@@ -66,7 +66,7 @@ public class ShOTCSProvider implements ShExchangeProvider {
 	private static final String USERNAME_VAR = "USERNAME";
 	private static final String PASSWORD_VAR = "PASSWORD";
 
-	private ObjectMapper objectMapper = new ObjectMapper().enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
+	private ObjectMapper objectMapper = new ObjectMapper().enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
 	private HttpClient httpClient = HttpClientBuilder.create().build();
 
@@ -237,7 +237,7 @@ public class ShOTCSProvider implements ShExchangeProvider {
 	}
 
 	private void getOTCSParentBreadcrumbItem(String id, ArrayList<ShExchangeProviderBreadcrumbItem> breadcrumb) {
-		if (!StringUtils.isBlank(id) && Integer.parseInt(id) > 0) {
+		if (!StringUtils.isBlank(id) && isNumber(id) && Integer.parseInt(id) > 0) {
 			ShExchangeProviderPost shExchangeProviderPost = this.getObject(id, true);
 
 			ShExchangeProviderBreadcrumbItem shExchangeProviderBreadcrumbItem = new ShExchangeProviderBreadcrumbItem();
@@ -247,5 +247,13 @@ public class ShOTCSProvider implements ShExchangeProvider {
 			this.getOTCSParentBreadcrumbItem(shExchangeProviderPost.getParentId(), breadcrumb);
 			breadcrumb.add(shExchangeProviderBreadcrumbItem);
 		}
+	}
+	
+	private boolean isNumber(String s) {
+	    boolean isNumber = true;
+	    for (char c : s.toCharArray()) {
+	        isNumber = isNumber && Character.isDigit(c);
+	    }
+	    return isNumber;
 	}
 }

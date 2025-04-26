@@ -6,7 +6,6 @@ import { ShioPostTypeListComponent } from './component/shio-post-type-list/shio-
 import { ShioPostTypePageComponent } from './component/shio-post-type-page/shio-post-type-page.component';
 import { ShioPostTypeReportComponent } from './component/shio-post-type-report/shio-post-type-report.component';
 import { ShioCommonsModule } from 'src/commons/shio-commons.module';
-import { OcticonsModule } from 'ngx-octicons';
 
 
 
@@ -20,7 +19,6 @@ import { OcticonsModule } from 'ngx-octicons';
     CommonModule,
     ReactiveFormsModule,
     FormsModule,
-    OcticonsModule,
     ShioCommonsModule,
     ShioPostTypeRoutingModule
   ],

@@ -18,7 +18,7 @@ package com.viglet.shio.provider.auth.otds;
 
 import java.util.ArrayList;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;

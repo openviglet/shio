@@ -25,7 +25,7 @@ import org.springframework.jms.annotation.EnableJms;
 import org.springframework.web.filter.CharacterEncodingFilter;
 
 import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
+import com.fasterxml.jackson.datatype.hibernate5.jakarta.Hibernate5JakartaModule;
 
 /**
  * Class that can be used to bootstrap and launch a Shio CMS from a Java
@@ -57,6 +57,6 @@ public class Shio {
 
 	@Bean
 	public Module hibernate5Module() {
-		return new Hibernate5Module();
+		return new Hibernate5JakartaModule();
 	}
 }

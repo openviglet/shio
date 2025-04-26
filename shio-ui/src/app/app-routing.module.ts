@@ -24,7 +24,7 @@ const routes: Routes = [
   { path: '', redirectTo: '/content/dashboard/repo', pathMatch: 'full' }
 ];
 @NgModule({
-  imports: [RouterModule.forRoot(routes, { useHash: true, relativeLinkResolution: 'legacy' })],
+  imports: [RouterModule.forRoot(routes, { useHash: true})],
   exports: [RouterModule]
 })
 export class AppRoutingModule { }

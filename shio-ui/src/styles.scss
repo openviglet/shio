@@ -1,36 +1,8 @@
-/* You can add global styles to this file, and also import other style files */
-@import "node_modules/@primer/css/alerts";
-@import "node_modules/@primer/css/base";
-@import "node_modules/@primer/css/blankslate";
-@import "node_modules/@primer/css/box";
-@import "node_modules/@primer/css/branch-name";
-@import "node_modules/@primer/css/breadcrumb";
-@import "node_modules/@primer/css/support";
-@import "node_modules/@primer/css/buttons";
-@import "node_modules/@primer/css/core";
-@import "node_modules/@primer/css/dropdown";
-@import "node_modules/@primer/css/forms";
-@import "node_modules/@primer/css/header";
-@import "node_modules/@primer/css/labels";
-@import "node_modules/@primer/css/layout";
-@import "node_modules/@primer/css/loaders";
-@import "node_modules/@primer/css/markdown";
-@import "node_modules/@primer/css/marketing";
-@import "node_modules/@primer/css/navigation";
-@import "node_modules/@primer/css/pagination";
-@import "node_modules/@primer/css/popover";
-@import "node_modules/@primer/css/product";
-@import "node_modules/@primer/css/progress";
-@import "node_modules/@primer/css/select-menu";
-@import "node_modules/@primer/css/subhead";
-@import "node_modules/@primer/css/table-object";
-@import "node_modules/@primer/css/timeline";
-@import "node_modules/@primer/css/toasts";
-@import "node_modules/@primer/css/tooltips";
-@import "node_modules/@primer/css/truncate";
-@import "node_modules/@primer/css/utilities";
-@import "node_modules/@primer/octicons";
-@import "node_modules/angular-notifier/styles";
-@import "node_modules/ngx-smart-modal/ngx-smart-modal";
+/* node_modules/@primer/css */
+@use "node_modules/@primer/css";
+/* node_modules/@primer/octicons */
+@use "node_modules/@primer/octicons";
+/* node_modules/ngx-smart-modal/ngx-smart-modal */
+@use "node_modules/ngx-smart-modal/styles/ngx-smart-modal";
 
 

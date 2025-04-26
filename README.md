@@ -38,7 +38,7 @@ $ cd shio
 Use Gradle to execute Shio CMS, without generate jar file.
 
 ```shell
-$ ./gradlew bootrun
+$ ./mvnw spring-boot:run
 ```
 
 
@@ -47,7 +47,7 @@ $ ./gradlew bootrun
 Use Gradle to generate Shio CMS executable JAR file.
 
 ```shell
-$ ./gradlew build
+$ ./mvnw package
 ```
 
 #### 2.1 Run

@@ -8,7 +8,6 @@ import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { ShioDashboardPageComponent } from './component/shio-dashboard-page/shio-dashboard-page.component';
 import { ShioModelingPageComponent } from './component/shio-modeling-page/shio-modeling-page.component';
 import { ShioRepositoryPageComponent } from './component/shio-repository-page/shio-repository-page.component';
-import { OcticonsModule } from 'ngx-octicons';
 
 @NgModule({
   declarations: [
@@ -20,7 +19,6 @@ import { OcticonsModule } from 'ngx-octicons';
     CommonModule,
     ReactiveFormsModule,
     FormsModule,
-    OcticonsModule,
     ShioCommonsModule,
     ShioDashboardRoutingModule,
     ShioRepositoryModule,

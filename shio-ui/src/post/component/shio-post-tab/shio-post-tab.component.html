@@ -13,18 +13,8 @@
                     <input
                         *ngIf="shPostAttr.shPostTypeAttr.shWidget.name !== 'Text Area' && shPostAttr.shPostTypeAttr.shWidget.name !== 'HTML Editor' && shPostAttr.shPostTypeAttr.shWidget.name !== 'Ace Editor - HTML' && shPostAttr.shPostTypeAttr.shWidget.name !== 'Ace Editor - Javascript'"
                         class="form-control" [(ngModel)]="shPostAttr.strValue">
-                    <div *ngIf="shPostAttr.shPostTypeAttr.shWidget.name === 'Ace Editor - Javascript'" ace-editor
-                        [(text)]="shPostAttr.strValue" [mode]="'javascript'" [theme]="'eclipse'" [options]="options"
-                        [readOnly]="false" [autoUpdateContent]="true" [durationBeforeCallback]="1000"
-                        style="min-height: 200px; width:100%; overflow: auto;"></div>
-                    <div *ngIf="shPostAttr.shPostTypeAttr.shWidget.name === 'Ace Editor - HTML'" ace-editor
-                        [(text)]="shPostAttr.strValue" [mode]="'html'" [theme]="'eclipse'" [options]="options"
-                        [readOnly]="false" [autoUpdateContent]="true" [durationBeforeCallback]="1000"
-                        style="min-height: 200px; width:100%; overflow: auto;"></div>
-                    <editor *ngIf="shPostAttr.shPostTypeAttr.shWidget.name === 'HTML Editor'" [init]="tinyMCEConfig"
+                    <editor *ngIf="shPostAttr.shPostTypeAttr.shWidget.name === 'HTML Editor'"
                         [(ngModel)]="shPostAttr.strValue"></editor>
-                    <ckeditor *ngIf="shPostAttr.shPostTypeAttr.shWidget.name === 'ChkEditor'" [editor]="chkEditor"
-                        [(ngModel)]="shPostAttr.strValue"></ckeditor>
                 </div>
             </div>
         </div>

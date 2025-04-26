@@ -1,6 +1,6 @@
 buildscript {
-    ext { springBootVersion = '2.5.6'
-	      hibernateVersion = '5.11.10.Final'
+    ext { springBootVersion = '3.3.5'
+	      hibernateVersion = '5.11.12.Final'
 		  swaggerVersion = '3.0.0'
 		 }
 		repositories {
@@ -17,14 +17,14 @@ buildscript {
 
 plugins {
   id 'org.springframework.boot' version "${springBootVersion}"
-  id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+  id 'io.spring.dependency-management' version '1.1.0'
   id 'java'
   id "com.eriwen.gradle.js" version "2.14.1"
 //  id "com.gorylenko.gradle-git-properties" version "2.2.4"
-  id 'de.undercouch.download' version '4.1.2'
+  id 'de.undercouch.download' version '5.6.0'
   id 'eclipse'
   id 'jacoco'
-  id "org.sonarqube" version "3.3"
+  id "org.sonarqube" version "5.1.0.4882"
 }
 
 sonarqube {
@@ -81,8 +81,8 @@ repositories {
 }
 
 group = 'com.viglet.shio'
-sourceCompatibility = 17
-targetCompatibility = 17
+sourceCompatibility = 21
+targetCompatibility = 21gradlew wrapper --gradle versio
 
 tasks.withType(JavaCompile) {
 	options.encoding = 'UTF-8'
@@ -151,35 +151,35 @@ dependencies {
 	implementation 'com.github.openturing:turing-java-sdk:0.3.3'
 
   	// Spring
-  	implementation group: 'org.springframework', name: 'spring-test', version: '5.3.12'
+  	implementation group: 'org.springframework', name: 'spring-test', version: '6.0.6'
   	    
   	// Jackson
-    implementation group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-hibernate5', version: '2.13.0'
+    implementation group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-hibernate5', version: '2.18.1'
    
    	// Oracle	
 	implementation group: 'com.oracle.ojdbc', name: 'ojdbc8', version: '19.3.0.0'
 	
     // H2
-    implementation group: 'com.h2database', name: 'h2', version:'1.4.200'
+    implementation group: 'com.h2database', name: 'h2', version:'2.3.232'
 
 	// MariaDB
-    implementation group: 'org.mariadb.jdbc', name: 'mariadb-java-client', version: '2.7.4'
+    implementation group: 'org.mariadb.jdbc', name: 'mariadb-java-client', version: '3.5.0'
 
     // Apache Commons
-    implementation group: 'org.apache.commons', name: 'commons-compress', version: '1.21'   
-    implementation group: 'commons-io', name: 'commons-io', version:'2.11.0'
-    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
-	implementation group: 'org.apache.commons', name: 'commons-text', version: '1.9'
+    implementation group: 'org.apache.commons', name: 'commons-compress', version: '1.27.1'   
+    implementation group: 'commons-io', name: 'commons-io', version:'2.17.0'
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.17.0'
+	implementation group: 'org.apache.commons', name: 'commons-text', version: '1.12.0'
 	
 	//Zip4j
-    implementation group: 'net.lingala.zip4j', name: 'zip4j', version: '2.9.0'
+    implementation group: 'net.lingala.zip4j', name: 'zip4j', version: '2.11.5'
 
     // Apache POI
-    implementation group: 'org.apache.poi', name: 'poi', version: '5.0.0'
-    implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '5.0.0'
+    implementation group: 'org.apache.poi', name: 'poi', version: '5.2.2'
+    implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '5.2.2'
     
     // JSoup
-	implementation group: 'org.jsoup', name: 'jsoup', version: '1.14.3'
+	implementation group: 'org.jsoup', name: 'jsoup', version: '1.18.1'
 	
 	// Hibernate
 	implementation group: 'org.hibernate', name: 'hibernate-search-engine', version: "${hibernateVersion}"
@@ -187,7 +187,7 @@ dependencies {
 	
 	//Hazelcast
 	implementation group: 'com.hazelcast', name: 'hazelcast-all', version : '4.0.3'	
-	implementation group: 'com.hazelcast', name: 'hazelcast-spring', version: '4.0.3'
+	implementation group: 'com.hazelcast', name: 'hazelcast-spring', version: '5.5.0'
 	
 	
 	// Swagger 2
@@ -195,52 +195,52 @@ dependencies {
 	implementation group: 'io.springfox', name: 'springfox-swagger-ui', version: "${swaggerVersion}"
 	
 	// Gson - is used by reCAPTCHA
-	implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.8'
+	implementation group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
 
 	// Thumbnailator
-    implementation group: 'net.coobird', name: 'thumbnailator', version: '0.4.14'
+    implementation group: 'net.coobird', name: 'thumbnailator', version: '0.4.20'
 	
 	// Tika
-    implementation group: 'org.apache.tika', name: 'tika-core', version:'2.1.0'
-    implementation group: 'org.apache.tika', name: 'tika-parsers', version:'2.1.0'
+    implementation group: 'org.apache.tika', name: 'tika-core', version:'3.0.0'
+    implementation group: 'org.apache.tika', name: 'tika-parsers', version:'3.0.0'
     
 	// LDAP
 	implementation group: 'ldapsdk', name: 'ldapsdk', version: '4.1'
 	
 	// Git 
-	implementation group: 'org.eclipse.jgit', name: 'org.eclipse.jgit', version: '5.13.0.202109080827-r'
+	implementation group: 'org.eclipse.jgit', name: 'org.eclipse.jgit', version: '7.0.0.202409031743-r'
 		
 	// GraphQL
 	implementation 'com.graphql-java:graphql-java:230521-nf-execution'
 	implementation 'com.graphql-java:graphql-java-spring-webmvc:2021-10-25T04-50-54-fbc162f'	
-	implementation 'com.graphql-java:graphql-java-extended-scalars:17.0'
-	implementation 'io.projectreactor:reactor-core:3.4.11'
-	implementation "com.graphql-java-kickstart:graphql-webclient-spring-boot-starter:1.0.0"
+	implementation 'com.graphql-java:graphql-java-extended-scalars:22.0'
+	implementation 'io.projectreactor:reactor-core:3.5.3'
+	implementation "com.graphql-java-kickstart:graphql-webclient-spring-boot-starter:2.1.0"
 
 	// Color Thief
 	implementation group: 'de.androidpit', name: 'color-thief', version: '1.1.2'
 
 	// Guava
-	implementation 'com.google.guava:guava:31.0.1-jre'
+	implementation 'com.google.guava:guava:31.1-jre'
 	
 	// Rome
-	implementation group: 'com.rometools', name: 'rome', version: '1.16.0'
+	implementation group: 'com.rometools', name: 'rome', version: '1.18.0'
 
 	
 	// WebJars
-	implementation 'org.webjars:jquery:1.12.4'
-	implementation 'org.webjars.bower:jquery.ui:1.12.1'
-	implementation 'org.webjars:bootstrap:3.3.7-1' // Content
-	implementation 'org.webjars.bower:bootstrap:4.6.0' // Preview
-	implementation 'org.webjars.npm:angular:1.8.2'
-	implementation 'org.webjars.npm:angular-resource:1.8.2'
-	implementation 'org.webjars.npm:angular-animate:1.8.2'
-	implementation 'org.webjars.npm:angular-sanitize:1.8.2'	
+	implementation 'org.webjars:jquery:3.7.1'
+	implementation 'org.webjars.bower:jquery.ui:1.11.3'
+	implementation 'org.webjars:bootstrap:5.3.3' // Content
+	implementation 'org.webjars.bower:bootstrap:5.3.3' // Preview
+	implementation 'org.webjars.npm:angular:1.8.3'
+	implementation 'org.webjars.npm:angular-resource:1.8.3'
+	implementation 'org.webjars.npm:angular-animate:1.8.3'
+	implementation 'org.webjars.npm:angular-sanitize:1.8.3'	
 	implementation 'org.webjars.npm:angular-cookies:1.8.2'
 	implementation 'org.webjars.bower:ace-builds:1.4.12'
-	implementation 'org.webjars.bower:tinymce:5.9.2'
+	implementation 'org.webjars.bower:tinymce:6.8.3'
 	implementation 'org.webjars.bower:angular-ui-router:1.0.29'
-	implementation 'org.webjars.npm:angular-translate:2.18.4'		
+	implementation 'org.webjars.npm:angular-translate:2.19.1'		
 	implementation 'org.webjars.bower:angular-bootstrap:2.5.0'
 	implementation 'org.webjars.bower:angular-moment:1.2.0'
 	implementation 'org.webjars.bower:angular-ui-ace:0.2.3'
@@ -254,9 +254,9 @@ dependencies {
 	implementation 'org.webjars:angular-avatar:1.3.0'
 	implementation 'org.webjars.bower:angular-bootstrap-toggle:0.4.2'
 
-	implementation group: 'org.openjdk.nashorn', name: 'nashorn-core', version: '15.3'
+	implementation group: 'org.openjdk.nashorn', name: 'nashorn-core', version: '15.4'
 
-	implementation group: 'org.mozilla', name: 'rhino-engine', version: '1.7.13'
+	implementation group: 'org.mozilla', name: 'rhino-engine', version: '1.7.15'
 
 	testImplementation('org.springframework.boot:spring-boot-starter-test')
 }

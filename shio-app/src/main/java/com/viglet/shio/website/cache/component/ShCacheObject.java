@@ -31,11 +31,9 @@ import org.springframework.stereotype.Component;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.ShObject;
 import com.viglet.shio.persistence.model.post.ShPost;
-import com.viglet.shio.persistence.model.post.impl.ShPostImpl;
 import com.viglet.shio.persistence.repository.object.ShObjectRepository;
 import com.viglet.shio.persistence.repository.post.ShPostRepository;
 import com.viglet.shio.utils.ShFolderUtils;
-import com.viglet.shio.utils.ShUtils;
 import com.viglet.shio.website.ShSitesContextURL;
 import com.viglet.shio.website.utils.ShSitesObjectUtils;
 
@@ -43,36 +41,35 @@ import com.viglet.shio.website.utils.ShSitesObjectUtils;
  * @author Alexandre Oliveira
  */
 
+
 @Component
 public class ShCacheObject {
 	private static final Log logger = LogFactory.getLog(ShCacheObject.class);
 	@Autowired
-	private ShCachePage shCachePage;
+	ShCachePage shCachePage;
 	@Autowired
-	private ShCacheURL shCacheURL;
+	ShCacheURL shCacheURL;
 	@Autowired
-	private ShObjectRepository shObjectRepository;
+	ShCacheObject shCacheObject;
 	@Autowired
-	private ShPostRepository shPostRepository;
+	ShObjectRepository shObjectRepository;
 	@Autowired
-	private ShFolderUtils shFolderUtils;
+	ShPostRepository shPostRepository;
 	@Autowired
-	private  ShUtils shUtils;
+	ShFolderUtils shFolderUtils;
 	@Autowired
-	private ShSitesObjectUtils shSitesObjectUtils;
-
+	ShSitesObjectUtils shSitesObjectUtils;
+	
 	@Cacheable(value = "shObject", key = "#id", sync = true)
 	public List<String> cache(String id) {
-		if (logger.isDebugEnabled()) {
-			String sanitizedId = shUtils.sanitizedString(id);
-			logger.debug("Creating the shObject Cache id " + sanitizedId);
-		}
+		if (logger.isDebugEnabled())
+			logger.debug("Creating the shObject Cache id " + id);
 		return new ArrayList<>();
 	}
 
 	@CachePut(value = "shObject", key = "#id")
 	public List<String> updateCache(String id, ShSitesContextURL shSitesContextURL) {
-		List<String> urls = cache(id);
+		List<String> urls = shCacheObject.cache(id);
 		if (!urls.contains(shSitesContextURL.getInfo().getContextURLOriginal())) {
 			if (logger.isDebugEnabled())
 				logger.debug("Adding id: " + id + " and URL: " + shSitesContextURL.getInfo().getContextURLOriginal());
@@ -84,29 +81,28 @@ public class ShCacheObject {
 	public void deleteCache(String id) {
 		ShObject shObject = shObjectRepository.findById(id).orElse(null);
 		String objectId = id;
-		if (shObject instanceof ShFolder shFolder) {
-			ShPost shFolderIndex = shPostRepository.findByShFolderAndFurl(shFolder, "index");
+		if (shObject instanceof ShFolder) {
+			ShPost shFolderIndex = shPostRepository.findByShFolderAndFurl((ShFolder) shObject, "index");
 			if (shFolderIndex != null) {
 				objectId = shFolderIndex.getId();
 			}
-		} else if (shObject instanceof ShPostImpl shPostImpl) {
-			ShFolder shFolder = shFolderUtils.getParentFolder(shPostImpl);
+		} else if (shObject instanceof ShPost) {
+			ShFolder shFolder = shFolderUtils.getParentFolder(shObject);
 			this.deleteCache(shFolder.getId());
 		}
 
 		this.deleteDependency(objectId);
-		deleteCacheSelf(objectId);
+		shCacheObject.deleteCacheSelf(objectId);
 
 	}
 
 	public void deleteDependency(String id) {
-		String sanitizedId = shUtils.sanitizedString(id);
 		if (logger.isDebugEnabled())
-			logger.debug("Executing deleteDependency for id: " + sanitizedId);
-		List<String> urls = cache(id);
+			logger.debug("Executing deleteDependency for id: " + id);
+		List<String> urls = shCacheObject.cache(id);
 		for (String url : urls) {
 			if (logger.isDebugEnabled())
-				logger.debug("Deleting the page with id: " + sanitizedId + " and URL: " + url);
+				logger.debug("Deleting the page with id: " + id + " and URL: " + url);
 			shCachePage.deleteCache(id, url);
 			ShObject shObject = shObjectRepository.findById(id).orElse(null);
 			String contextURL = null;
@@ -130,9 +126,7 @@ public class ShCacheObject {
 
 	@CacheEvict(value = "shObject", key = "#id")
 	public void deleteCacheSelf(String id) {
-		if (logger.isDebugEnabled()) {
-			String sanitizedId = shUtils.sanitizedString(id);
-			logger.debug("Deleted Cache: ".concat(sanitizedId));
-		}
+		if (logger.isDebugEnabled())
+			logger.debug("Deleted Cache: ".concat(id));
 	}
 }

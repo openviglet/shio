@@ -12,7 +12,6 @@ import { NgxSmartModalModule } from 'ngx-smart-modal';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { ShioHistoryModule } from 'src/history/shio-history.module';
-import { OcticonsModule } from 'ngx-octicons';
 
 @NgModule({
   declarations: [
@@ -27,7 +26,6 @@ import { OcticonsModule } from 'ngx-octicons';
     MomentModule,
     NgxSmartModalModule.forRoot(),
     FontAwesomeModule,
-    OcticonsModule,
     ShioObjectRoutingModule,
     ShioCommonsModule,
     ShioPostTypeModule,

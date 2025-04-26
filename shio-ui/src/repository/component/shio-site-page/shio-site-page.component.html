@@ -62,10 +62,6 @@
                 </div>
 
                 <div class="form-group-body">
-                    <div ace-editor [(text)]="shSite.postTypeLayout" [mode]="'json'" [theme]="'eclipse'"
-                        [options]="options" [readOnly]="false" [autoUpdateContent]="true"
-                        [durationBeforeCallback]="1000"
-                        style="min-height: 200px; width:100%; overflow: auto;"></div>
                     <p class="note" id="help-text-for-checkbox">
                         Define which <strong>page payouts</strong> will be used by <strong>post types</strong>.
                     </p>
@@ -76,8 +72,6 @@
                     <label for="repo-searchable">Searchable Post Types</label>
                 </div>
                 <div class="form-group-body">
-                    <ace fxFlex="auto" [mode]="'json'" style="height: 200px;" [(value)]="shSite.searchablePostTypes">
-                    </ace>
                     <p class="note" id="help-text-for-checkbox">
                         Define which <strong>post types</strong> will be indexed and will appear on <strong>website
                             search</strong>.

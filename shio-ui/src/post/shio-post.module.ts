@@ -5,9 +5,6 @@ import { ShioPostSettingsPageComponent } from './component/shio-post-settings-pa
 import { ShioPostTabComponent } from './component/shio-post-tab/shio-post-tab.component';
 import { ShioPostTabsComponent } from './component/shio-post-tabs/shio-post-tabs.component';
 import { ShPostService } from './service/post.service';
-import { EditorModule, TINYMCE_SCRIPT_SRC } from '@tinymce/tinymce-angular';
-import { CKEditorModule } from '@ckeditor/ckeditor5-angular';
-import { AceEditorModule } from 'ace-editor-ng9';
 import { ShioPostRoutingModule } from './shio-post-routing.module';
 import { ShioCommonsModule } from 'src/commons/shio-commons.module';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
@@ -25,16 +22,12 @@ import { ShioWidgetModule } from 'src/widget/shio-widget.module';
     CommonModule,
     ReactiveFormsModule,
     FormsModule,
-    AceEditorModule,
-    EditorModule,
-    CKEditorModule,
     ShioCommonsModule,
     ShioPostRoutingModule,
     ShioWidgetModule
   ],
   providers: [
-    ShPostService,
-    { provide: TINYMCE_SCRIPT_SRC, useValue: 'tinymce/tinymce.min.js' }
+    ShPostService
   ],
 })
 export class ShioPostModule { }

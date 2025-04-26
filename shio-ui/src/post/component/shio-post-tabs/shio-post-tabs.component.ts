@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { ShPostService } from 'src/post/service/post.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ShPost } from 'src/post/model/post.model';
-import { NotifierService } from 'angular-notifier';
+import { NotifierService } from 'angular-notifier-updated';
 
 @Component({
   selector: 'shio-post-tabs',
