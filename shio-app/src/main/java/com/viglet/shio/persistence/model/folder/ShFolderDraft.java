@@ -16,7 +16,7 @@
  */
 package com.viglet.shio.persistence.model.folder;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;

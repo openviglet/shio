@@ -17,7 +17,7 @@
 package com.viglet.shio.persistence.model.system;
 
 import java.io.Serializable;
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * The persistent class for the ShLocale database table.

@@ -19,7 +19,7 @@ package com.viglet.shio.website.nashorn;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import javax.script.Bindings;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;

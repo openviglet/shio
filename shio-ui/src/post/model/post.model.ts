@@ -10,4 +10,5 @@ export interface ShPost {
     shSite: ShSite;
     shPostType: ShPostType;
     shPostAttrs: ShPostAttr[];
+    summary: string;
 }

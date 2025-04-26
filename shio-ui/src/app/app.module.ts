@@ -4,15 +4,11 @@ import { NgModule } from '@angular/core';
 import { AppRoutingModule } from './app-routing.module';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AppComponent } from './page/app/app.component';
-import localeEn from '@angular/common/locales/global/en';
-import localePt from '@angular/common/locales/global/pt';
-import { registerLocaleData } from '@angular/common';
 import { BasicAuthInterceptor, ErrorInterceptor } from './_helpers';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { NotifierModule, NotifierOptions } from "angular-notifier";
+import { NotifierModule, NotifierOptions } from "angular-notifier-updated";
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 
-import { OcticonsModule } from 'ngx-octicons';
 import { ApiPlaygroundComponent } from './page/api-playground/api-playground.component';
 import { ShioContentPageComponent } from './page/shio-content-page/shio-content-page.component';
 import { ShioLoginModule } from 'src/login/shio-login.module';
@@ -23,8 +19,6 @@ import { ShioCommonsModule } from 'src/commons/shio-commons.module';
 import { ShioWidgetModule } from 'src/widget/shio-widget.module';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 
-registerLocaleData(localeEn, 'en');
-registerLocaleData(localePt, 'pt');
 const notifierDefaultOptions: NotifierOptions = {
   position: {
       horizontal: {
@@ -78,16 +72,15 @@ const notifierDefaultOptions: NotifierOptions = {
     ReactiveFormsModule,
     FormsModule,
     NotifierModule.withConfig(notifierDefaultOptions),
-    FontAwesomeModule,   
+    FontAwesomeModule,
     ShioWidgetModule,
     ShioLoginModule,
     ShioPostModule,
     ShioPostTypeModule,
     ShioRepositoryModule,
-    OcticonsModule,
     ShioCommonsModule,
     DragDropModule
-    
+
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: BasicAuthInterceptor, multi: true },

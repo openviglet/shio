@@ -19,8 +19,8 @@ package com.viglet.shio.api.auth;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.http.HttpSession;
-import javax.transaction.Transactional;
+import jakarta.servlet.http.HttpSession;
+import jakarta.transaction.Transactional;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

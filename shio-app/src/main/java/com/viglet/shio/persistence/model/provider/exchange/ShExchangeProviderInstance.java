@@ -16,8 +16,8 @@
  */
 package com.viglet.shio.persistence.model.provider.exchange;
 
-import javax.persistence.Entity;
-import javax.persistence.NamedQuery;
+import jakarta.persistence.Entity;
+import jakarta.persistence.NamedQuery;
 
 import com.viglet.shio.persistence.model.provider.ShProviderInstance;
 

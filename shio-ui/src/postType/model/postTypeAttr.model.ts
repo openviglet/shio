@@ -5,4 +5,8 @@ export interface ShPostTypeAttr {
     shWidget: ShWidget;
     ordinal: number;
     label: string;
+    required: boolean;
+    isSummary:boolean;
+    isTitle:boolean;
+    name:string;
 }

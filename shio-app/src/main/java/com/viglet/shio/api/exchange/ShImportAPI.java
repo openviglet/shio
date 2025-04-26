@@ -18,7 +18,7 @@ package com.viglet.shio.api.exchange;
 
 import java.security.Principal;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

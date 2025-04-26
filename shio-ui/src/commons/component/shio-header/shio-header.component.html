@@ -2,7 +2,7 @@
     <div class="Header-item" style="padding: 6px 0px">
         <a [routerLink]="['/content/dashboard']" routerLinkActive="active"
             class="Header-link d-flex flex-items-center ">
-            <shio-logo size="30" style="padding-top: 5px;"></shio-logo>
+            <shio-logo style="padding-top: 5px;"></shio-logo>
         </a>
     </div>
     <div class="Header-item Header-item--full">
@@ -27,7 +27,7 @@
             </div>
         </details>
 
-    </div>    
+    </div>
     <div class="Header-item position-relative mr-0 d-none d-lg-flex">
         <details *ngIf="(user | async) as userItem"
             class="details-overlay details-reset">
