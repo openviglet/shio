@@ -15,11 +15,11 @@
     <sonar.cpd.exclusions>**/persistence/dto/**,**/persistence/model/**,**/plugins/nlp/otca/response/xml/**</sonar.cpd.exclusions>
     <maven.compiler.source>21</maven.compiler.source>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-    <sonar.organization>viglet-shio</sonar.organization>
+    <sonar.organization>viglet</sonar.organization>
     <spring-boot.version>3.4.4</spring-boot.version>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.compiler.target>21</maven.compiler.target>
-    <sonar.projectKey>shio-app</sonar.projectKey>
+    <sonar.projectKey>viglet_shio</sonar.projectKey>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
   <dependencyManagement>

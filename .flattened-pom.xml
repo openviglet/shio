@@ -10,7 +10,7 @@
   <description>Viglet Shio CMS</description>
   <properties>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-    <sonar.organization>openviglet</sonar.organization>
+    <sonar.organization>viglet</sonar.organization>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <spring-boot.version>3.4.4</spring-boot.version>
     <revision>0.3.9</revision>
