@@ -8,7 +8,8 @@ import { ShSiteService } from 'src/repository/service/site/site.service';
 
 @Component({
   selector: 'app-shio-commit-page',
-  templateUrl: './shio-commit-page.component.html'
+  templateUrl: './shio-commit-page.component.html',
+  standalone: false
 })
 export class ShioCommitPageComponent implements OnInit {
   private shSite: Observable<ShSite>;
@@ -47,7 +48,7 @@ export class ShioCommitPageComponent implements OnInit {
       (rv[x[key]] = rv[x[key]] || []).push(x);
       return rv;
     }, {});
-    let groupByDay = [];
+    let groupByDay: { day: Date; histories: unknown; }[] = [];
     Object.entries(reduce).forEach((itemByDay) => {
       groupByDay.push({
         day: new Date(itemByDay[0]),

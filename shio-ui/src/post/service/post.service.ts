@@ -30,10 +30,11 @@ export class ShPostService {
 
     constructor(private httpClient: HttpClient) { }
 
-    get(id: string): Observable<ShPostXPData> {
+    get(id: string | null): Observable<ShPostXPData> {
         return this.httpClient.get<ShPostXPData>(`${environment.apiUrl}/api/v2/post/xp/${id}`);
     }
-    getBreadcrumb(id: string): Observable<Breadcrumb> {
+
+    getBreadcrumb(id: string | null): Observable<Breadcrumb> {
         return this.httpClient.get<Breadcrumb>(`${environment.apiUrl}/api/v2/folder/${id}/path`)
     }
     public savePost(shPost: ShPost): Observable<Object> {        

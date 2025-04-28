@@ -6,7 +6,8 @@ import { ShObject } from 'src/object/model/object.model';
 
 @Component({
   selector: 'shio-object-list-page',
-  templateUrl: './shio-object-list-page.component.html'
+  templateUrl: './shio-object-list-page.component.html',
+  standalone: false
 })
 export class ShioObjectListPageComponent implements OnInit, OnDestroy {
   private shObjectList: Observable<ShObject>;

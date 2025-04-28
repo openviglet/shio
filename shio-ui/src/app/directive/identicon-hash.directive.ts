@@ -2,7 +2,7 @@ import { Directive, ElementRef, Input, OnChanges, Renderer2, SimpleChanges } fro
 import { update } from "jdenticon";
 @Directive({ selector: '[identiconHash]' })
 export class IdenticonHashDirective implements OnChanges {
-  @Input() identiconHash: string;
+  @Input() identiconHash: string | undefined;
 
   constructor(private el: ElementRef) { }
 

@@ -7,7 +7,8 @@ import { ShSiteService } from 'src/repository/service/site/site.service';
 
 @Component({
   selector: 'app-shio-site-page',
-  templateUrl: './shio-site-page.component.html'
+  templateUrl: './shio-site-page.component.html',
+  standalone: false
 })
 export class ShioSitePageComponent implements OnInit {
   private shSite: Observable<ShSite>;
@@ -26,8 +27,8 @@ export class ShioSitePageComponent implements OnInit {
   }
 
   public saveSite(_shSite: ShSite) {
-    this.shSiteService.save(_shSite).subscribe(
-      (shSite: ShSite) => {
+    // @ts-ignore
+    this.shSiteService.save(_shSite).subscribe((shSite: ShSite) => {
         _shSite = shSite;
         this.notifier.notify("success", shSite.name.concat(" Repository settings was updated."));
       },

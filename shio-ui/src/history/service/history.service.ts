@@ -24,7 +24,8 @@ import { ShHistory } from 'src/history/model/history.model';
 @Injectable()
 export class ShHistoryService {
     constructor(private httpClient: HttpClient) { }
-    findBySite(id: string, page: number): Observable<ShHistory[]> {
+
+    findBySite(id: string | null, page: number): Observable<ShHistory[]> {
         return this.httpClient.get<ShHistory[]>(`${environment.apiUrl}/api/v2/history/object/${id}/${page}`);
     }
     countBySite(id: string): Observable<number> {

@@ -14,7 +14,8 @@ export const CUSTOM_INPUT_CONTROL_VALUE_ACCESSOR: any = {
 @Component({
   selector: 'shio-text-widget',
   templateUrl: './shio-text-widget.component.html',
-  providers: [createCustomInputControlValueAccessor(ShioTextWidgetComponent)]
+  providers: [createCustomInputControlValueAccessor(ShioTextWidgetComponent)],
+  standalone: false
 })
 export class ShioTextWidgetComponent implements ControlValueAccessor {
 

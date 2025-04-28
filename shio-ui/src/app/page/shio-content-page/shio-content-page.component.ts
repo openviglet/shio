@@ -2,7 +2,8 @@ import { Component, OnInit } from '@angular/core';
 
 @Component({
   selector: 'app-shio-content-page',
-  templateUrl: './shio-content-page.component.html'
+  templateUrl: './shio-content-page.component.html',
+  standalone: false
 })
 export class ShioContentPageComponent implements OnInit {
 
@@ -10,6 +11,5 @@ export class ShioContentPageComponent implements OnInit {
 
   ngOnInit(): void {
   }
-  imports: [
-  ]
+  imports: [] | undefined
 }

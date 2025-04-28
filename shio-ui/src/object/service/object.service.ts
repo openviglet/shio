@@ -30,7 +30,8 @@ export class ShObjectService {
     query(): Observable<ShObject[]> {
         return this.httpClient.get<ShObject[]>(`${environment.apiUrl}/api/v2/object`);
     }
-    get(id: string): Observable<ShObject> {
+
+    get(id: string | null): Observable<ShObject> {
         return this.httpClient.get<ShObject>(`${environment.apiUrl}/api/v2/object/${id}/list`);
     }
 }

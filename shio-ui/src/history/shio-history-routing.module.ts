@@ -1,8 +1,8 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 
-import { AuthGuard } from '@app/_helpers';
 import { ShioCommitPageComponent } from './shio-commit-page/shio-commit-page.component';
+import {AuthGuard} from "../app/_helpers";
 
 
 const routes: Routes = [

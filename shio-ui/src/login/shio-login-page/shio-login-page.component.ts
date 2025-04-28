@@ -2,15 +2,16 @@
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { first } from 'rxjs/operators';
+import {AuthenticationService} from "../../app/_services";
 
-import { AuthenticationService } from '@app/_services';
 
-@Component({ templateUrl: 'shio-login-page.component.html' })
+@Component({ templateUrl: 'shio-login-page.component.html',
+    standalone: false })
 export class ShioLoginPageComponent implements OnInit {
-    loginForm: FormGroup;
+    loginForm: FormGroup | undefined;
     loading = false;
     submitted = false;
-    returnUrl: string;
+    returnUrl: string | undefined;
     error = '';
 
     constructor(
@@ -36,12 +37,14 @@ export class ShioLoginPageComponent implements OnInit {
     }
 
     // convenience getter for easy access to form fields
-    get f() { return this.loginForm.controls; }
+    get f() { // @ts-ignore
+        return this.loginForm.controls; }
 
     onSubmit() {
         this.submitted = true;
 
         // stop here if form is invalid
+        // @ts-ignore
         if (this.loginForm.invalid) {
             return;
         }
@@ -53,7 +56,7 @@ export class ShioLoginPageComponent implements OnInit {
                 data => {
                     this.router.navigate([this.returnUrl]);
                 },
-                error => {
+                (error: string) => {
                     this.error = error;
                     this.loading = false;
                 });

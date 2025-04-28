@@ -8,13 +8,14 @@ import { NotifierService } from 'angular-notifier-updated';
 
 @Component({
   selector: 'shio-post-tabs',
-  templateUrl: './shio-post-tabs.component.html'
+  templateUrl: './shio-post-tabs.component.html',
+  standalone: false
 })
 export class ShioPostTabsComponent implements OnInit {
-  @Input() shPost: ShPost;
+  @Input() shPost: ShPost | undefined;
   public currentTab: number = 0;
   private breacrumbData: Observable<Breadcrumb>;
-  private id: string;
+  private id: string | null;
   tabs: any[] = [];
   constructor(private readonly notifier: NotifierService, private shPostService: ShPostService, private route: ActivatedRoute, private router: Router) {
     this.id = this.route.snapshot.paramMap.get('id');
@@ -29,13 +30,16 @@ export class ShioPostTabsComponent implements OnInit {
   ngOnInit(): void {
     this.formatPost(this.shPost);
   }
-  private formatPost(shPost: ShPost) {
+  private formatPost(shPost: ShPost | undefined) {
     this.tabs = [];
     let currentTabIndex: number;
     let createTab = false;
+    // @ts-ignore
     shPost.shPostAttrs.sort((a, b) => a.shPostTypeAttr.ordinal - b.shPostTypeAttr.ordinal);
 
+    // @ts-ignore
     shPost.shPostAttrs.forEach((shPostAttr, index) => {
+      // @ts-ignore
       let tabName = this.shPost.shPostType.title;
 
       if (shPostAttr.shPostTypeAttr.shWidget.name === 'Tab') {
@@ -59,8 +63,8 @@ export class ShioPostTabsComponent implements OnInit {
     });
   }
   public savePost() {
-    this.shPostService.savePost(this.shPost).subscribe(
-      (shPost: ShPost) => {
+    // @ts-ignore
+    this.shPostService.savePost(this.shPost).subscribe((shPost: ShPost) => {
         this.shPost = shPost;
         this.formatPost(this.shPost);
         this.notifier.notify("success", shPost.title.concat(" Post was updated."));

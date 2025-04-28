@@ -7,12 +7,13 @@ import { ShPostXPData } from 'src/post/model/postxp.model';
 
 @Component({
   selector: 'shio-post-page',
-  templateUrl: './shio-post-page.component.html'
+  templateUrl: './shio-post-page.component.html',
+  standalone: false
 })
 export class ShioPostPageComponent implements OnInit {
   private breacrumbData: Observable<Breadcrumb>;
   private shPostData: Observable<ShPostXPData>
-  private id: string;
+  private id: string | null;
 
   constructor(private shPostService: ShPostService, private route: ActivatedRoute, private router: Router) {
     this.id = this.route.snapshot.paramMap.get('id');

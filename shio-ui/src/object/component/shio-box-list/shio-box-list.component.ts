@@ -6,11 +6,12 @@ import { NgxSmartModalService } from 'ngx-smart-modal';
 
 @Component({
   selector: 'shio-box-list',
-  templateUrl: './shio-box-list.component.html'
+  templateUrl: './shio-box-list.component.html',
+  standalone: false
 })
 export class ShioBoxListComponent implements OnInit {
-  @Input() objectList: ShObject;
-  ptSelectForm: FormGroup;
+  @Input() objectList: ShObject | undefined;
+  ptSelectForm: FormGroup | undefined;
   faBars = faBars;
   constructor(public ngxSmartModalService: NgxSmartModalService, private formBuilder: FormBuilder) { }
 

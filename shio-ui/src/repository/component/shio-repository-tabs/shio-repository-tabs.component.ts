@@ -5,21 +5,23 @@ import { Observable } from 'rxjs';
 
 @Component({
   selector: 'shio-repository-tabs',
-  templateUrl: './shio-repository-tabs.component.html'
+  templateUrl: './shio-repository-tabs.component.html',
+  standalone: false
 })
 export class ShioRepositoryTabsComponent implements OnInit {
-  @Input() shSite: ShSite;
-  @Input() tabIndex: number;
-  private commitCount: Observable<number>;
+  @Input() shSite: ShSite | undefined;
+  @Input() tabIndex: number | undefined;
+  private commitCount: Observable<number> | undefined;
   constructor(private shHistoryService: ShHistoryService) {
     
    }
 
   ngOnInit(): void {
+    // @ts-ignore
     this.commitCount = this.shHistoryService.countBySite(this.shSite.id);
   }
 
-  getCommitCount(): Observable<number> {
+  getCommitCount(): Observable<number> | undefined {
     return this.commitCount;
   }
 

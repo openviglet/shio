@@ -1,9 +1,9 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 
-import { AuthGuard } from '@app/_helpers';
 import { ShioPostPageComponent } from './component/shio-post-page/shio-post-page.component';
 import { ShioPostSettingsPageComponent } from './component/shio-post-settings-page/shio-post-settings-page.component';
+import {AuthGuard} from "../app/_helpers";
 
 
 const routes: Routes = [
