@@ -76,7 +76,7 @@ public class ShSearchAPI {
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
 	public List<ShPostWithBreadcrumb> shSearch(@RequestParam(value = "q") String q) {
 		List<ShPostWithBreadcrumb> searchResults = new ArrayList<>();
-		for (ShPost shPost : shPostRepository.fuzzySearch(q)) {
+		for (ShPost shPost : shPostRepository.findByTitle(q)) {
 			ShPostImpl shPostLazy = shPostUtils.loadLazyPost(shPost.getId(), false);
 			List<ShFolder> breadcrumb = shFolderUtils.breadcrumb(shPostLazy.getShFolder());
 			ShSite shSite = breadcrumb.get(0).getShSite();

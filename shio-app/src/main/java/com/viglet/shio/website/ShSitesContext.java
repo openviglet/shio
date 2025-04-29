@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import com.viglet.shio.website.cache.component.ShCacheObject;
 import jakarta.activation.MimetypesFileTypeMap;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -69,8 +70,6 @@ public class ShSitesContext {
 	private static final String USER_GROUPS_SESSION = "shUserGroups";
 	private static final String LOGIN_CALLBACK_SESSION = "shLoginCallBack";
 	private static final String LOGIN_PAGE = "/login-page";
-	@Resource
-	private ApplicationContext applicationContext;
 	@Autowired
 	private ShStaticFileUtils shStaticFileUtils;
 	@Autowired
@@ -89,6 +88,8 @@ public class ShSitesContext {
 	private ShUserRepository shUserRepository;
 	@Autowired
 	private ShUserUtils shUserUtils;
+	@Autowired
+	private ShCacheObject shCacheObject;
 
 	@PostMapping("/sites/**")
 	public ModelAndView sitesPostForm(HttpServletRequest request, HttpServletResponse response) {
@@ -278,7 +279,7 @@ public class ShSitesContext {
 
 	private ShCachePageBean recreateCache(ShSitesContextURL shSitesContextURL) {
 		ShCachePageBean shCachePageBean;
-		shCachePage.deleteCache(shSitesContextURL.getInfo().getObjectId(),
+		shCacheObject.deletePageCache(shSitesContextURL.getInfo().getObjectId(),
 				shSitesContextURL.getInfo().getContextURLOriginal());
 		shCachePageBean = shCachePage.cache(shSitesContextURL);
 		if (logger.isDebugEnabled()) {

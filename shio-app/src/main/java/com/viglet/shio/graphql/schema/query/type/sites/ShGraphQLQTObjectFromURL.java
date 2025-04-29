@@ -26,6 +26,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import com.viglet.shio.persistence.model.post.impl.ShPostImpl;
+import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.post.type.ShSystemPostType;
+import com.viglet.shio.website.ShSitesContextURL;
+import com.viglet.shio.website.ShSitesContextURLProcess;
+import com.viglet.shio.website.ShSitesDetectContextURL;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -63,7 +69,10 @@ public class ShGraphQLQTObjectFromURL {
 	private ShGraphQLUtils shGraphQLUtils;
 	@Autowired
 	private ShSitesPageLayoutUtils shSitesPageLayoutUtils;
-
+	@Autowired
+	private ShSitesDetectContextURL shSitesDetectContextURL;
+	@Autowired
+	private ShSiteRepository shSiteRepository;
 	private static final String CONTENT_NAME = "shObjectFromURL";
 	private static final String SYSTEM_ATTR = "system";
 
@@ -106,7 +115,7 @@ public class ShGraphQLQTObjectFromURL {
 					type = "site";
 				}
 
-				ShPost pageLayout = shSitesPageLayoutUtils.fromURL(url);
+				ShPost pageLayout = fromURL(url);
 
 				if (pageLayout != null)
 					post.put("pageLayout", pageLayout.getTitle());
@@ -124,5 +133,31 @@ public class ShGraphQLQTObjectFromURL {
 			}
 			return null;
 		};
+	}
+
+	public ShPost fromURL(String url) {
+		ShSitesContextURL shSitesContextURL = new ShSitesContextURL();
+
+		shSitesDetectContextURL.detectContextURL(url, shSitesContextURL);
+
+		Optional<ShObject> shObject = shObjectRepository.findById(shSitesContextURL.getInfo().getObjectId());
+
+		Optional<ShSite> shSite = shSiteRepository.findById(shSitesContextURL.getInfo().getSiteId());
+
+		String format = shSitesContextURL.getInfo().getShFormat();
+
+		if (shObject.isPresent() && shSite.isPresent()) {
+			if (shObject.get() instanceof ShFolder shFolder) {
+				return shSitesPageLayoutUtils.pageLayoutFromFolderAndFolderIndex(shFolder, shSite.get(), format);
+			} else if (shObject.get() instanceof ShPostImpl shPostImpl) {
+				if (shPostImpl.getShPostType().getName().equals(ShSystemPostType.FOLDER_INDEX)) {
+					return shSitesPageLayoutUtils.pageLayoutFromFolderAndFolderIndex(shPostImpl, shSite.get(), format);
+				} else {
+					return shSitesPageLayoutUtils.pageLayoutFromPost(shPostImpl, shSite.get(), format);
+				}
+
+			}
+		}
+		return null;
 	}
 }

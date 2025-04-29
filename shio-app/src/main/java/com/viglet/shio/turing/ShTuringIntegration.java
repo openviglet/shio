@@ -60,7 +60,6 @@ import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.utils.ShObjectUtils;
 import com.viglet.shio.utils.ShPostTypeUtils;
 import com.viglet.shio.utils.ShUtils;
-import com.viglet.shio.website.utils.ShSitesFolderUtils;
 import com.viglet.shio.website.utils.ShSitesObjectUtils;
 import com.viglet.shio.website.utils.ShSitesPostUtils;
 import com.viglet.shio.widget.ShSystemWidget;
@@ -93,8 +92,6 @@ public class ShTuringIntegration {
 	private ShSitesObjectUtils shSitesObjectUtils;
 	@Autowired
 	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShSitesFolderUtils shSitesFolderUtils;
 
 	public void indexObject(ShObjectImpl shObject) {
 		ShSite shSite = shObjectUtils.getSite(shObject);
@@ -246,7 +243,7 @@ public class ShTuringIntegration {
 	private void addFolder(ShObjectImpl shObject, Map<String, Object> attributes) {
 		ShFolder shFolder = (ShFolder) shObject;
 		attributes.put("title", shFolder.getName());
-		ShPost shFolderIndexPost = shSitesFolderUtils.getFolderIndex(shFolder);
+		ShPost shFolderIndexPost = shSitesPostUtils.getFolderIndex(shFolder);
 		if (shFolderIndexPost != null) {
 			Map<String, ShPostAttr> shFolderIndexPostMap = shSitesPostUtils.postToMap(shFolderIndexPost);
 			if (shFolderIndexPostMap.containsKey(ShSystemPostTypeAttr.DESCRIPTION)) {

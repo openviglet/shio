@@ -19,7 +19,6 @@ package com.viglet.shio.persistence.model.post;
 import java.io.Serializable;
 
 import org.hibernate.annotations.*;
-import org.hibernate.search.annotations.Field;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.persistence.model.object.ShObject;
@@ -33,12 +32,10 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -70,15 +67,10 @@ public class ShPostAttr implements Serializable, ShPostAttrImpl {
 	@Column(name = "int_value")
 	private int intValue;
 
-	@Field
 	@Column(name = "str_value", length = 5 * 1024 * 1024) // 5Mb
 	private String strValue;
 
 	@ElementCollection
-	@Fetch(org.hibernate.annotations.FetchMode.JOIN)
-	@CollectionTable(name = "sh_post_attr_array_value")
-	@JoinColumn(name = "post_attr_id")
-	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Set<String> arrayValue = new HashSet<>();
 
 	// bi-directional many-to-one association to shObject

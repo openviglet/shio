@@ -20,7 +20,6 @@ import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-import org.hibernate.search.annotations.IndexedEmbedded;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.object.ShObjectType;
@@ -70,7 +69,6 @@ public class ShPostDraft extends ShObjectDraft implements ShPostImpl {
 	private ShFolder shFolder;
 
 	// bi-directional many-to-one association to ShSite
-	@IndexedEmbedded
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "site_id")
 	private ShSite shSite;

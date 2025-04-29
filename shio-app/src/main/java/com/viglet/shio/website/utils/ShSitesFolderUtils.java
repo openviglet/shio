@@ -18,7 +18,6 @@ package com.viglet.shio.website.utils;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -27,13 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.folder.ShFolder;
-import com.viglet.shio.persistence.model.post.ShPost;
-import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
-import com.viglet.shio.persistence.repository.post.ShPostRepository;
-import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
-import com.viglet.shio.post.type.ShSystemPostType;
-import com.viglet.shio.url.ShURLScheme;
 import com.viglet.shio.utils.ShFolderUtils;
 import com.viglet.shio.website.ShContent;
 
@@ -45,27 +38,10 @@ public class ShSitesFolderUtils {
 	@Autowired
 	private ShFolderRepository shFolderRepository;
 	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShURLScheme shURLScheme;
-	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ShSitesPostUtils shSitesPostUtils;
-	@Autowired
 	private ShFolderUtils shFolderUtils;
 
 	public ShFolder getParentFolder(String shFolderId) {
 		return shFolderUtils.getParentFolder(shFolderId);
-	}
-
-	public ShPost getFolderIndex(ShFolder shFolder) {
-		ShPostType shPostType = shPostTypeRepository.findByName(ShSystemPostType.FOLDER_INDEX);
-		List<ShPost> shFolderIndexPosts = shPostRepository.findByShFolderAndShPostTypeOrderByPositionAsc(shFolder,
-				shPostType);
-		if (!shFolderIndexPosts.isEmpty())
-			return shSitesPostUtils.getPostByStage(shFolderIndexPosts.get(0));
-		return null;
 	}
 
 	public Map<String, Object> toMap(String shFolderId) {
@@ -105,20 +81,5 @@ public class ShSitesFolderUtils {
 		shFolderItemAttrs.put("system", shFolderItemSystemAttrs);
 
 		return shFolderItemAttrs;
-	}
-
-	public String generateFolderLink(ShFolder shFolder) {
-		String link = shURLScheme.get(shFolder);
-		link = link + shFolderUtils.folderPath(shFolder, true, false);
-		return link;
-	}
-
-	public String generateFolderLinkById(String folderID) {
-		Optional<ShFolder> shFolderOptional = shFolderRepository.findById(folderID);
-		if (shFolderOptional.isPresent()) {
-			ShFolder shFolder = shFolderOptional.get();
-			return this.generateFolderLink(shFolder);
-		}
-		return null;
 	}
 }

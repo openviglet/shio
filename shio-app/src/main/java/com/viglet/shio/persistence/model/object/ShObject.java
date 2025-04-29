@@ -21,15 +21,12 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Temporal;
@@ -95,17 +92,9 @@ public class ShObject implements Serializable, ShObjectImpl {
 	private boolean published;
 
 	@ElementCollection
-	@Fetch(org.hibernate.annotations.FetchMode.JOIN)
-	@CollectionTable(name = "sh_object_groups")
-	@JoinColumn(name = "object_id")
-	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Set<String> shGroups = new HashSet<>();
 
 	@ElementCollection
-	@Fetch(org.hibernate.annotations.FetchMode.JOIN)
-	@CollectionTable(name = "sh_object_users")
-	@JoinColumn(name = "object_id")
-	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Set<String> shUsers = new HashSet<>();
 
 	// bi-directional many-to-one association to shWorkflowTasks
@@ -121,10 +110,6 @@ public class ShObject implements Serializable, ShObjectImpl {
 	private boolean pageAllowGuestUser = true;
 
 	@ElementCollection
-	@Fetch(org.hibernate.annotations.FetchMode.JOIN)
-	@CollectionTable(name = "sh_object_page_groups")
-	@JoinColumn(name = "object_id")
-	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Set<String> shPageGroups = new HashSet<>();
 
 	@Override

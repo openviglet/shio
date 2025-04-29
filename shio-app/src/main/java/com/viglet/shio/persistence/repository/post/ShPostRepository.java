@@ -39,7 +39,7 @@ import com.viglet.shio.persistence.model.site.ShSite;
  * @author Alexandre Oliveira
  */
 @Repository
-public interface ShPostRepository extends JpaRepository<ShPost, String>, ShPostRepositoryCustom, JpaSpecificationExecutor<ShPost> {
+public interface ShPostRepository extends JpaRepository<ShPost, String>, JpaSpecificationExecutor<ShPost> {
 
 	Set<ShPost> findByShPostTypeAndShPostAttrsIn(ShPostType shPostType, Collection<ShPostAttr> postAttrs);
 	

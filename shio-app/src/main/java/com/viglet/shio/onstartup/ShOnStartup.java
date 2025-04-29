@@ -80,15 +80,15 @@ public class ShOnStartup implements ApplicationRunner {
 
 			shLocaleOnStartup.createDefaultRows();
 			shWidgetOnStartup.createDefaultRows();
-			shPostTypeOnStartup.createDefaultRows();
+		//	shPostTypeOnStartup.createDefaultRows();
 			shGroupOnStartup.createDefaultRows();
-			shUserOnStartup.createDefaultRows();
+		//	shUserOnStartup.createDefaultRows();
 			shAuthProviderVendorOnStartup.createDefaultRows();
 			shAuthProviderInstanceOnStartup.createDefaultRows();
 			shExchangeProviderVendorOnStartup.createDefaultRows();
 			shExchangeProviderInstanceOnStartup.createDefaultRows();
 			shConfigVarOnStartup.createDefaultRows();
-			shSiteOnStartup.createDefaultRows();
+		//	shSiteOnStartup.createDefaultRows();
 
 			logger.info("Configuration finished.");
 		}

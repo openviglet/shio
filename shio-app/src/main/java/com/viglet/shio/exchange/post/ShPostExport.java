@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.viglet.shio.utils.ShFolderUtils;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.logging.log4j.LogManager;
@@ -58,7 +59,7 @@ import com.viglet.shio.widget.ShSystemWidget;
 public class ShPostExport {
 	static final Logger logger = LogManager.getLogger(ShPostExport.class.getName());
 	@Autowired
-	private ShStaticFileUtils shStaticFileUtils;
+	private ShFolderUtils shFolderUtils;
 	@Autowired
 	private ShPostRepository shPostRepository;
 	@Autowired
@@ -165,7 +166,7 @@ public class ShPostExport {
 	private void exportStaticFiles(ShPost shPost, List<ShFileExchange> files, ShPostAttrImpl shPostAttr) {
 		if (canExportStaticFile(shPost, files, shPostAttr)) {
 			String fileName = shPostAttr.getStrValue();
-			File directoryPath = shStaticFileUtils.dirPath(shPost.getShFolder());
+			File directoryPath = shFolderUtils.dirPath(shPost.getShFolder());
 			File file = new File(directoryPath.getAbsolutePath().concat(File.separator + fileName));
 			ShFileExchange shFileExchange = new ShFileExchange();
 			shFileExchange.setId(shPost.getId());

@@ -61,7 +61,6 @@ import com.viglet.shio.turing.ShTuringIntegration;
 import com.viglet.shio.url.ShURLFormatter;
 import com.viglet.shio.utils.ShFolderUtils;
 import com.viglet.shio.utils.ShPostUtils;
-import com.viglet.shio.utils.ShStaticFileUtils;
 import com.viglet.shio.utils.ShUserUtils;
 import com.viglet.shio.widget.ShSystemWidget;
 
@@ -83,8 +82,6 @@ public class ShPostImport {
 	private ShPostAttrRepository shPostAttrRepository;
 	@Autowired
 	private ShRelatorItemRepository shRelatorItemRepository;
-	@Autowired
-	private ShStaticFileUtils shStaticFileUtils;
 	@Autowired
 	private ShPostUtils shPostUtils;
 	@Autowired
@@ -345,7 +342,7 @@ public class ShPostImport {
 		if (shPostTypeAttr.getName().equals(ShSystemPostTypeAttr.FILE)
 				&& shPostExchange.getPostType().equals(ShSystemPostType.FILE)) {
 			String fileName = (String) shPostField.getValue();
-			File directoryPath = shStaticFileUtils.dirPath(shPost.getShFolder());
+			File directoryPath = shFolderUtils.dirPath(shPost.getShFolder());
 			File fileSource = new File(
 					extractFolder.getAbsolutePath().concat(File.separator + shPostExchange.getId()));
 			File fileDest = new File(directoryPath.getAbsolutePath().concat(File.separator + fileName));

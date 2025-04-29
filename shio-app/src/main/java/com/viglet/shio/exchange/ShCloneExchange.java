@@ -19,13 +19,19 @@ package com.viglet.shio.exchange;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.Date;
+import java.util.UUID;
 
+import com.viglet.shio.utils.ShStaticFileUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -47,6 +53,40 @@ public class ShCloneExchange {
 	private ShPostTypeImport shPostTypeImport;
 	@Autowired
 	private ShImportExchange shImportExchange;
+	@Autowired
+	private ShStaticFileUtils shStaticFileUtils;
+	@Autowired
+	private ResourceLoader resourceloader;
+
+	public ShExchangeData getDefaultTemplateToSite(ShSite shSite) {
+
+		ShExchangeData shExchangeData = null;
+
+		File templateSiteFile = new File(shStaticFileUtils.getTmpDir().getAbsolutePath()
+				.concat(File.separator + "template-site-" + UUID.randomUUID() + ".zip"));
+
+		try {
+			Resource resource = resourceloader.getResource("classpath:/import/bootstrap-site.zip");
+
+			if (resource.exists()) {
+				InputStream is = resource.getInputStream();
+				FileUtils.copyInputStreamToFile(is, templateSiteFile);
+			} else {
+				FileUtils.copyURLToFile(new URL("https://github.com/ShioCMS/bootstrap-site/archive/0.3.7.zip"),
+						templateSiteFile);
+			}
+			shExchangeData = getTemplateAsCloneFromFile(templateSiteFile, shSite);
+		} catch (IllegalStateException | IOException e) {
+			logger.error(e);
+		}
+		if (shExchangeData != null && shExchangeData.getShExchange() != null
+				&& shExchangeData.getShExchange().getSites() != null) {
+			shSite.setId(shExchangeData.getShExchange().getSites().get(0).getId());
+		}
+		FileUtils.deleteQuietly(templateSiteFile);
+
+		return shExchangeData;
+	}
 
 	public ShExchangeData getTemplateAsCloneFromMultipartFile(MultipartFile multipartFile, ShSite shSite) {
 		ShExchangeFilesDirs shExchangeFilesDirs = shImportExchange.extractZipFile(multipartFile);
@@ -92,7 +132,7 @@ public class ShCloneExchange {
 				shSiteExchange.setDate(new Date());
 				if (shSite != null) {
 
-					if (shSite.getId() != null && shSite.getId().trim().length() > 0)
+					if (shSite.getId() != null && !shSite.getId().trim().isEmpty())
 						shSiteExchange.setId(shSite.getId());
 					shSiteExchange.setOwner(shSite.getOwner());
 					shSiteExchange.setFurl(shSite.getFurl());
@@ -128,17 +168,6 @@ public class ShCloneExchange {
 		return this.getTemplateAsCloneFromMultipartFile(multipartFile, shSite);
 	}
 
-	public boolean importTemplateAsCloneFromFile(File file, ShSite shSite) {
-
-		ShExchangeData shExchangeData = this.getTemplateAsCloneFromFile(file, shSite);
-		this.importFromShExchangeData(shExchangeData);
-
-		shExchangeData.getShExchangeFilesDirs().deleteExport();
-		FileUtils.deleteQuietly(file);
-
-		return true;
-	}
-
 	public ShSite importNewSiteFromTemplateFile(File file) {
 		ShExchangeData shExchangeData = this.getNewSiteFromTemplateFile(file);
 
@@ -153,20 +182,5 @@ public class ShCloneExchange {
 	public ShExchangeData getNewSiteFromTemplateFile(File file) {
 
 		return this.getTemplateAsCloneFromFile(file, null);
-	}
-
-	public ShExchange cloneFromExtractedImport(File directory, ShSite shSite) {
-
-		var shExchangeFilesDirs = shImportExchange.getExtratedImport(directory);
-
-		if (shExchangeFilesDirs.getExportDir() != null) {
-			ShExchange shExchange = changeObjectIdsFromExportToClone(shSite, shExchangeFilesDirs);
-
-			shExchangeFilesDirs.deleteExport();
-
-			return shExchange;
-		} else {
-			return null;
-		}
 	}
 }

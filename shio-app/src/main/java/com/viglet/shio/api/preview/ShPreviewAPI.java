@@ -19,6 +19,7 @@ package com.viglet.shio.api.preview;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import com.viglet.shio.website.ShSitesDetectContextURL;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -48,6 +49,8 @@ public class ShPreviewAPI {
 	ShSitesContextURLProcess shSitesContextURLProcess;
 	@Autowired
 	private ShObjectRepository shObjectRepository;
+	@Autowired
+	private ShSitesDetectContextURL shSitesDetectContextURL;
 
 	@Operation(summary = "Detect URL")
 	@PostMapping("/detect-url")
@@ -58,7 +61,7 @@ public class ShPreviewAPI {
 		URL url = new URL(request.getParameter("url"));
 		ShSitesContextURL shSitesContextURL = shSitesContextURLProcess.getContextURL(request, response);
 		shSitesContextURL.getInfo().setContextURL(url.getPath());
-		shSitesContextURLProcess.detectContextURL(shSitesContextURL);
+		shSitesDetectContextURL.detectContextURL(shSitesContextURL);
 		return shObjectRepository.findById(shSitesContextURL.getInfo().getObjectId()).orElse(null);
 	}
 }

@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
+import com.viglet.shio.utils.ShIntegrationUtils;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.logging.log4j.LogManager;
@@ -85,6 +86,8 @@ public class ShFolderAPI {
 	private ShHistoryUtils shHistoryUtils;
 	@Autowired
 	private ShFolderExport shFolderExport;
+	@Autowired
+	private ShIntegrationUtils shIntegrationUtils;
 	
 	@Operation(summary = "Folder list")
 	@GetMapping
@@ -138,7 +141,7 @@ public class ShFolderAPI {
 		if (shObjectUtils.canAccess(principal, id)) {
 			shFolderRepository.findById(id).ifPresent(shFolder -> {
 				try {
-					shFolderUtils.deleteFolder(shFolder);
+					shIntegrationUtils.deleteFolder(shFolder);
 					shHistoryUtils.commit(shFolder, principal, ShHistoryUtils.DELETE);
 				} catch (IOException e) {
 					logger.error("FolderDeleteException", e);

@@ -104,8 +104,6 @@ public class ShPostUtils {
 	@Autowired
 	private ShObjectRepository shObjectRepository;
 	@Autowired
-	private ShStaticFileUtils shStaticFileUtils;
-	@Autowired
 	private ShReferenceRepository shReferenceRepository;
 	@Autowired
 	private ShReferenceDraftRepository shReferenceDraftRepository;
@@ -294,8 +292,8 @@ public class ShPostUtils {
 	public void referencedFile(ShPostAttrImpl shPostAttrEdit, ShPostAttrImpl shPostAttr, ShPostImpl shPost) {
 		if (shPost != null && shPost.getShPostType() != null && shPost.getShPostType().getName() != null
 				&& shPost.getShPostType().getName().equals(ShSystemPostType.FILE)) {
-			File fileFrom = shStaticFileUtils.filePath(shPost.getShFolder(), shPostAttrEdit.getStrValue());
-			File fileTo = shStaticFileUtils.filePath(shPost.getShFolder(), shPostAttr.getStrValue());
+			File fileFrom = shFolderUtils.filePath(shPost.getShFolder(), shPostAttrEdit.getStrValue());
+			File fileTo = shFolderUtils.filePath(shPost.getShFolder(), shPostAttr.getStrValue());
 			if (fileFrom != null && fileTo != null && fileFrom.exists() && !fileFrom.renameTo(fileTo)) {
 				logger.error(String.format("Can't rename the file %s", fileFrom.getName()));
 			}

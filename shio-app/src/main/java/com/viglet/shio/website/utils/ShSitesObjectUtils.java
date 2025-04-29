@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.viglet.shio.url.ShURLScheme;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -38,45 +39,12 @@ import com.viglet.shio.utils.ShFolderUtils;
 @Component
 public class ShSitesObjectUtils {
 
-	private static final String IS_VISIBLE_PAGE = "IS_VISIBLE_PAGE";
-	private static final String NO = "no";
-	private static final String HOME = "Home";
 	@Autowired
-	private ShFolderUtils shFolderUtils;
-	@Autowired
-	private ShSitesFolderUtils shSitesFolderUtils;
+	private ShURLScheme shURLScheme;
 	@Autowired
 	private ShObjectRepository shObjectRepository;
 	@Autowired
 	private ShSitesPostUtils shSitesPostUtils;
-
-	public boolean isVisiblePage(ShObjectImpl shObject) {
-		ShFolder shFolder = null;
-		if (shObject instanceof ShFolder shFolderInst) {
-			shFolder = shFolderInst;
-			ShPost shFolderIndexPost = shSitesFolderUtils.getFolderIndex(shFolder);
-			if (shFolderIndexPost != null) {
-				Map<String, ShPostAttr> shFolderIndexPostMap = shSitesPostUtils.postToMap(shFolderIndexPost);
-				if (shFolderIndexPostMap.get(IS_VISIBLE_PAGE) != null
-						&& shFolderIndexPostMap.get(IS_VISIBLE_PAGE).getStrValue() != null
-						&& shFolderIndexPostMap.get(IS_VISIBLE_PAGE).getStrValue().equals(NO)) {
-					return false;
-				}
-			} else {
-				return false;
-			}
-		} else if (shObject instanceof ShPost) {
-			ShPostImpl shPost = (ShPostImpl) shObject;
-			shFolder = shPost.getShFolder();
-		}
-		if (shFolder != null) {
-			List<ShFolder> breadcrumb = shFolderUtils.breadcrumb(shFolder);
-			return breadcrumb.get(0).getName().equals(HOME);
-		} else {
-			return false;
-		}
-
-	}
 
 	public String generateObjectLinkById(String objectId) {
 		if (objectId != null) {
@@ -86,7 +54,7 @@ public class ShSitesObjectUtils {
 				if (shObject instanceof ShPostImpl shPostImpl) {
 					return shSitesPostUtils.generatePostLink(shPostImpl);
 				} else if (shObject instanceof ShFolder shFolder) {
-					return shSitesFolderUtils.generateFolderLink(shFolder);
+					return shURLScheme.generateFolderLink(shFolder);
 				}
 			}
 

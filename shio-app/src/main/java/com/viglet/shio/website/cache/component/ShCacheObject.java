@@ -46,11 +46,7 @@ import com.viglet.shio.website.utils.ShSitesObjectUtils;
 public class ShCacheObject {
 	private static final Log logger = LogFactory.getLog(ShCacheObject.class);
 	@Autowired
-	ShCachePage shCachePage;
-	@Autowired
 	ShCacheURL shCacheURL;
-	@Autowired
-	ShCacheObject shCacheObject;
 	@Autowired
 	ShObjectRepository shObjectRepository;
 	@Autowired
@@ -69,7 +65,7 @@ public class ShCacheObject {
 
 	@CachePut(value = "shObject", key = "#id")
 	public List<String> updateCache(String id, ShSitesContextURL shSitesContextURL) {
-		List<String> urls = shCacheObject.cache(id);
+		List<String> urls = cache(id);
 		if (!urls.contains(shSitesContextURL.getInfo().getContextURLOriginal())) {
 			if (logger.isDebugEnabled())
 				logger.debug("Adding id: " + id + " and URL: " + shSitesContextURL.getInfo().getContextURLOriginal());
@@ -92,18 +88,18 @@ public class ShCacheObject {
 		}
 
 		this.deleteDependency(objectId);
-		shCacheObject.deleteCacheSelf(objectId);
+		deleteCacheSelf(objectId);
 
 	}
 
 	public void deleteDependency(String id) {
 		if (logger.isDebugEnabled())
 			logger.debug("Executing deleteDependency for id: " + id);
-		List<String> urls = shCacheObject.cache(id);
+		List<String> urls = cache(id);
 		for (String url : urls) {
 			if (logger.isDebugEnabled())
 				logger.debug("Deleting the page with id: " + id + " and URL: " + url);
-			shCachePage.deleteCache(id, url);
+			deletePageCache(id, url);
 			ShObject shObject = shObjectRepository.findById(id).orElse(null);
 			String contextURL = null;
 			if (shObject instanceof ShPost && shObject.getFurl().equals("index")) {
@@ -123,7 +119,13 @@ public class ShCacheObject {
 		}
 
 	}
-
+	@CacheEvict(value = "page", key = "{#id, #url}")
+	public void deletePageCache(String id, String url) {
+		if (logger.isDebugEnabled()) {
+			String sanitizedId = id.replaceAll("[\n\r\t]", "_");
+			logger.debug(String.format("Deleted cache of id %s, %s", sanitizedId, url));
+		}
+	}
 	@CacheEvict(value = "shObject", key = "#id")
 	public void deleteCacheSelf(String id) {
 		if (logger.isDebugEnabled())

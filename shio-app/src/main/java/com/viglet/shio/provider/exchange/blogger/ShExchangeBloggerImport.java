@@ -39,7 +39,6 @@ import com.viglet.shio.exchange.ShCloneExchange;
 import com.viglet.shio.exchange.ShExchange;
 import com.viglet.shio.exchange.ShExchangeData;
 import com.viglet.shio.exchange.ShExchangeFilesDirs;
-import com.viglet.shio.exchange.ShImportExchange;
 import com.viglet.shio.exchange.folder.ShFolderExchange;
 import com.viglet.shio.exchange.post.ShPostExchange;
 import com.viglet.shio.persistence.model.site.ShSite;
@@ -61,8 +60,6 @@ public class ShExchangeBloggerImport {
 	private static final Logger logger = LogManager.getLogger(ShExchangeBloggerImport.class);
 	@Autowired
 	private ShUserUtils shUserUtils;
-	@Autowired
-	private ShImportExchange shImportExchange;
 	@Autowired
 	private ShCloneExchange shCloneExchange;
 
@@ -126,7 +123,7 @@ public class ShExchangeBloggerImport {
 		shSite.setOwner(shUserUtils.getCurrentUsername());
 		shSite.setFurl(ShURLFormatter.format(shSite.getName()));
 
-		return shImportExchange.getDefaultTemplateToSite(shSite);
+		return shCloneExchange.getDefaultTemplateToSite(shSite);
 	}
 
 	private List<ShPostExchange> createPosts(ShImporterPlugin shImporterPlugin, ShExchangeData shExchangeData,

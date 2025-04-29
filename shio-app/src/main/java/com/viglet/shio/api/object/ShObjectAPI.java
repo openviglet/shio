@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
+import com.viglet.shio.url.ShURLScheme;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
@@ -95,7 +96,7 @@ public class ShObjectAPI {
 	@Autowired
 	private ShFolderUtils shFolderUtils;
 	@Autowired
-	private ShSitesFolderUtils shSitesFolderUtils;
+	private ShURLScheme shURLScheme;
 	@Autowired
 	private ShPostTypeRepository shPostTypeRepository;
 	@Autowired
@@ -158,7 +159,7 @@ public class ShObjectAPI {
 		} else if (shObject instanceof ShPost shPost) {
 			redirect = shSitesPostUtils.generatePostLink(shPost);
 		} else if (shObject instanceof ShFolder shFolder) {
-			redirect = shSitesFolderUtils.generateFolderLink(shFolder);
+			redirect = shURLScheme.generateFolderLink(shFolder);
 		}
 		if (redirect != null) {
 			RedirectView redirectView = new RedirectView(

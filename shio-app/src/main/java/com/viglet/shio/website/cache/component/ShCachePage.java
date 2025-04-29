@@ -23,7 +23,6 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -189,11 +188,4 @@ public class ShCachePage {
 			shCachePageBean.setContentType(MediaType.TEXT_HTML_VALUE);
 	}
 
-	@CacheEvict(value = "page", key = "{#id, #url}")
-	public void deleteCache(String id, String url) {
-		if (logger.isDebugEnabled()) {
-			String sanitizedId = id.replaceAll("[\n\r\t]", "_");
-			logger.debug(String.format("Deleted cache of id %s, %s", sanitizedId, url));
-		}
-	}
 }

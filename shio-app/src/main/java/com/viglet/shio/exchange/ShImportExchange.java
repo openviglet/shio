@@ -17,20 +17,10 @@
 package com.viglet.shio.exchange;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.UUID;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,8 +28,6 @@ import com.viglet.shio.exchange.post.ShPostImport;
 import com.viglet.shio.exchange.post.type.ShPostTypeImport;
 import com.viglet.shio.exchange.site.ShSiteImport;
 import com.viglet.shio.exchange.utils.ShExchangeUtils;
-import com.viglet.shio.persistence.model.site.ShSite;
-import com.viglet.shio.utils.ShStaticFileUtils;
 
 /**
  * @author Alexandre Oliveira
@@ -55,43 +43,7 @@ public class ShImportExchange {
 	private ShPostImport shPostImport;
 	@Autowired
 	private ShExchangeUtils shExchangeUtils;
-	@Autowired
-	private ResourceLoader resourceloader;
-	@Autowired
-	private ShCloneExchange shCloneExchange;
-	@Autowired
-	private ShStaticFileUtils shStaticFileUtils;
 
-	public ShExchangeData getDefaultTemplateToSite(ShSite shSite) {
-
-		ShExchangeData shExchangeData = null;
-
-		File templateSiteFile = new File(shStaticFileUtils.getTmpDir().getAbsolutePath()
-				.concat(File.separator + "template-site-" + UUID.randomUUID() + ".zip"));
-
-		try {
-			Resource resource = resourceloader.getResource("classpath:/import/bootstrap-site.zip");
-
-			if (resource.exists()) {
-				InputStream is = resource.getInputStream();
-				FileUtils.copyInputStreamToFile(is, templateSiteFile);
-			} else {
-				FileUtils.copyURLToFile(new URL("https://github.com/ShioCMS/bootstrap-site/archive/0.3.7.zip"),
-						templateSiteFile);
-			}
-			shExchangeData = shCloneExchange.getTemplateAsCloneFromFile(templateSiteFile, shSite);
-		} catch (IllegalStateException | IOException e) {
-
-			logger.error(e);
-		}
-		if (shExchangeData != null && shExchangeData.getShExchange() != null
-				&& shExchangeData.getShExchange().getSites() != null) {
-			shSite.setId(shExchangeData.getShExchange().getSites().get(0).getId());
-		}
-		FileUtils.deleteQuietly(templateSiteFile);
-
-		return shExchangeData;
-	}
 
 	public ShExchange importFromMultipartFile(MultipartFile multipartFile) {
 		logger.info("Unzip Package");
@@ -120,31 +72,13 @@ public class ShImportExchange {
 				shSiteImport.importSite(shExchange, extractFolder);
 			} else if (shExchange.getFolders() == null && shExchange.getPosts() != null) {
 				ShExchangeObjectMap shExchangeObjectMap = shSiteImport.prepareImport(shExchange);
-				File extractFolderInner = extractFolder;
-				shExchange.getPosts().forEach(shPostExchange -> shPostImport.createShPost(
-						new ShExchangeContext(extractFolderInner, false), shPostExchange, shExchangeObjectMap));
+                shExchange.getPosts().forEach(shPostExchange -> shPostImport.createShPost(
+						new ShExchangeContext(extractFolder, false), shPostExchange, shExchangeObjectMap));
 			}
 		}
 	}
 
-	public ShExchange importFromFile(File file) {
-
-		MultipartFile multipartFile = null;
-		try {
-			FileInputStream input = new FileInputStream(file);
-			multipartFile = new MockMultipartFile(file.getName(), IOUtils.toByteArray(input));
-		} catch (IOException e) {
-			logger.error(e);
-		}
-
-		return this.importFromMultipartFile(multipartFile);
-	}
-
 	public ShExchangeFilesDirs extractZipFile(MultipartFile file) {
 		return shExchangeUtils.extractZipFile(file);
-	}
-
-	public ShExchangeFilesDirs getExtratedImport(File directory) {
-		return shExchangeUtils.getExtratedImport(directory);
 	}
 }

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import com.viglet.shio.utils.*;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
@@ -80,10 +81,6 @@ import com.viglet.shio.persistence.repository.workflow.ShWorkflowTaskRepository;
 import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.turing.ShTuringIntegration;
 import com.viglet.shio.url.ShURLFormatter;
-import com.viglet.shio.utils.ShHistoryUtils;
-import com.viglet.shio.utils.ShObjectUtils;
-import com.viglet.shio.utils.ShPostUtils;
-import com.viglet.shio.utils.ShStaticFileUtils;
 import com.viglet.shio.website.cache.component.ShCacheObject;
 import com.viglet.shio.widget.ShSystemWidget;
 
@@ -136,6 +133,8 @@ public class ShPostAPI {
 	private ShHistoryUtils shHistoryUtils;
 	@Autowired
 	private ShPostExport shPostExport;
+	@Autowired
+	private ShFolderUtils shFolderUtils;
 
 	private final SimpleDateFormat dt = new SimpleDateFormat("dd/MM/yyyyy");
 
@@ -275,7 +274,7 @@ public class ShPostAPI {
 	private void deleteStaticFiles(ShPost shPost) {
 		Set<ShPostAttr> shPostAttrs = shPostAttrRepository.findByShPost(shPost);
 		if (shPost.getShPostType().getName().equals(ShSystemPostType.FILE) && !shPostAttrs.isEmpty()) {
-			File file = shStaticFileUtils.filePath(shPost.getShFolder(), shPostAttrs.iterator().next().getStrValue());
+			File file = shFolderUtils.filePath(shPost.getShFolder(), shPostAttrs.iterator().next().getStrValue());
 			if (file != null && file.exists()) {
 				try {
 					Files.delete(file.toPath());

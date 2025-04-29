@@ -16,6 +16,7 @@
  */
 package com.viglet.shio.website.cache.component;
 
+import com.viglet.shio.website.ShSitesRegion;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;
@@ -36,7 +37,7 @@ import com.viglet.shio.website.nashorn.ShNashornEngineProcess;
 public class ShCachePageLayout {
 	static final Logger logger = LogManager.getLogger(ShCachePageLayout.class);
 	@Autowired
-	private ShSitesContextComponent shSitesContextComponent;
+	private ShSitesRegion shSitesRegion;
 	@Autowired
 	private ShNashornEngineProcess shNashornEngineProcess;
 
@@ -53,7 +54,7 @@ public class ShCachePageLayout {
 						shSitesPageLayout.getJavascriptCode(), shSitesPageLayout.getHTML(), request,
 						shSitesPageLayout.getShContent());
 				if (renderPageLayout != null) {
-					Document documentRegion = shSitesContextComponent.shRegionFactory(shSitesPageLayout,
+					Document documentRegion = shSitesRegion.shRegionFactory(shSitesPageLayout,
 							renderPageLayout.toString(), shSite, mimeType, request);
 					if (documentRegion != null) {
 						return documentRegion.html();

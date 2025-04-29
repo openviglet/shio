@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.viglet.shio.website.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONException;
@@ -44,10 +45,6 @@ import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.utils.ShPostUtils;
 import com.viglet.shio.utils.ShSiteUtils;
-import com.viglet.shio.website.ShContent;
-import com.viglet.shio.website.ShSitesContextComponent;
-import com.viglet.shio.website.ShSitesContextURL;
-import com.viglet.shio.website.ShSitesContextURLProcess;
 import com.viglet.shio.website.utils.ShSitesFolderUtils;
 import com.viglet.shio.website.utils.ShSitesPostUtils;
 
@@ -73,7 +70,7 @@ public class ShSitesContent {
 	@Autowired
 	private ShSitesPostUtils shSitesPostUtils;
 	@Autowired
-	private ShSitesContextURLProcess shSitesContextURLProcess;
+	private ShSitesDetectContextURL shSitesDetectContextURL;
 	@Autowired
 	private ShObjectRepository shObjectRepository;
 	@Autowired
@@ -86,7 +83,7 @@ public class ShSitesContent {
 	public ShContent fromURL(String url) {
 		ShSitesContextURL shSitesContextURL = new ShSitesContextURL();
 
-		shSitesContextURLProcess.detectContextURL(url, shSitesContextURL);
+		shSitesDetectContextURL.detectContextURL(url, shSitesContextURL);
 
 		ShObjectImpl shObject = shObjectRepository.findById(shSitesContextURL.getInfo().getObjectId()).orElse(null);
 

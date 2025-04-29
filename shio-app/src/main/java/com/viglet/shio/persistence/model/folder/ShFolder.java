@@ -21,7 +21,6 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
 import org.hibernate.annotations.Fetch;
-import org.hibernate.search.annotations.Field;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.object.ShObjectType;
@@ -45,7 +44,6 @@ import java.util.Set;
 public class ShFolder extends ShObject {
 	private static final long serialVersionUID = 1L;
 
-	@Field
 	private String name;
 
 	private byte rootFolder;

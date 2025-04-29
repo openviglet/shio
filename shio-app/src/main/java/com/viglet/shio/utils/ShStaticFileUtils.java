@@ -66,33 +66,15 @@ public class ShStaticFileUtils {
 	private static final String USER_DIR = "user.dir";
 	private File userDir = new File(System.getProperty(USER_DIR));
 
-	public File dirPath(ShFolder shFolder) {
-		File directoryPath = null;
-		ShSite shSite = shFolderUtils.getSite(shFolder);
-		String folderPath = shFolderUtils.directoryPath(shFolder, File.separator);
-		String folderPathFile = FILE_SOURCE_BASE.concat(File.separator + shSite.getName() + folderPath);
-		if (userDir.exists() && userDir.isDirectory())
-			directoryPath = new File(userDir.getAbsolutePath().concat(folderPathFile));
-		return directoryPath;
-	}
 
 	public boolean fileExists(ShFolder shFolder, String fileName) {
 		return shPostRepository.existsByShFolderAndTitle(shFolder, fileName);
 	}
 
-	public File filePath(ShFolder shFolder, String fileName) {
-		File file = null;
-		File directoryPath = this.dirPath(shFolder);
-
-		if (directoryPath != null)
-			file = new File(directoryPath.getAbsolutePath().concat(File.separator + fileName));
-		return file;
-	}
-
 	public File filePath(ShPostImpl shPost) {
 		File file = null;
 		if (shPost.getShPostType().getName().equals(ShSystemPostType.FILE)) {
-			File directoryPath = this.dirPath(shPost.getShFolder());
+			File directoryPath = shFolderUtils.dirPath(shPost.getShFolder());
 
 			if (directoryPath != null)
 				file = new File(directoryPath.getAbsolutePath().concat(File.separator + shPost.getTitle()));
@@ -138,7 +120,7 @@ public class ShStaticFileUtils {
 
 	public ShPost createFilePost(MultipartFile file, String fileName, ShFolder shFolder, Principal principal,
 			boolean createPost) {
-		File directoryPath = this.dirPath(shFolder);
+		File directoryPath = shFolderUtils.dirPath(shFolder);
 		ShPost shPost = new ShPost();
 		if (directoryPath != null) {
 			if (!directoryPath.exists())

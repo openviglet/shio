@@ -21,15 +21,12 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Temporal;
@@ -60,11 +57,11 @@ public class ShObjectDraft implements Serializable, ShObjectImpl {
 	private String id;
 
 	// bi-directional many-to-one association to ShObject
-	@OneToMany(mappedBy = "referenceObject") // , orphanRemoval = true)
-	@Fetch(org.hibernate.annotations.FetchMode.JOIN)
-	@Cascade({ CascadeType.ALL })
+//	@OneToMany(mappedBy = "referenceObject") // , orphanRemoval = true)
+//	@Fetch(org.hibernate.annotations.FetchMode.JOIN)
+//	@Cascade({ CascadeType.ALL })
 //	@OnDelete(action = OnDeleteAction.CASCADE)
-	private Set<ShPostDraftAttr> shPostAttrRefs = new HashSet<>();
+//	private Set<ShPostDraftAttr> shPostAttrRefs = new HashSet<>();
 
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date date;
@@ -91,17 +88,9 @@ public class ShObjectDraft implements Serializable, ShObjectImpl {
 	private String draft;
 
 	@ElementCollection
-	@Fetch(org.hibernate.annotations.FetchMode.JOIN)
-	@CollectionTable(name = "sh_object_draft_groups")
-	@JoinColumn(name = "object_id")
-	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Set<String> shGroups = new HashSet<>();
 
 	@ElementCollection
-	@Fetch(org.hibernate.annotations.FetchMode.JOIN)
-	@CollectionTable(name = "sh_object_draft_users")
-	@JoinColumn(name = "object_id")
-	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Set<String> shUsers = new HashSet<>();
 
 	private String publishStatus;
@@ -111,10 +100,6 @@ public class ShObjectDraft implements Serializable, ShObjectImpl {
 	private boolean pageAllowGuestUser = true;
 
 	@ElementCollection
-	@Fetch(org.hibernate.annotations.FetchMode.JOIN)
-	@CollectionTable(name = "sh_object_draft_page_groups")
-	@JoinColumn(name = "object_id")
-	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Set<String> shPageGroups = new HashSet<>();
 	@Override
 	public String getId() {
@@ -196,16 +181,27 @@ public class ShObjectDraft implements Serializable, ShObjectImpl {
 	public void setObjectType(String objectType) {
 		this.objectType = objectType;
 	}
+
 	@Override
 	public Set<? extends ShPostAttrImpl> getShPostAttrRefs() {
-		return shPostAttrRefs;
+		return Set.of();
 	}
+
 	@Override
 	public void setShPostAttrRefs(Set<? extends ShPostAttrImpl> shPostAttrRefs) {
-		this.shPostAttrRefs.clear();
-		if (shPostAttrRefs != null)
-			shPostAttrRefs.forEach(shPostAttrRef -> this.shPostAttrRefs.add((ShPostDraftAttr) shPostAttrRef));	
+
 	}
+
+	//@Override
+	//public Set<? extends ShPostAttrImpl> getShPostAttrRefs() {
+	//	return shPostAttrRefs;
+	//}
+	//@Override
+	//public void setShPostAttrRefs(Set<? extends ShPostAttrImpl> shPostAttrRefs) {
+	//	this.shPostAttrRefs.clear();
+	//	if (shPostAttrRefs != null)
+	//		shPostAttrRefs.forEach(shPostAttrRef -> this.shPostAttrRefs.add((ShPostDraftAttr) shPostAttrRef));
+	//}
 	@Override
 	public Set<String> getShGroups() {
 		return shGroups;

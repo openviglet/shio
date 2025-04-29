@@ -39,7 +39,7 @@ import com.viglet.shio.utils.ShFolderUtils;
 public class ShSitesContextURLProcessCache {
 	private static final Log logger = LogFactory.getLog(ShSitesContextURLProcessCache.class);
 	@Autowired
-	ShSitesContextURLProcess shSitesContextURLProcess;
+	ShSitesDetectContextURL shSitesDetectContextURL;
 	@Autowired
 	ShObjectRepository shObjectRepository;
 	@Autowired
@@ -50,7 +50,7 @@ public class ShSitesContextURLProcessCache {
 		Date now = new Date();
 		if (logger.isDebugEnabled())
 			logger.debug("detectContextURL Before: " + shSitesContextURL.toString());
-		shSitesContextURLProcess.detectContextURL(shSitesContextURL);
+		shSitesDetectContextURL.detectContextURL(shSitesContextURL);
 		ShSitesContextURLInfo shSitesContextURLInfo = new ShSitesContextURLInfo();
 		shSitesContextURLInfo.setCacheEnabled(shSitesContextURL.getInfo().isCacheEnabled());
 		shSitesContextURLInfo.setContextURL(shSitesContextURL.getInfo().getContextURL());
