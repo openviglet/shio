@@ -1,0 +1,1 @@
+call mvn spring-boot:run -pl shio-app -Dskip.npm

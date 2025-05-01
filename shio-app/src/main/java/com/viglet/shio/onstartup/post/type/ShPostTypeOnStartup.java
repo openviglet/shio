@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.viglet.shio.exchange.ShExchange;
 import com.viglet.shio.exchange.post.type.ShPostTypeImport;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Alexandre Oliveira
