@@ -20,15 +20,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
+import java.net.URI;
 import java.util.Date;
 import java.util.UUID;
 
 import com.viglet.shio.utils.ShStaticFileUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -45,18 +44,26 @@ import com.viglet.shio.persistence.model.site.ShSite;
  * @author Alexandre Oliveira
  */
 @Component
+@Slf4j
 public class ShCloneExchange {
-	private static final Logger logger = LogManager.getLogger(ShCloneExchange.class);
+	private final ShSiteImport shSiteImport;
+	private final ShPostTypeImport shPostTypeImport;
+	private final ShImportExchange shImportExchange;
+	private final ShStaticFileUtils shStaticFileUtils;
+	private final ResourceLoader resourceloader;
+
 	@Autowired
-	private ShSiteImport shSiteImport;
-	@Autowired
-	private ShPostTypeImport shPostTypeImport;
-	@Autowired
-	private ShImportExchange shImportExchange;
-	@Autowired
-	private ShStaticFileUtils shStaticFileUtils;
-	@Autowired
-	private ResourceLoader resourceloader;
+	public ShCloneExchange(ShSiteImport shSiteImport,
+						   ShPostTypeImport shPostTypeImport,
+						   ShImportExchange shImportExchange,
+						   ShStaticFileUtils shStaticFileUtils,
+						   ResourceLoader resourceloader) {
+		this.shSiteImport = shSiteImport;
+		this.shPostTypeImport = shPostTypeImport;
+		this.shImportExchange = shImportExchange;
+		this.shStaticFileUtils = shStaticFileUtils;
+		this.resourceloader = resourceloader;
+	}
 
 	public ShExchangeData getDefaultTemplateToSite(ShSite shSite) {
 
@@ -72,16 +79,16 @@ public class ShCloneExchange {
 				InputStream is = resource.getInputStream();
 				FileUtils.copyInputStreamToFile(is, templateSiteFile);
 			} else {
-				FileUtils.copyURLToFile(new URL("https://github.com/ShioCMS/bootstrap-site/archive/0.3.7.zip"),
+				FileUtils.copyURLToFile(URI.create("https://github.com/ShioCMS/bootstrap-site/archive/0.3.7.zip").toURL(),
 						templateSiteFile);
 			}
 			shExchangeData = getTemplateAsCloneFromFile(templateSiteFile, shSite);
 		} catch (IllegalStateException | IOException e) {
-			logger.error(e);
+			log.error(e.getMessage(), e);
 		}
 		if (shExchangeData != null && shExchangeData.getShExchange() != null
 				&& shExchangeData.getShExchange().getSites() != null) {
-			shSite.setId(shExchangeData.getShExchange().getSites().get(0).getId());
+			shSite.setId(shExchangeData.getShExchange().getSites().getFirst().getId());
 		}
 		FileUtils.deleteQuietly(templateSiteFile);
 
@@ -99,27 +106,21 @@ public class ShCloneExchange {
 		}
 	}
 
-	public boolean importFromShExchangeData(ShExchangeData shExchangeData) {
+	public void importFromShExchangeData(ShExchangeData shExchangeData) {
 		ShExchange shExchange = shExchangeData.getShExchange();
-		boolean isOk = false;
 		if (hasPostTypes(shExchange)) {
 			shPostTypeImport.importPostType(shExchange, true);
-			isOk = true;
 		}
 		if (hasSites(shExchange)) {
 			importSiteFromShExchangeData(shExchangeData);
-			isOk = true;
 		}
-		return isOk;
 	}
 
-	public ShSite importSiteFromShExchangeData(ShExchangeData shExchangeData) {
-		ShSite shSite = null;
+	public void importSiteFromShExchangeData(ShExchangeData shExchangeData) {
 		ShExchange shExchange = shExchangeData.getShExchange();
 		if (hasSites(shExchange)) {
-			shSite = shSiteImport.cloneSite(shExchangeData);
+			shSiteImport.cloneSite(shExchangeData);
 		}
-		return shSite;
 	}
 
 	private ShExchange changeObjectIdsFromExportToClone(ShSite shSite, ShExchangeFilesDirs shExchangeFilesDirs) {
@@ -162,21 +163,16 @@ public class ShCloneExchange {
 			FileInputStream input = new FileInputStream(file);
 			multipartFile = new MockMultipartFile(file.getName(), IOUtils.toByteArray(input));
 		} catch (IOException e) {
-			logger.error(e);
+			log.error(e.getMessage(), e);
 		}
-
 		return this.getTemplateAsCloneFromMultipartFile(multipartFile, shSite);
 	}
 
-	public ShSite importNewSiteFromTemplateFile(File file) {
+	public void importNewSiteFromTemplateFile(File file) {
 		ShExchangeData shExchangeData = this.getNewSiteFromTemplateFile(file);
-
-		ShSite shSite = this.importSiteFromShExchangeData(shExchangeData);
-
 		shExchangeData.getShExchangeFilesDirs().deleteExport();
 		FileUtils.deleteQuietly(file);
 
-		return shSite;
 	}
 
 	public ShExchangeData getNewSiteFromTemplateFile(File file) {
