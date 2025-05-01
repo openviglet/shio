@@ -80,6 +80,7 @@ public class ShSecurityConfigProduction {
 								mvc.pattern("/"),
 								AntPathRequestMatcher.antMatcher("/assets/**"),
 								mvc.pattern("/swagger-resources/**"),
+								mvc.pattern("/thirdparty/**"),
 								mvc.pattern("/fonts/**"),
 								AntPathRequestMatcher.antMatcher("/favicon.ico"),
 								AntPathRequestMatcher.antMatcher("/*.png"),
