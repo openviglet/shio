@@ -16,6 +16,7 @@
  */
 package com.viglet.shio.onstartup;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,34 +42,50 @@ import com.viglet.shio.property.ShConfigProperties;
  * @author Alexandre Oliveira
  */
 @Component
+@Slf4j
 public class ShOnStartup implements ApplicationRunner {
-	private static final Logger logger = LogManager.getLogger(ShOnStartup.class);
+	private final ShConfigProperties shConfigProperties;
+	private final ShConfigVarRepository shConfigVarRepository;
+	private final ShLocaleOnStartup shLocaleOnStartup;
+	private final ShWidgetOnStartup shWidgetOnStartup;
+	private final ShPostTypeOnStartup shPostTypeOnStartup;
+	private final ShConfigVarOnStartup shConfigVarOnStartup;
+	private final ShSiteOnStartup shSiteOnStartup;
+	private final ShGroupOnStartup shGroupOnStartup;
+	private final ShUserOnStartup shUserOnStartup;
+	private final ShAuthProviderVendorOnStartup shAuthProviderVendorOnStartup;
+	private final ShAuthProviderInstanceOnStartup shAuthProviderInstanceOnStartup;
+	private final ShExchangeProviderVendorOnStartup shExchangeProviderVendorOnStartup;
+	private final ShExchangeProviderInstanceOnStartup shExchangeProviderInstanceOnStartup;
+
 	@Autowired
-	private ShConfigProperties shConfigProperties;
-	@Autowired
-	private ShConfigVarRepository shConfigVarRepository;
-	@Autowired
-	private ShLocaleOnStartup shLocaleOnStartup;
-	@Autowired
-	private ShWidgetOnStartup shWidgetOnStartup;
-	@Autowired
-	private ShPostTypeOnStartup shPostTypeOnStartup;
-	@Autowired
-	private ShConfigVarOnStartup shConfigVarOnStartup;
-	@Autowired
-	private ShSiteOnStartup shSiteOnStartup;
-	@Autowired
-	private ShGroupOnStartup shGroupOnStartup;
-	@Autowired
-	private ShUserOnStartup shUserOnStartup;
-	@Autowired
-	private ShAuthProviderVendorOnStartup shAuthProviderVendorOnStartup;
-	@Autowired
-	private ShAuthProviderInstanceOnStartup shAuthProviderInstanceOnStartup;
-	@Autowired
-	private ShExchangeProviderVendorOnStartup shExchangeProviderVendorOnStartup;
-	@Autowired
-	private ShExchangeProviderInstanceOnStartup shExchangeProviderInstanceOnStartup;
+	public ShOnStartup(ShConfigProperties shConfigProperties,
+					   ShConfigVarRepository shConfigVarRepository,
+					   ShLocaleOnStartup shLocaleOnStartup,
+					   ShWidgetOnStartup shWidgetOnStartup,
+					   ShPostTypeOnStartup shPostTypeOnStartup,
+					   ShConfigVarOnStartup shConfigVarOnStartup,
+					   ShSiteOnStartup shSiteOnStartup,
+					   ShGroupOnStartup shGroupOnStartup,
+					   ShUserOnStartup shUserOnStartup,
+					   ShAuthProviderVendorOnStartup shAuthProviderVendorOnStartup,
+					   ShAuthProviderInstanceOnStartup shAuthProviderInstanceOnStartup,
+					   ShExchangeProviderVendorOnStartup shExchangeProviderVendorOnStartup,
+					   ShExchangeProviderInstanceOnStartup shExchangeProviderInstanceOnStartup) {
+		this.shConfigProperties = shConfigProperties;
+		this.shConfigVarRepository = shConfigVarRepository;
+		this.shLocaleOnStartup = shLocaleOnStartup;
+		this.shWidgetOnStartup = shWidgetOnStartup;
+		this.shPostTypeOnStartup = shPostTypeOnStartup;
+		this.shConfigVarOnStartup = shConfigVarOnStartup;
+		this.shSiteOnStartup = shSiteOnStartup;
+		this.shGroupOnStartup = shGroupOnStartup;
+		this.shUserOnStartup = shUserOnStartup;
+		this.shAuthProviderVendorOnStartup = shAuthProviderVendorOnStartup;
+		this.shAuthProviderInstanceOnStartup = shAuthProviderInstanceOnStartup;
+		this.shExchangeProviderVendorOnStartup = shExchangeProviderVendorOnStartup;
+		this.shExchangeProviderInstanceOnStartup = shExchangeProviderInstanceOnStartup;
+	}
 
 	@Override
 	public void run(ApplicationArguments arg0) throws Exception {
@@ -76,7 +93,7 @@ public class ShOnStartup implements ApplicationRunner {
 		if (!shConfigVarRepository.existsByPathAndName(shConfigProperties.getSystem(),
 				ShConfigVarOnStartup.FIRST_TIME_NAME)) {
 
-			logger.info("First Time Configuration ...");
+			log.info("First Time Configuration ...");
 
 			shLocaleOnStartup.createDefaultRows();
 			shWidgetOnStartup.createDefaultRows();
@@ -90,7 +107,7 @@ public class ShOnStartup implements ApplicationRunner {
 			shConfigVarOnStartup.createDefaultRows();
 			shSiteOnStartup.createDefaultRows();
 
-			logger.info("Configuration finished.");
+			log.info("Configuration finished.");
 		}
 
 	}

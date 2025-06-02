@@ -16,6 +16,7 @@
  */
 package com.viglet.shio.persistence.model.reference;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 import jakarta.persistence.Column;
@@ -27,6 +28,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQuery;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.GenericGenerator;
 
 import com.viglet.shio.persistence.model.object.ShObject;
@@ -38,12 +41,15 @@ import org.hibernate.annotations.UuidGenerator;
  * 
  * @author Alexandre Oliveira
  */
+@Setter
 @Entity
 @NamedQuery(name = "ShReference.findAll", query = "SELECT r FROM ShReference r")
 public class ShReference implements Serializable{
 	
+	@Serial
 	private static final long serialVersionUID = 1L;
-	@Id
+	@Getter
+    @Id
 	@UuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
@@ -56,29 +62,13 @@ public class ShReference implements Serializable{
 	@JoinColumn(name = "object_to", nullable = false)
 	private ShObject shObjectTo;
 
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public ShObjectImpl getShObjectFrom() {
+    public ShObjectImpl getShObjectFrom() {
 		return shObjectFrom;
 	}
 
-	public void setShObjectFrom(ShObject shObjectFrom) {
-		this.shObjectFrom = shObjectFrom;
-	}
-
-	public ShObjectImpl getShObjectTo() {
+    public ShObjectImpl getShObjectTo() {
 		return shObjectTo;
 	}
 
-	public void setShObjectTo(ShObject shObjectTo) {
-		this.shObjectTo = shObjectTo;
-	}
 
-	
 }

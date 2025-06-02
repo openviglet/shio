@@ -29,10 +29,15 @@ import com.viglet.shio.widget.ShSystemWidget;
 @Component
 public class ShWidgetOnStartup {
 
-	@Autowired
-	private ShWidgetRepository shWidgetRepository;
+	private final ShWidgetRepository shWidgetRepository;
 
 	private static final String TEXT_TYPE = "TEXT,TEXTAREA";
+
+	@Autowired
+	public ShWidgetOnStartup(ShWidgetRepository shWidgetRepository) {
+		this.shWidgetRepository = shWidgetRepository;
+	}
+
 	public void createDefaultRows() {
 
 		if (shWidgetRepository.findAll().isEmpty()) {

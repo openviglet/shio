@@ -28,7 +28,7 @@ export class ShPostTypeService {
 
     constructor(private httpClient: HttpClient) { }
 
-    get(id: string): Observable<ShPostType> {
+    get(id: string | null): Observable<ShPostType> {
         return this.httpClient.get<ShPostType>(`${environment.apiUrl}/api/v2/post/type/${id}`);
     }
     query(): Observable<ShPostType[]> {

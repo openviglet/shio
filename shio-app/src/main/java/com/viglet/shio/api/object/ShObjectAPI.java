@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
+import com.viglet.shio.url.ShURLScheme;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
@@ -71,7 +72,6 @@ import com.viglet.shio.utils.ShObjectUtils;
 import com.viglet.shio.utils.ShPostUtils;
 import com.viglet.shio.utils.ShSiteUtils;
 import com.viglet.shio.website.cache.component.ShCacheObject;
-import com.viglet.shio.website.utils.ShSitesFolderUtils;
 import com.viglet.shio.website.utils.ShSitesObjectUtils;
 import com.viglet.shio.website.utils.ShSitesPostUtils;
 import com.viglet.shio.workflow.ShWorkflow;
@@ -86,34 +86,43 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/api/v2/object")
 @Tag( name = "Object", description = "Object API")
 public class ShObjectAPI {
+	private final ShFolderRepository shFolderRepository;
+	private final ShPostRepository shPostRepository;
+	private final ShSiteUtils shSiteUtils;
+	private final ShFolderUtils shFolderUtils;
+	private final ShURLScheme shURLScheme;
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ShObjectRepository shObjectRepository;
+	private final ShPostUtils shPostUtils;
+	private final ShSitesPostUtils shSitesPostUtils;
+	private final ShCacheObject shCacheObject;
+	private final ShSitesObjectUtils shSitesObjectUtils;
+	private final ShUserRepository shUserRepository;
+	private final ShObjectUtils shObjectUtils;
+	private final ShWorkflow shWorkflow;
+
 	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShSiteUtils shSiteUtils;
-	@Autowired
-	private ShFolderUtils shFolderUtils;
-	@Autowired
-	private ShSitesFolderUtils shSitesFolderUtils;
-	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ShObjectRepository shObjectRepository;
-	@Autowired
-	private ShPostUtils shPostUtils;
-	@Autowired
-	private ShSitesPostUtils shSitesPostUtils;
-	@Autowired
-	private ShCacheObject shCacheObject;
-	@Autowired
-	private ShSitesObjectUtils shSitesObjectUtils;
-	@Autowired
-	private ShUserRepository shUserRepository;
-	@Autowired
-	private ShObjectUtils shObjectUtils;
-	@Autowired
-	private ShWorkflow shWorkflow;
+	public ShObjectAPI(ShObjectRepository shObjectRepository, ShFolderRepository shFolderRepository,
+					   ShPostRepository shPostRepository, ShSiteUtils shSiteUtils, ShFolderUtils shFolderUtils,
+					   ShUserRepository shUserRepository, ShURLScheme shURLScheme,
+					   ShPostTypeRepository shPostTypeRepository, ShPostUtils shPostUtils,
+					   ShSitesPostUtils shSitesPostUtils, ShWorkflow shWorkflow, ShCacheObject shCacheObject,
+					   ShSitesObjectUtils shSitesObjectUtils, ShObjectUtils shObjectUtils) {
+		this.shObjectRepository = shObjectRepository;
+		this.shFolderRepository = shFolderRepository;
+		this.shPostRepository = shPostRepository;
+		this.shSiteUtils = shSiteUtils;
+		this.shFolderUtils = shFolderUtils;
+		this.shUserRepository = shUserRepository;
+		this.shURLScheme = shURLScheme;
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.shPostUtils = shPostUtils;
+		this.shSitesPostUtils = shSitesPostUtils;
+		this.shWorkflow = shWorkflow;
+		this.shCacheObject = shCacheObject;
+		this.shSitesObjectUtils = shSitesObjectUtils;
+		this.shObjectUtils = shObjectUtils;
+	}
 
 	@GetMapping
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
@@ -158,7 +167,7 @@ public class ShObjectAPI {
 		} else if (shObject instanceof ShPost shPost) {
 			redirect = shSitesPostUtils.generatePostLink(shPost);
 		} else if (shObject instanceof ShFolder shFolder) {
-			redirect = shSitesFolderUtils.generateFolderLink(shFolder);
+			redirect = shURLScheme.generateFolderLink(shFolder);
 		}
 		if (redirect != null) {
 			RedirectView redirectView = new RedirectView(

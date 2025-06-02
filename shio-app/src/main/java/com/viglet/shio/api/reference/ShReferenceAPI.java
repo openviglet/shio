@@ -48,12 +48,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag( name = "Reference", description = "Reference API")
 public class ShReferenceAPI {
 
+	private final ShReferenceRepository shReferenceRepository;
+	private final ShObjectRepository shObjectRepository;
+	private final ShPostAttrRepository shPostAttrRepository;
+
 	@Autowired
-	private ShReferenceRepository shReferenceRepository;
-	@Autowired
-	private ShObjectRepository shObjectRepository;
-	@Autowired
-	private ShPostAttrRepository shPostAttrRepository;
+	public ShReferenceAPI(ShReferenceRepository shReferenceRepository, ShObjectRepository shObjectRepository,
+						  ShPostAttrRepository shPostAttrRepository) {
+		this.shReferenceRepository = shReferenceRepository;
+		this.shObjectRepository = shObjectRepository;
+		this.shPostAttrRepository = shPostAttrRepository;
+	}
 
 	@GetMapping
 	@JsonView({ ShJsonView.ShJsonViewReference.class })

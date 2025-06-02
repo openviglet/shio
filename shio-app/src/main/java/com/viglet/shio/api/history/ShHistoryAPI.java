@@ -46,12 +46,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag( name = "History", description = "History API")
 public class ShHistoryAPI {
 
+	private final ShObjectRepository shObjectRepository;
+	private final ShHistoryRepository shHistoryRepository;
+	private final ShHistoryPageableRepository shHistoryPageableRepository;
+
 	@Autowired
-	private ShObjectRepository shObjectRepository;
-	@Autowired
-	private ShHistoryRepository shHistoryRepository;
-	@Autowired
-	private ShHistoryPageableRepository shHistoryPageableRepository;
+	public ShHistoryAPI(ShObjectRepository shObjectRepository, ShHistoryRepository shHistoryRepository,
+						ShHistoryPageableRepository shHistoryPageableRepository) {
+		this.shObjectRepository = shObjectRepository;
+		this.shHistoryRepository = shHistoryRepository;
+		this.shHistoryPageableRepository = shHistoryPageableRepository;
+	}
 
 	@GetMapping
 	@JsonView({ ShJsonView.ShJsonViewObject.class })

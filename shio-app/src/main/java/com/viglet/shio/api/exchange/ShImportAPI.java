@@ -48,10 +48,14 @@ public class ShImportAPI {
 	private static final Logger logger = LogManager.getLogger(ShImportAPI.class);
 	private static final String SHIO_IMPORT = "shio";
 	private static final String BLOGGER_IMPORT = "blogger";
+	private final ShImportExchange shImportExchange;
+	private final ShExchangeBloggerImport shExchangeBloggerImport;
+
 	@Autowired
-	private ShImportExchange shImportExchange;
-	@Autowired
-	private ShExchangeBloggerImport shExchangeBloggerImport;
+	public ShImportAPI(ShImportExchange shImportExchange, ShExchangeBloggerImport shExchangeBloggerImport) {
+		this.shImportExchange = shImportExchange;
+		this.shExchangeBloggerImport = shExchangeBloggerImport;
+	}
 
 	@PostMapping
 	@JsonView({ ShJsonView.ShJsonViewObject.class })

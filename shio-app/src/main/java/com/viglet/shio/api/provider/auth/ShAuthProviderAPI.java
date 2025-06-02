@@ -21,8 +21,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -55,19 +54,25 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/api/v2/provider/auth")
 @Tag( name = "Auth Provider", description = "Auth Provider API")
+@Slf4j
 public class ShAuthProviderAPI {
-	@SuppressWarnings("unused")
-	private static final Log logger = LogFactory.getLog(ShAuthProviderAPI.class);
+	private final ShConfigProperties shConfigProperties;
+	private final ShAuthProviderInstanceRepository shAuthProviderInstanceRepository;
+	private final ShAuthProviderVendorRepository shAuthProviderVendorRepository;
+	private final ShConfigVarRepository shConfigVarRepository;
+	private final ShAuthProviderService shAuthProviderService;
+
 	@Autowired
-	private ShConfigProperties shConfigProperties;
-	@Autowired
-	private ShAuthProviderInstanceRepository shAuthProviderInstanceRepository;
-	@Autowired
-	private ShAuthProviderVendorRepository shAuthProviderVendorRepository;
-	@Autowired
-	private ShConfigVarRepository shConfigVarRepository;
-	@Autowired
-	private ShAuthProviderService shAuthProviderService;
+	public ShAuthProviderAPI(ShConfigProperties shConfigProperties,
+							 ShAuthProviderInstanceRepository shAuthProviderInstanceRepository,
+							 ShAuthProviderVendorRepository shAuthProviderVendorRepository,
+							 ShConfigVarRepository shConfigVarRepository, ShAuthProviderService shAuthProviderService) {
+		this.shConfigProperties = shConfigProperties;
+		this.shAuthProviderInstanceRepository = shAuthProviderInstanceRepository;
+		this.shAuthProviderVendorRepository = shAuthProviderVendorRepository;
+		this.shConfigVarRepository = shConfigVarRepository;
+		this.shAuthProviderService = shAuthProviderService;
+	}
 
 	@GetMapping("/vendor")
 	@JsonView({ ShJsonView.ShJsonViewObject.class })

@@ -50,22 +50,29 @@ import static graphql.schema.GraphqlTypeComparatorRegistry.BY_NAME_REGISTRY;
 @Component
 public class ShGraphQLSchema {
 
-	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ShGraphQLOTPostType shGraphQLOTPostType;
-	@Autowired
-	private ShGraphQLOTObjectFromURL shGraphQLOTObjectFromURL;
-	@Autowired
-	private ShGraphQLOTNavigation shGraphQLOTNavigation;
-	@Autowired
-	private ShGraphQLOTQuery shGraphQLOTQuery;
-	@Autowired
-	private ShGraphQLOTObjectURL shGraphQLOTObjectURL;
-	@Autowired
-	private ShGraphQLQTCommons shGraphQLQTCommons;
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ShGraphQLOTPostType shGraphQLOTPostType;
+	private final ShGraphQLOTObjectFromURL shGraphQLOTObjectFromURL;
+	private final ShGraphQLOTNavigation shGraphQLOTNavigation;
+	private final ShGraphQLOTQuery shGraphQLOTQuery;
+	private final ShGraphQLOTObjectURL shGraphQLOTObjectURL;
+	private final ShGraphQLQTCommons shGraphQLQTCommons;
 
 	private GraphQL graphQL;
+
+	@Autowired
+	public ShGraphQLSchema(ShPostTypeRepository shPostTypeRepository, ShGraphQLOTPostType shGraphQLOTPostType,
+						   ShGraphQLOTObjectFromURL shGraphQLOTObjectFromURL,
+						   ShGraphQLOTNavigation shGraphQLOTNavigation, ShGraphQLOTQuery shGraphQLOTQuery,
+						   ShGraphQLOTObjectURL shGraphQLOTObjectURL, ShGraphQLQTCommons shGraphQLQTCommons) {
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.shGraphQLOTPostType = shGraphQLOTPostType;
+		this.shGraphQLOTObjectFromURL = shGraphQLOTObjectFromURL;
+		this.shGraphQLOTNavigation = shGraphQLOTNavigation;
+		this.shGraphQLOTQuery = shGraphQLOTQuery;
+		this.shGraphQLOTObjectURL = shGraphQLOTObjectURL;
+		this.shGraphQLQTCommons = shGraphQLQTCommons;
+	}
 
 	private GraphQLSchema loadSchema() {
 		Builder queryTypeBuilder = newObject().name(ShGraphQLConstants.QUERY_TYPE);

@@ -64,38 +64,7 @@ public class ShSitesPageLayoutUtils {
 	private ShPostRepository shPostRepository;
 	@Autowired
 	private ShPostUtils shPostUtils;
-	@Autowired
-	private ShSitesContextURLProcess shSitesContextURLProcess;
-	@Autowired
-	private ShObjectRepository shObjectRepository;
-	@Autowired
-	private ShSiteRepository shSiteRepository;
 
-	public ShPost fromURL(String url) {
-		ShSitesContextURL shSitesContextURL = new ShSitesContextURL();
-
-		shSitesContextURLProcess.detectContextURL(url, shSitesContextURL);
-
-		Optional<ShObject> shObject = shObjectRepository.findById(shSitesContextURL.getInfo().getObjectId());
-
-		Optional<ShSite> shSite = shSiteRepository.findById(shSitesContextURL.getInfo().getSiteId());
-
-		String format = shSitesContextURL.getInfo().getShFormat();
-
-		if (shObject.isPresent() && shSite.isPresent()) {
-			if (shObject.get() instanceof ShFolder shFolder) {
-				return this.pageLayoutFromFolderAndFolderIndex(shFolder, shSite.get(), format);
-			} else if (shObject.get() instanceof ShPostImpl shPostImpl) {
-				if (shPostImpl.getShPostType().getName().equals(ShSystemPostType.FOLDER_INDEX)) {
-					return this.pageLayoutFromFolderAndFolderIndex(shPostImpl, shSite.get(), format);
-				} else {
-					return this.pageLayoutFromPost(shPostImpl, shSite.get(), format);
-				}
-
-			}
-		}
-		return null;
-	}
 
 	public ShPost pageLayoutFromPost(ShPostImpl shPostItem, ShSite shSite, String format) {
 		JSONObject postTypeLayout = new JSONObject();

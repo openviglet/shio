@@ -1,9 +1,9 @@
 ﻿export class User {
-    id: number;
-    username: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    authdata?: string;
-    admin: boolean;
+    id: number | undefined;
+    username: string | undefined;
+    password: string | undefined;
+    firstName: string | undefined;
+    lastName: string | undefined;
+    authdata: string | undefined;
+    admin: boolean | undefined;
 }

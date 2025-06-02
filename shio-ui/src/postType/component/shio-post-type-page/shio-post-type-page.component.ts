@@ -6,11 +6,12 @@ import { ShPostTypeService } from 'src/postType/service/postType.service';
 
 @Component({
   selector: 'app-shio-post-type-page',
-  templateUrl: './shio-post-type-page.component.html'
+  templateUrl: './shio-post-type-page.component.html',
+  standalone: false
 })
 export class ShioPostTypePageComponent implements OnInit {
   private shPostTypeData: Observable<ShPostType>
-  private id: string;
+  private id: string | null;
 
   constructor(private shPostTypeService: ShPostTypeService, private route: ActivatedRoute) {
     this.id = this.route.snapshot.paramMap.get('id');

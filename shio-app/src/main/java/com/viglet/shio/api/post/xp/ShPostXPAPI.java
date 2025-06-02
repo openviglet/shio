@@ -51,12 +51,16 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class ShPostXPAPI {
 	private static final Log logger = LogFactory.getLog(ShPostXPAPI.class);
 
+	private final ShPostUtils shPostUtils;
+	private final ShObjectUtils shObjectUtils;
+	private final ShMgmtProperties shMgmtProperties;
+
 	@Autowired
-	private ShPostUtils shPostUtils;
-	@Autowired
-	private ShObjectUtils shObjectUtils;
-	@Autowired
-	private ShMgmtProperties shMgmtProperties;
+	public ShPostXPAPI(ShPostUtils shPostUtils, ShObjectUtils shObjectUtils, ShMgmtProperties shMgmtProperties) {
+		this.shPostUtils = shPostUtils;
+		this.shObjectUtils = shObjectUtils;
+		this.shMgmtProperties = shMgmtProperties;
+	}
 
 	/**
 	 * Post XP Edit API

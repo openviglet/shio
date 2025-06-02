@@ -20,10 +20,14 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.exchange.object.ShObjectExchange;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ShPostExchange extends ShObjectExchange {
 	
@@ -33,31 +37,5 @@ public class ShPostExchange extends ShObjectExchange {
 
 	private Map<String, Object> fields;
 
-	public String getFolder() {
-		return folder;
-	}
 
-	public void setFolder(String folder) {
-		this.folder = folder;
-	}
-
-	public String getPostType() {
-		return postType;
-	}
-
-	public void setPostType(String postType) {
-		this.postType = postType;
-	}
-
-	public Map<String, Object> getFields() {
-		return fields;
-	}
-
-	public void setFields(Map<String, Object> fields) {
-		this.fields = fields;
-	}
-
-	
-
-	
 }

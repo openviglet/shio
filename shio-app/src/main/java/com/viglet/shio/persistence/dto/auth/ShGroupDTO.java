@@ -22,12 +22,16 @@ import java.util.Set;
 import com.viglet.shio.persistence.model.auth.ShGroup;
 import com.viglet.shio.persistence.model.auth.ShRole;
 import com.viglet.shio.persistence.model.auth.ShUser;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * The DTO class for the ShGroup database table.
  * 
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 public class ShGroupDTO {
 	private String id;
 
@@ -39,47 +43,7 @@ public class ShGroupDTO {
 
 	private Set<ShUser> shUsers = new HashSet<>();
 
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getDescription() {
-		return description;
-	}
-
-	public void setDescription(String description) {
-		this.description = description;
-	}
-
-	public Set<ShRole> getShRoles() {
-		return shRoles;
-	}
-
-	public void setShRoles(Set<ShRole> shRoles) {
-		this.shRoles = shRoles;
-	}
-
-	public Set<ShUser> getShUsers() {
-		return shUsers;
-	}
-
-	public void setShUsers(Set<ShUser> shUsers) {
-		this.shUsers = shUsers;
-	}
-
-	public ShGroup toEntity() {
+    public ShGroup toEntity() {
 		ShGroup shGroup = new ShGroup();
 		shGroup.setId(this.getId());
 		shGroup.setName(this.getName());

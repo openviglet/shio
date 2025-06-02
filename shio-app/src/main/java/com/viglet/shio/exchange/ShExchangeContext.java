@@ -16,6 +16,9 @@
  */
 package com.viglet.shio.exchange;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.io.File;
 
 /**
@@ -25,28 +28,14 @@ import java.io.File;
  * @since 0.3.7
  * 
  */
+@Setter
+@Getter
 public class ShExchangeContext {
 	private File extractFolder;
 	private boolean isCloned;
 
 	public ShExchangeContext(File extractFolder, boolean isCloned) {
 		this.extractFolder = extractFolder;
-		this.isCloned = isCloned;
-	}
-
-	public File getExtractFolder() {
-		return extractFolder;
-	}
-
-	public void setExtractFolder(File extractFolder) {
-		this.extractFolder = extractFolder;
-	}
-
-	public boolean isCloned() {
-		return isCloned;
-	}
-
-	public void setCloned(boolean isCloned) {
 		this.isCloned = isCloned;
 	}
 

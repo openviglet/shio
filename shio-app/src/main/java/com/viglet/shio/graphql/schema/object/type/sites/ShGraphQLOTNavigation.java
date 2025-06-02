@@ -38,8 +38,12 @@ import graphql.scalars.ExtendedScalars;
 @Component
 public class ShGraphQLOTNavigation {
 
+	private final ShGraphQLQTNavigation shGraphQLQTNavigation;
+
 	@Autowired
-	private ShGraphQLQTNavigation shGraphQLQTNavigation;
+	public ShGraphQLOTNavigation(ShGraphQLQTNavigation shGraphQLQTNavigation) {
+		this.shGraphQLQTNavigation = shGraphQLQTNavigation;
+	}
 
 	private GraphQLObjectType createWebSiteByURL() {
 		Builder builder = newObject().name("ShNavigation").description("Navigation Component");

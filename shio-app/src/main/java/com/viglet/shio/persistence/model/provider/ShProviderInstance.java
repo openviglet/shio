@@ -24,6 +24,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQuery;
 
+import lombok.Setter;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UuidGenerator;
@@ -34,6 +35,7 @@ import org.hibernate.annotations.UuidGenerator;
  * @author Alexandre Oliveira
  * @since 0.3.6
  */
+@Setter
 @Entity
 @NamedQuery(name = "ShProviderInstance.findAll", query = "SELECT pi FROM ShProviderInstance pi")
 public class ShProviderInstance {
@@ -60,48 +62,24 @@ public class ShProviderInstance {
 		return id;
 	}
 
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public String getName() {
+    public String getName() {
 		return name;
 	}
 
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getDescription() {
+    public String getDescription() {
 		return description;
 	}
 
-	public void setDescription(String description) {
-		this.description = description;
-	}
-
-	public ShProviderVendor getVendor() {
+    public ShProviderVendor getVendor() {
 		return vendor;
 	}
 
-	public void setVendor(ShProviderVendor vendor) {
-		this.vendor = vendor;
-	}
-
-	public int getPosition() {
+    public int getPosition() {
 		return position;
 	}
 
-	public void setPosition(int position) {
-		this.position = position;
-	}
-
-	public boolean getEnabled() {
+    public boolean getEnabled() {
 		return enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

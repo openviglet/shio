@@ -12,7 +12,7 @@ export function createCustomInputControlValueAccessor(extendedInputComponent: an
     template: ''
 })
 export class InputComponent implements ControlValueAccessor, OnInit {
-    @ViewChild('input') inputRef: ElementRef;
+    @ViewChild('input') inputRef: ElementRef | undefined;
 
     // The internal data model
     public innerValue: any = '';
@@ -37,6 +37,7 @@ export class InputComponent implements ControlValueAccessor, OnInit {
 
     // change events from the textarea
     private onChange() {
+        // @ts-ignore
         const input = <HTMLInputElement>this.inputRef.nativeElement;
         // get value from text area
         const newValue = input.value;
@@ -45,6 +46,7 @@ export class InputComponent implements ControlValueAccessor, OnInit {
         this.onChangeCallback(newValue);
     }
     ngOnInit() {
+        // @ts-ignore
         const inputElement = <HTMLInputElement>this.inputRef.nativeElement;
         inputElement.onchange = () => this.onChange();
         inputElement.onkeyup = () => this.onChange();

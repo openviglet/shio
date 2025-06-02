@@ -52,18 +52,24 @@ import com.viglet.shio.utils.ShFolderUtils;
  */
 @Component
 public class ShFolderExport {
+	private final ShFolderRepository shFolderRepository;
+	private final ShPostRepository shPostRepository;
+	private final ShPostExport shPostExport;
+	private final ShPostTypeExport shPostTypeExport;
+	private final ShExchangeUtils shExchangeUtils;
+	private final ShFolderUtils shFolderUtils;
+
 	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShPostExport shPostExport;
-	@Autowired
-	private ShPostTypeExport shPostTypeExport;
-	@Autowired
-	private ShExchangeUtils shExchangeUtils;
-	@Autowired
-	private ShFolderUtils shFolderUtils;
+	public ShFolderExport(ShFolderRepository shFolderRepository, ShPostRepository shPostRepository,
+						  ShPostExport shPostExport, ShPostTypeExport shPostTypeExport, ShExchangeUtils shExchangeUtils,
+						  ShFolderUtils shFolderUtils) {
+		this.shFolderRepository = shFolderRepository;
+		this.shPostRepository = shPostRepository;
+		this.shPostExport = shPostExport;
+		this.shPostTypeExport = shPostTypeExport;
+		this.shExchangeUtils = shExchangeUtils;
+		this.shFolderUtils = shFolderUtils;
+	}
 
 	public ShExchange shFolderExchangeIterate(Set<ShFolder> shFolders) {
 		ShExchange shExchange = new ShExchange();

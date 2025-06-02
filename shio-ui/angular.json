@@ -73,18 +73,18 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "shio-ui:build"
+            "buildTarget": "shio-ui:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "shio-ui:build:production"
+              "buildTarget": "shio-ui:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "shio-ui:build"
+            "buildTarget": "shio-ui:build"
           }
         },
         "i18n": {

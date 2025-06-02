@@ -16,6 +16,7 @@
  */
 package com.viglet.shio.persistence.model.workflow;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -27,6 +28,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQuery;
 
+import lombok.Getter;
 import org.hibernate.annotations.GenericGenerator;
 
 import com.viglet.shio.persistence.model.object.ShObject;
@@ -37,10 +39,12 @@ import org.hibernate.annotations.UuidGenerator;
  * 
  * @author Alexandre Oliveira
  */
+@Getter
 @Entity
 @NamedQuery(name = "ShWorkflowTask.findAll", query = "SELECT wt FROM ShWorkflowTask wt")
 public class ShWorkflowTask implements Serializable {
 
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	@Id
@@ -63,51 +67,27 @@ public class ShWorkflowTask implements Serializable {
 	// Who will be responsible for the action
 	private String requested;
 
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
+    public void setId(String id) {
 		this.id = id;
 	}
 
-	public Date getDate() {
-		return date;
-	}
-
-	public void setDate(Date date) {
+    public void setDate(Date date) {
 		this.date = date;
 	}
 
-	public String getRequester() {
-		return requester;
-	}
-
-	public void setRequester(String requester) {
+    public void setRequester(String requester) {
 		this.requester = requester;
 	}
 
-	public String getRequested() {
-		return requested;
-	}
-
-	public void setRequested(String requested) {
+    public void setRequested(String requested) {
 		this.requested = requested;
 	}
 
-	public String getTitle() {
-		return title;
-	}
-
-	public void setTitle(String title) {
+    public void setTitle(String title) {
 		this.title = title;
 	}
 
-	public ShObject getShObject() {
-		return shObject;
-	}
-
-	public void setShObject(ShObject shObject) {
+    public void setShObject(ShObject shObject) {
 		this.shObject = shObject;
 	}
 

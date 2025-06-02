@@ -36,8 +36,6 @@ public interface ShConfigVarRepository extends JpaRepository<ShConfigVar, String
 
 	boolean existsByPathAndName(String path, String name);
 
-	boolean existsByPath(String path);
-
 	List<ShConfigVar> findByPath(String path);
 
 	ShConfigVar findByPathAndName(String path, String name);

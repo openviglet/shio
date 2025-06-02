@@ -111,4 +111,11 @@ public class ShURLScheme {
 	private String getURL(String shSiteName, String shContext, String shFormat, String shLocale) {
 		return String.format("/%s/%s/%s/%s", shContext, shSiteName, shFormat, shLocale);
 	}
+
+	public String generateFolderLink(ShFolder shFolder) {
+		String link = get(shFolder);
+		link = link + shFolderUtils.folderPath(shFolder, true, false);
+		return link;
+	}
+
 }

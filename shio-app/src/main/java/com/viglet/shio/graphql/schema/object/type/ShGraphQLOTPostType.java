@@ -44,13 +44,17 @@ import graphql.schema.GraphQLObjectType.Builder;
 @Component
 public class ShGraphQLOTPostType {
 
+	private final ShGraphQLUtils shGraphQLUtils;
+	private final ShGraphQLQTUnique shGraphQLQTUnique;
+	private final ShGraphQLQTPlural shGraphQLQTPlural;
+
 	@Autowired
-	private ShGraphQLUtils shGraphQLUtils;
-	@Autowired
-	private ShGraphQLQTUnique shGraphQLQTUnique;
-	@Autowired
-	private ShGraphQLQTPlural shGraphQLQTPlural;
-	
+	public ShGraphQLOTPostType(ShGraphQLUtils shGraphQLUtils, ShGraphQLQTUnique shGraphQLQTUnique, ShGraphQLQTPlural shGraphQLQTPlural) {
+		this.shGraphQLUtils = shGraphQLUtils;
+		this.shGraphQLQTUnique = shGraphQLQTUnique;
+		this.shGraphQLQTPlural = shGraphQLQTPlural;
+	}
+
 	private GraphQLObjectType createObjectType(ShPostType shPostType) {
 		Builder builder = newObject().name(shPostType.getName().replace("-", "_")).description(shPostType.getDescription());
 

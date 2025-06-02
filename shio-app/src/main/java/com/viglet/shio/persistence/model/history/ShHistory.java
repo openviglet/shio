@@ -16,6 +16,7 @@
  */
 package com.viglet.shio.persistence.model.history;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -25,6 +26,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.NamedQuery;
 
+import lombok.Getter;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -33,10 +35,12 @@ import org.hibernate.annotations.UuidGenerator;
  * 
  * @author Alexandre Oliveira
  */
+@Getter
 @Entity
 @NamedQuery(name = "ShHistory.findAll", query = "SELECT h FROM ShHistory h")
 public class ShHistory implements Serializable {
 
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	@Id
@@ -54,51 +58,27 @@ public class ShHistory implements Serializable {
 
 	private String shSite;
 
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
+    public void setId(String id) {
 		this.id = id;
 	}
 
-	public String getOwner() {
-		return owner;
-	}
-
-	public void setOwner(String owner) {
+    public void setOwner(String owner) {
 		this.owner = owner;
 	}
 
-	public Date getDate() {
-		return date;
-	}
-
-	public void setDate(Date date) {
+    public void setDate(Date date) {
 		this.date = date;
 	}
 
-	public String getDescription() {
-		return description;
-	}
-
-	public void setDescription(String description) {
+    public void setDescription(String description) {
 		this.description = description;
 	}
 
-	public String getShObject() {
-		return shObject;
-	}
-
-	public void setShObject(String shObject) {
+    public void setShObject(String shObject) {
 		this.shObject = shObject;
 	}
 
-	public String getShSite() {
-		return shSite;
-	}
-
-	public void setShSite(String shSite) {
+    public void setShSite(String shSite) {
 		this.shSite = shSite;
 	}
 	

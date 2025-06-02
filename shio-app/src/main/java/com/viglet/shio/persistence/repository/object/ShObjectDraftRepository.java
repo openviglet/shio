@@ -40,7 +40,6 @@ public interface ShObjectDraftRepository extends JpaRepository<ShObjectDraft, St
 	@SuppressWarnings("unchecked")
 	ShObjectDraft save(ShObjectDraft shObject);
 
-	int countByIdAndShGroupsInOrIdAndShGroupsIsNull(String id,Collection<String> groups, String id2);
 	@Modifying
 	@Query("delete from ShObjectDraft od where od.id = ?1")
 	void delete(String shObjectId);

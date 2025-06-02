@@ -23,10 +23,14 @@ import com.viglet.shio.bean.ShFolderTinyBean;
 import com.viglet.shio.bean.ShPostTinyBean;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.site.ShSite;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  */
+@Getter
+@Setter
 public class ShFolderList {
 
 	private Set<ShFolderTinyBean> shFolders;
@@ -38,45 +42,5 @@ public class ShFolderList {
 	private List<ShFolder> breadcrumb;
 	
 	private ShSite shSite;
-	
-	public Set<ShFolderTinyBean> getShFolders() {
-		return shFolders;
-	}
-
-	public void setShFolders(Set<ShFolderTinyBean> shFolders) {
-		this.shFolders = shFolders;
-	}
-
-	public List<ShPostTinyBean> getShPosts() {
-		return shPosts;
-	}
-
-	public void setShPosts(List<ShPostTinyBean> shPosts) {
-		this.shPosts = shPosts;
-	}
-
-	public String getFolderPath() {
-		return folderPath;
-	}
-
-	public void setFolderPath(String folderPath) {
-		this.folderPath = folderPath;
-	}
-
-	public List<ShFolder> getBreadcrumb() {
-		return breadcrumb;
-	}
-
-	public void setBreadcrumb(List<ShFolder> breadcrumb) {
-		this.breadcrumb = breadcrumb;
-	}
-
-	public ShSite getShSite() {
-		return shSite;
-	}
-
-	public void setShSite(ShSite shSite) {
-		this.shSite = shSite;
-	}
 
 }

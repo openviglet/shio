@@ -25,9 +25,8 @@ import java.util.List;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
@@ -62,19 +61,24 @@ import net.coobird.thumbnailator.Thumbnails;
 @RestController
 @RequestMapping("/api/v2/staticfile")
 @Tag( name = "Static File", description = "Static File API")
+@Slf4j
 public class ShStaticFileAPI {
-	static final Logger logger = LogManager.getLogger(ShStaticFileAPI.class.getName());
+	private final ShFolderRepository shFolderRepository;
+	private final ShStaticFileUtils shStaticFileUtils;
+	private final ShObjectRepository shObjectRepository;
+	private final ResourceLoader resourceloader;
+	private final ShUtils shUtils;
+
 	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShStaticFileUtils shStaticFileUtils;
-	@Autowired
-	private ShObjectRepository shObjectRepository;
-	@Autowired
-	private ResourceLoader resourceloader;
-	@Autowired
-	private ShUtils shUtils;
-	
+	public ShStaticFileAPI(ShFolderRepository shFolderRepository, ShStaticFileUtils shStaticFileUtils,
+						   ShObjectRepository shObjectRepository, ResourceLoader resourceloader, ShUtils shUtils) {
+		this.shFolderRepository = shFolderRepository;
+		this.shStaticFileUtils = shStaticFileUtils;
+		this.shObjectRepository = shObjectRepository;
+		this.resourceloader = resourceloader;
+		this.shUtils = shUtils;
+	}
+
 	@GetMapping("/pre-upload/{folderId}/{fileName}")
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
 	public ResponseEntity<ShHttpMessageBean> shStaticFilePreUpload(@PathVariable String fileName,
@@ -140,14 +144,14 @@ public class ShStaticFileAPI {
 							.outputQuality(1).toOutputStream(response.getOutputStream());
 				} catch (IOException e) {
 
-					logger.error("Image Resize", e);
+					log.error("Image Resize", e);
 				}
 			} else {
 				try {
 					Thumbnails.of(resourceloader.getResource("classpath:/ui/public/img/file.png").getInputStream())
 							.scale(1).outputFormat("png").outputQuality(1).toOutputStream(response.getOutputStream());
 				} catch (IOException e) {
-					logger.error("No Image Resize", e);
+					log.error("No Image Resize", e);
 				}
 
 			}

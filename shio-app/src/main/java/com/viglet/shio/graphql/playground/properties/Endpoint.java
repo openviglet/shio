@@ -21,15 +21,13 @@ package com.viglet.shio.graphql.playground.properties;
 * @since 0.3.7
 */
 public class Endpoint {
-	private String graphql = "/graphql";
-	private String subscriptions = "/subscriptions";
 
-	public String getGraphql() {
-		return graphql;
+    public String getGraphql() {
+        return "/graphql";
 	}
 
 	public String getSubscriptions() {
-		return subscriptions;
+        return "/subscriptions";
 	}
 
 }

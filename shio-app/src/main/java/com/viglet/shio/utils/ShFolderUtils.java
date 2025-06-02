@@ -16,30 +16,21 @@
  */
 package com.viglet.shio.utils;
 
-import java.io.IOException;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.impl.ShObjectImpl;
-import com.viglet.shio.persistence.model.post.ShPost;
-import com.viglet.shio.persistence.model.post.ShPostAttr;
 import com.viglet.shio.persistence.model.post.impl.ShPostImpl;
-import com.viglet.shio.persistence.model.reference.ShReference;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
-import com.viglet.shio.persistence.repository.post.ShPostAttrRepository;
-import com.viglet.shio.persistence.repository.post.ShPostRepository;
-import com.viglet.shio.persistence.repository.reference.ShReferenceRepository;
-import com.viglet.shio.turing.ShTuringIntegration;
 
 /**
  * @author Alexandre Oliveira
@@ -48,18 +39,22 @@ import com.viglet.shio.turing.ShTuringIntegration;
 public class ShFolderUtils {
 	@Autowired
 	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShPostAttrRepository shPostAttrRepository;
-	@Autowired
-	private ShReferenceRepository shReferenceRepository;
-	@Autowired
-	private ShTuringIntegration shTuringIntegration;
+	private static final String FILE_SOURCE_BASE = File.separator + "store" + File.separator + "file_source";
+	private static final String USER_DIR = "user.dir";
+	private File userDir = new File(System.getProperty(USER_DIR));
 
 	public ShFolder getParentFolder(String shFolderId) {
 		Optional<ShFolder> shFolder = shFolderRepository.findById(shFolderId);
 		return shFolder.isPresent() ? shFolder.get().getParentFolder() : null;
+	}
+
+	public File filePath(ShFolder shFolder, String fileName) {
+		File file = null;
+		File directoryPath = dirPath(shFolder);
+
+		if (directoryPath != null)
+			file = new File(directoryPath.getAbsolutePath().concat(File.separator + fileName));
+		return file;
 	}
 
 	public ShFolder getParentFolder(ShObjectImpl shObject) {
@@ -174,6 +169,16 @@ public class ShFolderUtils {
 
 	}
 
+
+	public File dirPath(ShFolder shFolder) {
+		File directoryPath = null;
+		ShSite shSite = getSite(shFolder);
+		String folderPath = directoryPath(shFolder, File.separator);
+		String folderPathFile = FILE_SOURCE_BASE.concat(File.separator + shSite.getName() + folderPath);
+		if (userDir.exists() && userDir.isDirectory())
+			directoryPath = new File(userDir.getAbsolutePath().concat(folderPathFile));
+		return directoryPath;
+	}
 	public ShSite getSite(ShFolder shFolder) {
 		ShSite shSite = null;
 		if (shFolder != null) {
@@ -224,33 +229,6 @@ public class ShFolderUtils {
 			}
 		}
 		return currentFolder;
-	}
-
-	@Transactional
-	public boolean deleteFolder(ShFolder shFolder) throws IOException {
-		shTuringIntegration.deindexObject(shFolder);
-
-		for (ShPost shPost : shPostRepository.findByShFolder(shFolder)) {
-			List<ShReference> shGlobalFromId = shReferenceRepository.findByShObjectFrom(shPost);
-			List<ShReference> shGlobalToId = shReferenceRepository.findByShObjectTo(shPost);
-			shReferenceRepository.deleteAllInBatch(shGlobalFromId);
-			shReferenceRepository.deleteAllInBatch(shGlobalToId);
-		}
-
-		for (ShPostImpl shPost : shPostRepository.findByShFolder(shFolder)) {
-			Set<ShPostAttr> shPostAttrs = shPostAttrRepository.findByShPost(shPost);
-			shPostAttrRepository.deleteAllInBatch(shPostAttrs);
-		}
-
-		shPostRepository.deleteAllInBatch(shPostRepository.findByShFolder(shFolder));
-
-		for (ShFolder shFolderChild : shFolderRepository.findByParentFolder(shFolder)) {
-			this.deleteFolder(shFolderChild);
-		}
-
-		shFolderRepository.delete(shFolder.getId());
-
-		return true;
 	}
 
 	public ShFolder copy(ShFolder shFolder, ShObjectImpl shObjectDest) {

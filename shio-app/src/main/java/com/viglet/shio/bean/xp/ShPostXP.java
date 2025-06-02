@@ -17,31 +17,19 @@
 package com.viglet.shio.bean.xp;
 
 import com.viglet.shio.persistence.model.post.impl.ShPostImpl;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 public class ShPostXP {
 
 	private ShPostImpl shPost;
 	
 	private boolean allowPublish;
 
-	public ShPostImpl getShPost() {
-		return shPost;
-	}
 
-	public void setShPost(ShPostImpl shPost) {
-		this.shPost = shPost;
-	}
-
-	public boolean isAllowPublish() {
-		return allowPublish;
-	}
-
-	public void setAllowPublish(boolean allowPublish) {
-		this.allowPublish = allowPublish;
-	} 
-	
-	
 }

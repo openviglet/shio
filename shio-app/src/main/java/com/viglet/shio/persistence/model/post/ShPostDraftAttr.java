@@ -16,12 +16,14 @@
  */
 package com.viglet.shio.persistence.model.post;
 
+import java.io.Serial;
 import java.io.Serializable;
 
+import com.viglet.shio.persistence.model.object.ShObject;
+import com.viglet.shio.persistence.model.object.ShObjectDraft;
 import org.hibernate.annotations.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.viglet.shio.persistence.model.object.ShObject;
 import com.viglet.shio.persistence.model.post.impl.ShPostAttrImpl;
 import com.viglet.shio.persistence.model.post.impl.ShPostImpl;
 import com.viglet.shio.persistence.model.post.relator.ShRelatorItemDraft;
@@ -32,12 +34,10 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -55,6 +55,7 @@ import jakarta.persistence.TemporalType;
 @NamedQuery(name = "ShPostDraftAttr.findAll", query = "SELECT pda FROM ShPostDraftAttr pda")
 @JsonIgnoreProperties({ "shPostType", "shPost", "shParentRelatorItem", "tab" })
 public class ShPostDraftAttr implements Serializable, ShPostAttrImpl {
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	@Id
@@ -73,10 +74,6 @@ public class ShPostDraftAttr implements Serializable, ShPostAttrImpl {
 	private String strValue;
 
 	@ElementCollection
-	@Fetch(org.hibernate.annotations.FetchMode.JOIN)
-	@CollectionTable(name = "sh_post_draft_attr_array_value")
-	@JoinColumn(name = "post_attr_id")
-	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Set<String> arrayValue = new HashSet<>();
 
 	// bi-directional many-to-one association to shObject
@@ -109,12 +106,12 @@ public class ShPostDraftAttr implements Serializable, ShPostAttrImpl {
 	@JoinColumn(name = "post_attr_id")
 	private ShRelatorItemDraft shParentRelatorItem;
 
-	@Override
-	public ShObject getReferenceObject() {
-		return referenceObject;
-	}
 
 	@Override
+	public ShObject getReferenceObject() {
+		return null;
+	}
+
 	public void setReferenceObject(ShObject referenceObject) {
 		this.referenceObject = referenceObject;
 	}

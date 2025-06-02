@@ -48,14 +48,18 @@ import graphql.schema.GraphQLObjectType.Builder;
 @Component
 public class ShGraphQLQTNavigation {
 
-	@Autowired
-	private ShNavigationComponent shNavigationComponent;
+	private final ShNavigationComponent shNavigationComponent;
 	private static final String QUERY_TYPE_NAME = "shNavigation";
 	
 	public static final String SITE_NAME = "siteName";
 	public static final String FOLDER_ID = "folderId";
 	public static final String IS_HOME = "isHome";
-	
+
+	@Autowired
+	public ShGraphQLQTNavigation(ShNavigationComponent shNavigationComponent) {
+		this.shNavigationComponent = shNavigationComponent;
+	}
+
 	public void createQueryType(Builder queryTypeBuilder,
 			graphql.schema.GraphQLCodeRegistry.Builder codeRegistryBuilder, GraphQLObjectType graphQLObjectType) {
 

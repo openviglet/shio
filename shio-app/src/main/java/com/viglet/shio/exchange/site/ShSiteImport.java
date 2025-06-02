@@ -28,9 +28,8 @@ import java.util.UUID;
 import java.util.Map.Entry;
 import java.util.Optional;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -58,68 +57,70 @@ import com.viglet.shio.widget.ShSystemWidget;
  * @since 0.3.0
  */
 @Component
+@Slf4j
 public class ShSiteImport {
-	private static final Log logger = LogFactory.getLog(ShSiteImport.class);
+	private final ShSiteRepository shSiteRepository;
+	private final ShFolderImport shFolderImport;
+	private final ShPostTypeAttrRepository shPostTypeAttrRepository;
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ShUserUtils shUserUtils;
+
 	@Autowired
-	private ShSiteRepository shSiteRepository;
-	@Autowired
-	private ShFolderImport shFolderImport;
-	@Autowired
-	private ShPostTypeAttrRepository shPostTypeAttrRepository;
-	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ShUserUtils shUserUtils;
+	public ShSiteImport(ShSiteRepository shSiteRepository,
+						ShFolderImport shFolderImport,
+						ShPostTypeAttrRepository shPostTypeAttrRepository,
+						ShPostTypeRepository shPostTypeRepository,
+						ShUserUtils shUserUtils) {
+		this.shSiteRepository = shSiteRepository;
+		this.shFolderImport = shFolderImport;
+		this.shPostTypeAttrRepository = shPostTypeAttrRepository;
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.shUserUtils = shUserUtils;
+	}
 
 	public void importSite(ShExchange shExchange, File extractFolder) {
-		logger.info("2 of 4 - Importing Sites");
+		log.info("2 of 4 - Importing Sites");
 		for (ShSiteExchange shSiteExchange : shExchange.getSites()) {
 			ShExchangeObjectMap shExchangeObjectMap = prepareImport(shExchange, shSiteExchange);
-			logger.info(String.format(".... %s Site (%s)", shSiteExchange.getName(), shSiteExchange.getId()));
+			log.info(".... {} Site ({})", shSiteExchange.getName(), shSiteExchange.getId());
 			this.createShSite(shSiteExchange);
 			// Create only Folders
-			logger.info("3 of 4 - Importing Folders");
+			log.info("3 of 4 - Importing Folders");
 			shFolderImport.shFolderImportNested(shSiteExchange.getId(), true, shExchangeObjectMap,
 					new ShExchangeContext(extractFolder, false));
 			// Create all objects
-			logger.info("4 of 4 - Importing Posts");
+			log.info("4 of 4 - Importing Posts");
 			shFolderImport.shFolderImportNested(shSiteExchange.getId(), false, shExchangeObjectMap,
 					new ShExchangeContext(extractFolder, false));
 		}
 	}
 
-	public ShSite cloneSite(ShExchangeData shExchangeData) {
-		ShSite shSite = null;
+	public void cloneSite(ShExchangeData shExchangeData) {
 		ShExchange shExchange = shExchangeData.getShExchange();
 		File extractFolder = shExchangeData.getShExchangeFilesDirs().getExportDir();
 
-		logger.info("2 of 4 - Cloning Sites");
+		log.info("2 of 4 - Cloning Sites");
 		for (ShSiteExchange shSiteExchange : shExchange.getSites()) {
 			shSiteExchange.setDate(new Date());
 			ShExchangeObjectMap shExchangeObjectMap = prepareImport(shExchange, shSiteExchange);
-			logger.info(String.format(".... %s Site (%s)", shSiteExchange.getName(), shSiteExchange.getId()));
-			shSite = this.createShSite(shSiteExchange);
+			log.info(".... {} Site ({})", shSiteExchange.getName(), shSiteExchange.getId());
 			// Create only Folders
-			logger.info("3 of 4 - Cloning Folders");
+			log.info("3 of 4 - Cloning Folders");
 			shFolderImport.shFolderImportNested(shSiteExchange.getId(), true, shExchangeObjectMap,
 					new ShExchangeContext(extractFolder, true));
 			// Create all objects
-			logger.info("4 of 4 - Cloning Posts");
+			log.info("4 of 4 - Cloning Posts");
 			shFolderImport.shFolderImportNested(shSiteExchange.getId(), false, shExchangeObjectMap,
 					new ShExchangeContext(extractFolder, true));
 		}
 
-		return shSite;
 	}
 
-	public ShSite createShSite(ShSiteExchange shSiteExchange) {
-		ShSite shSite = null;
+	public void createShSite(ShSiteExchange shSiteExchange) {
 		Optional<ShSite> shSiteOptional = shSiteRepository.findById(shSiteExchange.getId());
-		if (shSiteOptional.isPresent()) {
-			shSite = shSiteOptional.get();
-		} else {
-			shSite = new ShSite();
-			shSite.setId(shSiteExchange.getId());
+		if (shSiteOptional.isEmpty()) {
+			ShSite shSite = new ShSite();
+	//		shSite.setId(shSiteExchange.getId());
 			shSite.setName(shSiteExchange.getName());
 			shSite.setUrl(shSiteExchange.getUrl());
 			shSite.setDescription(shSiteExchange.getDescription());
@@ -140,7 +141,6 @@ public class ShSiteImport {
 
 		}
 
-		return shSite;
 	}
 
 	public ShExchangeObjectMap prepareImport(ShExchange shExchange, ShSiteExchange shCurrentSiteExchange) {
@@ -208,20 +208,19 @@ public class ShSiteImport {
 
 	private void preparePostImport(ShExchange shExchange, ShExchangeObjectMap shExchangeObjectMap) {
 		if (shExchange.getPosts() != null) {
-			for (ShPostExchange shPostExchange : shExchange.getPosts()) {
-
-				shExchangeObjectMap.getShObjects().put(shPostExchange.getId(), shPostExchange);
-				if (shPostExchange.getFolder() != null) {
-					Map<String, List<String>> shChildObjects = shExchangeObjectMap.getShChildObjects();
-					if (shChildObjects.containsKey(shPostExchange.getFolder())) {
-						shChildObjects.get(shPostExchange.getFolder()).add(shPostExchange.getId());
-					} else {
-						List<String> childObjectList = new ArrayList<>();
-						childObjectList.add(shPostExchange.getId());
-						shChildObjects.put(shPostExchange.getFolder(), childObjectList);
-					}
-				}
-			}
+            shExchange.getPosts().forEach(shPostExchange -> {
+                shExchangeObjectMap.getShObjects().put(shPostExchange.getId(), shPostExchange);
+                if (shPostExchange.getFolder() != null) {
+                    Map<String, List<String>> shChildObjects = shExchangeObjectMap.getShChildObjects();
+                    if (shChildObjects.containsKey(shPostExchange.getFolder())) {
+                        shChildObjects.get(shPostExchange.getFolder()).add(shPostExchange.getId());
+                    } else {
+                        List<String> childObjectList = new ArrayList<>();
+                        childObjectList.add(shPostExchange.getId());
+                        shChildObjects.put(shPostExchange.getFolder(), childObjectList);
+                    }
+                }
+            });
 		}
 	}
 
@@ -235,13 +234,10 @@ public class ShSiteImport {
 			setRootFolderWithNewIds(shNewIds, shNewIdsReverse, shSiteExchange);
 			importSitesWithNewIds(shNewIds, shNewIdsReverse, shSiteExchangeWithNewIds, shSiteExchange);
 		});
-
 		List<ShFolderExchange> shFolderExchangeWithNewIds = importFoldersWithNewIds(shExchange, shNewIds,
 				shNewIdsReverse);
-
 		List<ShPostExchange> shPostExchangeWithNewIds = importPostsWithNewIds(shExchange, extractFolder, shNewIds,
 				shNewIdsReverse);
-
 		shExchange.setPosts(shPostExchangeWithNewIds);
 		shExchangeWithNewIds.setFiles(shExchange.getFiles());
 		shExchangeWithNewIds.setFolders(shFolderExchangeWithNewIds);
@@ -257,7 +253,6 @@ public class ShSiteImport {
 			shNewIds.put(shSiteExchange.getId(), newUUID);
 			shNewIdsReverse.put(newUUID, shSiteExchange.getId());
 		}
-
 		shSiteExchange.setId(shNewIds.get(shSiteExchange.getId()));
 
 		shSiteExchangeWithNewIds.add(shSiteExchange);
@@ -305,25 +300,23 @@ public class ShSiteImport {
 	private List<ShPostExchange> importPostsWithNewIds(ShExchange shExchange, File extractFolder,
 			Map<String, String> shNewIds, Map<String, String> shNewIdsReverse) {
 		List<ShPostExchange> shPostExchangeWithNewIds = new ArrayList<>();
-		for (ShPostExchange shPostExchange : shExchange.getPosts()) {
-			if (!shNewIds.containsKey(shPostExchange.getId())) {
-				String newUUID = UUID.randomUUID().toString();
-				shNewIds.put(shPostExchange.getId(), newUUID);
-				shNewIdsReverse.put(newUUID, shPostExchange.getId());
-			}
-			if (!shNewIds.containsKey(shPostExchange.getFolder())) {
-				String newUUID = UUID.randomUUID().toString();
-				shNewIds.put(shPostExchange.getFolder(), newUUID);
-				shNewIdsReverse.put(newUUID, shPostExchange.getFolder());
-			}
-
-			shPostExchange.setId(shNewIds.get(shPostExchange.getId()));
-			shPostExchange.setFolder(shNewIds.get(shPostExchange.getFolder()));
-			shPostExchange.setFields(this.updateFieldRelation(shNewIds, shNewIdsReverse, shPostExchange,
-					shPostExchange.getFields(), extractFolder));
-			shPostExchangeWithNewIds.add(shPostExchange);
-
-		}
+        shExchange.getPosts().forEach(shPostExchange -> {
+            if (!shNewIds.containsKey(shPostExchange.getId())) {
+                String newUUID = UUID.randomUUID().toString();
+                shNewIds.put(shPostExchange.getId(), newUUID);
+                shNewIdsReverse.put(newUUID, shPostExchange.getId());
+            }
+            if (!shNewIds.containsKey(shPostExchange.getFolder())) {
+                String newUUID = UUID.randomUUID().toString();
+                shNewIds.put(shPostExchange.getFolder(), newUUID);
+                shNewIdsReverse.put(newUUID, shPostExchange.getFolder());
+            }
+            shPostExchange.setId(shNewIds.get(shPostExchange.getId()));
+            shPostExchange.setFolder(shNewIds.get(shPostExchange.getFolder()));
+            shPostExchange.setFields(this.updateFieldRelation(shNewIds, shNewIdsReverse, shPostExchange,
+                    shPostExchange.getFields(), extractFolder));
+            shPostExchangeWithNewIds.add(shPostExchange);
+        });
 		return shPostExchangeWithNewIds;
 	}
 
@@ -365,10 +358,11 @@ public class ShSiteImport {
 	private void setRelatorValue(Map<String, String> shNewIds, Map<String, String> shNewIdsReverse,
 			ShPostExchange shPostExchange, File extractFolder, Entry<String, Object> shPostField) {
 		LinkedHashMap<String, Object> relatorFields = (LinkedHashMap<String, Object>) shPostField.getValue();
-		for (Object shSubPost : (ArrayList<Object>) relatorFields.get("shSubPosts")) {
-			shPostField.setValue(this.updateFieldRelation(shNewIds, shNewIdsReverse, shPostExchange,
-					(Map<String, Object>) shSubPost, extractFolder));
-		}
+        ((ArrayList<Object>) relatorFields.get("shSubPosts"))
+				.stream()
+				.map(shSubPost -> this.updateFieldRelation(shNewIds, shNewIdsReverse, shPostExchange,
+                (Map<String, Object>) shSubPost, extractFolder))
+				.forEach(shPostField::setValue);
 	}
 
 	private void importStaticFile(Map<String, String> shNewIdsReverse, ShPostExchange shPostExchange,
@@ -379,7 +373,7 @@ public class ShSiteImport {
 		try {
 			FileUtils.moveFile(fileSource, fileDest);
 		} catch (IOException e) {
-			logger.error("updateFieldRelationException", e);
+			log.error(e.getMessage(), e);
 		}
 	}
 
@@ -397,6 +391,6 @@ public class ShSiteImport {
 		return (shPostTypeAttr.getShWidget().getName().equals(ShSystemWidget.FILE)
 				&& !shPostExchange.getPostType().equals(ShSystemPostType.FILE))
 				|| shPostTypeAttr.getShWidget().getName().equals(ShSystemWidget.CONTENT_SELECT)
-						&& shPostField.getValue() != null && shPostField.getKey().trim().length() > 0;
+						&& shPostField.getValue() != null && !shPostField.getKey().trim().isEmpty();
 	}
 }

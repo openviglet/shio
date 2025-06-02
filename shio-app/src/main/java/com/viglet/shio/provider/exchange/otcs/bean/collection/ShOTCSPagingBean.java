@@ -18,12 +18,16 @@ package com.viglet.shio.provider.exchange.otcs.bean.collection;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.viglet.shio.provider.exchange.otcs.bean.link.ShOTCSLinksBean;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  * 
  * @since 0.3.6
  */
+@Setter
+@Getter
 public class ShOTCSPagingBean {
 
 	private int limit;
@@ -44,60 +48,4 @@ public class ShOTCSPagingBean {
 	@JsonProperty("total_count")
 	private int totalCount;
 
-	public int getLimit() {
-		return limit;
-	}
-
-	public void setLimit(int limit) {
-		this.limit = limit;
-	}
-
-	public ShOTCSLinksBean getLinks() {
-		return links;
-	}
-
-	public void setLinks(ShOTCSLinksBean links) {
-		this.links = links;
-	}
-
-	public int getPage() {
-		return page;
-	}
-
-	public void setPage(int page) {
-		this.page = page;
-	}
-
-	public int getPageTotal() {
-		return pageTotal;
-	}
-
-	public void setPageTotal(int pageTotal) {
-		this.pageTotal = pageTotal;
-	}
-
-	public int getRangeMax() {
-		return rangeMax;
-	}
-
-	public void setRangeMax(int rangeMax) {
-		this.rangeMax = rangeMax;
-	}
-
-	public int getRangeMin() {
-		return rangeMin;
-	}
-
-	public void setRangeMin(int rangeMin) {
-		this.rangeMin = rangeMin;
-	}
-
-	public int getTotalCount() {
-		return totalCount;
-	}
-
-	public void setTotalCount(int totalCount) {
-		this.totalCount = totalCount;
-	}	
-	
 }

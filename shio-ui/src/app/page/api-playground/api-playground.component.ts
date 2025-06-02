@@ -4,7 +4,8 @@ import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/dr
 import  *  as  data  from  './shared/data.json';
 @Component({
   selector: 'app-api-playground',
-  templateUrl: './api-playground.component.html'
+  templateUrl: './api-playground.component.html',
+  standalone: false
 })
 export class ApiPlaygroundComponent implements OnInit {
   ngOnInit(): void {

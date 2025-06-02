@@ -52,10 +52,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag( name = "Group", description = "Group API")
 public class ShGroupAPI {
 
+	private final ShGroupRepository shGroupRepository;
+	private final ShUserRepository shUserRepository;
+
 	@Autowired
-	private ShGroupRepository shGroupRepository;
-	@Autowired
-	private ShUserRepository shUserRepository;
+	public ShGroupAPI(ShGroupRepository shGroupRepository, ShUserRepository shUserRepository) {
+		this.shGroupRepository = shGroupRepository;
+		this.shUserRepository = shUserRepository;
+	}
 
 	@GetMapping
 	@JsonView({ ShJsonView.ShJsonViewObject.class })

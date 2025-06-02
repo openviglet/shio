@@ -23,7 +23,8 @@ import { Component, Input } from '@angular/core';
       d="M7940 1755 l0 -505 68 0 67 0 165 400 c90 220 167 400 170 400 3 0 79 -180 169 -400 l164 -400 68 0 69 0 0 505 0 505 -50 0 -50 0 -2 -415 -3 -415 -170 413 c-156 376 -173 412 -195 415 -24 3 -33 -16 -200 -421 l-175 -424 -3 423 -2 424 -45 0 -45 0 0 -505z" />
   </g>
 </svg>`,
+  standalone: false
 })
 export class ShioLogoComponent {
-  @Input() size: number;
+  @Input() size: number | undefined;
 }

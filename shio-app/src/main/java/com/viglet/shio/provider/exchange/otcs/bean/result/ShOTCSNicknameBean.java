@@ -16,21 +16,18 @@
  */
 package com.viglet.shio.provider.exchange.otcs.bean.result;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * @author Alexandre Oliveira
  * 
  * @since 0.3.6
  */
+@Setter
+@Getter
 public class ShOTCSNicknameBean {
 
 	private String nickname;
-
-	public String getNickname() {
-		return nickname;
-	}
-
-	public void setNickname(String nickname) {
-		this.nickname = nickname;
-	}
 
 }

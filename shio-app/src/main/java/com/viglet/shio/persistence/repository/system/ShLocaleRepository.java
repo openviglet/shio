@@ -31,8 +31,6 @@ public interface ShLocaleRepository extends JpaRepository<ShLocale, String> {
 
 	List<ShLocale> findAll();
 
-	ShLocale findByInitials(String initials);
-
 	@SuppressWarnings("unchecked")
 	ShLocale save(ShLocale turLocale);
 

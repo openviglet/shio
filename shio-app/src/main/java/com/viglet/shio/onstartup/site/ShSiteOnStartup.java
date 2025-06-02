@@ -19,8 +19,7 @@ package com.viglet.shio.onstartup.site;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -31,12 +30,16 @@ import com.viglet.shio.utils.ShSiteUtils;
  * @author Alexandre Oliveira
  */
 @Component
+@Slf4j
 public class ShSiteOnStartup {
-	private static final Log logger = LogFactory.getLog(ShSiteOnStartup.class);
+	private final ShSiteRepository shSiteRepository;
+	private final ShSiteUtils shSiteUtils;
+
 	@Autowired
-	private ShSiteRepository shSiteRepository;
-	@Autowired
-	private ShSiteUtils shSiteUtils;
+	public ShSiteOnStartup(ShSiteRepository shSiteRepository, ShSiteUtils shSiteUtils) {
+		this.shSiteRepository = shSiteRepository;
+		this.shSiteUtils = shSiteUtils;
+	}
 
 	public void createDefaultRows() {
 
@@ -49,7 +52,7 @@ public class ShSiteOnStartup {
 						new URL("https://github.com/ShioCMS/stock-site-import/archive/0.3.8.zip"),
 						"sample-site-import");
 			} catch (MalformedURLException e) {
-				logger.error(e.getMessage(), e);
+				log.error(e.getMessage(), e);
 			}
 		}
 	}

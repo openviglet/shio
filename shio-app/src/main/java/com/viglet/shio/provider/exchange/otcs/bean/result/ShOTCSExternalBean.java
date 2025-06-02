@@ -19,12 +19,16 @@ package com.viglet.shio.provider.exchange.otcs.bean.result;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  * 
  * @since 0.3.6
  */
+@Setter
+@Getter
 public abstract class ShOTCSExternalBean {
 
 	@JsonProperty("external_create_date")
@@ -41,45 +45,5 @@ public abstract class ShOTCSExternalBean {
 
 	@JsonProperty("external_source")
 	private String externalSource;
-
-	public Date getExternalCreateDate() {
-		return externalCreateDate;
-	}
-
-	public void setExternalCreateDate(Date externalCreateDate) {
-		this.externalCreateDate = externalCreateDate;
-	}
-
-	public String getExternalIdentity() {
-		return externalIdentity;
-	}
-
-	public void setExternalIdentity(String externalIdentity) {
-		this.externalIdentity = externalIdentity;
-	}
-
-	public String getExternalIdentityType() {
-		return externalIdentityType;
-	}
-
-	public void setExternalIdentityType(String externalIdentityType) {
-		this.externalIdentityType = externalIdentityType;
-	}
-
-	public Date getExternalModifyDate() {
-		return externalModifyDate;
-	}
-
-	public void setExternalModifyDate(Date externalModifyDate) {
-		this.externalModifyDate = externalModifyDate;
-	}
-
-	public String getExternalSource() {
-		return externalSource;
-	}
-
-	public void setExternalSource(String externalSource) {
-		this.externalSource = externalSource;
-	}
 
 }

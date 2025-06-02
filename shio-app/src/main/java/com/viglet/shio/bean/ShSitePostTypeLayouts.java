@@ -16,6 +16,7 @@
  */
 package com.viglet.shio.bean;
 
+import java.io.Serial;
 import java.util.ArrayList;
 
 /**
@@ -23,6 +24,7 @@ import java.util.ArrayList;
  */
 public class ShSitePostTypeLayouts extends ArrayList<ShSitePostTypeLayout>{
 
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 }

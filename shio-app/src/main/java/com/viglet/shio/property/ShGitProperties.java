@@ -16,31 +16,20 @@
  */
 package com.viglet.shio.property;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 @Component
 @ConfigurationProperties("shio.git")
 public class ShGitProperties {
 	private String url = "none";
 	private String token = "none";
 
-	public String getUrl() {
-		return url;
-	}
-
-	public void setUrl(String url) {
-		this.url = url;
-	}
-
-	public String getToken() {
-		return token;
-	}
-
-	public void setToken(String token) {
-		this.token = token;
-	}
 }

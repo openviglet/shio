@@ -39,12 +39,17 @@ import org.springframework.stereotype.Component;
 public class ShAuthProviderService {
 	@SuppressWarnings("unused")
 	private static final Log logger = LogFactory.getLog(ShAuthProviderService.class);
+	private final ShConfigProperties shConfigProperties;
+	private final ShConfigVarRepository shConfigVarRepository;
+	private final ShAuthProviderInstanceRepository shAuthProviderInstanceRepository;
+
 	@Autowired
-	private ShConfigProperties shConfigProperties;
-	@Autowired
-	private ShConfigVarRepository shConfigVarRepository;
-	@Autowired
-	private ShAuthProviderInstanceRepository shAuthProviderInstanceRepository;
+	public ShAuthProviderService(ShConfigProperties shConfigProperties, ShConfigVarRepository shConfigVarRepository,
+								 ShAuthProviderInstanceRepository shAuthProviderInstanceRepository) {
+		this.shConfigProperties = shConfigProperties;
+		this.shConfigVarRepository = shConfigVarRepository;
+		this.shAuthProviderInstanceRepository = shAuthProviderInstanceRepository;
+	}
 
 	public ShAuthProviderInstanceBean getShAuthProviderInstanceBean(String providerId) {
 		ShAuthProviderInstance shAuthProviderInstance = shAuthProviderInstanceRepository.findById(providerId)

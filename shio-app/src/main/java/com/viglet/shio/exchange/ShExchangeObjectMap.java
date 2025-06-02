@@ -16,6 +16,9 @@
  */
 package com.viglet.shio.exchange;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,24 +29,10 @@ import java.util.Map;
  * @author Alexandre Oliveira
  * @since 0.3.4
  */
+@Setter
+@Getter
 public class ShExchangeObjectMap {
 	private Map<String, Object> shObjects = new HashMap<>();
 	private Map<String, List<String>> shChildObjects = new HashMap<>();
-
-	public Map<String, Object> getShObjects() {
-		return shObjects;
-	}
-
-	public void setShObjects(Map<String, Object> shObjects) {
-		this.shObjects = shObjects;
-	}
-
-	public Map<String, List<String>> getShChildObjects() {
-		return shChildObjects;
-	}
-
-	public void setShChildObjects(Map<String, List<String>> shChildObjects) {
-		this.shChildObjects = shChildObjects;
-	}
 
 }

@@ -16,6 +16,8 @@
  */
 package com.viglet.shio.property;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -23,20 +25,14 @@ import org.springframework.stereotype.Component;
  * @author Alexandre Oliveira
  * @since 0.3.7
  */
+@Setter
+@Getter
 @Component
 @ConfigurationProperties("shio.website")
 public class ShWebsiteProperties {
 	private String[] nashorn = {};
 
-	public String[] getNashorn() {
-		return nashorn;
-	}
-
-	public void setNashorn(String[] nashorn) {
-		this.nashorn = nashorn;
-	}
-
-	public Object[] getNashornAsObject() {
+    public Object[] getNashornAsObject() {
 		return new Object[] { nashorn };
 	}
 }

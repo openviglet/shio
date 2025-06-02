@@ -21,8 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -42,16 +41,21 @@ import com.viglet.shio.utils.ShUserUtils;
  * @author Alexandre Oliveira
  */
 @Component
+@Slf4j
 public class ShFolderImport {
-	private static final Log logger = LogFactory.getLog(ShFolderImport.class);
+	private final ShSiteRepository shSiteRepository;
+	private final ShFolderRepository shFolderRepository;
+	private final ShPostImport shPostImport;
+	private final ShUserUtils shUserUtils;
+
 	@Autowired
-	private ShSiteRepository shSiteRepository;
-	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShPostImport shPostImport;
-	@Autowired
-	private ShUserUtils shUserUtils;
+	public ShFolderImport(ShSiteRepository shSiteRepository, ShFolderRepository shFolderRepository,
+						  ShPostImport shPostImport, ShUserUtils shUserUtils) {
+		this.shSiteRepository = shSiteRepository;
+		this.shFolderRepository = shFolderRepository;
+		this.shPostImport = shPostImport;
+		this.shUserUtils = shUserUtils;
+	}
 
 	public void shFolderImportNested(String shObject, boolean importOnlyFolders,
 			ShExchangeObjectMap shExchangeObjectMap, ShExchangeContext shExchangeContext) {
@@ -80,21 +84,16 @@ public class ShFolderImport {
 		}
 	}
 
-	public ShFolder createShFolder(ShFolderExchangeContext context) {
-		ShFolder shFolderChild = null;
+	public void createShFolder(ShFolderExchangeContext context) {
 		Optional<ShFolder> shFolderOptional = shFolderRepository.findById(context.getShFolderExchange().getId());
-		if (shFolderOptional.isPresent()) {
-			shFolderChild = shFolderOptional.get();
-		} else {
-			shFolderChild = this.createFolderObject(context.getShFolderExchange(), context.getUsername(),
-					context.getShObject(), context.getShExchangeObjectMap().getShObjects(), context.isCloned());
-		}
+		ShFolder shFolderChild = shFolderOptional.orElseGet(() -> this.createFolderObject(context.getShFolderExchange(),
+				context.getUsername(),
+                context.getShObject(), context.getShExchangeObjectMap().getShObjects(), context.isCloned()));
 
 		this.shFolderImportNested(shFolderChild.getId(), context.isImportOnlyFolders(),
 				context.getShExchangeObjectMap(),
 				new ShExchangeContext(context.getExtractFolder(), context.isCloned()));
 
-		return shFolderChild;
 	}
 
 	private ShFolder createFolderObject(ShFolderExchange shFolderExchange, String username, String shObject,
@@ -118,7 +117,7 @@ public class ShFolderImport {
 			shFolderChild.setFurl(ShURLFormatter.format(shFolderExchange.getName()));
 		}
 		this.rootFolderSettings(shFolderExchange, shObject, shObjects, shFolderChild);
-		logger.info(String.format("...... %s Folder (%s)", shFolderChild.getName(), shFolderChild.getId()));
+		log.info("...... {} Folder ({})", shFolderChild.getName(), shFolderChild.getId());
 		shFolderRepository.save(shFolderChild);
 		return shFolderChild;
 	}

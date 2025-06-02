@@ -46,10 +46,14 @@ import graphql.schema.GraphQLScalarType;
  */
 @Component
 public class ShGraphQLInputObjectField {
+	private final ShGraphQLUtils shGraphQLUtils;
+	private final ShPostService shPostService;
+
 	@Autowired
-	private ShGraphQLUtils shGraphQLUtils;
-	@Autowired
-	private ShPostService shPostService;
+	public ShGraphQLInputObjectField(ShGraphQLUtils shGraphQLUtils, ShPostService shPostService) {
+		this.shGraphQLUtils = shGraphQLUtils;
+		this.shPostService = shPostService;
+	}
 
 	public void createInputObjectField(GraphQLInputObjectType.Builder builder, String name, GraphQLInputType type,
 			String description) {

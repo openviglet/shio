@@ -27,8 +27,12 @@ import com.viglet.shio.persistence.repository.system.ShLocaleRepository;
  */
 @Component
 public class ShLocaleOnStartup {
+	private final ShLocaleRepository shLocaleRepository;
+
 	@Autowired
-	private ShLocaleRepository shLocaleRepository;
+	public ShLocaleOnStartup(ShLocaleRepository shLocaleRepository) {
+		this.shLocaleRepository = shLocaleRepository;
+	}
 
 	public void createDefaultRows() {
 

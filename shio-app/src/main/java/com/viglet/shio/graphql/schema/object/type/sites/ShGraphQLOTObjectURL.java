@@ -38,8 +38,12 @@ import graphql.schema.GraphQLObjectType.Builder;
 @Component
 public class ShGraphQLOTObjectURL {
 
+	private final ShGraphQLQTObjectURL shGraphQLQTObjectURL;
+
 	@Autowired
-	private ShGraphQLQTObjectURL shGraphQLQTObjectURL;
+	public ShGraphQLOTObjectURL(ShGraphQLQTObjectURL shGraphQLQTObjectURL) {
+		this.shGraphQLQTObjectURL = shGraphQLQTObjectURL;
+	}
 
 	private GraphQLObjectType createWebSiteByURL() {
 		Builder builder = newObject().name("ShObjectURL").description("Object URL");

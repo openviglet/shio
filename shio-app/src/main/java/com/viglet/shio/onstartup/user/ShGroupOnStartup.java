@@ -27,8 +27,12 @@ import com.viglet.shio.persistence.repository.auth.ShGroupRepository;
  */
 @Component
 public class ShGroupOnStartup {
+	private final ShGroupRepository shGroupRepository;
+
 	@Autowired
-	private ShGroupRepository shGroupRepository;
+	public ShGroupOnStartup(ShGroupRepository shGroupRepository) {
+		this.shGroupRepository = shGroupRepository;
+	}
 
 	public void createDefaultRows() {
 

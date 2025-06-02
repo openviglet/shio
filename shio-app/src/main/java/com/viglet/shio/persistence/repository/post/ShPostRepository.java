@@ -39,7 +39,7 @@ import com.viglet.shio.persistence.model.site.ShSite;
  * @author Alexandre Oliveira
  */
 @Repository
-public interface ShPostRepository extends JpaRepository<ShPost, String>, ShPostRepositoryCustom, JpaSpecificationExecutor<ShPost> {
+public interface ShPostRepository extends JpaRepository<ShPost, String>, JpaSpecificationExecutor<ShPost> {
 
 	Set<ShPost> findByShPostTypeAndShPostAttrsIn(ShPostType shPostType, Collection<ShPostAttr> postAttrs);
 	
@@ -54,17 +54,11 @@ public interface ShPostRepository extends JpaRepository<ShPost, String>, ShPostR
 	
 	@Query("select new com.viglet.shio.bean.ShPostTinyBean(p) from ShPost p where p.shFolder.id = ?1 and p.shPostType.id = ?2")
 	List<ShPostTinyBean> findByShFolderAndShPostTypeTiny(String shFolderId, String shPostTypeId);
-		
-	List<ShPost> findByShFolderAndShPostType(ShFolder shFolder, ShPostType shPostType);
-	
+
 	List<ShPost> findByShPostType(ShPostType shPostType);
 		
 	@Query("SELECT p.shPostType AS shPostType, COUNT(p.shPostType) AS totalPostType FROM ShPost AS p WHERE p.shSite = ?1 GROUP BY p.shPostType")
 	List<IShPostTypeCount> counShPostTypeByShSite(ShSite shSite);
-	
-	List<ShPost> findByShSite_IdIn(Collection<String> shSiteId); //NOSONAR
-	
-	List<ShPost> findByShSite_IdInAndShPostType(Collection<String> shSiteId, ShPostType shPostType); //NOSONAR
 	
 	List<ShPost> findByShFolderAndShPostTypeOrderByPositionAsc(ShFolder shFolder, ShPostType shPostType);
 
@@ -74,17 +68,7 @@ public interface ShPostRepository extends JpaRepository<ShPost, String>, ShPostR
 	Optional<ShPost> findById(String id);
 
 	List<ShPost> findByTitle(String title);
-	
-	List<ShPost> findBySummary(String summary);
-	
-	List<ShPost> findByFurl(String furl);
-	
-	List<ShPost> findByModifier(String modifier);
-	
-	List<ShPost> findByPublisher(String publisher);
-	
-	List<ShPost> findByShFolder_Name(String folderName); //NOSONAR
-	
+
 	List<ShPost> findByShPostAttrsIn(Collection<ShPostAttr> shPostAttr);
 	
 	ShPost findByShFolderAndTitle(ShFolder shFolder, String title);
@@ -92,8 +76,6 @@ public interface ShPostRepository extends JpaRepository<ShPost, String>, ShPostR
 	ShPost findByShFolderAndFurl(ShFolder shFolder, String furl);
 	
 	boolean existsByShFolderAndTitle(ShFolder shFolder, String title);
-	
-	boolean existsByShFolderAndFurl(ShFolder shFolder, String furl);
 
 	@SuppressWarnings("unchecked")
 	ShPost save(ShPost shPost);

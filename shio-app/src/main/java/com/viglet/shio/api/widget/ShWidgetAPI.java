@@ -44,8 +44,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag( name = "Widget", description = "Widget API")
 public class ShWidgetAPI {
 
+	private final ShWidgetRepository shWidgetRepository;
+
 	@Autowired
-	private ShWidgetRepository shWidgetRepository;
+	public ShWidgetAPI(ShWidgetRepository shWidgetRepository) {
+		this.shWidgetRepository = shWidgetRepository;
+	}
 
 	@GetMapping
 	public List<ShWidget> shWidgetList() {

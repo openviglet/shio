@@ -16,6 +16,7 @@
  */
 package com.viglet.shio.persistence.model.auth;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
@@ -33,6 +34,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Entity
 @NamedQuery(name = "ShGroup.findAll", query = "SELECT g FROM ShGroup g")
 public class ShGroup implements Serializable {
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	@Id

@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.viglet.shio.exchange.ShExchange;
 import com.viglet.shio.exchange.post.type.ShPostTypeImport;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Alexandre Oliveira
@@ -34,12 +35,17 @@ import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 @Component
 public class ShPostTypeOnStartup {
 
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ResourceLoader resourceloader;
+	private final ShPostTypeImport shPostTypeImport;
+
 	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ResourceLoader resourceloader;
-	@Autowired
-	private ShPostTypeImport shPostTypeImport;
+	public ShPostTypeOnStartup(ShPostTypeRepository shPostTypeRepository, ResourceLoader resourceloader,
+							   ShPostTypeImport shPostTypeImport) {
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.resourceloader = resourceloader;
+		this.shPostTypeImport = shPostTypeImport;
+	}
 
 	public void createDefaultRows() throws IOException {
 

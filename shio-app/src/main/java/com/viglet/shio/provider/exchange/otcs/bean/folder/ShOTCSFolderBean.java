@@ -21,12 +21,16 @@ import java.util.List;
 import com.viglet.shio.provider.exchange.otcs.bean.collection.ShOTCSCollectionBean;
 import com.viglet.shio.provider.exchange.otcs.bean.link.ShOTCSLinksBean;
 import com.viglet.shio.provider.exchange.otcs.bean.result.ShOTCSResultsBean;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  * 
  * @since 0.3.6
  */
+@Setter
+@Getter
 public class ShOTCSFolderBean {
 
 	private ShOTCSCollectionBean collection;
@@ -35,29 +39,5 @@ public class ShOTCSFolderBean {
 
 	private List<ShOTCSResultsBean> results;
 
-	public ShOTCSCollectionBean getCollection() {
-		return collection;
-	}
 
-	public void setCollection(ShOTCSCollectionBean collection) {
-		this.collection = collection;
-	}
-
-	public ShOTCSLinksBean getLinks() {
-		return links;
-	}
-
-	public void setLinks(ShOTCSLinksBean links) {
-		this.links = links;
-	}
-
-	public List<ShOTCSResultsBean> getResults() {
-		return results;
-	}
-
-	public void setResults(List<ShOTCSResultsBean> results) {
-		this.results = results;
-	}
-
-	
 }

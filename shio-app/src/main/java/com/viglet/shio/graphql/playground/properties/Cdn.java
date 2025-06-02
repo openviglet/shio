@@ -22,15 +22,12 @@ package com.viglet.shio.graphql.playground.properties;
 */
 public class Cdn {
 
-	private boolean enabled = false;
-	private String version = "0.13.0";
-
-	public boolean isEnabled() {
-		return enabled;
+    public boolean isEnabled() {
+        return false;
 	}
 
 	public String getVersion() {
-		return version;
+        return "0.13.0";
 	}
 
 }

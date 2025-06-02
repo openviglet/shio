@@ -42,10 +42,14 @@ import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
  */
 @Component
 public class ShPostTypeExport {
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ShExchangeUtils shExchangeUtils;
+
 	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ShExchangeUtils shExchangeUtils;
+	public ShPostTypeExport(ShPostTypeRepository shPostTypeRepository, ShExchangeUtils shExchangeUtils) {
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.shExchangeUtils = shExchangeUtils;
+	}
 
 	public StreamingResponseBody exportObject(HttpServletResponse response) {
 		ShExchangeFilesDirs shExchangeFilesDirs = new ShExchangeFilesDirs();

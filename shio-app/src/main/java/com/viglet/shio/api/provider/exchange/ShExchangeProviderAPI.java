@@ -25,10 +25,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tika.Tika;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.mime.MimeType;
@@ -74,25 +73,33 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/api/v2/provider/exchange")
 @Tag( name = "Exchange Provider", description = "Exchange Provider API")
+@Slf4j
 public class ShExchangeProviderAPI {
-	private static final Log logger = LogFactory.getLog(ShExchangeProviderAPI.class);
 
-	@Autowired
-	private ShConfigProperties shConfigProperties;
-	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShStaticFileUtils shStaticFileUtils;
-	@Autowired
-	private ShConfigVarUtils shConfigVarUtils;
-	@Autowired
-	private ShExchangeProviderInstanceRepository shExchangeProviderInstanceRepository;
-	@Autowired
-	private ShExchangeProviderVendorRepository shExchangeProviderVendorRepository;
-	@Autowired
-	private ShConfigVarRepository shConfigVarRepository;
+	private final ShConfigProperties shConfigProperties;
+	private final ShFolderRepository shFolderRepository;
+	private final ShStaticFileUtils shStaticFileUtils;
+	private final ShConfigVarUtils shConfigVarUtils;
+	private final ShExchangeProviderInstanceRepository shExchangeProviderInstanceRepository;
+	private final ShExchangeProviderVendorRepository shExchangeProviderVendorRepository;
+	private final ShConfigVarRepository shConfigVarRepository;
 
 	private ShExchangeProvider shExchangeProvider;
+
+	@Autowired
+	public ShExchangeProviderAPI(ShConfigProperties shConfigProperties, ShFolderRepository shFolderRepository,
+								 ShStaticFileUtils shStaticFileUtils, ShConfigVarUtils shConfigVarUtils,
+								 ShExchangeProviderInstanceRepository shExchangeProviderInstanceRepository,
+								 ShExchangeProviderVendorRepository shExchangeProviderVendorRepository,
+								 ShConfigVarRepository shConfigVarRepository) {
+		this.shConfigProperties = shConfigProperties;
+		this.shFolderRepository = shFolderRepository;
+		this.shStaticFileUtils = shStaticFileUtils;
+		this.shConfigVarUtils = shConfigVarUtils;
+		this.shExchangeProviderInstanceRepository = shExchangeProviderInstanceRepository;
+		this.shExchangeProviderVendorRepository = shExchangeProviderVendorRepository;
+		this.shConfigVarRepository = shConfigVarRepository;
+	}
 
 	@GetMapping("/vendor")
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
@@ -265,7 +272,7 @@ public class ShExchangeProviderAPI {
 
 			} catch (IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException
 					| InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-				logger.error("initProvider: ", e);
+				log.error(e.getMessage(), e);
 			}
 			shExchangeProvider.init(variables);
 		}
@@ -295,13 +302,12 @@ public class ShExchangeProviderAPI {
 				String extension = mimeType.getExtension();
 				if (!StringUtils.isEmpty(extension)) {
 					String fileWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.'));
-					String fileNameFormatted = String.format("%s%s", fileWithoutExtension, extension);
-					fileName = fileNameFormatted;
+                    fileName = String.format("%s%s", fileWithoutExtension, extension);
 				}
 				return shStaticFileUtils.createFilePost(file, fileName, shFolder, principal, true);
 			}
 		} catch (IOException | MimeTypeException e) {
-			logger.error(e);
+			log.error(e.getMessage(), e);
 		}
 		return null;
 	}

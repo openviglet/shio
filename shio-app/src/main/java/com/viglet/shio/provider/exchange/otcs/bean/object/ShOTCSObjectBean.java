@@ -18,32 +18,20 @@ package com.viglet.shio.provider.exchange.otcs.bean.object;
 
 import com.viglet.shio.provider.exchange.otcs.bean.link.ShOTCSLinksBean;
 import com.viglet.shio.provider.exchange.otcs.bean.result.ShOTCSResultsBean;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  * 
  * @since 0.3.6
  */
+@Setter
+@Getter
 public class ShOTCSObjectBean {
 
 	private ShOTCSLinksBean links;
 
 	private ShOTCSResultsBean results;
 
-	public ShOTCSLinksBean getLinks() {
-		return links;
-	}
-
-	public void setLinks(ShOTCSLinksBean links) {
-		this.links = links;
-	}
-
-	public ShOTCSResultsBean getResults() {
-		return results;
-	}
-
-	public void setResults(ShOTCSResultsBean results) {
-		this.results = results;
-	}
-	
 }

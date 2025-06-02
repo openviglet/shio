@@ -16,11 +16,16 @@
  */
 package com.viglet.shio.bean.security;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.Set;
 
 /**
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 public class ShPageSecurityBean {
 
 	private boolean allowRegisterUser;
@@ -28,29 +33,5 @@ public class ShPageSecurityBean {
 	private boolean allowGuestUser;
 
 	private Set<String> shGroups;
-
-	public boolean isAllowRegisterUser() {
-		return allowRegisterUser;
-	}
-
-	public void setAllowRegisterUser(boolean allowRegisterUser) {
-		this.allowRegisterUser = allowRegisterUser;
-	}
-
-	public boolean isAllowGuestUser() {
-		return allowGuestUser;
-	}
-
-	public void setAllowGuestUser(boolean allowGuestUser) {
-		this.allowGuestUser = allowGuestUser;
-	}
-
-	public Set<String> getShGroups() {
-		return shGroups;
-	}
-
-	public void setShGroups(Set<String> shGroups) {
-		this.shGroups = shGroups;
-	}
 
 }

@@ -51,14 +51,18 @@ import static org.springframework.data.jpa.domain.Specification.where;
 @Service
 public class ShPostServiceImpl implements ShPostService {
 
+	private final ShPostRepository shPostRepository;
+	private final ShPostAttrRepository shPostAttrRepository;
+	private final ShPostTypeAttrRepository shPostTypeAttrRepository;
+	private final ShSiteRepository shSiteRepository;
+
 	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShPostAttrRepository shPostAttrRepository;
-	@Autowired
-	private ShPostTypeAttrRepository shPostTypeAttrRepository;
-	@Autowired
-	private ShSiteRepository shSiteRepository;
+	public ShPostServiceImpl(ShPostRepository shPostRepository, ShPostAttrRepository shPostAttrRepository, ShPostTypeAttrRepository shPostTypeAttrRepository, ShSiteRepository shSiteRepository) {
+		this.shPostRepository = shPostRepository;
+		this.shPostAttrRepository = shPostAttrRepository;
+		this.shPostTypeAttrRepository = shPostTypeAttrRepository;
+		this.shSiteRepository = shSiteRepository;
+	}
 
 	public List<ShPost> findByShPostTypeAndAttrNameAndAttrValueAndConditionAndSites(ShPostType shPostType,
 			String attrName, String attrValue, String condition, List<String> siteIds) {

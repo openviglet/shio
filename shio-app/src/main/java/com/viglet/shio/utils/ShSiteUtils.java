@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -41,20 +42,27 @@ import com.viglet.shio.url.ShURLScheme;
  * @author Alexandre Oliveira
  */
 @Component
+@Slf4j
 public class ShSiteUtils {
-	private static final Log logger = LogFactory.getLog(ShSiteUtils.class);
-	@Autowired
-	ShURLScheme shURLScheme;
-	@Autowired
-	private ShCloneExchange shCloneExchange;
-	@Autowired
-	private ResourceLoader resourceloader;
-	@Autowired
-	private ShStaticFileUtils shStaticFileUtils;
+	private final ShURLScheme shURLScheme;
+	private final ShCloneExchange shCloneExchange;
+	private final ResourceLoader resourceloader;
+	private final ShStaticFileUtils shStaticFileUtils;
 	
 	private static final String COULD_NOT_CREATE_SAMPLE_SITE = "Could not create sample site";
-	
-	public ShSite importSiteFromResourceOrURL(String classpathFile, URL url, String slug) {
+
+	@Autowired
+	public ShSiteUtils(ShURLScheme shURLScheme,
+					   ShCloneExchange shCloneExchange,
+					   ResourceLoader resourceloader,
+					   ShStaticFileUtils shStaticFileUtils) {
+		this.shURLScheme = shURLScheme;
+		this.shCloneExchange = shCloneExchange;
+		this.resourceloader = resourceloader;
+		this.shStaticFileUtils = shStaticFileUtils;
+	}
+
+	public void importSiteFromResourceOrURL(String classpathFile, URL url, String slug) {
 		try {
 			Resource resource = resourceloader.getResource("classpath:" + classpathFile);
 
@@ -67,12 +75,10 @@ public class ShSiteUtils {
 			} else {
 				FileUtils.copyURLToFile(url, siteFile);
 			}
-			return shCloneExchange.importNewSiteFromTemplateFile(siteFile);
+			shCloneExchange.importNewSiteFromTemplateFile(siteFile);
 		} catch (IllegalStateException | IOException e) {
-			logger.error(COULD_NOT_CREATE_SAMPLE_SITE, e);
+			log.error(COULD_NOT_CREATE_SAMPLE_SITE, e);
 		}
-		
-		return null;
 
 	}
 	public Map<String, Object> toSystemMap(ShSite shSite) {

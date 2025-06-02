@@ -1,20 +1,21 @@
 import { Component, OnInit } from '@angular/core';
 import { ShSite } from 'src/repository/model/site.model';
-import { User } from '@app/_models';
-import { UserService } from '@app/_services';
 import { Observable } from 'rxjs';
 import { Router } from '@angular/router';
 import { ShSiteService } from 'src/repository/service/site/site.service';
+import {User} from "../../../app/_models";
+import {UserService} from "../../../app/_services";
 @Component({
   selector: 'shio-dashboard-page',
-  templateUrl: './shio-dashboard-page.component.html'
+  templateUrl: './shio-dashboard-page.component.html',
+  standalone: false
 })
 
 export class ShioDashboardPageComponent implements OnInit {
-  sites: ShSite[];
+  sites: ShSite[] | undefined;
   orderProp: string;
   loading = false;
-  user: Observable<User>;
+  user: Observable<User> | undefined;
   constructor(private userService: UserService, private siteService: ShSiteService, private router: Router) {
     
     siteService.query().subscribe(sites => {
@@ -22,7 +23,7 @@ export class ShioDashboardPageComponent implements OnInit {
     });
     this.orderProp = 'name';
   }
-  getSites(): ShSite[] {
+  getSites(): ShSite[] | undefined {
     return this.sites;
   }
 

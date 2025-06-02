@@ -22,10 +22,8 @@ package com.viglet.shio.graphql.playground.properties;
 */
 public class Static {
 
-	private String basePath = "/";
-
-	public String getBasePath() {
-		return basePath;
+    public String getBasePath() {
+        return "/";
 	}
 
 }

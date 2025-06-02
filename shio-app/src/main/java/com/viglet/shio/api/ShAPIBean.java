@@ -16,22 +16,18 @@
  */
 package com.viglet.shio.api;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.stereotype.Component;
 
 /**
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 @Component
 public class ShAPIBean {
 
 	private String product;
 
-	public String getProduct() {
-		return product;
-	}
-
-	public void setProduct(String product) {
-		this.product = product;
-	}
-	
 }

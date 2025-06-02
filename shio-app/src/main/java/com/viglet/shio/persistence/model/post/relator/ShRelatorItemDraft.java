@@ -16,6 +16,7 @@
  */
 package com.viglet.shio.persistence.model.post.relator;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
@@ -47,6 +48,7 @@ import com.viglet.shio.persistence.model.post.relator.impl.ShRelatorItemImpl;
 @NamedQuery(name = "ShRelatorItemDraft.findAll", query = "SELECT rid FROM ShRelatorItemDraft rid")
 @JsonIgnoreProperties({ "shPostAttr", "shParentPostAttr" })
 public class ShRelatorItemDraft implements Serializable, ShRelatorItemImpl {
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	@Id

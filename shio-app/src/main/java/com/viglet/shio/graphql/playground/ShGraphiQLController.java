@@ -19,6 +19,7 @@ package com.viglet.shio.graphql.playground;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.logging.log4j.LogManager;
@@ -43,9 +44,8 @@ import java.util.Properties;
  * @author Andrew Potter
  * @since 0.3.7
  */
-
+@Slf4j
 public abstract class ShGraphiQLController {
-	static final Logger logger = LogManager.getLogger(ShGraphiQLController.class);
 	private static final String CDNJS_CLOUDFLARE_COM_AJAX_LIBS = "//cdnjs.cloudflare.com/ajax/libs/";
 	private static final String CDN_JSDELIVR_NET_NPM = "//cdn.jsdelivr.net/npm/";
 	private static final String GRAPHIQL = "graphiql";
@@ -133,7 +133,7 @@ public abstract class ShGraphiQLController {
 		try {
 			replacements.put("headers", new ObjectMapper().writeValueAsString(headerProperties));
 		} catch (JsonProcessingException e) {
-			logger.error("Cannot serialize headers", e);
+			log.error("Cannot serialize headers", e);
 		}
 		replacements.put("subscriptionClientTimeout",
 				String.valueOf(graphiQLProperties.getSubscriptions().getTimeout() * 1000));

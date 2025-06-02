@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.viglet.shio.exchange.post.ShPostExchange;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Article Post Type 
@@ -28,6 +30,8 @@ import com.viglet.shio.exchange.post.ShPostExchange;
  * @since 0.3.4
  * 
  */
+@Setter
+@Getter
 public class ShArticlePostType extends ShAbstractPostType {
 
 	private String title;
@@ -40,47 +44,7 @@ public class ShArticlePostType extends ShAbstractPostType {
 
 	private String videoURL;
 
-	public String getTitle() {
-		return title;
-	}
-
-	public void setTitle(String title) {
-		this.title = title;
-	}
-
-	public String getDescription() {
-		return description;
-	}
-
-	public void setDescription(String description) {
-		this.description = description;
-	}
-
-	public String getText() {
-		return text;
-	}
-
-	public void setText(String text) {
-		this.text = text;
-	}
-
-	public String getFilePath() {
-		return filePath;
-	}
-
-	public void setFilePath(String filePath) {
-		this.filePath = filePath;
-	}
-
-	public String getVideoURL() {
-		return videoURL;
-	}
-
-	public void setVideoURL(String videoURL) {
-		this.videoURL = videoURL;
-	}
-
-	@Override
+    @Override
 	public ShPostExchange getShPostExchange() {
 		ShPostExchange shPostExchange = super.getShPostExchange();
 		shPostExchange.setPostType(ShSystemPostType.ARTICLE);

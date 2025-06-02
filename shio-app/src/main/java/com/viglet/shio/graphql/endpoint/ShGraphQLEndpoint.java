@@ -48,17 +48,22 @@ import java.util.concurrent.CompletableFuture;
 @RestController
 public class ShGraphQLEndpoint {
 
-	@Autowired
-	GraphQLInvocation graphQLInvocation;
+	private final GraphQLInvocation graphQLInvocation;
+
+	private final ExecutionResultHandler executionResultHandler;
+
+	private final JsonSerializer jsonSerializer;
+
+	private final ShUserUtils shUserUtils;
 
 	@Autowired
-	ExecutionResultHandler executionResultHandler;
-
-	@Autowired
-	JsonSerializer jsonSerializer;
-
-	@Autowired
-	private ShUserUtils shUserUtils;
+	public ShGraphQLEndpoint(GraphQLInvocation graphQLInvocation, ExecutionResultHandler executionResultHandler,
+							 JsonSerializer jsonSerializer, ShUserUtils shUserUtils) {
+		this.graphQLInvocation = graphQLInvocation;
+		this.executionResultHandler = executionResultHandler;
+		this.jsonSerializer = jsonSerializer;
+		this.shUserUtils = shUserUtils;
+	}
 
 	@PostMapping(value = "graphql", produces = MediaType.APPLICATION_JSON_VALUE)
 	public Object graphqlPOST(@RequestHeader(value = HttpHeaders.CONTENT_TYPE, required = false) String contentType,

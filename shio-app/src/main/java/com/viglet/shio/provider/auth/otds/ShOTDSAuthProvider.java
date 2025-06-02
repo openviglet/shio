@@ -37,12 +37,16 @@ import com.viglet.shio.provider.auth.ShAuthenticationProvider;
 @Component
 public class ShOTDSAuthProvider implements ShAuthenticationProvider {
 
-	@Autowired
-	private ShOTDSService shOTDSService;
-	@Autowired
-	private ObjectFactory<HttpSession> httpSessionFactory;
+	private final ShOTDSService shOTDSService;
+	private final ObjectFactory<HttpSession> httpSessionFactory;
 
 	private String providerId = null;
+
+	@Autowired
+	public ShOTDSAuthProvider(ShOTDSService shOTDSService, ObjectFactory<HttpSession> httpSessionFactory) {
+		this.shOTDSService = shOTDSService;
+		this.httpSessionFactory = httpSessionFactory;
+	}
 
 	@Override
 	public void init(String providerId) {

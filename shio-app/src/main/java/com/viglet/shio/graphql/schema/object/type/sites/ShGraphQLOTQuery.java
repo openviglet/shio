@@ -38,8 +38,12 @@ import graphql.scalars.ExtendedScalars;
 @Component
 public class ShGraphQLOTQuery {
 
+	private final ShGraphQLQTQuery shGraphQLQTQuery;
+
 	@Autowired
-	private ShGraphQLQTQuery shGraphQLQTQuery;
+	public ShGraphQLOTQuery(ShGraphQLQTQuery shGraphQLQTQuery) {
+		this.shGraphQLQTQuery = shGraphQLQTQuery;
+	}
 
 	private GraphQLObjectType createWebSiteByURL() {
 		Builder builder = newObject().name("ShQuery").description("Query Component");

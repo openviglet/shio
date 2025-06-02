@@ -29,8 +29,12 @@ import com.viglet.shio.provider.exchange.ShExchangeSystemProviderVendor;
 @Component
 public class ShExchangeProviderVendorOnStartup {
 
+	private final ShExchangeProviderVendorRepository shExchangeProviderVendorRepository;
+
 	@Autowired
-	private ShExchangeProviderVendorRepository shExchangeProviderVendorRepository;
+	public ShExchangeProviderVendorOnStartup(ShExchangeProviderVendorRepository shExchangeProviderVendorRepository) {
+		this.shExchangeProviderVendorRepository = shExchangeProviderVendorRepository;
+	}
 
 	public void createDefaultRows() {
 

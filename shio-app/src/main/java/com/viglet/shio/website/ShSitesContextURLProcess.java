@@ -18,6 +18,7 @@ package com.viglet.shio.website;
 
 import java.util.List;
 
+import com.viglet.shio.website.utils.ShSitesPostUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -48,6 +49,9 @@ public class ShSitesContextURLProcess {
 	private ShFolderUtils shFolderUtils;
 	@Autowired
 	private ShSitesContextURLProcessCache shSitesContextURLProcessCache;
+	@Autowired
+	private ShSitesDetectContextURL shSitesDetectContextURL;
+
 
 	private static final String SITE_HEADER = "x-sh-site";
 	private static final String NO_CACHE_HEADER = "x-sh-nocache";
@@ -102,56 +106,6 @@ public class ShSitesContextURLProcess {
 		return request.getHeader(NO_CACHE_HEADER) != null && !request.getHeader(NO_CACHE_HEADER).equals("1");
 	}
 
-	public void detectContextURL(ShSitesContextURL shSitesContextURL) {
-
-		this.detectContextURL(shSitesContextURL.getInfo().getContextURL(), shSitesContextURL);
-	}
-
-	public void detectContextURL(String url, ShSitesContextURL shSitesContextURL) {
-		shSitesContextURL.getInfo().setContextURL(url);
-		String shSiteName = null;
-		String[] contexts = url.split(SEPARATOR);
-		for (int i = 1; i < contexts.length; i++) {
-			switch (i) {
-			case 1:
-				shSitesContextURL.getInfo().setShContext(contexts[i]);
-				break;
-			case 2:
-				shSiteName = contexts[i];
-				break;
-			case 3:
-				shSitesContextURL.getInfo().setShFormat(contexts[i]);
-				break;
-			case 4:
-				shSitesContextURL.getInfo().setShLocale(contexts[i]);
-				break;
-			default:
-				break;
-			}
-		}
-
-		ShSite shSite = shSiteRepository.findByFurl(shSiteName);
-		shSitesContextURL.getInfo().setSiteId(shSite.getId());
-
-		List<String> contentPath = shSitesContextComponent
-				.contentPathFactory(shSitesContextURL.getInfo().getContextURL());
-
-		String objectName = shSitesContextComponent.objectNameFactory(contentPath);
-
-		ShFolder shFolder = shFolderUtils.folderFromPath(shSite,
-				shSitesContextComponent.folderPathFactory(contentPath));
-		if (shFolder != null) {
-			shSitesContextURL.getInfo().setParentFolderId(shFolder.getId());
-		} else {
-			logger.info("No folder for " + shSitesContextURL.getInfo().getContextURL());
-		}
-
-		ShObjectImpl shObject = shSitesContextComponent.shObjectItemFactory(shSite, shFolder, objectName);
-		if (shObject != null) {
-			shSitesContextURL.getInfo().setObjectId(shObject.getId());
-		}
-
-	}
 
 	public ShSiteRepository getShSiteRepository() {
 		return shSiteRepository;

@@ -45,13 +45,17 @@ import graphql.schema.GraphQLObjectType.Builder;
 @Component
 public class ShGraphQLQTObjectURL {
 
-	@Autowired
-	private ShSitesObjectUtils shSitesObjectUtils;
+	private final ShSitesObjectUtils shSitesObjectUtils;
 	
 	public static final String OBJECT_ID = "objectId";
 	public static final String SCALE = "scale";
 	
 	private static final String QUERY_TYPE_NAME = "shObjectURL";
+
+	@Autowired
+	public ShGraphQLQTObjectURL(ShSitesObjectUtils shSitesObjectUtils) {
+		this.shSitesObjectUtils = shSitesObjectUtils;
+	}
 
 	public void createQueryType(Builder queryTypeBuilder,
 			graphql.schema.GraphQLCodeRegistry.Builder codeRegistryBuilder, GraphQLObjectType graphQLObjectType) {

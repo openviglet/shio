@@ -20,10 +20,6 @@ import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-import org.hibernate.search.annotations.Field;
-import org.hibernate.search.annotations.Indexed;
-import org.hibernate.search.annotations.IndexedEmbedded;
-import org.hibernate.search.annotations.Store;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.object.ShObjectType;
@@ -34,6 +30,7 @@ import com.viglet.shio.persistence.model.post.impl.ShPostImpl;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.site.ShSite;
 
+import java.io.Serial;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -50,41 +47,35 @@ import jakarta.persistence.PrimaryKeyJoinColumn;
  * 
  * @author Alexandre Oliveira
  */
-@Indexed
 @Entity
 @NamedQuery(name = "ShPost.findAll", query = "SELECT s FROM ShPost s")
 @PrimaryKeyJoinColumn(name = "object_id")
 @JsonIgnoreProperties({ "shPostAttrRefs", "shGroups", "shUsers", "shPostDraftAttrRefs", "shWorkflowTasks",
 		"shPostAttrsDraft", "shPostAttrsNonDraft" })
 public class ShPost extends ShObject implements ShPostImpl {
+	@Serial
 	private static final long serialVersionUID = 1L;
 
-	@Field(store = Store.YES)
 	private String summary;
 
-	@Field(store = Store.YES)
 	private String title;
 
 	// bi-directional many-to-one association to ShPostType
-	@IndexedEmbedded
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "post_type_id")
 	private ShPostType shPostType;
 
 	// bi-directional many-to-one association to ShFolder
-	@IndexedEmbedded
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "folder_id")
 	private ShFolder shFolder;
 
 	// bi-directional many-to-one association to ShSite
-	@IndexedEmbedded
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "site_id")
 	private ShSite shSite;
 
 	// bi-directional many-to-one association to ShPostAttr
-	@IndexedEmbedded
 	@OneToMany(mappedBy = "shPost", orphanRemoval = true, fetch = FetchType.LAZY)
 	@Cascade({ CascadeType.ALL })
 	@OnDelete(action = OnDeleteAction.CASCADE)

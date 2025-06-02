@@ -40,10 +40,14 @@ import graphql.scalars.ExtendedScalars;
 @Component
 public class ShGraphQLOTObjectFromURL {
 
-	@Autowired
-	private ShGraphQLQTObjectFromURL shGraphQLQTObjectFromURL;
+	private final ShGraphQLQTObjectFromURL shGraphQLQTObjectFromURL;
 
-	
+	@Autowired
+	public ShGraphQLOTObjectFromURL(ShGraphQLQTObjectFromURL shGraphQLQTObjectFromURL) {
+		this.shGraphQLQTObjectFromURL = shGraphQLQTObjectFromURL;
+	}
+
+
 	private GraphQLObjectType createWebSiteByURL() {
 		Builder builder = newObject().name("ObjectFromURL").description("Object from Site URL");
 

@@ -19,22 +19,18 @@ package com.viglet.shio.provider.exchange.otcs.bean.collection;
 import java.util.List;
 
 import com.viglet.shio.provider.exchange.ot.bean.ShOTEntryBean;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  * 
  * @since 0.3.6
  */
+@Setter
+@Getter
 public class ShOTCSSortingBean {
 
 	private List<ShOTEntryBean> sort;
-
-	public List<ShOTEntryBean> getSort() {
-		return sort;
-	}
-
-	public void setSort(List<ShOTEntryBean> sort) {
-		this.sort = sort;
-	}
 
 }

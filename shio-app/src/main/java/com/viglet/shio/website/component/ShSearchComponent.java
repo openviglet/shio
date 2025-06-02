@@ -41,7 +41,7 @@ public class ShSearchComponent {
 	
 	public List<Map<String, ShPostAttr>> search(String q) {
 		List<Map<String, ShPostAttr>> shPosts = new ArrayList<>();
-		for (ShPost shPost : shPostRepository.fuzzySearch(q)) {
+		for (ShPost shPost : shPostRepository.findByTitle(q)) {
 			Map<String, ShPostAttr> shPostObject = shSitesPostUtils.postToMap(shPost);
 			shPosts.add(shPostObject);
 		}

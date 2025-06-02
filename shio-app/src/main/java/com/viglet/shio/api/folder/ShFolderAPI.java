@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
+import com.viglet.shio.utils.ShIntegrationUtils;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.logging.log4j.LogManager;
@@ -54,7 +55,6 @@ import com.viglet.shio.persistence.repository.object.ShObjectRepository;
 import com.viglet.shio.spreedsheet.ShSpreadsheet;
 import com.viglet.shio.turing.ShTuringIntegration;
 import com.viglet.shio.url.ShURLFormatter;
-import com.viglet.shio.utils.ShFolderUtils;
 import com.viglet.shio.utils.ShHistoryUtils;
 import com.viglet.shio.utils.ShObjectUtils;
 
@@ -69,23 +69,30 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag( name = "Folder", description = "Search API")
 public class ShFolderAPI {
 	private static final Logger logger = LogManager.getLogger(ShFolderAPI.class);
+	private final ShFolderRepository shFolderRepository;
+	private final ShObjectRepository shObjectRepository;
+	private final ShObjectUtils shObjectUtils;
+	private final ShTuringIntegration shTuringIntegration;
+	private final ShSpreadsheet shSpreadsheet;
+	private final ShHistoryUtils shHistoryUtils;
+	private final ShFolderExport shFolderExport;
+	private final ShIntegrationUtils shIntegrationUtils;
+
 	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShFolderUtils shFolderUtils;
-	@Autowired
-	private ShObjectRepository shObjectRepository;
-	@Autowired
-	private ShObjectUtils shObjectUtils;
-	@Autowired
-	private ShTuringIntegration shTuringIntegration;
-	@Autowired
-	private ShSpreadsheet shSpreadsheet;
-	@Autowired
-	private ShHistoryUtils shHistoryUtils;
-	@Autowired
-	private ShFolderExport shFolderExport;
-	
+	public ShFolderAPI(ShFolderRepository shFolderRepository, ShObjectRepository shObjectRepository,
+					   ShObjectUtils shObjectUtils, ShTuringIntegration shTuringIntegration,
+					   ShSpreadsheet shSpreadsheet, ShHistoryUtils shHistoryUtils, ShFolderExport shFolderExport,
+					   ShIntegrationUtils shIntegrationUtils) {
+		this.shFolderRepository = shFolderRepository;
+		this.shObjectRepository = shObjectRepository;
+		this.shObjectUtils = shObjectUtils;
+		this.shTuringIntegration = shTuringIntegration;
+		this.shSpreadsheet = shSpreadsheet;
+		this.shHistoryUtils = shHistoryUtils;
+		this.shFolderExport = shFolderExport;
+		this.shIntegrationUtils = shIntegrationUtils;
+	}
+
 	@Operation(summary = "Folder list")
 	@GetMapping
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
@@ -138,7 +145,7 @@ public class ShFolderAPI {
 		if (shObjectUtils.canAccess(principal, id)) {
 			shFolderRepository.findById(id).ifPresent(shFolder -> {
 				try {
-					shFolderUtils.deleteFolder(shFolder);
+					shIntegrationUtils.deleteFolder(shFolder);
 					shHistoryUtils.commit(shFolder, principal, ShHistoryUtils.DELETE);
 				} catch (IOException e) {
 					logger.error("FolderDeleteException", e);

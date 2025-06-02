@@ -21,15 +21,13 @@ package com.viglet.shio.graphql.playground.properties;
 * @since 0.3.7
 */
 public class Subscriptions {
-	private int timeout = 30;
-	private boolean reconnect = false;
 
-	public int getTimeout() {
-		return timeout;
+    public int getTimeout() {
+        return 30;
 	}
 
 	public boolean isReconnect() {
-		return reconnect;
+        return false;
 	}
 
 }

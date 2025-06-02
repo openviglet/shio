@@ -40,8 +40,6 @@ public interface ShObjectRepository extends JpaRepository<ShObject, String> {
 	@SuppressWarnings("unchecked")
 	ShObject save(ShObject shObject);
 
-	int countByIdAndShGroupsInOrIdAndShGroupsIsNull(String id, Collection<String> groups, String id2);
-
 	int countByIdAndShGroupsInOrIdAndShUsersInOrIdAndShGroupsIsNullAndShUsersIsNull(String id, Collection<String> groups,
 			String id2, Collection<String> users, String id3);
 

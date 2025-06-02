@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import com.viglet.shio.website.utils.ShSitesPostUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +29,6 @@ import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
-import com.viglet.shio.website.utils.ShSitesObjectUtils;
 
 /**
  * @author Alexandre Oliveira
@@ -40,17 +40,17 @@ public class ShNavigationComponent {
 	@Autowired
 	private ShFolderRepository shFolderRepository;
 	@Autowired
-	private ShSitesObjectUtils shSitesObjectUtils;
+	private ShSitesPostUtils shSitesPostUtils;
 
 	public List<ShFolder> navigation(String siteName, boolean home) {
 		ShSite shSite = shSiteRepository.findByName(siteName);
 		ShFolder homeFolder = shFolderRepository.findByShSiteAndName(shSite, "Home");
 		List<ShFolder> shFolders = new ArrayList<>();
-		if (home && shSitesObjectUtils.isVisiblePage(homeFolder))
+		if (home && shSitesPostUtils.isVisiblePage(homeFolder))
 			shFolders.add(homeFolder);
 
 		shFolderRepository.findByParentFolderOrderByPositionAsc(homeFolder).forEach(shFolder -> {
-			if (shSitesObjectUtils.isVisiblePage(shFolder))
+			if (shSitesPostUtils.isVisiblePage(shFolder))
 				shFolders.add(shFolder);
 
 		});
@@ -63,7 +63,7 @@ public class ShNavigationComponent {
 		if (shFolderOptional.isPresent()) {
 			ShFolder shParentFolder = shFolderOptional.get();
 			List<ShFolder> shFolders = shFolderRepository.findByParentFolderOrderByPositionAsc(shParentFolder);
-			if (home && shSitesObjectUtils.isVisiblePage(shParentFolder))
+			if (home && shSitesPostUtils.isVisiblePage(shParentFolder))
 				shFolders.add(shParentFolder);
 
 			return shFolders;

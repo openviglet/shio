@@ -16,18 +16,24 @@
  */
 package com.viglet.shio.persistence.model.system;
 
+import java.io.Serial;
 import java.io.Serializable;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * The persistent class for the ShLocale database table.
  * 
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 @Entity
 @Table(name = "shLocale")
 @NamedQuery(name = "ShLocale.findAll", query = "SELECT l FROM ShLocale l")
 public class ShLocale implements Serializable {
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	@Id
@@ -48,30 +54,6 @@ public class ShLocale implements Serializable {
 		setInitials(initials);
 		setEn(en);
 		setPt(pt);
-	}
-
-	public String getInitials() {
-		return initials;
-	}
-
-	public void setInitials(String initials) {
-		this.initials = initials;
-	}
-
-	public String getEn() {
-		return en;
-	}
-
-	public void setEn(String en) {
-		this.en = en;
-	}
-
-	public String getPt() {
-		return pt;
-	}
-
-	public void setPt(String pt) {
-		this.pt = pt;
 	}
 
 }

@@ -19,6 +19,7 @@ package com.viglet.shio.api.preview;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import com.viglet.shio.website.ShSitesDetectContextURL;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -44,10 +45,18 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/api/v2/preview")
 @Tag( name = "Preview", description = "Preview API")
 public class ShPreviewAPI {
-	@Autowired
+	final
 	ShSitesContextURLProcess shSitesContextURLProcess;
+	private final ShObjectRepository shObjectRepository;
+	private final ShSitesDetectContextURL shSitesDetectContextURL;
+
 	@Autowired
-	private ShObjectRepository shObjectRepository;
+	public ShPreviewAPI(ShSitesContextURLProcess shSitesContextURLProcess, ShObjectRepository shObjectRepository,
+						ShSitesDetectContextURL shSitesDetectContextURL) {
+		this.shSitesContextURLProcess = shSitesContextURLProcess;
+		this.shObjectRepository = shObjectRepository;
+		this.shSitesDetectContextURL = shSitesDetectContextURL;
+	}
 
 	@Operation(summary = "Detect URL")
 	@PostMapping("/detect-url")
@@ -58,7 +67,7 @@ public class ShPreviewAPI {
 		URL url = new URL(request.getParameter("url"));
 		ShSitesContextURL shSitesContextURL = shSitesContextURLProcess.getContextURL(request, response);
 		shSitesContextURL.getInfo().setContextURL(url.getPath());
-		shSitesContextURLProcess.detectContextURL(shSitesContextURL);
+		shSitesDetectContextURL.detectContextURL(shSitesContextURL);
 		return shObjectRepository.findById(shSitesContextURL.getInfo().getObjectId()).orElse(null);
 	}
 }

@@ -30,10 +30,14 @@ import com.viglet.shio.property.ShConfigProperties;
 public class ShConfigVarOnStartup {
 	
 	public static final String FIRST_TIME_NAME = "FIRST_TIME";
+	private final ShConfigProperties shConfigProperties;
+	private final ShConfigVarRepository shConfigVarRepository;
+
 	@Autowired
-	private ShConfigProperties shConfigProperties;
-	@Autowired
-	private ShConfigVarRepository shConfigVarRepository;
+	public ShConfigVarOnStartup(ShConfigProperties shConfigProperties, ShConfigVarRepository shConfigVarRepository) {
+		this.shConfigProperties = shConfigProperties;
+		this.shConfigVarRepository = shConfigVarRepository;
+	}
 
 	public void createDefaultRows() {
 

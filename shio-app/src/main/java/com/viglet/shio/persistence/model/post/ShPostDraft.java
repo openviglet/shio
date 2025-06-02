@@ -20,7 +20,6 @@ import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-import org.hibernate.search.annotations.IndexedEmbedded;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.object.ShObjectType;
@@ -31,6 +30,7 @@ import com.viglet.shio.persistence.model.post.impl.ShPostImpl;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.site.ShSite;
 
+import java.io.Serial;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -53,6 +53,7 @@ import jakarta.persistence.PrimaryKeyJoinColumn;
 @JsonIgnoreProperties({ "shPostAttrRefs", "shGroups", "shUsers", "shPostDraftAttrRefs", "shPostAttrsDraft",
 		"shPostAttrsNonDraft" })
 public class ShPostDraft extends ShObjectDraft implements ShPostImpl {
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	private String summary;
@@ -70,7 +71,6 @@ public class ShPostDraft extends ShObjectDraft implements ShPostImpl {
 	private ShFolder shFolder;
 
 	// bi-directional many-to-one association to ShSite
-	@IndexedEmbedded
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "site_id")
 	private ShSite shSite;

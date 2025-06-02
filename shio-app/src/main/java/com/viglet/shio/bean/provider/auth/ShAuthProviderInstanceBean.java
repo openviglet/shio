@@ -20,22 +20,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 public class ShAuthProviderInstanceBean extends ShAuthProviderInstance  {
 
 	private Map<String, String> properties = new HashMap<>();
 
-	public Map<String, String> getProperties() {
-		return properties;
-	}
 
-	public void setProperties(Map<String, String> properties) {
-		this.properties = properties;
-	}
-
-
-	
 }

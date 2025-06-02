@@ -24,6 +24,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.viglet.shio.persistence.model.object.impl.ShObjectImpl;
+import com.viglet.shio.persistence.model.post.type.ShPostType;
+import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
+import com.viglet.shio.url.ShURLScheme;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONObject;
@@ -59,11 +63,13 @@ import com.viglet.shio.website.ShContent;
 @Component
 public class ShSitesPostUtils {
 	private static final Log logger = LogFactory.getLog(ShSitesPostUtils.class);
-
+	private static final String IS_VISIBLE_PAGE = "IS_VISIBLE_PAGE";
+	private static final String NO = "no";
+	private static final String HOME = "Home";
 	@Autowired
 	private ShFolderUtils shFolderUtils;
 	@Autowired
-	private ShSitesFolderUtils shSitesFolderUtils;
+	private ShURLScheme shURLScheme;
 	@Autowired
 	private ShPostRepository shPostRepository;
 	@Autowired
@@ -75,11 +81,20 @@ public class ShSitesPostUtils {
 	@Autowired
 	private ShStaticFileUtils shStaticFileUtils;
 	@Autowired
-	private ShSitesObjectUtils shSitesObjectUtils;
-	@Autowired
 	private ShMgmtProperties shMgmtProperties;
 	@Autowired
 	private ShPostUtils shPostUtils;
+	@Autowired
+	private ShPostTypeRepository shPostTypeRepository;
+
+	public ShPost getFolderIndex(ShFolder shFolder) {
+		ShPostType shPostType = shPostTypeRepository.findByName(ShSystemPostType.FOLDER_INDEX);
+		List<ShPost> shFolderIndexPosts = shPostRepository.findByShFolderAndShPostTypeOrderByPositionAsc(shFolder,
+				shPostType);
+		if (!shFolderIndexPosts.isEmpty())
+			return getPostByStage(shFolderIndexPosts.get(0));
+		return null;
+	}
 
 	public boolean isFolderIndex(ShPost shPost) {
 		if (shPost.getShPostType().getName().equals(ShSystemPostType.FOLDER_INDEX)) {
@@ -272,13 +287,40 @@ public class ShSitesPostUtils {
 		if (shPostImpl.getShPostType().getName().equals(ShSystemPostType.FILE)) {
 			link = shStaticFileUtils.getFileSourceBase(true) + "/" + shFolderUtils.getSite(shFolder).getName()
 					+ shFolderUtils.folderPath(shFolder, false, true) + shPostImpl.getTitle();
-		} else if (shSitesObjectUtils.isVisiblePage(shPostImpl)) {
-			link = shSitesFolderUtils.generateFolderLink(shFolder);
+		} else if (isVisiblePage(shPostImpl)) {
+			link = shURLScheme.generateFolderLink(shFolder);
 			link = link + shPostImpl.getFurl();
 		}
 		return link;
 	}
 
+	public boolean isVisiblePage(ShObjectImpl shObject) {
+		ShFolder shFolder = null;
+		if (shObject instanceof ShFolder shFolderInst) {
+			shFolder = shFolderInst;
+			ShPost shFolderIndexPost = getFolderIndex(shFolder);
+			if (shFolderIndexPost != null) {
+				Map<String, ShPostAttr> shFolderIndexPostMap = postToMap(shFolderIndexPost);
+				if (shFolderIndexPostMap.get(IS_VISIBLE_PAGE) != null
+						&& shFolderIndexPostMap.get(IS_VISIBLE_PAGE).getStrValue() != null
+						&& shFolderIndexPostMap.get(IS_VISIBLE_PAGE).getStrValue().equals(NO)) {
+					return false;
+				}
+			} else {
+				return false;
+			}
+		} else if (shObject instanceof ShPost) {
+			ShPostImpl shPost = (ShPostImpl) shObject;
+			shFolder = shPost.getShFolder();
+		}
+		if (shFolder != null) {
+			List<ShFolder> breadcrumb = shFolderUtils.breadcrumb(shFolder);
+			return breadcrumb.get(0).getName().equals(HOME);
+		} else {
+			return false;
+		}
+
+	}
 	public String generatePostLinkById(String postID) {
 		if (postID != null) {
 			try {

@@ -28,7 +28,8 @@ export class ShSiteService {
     query(): Observable<ShSite[]> {
         return this.httpClient.get<ShSite[]>(`${environment.apiUrl}/api/v2/site`);
     }
-    get(id: string): Observable<ShSite> {
+
+    get(id: string | null): Observable<ShSite> {
         return this.httpClient.get<ShSite>(`${environment.apiUrl}/api/v2/site/${id}`);
     }
     countPostType(id: string): Observable<ShPostTypeReport[]> {

@@ -19,10 +19,14 @@ package com.viglet.shio.exchange.relator;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  */
+@Getter
+@Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ShRelatorExchange {
 
@@ -31,32 +35,5 @@ public class ShRelatorExchange {
 	private String name;
 
 	private ShRelatorItemExchanges shSubPosts;
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public List<ShRelatorItemExchange> getShSubPosts() {
-		return shSubPosts;
-	}
-
-	public void setShSubPosts(ShRelatorItemExchanges shSubPosts) {
-		this.shSubPosts = shSubPosts;
-	}
-
-	
-	
 
 }

@@ -38,8 +38,12 @@ import com.viglet.shio.utils.ShObjectUtils;
 @Component
 public class ShGraphQLUtils {
 
+	private final ShObjectUtils shObjectUtils;
+
 	@Autowired
-	private ShObjectUtils shObjectUtils;
+	public ShGraphQLUtils(ShObjectUtils shObjectUtils) {
+		this.shObjectUtils = shObjectUtils;
+	}
 
 	public String normalizedField(String object) {
 		return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, object.toLowerCase().replace(" ", "_").replace("-", "_"));

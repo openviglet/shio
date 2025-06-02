@@ -16,6 +16,7 @@
  */
 package com.viglet.shio.bean;
 
+import java.io.Serial;
 import java.util.HashMap;
 
 /**
@@ -24,6 +25,7 @@ import java.util.HashMap;
  */
 public class ShSitePostTypeLayoutsGeneral extends HashMap<String,ShSitePostTypeLayouts>{
 
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 }

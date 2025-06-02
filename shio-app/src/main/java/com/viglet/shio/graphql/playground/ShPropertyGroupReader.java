@@ -32,8 +32,8 @@ import java.util.stream.StreamSupport;
 */
 class ShPropertyGroupReader {
 
-    private Environment environment;
-    private String prefix;
+    private final Environment environment;
+    private final String prefix;
     private Properties props;
 
     ShPropertyGroupReader(Environment environment, String prefix) {
