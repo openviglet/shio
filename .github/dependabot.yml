@@ -12,7 +12,9 @@ updates:
     target-branch: "0.3.9"
     open-pull-requests-limit: 15
     ignore:
-      - dependency-name: "org.apache.nutch:nutch"
+      - dependency-name: "org.webjars.bower:*"
+      - dependency-name: "org.webjars.npm:*"
+      - dependency-name: "org.webjars.bower:*"
     groups:
       java:
         applies-to: version-updates
