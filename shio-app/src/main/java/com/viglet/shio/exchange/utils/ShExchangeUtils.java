@@ -28,6 +28,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -50,8 +51,8 @@ import net.lingala.zip4j.model.ZipParameters;
 public class ShExchangeUtils {
 	private static final Log logger = LogFactory.getLog(ShExchangeUtils.class);
 
-	public File responseWithZipFile(String suffixFileName, HttpServletResponse response, ShExchange shExchange,
-			ShExchangeFilesDirs shExchangeFilesDirs) {
+	public void responseWithZipFile(String suffixFileName, HttpServletResponse response, ShExchange shExchange,
+									ShExchangeFilesDirs shExchangeFilesDirs) {
 		ObjectMapper mapper = new ObjectMapper();
 		try {
 			mapper.writerWithDefaultPrettyPrinter().writeValue(shExchangeFilesDirs.getExportJsonFile(), shExchange);
@@ -73,13 +74,12 @@ public class ShExchangeUtils {
 		response.addHeader("Content-disposition", "attachment;filename=" + zipFileName);
 		response.setContentType("application/octet-stream");
 		response.setStatus(HttpServletResponse.SC_OK);
-		return shExchangeFilesDirs.getZipFile();
 	}
 
 	public StreamingResponseBody responseBodyFromZipFle(ShExchangeFilesDirs shExchangeFilesDirs) {
 		return new StreamingResponseBody() {
 			@Override
-			public void writeTo(java.io.OutputStream output) throws IOException {
+			public void writeTo(@NotNull java.io.OutputStream output) throws IOException {
 
 				try {
 					java.nio.file.Path path = Paths.get(shExchangeFilesDirs.getZipFile().getAbsolutePath());

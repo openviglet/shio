@@ -16,15 +16,14 @@
  */
 package com.viglet.shio.graphql.playground.properties;
 
+import lombok.Getter;
+
 /**
 * @author Alexandre Oliveira
 * @since 0.3.7
 */
+@Getter
 public class Variables {
 	private String editorTheme;
-
-	public String getEditorTheme() {
-		return editorTheme;
-	}
 
 }

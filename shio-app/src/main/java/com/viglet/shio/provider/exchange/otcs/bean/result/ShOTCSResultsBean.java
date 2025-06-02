@@ -16,22 +16,19 @@
  */
 package com.viglet.shio.provider.exchange.otcs.bean.result;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * @author Alexandre Oliveira
  * 
  * @since 0.3.6
  */
+@Setter
+@Getter
 public class ShOTCSResultsBean {
 
 	private ShOTCSResultsDataBean data;
-
-	public ShOTCSResultsDataBean getData() {
-		return data;
-	}
-
-	public void setData(ShOTCSResultsDataBean data) {
-		this.data = data;
-	}
 
 
 }

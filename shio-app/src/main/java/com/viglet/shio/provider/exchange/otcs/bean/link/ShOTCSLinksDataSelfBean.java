@@ -17,12 +17,16 @@
 package com.viglet.shio.provider.exchange.otcs.bean.link;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  * 
  * @since 0.3.6
  */
+@Setter
+@Getter
 public class ShOTCSLinksDataSelfBean {
 
 	private String body;
@@ -36,46 +40,5 @@ public class ShOTCSLinksDataSelfBean {
 	
 	private String name;
 
-	public String getBody() {
-		return body;
-	}
 
-	public void setBody(String body) {
-		this.body = body;
-	}
-
-	public String getContentType() {
-		return contentType;
-	}
-
-	public void setContentType(String contentType) {
-		this.contentType = contentType;
-	}
-
-	public String getHref() {
-		return href;
-	}
-
-	public void setHref(String href) {
-		this.href = href;
-	}
-
-	public String getMethod() {
-		return method;
-	}
-
-	public void setMethod(String method) {
-		this.method = method;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-	
-	
-	
 }

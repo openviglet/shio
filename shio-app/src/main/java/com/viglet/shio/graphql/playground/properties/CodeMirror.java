@@ -21,10 +21,9 @@ package com.viglet.shio.graphql.playground.properties;
 * @since 0.3.7
 */
 public class CodeMirror {
-	private String version = "5.47.0";
 
-	public String getVersion() {
-		return version;
+    public String getVersion() {
+        return "5.47.0";
 	}
 
 }

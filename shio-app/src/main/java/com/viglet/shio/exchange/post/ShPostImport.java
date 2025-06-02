@@ -27,11 +27,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -68,30 +66,35 @@ import com.viglet.shio.widget.ShSystemWidget;
  * @author Alexandre Oliveira
  */
 @Component
+@Slf4j
 public class ShPostImport {
-	static final Logger logger = LogManager.getLogger(ShPostImport.class.getName());
-	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ShPostTypeAttrRepository shPostTypeAttrRepository;
-	@Autowired
-	private ShPostAttrRepository shPostAttrRepository;
-	@Autowired
-	private ShRelatorItemRepository shRelatorItemRepository;
-	@Autowired
-	private ShPostUtils shPostUtils;
-	@Autowired
-	private ShFolderUtils shFolderUtils;
-	@Autowired
-	private ShTuringIntegration shTuringIntegration;
-	@Autowired
-	private ShUserUtils shUserUtils;
+	private final ShFolderRepository shFolderRepository;
+	private final ShPostRepository shPostRepository;
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ShPostTypeAttrRepository shPostTypeAttrRepository;
+	private final ShPostAttrRepository shPostAttrRepository;
+	private final ShRelatorItemRepository shRelatorItemRepository;
+	private final ShPostUtils shPostUtils;
+	private final ShFolderUtils shFolderUtils;
+	private final ShTuringIntegration shTuringIntegration;
+	private final ShUserUtils shUserUtils;
 
-	private boolean turingEnabled = true;
+    public ShPostImport(ShFolderRepository shFolderRepository, ShPostRepository shPostRepository,
+						ShPostTypeRepository shPostTypeRepository, ShPostTypeAttrRepository shPostTypeAttrRepository,
+						ShPostAttrRepository shPostAttrRepository, ShRelatorItemRepository shRelatorItemRepository,
+						ShPostUtils shPostUtils, ShFolderUtils shFolderUtils, ShTuringIntegration shTuringIntegration,
+						ShUserUtils shUserUtils) {
+		this.shFolderRepository = shFolderRepository;
+		this.shPostRepository = shPostRepository;
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.shPostTypeAttrRepository = shPostTypeAttrRepository;
+		this.shPostAttrRepository = shPostAttrRepository;
+		this.shRelatorItemRepository = shRelatorItemRepository;
+		this.shPostUtils = shPostUtils;
+		this.shFolderUtils = shFolderUtils;
+		this.shTuringIntegration = shTuringIntegration;
+		this.shUserUtils = shUserUtils;
+	}
 
 	public ShPostImpl getShPost(ShPostExchange shPostExchange) {
 		ShPost shPost = new ShPost();
@@ -198,7 +201,7 @@ public class ShPostImport {
 				shPostAttr.setDateValue(
 						new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'").parse((String) shPostField.getValue()));
 			} catch (ParseException e) {
-				logger.error("createShPostAttrs Error:", e);
+				log.error("createShPostAttrs Error:", e);
 			}
 		}
 	}
@@ -258,13 +261,13 @@ public class ShPostImport {
 			String subPostsJson = ow.writeValueAsString(relatorFields.get("shSubPosts"));
 			subPosts = mapper.readValue(subPostsJson, ShRelatorItemExchanges.class);
 		} catch (JsonProcessingException e) {
-			logger.error(e);
+			log.error(e.getMessage(), e);
 		}
 		return subPosts;
 	}
 
-	public ShPostImpl createShPost(ShExchangeContext context, ShPostExchange shPostExchange,
-			ShExchangeObjectMap shExchangeObjectMap) {
+	public void createShPost(ShExchangeContext context, ShPostExchange shPostExchange,
+							 ShExchangeObjectMap shExchangeObjectMap) {
 
 		ShPost shPost = null;
 		if (shPostRepository.findById(shPostExchange.getId()).isPresent()) {
@@ -274,8 +277,7 @@ public class ShPostImport {
 		}
 
 		if (shPost != null)
-			logger.info("........ {} Post ({})", shPost.getTitle(), shPost.getId());
-		return shPost;
+			log.info("........ {} Post ({})", shPost.getTitle(), shPost.getId());
 	}
 
 	private ShPost extractPostFromExchange(ShExchangeContext context, ShPostExchange shPostExchange,
@@ -311,9 +313,7 @@ public class ShPostImport {
 		for (ShPostAttrImpl shPostAttr : shPostAttrRepository.findByShPost(shPost)) {
 			shPostUtils.updateRelatorInfo(shPostAttr, shPost);
 		}
-
-		if (turingEnabled)
-			shTuringIntegration.indexObject(shPost);
+        shTuringIntegration.indexObject(shPost);
 		return shPost;
 	}
 
@@ -354,15 +354,15 @@ public class ShPostImport {
 					FileUtils.copyFile(fileSource, fileDest);
 				} else {
 					if (fileDest.createNewFile()) {
-						logger.error("{} file not exists, created empty file into {}.",
+						log.error("{} file not exists, created empty file into {}.",
 								fileSource.getAbsoluteFile(), fileDest.getAbsoluteFile());
 					} else {
-						logger.error("{} file not exists, but it cannot to create empty file into {}.",
+						log.error("{} file not exists, but it cannot to create empty file into {}.",
 										fileSource.getAbsoluteFile(), fileDest.getAbsoluteFile());
 					}
 				}
 			} catch (IOException e) {
-				logger.error(e);
+				log.error(e.getMessage(), e);
 			}
 		}
 	}
@@ -375,7 +375,7 @@ public class ShPostImport {
 
 			ShPostTypeAttr shPostTypeAttr = getPostAttr(shParentRelatorItem, shPostField, shPostType);
 
-			this.createReferecedPosts(context, shExchangeObjectMap, shPostField, shPostType, shPostTypeAttr);
+			this.createReferencedPosts(context, shExchangeObjectMap, shPostField, shPostType, shPostTypeAttr);
 			if (isRelator(shPostTypeAttr)) {
 
 				this.detectPostAttrRelator(context, shPostExchange, shPost, shParentRelatorItem, shExchangeObjectMap,
@@ -386,21 +386,22 @@ public class ShPostImport {
 		}
 	}
 
-	private void createReferecedPosts(ShExchangeContext context, ShExchangeObjectMap shExchangeObjectMap,
-			Entry<String, Object> shPostField, ShPostType shPostType, ShPostTypeAttr shPostTypeAttr) {
+	private void createReferencedPosts(ShExchangeContext context, ShExchangeObjectMap shExchangeObjectMap,
+									   Entry<String, Object> shPostField, ShPostType shPostType,
+									   ShPostTypeAttr shPostTypeAttr) {
 		Map<String, Object> shObjects = shExchangeObjectMap.getShObjects();
 		if (isReferencedPostTypeAttr(shPostType, shPostTypeAttr) && shPostField != null
 				&& shPostField.getValue() != null) {
 			try {
 				String shReferencedPostUUID = (String) shPostField.getValue();
 				// So the referenced Post not exists, need create first
-				if (!shPostRepository.findById(shReferencedPostUUID).isPresent()
+				if (shPostRepository.findById(shReferencedPostUUID).isEmpty()
 						&& shObjects.get(shReferencedPostUUID) instanceof ShPostExchange shPostExchange) {
 					this.createShPost(context, shPostExchange, shExchangeObjectMap);
 				}
 
 			} catch (IllegalArgumentException iae) {
-				logger.error("createShPostAttrs", iae);
+				log.error("createShPostAttrs", iae);
 			}
 		}
 	}

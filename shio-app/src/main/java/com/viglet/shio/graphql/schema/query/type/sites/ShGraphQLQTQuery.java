@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,16 +55,20 @@ import graphql.schema.GraphQLObjectType.Builder;
  * @since 0.3.7
  */
 @Component
+@Slf4j
 public class ShGraphQLQTQuery {
-	private static final Log logger = LogFactory.getLog(ShGraphQLQTQuery.class);
-	@Autowired
-	private ShQueryComponent shQueryComponent;
+	private final ShQueryComponent shQueryComponent;
 	private static final String QUERY_TYPE_NAME = "shQuery";
 
 	public static final String POST_TYPE_NAME = "postTypeName";
 	public static final String FOLDER_ID = "folderId";
 	public static final String POST_ATTR_NAME = "postAttrName";
 	public static final String ARRAY_VALUE = "arrayValue";
+
+	@Autowired
+	public ShGraphQLQTQuery(ShQueryComponent shQueryComponent) {
+		this.shQueryComponent = shQueryComponent;
+	}
 
 	public void createQueryType(Builder queryTypeBuilder,
 			graphql.schema.GraphQLCodeRegistry.Builder codeRegistryBuilder, GraphQLObjectType graphQLObjectType) {
@@ -117,7 +122,7 @@ public class ShGraphQLQTQuery {
 			tinyPost.remove("__type__");
 			result.put("post", tinyPost);
 		} catch (JsonProcessingException e) {
-			logger.error(e);
+			log.error(e.getMessage(), e);
 		}
 
 		return result;

@@ -35,12 +35,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class ShPostTypeOnStartup {
 
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ResourceLoader resourceloader;
+	private final ShPostTypeImport shPostTypeImport;
+
 	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ResourceLoader resourceloader;
-	@Autowired
-	private ShPostTypeImport shPostTypeImport;
+	public ShPostTypeOnStartup(ShPostTypeRepository shPostTypeRepository, ResourceLoader resourceloader,
+							   ShPostTypeImport shPostTypeImport) {
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.resourceloader = resourceloader;
+		this.shPostTypeImport = shPostTypeImport;
+	}
 
 	public void createDefaultRows() throws IOException {
 

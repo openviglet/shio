@@ -40,35 +40,12 @@ import com.viglet.shio.persistence.model.post.type.ShPostType;
 @Repository
 public interface ShPostDraftRepository extends JpaRepository<ShPostDraft, String>, JpaSpecificationExecutor<ShPostDraft> {
 
-	Set<ShPostDraft> findByShPostTypeAndShPostAttrsIn(ShPostType shPostType, Collection<ShPostAttr> postAttrs);
-	
 	List<ShPostDraft> findAll();
 
-	List<ShPostDraft> findByShFolder(ShFolder shFolder);
-
-	@Query("select new com.viglet.shio.bean.ShPostTinyBean(p) from ShPostDraft p where p.shFolder.id = ?1")
-	List<ShPostTinyBean> findByShFolderTiny(String shFolderId);
-	
-	@Query("select new com.viglet.shio.bean.ShPostTinyBean(p) from ShPostDraft p where p.shFolder.id = ?1 and p.shPostType.id = ?2")
-	List<ShPostTinyBean> findByShFolderAndShPostTypeTiny(String shFolderId, String shPostTypeId);
-		
-	List<ShPostDraft> findByShFolderAndShPostType(ShFolder shFolder, ShPostType shPostType);
-	
-	List<ShPostDraft> findByShPostType(ShPostType shPostType);
-
-	List<ShPostDraft> findByShFolderAndShPostTypeOrderByPositionAsc(ShFolder shFolder, ShPostType shPostType);
-
-	
 	@Query("select p from ShPostDraft p JOIN FETCH p.shPostType JOIN FETCH p.shFolder JOIN FETCH p.shPostAttrs where p.id = ?1")
 	Optional<ShPostDraft> findByIdFull(String id);
 	
 	Optional<ShPostDraft> findById(String id);
-
-	List<ShPostDraft> findByTitle(String title);
-
-	ShPostImpl findByShFolderAndTitle(ShFolder shFolder, String title);
-
-	ShPostImpl findByShFolderAndFurl(ShFolder shFolder, String furl);
 
 	@SuppressWarnings("unchecked")
 	ShPostDraft save(ShPostDraft shPost);

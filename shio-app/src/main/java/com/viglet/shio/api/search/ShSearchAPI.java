@@ -19,8 +19,7 @@ package com.viglet.shio.api.search;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -54,22 +53,28 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/api/v2/search")
 @Tag( name = "Search", description = "Search for Shio Objects")
+@Slf4j
 public class ShSearchAPI {
-	private static final Log logger = LogFactory.getLog(ShSearchAPI.class);
+	private final ShSiteRepository shSiteRepository;
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ShPostRepository shPostRepository;
+	private final ShFolderRepository shFolderRepository;
+	private final ShPostUtils shPostUtils;
+	private final ShFolderUtils shFolderUtils;
+	private final ShTuringIntegration shTuringIntegration;
+
 	@Autowired
-	private ShSiteRepository shSiteRepository;
-	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShPostUtils shPostUtils;
-	@Autowired
-	private ShFolderUtils shFolderUtils;
-	@Autowired
-	private ShTuringIntegration shTuringIntegration;
+	public ShSearchAPI(ShSiteRepository shSiteRepository, ShPostTypeRepository shPostTypeRepository,
+					   ShPostRepository shPostRepository, ShFolderRepository shFolderRepository,
+					   ShPostUtils shPostUtils, ShFolderUtils shFolderUtils, ShTuringIntegration shTuringIntegration) {
+		this.shSiteRepository = shSiteRepository;
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.shPostRepository = shPostRepository;
+		this.shFolderRepository = shFolderRepository;
+		this.shPostUtils = shPostUtils;
+		this.shFolderUtils = shFolderUtils;
+		this.shTuringIntegration = shTuringIntegration;
+	}
 
 	@Operation(summary = "Search for Shio Objects")
 	@GetMapping
@@ -127,31 +132,31 @@ public class ShSearchAPI {
 	}
 
 	private void postIndexing(String siteName, String objectName) {
-		logger.info(String.format("Trying to Index posts of %s", objectName));
+		log.info("Trying to Index posts of {}", objectName);
 		ShPostType shPostType = shPostTypeRepository.findByName(objectName);
 		if (shPostType != null) {
-			logger.info(String.format("Indexing posts of %s", shPostType.getName()));
+			log.info("Indexing posts of {}", shPostType.getName());
 			for (ShPost shPost : shPostRepository.findByShPostType(shPostType)) {
 				if (shPostUtils.getSite(shPost).getName().equals(siteName)) {
-					logger.info(String.format("Indexing %s post", shPost.getTitle()));
+					log.info("Indexing {} post", shPost.getTitle());
 					shTuringIntegration.indexObject(shPost);
 				}
 
 			}
-			logger.info("Indexed.");
+			log.info("Indexed.");
 
 		}
 	}
 
 	private boolean folderIndexing(String siteName) {
-		logger.info("Trying to Index Folders");
+		log.info("Trying to Index Folders");
 		for (ShFolder shFolder : shFolderRepository.findAll()) {
 			if (shFolderUtils.getSite(shFolder).getName().equals(siteName)) {
-				logger.info(String.format("Indexing %s folder", shFolder.getName()));
+				log.info(String.format("Indexing %s folder", shFolder.getName()));
 				shTuringIntegration.indexObject(shFolder);
 			}
 		}
-		logger.info("Indexed.");
+		log.info("Indexed.");
 		return true;
 	}
 }

@@ -28,9 +28,8 @@ import java.util.Set;
 
 import jakarta.servlet.http.HttpServletResponse;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -61,23 +60,28 @@ import com.viglet.shio.utils.ShUtils;
  * @since 0.3.0
  */
 @Component
+@Slf4j
 public class ShSiteExport {
-	private static final Log logger = LogFactory.getLog(ShSiteExport.class);
+	private final ShSiteRepository shSiteRepository;
+	private final ShFolderRepository shFolderRepository;
+	private final ShUtils shUtils;
+	private final ShFolderExport shFolderExport;
+	private final ShPostTypeExport shPostTypeExport;
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ShExchangeUtils shExchangeUtils;
 
 	@Autowired
-	private ShSiteRepository shSiteRepository;
-	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShUtils shUtils;
-	@Autowired
-	private ShFolderExport shFolderExport;
-	@Autowired
-	private ShPostTypeExport shPostTypeExport;
-	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ShExchangeUtils shExchangeUtils;
+	public ShSiteExport(ShSiteRepository shSiteRepository, ShFolderRepository shFolderRepository, ShUtils shUtils,
+						ShFolderExport shFolderExport, ShPostTypeExport shPostTypeExport,
+						ShPostTypeRepository shPostTypeRepository, ShExchangeUtils shExchangeUtils) {
+		this.shSiteRepository = shSiteRepository;
+		this.shFolderRepository = shFolderRepository;
+		this.shUtils = shUtils;
+		this.shFolderExport = shFolderExport;
+		this.shPostTypeExport = shPostTypeExport;
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.shExchangeUtils = shExchangeUtils;
+	}
 
 	public StreamingResponseBody exportObject(@PathVariable String id, HttpServletResponse response) {
 		ShExchange shExchange = new ShExchange();
@@ -160,17 +164,15 @@ public class ShSiteExport {
 				if (fileSource.exists())
 					FileUtils.copyFile(fileSource, fileDestination);
 				else {
-					logger.warn(String.format(
-							"Exporting the file %s, but it does not exist, so it is creating a new empty file to export.",
-							fileSource.getAbsoluteFile()));
+					log.warn("Exporting the file {}, but it does not exist, so it is creating a new empty file to export.", fileSource.getAbsoluteFile());
 					if (fileDestination.createNewFile())
-						logger.debug(String.format("File was created %s", fileDestination));
+						log.debug("File was created {}", fileDestination);
 					else
-						logger.error(String.format("File was not created: %s", fileDestination));
+						log.error("File was not created: {}", fileDestination);
 				}
 
 			} catch (IOException e) {
-				logger.error("exportObject: ", e);
+				log.error("exportObject: ", e);
 			}
 
 		});

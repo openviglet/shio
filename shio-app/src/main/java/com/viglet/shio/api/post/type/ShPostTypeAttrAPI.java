@@ -44,10 +44,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/api/v2/post/type/attr")
 @Tag( name = "Post Type Attribute", description = "Post Type Attribute API")
 public class ShPostTypeAttrAPI {
+	private final ShPostTypeAttrRepository shPostTypeAttrRepository;
+	private final ShPostAttrRepository shPostAttrRepository;
+
 	@Autowired
-	private ShPostTypeAttrRepository shPostTypeAttrRepository;
-	@Autowired
-	private ShPostAttrRepository shPostAttrRepository;
+	public ShPostTypeAttrAPI(ShPostTypeAttrRepository shPostTypeAttrRepository, ShPostAttrRepository shPostAttrRepository) {
+		this.shPostTypeAttrRepository = shPostTypeAttrRepository;
+		this.shPostAttrRepository = shPostAttrRepository;
+	}
 
 	@GetMapping
 	public List<ShPostTypeAttr> shPostTypeAttrList() {

@@ -37,8 +37,6 @@ import com.viglet.shio.persistence.model.post.relator.ShRelatorItemDraft;
 @Repository
 public interface ShPostDraftAttrRepository extends JpaRepository<ShPostDraftAttr, String>, JpaSpecificationExecutor<ShPostDraftAttr> {
 
-	Set<ShPostDraftAttr> findByArrayValueIn(Collection<String> values);
-
 	List<ShPostDraftAttr> findAll();
 
 	@Query("select p from ShPostDraftAttr p JOIN FETCH p.shPostTypeAttr where p.shPost = ?1")

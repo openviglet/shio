@@ -61,18 +61,24 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/api/v2/post/type")
 @Tag( name = "Post Type", description = "PostType API")
 public class ShPostTypeAPI {
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ShPostTypeAttrRepository shPostTypeAttrRepository;
+	private final ShPostAttrRepository shPostAttrRepository;
+	private final ShPostRepository shPostRepository;
+	private final ShPostTypeExport shPostTypeExport;
+	private final ShPostTypeUtils shPostTypeUtils;
+
 	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ShPostTypeAttrRepository shPostTypeAttrRepository;
-	@Autowired
-	private ShPostAttrRepository shPostAttrRepository;
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShPostTypeExport shPostTypeExport;
-	@Autowired
-	private ShPostTypeUtils shPostTypeUtils;
+	public ShPostTypeAPI(ShPostTypeRepository shPostTypeRepository, ShPostTypeAttrRepository shPostTypeAttrRepository,
+						 ShPostAttrRepository shPostAttrRepository, ShPostRepository shPostRepository,
+						 ShPostTypeExport shPostTypeExport, ShPostTypeUtils shPostTypeUtils) {
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.shPostTypeAttrRepository = shPostTypeAttrRepository;
+		this.shPostAttrRepository = shPostAttrRepository;
+		this.shPostRepository = shPostRepository;
+		this.shPostTypeExport = shPostTypeExport;
+		this.shPostTypeUtils = shPostTypeUtils;
+	}
 
 	@GetMapping
 	@JsonView({ ShJsonView.ShJsonViewPostType.class })

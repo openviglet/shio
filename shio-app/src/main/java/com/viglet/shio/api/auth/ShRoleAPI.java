@@ -45,8 +45,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag( name = "Role", description = "Role API")
 public class ShRoleAPI {
 
+	private final ShRoleRepository shRoleRepository;
+
 	@Autowired
-	private ShRoleRepository shRoleRepository;
+	public ShRoleAPI(ShRoleRepository shRoleRepository) {
+		this.shRoleRepository = shRoleRepository;
+	}
 
 	@GetMapping
 	@JsonView({ ShJsonView.ShJsonViewObject.class })

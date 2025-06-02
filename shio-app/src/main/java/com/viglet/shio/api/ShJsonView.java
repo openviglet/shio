@@ -16,23 +16,25 @@
  */
 package com.viglet.shio.api;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
  * @author Alexandre Oliveira
  */
 public class ShJsonView implements Serializable {
+	@Serial
 	private static final long serialVersionUID = 3989499187492868996L;
 
-	public static interface ShJsonViewGenericType {}
+	public interface ShJsonViewGenericType {}
 
-	public static interface ShJsonViewObject extends ShJsonViewGenericType {}
+	public interface ShJsonViewObject extends ShJsonViewGenericType {}
 
-	public static interface ShJsonViewReference extends ShJsonViewGenericType {}
+	public interface ShJsonViewReference extends ShJsonViewGenericType {}
 
-	public static interface ShJsonViewPostType extends ShJsonViewGenericType {}
+	public interface ShJsonViewPostType extends ShJsonViewGenericType {}
 
-	public static interface ShJsonViewPost extends ShJsonViewGenericType {}
+	public interface ShJsonViewPost extends ShJsonViewGenericType {}
 
-	public static interface ShJsonViewPostTypeAttr extends ShJsonViewGenericType {}
+	public interface ShJsonViewPostTypeAttr extends ShJsonViewGenericType {}
 }

@@ -20,17 +20,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import graphql.spring.web.servlet.JsonSerializer;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 @Component
+@Slf4j
 public class ShJacksonJsonSerializer implements JsonSerializer {
-	private static final Logger logger = LogManager.getLogger(ShJacksonJsonSerializer.class);
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     @Autowired
     public ShJacksonJsonSerializer(ObjectMapper objectMapper) {
@@ -42,7 +41,7 @@ public class ShJacksonJsonSerializer implements JsonSerializer {
         try {
             return objectMapper.writeValueAsString(object);
         } catch (IOException e) {
-        	logger.error("Error serializing object to JSON: {}", e.getMessage(), e);
+        	log.error("Error serializing object to JSON: {}", e.getMessage(), e);
         }
 		return null;
     }
@@ -52,7 +51,7 @@ public class ShJacksonJsonSerializer implements JsonSerializer {
         try {
             return objectMapper.readValue(json, requiredType);
         } catch (IOException e) {
-        	logger.error("Error deserializing object from JSON: {}", e.getMessage(), e);
+        	log.error("Error deserializing object from JSON: {}", e.getMessage(), e);
         }
 		return null;
     }

@@ -63,18 +63,25 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag(name = "User", description = "User API")
 public class ShUserAPI {
 	private static final Log logger = LogFactory.getLog(ShUserAPI.class);
+	private final PasswordEncoder passwordEncoder;
+	private final ShUserRepository shUserRepository;
+	private final ShGroupRepository shGroupRepository;
+	private final ShAuthProviderInstanceRepository shAuthProviderInstanceRepository;
+	private final ApplicationContext context;
+	private final ShUserUtils shUserUtils;
+
 	@Autowired
-	private PasswordEncoder passwordEncoder;
-	@Autowired
-	private ShUserRepository shUserRepository;
-	@Autowired
-	private ShGroupRepository shGroupRepository;
-	@Autowired
-	private ShAuthProviderInstanceRepository shAuthProviderInstanceRepository;
-	@Autowired
-	private ApplicationContext context;
-	@Autowired
-	private ShUserUtils shUserUtils;
+	public ShUserAPI(PasswordEncoder passwordEncoder, ShUserRepository shUserRepository,
+					 ShGroupRepository shGroupRepository,
+					 ShAuthProviderInstanceRepository shAuthProviderInstanceRepository,
+					 ApplicationContext context, ShUserUtils shUserUtils) {
+		this.passwordEncoder = passwordEncoder;
+		this.shUserRepository = shUserRepository;
+		this.shGroupRepository = shGroupRepository;
+		this.shAuthProviderInstanceRepository = shAuthProviderInstanceRepository;
+		this.context = context;
+		this.shUserUtils = shUserUtils;
+	}
 
 	@GetMapping
 	@JsonView({ ShJsonView.ShJsonViewObject.class })

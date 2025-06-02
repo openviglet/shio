@@ -16,9 +16,14 @@
  */
 package com.viglet.shio.bean;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 public class ShCurrentUser {
 
 	private String username;
@@ -29,35 +34,4 @@ public class ShCurrentUser {
 	
 	private boolean admin;
 
-	public String getUsername() {
-		return username;
-	}
-
-	public void setUsername(String username) {
-		this.username = username;
-	}
-
-	public String getFirstName() {
-		return firstName;
-	}
-
-	public void setFirstName(String firstName) {
-		this.firstName = firstName;
-	}
-
-	public String getLastName() {
-		return lastName;
-	}
-
-	public void setLastName(String lastName) {
-		this.lastName = lastName;
-	}
-
-	public boolean isAdmin() {
-		return admin;
-	}
-
-	public void setAdmin(boolean admin) {
-		this.admin = admin;
-	}	
 }

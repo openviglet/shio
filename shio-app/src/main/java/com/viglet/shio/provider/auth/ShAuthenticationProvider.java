@@ -6,7 +6,7 @@ import com.viglet.shio.persistence.model.auth.ShUser;
 
 public interface ShAuthenticationProvider extends AuthenticationProvider {
 
-	public void init(String providerId);
+	void init(String providerId);
 	
-	public ShUser getShUser(String username);
+	ShUser getShUser(String username);
 }

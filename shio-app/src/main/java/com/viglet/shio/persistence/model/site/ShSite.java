@@ -16,11 +16,13 @@
  */
 package com.viglet.shio.persistence.model.site;
 
+import java.io.Serial;
 import java.util.HashSet;
 import java.util.Set;
 
 import jakarta.persistence.*;
 
+import lombok.Getter;
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
 import org.hibernate.annotations.Fetch;
@@ -35,11 +37,13 @@ import com.viglet.shio.persistence.model.object.ShObject;
  * 
  * @author Alexandre Oliveira
  */
+@Getter
 @Entity
 @NamedQuery(name = "ShSite.findAll", query = "SELECT s FROM ShSite s")
 @JsonIgnoreProperties({ "shFolders", "shPosts", "shPostAttrRefs", "shGroups", "shWorkflowTasks" })
 @PrimaryKeyJoinColumn(name = "object_id")
 public class ShSite extends ShObject {
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	@Column(unique=true)
@@ -66,46 +70,26 @@ public class ShSite extends ShObject {
 		this.setObjectType(ShObjectType.SITE);
 	}
 
-	public String getDescription() {
-		return description;
-	}
-
-	public void setDescription(String description) {
+    public void setDescription(String description) {
 		this.description = description;
 	}
 
-	public String getUrl() {
-		return url;
-	}
-
-	public void setUrl(String url) {
+    public void setUrl(String url) {
 		this.url = url;
 	}
 
-	public String getName() {
-		return this.name;
-	}
-
-	public void setName(String name) {
+    public void setName(String name) {
 		this.name = name;
 	}
 
-	public Set<ShFolder> getShFolders() {
-		return this.shFolders;
-	}
-
-	public void setShFolders(Set<ShFolder> shFolders) {
+    public void setShFolders(Set<ShFolder> shFolders) {
 		this.shFolders.clear();
 		if (shFolders != null) {
 			this.shFolders.addAll(shFolders);
 		}
 	}
 
-	public String getPostTypeLayout() {
-		return postTypeLayout;
-	}
-
-	public void setPostTypeLayout(String postTypeLayout) {
+    public void setPostTypeLayout(String postTypeLayout) {
 		this.postTypeLayout = postTypeLayout;
 	}
 	
@@ -119,19 +103,11 @@ public class ShSite extends ShObject {
 		super.setObjectType(ShObjectType.SITE);
 	}
 
-	public String getSearchablePostTypes() {
-		return searchablePostTypes;
-	}
-
-	public void setSearchablePostTypes(String searchablePostTypes) {
+    public void setSearchablePostTypes(String searchablePostTypes) {
 		this.searchablePostTypes = searchablePostTypes;
 	}
 
-	public String getFormSuccess() {
-		return formSuccess;
-	}
-
-	public void setFormSuccess(String formSuccess) {
+    public void setFormSuccess(String formSuccess) {
 		this.formSuccess = formSuccess;
 	}
 	

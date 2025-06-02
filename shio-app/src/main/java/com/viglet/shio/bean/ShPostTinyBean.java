@@ -20,10 +20,14 @@ import java.util.Date;
 
 import com.viglet.shio.persistence.model.post.impl.ShPostImpl;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 public class ShPostTinyBean {
 
 	private String id;
@@ -58,78 +62,6 @@ public class ShPostTinyBean {
 		this.shPostType.setId(shPost.getShPostType().getId());
 		this.shPostType.setName(shPost.getShPostType().getName());
 		this.shPostType.setTitle(shPost.getShPostType().getTitle());
-	}
-	
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public String getObjectType() {
-		return objectType;
-	}
-
-	public void setObjectType(String objectType) {
-		this.objectType = objectType;
-	}
-
-	public String getTitle() {
-		return title;
-	}
-
-	public void setTitle(String title) {
-		this.title = title;
-	}
-
-	public int getPosition() {
-		return position;
-	}
-
-	public void setPosition(int position) {
-		this.position = position;
-	}
-
-	public Date getDate() {
-		return date;
-	}
-
-	public void setDate(Date date) {
-		this.date = date;
-	}
-
-	public String getSummary() {
-		return summary;
-	}
-
-	public void setSummary(String summary) {
-		this.summary = summary;
-	}
-
-	public ShPostType getShPostType() {
-		return shPostType;
-	}
-
-	public void setShPostType(ShPostType shPostType) {
-		this.shPostType = shPostType;
-	}
-
-	public String getPublishStatus() {
-		return publishStatus;
-	}
-
-	public void setPublishStatus(String publishStatus) {
-		this.publishStatus = publishStatus;
-	}
-
-	public boolean isPublished() {
-		return published;
-	}
-
-	public void setPublished(boolean published) {
-		this.published = published;
 	}
 
 }

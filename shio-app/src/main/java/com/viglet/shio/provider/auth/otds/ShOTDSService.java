@@ -72,21 +72,25 @@ public class ShOTDSService {
 	public static final String GROUP_DN = "GROUP_DN";
 	public static final String OTDS_TICKET = "OTDSTicket";
 
-	@Autowired
-	private ShAuthProviderService shAuthProviderService;
+	private final ShAuthProviderService shAuthProviderService;
 
 	private ShOTDSProviderInstanceBean otdsInstance = null;
 
-	private HttpClient httpClient = HttpClientBuilder.create().build();
+	private final HttpClient httpClient = HttpClientBuilder.create().build();
 
-	private ObjectMapper objectMapper = new ObjectMapper().enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+	private final ObjectMapper objectMapper = new ObjectMapper().enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-	private ResponseHandler<String> responseHandler = new BasicResponseHandler();
+	private final ResponseHandler<String> responseHandler = new BasicResponseHandler();
 
 	private static final Log logger = LogFactory.getLog(ShOTDSService.class);
 
 	private String otdsTicket = null;
+
+	@Autowired
+	public ShOTDSService(ShAuthProviderService shAuthProviderService) {
+		this.shAuthProviderService = shAuthProviderService;
+	}
 
 	public void init(String providerId) {
 		otdsInstance = this.getInstance(providerId);

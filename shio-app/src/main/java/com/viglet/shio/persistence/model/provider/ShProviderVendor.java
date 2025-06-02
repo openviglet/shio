@@ -27,6 +27,8 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * The persistent class for the ShProviderVendor database table.
@@ -34,6 +36,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * @author Alexandre Oliveira
  * @since 0.3.6
  */
+@Setter
+@Getter
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
 @NamedQuery(name = "ShProviderVendor.findAll", query = "SELECT pv FROM ShProviderVendor pv")
@@ -56,53 +60,5 @@ public class ShProviderVendor {
 
 	@OneToMany(mappedBy = "vendor")
 	private List<ShProviderInstance> instances;
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getClassName() {
-		return className;
-	}
-
-	public void setClassName(String className) {
-		this.className = className;
-	}
-
-	public String getDescription() {
-		return description;
-	}
-
-	public void setDescription(String description) {
-		this.description = description;
-	}
-
-	public String getConfigurationPage() {
-		return configurationPage;
-	}
-
-	public void setConfigurationPage(String configurationPage) {
-		this.configurationPage = configurationPage;
-	}
-
-	public List<ShProviderInstance> getInstances() {
-		return instances;
-	}
-
-	public void setInstances(List<ShProviderInstance> instances) {
-		this.instances = instances;
-	}
 
 }

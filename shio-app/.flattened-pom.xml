@@ -220,8 +220,8 @@
       <version>6.6</version>
       <exclusions>
         <exclusion>
-          <artifactId>lucene-backward-codecs</artifactId>
           <groupId>org.apache.lucene</groupId>
+          <artifactId>lucene-backward-codecs</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -231,8 +231,8 @@
       <version>6.6</version>
       <exclusions>
         <exclusion>
-          <artifactId>lucene-backward-codecs</artifactId>
           <groupId>org.apache.lucene</groupId>
+          <artifactId>lucene-backward-codecs</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -279,8 +279,8 @@
       <scope>compile</scope>
       <exclusions>
         <exclusion>
-          <artifactId>antlr4-runtime</artifactId>
           <groupId>org.antlr</groupId>
+          <artifactId>antlr4-runtime</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -291,8 +291,8 @@
       <scope>compile</scope>
       <exclusions>
         <exclusion>
-          <artifactId>antlr4-runtime</artifactId>
           <groupId>org.antlr</groupId>
+          <artifactId>antlr4-runtime</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -303,8 +303,8 @@
       <scope>compile</scope>
       <exclusions>
         <exclusion>
-          <artifactId>antlr4-runtime</artifactId>
           <groupId>org.antlr</groupId>
+          <artifactId>antlr4-runtime</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -320,8 +320,8 @@
       <version>2.1.0</version>
       <exclusions>
         <exclusion>
-          <artifactId>antlr4-runtime</artifactId>
           <groupId>org.antlr</groupId>
+          <artifactId>antlr4-runtime</artifactId>
         </exclusion>
       </exclusions>
     </dependency>

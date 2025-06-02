@@ -18,6 +18,7 @@ package com.viglet.shio.persistence.model.folder;
 
 import jakarta.persistence.*;
 
+import lombok.Getter;
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
 import org.hibernate.annotations.Fetch;
@@ -28,6 +29,7 @@ import com.viglet.shio.persistence.model.object.ShObjectDraft;
 import com.viglet.shio.persistence.model.post.ShPostDraft;
 import com.viglet.shio.persistence.model.site.ShSite;
 
+import java.io.Serial;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,16 +38,32 @@ import java.util.Set;
  * 
  * @author Alexandre Oliveira
  */
+@Getter
 @Entity
 @NamedQuery(name = "ShFolderDraft.findAll", query = "SELECT c FROM ShFolderDraft c")
 @JsonIgnoreProperties({ "shFolders", "shPosts", "shPostAttrRefs", "shGroups", "shUsers", "shPostDrafts", "shPostDraftAttrRefs", "$$_hibernate_interceptor", "hibernateLazyInitializer" })
 @PrimaryKeyJoinColumn(name = "object_id")
 public class ShFolderDraft extends ShObjectDraft {
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	private String name;
 
-	private byte rootFolder;
+	/*
+	public Set<ShPostDraft> getShPosts() {
+		return this.shPosts;
+	}
+
+ */
+	/*
+	public void setShPosts(Set<ShPostDraft> shPosts) {
+		this.shPosts.clear();
+		if (shPosts != null) {
+			this.shPosts.addAll(shPosts);
+		}
+	}
+*/
+    private byte rootFolder;
 
 	// bi-directional many-to-one association to ShFolder
 	@ManyToOne
@@ -73,59 +91,26 @@ public class ShFolderDraft extends ShObjectDraft {
 		this.setObjectType(ShObjectType.FOLDER);
 	}
 
-	public String getName() {
-		return name;
-	}
-
 	/*public void setName(String name) {
 		this.name = name;
 	} */
 
-	public ShFolderDraft getParentFolder() {
-		return parentFolder;
-	}
-
-	public void setParentFolder(ShFolderDraft parentFolder) {
+    public void setParentFolder(ShFolderDraft parentFolder) {
 		this.parentFolder = parentFolder;
 	}
 
-	public ShSite getShSite() {
-		return shSite;
-	}
-
-	public void setShSite(ShSite shSite) {
+    public void setShSite(ShSite shSite) {
 		this.shSite = shSite;
 	}
 
-	public Set<ShFolderDraft> getShFolders() {
-		return this.shFolders;
-	}
-
-	public void setShFolders(Set<ShFolderDraft> shFolders) {
+    public void setShFolders(Set<ShFolderDraft> shFolders) {
 		this.shFolders.clear();
 		if (shFolders != null) {
 			this.shFolders.addAll(shFolders);
 		}
 	}
-/*
-	public Set<ShPostDraft> getShPosts() {
-		return this.shPosts;
-	}
 
- */
-/*
-	public void setShPosts(Set<ShPostDraft> shPosts) {
-		this.shPosts.clear();
-		if (shPosts != null) {
-			this.shPosts.addAll(shPosts);
-		}
-	}
-*/
-	public byte getRootFolder() {
-		return rootFolder;
-	}
-
-	public void setRootFolder(byte rootFolder) {
+    public void setRootFolder(byte rootFolder) {
 		this.rootFolder = rootFolder;
 	}
 

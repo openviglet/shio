@@ -23,9 +23,8 @@ import java.util.StringJoiner;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -41,10 +40,14 @@ import net.coobird.thumbnailator.Thumbnails;
  * @author Alexandre Oliveira
  */
 @Controller
+@Slf4j
 public class ShImageResize {
-	private static final Log logger = LogFactory.getLog(ShImageResize.class);
+	private final ShStaticFileUtils shStaticFileUtils;
+
 	@Autowired
-	ShStaticFileUtils shStaticFileUtils;
+	public ShImageResize(ShStaticFileUtils shStaticFileUtils) {
+		this.shStaticFileUtils = shStaticFileUtils;
+	}
 
 	@GetMapping("/image/{type}/{value}/**")
 	public void resize(HttpServletRequest request, HttpServletResponse response, @PathVariable String type,
@@ -73,7 +76,7 @@ public class ShImageResize {
 			}
 
 		} catch (IOException e) {
-			logger.error("Image Resize Error", e);
+			log.error("Image Resize Error", e);
 		}
 	}
 }

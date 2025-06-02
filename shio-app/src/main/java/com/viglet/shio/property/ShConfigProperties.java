@@ -16,6 +16,8 @@
  */
 package com.viglet.shio.property;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -23,30 +25,13 @@ import org.springframework.stereotype.Component;
  * @author Alexandre Oliveira
  * @since 0.3.7
  */
+@Setter
+@Getter
 @Component
 @ConfigurationProperties("shio.config")
 public class ShConfigProperties {
 	private String system = "none";
 	private String auth = "none";
 	private String exchange = "none";
-	
-	public String getSystem() {
-		return system;
-	}
-	public void setSystem(String system) {
-		this.system = system;
-	}
-	public String getAuth() {
-		return auth;
-	}
-	public void setAuth(String auth) {
-		this.auth = auth;
-	}
-	public String getExchange() {
-		return exchange;
-	}
-	public void setExchange(String exchange) {
-		this.exchange = exchange;
-	}
 
 }

@@ -28,8 +28,6 @@ import java.util.Optional;
 import com.viglet.shio.utils.ShFolderUtils;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -49,7 +47,6 @@ import com.viglet.shio.persistence.model.post.relator.impl.ShRelatorItemImpl;
 import com.viglet.shio.persistence.repository.post.ShPostRepository;
 import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.post.type.ShSystemPostTypeAttr;
-import com.viglet.shio.utils.ShStaticFileUtils;
 import com.viglet.shio.widget.ShSystemWidget;
 
 /**
@@ -57,13 +54,16 @@ import com.viglet.shio.widget.ShSystemWidget;
  */
 @Component
 public class ShPostExport {
-	static final Logger logger = LogManager.getLogger(ShPostExport.class.getName());
+	private final ShFolderUtils shFolderUtils;
+	private final ShPostRepository shPostRepository;
+	private final ShExchangeUtils shExchangeUtils;
+
 	@Autowired
-	private ShFolderUtils shFolderUtils;
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShExchangeUtils shExchangeUtils;
+	public ShPostExport(ShFolderUtils shFolderUtils, ShPostRepository shPostRepository, ShExchangeUtils shExchangeUtils) {
+		this.shFolderUtils = shFolderUtils;
+		this.shPostRepository = shPostRepository;
+		this.shExchangeUtils = shExchangeUtils;
+	}
 
 	public StreamingResponseBody exportObject(HttpServletResponse response, String id) {
 		Optional<ShPost> shPost = shPostRepository.findById(id);

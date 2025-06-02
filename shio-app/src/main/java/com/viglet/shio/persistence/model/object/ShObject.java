@@ -16,6 +16,7 @@
  */
 package com.viglet.shio.persistence.model.object;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.HashSet;
@@ -52,6 +53,7 @@ import com.viglet.shio.persistence.model.workflow.ShWorkflowTask;
 @JsonIgnoreProperties({ "shPostAttrRefs", "shGroups", "shUsers", "summary", "shWorkflowTasks" })
 public class ShObject implements Serializable, ShObjectImpl {
 
+	@Serial
 	private static final long serialVersionUID = 1L;
 	@Id
 	@UuidGenerator

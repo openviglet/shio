@@ -45,12 +45,18 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/api/v2/preview")
 @Tag( name = "Preview", description = "Preview API")
 public class ShPreviewAPI {
-	@Autowired
+	final
 	ShSitesContextURLProcess shSitesContextURLProcess;
+	private final ShObjectRepository shObjectRepository;
+	private final ShSitesDetectContextURL shSitesDetectContextURL;
+
 	@Autowired
-	private ShObjectRepository shObjectRepository;
-	@Autowired
-	private ShSitesDetectContextURL shSitesDetectContextURL;
+	public ShPreviewAPI(ShSitesContextURLProcess shSitesContextURLProcess, ShObjectRepository shObjectRepository,
+						ShSitesDetectContextURL shSitesDetectContextURL) {
+		this.shSitesContextURLProcess = shSitesContextURLProcess;
+		this.shObjectRepository = shObjectRepository;
+		this.shSitesDetectContextURL = shSitesDetectContextURL;
+	}
 
 	@Operation(summary = "Detect URL")
 	@PostMapping("/detect-url")

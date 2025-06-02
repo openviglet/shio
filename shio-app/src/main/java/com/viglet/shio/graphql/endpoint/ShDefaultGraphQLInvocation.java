@@ -35,18 +35,14 @@ import java.util.concurrent.CompletableFuture;
 
 @Component
 public class ShDefaultGraphQLInvocation implements GraphQLInvocation {
-	static final Logger logger = LogManager.getLogger(ShDefaultGraphQLInvocation.class);
-	@Autowired
-	GraphQL graphQL;
-
 	@Autowired(required = false)
-	DataLoaderRegistry dataLoaderRegistry;
+	private DataLoaderRegistry dataLoaderRegistry;
 
 	@Autowired
-	ExecutionInputCustomizer executionInputCustomizer;
+	private ExecutionInputCustomizer executionInputCustomizer;
 
 	@Autowired
-	ShGraphQLSchema shGraphQLSchema;
+	private  ShGraphQLSchema shGraphQLSchema;
 
 	@Override
 	public CompletableFuture<ExecutionResult> invoke(GraphQLInvocationData invocationData, WebRequest webRequest) {

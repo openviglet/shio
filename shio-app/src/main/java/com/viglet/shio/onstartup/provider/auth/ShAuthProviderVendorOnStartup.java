@@ -45,8 +45,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class ShAuthProviderVendorOnStartup {
 
+	private final ShAuthProviderVendorRepository shAuthProviderVendorRepository;
+
 	@Autowired
-	private ShAuthProviderVendorRepository shAuthProviderVendorRepository;
+	public ShAuthProviderVendorOnStartup(ShAuthProviderVendorRepository shAuthProviderVendorRepository) {
+		this.shAuthProviderVendorRepository = shAuthProviderVendorRepository;
+	}
 
 	public void createDefaultRows() {
 

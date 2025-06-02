@@ -16,9 +16,11 @@
  */
 package com.viglet.shio.persistence.model.widget;
 
+import java.io.Serial;
 import java.io.Serializable;
 import jakarta.persistence.*;
 
+import lombok.Getter;
 import org.hibernate.annotations.GenericGenerator;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -33,10 +35,12 @@ import java.util.List;
  * 
  * @author Alexandre Oliveira
  */
+@Getter
 @Entity
 @NamedQuery(name = "ShWidget.findAll", query = "SELECT s FROM ShWidget s")
 @JsonIgnoreProperties({ "shPostTypeAttrs" })
 public class ShWidget implements Serializable {
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	@Id
@@ -63,43 +67,23 @@ public class ShWidget implements Serializable {
 	@OneToMany(mappedBy = "shWidget")
 	private List<ShPostTypeAttr> shPostTypeAttrs;
 
-	public String getId() {
-		return this.id;
-	}
-
-	public void setId(String id) {
+    public void setId(String id) {
 		this.id = id;
 	}
 
-	public String getClassName() {
-		return this.className;
-	}
-
-	public void setClassName(String className) {
+    public void setClassName(String className) {
 		this.className = className;
 	}
 
-	public String getDescription() {
-		return this.description;
-	}
-
-	public void setDescription(String description) {
+    public void setDescription(String description) {
 		this.description = description;
 	}
 
-	public String getImplementationCode() {
-		return this.implementationCode;
-	}
-
-	public void setImplementationCode(String implementationCode) {
+    public void setImplementationCode(String implementationCode) {
 		this.implementationCode = implementationCode;
 	}
 
-	public String getName() {
-		return this.name;
-	}
-
-	public void setName(String name) {
+    public void setName(String name) {
 		this.name = name;
 	}
 
@@ -107,19 +91,11 @@ public class ShWidget implements Serializable {
 		this.name = shSystemWidget.toString();
 	}
 
-	public String getType() {
-		return this.type;
-	}
-
-	public void setType(String type) {
+    public void setType(String type) {
 		this.type = type;
 	}
 
-	public List<ShPostTypeAttr> getShPostTypeAttrs() {
-		return this.shPostTypeAttrs;
-	}
-
-	public void setShPostTypeAttrs(List<ShPostTypeAttr> shPostTypeAttrs) {
+    public void setShPostTypeAttrs(List<ShPostTypeAttr> shPostTypeAttrs) {
 		this.shPostTypeAttrs = shPostTypeAttrs;
 	}
 
@@ -137,11 +113,7 @@ public class ShWidget implements Serializable {
 		return shPostTypeAttr;
 	}
 
-	public String getSettingPath() {
-		return settingPath;
-	}
-
-	public void setSettingPath(String settingPath) {
+    public void setSettingPath(String settingPath) {
 		this.settingPath = settingPath;
 	}
 

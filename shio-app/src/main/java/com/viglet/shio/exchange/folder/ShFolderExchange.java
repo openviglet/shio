@@ -18,33 +18,20 @@ package com.viglet.shio.exchange.folder;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.exchange.object.ShObjectExchange;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ShFolderExchange extends ShObjectExchange {
-	
 
 	private String name;
 
 	private String parentFolder;
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getParentFolder() {
-		return parentFolder;
-	}
-
-	public void setParentFolder(String parentFolder) {
-		this.parentFolder = parentFolder;
-	}
 
 
 }

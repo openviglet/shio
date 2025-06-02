@@ -16,9 +16,12 @@
  */
 package com.viglet.shio.persistence.model.system;
 
+import java.io.Serial;
 import java.io.Serializable;
 import jakarta.persistence.*;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -27,10 +30,13 @@ import org.hibernate.annotations.UuidGenerator;
  * 
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 @Entity
 @Table(name = "shConfigVar")
 @NamedQuery(name = "ShConfigVar.findAll", query = "SELECT cv FROM ShConfigVar cv")
 public class ShConfigVar implements Serializable {
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	@Id
@@ -46,38 +52,6 @@ public class ShConfigVar implements Serializable {
 	
 	@Column(nullable = true, length = 255)
 	private String value;
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public String getPath() {
-		return path;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public void setPath(String path) {
-		this.path = path;
-	}
-
-	public String getValue() {
-		return value;
-	}
-
-	public void setValue(String value) {
-		this.value = value;
-	}
 
 
 }

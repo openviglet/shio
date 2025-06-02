@@ -19,12 +19,16 @@ package com.viglet.shio.provider.exchange.otcs.bean.result;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  * 
  * @since 0.3.6
  */
+@Setter
+@Getter
 public class ShOTCSPermissionsBean {
 
 	private List<String> permissions;
@@ -33,29 +37,5 @@ public class ShOTCSPermissionsBean {
 	private int rightId;
 	
 	private String type;
-	
-	public List<String> getPermissions() {
-		return permissions;
-	}
 
-	public void setPermissions(List<String> permissions) {
-		this.permissions = permissions;
-	}
-
-	public int getRightId() {
-		return rightId;
-	}
-
-	public void setRightId(int rightId) {
-		this.rightId = rightId;
-	}
-
-	public String getType() {
-		return type;
-	}
-
-	public void setType(String type) {
-		this.type = type;
-	}
-	
 }

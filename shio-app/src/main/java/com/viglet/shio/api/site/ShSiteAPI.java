@@ -27,9 +27,8 @@ import java.util.Set;
 import com.viglet.shio.utils.ShIntegrationUtils;
 import jakarta.servlet.http.HttpServletResponse;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,25 +72,32 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/api/v2/site")
 @Tag( name = "Site", description = "Site API")
+@Slf4j
 public class ShSiteAPI {
-	static final Logger logger = LogManager.getLogger(ShSiteAPI.class);
+	private final ShSiteRepository shSiteRepository;
+	private final ShFolderRepository shFolderRepository;
+	private final ShSiteExport shSiteExport;
+	private final ShSitesNodeJS shSitesNodeJS;
+	private final ShCloneExchange shCloneExchange;
+	private final ShHistoryUtils shHistoryUtils;
+	private final ShReportPostType shReportPostType;
+	private final ShIntegrationUtils shIntegrationUtils;
 
 	@Autowired
-	private ShSiteRepository shSiteRepository;
-	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShSiteExport shSiteExport;
-	@Autowired
-	private ShSitesNodeJS shSitesNodeJS;
-	@Autowired
-	private ShCloneExchange shCloneExchange;
-	@Autowired
-	private ShHistoryUtils shHistoryUtils;
-	@Autowired
-	private ShReportPostType shReportPostType;
-	@Autowired
-	private ShIntegrationUtils shIntegrationUtils;
+	public ShSiteAPI(ShSiteRepository shSiteRepository, ShFolderRepository shFolderRepository,
+					 ShSiteExport shSiteExport, ShSitesNodeJS shSitesNodeJS, ShCloneExchange shCloneExchange,
+					 ShHistoryUtils shHistoryUtils, ShReportPostType shReportPostType,
+					 ShIntegrationUtils shIntegrationUtils) {
+		this.shSiteRepository = shSiteRepository;
+		this.shFolderRepository = shFolderRepository;
+		this.shSiteExport = shSiteExport;
+		this.shSitesNodeJS = shSitesNodeJS;
+		this.shCloneExchange = shCloneExchange;
+		this.shHistoryUtils = shHistoryUtils;
+		this.shReportPostType = shReportPostType;
+		this.shIntegrationUtils = shIntegrationUtils;
+	}
+
 	@GetMapping
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
 	public List<ShSite> shSiteList(final Principal principal) {
@@ -144,9 +150,9 @@ public class ShSiteAPI {
 			try {
 				shIntegrationUtils.deleteFolder(shFolder);
 			} catch (ClientProtocolException e) {
-				logger.error("shSiteDelete ClientProtocolException: ", e);
+				log.error("shSiteDelete ClientProtocolException: ", e);
 			} catch (IOException e) {
-				logger.error("shSiteDelete IOException: ", e);
+				log.error("shSiteDelete IOException: ", e);
 			}
 		}
 

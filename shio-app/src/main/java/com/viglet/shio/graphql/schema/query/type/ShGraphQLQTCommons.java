@@ -46,11 +46,15 @@ import graphql.schema.GraphQLObjectType.Builder;
  */
 @Component
 public class ShGraphQLQTCommons {
+	private final ShSiteRepository shSiteRepository;
+	private final ShGraphQLUtils shGraphQLUtils;
+
 	@Autowired
-	private ShSiteRepository shSiteRepository;
-	@Autowired
-	private ShGraphQLUtils shGraphQLUtils;
-	
+	public ShGraphQLQTCommons(ShSiteRepository shSiteRepository, ShGraphQLUtils shGraphQLUtils) {
+		this.shSiteRepository = shSiteRepository;
+		this.shGraphQLUtils = shGraphQLUtils;
+	}
+
 	public void createArguments(Builder queryTypeBuilder, GraphQLObjectType graphQLObjectType, String postTypeName,
 			GraphQLInputObjectType.Builder postTypeWhereInputBuilder, boolean isPlural) {
 		if (!StringUtils.isBlank(postTypeName)) {

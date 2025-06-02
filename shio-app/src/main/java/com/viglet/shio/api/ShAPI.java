@@ -32,8 +32,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag( name = "Heartbeat", description = "Heartbeat")
 public class ShAPI {
 
+	private final ShAPIBean shAPIBean;
+
 	@Autowired
-	private ShAPIBean shAPIBean;
+	public ShAPI(ShAPIBean shAPIBean) {
+		this.shAPIBean = shAPIBean;
+	}
 
 	@GetMapping
 	public ShAPIBean shApiInfo() {

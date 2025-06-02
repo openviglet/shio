@@ -16,6 +16,7 @@
  */
 package com.viglet.shio.persistence.model.post;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 import com.viglet.shio.persistence.model.object.ShObject;
@@ -54,6 +55,7 @@ import jakarta.persistence.TemporalType;
 @NamedQuery(name = "ShPostDraftAttr.findAll", query = "SELECT pda FROM ShPostDraftAttr pda")
 @JsonIgnoreProperties({ "shPostType", "shPost", "shParentRelatorItem", "tab" })
 public class ShPostDraftAttr implements Serializable, ShPostAttrImpl {
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	@Id

@@ -32,18 +32,25 @@ import com.viglet.shio.provider.exchange.ShExchangeSystemProviderVendor;
  */
 @Component
 public class ShExchangeProviderInstanceOnStartup {
-	@Autowired
-	private ShConfigProperties shConfigProperties;
+	private final ShConfigProperties shConfigProperties;
 	private static final String URL = "URL";
 	private static final String USERNAME = "USERNAME";
 	private static final String PASSWORD = "PASSWORD";
 
+	private final ShConfigVarRepository shConfigVarRepository;
+	private final ShExchangeProviderInstanceRepository shExchangeProviderInstanceRepository;
+	private final ShExchangeProviderVendorRepository shExchangeProviderVendorRepository;
+
 	@Autowired
-	private ShConfigVarRepository shConfigVarRepository;
-	@Autowired
-	private ShExchangeProviderInstanceRepository shExchangeProviderInstanceRepository;
-	@Autowired
-	private ShExchangeProviderVendorRepository shExchangeProviderVendorRepository;
+	public ShExchangeProviderInstanceOnStartup(ShConfigProperties shConfigProperties,
+											   ShConfigVarRepository shConfigVarRepository,
+											   ShExchangeProviderInstanceRepository shExchangeProviderInstanceRepository,
+											   ShExchangeProviderVendorRepository shExchangeProviderVendorRepository) {
+		this.shConfigProperties = shConfigProperties;
+		this.shConfigVarRepository = shConfigVarRepository;
+		this.shExchangeProviderInstanceRepository = shExchangeProviderInstanceRepository;
+		this.shExchangeProviderVendorRepository = shExchangeProviderVendorRepository;
+	}
 
 	public void createDefaultRows() {
 

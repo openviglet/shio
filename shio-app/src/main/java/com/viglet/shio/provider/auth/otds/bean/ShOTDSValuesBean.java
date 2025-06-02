@@ -16,28 +16,18 @@
  */
 package com.viglet.shio.provider.auth.otds.bean;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 public class ShOTDSValuesBean {
 
 	private String name;
 	
 	private Object[] values;
 
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public Object[] getValues() {
-		return values;
-	}
-
-	public void setValues(Object[] values) {
-		this.values = values;
-	}
 }

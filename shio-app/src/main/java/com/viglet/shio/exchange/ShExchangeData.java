@@ -16,6 +16,9 @@
  */
 package com.viglet.shio.exchange;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * Export Data includes Export and Info about Directory where is the static
  * files.
@@ -24,28 +27,14 @@ package com.viglet.shio.exchange;
  * @since 0.3.4
  * 
  */
+@Setter
+@Getter
 public class ShExchangeData {
 	private ShExchange shExchange;
 	private ShExchangeFilesDirs shExchangeFilesDirs;
 
 	ShExchangeData(ShExchange shExchange, ShExchangeFilesDirs shExchangeFilesDirs) {
 		this.shExchange = shExchange;
-		this.shExchangeFilesDirs = shExchangeFilesDirs;
-	}
-
-	public ShExchange getShExchange() {
-		return shExchange;
-	}
-
-	public void setShExchange(ShExchange shExchange) {
-		this.shExchange = shExchange;
-	}
-
-	public ShExchangeFilesDirs getShExchangeFilesDirs() {
-		return shExchangeFilesDirs;
-	}
-
-	public void setShExchangeFilesDirs(ShExchangeFilesDirs shExchangeFilesDirs) {
 		this.shExchangeFilesDirs = shExchangeFilesDirs;
 	}
 

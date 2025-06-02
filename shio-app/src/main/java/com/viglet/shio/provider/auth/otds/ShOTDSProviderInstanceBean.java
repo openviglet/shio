@@ -17,11 +17,15 @@
 package com.viglet.shio.provider.auth.otds;
 
 import com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  * @since 0.3.6
  */
+@Setter
+@Getter
 public class ShOTDSProviderInstanceBean extends ShAuthProviderInstance {
 
     private String host;
@@ -39,117 +43,5 @@ public class ShOTDSProviderInstanceBean extends ShAuthProviderInstance {
     private String groupScope;
     private String groupDN;
 
-    public String getHost() {
-        return host;
-    }
 
-    public void setHost(String host) {
-        this.host = host;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public String getResourceId() {
-        return resourceId;
-    }
-
-    public void setResourceId(String resourceId) {
-        this.resourceId = resourceId;
-    }
-
-    public String getSecretKey() {
-        return secretKey;
-    }
-
-    public void setSecretKey(String secretKey) {
-        this.secretKey = secretKey;
-    }
-
-    public String getPartition() {
-        return partition;
-    }
-
-    public void setPartition(String partition) {
-        this.partition = partition;
-    }
-
-    public String getDomain() {
-        return domain;
-    }
-
-    public void setDomain(String domain) {
-        this.domain = domain;
-    }
-
-    public String getMembershipFilter() {
-        return membershipFilter;
-    }
-
-    public void setMembershipFilter(String membershipFilter) {
-        this.membershipFilter = membershipFilter;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getUserFilter() {
-        return userFilter;
-    }
-
-    public void setUserFilter(String userFilter) {
-        this.userFilter = userFilter;
-    }
-
-    public String getUserScope() {
-        return userScope;
-    }
-
-    public void setUserScope(String userScope) {
-        this.userScope = userScope;
-    }
-
-    public String getUserDN() {
-        return userDN;
-    }
-
-    public void setUserDN(String userDN) {
-        this.userDN = userDN;
-    }
-
-    public String getGroupFilter() {
-        return groupFilter;
-    }
-
-    public void setGroupFilter(String groupFilter) {
-        this.groupFilter = groupFilter;
-    }
-
-    public String getGroupScope() {
-        return groupScope;
-    }
-
-    public void setGroupScope(String groupScope) {
-        this.groupScope = groupScope;
-    }
-
-    public String getGroupDN() {
-        return groupDN;
-    }
-
-    public void setGroupDN(String groupDN) {
-        this.groupDN = groupDN;
-    }
-
-    
 }

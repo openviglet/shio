@@ -16,9 +16,11 @@
  */
 package com.viglet.shio.persistence.model.auth;
 
+import java.io.Serial;
 import java.io.Serializable;
 import jakarta.persistence.*;
 
+import lombok.Getter;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -30,10 +32,12 @@ import java.util.Set;
  * 
  * @author Alexandre Oliveira
  */
+@Getter
 @Entity
 @Table(name = "shRole")
 @NamedQuery(name = "ShRole.findAll", query = "SELECT r FROM ShRole r")
 public class ShRole implements Serializable {
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	@Id
@@ -51,35 +55,19 @@ public class ShRole implements Serializable {
 	@ManyToMany
 	private Set<ShGroup> shGroups = new HashSet<>();
 
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
+    public void setId(String id) {
 		this.id = id;
 	}
 
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
+    public void setName(String name) {
 		this.name = name;
 	}
 
-	public String getDescription() {
-		return description;
-	}
-
-	public void setDescription(String description) {
+    public void setDescription(String description) {
 		this.description = description;
 	}
-	
-	public Set<ShGroup> getShGroups() {
-		return this.shGroups;
-	}
 
-	public void setShGroups(Set<ShGroup> shGroups) {
+    public void setShGroups(Set<ShGroup> shGroups) {
 		this.shGroups.clear();
 		if (shGroups != null) {
 			this.shGroups.addAll(shGroups);

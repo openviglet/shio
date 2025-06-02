@@ -61,20 +61,26 @@ import graphql.schema.GraphQLObjectType.Builder;
 @Component
 public class ShGraphQLQTObjectFromURL {
 
-	@Autowired
-	private ShSitesContent shSitesContent;
-	@Autowired
-	private ShObjectRepository shObjectRepository;
-	@Autowired
-	private ShGraphQLUtils shGraphQLUtils;
-	@Autowired
-	private ShSitesPageLayoutUtils shSitesPageLayoutUtils;
-	@Autowired
-	private ShSitesDetectContextURL shSitesDetectContextURL;
-	@Autowired
-	private ShSiteRepository shSiteRepository;
+	private final ShSitesContent shSitesContent;
+	private final ShObjectRepository shObjectRepository;
+	private final ShGraphQLUtils shGraphQLUtils;
+	private final ShSitesPageLayoutUtils shSitesPageLayoutUtils;
+	private final ShSitesDetectContextURL shSitesDetectContextURL;
+	private final ShSiteRepository shSiteRepository;
 	private static final String CONTENT_NAME = "shObjectFromURL";
 	private static final String SYSTEM_ATTR = "system";
+
+	@Autowired
+	public ShGraphQLQTObjectFromURL(ShSitesContent shSitesContent, ShObjectRepository shObjectRepository,
+									ShGraphQLUtils shGraphQLUtils, ShSitesPageLayoutUtils shSitesPageLayoutUtils,
+									ShSitesDetectContextURL shSitesDetectContextURL, ShSiteRepository shSiteRepository) {
+		this.shSitesContent = shSitesContent;
+		this.shObjectRepository = shObjectRepository;
+		this.shGraphQLUtils = shGraphQLUtils;
+		this.shSitesPageLayoutUtils = shSitesPageLayoutUtils;
+		this.shSitesDetectContextURL = shSitesDetectContextURL;
+		this.shSiteRepository = shSiteRepository;
+	}
 
 	public void createQueryType(Builder queryTypeBuilder,
 			graphql.schema.GraphQLCodeRegistry.Builder codeRegistryBuilder, GraphQLObjectType graphQLObjectType) {

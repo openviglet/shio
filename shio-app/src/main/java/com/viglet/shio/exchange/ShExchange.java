@@ -26,10 +26,14 @@ import com.viglet.shio.exchange.folder.ShFolderExchange;
 import com.viglet.shio.exchange.post.ShPostExchange;
 import com.viglet.shio.exchange.post.type.ShPostTypeExchange;
 import com.viglet.shio.exchange.site.ShSiteExchange;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ShExchange {
 
@@ -47,45 +51,5 @@ public class ShExchange {
 
 	@JsonInclude(Include.NON_NULL)
 	private List<ShFileExchange> files;
-
-	public List<ShSiteExchange> getSites() {
-		return sites;
-	}
-
-	public void setSites(List<ShSiteExchange> sites) {
-		this.sites = sites;
-	}
-
-	public List<ShFolderExchange> getFolders() {
-		return folders;
-	}
-
-	public void setFolders(List<ShFolderExchange> folders) {
-		this.folders = folders;
-	}
-
-	public List<ShPostExchange> getPosts() {
-		return posts;
-	}
-
-	public void setPosts(List<ShPostExchange> posts) {
-		this.posts = posts;
-	}
-
-	public List<ShFileExchange> getFiles() {
-		return files;
-	}
-
-	public void setFiles(List<ShFileExchange> files) {
-		this.files = files;
-	}
-
-	public List<ShPostTypeExchange> getPostTypes() {
-		return postTypes;
-	}
-
-	public void setPostTypes(List<ShPostTypeExchange> postTypes) {
-		this.postTypes = postTypes;
-	}
 
 }

@@ -21,10 +21,14 @@ import java.util.List;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.impl.ShPostImpl;
 import com.viglet.shio.persistence.model.site.ShSite;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 public class ShFolderPath {
 
 	private String folderPath;
@@ -36,45 +40,5 @@ public class ShFolderPath {
 	private ShPostImpl shPost;
 	
 	private ShSite shSite;
-
-	public String getFolderPath() {
-		return folderPath;
-	}
-
-	public void setFolderPath(String folderPath) {
-		this.folderPath = folderPath;
-	}
-
-	public ShFolder getCurrentFolder() {
-		return currentFolder;
-	}
-
-	public void setCurrentFolder(ShFolder currentFolder) {
-		this.currentFolder = currentFolder;
-	}
-
-	public List<ShFolder> getBreadcrumb() {
-		return breadcrumb;
-	}
-
-	public void setBreadcrumb(List<ShFolder> breadcrumb) {
-		this.breadcrumb = breadcrumb;
-	}
-
-	public ShSite getShSite() {
-		return shSite;
-	}
-
-	public void setShSite(ShSite shSite) {
-		this.shSite = shSite;
-	}
-
-	public ShPostImpl getShPost() {
-		return shPost;
-	}
-
-	public void setShPost(ShPostImpl shPost) {
-		this.shPost = shPost;
-	}
 
 }

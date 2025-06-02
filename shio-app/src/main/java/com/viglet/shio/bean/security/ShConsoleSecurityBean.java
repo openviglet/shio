@@ -16,31 +16,20 @@
  */
 package com.viglet.shio.bean.security;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.Set;
 
 /**
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 public class ShConsoleSecurityBean {
 
 	private Set<String> shUsers;
 	
 	private Set<String> shGroups;
-
-	public Set<String> getShUsers() {
-		return shUsers;
-	}
-
-	public void setShUsers(Set<String> shUsers) {
-		this.shUsers = shUsers;
-	}
-
-	public Set<String> getShGroups() {
-		return shGroups;
-	}
-
-	public void setShGroups(Set<String> shGroups) {
-		this.shGroups = shGroups;
-	}
 
 }

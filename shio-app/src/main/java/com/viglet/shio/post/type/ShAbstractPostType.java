@@ -20,6 +20,8 @@ import java.util.Date;
 
 import com.viglet.shio.exchange.post.ShPostExchange;
 import com.viglet.shio.url.ShURLFormatter;
+import lombok.Getter;
+import lombok.Setter;
 
 
 /**
@@ -29,6 +31,8 @@ import com.viglet.shio.url.ShURLFormatter;
  * @since 0.3.4
  * 
  */
+@Setter
+@Getter
 public class ShAbstractPostType {
 
 	private String id;
@@ -41,47 +45,7 @@ public class ShAbstractPostType {
 	
 	private String folder;
 
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public String getFurl() {
-		return furl;
-	}
-
-	public void setFurl(String furl) {
-		this.furl = furl;
-	}
-
-	public Date getDate() {
-		return date;
-	}
-
-	public void setDate(Date date) {
-		this.date = date;
-	}
-
-	public String getOwner() {
-		return owner;
-	}
-
-	public void setOwner(String owner) {
-		this.owner = owner;
-	}
-
-	public String getFolder() {
-		return folder;
-	}
-
-	public void setFolder(String folder) {
-		this.folder = folder;
-	}
-	
-	public ShPostExchange getShPostExchange() {
+    public ShPostExchange getShPostExchange() {
 		
 		ShPostExchange shPostExchange = new ShPostExchange();
 

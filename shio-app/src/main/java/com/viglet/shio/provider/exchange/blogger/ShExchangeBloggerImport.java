@@ -21,8 +21,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.UUID;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,12 +55,10 @@ import com.viglet.shio.utils.ShUserUtils;
  */
 
 @Component
+@Slf4j
 public class ShExchangeBloggerImport {
-	private static final Logger logger = LogManager.getLogger(ShExchangeBloggerImport.class);
-	@Autowired
-	private ShUserUtils shUserUtils;
-	@Autowired
-	private ShCloneExchange shCloneExchange;
+	private final ShUserUtils shUserUtils;
+	private final ShCloneExchange shCloneExchange;
 
 	private static final String HOME_NAME = "Home";
 
@@ -70,6 +67,12 @@ public class ShExchangeBloggerImport {
 	@Value("${shio.plugin.blogger:}")
 	private String customClass;
 	private boolean hasPlugin = false;
+
+	@Autowired
+	public ShExchangeBloggerImport(ShUserUtils shUserUtils, ShCloneExchange shCloneExchange) {
+		this.shUserUtils = shUserUtils;
+		this.shCloneExchange = shCloneExchange;
+	}
 
 	public ShExchange shImportFromBlogger(MultipartFile multipartFile) {
 		ShImporterPlugin shImporterPlugin = null;
@@ -80,7 +83,7 @@ public class ShExchangeBloggerImport {
 				hasPlugin = true;
 			} catch (ClassNotFoundException | InstantiationException | IllegalAccessException | IllegalArgumentException
 					| InvocationTargetException | NoSuchMethodException | SecurityException e) {
-				logger.error(e.getMessage(), e);
+				log.error(e.getMessage(), e);
 			}
 		}
 		ShExchangeFilesDirs shExchangeFilesDirs = new ShExchangeFilesDirs();
@@ -110,7 +113,7 @@ public class ShExchangeBloggerImport {
 				shExchangeData.getShExchangeFilesDirs().deleteExport();
 				return shExchangeData.getShExchange();
 			} catch (IOException | IllegalArgumentException | FeedException | IllegalStateException e) {
-				logger.error(e.getMessage(), e);
+				log.error(e.getMessage(), e);
 			}
 		}
 		return new ShExchange();

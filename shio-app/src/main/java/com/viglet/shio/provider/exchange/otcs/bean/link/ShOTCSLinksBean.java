@@ -16,21 +16,18 @@
  */
 package com.viglet.shio.provider.exchange.otcs.bean.link;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * @author Alexandre Oliveira
  * 
  * @since 0.3.6
  */
+@Setter
+@Getter
 public class ShOTCSLinksBean {
 
 	private ShOTCSLinksDataBean data;
-
-	public ShOTCSLinksDataBean getData() {
-		return data;
-	}
-
-	public void setData(ShOTCSLinksDataBean data) {
-		this.data = data;
-	}
 
 }

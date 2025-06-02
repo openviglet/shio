@@ -20,6 +20,8 @@ import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * ShObject Exchange
@@ -28,6 +30,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * @since 0.3.7
  * 
  */
+@Setter
+@Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ShObjectExchange {
 	
@@ -42,44 +46,4 @@ public class ShObjectExchange {
 
 	private int position;
 
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public Date getDate() {
-		return date;
-	}
-
-	public void setDate(Date date) {
-		this.date = date;
-	}
-
-	public String getOwner() {
-		return owner;
-	}
-
-	public void setOwner(String owner) {
-		this.owner = owner;
-	}
-
-	public String getFurl() {
-		return furl;
-	}
-
-	public void setFurl(String furl) {
-		this.furl = furl;
-	}
-
-	public int getPosition() {
-		return position;
-	}
-
-	public void setPosition(int position) {
-		this.position = position;
-	}
-	
 }

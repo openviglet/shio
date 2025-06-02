@@ -16,16 +16,15 @@
  */
 package com.viglet.shio.graphql.playground.properties;
 
+import lombok.Getter;
+
 /**
 * @author Alexandre Oliveira
 * @since 0.3.7
 */
+@Getter
 public class Props {
 
-	private Variables variables = new Variables();
-
-	public Variables getVariables() {
-		return variables;
-	}
+	private final Variables variables = new Variables();
 
 }

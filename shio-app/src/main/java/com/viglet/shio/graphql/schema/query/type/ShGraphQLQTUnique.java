@@ -49,14 +49,19 @@ import graphql.schema.GraphQLObjectType.Builder;
 @Component
 public class ShGraphQLQTUnique {
 
+	private final ShObjectRepository shObjectRepository;
+	private final ShGraphQLQTCommons shGraphQLQTCommons;
+	private final ShGraphQLUtils shGraphQLUtils;
+	private final ShGraphQLInputObjectField shGraphQLInputObjectField;
+
 	@Autowired
-	private ShObjectRepository shObjectRepository;
-	@Autowired
-	private ShGraphQLQTCommons shGraphQLQTCommons;
-	@Autowired
-	private ShGraphQLUtils shGraphQLUtils;
-	@Autowired
-	private ShGraphQLInputObjectField shGraphQLInputObjectField;
+	public ShGraphQLQTUnique(ShObjectRepository shObjectRepository, ShGraphQLQTCommons shGraphQLQTCommons,
+							 ShGraphQLUtils shGraphQLUtils, ShGraphQLInputObjectField shGraphQLInputObjectField) {
+		this.shObjectRepository = shObjectRepository;
+		this.shGraphQLQTCommons = shGraphQLQTCommons;
+		this.shGraphQLUtils = shGraphQLUtils;
+		this.shGraphQLInputObjectField = shGraphQLInputObjectField;
+	}
 
 	private String getPostTypeNameUnique(ShPostType shPostType) {
 		return shGraphQLUtils.normalizedName(shPostType.getName());

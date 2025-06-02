@@ -16,11 +16,16 @@
  */
 package com.viglet.shio.bean;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.Date;
 
 /**
  * @author Alexandre Oliveira
  */
+@Setter
+@Getter
 public class ShFolderTinyBean {
 
 	private String id;
@@ -35,38 +40,6 @@ public class ShFolderTinyBean {
 		this.id = id;
 		this.position = position;
 		this.name = name;
-		this.date = date;
-	}
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public int getPosition() {
-		return position;
-	}
-
-	public void setPosition(int position) {
-		this.position = position;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public Date getDate() {
-		return date;
-	}
-
-	public void setDate(Date date) {
 		this.date = date;
 	}
 

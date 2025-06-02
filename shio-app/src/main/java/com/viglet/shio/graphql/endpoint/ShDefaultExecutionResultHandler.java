@@ -16,20 +16,14 @@
  */
 package com.viglet.shio.graphql.endpoint;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import graphql.ExecutionResult;
 import graphql.spring.web.servlet.ExecutionResultHandler;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.CompletableFuture;
 
 @Component
 public class ShDefaultExecutionResultHandler implements ExecutionResultHandler {
-
-    @Autowired
-    ObjectMapper objectMapper;
-
     @Override
     public Object handleExecutionResult(CompletableFuture<ExecutionResult> executionResultCF) {
         return executionResultCF.thenApply(ExecutionResult::toSpecification);

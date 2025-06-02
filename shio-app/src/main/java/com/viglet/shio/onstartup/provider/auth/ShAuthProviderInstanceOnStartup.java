@@ -33,14 +33,21 @@ import com.viglet.shio.property.ShConfigProperties;
  */
 @Component
 public class ShAuthProviderInstanceOnStartup {
+	private final ShConfigProperties shConfigProperties;
+	private final ShConfigVarRepository shConfigVarRepository;
+	private final ShAuthProviderInstanceRepository shAuthProviderInstanceRepository;
+	private final ShAuthProviderVendorRepository shAuthProviderVendorRepository;
+
 	@Autowired
-	private ShConfigProperties shConfigProperties;
-	@Autowired
-	private ShConfigVarRepository shConfigVarRepository;
-	@Autowired
-	private ShAuthProviderInstanceRepository shAuthProviderInstanceRepository;
-	@Autowired
-	private ShAuthProviderVendorRepository shAuthProviderVendorRepository;
+	public ShAuthProviderInstanceOnStartup(ShConfigProperties shConfigProperties,
+										   ShConfigVarRepository shConfigVarRepository,
+										   ShAuthProviderInstanceRepository shAuthProviderInstanceRepository,
+										   ShAuthProviderVendorRepository shAuthProviderVendorRepository) {
+		this.shConfigProperties = shConfigProperties;
+		this.shConfigVarRepository = shConfigVarRepository;
+		this.shAuthProviderInstanceRepository = shAuthProviderInstanceRepository;
+		this.shAuthProviderVendorRepository = shAuthProviderVendorRepository;
+	}
 
 	public void createDefaultRows() {
 

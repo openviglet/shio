@@ -16,6 +16,7 @@
  */
 package com.viglet.shio.graphql.playground;
 
+import lombok.Getter;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.graphql.playground.properties.Cdn;
@@ -32,45 +33,28 @@ import com.viglet.shio.graphql.playground.properties.Subscriptions;
 @Component
 public class ShGraphiQLProperties {
 
-	private Endpoint endpoint = new Endpoint();
-	private Static staticFile = new Static();
-	private CodeMirror codeMirror = new CodeMirror();
-	private Props props = new Props();
-	private String pageTitle = "Shio CMS Playground";
-	private String mapping = "/graphiql";
-	private Subscriptions subscriptions = new Subscriptions();
-	private Cdn cdn = new Cdn();
+	@Getter
+    private final Endpoint endpoint = new Endpoint();
+	private final Static staticFile = new Static();
+	@Getter
+    private final CodeMirror codeMirror = new CodeMirror();
+	@Getter
+    private final Props props = new Props();
+    @Getter
+    private final Subscriptions subscriptions = new Subscriptions();
+	@Getter
+    private final Cdn cdn = new Cdn();
 
-	public Endpoint getEndpoint() {
-		return endpoint;
-	}
-
-	public Static getStatic() {
+    public Static getStatic() {
 		return staticFile;
 	}
 
-	public CodeMirror getCodeMirror() {
-		return codeMirror;
-	}
-
-	public Props getProps() {
-		return props;
-	}
-
-	public String getPageTitle() {
-		return pageTitle;
+    public String getPageTitle() {
+        return "Shio CMS Playground";
 	}
 
 	public String getMapping() {
-		return mapping;
-	}
-
-	public Subscriptions getSubscriptions() {
-		return subscriptions;
-	}
-
-	public Cdn getCdn() {
-		return cdn;
+        return "/graphiql";
 	}
 
 }

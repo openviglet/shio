@@ -24,9 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -51,16 +50,21 @@ import graphql.schema.GraphQLObjectType.Builder;
  * @since 0.3.7
  */
 @Component
+@Slf4j
 public class ShGraphQLQTPlural {
-	private static final Log logger = LogFactory.getLog(ShGraphQLQTPlural.class);
+	private final ShPostRepository shPostRepository;
+	private final ShGraphQLQTCommons shGraphQLQTCommons;
+	private final ShGraphQLUtils shGraphQLUtils;
+	private final ShGraphQLInputObjectField shGraphQLInputObjectField;
+
 	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShGraphQLQTCommons shGraphQLQTCommons;
-	@Autowired
-	private ShGraphQLUtils shGraphQLUtils;
-	@Autowired
-	private ShGraphQLInputObjectField shGraphQLInputObjectField;
+	public ShGraphQLQTPlural(ShPostRepository shPostRepository, ShGraphQLQTCommons shGraphQLQTCommons,
+							 ShGraphQLUtils shGraphQLUtils, ShGraphQLInputObjectField shGraphQLInputObjectField) {
+		this.shPostRepository = shPostRepository;
+		this.shGraphQLQTCommons = shGraphQLQTCommons;
+		this.shGraphQLUtils = shGraphQLUtils;
+		this.shGraphQLInputObjectField = shGraphQLInputObjectField;
+	}
 
 	private String getPostTypeNamePlural(ShPostType shPostType) {
 		return shGraphQLUtils.normalizedName(shPostType.getNamePlural());
@@ -156,28 +160,26 @@ public class ShGraphQLQTPlural {
 		whereMap.entrySet().forEach(whereArgItem -> {
 
 			String arg = whereArgItem.getKey();
-			if (arg.equals(ShGraphQLConstants.SEARCH)) {
-				logger.info("GraphQL Search");
-			} else if (arg.equals(ShGraphQLConstants.AND)) {
-				logger.info("GraphQL AND");
-			} else if (arg.equals(ShGraphQLConstants.OR)) {
-				logger.info("GraphQL OR");
-			} else if (arg.equals(ShGraphQLConstants.NOT)) {
-				logger.info("GraphQL NOT");
-			} else {
-				String field = arg;
-				String action = ShGraphQLConstants.CONDITION_EQUAL;
-				if (arg.startsWith("_")
-						&& arg.replaceFirst("_", StringUtils.EMPTY).contains(ShGraphQLConstants.CONDITION_SEPARATOR)) {
-					field = String.format("_%s", arg.split(ShGraphQLConstants.CONDITION_SEPARATOR)[1]);
-					action = arg.replaceFirst(field.concat(ShGraphQLConstants.CONDITION_SEPARATOR), StringUtils.EMPTY);
+            switch (arg) {
+                case ShGraphQLConstants.SEARCH -> log.info("GraphQL Search");
+                case ShGraphQLConstants.AND -> log.info("GraphQL AND");
+                case ShGraphQLConstants.OR -> log.info("GraphQL OR");
+                case ShGraphQLConstants.NOT -> log.info("GraphQL NOT");
+                default -> {
+                    String field = arg;
+                    String action = ShGraphQLConstants.CONDITION_EQUAL;
+                    if (arg.startsWith("_")
+                            && arg.replaceFirst("_", StringUtils.EMPTY).contains(ShGraphQLConstants.CONDITION_SEPARATOR)) {
+                        field = String.format("_%s", arg.split(ShGraphQLConstants.CONDITION_SEPARATOR)[1]);
+                        action = arg.replaceFirst(field.concat(ShGraphQLConstants.CONDITION_SEPARATOR), StringUtils.EMPTY);
 
-				} else if (!arg.startsWith("_") && arg.contains(ShGraphQLConstants.CONDITION_SEPARATOR)) {
-					field = arg.split(ShGraphQLConstants.CONDITION_SEPARATOR)[0];
-					action = arg.replaceFirst(field.concat(ShGraphQLConstants.CONDITION_SEPARATOR), StringUtils.EMPTY);
-				}
-				shGraphQLInputObjectField.fieldWhereCondition(shPostType, posts, whereArgItem, field, action, siteIds);
-			}
+                    } else if (!arg.startsWith("_") && arg.contains(ShGraphQLConstants.CONDITION_SEPARATOR)) {
+                        field = arg.split(ShGraphQLConstants.CONDITION_SEPARATOR)[0];
+                        action = arg.replaceFirst(field.concat(ShGraphQLConstants.CONDITION_SEPARATOR), StringUtils.EMPTY);
+                    }
+                    shGraphQLInputObjectField.fieldWhereCondition(shPostType, posts, whereArgItem, field, action, siteIds);
+                }
+            }
 		});
 	}
 }

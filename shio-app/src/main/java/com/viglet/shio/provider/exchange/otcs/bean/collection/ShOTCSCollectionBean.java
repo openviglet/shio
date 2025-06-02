@@ -16,31 +16,20 @@
  */
 package com.viglet.shio.provider.exchange.otcs.bean.collection;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * @author Alexandre Oliveira
  * 
  * @since 0.3.6
  */
+@Setter
+@Getter
 public class ShOTCSCollectionBean {
 
 	private ShOTCSPagingBean paging;
 
 	private ShOTCSSortingBean sorting;
-
-	public ShOTCSPagingBean getPaging() {
-		return paging;
-	}
-
-	public void setPaging(ShOTCSPagingBean paging) {
-		this.paging = paging;
-	}
-
-	public ShOTCSSortingBean getSorting() {
-		return sorting;
-	}
-
-	public void setSorting(ShOTCSSortingBean sorting) {
-		this.sorting = sorting;
-	}
 
 }

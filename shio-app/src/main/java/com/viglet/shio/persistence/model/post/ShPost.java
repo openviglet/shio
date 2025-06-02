@@ -30,6 +30,7 @@ import com.viglet.shio.persistence.model.post.impl.ShPostImpl;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.site.ShSite;
 
+import java.io.Serial;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -52,6 +53,7 @@ import jakarta.persistence.PrimaryKeyJoinColumn;
 @JsonIgnoreProperties({ "shPostAttrRefs", "shGroups", "shUsers", "shPostDraftAttrRefs", "shWorkflowTasks",
 		"shPostAttrsDraft", "shPostAttrsNonDraft" })
 public class ShPost extends ShObject implements ShPostImpl {
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	private String summary;

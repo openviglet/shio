@@ -24,9 +24,8 @@ import java.util.List;
 
 import javax.imageio.ImageIO;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.json.JSONException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,16 +49,21 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/api/v2/stock/photos")
 @Tag( name = "Photos", description = "Photos")
+@Slf4j
 public class ShSPhotoAPI {
-	private static final Logger logger = LogManager.getLogger(ShSPhotoAPI.class);
+	private final ShFolderRepository shFolderRepository;
+	private final ShPostRepository shPostRepository;
+	private final ShStaticFileUtils shStaticFileUtils;
+	private final ShSitesPostUtils shSitesPostUtils;
+
 	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShStaticFileUtils shStaticFileUtils;
-	@Autowired
-	private ShSitesPostUtils shSitesPostUtils;
+	public ShSPhotoAPI(ShFolderRepository shFolderRepository, ShPostRepository shPostRepository,
+					   ShStaticFileUtils shStaticFileUtils, ShSitesPostUtils shSitesPostUtils) {
+		this.shFolderRepository = shFolderRepository;
+		this.shPostRepository = shPostRepository;
+		this.shStaticFileUtils = shStaticFileUtils;
+		this.shSitesPostUtils = shSitesPostUtils;
+	}
 
 	@GetMapping
 	public List<ShSPhotoBean> getPhotos(){
@@ -77,8 +81,8 @@ public class ShSPhotoAPI {
 								int[] rgbArray = ColorThief.getColor(image);
 								String rgb = String.format("rgb(%d,%d,%d)", rgbArray[0], rgbArray[1], rgbArray[2]);
 
-								if (logger.isDebugEnabled())
-									logger.debug(String.format("%s %s", imageURL, rgb));
+								if (log.isDebugEnabled())
+									log.debug("{} {}", imageURL, rgb);
 
 								ShSPhotoBean shSPhotoBean = new ShSPhotoBean();
 
@@ -95,7 +99,7 @@ public class ShSPhotoAPI {
 								shSPhotoBeans.add(shSPhotoBean);
 
 							} catch (JSONException | IOException e) {
-								logger.error(e);
+								log.error(e.getMessage(), e);
 							}
 						})));
 

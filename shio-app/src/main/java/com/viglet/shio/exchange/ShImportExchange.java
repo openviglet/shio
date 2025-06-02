@@ -18,8 +18,7 @@ package com.viglet.shio.exchange;
 
 import java.io.File;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,20 +32,25 @@ import com.viglet.shio.exchange.utils.ShExchangeUtils;
  * @author Alexandre Oliveira
  */
 @Component
+@Slf4j
 public class ShImportExchange {
-	private static final Logger logger = LogManager.getLogger(ShImportExchange.class);
+	private final ShSiteImport shSiteImport;
+	private final ShPostTypeImport shPostTypeImport;
+	private final ShPostImport shPostImport;
+	private final ShExchangeUtils shExchangeUtils;
+
 	@Autowired
-	private ShSiteImport shSiteImport;
-	@Autowired
-	private ShPostTypeImport shPostTypeImport;
-	@Autowired
-	private ShPostImport shPostImport;
-	@Autowired
-	private ShExchangeUtils shExchangeUtils;
+	public ShImportExchange(ShSiteImport shSiteImport, ShPostTypeImport shPostTypeImport, ShPostImport shPostImport,
+							ShExchangeUtils shExchangeUtils) {
+		this.shSiteImport = shSiteImport;
+		this.shPostTypeImport = shPostTypeImport;
+		this.shPostImport = shPostImport;
+		this.shExchangeUtils = shExchangeUtils;
+	}
 
 
 	public ShExchange importFromMultipartFile(MultipartFile multipartFile) {
-		logger.info("Unzip Package");
+		log.info("Unzip Package");
 		ShExchangeFilesDirs shExchangeFilesDirs = this.extractZipFile(multipartFile);
 
 		if (shExchangeFilesDirs.getExportDir() != null) {

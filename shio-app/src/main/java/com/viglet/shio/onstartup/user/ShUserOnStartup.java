@@ -39,14 +39,19 @@ import com.viglet.shio.post.type.ShSystemPostType;
  */
 @Component
 public class ShUserOnStartup {
+	private final PasswordEncoder passwordEncoder;
+	private final ShUserRepository shUserRepository;
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ShGroupRepository shGroupRepository;
+
 	@Autowired
-	private PasswordEncoder passwordEncoder;
-	@Autowired
-	private ShUserRepository shUserRepository;
-	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ShGroupRepository shGroupRepository;
+	public ShUserOnStartup(PasswordEncoder passwordEncoder, ShUserRepository shUserRepository,
+						   ShPostTypeRepository shPostTypeRepository, ShGroupRepository shGroupRepository) {
+		this.passwordEncoder = passwordEncoder;
+		this.shUserRepository = shUserRepository;
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.shGroupRepository = shGroupRepository;
+	}
 
 	public void createDefaultRows() {
 

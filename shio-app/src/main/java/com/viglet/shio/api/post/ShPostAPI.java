@@ -99,44 +99,54 @@ public class ShPostAPI {
 
 	private static final Log logger = LogFactory.getLog(ShPostAPI.class);
 
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShPostDraftRepository shPostDraftRepository;
-	@Autowired
-	private ShPostAttrRepository shPostAttrRepository;
-	@Autowired
-	private ShPostDraftAttrRepository shPostDraftAttrRepository;
-	@Autowired
-	private ShUserRepository shUserRepository;
-	@Autowired
-	private ShStaticFileUtils shStaticFileUtils;
-	@Autowired
-	private ShReferenceRepository shReferenceRepository;
-	@Autowired
-	private ShReferenceDraftRepository shReferenceDraftRepository;
-	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ShObjectRepository shObjectRepository;
-	@Autowired
-	private ShPostUtils shPostUtils;
-	@Autowired
-	private ShTuringIntegration shTuringIntegration;
-	@Autowired
-	private ShCacheObject shCacheObject;
-	@Autowired
-	private ShWorkflowTaskRepository shWorkflowTaskRepository;
-	@Autowired
-	private ShObjectUtils shObjectUtils;
-	@Autowired
-	private ShHistoryUtils shHistoryUtils;
-	@Autowired
-	private ShPostExport shPostExport;
-	@Autowired
-	private ShFolderUtils shFolderUtils;
+	private final ShPostRepository shPostRepository;
+	private final ShPostDraftRepository shPostDraftRepository;
+	private final ShPostAttrRepository shPostAttrRepository;
+	private final ShPostDraftAttrRepository shPostDraftAttrRepository;
+	private final ShUserRepository shUserRepository;
+	private final ShReferenceRepository shReferenceRepository;
+	private final ShReferenceDraftRepository shReferenceDraftRepository;
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ShObjectRepository shObjectRepository;
+	private final ShPostUtils shPostUtils;
+	private final ShTuringIntegration shTuringIntegration;
+	private final ShCacheObject shCacheObject;
+	private final ShWorkflowTaskRepository shWorkflowTaskRepository;
+	private final ShObjectUtils shObjectUtils;
+	private final ShHistoryUtils shHistoryUtils;
+	private final ShPostExport shPostExport;
+	private final ShFolderUtils shFolderUtils;
 
 	private final SimpleDateFormat dt = new SimpleDateFormat("dd/MM/yyyyy");
+
+	@Autowired
+	public ShPostAPI(ShPostRepository shPostRepository, ShPostDraftRepository shPostDraftRepository,
+					 ShPostAttrRepository shPostAttrRepository, ShPostDraftAttrRepository shPostDraftAttrRepository,
+					 ShUserRepository shUserRepository,
+					 ShCacheObject shCacheObject, ShObjectUtils shObjectUtils,
+					 ShReferenceRepository shReferenceRepository, ShReferenceDraftRepository shReferenceDraftRepository,
+					 ShTuringIntegration shTuringIntegration, ShWorkflowTaskRepository shWorkflowTaskRepository,
+					 ShPostExport shPostExport, ShPostTypeRepository shPostTypeRepository,
+					 ShObjectRepository shObjectRepository, ShPostUtils shPostUtils, ShHistoryUtils shHistoryUtils,
+					 ShFolderUtils shFolderUtils) {
+		this.shPostRepository = shPostRepository;
+		this.shPostDraftRepository = shPostDraftRepository;
+		this.shPostAttrRepository = shPostAttrRepository;
+		this.shPostDraftAttrRepository = shPostDraftAttrRepository;
+		this.shUserRepository = shUserRepository;
+		this.shCacheObject = shCacheObject;
+		this.shObjectUtils = shObjectUtils;
+		this.shReferenceRepository = shReferenceRepository;
+		this.shReferenceDraftRepository = shReferenceDraftRepository;
+		this.shTuringIntegration = shTuringIntegration;
+		this.shWorkflowTaskRepository = shWorkflowTaskRepository;
+		this.shPostExport = shPostExport;
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.shObjectRepository = shObjectRepository;
+		this.shPostUtils = shPostUtils;
+		this.shHistoryUtils = shHistoryUtils;
+		this.shFolderUtils = shFolderUtils;
+	}
 
 	@GetMapping
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
