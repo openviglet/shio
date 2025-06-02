@@ -1,8 +1,17 @@
-[![Slack](https://img.shields.io/badge/slack-@shiocms-yellow.svg?logo=slack)](https://join.slack.com/t/shiocms/shared_invite/zt-pm6w20zq-ywfhQj0zf_mejan0_xXqJw)
-[![Docker Image Version (latest semver)](https://img.shields.io/docker/v/viglet/shio?label=docker&logo=Viglet%20Shio)](https://hub.docker.com/r/viglet/shio) [![downloads](https://img.shields.io/github/downloads/ShioCMS/shio/total.svg)](https://github.com/ShioCMS/shio/releases/download/v0.3.8/viglet-shio.jar) [![Build](https://github.com/ShioCMS/shio/actions/workflows/build.yml/badge.svg)](https://github.com/ShioCMS/shio/actions/workflows/build.yml) [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=ShioCMS_shio&metric=security_rating)](https://sonarcloud.io/dashboard?id=ShioCMS_shio) [![codecov](https://codecov.io/gh/ShioCMS/shio/branch/master/graph/badge.svg)](https://codecov.io/gh/ShioCMS/shio) [![Twitter](https://img.shields.io/twitter/follow/shiocms.svg?style=social&label=Follow)](https://twitter.com/intent/follow?screen_name=shiocms)
+= Viglet Turing ES: README
+Viglet Team <opensource@viglet.com>
+:organization: Viglet Turing
+:toclevels: 5
+:toc-title: Table of Content
+:viglet-version: 2025.1
 
-![shio_banner.png](https://shiocms.github.io/shio/img/shio_banner.png) 
-------
+[preface]
+image:https://img.shields.io/badge/Download-Release%20{viglet-version}-blue?style=for-the-badge&logo=OpenJDK[link="https://viglet.com/shio/download/"]
+image:https://img.shields.io/github/license/openviglet/shio.svg?style=for-the-badge&logo=Apache["License"]
+image:https://img.shields.io/github/last-commit/openviglet/shio.svg?style=for-the-badge&logo=java)[GitHub last commit]
+image:https://img.shields.io/github/actions/workflow/status/openviglet/shio/build.yml?branch=2025.1&style=for-the-badge&logo=GitHub[link="https://github.com/openviglet/shio/actions/workflows/build.yml"]
+image:https://img.shields.io/badge/Sonar-Code%20Quality-brightgreen?style=for-the-badge&logo=SonarCloud[link="https://sonarcloud.io/project/overview?id=viglet_shio"]
+
 
 **Viglet Shio CMS** - Model Content, use GraphQL and Create Site using Javascript with Native Cache and Search.
 
@@ -16,7 +25,7 @@ guidelines](CONTRIBUTING.md).**
 # Installation
 
 ## Pre-reqs
-1. Install Java 17
+1. Install Java 14
 2. Install Git Client
 3. Install NPM
 4. Install Angular CLI
