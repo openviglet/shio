@@ -39,7 +39,7 @@
         <dependency>
             <groupId>co.elastic.clients</groupId>
             <artifactId>elasticsearch-java</artifactId>
-            <version>9.1.4</version>
+            <version>9.1.5</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -130,7 +130,7 @@
         <dependency>
             <groupId>org.apache.opennlp</groupId>
             <artifactId>opennlp-tools</artifactId>
-            <version>2.5.5</version>
+            <version>2.5.6</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -210,7 +210,7 @@
         <dependency>
             <groupId>org.languagetool</groupId>
             <artifactId>language-en</artifactId>
-            <version>6.6</version>
+            <version>6.7</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.lucene</groupId>
@@ -221,7 +221,7 @@
         <dependency>
             <groupId>org.languagetool</groupId>
             <artifactId>language-pt</artifactId>
-            <version>6.6</version>
+            <version>6.7</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.lucene</groupId>
@@ -321,12 +321,12 @@
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
-            <version>7.3.0.202506031305-r</version>
+            <version>7.4.0.202509020913-r</version>
         </dependency>
         <dependency>
             <groupId>net.coobird</groupId>
             <artifactId>thumbnailator</artifactId>
-            <version>0.4.20</version>
+            <version>0.4.21</version>
         </dependency>
         <dependency>
             <groupId>net.lingala.zip4j</groupId>
