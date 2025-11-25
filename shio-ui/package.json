@@ -33,11 +33,20 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^21.0.0",
-    "@angular/cli": "^21.0.0",
-    "@angular/compiler-cli": "^21.0.0",
-    "@angular/language-service": "^21.0.0",
-    "@types/node": "^24.10.1",
-    "typescript": "5.9.3"
+    "@angular/build": "^21.0.0",
+    "@angular/cli": "21.0.0",
+    "@angular/compiler-cli": "21.0.0",
+    "@angular/language-service": "21.0.0",
+    "@types/jasmine": "5.1.13",
+    "@types/jasminewd2": "2.0.13",
+    "@types/node": "24.10.1",
+    "@types/primer__octicons": "^19.11.1",
+    "jasmine-core": "~5.12.1",
+    "karma": "~6.4.0",
+    "karma-chrome-launcher": "~3.2.0",
+    "karma-coverage": "~2.2.0",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "~2.1.0",
+    "typescript": "~5.9.3"
   }
 }

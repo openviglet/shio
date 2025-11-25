@@ -1,7 +1,6 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { ShObject } from 'src/object/model/object.model';
 import { FormGroup, FormBuilder } from '@angular/forms';
-import { faBars } from '@fortawesome/free-solid-svg-icons';
 import { NgxSmartModalService } from 'ngx-smart-modal';
 
 @Component({

@@ -23,9 +23,7 @@ import { ShPostXPData } from 'src/post/model/postxp.model';
 import { Breadcrumb } from 'src/folder/model/breadcrumb.model';
 import { ShPost } from 'src/post/model/post.model';
 
-@Injectable({
-    providedIn: 'root'
-})
+@Injectable()
 export class ShPostService {
 
     constructor(private httpClient: HttpClient) { }

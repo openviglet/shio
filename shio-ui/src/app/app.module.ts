@@ -2,12 +2,10 @@ import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 
 import { AppRoutingModule } from './app-routing.module';
-import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AppComponent } from './page/app/app.component';
 import { BasicAuthInterceptor, ErrorInterceptor } from './_helpers';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { NotifierModule, NotifierOptions } from "angular-notifier-updated";
-import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 
 import { ApiPlaygroundComponent } from './page/api-playground/api-playground.component';
 import { ShioContentPageComponent } from './page/shio-content-page/shio-content-page.component';
@@ -68,11 +66,9 @@ const notifierDefaultOptions: NotifierOptions = {
   imports: [
     BrowserModule,
     AppRoutingModule,
-    HttpClientModule,
     ReactiveFormsModule,
     FormsModule,
     NotifierModule.withConfig(notifierDefaultOptions),
-    FontAwesomeModule,
     ShioWidgetModule,
     ShioLoginModule,
     ShioPostModule,
@@ -81,10 +77,6 @@ const notifierDefaultOptions: NotifierOptions = {
     ShioCommonsModule,
     DragDropModule
 
-  ],
-  providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: BasicAuthInterceptor, multi: true },
-    { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true }
   ],
   bootstrap: [AppComponent]
 })

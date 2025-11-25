@@ -37,11 +37,8 @@ export class ShSiteService {
     }
 
     public save(shSite: ShSite): Observable<Object> {
-
-
         return this.httpClient.put(`${environment.apiUrl}/api/v2/site/${shSite.id}`,
             JSON.stringify(shSite));
 
     }
-
 }

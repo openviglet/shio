@@ -9,7 +9,6 @@ import { ShioObjectRoutingModule } from './shio-object-routing.module';
 import { ShioPostTypeModule } from 'src/postType/shio-post-type.module';
 import { ShioCommonsModule } from 'src/commons/shio-commons.module';
 import { NgxSmartModalModule } from 'ngx-smart-modal';
-import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { ShioHistoryModule } from 'src/history/shio-history.module';
 
@@ -25,7 +24,6 @@ import { ShioHistoryModule } from 'src/history/shio-history.module';
     FormsModule,
     MomentModule,
     NgxSmartModalModule.forRoot(),
-    FontAwesomeModule,
     ShioObjectRoutingModule,
     ShioCommonsModule,
     ShioPostTypeModule,
