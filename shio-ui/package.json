@@ -30,8 +30,7 @@
     "ngx-moment": "^6.0.2",
     "ngx-smart-modal": "^14.1.0",
     "num2fraction": "^1.2.2",
-    "rxjs": "^7.8.1",
-    "zone.js": "^0.16.0"
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^21.0.0",
@@ -39,6 +38,6 @@
     "@angular/compiler-cli": "^21.0.0",
     "@angular/language-service": "^21.0.0",
     "@types/node": "^24.10.1",
-    "typescript": "5.5.4"
+    "typescript": "5.9.3"
   }
 }
