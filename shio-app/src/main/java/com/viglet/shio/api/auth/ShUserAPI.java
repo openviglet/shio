@@ -25,12 +25,10 @@ import jakarta.transaction.Transactional;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -63,19 +61,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag(name = "User", description = "User API")
 public class ShUserAPI {
 	private static final Log logger = LogFactory.getLog(ShUserAPI.class);
-	private final PasswordEncoder passwordEncoder;
 	private final ShUserRepository shUserRepository;
 	private final ShGroupRepository shGroupRepository;
 	private final ShAuthProviderInstanceRepository shAuthProviderInstanceRepository;
 	private final ApplicationContext context;
 	private final ShUserUtils shUserUtils;
-
-	@Autowired
-	public ShUserAPI(PasswordEncoder passwordEncoder, ShUserRepository shUserRepository,
+	public ShUserAPI(ShUserRepository shUserRepository,
 					 ShGroupRepository shGroupRepository,
 					 ShAuthProviderInstanceRepository shAuthProviderInstanceRepository,
 					 ApplicationContext context, ShUserUtils shUserUtils) {
-		this.passwordEncoder = passwordEncoder;
 		this.shUserRepository = shUserRepository;
 		this.shGroupRepository = shGroupRepository;
 		this.shAuthProviderInstanceRepository = shAuthProviderInstanceRepository;
@@ -191,9 +185,6 @@ public class ShUserAPI {
 			shUserEdit.setFirstName(shUser.getFirstName());
 			shUserEdit.setLastName(shUser.getLastName());
 			shUserEdit.setEmail(shUser.getEmail());
-			if (shUser.getPassword() != null && shUser.getPassword().trim().length() > 0) {
-				shUserEdit.setPassword(passwordEncoder.encode(shUser.getPassword()));
-			}
 			shUserEdit.setShGroups(shUser.getShGroups());
 			shUserRepository.save(shUserEdit);
 		}
@@ -210,11 +201,7 @@ public class ShUserAPI {
 	@PostMapping("/{username}")
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
 	public ShUser shUserAdd(@PathVariable String username, @RequestBody ShUser shUser) {
-		if (shUser.getPassword() != null && shUser.getPassword().trim().length() > 0) {
-			shUser.setPassword(passwordEncoder.encode(shUser.getPassword()));
-		}
-
-		shUserRepository.save(shUser);
+				shUserRepository.save(shUser);
 
 		return shUser;
 	}

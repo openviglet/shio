@@ -20,7 +20,6 @@ import java.security.Principal;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,7 +54,6 @@ public class ShPostXPAPI {
 	private final ShObjectUtils shObjectUtils;
 	private final ShMgmtProperties shMgmtProperties;
 
-	@Autowired
 	public ShPostXPAPI(ShPostUtils shPostUtils, ShObjectUtils shObjectUtils, ShMgmtProperties shMgmtProperties) {
 		this.shPostUtils = shPostUtils;
 		this.shObjectUtils = shObjectUtils;

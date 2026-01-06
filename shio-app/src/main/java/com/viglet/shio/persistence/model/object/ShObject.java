@@ -18,6 +18,7 @@ package com.viglet.shio.persistence.model.object;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,10 +31,8 @@ import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
-
-import org.hibernate.annotations.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.UuidGenerator;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.persistence.model.object.impl.ShObjectImpl;
@@ -61,19 +60,16 @@ public class ShObject implements Serializable, ShObjectImpl {
 	private String id;
 
 	// bi-directional many-to-one association to ShObject
-	@OneToMany(mappedBy = "referenceObject")
+	@OneToMany(mappedBy = "referenceObject", cascade = jakarta.persistence.CascadeType.ALL)
 	@Fetch(org.hibernate.annotations.FetchMode.JOIN)
-	@Cascade({ CascadeType.ALL })
 	private Set<ShPostAttr> shPostAttrRefs = new HashSet<>();
 
 	// bi-directional many-to-one association to ShObject
-	@OneToMany(mappedBy = "referenceObject")
+	@OneToMany(mappedBy = "referenceObject", cascade = jakarta.persistence.CascadeType.ALL)
 	@Fetch(org.hibernate.annotations.FetchMode.JOIN)
-	@Cascade({ CascadeType.ALL })
 	private Set<ShPostDraftAttr> shPostDraftAttrRefs = new HashSet<>();
 
-	@Temporal(TemporalType.TIMESTAMP)
-	private Date date;
+	private Instant date;
 
 	private String owner;
 
@@ -100,9 +96,8 @@ public class ShObject implements Serializable, ShObjectImpl {
 	private Set<String> shUsers = new HashSet<>();
 
 	// bi-directional many-to-one association to shWorkflowTasks
-	@OneToMany(mappedBy = "shObject")
+	@OneToMany(mappedBy = "shObject", cascade = jakarta.persistence.CascadeType.ALL)
 	@Fetch(org.hibernate.annotations.FetchMode.JOIN)
-	@Cascade({ CascadeType.ALL })
 	private Set<ShWorkflowTask> shWorkflowTasks = new HashSet<>();
 
 	private String publishStatus;
@@ -145,12 +140,12 @@ public class ShObject implements Serializable, ShObjectImpl {
 	}
 
 	@Override
-	public Date getDate() {
+	public Instant getDate() {
 		return this.date;
 	}
 
 	@Override
-	public void setDate(Date date) {
+	public void setDate(Instant date) {
 		this.date = date;
 	}
 

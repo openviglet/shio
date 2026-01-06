@@ -29,7 +29,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,7 +77,6 @@ public class ShFolderAPI {
 	private final ShFolderExport shFolderExport;
 	private final ShIntegrationUtils shIntegrationUtils;
 
-	@Autowired
 	public ShFolderAPI(ShFolderRepository shFolderRepository, ShObjectRepository shObjectRepository,
 					   ShObjectUtils shObjectUtils, ShTuringIntegration shTuringIntegration,
 					   ShSpreadsheet shSpreadsheet, ShHistoryUtils shHistoryUtils, ShFolderExport shFolderExport,
@@ -120,7 +118,7 @@ public class ShFolderAPI {
 			if (shFolderOptional.isPresent()) {
 				ShFolder shFolderEdit = shFolderOptional.get();
 
-				shFolderEdit.setDate(new Date());
+				shFolderEdit.setDate(new Date().toInstant());
 				shFolderEdit.setName(shFolder.getName());
 				shFolderEdit.setParentFolder(shFolder.getParentFolder());
 				shFolderEdit.setShSite(shFolder.getShSite());
@@ -173,7 +171,7 @@ public class ShFolderAPI {
 				shObjects.add(shParentObject);
 
 				shObjectRepository.findById(shParentObject.getId()).ifPresent(shObject -> {
-					shFolder.setDate(new Date());
+					shFolder.setDate(new Date().toInstant());
 					shFolder.setFurl(ShURLFormatter.format(shFolder.getName()));
 					shFolder.setShGroups(new HashSet<>(shObject.getShGroups()));
 					shFolder.setShUsers(new HashSet<>(shObject.getShUsers()));
@@ -204,7 +202,7 @@ public class ShFolderAPI {
 				shObjects.add(shObject);
 
 				ShFolder shNewFolder = new ShFolder();
-				shNewFolder.setDate(new Date());
+				shNewFolder.setDate(new Date().toInstant());
 				shNewFolder.setName(shFolder.getName());
 				shNewFolder.setShGroups(new HashSet<>(shObject.getShGroups()));
 				shNewFolder.setShUsers(new HashSet<>(shObject.getShUsers()));

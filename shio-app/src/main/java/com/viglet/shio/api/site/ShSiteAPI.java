@@ -83,7 +83,6 @@ public class ShSiteAPI {
 	private final ShReportPostType shReportPostType;
 	private final ShIntegrationUtils shIntegrationUtils;
 
-	@Autowired
 	public ShSiteAPI(ShSiteRepository shSiteRepository, ShFolderRepository shFolderRepository,
 					 ShSiteExport shSiteExport, ShSitesNodeJS shSitesNodeJS, ShCloneExchange shCloneExchange,
 					 ShHistoryUtils shHistoryUtils, ShReportPostType shReportPostType,
@@ -120,7 +119,7 @@ public class ShSiteAPI {
 		Optional<ShSite> shSiteOptional = shSiteRepository.findById(id);
 		if (shSiteOptional.isPresent()) {
 			ShSite shSiteEdit = shSiteOptional.get();
-			shSiteEdit.setDate(new Date());
+			shSiteEdit.setDate(new Date().toInstant());
 			shSiteEdit.setName(shSite.getName());
 			shSiteEdit.setDescription(shSite.getDescription());
 			shSiteEdit.setUrl(shSite.getUrl());
@@ -168,7 +167,7 @@ public class ShSiteAPI {
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
 	public ShSite shSiteAdd(@RequestBody ShSite shSite, final Principal principal) {
 
-		shSite.setDate(new Date());
+		shSite.setDate(new Date().toInstant());
 		shSite.setOwner(principal.getName());
 		shSite.setFurl(ShURLFormatter.format(shSite.getName()));
 

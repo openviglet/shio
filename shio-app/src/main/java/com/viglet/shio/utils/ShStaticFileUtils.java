@@ -33,7 +33,6 @@ import com.viglet.shio.persistence.model.post.ShPostAttr;
 import com.viglet.shio.persistence.model.post.impl.ShPostImpl;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
-import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.post.ShPostAttrRepository;
 import com.viglet.shio.persistence.repository.post.ShPostRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeAttrRepository;
@@ -136,7 +135,7 @@ public class ShStaticFileUtils {
 					// Post File
 					ShPostType shPostType = shPostTypeRepository.findByName(ShSystemPostType.FILE);
 
-					shPost.setDate(new Date());
+					shPost.setDate(new Date().toInstant());
 					shPost.setShPostType(shPostType);
 					shPost.setSummary(null);
 					shPost.setTitle(fileName);

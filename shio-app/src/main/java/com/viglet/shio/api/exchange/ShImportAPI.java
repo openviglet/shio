@@ -22,7 +22,6 @@ import jakarta.annotation.Nonnull;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -51,7 +50,6 @@ public class ShImportAPI {
 	private final ShImportExchange shImportExchange;
 	private final ShExchangeBloggerImport shExchangeBloggerImport;
 
-	@Autowired
 	public ShImportAPI(ShImportExchange shImportExchange, ShExchangeBloggerImport shExchangeBloggerImport) {
 		this.shImportExchange = shImportExchange;
 		this.shExchangeBloggerImport = shExchangeBloggerImport;

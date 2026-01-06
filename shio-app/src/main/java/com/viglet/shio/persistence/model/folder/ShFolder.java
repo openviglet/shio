@@ -19,8 +19,6 @@ package com.viglet.shio.persistence.model.folder;
 import jakarta.persistence.*;
 
 import lombok.Getter;
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
 import org.hibernate.annotations.Fetch;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -63,20 +61,17 @@ public class ShFolder extends ShObject {
 	private ShSite shSite;
 
 	// bi-directional many-to-one association to ShFolder
-	@OneToMany(mappedBy = "parentFolder", orphanRemoval = true)
-	@Cascade({ CascadeType.ALL })
+	@OneToMany(mappedBy = "parentFolder", orphanRemoval = true, cascade = CascadeType.ALL)
 	@Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
 	private Set<ShFolder> shFolders = new HashSet<>();
 
 	// bi-directional many-to-one association to ShFolder
-	@OneToMany(mappedBy = "shFolder", orphanRemoval = true)
-	@Cascade({ CascadeType.ALL })
+	@OneToMany(mappedBy = "shFolder", orphanRemoval = true, cascade = CascadeType.ALL)
 	@Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
 	private Set<ShPost> shPosts = new HashSet<>();
 
 	// bi-directional many-to-one association to ShFolder
-	@OneToMany(mappedBy = "shFolder", orphanRemoval = true)
-	@Cascade({ CascadeType.ALL })
+	@OneToMany(mappedBy = "shFolder", orphanRemoval = true, cascade = CascadeType.ALL)
 	@Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
 	private Set<ShPostDraft> shPostDrafts = new HashSet<>();
 

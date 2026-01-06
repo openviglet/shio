@@ -20,6 +20,7 @@ import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +29,6 @@ import java.util.Optional;
 import com.viglet.shio.utils.ShFolderUtils;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -58,7 +58,6 @@ public class ShPostExport {
 	private final ShPostRepository shPostRepository;
 	private final ShExchangeUtils shExchangeUtils;
 
-	@Autowired
 	public ShPostExport(ShFolderUtils shFolderUtils, ShPostRepository shPostRepository, ShExchangeUtils shExchangeUtils) {
 		this.shFolderUtils = shFolderUtils;
 		this.shPostRepository = shPostRepository;
@@ -88,7 +87,7 @@ public class ShPostExport {
 		ShPostExchange shPostExchange = new ShPostExchange();
 		shPostExchange.setId(shPost.getId());
 		shPostExchange.setFolder(shPost.getShFolder().getId());
-		shPostExchange.setDate(shPost.getDate());
+		shPostExchange.setDate(Date.from(shPost.getDate()));
 		shPostExchange.setPostType(shPost.getShPostType().getName());
 		shPostExchange.setOwner(shPost.getOwner());
 		shPostExchange.setFurl(shPost.getFurl());

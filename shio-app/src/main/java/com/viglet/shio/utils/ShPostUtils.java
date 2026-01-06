@@ -145,7 +145,7 @@ public class ShPostUtils {
 		}
 
 		ShPost shPostCopy = new ShPost();
-		shPostCopy.setDate(new Date());
+		shPostCopy.setDate(new Date().toInstant());
 		shPostCopy.setShFolder(shFolderDest);
 		shPostCopy.setShPostType(shPost.getShPostType());
 		shPostCopy.setSummary(shPost.getSummary());

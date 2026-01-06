@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
@@ -30,7 +31,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -70,7 +70,6 @@ public class ShSiteExport {
 	private final ShPostTypeRepository shPostTypeRepository;
 	private final ShExchangeUtils shExchangeUtils;
 
-	@Autowired
 	public ShSiteExport(ShSiteRepository shSiteRepository, ShFolderRepository shFolderRepository, ShUtils shUtils,
 						ShFolderExport shFolderExport, ShPostTypeExport shPostTypeExport,
 						ShPostTypeRepository shPostTypeRepository, ShExchangeUtils shExchangeUtils) {
@@ -103,7 +102,7 @@ public class ShSiteExport {
 			shSiteExchange.setDescription(shSite.getDescription());
 			shSiteExchange.setPostTypeLayout(shSite.getPostTypeLayout());
 			shSiteExchange.setSearchablePostTypes(shSite.getSearchablePostTypes());
-			shSiteExchange.setDate(shSite.getDate());
+			shSiteExchange.setDate(Date.from(shSite.getDate()));
 			shSiteExchange.setRootFolders(rootFoldersUUID);
 			shSiteExchange.setOwner(shSite.getOwner());
 			shSiteExchange.setFurl(shSite.getFurl());

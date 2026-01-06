@@ -106,7 +106,7 @@ public class ShFormUtils {
 			ShFolder shFolder, ShPostType shPostType) {
 		if (shPostType != null) {
 			shPost = new ShPost();
-			shPost.setDate(new Date());
+			shPost.setDate(new Date().toInstant());
 			shPost.setOwner("anonymous");
 			shPost.setShFolder(shFolder);
 

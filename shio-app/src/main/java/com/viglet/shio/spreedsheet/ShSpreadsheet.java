@@ -202,7 +202,7 @@ public class ShSpreadsheet {
 
 	private void createdDateCell(ShPost shPost, CellStyle cellDateStyle, XSSFRow row) {
 		Cell cellDate = row.createCell(0);
-		cellDate.setCellValue(shPost.getDate());
+		cellDate.setCellValue(Date.from(shPost.getDate()));
 		cellDate.setCellStyle(cellDateStyle);
 	}
 

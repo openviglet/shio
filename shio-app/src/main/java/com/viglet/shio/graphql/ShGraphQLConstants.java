@@ -16,11 +16,6 @@
  */
 package com.viglet.shio.graphql;
 
-import static graphql.schema.GraphQLEnumType.newEnum;
-import static graphql.schema.GraphqlTypeComparatorRegistry.BY_NAME_REGISTRY;
-
-import graphql.schema.GraphQLEnumType;
-
 /**
  * GraphQL Constants.
  *
@@ -82,14 +77,6 @@ public final class ShGraphQLConstants {
 	public static final String FIELD_TYPE_GRAPHQL_ID = "GraphQLID";
 	public static final String FIELD_TYPE_GRAPHQL_STRING = "GraphQLString";
 	public static final String FIELD_TYPE_GRAPHQL_DATE_TIME = "DateTime";
-	
-	public static final GraphQLEnumType stageEnum = newEnum().name(STAGE_ARG_TITLE).description("Stage system enumeration")
-			.value("PUBLISHED", 10, "System Published Stage.").value("DRAFT", 20, "System Draft Stage")
-			.comparatorRegistry(BY_NAME_REGISTRY).build();
 
-	public static final GraphQLEnumType localeEnum = newEnum().name(LOCALES_ARG_TITLE).description("Locale system enumeration")
-			.value("en", "EN", "System Locale.").comparatorRegistry(BY_NAME_REGISTRY).build();
-	
-	public static GraphQLEnumType siteEnum; //NOSONAR
 
 }

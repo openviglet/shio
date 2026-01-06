@@ -20,6 +20,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -27,7 +28,6 @@ import javax.imageio.ImageIO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -56,7 +56,6 @@ public class ShSPhotoAPI {
 	private final ShStaticFileUtils shStaticFileUtils;
 	private final ShSitesPostUtils shSitesPostUtils;
 
-	@Autowired
 	public ShSPhotoAPI(ShFolderRepository shFolderRepository, ShPostRepository shPostRepository,
 					   ShStaticFileUtils shStaticFileUtils, ShSitesPostUtils shSitesPostUtils) {
 		this.shFolderRepository = shFolderRepository;
@@ -87,7 +86,7 @@ public class ShSPhotoAPI {
 								ShSPhotoBean shSPhotoBean = new ShSPhotoBean();
 
 								shSPhotoBean.setName(shPost.getTitle());
-								shSPhotoBean.setDate(shPost.getDate());
+								shSPhotoBean.setDate(Date.from(shPost.getDate()));
 								shSPhotoBean.setPreviewXXS(new ShSPhotoPreviewBean(imageURL, width, height));
 								shSPhotoBean.setPreviewXS(new ShSPhotoPreviewBean(imageURL, width, height));
 								shSPhotoBean.setPreviewS(new ShSPhotoPreviewBean(imageURL, width, height));

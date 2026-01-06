@@ -17,13 +17,13 @@
 package com.viglet.shio.exchange.post.type;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -45,7 +45,6 @@ public class ShPostTypeExport {
 	private final ShPostTypeRepository shPostTypeRepository;
 	private final ShExchangeUtils shExchangeUtils;
 
-	@Autowired
 	public ShPostTypeExport(ShPostTypeRepository shPostTypeRepository, ShExchangeUtils shExchangeUtils) {
 		this.shPostTypeRepository = shPostTypeRepository;
 		this.shExchangeUtils = shExchangeUtils;
@@ -75,7 +74,7 @@ public class ShPostTypeExport {
 		shPostTypeExchange.setName(shPostType.getName());
 		shPostTypeExchange.setNamePlural(shPostType.getNamePlural());
 		shPostTypeExchange.setLabel(shPostType.getTitle());
-		shPostTypeExchange.setDate(shPostType.getDate());
+		shPostTypeExchange.setDate( Date.from(shPostType.getDate()));
 		shPostTypeExchange.setDescription(shPostType.getDescription());
 
 		shPostTypeExchange.setOwner(shPostType.getOwner());

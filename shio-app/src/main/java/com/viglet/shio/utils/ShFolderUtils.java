@@ -244,7 +244,7 @@ public class ShFolderUtils {
 		} else {
 			return null;
 		}
-		shFolderCopy.setDate(new Date());
+		shFolderCopy.setDate(new Date().toInstant());
 		shFolderCopy.setName(shFolder.getName());
 		shFolderCopy.setFurl(shFolder.getFurl());
 		shFolderRepository.save(shFolderCopy);

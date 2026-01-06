@@ -99,7 +99,7 @@ public class ShPostImport {
 	public ShPostImpl getShPost(ShPostExchange shPostExchange) {
 		ShPost shPost = new ShPost();
 		shPost.setId(shPostExchange.getId());
-		shPost.setDate(shPostExchange.getDate());
+		shPost.setDate(shPostExchange.getDate().toInstant());
 		if (shPostExchange.getPosition() > 0) {
 			shPost.setPosition(shPostExchange.getPosition());
 		}
@@ -285,7 +285,7 @@ public class ShPostImport {
 		ShPost shPost;
 		shPost = new ShPost();
 		shPost.setId(shPostExchange.getId());
-		shPost.setDate(context.isCloned() ? new Date() : shPostExchange.getDate());
+		shPost.setDate(context.isCloned() ? new Date().toInstant() : shPostExchange.getDate().toInstant());
 		if (shPostExchange.getPosition() > 0)
 			shPost.setPosition(shPostExchange.getPosition());
 

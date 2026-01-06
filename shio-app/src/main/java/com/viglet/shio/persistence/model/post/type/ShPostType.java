@@ -18,10 +18,10 @@ package com.viglet.shio.persistence.model.post.type;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+
+import jakarta.persistence.CascadeType;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -30,7 +30,6 @@ import com.viglet.shio.object.ShObjectType;
 import com.viglet.shio.persistence.model.object.ShObject;
 import com.viglet.shio.persistence.model.post.ShPost;
 import com.viglet.shio.persistence.model.post.ShPostDraft;
-import com.viglet.shio.persistence.model.post.impl.ShPostImpl;
 import com.viglet.shio.post.type.ShSystemPostType;
 
 import java.io.Serial;
@@ -70,19 +69,16 @@ public class ShPostType extends ShObject {
     private byte system;
 
     // bi-directional many-to-one association to ShPost
-    @OneToMany(mappedBy = "shPostType", orphanRemoval = true, fetch = FetchType.LAZY)
-    @Cascade({ CascadeType.ALL })
+    @OneToMany(mappedBy = "shPostType", orphanRemoval = true, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Set<ShPost> shPosts = new HashSet<>();
 
-    @OneToMany(mappedBy = "shPostType", orphanRemoval = true, fetch = FetchType.LAZY)
-    @Cascade({ CascadeType.ALL })
+    @OneToMany(mappedBy = "shPostType", orphanRemoval = true, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Set<ShPostDraft> shPostDrafts = new HashSet<>();
 
     // bi-directional many-to-one association to ShPostTypeAttr
-    @OneToMany(mappedBy = "shPostType", orphanRemoval = true, fetch = FetchType.LAZY)
-    @Cascade({CascadeType.ALL})
+    @OneToMany(mappedBy = "shPostType", orphanRemoval = true, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JsonView({ShJsonView.ShJsonViewPostType.class})
     private Set<ShPostTypeAttr> shPostTypeAttrs = new HashSet<>();

@@ -67,7 +67,7 @@ public class ShPostTypeUtils {
 		}
 
 		ShPostType shPostTypeClone = new ShPostType();
-		shPostTypeClone.setDate(new Date());
+		shPostTypeClone.setDate(new Date().toInstant());
 		shPostTypeClone.setDescription(shPostType.getDescription());
 		shPostTypeClone.setModifiedDate(new Date());
 

@@ -23,8 +23,6 @@ import java.util.Set;
 import jakarta.persistence.*;
 
 import lombok.Getter;
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
 import org.hibernate.annotations.Fetch;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -59,8 +57,7 @@ public class ShSite extends ShObject {
 	@Column(name = "searchable_post_types", length = 5 * 1024 * 1024) // 5Mb
 	private String searchablePostTypes;
 	
-	@OneToMany(mappedBy = "shSite")
-	@Cascade({ CascadeType.ALL })
+	@OneToMany(mappedBy = "shSite", cascade = CascadeType.ALL)
 	@Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
 	private Set<ShFolder> shFolders = new HashSet<>();
 

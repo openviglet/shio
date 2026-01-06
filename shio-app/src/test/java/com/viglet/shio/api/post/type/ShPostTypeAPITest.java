@@ -32,12 +32,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -54,7 +52,6 @@ import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.utils.ShUtils;
 import com.viglet.shio.widget.ShSystemWidget;
 
-@ExtendWith(SpringExtension.class)
 @SpringBootTest
 @TestMethodOrder (MethodOrderer.MethodName.class)
 @TestInstance(Lifecycle.PER_CLASS)
@@ -103,7 +100,7 @@ class ShPostTypeAPITest {
 		shPostType.setId(newPostTypeId);
 		shPostType.setName("PT-TEST");
 		shPostType.setTitle("Test");
-		shPostType.setDate(Calendar.getInstance().getTime());
+		shPostType.setDate(Calendar.getInstance().toInstant());
 		shPostType.setDescription("Test Post Type");
 		shPostType.setSystem((byte) 0);
 
@@ -177,7 +174,7 @@ class ShPostTypeAPITest {
 
 		shPostType.setName("PT-TEST");
 		shPostType.setTitle("Test was Changed");
-		shPostType.setDate(Calendar.getInstance().getTime());
+		shPostType.setDate(Calendar.getInstance().toInstant());
 		shPostType.setDescription("Test Post Type was Changed");
 		shPostType.setSystem((byte) 0);
 		shPostType.setShPostTypeAttrs(new HashSet<ShPostTypeAttr>());

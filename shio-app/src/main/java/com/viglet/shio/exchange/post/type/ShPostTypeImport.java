@@ -23,7 +23,6 @@ import java.util.Set;
 
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeAttrRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.exchange.ShExchange;
@@ -44,7 +43,6 @@ public class ShPostTypeImport {
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShPostTypeAttrRepository shPostTypeAttrRepository;
 
-    @Autowired
     public ShPostTypeImport(ShWidgetRepository shWidgetRepository,
                             ShPostTypeRepository shPostTypeRepository,
                             ShPostTypeAttrRepository shPostTypeAttrRepository) {
@@ -66,7 +64,7 @@ public class ShPostTypeImport {
                     ShPostType shPostType = new ShPostType();
                  //   shPostType.setId(shPostTypeExchange.getId());
                     shPostType.setTitle(shPostTypeExchange.getLabel());
-                    shPostType.setDate(isCloned ? new Date() : shPostTypeExchange.getDate());
+                    shPostType.setDate(isCloned ? new Date().toInstant() : shPostTypeExchange.getDate().toInstant());
                     shPostType.setDescription(shPostTypeExchange.getDescription());
                     shPostType.setName(shPostTypeExchange.getName());
                     shPostType.setNamePlural(shPostTypeExchange.getNamePlural());

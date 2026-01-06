@@ -16,8 +16,6 @@
  */
 package com.viglet.shio.persistence.model.post;
 
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -76,8 +74,7 @@ public class ShPostDraft extends ShObjectDraft implements ShPostImpl {
 	private ShSite shSite;
 
 	// bi-directional many-to-one association to ShPostAttr
-	@OneToMany(mappedBy = "shPost", orphanRemoval = true, fetch = FetchType.LAZY)
-	@Cascade({ CascadeType.ALL })
+	@OneToMany(mappedBy = "shPost", orphanRemoval = true, fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.ALL)
 	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Set<ShPostDraftAttr> shPostAttrs = new HashSet<>();
 

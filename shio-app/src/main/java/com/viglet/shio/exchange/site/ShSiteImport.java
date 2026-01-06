@@ -30,7 +30,6 @@ import java.util.Optional;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.exchange.ShExchange;
@@ -65,7 +64,6 @@ public class ShSiteImport {
 	private final ShPostTypeRepository shPostTypeRepository;
 	private final ShUserUtils shUserUtils;
 
-	@Autowired
 	public ShSiteImport(ShSiteRepository shSiteRepository,
 						ShFolderImport shFolderImport,
 						ShPostTypeAttrRepository shPostTypeAttrRepository,
@@ -136,7 +134,7 @@ public class ShSiteImport {
 			} else {
 				shSite.setFurl(ShURLFormatter.format(shSiteExchange.getName()));
 			}
-			shSite.setDate(shSiteExchange.getDate());
+			shSite.setDate(shSiteExchange.getDate().toInstant());
 			shSiteRepository.save(shSite);
 
 		}

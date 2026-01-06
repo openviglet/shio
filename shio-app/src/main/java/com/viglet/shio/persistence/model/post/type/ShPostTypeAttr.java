@@ -33,7 +33,6 @@ import com.viglet.shio.api.ShJsonView;
 import com.viglet.shio.persistence.model.post.ShPostAttr;
 import com.viglet.shio.persistence.model.post.ShPostDraftAttr;
 import com.viglet.shio.persistence.model.widget.ShWidget;
-import org.hibernate.annotations.CascadeType;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -66,38 +65,32 @@ public class ShPostTypeAttr implements Serializable {
     private int ordinal;
     private byte required;
 
-    @OneToMany(mappedBy = "shParentPostTypeAttr", orphanRemoval = true, fetch = FetchType.LAZY)
-    @Cascade({CascadeType.ALL})
+    @OneToMany(mappedBy = "shParentPostTypeAttr", orphanRemoval = true, fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.ALL)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Set<ShPostTypeAttr> shPostTypeAttrs = new HashSet<>();
 
-    @OneToMany(mappedBy = "shPostTypeAttr", orphanRemoval = true, fetch = FetchType.LAZY)
-    @Cascade({CascadeType.ALL})
+    @OneToMany(mappedBy = "shPostTypeAttr", orphanRemoval = true, fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.ALL)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Set<ShPostAttr> shPostAttrs = new HashSet<>();
 
-    @OneToMany(mappedBy = "shPostTypeAttr", orphanRemoval = true, fetch = FetchType.LAZY)
-    @Cascade({CascadeType.ALL})
+    @OneToMany(mappedBy = "shPostTypeAttr", orphanRemoval = true, fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.ALL)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Set<ShPostDraftAttr> shPostDraftAttrs = new HashSet<>();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @Cascade({CascadeType.ALL})
+    @ManyToOne(fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.ALL)
     @JoinColumn(name = "postType_id")
     @JsonView({ShJsonView.ShJsonViewPostTypeAttr.class})
     private ShPostType shPostType;
 
     // Remove LAZY because it have few shWidgets
-    @ManyToOne
-    @Cascade({CascadeType.ALL})
+    @ManyToOne(cascade = jakarta.persistence.CascadeType.ALL)
     @JoinColumn(name = "widget_id")
     @Fetch(org.hibernate.annotations.FetchMode.JOIN)
     private ShWidget shWidget;
     @Column(name = "widget_settings", length = 5 * 1024 * 1024) // 5Mb
     private String widgetSettings;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @Cascade({CascadeType.ALL})
+    @ManyToOne(fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.ALL)
     @JoinColumn(name = "parent_relator_id")
     @JsonView({ShJsonView.ShJsonViewPostTypeAttr.class})
     private ShPostTypeAttr shParentPostTypeAttr;

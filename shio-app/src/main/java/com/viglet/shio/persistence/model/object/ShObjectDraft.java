@@ -18,6 +18,7 @@ package com.viglet.shio.persistence.model.object;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -29,15 +30,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.NamedQuery;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
-
 import org.hibernate.annotations.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.persistence.model.object.impl.ShObjectImpl;
-import com.viglet.shio.persistence.model.post.ShPostDraftAttr;
 import com.viglet.shio.persistence.model.post.impl.ShPostAttrImpl;
 
 /**
@@ -58,15 +54,7 @@ public class ShObjectDraft implements Serializable, ShObjectImpl {
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 
-	// bi-directional many-to-one association to ShObject
-//	@OneToMany(mappedBy = "referenceObject") // , orphanRemoval = true)
-//	@Fetch(org.hibernate.annotations.FetchMode.JOIN)
-//	@Cascade({ CascadeType.ALL })
-//	@OnDelete(action = OnDeleteAction.CASCADE)
-//	private Set<ShPostDraftAttr> shPostAttrRefs = new HashSet<>();
-
-	@Temporal(TemporalType.TIMESTAMP)
-	private Date date;
+	private Instant date;
 
 	private String owner;
 
@@ -128,11 +116,11 @@ public class ShObjectDraft implements Serializable, ShObjectImpl {
 		this.furl = furl;
 	}
 	@Override
-	public Date getDate() {
+	public Instant getDate() {
 		return this.date;
 	}
 	@Override
-	public void setDate(Date date) {
+	public void setDate(Instant date) {
 		this.date = date;
 	}
 	@Override

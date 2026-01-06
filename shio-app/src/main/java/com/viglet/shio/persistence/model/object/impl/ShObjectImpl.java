@@ -17,6 +17,7 @@
 package com.viglet.shio.persistence.model.object.impl;
 
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.Set;
 
@@ -43,9 +44,9 @@ public interface ShObjectImpl {
 
 	void setFurl(String furl);
 
-	Date getDate();
+	Instant getDate();
 
-	void setDate(Date date);
+	void setDate(Instant date);
 
 	String getModifier();
 

@@ -35,7 +35,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -119,7 +118,6 @@ public class ShPostAPI {
 
 	private final SimpleDateFormat dt = new SimpleDateFormat("dd/MM/yyyyy");
 
-	@Autowired
 	public ShPostAPI(ShPostRepository shPostRepository, ShPostDraftRepository shPostDraftRepository,
 					 ShPostAttrRepository shPostAttrRepository, ShPostDraftAttrRepository shPostDraftAttrRepository,
 					 ShUserRepository shUserRepository,
@@ -309,7 +307,7 @@ public class ShPostAPI {
 				- o2.getShPostTypeAttr().getOrdinal());
 		this.titleAndSummary(title, summary, shPostAttrsByOrdinal);
 
-		shPost.setDate(new Date());
+		shPost.setDate(new Date().toInstant());
 		shPost.setTitle(title.toString());
 		shPost.setSummary(summary.toString());
 		shPost.setShSite(shPostUtils.getSite(shPost));

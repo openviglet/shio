@@ -19,7 +19,6 @@ package com.viglet.shio.exchange;
 import java.io.File;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -39,7 +38,6 @@ public class ShImportExchange {
 	private final ShPostImport shPostImport;
 	private final ShExchangeUtils shExchangeUtils;
 
-	@Autowired
 	public ShImportExchange(ShSiteImport shSiteImport, ShPostTypeImport shPostTypeImport, ShPostImport shPostImport,
 							ShExchangeUtils shExchangeUtils) {
 		this.shSiteImport = shSiteImport;

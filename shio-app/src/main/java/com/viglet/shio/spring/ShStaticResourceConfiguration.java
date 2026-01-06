@@ -18,8 +18,6 @@ package com.viglet.shio.spring;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.AutoConfigureAfter;
-import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletAutoConfiguration;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -33,7 +31,6 @@ import com.viglet.shio.utils.ShStaticFileUtils;
  * @author Alexandre Oliveira
  */
 @Configuration
-@AutoConfigureAfter(DispatcherServletAutoConfiguration.class)
 public class ShStaticResourceConfiguration implements WebMvcConfigurer {
 
 	private static final String THIRDPARTY_FOLDER = "/thirdparty/**";

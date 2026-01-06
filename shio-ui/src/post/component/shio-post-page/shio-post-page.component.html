@@ -1,8 +1,0 @@
-<div class="clearfix">
-    <div *ngIf="(getShPost() | async) as post; else loading">
-        <shio-post-tabs [shPost]="post.shPost"></shio-post-tabs>
-    </div>
-</div>
-<ng-template #loading>
-    Loading...
-</ng-template>

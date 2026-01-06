@@ -53,7 +53,7 @@ public class ShPostTinyBean {
 		this.title = shPost.getTitle();
 		this.summary = shPost.getSummary();
 		this.position = shPost.getPosition();
-		this.date = shPost.getDate();
+		this.date =Date.from(shPost.getDate());
 		this.objectType = shPost.getObjectType();
 		this.publishStatus = shPost.getPublishStatus();
 		this.published = shPost.isPublished();

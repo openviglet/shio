@@ -68,7 +68,6 @@ public class ShExchangeBloggerImport {
 	private String customClass;
 	private boolean hasPlugin = false;
 
-	@Autowired
 	public ShExchangeBloggerImport(ShUserUtils shUserUtils, ShCloneExchange shCloneExchange) {
 		this.shUserUtils = shUserUtils;
 		this.shCloneExchange = shCloneExchange;
@@ -122,7 +121,7 @@ public class ShExchangeBloggerImport {
 	private ShExchangeData createExchangeData(SyndFeed feed) {
 		ShSite shSite = new ShSite();
 		shSite.setName(feed.getTitle().trim());
-		shSite.setDate(feed.getPublishedDate());
+		shSite.setDate(feed.getPublishedDate().toInstant());
 		shSite.setOwner(shUserUtils.getCurrentUsername());
 		shSite.setFurl(ShURLFormatter.format(shSite.getName()));
 

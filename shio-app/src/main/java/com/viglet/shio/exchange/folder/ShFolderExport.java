@@ -18,6 +18,7 @@ package com.viglet.shio.exchange.folder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,7 +28,6 @@ import java.util.Set;
 
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -59,7 +59,6 @@ public class ShFolderExport {
 	private final ShExchangeUtils shExchangeUtils;
 	private final ShFolderUtils shFolderUtils;
 
-	@Autowired
 	public ShFolderExport(ShFolderRepository shFolderRepository, ShPostRepository shPostRepository,
 						  ShPostExport shPostExport, ShPostTypeExport shPostTypeExport, ShExchangeUtils shExchangeUtils,
 						  ShFolderUtils shFolderUtils) {
@@ -86,7 +85,7 @@ public class ShFolderExport {
 			}
 			ShFolderExchange shFolderExchangeChild = new ShFolderExchange();
 			shFolderExchangeChild.setId(shFolder.getId());
-			shFolderExchangeChild.setDate(shFolder.getDate());
+			shFolderExchangeChild.setDate(Date.from(shFolder.getDate()));
 			shFolderExchangeChild.setName(shFolder.getName());
 			shFolderExchangeChild.setOwner(shFolder.getOwner());
 			shFolderExchangeChild.setFurl(shFolder.getFurl());
@@ -120,7 +119,7 @@ public class ShFolderExport {
 		ShPostExchange shPostExchange = new ShPostExchange();
 		shPostExchange.setId(shPost.getId());
 		shPostExchange.setFolder(shPost.getShFolder().getId());
-		shPostExchange.setDate(shPost.getDate());
+		shPostExchange.setDate(Date.from(shPost.getDate()));
 		shPostExchange.setPostType(shPost.getShPostType().getName());
 		shPostExchange.setOwner(shPost.getOwner());
 		shPostExchange.setFurl(shPost.getFurl());
@@ -161,7 +160,7 @@ public class ShFolderExport {
 					shSiteExchange.setDescription(shSite.getDescription());
 					shSiteExchange.setPostTypeLayout(shSite.getPostTypeLayout());
 					shSiteExchange.setSearchablePostTypes(shSite.getSearchablePostTypes());
-					shSiteExchange.setDate(shSite.getDate());
+					shSiteExchange.setDate(Date.from(shSite.getDate()));
 					shSiteExchange.setRootFolders(Arrays.asList(shFolder.get().getId()));
 					shSiteExchange.setOwner(shSite.getOwner());
 					shSiteExchange.setFurl(shSite.getFurl());

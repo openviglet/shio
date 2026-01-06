@@ -28,7 +28,6 @@ import com.viglet.shio.utils.ShStaticFileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.mock.web.MockMultipartFile;
@@ -52,7 +51,6 @@ public class ShCloneExchange {
 	private final ShStaticFileUtils shStaticFileUtils;
 	private final ResourceLoader resourceloader;
 
-	@Autowired
 	public ShCloneExchange(ShSiteImport shSiteImport,
 						   ShPostTypeImport shPostTypeImport,
 						   ShImportExchange shImportExchange,

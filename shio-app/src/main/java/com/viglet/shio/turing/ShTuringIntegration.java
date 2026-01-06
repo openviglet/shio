@@ -229,7 +229,7 @@ public class ShTuringIntegration {
 
 	private void addGenericAttributes(ShObjectImpl shObject, Map<String, Object> attributes) {
 		attributes.put("id", shObject.getId());
-		attributes.put("publication_date", formatDateToTuring(shObject.getDate()));
+		attributes.put("publication_date", formatDateToTuring( Date.from(shObject.getDate())));
 		attributes.put("url", shSitesObjectUtils.generateObjectLink(shObject));
 	}
 

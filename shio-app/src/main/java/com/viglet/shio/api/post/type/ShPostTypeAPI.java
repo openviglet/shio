@@ -25,7 +25,6 @@ import java.util.Set;
 
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -68,7 +67,6 @@ public class ShPostTypeAPI {
 	private final ShPostTypeExport shPostTypeExport;
 	private final ShPostTypeUtils shPostTypeUtils;
 
-	@Autowired
 	public ShPostTypeAPI(ShPostTypeRepository shPostTypeRepository, ShPostTypeAttrRepository shPostTypeAttrRepository,
 						 ShPostAttrRepository shPostAttrRepository, ShPostRepository shPostRepository,
 						 ShPostTypeExport shPostTypeExport, ShPostTypeUtils shPostTypeUtils) {
@@ -211,7 +209,7 @@ public class ShPostTypeAPI {
 
 	private void postTypeSave(ShPostType shPostType) {
 
-		shPostType.setDate(new Date());
+		shPostType.setDate(new Date().toInstant());
 		shPostType.getShPostTypeAttrs().forEach(shPostTypeAttr -> {
 			shPostTypeAttr.setShPostType(shPostType);
 			this.postTypeAttrSave(shPostTypeAttr, shPostType);

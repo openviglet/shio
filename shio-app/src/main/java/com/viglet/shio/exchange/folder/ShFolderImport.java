@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.exchange.ShExchangeContext;
@@ -48,7 +47,6 @@ public class ShFolderImport {
 	private final ShPostImport shPostImport;
 	private final ShUserUtils shUserUtils;
 
-	@Autowired
 	public ShFolderImport(ShSiteRepository shSiteRepository, ShFolderRepository shFolderRepository,
 						  ShPostImport shPostImport, ShUserUtils shUserUtils) {
 		this.shSiteRepository = shSiteRepository;
@@ -101,7 +99,7 @@ public class ShFolderImport {
 		ShFolder shFolderChild;
 		shFolderChild = new ShFolder();
 		shFolderChild.setId(shFolderExchange.getId());
-		shFolderChild.setDate(isCloned ? new Date() : shFolderExchange.getDate());
+		shFolderChild.setDate(isCloned ? new Date().toInstant() : shFolderExchange.getDate().toInstant());
 		shFolderChild.setName(shFolderExchange.getName());
 		if (shFolderExchange.getPosition() > 0) {
 			shFolderChild.setPosition(shFolderExchange.getPosition());
