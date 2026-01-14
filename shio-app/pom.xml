@@ -39,7 +39,7 @@
         <dependency>
             <groupId>co.elastic.clients</groupId>
             <artifactId>elasticsearch-java</artifactId>
-            <version>9.2.3</version>
+            <version>9.2.4</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -85,13 +85,13 @@
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>itext-core</artifactId>
-            <version>9.4.0</version>
+            <version>9.5.0</version>
             <type>pom</type>
         </dependency>
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>cleanup</artifactId>
-            <version>5.0.4</version>
+            <version>5.0.5</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
