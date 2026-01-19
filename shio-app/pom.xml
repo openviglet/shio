@@ -125,7 +125,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.7.8</version>
+            <version>42.7.9</version>
         </dependency>
         <dependency>
             <groupId>org.apache.opennlp</groupId>
@@ -304,7 +304,7 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
-            <version>3.8.1</version>
+            <version>3.8.2</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
