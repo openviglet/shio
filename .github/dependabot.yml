@@ -9,7 +9,7 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
-    target-branch: "0.3.9"
+    target-branch: "2026.1"
     open-pull-requests-limit: 15
     ignore:
       - dependency-name: "org.springframework.boot:*"
@@ -34,7 +34,7 @@ updates:
     directory: "/shio-ui" # Location of package manifests
     schedule:
       interval: "weekly"
-    target-branch: "0.3.9"
+    target-branch: "2026.1"
     open-pull-requests-limit: 15
     ignore:
       - dependency-name: "typescript"
