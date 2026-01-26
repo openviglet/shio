@@ -14,7 +14,7 @@
         <revision>0.3.9</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <spring-boot.version>4.0.1</spring-boot.version>
+        <spring-boot.version>4.0.2</spring-boot.version>
         <sonar.organization>viglet</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
@@ -160,7 +160,7 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-core</artifactId>
-                <version>1.5.25</version>
+                <version>1.5.26</version>
             </dependency>
             <dependency>
                 <groupId>com.viglet.turing</groupId>
@@ -170,7 +170,7 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.5.25</version>
+                <version>1.5.26</version>
             </dependency>
             <dependency>
                 <groupId>org.json</groupId>
