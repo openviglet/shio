@@ -160,7 +160,7 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-core</artifactId>
-                <version>1.5.28</version>
+                <version>1.5.31</version>
             </dependency>
             <dependency>
                 <groupId>com.viglet.turing</groupId>
@@ -170,7 +170,7 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.5.28</version>
+                <version>1.5.31</version>
             </dependency>
             <dependency>
                 <groupId>org.json</groupId>
@@ -215,7 +215,7 @@
             <dependency>
                 <groupId>org.xerial</groupId>
                 <artifactId>sqlite-jdbc</artifactId>
-                <version>3.51.1.0</version>
+                <version>3.51.2.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
