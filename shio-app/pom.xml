@@ -15,7 +15,7 @@
     <url>https://github.com/openshio/shio</url>
     <packaging>jar</packaging>
     <properties>
-        <spring-boot.version>4.0.2</spring-boot.version>
+        <spring-boot.version>4.0.3</spring-boot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>21</maven.compiler.source>
@@ -39,7 +39,7 @@
         <dependency>
             <groupId>co.elastic.clients</groupId>
             <artifactId>elasticsearch-java</artifactId>
-            <version>9.3.0</version>
+            <version>9.3.1</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -552,12 +552,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.4</version>
+                <version>3.5.5</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>3.5.4</version>
+                <version>3.5.5</version>
                 <executions>
                     <execution>
                         <goals>
@@ -593,7 +593,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-report-plugin</artifactId>
-                <version>3.5.4</version>
+                <version>3.5.5</version>
             </plugin>
         </plugins>
     </reporting>
