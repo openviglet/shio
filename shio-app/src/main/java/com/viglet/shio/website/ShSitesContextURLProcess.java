@@ -29,18 +29,15 @@ import org.springframework.web.servlet.HandlerMapping;
 @Component
 public class ShSitesContextURLProcess {
 	private final ShSitesContextURLProcessCache shSitesContextURLProcessCache;
-
-
-	public ShSitesContextURLProcess(
-			 ShSitesContextURLProcessCache shSitesContextURLProcessCache
-			) {
-		this.shSitesContextURLProcessCache = shSitesContextURLProcessCache;
-	}
-
 	private static final String SITE_HEADER = "x-sh-site";
 	private static final String NO_CACHE_HEADER = "x-sh-nocache";
 	private static final String FORMAT_PARAM = "sh-format";
 	private static final String SEPARATOR = "/";
+
+	public ShSitesContextURLProcess(
+			ShSitesContextURLProcessCache shSitesContextURLProcessCache) {
+		this.shSitesContextURLProcessCache = shSitesContextURLProcessCache;
+	}
 
 	public ShSitesContextURL getContextURL(HttpServletRequest request, HttpServletResponse response) {
 		ShSitesContextURL shSitesContextURL = new ShSitesContextURL();

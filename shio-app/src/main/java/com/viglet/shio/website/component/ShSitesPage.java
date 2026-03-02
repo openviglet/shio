@@ -108,14 +108,16 @@ public class ShSitesPage {
 		if (format == null)
 			format = DEFAULT_FORMAT;
 
-		for (ShSitePostTypeLayout shSitePostTypeLayout : shSitePostTypeLayouts) {
-			if (shSitePostTypeLayout.getFormat().equals(format)) {
-				pageLayoutName = shSitePostTypeLayout.getLayout();
-				if (shSitePostTypeLayout.getCacheTTL() != null)
-					shSitesPageLayout.setCacheTTL(shSitePostTypeLayout.getCacheTTL());
+		if (shSitePostTypeLayouts != null) {
+			for (ShSitePostTypeLayout shSitePostTypeLayout : shSitePostTypeLayouts) {
+				if (shSitePostTypeLayout.getFormat().equals(format)) {
+					pageLayoutName = shSitePostTypeLayout.getLayout();
+					if (shSitePostTypeLayout.getCacheTTL() != null)
+						shSitesPageLayout.setCacheTTL(shSitePostTypeLayout.getCacheTTL());
 
-				if (shSitePostTypeLayout.getMimeType() != null)
-					mimeType = shSitePostTypeLayout.getMimeType();
+					if (shSitePostTypeLayout.getMimeType() != null)
+						mimeType = shSitePostTypeLayout.getMimeType();
+				}
 			}
 		}
 
@@ -170,8 +172,9 @@ public class ShSitesPage {
 		ObjectMapper mapper = new ObjectMapper();
 
 		try {
-			shSitePostTypeLayouts = mapper.readValue(
-					postTypeLayout.get(shPostItem.getShPostType().getName()).toString(), ShSitePostTypeLayouts.class);
+			String postTypeLayoutJson = postTypeLayout.optString(shPostItem.getShPostType().getName(), null);
+			if (postTypeLayoutJson != null)
+				shSitePostTypeLayouts = mapper.readValue(postTypeLayoutJson, ShSitePostTypeLayouts.class);
 
 		} catch (JacksonException e) {
 			logger.error(e);
