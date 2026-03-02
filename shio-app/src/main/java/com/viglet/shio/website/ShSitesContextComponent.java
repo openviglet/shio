@@ -26,7 +26,6 @@ import java.util.Set;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -52,23 +51,28 @@ import com.viglet.shio.website.utils.ShSitesPostUtils;
  */
 @Component
 public class ShSitesContextComponent {
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShFolderUtils shFolderUtils;
-	@Autowired
-	private ShSitesFolderUtils shSitesFolderUtils;
 
-	@Autowired
-	private ShSitesPostUtils shSitesPostUtils;
-	@Autowired
-	private ShCachePageLayout shCachePageLayout;
-	@Autowired
-	private ShSitesPageLayoutUtils shSitesPageLayoutUtils;
+	private final ShPostRepository shPostRepository;
+	private final ShFolderRepository shFolderRepository;
+	private final ShFolderUtils shFolderUtils;
+	private final ShSitesFolderUtils shSitesFolderUtils;
+	private final ShSitesPostUtils shSitesPostUtils;
+	private final ShCachePageLayout shCachePageLayout;
+	private final ShSitesPageLayoutUtils shSitesPageLayoutUtils;
 
 	private static final String SEPARATOR = "/";
+
+	public ShSitesContextComponent(ShPostRepository shPostRepository, ShFolderRepository shFolderRepository,
+			ShFolderUtils shFolderUtils, ShSitesFolderUtils shSitesFolderUtils, ShSitesPostUtils shSitesPostUtils,
+			ShCachePageLayout shCachePageLayout, ShSitesPageLayoutUtils shSitesPageLayoutUtils) {
+		this.shPostRepository = shPostRepository;
+		this.shFolderRepository = shFolderRepository;
+		this.shFolderUtils = shFolderUtils;
+		this.shSitesFolderUtils = shSitesFolderUtils;
+		this.shSitesPostUtils = shSitesPostUtils;
+		this.shCachePageLayout = shCachePageLayout;
+		this.shSitesPageLayoutUtils = shSitesPageLayoutUtils;
+	}
 
 	public String folderPathFactory(List<String> contentPath) {
 		StringBuilder folderPath = new StringBuilder("/");

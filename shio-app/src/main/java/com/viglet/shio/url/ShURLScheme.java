@@ -19,7 +19,6 @@ package com.viglet.shio.url;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.servlet.HandlerMapping;
 
@@ -35,15 +34,19 @@ import com.viglet.shio.utils.ShUtils;
  */
 @Controller
 public class ShURLScheme {
-	@Autowired
-	private HttpServletRequest request;
-	@Autowired
-	private ShFolderUtils shFolderUtils;
-	@Autowired
-	private ShUtils shUtils;
+
+	private final HttpServletRequest request;
+	private final ShFolderUtils shFolderUtils;
+	private final ShUtils shUtils;
 
 	private static final String X_SH_SITE = "x-sh-site";
 	private static final String X_SH_CONTEXT = "x-sh-context";
+
+	public ShURLScheme(HttpServletRequest request, ShFolderUtils shFolderUtils, ShUtils shUtils) {
+		this.request = request;
+		this.shFolderUtils = shFolderUtils;
+		this.shUtils = shUtils;
+	}
 
 	public String get(ShObjectImpl shObject) {
 		String shXSiteName = request.getHeader(X_SH_SITE);

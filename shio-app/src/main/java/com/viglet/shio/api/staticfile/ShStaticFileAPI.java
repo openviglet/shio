@@ -27,7 +27,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -69,8 +68,7 @@ public class ShStaticFileAPI {
 	private final ResourceLoader resourceloader;
 	private final ShUtils shUtils;
 
-	@Autowired
-	public ShStaticFileAPI(ShFolderRepository shFolderRepository, ShStaticFileUtils shStaticFileUtils,
+	ShStaticFileAPI(ShFolderRepository shFolderRepository, ShStaticFileUtils shStaticFileUtils,
 						   ShObjectRepository shObjectRepository, ResourceLoader resourceloader, ShUtils shUtils) {
 		this.shFolderRepository = shFolderRepository;
 		this.shStaticFileUtils = shStaticFileUtils;

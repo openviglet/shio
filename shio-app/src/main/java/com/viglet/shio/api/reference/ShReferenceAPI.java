@@ -20,7 +20,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,16 +44,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  */
 @RestController
 @RequestMapping("/api/v2/reference")
-@Tag( name = "Reference", description = "Reference API")
+@Tag(name = "Reference", description = "Reference API")
 public class ShReferenceAPI {
 
 	private final ShReferenceRepository shReferenceRepository;
 	private final ShObjectRepository shObjectRepository;
 	private final ShPostAttrRepository shPostAttrRepository;
 
-	@Autowired
-	public ShReferenceAPI(ShReferenceRepository shReferenceRepository, ShObjectRepository shObjectRepository,
-						  ShPostAttrRepository shPostAttrRepository) {
+	ShReferenceAPI(ShReferenceRepository shReferenceRepository, ShObjectRepository shObjectRepository,
+			ShPostAttrRepository shPostAttrRepository) {
 		this.shReferenceRepository = shReferenceRepository;
 		this.shObjectRepository = shObjectRepository;
 		this.shPostAttrRepository = shPostAttrRepository;

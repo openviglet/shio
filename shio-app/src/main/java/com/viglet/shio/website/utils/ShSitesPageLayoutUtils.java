@@ -18,13 +18,10 @@ package com.viglet.shio.website.utils;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -32,21 +29,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.viglet.shio.bean.ShSitePostTypeLayout;
 import com.viglet.shio.bean.ShSitePostTypeLayouts;
 import com.viglet.shio.persistence.model.folder.ShFolder;
-import com.viglet.shio.persistence.model.object.ShObject;
 import com.viglet.shio.persistence.model.object.impl.ShObjectImpl;
 import com.viglet.shio.persistence.model.post.ShPost;
 import com.viglet.shio.persistence.model.post.ShPostAttr;
 import com.viglet.shio.persistence.model.post.impl.ShPostAttrImpl;
 import com.viglet.shio.persistence.model.post.impl.ShPostImpl;
 import com.viglet.shio.persistence.model.site.ShSite;
-import com.viglet.shio.persistence.repository.object.ShObjectRepository;
 import com.viglet.shio.persistence.repository.post.ShPostRepository;
-import com.viglet.shio.persistence.repository.site.ShSiteRepository;
-import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.utils.ShPostUtils;
-import com.viglet.shio.website.ShSitesContextURL;
-import com.viglet.shio.website.ShSitesContextURLProcess;
 
 /**
  * Page Layout Utils.
@@ -58,13 +49,16 @@ import com.viglet.shio.website.ShSitesContextURLProcess;
 public class ShSitesPageLayoutUtils {
 	private static final Logger logger = LogManager.getLogger(ShSitesPageLayoutUtils.class);
 	private static final String DEFAULT_FORMAT = "default";
-	@Autowired
-	private ShSitesPostUtils shSitesPostUtils;
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShPostUtils shPostUtils;
 
+	private final ShSitesPostUtils shSitesPostUtils;
+	private final ShPostRepository shPostRepository;
+	private final ShPostUtils shPostUtils;
+	public ShSitesPageLayoutUtils(ShSitesPostUtils shSitesPostUtils, ShPostRepository shPostRepository,
+			ShPostUtils shPostUtils) {
+		this.shSitesPostUtils = shSitesPostUtils;
+		this.shPostRepository = shPostRepository;
+		this.shPostUtils = shPostUtils;
+	}
 
 	public ShPost pageLayoutFromPost(ShPostImpl shPostItem, ShSite shSite, String format) {
 		JSONObject postTypeLayout = new JSONObject();
@@ -104,26 +98,28 @@ public class ShSitesPageLayoutUtils {
 	}
 
 	public ShPost pageLayoutFromFolderAndFolderIndex(ShObjectImpl shObjectItem, ShSite shSite, String format) {
-		ShPost shFolderPageLayout = null;
-		if (shObjectItem instanceof ShPostImpl shPostImpl) {
-			if (logger.isDebugEnabled())
-				logger.debug("isPost");
-			shFolderPageLayout = folderIndexPageLayout(shPostImpl, format, shFolderPageLayout);
-		} else if (shObjectItem instanceof ShFolder shFolder) {
-			if (logger.isDebugEnabled())
-				logger.debug("isFolder");
-			ShPost shFolderIndex = shPostRepository.findByShFolderAndFurl(shFolder, "index");
-			if (shFolderIndex != null) {
-				shFolderPageLayout = folderIndexPageLayout(shFolderIndex, format, shFolderPageLayout);
-			} else {
-				shFolderPageLayout = this.defaultFolderPageLayout(shSite, format, shFolderPageLayout);
+		return switch (shObjectItem) {
+			case ShPostImpl shPostImpl -> {
+				if (logger.isDebugEnabled())
+					logger.debug("isPost");
+				yield folderIndexPageLayout(shPostImpl, format, null);
 			}
-		} else {
-			logger.debug("Object not found because shObjectItem {}, Site Id: {}, Page Layout: {}",
-					shObjectItem, shObjectItem.getId(), shSite.getPostTypeLayout());
-		}
-
-		return shFolderPageLayout;
+			case ShFolder shFolder -> {
+				if (logger.isDebugEnabled())
+					logger.debug("isFolder");
+				ShPost shFolderIndex = shPostRepository.findByShFolderAndFurl(shFolder, "index");
+				if (shFolderIndex != null) {
+					yield folderIndexPageLayout(shFolderIndex, format, null);
+				} else {
+					yield this.defaultFolderPageLayout(shSite, format, null);
+				}
+			}
+			default -> {
+				logger.debug("Object not found because shObjectItem {}, Site Id: {}, Page Layout: {}",
+						shObjectItem, shObjectItem.getId(), shSite.getPostTypeLayout());
+				yield null;
+			}
+		};
 	}
 
 	private ShPost folderIndexPageLayout(ShObjectImpl shObjectItem, String format, ShPost shFolderPageLayout) {

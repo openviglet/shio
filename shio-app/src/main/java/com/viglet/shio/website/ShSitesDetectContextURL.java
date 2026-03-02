@@ -5,23 +5,26 @@ import com.viglet.shio.persistence.model.object.impl.ShObjectImpl;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.utils.ShFolderUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+@Slf4j
 @Component
 public class ShSitesDetectContextURL {
-    private static final Log logger = LogFactory.getLog(ShSitesDetectContextURL.class);
-    @Autowired
-    private ShSiteRepository shSiteRepository;
-    @Autowired
-    private ShSitesContextComponent shSitesContextComponent;
-    @Autowired
-    private ShFolderUtils shFolderUtils;
+    private final ShSiteRepository shSiteRepository;
+    private final ShSitesContextComponent shSitesContextComponent;
+    private final ShFolderUtils shFolderUtils;
     private static final String SEPARATOR = "/";
+
+    public ShSitesDetectContextURL(ShSiteRepository shSiteRepository, ShSitesContextComponent shSitesContextComponent, ShFolderUtils shFolderUtils) {
+        this.shSiteRepository = shSiteRepository;
+        this.shSitesContextComponent = shSitesContextComponent;
+        this.shFolderUtils = shFolderUtils;
+    }
 
     public void detectContextURL(String url, ShSitesContextURL shSitesContextURL) {
         shSitesContextURL.getInfo().setContextURL(url);
@@ -51,7 +54,7 @@ public class ShSitesDetectContextURL {
             shSite = shSiteRepository.findByName(shSiteName);
         }
         if (shSite == null) {
-            logger.warn("No site found for context: " + shSiteName);
+            log.warn("No site found for context: " + shSiteName);
             return;
         }
         shSitesContextURL.getInfo().setSiteId(shSite.getId());
@@ -66,7 +69,7 @@ public class ShSitesDetectContextURL {
         if (shFolder != null) {
             shSitesContextURL.getInfo().setParentFolderId(shFolder.getId());
         } else {
-            logger.info("No folder for " + shSitesContextURL.getInfo().getContextURL());
+            log.info("No folder for " + shSitesContextURL.getInfo().getContextURL());
         }
 
         ShObjectImpl shObject = shSitesContextComponent.shObjectItemFactory(shSite, shFolder, objectName);

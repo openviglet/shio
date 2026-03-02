@@ -42,8 +42,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 
 /**
  * The persistent class for the ShPostAttr database table.
@@ -61,8 +59,6 @@ public class ShPostAttr implements Serializable, ShPostAttrImpl {
 	@UuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
-
-	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "date_value")
 	private Date dateValue;
 
@@ -85,8 +81,7 @@ public class ShPostAttr implements Serializable, ShPostAttrImpl {
 	private int type;
 
 	// bi-directional many-to-one association to ShRelatorItem
-	@OneToMany(mappedBy = "shParentPostAttr", orphanRemoval = true, fetch = FetchType.LAZY)
-	@Cascade({ CascadeType.ALL })
+	@OneToMany(mappedBy = "shParentPostAttr", orphanRemoval = true, fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.ALL)
 	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Set<ShRelatorItem> shChildrenRelatorItems = new HashSet<>();
 

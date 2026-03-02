@@ -42,7 +42,6 @@ import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -65,10 +64,12 @@ public class ShSpreadsheet {
 	static final int MIN_COL_WIDTH = 20 << 8;
 	static final int MAX_COL_WIDTH = 100 << 8;
 
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShPostUtils shPostUtils;
+	private final ShPostRepository shPostRepository;
+	private final ShPostUtils shPostUtils;
+	public ShSpreadsheet(ShPostRepository shPostRepository, ShPostUtils shPostUtils) {
+		this.shPostRepository = shPostRepository;
+		this.shPostUtils = shPostUtils;
+	}
 
 	public void generate(ShFolder shFolder, HttpServletResponse response) {
 
@@ -99,7 +100,7 @@ public class ShSpreadsheet {
 		Map<String, List<ShPost>> shPostsByTypeMap = new HashMap<>();
 
 		String postTypeName = null;
-		List<ShPost> shPostsByType = null;
+		List<ShPost> shPostsByType = new ArrayList<>();
 		for (ShPost shPost : shPosts) {
 			shPostUtils.syncWithPostType(shPost);
 			if (postTypeName == null) {
@@ -280,7 +281,7 @@ public class ShSpreadsheet {
 			sheet.autoSizeColumn(i);
 
 			int cw = (int) (sheet.getColumnWidth(i) * 0.8);
-			sheet.setColumnWidth(i, Math.max(Math.min(cw, MAX_COL_WIDTH), MIN_COL_WIDTH));
+			sheet.setColumnWidth(i, Math.clamp(cw, MIN_COL_WIDTH, MAX_COL_WIDTH));
 		}
 		maxCol = 0;
 		return maxCol;

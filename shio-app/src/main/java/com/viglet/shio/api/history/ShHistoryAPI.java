@@ -19,7 +19,6 @@ package com.viglet.shio.api.history;
 import java.util.Collections;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -49,8 +48,6 @@ public class ShHistoryAPI {
 	private final ShObjectRepository shObjectRepository;
 	private final ShHistoryRepository shHistoryRepository;
 	private final ShHistoryPageableRepository shHistoryPageableRepository;
-
-	@Autowired
 	public ShHistoryAPI(ShObjectRepository shObjectRepository, ShHistoryRepository shHistoryRepository,
 						ShHistoryPageableRepository shHistoryPageableRepository) {
 		this.shObjectRepository = shObjectRepository;

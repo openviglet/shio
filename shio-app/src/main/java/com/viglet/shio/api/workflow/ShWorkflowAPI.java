@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -43,14 +42,19 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag( name = "Workflow", description = "Workflow API")
 public class ShWorkflowAPI {
 
-	@Autowired
-	private ShWorkflowTaskRepository shWorkflowTaskRepository;
-	@Autowired
-	private ShUserRepository shUserRepository;
-	@Autowired
-	private ShGroupRepository shGroupRepository;
-	@Autowired
-	private ShPostRepository shPostRepository;
+
+	private final ShWorkflowTaskRepository shWorkflowTaskRepository;
+	private final ShUserRepository shUserRepository;
+	private final ShGroupRepository shGroupRepository;
+	private final ShPostRepository shPostRepository;
+
+	ShWorkflowAPI(ShWorkflowTaskRepository shWorkflowTaskRepository, ShUserRepository shUserRepository,
+				  ShGroupRepository shGroupRepository, ShPostRepository shPostRepository) {
+		this.shWorkflowTaskRepository = shWorkflowTaskRepository;
+		this.shUserRepository = shUserRepository;
+		this.shGroupRepository = shGroupRepository;
+		this.shPostRepository = shPostRepository;
+	}
 
 	@GetMapping("/task")
 	public Set<ShWorkflowTask> shWorkflowTasksGet(Principal principal) {

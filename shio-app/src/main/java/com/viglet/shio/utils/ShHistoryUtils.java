@@ -19,7 +19,6 @@ package com.viglet.shio.utils;
 import java.security.Principal;
 import java.util.Date;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -36,16 +35,21 @@ import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 @Component
 public class ShHistoryUtils {
 
-	@Autowired
-	private ShHistoryRepository shHistoryRepository;
-	@Autowired
-	private ShPostUtils shPostUtils;
-	@Autowired
-	private ShFolderUtils shFolderUtils;
+
+	private final ShHistoryRepository shHistoryRepository;
+	private final ShPostUtils shPostUtils;
+	private final ShFolderUtils shFolderUtils;
 
 	public static final String CREATE = "CREATE";
 	public static final String DELETE = "DELETE";
 	public static final String UPDATE = "UPDATE";
+
+	public ShHistoryUtils(ShHistoryRepository shHistoryRepository, ShPostUtils shPostUtils,
+			ShFolderUtils shFolderUtils) {
+		this.shHistoryRepository = shHistoryRepository;
+		this.shPostUtils = shPostUtils;
+		this.shFolderUtils = shFolderUtils;
+	}
 
 	public void commit(ShObjectImpl shObject, Principal principal, String action) {
 		if (shObject != null) {

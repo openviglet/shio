@@ -16,7 +16,6 @@
  */
 package com.viglet.shio.spring;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
@@ -34,10 +33,14 @@ import com.viglet.shio.utils.ShStaticFileUtils;
 public class ShStaticResourceConfiguration implements WebMvcConfigurer {
 
 	private static final String THIRDPARTY_FOLDER = "/thirdparty/**";
-	@Autowired
-	private ShStaticFileUtils shStaticFileUtils;
+
+	private final ShStaticFileUtils shStaticFileUtils;
 	@Value("${shio.allowedOrigins:localhost}")
 	private String allowedOrigins;
+
+	public ShStaticResourceConfiguration(ShStaticFileUtils shStaticFileUtils) {
+		this.shStaticFileUtils = shStaticFileUtils;
+	}
 
 	@Override
 	public void addResourceHandlers(ResourceHandlerRegistry registry) {

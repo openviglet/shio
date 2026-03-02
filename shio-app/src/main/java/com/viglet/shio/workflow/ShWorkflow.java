@@ -40,21 +40,27 @@ import com.viglet.shio.persistence.repository.auth.ShGroupRepository;
 import com.viglet.shio.persistence.repository.auth.ShUserRepository;
 import com.viglet.shio.persistence.repository.workflow.ShWorkflowTaskRepository;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author Alexandre Oliveira
  */
+@Slf4j
 @Component
 public class ShWorkflow {
-	private static final Log logger = LogFactory.getLog(ShWorkflow.class);
 
-	@Autowired
-	private JavaMailSender javaMailSender;
-	@Autowired
-	private ShWorkflowTaskRepository shWorkflowTaskRepository;
-	@Autowired
-	private ShUserRepository shUserRepository;
-	@Autowired
-	private ShGroupRepository shGroupRepository;
+	private final JavaMailSender javaMailSender;
+	private final ShWorkflowTaskRepository shWorkflowTaskRepository;
+	private final ShUserRepository shUserRepository;
+	private final ShGroupRepository shGroupRepository;
+
+	public ShWorkflow(JavaMailSender javaMailSender, ShWorkflowTaskRepository shWorkflowTaskRepository,
+					  ShUserRepository shUserRepository, ShGroupRepository shGroupRepository) {
+		this.javaMailSender = javaMailSender;
+		this.shWorkflowTaskRepository = shWorkflowTaskRepository;
+		this.shUserRepository = shUserRepository;
+		this.shGroupRepository = shGroupRepository;
+	}
 
 	public void requestWorkFlow(ShObject shObject, Principal principal) {
 		if (shObject instanceof ShPostImpl shPostImpl && shWorkflowTaskRepository.countByShObject(shObject) == 0) {
@@ -98,8 +104,8 @@ public class ShWorkflow {
 				javaMailSender.send(msg);
 			}
 		} catch (Exception e) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Test Connection Email failed");
+			if (log.isDebugEnabled()) {
+				log.debug("Test Connection Email failed");
 			}
 		}
 

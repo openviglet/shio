@@ -36,10 +36,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -67,31 +64,39 @@ import com.viglet.turing.client.sn.job.TurSNJobAction;
 import com.viglet.turing.client.sn.job.TurSNJobItem;
 import com.viglet.turing.client.sn.job.TurSNJobItems;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author Alexandre Oliveira
  */
+@Slf4j
 @Component
 public class ShTuringIntegration {
-	static final Logger logger = LogManager.getLogger(ShTuringIntegration.class);
 	private static final String TURING_SERVER = "http://localhost:2700";
 	private static final boolean TURING_ENABLED = true;
 
-	@Autowired
-	private ShSitesPostUtils shSitesPostUtils;
-	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ShUtils shUtils;
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShPostTypeUtils shPostTypeUtils;
-	@Autowired
-	private ShObjectUtils shObjectUtils;
-	@Autowired
-	private ShSitesObjectUtils shSitesObjectUtils;
-	@Autowired
-	private ShFolderRepository shFolderRepository;
+
+	private final ShSitesPostUtils shSitesPostUtils;
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ShUtils shUtils;
+	private final ShPostRepository shPostRepository;
+	private final ShPostTypeUtils shPostTypeUtils;
+	private final ShObjectUtils shObjectUtils;
+	private final ShSitesObjectUtils shSitesObjectUtils;
+	private final ShFolderRepository shFolderRepository;
+
+	public ShTuringIntegration(ShSitesPostUtils shSitesPostUtils, ShPostTypeRepository shPostTypeRepository,
+			ShUtils shUtils, ShPostRepository shPostRepository, ShPostTypeUtils shPostTypeUtils,
+			ShObjectUtils shObjectUtils, ShSitesObjectUtils shSitesObjectUtils, ShFolderRepository shFolderRepository) {
+		this.shSitesPostUtils = shSitesPostUtils;
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.shUtils = shUtils;
+		this.shPostRepository = shPostRepository;
+		this.shPostTypeUtils = shPostTypeUtils;
+		this.shObjectUtils = shObjectUtils;
+		this.shSitesObjectUtils = shSitesObjectUtils;
+		this.shFolderRepository = shFolderRepository;
+	}
 
 	public void indexObject(ShObjectImpl shObject) {
 		ShSite shSite = shObjectUtils.getSite(shObject);
@@ -103,7 +108,7 @@ public class ShTuringIntegration {
 			String objectTypeName = getObjectTypeName(shObject);
 			String objectName = getObjectName(shObject);
 
-			logger.info("Preparing to index {}...", objectName);
+			log.info("Preparing to index {}...", objectName);
 
 			this.sendServerToIndex(shObject, objectName, objectTypeName, shSite);
 
@@ -147,7 +152,7 @@ public class ShTuringIntegration {
 			}
 
 			this.sendServer(turSNJobItems, shSite);
-			logger.info("Sent to index queue: {}", objectName);
+			log.info("Sent to index queue: {}", objectName);
 		}
 	}
 
@@ -211,7 +216,7 @@ public class ShTuringIntegration {
 				return null;
 			}
 		} catch (Exception e) {
-			logger.error(e);
+			log.error("Error while creating TurSNJobItem", e);
 		}
 
 		return null;
@@ -422,8 +427,8 @@ public class ShTuringIntegration {
 				String serviceAPI = "%s/api/sn/%s/import";
 
 				HttpPost httpPost = new HttpPost(String.format(serviceAPI, TURING_SERVER, shSite.getName()));
-				if (logger.isDebugEnabled())
-					logger.debug(jsonUTF8);
+				if (log.isDebugEnabled())
+					log.debug(jsonUTF8);
 
 				StringEntity entity = new StringEntity(jsonUTF8, StandardCharsets.UTF_8.name());
 				httpPost.setEntity(entity);
@@ -432,11 +437,11 @@ public class ShTuringIntegration {
 				httpPost.setHeader("Accept-Encoding", StandardCharsets.UTF_8.name());
 
 				try (CloseableHttpResponse response = client.execute(httpPost)) {
-					logger.debug("Closed connection");
+					log.debug("Closed connection");
 				}
 			}
 		} catch (IOException e) {
-			logger.error(e);
+			log.error("Error while creating TurSNJobItem", e);
 		}
 
 	}

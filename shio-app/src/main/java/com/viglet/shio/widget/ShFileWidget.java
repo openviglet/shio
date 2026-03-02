@@ -17,8 +17,15 @@
 package com.viglet.shio.widget;
 
 import org.springframework.stereotype.Component;
+import org.thymeleaf.spring6.SpringTemplateEngine;
+
 /**
  * @author Alexandre Oliveira
  */
 @Component
-public class ShFileWidget extends ShTextWidget {}
+public class ShFileWidget extends ShTextWidget {
+
+    ShFileWidget(SpringTemplateEngine templateEngine) {
+        super(templateEngine);
+    }
+}

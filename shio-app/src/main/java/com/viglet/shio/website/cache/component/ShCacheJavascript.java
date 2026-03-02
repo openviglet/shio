@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
@@ -34,8 +33,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class ShCacheJavascript {
 	private static final Logger logger = LogManager.getLogger(ShCacheJavascript.class);
-	@Autowired
-	private ResourceLoader resourceloader;
+
+	private final ResourceLoader resourceloader;
+
+	public ShCacheJavascript(ResourceLoader resourceloader) {
+		this.resourceloader = resourceloader;
+	}
 
 	@Cacheable(value = "javascript", sync = true)
 	public StringBuilder shObjectJSFactory() {

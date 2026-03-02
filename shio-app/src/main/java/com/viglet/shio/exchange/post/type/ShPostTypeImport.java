@@ -62,7 +62,6 @@ public class ShPostTypeImport {
                 .forEach(shPostTypeExchange -> {
                     log.info(".. {} Post Type ({})", shPostTypeExchange.getName(), shPostTypeExchange.getId());
                     ShPostType shPostType = new ShPostType();
-                 //   shPostType.setId(shPostTypeExchange.getId());
                     shPostType.setTitle(shPostTypeExchange.getLabel());
                     shPostType.setDate(isCloned ? new Date().toInstant() : shPostTypeExchange.getDate().toInstant());
                     shPostType.setDescription(shPostTypeExchange.getDescription());
@@ -92,7 +91,7 @@ public class ShPostTypeImport {
     public ShPostTypeAttr importPostTypeField(Entry<String, ShPostTypeFieldExchange> postTypeField) {
         ShPostTypeFieldExchange shPostTypeFieldExchange = postTypeField.getValue();
         ShPostTypeAttr shPostTypeAttr = new ShPostTypeAttr();
-      //  shPostTypeAttr.setId(shPostTypeFieldExchange.getId());
+        shPostTypeAttr.setId(shPostTypeFieldExchange.getId());
         shPostTypeAttr.setDescription(shPostTypeFieldExchange.getDescription());
         shPostTypeAttr.setLabel(shPostTypeFieldExchange.getLabel());
         shPostTypeAttr.setName(postTypeField.getKey());

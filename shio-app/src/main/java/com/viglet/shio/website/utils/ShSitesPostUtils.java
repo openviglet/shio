@@ -28,10 +28,7 @@ import com.viglet.shio.persistence.model.object.impl.ShObjectImpl;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.url.ShURLScheme;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -54,39 +51,48 @@ import com.viglet.shio.utils.ShPostUtils;
 import com.viglet.shio.utils.ShStaticFileUtils;
 import com.viglet.shio.website.ShContent;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Site Post Utils.
  *
  * @author Alexandre Oliveira
  * @since 0.3.5
  */
+@Slf4j
 @Component
 public class ShSitesPostUtils {
-	private static final Log logger = LogFactory.getLog(ShSitesPostUtils.class);
 	private static final String IS_VISIBLE_PAGE = "IS_VISIBLE_PAGE";
 	private static final String NO = "no";
 	private static final String HOME = "Home";
-	@Autowired
-	private ShFolderUtils shFolderUtils;
-	@Autowired
-	private ShURLScheme shURLScheme;
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShPostDraftRepository shPostDraftRepository;
-	@Autowired
-	private ShPostAttrRepository shPostAttrRepository;
-	@Autowired
-	private ShPostDraftAttrRepository shPostDraftAttrRepository;
-	@Autowired
-	private ShStaticFileUtils shStaticFileUtils;
-	@Autowired
-	private ShMgmtProperties shMgmtProperties;
-	@Autowired
-	private ShPostUtils shPostUtils;
-	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
 
+	private final ShFolderUtils shFolderUtils;
+	private final ShURLScheme shURLScheme;
+	private final ShPostRepository shPostRepository;
+	private final ShPostDraftRepository shPostDraftRepository;
+	private final ShPostAttrRepository shPostAttrRepository;
+	private final ShPostDraftAttrRepository shPostDraftAttrRepository;
+	private final ShStaticFileUtils shStaticFileUtils;
+	private final ShMgmtProperties shMgmtProperties;
+	private final ShPostUtils shPostUtils;
+	private final ShPostTypeRepository shPostTypeRepository;
+
+	public ShSitesPostUtils(ShFolderUtils shFolderUtils, ShURLScheme shURLScheme, ShPostRepository shPostRepository,
+							ShPostDraftRepository shPostDraftRepository, ShPostAttrRepository shPostAttrRepository,
+							ShPostDraftAttrRepository shPostDraftAttrRepository, ShStaticFileUtils shStaticFileUtils,
+							ShMgmtProperties shMgmtProperties, ShPostUtils shPostUtils, ShPostTypeRepository shPostTypeRepository) {
+		this.shFolderUtils = shFolderUtils;
+		this.shURLScheme = shURLScheme;
+		this.shPostRepository = shPostRepository;
+		this.shPostDraftRepository = shPostDraftRepository;
+		this.shPostAttrRepository = shPostAttrRepository;
+		this.shPostDraftAttrRepository = shPostDraftAttrRepository;
+		this.shStaticFileUtils = shStaticFileUtils;
+		this.shMgmtProperties = shMgmtProperties;
+		this.shPostUtils = shPostUtils;
+		this.shPostTypeRepository = shPostTypeRepository;
+	}	
+	
 	public ShPost getFolderIndex(ShFolder shFolder) {
 		ShPostType shPostType = shPostTypeRepository.findByName(ShSystemPostType.FOLDER_INDEX);
 		List<ShPost> shFolderIndexPosts = shPostRepository.findByShFolderAndShPostTypeOrderByPositionAsc(shFolder,
@@ -98,12 +104,12 @@ public class ShSitesPostUtils {
 
 	public boolean isFolderIndex(ShPost shPost) {
 		if (shPost.getShPostType().getName().equals(ShSystemPostType.FOLDER_INDEX)) {
-			if (logger.isDebugEnabled())
-				logger.debug("Is FolderIndex Post");
+			if (log.isDebugEnabled())
+				log.debug("Is FolderIndex Post");
 			return true;
 		} else {
-			if (logger.isDebugEnabled())
-				logger.debug("Is Not FolderIndex Post");
+			if (log.isDebugEnabled())
+				log.debug("Is Not FolderIndex Post");
 			return false;
 		}
 
@@ -119,22 +125,22 @@ public class ShSitesPostUtils {
 
 	private ShPost getLivePost(ShPost shPost) {
 
-		if (logger.isDebugEnabled())
-			logger.debug("mgmt is not enabled: ");
+		if (log.isDebugEnabled())
+			log.debug("mgmt is not enabled: ");
 		if (shPost.isPublished()) {
-			if (logger.isDebugEnabled())
-				logger.debug("is Published ");
+			if (log.isDebugEnabled())
+				log.debug("is Published ");
 			return shPost;
 		} else {
-			if (logger.isDebugEnabled())
-				logger.debug("is not Published ");
+			if (log.isDebugEnabled())
+				log.debug("is not Published ");
 		}
 		return null;
 	}
 
 	private ShPost getMgmtPost(ShPost shPost) {
-		if (logger.isDebugEnabled())
-			logger.debug("mgmt is enabled");
+		if (log.isDebugEnabled())
+			log.debug("mgmt is enabled");
 		Optional<ShPostDraft> shPostDraftOptional = shPostDraftRepository.findByIdFull(shPost.getId());
 		if (shPostDraftOptional.isPresent()) {
 			ShPost shPostDraft = shPostUtils.loadPostDraft(shPostDraftOptional.get());

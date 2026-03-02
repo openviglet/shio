@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -63,8 +62,7 @@ public class ShSearchAPI {
 	private final ShFolderUtils shFolderUtils;
 	private final ShTuringIntegration shTuringIntegration;
 
-	@Autowired
-	public ShSearchAPI(ShSiteRepository shSiteRepository, ShPostTypeRepository shPostTypeRepository,
+	ShSearchAPI(ShSiteRepository shSiteRepository, ShPostTypeRepository shPostTypeRepository,
 					   ShPostRepository shPostRepository, ShFolderRepository shFolderRepository,
 					   ShPostUtils shPostUtils, ShFolderUtils shFolderUtils, ShTuringIntegration shTuringIntegration) {
 		this.shSiteRepository = shSiteRepository;

@@ -36,7 +36,6 @@ import com.viglet.shio.persistence.model.provider.auth.ShAuthProviderVendor;
 import com.viglet.shio.persistence.repository.provider.auth.ShAuthProviderVendorRepository;
 import com.viglet.shio.provider.auth.ShAuthSystemProviderVendor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -46,8 +45,6 @@ import org.springframework.stereotype.Component;
 public class ShAuthProviderVendorOnStartup {
 
 	private final ShAuthProviderVendorRepository shAuthProviderVendorRepository;
-
-	@Autowired
 	public ShAuthProviderVendorOnStartup(ShAuthProviderVendorRepository shAuthProviderVendorRepository) {
 		this.shAuthProviderVendorRepository = shAuthProviderVendorRepository;
 	}

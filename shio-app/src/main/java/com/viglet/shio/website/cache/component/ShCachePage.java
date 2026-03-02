@@ -20,9 +20,6 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -41,24 +38,30 @@ import com.viglet.shio.website.component.ShSitesPage;
 import com.viglet.shio.website.component.ShSitesPageLayout;
 import com.viglet.shio.website.utils.ShSitesPostUtils;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author Alexandre Oliveira
  */
 @Component
+@Slf4j
 public class ShCachePage {
-	private static final Log logger = LogFactory.getLog(ShCachePage.class);
-	@Autowired
-	private ShSitesContextComponent shSitesContextComponent;
-	@Autowired
-	private ShSitesPage shSitesPage;
-	@Autowired
-	private ShObjectRepository shObjectRepository;
-	@Autowired
-	private ShSiteRepository shSiteRepository;
-	@Autowired
-	private ShCacheObject shCacheObject;
-	@Autowired
-	private ShSitesPostUtils shSitesPostUtils;
+
+	private final ShSitesContextComponent shSitesContextComponent;
+	private final ShSitesPage shSitesPage;
+	private final ShObjectRepository shObjectRepository;
+	private final ShSiteRepository shSiteRepository;
+	private final ShCacheObject shCacheObject;
+	private final ShSitesPostUtils shSitesPostUtils;
+
+	public ShCachePage(ShSitesContextComponent shSitesContextComponent, ShSitesPage shSitesPage, ShObjectRepository shObjectRepository, ShSiteRepository shSiteRepository, ShCacheObject shCacheObject, ShSitesPostUtils shSitesPostUtils) {		
+		this.shSitesContextComponent = shSitesContextComponent;
+		this.shSitesPage = shSitesPage;
+		this.shObjectRepository = shObjectRepository;
+		this.shSiteRepository = shSiteRepository;
+		this.shCacheObject = shCacheObject;
+		this.shSitesPostUtils = shSitesPostUtils;
+	}
 
 	@Cacheable(value = "page", key = "{#shSitesContextURL.getInfo().getObjectId(), #shSitesContextURL.getInfo().getContextURLOriginal()}", sync = true)
 	public ShCachePageBean cache(ShSitesContextURL shSitesContextURL) {
@@ -66,8 +69,8 @@ public class ShCachePage {
 		ShCachePageBean shCachePageBean = new ShCachePageBean();
 		
 
-		if (logger.isDebugEnabled())
-			logger.debug("Creating the page cache of id: " + shSitesContextURL.getInfo().getObjectId() + " and URL "
+		if (log.isDebugEnabled())
+			log.debug("Creating the page cache of id: " + shSitesContextURL.getInfo().getObjectId() + " and URL "
 					+ shSitesContextURL.getInfo().getContextURLOriginal());
 		shCacheObject.updateCache(shSitesContextURL.getInfo().getObjectId(), shSitesContextURL);
 
@@ -90,13 +93,13 @@ public class ShCachePage {
 		String mimeType = "html";
 		
 		if (shObject instanceof ShFolder) {
-			if (logger.isDebugEnabled())
-				logger.debug("Is Folder");
+			if (log.isDebugEnabled())
+				log.debug("Is Folder");
 			mimeType = setFolderInfo(shSitesContextURL, mimeType, shSite, shSitesPageLayout);
 
 		} else if (shObject instanceof ShPost) {
-			if (logger.isDebugEnabled())
-				logger.debug("Is Post");
+			if (log.isDebugEnabled())
+				log.debug("Is Post");
 			mimeType = setPostInfo(shSitesContextURL, shCachePageBean, mimeType, shObject, shSite, shSitesPageLayout);
 		}
 		return mimeType;
@@ -174,7 +177,7 @@ public class ShCachePage {
 			shPageLayoutHTML = shSitesContextComponent.shPageLayoutFactory(shSitesPageLayout,
 					shSitesContextURL.getRequest(), shSite, mimeType);
 		} catch (Exception e) {
-			logger.error("ShCachePage Error:", e);
+			log.error("ShCachePage Error:", e);
 		}
 		shCachePageBean.setBody(shPageLayoutHTML);
 	}

@@ -30,7 +30,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -60,21 +59,27 @@ public class ShFormUtils {
 	private static final Log logger = LogFactory.getLog(ShFormUtils.class);
 	@Resource
 	private ApplicationContext applicationContext;
-	@Autowired
-	private ShPostTypeAttrRepository shPostTypeAttrRepository;
-	@Autowired
-	private ShPostAPI shPostAPI;
-	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShObjectRepository shObjectRepository;
+
+	private final ShPostTypeAttrRepository shPostTypeAttrRepository;
+	private final ShPostAPI shPostAPI;
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ShFolderRepository shFolderRepository;
+	private final ShPostRepository shPostRepository;
+	private final ShObjectRepository shObjectRepository;
 
 	private static final String POST_TYPE_ATTR_PARAM = "__sh-post-type-attr-";
 	private static final String POST_TYPE_PARAM = "__sh-post-type";
+
+	ShFormUtils(ShPostTypeAttrRepository shPostTypeAttrRepository, ShPostAPI shPostAPI,
+			ShPostTypeRepository shPostTypeRepository, ShFolderRepository shFolderRepository,
+			ShPostRepository shPostRepository, ShObjectRepository shObjectRepository) {
+		this.shPostTypeAttrRepository = shPostTypeAttrRepository;
+		this.shPostAPI = shPostAPI;
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.shFolderRepository = shFolderRepository;
+		this.shPostRepository = shPostRepository;
+		this.shObjectRepository = shObjectRepository;
+	}
 
 	private ShPost createPost(ShSitesContextURL shSitesContextURL, ShFormConfiguration shFormConfiguration,
 			ShPostType shPostType) {

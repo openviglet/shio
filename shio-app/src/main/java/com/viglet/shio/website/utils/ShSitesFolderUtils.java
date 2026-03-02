@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -35,10 +34,14 @@ import com.viglet.shio.website.ShContent;
  */
 @Component
 public class ShSitesFolderUtils {
-	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShFolderUtils shFolderUtils;
+
+	private final ShFolderRepository shFolderRepository;
+	private final ShFolderUtils shFolderUtils;
+
+	public ShSitesFolderUtils(ShFolderRepository shFolderRepository, ShFolderUtils shFolderUtils) {
+		this.shFolderRepository = shFolderRepository;
+		this.shFolderUtils = shFolderUtils;
+	}
 
 	public ShFolder getParentFolder(String shFolderId) {
 		return shFolderUtils.getParentFolder(shFolderId);

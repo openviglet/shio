@@ -21,7 +21,6 @@ import java.io.Serializable;
 import jakarta.persistence.*;
 
 import lombok.Getter;
-import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.util.HashSet;

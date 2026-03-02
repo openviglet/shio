@@ -20,7 +20,6 @@ import java.util.List;
 
 import jakarta.transaction.Transactional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -47,7 +46,6 @@ public class ShRoleAPI {
 
 	private final ShRoleRepository shRoleRepository;
 
-	@Autowired
 	public ShRoleAPI(ShRoleRepository shRoleRepository) {
 		this.shRoleRepository = shRoleRepository;
 	}

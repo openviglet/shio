@@ -16,35 +16,31 @@
  */
 package com.viglet.shio.website.utils;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import com.viglet.shio.url.ShURLScheme;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.ShObject;
 import com.viglet.shio.persistence.model.object.impl.ShObjectImpl;
-import com.viglet.shio.persistence.model.post.ShPost;
-import com.viglet.shio.persistence.model.post.ShPostAttr;
 import com.viglet.shio.persistence.model.post.impl.ShPostImpl;
 import com.viglet.shio.persistence.repository.object.ShObjectRepository;
-import com.viglet.shio.utils.ShFolderUtils;
 
 /**
  * @author Alexandre Oliveira
  */
 @Component
 public class ShSitesObjectUtils {
+	private final ShURLScheme shURLScheme;
+	private final ShObjectRepository shObjectRepository;
+	private final ShSitesPostUtils shSitesPostUtils;
 
-	@Autowired
-	private ShURLScheme shURLScheme;
-	@Autowired
-	private ShObjectRepository shObjectRepository;
-	@Autowired
-	private ShSitesPostUtils shSitesPostUtils;
+	public ShSitesObjectUtils(ShURLScheme shURLScheme, ShObjectRepository shObjectRepository, ShSitesPostUtils shSitesPostUtils) {
+		this.shURLScheme = shURLScheme;
+		this.shObjectRepository = shObjectRepository;
+		this.shSitesPostUtils = shSitesPostUtils;
+	}
 
 	public String generateObjectLinkById(String objectId) {
 		if (objectId != null) {

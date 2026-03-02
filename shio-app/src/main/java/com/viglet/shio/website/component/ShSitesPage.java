@@ -23,7 +23,6 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -51,22 +50,15 @@ import com.viglet.shio.website.utils.ShSitesPostUtils;
 @Component
 public class ShSitesPage {
 	private static final Log logger = LogFactory.getLog(ShSitesPage.class);
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShSitesFolderUtils shSitesFolderUtils;
-	@Autowired
-	private ShPostUtils shPostUtils;
-	@Autowired
-	private ShSitesPostUtils shSitesPostUtils;
-	@Autowired
-	private ShSiteUtils shSiteUtils;
-	@Autowired
-	private ShSitesContextComponent shSitesContextComponent;
-	@Autowired
-	private ShCachePreviewHtml shCachePreviewHtml;
+
+	private final ShPostRepository shPostRepository;
+	private final ShFolderRepository shFolderRepository;
+	private final ShSitesFolderUtils shSitesFolderUtils;
+	private final ShPostUtils shPostUtils;
+	private final ShSitesPostUtils shSitesPostUtils;
+	private final ShSiteUtils shSiteUtils;
+	private final ShSitesContextComponent shSitesContextComponent;
+	private final ShCachePreviewHtml shCachePreviewHtml;
 	private static final String THEME = "theme";
 	private static final String POSTS = "posts";
 	private static final String FOLDERS = "folders";
@@ -74,6 +66,21 @@ public class ShSitesPage {
 	private static final String SITE = "site";
 	private static final String DEFAULT_FORMAT = "default";
 	private static final String IN_CONTEXT_EDITING = "in-context-editing";
+
+	
+	public ShSitesPage(ShPostRepository shPostRepository, ShFolderRepository shFolderRepository,
+			ShSitesFolderUtils shSitesFolderUtils, ShPostUtils shPostUtils, ShSitesPostUtils shSitesPostUtils,
+			ShSiteUtils shSiteUtils, ShSitesContextComponent shSitesContextComponent,
+			ShCachePreviewHtml shCachePreviewHtml) {
+		this.shPostRepository = shPostRepository;
+		this.shFolderRepository = shFolderRepository;
+		this.shSitesFolderUtils = shSitesFolderUtils;
+		this.shPostUtils = shPostUtils;
+		this.shSitesPostUtils = shSitesPostUtils;
+		this.shSiteUtils = shSiteUtils;
+		this.shSitesContextComponent = shSitesContextComponent;
+		this.shCachePreviewHtml = shCachePreviewHtml;
+	}
 
 	public String shPostPage(ShSitesPageLayout shSitesPageLayout, ShSite shSite, ShSitesContextURL shSitesContextURL,
 			String mimeType) {

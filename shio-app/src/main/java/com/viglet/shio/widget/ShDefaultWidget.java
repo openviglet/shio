@@ -20,7 +20,6 @@ import java.io.IOException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
@@ -37,8 +36,12 @@ import com.viglet.shio.website.ShSitesContextURL;
 public abstract class ShDefaultWidget implements ShWidgetImplementation {
 	
 	protected String template;
-	@Autowired
-	protected SpringTemplateEngine templateEngine;
+
+	protected final SpringTemplateEngine templateEngine;
+
+	ShDefaultWidget(SpringTemplateEngine templateEngine) {
+		this.templateEngine = templateEngine;
+	}
 
 	@Override
 	public String render(ShPostTypeAttr shPostTypeAttr, ShObjectImpl shObject) {

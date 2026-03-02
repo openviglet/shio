@@ -18,7 +18,6 @@ package com.viglet.shio.api.folder;
 
 import java.io.IOException;
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -39,7 +38,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -167,10 +165,7 @@ public class ShFolderAPI {
 				shParentObject = shFolder.getParentFolder();
 
 			if (shParentObject != null && shObjectUtils.canAccess(principal, shParentObject.getId())) {
-				List<ShObject> shObjects = new ArrayList<>();
-				shObjects.add(shParentObject);
-
-				shObjectRepository.findById(shParentObject.getId()).ifPresent(shObject -> {
+					shObjectRepository.findById(shParentObject.getId()).ifPresent(shObject -> {
 					shFolder.setDate(new Date().toInstant());
 					shFolder.setFurl(ShURLFormatter.format(shFolder.getName()));
 					shFolder.setShGroups(new HashSet<>(shObject.getShGroups()));
@@ -198,9 +193,6 @@ public class ShFolderAPI {
 		if (shObjectUtils.canAccess(principal, objectId)) {
 
 			shObjectRepository.findById(objectId).ifPresent(shObject -> {
-				List<ShObject> shObjects = new ArrayList<>();
-				shObjects.add(shObject);
-
 				ShFolder shNewFolder = new ShFolder();
 				shNewFolder.setDate(new Date().toInstant());
 				shNewFolder.setName(shFolder.getName());
@@ -253,7 +245,7 @@ public class ShFolderAPI {
 		if (shFolder != null)
 			shSpreadsheet.generate(shFolder, response);
 	}
-	@ResponseBody
+
 	@GetMapping(value = "/{id}/export", produces = "application/zip")
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
 	public ResponseEntity<StreamingResponseBody> shPostExport(@PathVariable String id, Principal principal,

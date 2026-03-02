@@ -32,7 +32,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import com.google.gson.Gson;
@@ -82,7 +81,7 @@ public class ShSiteExport {
 		this.shExchangeUtils = shExchangeUtils;
 	}
 
-	public StreamingResponseBody exportObject(@PathVariable String id, HttpServletResponse response) {
+	public StreamingResponseBody exportObject(String id, HttpServletResponse response) {
 		ShExchange shExchange = new ShExchange();
 		Optional<ShSite> shSiteOptional = shSiteRepository.findById(id);
 

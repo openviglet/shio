@@ -16,11 +16,10 @@
  */
 package com.viglet.shio.onstartup.user;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +43,6 @@ public class ShUserOnStartup {
 	private final ShPostTypeRepository shPostTypeRepository;
 	private final ShGroupRepository shGroupRepository;
 
-	@Autowired
 	public ShUserOnStartup(PasswordEncoder passwordEncoder, ShUserRepository shUserRepository,
 						   ShPostTypeRepository shPostTypeRepository, ShGroupRepository shGroupRepository) {
 		this.passwordEncoder = passwordEncoder;
@@ -83,7 +81,7 @@ public class ShUserOnStartup {
 
 		shUser.setEmail(email);
 		shUser.setFirstName(firstName);
-		shUser.setLastLogin(new Date());
+		shUser.setLastLogin(Instant.now());
 		shUser.setLastName(lastName);
 		shUser.setLastPostType(String.valueOf(shPostType.getId()));
 		shUser.setLoginTimes(0);

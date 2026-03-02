@@ -63,20 +63,12 @@ public class ShFolderDraft extends ShObjectDraft {
 	@Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
 	private Set<ShFolderDraft> shFolders = new HashSet<>();
 
-	// bi-directional many-to-one association to ShFolder
-	/*@OneToMany(mappedBy = "shFolder", orphanRemoval = true)
-	@Cascade({CascadeType.ALL})
-	@Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
-	private Set<ShPostDraft> shPosts = new HashSet<>();
-*/
+	
 	public ShFolderDraft() {
 		this.setObjectType(ShObjectType.FOLDER);
 	}
 
-	/*public void setName(String name) {
-		this.name = name;
-	} */
-
+	
     public void setParentFolder(ShFolderDraft parentFolder) {
 		this.parentFolder = parentFolder;
 	}

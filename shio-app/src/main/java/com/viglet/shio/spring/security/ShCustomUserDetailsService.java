@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -38,12 +37,16 @@ import com.viglet.shio.persistence.repository.auth.ShUserRepository;
  */
 @Service("customUserDetailsService")
 public class ShCustomUserDetailsService implements UserDetailsService {
-	@Autowired
-	private ShUserRepository shUserRepository;
-	@Autowired
-	private ShRoleRepository shRoleRepository;
-	@Autowired
-	private ShGroupRepository shGroupRepository;
+
+	private final ShUserRepository shUserRepository;
+	private final ShRoleRepository shRoleRepository;
+	private final ShGroupRepository shGroupRepository;
+
+	public ShCustomUserDetailsService(ShUserRepository shUserRepository, ShRoleRepository shRoleRepository, ShGroupRepository shGroupRepository) {
+		this.shUserRepository = shUserRepository;
+		this.shRoleRepository = shRoleRepository;
+		this.shGroupRepository = shGroupRepository;
+	}
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {

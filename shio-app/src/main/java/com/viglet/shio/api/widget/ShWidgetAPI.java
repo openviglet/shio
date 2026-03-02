@@ -21,7 +21,6 @@ import java.util.Optional;
 
 import jakarta.transaction.Transactional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,8 +45,7 @@ public class ShWidgetAPI {
 
 	private final ShWidgetRepository shWidgetRepository;
 
-	@Autowired
-	public ShWidgetAPI(ShWidgetRepository shWidgetRepository) {
+	ShWidgetAPI(ShWidgetRepository shWidgetRepository) {
 		this.shWidgetRepository = shWidgetRepository;
 	}
 

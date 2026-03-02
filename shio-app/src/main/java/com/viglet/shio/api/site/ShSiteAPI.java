@@ -38,7 +38,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -82,7 +81,7 @@ public class ShSiteAPI {
 	private final ShReportPostType shReportPostType;
 	private final ShIntegrationUtils shIntegrationUtils;
 
-	public ShSiteAPI(ShSiteRepository shSiteRepository, ShFolderRepository shFolderRepository,
+	ShSiteAPI(ShSiteRepository shSiteRepository, ShFolderRepository shFolderRepository,
 					 ShSiteExport shSiteExport, ShSitesNodeJS shSitesNodeJS, ShCloneExchange shCloneExchange,
 					 ShHistoryUtils shHistoryUtils, ShReportPostType shReportPostType,
 					 ShIntegrationUtils shIntegrationUtils) {
@@ -214,7 +213,6 @@ public class ShSiteAPI {
 
 	}
 
-	@ResponseBody
 	@GetMapping(value = "/{id}/export", produces = "application/zip")
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
 	public StreamingResponseBody shSiteExport(@PathVariable String id, HttpServletResponse response) {
@@ -223,7 +221,6 @@ public class ShSiteAPI {
 
 	}
 
-	@ResponseBody
 	@GetMapping(value = "/{id}/nodejs", produces = "application/zip")
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
 	public StreamingResponseBody shSiteNodeJS(@PathVariable String id, HttpServletResponse response) {

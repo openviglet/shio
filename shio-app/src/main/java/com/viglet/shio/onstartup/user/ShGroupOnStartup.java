@@ -16,7 +16,6 @@
  */
 package com.viglet.shio.onstartup.user;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.auth.ShGroup;
@@ -29,7 +28,6 @@ import com.viglet.shio.persistence.repository.auth.ShGroupRepository;
 public class ShGroupOnStartup {
 	private final ShGroupRepository shGroupRepository;
 
-	@Autowired
 	public ShGroupOnStartup(ShGroupRepository shGroupRepository) {
 		this.shGroupRepository = shGroupRepository;
 	}

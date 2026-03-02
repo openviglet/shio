@@ -16,7 +16,6 @@
  */
 package com.viglet.shio.onstartup.widget;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.widget.ShWidget;
@@ -33,7 +32,6 @@ public class ShWidgetOnStartup {
 
 	private static final String TEXT_TYPE = "TEXT,TEXTAREA";
 
-	@Autowired
 	public ShWidgetOnStartup(ShWidgetRepository shWidgetRepository) {
 		this.shWidgetRepository = shWidgetRepository;
 	}

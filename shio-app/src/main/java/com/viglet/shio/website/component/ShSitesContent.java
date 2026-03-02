@@ -25,7 +25,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -61,24 +60,29 @@ public class ShSitesContent {
 	private static final String SITE = "site";
 	private static final String DEFAULT_FORMAT = "default";
 
-	@Autowired
-	private ShSitesFolderUtils shSitesFolderUtils;
-	@Autowired
-	private ShSiteUtils shSiteUtils;
-	@Autowired
-	private ShSitesContextComponent shSitesContextComponent;
-	@Autowired
-	private ShSitesPostUtils shSitesPostUtils;
-	@Autowired
-	private ShSitesDetectContextURL shSitesDetectContextURL;
-	@Autowired
-	private ShObjectRepository shObjectRepository;
-	@Autowired
-	private ShSiteRepository shSiteRepository;
-	@Autowired
-	private ShPostUtils shPostUtils;
-	@Autowired
-	private ShPostRepository shPostRepository;
+
+	private final ShSitesFolderUtils shSitesFolderUtils;
+	private final ShSiteUtils shSiteUtils;
+	private final ShSitesContextComponent shSitesContextComponent;
+	private final ShSitesDetectContextURL shSitesDetectContextURL;
+	private final ShObjectRepository shObjectRepository;
+	private final ShSiteRepository shSiteRepository;
+	private final ShPostUtils shPostUtils;
+	private final ShPostRepository shPostRepository;
+	private final ShSitesPostUtils shSitesPostUtils;
+	public ShSitesContent(ShSitesFolderUtils shSitesFolderUtils, ShSiteUtils shSiteUtils, ShSitesContextComponent shSitesContextComponent, ShSitesDetectContextURL shSitesDetectContextURL, ShObjectRepository shObjectRepository, ShSiteRepository shSiteRepository, ShPostUtils shPostUtils, ShPostRepository shPostRepository, ShSitesPostUtils shSitesPostUtils	) {
+		this.shSitesFolderUtils = shSitesFolderUtils;
+		this.shSiteUtils = shSiteUtils;
+		this.shSitesContextComponent = shSitesContextComponent;
+		this.shSitesDetectContextURL = shSitesDetectContextURL;
+		this.shObjectRepository = shObjectRepository;
+		this.shSiteRepository = shSiteRepository;
+		this.shPostUtils = shPostUtils;
+		this.shPostRepository = shPostRepository;
+		this.shSitesPostUtils = shSitesPostUtils;
+	}
+
+
 
 	public ShContent fromURL(String url) {
 		ShSitesContextURL shSitesContextURL = new ShSitesContextURL();
@@ -131,11 +135,34 @@ public class ShSitesContent {
 		Map<String, Object> shSiteItemAttrs = shSiteUtils.toSystemMap(shSite);
 
 		ShContent shPostItemAttrs = shSitesPostUtils.toSystemMap(shPostImpl);
+		
+		String format = shSitesContextURL.getInfo().getShFormat();
+		if (format == null)
+			format = DEFAULT_FORMAT;
+
+		applyThemeToPost(shSite, shPostImpl, format, shPostItemAttrs);
+
+		shPostItemAttrs.put(SITE, shSiteItemAttrs);
+
+		return shPostItemAttrs;
+
+	}
+
+	private void applyThemeToPost(ShSite shSite, ShPostImpl shPostImpl, String format, ShContent shPostItemAttrs) {
 		JSONObject postTypeLayout = new JSONObject();
 
 		if (shSite.getPostTypeLayout() != null)
 			postTypeLayout = new JSONObject(shSite.getPostTypeLayout());
 
+		ShSitePostTypeLayouts shSitePostTypeLayouts = parsePostTypeLayouts(postTypeLayout, shPostImpl);
+
+		String pageLayoutName = findPageLayoutNameByFormat(shSitePostTypeLayouts, format);
+		List<ShPost> shPostPageLayouts = shPostRepository.findByTitle(pageLayoutName);
+
+		applyThemeFromPageLayout(shSite, shPostPageLayouts, shPostItemAttrs);
+	}
+
+	private ShSitePostTypeLayouts parsePostTypeLayouts(JSONObject postTypeLayout, ShPostImpl shPostImpl) {
 		ObjectMapper mapper = new ObjectMapper();
 		ShSitePostTypeLayouts shSitePostTypeLayouts = null;
 
@@ -145,36 +172,34 @@ public class ShSitesContent {
 		} catch (JsonProcessingException | JSONException e) {
 			logger.error("fromPost Error: ", e);
 		}
+		return shSitePostTypeLayouts;
+	}
 
+	private String findPageLayoutNameByFormat(ShSitePostTypeLayouts shSitePostTypeLayouts, String format) {
 		String pageLayoutName = null;
-		String format = shSitesContextURL.getInfo().getShFormat();
-		if (format == null)
-			format = DEFAULT_FORMAT;
 
-		for (ShSitePostTypeLayout shSitePostTypeLayout : shSitePostTypeLayouts) {
-			if (shSitePostTypeLayout.getFormat().equals(format))
-				pageLayoutName = shSitePostTypeLayout.getLayout();
+		if (shSitePostTypeLayouts != null) {
+			for (ShSitePostTypeLayout shSitePostTypeLayout : shSitePostTypeLayouts) {
+				if (shSitePostTypeLayout.getFormat().equals(format))
+					pageLayoutName = shSitePostTypeLayout.getLayout();
+			}
 		}
-		List<ShPost> shPostPageLayouts = shPostRepository.findByTitle(pageLayoutName);
+		return pageLayoutName;
+	}
 
-		Map<String, ShPostAttr> shPostPageLayoutMap = null;
-
+	private void applyThemeFromPageLayout(ShSite shSite, List<ShPost> shPostPageLayouts, ShContent shPostItemAttrs) {
 		if (shPostPageLayouts != null) {
 			for (ShPost shPostPageLayout : shPostPageLayouts) {
-				if (shPostUtils.getSite(shPostPageLayout).getId().equals(shSite.getId()))
-					shPostPageLayoutMap = shSitesPostUtils.postToMap(shPostPageLayout);
-			}
-			if (shPostPageLayoutMap != null) {
-				String shPostThemeId = shPostPageLayoutMap.get(ShSystemPostTypeAttr.THEME).getStrValue();
-				Map<String, Object> shThemeAttrs = shSitesContextComponent.shThemeFactory(shPostThemeId);
-				shPostItemAttrs.put(THEME, shThemeAttrs);
+				if (shPostUtils.getSite(shPostPageLayout).getId().equals(shSite.getId())) {
+					Map<String, ShPostAttr> shPostPageLayoutMap = shSitesPostUtils.postToMap(shPostPageLayout);
+					if (shPostPageLayoutMap != null) {
+						String shPostThemeId = shPostPageLayoutMap.get(ShSystemPostTypeAttr.THEME).getStrValue();
+						Map<String, Object> shThemeAttrs = shSitesContextComponent.shThemeFactory(shPostThemeId);
+						shPostItemAttrs.put(THEME, shThemeAttrs);
+					}
+				}
 			}
 		}
-
-		shPostItemAttrs.put(SITE, shSiteItemAttrs);
-
-		return shPostItemAttrs;
-
 	}
 
 	private ShContent fromFolder(ShSite shSite, ShFolder shFolder, ShSitesContextURL shSitesContextURL) {

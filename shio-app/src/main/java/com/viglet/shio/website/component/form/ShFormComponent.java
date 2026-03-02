@@ -21,13 +21,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.stereotype.Component;
@@ -48,14 +46,18 @@ import com.viglet.shio.widget.ShWidgetImplementation;
 @Component
 public class ShFormComponent {
 	private static final Log logger = LogFactory.getLog(ShFormComponent.class);
-	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Resource
-	private ApplicationContext applicationContext;
-	@Autowired
-	private SpringTemplateEngine templateEngine;
-	@Autowired
-	private ShObjectRepository shObjectRepository;
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ApplicationContext applicationContext;
+	private final SpringTemplateEngine templateEngine;
+
+	private final ShObjectRepository shObjectRepository;
+
+	public ShFormComponent(ShPostTypeRepository shPostTypeRepository, ApplicationContext applicationContext, SpringTemplateEngine templateEngine, ShObjectRepository shObjectRepository) {
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.applicationContext = applicationContext;
+		this.templateEngine = templateEngine;
+		this.shObjectRepository = shObjectRepository;
+	}
 
 	public String byPostType(String shPostTypeName, String shObjectId, HttpServletRequest request) {
 		final Context ctx = new Context();

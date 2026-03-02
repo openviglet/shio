@@ -21,33 +21,33 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author Alexandre Oliveira
  */
+@Slf4j
 @Component
 public class ShCachePreviewHtml {
-	private static final Logger logger = LogManager.getLogger(ShCachePreviewHtml.class);
-	@Autowired
-	private ResourceLoader resourceloader;
-
+		private final ResourceLoader resourceloader;
+	public ShCachePreviewHtml(ResourceLoader resourceloader) {
+		this.resourceloader = resourceloader;
+	}
 	@Cacheable(value = "previewMenu", sync = true)
 	public String shPreviewMenuFactory() {
 
-		logger.debug("Executing shPreviewMenuFactory");
+		log.debug("Executing shPreviewMenuFactory");
 
 		var html = StringUtils.EMPTY;
 
 		try (var isrObjectJS = resourceloader.getResource("classpath:/preview/preview-menu.html").getInputStream()) {
 			html = IOUtils.toString(isrObjectJS, StandardCharsets.UTF_8.name());
 		} catch (IOException e) {
-			logger.error(e);
+			log.error(e.getMessage(), e	);
 		}
 
 		return html;
@@ -56,14 +56,14 @@ public class ShCachePreviewHtml {
 	@Cacheable(value = "previewRegion", sync = true)
 	public String shPreviewRegionFactory() {
 
-		logger.debug("Executing shPreviewRegionFactory");
+		log.debug("Executing shPreviewRegionFactory");
 
 		var html = StringUtils.EMPTY;
 
 		try (var isrObjectJS = resourceloader.getResource("classpath:/preview/preview-region.html").getInputStream()) {
 			html = IOUtils.toString(isrObjectJS, StandardCharsets.UTF_8.name());
 		} catch (IOException e) {
-			logger.error(e);
+			log.error(e.getMessage(), e);
 		}
 
 		return html;

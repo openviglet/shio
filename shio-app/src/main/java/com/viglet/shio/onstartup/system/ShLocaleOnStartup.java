@@ -16,7 +16,6 @@
  */
 package com.viglet.shio.onstartup.system;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.system.ShLocale;
@@ -29,7 +28,6 @@ import com.viglet.shio.persistence.repository.system.ShLocaleRepository;
 public class ShLocaleOnStartup {
 	private final ShLocaleRepository shLocaleRepository;
 
-	@Autowired
 	public ShLocaleOnStartup(ShLocaleRepository shLocaleRepository) {
 		this.shLocaleRepository = shLocaleRepository;
 	}

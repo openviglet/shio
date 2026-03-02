@@ -18,34 +18,35 @@ package com.viglet.shio.website.cache.component;
 
 import com.viglet.shio.website.ShSitesRegion;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jsoup.nodes.Document;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.site.ShSite;
-import com.viglet.shio.website.ShSitesContextComponent;
 import com.viglet.shio.website.component.ShSitesPageLayout;
 import com.viglet.shio.website.nashorn.ShNashornEngineProcess;
 
 /**
  * @author Alexandre Oliveira
  */
+
+@Slf4j
 @Component
 public class ShCachePageLayout {
-	static final Logger logger = LogManager.getLogger(ShCachePageLayout.class);
-	@Autowired
 	private ShSitesRegion shSitesRegion;
-	@Autowired
 	private ShNashornEngineProcess shNashornEngineProcess;
+
+	public ShCachePageLayout(ShSitesRegion shSitesRegion, ShNashornEngineProcess shNashornEngineProcess) {
+		this.shSitesRegion = shSitesRegion;
+		this.shNashornEngineProcess = shNashornEngineProcess;
+	}
 
 	public String cache(ShSitesPageLayout shSitesPageLayout, HttpServletRequest request, ShSite shSite,
 			String mimeType) {
 		if (shSitesPageLayout.getId() != null) {
-			if (logger.isDebugEnabled()) {
-				logger.debug(String.format("ShCachePageLayout.cache Key: %s %s", shSitesPageLayout.getId(),
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("ShCachePageLayout.cache Key: %s %s", shSitesPageLayout.getId(),
 						shSitesPageLayout.getPageCacheKey()));
 			}
 			try {
@@ -58,19 +59,19 @@ public class ShCachePageLayout {
 							renderPageLayout.toString(), shSite, mimeType, request);
 					if (documentRegion != null) {
 						return documentRegion.html();
-					} else if (logger.isDebugEnabled()) {
-						logger.debug("Region is null");
+					} else if (log.isDebugEnabled()) {
+						log.debug("Region is null");
 					}
-				} else if (logger.isDebugEnabled()) {
-					logger.debug("Render PageLayout is null");
+				} else if (log.isDebugEnabled()) {
+					log.debug("Render PageLayout is null");
 				}
 
 			} catch (Exception e) {
-				logger.error("ShCachePageLayout Exception: ", e);
+				log.error("ShCachePageLayout Exception: ", e);
 			}
 		}
-		if (logger.isDebugEnabled()) {
-			logger.debug("Page Layout Id is null");
+		if (log.isDebugEnabled()) {
+			log.debug("Page Layout Id is null");
 		}
 		return null;
 	}

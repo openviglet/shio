@@ -32,7 +32,6 @@ import org.apache.tika.Tika;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.mime.MimeType;
 import org.apache.tika.mime.MimeTypeException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -86,8 +85,7 @@ public class ShExchangeProviderAPI {
 
 	private ShExchangeProvider shExchangeProvider;
 
-	@Autowired
-	public ShExchangeProviderAPI(ShConfigProperties shConfigProperties, ShFolderRepository shFolderRepository,
+	ShExchangeProviderAPI(ShConfigProperties shConfigProperties, ShFolderRepository shFolderRepository,
 								 ShStaticFileUtils shStaticFileUtils, ShConfigVarUtils shConfigVarUtils,
 								 ShExchangeProviderInstanceRepository shExchangeProviderInstanceRepository,
 								 ShExchangeProviderVendorRepository shExchangeProviderVendorRepository,

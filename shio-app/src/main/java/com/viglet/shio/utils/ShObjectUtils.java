@@ -22,9 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import com.viglet.shio.api.folder.ShFolderPath;
 import com.viglet.shio.persistence.model.auth.ShGroup;
@@ -42,23 +40,26 @@ import com.viglet.shio.persistence.repository.object.ShObjectRepository;
  */
 @Component
 public class ShObjectUtils {
-	@Autowired
-	private ShFolderUtils shFolderUtils;
-	@Autowired
-	private ShObjectRepository shObjectRepository;
-	@Autowired
-	private ShUserRepository shUserRepository;
-	@Autowired
-	private ShPostUtils shPostUtils;
+
+	private final ShFolderUtils shFolderUtils;
+	private final ShObjectRepository shObjectRepository;
+	private final ShUserRepository shUserRepository;
+	private final ShPostUtils shPostUtils;
+
+	public ShObjectUtils(ShFolderUtils shFolderUtils, ShObjectRepository shObjectRepository,
+			ShUserRepository shUserRepository, ShPostUtils shPostUtils) {
+		this.shFolderUtils = shFolderUtils;
+		this.shObjectRepository = shObjectRepository;
+		this.shUserRepository = shUserRepository;
+		this.shPostUtils = shPostUtils;
+	}
 
 	public ShSite getSite(ShObjectImpl shObject) {
-		if (shObject instanceof ShPostImpl shPostImpl) {
-			return shPostUtils.getSite(shPostImpl);
-		} else if (shObject instanceof ShFolder shFolder) {
-			return shFolderUtils.getSite(shFolder);
-		} else {
-			return null;
-		}
+		return switch (shObject) {
+			case ShPostImpl shPostImpl -> shPostUtils.getSite(shPostImpl);
+			case ShFolder shFolder -> shFolderUtils.getSite(shFolder);
+			default -> null;
+		};
 	}
 
 	public boolean canAccess(Principal principal, String shObjectId) {
@@ -106,7 +107,7 @@ public class ShObjectUtils {
 
 	}
 
-	public ShFolderPath objectPath(@PathVariable String id) {
+	public ShFolderPath objectPath(String id) {
 		Optional<ShObject> shObject = shObjectRepository.findById(id);
 		if (shObject.isPresent()) {
 			if (shObject.get() instanceof ShSite shSite) {

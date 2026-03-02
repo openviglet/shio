@@ -19,6 +19,7 @@ package com.viglet.shio.widget;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.util.stream.Collectors;
 
@@ -30,6 +31,7 @@ import org.apache.commons.logging.LogFactory;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import com.google.gson.Gson;
 import com.viglet.shio.persistence.model.object.impl.ShObjectImpl;
@@ -43,6 +45,10 @@ import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
  */
 @Component
 public class ShReCaptchaWidget extends ShDefaultWidget {
+
+	ShReCaptchaWidget(SpringTemplateEngine templateEngine) {
+		super(templateEngine);
+	}
 
 	private static final Log logger = LogFactory.getLog(ShReCaptchaWidget.class);
 
@@ -76,7 +82,7 @@ public class ShReCaptchaWidget extends ShDefaultWidget {
 			// Send get request to Google reCaptcha server with secret key
 			String urlFormatada = String.format(urlGoogle, secretKey, recap,
 					(request.getRemoteAddr() != null ? request.getRemoteAddr() : "0.0.0.0"));
-			URL url = new URL(urlFormatada);
+			URL url = URI.create(urlFormatada).toURL();
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod("GET");
 			String outputString = StringUtils.EMPTY;

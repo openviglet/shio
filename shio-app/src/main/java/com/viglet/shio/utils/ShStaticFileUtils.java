@@ -23,7 +23,6 @@ import java.util.Date;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -46,18 +45,14 @@ import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 @Component
 public class ShStaticFileUtils {
 	private static final Log logger = LogFactory.getLog(ShStaticFileUtils.class);
-	@Autowired
-	private ShFolderUtils shFolderUtils;
-	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShPostTypeAttrRepository shPostTypeAttrRepository;
-	@Autowired
-	private ShPostAttrRepository shPostAttrRepository;
-	@Autowired
-	private ShHistoryUtils shHistoryUtils;
+
+	private final ShFolderUtils shFolderUtils;
+	private final ShPostTypeRepository shPostTypeRepository;
+
+	private final ShPostRepository shPostRepository;
+	private final ShPostTypeAttrRepository shPostTypeAttrRepository;
+	private final ShPostAttrRepository shPostAttrRepository;
+	private final ShHistoryUtils shHistoryUtils;
 
 	private static final String FILE_SOURCE_BASE = File.separator + "store" + File.separator + "file_source";
 	private static final String TEMP_DIR = File.separator + "store" + File.separator + "tmp";
@@ -65,6 +60,17 @@ public class ShStaticFileUtils {
 	private static final String USER_DIR = "user.dir";
 	private File userDir = new File(System.getProperty(USER_DIR));
 
+
+	public ShStaticFileUtils(ShFolderUtils shFolderUtils, ShPostTypeRepository shPostTypeRepository,
+			ShPostRepository shPostRepository, ShPostTypeAttrRepository shPostTypeAttrRepository,
+			ShPostAttrRepository shPostAttrRepository, ShHistoryUtils shHistoryUtils) {
+		this.shFolderUtils = shFolderUtils;
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.shPostRepository = shPostRepository;
+		this.shPostTypeAttrRepository = shPostTypeAttrRepository;
+		this.shPostAttrRepository = shPostAttrRepository;
+		this.shHistoryUtils = shHistoryUtils;
+	}
 
 	public boolean fileExists(ShFolder shFolder, String fileName) {
 		return shPostRepository.existsByShFolderAndTitle(shFolder, fileName);

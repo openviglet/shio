@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.post.ShPostAttr;
@@ -32,11 +31,13 @@ import com.viglet.shio.website.utils.ShSitesPostUtils;
  */
 @Component
 public class ShGetRelationComponent {
+	private final ShPostAttrRepository shPostAttrRepository;
+	private final ShSitesPostUtils shSitesPostUtils;
 
-	@Autowired
-	private ShPostAttrRepository shPostAttrRepository;
-	@Autowired
-	private ShSitesPostUtils shSitesPostUtils;
+	public ShGetRelationComponent(ShPostAttrRepository shPostAttrRepository, ShSitesPostUtils shSitesPostUtils) {
+		this.shPostAttrRepository = shPostAttrRepository;
+		this.shSitesPostUtils = shSitesPostUtils;
+	}
 
 	public List<Map<String, ShPostAttr>> findByPostAttrId(String postAttrId) {
 		Optional<ShPostAttr> shPostAttr = shPostAttrRepository.findById(postAttrId);

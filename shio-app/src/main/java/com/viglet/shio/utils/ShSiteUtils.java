@@ -27,7 +27,6 @@ import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
@@ -49,7 +48,6 @@ public class ShSiteUtils {
 	
 	private static final String COULD_NOT_CREATE_SAMPLE_SITE = "Could not create sample site";
 
-	@Autowired
 	public ShSiteUtils(ShURLScheme shURLScheme,
 					   ShCloneExchange shCloneExchange,
 					   ResourceLoader resourceloader,

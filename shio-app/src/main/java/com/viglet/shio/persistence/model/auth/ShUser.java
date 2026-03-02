@@ -17,8 +17,7 @@
 package com.viglet.shio.persistence.model.auth;
 
 import java.io.Serializable;
-
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -27,8 +26,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.NamedQuery;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 
 /**
  * The persistent class for the ShUser database table.
@@ -51,8 +48,7 @@ public class ShUser implements Serializable {
 
 	private String firstName;
 
-	@Temporal(TemporalType.TIMESTAMP)
-	private Date lastLogin;
+	private Instant lastLogin;
 
 	private String lastName;
 
@@ -108,11 +104,11 @@ public class ShUser implements Serializable {
 		this.firstName = firstName;
 	}
 
-	public Date getLastLogin() {
+	public Instant getLastLogin() {
 		return this.lastLogin;
 	}
 
-	public void setLastLogin(Date lastLogin) {
+	public void setLastLogin(Instant lastLogin) {
 		this.lastLogin = lastLogin;
 	}
 

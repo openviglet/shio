@@ -17,13 +17,13 @@
 package com.viglet.shio.api.preview;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 
 import com.viglet.shio.website.ShSitesDetectContextURL;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,12 +45,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/api/v2/preview")
 @Tag( name = "Preview", description = "Preview API")
 public class ShPreviewAPI {
-	final
-	ShSitesContextURLProcess shSitesContextURLProcess;
+	private final ShSitesContextURLProcess shSitesContextURLProcess;
 	private final ShObjectRepository shObjectRepository;
 	private final ShSitesDetectContextURL shSitesDetectContextURL;
 
-	@Autowired
 	public ShPreviewAPI(ShSitesContextURLProcess shSitesContextURLProcess, ShObjectRepository shObjectRepository,
 						ShSitesDetectContextURL shSitesDetectContextURL) {
 		this.shSitesContextURLProcess = shSitesContextURLProcess;
@@ -64,7 +62,7 @@ public class ShPreviewAPI {
 	public ShObjectImpl shPreviewDetectURL(HttpServletRequest request, HttpServletResponse response)
 			throws MalformedURLException {
 
-		URL url = new URL(request.getParameter("url"));
+		URL url = URI.create(request.getParameter("url")).toURL();
 		ShSitesContextURL shSitesContextURL = shSitesContextURLProcess.getContextURL(request, response);
 		shSitesContextURL.getInfo().setContextURL(url.getPath());
 		shSitesDetectContextURL.detectContextURL(shSitesContextURL);

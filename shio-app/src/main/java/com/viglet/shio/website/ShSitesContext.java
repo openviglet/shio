@@ -25,7 +25,6 @@ import java.util.Optional;
 
 import com.viglet.shio.website.cache.component.ShCacheObject;
 import jakarta.activation.MimetypesFileTypeMap;
-import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -34,8 +33,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -70,26 +67,34 @@ public class ShSitesContext {
 	private static final String USER_GROUPS_SESSION = "shUserGroups";
 	private static final String LOGIN_CALLBACK_SESSION = "shLoginCallBack";
 	private static final String LOGIN_PAGE = "/login-page";
-	@Autowired
-	private ShStaticFileUtils shStaticFileUtils;
-	@Autowired
-	private ShSitesContextURLProcess shSitesContextURLProcess;
-	@Autowired
-	private ShFormUtils shFormUtils;
-	@Autowired
-	private ShSitesObjectUtils shSitesObjectUtils;
-	@Autowired
-	private ShCachePage shCachePage;
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShSiteRepository shSiteRepository;
-	@Autowired
-	private ShUserRepository shUserRepository;
-	@Autowired
-	private ShUserUtils shUserUtils;
-	@Autowired
-	private ShCacheObject shCacheObject;
+
+	private final ShStaticFileUtils shStaticFileUtils;
+	private final ShSitesContextURLProcess shSitesContextURLProcess;
+	private final ShFormUtils shFormUtils;
+	private final ShSitesObjectUtils shSitesObjectUtils;
+	private final ShCachePage shCachePage;
+	private final ShPostRepository shPostRepository;
+	private final ShSiteRepository shSiteRepository;
+	private final ShUserRepository shUserRepository;
+	private final ShUserUtils shUserUtils;
+	private final ShCacheObject shCacheObject;
+
+	
+	ShSitesContext(ShStaticFileUtils shStaticFileUtils, ShSitesContextURLProcess shSitesContextURLProcess,
+			ShFormUtils shFormUtils, ShSitesObjectUtils shSitesObjectUtils, ShCachePage shCachePage,
+			ShPostRepository shPostRepository, ShSiteRepository shSiteRepository, ShUserRepository shUserRepository,
+			ShUserUtils shUserUtils, ShCacheObject shCacheObject) {
+		this.shStaticFileUtils = shStaticFileUtils;
+		this.shSitesContextURLProcess = shSitesContextURLProcess;
+		this.shFormUtils = shFormUtils;
+		this.shSitesObjectUtils = shSitesObjectUtils;
+		this.shCachePage = shCachePage;
+		this.shPostRepository = shPostRepository;
+		this.shSiteRepository = shSiteRepository;
+		this.shUserRepository = shUserRepository;
+		this.shUserUtils = shUserUtils;
+		this.shCacheObject = shCacheObject;
+	}
 
 	@PostMapping("/sites/**")
 	public ModelAndView sitesPostForm(HttpServletRequest request, HttpServletResponse response) {

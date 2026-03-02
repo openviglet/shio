@@ -18,9 +18,6 @@ package com.viglet.shio.website;
 
 import java.util.Date;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
@@ -32,24 +29,30 @@ import com.viglet.shio.persistence.repository.object.ShObjectRepository;
 import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.utils.ShFolderUtils;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author Alexandre Oliveira
  */
+@Slf4j
 @Component
 public class ShSitesContextURLProcessCache {
-	private static final Log logger = LogFactory.getLog(ShSitesContextURLProcessCache.class);
-	@Autowired
-	ShSitesDetectContextURL shSitesDetectContextURL;
-	@Autowired
-	ShObjectRepository shObjectRepository;
-	@Autowired
-	ShFolderUtils shFolderUtils;
+	private final ShSitesDetectContextURL shSitesDetectContextURL;
+	private final ShObjectRepository shObjectRepository;
+	private final ShFolderUtils shFolderUtils;
+
+	public ShSitesContextURLProcessCache(ShSitesDetectContextURL shSitesDetectContextURL,
+			ShObjectRepository shObjectRepository, ShFolderUtils shFolderUtils) {
+		this.shSitesDetectContextURL = shSitesDetectContextURL;
+		this.shObjectRepository = shObjectRepository;
+		this.shFolderUtils = shFolderUtils;
+	}
 
 	@Cacheable(value = "url", key = "{#shSitesContextURL.getInfo().getContextURL(), #shSitesContextURL.getInfo().getContextURLOriginal()}", sync = true)
 	public ShSitesContextURLInfo detectContextURL(ShSitesContextURL shSitesContextURL) {
 		Date now = new Date();
-		if (logger.isDebugEnabled())
-			logger.debug("detectContextURL Before: " + shSitesContextURL.toString());
+		if (log.isDebugEnabled())
+			log.debug("detectContextURL Before: " + shSitesContextURL.toString());
 		shSitesDetectContextURL.detectContextURL(shSitesContextURL);
 		ShSitesContextURLInfo shSitesContextURLInfo = new ShSitesContextURLInfo();
 		shSitesContextURLInfo.setCacheEnabled(shSitesContextURL.getInfo().isCacheEnabled());
@@ -71,11 +74,11 @@ public class ShSitesContextURLProcessCache {
 			shSitesContextURLInfo.setShPageGroups(null);
 		}
 
-		if (logger.isDebugEnabled()) {
+		if (log.isDebugEnabled()) {
 			Date after = new Date();
 
-			logger.debug("detectContextURL After: " + shSitesContextURL.toString());
-			logger.debug("URL Time: " + (after.getTime() - now.getTime()));
+			log.debug("detectContextURL After: " + shSitesContextURL.toString());
+			log.debug("URL Time: " + (after.getTime() - now.getTime()));
 		}
 
 		return shSitesContextURLInfo;

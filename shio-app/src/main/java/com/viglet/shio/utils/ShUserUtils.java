@@ -16,7 +16,6 @@
  */
 package com.viglet.shio.utils;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -33,14 +32,18 @@ import com.viglet.shio.spring.security.auth.IShAuthenticationFacade;
 @Component
 public class ShUserUtils {
 
-	@Autowired
-	private ShUserRepository shUserRepository;
-	@Autowired
-	private IShAuthenticationFacade authenticationFacade;
-	@Autowired
-	private ShUtils shUtils;
+
+	private final ShUserRepository shUserRepository;
+	private final IShAuthenticationFacade authenticationFacade;
+	private final ShUtils shUtils;
 	
 	private static final String DEFAULT_ANONYMOUS_USER = "anonymous";
+
+	public ShUserUtils(ShUserRepository shUserRepository, IShAuthenticationFacade authenticationFacade, ShUtils shUtils) {
+		this.shUserRepository = shUserRepository;
+		this.authenticationFacade = authenticationFacade;
+		this.shUtils = shUtils;
+	}
 
 	public String getCurrentUsername() {
 		Authentication authentication = authenticationFacade.getAuthentication();

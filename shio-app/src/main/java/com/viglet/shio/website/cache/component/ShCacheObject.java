@@ -17,12 +17,11 @@
 package com.viglet.shio.website.cache.component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -37,38 +36,44 @@ import com.viglet.shio.utils.ShFolderUtils;
 import com.viglet.shio.website.ShSitesContextURL;
 import com.viglet.shio.website.utils.ShSitesObjectUtils;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author Alexandre Oliveira
  */
 
-
+@Slf4j
 @Component
 public class ShCacheObject {
-	private static final Log logger = LogFactory.getLog(ShCacheObject.class);
-	@Autowired
-	ShCacheURL shCacheURL;
-	@Autowired
-	ShObjectRepository shObjectRepository;
-	@Autowired
-	ShPostRepository shPostRepository;
-	@Autowired
-	ShFolderUtils shFolderUtils;
-	@Autowired
-	ShSitesObjectUtils shSitesObjectUtils;
-	
+	private final ShCacheURL shCacheURL;
+	private final ShObjectRepository shObjectRepository;
+	private final ShPostRepository shPostRepository;
+	private final ShFolderUtils shFolderUtils;
+	private final ShSitesObjectUtils shSitesObjectUtils;
+	private final ShCacheObject shCacheObjectInner;
+
+	public ShCacheObject(ShCacheURL shCacheURL, ShObjectRepository shObjectRepository, ShPostRepository shPostRepository, ShFolderUtils shFolderUtils, ShSitesObjectUtils shSitesObjectUtils, @Lazy ShCacheObject shCacheObject) {
+		this.shCacheURL = shCacheURL;
+		this.shObjectRepository = shObjectRepository;
+		this.shPostRepository = shPostRepository;
+		this.shFolderUtils = shFolderUtils;
+		this.shSitesObjectUtils = shSitesObjectUtils;
+		this.shCacheObjectInner = shCacheObject;
+	}
+
 	@Cacheable(value = "shObject", key = "#id", sync = true)
 	public List<String> cache(String id) {
-		if (logger.isDebugEnabled())
-			logger.debug("Creating the shObject Cache id " + id);
+		if (log.isDebugEnabled())
+			log.debug("Creating the shObject Cache id " + id);
 		return new ArrayList<>();
 	}
 
 	@CachePut(value = "shObject", key = "#id")
 	public List<String> updateCache(String id, ShSitesContextURL shSitesContextURL) {
-		List<String> urls = cache(id);
+		List<String> urls = shCacheObjectInner != null ? shCacheObjectInner.cache(id) : Collections.emptyList();
 		if (!urls.contains(shSitesContextURL.getInfo().getContextURLOriginal())) {
-			if (logger.isDebugEnabled())
-				logger.debug("Adding id: " + id + " and URL: " + shSitesContextURL.getInfo().getContextURLOriginal());
+			if (log.isDebugEnabled())
+				log.debug("Adding id: " + id + " and URL: " + shSitesContextURL.getInfo().getContextURLOriginal());
 			urls.add(shSitesContextURL.getInfo().getContextURLOriginal());
 		}
 		return urls;
@@ -77,14 +82,14 @@ public class ShCacheObject {
 	public void deleteCache(String id) {
 		ShObject shObject = shObjectRepository.findById(id).orElse(null);
 		String objectId = id;
-		if (shObject instanceof ShFolder) {
-			ShPost shFolderIndex = shPostRepository.findByShFolderAndFurl((ShFolder) shObject, "index");
+		if (shObject instanceof ShFolder shFolder) {
+			ShPost shFolderIndex = shPostRepository.findByShFolderAndFurl(shFolder, "index");
 			if (shFolderIndex != null) {
 				objectId = shFolderIndex.getId();
 			}
-		} else if (shObject instanceof ShPost) {
-			ShFolder shFolder = shFolderUtils.getParentFolder(shObject);
-			this.deleteCache(shFolder.getId());
+		} else if (shObject instanceof ShPost shPost) {
+			ShFolder parentFolder = shFolderUtils.getParentFolder(shPost);
+			this.deleteCache(parentFolder.getId());
 		}
 
 		this.deleteDependency(objectId);
@@ -93,17 +98,17 @@ public class ShCacheObject {
 	}
 
 	public void deleteDependency(String id) {
-		if (logger.isDebugEnabled())
-			logger.debug("Executing deleteDependency for id: " + id);
-		List<String> urls = cache(id);
+		if (log.isDebugEnabled())
+			log.debug("Executing deleteDependency for id: " + id);
+		List<String> urls = shCacheObjectInner != null ? shCacheObjectInner.cache(id) : Collections.emptyList();
 		for (String url : urls) {
-			if (logger.isDebugEnabled())
-				logger.debug("Deleting the page with id: " + id + " and URL: " + url);
+			if (log.isDebugEnabled())
+				log.debug("Deleting the page with id: " + id + " and URL: " + url);
 			deletePageCache(id, url);
 			ShObject shObject = shObjectRepository.findById(id).orElse(null);
 			String contextURL = null;
-			if (shObject instanceof ShPost && shObject.getFurl().equals("index")) {
-				ShFolder shFolder = shFolderUtils.getParentFolder(shObject);
+			if (shObject != null && shObject instanceof ShPost shPost && shPost.getFurl().equals("index")) {
+				ShFolder shFolder = shFolderUtils.getParentFolder(shPost);
 				contextURL = shSitesObjectUtils.generateObjectLinkById(shFolder.getId());
 			} else {
 				contextURL = shSitesObjectUtils.generateObjectLinkById(id);
@@ -121,14 +126,14 @@ public class ShCacheObject {
 	}
 	@CacheEvict(value = "page", key = "{#id, #url}")
 	public void deletePageCache(String id, String url) {
-		if (logger.isDebugEnabled()) {
+		if (log.isDebugEnabled()) {
 			String sanitizedId = id.replaceAll("[\n\r\t]", "_");
-			logger.debug(String.format("Deleted cache of id %s, %s", sanitizedId, url));
+			log.debug(String.format("Deleted cache of id %s, %s", sanitizedId, url));
 		}
 	}
 	@CacheEvict(value = "shObject", key = "#id")
 	public void deleteCacheSelf(String id) {
-		if (logger.isDebugEnabled())
-			logger.debug("Deleted Cache: ".concat(id));
+		if (log.isDebugEnabled())
+			log.debug("Deleted Cache: ".concat(id));
 	}
 }

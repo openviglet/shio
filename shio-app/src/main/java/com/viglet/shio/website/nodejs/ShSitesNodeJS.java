@@ -19,21 +19,18 @@ package com.viglet.shio.website.nodejs;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import com.viglet.shio.persistence.model.site.ShSite;
@@ -45,14 +42,17 @@ import com.viglet.shio.persistence.repository.site.ShSiteRepository;
  * @author Alexandre Oliveira
  * @since 0.3.7
  */
+
+@Slf4j
 @Component
 public class ShSitesNodeJS {
-	private static final Log logger = LogFactory.getLog(ShSitesNodeJS.class);
+	private final ShSiteRepository shSiteRepository;
 
-	@Autowired
-	private ShSiteRepository shSiteRepository;
+	public ShSitesNodeJS(ShSiteRepository shSiteRepository) {
+		this.shSiteRepository = shSiteRepository;
+	}
 
-	public StreamingResponseBody exportApplication(@PathVariable String id, HttpServletResponse response) {
+	public StreamingResponseBody exportApplication(String id, HttpServletResponse response) {
 		File userDir = new File(System.getProperty("user.dir"));
 		Optional<ShSite> shSiteOptional = shSiteRepository.findById(id);
 		if (shSiteOptional.isPresent() && userDir.exists() && userDir.isDirectory()) {
@@ -67,9 +67,9 @@ public class ShSitesNodeJS {
 					tmpDir.getAbsolutePath().concat(File.separator + shSite.getName() + UUID.randomUUID() + ".zip"));
 			try {
 
-				FileUtils.copyURLToFile(new URL("https://github.com/ShioCMS/shio-nodejs/archive/master.zip"), siteFile);
+				FileUtils.copyURLToFile(URI.create("https://github.com/ShioCMS/shio-nodejs/archive/master.zip").toURL(), siteFile);
 			} catch (Exception e) {
-				logger.error("exportApplication: ", e);
+				log.error("exportApplication: ", e);
 			}
 
 			String strDate = new SimpleDateFormat("yyyy-MM-dd_HHmmss").format(new Date());
@@ -88,9 +88,9 @@ public class ShSitesNodeJS {
 						FileUtils.deleteQuietly(siteFile);
 
 					} catch (IOException ex) {
-						logger.error("exportObjectIOException", ex);
+						log.error("exportObjectIOException", ex);
 					} catch (Exception e) {
-						logger.error("exportObjectException", e);
+						log.error("exportObjectException", e);
 					}
 				}
 			};

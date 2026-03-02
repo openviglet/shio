@@ -23,7 +23,6 @@ import java.util.Set;
 
 import jakarta.persistence.*;
 
-import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UuidGenerator;
 
 /**

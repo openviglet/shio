@@ -30,7 +30,6 @@ import com.viglet.shio.url.ShURLScheme;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -100,8 +99,6 @@ public class ShObjectAPI {
 	private final ShUserRepository shUserRepository;
 	private final ShObjectUtils shObjectUtils;
 	private final ShWorkflow shWorkflow;
-
-	@Autowired
 	public ShObjectAPI(ShObjectRepository shObjectRepository, ShFolderRepository shFolderRepository,
 					   ShPostRepository shPostRepository, ShSiteUtils shSiteUtils, ShFolderUtils shFolderUtils,
 					   ShUserRepository shUserRepository, ShURLScheme shURLScheme,
@@ -201,8 +198,6 @@ public class ShObjectAPI {
 	public ShSecurityBean shObjectGroupsGet(@PathVariable String id) {
 		ShSecurityBean shSecurityBean = new ShSecurityBean();
 		shObjectRepository.findById(id).ifPresent(shObject -> {
-			List<ShObject> shObjects = new ArrayList<>();
-			shObjects.add(shObject);
 
 			ShConsoleSecurityBean shConsoleSecurityBean = new ShConsoleSecurityBean();
 			shConsoleSecurityBean.setShGroups(shObject.getShGroups());
@@ -310,26 +305,27 @@ public class ShObjectAPI {
 				if (principal != null)
 					shUser = shUserRepository.findByUsername(principal.getName());
 				ShObjectImpl shObject = shObjectOptional.get();
-				if (shObject instanceof ShFolder shFolder) {
-					String folderPath = shFolderUtils.folderPath(shFolder, true, false);
-					List<ShFolder> breadcrumb = shFolderUtils.breadcrumb(shFolder);
-					ShSite shSite = breadcrumb.get(0).getShSite();
-					ShFolderList shFolderList = new ShFolderList();
-					shFolderList.setShFolders(this.allowedFolders(shUser, shObject));
-					shFolderList.setShPosts(this.allowedPosts(shUser, shObject));
-					shFolderList.setFolderPath(folderPath);
-					shFolderList.setBreadcrumb(breadcrumb);
-					shFolderList.setShSite(shSite);
-
-					return new ResponseEntity<>(shFolderList, HttpStatus.OK);
-				} else if (shObject instanceof ShSite shSite) {
-					ShFolderList shFolderList = new ShFolderList();
-					shFolderList.setShFolders(this.allowedFolders(shUser, shObject));
-					shFolderList.setShSite(shSite);
-					return new ResponseEntity<>(shFolderList, HttpStatus.OK);
-				} else {
-					return ResponseEntity.status(HttpStatus.OK).build();
-				}
+				return switch (shObject) {
+					case ShFolder shFolder -> {
+						String folderPath = shFolderUtils.folderPath(shFolder, true, false);
+						List<ShFolder> breadcrumb = shFolderUtils.breadcrumb(shFolder);
+						ShSite shSite = breadcrumb.get(0).getShSite();
+						ShFolderList shFolderList = new ShFolderList();
+						shFolderList.setShFolders(this.allowedFolders(shUser, shObject));
+						shFolderList.setShPosts(this.allowedPosts(shUser, shObject));
+						shFolderList.setFolderPath(folderPath);
+						shFolderList.setBreadcrumb(breadcrumb);
+						shFolderList.setShSite(shSite);
+						yield new ResponseEntity<>(shFolderList, HttpStatus.OK);
+					}
+					case ShSite shSite -> {
+						ShFolderList shFolderList = new ShFolderList();
+						shFolderList.setShFolders(this.allowedFolders(shUser, shObject));
+						shFolderList.setShSite(shSite);
+						yield new ResponseEntity<>(shFolderList, HttpStatus.OK);
+					}
+					default -> ResponseEntity.status(HttpStatus.OK).build();
+				};
 			}
 		}
 		return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -427,30 +423,32 @@ public class ShObjectAPI {
 		if (shObjectOptional.isPresent()) {
 			ShObjectImpl shObject = shObjectOptional.get();
 			ShPostType shPostType = shPostTypeRepository.findByName(postTypeName);
-			if (shObject instanceof ShFolder shFolder) {
-				String folderPath = shFolderUtils.folderPath(shFolder, true, false);
-				List<ShFolder> breadcrumb = shFolderUtils.breadcrumb(shFolder);
-				ShSite shSite = breadcrumb.get(0).getShSite();
-				ShFolderList shFolderList = new ShFolderList();
-				shFolderList.setShFolders(shFolderRepository.findByParentFolderTiny(shFolder));
-				String postTypeId = null;
-				if (shPostType != null) {
-					postTypeId = shPostType.getId();
+			return switch (shObject) {
+				case ShFolder shFolder -> {
+					String folderPath = shFolderUtils.folderPath(shFolder, true, false);
+					List<ShFolder> breadcrumb = shFolderUtils.breadcrumb(shFolder);
+					ShSite shSite = breadcrumb.get(0).getShSite();
+					ShFolderList shFolderList = new ShFolderList();
+					shFolderList.setShFolders(shFolderRepository.findByParentFolderTiny(shFolder));
+					String postTypeId = null;
+					if (shPostType != null) {
+						postTypeId = shPostType.getId();
+					}
+					shFolderList.setShPosts(shPostRepository.findByShFolderAndShPostTypeTiny(shFolder.getId(), postTypeId));
+					shFolderList.setFolderPath(folderPath);
+					shFolderList.setBreadcrumb(breadcrumb);
+					shFolderList.setShSite(shSite);
+					yield shFolderList;
 				}
-				shFolderList.setShPosts(shPostRepository.findByShFolderAndShPostTypeTiny(shFolder.getId(), postTypeId));
-				shFolderList.setFolderPath(folderPath);
-				shFolderList.setBreadcrumb(breadcrumb);
-				shFolderList.setShSite(shSite);
-				return shFolderList;
-			} else if (shObject instanceof ShSite shSite) {
-				Set<ShFolderTinyBean> shFolders = shFolderRepository.findByShSiteAndRootFolderTiny(shSite, (byte) 1);
-				ShFolderList shFolderList = new ShFolderList();
-				shFolderList.setShFolders(shFolders);
-				shFolderList.setShSite(shSite);
-				return shFolderList;
-			} else {
-				return null;
-			}
+				case ShSite shSite -> {
+					Set<ShFolderTinyBean> shFolders = shFolderRepository.findByShSiteAndRootFolderTiny(shSite, (byte) 1);
+					ShFolderList shFolderList = new ShFolderList();
+					shFolderList.setShFolders(shFolders);
+					shFolderList.setShSite(shSite);
+					yield shFolderList;
+				}
+				default -> null;
+			};
 		} else {
 			return null;
 		}
@@ -461,14 +459,12 @@ public class ShObjectAPI {
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
 	public String shObjectURL(@PathVariable String id) {
 		ShObjectImpl shObject = shObjectRepository.findById(id).orElse(null);
-		String label = StringUtils.EMPTY;
-		if (shObject instanceof ShPostImpl shPostImpl) {
-			label = shPostImpl.getTitle();
-		} else if (shObject instanceof ShFolder shFolder) {
-			label = shFolder.getName();
-		} else if (shObject instanceof ShSite shSite) {
-			label = shSite.getName();
-		}
+		String label = shObject == null ? StringUtils.EMPTY : switch (shObject) {
+			case ShPostImpl shPostImpl -> shPostImpl.getTitle();
+			case ShFolder shFolder -> shFolder.getName();
+			case ShSite shSite -> shSite.getName();
+			default -> StringUtils.EMPTY;
+		};
 
 		return String.format("{ \"url\" : \"%s\", \"label\" : \"%s\"}", shSitesObjectUtils.generateObjectLinkById(id),
 				label);

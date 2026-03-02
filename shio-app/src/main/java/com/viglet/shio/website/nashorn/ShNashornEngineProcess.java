@@ -32,7 +32,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.website.cache.component.ShCacheJavascript;
@@ -44,10 +43,13 @@ import com.viglet.shio.website.cache.component.ShCacheJavascript;
 public class ShNashornEngineProcess {
 	private static final Log logger = LogFactory.getLog(ShNashornEngineProcess.class);
 	private static final ThreadLocal<HashMap<String, ScriptContext>> scriptContexts = new ThreadLocal<>();
-	@Autowired
+
 	private ScriptEngine scriptEngine;
-	@Autowired
-	private ShCacheJavascript shCacheJavascript;
+	private final ShCacheJavascript shCacheJavascript;
+
+	public ShNashornEngineProcess(ShCacheJavascript shCacheJavascript) {
+		this.shCacheJavascript = shCacheJavascript;
+	}
 
 	public void cleanup() {
 		scriptContexts.remove();
@@ -134,11 +136,11 @@ public class ShNashornEngineProcess {
 			if (lineNumber + 5 < maxlines)
 				maxlines = lineNumber + 5;
 			for (int x = minlines; x <= maxlines; x++) {
-				errorCode.append(javascriptLines[x] + "\n");
+				errorCode.append(javascriptLines[x]).append("\n");
 				if (x == lineNumber - 1) {
 					String errorPos = IntStream.range(0, columnNumber).mapToObj(i -> "-")
 							.collect(Collectors.joining(StringUtils.EMPTY)) + "^";
-					errorCode.append(errorPos + "\n");
+					errorCode.append(errorPos).append("\n");
 				}
 
 			}

@@ -24,7 +24,6 @@ import java.util.Set;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -63,11 +62,10 @@ public class ShRelatorItem implements Serializable, ShRelatorItemImpl {
 	private int ordinal;
 
 	// bi-directional many-to-one association to ShPostAttr
-	@OneToMany(mappedBy = "shParentRelatorItem", orphanRemoval = true, fetch = FetchType.LAZY)
+	@OneToMany(mappedBy = "shParentRelatorItem", orphanRemoval = true, fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.ALL)
 	// Need this join, because without this show error when try to remove a relator
 	// item.
 	@Fetch(org.hibernate.annotations.FetchMode.JOIN)
-	@Cascade({ CascadeType.ALL })
 	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Set<ShPostAttr> shChildrenPostAttrs = new HashSet<>();
 

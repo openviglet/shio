@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -56,7 +55,6 @@ public class ShPostServiceImpl implements ShPostService {
 	private final ShPostTypeAttrRepository shPostTypeAttrRepository;
 	private final ShSiteRepository shSiteRepository;
 
-	@Autowired
 	public ShPostServiceImpl(ShPostRepository shPostRepository, ShPostAttrRepository shPostAttrRepository, ShPostTypeAttrRepository shPostTypeAttrRepository, ShSiteRepository shSiteRepository) {
 		this.shPostRepository = shPostRepository;
 		this.shPostAttrRepository = shPostAttrRepository;

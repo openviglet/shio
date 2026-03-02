@@ -19,7 +19,6 @@ package com.viglet.shio.onstartup.post.type;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +26,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.viglet.shio.exchange.ShExchange;
 import com.viglet.shio.exchange.post.type.ShPostTypeImport;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Alexandre Oliveira
@@ -39,7 +37,6 @@ public class ShPostTypeOnStartup {
 	private final ResourceLoader resourceloader;
 	private final ShPostTypeImport shPostTypeImport;
 
-	@Autowired
 	public ShPostTypeOnStartup(ShPostTypeRepository shPostTypeRepository, ResourceLoader resourceloader,
 							   ShPostTypeImport shPostTypeImport) {
 		this.shPostTypeRepository = shPostTypeRepository;

@@ -61,12 +61,8 @@ public class ShImporterBloggerPlugin implements ShImporterPlugin {
 					final java.util.regex.Matcher matcher = pattern.matcher(plainText);
 
 					while (matcher.find()) {
-						//System.out.println("Full match: " + matcher.group(0));
 						newFields.put(keyWord.getValue(),
 								matcher.group(0).replace(keyWord.getKey() + ":", "").trim());
-						//for (int i = 1; i <= matcher.groupCount(); i++) {
-							//System.out.println("Group " + i + ": " + matcher.group(i));
-						//}
 					}
 				}
 			}

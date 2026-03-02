@@ -17,12 +17,17 @@
 package com.viglet.shio.widget;
 
 import org.springframework.stereotype.Component;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
 /**
  * @author Alexandre Oliveira
  */
 @Component
 public class ShCheckBoxWidget extends ShComboBoxWidget {
+
+	ShCheckBoxWidget(SpringTemplateEngine templateEngine) {
+		super(templateEngine);
+	}
 
 	@Override
 	public void setTemplate() {

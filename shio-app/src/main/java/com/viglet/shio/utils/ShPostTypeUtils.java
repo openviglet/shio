@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -36,10 +35,14 @@ import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
  */
 @Component
 public class ShPostTypeUtils {
-	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ShPostTypeAttrRepository shPostTypeAttrRepository;
+
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ShPostTypeAttrRepository shPostTypeAttrRepository;
+
+	public ShPostTypeUtils(ShPostTypeRepository shPostTypeRepository, ShPostTypeAttrRepository shPostTypeAttrRepository) {
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.shPostTypeAttrRepository = shPostTypeAttrRepository;
+	}
 
 	public Map<String, ShPostTypeAttr> toMap(ShPostType shPostType) {
 

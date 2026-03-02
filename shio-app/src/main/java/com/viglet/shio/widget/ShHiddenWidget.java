@@ -19,6 +19,7 @@ package com.viglet.shio.widget;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import com.viglet.shio.persistence.model.object.impl.ShObjectImpl;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
@@ -28,6 +29,10 @@ import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
  */
 @Component
 public class ShHiddenWidget extends ShDefaultWidget {
+	ShHiddenWidget(SpringTemplateEngine templateEngine) {
+		super(templateEngine);
+	}
+
 	@Override
 	public void setTemplate() {
 		this.template = "widget/hidden/hidden-widget";

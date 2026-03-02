@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Optional;
 
 import com.viglet.shio.website.utils.ShSitesPostUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -35,12 +34,16 @@ import com.viglet.shio.persistence.repository.site.ShSiteRepository;
  */
 @Component
 public class ShNavigationComponent {
-	@Autowired
-	private ShSiteRepository shSiteRepository;
-	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShSitesPostUtils shSitesPostUtils;
+
+	private final ShSiteRepository shSiteRepository;
+	private final ShFolderRepository shFolderRepository;
+	private final ShSitesPostUtils shSitesPostUtils;
+
+	public ShNavigationComponent(ShSiteRepository shSiteRepository, ShFolderRepository shFolderRepository, ShSitesPostUtils shSitesPostUtils) {
+		this.shSiteRepository = shSiteRepository;
+		this.shFolderRepository = shFolderRepository;
+		this.shSitesPostUtils = shSitesPostUtils;
+	}
 
 	public List<ShFolder> navigation(String siteName, boolean home) {
 		ShSite shSite = shSiteRepository.findByName(siteName);

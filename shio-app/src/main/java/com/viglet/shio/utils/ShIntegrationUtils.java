@@ -10,7 +10,7 @@ import com.viglet.shio.persistence.repository.post.ShPostAttrRepository;
 import com.viglet.shio.persistence.repository.post.ShPostRepository;
 import com.viglet.shio.persistence.repository.reference.ShReferenceRepository;
 import com.viglet.shio.turing.ShTuringIntegration;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,16 +20,25 @@ import java.util.Set;
 
 @Component
 public class ShIntegrationUtils {
-    @Autowired
-    private ShFolderRepository shFolderRepository;
-    @Autowired
-    private ShPostRepository shPostRepository;
-    @Autowired
-    private ShPostAttrRepository shPostAttrRepository;
-    @Autowired
-    private ShReferenceRepository shReferenceRepository;
-    @Autowired
-    private ShTuringIntegration shTuringIntegration;
+
+    private final ShFolderRepository shFolderRepository;
+    private final ShPostRepository shPostRepository;
+    private final ShPostAttrRepository shPostAttrRepository;
+    private final ShReferenceRepository shReferenceRepository;
+    private final ShTuringIntegration shTuringIntegration;
+    private final ShIntegrationUtils shIntegrationUtilsInner;
+
+    public ShIntegrationUtils(ShFolderRepository shFolderRepository, ShPostRepository shPostRepository,
+            ShPostAttrRepository shPostAttrRepository, ShReferenceRepository shReferenceRepository,
+            ShTuringIntegration shTuringIntegration, @Lazy ShIntegrationUtils shIntegrationUtils) {
+        this.shFolderRepository = shFolderRepository;
+        this.shPostRepository = shPostRepository;
+        this.shPostAttrRepository = shPostAttrRepository;
+        this.shReferenceRepository = shReferenceRepository;
+        this.shTuringIntegration = shTuringIntegration;
+        this.shIntegrationUtilsInner = shIntegrationUtils;
+    }
+
     @Transactional
     public boolean deleteFolder(ShFolder shFolder) throws IOException {
         shTuringIntegration.deindexObject(shFolder);
@@ -49,7 +58,7 @@ public class ShIntegrationUtils {
         shPostRepository.deleteAllInBatch(shPostRepository.findByShFolder(shFolder));
 
         for (ShFolder shFolderChild : shFolderRepository.findByParentFolder(shFolder)) {
-            this.deleteFolder(shFolderChild);
+            shIntegrationUtilsInner.deleteFolder(shFolderChild);
         }
 
         shFolderRepository.delete(shFolder.getId());

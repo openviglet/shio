@@ -17,10 +17,8 @@
 package com.viglet.shio.onstartup.site;
 
 import java.net.MalformedURLException;
-import java.net.URL;
-
+import java.net.URI;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
@@ -35,7 +33,6 @@ public class ShSiteOnStartup {
 	private final ShSiteRepository shSiteRepository;
 	private final ShSiteUtils shSiteUtils;
 
-	@Autowired
 	public ShSiteOnStartup(ShSiteRepository shSiteRepository, ShSiteUtils shSiteUtils) {
 		this.shSiteRepository = shSiteRepository;
 		this.shSiteUtils = shSiteUtils;
@@ -46,10 +43,10 @@ public class ShSiteOnStartup {
 		if (shSiteRepository.findAll().isEmpty()) {
 			try {
 				shSiteUtils.importSiteFromResourceOrURL("/import/sample-site.zip",
-						new URL("https://github.com/ShioCMS/sample-site/archive/0.3.8.zip"), "sample-site-import");
+						URI.create("https://github.com/ShioCMS/sample-site/archive/0.3.8.zip").toURL(), "sample-site-import");
 
 				shSiteUtils.importSiteFromResourceOrURL("/import/stock-site.zip",
-						new URL("https://github.com/ShioCMS/stock-site-import/archive/0.3.8.zip"),
+						URI.create("https://github.com/ShioCMS/stock-site-import/archive/0.3.8.zip").toURL(),
 						"sample-site-import");
 			} catch (MalformedURLException e) {
 				log.error(e.getMessage(), e);

@@ -16,34 +16,23 @@
  */
 package com.viglet.shio.onstartup.provider.auth;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.provider.auth.ShAuthSystemProviderVendor;
 import com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance;
-import com.viglet.shio.persistence.model.system.ShConfigVar;
 import com.viglet.shio.persistence.repository.provider.auth.ShAuthProviderInstanceRepository;
 import com.viglet.shio.persistence.repository.provider.auth.ShAuthProviderVendorRepository;
-import com.viglet.shio.persistence.repository.system.ShConfigVarRepository;
-import com.viglet.shio.property.ShConfigProperties;
 
 /**
  * @author Alexandre Oliveira
  */
 @Component
 public class ShAuthProviderInstanceOnStartup {
-	private final ShConfigProperties shConfigProperties;
-	private final ShConfigVarRepository shConfigVarRepository;
 	private final ShAuthProviderInstanceRepository shAuthProviderInstanceRepository;
 	private final ShAuthProviderVendorRepository shAuthProviderVendorRepository;
 
-	@Autowired
-	public ShAuthProviderInstanceOnStartup(ShConfigProperties shConfigProperties,
-										   ShConfigVarRepository shConfigVarRepository,
-										   ShAuthProviderInstanceRepository shAuthProviderInstanceRepository,
+	public ShAuthProviderInstanceOnStartup(ShAuthProviderInstanceRepository shAuthProviderInstanceRepository,
 										   ShAuthProviderVendorRepository shAuthProviderVendorRepository) {
-		this.shConfigProperties = shConfigProperties;
-		this.shConfigVarRepository = shConfigVarRepository;
 		this.shAuthProviderInstanceRepository = shAuthProviderInstanceRepository;
 		this.shAuthProviderVendorRepository = shAuthProviderVendorRepository;
 	}

@@ -16,7 +16,6 @@
  */
 package com.viglet.shio.website.nashorn;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.property.ShWebsiteProperties;
@@ -36,24 +35,31 @@ import com.viglet.shio.website.utils.ShSitesPostUtils;
  */
 @Component
 public class ShNashornEngineBindings {
-	@Autowired
-	private ShNavigationComponent shNavigationComponent;
-	@Autowired
-	private ShQueryComponent shQueryComponent;
-	@Autowired
-	private ShSearchComponent shSearchComponent;
-	@Autowired
-	private ShFormComponent shFormComponent;
-	@Autowired
-	private ShSitesFolderUtils shSitesFolderUtils;
-	@Autowired
-	private ShSitesObjectUtils shSitesObjectUtils;
-	@Autowired
-	private ShSitesPostUtils shSitesPostUtils;
-	@Autowired
-	private ShGetRelationComponent shGetRelationComponent;
-	@Autowired
-	private ShWebsiteProperties shWebsiteProperties;
+
+	private final ShNavigationComponent shNavigationComponent;
+	private final ShQueryComponent shQueryComponent;
+	private final ShSearchComponent shSearchComponent;
+	private final ShFormComponent shFormComponent;
+	private final ShSitesFolderUtils shSitesFolderUtils;
+	private final ShSitesObjectUtils shSitesObjectUtils;
+	private final ShSitesPostUtils shSitesPostUtils;
+	private final ShGetRelationComponent shGetRelationComponent;
+	private final ShWebsiteProperties shWebsiteProperties;
+
+	public ShNashornEngineBindings(ShNavigationComponent shNavigationComponent, ShQueryComponent shQueryComponent,
+			ShSearchComponent shSearchComponent, ShFormComponent shFormComponent, ShSitesFolderUtils shSitesFolderUtils,
+			ShSitesObjectUtils shSitesObjectUtils, ShSitesPostUtils shSitesPostUtils, ShGetRelationComponent shGetRelationComponent,
+			ShWebsiteProperties shWebsiteProperties) {
+		this.shNavigationComponent = shNavigationComponent;
+		this.shQueryComponent = shQueryComponent;
+		this.shSearchComponent = shSearchComponent;
+		this.shFormComponent = shFormComponent;
+		this.shSitesFolderUtils = shSitesFolderUtils;
+		this.shSitesObjectUtils = shSitesObjectUtils;
+		this.shSitesPostUtils = shSitesPostUtils;
+		this.shGetRelationComponent = shGetRelationComponent;
+		this.shWebsiteProperties = shWebsiteProperties;
+	}
 
 	public ShNavigationComponent getShNavigationComponent() {
 		return shNavigationComponent;

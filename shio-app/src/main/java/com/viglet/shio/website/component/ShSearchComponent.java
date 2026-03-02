@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.post.ShPost;
@@ -34,11 +33,15 @@ import com.viglet.shio.website.utils.ShSitesPostUtils;
 @Component
 public class ShSearchComponent {
 
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShSitesPostUtils shSitesPostUtils;
-	
+
+	private final ShPostRepository shPostRepository;
+	private final ShSitesPostUtils shSitesPostUtils;
+
+	public ShSearchComponent(ShPostRepository shPostRepository, ShSitesPostUtils shSitesPostUtils) {
+		this.shPostRepository = shPostRepository;
+		this.shSitesPostUtils = shSitesPostUtils;
+	}
+
 	public List<Map<String, ShPostAttr>> search(String q) {
 		List<Map<String, ShPostAttr>> shPosts = new ArrayList<>();
 		for (ShPost shPost : shPostRepository.findByTitle(q)) {

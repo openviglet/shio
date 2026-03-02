@@ -16,7 +16,6 @@
  */
 package com.viglet.shio.persistence.repository.object;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 

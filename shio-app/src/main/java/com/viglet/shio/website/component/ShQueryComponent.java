@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -40,16 +39,20 @@ import com.viglet.shio.website.utils.ShSitesPostUtils;
 @Component
 public class ShQueryComponent {
 
-	@Autowired
-	private ShFolderRepository shFolderRepository;
-	@Autowired
-	private ShPostRepository shPostRepository;
-	@Autowired
-	private ShPostAttrRepository shPostAttrRepository;
-	@Autowired
-	private ShPostTypeRepository shPostTypeRepository;
-	@Autowired
-	private ShSitesPostUtils shSitesPostUtils;
+
+	private final ShFolderRepository shFolderRepository;
+	private final ShPostRepository shPostRepository;
+	private final ShPostAttrRepository shPostAttrRepository;
+	private final ShPostTypeRepository shPostTypeRepository;
+	private final ShSitesPostUtils shSitesPostUtils;
+
+	public ShQueryComponent(ShFolderRepository shFolderRepository, ShPostRepository shPostRepository, ShPostAttrRepository shPostAttrRepository, ShPostTypeRepository shPostTypeRepository, ShSitesPostUtils shSitesPostUtils) {
+		this.shFolderRepository = shFolderRepository;
+		this.shPostRepository = shPostRepository;
+		this.shPostAttrRepository = shPostAttrRepository;
+		this.shPostTypeRepository = shPostTypeRepository;
+		this.shSitesPostUtils = shSitesPostUtils;
+	}
 
 	public List<Map<String, ShPostAttr>> findByFolderName(String folderId, String postTypeName) {
 

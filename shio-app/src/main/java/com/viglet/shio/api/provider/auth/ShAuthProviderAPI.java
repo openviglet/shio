@@ -22,7 +22,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -62,8 +61,7 @@ public class ShAuthProviderAPI {
 	private final ShConfigVarRepository shConfigVarRepository;
 	private final ShAuthProviderService shAuthProviderService;
 
-	@Autowired
-	public ShAuthProviderAPI(ShConfigProperties shConfigProperties,
+	ShAuthProviderAPI(ShConfigProperties shConfigProperties,
 							 ShAuthProviderInstanceRepository shAuthProviderInstanceRepository,
 							 ShAuthProviderVendorRepository shAuthProviderVendorRepository,
 							 ShConfigVarRepository shConfigVarRepository, ShAuthProviderService shAuthProviderService) {

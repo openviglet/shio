@@ -21,8 +21,6 @@ import java.io.Serializable;
 import jakarta.persistence.*;
 
 import lombok.Getter;
-import org.hibernate.annotations.GenericGenerator;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.widget.ShSystemWidget;

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.security.Principal;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -47,7 +46,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -216,9 +214,6 @@ public class ShPostAPI {
 
 			Optional<ShObject> shObject = shObjectRepository.findById(shPost.getShFolder().getId());
 			if (shObject.isPresent()) {
-				List<ShObject> shObjects = new ArrayList<>();
-				shObjects.add(shObject.get());
-
 				shPost.setShGroups(new HashSet<>(shObject.get().getShGroups()));
 				shPost.setShUsers(new HashSet<>(shObject.get().getShUsers()));
 
@@ -268,7 +263,6 @@ public class ShPostAPI {
 		return new ResponseEntity<>(false, HttpStatus.FORBIDDEN);
 	}
 
-	@ResponseBody
 	@GetMapping(value = "/{id}/export", produces = "application/zip")
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
 	public ResponseEntity<StreamingResponseBody> shPostExport(@PathVariable String id, Principal principal,
@@ -295,6 +289,26 @@ public class ShPostAPI {
 	}
 
 	public void postSave(ShPost shPost) {
+		this.loadMissingPostProperties(shPost);
+		
+		Set<ShPostAttr> shPostAttrs = this.getPostAttrs(shPost);
+
+		StringBuilder title = new StringBuilder();
+		StringBuilder summary = new StringBuilder();
+
+		List<ShPostAttr> shPostAttrsByOrdinal = this.getSortedPostAttrs(shPostAttrs);
+		this.titleAndSummary(title, summary, shPostAttrsByOrdinal);
+
+		this.updatePostMetadata(shPost, title, summary);
+
+		this.updatePostAttrsAndRelators(shPostAttrs, shPost);
+
+		this.handlePublishStatus(shPost);
+
+		this.lastPostTypeUsed(shPost);
+	}
+
+	private void loadMissingPostProperties(ShPost shPost) {
 		if (shPost.getId() != null
 				&& (shPost.getShPostType() == null || shPost.getShFolder() == null || shPost.getShSite() == null)) {
 			shPostRepository.findById(shPost.getId()).ifPresent(shPostEdit -> {
@@ -309,59 +323,76 @@ public class ShPostAPI {
 				}
 			});
 		}
+	}
 
-		// Get PostAttrs before save, because JPA Lazy
-		@SuppressWarnings("unchecked")
+	@SuppressWarnings("unchecked")
+	private Set<ShPostAttr> getPostAttrs(ShPost shPost) {
 		Set<ShPostAttr> shPostAttrs = (Set<ShPostAttr>) shPost.getShPostAttrs();
-		if (shPostAttrs == null) {
-			shPostAttrs = Collections.emptySet();
-		}
+		return shPostAttrs != null ? shPostAttrs : Collections.emptySet();
+	}
 
-		StringBuilder title = new StringBuilder();
-		StringBuilder summary = new StringBuilder();
-
+	private List<ShPostAttr> getSortedPostAttrs(Set<ShPostAttr> shPostAttrs) {
 		List<ShPostAttr> shPostAttrsByOrdinal = shPostAttrs.stream()
 				.filter(shPostAttr -> shPostAttr != null && shPostAttr.getShPostTypeAttr() != null)
 				.collect(Collectors.toList());
 
 		Collections.sort(shPostAttrsByOrdinal, (ShPostAttr o1, ShPostAttr o2) -> o1.getShPostTypeAttr().getOrdinal()
 				- o2.getShPostTypeAttr().getOrdinal());
-		this.titleAndSummary(title, summary, shPostAttrsByOrdinal);
+		
+		return shPostAttrsByOrdinal;
+	}
 
+	private void updatePostMetadata(ShPost shPost, StringBuilder title, StringBuilder summary) {
 		shPost.setDate(new Date().toInstant());
 		shPost.setTitle(title.toString());
 		shPost.setSummary(summary.toString());
 		shPost.setShSite(shPostUtils.getSite(shPost));
 		shPost.setModifiedDate(new Date());
 
-		if (shPost.getPublicationDate() == null)
+		if (shPost.getPublicationDate() == null) {
 			shPost.setFurl(ShURLFormatter.format(title.toString()));
+		}
+	}
 
+	private void updatePostAttrsAndRelators(Set<ShPostAttr> shPostAttrs, ShPost shPost) {
 		shPostAttrs.stream()
 				.filter(shPostAttr -> shPostAttr != null && shPostAttr.getShPostTypeAttr() != null)
 				.forEach(shPostAttr -> {
 					shPostAttr.setShPost(shPost);
 					this.updateRelatorParent(shPostAttr, shPost);
 				});
+	}
 
+	private void handlePublishStatus(ShPost shPost) {
 		if (shPost.getPublishStatus() != null) {
-			if (shPost.getPublishStatus().equals(ShObjectPublishStatus.PUBLISH))
-				this.postPublishSave(shPost);
-			else if (shPost.getPublishStatus().equals(ShObjectPublishStatus.UNPUBLISH))
-				this.postUnpublishSave(shPost);
-			else if (shPost.getPublishStatus().equals(ShObjectPublishStatus.DRAFT))
-				this.postDraftSave(shPost);
-
+			handleExplicitPublishStatus(shPost);
 		} else {
-			if (shPost.isPublished())
-				this.postDraftSave(shPost);
-			else
-				this.postUnpublishSave(shPost);
-
+			handleImplicitPublishStatus(shPost);
 		}
+	}
 
-		this.lastPostTypeUsed(shPost);
+	private void handleExplicitPublishStatus(ShPost shPost) {
+		switch (shPost.getPublishStatus()) {
+			case ShObjectPublishStatus.PUBLISH:
+				this.postPublishSave(shPost);
+				break;
+			case ShObjectPublishStatus.UNPUBLISH:
+				this.postUnpublishSave(shPost);
+				break;
+			case ShObjectPublishStatus.DRAFT:
+				this.postDraftSave(shPost);
+				break;
+			default:
+				break;
+		}
+	}
 
+	private void handleImplicitPublishStatus(ShPost shPost) {
+		if (shPost.isPublished()) {
+			this.postDraftSave(shPost);
+		} else {
+			this.postUnpublishSave(shPost);
+		}
 	}
 
 	private void lastPostTypeUsed(ShPost shPost) {

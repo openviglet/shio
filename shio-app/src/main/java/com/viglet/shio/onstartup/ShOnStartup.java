@@ -17,9 +17,6 @@
 package com.viglet.shio.onstartup;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
@@ -58,7 +55,6 @@ public class ShOnStartup implements ApplicationRunner {
 	private final ShExchangeProviderVendorOnStartup shExchangeProviderVendorOnStartup;
 	private final ShExchangeProviderInstanceOnStartup shExchangeProviderInstanceOnStartup;
 
-	@Autowired
 	public ShOnStartup(ShConfigProperties shConfigProperties,
 					   ShConfigVarRepository shConfigVarRepository,
 					   ShLocaleOnStartup shLocaleOnStartup,

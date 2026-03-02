@@ -19,7 +19,6 @@ package com.viglet.shio.utils;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.system.ShConfigVar;
@@ -31,8 +30,11 @@ import com.viglet.shio.persistence.repository.system.ShConfigVarRepository;
 @Component
 public class ShConfigVarUtils {
 
-	@Autowired
-	private ShConfigVarRepository shConfigVarRepository;
+	private final ShConfigVarRepository shConfigVarRepository;
+
+	public ShConfigVarUtils(ShConfigVarRepository shConfigVarRepository) {
+		this.shConfigVarRepository = shConfigVarRepository;
+	}
 
 	public Map<String, String> getVariablesFromPath(String path) {
 

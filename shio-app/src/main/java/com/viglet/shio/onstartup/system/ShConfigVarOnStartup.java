@@ -16,7 +16,6 @@
  */
 package com.viglet.shio.onstartup.system;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.system.ShConfigVar;
@@ -33,7 +32,6 @@ public class ShConfigVarOnStartup {
 	private final ShConfigProperties shConfigProperties;
 	private final ShConfigVarRepository shConfigVarRepository;
 
-	@Autowired
 	public ShConfigVarOnStartup(ShConfigProperties shConfigProperties, ShConfigVarRepository shConfigVarRepository) {
 		this.shConfigProperties = shConfigProperties;
 		this.shConfigVarRepository = shConfigVarRepository;

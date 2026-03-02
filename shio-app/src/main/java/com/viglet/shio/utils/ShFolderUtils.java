@@ -23,7 +23,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -37,11 +36,14 @@ import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
  */
 @Component
 public class ShFolderUtils {
-	@Autowired
-	private ShFolderRepository shFolderRepository;
+	private final ShFolderRepository shFolderRepository;
 	private static final String FILE_SOURCE_BASE = File.separator + "store" + File.separator + "file_source";
 	private static final String USER_DIR = "user.dir";
 	private File userDir = new File(System.getProperty(USER_DIR));
+
+	public ShFolderUtils(ShFolderRepository shFolderRepository) {
+		this.shFolderRepository = shFolderRepository;
+	}
 
 	public ShFolder getParentFolder(String shFolderId) {
 		Optional<ShFolder> shFolder = shFolderRepository.findById(shFolderId);
@@ -175,7 +177,6 @@ public class ShFolderUtils {
 
 	}
 
-
 	public File dirPath(ShFolder shFolder) {
 		File directoryPath = null;
 		ShSite shSite = getSite(shFolder);
@@ -185,6 +186,7 @@ public class ShFolderUtils {
 			directoryPath = new File(userDir.getAbsolutePath().concat(folderPathFile));
 		return directoryPath;
 	}
+
 	public ShSite getSite(ShFolder shFolder) {
 		ShSite shSite = null;
 		if (shFolder != null) {
@@ -239,16 +241,20 @@ public class ShFolderUtils {
 
 	public ShFolder copy(ShFolder shFolder, ShObjectImpl shObjectDest) {
 		ShFolder shFolderCopy = new ShFolder();
-		if (shObjectDest instanceof ShFolder shFolderDest) {
-			shFolderCopy.setParentFolder(shFolderDest);
-			shFolderCopy.setShSite(null);
-			shFolderCopy.setRootFolder((byte) 0);
-		} else if (shObjectDest instanceof ShSite shSiteDest) {
-			shFolderCopy.setParentFolder(null);
-			shFolderCopy.setShSite(shSiteDest);
-			shFolderCopy.setRootFolder((byte) 1);
-		} else {
-			return null;
+		switch (shObjectDest) {
+			case ShFolder shFolderDest -> {
+				shFolderCopy.setParentFolder(shFolderDest);
+				shFolderCopy.setShSite(null);
+				shFolderCopy.setRootFolder((byte) 0);
+			}
+			case ShSite shSiteDest -> {
+				shFolderCopy.setParentFolder(null);
+				shFolderCopy.setShSite(shSiteDest);
+				shFolderCopy.setRootFolder((byte) 1);
+			}
+			default -> {
+				return null;
+			}
 		}
 		shFolderCopy.setDate(new Date().toInstant());
 		shFolderCopy.setName(shFolder.getName());
