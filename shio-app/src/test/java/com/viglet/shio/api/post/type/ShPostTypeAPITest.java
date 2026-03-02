@@ -24,7 +24,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.security.Principal;
 import java.util.Calendar;
-import java.util.HashSet;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -38,10 +37,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.viglet.shio.api.ShJsonView;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
@@ -69,6 +71,7 @@ class ShPostTypeAPITest {
 	private Principal mockPrincipal;
 
 	private String newPostTypeId = "f0a9cc2f-f283-4e05-a7c6-758bb3b81b76";
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	@BeforeAll
 	void setup() {
@@ -97,7 +100,6 @@ class ShPostTypeAPITest {
 		ShWidget shWidgetText = shWidgetRepository.findByName(ShSystemWidget.TEXT);
 
 		ShPostType shPostType = new ShPostType();
-		shPostType.setId(newPostTypeId);
 		shPostType.setName("PT-TEST");
 		shPostType.setTitle("Test");
 		shPostType.setDate(Calendar.getInstance().toInstant());
@@ -122,7 +124,9 @@ class ShPostTypeAPITest {
 				.accept(MediaType.APPLICATION_JSON).content(postTypeRequestBody)
 				.contentType("application/json");
 
-		mockMvc.perform(folderRequestBuilder).andExpect(status().isOk());
+		ResultActions resultActions = mockMvc.perform(folderRequestBuilder).andExpect(status().isOk());
+		JsonNode resultNode = objectMapper.readTree(resultActions.andReturn().getResponse().getContentAsString());
+		newPostTypeId = resultNode.path("id").asText(newPostTypeId);
 	}
 
 	@Test
@@ -170,14 +174,13 @@ class ShPostTypeAPITest {
 
 	@Test
 	void stage06ShPostTypeUpdate() throws Exception {
-		ShPostType shPostType = shPostTypeRepository.findById(newPostTypeId).get();
+		ShPostType shPostType = shPostTypeRepository.findById(newPostTypeId).orElseThrow();
 
 		shPostType.setName("PT-TEST");
 		shPostType.setTitle("Test was Changed");
 		shPostType.setDate(Calendar.getInstance().toInstant());
 		shPostType.setDescription("Test Post Type was Changed");
 		shPostType.setSystem((byte) 0);
-		shPostType.setShPostTypeAttrs(new HashSet<ShPostTypeAttr>());
 		String postTypeRequestBody = ShUtils.asJsonStringAndView(shPostType, ShJsonView.ShJsonViewPostType.class);
 
 		RequestBuilder folderRequestBuilder = MockMvcRequestBuilders.put("/api/v2/post/type/" + newPostTypeId)

@@ -47,6 +47,13 @@ public class ShSitesDetectContextURL {
         }
 
         ShSite shSite = shSiteRepository.findByFurl(shSiteName);
+        if (shSite == null) {
+            shSite = shSiteRepository.findByName(shSiteName);
+        }
+        if (shSite == null) {
+            logger.warn("No site found for context: " + shSiteName);
+            return;
+        }
         shSitesContextURL.getInfo().setSiteId(shSite.getId());
 
         List<String> contentPath = shSitesContextComponent

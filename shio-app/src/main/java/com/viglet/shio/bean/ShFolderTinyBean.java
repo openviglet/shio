@@ -19,7 +19,7 @@ package com.viglet.shio.bean;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Date;
+import java.time.Instant;
 
 /**
  * @author Alexandre Oliveira
@@ -34,9 +34,9 @@ public class ShFolderTinyBean {
 
 	private String name;
 
-	private Date date;
+	private Instant date;
 
-	public ShFolderTinyBean(String id, String name, int position, Date date) {
+	public ShFolderTinyBean(String id, String name, int position, Instant date) {
 		this.id = id;
 		this.position = position;
 		this.name = name;

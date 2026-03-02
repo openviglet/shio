@@ -21,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.security.Principal;
+import java.util.Date;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -38,10 +39,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.viglet.shio.api.ShJsonView;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.ShPost;
@@ -81,6 +85,7 @@ class ShPostAPITest {
 	private Principal mockPrincipal;
 
 	private String newPostId = "553923c7-fda4-4a91-9700-eb9a549bb522";
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	@BeforeAll
 	void setup() {
@@ -88,6 +93,32 @@ class ShPostAPITest {
 		mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
 		mockPrincipal = Mockito.mock(Principal.class);
 		Mockito.when(mockPrincipal.getName()).thenReturn("admin");
+		this.ensureBaselineSite();
+	}
+
+	private void ensureBaselineSite() {
+		ShSite shSite = shSiteRepository.findByName("Viglet");
+		if (shSite == null) {
+			shSite = new ShSite();
+			shSite.setName("Viglet");
+			shSite.setDescription("Default Site");
+			shSite.setUrl("http://example.com");
+			shSite.setOwner("admin");
+			shSite.setFurl("viglet");
+			shSite.setDate(new Date().toInstant());
+			shSiteRepository.save(shSite);
+		}
+		ShFolder shFolder = shFolderRepository.findByShSiteAndName(shSite, "Home");
+		if (shFolder == null) {
+			ShFolder homeFolder = new ShFolder();
+			homeFolder.setName("Home");
+			homeFolder.setRootFolder((byte) 1);
+			homeFolder.setPosition(1);
+			homeFolder.setShSite(shSite);
+			homeFolder.setOwner("admin");
+			homeFolder.setDate(new Date().toInstant());
+			shFolderRepository.save(homeFolder);
+		}
 	}
 
 	@Test
@@ -112,7 +143,6 @@ class ShPostAPITest {
 
 		// Post
 		ShPost shPost = new ShPost();
-		shPost.setId(newPostId);
 		shPost.setShFolder(shFolder);
 		shPost.setShPostType(shPostType);
 		shPost.setShSite(shSite);
@@ -134,12 +164,14 @@ class ShPostAPITest {
 
 		shPost.getShPostAttrsNonDraft().add(shPostAttrDescription);
 
-		String postRequestBody = ShUtils.asJsonStringAndView(shPost, ShJsonView.ShJsonViewObject.class);
+		String postRequestBody = ShUtils.asJsonString(shPost);
 
 		RequestBuilder folderRequestBuilder = MockMvcRequestBuilders.post("/api/v2/post").principal(mockPrincipal)
 				.accept(MediaType.APPLICATION_JSON).content(postRequestBody).contentType("application/json");
 
-		mockMvc.perform(folderRequestBuilder).andExpect(status().isOk());
+		ResultActions resultActions = mockMvc.perform(folderRequestBuilder).andExpect(status().isOk());
+		JsonNode resultNode = objectMapper.readTree(resultActions.andReturn().getResponse().getContentAsString());
+		newPostId = resultNode.path("id").asText(newPostId);
 	}
 
 	@Test
@@ -151,7 +183,7 @@ class ShPostAPITest {
 	@Test
 	void stage03ShPostUpdate() throws Exception {
 
-		ShPost shPost = shPostRepository.findById(newPostId).get();
+		ShPost shPost = shPostRepository.findById(newPostId).orElseThrow();
 
 		for (ShPostAttr shPostAttr : shPost.getShPostAttrsNonDraft()) {
 			shPostAttr.setStrValue("Test Value was changed");

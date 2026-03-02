@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.viglet.shio.utils.*;
 import jakarta.servlet.http.HttpServletResponse;
@@ -294,14 +295,34 @@ public class ShPostAPI {
 	}
 
 	public void postSave(ShPost shPost) {
+		if (shPost.getId() != null
+				&& (shPost.getShPostType() == null || shPost.getShFolder() == null || shPost.getShSite() == null)) {
+			shPostRepository.findById(shPost.getId()).ifPresent(shPostEdit -> {
+				if (shPost.getShPostType() == null) {
+					shPost.setShPostType(shPostEdit.getShPostType());
+				}
+				if (shPost.getShFolder() == null) {
+					shPost.setShFolder(shPostEdit.getShFolder());
+				}
+				if (shPost.getShSite() == null) {
+					shPost.setShSite(shPostEdit.getShSite());
+				}
+			});
+		}
+
 		// Get PostAttrs before save, because JPA Lazy
 		@SuppressWarnings("unchecked")
 		Set<ShPostAttr> shPostAttrs = (Set<ShPostAttr>) shPost.getShPostAttrs();
+		if (shPostAttrs == null) {
+			shPostAttrs = Collections.emptySet();
+		}
 
 		StringBuilder title = new StringBuilder();
 		StringBuilder summary = new StringBuilder();
 
-		List<ShPostAttr> shPostAttrsByOrdinal = new ArrayList<>(shPostAttrs);
+		List<ShPostAttr> shPostAttrsByOrdinal = shPostAttrs.stream()
+				.filter(shPostAttr -> shPostAttr != null && shPostAttr.getShPostTypeAttr() != null)
+				.collect(Collectors.toList());
 
 		Collections.sort(shPostAttrsByOrdinal, (ShPostAttr o1, ShPostAttr o2) -> o1.getShPostTypeAttr().getOrdinal()
 				- o2.getShPostTypeAttr().getOrdinal());
@@ -316,11 +337,12 @@ public class ShPostAPI {
 		if (shPost.getPublicationDate() == null)
 			shPost.setFurl(ShURLFormatter.format(title.toString()));
 
-		shPostAttrs.forEach(shPostAttr -> {
-			shPostAttr.setShPost(shPost);
-			this.updateRelatorParent(shPostAttr, shPost);
-
-		});
+		shPostAttrs.stream()
+				.filter(shPostAttr -> shPostAttr != null && shPostAttr.getShPostTypeAttr() != null)
+				.forEach(shPostAttr -> {
+					shPostAttr.setShPost(shPost);
+					this.updateRelatorParent(shPostAttr, shPost);
+				});
 
 		if (shPost.getPublishStatus() != null) {
 			if (shPost.getPublishStatus().equals(ShObjectPublishStatus.PUBLISH))
@@ -343,6 +365,9 @@ public class ShPostAPI {
 	}
 
 	private void lastPostTypeUsed(ShPost shPost) {
+		if (shPost.getShPostType() == null) {
+			return;
+		}
 		ShUser shUser = shUserRepository.findByUsername("admin");
 		shUser.setLastPostType(String.valueOf(shPost.getShPostType().getId()));
 		shUserRepository.saveAndFlush(shUser);

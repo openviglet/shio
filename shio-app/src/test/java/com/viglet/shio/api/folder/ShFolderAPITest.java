@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.security.Principal;
+import java.util.UUID;
 
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,10 +39,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
@@ -67,6 +71,7 @@ class ShFolderAPITest {
 
 	@Autowired
 	private ShSiteRepository shSiteRepository;
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	@BeforeAll
 	void setup() {
@@ -90,9 +95,8 @@ class ShFolderAPITest {
 	@Test
 	void stage01ShFolderAdd() throws Exception {
 		ShSite shSite = new ShSite();
-		shSite.setId(newSiteId);
 		shSite.setDescription("Test Site");
-		shSite.setName("Test");
+		shSite.setName("Test-" + UUID.randomUUID());
 		shSite.setUrl("http://example.com");
 
 		String requestBody = ShUtils.asJsonString(shSite);
@@ -101,10 +105,12 @@ class ShFolderAPITest {
 				.accept(MediaType.APPLICATION_JSON).content(requestBody).contentType("application/json")
 				.header("X-Requested-With", "XMLHttpRequest");
 
-		mockMvc.perform(requestBuilder).andExpect(status().isOk());
+		ResultActions siteResult = mockMvc.perform(requestBuilder).andExpect(status().isOk());
+		JsonNode siteNode = objectMapper.readTree(siteResult.andReturn().getResponse().getContentAsString());
+		newSiteId = siteNode.path("id").asText(newSiteId);
+		shSite.setId(newSiteId);
 
 		ShFolder shFolder = new ShFolder();
-		shFolder.setId(newFolderId);
 		shFolder.setName("Unit Test");
 		shFolder.setPosition(2);
 		shFolder.setRootFolder((byte) 1);
@@ -116,7 +122,9 @@ class ShFolderAPITest {
 				.accept(MediaType.APPLICATION_JSON).content(folderRequestBody)
 				.contentType("application/json").header("X-Requested-With", "XMLHttpRequest");
 
-		mockMvc.perform(folderRequestBuilder).andExpect(status().isOk());
+		ResultActions folderResult = mockMvc.perform(folderRequestBuilder).andExpect(status().isOk());
+		JsonNode folderNode = objectMapper.readTree(folderResult.andReturn().getResponse().getContentAsString());
+		newFolderId = folderNode.path("id").asText(newFolderId);
 	}
 
 	@Test
@@ -133,7 +141,7 @@ class ShFolderAPITest {
 	
 	@Test
 	void stage04ShFolderUpdate() throws Exception {
-		ShSite shSite = shSiteRepository.findById(newSiteId).get();
+		ShSite shSite = shSiteRepository.findById(newSiteId).orElseThrow();
 
 		ShFolder shFolder = new ShFolder();
 		shFolder.setId(newFolderId);

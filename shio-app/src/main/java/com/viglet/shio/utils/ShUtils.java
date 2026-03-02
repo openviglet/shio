@@ -38,7 +38,7 @@ public class ShUtils {
 
 	public static String asJsonString(final Object obj) throws ShUtilsException {
 		try {
-			return new ObjectMapper().writeValueAsString(obj);
+			return getObjectMapper().writeValueAsString(obj);
 		} catch (Exception e) {
 			throw new ShUtilsException(e);
 		}
@@ -47,12 +47,18 @@ public class ShUtils {
 	public static String asJsonStringAndView(final Object obj, Class<? extends ShJsonViewGenericType> clazz)
 			throws ShUtilsException {
 		try {
-			ObjectMapper mapper = new ObjectMapper();
+			ObjectMapper mapper = getObjectMapper();
 			mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 			return mapper.writerWithView(clazz).writeValueAsString(obj);
 		} catch (Exception e) {
 			throw new ShUtilsException(e);
 		}
+	}
+
+	private static ObjectMapper getObjectMapper() {
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.findAndRegisterModules();
+		return mapper;
 	}
 
 	public boolean isJSONValid(String json) {

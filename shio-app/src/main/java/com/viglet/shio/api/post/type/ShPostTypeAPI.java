@@ -45,10 +45,12 @@ import com.viglet.shio.exchange.post.type.ShPostTypeExport;
 import com.viglet.shio.persistence.model.post.ShPost;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
+import com.viglet.shio.persistence.model.widget.ShWidget;
 import com.viglet.shio.persistence.repository.post.ShPostAttrRepository;
 import com.viglet.shio.persistence.repository.post.ShPostRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeAttrRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
+import com.viglet.shio.persistence.repository.widget.ShWidgetRepository;
 import com.viglet.shio.utils.ShPostTypeUtils;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -64,16 +66,19 @@ public class ShPostTypeAPI {
 	private final ShPostTypeAttrRepository shPostTypeAttrRepository;
 	private final ShPostAttrRepository shPostAttrRepository;
 	private final ShPostRepository shPostRepository;
+	private final ShWidgetRepository shWidgetRepository;
 	private final ShPostTypeExport shPostTypeExport;
 	private final ShPostTypeUtils shPostTypeUtils;
 
 	public ShPostTypeAPI(ShPostTypeRepository shPostTypeRepository, ShPostTypeAttrRepository shPostTypeAttrRepository,
 						 ShPostAttrRepository shPostAttrRepository, ShPostRepository shPostRepository,
+						 ShWidgetRepository shWidgetRepository,
 						 ShPostTypeExport shPostTypeExport, ShPostTypeUtils shPostTypeUtils) {
 		this.shPostTypeRepository = shPostTypeRepository;
 		this.shPostTypeAttrRepository = shPostTypeAttrRepository;
 		this.shPostAttrRepository = shPostAttrRepository;
 		this.shPostRepository = shPostRepository;
+		this.shWidgetRepository = shWidgetRepository;
 		this.shPostTypeExport = shPostTypeExport;
 		this.shPostTypeUtils = shPostTypeUtils;
 	}
@@ -134,6 +139,10 @@ public class ShPostTypeAPI {
 	}
 
 	private void setPostTypeAttrs(ShPostImpl shPost) {
+		if (shPost.getShPostType() == null) {
+			shPost.setShPostAttrs(new HashSet<>());
+			return;
+		}
 		Set<ShPostAttr> shPostAttrs = new HashSet<>();
 		shPost.getShPostType().getShPostTypeAttrs().forEach(shPostTypeAttr -> {
 			ShPostAttr shPostAttr = new ShPostAttr();
@@ -146,8 +155,18 @@ public class ShPostTypeAPI {
 	@PutMapping("/{id}")
 	@JsonView({ ShJsonView.ShJsonViewPostType.class })
 	public ShPostType shPostTypeUpdate(@PathVariable String id, @RequestBody ShPostType shPostType) {
-		this.postTypeSave(shPostType);
-		return shPostType;
+		Optional<ShPostType> shPostTypeOptional = shPostTypeRepository.findById(id);
+		if (shPostTypeOptional.isEmpty()) {
+			return null;
+		}
+		ShPostType shPostTypeEdit = shPostTypeOptional.get();
+		shPostTypeEdit.setName(shPostType.getName());
+		shPostTypeEdit.setTitle(shPostType.getTitle());
+		shPostTypeEdit.setDescription(shPostType.getDescription());
+		shPostTypeEdit.setSystem(shPostType.getSystem());
+		shPostTypeEdit.setDate(new Date().toInstant());
+		shPostTypeRepository.saveAndFlush(shPostTypeEdit);
+		return shPostTypeEdit;
 	}
 
 	@Transactional
@@ -189,6 +208,7 @@ public class ShPostTypeAPI {
 		if (shPostTypeOptional.isPresent()) {
 			ShPostType shPostType = shPostTypeOptional.get();
 			if (shPostType != null) {
+				this.attachManagedWidget(shPostTypeAttr);
 				shPostTypeAttr.setShPostType(shPostType);
 				shPostTypeAttrRepository.save(shPostTypeAttr);
 				return shPostTypeAttr;
@@ -211,6 +231,7 @@ public class ShPostTypeAPI {
 
 		shPostType.setDate(new Date().toInstant());
 		shPostType.getShPostTypeAttrs().forEach(shPostTypeAttr -> {
+			this.attachManagedWidget(shPostTypeAttr);
 			shPostTypeAttr.setShPostType(shPostType);
 			this.postTypeAttrSave(shPostTypeAttr, shPostType);
 		});		
@@ -233,7 +254,25 @@ public class ShPostTypeAPI {
 	private void postTypeAttrSave(ShPostTypeAttr shPostTypeAttr, ShPostType shPostType) {
 		shPostTypeAttr.getShPostTypeAttrs().forEach(shChildPostTypeAttr -> {
 			shChildPostTypeAttr.setShParentPostTypeAttr(shPostTypeAttr);
+			this.attachManagedWidget(shChildPostTypeAttr);
 			this.postTypeAttrSave(shChildPostTypeAttr, shPostType);
 		});
+	}
+
+	private void attachManagedWidget(ShPostTypeAttr shPostTypeAttr) {
+		if (shPostTypeAttr.getShWidget() == null) {
+			return;
+		}
+		ShWidget requestWidget = shPostTypeAttr.getShWidget();
+		if (requestWidget.getId() != null) {
+			shWidgetRepository.findById(requestWidget.getId()).ifPresent(shPostTypeAttr::setShWidget);
+			return;
+		}
+		if (requestWidget.getName() != null) {
+			ShWidget shWidget = shWidgetRepository.findByName(requestWidget.getName());
+			if (shWidget != null) {
+				shPostTypeAttr.setShWidget(shWidget);
+			}
+		}
 	}
 }

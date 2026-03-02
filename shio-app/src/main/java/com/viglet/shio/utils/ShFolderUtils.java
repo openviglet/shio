@@ -121,10 +121,16 @@ public class ShFolderUtils {
 	}
 
 	private void addFolderToPath(boolean usingFurl, List<String> pathContexts, ShFolder parentFolder) {
-		if (usingFurl)
-			pathContexts.add(parentFolder.getFurl());
-		else
+		if (usingFurl) {
+			String furl = parentFolder.getFurl();
+			if (furl == null || furl.isEmpty()) {
+				String folderName = parentFolder.getName();
+				furl = folderName == null ? "" : folderName.trim().toLowerCase().replace(" ", "-");
+			}
+			pathContexts.add(furl);
+		} else {
 			pathContexts.add(parentFolder.getName());
+		}
 	}
 
 	private boolean isRootFolder(ShFolder parentFolder) {
@@ -133,7 +139,7 @@ public class ShFolderUtils {
 
 	private void getFolderNameFromPath(ShFolder shFolder, boolean usingFurl, boolean addHomeFolder,
 			List<String> pathContexts) {
-		if (!(shFolder.getFurl().equals("home") && shFolder.getRootFolder() == (byte) 1 && !addHomeFolder)) {
+		if (!(("home".equals(shFolder.getFurl())) && shFolder.getRootFolder() == (byte) 1 && !addHomeFolder)) {
 			addFolderToPath(usingFurl, pathContexts, shFolder);
 
 		}

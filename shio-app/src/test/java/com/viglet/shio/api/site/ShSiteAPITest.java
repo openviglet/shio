@@ -38,9 +38,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.utils.ShUtils;
@@ -61,6 +65,7 @@ class ShSiteAPITest {
 	private String newSiteId  = "2761f115-198d-4cd8-9566-7d5671764444";
 
 	private Principal mockPrincipal;
+	private final ObjectMapper objectMapper = new ObjectMapper();
 	
 	@BeforeAll
 	void setup() {
@@ -106,7 +111,6 @@ class ShSiteAPITest {
 	@Test
 	void stage01ShSiteAdd() throws Exception {
 		ShSite shSite = new ShSite();
-		shSite.setId(newSiteId);
 		shSite.setDescription("Test Site");
 		shSite.setName(UUID.randomUUID().toString());
 		shSite.setUrl("http://example.com");
@@ -117,7 +121,9 @@ class ShSiteAPITest {
 				.accept(MediaType.APPLICATION_JSON).content(requestBody).contentType("application/json")
 				.header("X-Requested-With", "XMLHttpRequest");
 
-		mockMvc.perform(requestBuilder).andExpect(status().isOk());
+		ResultActions resultActions = mockMvc.perform(requestBuilder).andExpect(status().isOk());
+		JsonNode resultNode = objectMapper.readTree(resultActions.andReturn().getResponse().getContentAsString());
+		newSiteId = resultNode.path("id").asText(newSiteId);
 
 	}
 

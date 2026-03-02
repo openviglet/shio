@@ -118,7 +118,7 @@ public class ShSiteImport {
 		Optional<ShSite> shSiteOptional = shSiteRepository.findById(shSiteExchange.getId());
 		if (shSiteOptional.isEmpty()) {
 			ShSite shSite = new ShSite();
-	//		shSite.setId(shSiteExchange.getId());
+			shSite.setId(shSiteExchange.getId());
 			shSite.setName(shSiteExchange.getName());
 			shSite.setUrl(shSiteExchange.getUrl());
 			shSite.setDescription(shSiteExchange.getDescription());

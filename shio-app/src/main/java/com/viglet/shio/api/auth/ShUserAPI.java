@@ -26,6 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -43,7 +44,6 @@ import com.viglet.shio.api.ShJsonView;
 import com.viglet.shio.bean.ShCurrentUser;
 import com.viglet.shio.persistence.model.auth.ShGroup;
 import com.viglet.shio.persistence.model.auth.ShUser;
-import com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance;
 import com.viglet.shio.persistence.repository.auth.ShGroupRepository;
 import com.viglet.shio.persistence.repository.auth.ShUserRepository;
 import com.viglet.shio.persistence.repository.provider.auth.ShAuthProviderInstanceRepository;
@@ -57,7 +57,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  * @author Alexandre Oliveira
  */
 @RestController
-@RequestMapping("/api/v2/user")
+@RequestMapping(value = "/api/v2/user", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "User", description = "User API")
 public class ShUserAPI {
 	private static final Log logger = LogFactory.getLog(ShUserAPI.class);
@@ -89,7 +89,7 @@ public class ShUserAPI {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		if (!(authentication instanceof AnonymousAuthenticationToken)) {
 			String currentUserName = shUserUtils.getCurrentUsername();
-			ShAuthProviderInstance instance = this.getProviderInstance(session);
+			com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance instance = this.getProviderInstance(session);
 			ShUser shUser = this.getUserFromAuth(currentUserName, instance);
 			boolean isAdmin = this.isAdminFromNative(shUser, instance);
 
@@ -99,15 +99,16 @@ public class ShUserAPI {
 		return null;
 	}
 
-	private ShAuthProviderInstance getProviderInstance(HttpSession session) {
+	private com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance getProviderInstance(HttpSession session) {
 		String providerId = (String) session.getAttribute("authProvider");
-		ShAuthProviderInstance instance = null;
+		com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance instance = null;
 		if (providerId != null)
 			instance = shAuthProviderInstanceRepository.findById(providerId).orElse(null);
 		return instance;
 	}
 
-	private ShUser getUserFromAuth(String currentUserName, ShAuthProviderInstance instance) {
+	private ShUser getUserFromAuth(String currentUserName,
+			com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance instance) {
 		ShUser shUser = null;
 		if (isNotNativeAuth(instance)) {
 			shUser = loadAuthProvider(currentUserName, instance, shUser);
@@ -119,7 +120,8 @@ public class ShUserAPI {
 		return shUser;
 	}
 
-	private boolean isAdminFromNative(ShUser shUser, ShAuthProviderInstance instance) {
+	private boolean isAdminFromNative(ShUser shUser,
+			com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance instance) {
 		boolean isAdmin = false;
 		if (!isNotNativeAuth(instance) && shUser != null && shUser.getShGroups() != null) {
 			for (ShGroup shGroup : shUser.getShGroups()) {
@@ -130,7 +132,7 @@ public class ShUserAPI {
 		return isAdmin;
 	}
 
-	private boolean isNotNativeAuth(ShAuthProviderInstance instance) {
+	private boolean isNotNativeAuth(com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance instance) {
 		return instance != null && !instance.getVendor().getId().equals(ShAuthSystemProviderVendor.NATIVE);
 	}
 
@@ -147,7 +149,8 @@ public class ShUserAPI {
 		}
 	}
 
-	private ShUser loadAuthProvider(String currentUserName, ShAuthProviderInstance instance, ShUser shUser) {
+	private ShUser loadAuthProvider(String currentUserName,
+			com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance instance, ShUser shUser) {
 		ShAuthenticationProvider shAuthenticationProvider;
 		try {
 			shAuthenticationProvider = (ShAuthenticationProvider) context

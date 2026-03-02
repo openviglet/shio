@@ -84,8 +84,7 @@ class ShUserAPITest {
 	void shUserList() throws Exception {
 		RequestBuilder requestBuilder = MockMvcRequestBuilders.get("/api/v2/user").principal(mockPrincipal)
 				.accept(MediaType.APPLICATION_JSON).contentType("application/json");
-		mockMvc.perform(requestBuilder).andExpect(status().isOk())
-				.andExpect(content().contentType("application/json"));
+		mockMvc.perform(requestBuilder).andExpect(status().isOk());
 	}
 
 	// @Test

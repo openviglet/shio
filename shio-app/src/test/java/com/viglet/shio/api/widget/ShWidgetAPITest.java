@@ -38,10 +38,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.viglet.shio.persistence.model.widget.ShWidget;
 import com.viglet.shio.utils.ShUtils;
 import com.viglet.shio.widget.ShSystemWidget;
@@ -60,6 +63,7 @@ class ShWidgetAPITest {
 	private Principal mockPrincipal;
 
 	private String newWidgetId = "9be0d9a6-1b98-43af-9e19-00bf71a05908";
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	@BeforeAll
 	void setup() {
@@ -79,7 +83,6 @@ class ShWidgetAPITest {
 	void stage01ShWidgetAdd() throws Exception {
 		ShWidget shWidget = new ShWidget();
 
-		shWidget.setId(newWidgetId);
 		shWidget.setName(ShSystemWidget.TEXT);
 		shWidget.setDescription("Test Widget");
 		shWidget.setClassName("com.viglet.shio.widget.ShTestWidget");
@@ -91,7 +94,9 @@ class ShWidgetAPITest {
 		RequestBuilder requestBuilder = MockMvcRequestBuilders.post("/api/v2/widget").principal(mockPrincipal)
 				.accept(MediaType.APPLICATION_JSON).content(requestBody).contentType("application/json");
 
-		mockMvc.perform(requestBuilder).andExpect(status().isOk());
+		ResultActions resultActions = mockMvc.perform(requestBuilder).andExpect(status().isOk());
+		JsonNode resultNode = objectMapper.readTree(resultActions.andReturn().getResponse().getContentAsString());
+		newWidgetId = resultNode.path("id").asText(newWidgetId);
 	}
 
 	@Test

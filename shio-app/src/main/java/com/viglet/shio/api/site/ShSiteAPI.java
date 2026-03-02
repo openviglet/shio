@@ -29,7 +29,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.ClientProtocolException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -167,15 +166,28 @@ public class ShSiteAPI {
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
 	public ShSite shSiteAdd(@RequestBody ShSite shSite, final Principal principal) {
 
+		shSite.setId(null);
 		shSite.setDate(new Date().toInstant());
 		shSite.setOwner(principal.getName());
 		shSite.setFurl(ShURLFormatter.format(shSite.getName()));
 
-		ShExchangeData shExchangeData = shCloneExchange.getDefaultTemplateToSite(shSite);
-
-		shCloneExchange.importFromShExchangeData(shExchangeData);
-		
-		shExchangeData.getShExchangeFilesDirs().deleteExport();
+		try {
+			ShExchangeData shExchangeData = shCloneExchange.getDefaultTemplateToSite(shSite);
+			shCloneExchange.importFromShExchangeData(shExchangeData);
+			if (shExchangeData != null && shExchangeData.getShExchangeFilesDirs() != null) {
+				shExchangeData.getShExchangeFilesDirs().deleteExport();
+			}
+		} catch (RuntimeException e) {
+			log.warn("Template import failed for site {}. Falling back to plain site creation.", shSite.getName(), e);
+			ShSite shSiteFallback = new ShSite();
+			shSiteFallback.setName(shSite.getName());
+			shSiteFallback.setDescription(shSite.getDescription());
+			shSiteFallback.setUrl(shSite.getUrl());
+			shSiteFallback.setDate(shSite.getDate());
+			shSiteFallback.setOwner(shSite.getOwner());
+			shSiteFallback.setFurl(shSite.getFurl());
+			shSite = shSiteRepository.save(shSiteFallback);
+		}
 		
 		shHistoryUtils.commit(shSite, principal, ShHistoryUtils.CREATE);
 
