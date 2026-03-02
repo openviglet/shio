@@ -14,7 +14,6 @@ updates:
     ignore:
       - dependency-name: "org.webjars.bower:*"
       - dependency-name: "org.webjars.npm:*"
-      - dependency-name: "org.webjars.bower:*"
       - dependency-name: "org.webjars:*"
     groups:
       java:
