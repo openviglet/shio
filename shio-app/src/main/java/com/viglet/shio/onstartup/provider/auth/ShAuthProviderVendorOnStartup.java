@@ -56,7 +56,6 @@ public class ShAuthProviderVendorOnStartup {
 
 		if (shAuthProviderVendorRepository.findAll().isEmpty()) {
 			embedded();
-			otds();
 		}
 
 	}
@@ -70,14 +69,5 @@ public class ShAuthProviderVendorOnStartup {
 
 		shAuthProviderVendorRepository.save(shAuthProviderVendor);
 	}
-	private void otds() {
-		ShAuthProviderVendor shAuthProviderVendor = new ShAuthProviderVendor();
-		shAuthProviderVendor.setId(ShAuthSystemProviderVendor.OTDS);
-		shAuthProviderVendor.setName("OpenText Directory Services");
-		shAuthProviderVendor.setDescription("Sample Directory Services");
-		shAuthProviderVendor.setClassName("com.viglet.shio.provider.auth.otds.ShOTDSAuthProvider");
-		shAuthProviderVendor.setConfigurationPage("template/config/provider/auth/otds/otds-configuration.html");
 
-		shAuthProviderVendorRepository.save(shAuthProviderVendor);
-	}
 }

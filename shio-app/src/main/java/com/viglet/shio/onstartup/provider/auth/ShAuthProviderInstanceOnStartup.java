@@ -20,7 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.provider.auth.ShAuthSystemProviderVendor;
-import com.viglet.shio.provider.auth.otds.ShOTDSService;
 import com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance;
 import com.viglet.shio.persistence.model.system.ShConfigVar;
 import com.viglet.shio.persistence.repository.provider.auth.ShAuthProviderInstanceRepository;
@@ -53,7 +52,6 @@ public class ShAuthProviderInstanceOnStartup {
 
 		if (shAuthProviderInstanceRepository.findAll().isEmpty()) {
 			this.createEmbeddedInstance();
-			this.createOTDSInstance();
 		}
 	}
 
@@ -66,43 +64,5 @@ public class ShAuthProviderInstanceOnStartup {
 	
 		shAuthProviderInstanceRepository.save(shAuthProviderInstance);
 	}
-	
-	private void createOTDSInstance() {
-		ShAuthProviderInstance shAuthProviderInstance = new ShAuthProviderInstance();
-		shAuthProviderInstance.setName("OpenText Directory Services");
-		shAuthProviderInstance.setDescription("Sample of OTDS");
-		shAuthProviderInstance.setVendor(shAuthProviderVendorRepository.findById(ShAuthSystemProviderVendor.OTDS).orElse(null));
-		shAuthProviderInstance.setEnabled(false);
-		
-		shAuthProviderInstanceRepository.save(shAuthProviderInstance);
 
-		this.createAttribute(shAuthProviderInstance.getId(), ShOTDSService.HOST, "otds-hostname");
-		this.createAttribute(shAuthProviderInstance.getId(), ShOTDSService.PORT, "8080");
-		this.createAttribute(shAuthProviderInstance.getId(), ShOTDSService.RESOURCE_ID, "enter-otds-resource-id");
-		this.createAttribute(shAuthProviderInstance.getId(), ShOTDSService.SECRET_KEY, "enter-otds-secret-key");
-		this.createAttribute(shAuthProviderInstance.getId(), ShOTDSService.PARTITION, "otds.admin");
-		this.createAttribute(shAuthProviderInstance.getId(), ShOTDSService.DOMAIN, "otds.admin");
-		this.createAttribute(shAuthProviderInstance.getId(), ShOTDSService.MEMBERSHIP_FILTER,
-				"(&(oTMember=%M)(objectclass=oTGroup))");
-		this.createAttribute(shAuthProviderInstance.getId(), ShOTDSService.USERNAME, "oTExternalID3");
-		this.createAttribute(shAuthProviderInstance.getId(), ShOTDSService.USER_FILTER,
-				"(&(oTUserID1=%u)(objectclass=oTPerson))");
-		this.createAttribute(shAuthProviderInstance.getId(), ShOTDSService.USER_SCOPE, "subtree");
-		this.createAttribute(shAuthProviderInstance.getId(), ShOTDSService.USER_DN,
-				"ou=Root,ou=otds.admin,ou=IdentityProviders,dc=identity,dc=opentext,dc=net");
-		this.createAttribute(shAuthProviderInstance.getId(), ShOTDSService.GROUP_FILTER,
-				"(&(cn=%g)(objectclass=oTGroup))");
-		this.createAttribute(shAuthProviderInstance.getId(), ShOTDSService.GROUP_SCOPE, "subtree");
-		this.createAttribute(shAuthProviderInstance.getId(), ShOTDSService.GROUP_DN,
-				"ou=Root,ou=otds.admin,ou=IdentityProviders,dc=identity,dc=opentext,dc=net");
-	}
-
-	private void createAttribute(String instanceId, String key, String value) {
-		String providerInstance = String.format(shConfigProperties.getAuth(), instanceId);
-		ShConfigVar shConfigVar = new ShConfigVar();
-		shConfigVar.setPath(providerInstance);
-		shConfigVar.setName(key);
-		shConfigVar.setValue(value);
-		shConfigVarRepository.save(shConfigVar);
-	}
 }
