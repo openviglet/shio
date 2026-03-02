@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.viglet.shio.exchange.ShExchange;
 import com.viglet.shio.exchange.ShExchangeFilesDirs;
 
@@ -56,7 +56,7 @@ public class ShExchangeUtils {
 		ObjectMapper mapper = new ObjectMapper();
 		try {
 			mapper.writerWithDefaultPrettyPrinter().writeValue(shExchangeFilesDirs.getExportJsonFile(), shExchange);
-		} catch (IOException e) {
+		} catch (Exception e) {
 			logger.error(e);
 		}
 		var zipParameters = new ZipParameters();

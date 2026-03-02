@@ -39,7 +39,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.viglet.shio.object.ShObjectType;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.impl.ShObjectImpl;

@@ -33,8 +33,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.springframework.http.MediaType;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.net.HttpHeaders;
 import com.viglet.shio.provider.exchange.ShExchangeProvider;
 import com.viglet.shio.provider.exchange.ShExchangeProviderBreadcrumbItem;
@@ -66,7 +66,10 @@ public class ShOTCSProvider implements ShExchangeProvider {
 	private static final String USERNAME_VAR = "USERNAME";
 	private static final String PASSWORD_VAR = "PASSWORD";
 
-	private ObjectMapper objectMapper = new ObjectMapper().enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+	private ObjectMapper objectMapper = new ObjectMapper().rebuild()
+			.enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.build();
 
 	private HttpClient httpClient = HttpClientBuilder.create().build();
 

@@ -58,8 +58,8 @@ import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.reference.ShReference;
 import com.viglet.shio.persistence.model.reference.ShReferenceDraft;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.viglet.shio.api.ShJsonView;
 import com.viglet.shio.exchange.post.ShPostExport;
 import com.viglet.shio.object.ShObjectPublishStatus;
@@ -514,8 +514,8 @@ public class ShPostAPI {
 					.replace("\"@type\":\"ShPostAttr\"", "\"@type\":\"ShPostDraftAttr\"");
 			shPostDraft = mapper.readValue(jsonInString, ShPostDraft.class);
 
-		} catch (JsonProcessingException e) {
-			logger.error("convertPost2Draft JsonProcessingException:", e);
+		} catch (JacksonException e) {
+			logger.error("convertPost2Draft JacksonException:", e);
 		}
 
 		return shPostDraft;

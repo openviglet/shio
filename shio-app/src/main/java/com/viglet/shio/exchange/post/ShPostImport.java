@@ -32,9 +32,9 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectWriter;
 import com.viglet.shio.exchange.ShExchangeContext;
 import com.viglet.shio.exchange.ShExchangeObjectMap;
 import com.viglet.shio.exchange.relator.ShRelatorItemExchanges;
@@ -260,7 +260,7 @@ public class ShPostImport {
 		try {
 			String subPostsJson = ow.writeValueAsString(relatorFields.get("shSubPosts"));
 			subPosts = mapper.readValue(subPostsJson, ShRelatorItemExchanges.class);
-		} catch (JsonProcessingException e) {
+		} catch (JacksonException e) {
 			log.error(e.getMessage(), e);
 		}
 		return subPosts;

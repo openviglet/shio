@@ -23,12 +23,11 @@ import java.util.Map;
 import com.viglet.shio.website.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.viglet.shio.bean.ShSitePostTypeLayout;
 import com.viglet.shio.bean.ShSitePostTypeLayouts;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -165,11 +164,13 @@ public class ShSitesContent {
 	private ShSitePostTypeLayouts parsePostTypeLayouts(JSONObject postTypeLayout, ShPostImpl shPostImpl) {
 		ObjectMapper mapper = new ObjectMapper();
 		ShSitePostTypeLayouts shSitePostTypeLayouts = null;
+		String postTypeName = shPostImpl.getShPostType().getName();
 
 		try {
-			shSitePostTypeLayouts = mapper.readValue(postTypeLayout.get(shPostImpl.getShPostType().getName()).toString(),
-					ShSitePostTypeLayouts.class);
-		} catch (JsonProcessingException | JSONException e) {
+			String postTypeLayoutJson = postTypeLayout.optString(postTypeName, null);
+			if (postTypeLayoutJson != null)
+				shSitePostTypeLayouts = mapper.readValue(postTypeLayoutJson, ShSitePostTypeLayouts.class);
+		} catch (JacksonException e) {
 			logger.error("fromPost Error: ", e);
 		}
 		return shSitePostTypeLayouts;

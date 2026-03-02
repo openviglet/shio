@@ -22,8 +22,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 import com.viglet.shio.api.ShJsonView.ShJsonViewGenericType;
 
 /**
@@ -48,7 +48,7 @@ public class ShUtils {
 			throws ShUtilsException {
 		try {
 			ObjectMapper mapper = getObjectMapper();
-			mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+			mapper = mapper.rebuild().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false).build();
 			return mapper.writerWithView(clazz).writeValueAsString(obj);
 		} catch (Exception e) {
 			throw new ShUtilsException(e);
@@ -57,7 +57,7 @@ public class ShUtils {
 
 	private static ObjectMapper getObjectMapper() {
 		ObjectMapper mapper = new ObjectMapper();
-		mapper.findAndRegisterModules();
+		mapper = mapper.rebuild().findAndAddModules().build();
 		return mapper;
 	}
 

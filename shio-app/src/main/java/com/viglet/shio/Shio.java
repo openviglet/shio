@@ -26,8 +26,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.filter.CharacterEncodingFilter;
 
-import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.datatype.hibernate7.Hibernate7Module;
+import tools.jackson.databind.JacksonModule;
+import tools.jackson.datatype.hibernate7.Hibernate7Module;
 
 /**
  * Class that can be used to bootstrap and launch a Shio CMS from a Java
@@ -57,10 +57,10 @@ public class Shio {
 		return registrationBean;
 	}
 
-    @Bean
-    Module hibernate7Module() {
-        return new Hibernate7Module();
-    }
+	@Bean
+	JacksonModule hibernate7Module() {
+		return new Hibernate7Module();
+	}
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {

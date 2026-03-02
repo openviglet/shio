@@ -25,8 +25,8 @@ import org.apache.commons.logging.LogFactory;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.viglet.shio.bean.ShSitePostTypeLayout;
 import com.viglet.shio.bean.ShSitePostTypeLayouts;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -173,7 +173,7 @@ public class ShSitesPage {
 			shSitePostTypeLayouts = mapper.readValue(
 					postTypeLayout.get(shPostItem.getShPostType().getName()).toString(), ShSitePostTypeLayouts.class);
 
-		} catch (JsonProcessingException e) {
+		} catch (JacksonException e) {
 			logger.error(e);
 		}
 		return shSitePostTypeLayouts;

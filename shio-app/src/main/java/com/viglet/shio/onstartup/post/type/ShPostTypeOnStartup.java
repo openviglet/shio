@@ -22,7 +22,7 @@ import java.io.InputStreamReader;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.viglet.shio.exchange.ShExchange;
 import com.viglet.shio.exchange.post.type.ShPostTypeImport;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;

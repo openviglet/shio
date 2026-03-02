@@ -20,12 +20,11 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.viglet.shio.bean.ShSitePostTypeLayout;
 import com.viglet.shio.bean.ShSitePostTypeLayouts;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -81,10 +80,12 @@ public class ShSitesPageLayoutUtils {
 	private String getPageLayoutNamePost(ShPostImpl shPostItem, String format, JSONObject postTypeLayout) {
 		ShSitePostTypeLayouts shSitePostTypeLayouts = null;
 		ObjectMapper mapper = new ObjectMapper();
+		String postTypeName = shPostItem.getShPostType().getName();
 		try {
-			shSitePostTypeLayouts = mapper.readValue(
-					postTypeLayout.get(shPostItem.getShPostType().getName()).toString(), ShSitePostTypeLayouts.class);
-		} catch (JsonProcessingException | JSONException e) {
+			String postTypeLayoutJson = postTypeLayout.optString(postTypeName, null);
+			if (postTypeLayoutJson != null)
+				shSitePostTypeLayouts = mapper.readValue(postTypeLayoutJson, ShSitePostTypeLayouts.class);
+		} catch (JacksonException e) {
 			logger.error("pageLayoutFromPost Error", e);
 		}
 
@@ -93,7 +94,8 @@ public class ShSitesPageLayoutUtils {
 		if (format == null)
 			format = DEFAULT_FORMAT;
 
-		pageLayoutName = getPageLayoutName(format, pageLayoutName, shSitePostTypeLayouts);
+		if (shSitePostTypeLayouts != null)
+			pageLayoutName = getPageLayoutName(format, pageLayoutName, shSitePostTypeLayouts);
 		return pageLayoutName;
 	}
 
@@ -187,13 +189,16 @@ public class ShSitesPageLayoutUtils {
 		ObjectMapper mapper = new ObjectMapper();
 		ShSitePostTypeLayouts shSitePostTypeLayouts;
 		try {
-			shSitePostTypeLayouts = mapper.readValue(postTypeLayout.get("FOLDER").toString(),
-					ShSitePostTypeLayouts.class);
+			String folderLayoutJson = postTypeLayout.optString("FOLDER", null);
+			if (folderLayoutJson == null)
+				return null;
+
+			shSitePostTypeLayouts = mapper.readValue(folderLayoutJson, ShSitePostTypeLayouts.class);
 			if (format == null)
 				format = DEFAULT_FORMAT;
 
 			pageLayoutName = getPageLayoutName(format, pageLayoutName, shSitePostTypeLayouts);
-		} catch (JsonProcessingException | JSONException e) {
+		} catch (JacksonException e) {
 			logger.error(e);
 		}
 

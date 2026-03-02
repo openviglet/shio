@@ -37,8 +37,8 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
 import org.springframework.http.MediaType;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.net.HttpHeaders;
 import com.viglet.shio.provider.exchange.ShExchangeProvider;
 import com.viglet.shio.provider.exchange.ShExchangeProviderBreadcrumbItem;
@@ -73,7 +73,9 @@ public class ShOTMMProvider implements ShExchangeProvider {
 	private static final String USERNAME_VAR = "USERNAME";
 	private static final String PASSWORD_VAR = "PASSWORD";
 
-	private ObjectMapper objectMapper = new ObjectMapper().enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
+	private ObjectMapper objectMapper = new ObjectMapper().rebuild()
+			.enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+			.build();
 
 	private int timeout = 5;
 	private RequestConfig config = RequestConfig.custom().setConnectTimeout(timeout * 1000)

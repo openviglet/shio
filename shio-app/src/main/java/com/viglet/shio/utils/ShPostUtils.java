@@ -36,11 +36,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 import com.viglet.shio.api.ShJsonView;
 import com.viglet.shio.bean.ShPostTinyBean;
 import com.viglet.shio.object.ShObjectType;
@@ -551,19 +551,20 @@ public class ShPostUtils {
 		ShPost shPost = null;
 		if (shPostDraft != null) {
 
-			ObjectMapper mapper = new ObjectMapper().addMixIn(ShPostDraft.class, NoTypes.class);
+			ObjectMapper mapper = new ObjectMapper().rebuild().addMixIn(ShPostDraft.class, NoTypes.class).build();
 
 			try {
 				shPostDraft.setShPostAttrs(shPostDraftAttrRepository.findByShPostAll(shPostDraft));
-				String jsonInString = mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+				mapper = mapper.rebuild().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 						.configure(MapperFeature.USE_BASE_TYPE_AS_DEFAULT_IMPL, true)
 						.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-						.writerWithView(ShJsonView.ShJsonViewObject.class).writeValueAsString(shPostDraft)
+						.build();
+				String jsonInString = mapper.writerWithView(ShJsonView.ShJsonViewObject.class).writeValueAsString(shPostDraft)
 						.replace("\"@type\":\"ShPostDraftAttr\"", "\"@type\":\"ShPostAttr\"");
 				shPost = mapper.readValue(jsonInString, ShPost.class);
 				this.loadPostDraftAttribs((Set<ShPostAttr>) shPost.getShPostAttrs());
 
-			} catch (JsonProcessingException e) {
+			} catch (JacksonException e) {
 				logger.error("loadPostDraft", e);
 			}
 		}
@@ -577,12 +578,13 @@ public class ShPostUtils {
 
 			ObjectMapper mapper = new ObjectMapper();
 			try {
-				String jsonInString = mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+				mapper = mapper.rebuild().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 						.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-						.writerWithView(ShJsonView.ShJsonViewObject.class).writeValueAsString(shPostDraftAttr);
+						.build();
+				String jsonInString = mapper.writerWithView(ShJsonView.ShJsonViewObject.class).writeValueAsString(shPostDraftAttr);
 				shPostAttr = mapper.readValue(jsonInString, ShPostAttr.class);
 
-			} catch (JsonProcessingException e) {
+			} catch (JacksonException e) {
 				logger.error("loadPostDraftAttr", e);
 			}
 		}

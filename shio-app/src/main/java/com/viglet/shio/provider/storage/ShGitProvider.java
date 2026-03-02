@@ -17,7 +17,7 @@
 
 package com.viglet.shio.provider.storage;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.viglet.shio.exchange.post.ShPostExchange;
 import com.viglet.shio.exchange.post.ShPostExport;
@@ -185,7 +185,7 @@ public class ShGitProvider {
 		try {
 
 			mapper.writerWithDefaultPrettyPrinter().writeValue(jsonFile, shPostExchange);
-		} catch (IOException mapperException) {
+		} catch (Exception mapperException) {
 			logger.error("exportObject, MapperObject", mapperException);
 		}
 		try {
