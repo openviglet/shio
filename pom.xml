@@ -6,7 +6,7 @@
     <groupId>com.viglet.shio</groupId>
     <artifactId>shio</artifactId>
     <packaging>pom</packaging>
-    <version>${revision}</version>
+    <version>2026.1.14</version>
     <name>Shio CMS Master</name>
     <description>Viglet Shio CMS</description>
 
@@ -240,7 +240,7 @@
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
-                <version>1.18.42</version>
+                <version>1.18.44</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

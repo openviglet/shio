@@ -277,13 +277,13 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
-            <version>3.8.3</version>
+            <version>3.8.4</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
-            <version>7.5.0.202512021534-r</version>
+            <version>7.6.0.202603022253-r</version>
         </dependency>
         <dependency>
             <groupId>net.coobird</groupId>
@@ -313,7 +313,7 @@
        <dependency>
             <groupId>tools.jackson.datatype</groupId>
             <artifactId>jackson-datatype-hibernate7</artifactId>
-            <version>3.0.4</version>
+            <version>3.1.0</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
