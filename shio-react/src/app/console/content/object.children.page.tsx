@@ -4,12 +4,14 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { IconFileText } from "@tabler/icons-react"
+import { DialogDelete } from "@/components/dialog.delete"
 import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, ChevronDown, Copy, Move, Trash2, Search, Upload, LayoutGrid, List, Sheet, RefreshCw, ClipboardCopy } from "lucide-react"
 import { useEffect, useState, useCallback } from "react"
 import { useTranslation } from "react-i18next"
@@ -53,34 +55,63 @@ export default function ObjectChildrenPage() {
   const navigate = useNavigate()
   const { resetBreadcrumb } = useBreadcrumb()
   const [listData, setListData] = useState<ObjectListResponse>({ shFolders: [], shPosts: [] })
-  const [postTypes, setPostTypes] = useState<ShPostType[]>([])
   const [breadcrumbPath, setBreadcrumbPath] = useState<BreadcrumbPathItem[]>([])
-  const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+  const [lastPostType, setLastPostType] = useState<ShPostType | null>(null)
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState("order")
   const [viewMode, setViewMode] = useState<"list" | "grid" | "spreadsheet">("list")
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<ObjectChild | null>(null)
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false)
+  const [folderDialogMode, setFolderDialogMode] = useState<"copy" | "move">("copy")
+  const [folderDialogIds, setFolderDialogIds] = useState<string[]>([])
+  const [folderDialogFolders, setFolderDialogFolders] = useState<Array<{ id: string; name: string }>>([])
+  const [folderDialogCurrentId, setFolderDialogCurrentId] = useState<string | null>(null)
+  const [folderDialogPath, setFolderDialogPath] = useState<Array<{ id: string; name: string }>>([])
+
 
   useEffect(() => {
     setLoading(true)
     setSelectedItems(new Set())
 
     const fetchPath = axios.get(`/v2/object/${objectId}/path`).then((res) => {
-      if (Array.isArray(res.data)) {
-        setBreadcrumbPath(res.data)
+      const data = res.data
+      const items: BreadcrumbPathItem[] = []
+      // API returns { breadcrumb: [...folders], shSite: {...}, currentFolder: {...} }
+      if (data.shSite) {
+        items.push({ id: data.shSite.id, name: data.shSite.name, type: "SITE" })
       }
+      if (Array.isArray(data.breadcrumb)) {
+        for (const crumb of data.breadcrumb) {
+          items.push({ id: crumb.id, name: crumb.name, type: crumb.objectType || "FOLDER" })
+        }
+      } else if (Array.isArray(data)) {
+        // Fallback: API returns plain array
+        for (const crumb of data) {
+          items.push({ id: crumb.id, name: crumb.name, type: crumb.objectType || crumb.type || "FOLDER" })
+        }
+      }
+      setBreadcrumbPath(items)
     }).catch(() => {
       setBreadcrumbPath([])
     })
 
     const fetchChildren = axios.get<ObjectListResponse>(`/v2/object/${objectId}/list`).then((res) => {
-      setListData(res.data)
+      setListData({
+        shFolders: res.data.shFolders ?? [],
+        shPosts: res.data.shPosts ?? [],
+      })
     })
 
     Promise.all([fetchPath, fetchChildren]).finally(() => setLoading(false))
-    postTypeService.query().then(setPostTypes)
+    postTypeService.query().then((pts) => {
+      const savedId = localStorage.getItem("sh-last-post-type")
+      const saved = pts.find(p => p.id === savedId)
+      setLastPostType(saved || pts.find(p => !p.system) || pts[0] || null)
+    })
   }, [objectId])
 
   useEffect(() => {
@@ -160,17 +191,19 @@ export default function ObjectChildrenPage() {
     }
   }
 
+  const deleteObject = async (id: string, objectType: string) => {
+    if (objectType === "FOLDER") {
+      await axios.delete(`/v2/folder/${id}`)
+    } else {
+      await axios.delete(`/v2/post/${id}`)
+    }
+  }
+
   const handleBatchAction = async (action: string) => {
     if (selectedItems.size === 0) return
     if (action === "delete") {
-      if (!confirm(`Delete ${selectedItems.size} selected item(s)?`)) return
-      for (const id of selectedItems) {
-        await axios.delete(`/v2/object/${id}`).catch(() => { })
-      }
-      toast.success(`${selectedItems.size} item(s) deleted`)
-      setSelectedItems(new Set())
-      const res = await axios.get<ObjectListResponse>(`/v2/object/${objectId}/list`)
-      setListData(res.data)
+      setDeleteTarget(null)
+      setDeleteDialogOpen(true)
     }
   }
 
@@ -189,6 +222,62 @@ export default function ObjectChildrenPage() {
     } else {
       navigate(`${ROUTES.CONTENT_ROOT}/post/${item.id}`)
     }
+  }
+
+  const refreshList = async () => {
+    const res = await axios.get<ObjectListResponse>(`/v2/object/${objectId}/list`)
+    setListData({ shFolders: res.data.shFolders ?? [], shPosts: res.data.shPosts ?? [] })
+  }
+
+  const handleClone = async (itemId: string) => {
+    await axios.put(`/v2/object/copyto/${objectId}`, [itemId])
+    toast.success("Cloned successfully")
+    await refreshList()
+  }
+
+  const openFolderDialog = (mode: "copy" | "move", ids: string[]) => {
+    setFolderDialogMode(mode)
+    setFolderDialogIds(ids)
+    // Start at site root
+    const startId = siteId || objectId
+    setFolderDialogCurrentId(startId)
+    setFolderDialogPath([])
+    axios.get<ObjectListResponse>(`/v2/object/${startId}/list`).then((res) => {
+      setFolderDialogFolders((res.data.shFolders ?? []).map(f => ({ id: f.id, name: f.name })))
+    })
+    setFolderDialogOpen(true)
+  }
+
+  const navigateFolderDialog = (folderId: string, folderName: string) => {
+    setFolderDialogCurrentId(folderId)
+    setFolderDialogPath(prev => [...prev, { id: folderId, name: folderName }])
+    axios.get<ObjectListResponse>(`/v2/object/${folderId}/list`).then((res) => {
+      setFolderDialogFolders((res.data.shFolders ?? []).map(f => ({ id: f.id, name: f.name })))
+    })
+  }
+
+  const goBackFolderDialog = (index: number) => {
+    const targetPath = folderDialogPath.slice(0, index)
+    const targetId = index === 0 ? (siteId || objectId) : targetPath.at(-1)!.id
+    setFolderDialogCurrentId(targetId)
+    setFolderDialogPath(targetPath)
+    axios.get<ObjectListResponse>(`/v2/object/${targetId}/list`).then((res) => {
+      setFolderDialogFolders((res.data.shFolders ?? []).map(f => ({ id: f.id, name: f.name })))
+    })
+  }
+
+  const confirmFolderDialog = async () => {
+    if (!folderDialogCurrentId) return
+    if (folderDialogMode === "move" && folderDialogCurrentId === objectId) {
+      toast.warning("Cannot move to the same folder")
+      return
+    }
+    const endpoint = folderDialogMode === "copy" ? "copyto" : "moveto"
+    await axios.put(`/v2/object/${endpoint}/${folderDialogCurrentId}`, folderDialogIds)
+    toast.success(folderDialogMode === "copy" ? "Copied successfully" : "Moved successfully")
+    setFolderDialogOpen(false)
+    setSelectedItems(new Set())
+    await refreshList()
   }
 
   const siteInfo = listData.shSite
@@ -238,27 +327,38 @@ export default function ObjectChildrenPage() {
 
         {/* Toolbar: New Article | Grid | New Folder | Import || Order | Select | Action in Batch */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Left actions */}
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Plus className="mr-2 h-4 w-4" /> New Article
+          {/* Left actions: New [PostType] + grid selector */}
+          <TooltipProvider>
+            <div className="flex items-center">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-r-none"
+                disabled={!lastPostType}
+                onClick={() => {
+                  if (lastPostType) {
+                    localStorage.setItem("sh-last-post-type", lastPostType.id)
+                    navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/post-type/${lastPostType.id}/new`)
+                  }
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" /> New {lastPostType?.title || lastPostType?.name || "Article"}
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Select Post Type</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                {postTypes.map((pt) => (
-                  <Button key={pt.id} variant="outline" className="w-full justify-start" onClick={() => { setDialogOpen(false); navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/post-type/${pt.id}/new`) }}>
-                    <FileText className="mr-2 h-4 w-4" /> {pt.title || pt.name}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 rounded-l-none border-l-0"
+                    onClick={() => navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/post-type-select`)}
+                  >
+                    <LayoutGrid className="h-4 w-4" />
                   </Button>
-                ))}
-                {postTypes.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">{t("common.noResults")}</p>}
-              </div>
-            </DialogContent>
-          </Dialog>
+                </TooltipTrigger>
+                <TooltipContent>Select post type</TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
 
           <Button variant="outline" size="sm" onClick={() => navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/new-folder`)}>
             <FolderPlus className="mr-2 h-4 w-4" /> New Folder
@@ -299,8 +399,8 @@ export default function ObjectChildrenPage() {
               <Button variant="outline" size="sm" disabled={selectedItems.size === 0}>Action in Batch <ChevronDown className="ml-1 h-3.5 w-3.5" /></Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleBatchAction("copy")}><Copy className="mr-2 h-4 w-4" /> Copy</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleBatchAction("move")}><Move className="mr-2 h-4 w-4" /> Move</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openFolderDialog("copy", [...selectedItems])}><Copy className="mr-2 h-4 w-4" /> Copy</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openFolderDialog("move", [...selectedItems])}><Move className="mr-2 h-4 w-4" /> Move</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleBatchAction("delete")} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
             </DropdownMenuContent>
@@ -360,23 +460,6 @@ export default function ObjectChildrenPage() {
         {/* Content list */}
         <Card className="overflow-hidden">
           <CardContent className="p-0">
-            {/* List header */}
-            <div className="flex items-center gap-3 px-4 py-2.5 bg-muted/50 border-b text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              <Checkbox
-                checked={sortedItems.length > 0 && selectedItems.size === sortedItems.length}
-                onCheckedChange={() => {
-                  if (selectedItems.size === sortedItems.length) setSelectedItems(new Set())
-                  else setSelectedItems(new Set(sortedItems.map(i => i.id)))
-                }}
-                aria-label="Select all"
-              />
-              <div className="w-8 text-center">#</div>
-              <div className="flex-1">Name</div>
-              <div className="hidden sm:block w-32 text-right">Type</div>
-              <div className="hidden md:block w-32 text-right">Date</div>
-              <div className="w-32 text-right">Actions</div>
-            </div>
-
             {loading && (
               <div className="px-4 py-12 text-center text-sm text-muted-foreground">Loading...</div>
             )}
@@ -384,75 +467,88 @@ export default function ObjectChildrenPage() {
             {!loading && sortedItems.map((item, index) => (
               <div
                 key={item.id}
-                className={`group flex items-center gap-3 px-4 py-2.5 text-sm border-b last:border-b-0 hover:bg-muted/40 transition-colors ${selectedItems.has(item.id) ? "bg-primary/5" : ""}`}
+                className={`group border-b last:border-b-0 hover:bg-muted/40 transition-colors ${selectedItems.has(item.id) ? "bg-primary/5" : ""}`}
               >
-                <Checkbox
-                  checked={selectedItems.has(item.id)}
-                  onCheckedChange={() => toggleSelect(item.id)}
-                  aria-label={`Select ${item.name}`}
-                />
-
-                {/* Position number */}
-                <div className="w-8 text-center">
-                  <span className={`inline-flex items-center justify-center h-6 w-6 rounded-full text-xs font-medium text-white ${item.objectType === "FOLDER" ? "bg-green-500" : "bg-blue-500"}`}>
+                <div className="flex items-start gap-3 px-4 py-3">
+                  {/* Position badge */}
+                  <span className={`mt-0.5 inline-flex items-center justify-center h-6 w-6 rounded-full text-xs font-medium text-white shrink-0 ${item.objectType === "FOLDER" ? "bg-orange-400" : "bg-blue-400"}`}>
                     {index + 1}
                   </span>
-                </div>
 
-                {/* Icon + Name */}
-                {item.objectType === "FOLDER" ? (
-                  <Folder className="h-4 w-4 shrink-0 text-amber-500" />
-                ) : (
-                  <FileText className="h-4 w-4 shrink-0 text-blue-500" />
-                )}
-                <button
-                  type="button"
-                  className="flex-1 text-left truncate font-medium text-blue-600 dark:text-blue-400 hover:underline transition-colors"
-                  onClick={() => handleItemClick(item)}
-                >
-                  {item.name}
-                </button>
+                  {/* Checkbox */}
+                  <Checkbox
+                    className="mt-1 shrink-0"
+                    checked={selectedItems.has(item.id)}
+                    onCheckedChange={() => toggleSelect(item.id)}
+                    aria-label={`Select ${item.name}`}
+                  />
 
-                {/* Type badges */}
-                <div className="hidden sm:flex w-32 justify-end gap-1">
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-                    {item.objectType === "FOLDER" ? "Folder" : item.postTypeName || "Post"}
-                  </Badge>
-                  {siteName && (
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                      {siteName}
-                    </Badge>
+                  {/* Icon */}
+                  {item.objectType === "FOLDER" ? (
+                    <Folder className="h-4 w-4 shrink-0 mt-1 text-amber-500" />
+                  ) : (
+                    <FileText className="h-4 w-4 shrink-0 mt-1 text-blue-500" />
                   )}
-                </div>
 
-                {/* Date */}
-                <div className="hidden md:block w-32 text-right text-xs text-muted-foreground">
-                  {formatDate(item.date)}
-                </div>
+                  {/* Content: name, date, badges */}
+                  <div className="flex-1 min-w-0">
+                    <button
+                      type="button"
+                      className="text-left font-medium text-blue-600 dark:text-blue-400 hover:underline transition-colors truncate block"
+                      onClick={() => handleItemClick(item)}
+                    >
+                      {item.name}
+                    </button>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {formatDate(item.date)}
+                      {item.objectType === "POST" && item.postTypeName && ` - ${item.postTypeName}`}
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {item.objectType === "POST" && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                          Post
+                        </Badge>
+                      )}
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                        {item.objectType === "FOLDER" ? "Folder" : item.postTypeName || "Post"}
+                      </Badge>
+                      {siteName && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                          {siteName}
+                        </Badge>
+                      )}
+                      {item.publishStatus && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                          {item.publishStatus}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
 
-                {/* Hover actions - grid layout like AngularJS */}
-                <div className="shrink-0 flex flex-wrap gap-x-3 gap-y-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); item.objectType === "FOLDER" ? navigate(`${ROUTES.CONTENT_ROOT}/folder/${item.id}/edit`) : navigate(`${ROUTES.CONTENT_ROOT}/post/${item.id}`) }}>
-                    <Pencil className="h-3 w-3" /> Edit
-                  </button>
-                  <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); toast.info("Clone: coming soon") }}>
-                    <ClipboardCopy className="h-3 w-3" /> Clone
-                  </button>
-                  <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); axios.get(`/v2/object/${item.id}/clear-cache`).then(() => toast.success("Cache cleared")) }}>
-                    <RefreshCw className="h-3 w-3" /> Clear Cache
-                  </button>
-                  <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); toast.info("Copy: coming soon") }}>
-                    <Copy className="h-3 w-3" /> Copy
-                  </button>
-                  <button type="button" className="flex items-center gap-1 text-xs text-destructive/70 hover:text-destructive" onClick={async (e) => { e.stopPropagation(); if (confirm(`Delete ${item.name}?`)) { await axios.delete(`/v2/object/${item.id}`).catch(() => {}); toast.success("Deleted"); const res = await axios.get<ObjectListResponse>(`/v2/object/${objectId}/list`); setListData(res.data) } }}>
-                    <Trash2 className="h-3 w-3" /> Delete
-                  </button>
-                  <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); toast.info("Move: coming soon") }}>
-                    <Move className="h-3 w-3" /> Move
-                  </button>
-                  <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); window.open(`/api/v2/object/${item.id}/preview`, "_blank") }}>
-                    <Eye className="h-3 w-3" /> View Page
-                  </button>
+                  {/* Hover actions - wrap in grid like AngularJS */}
+                  <div className="shrink-0 hidden group-hover:flex flex-wrap gap-x-4 gap-y-1 items-start text-xs max-w-70 justify-end">
+                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); item.objectType === "FOLDER" ? navigate(`${ROUTES.CONTENT_ROOT}/folder/${item.id}/edit`) : navigate(`${ROUTES.CONTENT_ROOT}/post/${item.id}`) }}>
+                      <Pencil className="h-3 w-3" /> Edit
+                    </button>
+                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); handleClone(item.id) }}>
+                      <ClipboardCopy className="h-3 w-3" /> Clone
+                    </button>
+                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); axios.get(`/v2/object/${item.id}/clear-cache`).then(() => toast.success("Cache cleared")) }}>
+                      <RefreshCw className="h-3 w-3" /> Clear Cache
+                    </button>
+                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); openFolderDialog("copy", [item.id]) }}>
+                      <Copy className="h-3 w-3" /> Copy
+                    </button>
+                    <button type="button" className="flex items-center gap-1 text-destructive/70 hover:text-destructive whitespace-nowrap" onClick={(e) => { e.stopPropagation(); setDeleteTarget(item); setDeleteDialogOpen(true) }}>
+                      <Trash2 className="h-3 w-3" /> Delete
+                    </button>
+                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); openFolderDialog("move", [item.id]) }}>
+                      <Move className="h-3 w-3" /> Move
+                    </button>
+                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); window.open(`/api/v2/object/${item.id}/preview`, "_blank") }}>
+                      <Eye className="h-3 w-3" /> View Page
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -478,6 +574,76 @@ export default function ObjectChildrenPage() {
           </div>
         )}
       </div>
+
+      {/* Folder picker dialog for Copy/Move */}
+      <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{folderDialogMode === "copy" ? "Copy to..." : "Move to..."}</DialogTitle>
+          </DialogHeader>
+          {/* Breadcrumb inside dialog */}
+          <div className="flex items-center gap-1 text-sm text-muted-foreground flex-wrap">
+            <button type="button" className="hover:text-foreground hover:underline" onClick={() => goBackFolderDialog(0)}>
+              Root
+            </button>
+            {folderDialogPath.map((item, i) => (
+              <span key={item.id} className="flex items-center gap-1">
+                <span>/</span>
+                <button type="button" className="hover:text-foreground hover:underline" onClick={() => goBackFolderDialog(i + 1)}>
+                  {item.name}
+                </button>
+              </span>
+            ))}
+          </div>
+          {/* Folder list */}
+          <div className="max-h-60 overflow-y-auto border rounded-md divide-y">
+            {folderDialogFolders.length === 0 && (
+              <div className="px-4 py-6 text-center text-sm text-muted-foreground">No subfolders</div>
+            )}
+            {folderDialogFolders.map(folder => (
+              <button
+                key={folder.id}
+                type="button"
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50 transition-colors text-left"
+                onClick={() => navigateFolderDialog(folder.id, folder.name)}
+              >
+                <Folder className="h-4 w-4 text-amber-500 shrink-0" />
+                <span className="truncate">{folder.name}</span>
+              </button>
+            ))}
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" size="sm" onClick={() => setFolderDialogOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={confirmFolderDialog}>
+              {folderDialogMode === "copy" ? "Copy here" : "Move here"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <DialogDelete
+        feature={deleteTarget ? (deleteTarget.objectType === "FOLDER" ? "Folder" : "Post") : "Item"}
+        name={deleteTarget?.name || `${selectedItems.size} item(s)`}
+        open={deleteDialogOpen}
+        setOpen={setDeleteDialogOpen}
+        onDelete={async () => {
+          if (deleteTarget) {
+            await deleteObject(deleteTarget.id, deleteTarget.objectType).catch(() => {})
+            toast.success("Deleted")
+          } else {
+            for (const id of selectedItems) {
+              const item = combinedItems.find(i => i.id === id)
+              await deleteObject(id, item?.objectType || "POST").catch(() => {})
+            }
+            toast.success(`${selectedItems.size} item(s) deleted`)
+            setSelectedItems(new Set())
+          }
+          setDeleteDialogOpen(false)
+          setDeleteTarget(null)
+          await refreshList()
+        }}
+      />
     </>
   )
 }

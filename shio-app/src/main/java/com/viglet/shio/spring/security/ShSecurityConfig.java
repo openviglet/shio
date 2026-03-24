@@ -18,15 +18,19 @@ package com.viglet.shio.spring.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 /**
  * @author Alexandre Oliveira
@@ -35,63 +39,74 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
 @EnableWebSecurity
 public class ShSecurityConfig {
 
+	private static final String LOGOUT_PATH = "/logout";
 	private final ShAuthenticationEntryPoint shAuthenticationEntryPoint;
+	PathPatternRequestMatcher.Builder mvc = PathPatternRequestMatcher.withDefaults();
 
 	public ShSecurityConfig(ShAuthenticationEntryPoint shAuthenticationEntryPoint) {
 		this.shAuthenticationEntryPoint = shAuthenticationEntryPoint;
 	}
 
 	@Bean
+	@SuppressWarnings("java:S4502")
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		http
-			.headers(headers -> headers
-				.frameOptions(frame -> frame.sameOrigin())
-			)
-			.securityContext(context -> context
-				.requireExplicitSave(false)
-			)
-			.sessionManagement(session -> session
-				.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-			)
-			.authorizeHttpRequests(auth -> auth
-				.requestMatchers(
-					"/error/**",
-					"/logout",
-					"/index.html",
-					"/welcome", "/welcome/**",
-					"/sites/**",
-					"/__tur/**",
-					"/",
-					"/assets/**",
-					"/thirdparty/**",
-					"/fonts/**",
-					"/favicon.ico",
-					"/*.png",
-					"/manifest.json",
-					"/browserconfig.xml",
-					"/content", "/content/**",
-					"/preview", "/preview/**",
-					"/media", "/media/**",
-					"/css/**",
-					"/js/**",
-					"/img/**",
-					"/store/**",
-					"/file_source/**",
-					"/template/**",
-					"/vendor/**",
-					"/svg/**"
-				).permitAll()
-				.anyRequest().authenticated()
-			)
-			.httpBasic(basic -> basic
-				.authenticationEntryPoint(shAuthenticationEntryPoint)
-			)
-			.cors(cors -> {})
-			.csrf(csrf -> csrf
-				.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+		http.headers(headers -> headers
+				.frameOptions(frame -> frame.sameOrigin()));
+		http.cors(Customizer.withDefaults());
+		http.securityContext(securityContext -> securityContext
+				.securityContextRepository(new HttpSessionSecurityContextRepository()));
+		http.sessionManagement(session -> session
+				.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
+
+		CookieCsrfTokenRepository csrfTokenRepository = new CookieCsrfTokenRepository();
+
+		http.csrf(csrf -> csrf
+				.csrfTokenRepository(csrfTokenRepository)
 				.csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
-			)
-			.addFilterAfter(new ShCsrfHeaderFilter(), CsrfFilter.class);
+				.ignoringRequestMatchers(
+						mvc.matcher("/error/**"),
+						mvc.matcher(LOGOUT_PATH)))
+				.addFilterAfter(new ShCsrfHeaderFilter(), BasicAuthenticationFilter.class);
+
+		http.httpBasic(httpBasic -> httpBasic.authenticationEntryPoint(shAuthenticationEntryPoint))
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers(
+								mvc.matcher("/error/**"),
+								mvc.matcher("/api/v2/csrf"),
+								mvc.matcher(LOGOUT_PATH),
+								mvc.matcher("/index.html"),
+								mvc.matcher("/welcome/**"),
+								mvc.matcher("/sites/**"),
+								mvc.matcher("/__tur/**"),
+								mvc.matcher("/"),
+								mvc.matcher("/assets/**"),
+								mvc.matcher("/thirdparty/**"),
+								mvc.matcher("/fonts/**"),
+								mvc.matcher("/favicon.ico"),
+								mvc.matcher("/*.png"),
+								mvc.matcher("/manifest.json"),
+								mvc.matcher("/browserconfig.xml"),
+								mvc.matcher("/content/**"),
+								mvc.matcher("/preview/**"),
+								mvc.matcher("/media/**"),
+								mvc.matcher("/console/**"),
+								mvc.matcher("/css/**"),
+								mvc.matcher("/js/**"),
+								mvc.matcher("/img/**"),
+								mvc.matcher("/store/**"),
+								mvc.matcher("/file_source/**"),
+								mvc.matcher("/template/**"),
+								mvc.matcher("/vendor/**"),
+								mvc.matcher("/svg/**")
+						).permitAll()
+						.anyRequest().authenticated());
+
+		http.logout(logout -> logout
+				.logoutRequestMatcher(mvc.matcher(HttpMethod.GET, LOGOUT_PATH))
+				.invalidateHttpSession(true)
+				.clearAuthentication(true)
+				.deleteCookies("JSESSIONID", "XSRF-TOKEN")
+				.logoutSuccessUrl("/"));
 
 		return http.build();
 	}

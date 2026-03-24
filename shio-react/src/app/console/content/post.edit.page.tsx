@@ -1,13 +1,11 @@
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
+import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconFileText } from "@tabler/icons-react"
 import { Loader2, Save } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -25,33 +23,45 @@ export default function PostEditPage() {
   const navigate = useNavigate()
   const { resetBreadcrumb } = useBreadcrumb()
   const [post, setPost] = useState<ShPost | null>(null)
+  const [allowPublish, setAllowPublish] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [parentFolderId, setParentFolderId] = useState<string | null>(null)
 
   useEffect(() => {
     service.get(postId).then((data) => {
-      setPost(data)
+      const shPost = data.shPost
+      setPost(shPost)
+      setAllowPublish(data.allowPublish)
+
       const items: { label: string; href?: string }[] = [
         { label: t("content.sites"), href: ROUTES.CONTENT_ROOT },
       ]
-      if (data.breadcrumb) {
-        for (const crumb of data.breadcrumb) {
+      const folder = shPost.shFolder
+      if (folder) {
+        setParentFolderId(folder.id)
+        const site = folder.shSite
+        if (site) {
           items.push({
-            label: crumb.name,
-            href: `${ROUTES.CONTENT_ROOT}/object/${crumb.id}`,
+            label: site.name,
+            href: `${ROUTES.CONTENT_ROOT}/object/${site.id}`,
           })
         }
+        items.push({
+          label: folder.name,
+          href: `${ROUTES.CONTENT_ROOT}/object/${folder.id}`,
+        })
       }
-      items.push({ label: t("content.editPost") })
+      items.push({ label: shPost.title || t("content.editPost") })
       resetBreadcrumb(items)
     })
   }, [postId, resetBreadcrumb, t])
 
-  const handleAttrChange = (attrIndex: number, value: string) => {
+  const handleAttrChange = (index: number, updatedAttr: ShPostAttr) => {
     if (!post) return
     setPost({
       ...post,
       shPostAttrs: post.shPostAttrs.map((attr, i) =>
-        i === attrIndex ? { ...attr, strValue: value } : attr
+        i === index ? updatedAttr : attr
       ),
     })
   }
@@ -62,34 +72,15 @@ export default function PostEditPage() {
     setIsLoading(true)
     try {
       await service.update(post)
-      toast.success(t("common.save"))
-      navigate(-1)
+      toast.success(t("common.saved"))
+      if (parentFolderId) {
+        navigate(`${ROUTES.CONTENT_ROOT}/object/${parentFolderId}`)
+      }
+    } catch {
+      toast.error(t("common.error"))
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const renderAttrField = (attr: ShPostAttr, index: number) => {
-    const widgetName = attr.shPostTypeAttr?.shWidget?.name?.toLowerCase() ?? ""
-    const isTextArea = widgetName.includes("textarea") || widgetName.includes("html")
-
-    return (
-      <div key={attr.id || index} className="space-y-2">
-        <Label>{attr.shPostTypeAttr?.label || attr.shPostTypeAttr?.name || `Field ${index + 1}`}</Label>
-        {isTextArea ? (
-          <Textarea
-            value={attr.strValue ?? ""}
-            onChange={(e) => handleAttrChange(index, e.target.value)}
-            rows={4}
-          />
-        ) : (
-          <Input
-            value={attr.strValue ?? ""}
-            onChange={(e) => handleAttrChange(index, e.target.value)}
-          />
-        )}
-      </div>
-    )
   }
 
   if (!post) {
@@ -110,42 +101,34 @@ export default function PostEditPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>{t("content.editPost")}</CardTitle>
-              <Badge variant="outline">{post.shPostType?.title || post.shPostType?.name}</Badge>
+              <CardTitle>{post.title || t("content.editPost")}</CardTitle>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{post.shPostType?.title || post.shPostType?.name}</Badge>
+                {allowPublish && (
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                    Can Publish
+                  </Badge>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label>{t("content.title")}</Label>
-                <Input
-                  value={post.title ?? ""}
-                  onChange={(e) => setPost({ ...post, title: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{t("content.summary")}</Label>
-                <Textarea
-                  value={post.summary ?? ""}
-                  onChange={(e) => setPost({ ...post, summary: e.target.value })}
-                  rows={3}
-                />
-              </div>
-              {post.shPostAttrs && post.shPostAttrs.length > 0 && (
-                <>
-                  <Separator />
-                  <h3 className="text-sm font-semibold">{t("content.attributes")}</h3>
-                  {post.shPostAttrs
-                    .sort((a, b) => (a.shPostTypeAttr?.ordinal ?? 0) - (b.shPostTypeAttr?.ordinal ?? 0))
-                    .map((attr, index) => renderAttrField(attr, index))}
-                </>
-              )}
-              <div className="flex gap-2 pt-4">
+              <PostFormFields attrs={post.shPostAttrs ?? []} onAttrChange={handleAttrChange} postId={postId} postTypeName={post.shPostType?.title || post.shPostType?.name} />
+              <Separator />
+              <div className="flex gap-2 pt-2">
                 <Button type="submit" disabled={isLoading}>
                   {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   {t("common.save")}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => parentFolderId
+                    ? navigate(`${ROUTES.CONTENT_ROOT}/object/${parentFolderId}`)
+                    : navigate(ROUTES.CONTENT_ROOT)
+                  }
+                >
                   {t("common.cancel")}
                 </Button>
               </div>

@@ -1,9 +1,14 @@
 import type { ShPost } from "@/models/post/post";
 import axios from "axios";
 
+interface ShPostXP {
+  shPost: ShPost;
+  allowPublish: boolean;
+}
+
 export class ShPostService {
-  async get(id: string): Promise<ShPost> {
-    const response = await axios.get<ShPost>(`/v2/post/${id}`);
+  async get(id: string): Promise<ShPostXP> {
+    const response = await axios.get<ShPostXP>(`/v2/post/xp/${id}`);
     return response.data;
   }
 
@@ -21,3 +26,5 @@ export class ShPostService {
     await axios.delete(`/v2/post/${id}`);
   }
 }
+
+export type { ShPostXP };

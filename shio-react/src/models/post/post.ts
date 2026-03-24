@@ -2,7 +2,9 @@ export type ShPost = {
   id: string;
   title: string;
   summary: string;
+  furl: string;
   shPostType: { id: string; name: string; title: string };
+  shFolder?: { id: string; name: string; shSite?: { id: string; name: string } };
   owner: string;
   date: string;
   published: boolean;
@@ -27,6 +29,7 @@ export type ShPostAttr = {
     isSummary: number;
     isTitle: number;
     shWidget: { name: string };
+    widgetSettings?: string;
   };
   shChildrenPostAttrs?: ShPostAttr[];
   shChildrenRelatorItems?: ShRelatorItem[];
@@ -34,6 +37,8 @@ export type ShPostAttr = {
 
 export type ShRelatorItem = {
   id: string;
+  title?: string;
+  summary?: string;
   ordinal: number;
   shChildrenPostAttrs: ShPostAttr[];
 };

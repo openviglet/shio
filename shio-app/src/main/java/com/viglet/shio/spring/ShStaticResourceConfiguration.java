@@ -61,8 +61,13 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
 	public void addCorsMappings(CorsRegistry registry) {
 		registry.addMapping(THIRDPARTY_FOLDER).allowedOrigins(allowedOrigins)
 				.allowedMethods("PUT", "DELETE", "GET", "POST").allowCredentials(false).maxAge(3600);
-		registry.addMapping("/api/**").allowedOrigins(allowedOrigins).allowedMethods("PUT", "DELETE", "GET", "POST")
-				.allowCredentials(false).maxAge(3600);
+		registry.addMapping("/api/**")
+				.allowedOriginPatterns(allowedOrigins, "http://localhost:*")
+				.allowedMethods("PUT", "DELETE", "GET", "POST", "OPTIONS")
+				.allowedHeaders("*")
+				.exposedHeaders("X-XSRF-TOKEN")
+				.allowCredentials(true)
+				.maxAge(3600);
 	}
 
 	@Override

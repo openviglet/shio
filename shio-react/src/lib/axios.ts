@@ -1,7 +1,7 @@
 import axios, { type AxiosRequestConfig } from "axios";
 
 const CSRF_HEADER = "X-XSRF-TOKEN";
-const CSRF_ENDPOINT = "/csrf";
+const CSRF_ENDPOINT = "/v2/csrf";
 let csrfToken: string | null = null;
 
 const csrfClient = axios.create({ withCredentials: true });
@@ -161,7 +161,6 @@ axios.interceptors.response.use(
     }
 
     if (error.response?.status === 401) {
-      // Handle unauthorized - redirect to login preserving the current URL
       if (!globalThis.location.pathname.startsWith("/login")) {
         const returnUrl = globalThis.location.pathname + globalThis.location.search;
         globalThis.location.href = `/login?returnUrl=${encodeURIComponent(returnUrl)}`;

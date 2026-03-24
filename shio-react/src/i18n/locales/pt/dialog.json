@@ -2,5 +2,9 @@
   "dialog.deleteTitle": "Excluir",
   "dialog.deleteMessage": "Tem certeza que deseja excluir este item?",
   "dialog.deleteConfirm": "Sim, excluir",
-  "dialog.deleteCancel": "Cancelar"
+  "dialog.deleteCancel": "Cancelar",
+  "dialog.deleteFeature": "Excluir {{feature}}",
+  "dialog.permanentDelete": "Isso excluirá permanentemente \"{{name}}\". Esta ação não pode ser desfeita.",
+  "dialog.typeToConfirm": "Digite",
+  "dialog.toConfirm": "para confirmar"
 }

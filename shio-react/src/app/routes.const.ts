@@ -9,6 +9,7 @@ export const ROUTES = {
   SITE_NEW: `${consolePath}/content/site/new`,
   SITE_IMPORT: `${consolePath}/content/site/import`,
   POST_TYPE_ROOT: `${consolePath}/content/post-type`,
+  POST_TYPE_NEW: `${consolePath}/content/post-type/new`,
   SEARCH: `${consolePath}/content/search`,
   PREVIEW: `${consolePath}/preview`,
   ADMIN_ROOT: `${consolePath}/admin`,
