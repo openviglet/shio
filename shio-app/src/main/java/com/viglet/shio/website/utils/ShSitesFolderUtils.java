@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
+import com.viglet.shio.url.ShURLScheme;
 import com.viglet.shio.utils.ShFolderUtils;
 import com.viglet.shio.website.ShContent;
 
@@ -37,10 +38,13 @@ public class ShSitesFolderUtils {
 
 	private final ShFolderRepository shFolderRepository;
 	private final ShFolderUtils shFolderUtils;
+	private final ShURLScheme shURLScheme;
 
-	public ShSitesFolderUtils(ShFolderRepository shFolderRepository, ShFolderUtils shFolderUtils) {
+	public ShSitesFolderUtils(ShFolderRepository shFolderRepository, ShFolderUtils shFolderUtils,
+							  ShURLScheme shURLScheme) {
 		this.shFolderRepository = shFolderRepository;
 		this.shFolderUtils = shFolderUtils;
+		this.shURLScheme = shURLScheme;
 	}
 
 	public ShFolder getParentFolder(String shFolderId) {
@@ -84,5 +88,19 @@ public class ShSitesFolderUtils {
 		shFolderItemAttrs.put("system", shFolderItemSystemAttrs);
 
 		return shFolderItemAttrs;
+	}
+
+	public String generateFolderLinkById(String folderId) {
+		if (folderId != null) {
+			try {
+				ShFolder shFolder = shFolderRepository.findById(folderId).orElse(null);
+				if (shFolder != null) {
+					return shURLScheme.generateFolderLink(shFolder);
+				}
+			} catch (IllegalArgumentException exception) {
+				return null;
+			}
+		}
+		return null;
 	}
 }

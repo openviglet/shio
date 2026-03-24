@@ -44,10 +44,11 @@ public class ShNashornEngineProcess {
 	private static final Log logger = LogFactory.getLog(ShNashornEngineProcess.class);
 	private static final ThreadLocal<HashMap<String, ScriptContext>> scriptContexts = new ThreadLocal<>();
 
-	private ScriptEngine scriptEngine;
+	private final ScriptEngine scriptEngine;
 	private final ShCacheJavascript shCacheJavascript;
 
-	public ShNashornEngineProcess(ShCacheJavascript shCacheJavascript) {
+	public ShNashornEngineProcess(ScriptEngine scriptEngine, ShCacheJavascript shCacheJavascript) {
+		this.scriptEngine = scriptEngine;
 		this.shCacheJavascript = shCacheJavascript;
 	}
 

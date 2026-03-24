@@ -67,7 +67,7 @@ public class ShSitesNodeJS {
 					tmpDir.getAbsolutePath().concat(File.separator + shSite.getName() + UUID.randomUUID() + ".zip"));
 			try {
 
-				FileUtils.copyURLToFile(URI.create("https://github.com/ShioCMS/shio-nodejs/archive/master.zip").toURL(), siteFile);
+				FileUtils.copyURLToFile(URI.create("https://github.com/openviglet/shio-nodejs/archive/master.zip").toURL(), siteFile);
 			} catch (Exception e) {
 				log.error("exportApplication: ", e);
 			}

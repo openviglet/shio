@@ -45,9 +45,10 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
 	@Override
 	public void addResourceHandlers(ResourceHandlerRegistry registry) {
 
-		String resourceLocation = "file:" + shStaticFileUtils.getFileSource().getAbsolutePath();
-		registry.addResourceHandler("/store/**").addResourceLocations(resourceLocation).setCachePeriod(3600 * 24);
-		registry.addResourceHandler("/file_source/**").addResourceLocations(resourceLocation + "/")
+		String fileSourceLocation = "file:" + shStaticFileUtils.getFileSource().getAbsolutePath() + "/";
+		String storeLocation = "file:" + shStaticFileUtils.getFileSource().getParentFile().getAbsolutePath() + "/";
+		registry.addResourceHandler("/store/**").addResourceLocations(storeLocation).setCachePeriod(3600 * 24);
+		registry.addResourceHandler("/file_source/**").addResourceLocations(fileSourceLocation)
 				.setCachePeriod(3600 * 24);
 
 		if (!registry.hasMappingForPattern(THIRDPARTY_FOLDER)) {

@@ -77,7 +77,7 @@ public class ShCloneExchange {
 				InputStream is = resource.getInputStream();
 				FileUtils.copyInputStreamToFile(is, templateSiteFile);
 			} else {
-				FileUtils.copyURLToFile(URI.create("https://github.com/ShioCMS/bootstrap-site/archive/0.3.7.zip").toURL(),
+				FileUtils.copyURLToFile(URI.create("https://github.com/openviglet/bootstrap-site/archive/0.3.7.zip").toURL(),
 						templateSiteFile);
 			}
 			shExchangeData = getTemplateAsCloneFromFile(templateSiteFile, shSite);

@@ -43,10 +43,10 @@ public class ShSiteOnStartup {
 		if (shSiteRepository.findAll().isEmpty()) {
 			try {
 				shSiteUtils.importSiteFromResourceOrURL("/import/sample-site.zip",
-						URI.create("https://github.com/ShioCMS/sample-site/archive/0.3.8.zip").toURL(), "sample-site-import");
+						URI.create("https://github.com/openviglet/shio-sample-site/archive/0.3.8.zip").toURL(), "sample-site-import");
 
 				shSiteUtils.importSiteFromResourceOrURL("/import/stock-site.zip",
-						URI.create("https://github.com/ShioCMS/stock-site-import/archive/0.3.8.zip").toURL(),
+						URI.create("https://github.com/openviglet/shio-stock-site-import/archive/0.3.8.zip").toURL(),
 						"sample-site-import");
 			} catch (MalformedURLException e) {
 				log.error(e.getMessage(), e);
