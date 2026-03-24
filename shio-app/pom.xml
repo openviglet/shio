@@ -439,6 +439,12 @@
             <groupId>org.webjars.bower</groupId>
             <artifactId>angular-ui-tinymce</artifactId>
             <version>0.0.19</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.webjars.bower</groupId>
+                    <artifactId>tinymce</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.webjars.bower</groupId>

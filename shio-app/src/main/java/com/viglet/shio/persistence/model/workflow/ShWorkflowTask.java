@@ -29,7 +29,7 @@ import jakarta.persistence.NamedQuery;
 
 import lombok.Getter;
 import com.viglet.shio.persistence.model.object.ShObject;
-import org.hibernate.annotations.UuidGenerator;
+import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
 
 /**
  * The persistent class for the ShWorkflowTask database table.
@@ -45,7 +45,7 @@ public class ShWorkflowTask implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Id
-	@UuidGenerator
+	@ShAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 

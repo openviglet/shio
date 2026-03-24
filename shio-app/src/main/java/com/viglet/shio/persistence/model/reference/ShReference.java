@@ -31,7 +31,7 @@ import lombok.Getter;
 import lombok.Setter;
 import com.viglet.shio.persistence.model.object.ShObject;
 import com.viglet.shio.persistence.model.object.impl.ShObjectImpl;
-import org.hibernate.annotations.UuidGenerator;
+import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
 
 /**
  * The persistent class for the ShReference database table.
@@ -47,7 +47,7 @@ public class ShReference implements Serializable{
 	private static final long serialVersionUID = 1L;
 	@Getter
     @Id
-	@UuidGenerator
+	@ShAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 	

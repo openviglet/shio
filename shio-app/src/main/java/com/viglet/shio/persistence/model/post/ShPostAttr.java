@@ -20,6 +20,7 @@ import java.io.Serial;
 import java.io.Serializable;
 
 import org.hibernate.annotations.*;
+import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.persistence.model.object.ShObject;
@@ -56,7 +57,7 @@ public class ShPostAttr implements Serializable, ShPostAttrImpl {
 	private static final long serialVersionUID = 1L;
 
 	@Id
-	@UuidGenerator
+	@ShAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 	@Column(name = "date_value")

@@ -28,6 +28,7 @@ import lombok.Setter;
 import org.hibernate.annotations.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.viglet.shio.api.ShJsonView;
 import com.viglet.shio.persistence.model.post.ShPostAttr;
@@ -54,7 +55,7 @@ public class ShPostTypeAttr implements Serializable {
 
 
     @Id
-    @UuidGenerator
+    @ShAssignableUuidGenerator
     @Column(name = "id", updatable = false, nullable = false)
     private String id;
     private String description;

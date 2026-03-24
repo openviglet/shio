@@ -14,7 +14,7 @@
     <url>https://github.com/openshio/shio</url>
     <packaging>jar</packaging>
     <properties>
-        <spring-boot.version>4.0.3</spring-boot.version>
+        <spring-boot.version>4.0.4</spring-boot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>21</maven.compiler.source>
@@ -38,7 +38,7 @@
         <dependency>
             <groupId>co.elastic.clients</groupId>
             <artifactId>elasticsearch-java</artifactId>
-            <version>9.3.2</version>
+            <version>9.3.3</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
@@ -256,7 +256,7 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
-            <version>7.0.3</version>
+            <version>7.0.4</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -277,13 +277,13 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
-            <version>3.8.3</version>
+            <version>3.8.4</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
-            <version>7.5.0.202512021534-r</version>
+            <version>7.6.0.202603022253-r</version>
         </dependency>
         <dependency>
             <groupId>net.coobird</groupId>
@@ -313,7 +313,7 @@
        <dependency>
             <groupId>tools.jackson.datatype</groupId>
             <artifactId>jackson-datatype-hibernate7</artifactId>
-            <version>3.0.4</version>
+            <version>3.1.0</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -439,6 +439,12 @@
             <groupId>org.webjars.bower</groupId>
             <artifactId>angular-ui-tinymce</artifactId>
             <version>0.0.19</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.webjars.bower</groupId>
+                    <artifactId>tinymce</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.webjars.bower</groupId>

@@ -25,7 +25,7 @@ import jakarta.persistence.NamedQuery;
 
 import lombok.Setter;
 import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.UuidGenerator;
+import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
 
 /**
  * The persistent class for the ShProviderInstance database table.
@@ -39,7 +39,7 @@ import org.hibernate.annotations.UuidGenerator;
 public class ShProviderInstance {
 
 	@Id
-	@UuidGenerator
+	@ShAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 

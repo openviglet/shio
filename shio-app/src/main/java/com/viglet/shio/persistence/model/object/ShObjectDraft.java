@@ -33,6 +33,7 @@ import jakarta.persistence.NamedQuery;
 import org.hibernate.annotations.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
 import com.viglet.shio.persistence.model.object.impl.ShObjectImpl;
 import com.viglet.shio.persistence.model.post.impl.ShPostAttrImpl;
 
@@ -50,7 +51,7 @@ public class ShObjectDraft implements Serializable, ShObjectImpl {
 	@Serial
 	private static final long serialVersionUID = 1L;
 	@Id
-	@UuidGenerator
+	@ShAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 

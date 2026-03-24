@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import com.viglet.shio.persistence.repository.post.type.ShPostTypeAttrRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -41,14 +40,11 @@ import org.springframework.util.ObjectUtils;
 public class ShPostTypeImport {
     private final ShWidgetRepository shWidgetRepository;
     private final ShPostTypeRepository shPostTypeRepository;
-    private final ShPostTypeAttrRepository shPostTypeAttrRepository;
 
     public ShPostTypeImport(ShWidgetRepository shWidgetRepository,
-                            ShPostTypeRepository shPostTypeRepository,
-                            ShPostTypeAttrRepository shPostTypeAttrRepository) {
+                            ShPostTypeRepository shPostTypeRepository) {
         this.shWidgetRepository = shWidgetRepository;
         this.shPostTypeRepository = shPostTypeRepository;
-        this.shPostTypeAttrRepository = shPostTypeAttrRepository;
     }
 
     @Transactional
@@ -69,14 +65,14 @@ public class ShPostTypeImport {
                     shPostType.setNamePlural(shPostTypeExchange.getNamePlural());
                     shPostType.setOwner(shPostTypeExchange.getOwner());
                     shPostType.setSystem(shPostTypeExchange.isSystem() ? (byte) 1 : (byte) 0);
+                    this.addPostTypeAttrs(shPostTypeExchange, shPostType);
                     shPostTypes.add(shPostType);
-                    this.importPostTypeAttr(shPostTypeExchange, shPostType);
                 });
         shPostTypeRepository.saveAll(shPostTypes);
 
     }
 
-    private void importPostTypeAttr(ShPostTypeExchange shPostTypeExchange, ShPostType shPostType) {
+    private void addPostTypeAttrs(ShPostTypeExchange shPostTypeExchange, ShPostType shPostType) {
         if (!ObjectUtils.isEmpty(shPostTypeExchange.getFields())) {
             Set<ShPostTypeAttr> shPostTypeAttrs = new HashSet<>();
             shPostTypeExchange.getFields()
@@ -84,7 +80,7 @@ public class ShPostTypeImport {
                         shPostTypeAttr.setShPostType(shPostType);
                         shPostTypeAttrs.add(shPostTypeAttr);
                     });
-            shPostTypeAttrRepository.saveAll(shPostTypeAttrs);
+            shPostType.setShPostTypeAttrs(shPostTypeAttrs);
         }
     }
 
