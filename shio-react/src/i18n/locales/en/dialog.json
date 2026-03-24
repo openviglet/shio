@@ -1,0 +1,6 @@
+{
+  "dialog.deleteTitle": "Delete",
+  "dialog.deleteMessage": "Are you sure you want to delete this item?",
+  "dialog.deleteConfirm": "Yes, delete",
+  "dialog.deleteCancel": "Cancel"
+}

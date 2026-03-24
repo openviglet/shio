@@ -1,0 +1,16 @@
+{
+  "admin.title": "Administração",
+  "admin.users": "Usuários",
+  "admin.roles": "Perfis",
+  "admin.groups": "Grupos",
+  "admin.newUser": "Novo Usuário",
+  "admin.editUser": "Editar Usuário",
+  "admin.newRole": "Novo Perfil",
+  "admin.editRole": "Editar Perfil",
+  "admin.newGroup": "Novo Grupo",
+  "admin.editGroup": "Editar Grupo",
+  "admin.username": "Usuário",
+  "admin.firstName": "Nome",
+  "admin.lastName": "Sobrenome",
+  "admin.email": "Email"
+}

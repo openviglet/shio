@@ -1,0 +1,17 @@
+{
+  "login.welcomeBack": "Bem-vindo de volta",
+  "login.signInDescription": "Entre na sua conta do Shio CMS",
+  "login.username": "Usuário",
+  "login.password": "Senha",
+  "login.enterUsername": "Digite seu usuário",
+  "login.enterPassword": "Digite sua senha",
+  "login.signIn": "Entrar",
+  "login.signingIn": "Entrando...",
+  "login.invalidCredentials": "Usuário ou senha inválidos",
+  "login.loginFailed": "Falha no login",
+  "login.emptyFields": "Preencha todos os campos",
+  "login.heroTagline": "CMS Headless para aplicações modernas",
+  "login.featureCms": "Sistema de Gerenciamento de Conteúdo",
+  "login.featureApi": "API REST para qualquer frontend",
+  "login.featureTemplates": "Renderização server-side com Nashorn"
+}

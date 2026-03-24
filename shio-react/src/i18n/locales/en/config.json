@@ -1,0 +1,7 @@
+{
+  "config.title": "Configuration",
+  "config.authProviders": "Auth Providers",
+  "config.exchangeProviders": "Exchange Providers",
+  "config.email": "Email",
+  "config.search": "Search"
+}

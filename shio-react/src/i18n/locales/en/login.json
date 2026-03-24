@@ -1,0 +1,17 @@
+{
+  "login.welcomeBack": "Welcome back",
+  "login.signInDescription": "Sign in to your Shio CMS account",
+  "login.username": "Username",
+  "login.password": "Password",
+  "login.enterUsername": "Enter your username",
+  "login.enterPassword": "Enter your password",
+  "login.signIn": "Sign in",
+  "login.signingIn": "Signing in...",
+  "login.invalidCredentials": "Invalid username or password",
+  "login.loginFailed": "Login failed",
+  "login.emptyFields": "Please fill in all fields",
+  "login.heroTagline": "Headless CMS for modern applications",
+  "login.featureCms": "Content Management System",
+  "login.featureApi": "REST API for any frontend",
+  "login.featureTemplates": "Server-side rendering with Nashorn"
+}

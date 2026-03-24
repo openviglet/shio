@@ -1,0 +1,23 @@
+const consolePath: string = import.meta.env.VITE_CONSOLE_CONTEXT_PATH;
+export const ROUTES = {
+  ROOT: "/",
+  LOGIN: "/login",
+  LOGOUT: "/logout",
+  CONSOLE: consolePath,
+  HOME: `${consolePath}/home`,
+  CONTENT_ROOT: `${consolePath}/content`,
+  SITE_NEW: `${consolePath}/content/site/new`,
+  SITE_IMPORT: `${consolePath}/content/site/import`,
+  POST_TYPE_ROOT: `${consolePath}/content/post-type`,
+  SEARCH: `${consolePath}/content/search`,
+  PREVIEW: `${consolePath}/preview`,
+  ADMIN_ROOT: `${consolePath}/admin`,
+  ADMIN_USERS: `${consolePath}/admin/users`,
+  ADMIN_GROUPS: `${consolePath}/admin/groups`,
+  ADMIN_ROLES: `${consolePath}/admin/roles`,
+  CONFIG_ROOT: `${consolePath}/config`,
+  CONFIG_AUTH_PROVIDERS: `${consolePath}/config/auth-providers`,
+  CONFIG_EXCHANGE_PROVIDERS: `${consolePath}/config/exchange-providers`,
+  CONFIG_EMAIL: `${consolePath}/config/email`,
+  CONFIG_SEARCH: `${consolePath}/config/search`,
+};
