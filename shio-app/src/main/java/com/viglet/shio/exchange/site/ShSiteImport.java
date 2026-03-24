@@ -102,6 +102,7 @@ public class ShSiteImport {
 			shSiteExchange.setDate(new Date());
 			ShExchangeObjectMap shExchangeObjectMap = prepareImport(shExchange, shSiteExchange);
 			log.info(".... {} Site ({})", shSiteExchange.getName(), shSiteExchange.getId());
+			this.createShSite(shSiteExchange);
 			// Create only Folders
 			log.info("3 of 4 - Cloning Folders");
 			shFolderImport.shFolderImportNested(shSiteExchange.getId(), true, shExchangeObjectMap,

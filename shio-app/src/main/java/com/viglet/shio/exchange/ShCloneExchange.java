@@ -168,6 +168,7 @@ public class ShCloneExchange {
 
 	public void importNewSiteFromTemplateFile(File file) {
 		ShExchangeData shExchangeData = this.getNewSiteFromTemplateFile(file);
+		this.importFromShExchangeData(shExchangeData);
 		shExchangeData.getShExchangeFilesDirs().deleteExport();
 		FileUtils.deleteQuietly(file);
 
