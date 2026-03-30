@@ -14,7 +14,7 @@
     <url>https://github.com/openshio/shio</url>
     <packaging>jar</packaging>
     <properties>
-        <spring-boot.version>4.0.4</spring-boot.version>
+        <spring-boot.version>4.0.5</spring-boot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>21</maven.compiler.source>
@@ -157,33 +157,33 @@
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
-            <version>3.2.3</version>
+            <version>3.3.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-parsers</artifactId>
-            <version>3.2.3</version>
+            <version>3.3.0</version>
             <type>pom</type>
         </dependency>
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-parser-pdf-module</artifactId>
-            <version>3.2.3</version>
+            <version>3.3.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-parser-text-module</artifactId>
-            <version>3.2.3</version>
+            <version>3.3.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-parser-ocr-module</artifactId>
-            <version>3.2.3</version>
+            <version>3.3.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-parser-microsoft-module</artifactId>
-            <version>3.2.3</version>
+            <version>3.3.0</version>
         </dependency>
         <dependency>
             <groupId>com.levigo.jbig2</groupId>
@@ -313,7 +313,7 @@
        <dependency>
             <groupId>tools.jackson.datatype</groupId>
             <artifactId>jackson-datatype-hibernate7</artifactId>
-            <version>3.1.0</version>
+            <version>3.1.1</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -6,7 +6,7 @@
     <groupId>com.viglet.shio</groupId>
     <artifactId>shio</artifactId>
     <packaging>pom</packaging>
-    <version>${revision}</version>
+    <version>2026.1.18</version>
     <name>Shio CMS Master</name>
     <description>Viglet Shio CMS</description>
 
@@ -14,7 +14,7 @@
         <revision>2026.1</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <spring-boot.version>4.0.4</spring-boot.version>
+        <spring-boot.version>4.0.5</spring-boot.version>
         <sonar.organization>viglet</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
@@ -220,7 +220,7 @@
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-core</artifactId>
-                <version>2.25.3</version>
+                <version>2.25.4</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents.client5</groupId>
