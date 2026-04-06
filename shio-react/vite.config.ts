@@ -30,6 +30,8 @@ export default defineConfig({
       "/api": "http://localhost:2710",
       "/logout": "http://localhost:2710",
       "/csrf": "http://localhost:2710",
+      "/graphiql": "http://localhost:2710",
+      "/graphql": "http://localhost:2710",
       "/oauth2": "http://localhost:2710",
       "/login/oauth2": "http://localhost:2710",
     },

@@ -4,6 +4,6 @@ ${AnsiColor.BRIGHT_RED}  \ V /| / _` | / -_)  _| \__ \ ' \| / _ \ | (__| |\/| \_
 ${AnsiColor.BRIGHT_RED}   \_/ |_\__, |_\___|\__| |___/_||_|_\___/  \___|_|  |_|___/ ${AnsiColor.BRIGHT_WHITE}${application.formatted-version}
 ${AnsiColor.BRIGHT_RED}         |___/                                              
 
-${AnsiColor.BRIGHT_WHITE}:: Copyright (C) 2016-2021, Viglet Team <opensource@viglet.com> 
+${AnsiColor.BRIGHT_WHITE}:: Copyright (C) 2016-2026, Viglet Team <opensource@viglet.com> 
 
 ${AnsiColor.BRIGHT_WHITE}:: Built with Spring Boot :: ${spring-boot.version}

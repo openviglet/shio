@@ -21,4 +21,5 @@ export const ROUTES = {
   CONFIG_EXCHANGE_PROVIDERS: `${consolePath}/config/exchange-providers`,
   CONFIG_EMAIL: `${consolePath}/config/email`,
   CONFIG_SEARCH: `${consolePath}/config/search`,
+  GRAPHQL_ROOT: `${consolePath}/graphql`,
 };

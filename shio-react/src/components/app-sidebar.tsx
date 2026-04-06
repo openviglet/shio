@@ -4,6 +4,7 @@ import {
   IconForms,
   IconShieldCog,
   IconSettings,
+  IconBrandGraphql,
 } from "@tabler/icons-react"
 import * as React from "react"
 import { useTranslation } from "react-i18next"
@@ -48,6 +49,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       items: [
         { title: t("admin.title"), url: ROUTES.ADMIN_ROOT, icon: IconShieldCog },
         { title: t("config.title"), url: ROUTES.CONFIG_ROOT, icon: IconSettings },
+        { title: t("graphql.title"), url: ROUTES.GRAPHQL_ROOT, icon: IconBrandGraphql },
       ],
     },
   ], [t])

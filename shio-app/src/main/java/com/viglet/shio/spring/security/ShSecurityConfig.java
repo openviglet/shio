@@ -62,11 +62,10 @@ public class ShSecurityConfig {
             ShOidcUserService shOidcUserService) {
 
         http.headers(header -> header.frameOptions(
-                frameOptions -> frameOptions.disable()
-                        .cacheControl(HeadersConfigurer.CacheControlConfig::disable)));
+                HeadersConfigurer.FrameOptionsConfig::disable)
+                .cacheControl(HeadersConfigurer.CacheControlConfig::disable));
         http.cors(Customizer.withDefaults());
         http.userDetailsService(userDetailsService);
-        http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
         http.securityContext(securityContext -> securityContext
                 .securityContextRepository(new HttpSessionSecurityContextRepository()));
         http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));

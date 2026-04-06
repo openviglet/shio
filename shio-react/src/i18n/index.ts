@@ -10,6 +10,7 @@ import enDialog from "./locales/en/dialog.json";
 import enContent from "./locales/en/content.json";
 import enAdmin from "./locales/en/admin.json";
 import enConfig from "./locales/en/config.json";
+import enGraphql from "./locales/en/graphql.json";
 
 import ptCommon from "./locales/pt/common.json";
 import ptLogin from "./locales/pt/login.json";
@@ -19,15 +20,16 @@ import ptDialog from "./locales/pt/dialog.json";
 import ptContent from "./locales/pt/content.json";
 import ptAdmin from "./locales/pt/admin.json";
 import ptConfig from "./locales/pt/config.json";
+import ptGraphql from "./locales/pt/graphql.json";
 
 const en = {
   ...enCommon, ...enLogin, ...enSidebar, ...enNav, ...enDialog,
-  ...enContent, ...enAdmin, ...enConfig,
+  ...enContent, ...enAdmin, ...enConfig, ...enGraphql,
 };
 
 const pt = {
   ...ptCommon, ...ptLogin, ...ptSidebar, ...ptNav, ...ptDialog,
-  ...ptContent, ...ptAdmin, ...ptConfig,
+  ...ptContent, ...ptAdmin, ...ptConfig, ...ptGraphql,
 };
 
 i18n
