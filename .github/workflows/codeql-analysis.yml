@@ -34,7 +34,13 @@ jobs:
       uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
+    - name: Configure npm auth token
+      run: echo "//npm.pkg.github.com/:_authToken=\${NODE_AUTH_TOKEN}" >> shio-react/.npmrc
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GH_PKG_TOKEN }}
     - name: Autobuild
       uses: github/codeql-action/autobuild@v3
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GH_PKG_TOKEN }}
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
