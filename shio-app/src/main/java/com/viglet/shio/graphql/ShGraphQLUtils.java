@@ -47,9 +47,9 @@ public class ShGraphQLUtils {
 
 	public String normalizedName(String name) {
 		if (StringUtils.isNotEmpty(name)) {
-			char[] c = name.replace(" ","_").replace("-", "_").toCharArray();
+			char[] c = name.replace(" ", "_").replace("-", "_").toCharArray();
 			c[0] = Character.toLowerCase(c[0]);
-			return  StringUtils.remove(WordUtils.capitalizeFully(new String(c), '_'), "_");
+			return StringUtils.remove(WordUtils.capitalizeFully(new String(c), '_'), "_");
 		} else {
 			return StringUtils.EMPTY;
 		}
