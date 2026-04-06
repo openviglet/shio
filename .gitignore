@@ -39,3 +39,5 @@ src/main/resources/js/client-side/build
 /shio-app/src/main/resources/public/assets
 /shio-react/node
 /shio-app/src/main/resources/public
+.flattened-pom.xml
+*.flattened-pom.xml
