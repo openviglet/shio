@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { ShAuthorizationService } from "@/services/auth/authorization.service"
 import { AlertCircle, KeyRound, Loader2, LogIn, User } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router-dom"
@@ -21,6 +21,14 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const authorization = new ShAuthorizationService()
+
+  useEffect(() => {
+    authorization.discovery().then((discovery) => {
+      if (discovery.keycloak) {
+        globalThis.location.href = "/oauth2/authorization/keycloak";
+      }
+    }).catch(() => { /* ignore — login page is still usable */ });
+  }, []);
 
   function onSubmit(data: LoginData) {
     setError(""); setIsLoading(true)

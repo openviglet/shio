@@ -142,6 +142,7 @@ public class ShUserAPI {
 			shCurrentUser.setUsername(shUser.getUsername());
 			shCurrentUser.setFirstName(shUser.getFirstName());
 			shCurrentUser.setLastName(shUser.getLastName());
+			shCurrentUser.setEmail(shUser.getEmail());
 			shCurrentUser.setAdmin(isAdmin);
 			return shCurrentUser;
 		} else {
