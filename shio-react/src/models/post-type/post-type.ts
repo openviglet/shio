@@ -7,6 +7,7 @@ export type ShPostType = {
   system: number;
   date: string;
   owner: string;
+  workflowPublishEntity?: string;
   shPostTypeAttrs?: ShPostTypeAttr[];
 };
 

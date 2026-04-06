@@ -1,6 +1,8 @@
+import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getWidget } from "@/components/widgets"
+import { getWidgetAccentColor, getWidgetBadgeColor } from "@/lib/widget-colors"
 import type { ShPostAttr } from "@/models/post/post"
 import { useMemo } from "react"
 
@@ -64,15 +66,48 @@ export function PostFormFields({ attrs, onAttrChange, postId, postTypeName }: Pr
       return <Widget key={attr.id || originalIndex} attr={attr} onChange={(a) => onAttrChange(originalIndex, a)} />
     }
 
+    const accentColor = getWidgetAccentColor(widgetName)
+    const badgeColor = getWidgetBadgeColor(widgetName)
+    const isRequired = attr.shPostTypeAttr?.required === 1
+    const isTitle = attr.shPostTypeAttr?.isTitle === 1
+
     return (
-      <div key={attr.id || originalIndex} className="space-y-2">
-        <Label className="flex items-center gap-2">
-          {attr.shPostTypeAttr?.label || attr.shPostTypeAttr?.name || `Field ${originalIndex + 1}`}
-          {attr.shPostTypeAttr?.required === 1 && (
-            <span className="text-destructive text-xs">*</span>
-          )}
-        </Label>
+      <div
+        key={attr.id || originalIndex}
+        className={`rounded-lg border border-l-4 ${accentColor} bg-background p-4 space-y-3 transition-shadow hover:shadow-sm`}
+      >
+        {/* Field header */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Label className="text-sm font-semibold flex items-center gap-1.5">
+            {attr.shPostTypeAttr?.label || attr.shPostTypeAttr?.name || `Field ${originalIndex + 1}`}
+            {isRequired && (
+              <span className="text-destructive">*</span>
+            )}
+          </Label>
+          <div className="flex items-center gap-1.5 ml-auto">
+            {isTitle && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-blue-300 text-blue-600 dark:border-blue-700 dark:text-blue-400">
+                Title
+              </Badge>
+            )}
+            {attr.shPostTypeAttr?.isSummary === 1 && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-green-300 text-green-600 dark:border-green-700 dark:text-green-400">
+                Summary
+              </Badge>
+            )}
+            <Badge
+              variant="outline"
+              className={`text-[10px] px-1.5 py-0 h-5 font-medium ${badgeColor}`}
+            >
+              {widgetName}
+            </Badge>
+          </div>
+        </div>
+
+        {/* Widget */}
         <Widget attr={attr} onChange={(a) => onAttrChange(originalIndex, a)} postId={postId} />
+
+        {/* Description */}
         {attr.shPostTypeAttr?.description && (
           <p className="text-xs text-muted-foreground">{attr.shPostTypeAttr.description}</p>
         )}
@@ -88,15 +123,18 @@ export function PostFormFields({ attrs, onAttrChange, postId, postTypeName }: Pr
   // Multiple tabs: use shadcn Tabs
   return (
     <Tabs defaultValue={tabs[0]?.label} className="w-full">
-      <TabsList>
+      <TabsList className="mb-2">
         {tabs.map((tab) => (
           <TabsTrigger key={tab.label} value={tab.label}>
             {tab.label}
+            <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0 h-4">
+              {tab.attrs.length}
+            </Badge>
           </TabsTrigger>
         ))}
       </TabsList>
       {tabs.map((tab) => (
-        <TabsContent key={tab.label} value={tab.label} className="space-y-4 pt-2">
+        <TabsContent key={tab.label} value={tab.label} className="space-y-4 pt-1">
           {tab.attrs.map(renderField)}
         </TabsContent>
       ))}

@@ -16,12 +16,12 @@
   - `src/app/routes/` - Route definitions
   - `src/components/` - Reusable components
   - `src/components/ui/` - shadcn/ui components
-  - `src/components/widgets/` - Dynamic form widgets
+  - `src/components/widgets/` - Dynamic form widgets (14 widgets)
   - `src/services/` - API service layer (class-based)
   - `src/models/` - TypeScript type definitions
   - `src/contexts/` - React Context providers
   - `src/i18n/` - Internationalization (en/pt)
-  - `src/lib/` - Utilities (axios, utils)
+  - `src/lib/` - Utilities (axios, utils, widget-colors)
 
 ## Architecture Patterns (follows Turing React)
 
@@ -102,29 +102,127 @@ Delete must be done by type: `/v2/post/{id}` or `/v2/folder/{id}`
 - Logout deletes cookies: `JSESSIONID`, `XSRF-TOKEN`
 - `/api/v2/csrf` must be in `permitAll()`
 
+## UI Design System
+
+### Available shadcn/ui Components
+Located in `src/components/ui/`:
+avatar, badge, breadcrumb, button, card, checkbox, dialog, dropdown-menu, form,
+gradient-button, input, label, select, separator, sheet, sidebar, skeleton, sonner,
+switch, table, tabs, textarea, tooltip
+
+**Not available** (do not attempt to import): accordion, collapsible, popover, command, calendar
+
+### Widget Color System (`src/lib/widget-colors.ts`)
+Shared color constants used across both the post-type editor and post form rendering.
+Each widget type has a unique color for visual identification:
+
+| Widget | Badge Color | Accent |
+|---|---|---|
+| Text | Blue | `border-l-blue-500` |
+| Text Area | Indigo | `border-l-indigo-500` |
+| HTML Editor | Purple | `border-l-purple-500` |
+| Check Box | Green | `border-l-green-500` |
+| Combo Box | Teal | `border-l-teal-500` |
+| Date | Amber | `border-l-amber-500` |
+| Hidden | Gray | `border-l-gray-400` |
+| Multi Select | Cyan | `border-l-cyan-500` |
+| Ace Editor - JS | Yellow | `border-l-yellow-500` |
+| Ace Editor - HTML | Orange | `border-l-orange-500` |
+| Content Select | Rose | `border-l-rose-500` |
+| File | Pink | `border-l-pink-500` |
+| Relator | Violet | `border-l-violet-500` |
+| Tab | Slate | `border-l-slate-500` |
+
+Helper functions: `getWidgetBadgeColor(name)`, `getWidgetAccentColor(name)` return appropriate classes with fallback defaults.
+
+**Usage**: Import from `@/lib/widget-colors` in any component that needs widget-type-aware styling.
+
+### Page Layout Pattern
+Editor pages follow a consistent layout:
+1. `<PageHeader>` with icon and breadcrumb
+2. **Sticky save bar** - `sticky top-0 z-10` with `bg-orange-50 dark:bg-orange-950/30` orange accent:
+   - Left: title + metadata badges (post type, field count, publish permission)
+   - Right: Save, Save & Close, Cancel buttons
+3. **Card(s)** containing the form content
+
+### Field Card Pattern
+Form fields (both in post-type editor and post form) render as individual cards:
+- `border-l-4` with widget-type accent color
+- `rounded-lg border bg-background`
+- `hover:shadow-sm transition-shadow` for interactivity
+- Header row with label, required indicator (`*`), and inline badges (Title, Summary, widget type)
+- Widget component renders inside the card
+- Optional description text below
+
+### Empty State Pattern
+When a list has no items, show a centered empty state:
+```tsx
+<div className="flex flex-col items-center justify-center py-16 text-center">
+  <div className="rounded-full bg-muted p-4 mb-4">
+    <Icon className="h-8 w-8 text-muted-foreground" />
+  </div>
+  <h3 className="font-semibold text-lg mb-1">Title</h3>
+  <p className="text-sm text-muted-foreground max-w-sm mb-6">Description</p>
+  <Button>CTA</Button>
+</div>
+```
+
+### Toggle Preferences
+- Use `Switch` for boolean toggles in settings/editor forms (modern look)
+- Use `Checkbox` only inside form widgets (e.g., CheckBoxWidget for content editing)
+- Use `Tooltip` with `Info` icon for field help text instead of permanent description paragraphs
+
+### Badge Patterns
+- **Widget type badge**: Colored per widget using `WIDGET_BADGE_COLORS`, variant `outline`
+- **Required badge**: `border-amber-300 text-amber-600` (dark: `border-amber-700 text-amber-400`)
+- **Title badge**: "T" with `border-blue-300 text-blue-600`
+- **Summary badge**: "S" with `border-green-300 text-green-600`
+- **Publish badge**: Shield icon with green background
+- **Field count badge**: `variant="secondary"` with count number
+
 ## Widget System
 
 ### Dynamic Form Rendering
 Widgets are React components that render based on `shPostTypeAttr.shWidget.name`.
-Registry in `src/components/widgets/index.ts` maps widget names to components.
+Registry in `src/components/widgets/index.ts` maps widget names to components via `WIDGET_MAP`.
+`getWidget(name)` returns the component, defaulting to `TextWidget` for unknown names.
 
 ### Widget Names (from database)
 | Widget Name | Component | Data Field |
 |---|---|---|
 | `Text` | Input | `strValue` |
-| `Text Area` | Textarea | `strValue` |
-| `HTML Editor` | contentEditable with toolbar | `strValue` |
-| `Check Box` | Checkbox (multiple) | `arrayValue` |
-| `Combo Box` | Select dropdown | `strValue` |
-| `Date` | Input type=date | `dateValue` |
-| `Hidden` | hidden input | `strValue` |
-| `Multi Select` | Tag badges | `arrayValue` |
-| `Ace Editor - Javascript` | CodeMirror (javascript mode) | `strValue` |
+| `Text Area` | Textarea (6 rows) | `strValue` |
+| `HTML Editor` | contentEditable with formatting toolbar (Bold, Italic, Underline, Lists, Link, Code) | `strValue` |
+| `Check Box` | Checkbox (multiple, parsed from widgetSettings choices) | `arrayValue` |
+| `Combo Box` | Select dropdown (parsed from widgetSettings choices, optional null) | `strValue` |
+| `Date` | Input type=date with clear button | `dateValue` (ISO string) |
+| `Hidden` | hidden input (not rendered visually) | `strValue` |
+| `Multi Select` | Free-form tag input with Enter to add, X to remove | `arrayValue` |
+| `Ace Editor - Javascript` | CodeMirror (javascript mode, line numbers, folding) | `strValue` |
 | `Ace Editor - HTML` | CodeMirror (html mode) | `strValue` |
-| `Content Select` | ID input + indicator | `strValue` |
-| `File` | ID input + indicator | `strValue` |
-| `Relator` | Nested items list | `shChildrenRelatorItems` |
-| `Tab` | Groups fields into tabs | none (container) |
+| `Content Select` | ID input + status indicator + clear button | `strValue` |
+| `File` | ID input + status indicator + clear button | `strValue` |
+| `Relator` | Nested items list with add/remove (uses `crypto.randomUUID()`) | `shChildrenRelatorItems` |
+| `Tab` | Groups fields into tabs (container, no data) | none |
+
+### WidgetProps Interface
+```typescript
+interface WidgetProps {
+  attr: ShPostAttr       // Current field value and metadata
+  onChange: (attr: ShPostAttr) => void  // Callback for changes
+  postId?: string        // ID of post being edited
+}
+```
+
+### PostFormFields Component (`src/components/widgets/post-form-fields.tsx`)
+Renders the dynamic form for post editing/creation:
+1. Sorts attrs by `shPostTypeAttr.ordinal`
+2. Groups fields into `TabGroup[]` when Tab widgets are present
+3. First group (before any Tab) gets the post type name as label
+4. Each tab trigger shows a field count badge
+5. Each visible field renders as a **color-coded card** with widget accent border
+6. Hidden widgets render invisibly (no card wrapper)
+7. Fields show: label with required asterisk, Title/Summary/WidgetType badges, widget component, description
 
 ### Tab Widget Behavior
 Tab widgets split the form into tabbed sections. The `PostFormFields` component:
@@ -139,6 +237,40 @@ Stored as JSON string in `shPostTypeAttr.widgetSettings`. Parsed by each widget:
 - File: `{ "file": { "folderId": "..." } }`
 - ContentSelect: `{ "contentSelect": { "folderId": "..." } }`
 - MultiSelect: `{ "multiselect": { "postType": "...", "folderId": "..." } }`
+- Relator: `{ "relator": { "title": "..." } }` (plus nested `shPostTypeAttrs`)
+- Search/Semantic: `{ "search": { "association": "...", "isAdditionalField": 1, ... } }`
+
+**IMPORTANT**: Always use safe parsing for `widgetSettings`. `JSON.parse("null")` returns `null`, not `{}`. Use the `parseSettings()` helper or guard:
+```typescript
+const p = JSON.parse(raw);
+return p && typeof p === "object" ? p : {};
+```
+
+## Post Type Editor (`post-type.edit.page.tsx`)
+
+### Layout
+- Sticky save bar with title and Save/Save & Close/Cancel buttons
+- Card with Tabs: Details (title, description, API name, plural name) | Workflow
+- Fields card with drag-and-drop field list
+
+### Field Editor (AttrFieldList + SortableAttrRow)
+- Uses `@dnd-kit/core` + `@dnd-kit/sortable` for drag-and-drop reordering
+- Each field is a collapsible card with:
+  - Left accent border (widget color), numbered circle badge, expand chevron
+  - Label (bold), identifier (mono), widget type badge, flag badges (Required, T, S)
+  - Icon-only delete button with tooltip
+- Expanded state has inner Tabs: Details | Semantic Navigation
+  - Details: 2-column layout (label + identifier), field type select, horizontal Switch toggles (Required, Title, Description), widget-specific settings in bordered container
+  - Semantic Navigation: search association dropdown, additional search field toggle
+- Empty state shown when no fields exist
+
+### Widget-Specific Settings in Post Type Editor
+Rendered inside `WidgetSpecificSettings` based on widget name:
+- **Check Box / Combo Box**: Choices textarea (monospace, `value: Label` format) + Allow Null switch
+- **File**: Folder ID input
+- **Content Select**: Folder ID input (key: `contentSelect`)
+- **Multi Select**: Post Type dropdown + Folder ID input
+- **Relator**: Relator title + recursive `AttrFieldList` for sub-fields
 
 ## Content Navigation (GitHub-like file browser)
 
@@ -161,6 +293,19 @@ Full page with grid of post types:
 - System types in compact grid (6 columns)
 - Custom types with description (4 columns)
 - Alternative actions: "Or create a new Folder", "Or model a new Post Type"
+
+### Post Edit Page (`post.edit.page.tsx`)
+- Sticky save bar with post title, post type badge, field count badge, publish permission badge
+- Save, Save & Close, Cancel buttons
+- Card with `PostFormFields` rendering color-coded field cards
+- Loading state with animated spinner
+- Navigation: back to parent folder on save/cancel
+
+### Post New Page (`post.new.page.tsx`)
+- Same sticky save bar pattern as edit page
+- Builds empty `ShPostAttr[]` from `ShPostTypeAttr[]` on the selected post type
+- Derives title/summary from attrs with `isTitle`/`isSummary` flags on submit
+- Navigates back to folder after creation
 
 ### Delete Dialog (follows Turing pattern)
 `DialogDelete` component requires typing the item name to confirm deletion.
@@ -188,7 +333,41 @@ Full page with grid of post types:
     shWidget: { name },
     widgetSettings?: string
   },
+  shChildrenPostAttrs?: ShPostAttr[],
   shChildrenRelatorItems?: ShRelatorItem[]
+}
+```
+
+### ShRelatorItem
+```typescript
+{
+  id: string,
+  title?: string,
+  summary?: string,
+  ordinal: number,
+  shChildrenPostAttrs: ShPostAttr[]
+}
+```
+
+### ShPostType
+```typescript
+{
+  id, name, namePlural, title, description,
+  system: number, date, owner,
+  workflowPublishEntity?: string,
+  shPostTypeAttrs?: ShPostTypeAttr[]
+}
+```
+
+### ShPostTypeAttr
+```typescript
+{
+  id, name, label, description,
+  ordinal: number, required: number,
+  isSummary: number, isTitle: number,
+  shWidget: { id, name },
+  widgetSettings: string,
+  shPostTypeAttrs?: ShPostTypeAttr[]  // nested for Relator
 }
 ```
 
@@ -222,6 +401,14 @@ Full page with grid of post types:
 3. Frontend axios interceptor must fetch token before mutating requests
 4. Cookie must not have `Secure` flag in dev (HTTP)
 
+### widgetSettings JSON.parse("null") Crash
+`widgetSettings` may contain the string `"null"` from the backend. `JSON.parse("null")` returns JavaScript `null`, which passes truthy checks but crashes on property access (`null.file`, `null.choices`, etc.). Always guard parsed settings:
+```typescript
+const p = JSON.parse(raw);
+return p && typeof p === "object" ? p : {};
+```
+The `parseSettings()` helper in `post-type.edit.page.tsx` centralizes this pattern.
+
 ### Vite "Outdated Optimize Dep" (504)
 After installing/removing npm packages, clear Vite cache: `rm -rf node_modules/.vite` and restart dev server.
 
@@ -230,12 +417,20 @@ After installing/removing npm packages, clear Vite cache: `rm -rf node_modules/.
 - Check Maven dependency resolution (transitive deps may override explicit versions)
 - `store/file_source/` path must end with `/` in resource handler
 
+### Unused Imports Fail TypeScript Build
+`tsc -b` with strict mode flags unused imports as errors (TS6133). When refactoring (e.g., replacing `Checkbox` with `Switch`), always remove unused imports.
+
 ## Color Theme
 - Primary: Orange/Amber (vs Turing's Blue/Indigo)
 - Gradients: `from-orange-500 to-amber-600`
 - Badges: orange for folders, blue for posts, green for sites
+- Sticky save bar: `bg-orange-50 dark:bg-orange-950/30`
+- Widget types: each has a unique color (see Widget Color System above)
 
 ## i18n
 - Languages: English (en), Portuguese (pt)
 - Namespace files in `src/i18n/locales/{lang}/`
 - Categories: common, content, admin, config, dialog, login, nav, sidebar
+- Key naming: `namespace.camelCaseKey` (e.g., `content.fieldLabel`, `content.noFields`)
+- Interpolation: `{{variable}}` syntax (e.g., `content.modelPostType: "Model your {{title}} Post Type"`)
+- Always add keys to both `en` and `pt` locale files simultaneously

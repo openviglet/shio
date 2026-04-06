@@ -1,13 +1,12 @@
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconFileText } from "@tabler/icons-react"
-import { Loader2, Save } from "lucide-react"
+import { Loader2, Save, ShieldCheck } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -66,16 +65,31 @@ export default function PostEditPage() {
     })
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  const navigateBack = () =>
+    parentFolderId
+      ? navigate(`${ROUTES.CONTENT_ROOT}/object/${parentFolderId}`)
+      : navigate(ROUTES.CONTENT_ROOT)
+
+  async function handleSave() {
     if (!post) return
     setIsLoading(true)
     try {
       await service.update(post)
       toast.success(t("common.saved"))
-      if (parentFolderId) {
-        navigate(`${ROUTES.CONTENT_ROOT}/object/${parentFolderId}`)
-      }
+    } catch {
+      toast.error(t("common.error"))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  async function handleSaveAndClose() {
+    if (!post) return
+    setIsLoading(true)
+    try {
+      await service.update(post)
+      toast.success(t("common.saved"))
+      navigateBack()
     } catch {
       toast.error(t("common.error"))
     } finally {
@@ -87,52 +101,68 @@ export default function PostEditPage() {
     return (
       <>
         <PageHeader title={t("content.editPost")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
-        <div className="p-6">
-          <p className="text-muted-foreground">{t("common.loading")}</p>
+        <div className="p-6 flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>{t("common.loading")}</span>
         </div>
       </>
     )
   }
 
+  const postTypeName = post.shPostType?.title || post.shPostType?.name
+  const fieldCount = post.shPostAttrs?.filter(
+    (a) => a.shPostTypeAttr?.shWidget?.name !== "Hidden"
+  ).length ?? 0
+
   return (
     <>
       <PageHeader title={t("content.editPost")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
-      <div className="p-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>{post.title || t("content.editPost")}</CardTitle>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">{post.shPostType?.title || post.shPostType?.name}</Badge>
-                {allowPublish && (
-                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                    Can Publish
-                  </Badge>
-                )}
-              </div>
+      <div className="p-6 space-y-6">
+        {/* Sticky save bar */}
+        <div className="sticky top-0 z-10 bg-orange-50 dark:bg-orange-950/30 border rounded-lg px-4 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <h3 className="text-lg font-semibold truncate">
+              {post.title || t("content.editPost")}
+            </h3>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Badge variant="outline" className="text-xs">
+                {postTypeName}
+              </Badge>
+              {allowPublish && (
+                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 gap-1">
+                  <ShieldCheck className="h-3 w-3" />
+                  {t("content.publish")}
+                </Badge>
+              )}
+              <Badge variant="secondary" className="text-xs">
+                {fieldCount} {t("content.fields").toLowerCase()}
+              </Badge>
             </div>
-          </CardHeader>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <Button type="button" disabled={isLoading} onClick={handleSave}>
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              {t("common.save")}
+            </Button>
+            <Button type="button" variant="outline" disabled={isLoading} onClick={handleSaveAndClose}>
+              {t("content.saveAndClose")}
+            </Button>
+            <Button type="button" variant="ghost" onClick={navigateBack}>
+              {t("common.cancel")}
+            </Button>
+          </div>
+        </div>
+
+        {/* Form card */}
+        <Card>
+          <CardHeader className="pb-2" />
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <PostFormFields attrs={post.shPostAttrs ?? []} onAttrChange={handleAttrChange} postId={postId} postTypeName={post.shPostType?.title || post.shPostType?.name} />
-              <Separator />
-              <div className="flex gap-2 pt-2">
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                  {t("common.save")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => parentFolderId
-                    ? navigate(`${ROUTES.CONTENT_ROOT}/object/${parentFolderId}`)
-                    : navigate(ROUTES.CONTENT_ROOT)
-                  }
-                >
-                  {t("common.cancel")}
-                </Button>
-              </div>
-            </form>
+            <PostFormFields
+              attrs={post.shPostAttrs ?? []}
+              onAttrChange={handleAttrChange}
+              postId={postId}
+              postTypeName={postTypeName}
+            />
           </CardContent>
         </Card>
       </div>

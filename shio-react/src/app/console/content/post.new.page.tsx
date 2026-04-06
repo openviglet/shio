@@ -1,8 +1,7 @@
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
@@ -66,8 +65,9 @@ export default function PostNewPage() {
     setPostAttrs((prev) => prev.map((attr, i) => (i === index ? updatedAttr : attr)))
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  const navigateBack = () => navigate(`${ROUTES.CONTENT_ROOT}/object/${folderId}`)
+
+  async function handleSave() {
     if (!postType) return
     setIsLoading(true)
     try {
@@ -84,7 +84,7 @@ export default function PostNewPage() {
 
       await postService.create(post)
       toast.success(t("common.saved"))
-      navigate(`${ROUTES.CONTENT_ROOT}/object/${folderId}`)
+      navigateBack()
     } catch {
       toast.error(t("common.error"))
     } finally {
@@ -96,42 +96,58 @@ export default function PostNewPage() {
     return (
       <>
         <PageHeader title={t("content.newPost")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
-        <div className="p-6">
-          <p className="text-muted-foreground">{t("common.loading")}</p>
+        <div className="p-6 flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>{t("common.loading")}</span>
         </div>
       </>
     )
   }
 
+  const postTypeName = postType.title || postType.name
+  const fieldCount = postAttrs.filter(
+    (a) => a.shPostTypeAttr?.shWidget?.name !== "Hidden"
+  ).length
+
   return (
     <>
       <PageHeader title={t("content.newPost")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
-      <div className="p-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>{t("content.newPost")}</CardTitle>
-              <Badge variant="outline">{postType.title || postType.name}</Badge>
+      <div className="p-6 space-y-6">
+        {/* Sticky save bar */}
+        <div className="sticky top-0 z-10 bg-orange-50 dark:bg-orange-950/30 border rounded-lg px-4 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <h3 className="text-lg font-semibold truncate">
+              {t("content.newPost")}
+            </h3>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Badge variant="outline" className="text-xs">
+                {postTypeName}
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                {fieldCount} {t("content.fields").toLowerCase()}
+              </Badge>
             </div>
-          </CardHeader>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <Button type="button" disabled={isLoading} onClick={handleSave}>
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              {t("common.save")}
+            </Button>
+            <Button type="button" variant="ghost" onClick={navigateBack}>
+              {t("common.cancel")}
+            </Button>
+          </div>
+        </div>
+
+        {/* Form card */}
+        <Card>
+          <CardHeader className="pb-2" />
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <PostFormFields attrs={postAttrs} onAttrChange={handleAttrChange} postTypeName={postType?.title || postType?.name} />
-              <Separator />
-              <div className="flex gap-2 pt-2">
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                  {t("common.save")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate(`${ROUTES.CONTENT_ROOT}/object/${folderId}`)}
-                >
-                  {t("common.cancel")}
-                </Button>
-              </div>
-            </form>
+            <PostFormFields
+              attrs={postAttrs}
+              onAttrChange={handleAttrChange}
+              postTypeName={postTypeName}
+            />
           </CardContent>
         </Card>
       </div>
