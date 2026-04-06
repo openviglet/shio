@@ -44,12 +44,12 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
   }
 
   return (
-    <Card className="border-0 shadow-xl shadow-black/5">
-      <CardHeader className="text-center pb-2">
-        <CardTitle className="text-2xl font-bold tracking-tight">{t("login.welcomeBack")}</CardTitle>
-        <CardDescription className="text-muted-foreground">{t("login.signInDescription")}</CardDescription>
+    <Card className="border-0 shadow-none bg-transparent">
+      <CardHeader className="text-center pb-2 px-0">
+        <CardTitle className="text-xl font-bold tracking-tight">{t("login.welcomeBack")}</CardTitle>
+        <CardDescription>{t("login.signInDescription")}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-0">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className={cn("flex flex-col gap-5", className)} {...props}>
             {error && (
@@ -83,7 +83,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
                 </FormItem>
               )} />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full h-11 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold" disabled={isLoading}>
               {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
               {isLoading ? t("login.signingIn") : t("login.signIn")}
             </Button>

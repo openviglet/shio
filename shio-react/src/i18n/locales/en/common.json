@@ -21,5 +21,7 @@
   "common.lastName": "Last Name",
   "common.email": "Email",
   "common.password": "Password",
-  "common.owner": "Owner"
+  "common.owner": "Owner",
+  "common.saved": "Saved successfully",
+  "common.error": "An error occurred"
 }

@@ -13,5 +13,9 @@
   "login.heroTagline": "Headless CMS for modern applications",
   "login.featureCms": "Content Management System",
   "login.featureApi": "REST API for any frontend",
-  "login.featureTemplates": "Server-side rendering with Nashorn"
+  "login.featureTemplates": "Server-side rendering with Nashorn",
+  "login.settingsAnimations": "Animations",
+  "login.settingsExplosion": "Explosion",
+  "login.settingsTokens": "Formulas",
+  "login.settingsLanguage": "Language"
 }

@@ -22,8 +22,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useCurrentUser } from "@/contexts/user.context"
-import { Layers } from "lucide-react"
-import { ModeToggleSidebar } from "@/components/mode-toggle-sidebar"
+import { ShLogo } from "@/components/logo/sh-logo"
+
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation()
@@ -60,7 +60,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={toggleSidebar} className="data-[slot=sidebar-menu-button]:p-1.5!">
-              <Layers className="size-6!" />
+              <ShLogo className="size-6!" />
               {!isCollapsed && (
                 <div className="grid flex-1 text-left leading-tight">
                   <span className="text-sm font-bold tracking-tight">{t("sidebar.brandName")}</span>
@@ -75,7 +75,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain groups={navGroups} />
       </SidebarContent>
       <SidebarFooter>
-        <ModeToggleSidebar />
         <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>

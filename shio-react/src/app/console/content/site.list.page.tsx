@@ -140,7 +140,7 @@ export default function SiteListPage() {
                             <Pencil className="h-3.5 w-3.5" /> Edit
                           </button>
                           <button
-                            onClick={e => { e.stopPropagation(); window.open(`/sites/${site.name}/default/en-us`, "_blank") }}
+                            onClick={e => { e.stopPropagation(); navigate(`${ROUTES.PREVIEW}/${site.id}`) }}
                             className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
                           >
                             <Eye className="h-3.5 w-3.5" /> View Site

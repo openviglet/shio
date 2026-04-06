@@ -297,7 +297,7 @@ export default function ObjectChildrenPage() {
               variant="default"
               size="sm"
               className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => window.open(`/sites/${siteName}/default/en-us`, "_blank")}
+              onClick={() => siteId && navigate(`${ROUTES.PREVIEW}/${siteId}`)}
             >
               <Eye className="mr-2 h-4 w-4" /> View Site
             </Button>
@@ -545,7 +545,7 @@ export default function ObjectChildrenPage() {
                     <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); openFolderDialog("move", [item.id]) }}>
                       <Move className="h-3 w-3" /> Move
                     </button>
-                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); window.open(`/api/v2/object/${item.id}/preview`, "_blank") }}>
+                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); navigate(`${ROUTES.PREVIEW}/${item.id}`) }}>
                       <Eye className="h-3 w-3" /> View Page
                     </button>
                   </div>

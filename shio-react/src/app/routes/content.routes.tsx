@@ -13,6 +13,7 @@ import PostTypeEditPage from "../console/content/post-type.edit.page"
 import PostTypeNewPage from "../console/content/post-type.new.page"
 import PostTypeSelectPage from "../console/content/post-type-select.page"
 import SearchPage from "../console/content/search.page"
+import PreviewPage from "../console/content/preview.page"
 
 export const ContentRoutes = (
   <>
@@ -30,5 +31,6 @@ export const ContentRoutes = (
     <Route path="content/post-type/new" element={<PostTypeNewPage />} />
     <Route path="content/post-type/:postTypeId" element={<PostTypeEditPage />} />
     <Route path="content/search" element={<SearchPage />} />
+    <Route path="preview/:objectId" element={<PreviewPage />} />
   </>
 )

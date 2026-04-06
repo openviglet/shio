@@ -1,0 +1,307 @@
+/* ══════════════════════════════════════════════════════
+   SHIO CMS LOGIN ANIMATED BACKGROUND
+   Based on Turing login — re-themed for Shio (orange/amber)
+   ══════════════════════════════════════════════════════ */
+
+/* ── Ambient Glow Orbs ── */
+.login-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.4;
+}
+.login-orb--1 {
+  top: -15%; right: -8%; width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.2), transparent 70%);
+  animation: login-float-1 8s ease-in-out infinite;
+}
+.login-orb--2 {
+  bottom: -20%; left: -5%; width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.15), transparent 70%);
+  animation: login-float-2 10s ease-in-out infinite;
+}
+.login-orb--3 {
+  top: 40%; left: 50%; width: 350px; height: 350px;
+  background: radial-gradient(circle, rgba(234, 88, 12, 0.12), transparent 70%);
+  animation: login-float-1 12s ease-in-out 2s infinite;
+}
+.dark .login-orb--1 { background: radial-gradient(circle, rgba(251, 146, 60, 0.35), transparent 70%); }
+.dark .login-orb--2 { background: radial-gradient(circle, rgba(252, 211, 77, 0.25), transparent 70%); }
+.dark .login-orb--3 { background: radial-gradient(circle, rgba(253, 186, 116, 0.18), transparent 70%); }
+
+@keyframes login-float-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-30px, 20px) scale(1.05); }
+}
+@keyframes login-float-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(25px, -15px) scale(1.08); }
+}
+
+/* ── Dot Grid ── */
+.login-grid {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(249, 115, 22, 0.07) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.dark .login-grid {
+  background-image: radial-gradient(rgba(253, 186, 116, 0.06) 1px, transparent 1px);
+}
+
+/* ── Floating CMS Terms ── */
+.login-term {
+  position: absolute;
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  font-weight: 700;
+  color: #f97316;
+  white-space: nowrap;
+  user-select: none;
+  will-change: transform;
+}
+.dark .login-term { color: #fb923c; }
+
+/* ── Connection Lines ── */
+.login-bond { position: absolute; will-change: transform; }
+.login-bond-line { stroke: #f97316; opacity: 0.5; }
+.login-bond-node { fill: #f97316; opacity: 0.6; }
+.dark .login-bond-line { stroke: #fb923c; opacity: 0.4; }
+.dark .login-bond-node { fill: #fb923c; opacity: 0.5; }
+
+/* ── 5 Drift Animations ── */
+.login-drift-a { animation: login-drift-a ease-in-out infinite; }
+.login-drift-b { animation: login-drift-b ease-in-out infinite; }
+.login-drift-c { animation: login-drift-c ease-in-out infinite; }
+.login-drift-d { animation: login-drift-d ease-in-out infinite; }
+.login-drift-e { animation: login-drift-e ease-in-out infinite; }
+
+@keyframes login-drift-a {
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+  20%  { transform: translate(80px, -60px) scale(1.15) rotate(5deg); }
+  40%  { transform: translate(-40px, -120px) scale(0.85) rotate(-4deg); }
+  60%  { transform: translate(-100px, -30px) scale(1.1) rotate(3deg); }
+  80%  { transform: translate(50px, 60px) scale(0.9) rotate(-2deg); }
+  100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+}
+@keyframes login-drift-b {
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+  25%  { transform: translate(-90px, 70px) scale(0.88) rotate(-5deg); }
+  50%  { transform: translate(60px, 130px) scale(1.2) rotate(4deg); }
+  75%  { transform: translate(100px, -40px) scale(0.85) rotate(-3deg); }
+  100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+}
+@keyframes login-drift-c {
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+  16%  { transform: translate(70px, 80px) scale(1.12) rotate(4deg); }
+  33%  { transform: translate(-50px, 40px) scale(0.86) rotate(-5deg); }
+  50%  { transform: translate(-110px, -60px) scale(1.18) rotate(2deg); }
+  66%  { transform: translate(30px, -100px) scale(0.9) rotate(-3deg); }
+  83%  { transform: translate(90px, -20px) scale(1.05) rotate(4deg); }
+  100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+}
+@keyframes login-drift-d {
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+  20%  { transform: translate(-70px, -90px) scale(1.1) rotate(-4deg); }
+  40%  { transform: translate(100px, -50px) scale(0.88) rotate(5deg); }
+  60%  { transform: translate(40px, 100px) scale(1.15) rotate(-2deg); }
+  80%  { transform: translate(-80px, 50px) scale(0.92) rotate(3deg); }
+  100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+}
+@keyframes login-drift-e {
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+  15%  { transform: translate(60px, 90px) scale(0.9) rotate(5deg); }
+  35%  { transform: translate(110px, -30px) scale(1.12) rotate(-3deg); }
+  55%  { transform: translate(-30px, -110px) scale(0.87) rotate(4deg); }
+  75%  { transform: translate(-100px, 40px) scale(1.1) rotate(-5deg); }
+  100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+}
+
+/* ── Fade-in-up ── */
+.login-fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: login-fade-up 0.7s ease-out forwards;
+}
+.login-fade-in-d1 {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: login-fade-up 0.7s ease-out 0.15s forwards;
+}
+.login-fade-in-d2 {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: login-fade-up 0.7s ease-out 0.3s forwards;
+}
+.login-fade-in-d3 {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: login-fade-up 0.7s ease-out 0.45s forwards;
+}
+@keyframes login-fade-up {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Glassmorphism card ── */
+.login-glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 8px 32px rgba(249, 115, 22, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.dark .login-glass-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* ── Feature pill ── */
+.login-feature-pill {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(249, 115, 22, 0.12);
+  transition: all 0.3s ease;
+}
+.login-feature-pill:hover {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(249, 115, 22, 0.25);
+  transform: translateX(4px);
+}
+.dark .login-feature-pill {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(251, 146, 60, 0.12);
+}
+.dark .login-feature-pill:hover {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: rgba(251, 146, 60, 0.25);
+}
+
+/* ── Pulse ring around logo ── */
+.login-logo-ring {
+  animation: login-pulse-ring 3s ease-in-out infinite;
+}
+@keyframes login-pulse-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.3); }
+  50%      { box-shadow: 0 0 0 12px rgba(249, 115, 22, 0); }
+}
+.dark .login-logo-ring {
+  animation: login-pulse-ring-dark 3s ease-in-out infinite;
+}
+@keyframes login-pulse-ring-dark {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.3); }
+  50%      { box-shadow: 0 0 0 12px rgba(251, 146, 60, 0); }
+}
+
+/* ══════════════════════════════════════════════════════
+   LIGHTNING FLASHES — Orange/amber palette
+   ══════════════════════════════════════════════════════ */
+.login-lightning {
+  position: absolute; inset: 0; opacity: 0;
+  pointer-events: none; will-change: opacity;
+  mix-blend-mode: multiply;
+}
+.dark .login-lightning { mix-blend-mode: screen; }
+
+.login-lightning--a1 {
+  background: radial-gradient(ellipse 50% 50% at 5% 10%, rgba(249, 115, 22, 0.35), rgba(245, 158, 11, 0.15) 40%, transparent 70%);
+  animation: login-flash-a 11s linear infinite;
+}
+.login-lightning--a2 {
+  background: radial-gradient(ellipse 50% 50% at 95% 85%, rgba(249, 115, 22, 0.3), rgba(234, 88, 12, 0.12) 40%, transparent 70%);
+  animation: login-flash-a 11s linear 0.08s infinite;
+}
+.login-lightning--a3 {
+  background: radial-gradient(ellipse 40% 60% at 3% 55%, rgba(245, 158, 11, 0.3), rgba(249, 115, 22, 0.12) 40%, transparent 70%);
+  animation: login-flash-a 11s linear 0.15s infinite;
+}
+.dark .login-lightning--a1 { background: radial-gradient(ellipse 50% 50% at 5% 10%, rgba(253, 186, 116, 0.9), rgba(251, 146, 60, 0.4) 40%, transparent 70%); }
+.dark .login-lightning--a2 { background: radial-gradient(ellipse 50% 50% at 95% 85%, rgba(252, 211, 77, 0.8), rgba(251, 146, 60, 0.35) 40%, transparent 70%); }
+.dark .login-lightning--a3 { background: radial-gradient(ellipse 40% 60% at 3% 55%, rgba(251, 146, 60, 0.8), rgba(245, 158, 11, 0.35) 40%, transparent 70%); }
+
+@keyframes login-flash-a {
+  0%, 100% { opacity: 0; } 3% { opacity: 0; } 3.2% { opacity: 1; } 3.5% { opacity: 0.15; }
+  3.8% { opacity: 0.95; } 4.3% { opacity: 1; } 5% { opacity: 0.4; } 5.8% { opacity: 0; }
+}
+
+.login-lightning--b1 {
+  background: radial-gradient(ellipse 45% 50% at 88% 8%, rgba(249, 115, 22, 0.35), rgba(234, 88, 12, 0.15) 45%, transparent 75%);
+  animation: login-flash-b 15s linear 4s infinite;
+}
+.login-lightning--b2 {
+  background: radial-gradient(ellipse 55% 45% at 45% 88%, rgba(245, 158, 11, 0.3), rgba(249, 115, 22, 0.12) 40%, transparent 70%);
+  animation: login-flash-b 15s linear 4.1s infinite;
+}
+.dark .login-lightning--b1 { background: radial-gradient(ellipse 45% 50% at 88% 8%, rgba(253, 186, 116, 0.85), rgba(251, 146, 60, 0.4) 45%, transparent 75%); }
+.dark .login-lightning--b2 { background: radial-gradient(ellipse 55% 45% at 45% 88%, rgba(252, 211, 77, 0.8), rgba(251, 146, 60, 0.35) 40%, transparent 70%); }
+
+@keyframes login-flash-b {
+  0%, 100% { opacity: 0; } 2% { opacity: 0; } 2.15% { opacity: 1; } 2.4% { opacity: 0.1; }
+  2.7% { opacity: 1; } 3.2% { opacity: 0.85; } 3.8% { opacity: 0; }
+}
+
+.login-lightning--c1 {
+  background: radial-gradient(ellipse 50% 55% at 8% 92%, rgba(249, 115, 22, 0.4), rgba(234, 88, 12, 0.18) 40%, transparent 70%);
+  animation: login-flash-c 18s linear 9s infinite;
+}
+.login-lightning--c2 {
+  background: radial-gradient(ellipse 55% 40% at 40% 5%, rgba(245, 158, 11, 0.35), rgba(249, 115, 22, 0.15) 40%, transparent 70%);
+  animation: login-flash-c 18s linear 9.06s infinite;
+}
+.login-lightning--c3 {
+  background: radial-gradient(ellipse 40% 60% at 97% 50%, rgba(234, 88, 12, 0.3), rgba(245, 158, 11, 0.12) 40%, transparent 70%);
+  animation: login-flash-c 18s linear 9.12s infinite;
+}
+.dark .login-lightning--c1 { background: radial-gradient(ellipse 50% 55% at 8% 92%, rgba(253, 186, 116, 0.95), rgba(251, 146, 60, 0.45) 40%, transparent 70%); }
+.dark .login-lightning--c2 { background: radial-gradient(ellipse 55% 40% at 40% 5%, rgba(252, 211, 77, 0.85), rgba(251, 146, 60, 0.4) 40%, transparent 70%); }
+.dark .login-lightning--c3 { background: radial-gradient(ellipse 40% 60% at 97% 50%, rgba(251, 146, 60, 0.8), rgba(245, 158, 11, 0.35) 40%, transparent 70%); }
+
+@keyframes login-flash-c {
+  0%, 100% { opacity: 0; } 4% { opacity: 0; } 4.1% { opacity: 1; } 4.25% { opacity: 0.1; }
+  4.4% { opacity: 1; } 4.55% { opacity: 0.05; } 4.7% { opacity: 0.95; } 5.1% { opacity: 1; }
+  5.6% { opacity: 0.5; } 6.2% { opacity: 0; }
+}
+
+/* ── Nuke ── */
+.login-lightning--nuke {
+  position: absolute; top: -150%; left: -150%; width: 400%; height: 400%;
+  background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(249, 115, 22, 0.5), rgba(245, 158, 11, 0.3) 25%, rgba(234, 88, 12, 0.15) 50%, transparent 75%);
+  animation: login-flash-nuke 50s linear 20s infinite;
+  mix-blend-mode: multiply;
+  transform: scale(0.15);
+  will-change: transform, opacity;
+}
+.dark .login-lightning--nuke {
+  background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(254, 243, 199, 1), rgba(253, 186, 116, 0.8) 25%, rgba(251, 146, 60, 0.45) 50%, transparent 75%);
+  mix-blend-mode: screen;
+}
+.login-lightning--flood {
+  position: absolute; inset: 0;
+  background: rgba(249, 115, 22, 0.95);
+  opacity: 0;
+  animation: login-flash-flood 50s linear 20s infinite;
+  will-change: opacity;
+}
+.dark .login-lightning--flood { background: rgba(255, 255, 255, 0.95); }
+
+@keyframes login-flash-nuke {
+  0%, 100% { opacity: 0; transform: scale(0.15); }
+  3% { opacity: 0; transform: scale(0.15); }
+  3.2% { opacity: 0.4; transform: scale(0.2); } 3.4% { opacity: 0.05; transform: scale(0.15); }
+  3.6% { opacity: 0.5; transform: scale(0.25); } 3.9% { opacity: 0.2; transform: scale(0.3); }
+  4.2% { opacity: 1; transform: scale(0.45); } 4.5% { opacity: 0.9; transform: scale(0.6); }
+  4.8% { opacity: 1; transform: scale(0.75); } 5.5% { opacity: 1; transform: scale(0.9); }
+  6.5% { opacity: 1; transform: scale(1.05); } 8% { opacity: 1; transform: scale(1.1); }
+  10% { opacity: 1; transform: scale(1.15); } 13% { opacity: 1; transform: scale(1.2); }
+  16% { opacity: 0.95; transform: scale(1.25); } 20% { opacity: 0.7; transform: scale(1.25); }
+  24% { opacity: 0.4; transform: scale(1.25); } 28% { opacity: 0.15; transform: scale(1.25); }
+  32% { opacity: 0; transform: scale(1.25); }
+}
+@keyframes login-flash-flood {
+  0% { opacity: 0; } 6% { opacity: 0; } 7% { opacity: 0.1; } 8% { opacity: 0.3; }
+  9% { opacity: 0.55; } 10% { opacity: 0.8; } 11% { opacity: 1; } 17% { opacity: 1; }
+  19% { opacity: 0.7; } 21% { opacity: 0.4; } 23% { opacity: 0.15; } 25% { opacity: 0; }
+}

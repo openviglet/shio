@@ -14,6 +14,7 @@ export type ShPost = {
 };
 
 export type ShPostAttr = {
+  "@type"?: string;
   id: string;
   strValue: string;
   arrayValue: string[];
@@ -30,12 +31,25 @@ export type ShPostAttr = {
     isTitle: number;
     shWidget: { name: string };
     widgetSettings?: string;
+    shPostTypeAttrs?: {
+      id: string;
+      name: string;
+      label: string;
+      description: string;
+      ordinal: number;
+      required: number;
+      isSummary: number;
+      isTitle: number;
+      shWidget: { name: string };
+      widgetSettings?: string;
+    }[];
   };
   shChildrenPostAttrs?: ShPostAttr[];
   shChildrenRelatorItems?: ShRelatorItem[];
 };
 
 export type ShRelatorItem = {
+  "@type"?: string;
   id: string;
   title?: string;
   summary?: string;

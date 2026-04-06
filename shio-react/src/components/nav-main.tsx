@@ -26,7 +26,7 @@ export function NavMain({ groups }: { groups: NavGroup[] }) {
               <SidebarMenuItem key={item.url}>
                 <SidebarMenuButton asChild isActive={pathname.startsWith(item.url)} tooltip={item.title}>
                   <NavLink to={item.url}>
-                    <item.icon />
+                    <item.icon className="size-6!" />
                     <span>{item.title}</span>
                   </NavLink>
                 </SidebarMenuButton>
