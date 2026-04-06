@@ -45,6 +45,8 @@ public class ShSecurityConfig {
     private String clientId;
     @Value("${shio.url:'http://localhost:2710'}")
     private String shioUrl;
+    @Value("${server.servlet.session.cookie.name:JSESSIONID}")
+    private String sessionCookieName;
 
     PathPatternRequestMatcher.Builder mvc = PathPatternRequestMatcher.withDefaults();
 
@@ -151,7 +153,7 @@ public class ShSecurityConfig {
                     .addLogoutHandler(shLogoutHandler)
                     .invalidateHttpSession(true)
                     .clearAuthentication(true)
-                    .deleteCookies("JSESSIONID", "XSRF-TOKEN")
+                    .deleteCookies(sessionCookieName, "XSRF-TOKEN")
                     .logoutSuccessUrl("/login"));
         }
         return http.build();

@@ -67,9 +67,8 @@ export function LoginSettingsButton({ settings, onUpdate }: LoginSettingsButtonP
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 border border-border"
+          variant="outline"
+          size="sm"
         >
           <IconRun className="h-[1.2rem] w-[1.2rem]" />
         </Button>
