@@ -6,7 +6,7 @@
     <groupId>com.viglet.shio</groupId>
     <artifactId>shio</artifactId>
     <packaging>pom</packaging>
-    <version>2026.1</version>
+    <version>2026.2.4</version>
     <name>Shio CMS Master</name>
     <description>Viglet Shio CMS</description>
 

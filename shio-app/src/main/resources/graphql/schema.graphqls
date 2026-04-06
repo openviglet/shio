@@ -1,0 +1,5 @@
+# Minimal placeholder schema - the actual schema is built programmatically by ShGraphQLSchema.
+# Spring for GraphQL requires at least one schema resource.
+type Query {
+    _placeholder: String
+}
