@@ -2,7 +2,7 @@
 setlocal
 
 set DS_SRC=d:\Git\viglet\viglet-design-system
-set DS_DEST=d:\Git\viglet\turing\2026.1\turing-react\node_modules\@openviglet\viglet-design-system
+set DS_DEST=d:\git\viglet\shio\shio-react\node_modules\@openviglet\viglet-design-system
 
 echo Building viglet-design-system...
 pushd "%DS_SRC%"
@@ -14,7 +14,7 @@ if errorlevel 1 (
 )
 popd
 
-echo Copying to turing-react node_modules...
+echo Copying to shio-react node_modules...
 if exist "%DS_DEST%" rmdir /s /q "%DS_DEST%"
 mkdir "%DS_DEST%"
 
