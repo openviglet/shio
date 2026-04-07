@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { ShSiteService } from "@/services/site/site.service"
 import type { ShSite } from "@/models/site/site"
-import { toast } from "sonner"
+import { toast } from "@openviglet/viglet-design-system"
 
 const service = new ShSiteService()
 

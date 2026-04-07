@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import type { ShPostType } from "@/models/post-type/post-type"
-import { toast } from "sonner"
+import { toast } from "@openviglet/viglet-design-system"
 
 const service = new ShPostTypeService()
 

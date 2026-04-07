@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { ShUserService } from "@/services/auth/user.service"
 import type { ShUser } from "@/models/auth/user"
-import { toast } from "sonner"
+import { toast } from "@openviglet/viglet-design-system"
 
 const service = new ShUserService()
 

@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { ShGroupService, type ShGroup } from "@/services/auth/group.service"
-import { toast } from "sonner"
+import { toast } from "@openviglet/viglet-design-system"
 
 const service = new ShGroupService()
 

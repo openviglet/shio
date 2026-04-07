@@ -14,7 +14,7 @@ import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { formatDistanceToNow } from "date-fns"
-import { toast } from "sonner"
+import { toast } from "@openviglet/viglet-design-system"
 
 const siteService = new ShSiteService()
 

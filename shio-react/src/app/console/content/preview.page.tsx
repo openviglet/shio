@@ -22,7 +22,7 @@ import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import axios from "axios"
-import { toast } from "sonner"
+import { toast } from "@openviglet/viglet-design-system"
 
 interface ObjectInfo {
   shSite?: { id: string; name: string }
