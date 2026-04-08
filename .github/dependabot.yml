@@ -9,7 +9,7 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
-    target-branch: "2026.1"
+    target-branch: "2026.2"
     open-pull-requests-limit: 15
     ignore:
       - dependency-name: "org.webjars.bower:*"
@@ -22,10 +22,10 @@ updates:
           - "*"
 
   - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/shio-ui" # Location of package manifests
+    directory: "/shio-react" # Location of package manifests
     schedule:
       interval: "weekly"
-    target-branch: "2026.1"
+    target-branch: "2026.2"
     open-pull-requests-limit: 15
     ignore:
       - dependency-name: "typescript"
