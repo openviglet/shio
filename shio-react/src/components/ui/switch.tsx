@@ -1,1 +1,1 @@
-export { Switch } from "@openviglet/viglet-design-system";
+export { Switch } from "@viglet/viglet-design-system";

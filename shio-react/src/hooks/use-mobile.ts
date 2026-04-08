@@ -1,1 +1,1 @@
-export { useIsMobile } from "@openviglet/viglet-design-system";
+export { useIsMobile } from "@viglet/viglet-design-system";

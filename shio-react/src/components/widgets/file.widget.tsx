@@ -3,7 +3,7 @@ import { ChevronRight, FileText, Folder, Loader2, Search, Upload, X } from "luci
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import axios from "axios"
-import { toast } from "@openviglet/viglet-design-system"
+import { toast } from "@viglet/viglet-design-system"
 import type { WidgetProps } from "./index"
 import { ContentBrowserDialog, type ContentBrowserSelection } from "./content-browser-dialog"
 

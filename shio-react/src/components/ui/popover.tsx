@@ -1,1 +1,1 @@
-export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@openviglet/viglet-design-system";
+export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@viglet/viglet-design-system";

@@ -33,7 +33,7 @@ import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShWidgetService } from "@/services/widget/widget.service"
 import type { ShPostType, ShPostTypeAttr } from "@/models/post-type/post-type"
 import type { ShWidget } from "@/models/widget/widget"
-import { toast } from "@openviglet/viglet-design-system"
+import { toast } from "@viglet/viglet-design-system"
 import {
   DndContext,
   closestCenter,

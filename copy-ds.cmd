@@ -2,7 +2,7 @@
 setlocal
 
 set DS_SRC=d:\Git\viglet\viglet-design-system
-set DS_DEST=d:\git\viglet\shio\shio-react\node_modules\@openviglet\viglet-design-system
+set DS_DEST=d:\git\viglet\shio\shio-react\node_modules\@viglet\viglet-design-system
 
 echo Building viglet-design-system...
 pushd "%DS_SRC%"

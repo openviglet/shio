@@ -22,7 +22,7 @@ import type { ShPostType } from "@/models/post-type/post-type"
 import type { ShFolder } from "@/models/folder/folder"
 import type { ShPost } from "@/models/post/post"
 import axios from "axios"
-import { toast } from "@openviglet/viglet-design-system"
+import { toast } from "@viglet/viglet-design-system"
 
 const postTypeService = new ShPostTypeService()
 

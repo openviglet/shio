@@ -1,1 +1,1 @@
-export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@openviglet/viglet-design-system";
+export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@viglet/viglet-design-system";

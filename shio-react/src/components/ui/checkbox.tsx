@@ -1,1 +1,1 @@
-export { Checkbox } from "@openviglet/viglet-design-system";
+export { Checkbox } from "@viglet/viglet-design-system";

@@ -1,1 +1,1 @@
-export { Input } from "@openviglet/viglet-design-system";
+export { Input } from "@viglet/viglet-design-system";

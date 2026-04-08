@@ -1,1 +1,1 @@
-export { ModeToggle, ModeToggleSidebar } from "@openviglet/viglet-design-system";
+export { ModeToggle, ModeToggleSidebar } from "@viglet/viglet-design-system";

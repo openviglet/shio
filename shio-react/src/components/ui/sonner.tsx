@@ -1,1 +1,1 @@
-export { toast, Toaster } from "@openviglet/viglet-design-system";
+export { toast, Toaster } from "@viglet/viglet-design-system";

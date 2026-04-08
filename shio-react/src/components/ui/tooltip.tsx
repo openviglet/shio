@@ -1,1 +1,1 @@
-export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@openviglet/viglet-design-system";
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@viglet/viglet-design-system";

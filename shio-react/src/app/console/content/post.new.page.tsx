@@ -14,7 +14,7 @@ import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShPostService } from "@/services/post/post.service"
 import type { ShPostType } from "@/models/post-type/post-type"
 import type { ShPost, ShPostAttr } from "@/models/post/post"
-import { toast } from "@openviglet/viglet-design-system"
+import { toast } from "@viglet/viglet-design-system"
 
 const postTypeService = new ShPostTypeService()
 const postService = new ShPostService()

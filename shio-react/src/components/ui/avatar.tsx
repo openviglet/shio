@@ -1,1 +1,1 @@
-export { Avatar, AvatarFallback, AvatarImage } from "@openviglet/viglet-design-system";
+export { Avatar, AvatarFallback, AvatarImage } from "@viglet/viglet-design-system";

@@ -1,1 +1,1 @@
-export { Button, buttonVariants } from "@openviglet/viglet-design-system";
+export { Button, buttonVariants } from "@viglet/viglet-design-system";

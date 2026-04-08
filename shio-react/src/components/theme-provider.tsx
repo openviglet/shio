@@ -1,1 +1,1 @@
-export { ThemeProvider, useTheme } from "@openviglet/viglet-design-system";
+export { ThemeProvider, useTheme } from "@viglet/viglet-design-system";

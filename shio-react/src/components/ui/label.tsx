@@ -1,1 +1,1 @@
-export { Label } from "@openviglet/viglet-design-system";
+export { Label } from "@viglet/viglet-design-system";

@@ -1,1 +1,1 @@
-export { Separator } from "@openviglet/viglet-design-system";
+export { Separator } from "@viglet/viglet-design-system";

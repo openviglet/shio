@@ -1,1 +1,1 @@
-export { Skeleton } from "@openviglet/viglet-design-system";
+export { Skeleton } from "@viglet/viglet-design-system";

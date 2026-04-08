@@ -1,1 +1,1 @@
-export { GradientButton, gradientButtonVariants } from "@openviglet/viglet-design-system";
+export { GradientButton, gradientButtonVariants } from "@viglet/viglet-design-system";

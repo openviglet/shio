@@ -1,1 +1,1 @@
-export { cn, truncateMiddle } from "@openviglet/viglet-design-system";
+export { cn, truncateMiddle } from "@viglet/viglet-design-system";

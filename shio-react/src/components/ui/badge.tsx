@@ -1,1 +1,1 @@
-export { Badge, badgeVariants } from "@openviglet/viglet-design-system";
+export { Badge, badgeVariants } from "@viglet/viglet-design-system";
