@@ -6,6 +6,8 @@ import AdminGroupsListPage from "../console/admin/admin.groups.list.page"
 import AdminGroupPage from "../console/admin/admin.group.page"
 import AdminRolesListPage from "../console/admin/admin.roles.list.page"
 import AdminRolePage from "../console/admin/admin.role.page"
+import ApiTokenListPage from "../console/admin/api-token/api-token.list.page"
+import ApiTokenPage from "../console/admin/api-token/api-token.page"
 import { ROUTES } from "../routes.const"
 
 export const AdminRoutes = (
@@ -17,5 +19,7 @@ export const AdminRoutes = (
     <Route path="groups/:groupId" element={<AdminGroupPage />} />
     <Route path="roles" element={<AdminRolesListPage />} />
     <Route path="roles/:roleId" element={<AdminRolePage />} />
+    <Route path="tokens" element={<ApiTokenListPage />} />
+    <Route path="tokens/:tokenId" element={<ApiTokenPage />} />
   </Route>
 )

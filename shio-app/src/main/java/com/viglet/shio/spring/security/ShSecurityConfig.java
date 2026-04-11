@@ -23,6 +23,7 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 import com.viglet.shio.property.ShAppProperties;
+import com.viglet.shio.spring.security.auth.ShApiTokenFilter;
 import com.viglet.shio.spring.security.auth.ShLogoutHandler;
 
 /**
@@ -58,6 +59,7 @@ public class ShSecurityConfig {
     @SuppressWarnings("java:S4502")
     SecurityFilterChain filterChain(HttpSecurity http,
             ShLogoutHandler shLogoutHandler,
+            ShApiTokenFilter shApiTokenFilter,
             ShAppProperties shAppProperties,
             ShAuthenticationEntryPoint shAuthenticationEntryPoint,
             ShOAuth2UserService shOAuth2UserService,
@@ -84,6 +86,7 @@ public class ShSecurityConfig {
                         mvc.matcher(LOGOUT_PATH),
                         mvc.matcher(LOGIN_PATH)))
                 .addFilterAfter(new ShCsrfHeaderFilter(), BasicAuthenticationFilter.class);
+        http.addFilterBefore(shApiTokenFilter, BasicAuthenticationFilter.class);
 
         if (shAppProperties.isKeycloak()) {
             String keycloakUrlFormat = String.format(

@@ -1,0 +1,22 @@
+{
+  "apiToken": {
+    "title": "Tokens de API",
+    "description": "Gerencie tokens CDA (Content Delivery API) para acesso somente leitura ao conteúdo publicado.",
+    "blankTitle": "Nenhum token de API",
+    "blankDescription": "Crie um token CDA para permitir que aplicações externas busquem conteúdo publicado.",
+    "newInstance": "Novo Token de API",
+    "general": "Geral",
+    "generalDesc": "Informações básicas sobre o token de API.",
+    "titlePlaceholder": "ex: Frontend do Site",
+    "descriptionPlaceholder": "ex: Usado pelo frontend para buscar conteúdo publicado.",
+    "tokenLabel": "Token",
+    "tokenDesc": "O valor do token CDA gerado. Use no header Key nas requisições da API.",
+    "tokenHint": "Exemplo: curl -H 'Key: {{token}}' http://localhost:2710/api/v2/site",
+    "enabledHint": "Desabilite para revogar temporariamente o acesso sem excluir o token.",
+    "titleRequired": "O título é obrigatório.",
+    "created": "Token de API criado. Copie o valor do token abaixo.",
+    "updated": "Token de API atualizado.",
+    "copied": "Token copiado para a área de transferência.",
+    "copyFailed": "Falha ao copiar o token."
+  }
+}

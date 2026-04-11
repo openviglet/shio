@@ -6,6 +6,7 @@ import {
   IconSettings,
   IconBrandGraphql,
   IconLayersIntersect,
+  IconKey,
 } from "@tabler/icons-react"
 import * as React from "react"
 import { useTranslation } from "react-i18next"
@@ -50,6 +51,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       label: t("sidebar.administration"),
       items: [
         { title: t("admin.title"), url: ROUTES.ADMIN_ROOT, icon: IconShieldCog },
+        { title: t("apiToken.title"), url: ROUTES.ADMIN_TOKENS, icon: IconKey },
         { title: t("config.title"), url: ROUTES.CONFIG_ROOT, icon: IconSettings },
         { title: t("graphql.title"), url: ROUTES.GRAPHQL_ROOT, icon: IconBrandGraphql },
       ],
