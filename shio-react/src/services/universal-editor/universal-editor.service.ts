@@ -63,4 +63,15 @@ export class ShUniversalEditorService {
     const response = await axios.patch(`/v2/universal-editor/post/${postId}`, updates);
     return response.data;
   }
+
+  async ensurePost(postId: string, model: string, fields: { prop: string; type: string; value: string; label: string }[], siteName?: string, folderPath?: string): Promise<ShEditorPostData> {
+    const response = await axios.post<ShEditorPostData>(`/v2/universal-editor/post/ensure`, {
+      id: postId,
+      model,
+      fields,
+      siteName,
+      folderPath,
+    });
+    return response.data;
+  }
 }

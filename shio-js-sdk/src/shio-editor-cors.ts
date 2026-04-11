@@ -17,6 +17,8 @@ interface EditorState {
   activeEditor: ActiveEditor | null;
   changedContent: Record<string, ContentChange>;
   connectionUrl: string | null;
+  siteName: string | null;
+  folderPath: string | null;
 }
 
 interface ActiveEditor {
@@ -34,6 +36,14 @@ interface ElementInfo {
   prop: string | null;
   label: string;
   model: string;
+  selector: string;
+}
+
+interface DomFieldInfo {
+  prop: string;
+  type: string;
+  label: string;
+  value: string;
   selector: string;
 }
 
@@ -61,6 +71,8 @@ const state: EditorState = {
   activeEditor: null,
   changedContent: {},
   connectionUrl: null,
+  siteName: null,
+  folderPath: null,
 };
 
 // ── Connection ────────────────────────────────────────────────────────────
@@ -72,8 +84,13 @@ function readConnectionMeta(): string | null {
   if (!meta) return null;
   const content = meta.getAttribute("content");
   if (!content) return null;
-  // Parse "shio:http://localhost:2710" → "http://localhost:2710"
   return content.replace(/^shio:/, "");
+}
+
+function readMeta(name: string): string | null {
+  const meta = document.querySelector(`meta[name="${name}"]`);
+  if (!meta) return null;
+  return meta.getAttribute("content") || null;
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────
@@ -99,11 +116,14 @@ function getElementInfo(el: HTMLElement): ElementInfo {
   const type = el.getAttribute("data-sh-type") || "text";
   const prop = el.getAttribute("data-sh-prop");
   const label = el.getAttribute("data-sh-label") || prop || "";
-  const model = el.getAttribute("data-sh-model") || "";
+  let model = el.getAttribute("data-sh-model") || "";
 
-  if (!resource) {
+  if (!resource || !model) {
     const parent = findEditableParent(el);
-    if (parent) resource = parent.getAttribute("data-sh-resource");
+    if (parent) {
+      if (!resource) resource = parent.getAttribute("data-sh-resource");
+      if (!model) model = parent.getAttribute("data-sh-model") || "";
+    }
   }
 
   return {
@@ -140,6 +160,32 @@ function buildSelector(el: HTMLElement): string {
     current = current.parentElement;
   }
   return path.join(" > ");
+}
+
+// ── Component Field Collection ────────────────────────────────────────────
+
+function getComponentFields(el: HTMLElement): DomFieldInfo[] {
+  const fields: DomFieldInfo[] = [];
+  el.querySelectorAll("[data-sh-prop]").forEach((child) => {
+    const htmlChild = child as HTMLElement;
+    const type = htmlChild.getAttribute("data-sh-type") || "text";
+    let value: string;
+    if (type === "media" && htmlChild.tagName === "IMG") {
+      value = (htmlChild as HTMLImageElement).src;
+    } else if (type === "richtext") {
+      value = htmlChild.innerHTML;
+    } else {
+      value = htmlChild.textContent || "";
+    }
+    fields.push({
+      prop: htmlChild.getAttribute("data-sh-prop") || "",
+      type,
+      label: htmlChild.getAttribute("data-sh-label") || htmlChild.getAttribute("data-sh-prop") || "",
+      value,
+      selector: buildSelector(htmlChild),
+    });
+  });
+  return fields;
 }
 
 // ── Communication with Parent (Editor Shell) ──────────────────────────────
@@ -214,7 +260,19 @@ function handleClick(e: MouseEvent): void {
   selectElement(editable);
 
   const info = getElementInfo(editable);
-  sendToParent("sh:element-selected", info as unknown as Record<string, unknown>);
+
+  // Collect all fields from the resource root element
+  const resourceRoot = editable.hasAttribute("data-sh-resource")
+    ? editable
+    : findEditableParent(editable);
+  const fields = resourceRoot ? getComponentFields(resourceRoot) : [];
+
+  sendToParent("sh:element-selected", {
+    ...info,
+    fields,
+    siteName: state.siteName,
+    folderPath: state.folderPath,
+  } as unknown as Record<string, unknown>);
 
   if (info.type === "text" || info.type === "richtext") {
     startInlineEdit(editable, info);
@@ -578,6 +636,8 @@ function init(): void {
 
   // Read connection metadata
   state.connectionUrl = readConnectionMeta();
+  state.siteName = readMeta("urn:shio:system:site");
+  state.folderPath = readMeta("urn:shio:system:path");
 
   injectStyles();
 
@@ -593,6 +653,8 @@ function init(): void {
     title: document.title,
     editableCount: document.querySelectorAll("[data-sh-resource]").length,
     connectionUrl: state.connectionUrl,
+    siteName: state.siteName,
+    folderPath: state.folderPath,
   });
 }
 

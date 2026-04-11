@@ -79,6 +79,7 @@ public class ShSecurityConfig {
                 .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
                 .ignoringRequestMatchers(
                         mvc.matcher("/graphql"),
+                        mvc.matcher("/api/v2/universal-editor/**"),
                         mvc.matcher(ERROR_PATH),
                         mvc.matcher(LOGOUT_PATH),
                         mvc.matcher(LOGIN_PATH)))

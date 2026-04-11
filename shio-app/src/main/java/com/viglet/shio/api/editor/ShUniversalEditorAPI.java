@@ -25,13 +25,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.ShPost;
 import com.viglet.shio.persistence.model.post.ShPostAttr;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
+import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostAttrRepository;
 import com.viglet.shio.persistence.repository.post.ShPostRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
+import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.persistence.model.widget.ShWidget;
+import com.viglet.shio.persistence.repository.widget.ShWidgetRepository;
 import com.viglet.shio.utils.ShObjectUtils;
 import com.viglet.shio.utils.ShPostUtils;
 import com.viglet.shio.website.cache.component.ShCacheObject;
@@ -55,6 +61,9 @@ public class ShUniversalEditorAPI {
     private final ShPostRepository shPostRepository;
     private final ShPostAttrRepository shPostAttrRepository;
     private final ShPostTypeRepository shPostTypeRepository;
+    private final ShFolderRepository shFolderRepository;
+    private final ShSiteRepository shSiteRepository;
+    private final ShWidgetRepository shWidgetRepository;
     private final ShPostUtils shPostUtils;
     private final ShObjectUtils shObjectUtils;
     private final ShCacheObject shCacheObject;
@@ -62,12 +71,18 @@ public class ShUniversalEditorAPI {
     public ShUniversalEditorAPI(ShPostRepository shPostRepository,
                                 ShPostAttrRepository shPostAttrRepository,
                                 ShPostTypeRepository shPostTypeRepository,
+                                ShFolderRepository shFolderRepository,
+                                ShSiteRepository shSiteRepository,
+                                ShWidgetRepository shWidgetRepository,
                                 ShPostUtils shPostUtils,
                                 ShObjectUtils shObjectUtils,
                                 ShCacheObject shCacheObject) {
         this.shPostRepository = shPostRepository;
         this.shPostAttrRepository = shPostAttrRepository;
         this.shPostTypeRepository = shPostTypeRepository;
+        this.shFolderRepository = shFolderRepository;
+        this.shSiteRepository = shSiteRepository;
+        this.shWidgetRepository = shWidgetRepository;
         this.shPostUtils = shPostUtils;
         this.shObjectUtils = shObjectUtils;
         this.shCacheObject = shCacheObject;
@@ -164,13 +179,17 @@ public class ShUniversalEditorAPI {
             @RequestBody List<Map<String, Object>> updates,
             Principal principal) {
 
-        if (!shObjectUtils.canAccess(principal, postId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
         Optional<ShPost> shPostOpt = shPostRepository.findById(postId);
         if (shPostOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
+            log.warn("PATCH post {} — not found. Call ensurePost first.", postId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Post not found. It must be created via /post/ensure first."));
+        }
+
+        if (!shObjectUtils.canAccess(principal, postId)) {
+            log.warn("PATCH post {} — access denied for {}", postId,
+                    principal != null ? principal.getName() : "anonymous");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         ShPost shPost = shPostUtils.loadLazyPost(postId, false);
@@ -311,6 +330,265 @@ public class ShUniversalEditorAPI {
         result.put("attrs", attrValues);
 
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Ensure a post exists. If the post already exists, returns its data.
+     * If not, auto-creates it using the provided model name and DOM field values.
+     * Requires the post type to exist in the system.
+     */
+    @Transactional
+    @PostMapping("/post/ensure")
+    @SuppressWarnings("unchecked")
+    public ResponseEntity<Map<String, Object>> ensurePost(
+            @RequestBody Map<String, Object> body,
+            Principal principal) {
+
+        String postId = (String) body.get("id");
+        String modelName = (String) body.get("model");
+        String siteName = (String) body.get("siteName");
+        String folderPath = (String) body.get("folderPath");
+        List<Map<String, Object>> fields = (List<Map<String, Object>>) body.getOrDefault("fields", List.of());
+
+        if (postId == null || modelName == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "id and model are required"));
+        }
+
+        // If post already exists, fix permissions if needed and return it
+        Optional<ShPost> existingPost = shPostRepository.findById(postId);
+        if (existingPost.isPresent()) {
+            ShPost ep = existingPost.get();
+            boolean needsUpdate = false;
+            if ((ep.getShGroups() == null || ep.getShGroups().isEmpty())
+                    && (ep.getShUsers() == null || ep.getShUsers().isEmpty())) {
+                ep.setShGroups(null);
+                ep.setShUsers(null);
+                needsUpdate = true;
+            }
+            if (needsUpdate) {
+                shPostRepository.saveAndFlush(ep);
+            }
+            return getPostData(postId, principal);
+        }
+
+        // Find or create post type
+        ShPostType postType = shPostTypeRepository.findByName(modelName);
+        if (postType == null) {
+            postType = createPostTypeFromFields(modelName, fields);
+            log.info("Auto-created post type '{}' with {} fields from Universal Editor",
+                    modelName, fields.size());
+        }
+
+        // Resolve or create site > folder hierarchy
+        ShFolder folder = resolveOrCreateFolder(siteName, folderPath);
+        if (folder == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "No site/folder available to create post"));
+        }
+
+        // Build field values map from DOM data
+        Map<String, String> fieldValues = new HashMap<>();
+        for (Map<String, Object> field : fields) {
+            String prop = (String) field.get("prop");
+            String value = (String) field.get("value");
+            if (prop != null) {
+                fieldValues.put(prop, value);
+            }
+        }
+
+        // Create the post with permissions copied from folder
+        ShPost post = new ShPost();
+        post.setId(postId);
+        post.setShPostType(postType);
+        post.setShFolder(folder);
+        post.setDate(java.time.Instant.now());
+        post.setOwner(principal != null ? principal.getName() : "system");
+        post.setFurl(postId);
+        post.setPublished(false);
+        // Copy permissions from folder; set null if empty so access check passes
+        if (folder.getShGroups() != null && !folder.getShGroups().isEmpty()) {
+            post.setShGroups(new HashSet<>(folder.getShGroups()));
+        } else {
+            post.setShGroups(null);
+        }
+        if (folder.getShUsers() != null && !folder.getShUsers().isEmpty()) {
+            post.setShUsers(new HashSet<>(folder.getShUsers()));
+        } else {
+            post.setShUsers(null);
+        }
+
+        // Derive title from fields
+        String title = modelName;
+        if (postType.getShPostTypeAttrs() != null) {
+            for (ShPostTypeAttr pta : postType.getShPostTypeAttrs()) {
+                if (pta.getIsTitle() == 1 && fieldValues.containsKey(pta.getName())) {
+                    title = fieldValues.get(pta.getName());
+                    break;
+                }
+            }
+        }
+        post.setTitle(title);
+
+        shPostRepository.saveAndFlush(post);
+
+        // Create post attributes
+        if (postType.getShPostTypeAttrs() != null) {
+            for (ShPostTypeAttr pta : postType.getShPostTypeAttrs()) {
+                ShPostAttr attr = new ShPostAttr();
+                attr.setShPost(post);
+                attr.setShPostTypeAttr(pta);
+                String value = fieldValues.getOrDefault(pta.getName(), "");
+                attr.setStrValue(value);
+                shPostAttrRepository.saveAndFlush(attr);
+
+                if (pta.getIsSummary() == 1) {
+                    post.setSummary(value);
+                }
+            }
+        }
+
+        shPostRepository.saveAndFlush(post);
+
+        log.info("Auto-created post {} ({}) from Universal Editor", postId, modelName);
+
+        return getPostData(postId, principal);
+    }
+
+    /**
+     * Resolves the folder hierarchy from site name and path, creating any missing
+     * pieces (site, root folder, sub-folders).
+     * Path format: "Home/Articles" → root folder "Home" → child folder "Articles"
+     */
+    private ShFolder resolveOrCreateFolder(String siteName, String folderPath) {
+        // Find or create site
+        ShSite site = findOrCreateSite(siteName);
+        if (site == null) return null;
+
+        // Find or create root folder
+        Set<ShFolder> rootFolders = shFolderRepository.findByShSiteAndRootFolder(site, (byte) 1);
+        ShFolder rootFolder;
+
+        if (folderPath == null || folderPath.isBlank()) {
+            // No path — use existing root or create one
+            if (!rootFolders.isEmpty()) return rootFolders.iterator().next();
+            rootFolder = createFolder("Home", site, null, true);
+            return rootFolder;
+        }
+
+        String[] segments = folderPath.split("/");
+
+        // First segment is the root folder
+        rootFolder = rootFolders.stream()
+                .filter(f -> segments[0].equals(f.getName()))
+                .findFirst()
+                .orElse(null);
+
+        if (rootFolder == null) {
+            rootFolder = createFolder(segments[0], site, null, true);
+        }
+
+        // Walk remaining segments, creating sub-folders as needed
+        ShFolder current = rootFolder;
+        for (int i = 1; i < segments.length; i++) {
+            String seg = segments[i];
+            ShFolder child = shFolderRepository.findByParentFolderAndName(current, seg);
+            if (child == null) {
+                child = createFolder(seg, null, current, false);
+            }
+            current = child;
+        }
+
+        return current;
+    }
+
+    private ShSite findOrCreateSite(String siteName) {
+        if (siteName != null && !siteName.isBlank()) {
+            ShSite existing = shSiteRepository.findByName(siteName);
+            if (existing != null) return existing;
+
+            // Create new site
+            ShSite site = new ShSite();
+            site.setName(siteName);
+            site.setFurl(siteName.toLowerCase().replace(" ", "_"));
+            site.setDate(java.time.Instant.now());
+            site.setShGroups(null);
+            site.setShUsers(null);
+            shSiteRepository.saveAndFlush(site);
+            log.info("Auto-created site '{}' from Universal Editor", siteName);
+            return site;
+        }
+
+        // No site name — use first existing site
+        List<ShSite> sites = shSiteRepository.findAll();
+        return sites.isEmpty() ? null : sites.getFirst();
+    }
+
+    private ShFolder createFolder(String name, ShSite site, ShFolder parent, boolean isRoot) {
+        ShFolder folder = new ShFolder();
+        folder.setName(name);
+        folder.setFurl(name.toLowerCase().replace(" ", "-"));
+        folder.setDate(java.time.Instant.now());
+        folder.setShGroups(null);
+        folder.setShUsers(null);
+        if (isRoot) {
+            folder.setShSite(site);
+            folder.setRootFolder((byte) 1);
+        } else {
+            folder.setParentFolder(parent);
+            folder.setRootFolder((byte) 0);
+        }
+        shFolderRepository.saveAndFlush(folder);
+        log.info("Auto-created folder '{}' (root={}) from Universal Editor", name, isRoot);
+        return folder;
+    }
+
+    /**
+     * Creates a new ShPostType from DOM field definitions.
+     * Maps field types (text, richtext, media) to Shio widgets.
+     */
+    private ShPostType createPostTypeFromFields(String modelName, List<Map<String, Object>> fields) {
+        ShPostType postType = new ShPostType();
+        postType.setName(modelName);
+        postType.setTitle(modelName);
+        postType.setDate(java.time.Instant.now());
+        postType.setOwner("system");
+        postType.setSystem((byte) 0);
+        shPostTypeRepository.saveAndFlush(postType);
+
+        int ordinal = 0;
+        for (Map<String, Object> field : fields) {
+            String prop = (String) field.get("prop");
+            String type = (String) field.getOrDefault("type", "text");
+            String label = (String) field.getOrDefault("label", prop);
+
+            ShPostTypeAttr attr = new ShPostTypeAttr();
+            attr.setName(prop);
+            attr.setLabel(label != null ? label : prop);
+            attr.setOrdinal(ordinal++);
+            attr.setRequired(0);
+            attr.setIsTitle(ordinal == 1 ? 1 : 0); // first field is title
+            attr.setIsSummary(0);
+            attr.setShPostType(postType);
+
+            // Map DOM type to Shio widget
+            String widgetName = switch (type) {
+                case "richtext" -> "HTML Editor";
+                case "media" -> "File";
+                case "textarea" -> "Text Area";
+                default -> "Text";
+            };
+            ShWidget widget = shWidgetRepository.findByName(widgetName);
+            if (widget == null) {
+                widget = shWidgetRepository.findByName("Text");
+            }
+            attr.setShWidget(widget);
+
+            postType.getShPostTypeAttrs().add(attr);
+        }
+
+        shPostTypeRepository.saveAndFlush(postType);
+        return postType;
     }
 
     private String mapWidgetToEditorComponent(String widgetName) {

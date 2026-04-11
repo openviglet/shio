@@ -36,6 +36,14 @@ interface ContentChange {
   label: string
 }
 
+interface DomField {
+  prop: string
+  type: string
+  label: string
+  value: string
+  selector: string
+}
+
 interface SelectedElement {
   resource: string
   postId: string
@@ -44,6 +52,7 @@ interface SelectedElement {
   label: string
   model: string
   selector: string
+  fields?: DomField[]
 }
 
 const editorService = new ShUniversalEditorService()
@@ -62,6 +71,9 @@ export default function VisualEditorPage() {
   const [showPanel, setShowPanel] = useState(true)
   const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null)
   const [postData, setPostData] = useState<ShEditorPostData | null>(null)
+  const [domFields, setDomFields] = useState<DomField[]>([])
+  const [pageMeta, setPageMeta] = useState<{ siteName?: string; folderPath?: string }>({})
+  const postMetaRef = useRef<Map<string, { model: string; fields: DomField[] }>>(new Map())
   const [pendingChanges, setPendingChanges] = useState<Map<string, ContentChange>>(new Map())
   const [saving, setSaving] = useState(false)
   const [pageTitle, setPageTitle] = useState("")
@@ -88,6 +100,7 @@ export default function VisualEditorPage() {
         case "sh:ready":
           setIframeReady(true)
           setPageTitle(data?.title || "")
+          setPageMeta({ siteName: data?.siteName, folderPath: data?.folderPath })
           if (mode === "edit") {
             sendToIframe("sh:mode-change", { mode: "edit" })
           }
@@ -98,8 +111,24 @@ export default function VisualEditorPage() {
 
         case "sh:element-selected":
           setSelectedElement(data)
+          setDomFields(data?.fields || [])
+          // Store model + fields per postId for later use in save
+          if (data?.postId && data?.model && data?.fields?.length > 0) {
+            postMetaRef.current.set(data.postId, { model: data.model, fields: data.fields })
+          }
           if (data?.postId) {
-            editorService.getPostData(data.postId).then(setPostData).catch(() => setPostData(null))
+            editorService.getPostData(data.postId)
+              .then(setPostData)
+              .catch(() => {
+                // Post doesn't exist yet — auto-create from DOM data
+                if (data.model && data.fields?.length > 0) {
+                  editorService.ensurePost(data.postId, data.model, data.fields, data.siteName, data.folderPath)
+                    .then(setPostData)
+                    .catch(() => setPostData(null))
+                } else {
+                  setPostData(null)
+                }
+              })
           }
           break
 
@@ -151,6 +180,18 @@ export default function VisualEditorPage() {
       }
 
       for (const [postId, changes] of byPost) {
+        // Ensure post exists before updating (auto-creates site/folder/post type/post if needed)
+        const meta = postMetaRef.current.get(postId)
+        if (meta) {
+          await editorService.ensurePost(
+            postId,
+            meta.model,
+            meta.fields.map(f => ({ prop: f.prop, type: f.type, value: f.value, label: f.label })),
+            pageMeta.siteName,
+            pageMeta.folderPath,
+          ).catch(() => { /* post may already exist */ })
+        }
+
         const updates = changes.map(c => ({
           attrName: c.prop,
           value: c.value,
@@ -184,7 +225,7 @@ export default function VisualEditorPage() {
   }
 
   // Update a field from the properties panel
-  const handlePanelFieldChange = (attrName: string, value: string, fieldType: string) => {
+  const handlePanelFieldChange = (attrName: string, value: string, fieldType: string, fieldSelector?: string) => {
     if (!selectedElement?.postId) return
 
     const change: ContentChange = {
@@ -201,9 +242,9 @@ export default function VisualEditorPage() {
       return next
     })
 
-    // Also update the DOM in the iframe
+    // Also update the DOM in the iframe using the field-specific selector
     sendToIframe("sh:content-patch", {
-      selector: selectedElement.selector,
+      selector: fieldSelector || selectedElement.selector,
       value,
       type: fieldType,
     })
@@ -369,11 +410,13 @@ export default function VisualEditorPage() {
             <PropertiesPanel
               selectedElement={selectedElement}
               postData={postData}
+              domFields={domFields}
               pendingChanges={pendingChanges}
               onFieldChange={handlePanelFieldChange}
               onDeselect={() => {
                 setSelectedElement(null)
                 setPostData(null)
+                setDomFields([])
               }}
             />
           </div>
@@ -403,12 +446,13 @@ export default function VisualEditorPage() {
 interface PropertiesPanelProps {
   selectedElement: SelectedElement | null
   postData: ShEditorPostData | null
+  domFields: DomField[]
   pendingChanges: Map<string, ContentChange>
-  onFieldChange: (attrName: string, value: string, fieldType: string) => void
+  onFieldChange: (attrName: string, value: string, fieldType: string, fieldSelector?: string) => void
   onDeselect: () => void
 }
 
-function PropertiesPanel({ selectedElement, postData, pendingChanges, onFieldChange, onDeselect }: PropertiesPanelProps) {
+function PropertiesPanel({ selectedElement, postData, domFields, pendingChanges, onFieldChange, onDeselect }: PropertiesPanelProps) {
   const { t } = useTranslation()
 
   if (!selectedElement) {
@@ -431,16 +475,22 @@ function PropertiesPanel({ selectedElement, postData, pendingChanges, onFieldCha
       <div className="flex items-center justify-between p-3 border-b">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold truncate">{selectedElement.label || selectedElement.prop}</h3>
-          {postData && (
-            <div className="flex items-center gap-1.5 mt-0.5">
+          <div className="flex items-center gap-1.5 mt-0.5">
+            {postData ? (
               <Badge variant="outline" className="text-[10px] h-4 px-1">
                 {postData.postType.name}
               </Badge>
-              <span className="text-[10px] text-muted-foreground truncate">
-                {postData.id.substring(0, 8)}...
-              </span>
-            </div>
-          )}
+            ) : selectedElement.model && (
+              <Badge variant="outline" className="text-[10px] h-4 px-1">
+                {selectedElement.model}
+              </Badge>
+            )}
+            {domFields.length > 0 && (
+              <Badge variant="secondary" className="text-[10px] h-4 px-1">
+                {domFields.length} {t("universalEditor.fields", { defaultValue: "fields" })}
+              </Badge>
+            )}
+          </div>
         </div>
         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onDeselect}>
           <X className="h-3 w-3" />
@@ -449,19 +499,18 @@ function PropertiesPanel({ selectedElement, postData, pendingChanges, onFieldCha
 
       {/* Fields */}
       <div className="p-3 space-y-4">
-        {selectedElement.prop && postData && (
-          <FieldEditor
-            attrName={selectedElement.prop}
-            attrData={postData.attrs[selectedElement.prop]}
-            fieldType={selectedElement.type}
-            pendingValue={pendingChanges.get(`${selectedElement.postId}:${selectedElement.prop}`)?.value}
-            onChange={(value) => onFieldChange(selectedElement.prop, value, selectedElement.type)}
-          />
-        )}
-
-        {/* Show all fields of the post */}
-        {postData && (
+        {/* Backend data available: show from postData */}
+        {postData ? (
           <>
+            {selectedElement.prop && postData.attrs[selectedElement.prop] && (
+              <FieldEditor
+                attrName={selectedElement.prop}
+                attrData={postData.attrs[selectedElement.prop]}
+                fieldType={selectedElement.type}
+                pendingValue={pendingChanges.get(`${selectedElement.postId}:${selectedElement.prop}`)?.value}
+                onChange={(value) => onFieldChange(selectedElement.prop, value, selectedElement.type)}
+              />
+            )}
             <Separator />
             <div className="space-y-1">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -479,10 +528,40 @@ function PropertiesPanel({ selectedElement, postData, pendingChanges, onFieldCha
               />
             ))}
           </>
+        ) : domFields.length > 0 ? (
+          /* Fallback: render from DOM fields */
+          domFields.map((field) => (
+            <FieldEditor
+              key={field.prop}
+              attrName={field.prop}
+              attrData={{
+                strValue: field.value,
+                widget: mapTypeToWidget(field.type),
+                label: field.label,
+              }}
+              fieldType={field.type}
+              pendingValue={pendingChanges.get(`${selectedElement.postId}:${field.prop}`)?.value}
+              onChange={(value) => onFieldChange(field.prop, value, field.type, field.selector)}
+            />
+          ))
+        ) : (
+          <div className="text-xs text-muted-foreground text-center py-4">
+            {t("common.loading")}
+          </div>
         )}
       </div>
     </div>
   )
+}
+
+function mapTypeToWidget(type: string): string {
+  switch (type) {
+    case "text": return "Text"
+    case "richtext": return "HTML Editor"
+    case "media": return "File"
+    case "textarea": return "Text Area"
+    default: return "Text"
+  }
 }
 
 function mapWidgetToType(widget: string): string {
