@@ -53,3 +53,7 @@ src/main/resources/js/client-side/build
 
 # === AI / Tooling ===
 /.claude/
+/shio-examples/corporate-site/node_modules
+/shio-js-sdk/node_modules
+/shio-examples/blog-site/node_modules
+/shio-js-sdk/dist
