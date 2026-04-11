@@ -566,9 +566,9 @@ public class ShUniversalEditorAPI {
             attr.setName(prop);
             attr.setLabel(label != null ? label : prop);
             attr.setOrdinal(ordinal++);
-            attr.setRequired(0);
-            attr.setIsTitle(ordinal == 1 ? 1 : 0); // first field is title
-            attr.setIsSummary(0);
+            attr.setRequired((byte) 0);
+            attr.setIsTitle(ordinal == 1 ? (byte) 1 : (byte) 0);
+            attr.setIsSummary((byte) 0);
             attr.setShPostType(postType);
 
             // Map DOM type to Shio widget

@@ -57,3 +57,7 @@ src/main/resources/js/client-side/build
 /shio-js-sdk/node_modules
 /shio-examples/blog-site/node_modules
 /shio-js-sdk/dist
+/shio-react-sdk/node_modules
+/shio-react-sdk/dist
+/shio-examples/corporate-site/dist
+/shio-examples/blog-site/dist

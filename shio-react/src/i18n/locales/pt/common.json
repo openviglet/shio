@@ -23,5 +23,9 @@
   "common.password": "Senha",
   "common.owner": "Proprietario",
   "common.saved": "Salvo com sucesso",
-  "common.error": "Ocorreu um erro"
+  "common.error": "Ocorreu um erro",
+  "common.title": "Titulo",
+  "common.enabled": "Habilitado",
+  "common.disabled": "Desabilitado",
+  "common.status": "Status"
 }

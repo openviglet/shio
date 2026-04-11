@@ -1,0 +1,36 @@
+{
+  "name": "@viglet/shio-react-sdk",
+  "version": "2026.2.0",
+  "description": "React SDK for consuming Shio CMS content via the Content Delivery API (CDA)",
+  "type": "module",
+  "main": "dist/shio-react-sdk.umd.cjs",
+  "module": "dist/shio-react-sdk.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/shio-react-sdk.js",
+      "require": "./dist/shio-react-sdk.umd.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build && tsc --emitDeclarationOnly",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.2",
+    "react": "^19.1.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.1"
+  },
+  "keywords": ["shio", "cms", "headless", "react", "sdk", "cda"],
+  "author": "Viglet Team",
+  "license": "GPL-3.0"
+}
