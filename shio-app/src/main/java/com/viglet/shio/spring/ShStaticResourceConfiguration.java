@@ -66,6 +66,11 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
 					.addResourceLocations("classpath:/META-INF/resources/webjars/").setCachePeriod(3600 * 24);
 		}
 
+		// Universal Editor bridge assets
+		registry.addResourceHandler("/universal-editor/**")
+				.addResourceLocations("classpath:/universal-editor/")
+				.setCachePeriod(3600);
+
 		// React SPA routing: serve index.html for all unmatched paths under these contexts
 		registryReact(registry, "/console");
 		registryReact(registry, "/login");
@@ -77,7 +82,7 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
 				.allowedMethods("PUT", "DELETE", "GET", "POST").allowCredentials(false).maxAge(3600);
 		registry.addMapping("/api/**")
 				.allowedOriginPatterns(allowedOrigins, "http://localhost:*")
-				.allowedMethods("PUT", "DELETE", "GET", "POST", "OPTIONS")
+				.allowedMethods("PUT", "DELETE", "GET", "POST", "PATCH", "OPTIONS")
 				.allowedHeaders("*")
 				.exposedHeaders("X-XSRF-TOKEN")
 				.allowCredentials(true)

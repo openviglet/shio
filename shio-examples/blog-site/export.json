@@ -1,0 +1,157 @@
+{
+  "postTypes": [
+    {
+      "id": "e1f2a3b4-0002-4000-a000-000000000001",
+      "date": "2026-04-11T00:00Z",
+      "name": "Article",
+      "namePlural": "Articles",
+      "label": "Article",
+      "description": "A blog article with title, excerpt, cover image, and rich content",
+      "fields": {
+        "TITLE": {
+          "id": "e1f2a3b4-0002-4000-a000-000000000010",
+          "label": "Title",
+          "description": "Article title",
+          "ordinal": 1,
+          "widget": "Text",
+          "widgetSettings": null,
+          "summary": false,
+          "title": true,
+          "required": true
+        },
+        "EXCERPT": {
+          "id": "e1f2a3b4-0002-4000-a000-000000000011",
+          "label": "Excerpt",
+          "description": "Short excerpt shown in blog listings",
+          "ordinal": 2,
+          "widget": "Text Area",
+          "widgetSettings": null,
+          "summary": true,
+          "title": false,
+          "required": false
+        },
+        "COVER_IMAGE": {
+          "id": "e1f2a3b4-0002-4000-a000-000000000012",
+          "label": "Cover Image",
+          "description": "Cover image URL",
+          "ordinal": 3,
+          "widget": "Text",
+          "widgetSettings": null,
+          "summary": false,
+          "title": false,
+          "required": false
+        },
+        "CONTENT": {
+          "id": "e1f2a3b4-0002-4000-a000-000000000013",
+          "label": "Content",
+          "description": "Full article content (HTML)",
+          "ordinal": 4,
+          "widget": "HTML Editor",
+          "widgetSettings": null,
+          "summary": false,
+          "title": false,
+          "required": false
+        },
+        "AUTHOR": {
+          "id": "e1f2a3b4-0002-4000-a000-000000000014",
+          "label": "Author",
+          "description": "Author name",
+          "ordinal": 5,
+          "widget": "Text",
+          "widgetSettings": null,
+          "summary": false,
+          "title": false,
+          "required": false
+        },
+        "CATEGORY": {
+          "id": "e1f2a3b4-0002-4000-a000-000000000015",
+          "label": "Category",
+          "description": "Article category",
+          "ordinal": 6,
+          "widget": "Text",
+          "widgetSettings": null,
+          "summary": false,
+          "title": false,
+          "required": false
+        }
+      },
+      "owner": "admin",
+      "system": false
+    }
+  ],
+  "sites": [
+    {
+      "id": "f1a2b3c4-0002-4000-b000-000000000001",
+      "name": "Tech Blog",
+      "date": "2026-04-11T00:00Z",
+      "description": "A modern tech blog with Universal Editor support",
+      "url": "http://localhost:2710",
+      "owner": "admin",
+      "furl": "tech-blog",
+      "rootFolders": ["f1a2b3c4-0002-4000-c000-000000000001"]
+    }
+  ],
+  "folders": [
+    {
+      "id": "f1a2b3c4-0002-4000-c000-000000000001",
+      "date": "2026-04-11T00:00Z",
+      "name": "Articles",
+      "owner": "admin",
+      "furl": "articles",
+      "position": 1
+    }
+  ],
+  "posts": [
+    {
+      "id": "f1a2b3c4-0002-4000-d000-000000000001",
+      "date": "2026-04-11T00:00Z",
+      "owner": "admin",
+      "furl": "getting-started-with-universal-editor",
+      "position": 1,
+      "folder": "f1a2b3c4-0002-4000-c000-000000000001",
+      "postType": "e1f2a3b4-0002-4000-a000-000000000001",
+      "fields": {
+        "TITLE": "Getting Started with the Shio Universal Editor",
+        "EXCERPT": "Learn how to instrument your pages with data-sh-* attributes and enable inline visual editing with Shio CMS.",
+        "COVER_IMAGE": "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=1200&h=600&fit=crop",
+        "CONTENT": "<p>The Shio Universal Editor brings the power of visual, in-context editing to any web page. Instead of editing content through a traditional form-based CMS interface, authors can click directly on page elements and modify them inline.</p><h2>How It Works</h2><p>The architecture follows the proven pattern established by Adobe's Universal Editor, adapted for Shio CMS. The key components are:</p><ul><li><strong>Editor Shell</strong> - The Shio Console provides the editing UI with toolbar, properties panel, and device preview.</li><li><strong>Editor Bridge</strong> - A lightweight JavaScript library (<code>shio-editor.js</code>) that runs inside your page, detects editable elements, and communicates with the shell.</li><li><strong>Data Attributes</strong> - HTML attributes (<code>data-sh-*</code>) that mark elements as editable and link them to Shio content.</li></ul><h2>Instrumenting Your Page</h2><p>Add the <code>shio-editor.js</code> script to your page and annotate elements with <code>data-sh-resource</code>, <code>data-sh-type</code>, and <code>data-sh-prop</code> attributes. The editor does the rest.</p>",
+        "AUTHOR": "Alexandre Oliveira",
+        "CATEGORY": "Tutorial"
+      }
+    },
+    {
+      "id": "f1a2b3c4-0002-4000-d000-000000000002",
+      "date": "2026-04-11T00:00Z",
+      "owner": "admin",
+      "furl": "future-of-headless-cms",
+      "position": 2,
+      "folder": "f1a2b3c4-0002-4000-c000-000000000001",
+      "postType": "e1f2a3b4-0002-4000-a000-000000000001",
+      "fields": {
+        "TITLE": "The Future of Headless CMS: Visual Editing Meets API-First",
+        "EXCERPT": "How modern CMS platforms are bridging the gap between developer flexibility and author experience.",
+        "COVER_IMAGE": "https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=1200&h=600&fit=crop",
+        "CONTENT": "<p>The headless CMS revolution promised developers freedom from monolithic architectures. But in doing so, it often left content authors stranded with bare-bones editing interfaces disconnected from the final output.</p><h2>The Author Experience Gap</h2><p>Traditional headless CMS platforms deliver content via APIs, which is great for developers building frontends with React, Vue, or any framework. However, authors editing content in a generic form have no visual context of how their changes will appear on the live site.</p><h2>Enter the Universal Editor</h2><p>The universal editor approach solves this by overlaying editing capabilities directly on the rendered page. The page is loaded in an iframe, and a thin JavaScript bridge enables the CMS to detect and modify editable regions. This gives authors a true WYSIWYG experience while preserving the headless, API-first architecture underneath.</p><p>Shio CMS implements this pattern natively, making it one of the few open-source platforms that offers both a headless API and a visual editing experience.</p>",
+        "AUTHOR": "Alexandre Oliveira",
+        "CATEGORY": "Architecture"
+      }
+    },
+    {
+      "id": "f1a2b3c4-0002-4000-d000-000000000003",
+      "date": "2026-04-11T00:00Z",
+      "owner": "admin",
+      "furl": "building-components-for-visual-editing",
+      "position": 3,
+      "folder": "f1a2b3c4-0002-4000-c000-000000000001",
+      "postType": "e1f2a3b4-0002-4000-a000-000000000001",
+      "fields": {
+        "TITLE": "Building Components for Visual Editing",
+        "EXCERPT": "Best practices for creating reusable components that work seamlessly with the Shio Universal Editor.",
+        "COVER_IMAGE": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=600&fit=crop",
+        "CONTENT": "<p>When building pages that support visual editing, component design becomes critical. Each component needs to clearly expose its editable regions through data attributes while maintaining clean, semantic HTML.</p><h2>Component Anatomy</h2><p>A well-structured editable component has three layers:</p><ol><li><strong>Resource</strong> - The <code>data-sh-resource</code> attribute identifies which content object (post) this component represents.</li><li><strong>Properties</strong> - Each editable field within the component uses <code>data-sh-prop</code> to map to a specific post attribute.</li><li><strong>Type</strong> - The <code>data-sh-type</code> attribute tells the editor how to handle editing (text, richtext, media, etc.).</li></ol><h2>Tips for Good Components</h2><ul><li>Keep components focused — one resource per component</li><li>Use semantic HTML elements that naturally contain the content type</li><li>Add descriptive <code>data-sh-label</code> values so authors know what they are editing</li><li>Test both with and without the editor — components should look great standalone</li></ul>",
+        "AUTHOR": "Alexandre Oliveira",
+        "CATEGORY": "Development"
+      }
+    }
+  ]
+}

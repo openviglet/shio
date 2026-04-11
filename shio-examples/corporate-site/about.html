@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About - Viglet Corporate</title>
+
+  <!-- Shio Universal Editor: Connection metadata -->
+  <meta name="urn:shio:system:connection" content="shio:http://localhost:2710">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #1a1a2e; line-height: 1.6; background: #ffffff;
+    }
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 48px;
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .nav-brand {
+      font-size: 20px; font-weight: 700;
+      background: linear-gradient(135deg, #f97316, #d97706);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a { text-decoration: none; color: #64748b; font-size: 14px; font-weight: 500; }
+    .nav-links a:hover { color: #f97316; }
+
+    .about-hero {
+      padding: 80px 48px; text-align: center;
+      background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%);
+    }
+    .about-hero h1 { font-size: 48px; font-weight: 800; margin-bottom: 12px; }
+    .about-hero p { font-size: 18px; color: #64748b; max-width: 600px; margin: 0 auto 32px; }
+    .about-hero img {
+      width: 100%; max-width: 800px; height: 360px; object-fit: cover;
+      border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+    }
+
+    .about-body {
+      max-width: 800px; margin: 0 auto; padding: 80px 48px;
+    }
+    .about-body p {
+      font-size: 18px; color: #475569; margin-bottom: 20px; line-height: 1.8;
+    }
+
+    .about-cta {
+      text-align: center; padding: 60px 48px;
+      background: #fafafa;
+    }
+    .about-cta a {
+      display: inline-flex; padding: 14px 28px; border-radius: 10px;
+      background: linear-gradient(135deg, #f97316, #d97706);
+      color: white; text-decoration: none; font-weight: 600;
+      box-shadow: 0 4px 14px rgba(249,115,22,0.3);
+      transition: transform 0.2s;
+    }
+    .about-cta a:hover { transform: translateY(-2px); }
+
+    .footer {
+      padding: 48px; background: #1a1a2e; color: #94a3b8;
+      text-align: center; font-size: 14px;
+    }
+    .footer a { color: #f97316; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav-brand">Viglet</div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="index.html#services">Services</a></li>
+      <li><a href="about.html">About</a></li>
+    </ul>
+  </nav>
+
+  <!-- About Hero - linked to the About post -->
+  <section class="about-hero"
+    data-sh-resource="urn:shio:d1e2f3a4-0001-4000-d000-000000000002"
+    data-sh-type="component"
+    data-sh-model="Page"
+    data-sh-label="About Page">
+
+    <h1 data-sh-type="text"
+        data-sh-prop="TITLE"
+        data-sh-label="Page Title">About Viglet</h1>
+
+    <p data-sh-type="text"
+       data-sh-prop="SUBTITLE"
+       data-sh-label="Subtitle">Our mission is to simplify content management</p>
+
+    <img data-sh-type="media"
+         data-sh-prop="HERO_IMAGE"
+         data-sh-label="Hero Image"
+         src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&h=600&fit=crop"
+         alt="Team working together">
+  </section>
+
+  <!-- About Body -->
+  <section class="about-body"
+    data-sh-resource="urn:shio:d1e2f3a4-0001-4000-d000-000000000002"
+    data-sh-type="component"
+    data-sh-label="About Page Body">
+
+    <div data-sh-type="richtext"
+         data-sh-prop="BODY"
+         data-sh-label="Body Content">
+      <p>Founded with a vision to democratize content management, Viglet brings enterprise-grade CMS capabilities to teams of all sizes. Our open-source platform is built on modern technologies like Spring Boot and React.</p>
+      <p>We believe that content management should be accessible, flexible, and enjoyable. That's why we built the Universal Editor — an inline editing experience that puts content authors in control.</p>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="about-cta"
+    data-sh-resource="urn:shio:d1e2f3a4-0001-4000-d000-000000000002"
+    data-sh-type="component"
+    data-sh-label="About CTA">
+
+    <a data-sh-type="text"
+       data-sh-prop="CTA_TEXT"
+       data-sh-label="CTA Button"
+       href="/services">View Services</a>
+  </section>
+
+  <footer class="footer">
+    <p>Built with <a href="#">Shio CMS</a> &mdash; Universal Editor Example</p>
+  </footer>
+
+  <script src="/universal-editor/shio-editor.js"></script>
+
+</body>
+</html>

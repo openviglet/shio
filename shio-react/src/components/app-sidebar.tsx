@@ -5,6 +5,7 @@ import {
   IconShieldCog,
   IconSettings,
   IconBrandGraphql,
+  IconLayersIntersect,
 } from "@tabler/icons-react"
 import * as React from "react"
 import { useTranslation } from "react-i18next"
@@ -42,6 +43,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       items: [
         { title: t("content.sites"), url: `${ROUTES.CONSOLE}/content`, icon: IconFileText },
         { title: t("content.postTypes"), url: ROUTES.POST_TYPE_ROOT, icon: IconForms },
+        { title: t("sidebar.universalEditor"), url: ROUTES.UNIVERSAL_EDITOR, icon: IconLayersIntersect },
       ],
     },
     {

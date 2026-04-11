@@ -12,6 +12,7 @@ import enContent from "./locales/en/content.json";
 import enAdmin from "./locales/en/admin.json";
 import enConfig from "./locales/en/config.json";
 import enGraphql from "./locales/en/graphql.json";
+import enUniversalEditor from "./locales/en/universal-editor.json";
 
 import ptCommon from "./locales/pt/common.json";
 import ptLogin from "./locales/pt/login.json";
@@ -22,15 +23,16 @@ import ptContent from "./locales/pt/content.json";
 import ptAdmin from "./locales/pt/admin.json";
 import ptConfig from "./locales/pt/config.json";
 import ptGraphql from "./locales/pt/graphql.json";
+import ptUniversalEditor from "./locales/pt/universal-editor.json";
 
 const en = {
   ...enCommon, ...enLogin, ...enSidebar, ...enNav, ...enDialog,
-  ...enContent, ...enAdmin, ...enConfig, ...enGraphql,
+  ...enContent, ...enAdmin, ...enConfig, ...enGraphql, ...enUniversalEditor,
 };
 
 const pt = {
   ...ptCommon, ...ptLogin, ...ptSidebar, ...ptNav, ...ptDialog,
-  ...ptContent, ...ptAdmin, ...ptConfig, ...ptGraphql,
+  ...ptContent, ...ptAdmin, ...ptConfig, ...ptGraphql, ...ptUniversalEditor,
 };
 
 i18n

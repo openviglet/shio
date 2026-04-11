@@ -145,6 +145,7 @@ public class ShSecurityConfig {
                                 mvc.matcher("/template/**"),
                                 mvc.matcher("/vendor/**"),
                                 mvc.matcher("/svg/**"),
+                                mvc.matcher("/universal-editor/**"),
                                 mvc.matcher(LOGIN_PATH)).permitAll();
                         authorizeRequests.anyRequest().authenticated();
                     });

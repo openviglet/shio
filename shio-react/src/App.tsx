@@ -7,6 +7,7 @@ import {
   ContentRoutes,
   ConfigRoutes,
   GraphqlRoutes,
+  UniversalEditorRoutes,
 } from "./app/routes"
 import { ROUTES } from "./app/routes.const"
 import { ThemeProvider } from "./components/theme-provider"
@@ -31,6 +32,7 @@ function App() {
                 {AdminRoutes}
                 {ConfigRoutes}
                 {GraphqlRoutes}
+                {UniversalEditorRoutes}
               </Route>
             </Routes>
           </ShioServiceProvider>

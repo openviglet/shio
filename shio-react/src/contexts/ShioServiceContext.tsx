@@ -4,6 +4,7 @@ import { ShPostService } from "@/services/post/post.service"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShSearchService } from "@/services/search/search.service"
 import { ShWidgetService } from "@/services/widget/widget.service"
+import { ShUniversalEditorService } from "@/services/universal-editor/universal-editor.service"
 import React from "react"
 
 interface ShioServiceContextType {
@@ -13,6 +14,7 @@ interface ShioServiceContextType {
   postTypeService: ShPostTypeService
   searchService: ShSearchService
   widgetService: ShWidgetService
+  universalEditorService: ShUniversalEditorService
 }
 
 const ShioServiceContext = React.createContext<ShioServiceContextType | null>(null)
@@ -25,6 +27,7 @@ export function ShioServiceProvider({ children }: { children: React.ReactNode })
     postTypeService: new ShPostTypeService(),
     searchService: new ShSearchService(),
     widgetService: new ShWidgetService(),
+    universalEditorService: new ShUniversalEditorService(),
   }), [])
 
   return <ShioServiceContext value={services}>{children}</ShioServiceContext>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viglet Corporate</title>
+
+  <!-- Shio Universal Editor: Connection metadata -->
+  <meta name="urn:shio:system:connection" content="shio:http://localhost:2710">
+
+  <!-- Shio Universal Editor: Model definitions -->
+  <script type="application/vnd.shio.model+json">
+  [
+    {
+      "id": "Page",
+      "fields": [
+        { "component": "text", "name": "TITLE", "label": "Title", "valueType": "string" },
+        { "component": "text", "name": "SUBTITLE", "label": "Subtitle", "valueType": "string" },
+        { "component": "media", "name": "HERO_IMAGE", "label": "Hero Image", "valueType": "string" },
+        { "component": "richtext", "name": "BODY", "label": "Body Content", "valueType": "string" },
+        { "component": "text", "name": "CTA_TEXT", "label": "CTA Text", "valueType": "string" },
+        { "component": "text", "name": "CTA_URL", "label": "CTA URL", "valueType": "string" }
+      ]
+    },
+    {
+      "id": "Service",
+      "fields": [
+        { "component": "text", "name": "TITLE", "label": "Service Title", "valueType": "string" },
+        { "component": "textarea", "name": "DESCRIPTION", "label": "Description", "valueType": "string" },
+        { "component": "text", "name": "ICON", "label": "Icon", "valueType": "string" }
+      ]
+    }
+  ]
+  </script>
+
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      color: #1a1a2e;
+      line-height: 1.6;
+      background: #ffffff;
+    }
+
+    /* ── Navigation ── */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 48px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .nav-brand {
+      font-size: 20px; font-weight: 700;
+      background: linear-gradient(135deg, #f97316, #d97706);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a {
+      text-decoration: none; color: #64748b; font-size: 14px; font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: #f97316; }
+
+    /* ── Hero Section ── */
+    .hero {
+      position: relative;
+      padding: 120px 48px 80px;
+      background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 50%, #fff7ed 100%);
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: -50%; right: -20%;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .hero-content { max-width: 720px; position: relative; z-index: 1; }
+    .hero h1 {
+      font-size: 56px; font-weight: 800; line-height: 1.1;
+      letter-spacing: -0.02em; margin-bottom: 16px;
+    }
+    .hero .subtitle {
+      font-size: 20px; color: #64748b; margin-bottom: 32px; max-width: 540px;
+    }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 28px; border-radius: 10px;
+      background: linear-gradient(135deg, #f97316, #d97706);
+      color: white; text-decoration: none;
+      font-weight: 600; font-size: 15px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 14px rgba(249,115,22,0.3);
+    }
+    .hero-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(249,115,22,0.4);
+    }
+    .hero-image {
+      margin-top: 48px; border-radius: 16px;
+      overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+      max-width: 900px;
+    }
+    .hero-image img {
+      width: 100%; height: 400px; object-fit: cover; display: block;
+    }
+
+    /* ── Body Content ── */
+    .body-section {
+      max-width: 800px; margin: 0 auto;
+      padding: 80px 48px;
+    }
+    .body-section p {
+      font-size: 18px; color: #475569; margin-bottom: 20px;
+      line-height: 1.8;
+    }
+
+    /* ── Services Section ── */
+    .services {
+      padding: 80px 48px;
+      background: #fafafa;
+    }
+    .services-header {
+      text-align: center; margin-bottom: 48px;
+    }
+    .services-header h2 {
+      font-size: 36px; font-weight: 700; margin-bottom: 12px;
+    }
+    .services-header p {
+      font-size: 16px; color: #64748b; max-width: 480px; margin: 0 auto;
+    }
+    .services-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px; max-width: 1000px; margin: 0 auto;
+    }
+    .service-card {
+      background: white; border-radius: 16px; padding: 32px;
+      border: 1px solid #f0f0f0;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .service-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+    }
+    .service-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: linear-gradient(135deg, #fff7ed, #fed7aa);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; margin-bottom: 16px;
+    }
+    .service-card h3 {
+      font-size: 18px; font-weight: 700; margin-bottom: 8px;
+    }
+    .service-card p {
+      font-size: 14px; color: #64748b; line-height: 1.6;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      padding: 48px;
+      background: #1a1a2e; color: #94a3b8;
+      text-align: center; font-size: 14px;
+    }
+    .footer a { color: #f97316; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-brand">Viglet</div>
+    <ul class="nav-links">
+      <li><a href="#home">Home</a></li>
+      <li><a href="#services">Services</a></li>
+      <li><a href="about.html">About</a></li>
+    </ul>
+  </nav>
+
+  <!-- Hero Section -->
+  <!-- data-sh-resource links this element tree to a Shio post -->
+  <section class="hero" id="home"
+    data-sh-resource="urn:shio:d1e2f3a4-0001-4000-d000-000000000001"
+    data-sh-type="component"
+    data-sh-model="Page"
+    data-sh-label="Homepage">
+
+    <div class="hero-content">
+      <h1 data-sh-type="text"
+          data-sh-prop="TITLE"
+          data-sh-label="Page Title">Welcome to Viglet</h1>
+
+      <p class="subtitle"
+         data-sh-type="text"
+         data-sh-prop="SUBTITLE"
+         data-sh-label="Subtitle">Building the future of content management</p>
+
+      <a class="hero-cta"
+         data-sh-type="text"
+         data-sh-prop="CTA_TEXT"
+         data-sh-label="CTA Button Text"
+         href="/services">Get Started</a>
+    </div>
+
+    <div class="hero-image">
+      <img data-sh-type="media"
+           data-sh-prop="HERO_IMAGE"
+           data-sh-label="Hero Image"
+           src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=600&fit=crop"
+           alt="Office workspace">
+    </div>
+  </section>
+
+  <!-- Body Content -->
+  <section class="body-section"
+    data-sh-resource="urn:shio:d1e2f3a4-0001-4000-d000-000000000001"
+    data-sh-type="component"
+    data-sh-label="Homepage Body">
+
+    <div data-sh-type="richtext"
+         data-sh-prop="BODY"
+         data-sh-label="Body Content">
+      <p>Viglet is a modern content management platform that empowers teams to create, manage, and deliver exceptional digital experiences. Our platform combines powerful content modeling with an intuitive visual editor.</p>
+      <p>With our Universal Editor, content authors can edit directly on the rendered page, seeing changes in real-time without switching between a form-based backend and the live site.</p>
+    </div>
+  </section>
+
+  <!-- Services Section -->
+  <section class="services" id="services">
+    <div class="services-header">
+      <h2>Our Services</h2>
+      <p>Everything you need to build and manage modern digital experiences.</p>
+    </div>
+
+    <div class="services-grid"
+         data-sh-type="container"
+         data-sh-label="Services List">
+
+      <!-- Service 1 -->
+      <div class="service-card"
+           data-sh-resource="urn:shio:d1e2f3a4-0001-4000-d000-000000000010"
+           data-sh-type="component"
+           data-sh-model="Service"
+           data-sh-label="Cloud Platform">
+
+        <div class="service-icon"
+             data-sh-type="text"
+             data-sh-prop="ICON"
+             data-sh-label="Icon">&#9729;</div>
+
+        <h3 data-sh-type="text"
+            data-sh-prop="TITLE"
+            data-sh-label="Service Title">Cloud Platform</h3>
+
+        <p data-sh-type="text"
+           data-sh-prop="DESCRIPTION"
+           data-sh-label="Description">Deploy and scale your content infrastructure in the cloud with zero downtime and automatic backups.</p>
+      </div>
+
+      <!-- Service 2 -->
+      <div class="service-card"
+           data-sh-resource="urn:shio:d1e2f3a4-0001-4000-d000-000000000011"
+           data-sh-type="component"
+           data-sh-model="Service"
+           data-sh-label="AI-Powered Content">
+
+        <div class="service-icon"
+             data-sh-type="text"
+             data-sh-prop="ICON"
+             data-sh-label="Icon">&#129504;</div>
+
+        <h3 data-sh-type="text"
+            data-sh-prop="TITLE"
+            data-sh-label="Service Title">AI-Powered Content</h3>
+
+        <p data-sh-type="text"
+           data-sh-prop="DESCRIPTION"
+           data-sh-label="Description">Leverage artificial intelligence to generate, optimize, and personalize content at scale.</p>
+      </div>
+
+      <!-- Service 3 -->
+      <div class="service-card"
+           data-sh-resource="urn:shio:d1e2f3a4-0001-4000-d000-000000000012"
+           data-sh-type="component"
+           data-sh-model="Service"
+           data-sh-label="Visual Editing">
+
+        <div class="service-icon"
+             data-sh-type="text"
+             data-sh-prop="ICON"
+             data-sh-label="Icon">&#128736;</div>
+
+        <h3 data-sh-type="text"
+            data-sh-prop="TITLE"
+            data-sh-label="Service Title">Visual Editing</h3>
+
+        <p data-sh-type="text"
+           data-sh-prop="DESCRIPTION"
+           data-sh-label="Description">Edit content directly on the live page with our Universal Editor. No context switching needed.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>Built with <a href="#">Shio CMS</a> &mdash; Universal Editor Example</p>
+  </footer>
+
+  <!-- Shio Universal Editor Bridge -->
+  <script src="/universal-editor/shio-editor.js"></script>
+
+</body>
+</html>

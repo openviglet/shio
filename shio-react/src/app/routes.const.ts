@@ -22,4 +22,5 @@ export const ROUTES = {
   CONFIG_EMAIL: `${consolePath}/config/email`,
   CONFIG_SEARCH: `${consolePath}/config/search`,
   GRAPHQL_ROOT: `${consolePath}/graphql`,
+  UNIVERSAL_EDITOR: `${consolePath}/universal-editor`,
 };

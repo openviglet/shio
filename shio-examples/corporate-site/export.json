@@ -1,0 +1,236 @@
+{
+  "postTypes": [
+    {
+      "id": "a1b2c3d4-0001-4000-a000-000000000001",
+      "date": "2026-04-11T00:00Z",
+      "name": "Page",
+      "namePlural": "Pages",
+      "label": "Page",
+      "description": "A general-purpose page with hero, body, and CTA sections",
+      "fields": {
+        "TITLE": {
+          "id": "a1b2c3d4-0001-4000-a000-000000000010",
+          "label": "Title",
+          "description": "Page title",
+          "ordinal": 1,
+          "widget": "Text",
+          "widgetSettings": null,
+          "summary": false,
+          "title": true,
+          "required": true
+        },
+        "SUBTITLE": {
+          "id": "a1b2c3d4-0001-4000-a000-000000000011",
+          "label": "Subtitle",
+          "description": "Page subtitle or tagline",
+          "ordinal": 2,
+          "widget": "Text",
+          "widgetSettings": null,
+          "summary": true,
+          "title": false,
+          "required": false
+        },
+        "HERO_IMAGE": {
+          "id": "a1b2c3d4-0001-4000-a000-000000000012",
+          "label": "Hero Image",
+          "description": "Hero banner image URL",
+          "ordinal": 3,
+          "widget": "Text",
+          "widgetSettings": null,
+          "summary": false,
+          "title": false,
+          "required": false
+        },
+        "BODY": {
+          "id": "a1b2c3d4-0001-4000-a000-000000000013",
+          "label": "Body Content",
+          "description": "Main page content (HTML)",
+          "ordinal": 4,
+          "widget": "HTML Editor",
+          "widgetSettings": null,
+          "summary": false,
+          "title": false,
+          "required": false
+        },
+        "CTA_TEXT": {
+          "id": "a1b2c3d4-0001-4000-a000-000000000014",
+          "label": "CTA Text",
+          "description": "Call-to-action button text",
+          "ordinal": 5,
+          "widget": "Text",
+          "widgetSettings": null,
+          "summary": false,
+          "title": false,
+          "required": false
+        },
+        "CTA_URL": {
+          "id": "a1b2c3d4-0001-4000-a000-000000000015",
+          "label": "CTA URL",
+          "description": "Call-to-action link URL",
+          "ordinal": 6,
+          "widget": "Text",
+          "widgetSettings": null,
+          "summary": false,
+          "title": false,
+          "required": false
+        }
+      },
+      "owner": "admin",
+      "system": false
+    },
+    {
+      "id": "a1b2c3d4-0001-4000-a000-000000000002",
+      "date": "2026-04-11T00:00Z",
+      "name": "Service",
+      "namePlural": "Services",
+      "label": "Service",
+      "description": "A service or feature card",
+      "fields": {
+        "TITLE": {
+          "id": "a1b2c3d4-0001-4000-a000-000000000020",
+          "label": "Service Title",
+          "description": "Name of the service",
+          "ordinal": 1,
+          "widget": "Text",
+          "widgetSettings": null,
+          "summary": false,
+          "title": true,
+          "required": true
+        },
+        "DESCRIPTION": {
+          "id": "a1b2c3d4-0001-4000-a000-000000000021",
+          "label": "Description",
+          "description": "Short description of the service",
+          "ordinal": 2,
+          "widget": "Text Area",
+          "widgetSettings": null,
+          "summary": true,
+          "title": false,
+          "required": false
+        },
+        "ICON": {
+          "id": "a1b2c3d4-0001-4000-a000-000000000022",
+          "label": "Icon",
+          "description": "Icon name or emoji",
+          "ordinal": 3,
+          "widget": "Text",
+          "widgetSettings": null,
+          "summary": false,
+          "title": false,
+          "required": false
+        }
+      },
+      "owner": "admin",
+      "system": false
+    }
+  ],
+  "sites": [
+    {
+      "id": "b1c2d3e4-0001-4000-b000-000000000001",
+      "name": "Viglet Corporate",
+      "date": "2026-04-11T00:00Z",
+      "description": "Corporate website example with Universal Editor support",
+      "url": "http://localhost:2710",
+      "owner": "admin",
+      "furl": "viglet-corporate",
+      "rootFolders": ["c1d2e3f4-0001-4000-c000-000000000001"]
+    }
+  ],
+  "folders": [
+    {
+      "id": "c1d2e3f4-0001-4000-c000-000000000001",
+      "date": "2026-04-11T00:00Z",
+      "name": "Home",
+      "owner": "admin",
+      "furl": "home",
+      "position": 1
+    },
+    {
+      "id": "c1d2e3f4-0001-4000-c000-000000000002",
+      "date": "2026-04-11T00:00Z",
+      "name": "Services",
+      "owner": "admin",
+      "furl": "services",
+      "position": 2,
+      "parentFolder": "c1d2e3f4-0001-4000-c000-000000000001"
+    }
+  ],
+  "posts": [
+    {
+      "id": "d1e2f3a4-0001-4000-d000-000000000001",
+      "date": "2026-04-11T00:00Z",
+      "owner": "admin",
+      "furl": "homepage",
+      "position": 1,
+      "folder": "c1d2e3f4-0001-4000-c000-000000000001",
+      "postType": "a1b2c3d4-0001-4000-a000-000000000001",
+      "fields": {
+        "TITLE": "Welcome to Viglet",
+        "SUBTITLE": "Building the future of content management",
+        "HERO_IMAGE": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=600&fit=crop",
+        "BODY": "<p>Viglet is a modern content management platform that empowers teams to create, manage, and deliver exceptional digital experiences. Our platform combines powerful content modeling with an intuitive visual editor.</p><p>With our Universal Editor, content authors can edit directly on the rendered page, seeing changes in real-time without switching between a form-based backend and the live site.</p>",
+        "CTA_TEXT": "Get Started",
+        "CTA_URL": "/services"
+      }
+    },
+    {
+      "id": "d1e2f3a4-0001-4000-d000-000000000002",
+      "date": "2026-04-11T00:00Z",
+      "owner": "admin",
+      "furl": "about",
+      "position": 2,
+      "folder": "c1d2e3f4-0001-4000-c000-000000000001",
+      "postType": "a1b2c3d4-0001-4000-a000-000000000001",
+      "fields": {
+        "TITLE": "About Viglet",
+        "SUBTITLE": "Our mission is to simplify content management",
+        "HERO_IMAGE": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&h=600&fit=crop",
+        "BODY": "<p>Founded with a vision to democratize content management, Viglet brings enterprise-grade CMS capabilities to teams of all sizes. Our open-source platform is built on modern technologies like Spring Boot and React.</p><p>We believe that content management should be accessible, flexible, and enjoyable. That's why we built the Universal Editor — an inline editing experience that puts content authors in control.</p>",
+        "CTA_TEXT": "View Services",
+        "CTA_URL": "/services"
+      }
+    },
+    {
+      "id": "d1e2f3a4-0001-4000-d000-000000000010",
+      "date": "2026-04-11T00:00Z",
+      "owner": "admin",
+      "furl": "cloud-platform",
+      "position": 1,
+      "folder": "c1d2e3f4-0001-4000-c000-000000000002",
+      "postType": "a1b2c3d4-0001-4000-a000-000000000002",
+      "fields": {
+        "TITLE": "Cloud Platform",
+        "DESCRIPTION": "Deploy and scale your content infrastructure in the cloud with zero downtime and automatic backups.",
+        "ICON": "cloud"
+      }
+    },
+    {
+      "id": "d1e2f3a4-0001-4000-d000-000000000011",
+      "date": "2026-04-11T00:00Z",
+      "owner": "admin",
+      "furl": "ai-content",
+      "position": 2,
+      "folder": "c1d2e3f4-0001-4000-c000-000000000002",
+      "postType": "a1b2c3d4-0001-4000-a000-000000000002",
+      "fields": {
+        "TITLE": "AI-Powered Content",
+        "DESCRIPTION": "Leverage artificial intelligence to generate, optimize, and personalize content at scale.",
+        "ICON": "brain"
+      }
+    },
+    {
+      "id": "d1e2f3a4-0001-4000-d000-000000000012",
+      "date": "2026-04-11T00:00Z",
+      "owner": "admin",
+      "furl": "visual-editing",
+      "position": 3,
+      "folder": "c1d2e3f4-0001-4000-c000-000000000002",
+      "postType": "a1b2c3d4-0001-4000-a000-000000000002",
+      "fields": {
+        "TITLE": "Visual Editing",
+        "DESCRIPTION": "Edit content directly on the live page with our Universal Editor. No context switching needed.",
+        "ICON": "layers"
+      }
+    }
+  ]
+}
