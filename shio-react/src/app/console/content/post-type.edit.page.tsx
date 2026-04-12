@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Badge } from "@/components/ui/badge"
+import { BadgeColorful } from "@/components/badge-colorful"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -470,7 +471,6 @@ function SortableAttrRow({ attr, index, widgets, postTypes, onAttrChange, onDele
 
   const widgetName = attr.shWidget?.name ?? ""
   const accentClass = WIDGET_ACCENT_COLORS[widgetName] ?? "border-l-gray-300 dark:border-l-gray-600"
-  const badgeClass = WIDGET_BADGE_COLORS[widgetName] ?? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700"
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -526,26 +526,15 @@ function SortableAttrRow({ attr, index, widgets, postTypes, onAttrChange, onDele
         {/* Badges */}
         <div className="flex items-center gap-1.5 shrink-0">
           {attr.required === 1 && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-amber-300 text-amber-600 dark:border-amber-700 dark:text-amber-400">
-              {t("content.required")}
-            </Badge>
+            <BadgeColorful text={t("content.required")} className="text-[10px] px-1.5 py-0 h-5" />
           )}
           {attr.isTitle === 1 && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-blue-300 text-blue-600 dark:border-blue-700 dark:text-blue-400">
-              T
-            </Badge>
+            <BadgeColorful text="T" className="text-[10px] px-1.5 py-0 h-5" />
           )}
           {attr.isSummary === 1 && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-green-300 text-green-600 dark:border-green-700 dark:text-green-400">
-              S
-            </Badge>
+            <BadgeColorful text="S" className="text-[10px] px-1.5 py-0 h-5" />
           )}
-          <Badge
-            variant="outline"
-            className={`text-[10px] px-2 py-0 h-5 font-medium ${badgeClass}`}
-          >
-            {widgetName || "—"}
-          </Badge>
+          <BadgeColorful text={widgetName || "—"} className="text-[10px] px-2 py-0 h-5 font-medium" />
         </div>
 
         {/* Delete button */}

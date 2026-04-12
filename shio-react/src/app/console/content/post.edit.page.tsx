@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
@@ -125,14 +126,13 @@ export default function PostEditPage() {
               {post.title || t("content.editPost")}
             </h3>
             <div className="flex items-center gap-1.5 shrink-0">
-              <Badge variant="outline" className="text-xs">
-                {postTypeName}
-              </Badge>
+              <BadgeColorful text={postTypeName || ""} className="text-xs" />
               {allowPublish && (
-                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 gap-1">
-                  <ShieldCheck className="h-3 w-3" />
-                  {t("content.publish")}
-                </Badge>
+                <BadgeColorful
+                  text={t("content.publish")}
+                  className="text-xs"
+                  prefix={<ShieldCheck className="h-3 w-3" />}
+                />
               )}
               <Badge variant="secondary" className="text-xs">
                 {fieldCount} {t("content.fields").toLowerCase()}

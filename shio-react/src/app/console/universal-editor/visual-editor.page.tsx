@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { BadgeColorful } from "@/components/badge-colorful"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -596,14 +597,9 @@ function FieldEditor({ attrName, attrData, fieldType, pendingValue, onChange }: 
         <Label className="text-xs font-medium">{attrData.label || attrName}</Label>
         <div className="flex items-center gap-1">
           {isModified && (
-            <Badge variant="outline" className="text-[10px] h-4 px-1 border-orange-300 text-orange-600">
-              {/* modified indicator */}
-              *
-            </Badge>
+            <BadgeColorful text="*" className="text-[10px] h-4 px-1" />
           )}
-          <Badge variant="secondary" className="text-[10px] h-4 px-1">
-            {attrData.widget}
-          </Badge>
+          <BadgeColorful text={attrData.widget} className="text-[10px] h-4 px-1" />
         </div>
       </div>
 

@@ -1,8 +1,9 @@
 import { Badge } from "@/components/ui/badge"
+import { BadgeColorful } from "@/components/badge-colorful"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getWidget } from "@/components/widgets"
-import { getWidgetAccentColor, getWidgetBadgeColor } from "@/lib/widget-colors"
+import { getWidgetAccentColor } from "@/lib/widget-colors"
 import type { ShPostAttr } from "@/models/post/post"
 import { useMemo } from "react"
 
@@ -67,7 +68,6 @@ export function PostFormFields({ attrs, onAttrChange, postId, postTypeName }: Pr
     }
 
     const accentColor = getWidgetAccentColor(widgetName)
-    const badgeColor = getWidgetBadgeColor(widgetName)
     const isRequired = attr.shPostTypeAttr?.required === 1
     const isTitle = attr.shPostTypeAttr?.isTitle === 1
 
@@ -86,21 +86,12 @@ export function PostFormFields({ attrs, onAttrChange, postId, postTypeName }: Pr
           </Label>
           <div className="flex items-center gap-1.5 ml-auto">
             {isTitle && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-blue-300 text-blue-600 dark:border-blue-700 dark:text-blue-400">
-                Title
-              </Badge>
+              <BadgeColorful text="Title" className="text-[10px] px-1.5 py-0 h-5" />
             )}
             {attr.shPostTypeAttr?.isSummary === 1 && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-green-300 text-green-600 dark:border-green-700 dark:text-green-400">
-                Summary
-              </Badge>
+              <BadgeColorful text="Summary" className="text-[10px] px-1.5 py-0 h-5" />
             )}
-            <Badge
-              variant="outline"
-              className={`text-[10px] px-1.5 py-0 h-5 font-medium ${badgeColor}`}
-            >
-              {widgetName}
-            </Badge>
+            <BadgeColorful text={widgetName} className="text-[10px] px-1.5 py-0 h-5 font-medium" />
           </div>
         </div>
 

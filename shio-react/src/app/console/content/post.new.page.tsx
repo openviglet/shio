@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
@@ -120,9 +121,7 @@ export default function PostNewPage() {
               {t("content.newPost")}
             </h3>
             <div className="flex items-center gap-1.5 shrink-0">
-              <Badge variant="outline" className="text-xs">
-                {postTypeName}
-              </Badge>
+              <BadgeColorful text={postTypeName || ""} className="text-xs" />
               <Badge variant="secondary" className="text-xs">
                 {fieldCount} {t("content.fields").toLowerCase()}
               </Badge>
