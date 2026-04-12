@@ -114,7 +114,6 @@ export default function PostNewPage() {
       <PageHeader title={t("content.newPost")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
       <div className="p-6 space-y-6">
         <StickySaveBar
-          variant="orange"
           title={t("content.newPost")}
           badges={
             <>

@@ -119,7 +119,6 @@ export default function PostEditPage() {
       <PageHeader title={t("content.editPost")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
       <div className="p-6 space-y-6">
         <StickySaveBar
-          variant="orange"
           title={post.title || t("content.editPost")}
           badges={
             <>

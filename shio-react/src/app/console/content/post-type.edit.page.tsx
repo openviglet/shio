@@ -778,7 +778,6 @@ export default function PostTypeEditPage() {
       <PageHeader title={t("content.editPostType")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
       <div className="p-6 space-y-6">
         <StickySaveBar
-          variant="orange"
           title={t("content.modelPostType", { title: title ?? "" })}
           actions={
             <>
