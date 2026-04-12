@@ -1,5 +1,4 @@
 import { PageHeader } from "@/components/page-header"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { BadgeColorful } from "@/components/badge-colorful"
@@ -13,7 +12,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { ShPostService } from "@/services/post/post.service"
 import type { ShPost, ShPostAttr } from "@/models/post/post"
-import { toast } from "@viglet/viglet-design-system"
+import { GradientButton, StickySaveBar, toast } from "@viglet/viglet-design-system"
 
 const service = new ShPostService()
 
@@ -119,13 +118,11 @@ export default function PostEditPage() {
     <>
       <PageHeader title={t("content.editPost")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
       <div className="p-6 space-y-6">
-        {/* Sticky save bar */}
-        <div className="sticky top-0 z-10 bg-orange-50 dark:bg-orange-950/30 border rounded-lg px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <h3 className="text-lg font-semibold truncate">
-              {post.title || t("content.editPost")}
-            </h3>
-            <div className="flex items-center gap-1.5 shrink-0">
+        <StickySaveBar
+          variant="orange"
+          title={post.title || t("content.editPost")}
+          badges={
+            <>
               <BadgeColorful text={postTypeName || ""} className="text-xs" />
               {allowPublish && (
                 <BadgeColorful
@@ -137,21 +134,23 @@ export default function PostEditPage() {
               <Badge variant="secondary" className="text-xs">
                 {fieldCount} {t("content.fields").toLowerCase()}
               </Badge>
-            </div>
-          </div>
-          <div className="flex gap-2 shrink-0">
-            <Button type="button" disabled={isLoading} onClick={handleSave}>
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              {t("common.save")}
-            </Button>
-            <Button type="button" variant="outline" disabled={isLoading} onClick={handleSaveAndClose}>
-              {t("content.saveAndClose")}
-            </Button>
-            <Button type="button" variant="ghost" onClick={navigateBack}>
-              {t("common.cancel")}
-            </Button>
-          </div>
-        </div>
+            </>
+          }
+          actions={
+            <>
+              <GradientButton type="button" size="sm" loading={isLoading} onClick={handleSave}>
+                <Save className="size-4" />
+                {t("common.save")}
+              </GradientButton>
+              <GradientButton type="button" size="sm" variant="outline" disabled={isLoading} onClick={handleSaveAndClose}>
+                {t("content.saveAndClose")}
+              </GradientButton>
+              <GradientButton type="button" size="sm" variant="ghost" onClick={navigateBack}>
+                {t("common.cancel")}
+              </GradientButton>
+            </>
+          }
+        />
 
         {/* Form card */}
         <Card>

@@ -20,7 +20,6 @@ import {
   GripVertical,
   Info,
   Layers,
-  Loader2,
   Plus,
   Save,
   Settings2,
@@ -34,7 +33,7 @@ import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShWidgetService } from "@/services/widget/widget.service"
 import type { ShPostType, ShPostTypeAttr } from "@/models/post-type/post-type"
 import type { ShWidget } from "@/models/widget/widget"
-import { toast } from "@viglet/viglet-design-system"
+import { GradientButton, StickySaveBar, toast } from "@viglet/viglet-design-system"
 import {
   DndContext,
   closestCenter,
@@ -778,33 +777,35 @@ export default function PostTypeEditPage() {
     <>
       <PageHeader title={t("content.editPostType")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
       <div className="p-6 space-y-6">
-        {/* Sticky save bar */}
-        <div className="sticky top-0 z-10 bg-orange-50 dark:bg-orange-950/30 border rounded-md px-4 py-3 flex items-center justify-between">
-          <h3 className="text-lg font-semibold">
-            {t("content.modelPostType", { title: title ?? "" })}
-          </h3>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              disabled={isLoading}
-              onClick={form.handleSubmit(onSubmit)}
-            >
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              {t("common.save")}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isLoading}
-              onClick={form.handleSubmit(onSubmitAndClose)}
-            >
-              {t("content.saveAndClose")}
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => navigate(ROUTES.POST_TYPE_ROOT)}>
-              {t("common.cancel")}
-            </Button>
-          </div>
-        </div>
+        <StickySaveBar
+          variant="orange"
+          title={t("content.modelPostType", { title: title ?? "" })}
+          actions={
+            <>
+              <GradientButton
+                type="button"
+                size="sm"
+                loading={isLoading}
+                onClick={form.handleSubmit(onSubmit)}
+              >
+                <Save className="size-4" />
+                {t("common.save")}
+              </GradientButton>
+              <GradientButton
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={isLoading}
+                onClick={form.handleSubmit(onSubmitAndClose)}
+              >
+                {t("content.saveAndClose")}
+              </GradientButton>
+              <GradientButton type="button" size="sm" variant="ghost" onClick={() => navigate(ROUTES.POST_TYPE_ROOT)}>
+                {t("common.cancel")}
+              </GradientButton>
+            </>
+          }
+        />
 
         {/* Post Type details + Workflow tabs */}
         <Card>
