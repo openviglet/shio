@@ -34,9 +34,9 @@ public class ShIndexContext {
 	public void index(HttpServletRequest request, HttpServletResponse response, final Principal principal)
 			throws IOException {
 		if (principal != null) {
-			response.sendRedirect("/content");
+			response.sendRedirect("/console");
 		} else {
-			response.sendRedirect("/welcome");
+			response.sendRedirect("/login");
 		}
 
 	}

@@ -91,6 +91,9 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
 
 	@Override
 	public void addViewControllers(ViewControllerRegistry registry) {
+		// Root redirect to React console
+		registry.addRedirectViewController("/", "/console");
+
 		// React SPA entry points
 		registry.addViewController("/console").setViewName(FORWARD_INDEX_HTML);
 		registry.addViewController("/console/").setViewName(FORWARD_INDEX_HTML);
