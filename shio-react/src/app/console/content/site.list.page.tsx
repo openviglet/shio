@@ -8,6 +8,7 @@ import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { ShSiteService } from "@/services/site/site.service"
 import type { ShSite } from "@/models/site/site"
+import { DialogDelete } from "@/components/dialog.delete"
 import { IconFileText } from "@tabler/icons-react"
 import { Download, Eye, Globe, Pencil, Plus, Search, Trash2, Upload, Network } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -25,6 +26,8 @@ export default function SiteListPage() {
   const [sites, setSites] = useState<ShSite[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState("")
+  const [deleteTarget, setDeleteTarget] = useState<ShSite | null>(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   useEffect(() => {
     resetBreadcrumb([{ label: t("sidebar.dashboard") }])
@@ -49,13 +52,19 @@ export default function SiteListPage() {
     URL.revokeObjectURL(url)
   }
 
-  const handleDelete = async (e: React.MouseEvent, site: ShSite) => {
+  const handleDeleteClick = (e: React.MouseEvent, site: ShSite) => {
     e.stopPropagation()
-    if (confirm(`${t("dialog.deleteMessage")} (${site.name})`)) {
-      await siteService.delete(site.id)
-      setSites(prev => prev.filter(s => s.id !== site.id))
-      toast.success(`${site.name} deleted`)
-    }
+    setDeleteTarget(site)
+    setDeleteOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return
+    await siteService.delete(deleteTarget.id)
+    setSites(prev => prev.filter(s => s.id !== deleteTarget.id))
+    toast.success(`${deleteTarget.name} deleted`)
+    setDeleteOpen(false)
+    setDeleteTarget(null)
   }
 
   return (
@@ -146,7 +155,7 @@ export default function SiteListPage() {
                             <Eye className="h-3.5 w-3.5" /> View Site
                           </button>
                           <button
-                            onClick={e => handleDelete(e, site)}
+                            onClick={e => handleDeleteClick(e, site)}
                             className="flex items-center gap-1 text-destructive/70 hover:text-destructive transition-colors"
                           >
                             <Trash2 className="h-3.5 w-3.5" /> Delete
@@ -167,6 +176,16 @@ export default function SiteListPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {deleteTarget && (
+        <DialogDelete
+          feature="Site"
+          name={deleteTarget.name}
+          open={deleteOpen}
+          setOpen={setDeleteOpen}
+          onDelete={handleDeleteConfirm}
+        />
+      )}
     </>
   )
 }
