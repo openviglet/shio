@@ -64,7 +64,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
                   <FormControl>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input {...field} placeholder={t("login.enterUsername")} className="pl-10 h-11" disabled={isLoading} />
+                      <Input {...field} placeholder={t("login.enterUsername")} className="pl-9 h-11" disabled={isLoading} />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -76,7 +76,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
                   <FormControl>
                     <div className="relative">
                       <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input {...field} placeholder={t("login.enterPassword")} type="password" className="pl-10 h-11" disabled={isLoading} />
+                      <Input {...field} placeholder={t("login.enterPassword")} type="password" className="pl-9 h-11" disabled={isLoading} />
                     </div>
                   </FormControl>
                   <FormMessage />
