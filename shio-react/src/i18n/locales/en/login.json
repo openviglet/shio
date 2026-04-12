@@ -17,5 +17,18 @@
   "login.settingsAnimations": "Animations",
   "login.settingsExplosion": "Explosion",
   "login.settingsTokens": "Formulas",
-  "login.settingsLanguage": "Language"
+  "login.settingsLanguage": "Language",
+
+  "setup.title": "Welcome to Shio CMS",
+  "setup.description": "Set up the administrator password to get started.",
+  "setup.hint": "First-time setup",
+  "setup.hintDescription": "Create a secure password for the admin account. You can change it later in the admin settings.",
+  "setup.newPassword": "New Password",
+  "setup.enterPassword": "Enter a secure password",
+  "setup.confirmPassword": "Confirm Password",
+  "setup.confirmPasswordPlaceholder": "Re-enter the password",
+  "setup.setPassword": "Set Password & Continue",
+  "setup.minLength": "Password must be at least 6 characters.",
+  "setup.passwordMismatch": "Passwords do not match.",
+  "setup.setupFailed": "Failed to set password. Please try again."
 }

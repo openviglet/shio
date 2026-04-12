@@ -99,6 +99,8 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
 		registry.addViewController("/console/").setViewName(FORWARD_INDEX_HTML);
 		registry.addViewController("/login").setViewName(FORWARD_INDEX_HTML);
 		registry.addViewController("/login/").setViewName(FORWARD_INDEX_HTML);
+		registry.addViewController("/setup").setViewName(FORWARD_INDEX_HTML);
+		registry.addViewController("/setup/").setViewName(FORWARD_INDEX_HTML);
 
 		// Legacy AngularJS apps
 		registry.addViewController("/content").setViewName("forward:/content/index.html");

@@ -17,5 +17,18 @@
   "login.settingsAnimations": "Animações",
   "login.settingsExplosion": "Explosão",
   "login.settingsTokens": "Formulas",
-  "login.settingsLanguage": "Idioma"
+  "login.settingsLanguage": "Idioma",
+
+  "setup.title": "Bem-vindo ao Shio CMS",
+  "setup.description": "Configure a senha do administrador para começar.",
+  "setup.hint": "Configuração inicial",
+  "setup.hintDescription": "Crie uma senha segura para a conta admin. Você pode alterá-la depois nas configurações.",
+  "setup.newPassword": "Nova Senha",
+  "setup.enterPassword": "Digite uma senha segura",
+  "setup.confirmPassword": "Confirmar Senha",
+  "setup.confirmPasswordPlaceholder": "Digite a senha novamente",
+  "setup.setPassword": "Definir Senha e Continuar",
+  "setup.minLength": "A senha deve ter pelo menos 6 caracteres.",
+  "setup.passwordMismatch": "As senhas não coincidem.",
+  "setup.setupFailed": "Falha ao definir a senha. Tente novamente."
 }

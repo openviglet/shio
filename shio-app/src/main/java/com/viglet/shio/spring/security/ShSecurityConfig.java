@@ -82,6 +82,7 @@ public class ShSecurityConfig {
                 .ignoringRequestMatchers(
                         mvc.matcher("/graphql"),
                         mvc.matcher("/api/v2/universal-editor/**"),
+                        mvc.matcher("/api/v2/setup"),
                         mvc.matcher(ERROR_PATH),
                         mvc.matcher(LOGOUT_PATH),
                         mvc.matcher(LOGIN_PATH)))
@@ -109,6 +110,7 @@ public class ShSecurityConfig {
                         mvc.matcher("/content/**"),
                         mvc.matcher("/preview/**"),
                         mvc.matcher("/sites/**"),
+                        mvc.matcher("/api/v2/setup"),
                         mvc.matcher(LOGIN_PATH)).permitAll();
                 authorizeRequests.anyRequest().authenticated();
             });
@@ -150,6 +152,9 @@ public class ShSecurityConfig {
                                 mvc.matcher("/vendor/**"),
                                 mvc.matcher("/svg/**"),
                                 mvc.matcher("/universal-editor/**"),
+                                mvc.matcher("/api/v2/setup"),
+                                mvc.matcher("/setup"),
+                                mvc.matcher("/setup/**"),
                                 mvc.matcher(LOGIN_PATH)).permitAll();
                         authorizeRequests.anyRequest().authenticated();
                     });

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { ShAuthorizationService } from "@/services/auth/authorization.service"
+import { ShSetupService } from "@/services/auth/setup.service"
 import { AlertCircle, KeyRound, Loader2, LogIn, User } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
@@ -23,6 +24,14 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
   const authorization = new ShAuthorizationService()
 
   useEffect(() => {
+    // Check if first-access setup is needed
+    new ShSetupService().status().then((status) => {
+      if (status.required) {
+        globalThis.location.href = ROUTES.SETUP;
+        return;
+      }
+    }).catch(() => { /* ignore */ });
+
     authorization.discovery().then((discovery) => {
       if (discovery.keycloak) {
         globalThis.location.href = "/oauth2/authorization/keycloak";

@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom"
 import ConsoleRootPage from "./app/console/console.root.page"
 import HomePage from "./app/console/home/home.page"
 import LoginPage from "./app/login/login.page"
+import SetupPage from "./app/setup/setup.page"
 import {
   AdminRoutes,
   ContentRoutes,
@@ -24,6 +25,7 @@ function App() {
             <Toaster />
             <Routes>
               <Route path={ROUTES.ROOT} element={<Navigate to={ROUTES.CONSOLE} replace />} />
+              <Route path={ROUTES.SETUP} element={<SetupPage />} />
               <Route path={ROUTES.LOGIN} element={<LoginPage />} />
               <Route path={ROUTES.CONSOLE} element={<ConsoleRootPage />}>
                 <Route index element={<Navigate to={ROUTES.HOME} replace />} />

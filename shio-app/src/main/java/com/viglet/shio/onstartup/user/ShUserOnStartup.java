@@ -60,13 +60,10 @@ public class ShUserOnStartup {
 			Set<ShGroup> shGroups = new HashSet<>();
 			shGroups.add(shGroup);
 
-			ShUser shUser = setUser("admin@localhost.local", "Shio", "Administrator", "admin", "admin");
+			// Admin user created without password — first-access setup will set it
+			ShUser shUser = setUser("admin@localhost.local", "Shio", "Administrator", null, "admin");
 
 			shUser.setShGroups(shGroups);
-
-			shUserRepository.save(shUser);
-
-			shUser = setUser("sample@localhost.local", "Sample user", "Sample", "sample123", "sample");
 
 			shUserRepository.save(shUser);
 		}
@@ -85,7 +82,7 @@ public class ShUserOnStartup {
 		shUser.setLastName(lastName);
 		shUser.setLastPostType(String.valueOf(shPostType.getId()));
 		shUser.setLoginTimes(0);
-		shUser.setPassword(passwordEncoder.encode(password));
+		shUser.setPassword(password != null ? passwordEncoder.encode(password) : null);
 		shUser.setRealm("default");
 		shUser.setUsername(username);
 		shUser.setEnabled(1);
