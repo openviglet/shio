@@ -1,4 +1,17 @@
+import { reportBackendOffline, reportBackendOnline } from "@viglet/viglet-design-system";
 import axios, { type AxiosRequestConfig } from "axios";
+
+/**
+ * Status codes that indicate the backend is effectively unreachable:
+ * - no response (network/DNS/connection refused)
+ * - 502 Bad Gateway / 503 Service Unavailable / 504 Gateway Timeout
+ */
+function isBackendUnreachable(error: unknown): boolean {
+  if (!axios.isAxiosError(error)) return false;
+  if (!error.response) return true;
+  const status = error.response.status;
+  return status === 502 || status === 503 || status === 504;
+}
 
 const CSRF_HEADER = "X-XSRF-TOKEN";
 const CSRF_ENDPOINT = "/v2/csrf";
@@ -123,6 +136,7 @@ axios.interceptors.request.use(
 // Add response interceptor to handle errors
 axios.interceptors.response.use(
   (response) => {
+    reportBackendOnline();
     const tokenFromHeader = readCsrfTokenFromHeaders(response.headers);
     if (tokenFromHeader) {
       csrfToken = tokenFromHeader;
@@ -130,6 +144,13 @@ axios.interceptors.response.use(
     return response;
   },
   async (error) => {
+    if (isBackendUnreachable(error)) {
+      reportBackendOffline();
+    } else if (axios.isAxiosError(error) && error.response) {
+      // Any HTTP response from the backend (even 4xx) proves it is reachable.
+      reportBackendOnline();
+    }
+
     const tokenFromHeader = readCsrfTokenFromHeaders(error.response?.headers);
     if (tokenFromHeader) {
       csrfToken = tokenFromHeader;

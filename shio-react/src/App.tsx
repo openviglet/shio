@@ -6,7 +6,6 @@ import SetupPage from "./app/setup/setup.page"
 import {
   AdminRoutes,
   ContentRoutes,
-  ConfigRoutes,
   GraphqlRoutes,
   UniversalEditorRoutes,
 } from "./app/routes"
@@ -32,7 +31,6 @@ function App() {
                 <Route path="home" element={<HomePage />} />
                 {ContentRoutes}
                 {AdminRoutes}
-                {ConfigRoutes}
                 {GraphqlRoutes}
                 {UniversalEditorRoutes}
               </Route>
