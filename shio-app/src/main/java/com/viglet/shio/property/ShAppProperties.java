@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties("shio")
 public class ShAppProperties {
     private boolean keycloak;
+    private boolean multiTenant;
     private String keycloakAdminId;
     private String allowedOrigins;
     private String url = "http://localhost:2710";

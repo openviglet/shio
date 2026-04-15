@@ -31,4 +31,6 @@ public class ShAPIBean {
 	private String product;
 
 	private boolean keycloak;
+
+	private boolean multiTenant;
 }

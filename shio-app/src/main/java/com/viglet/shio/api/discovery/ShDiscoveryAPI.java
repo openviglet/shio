@@ -25,6 +25,7 @@ public class ShDiscoveryAPI {
     public ShAPIBean info() {
         shAPIBean.setProduct("Viglet Shio CMS");
         shAPIBean.setKeycloak(shAppProperties.isKeycloak());
+        shAPIBean.setMultiTenant(shAppProperties.isMultiTenant());
         return shAPIBean;
     }
 }

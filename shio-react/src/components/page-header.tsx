@@ -1,10 +1,12 @@
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
+import { useDiscovery } from "@/hooks/use-discovery"
 import { IconChevronLeft } from "@tabler/icons-react"
-import React from "react"
+import React, { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { NavLink, useNavigate } from "react-router-dom"
+import { LanguageSwitcher, VigletAppSwitcher } from "@viglet/viglet-design-system"
 import { ModeToggle } from "./mode-toggle"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "./ui/breadcrumb"
 
@@ -14,6 +16,8 @@ export const PageHeader: React.FC<MyComponentProps> = ({ turIcon: TurIcon, title
   const { items } = useBreadcrumb()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const discovery = useDiscovery()
+  const [appSwitcherOpen, setAppSwitcherOpen] = useState(false)
   const lastItem = items.length > 0 ? items[items.length - 1] : null
   const parentItem = items.length > 1 ? items[items.length - 2] : null
 
@@ -45,7 +49,7 @@ export const PageHeader: React.FC<MyComponentProps> = ({ turIcon: TurIcon, title
         </div>
         <div className="flex md:hidden items-center gap-2 min-w-0 flex-1">
           {parentItem?.href && (
-            <button type="button" title={t("common.goBack")} onClick={() => navigate(parentItem.href!)} className="shrink-0 flex items-center justify-center size-8 rounded-lg hover:bg-muted transition-colors">
+            <button type="button" title={t("common.goBack")} onClick={() => navigate(parentItem.href)} className="shrink-0 flex items-center justify-center size-8 rounded-lg hover:bg-muted transition-colors">
               <IconChevronLeft className="size-4" />
             </button>
           )}
@@ -57,7 +61,20 @@ export const PageHeader: React.FC<MyComponentProps> = ({ turIcon: TurIcon, title
           <span className="text-sm font-semibold truncate">{lastItem?.label ?? title}</span>
         </div>
         <div className="ml-auto flex items-center gap-1">
-          <div className="hidden md:block"><ModeToggle /></div>
+          <div className="hidden md:flex items-center gap-1">
+            <LanguageSwitcher />
+            <ModeToggle />
+            {discovery?.multiTenant && (
+              <VigletAppSwitcher
+                open={appSwitcherOpen}
+                onToggle={() => setAppSwitcherOpen((o) => !o)}
+                activeProduct="shio"
+                /* SidebarInset variant="inset" adds m-2 (8px) margin +
+                   header is 48px → total offset from viewport top is 56px */
+                headerHeight={56}
+              />
+            )}
+          </div>
           <SidebarTrigger className="md:hidden" />
         </div>
       </div>
