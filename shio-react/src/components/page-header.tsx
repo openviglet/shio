@@ -49,7 +49,7 @@ export const PageHeader: React.FC<MyComponentProps> = ({ turIcon: TurIcon, title
         </div>
         <div className="flex md:hidden items-center gap-2 min-w-0 flex-1">
           {parentItem?.href && (
-            <button type="button" title={t("common.goBack")} onClick={() => navigate(parentItem.href)} className="shrink-0 flex items-center justify-center size-8 rounded-lg hover:bg-muted transition-colors">
+            <button type="button" title={t("common.goBack")} onClick={() => navigate(parentItem.href!)} className="shrink-0 flex items-center justify-center size-8 rounded-lg hover:bg-muted transition-colors">
               <IconChevronLeft className="size-4" />
             </button>
           )}
