@@ -16,8 +16,8 @@
  */
 package com.viglet.shio.api.auth;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
@@ -30,6 +30,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,7 +51,6 @@ import com.viglet.shio.persistence.repository.auth.ShUserRepository;
 import com.viglet.shio.persistence.repository.provider.auth.ShAuthProviderInstanceRepository;
 import com.viglet.shio.provider.auth.ShAuthSystemProviderVendor;
 import com.viglet.shio.provider.auth.ShAuthenticationProvider;
-import com.viglet.shio.utils.ShUserUtils;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -65,16 +66,14 @@ public class ShUserAPI {
 	private final ShGroupRepository shGroupRepository;
 	private final ShAuthProviderInstanceRepository shAuthProviderInstanceRepository;
 	private final ApplicationContext context;
-	private final ShUserUtils shUserUtils;
 	public ShUserAPI(ShUserRepository shUserRepository,
 					 ShGroupRepository shGroupRepository,
 					 ShAuthProviderInstanceRepository shAuthProviderInstanceRepository,
-					 ApplicationContext context, ShUserUtils shUserUtils) {
+					 ApplicationContext context) {
 		this.shUserRepository = shUserRepository;
 		this.shGroupRepository = shGroupRepository;
 		this.shAuthProviderInstanceRepository = shAuthProviderInstanceRepository;
 		this.context = context;
-		this.shUserUtils = shUserUtils;
 	}
 
 	@GetMapping
@@ -83,20 +82,101 @@ public class ShUserAPI {
 		return shUserRepository.findAll();
 	}
 
+	private static final String ADMINISTRATOR = "Administrator";
+	private static final String PREFERRED_USERNAME = "preferred_username";
+	private static final String GIVEN_NAME = "given_name";
+	private static final String FAMILY_NAME = "family_name";
+	private static final String EMAIL = "email";
+
 	@GetMapping("/current")
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
 	public ShCurrentUser shUserCurrent(HttpSession session) {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		if (!(authentication instanceof AnonymousAuthenticationToken)) {
-			String currentUserName = shUserUtils.getCurrentUsername();
-			com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance instance = this.getProviderInstance(session);
-			ShUser shUser = this.getUserFromAuth(currentUserName, instance);
-			boolean isAdmin = this.isAdminFromNative(shUser, instance);
+			if (authentication.getPrincipal() instanceof OAuth2User) {
+				return oauth2User(authentication);
+			} else {
+				return regularUser(session, authentication.getName());
+			}
+		}
+		return null;
+	}
 
-			return setUser(isAdmin, shUser);
+	private String firstNonNull(OAuth2User user, String... keys) {
+		for (String key : keys) {
+			String value = user.getAttribute(key);
+			if (value != null) return value;
+		}
+		return null;
+	}
+
+	private ShCurrentUser oauth2User(Authentication authentication) {
+		OAuth2User user = ((OAuth2User) authentication.getPrincipal());
+		String realm = (authentication instanceof OAuth2AuthenticationToken oauthToken)
+				? oauthToken.getAuthorizedClientRegistrationId()
+				: "oauth2";
+		String username = firstNonNull(user, PREFERRED_USERNAME, "login", EMAIL);
+		String email = firstNonNull(user, EMAIL);
+
+		String firstName = user.getAttribute(GIVEN_NAME);
+		String lastName = user.getAttribute(FAMILY_NAME);
+		if (firstName == null && lastName == null) {
+			String fullName = firstNonNull(user, "name");
+			if (fullName != null) {
+				int space = fullName.indexOf(' ');
+				firstName = space > 0 ? fullName.substring(0, space) : fullName;
+				lastName = space > 0 ? fullName.substring(space + 1) : null;
+			}
 		}
 
-		return null;
+		ShUser shUser = shUserRepository.findByUsername(username);
+		if (shUser == null) {
+			shUser = new ShUser();
+			shUser.setUsername(username);
+			shUser.setFirstName(firstName);
+			shUser.setLastName(lastName);
+			shUser.setEmail(email);
+			shUser.setRealm(realm);
+			shUser.setEnabled(1);
+			shUserRepository.save(shUser);
+		} else {
+			shUser.setFirstName(firstName);
+			shUser.setLastName(lastName);
+			shUser.setEmail(email);
+			shUser.setRealm(realm);
+			shUserRepository.save(shUser);
+		}
+
+		boolean isAdmin = isAdminUser(shUser);
+
+		ShCurrentUser shCurrentUser = new ShCurrentUser();
+		shCurrentUser.setUsername(username);
+		shCurrentUser.setFirstName(firstName);
+		shCurrentUser.setLastName(lastName);
+		shCurrentUser.setEmail(email);
+		shCurrentUser.setAdmin(isAdmin);
+		return shCurrentUser;
+	}
+
+	private ShCurrentUser regularUser(HttpSession session, String currentUserName) {
+		com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance instance = this.getProviderInstance(session);
+		ShUser shUser = this.getUserFromAuth(currentUserName, instance);
+		boolean isAdmin = this.isAdminFromNative(shUser, instance);
+		return setUser(isAdmin, shUser);
+	}
+
+	private boolean isAdminUser(ShUser shUser) {
+		if (shUser != null) {
+			Set<ShGroup> groups = shGroupRepository.findByShUsersIn(List.of(shUser));
+			if (groups != null) {
+				for (ShGroup shGroup : groups) {
+					if (ADMINISTRATOR.equals(shGroup.getName())) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
 	}
 
 	private com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance getProviderInstance(HttpSession session) {
@@ -114,22 +194,19 @@ public class ShUserAPI {
 			shUser = loadAuthProvider(currentUserName, instance, shUser);
 		} else {
 			shUser = shUserRepository.findByUsername(currentUserName);
-			shUser.setPassword(null);
-
+			if (shUser != null) {
+				shUser.setPassword(null);
+			}
 		}
 		return shUser;
 	}
 
 	private boolean isAdminFromNative(ShUser shUser,
 			com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance instance) {
-		boolean isAdmin = false;
-		if (!isNotNativeAuth(instance) && shUser != null && shUser.getShGroups() != null) {
-			for (ShGroup shGroup : shUser.getShGroups()) {
-				if (shGroup.getName().equals("Administrator"))
-					isAdmin = true;
-			}
+		if (!isNotNativeAuth(instance)) {
+			return isAdminUser(shUser);
 		}
-		return isAdmin;
+		return false;
 	}
 
 	private boolean isNotNativeAuth(com.viglet.shio.persistence.model.provider.auth.ShAuthProviderInstance instance) {
@@ -174,9 +251,7 @@ public class ShUserAPI {
 		ShUser shUser = shUserRepository.findByUsername(username);
 		if (shUser != null) {
 			shUser.setPassword(null);
-			List<ShUser> shUsers = new ArrayList<>();
-			shUsers.add(shUser);
-			shUser.setShGroups(shGroupRepository.findByShUsersIn(shUsers));
+			shUser.setShGroups(shGroupRepository.findByShUsersIn(List.of(shUser)));
 		}
 		return shUser;
 	}
