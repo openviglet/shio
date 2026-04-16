@@ -11,7 +11,6 @@ import * as React from "react"
 import { useTranslation } from "react-i18next"
 import { ROUTES } from "@/app/routes.const"
 import { NavMain } from "@/components/nav-main"
-import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
   SidebarContent,
@@ -22,13 +21,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { useCurrentUser } from "@/contexts/user.context"
 import { ShLogo } from "@/components/logo/sh-logo"
 
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation()
-  const { user } = useCurrentUser()
   const { toggleSidebar, state, isMobile } = useSidebar()
   const isCollapsed = state === "collapsed"
 
@@ -77,7 +74,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain groups={navGroups} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   )

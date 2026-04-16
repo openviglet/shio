@@ -1,12 +1,14 @@
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
+import { useCurrentUser } from "@/contexts/user.context"
 import { useDiscovery } from "@/hooks/use-discovery"
 import { IconChevronLeft } from "@tabler/icons-react"
 import React, { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { NavLink, useNavigate } from "react-router-dom"
 import { LanguageSwitcher, VigletAppSwitcher } from "@viglet/viglet-design-system"
+import { HeaderUserMenu } from "./header-user-menu"
 import { ModeToggle } from "./mode-toggle"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "./ui/breadcrumb"
 
@@ -17,6 +19,7 @@ export const PageHeader: React.FC<MyComponentProps> = ({ turIcon: TurIcon, title
   const navigate = useNavigate()
   const { t } = useTranslation()
   const discovery = useDiscovery()
+  const { user } = useCurrentUser()
   const [appSwitcherOpen, setAppSwitcherOpen] = useState(false)
   const lastItem = items.length > 0 ? items[items.length - 1] : null
   const parentItem = items.length > 1 ? items[items.length - 2] : null
@@ -74,6 +77,7 @@ export const PageHeader: React.FC<MyComponentProps> = ({ turIcon: TurIcon, title
                 headerHeight={56}
               />
             )}
+            {user && <HeaderUserMenu user={user} />}
           </div>
           <SidebarTrigger className="md:hidden" />
         </div>
