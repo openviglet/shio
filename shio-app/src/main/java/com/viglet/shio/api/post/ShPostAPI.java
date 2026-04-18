@@ -62,6 +62,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import com.viglet.shio.api.ShJsonView;
 import com.viglet.shio.exchange.post.ShPostExport;
+import com.viglet.shio.migration.unified.ShPostUnifiedMigrationService;
 import com.viglet.shio.object.ShObjectPublishStatus;
 import com.viglet.shio.persistence.model.auth.ShUser;
 import com.viglet.shio.persistence.model.object.ShObject;
@@ -114,6 +115,7 @@ public class ShPostAPI {
 	private final ShHistoryUtils shHistoryUtils;
 	private final ShPostExport shPostExport;
 	private final ShFolderUtils shFolderUtils;
+	private final ShPostUnifiedMigrationService shPostUnifiedMigrationService;
 
 	private final SimpleDateFormat dt = new SimpleDateFormat("dd/MM/yyyyy");
 
@@ -125,7 +127,8 @@ public class ShPostAPI {
 					 ShTuringIntegration shTuringIntegration, ShWorkflowTaskRepository shWorkflowTaskRepository,
 					 ShPostExport shPostExport, ShPostTypeRepository shPostTypeRepository,
 					 ShObjectRepository shObjectRepository, ShPostUtils shPostUtils, ShHistoryUtils shHistoryUtils,
-					 ShFolderUtils shFolderUtils) {
+					 ShFolderUtils shFolderUtils,
+					 ShPostUnifiedMigrationService shPostUnifiedMigrationService) {
 		this.shPostRepository = shPostRepository;
 		this.shPostDraftRepository = shPostDraftRepository;
 		this.shPostAttrRepository = shPostAttrRepository;
@@ -143,6 +146,7 @@ public class ShPostAPI {
 		this.shPostUtils = shPostUtils;
 		this.shHistoryUtils = shHistoryUtils;
 		this.shFolderUtils = shFolderUtils;
+		this.shPostUnifiedMigrationService = shPostUnifiedMigrationService;
 	}
 
 	@GetMapping
@@ -255,6 +259,8 @@ public class ShPostAPI {
 
 				shHistoryUtils.commit(shPost, principal, ShHistoryUtils.DELETE);
 
+				shPostUnifiedMigrationService.removeUnified(id);
+
 				shPostRepository.delete(id);
 
 				return new ResponseEntity<>(true, HttpStatus.OK);
@@ -306,6 +312,8 @@ public class ShPostAPI {
 		this.handlePublishStatus(shPost);
 
 		this.lastPostTypeUsed(shPost);
+
+		shPostUnifiedMigrationService.syncFromLegacy(shPost.getId());
 	}
 
 	private void loadMissingPostProperties(ShPost shPost) {
