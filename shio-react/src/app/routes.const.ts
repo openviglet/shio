@@ -54,3 +54,7 @@ export const ROUTE_PATTERNS = {
   GRAPHQL_ROOT: `/:tenant${consolePath}/graphql`,
   UNIVERSAL_EDITOR: `/:tenant${consolePath}/universal-editor`,
 };
+
+// Bare console path (no tenant) — matched to redirect through TenantGateway,
+// so old bookmarks / external redirects to /console still resolve a tenant.
+export const CONSOLE_GATEWAY_PATTERN = `${consolePath}/*`;

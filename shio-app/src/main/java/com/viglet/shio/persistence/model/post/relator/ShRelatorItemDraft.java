@@ -57,7 +57,7 @@ public class ShRelatorItemDraft implements Serializable, ShRelatorItemImpl {
 	private String id;
 
 	@TenantId
-	@Column(name = "tenant_id", updatable = false)
+	@Column(name = "TENANT_ID", updatable = false)
 	private String tenantId;
 
 	private String title;

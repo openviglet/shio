@@ -54,7 +54,7 @@ public class ShReference implements Serializable{
 
 	@Getter
 	@TenantId
-	@Column(name = "tenant_id", updatable = false)
+	@Column(name = "TENANT_ID", updatable = false)
 	private String tenantId;
 
 	@ManyToOne(fetch = FetchType.LAZY)

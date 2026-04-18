@@ -146,6 +146,7 @@ public class ShSecurityConfig {
                                 mvc.matcher("/preview/**"),
                                 mvc.matcher("/media/**"),
                                 mvc.matcher("/console/**"),
+                                mvc.matcher("/*/console/**"),
                                 mvc.matcher("/graphql/**"),
                                 mvc.matcher("/graphiql/**"),
                                 mvc.matcher("/css/**"),

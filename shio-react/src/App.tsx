@@ -10,7 +10,7 @@ import {
   GraphqlRoutes,
   UniversalEditorRoutes,
 } from "./app/routes"
-import { ROUTES, ROUTE_PATTERNS } from "./app/routes.const"
+import { CONSOLE_GATEWAY_PATTERN, ROUTES, ROUTE_PATTERNS } from "./app/routes.const"
 import { ThemeProvider } from "./components/theme-provider"
 import { Toaster } from "./components/ui/sonner"
 import { ShioServiceProvider } from "./contexts/ShioServiceContext"
@@ -26,6 +26,7 @@ function App() {
             <Toaster />
             <Routes>
               <Route path={ROUTES.ROOT} element={<TenantGateway />} />
+              <Route path={CONSOLE_GATEWAY_PATTERN} element={<TenantGateway />} />
               <Route path={ROUTES.SETUP} element={<SetupPage />} />
               <Route path={ROUTES.LOGIN} element={<LoginPage />} />
               <Route

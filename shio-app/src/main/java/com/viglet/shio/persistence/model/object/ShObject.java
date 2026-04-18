@@ -61,7 +61,7 @@ public class ShObject implements Serializable, ShObjectImpl {
 	private String id;
 
 	@TenantId
-	@Column(name = "tenant_id", nullable = false, updatable = false)
+	@Column(name = "TENANT_ID", nullable = false, updatable = false)
 	private String tenantId;
 
 	// bi-directional many-to-one association to ShObject

@@ -53,7 +53,7 @@ public class ShReferenceDraft implements Serializable{
 	private String id;
 
 	@TenantId
-	@Column(name = "tenant_id", updatable = false)
+	@Column(name = "TENANT_ID", updatable = false)
 	private String tenantId;
 
 	@ManyToOne(fetch = FetchType.LAZY)

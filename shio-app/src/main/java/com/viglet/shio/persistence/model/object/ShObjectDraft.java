@@ -56,7 +56,7 @@ public class ShObjectDraft implements Serializable, ShObjectImpl {
 	private String id;
 
 	@TenantId
-	@Column(name = "tenant_id", updatable = false)
+	@Column(name = "TENANT_ID", updatable = false)
 	private String tenantId;
 
 	private Instant date;

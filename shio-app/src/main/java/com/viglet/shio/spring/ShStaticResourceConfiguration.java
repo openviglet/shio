@@ -74,6 +74,8 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
 		// React SPA routing: serve index.html for all unmatched paths under these contexts
 		registryReact(registry, "/console");
 		registryReact(registry, "/login");
+		// Tenant-prefixed console: /{tenant}/console/**
+		registryReact(registry, "/*/console");
 	}
 
 	@Override
@@ -97,6 +99,9 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
 		// React SPA entry points
 		registry.addViewController("/console").setViewName(FORWARD_INDEX_HTML);
 		registry.addViewController("/console/").setViewName(FORWARD_INDEX_HTML);
+		// Tenant-prefixed console entry points (tenant is the first path segment)
+		registry.addViewController("/*/console").setViewName(FORWARD_INDEX_HTML);
+		registry.addViewController("/*/console/").setViewName(FORWARD_INDEX_HTML);
 		registry.addViewController("/login").setViewName(FORWARD_INDEX_HTML);
 		registry.addViewController("/login/").setViewName(FORWARD_INDEX_HTML);
 		registry.addViewController("/setup").setViewName(FORWARD_INDEX_HTML);
