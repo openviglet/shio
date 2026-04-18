@@ -16,7 +16,9 @@ interface LoginData { username: string; password: string }
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"form">) {
   const [searchParams] = useSearchParams()
-  const returnUrl = searchParams.get("returnUrl") || ROUTES.CONSOLE
+  // After login the tenant isn't known yet in the URL; land on "/" so
+  // TenantGateway can resolve the tenant and redirect to /{tenant}/console.
+  const returnUrl = searchParams.get("returnUrl") || ROUTES.ROOT
   const { t } = useTranslation()
   const form = useForm<LoginData>()
   const [error, setError] = useState("")

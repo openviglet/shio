@@ -32,6 +32,7 @@ import jakarta.persistence.InheritanceType;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.TenantId;
 import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -58,6 +59,10 @@ public class ShObject implements Serializable, ShObjectImpl {
 	@ShAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
+
+	@TenantId
+	@Column(name = "tenant_id", nullable = false, updatable = false)
+	private String tenantId;
 
 	// bi-directional many-to-one association to ShObject
 	@OneToMany(mappedBy = "referenceObject", cascade = jakarta.persistence.CascadeType.ALL)
@@ -117,6 +122,14 @@ public class ShObject implements Serializable, ShObjectImpl {
 	@Override
 	public void setId(String id) {
 		this.id = id;
+	}
+
+	public String getTenantId() {
+		return this.tenantId;
+	}
+
+	public void setTenantId(String tenantId) {
+		this.tenantId = tenantId;
 	}
 
 	@Override
