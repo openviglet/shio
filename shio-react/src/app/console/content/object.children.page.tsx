@@ -341,7 +341,8 @@ export default function ObjectChildrenPage() {
                 onClick={() => {
                   if (lastPostType) {
                     localStorage.setItem("sh-last-post-type", lastPostType.id)
-                    navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/post-type/${lastPostType.id}/new`)
+                    const suffix = unifiedEditor ? "new-unified" : "new"
+                    navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/post-type/${lastPostType.id}/${suffix}`)
                   }
                 }}
               >
