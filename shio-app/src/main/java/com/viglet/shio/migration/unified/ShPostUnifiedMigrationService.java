@@ -76,6 +76,35 @@ public class ShPostUnifiedMigrationService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Re-projects a single legacy post (and its draft counterpart, if any) into
+     * the unified table. Idempotent — safe to call repeatedly and from hot
+     * paths. Callers invoke this whenever a legacy write happens so the unified
+     * rows stay in sync without a batch backfill.
+     */
+    @Transactional
+    public void syncFromLegacy(String postId) {
+        if (postId == null) return;
+        shPostRepository.findById(postId)
+                .ifPresentOrElse(p -> shPostUnifiedRepository.save(fromShPost(p)),
+                        () -> shPostUnifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED)
+                                .ifPresent(shPostUnifiedRepository::delete));
+        shPostDraftRepository.findById(postId)
+                .ifPresentOrElse(d -> shPostUnifiedRepository.save(fromShPostDraft(d)),
+                        () -> shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT)
+                                .ifPresent(shPostUnifiedRepository::delete));
+    }
+
+    /**
+     * Drops every unified row for a post id regardless of state. Invoked when
+     * the legacy post is deleted.
+     */
+    @Transactional
+    public void removeUnified(String postId) {
+        if (postId == null) return;
+        shPostUnifiedRepository.findById(postId).forEach(shPostUnifiedRepository::delete);
+    }
+
     @Transactional
     public MigrationResult migrateAll() {
         int publishedMigrated = 0;

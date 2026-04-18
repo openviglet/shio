@@ -17,8 +17,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,9 +38,20 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class ShPostUnifiedAPI {
 
     private final ShPostUnifiedRepository shPostUnifiedRepository;
+    private final ShFolderRepository shFolderRepository;
 
-    public ShPostUnifiedAPI(ShPostUnifiedRepository shPostUnifiedRepository) {
+    public ShPostUnifiedAPI(ShPostUnifiedRepository shPostUnifiedRepository,
+                            ShFolderRepository shFolderRepository) {
         this.shPostUnifiedRepository = shPostUnifiedRepository;
+        this.shFolderRepository = shFolderRepository;
+    }
+
+    @GetMapping("/folder/{folderId}")
+    public List<ShPostUnified> listByFolder(@PathVariable String folderId,
+                                            @RequestParam(name = "state", defaultValue = "PUBLISHED") ShPostState state) {
+        return shFolderRepository.findById(folderId)
+                .map(folder -> shPostUnifiedRepository.findByShFolderAndState(folder, state))
+                .orElse(List.of());
     }
 
     @GetMapping("/{id}")

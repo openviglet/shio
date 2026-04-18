@@ -12,7 +12,7 @@ import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { IconFileText } from "@tabler/icons-react"
 import { DialogDelete } from "@/components/dialog.delete"
-import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, ChevronDown, Copy, Move, Trash2, Search, Upload, LayoutGrid, List, Sheet, RefreshCw, ClipboardCopy } from "lucide-react"
+import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, ChevronDown, Copy, Move, Trash2, Search, Upload, LayoutGrid, List, Sheet, RefreshCw, ClipboardCopy, Sparkles } from "lucide-react"
 import { useEffect, useState, useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -530,6 +530,11 @@ export default function ObjectChildrenPage() {
                     <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); item.objectType === "FOLDER" ? navigate(`${ROUTES.CONTENT_ROOT}/folder/${item.id}/edit`) : navigate(`${ROUTES.CONTENT_ROOT}/post/${item.id}`) }}>
                       <Pencil className="h-3 w-3" /> Edit
                     </button>
+                    {item.objectType !== "FOLDER" && (
+                      <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); navigate(`${ROUTES.CONTENT_ROOT}/post-unified/${item.id}`) }}>
+                        <Sparkles className="h-3 w-3" /> Edit (JSON)
+                      </button>
+                    )}
                     <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); handleClone(item.id) }}>
                       <ClipboardCopy className="h-3 w-3" /> Clone
                     </button>
