@@ -12,7 +12,9 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
+import com.viglet.shio.persistence.repository.post.ShPostRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 
@@ -51,15 +54,18 @@ public class ShPostUnifiedWriteService {
     private final ShPostAPI shPostAPI;
     private final ShFolderRepository shFolderRepository;
     private final ShPostTypeRepository shPostTypeRepository;
+    private final ShPostRepository shPostRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
 
     public ShPostUnifiedWriteService(ShPostAPI shPostAPI,
                                      ShFolderRepository shFolderRepository,
                                      ShPostTypeRepository shPostTypeRepository,
+                                     ShPostRepository shPostRepository,
                                      ShPostUnifiedRepository shPostUnifiedRepository) {
         this.shPostAPI = shPostAPI;
         this.shFolderRepository = shFolderRepository;
         this.shPostTypeRepository = shPostTypeRepository;
+        this.shPostRepository = shPostRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
     }
 
@@ -93,6 +99,88 @@ public class ShPostUnifiedWriteService {
                 .or(() -> shPostUnifiedRepository.findByIdAndState(post.getId(), ShPostState.DRAFT))
                 .orElseThrow(() -> new IllegalStateException(
                         "Post saved but not projected to unified table: " + post.getId()));
+    }
+
+    /**
+     * Updates an existing post from the unified payload. Existing
+     * {@code ShPostAttr} rows are kept in place (preserving their ids and
+     * bidirectional links) — only their scalar values are replaced. Relator
+     * subtrees are preserved as-is for now; editing nested relator items via
+     * the unified payload is not supported in this iteration.
+     */
+    @Transactional
+    public ShPostUnified update(String postId, UpdateRequest req) {
+        ShPost post = shPostRepository.findByIdFull(postId)
+                .or(() -> shPostRepository.findById(postId))
+                .orElseThrow(() -> new IllegalArgumentException("Post not found: " + postId));
+
+        ShPostState state = req.state() != null ? req.state() : ShPostState.DRAFT;
+        post.setPublishStatus(state == ShPostState.PUBLISHED
+                ? ShObjectPublishStatus.PUBLISH
+                : ShObjectPublishStatus.DRAFT);
+        post.setModifiedDate(new Date());
+        if (req.modifier() != null) post.setModifier(req.modifier());
+
+        Map<String, ShPostAttr> existingByName = post.getShPostAttrsNonDraft().stream()
+                .filter(a -> a.getShPostTypeAttr() != null && a.getShPostTypeAttr().getName() != null)
+                .collect(Collectors.toMap(
+                        a -> a.getShPostTypeAttr().getName(),
+                        a -> a,
+                        (left, right) -> left));
+
+        ShPostType postType = post.getShPostType();
+        if (postType != null && postType.getShPostTypeAttrs() != null) {
+            List<ShPostTypeAttr> sorted = postType.getShPostTypeAttrs().stream()
+                    .filter(a -> a.getShParentPostTypeAttr() == null)
+                    .sorted(Comparator.comparingInt(ShPostTypeAttr::getOrdinal))
+                    .toList();
+            for (ShPostTypeAttr typeAttr : sorted) {
+                JsonNode value = req.data() != null ? req.data().get(typeAttr.getName()) : null;
+                ShPostAttr existing = existingByName.get(typeAttr.getName());
+                if (existing != null) {
+                    applyValue(existing, typeAttr, value);
+                } else {
+                    ShPostAttr fresh = buildAttr(typeAttr, value);
+                    fresh.setShPost(post);
+                    post.getShPostAttrsNonDraft().add(fresh);
+                }
+            }
+        }
+
+        shPostAPI.postSave(post);
+
+        return shPostUnifiedRepository.findByIdAndState(post.getId(), state)
+                .or(() -> shPostUnifiedRepository.findByIdAndState(post.getId(), ShPostState.PUBLISHED))
+                .or(() -> shPostUnifiedRepository.findByIdAndState(post.getId(), ShPostState.DRAFT))
+                .orElseThrow(() -> new IllegalStateException(
+                        "Post saved but not projected to unified table: " + post.getId()));
+    }
+
+    private void applyValue(ShPostAttr target, ShPostTypeAttr typeAttr, JsonNode value) {
+        if (value != null && value.isArray() && !value.isEmpty() && value.get(0).isObject()) {
+            // Relator payload — preserve existing subtree, skip overwrite
+            return;
+        }
+        target.setStrValue(null);
+        target.setArrayValue(new HashSet<>());
+        target.setDateValue(null);
+        if (value == null || value.isNull()) return;
+        if (value.isArray()) {
+            Set<String> strings = new HashSet<>();
+            for (JsonNode v : value) {
+                if (v != null && !v.isNull()) strings.add(v.asString());
+            }
+            target.setArrayValue(strings);
+            return;
+        }
+        if (value.isTextual()) {
+            target.setStrValue(value.asString());
+        } else if (value.isNumber()) {
+            target.setIntValue(value.asInt());
+            target.setStrValue(value.asString());
+        } else if (value.isBoolean()) {
+            target.setStrValue(Boolean.toString(value.asBoolean()));
+        }
     }
 
     private Set<ShPostAttr> buildAttrs(ShPostType postType, JsonNode data) {
@@ -175,5 +263,8 @@ public class ShPostUnifiedWriteService {
 
     public record CreateRequest(String folderId, String postTypeId, JsonNode data,
                                 ShPostState state, String owner) {
+    }
+
+    public record UpdateRequest(JsonNode data, ShPostState state, String modifier) {
     }
 }
