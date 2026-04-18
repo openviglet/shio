@@ -36,8 +36,10 @@ import java.io.Serial;
 import java.util.HashSet;
 import java.util.Set;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.Lob;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrimaryKeyJoinColumn;
@@ -84,6 +86,16 @@ public class ShPostType extends ShObject {
     private Set<ShPostTypeAttr> shPostTypeAttrs = new HashSet<>();
 
     private String workflowPublishEntity;
+
+    /**
+     * Post-type schema as a JSON array of attribute descriptors. Populated by
+     * {@code ShPostUnifiedMigrationService} as the canonical replacement for
+     * {@link #shPostTypeAttrs} once the unified post model takes over. Nullable
+     * during the coexistence phase so the legacy EAV schema keeps working.
+     */
+    @Lob
+    @Column(name = "schema_json")
+    private String schemaJson;
 
     public ShPostType() {
         this.setObjectType(ShObjectType.POST_TYPE);
