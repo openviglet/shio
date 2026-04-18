@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.onstartup.post.type.ShPostTypeOnStartup;
 import com.viglet.shio.onstartup.provider.auth.ShAuthProviderInstanceOnStartup;
@@ -83,7 +84,21 @@ public class ShOnStartup implements ApplicationRunner {
 		this.shExchangeProviderInstanceOnStartup = shExchangeProviderInstanceOnStartup;
 	}
 
+	/**
+	 * First-time seeding runs inside a single transaction so every
+	 * {@code createDefaultRows} below shares one session. Without this the
+	 * seeders rely on {@code hibernate.enable_lazy_load_no_trans} to hydrate
+	 * relations via short-lived mini-sessions, which Hibernate 7 flags with
+	 * HHH90030002 warnings on every detach.
+	 *
+	 * <p>All-or-nothing is actually desirable here: a failure mid-seed would
+	 * otherwise leave the database in a partially initialized state that
+	 * subsequent boots cannot recover from, because the marker row (see
+	 * {@link ShConfigVarOnStartup#FIRST_TIME_NAME}) would already be in place
+	 * or missing in an inconsistent way.</p>
+	 */
 	@Override
+	@Transactional
 	public void run(ApplicationArguments arg0) throws Exception {
 
 		if (!shConfigVarRepository.existsByPathAndName(shConfigProperties.getSystem(),
