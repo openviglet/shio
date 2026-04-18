@@ -6,26 +6,26 @@ import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconFileText } from "@tabler/icons-react"
-import { Loader2, Save } from "lucide-react"
-import { useEffect, useState } from "react"
+import { Loader2, Save, Sparkles } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
-import { ShPostService } from "@/services/post/post.service"
+import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import type { ShPostType } from "@/models/post-type/post-type"
-import type { ShPost, ShPostAttr } from "@/models/post/post"
+import { buildSchemaFromPostType } from "@/models/post-unified/post-unified"
 import { GradientButton, StickySaveBar, toast } from "@viglet/viglet-design-system"
 
 const postTypeService = new ShPostTypeService()
-const postService = new ShPostService()
+const unifiedService = new ShPostUnifiedService()
 
-export default function PostNewPage() {
+export default function PostUnifiedNewPage() {
   const { folderId, postTypeId } = useParams() as { folderId: string; postTypeId: string }
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { resetBreadcrumb } = useBreadcrumb()
   const [postType, setPostType] = useState<ShPostType | null>(null)
-  const [postAttrs, setPostAttrs] = useState<ShPostAttr[]>([])
+  const [data, setData] = useState<Record<string, unknown>>({})
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -33,37 +33,18 @@ export default function PostNewPage() {
       { label: t("content.sites"), href: ROUTES.CONTENT_ROOT },
       { label: t("content.newPost") },
     ])
-    postTypeService.get(postTypeId).then((data) => {
-      setPostType(data)
-      // Build ShPostAttr[] from ShPostTypeAttr[] with empty values
-      const attrs: ShPostAttr[] = (data.shPostTypeAttrs ?? []).map((pta) => ({
-        id: "",
-        strValue: "",
-        arrayValue: [],
-        dateValue: "",
-        intValue: 0,
-        shPostTypeAttr: {
-          id: pta.id,
-          name: pta.name,
-          label: pta.label,
-          description: pta.description,
-          ordinal: pta.ordinal,
-          required: pta.required,
-          isSummary: pta.isSummary,
-          isTitle: pta.isTitle,
-          shWidget: pta.shWidget,
-          widgetSettings: pta.widgetSettings,
-        },
-        shChildrenRelatorItems: [],
-        shChildrenPostAttrs: [],
-      }))
-      setPostAttrs(attrs)
-    })
-  }, [postTypeId, folderId, resetBreadcrumb, t])
+    postTypeService.get(postTypeId).then(setPostType)
+  }, [postTypeId, resetBreadcrumb, t])
 
-  const handleAttrChange = (index: number, updatedAttr: ShPostAttr) => {
-    setPostAttrs((prev) => prev.map((attr, i) => (i === index ? updatedAttr : attr)))
-  }
+  const schema = useMemo(
+    () => (postType ? buildSchemaFromPostType(postType) : []),
+    [postType]
+  )
+
+  const visibleFieldCount = useMemo(
+    () => schema.filter((f) => f.widget !== "Hidden" && f.widget !== "Tab").length,
+    [schema]
+  )
 
   const navigateBack = () => navigate(`${ROUTES.CONTENT_ROOT}/object/${folderId}`)
 
@@ -71,18 +52,12 @@ export default function PostNewPage() {
     if (!postType) return
     setIsLoading(true)
     try {
-      const titleAttr = postAttrs.find((a) => a.shPostTypeAttr?.isTitle === 1)
-      const summaryAttr = postAttrs.find((a) => a.shPostTypeAttr?.isSummary === 1)
-
-      const post: Partial<ShPost> = {
-        title: titleAttr?.strValue ?? postAttrs[0]?.strValue ?? "",
-        summary: summaryAttr?.strValue ?? "",
-        shPostType: { id: postType.id, name: postType.name, title: postType.title },
-        shFolder: { id: folderId, name: "" },
-        shPostAttrs: postAttrs,
-      }
-
-      await postService.create(post)
+      await unifiedService.create({
+        folderId,
+        postTypeId: postType.id,
+        data,
+        state: "DRAFT",
+      })
       toast.success(t("common.saved"))
       navigateBack()
     } catch {
@@ -105,9 +80,6 @@ export default function PostNewPage() {
   }
 
   const postTypeName = postType.title || postType.name
-  const fieldCount = postAttrs.filter(
-    (a) => a.shPostTypeAttr?.shWidget?.name !== "Hidden"
-  ).length
 
   return (
     <>
@@ -118,8 +90,13 @@ export default function PostNewPage() {
           badges={
             <>
               <BadgeColorful text={postTypeName || ""} className="text-xs" />
+              <BadgeColorful
+                text="unified"
+                className="text-xs"
+                prefix={<Sparkles className="h-3 w-3" />}
+              />
               <Badge variant="secondary" className="text-xs">
-                {fieldCount} {t("content.fields").toLowerCase()}
+                {visibleFieldCount} {t("content.fields").toLowerCase()}
               </Badge>
             </>
           }
@@ -136,15 +113,21 @@ export default function PostNewPage() {
           }
         />
 
-        {/* Form card */}
         <Card>
           <CardHeader className="pb-2" />
           <CardContent>
-            <PostFormFields
-              attrs={postAttrs}
-              onAttrChange={handleAttrChange}
-              postTypeName={postTypeName}
-            />
+            {schema.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                This post type has no fields defined.
+              </p>
+            ) : (
+              <PostFormFields
+                schema={schema}
+                data={data}
+                onDataChange={setData}
+                postTypeName={postTypeName}
+              />
+            )}
           </CardContent>
         </Card>
       </div>

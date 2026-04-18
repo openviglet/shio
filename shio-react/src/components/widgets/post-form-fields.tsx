@@ -4,114 +4,90 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getWidget } from "@/components/widgets"
 import { getWidgetAccentColor } from "@/lib/widget-colors"
-import type { ShPostAttr } from "@/models/post/post"
+import type { ShPostAttr, ShRelatorItem } from "@/models/post/post"
+import type { ShPostTypeSchemaField } from "@/models/post-unified/post-unified"
 import { useMemo } from "react"
 
 interface Props {
-  attrs: ShPostAttr[]
-  onAttrChange: (index: number, updatedAttr: ShPostAttr) => void
+  schema: ShPostTypeSchemaField[]
+  data: Record<string, unknown>
+  onDataChange: (data: Record<string, unknown>) => void
   postId?: string
   postTypeName?: string
 }
 
 interface TabGroup {
   label: string
-  attrs: { attr: ShPostAttr; originalIndex: number }[]
+  fields: ShPostTypeSchemaField[]
 }
 
-export function PostFormFields({ attrs, onAttrChange, postId, postTypeName }: Props) {
-  const sortedAttrs = useMemo(
-    () =>
-      [...attrs]
-        .map((attr, i) => ({ attr, originalIndex: i }))
-        .sort((a, b) => (a.attr.shPostTypeAttr?.ordinal ?? 0) - (b.attr.shPostTypeAttr?.ordinal ?? 0)),
-    [attrs]
+export function PostFormFields({ schema, data, onDataChange, postId, postTypeName }: Props) {
+  const sorted = useMemo(
+    () => [...schema].sort((a, b) => a.ordinal - b.ordinal),
+    [schema]
   )
 
-  // Group attrs into tabs
   const tabs = useMemo(() => {
     const groups: TabGroup[] = []
-    let currentGroup: TabGroup | null = null
-
-    for (const item of sortedAttrs) {
-      const widgetName = item.attr.shPostTypeAttr?.shWidget?.name ?? ""
-      if (widgetName === "Tab") {
-        currentGroup = {
-          label: item.attr.shPostTypeAttr?.label || "Tab",
-          attrs: [],
-        }
-        groups.push(currentGroup)
+    let current: TabGroup | null = null
+    for (const field of sorted) {
+      if (field.widget === "Tab") {
+        current = { label: field.label || field.name, fields: [] }
+        groups.push(current)
       } else {
-        if (!currentGroup) {
-          currentGroup = {
-            label: postTypeName || "General",
-            attrs: [],
-          }
-          groups.push(currentGroup)
+        if (!current) {
+          current = { label: postTypeName || "General", fields: [] }
+          groups.push(current)
         }
-        currentGroup.attrs.push(item)
+        current.fields.push(field)
       }
     }
-
     return groups
-  }, [sortedAttrs, attrs])
+  }, [sorted, postTypeName])
 
+  const renderField = (field: ShPostTypeSchemaField) => {
+    const isHidden = field.widget === "Hidden"
+    const Widget = getWidget(field.widget)
+    const attr = buildAttrFromValue(field, data[field.name])
 
-  const renderField = (item: { attr: ShPostAttr; originalIndex: number }) => {
-    const { attr, originalIndex } = item
-    const widgetName = attr.shPostTypeAttr?.shWidget?.name ?? "Text"
-    const isHidden = widgetName === "Hidden"
-    const Widget = getWidget(widgetName)
-
-    if (isHidden) {
-      return <Widget key={attr.id || originalIndex} attr={attr} onChange={(a) => onAttrChange(originalIndex, a)} />
+    const handleChange = (updated: ShPostAttr) => {
+      onDataChange({ ...data, [field.name]: extractValueFromAttr(field, updated) })
     }
 
-    const accentColor = getWidgetAccentColor(widgetName)
-    const isRequired = attr.shPostTypeAttr?.required === 1
-    const isTitle = attr.shPostTypeAttr?.isTitle === 1
+    if (isHidden) {
+      return <Widget key={field.name} attr={attr} onChange={handleChange} />
+    }
+
+    const accent = getWidgetAccentColor(field.widget)
 
     return (
       <div
-        key={attr.id || originalIndex}
-        className={`rounded-lg border border-l-4 ${accentColor} bg-background p-4 space-y-3 transition-shadow hover:shadow-sm`}
+        key={field.name}
+        className={`rounded-lg border border-l-4 ${accent} bg-background p-4 space-y-3 transition-shadow hover:shadow-sm`}
       >
-        {/* Field header */}
         <div className="flex items-center gap-2 flex-wrap">
           <Label className="text-sm font-semibold flex items-center gap-1.5">
-            {attr.shPostTypeAttr?.label || attr.shPostTypeAttr?.name || `Field ${originalIndex + 1}`}
-            {isRequired && (
-              <span className="text-destructive">*</span>
-            )}
+            {field.label || field.name}
+            {field.required && <span className="text-destructive">*</span>}
           </Label>
           <div className="flex items-center gap-1.5 ml-auto">
-            {isTitle && (
-              <BadgeColorful text="Title" className="text-[10px] px-1.5 py-0 h-5" />
-            )}
-            {attr.shPostTypeAttr?.isSummary === 1 && (
-              <BadgeColorful text="Summary" className="text-[10px] px-1.5 py-0 h-5" />
-            )}
-            <BadgeColorful text={widgetName} className="text-[10px] px-1.5 py-0 h-5 font-medium" />
+            {field.isTitle && <BadgeColorful text="Title" className="text-[10px] px-1.5 py-0 h-5" />}
+            {field.isSummary && <BadgeColorful text="Summary" className="text-[10px] px-1.5 py-0 h-5" />}
+            <BadgeColorful text={field.widget} className="text-[10px] px-1.5 py-0 h-5 font-medium" />
           </div>
         </div>
 
-        {/* Widget */}
-        <Widget attr={attr} onChange={(a) => onAttrChange(originalIndex, a)} postId={postId} />
+        <Widget attr={attr} onChange={handleChange} postId={postId} />
 
-        {/* Description */}
-        {attr.shPostTypeAttr?.description && (
-          <p className="text-xs text-muted-foreground">{attr.shPostTypeAttr.description}</p>
-        )}
+        {field.description && <p className="text-xs text-muted-foreground">{field.description}</p>}
       </div>
     )
   }
 
-  // No tabs: just render fields directly
   if (tabs.length <= 1) {
-    return <div className="space-y-4">{tabs[0]?.attrs.map(renderField)}</div>
+    return <div className="space-y-4">{tabs[0]?.fields.map(renderField)}</div>
   }
 
-  // Multiple tabs: use shadcn Tabs
   return (
     <Tabs defaultValue={tabs[0]?.label} className="w-full">
       <TabsList className="mb-2">
@@ -119,16 +95,131 @@ export function PostFormFields({ attrs, onAttrChange, postId, postTypeName }: Pr
           <TabsTrigger key={tab.label} value={tab.label}>
             {tab.label}
             <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0 h-4">
-              {tab.attrs.length}
+              {tab.fields.length}
             </Badge>
           </TabsTrigger>
         ))}
       </TabsList>
       {tabs.map((tab) => (
         <TabsContent key={tab.label} value={tab.label} className="space-y-4 pt-1">
-          {tab.attrs.map(renderField)}
+          {tab.fields.map(renderField)}
         </TabsContent>
       ))}
     </Tabs>
   )
+}
+
+function buildAttrFromValue(field: ShPostTypeSchemaField, value: unknown): ShPostAttr {
+  const shPostTypeAttr = schemaFieldToAttrMetadata(field)
+  const attr: ShPostAttr = {
+    id: field.name,
+    strValue: "",
+    arrayValue: [],
+    dateValue: "",
+    intValue: 0,
+    shPostTypeAttr,
+  }
+
+  if (value == null) return attr
+
+  if (Array.isArray(value)) {
+    if (value.length > 0 && typeof value[0] === "object") {
+      attr.shChildrenRelatorItems = (value as Array<Record<string, unknown>>).map(valueToRelatorItem(field))
+    } else {
+      attr.arrayValue = (value as unknown[]).filter((v) => v != null).map(String)
+    }
+    return attr
+  }
+
+  if (typeof value === "string") {
+    if (field.widget === "Date") {
+      attr.dateValue = value
+    } else {
+      attr.strValue = value
+    }
+    return attr
+  }
+
+  if (typeof value === "number") {
+    attr.intValue = value
+    attr.strValue = String(value)
+  }
+
+  return attr
+}
+
+function extractValueFromAttr(field: ShPostTypeSchemaField, attr: ShPostAttr): unknown {
+  if (attr.shChildrenRelatorItems && attr.shChildrenRelatorItems.length > 0) {
+    return attr.shChildrenRelatorItems.map((item) => relatorItemToValue(field, item))
+  }
+  if (attr.arrayValue && attr.arrayValue.length > 0) {
+    return [...attr.arrayValue]
+  }
+  if (field.widget === "Date") {
+    return attr.dateValue || null
+  }
+  return attr.strValue ?? null
+}
+
+function valueToRelatorItem(field: ShPostTypeSchemaField) {
+  return (value: Record<string, unknown>): ShRelatorItem => {
+    const childAttrs: ShPostAttr[] = []
+    const children = field.children ?? []
+    for (const child of children) {
+      childAttrs.push({
+        ...buildAttrFromValue(child, value[child.name]),
+        id: `${String(value._id ?? "")}-${child.name}`,
+      })
+    }
+    return {
+      id: (value._id as string) || "",
+      title: (value._title as string | undefined) ?? undefined,
+      summary: (value._summary as string | undefined) ?? undefined,
+      ordinal: (value._ordinal as number) ?? 0,
+      shChildrenPostAttrs: childAttrs,
+    }
+  }
+}
+
+function relatorItemToValue(field: ShPostTypeSchemaField, item: ShRelatorItem): Record<string, unknown> {
+  const out: Record<string, unknown> = {
+    _id: item.id,
+    _ordinal: item.ordinal,
+  }
+  if (item.title !== undefined) out._title = item.title
+  if (item.summary !== undefined) out._summary = item.summary
+  for (const child of field.children ?? []) {
+    const childAttr = item.shChildrenPostAttrs.find((a) => a.shPostTypeAttr?.name === child.name)
+    if (childAttr) {
+      out[child.name] = extractValueFromAttr(child, childAttr)
+    }
+  }
+  return out
+}
+
+function schemaFieldToAttrMetadata(field: ShPostTypeSchemaField): ShPostAttr["shPostTypeAttr"] {
+  return {
+    id: field.name,
+    name: field.name,
+    label: field.label,
+    description: field.description ?? "",
+    ordinal: field.ordinal,
+    required: field.required ? 1 : 0,
+    isSummary: field.isSummary ? 1 : 0,
+    isTitle: field.isTitle ? 1 : 0,
+    shWidget: { name: field.widget },
+    widgetSettings: field.widgetSettings,
+    shPostTypeAttrs: field.children?.map((c) => ({
+      id: c.name,
+      name: c.name,
+      label: c.label,
+      description: c.description ?? "",
+      ordinal: c.ordinal,
+      required: c.required ? 1 : 0,
+      isSummary: c.isSummary ? 1 : 0,
+      isTitle: c.isTitle ? 1 : 0,
+      shWidget: { name: c.widget },
+      widgetSettings: c.widgetSettings,
+    })),
+  }
 }

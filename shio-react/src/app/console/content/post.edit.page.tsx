@@ -6,90 +6,85 @@ import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconFileText } from "@tabler/icons-react"
-import { Loader2, Save, ShieldCheck } from "lucide-react"
-import { useEffect, useState } from "react"
+import { Loader2, Save, Sparkles } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
-import { ShPostService } from "@/services/post/post.service"
-import type { ShPost, ShPostAttr } from "@/models/post/post"
+import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
+import type { ShPostUnified, ShPostState } from "@/models/post-unified/post-unified"
+import { parseSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, StickySaveBar, toast } from "@viglet/viglet-design-system"
 
-const service = new ShPostService()
+const unifiedService = new ShPostUnifiedService()
 
-export default function PostEditPage() {
+export default function PostUnifiedEditPage() {
   const { postId } = useParams() as { postId: string }
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { resetBreadcrumb } = useBreadcrumb()
-  const [post, setPost] = useState<ShPost | null>(null)
-  const [allowPublish, setAllowPublish] = useState(false)
+  const [post, setPost] = useState<ShPostUnified | null>(null)
+  const [state, setState] = useState<ShPostState>("DRAFT")
+  const [data, setData] = useState<Record<string, unknown>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [parentFolderId, setParentFolderId] = useState<string | null>(null)
 
   useEffect(() => {
-    service.get(postId).then((data) => {
-      const shPost = data.shPost
-      setPost(shPost)
-      setAllowPublish(data.allowPublish)
+    async function load() {
+      let unified: ShPostUnified
+      let resolvedState: ShPostState = "DRAFT"
+      try {
+        unified = await unifiedService.get(postId, "DRAFT")
+      } catch {
+        unified = await unifiedService.get(postId, "PUBLISHED")
+        resolvedState = "PUBLISHED"
+      }
+
+      setPost(unified)
+      setState(resolvedState)
+      setData(unified.data || {})
 
       const items: { label: string; href?: string }[] = [
         { label: t("content.sites"), href: ROUTES.CONTENT_ROOT },
       ]
-      const folder = shPost.shFolder
+      const folder = unified.shFolder
       if (folder) {
         setParentFolderId(folder.id)
         const site = folder.shSite
         if (site) {
-          items.push({
-            label: site.name,
-            href: `${ROUTES.CONTENT_ROOT}/object/${site.id}`,
-          })
+          items.push({ label: site.name, href: `${ROUTES.CONTENT_ROOT}/object/${site.id}` })
         }
-        items.push({
-          label: folder.name,
-          href: `${ROUTES.CONTENT_ROOT}/object/${folder.id}`,
-        })
+        items.push({ label: folder.name, href: `${ROUTES.CONTENT_ROOT}/object/${folder.id}` })
       }
-      items.push({ label: shPost.title || t("content.editPost") })
+      items.push({ label: unified.title || t("content.editPost") })
       resetBreadcrumb(items)
-    })
+    }
+    load()
   }, [postId, resetBreadcrumb, t])
 
-  const handleAttrChange = (index: number, updatedAttr: ShPostAttr) => {
-    if (!post) return
-    setPost({
-      ...post,
-      shPostAttrs: post.shPostAttrs.map((attr, i) =>
-        i === index ? updatedAttr : attr
-      ),
-    })
-  }
+  const schema = useMemo(() => parseSchema(post?.shPostType?.schemaJson), [post])
+  const postTypeName = post?.shPostType?.title || post?.shPostType?.name
+
+  const visibleFieldCount = useMemo(
+    () => schema.filter((f) => f.widget !== "Hidden" && f.widget !== "Tab").length,
+    [schema]
+  )
 
   const navigateBack = () =>
     parentFolderId
       ? navigate(`${ROUTES.CONTENT_ROOT}/object/${parentFolderId}`)
       : navigate(ROUTES.CONTENT_ROOT)
 
-  async function handleSave() {
-    if (!post) return
+  async function handleSave(close: boolean) {
     setIsLoading(true)
     try {
-      await service.update(post)
+      const updated = await unifiedService.update(postId, { data, state })
       toast.success(t("common.saved"))
-    } catch {
-      toast.error(t("common.error"))
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  async function handleSaveAndClose() {
-    if (!post) return
-    setIsLoading(true)
-    try {
-      await service.update(post)
-      toast.success(t("common.saved"))
-      navigateBack()
+      if (close) {
+        navigateBack()
+      } else {
+        setPost(updated)
+        setData(updated.data || {})
+      }
     } catch {
       toast.error(t("common.error"))
     } finally {
@@ -109,11 +104,6 @@ export default function PostEditPage() {
     )
   }
 
-  const postTypeName = post.shPostType?.title || post.shPostType?.name
-  const fieldCount = post.shPostAttrs?.filter(
-    (a) => a.shPostTypeAttr?.shWidget?.name !== "Hidden"
-  ).length ?? 0
-
   return (
     <>
       <PageHeader title={t("content.editPost")} turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
@@ -123,25 +113,23 @@ export default function PostEditPage() {
           badges={
             <>
               <BadgeColorful text={postTypeName || ""} className="text-xs" />
-              {allowPublish && (
-                <BadgeColorful
-                  text={t("content.publish")}
-                  className="text-xs"
-                  prefix={<ShieldCheck className="h-3 w-3" />}
-                />
-              )}
+              <BadgeColorful
+                text={state}
+                className="text-xs"
+                prefix={<Sparkles className="h-3 w-3" />}
+              />
               <Badge variant="secondary" className="text-xs">
-                {fieldCount} {t("content.fields").toLowerCase()}
+                {visibleFieldCount} {t("content.fields").toLowerCase()}
               </Badge>
             </>
           }
           actions={
             <>
-              <GradientButton type="button" size="sm" loading={isLoading} onClick={handleSave}>
+              <GradientButton type="button" size="sm" loading={isLoading} onClick={() => handleSave(false)}>
                 <Save className="size-4" />
                 {t("common.save")}
               </GradientButton>
-              <GradientButton type="button" size="sm" variant="outline" disabled={isLoading} onClick={handleSaveAndClose}>
+              <GradientButton type="button" size="sm" variant="outline" disabled={isLoading} onClick={() => handleSave(true)}>
                 {t("content.saveAndClose")}
               </GradientButton>
               <GradientButton type="button" size="sm" variant="ghost" onClick={navigateBack}>
@@ -151,16 +139,23 @@ export default function PostEditPage() {
           }
         />
 
-        {/* Form card */}
         <Card>
           <CardHeader className="pb-2" />
           <CardContent>
-            <PostFormFields
-              attrs={post.shPostAttrs ?? []}
-              onAttrChange={handleAttrChange}
-              postId={postId}
-              postTypeName={postTypeName}
-            />
+            {schema.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Schema JSON is empty for this post type. Run the unified migration (
+                <code>POST /api/v2/migration/unified/run</code>) to populate it.
+              </p>
+            ) : (
+              <PostFormFields
+                schema={schema}
+                data={data}
+                onDataChange={setData}
+                postId={postId}
+                postTypeName={postTypeName}
+              />
+            )}
           </CardContent>
         </Card>
       </div>

@@ -80,7 +80,9 @@ public class ShUserOnStartup {
 		shUser.setFirstName(firstName);
 		shUser.setLastLogin(Instant.now());
 		shUser.setLastName(lastName);
-		shUser.setLastPostType(String.valueOf(shPostType.getId()));
+		if (shPostType != null) {
+			shUser.setLastPostType(String.valueOf(shPostType.getId()));
+		}
 		shUser.setLoginTimes(0);
 		shUser.setPassword(password != null ? passwordEncoder.encode(password) : null);
 		shUser.setRealm("default");

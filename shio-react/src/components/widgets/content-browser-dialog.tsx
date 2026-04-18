@@ -13,7 +13,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import axios from "axios"
 import type { ShFolder } from "@/models/folder/folder"
-import type { ShPost } from "@/models/post/post"
+import type { ShPostUnified as ShPost } from "@/models/post-unified/post-unified"
 import type { ShSite } from "@/models/site/site"
 
 interface ObjectListResponse {
@@ -277,9 +277,9 @@ export function ContentBrowserDialog({
                       ? "bg-primary/10 ring-1 ring-primary/30"
                       : "hover:bg-muted/60"
                   }`}
-                  onClick={() => setSelectedItem({ id: post.id, name: post.title, type: "POST" })}
+                  onClick={() => setSelectedItem({ id: post.id, name: post.title ?? "", type: "POST" })}
                   onDoubleClick={() => {
-                    onSelect(buildSelection(post.id, post.title, "POST"))
+                    onSelect(buildSelection(post.id, post.title ?? "", "POST"))
                     onOpenChange(false)
                   }}
                 >

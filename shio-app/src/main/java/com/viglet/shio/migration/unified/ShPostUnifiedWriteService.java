@@ -8,83 +8,55 @@
  */
 package com.viglet.shio.migration.unified;
 
-import java.util.Comparator;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.viglet.shio.api.post.ShPostAPI;
 import com.viglet.shio.object.ShObjectPublishStatus;
+import com.viglet.shio.object.ShObjectType;
 import com.viglet.shio.persistence.model.folder.ShFolder;
-import com.viglet.shio.persistence.model.post.ShPost;
-import com.viglet.shio.persistence.model.post.ShPostAttr;
-import com.viglet.shio.persistence.model.post.relator.ShRelatorItem;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
-import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.persistence.model.post.unified.ShPostUnifiedId;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
-import com.viglet.shio.persistence.repository.post.ShPostRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * Reverse projection: builds a legacy {@link ShPost} (with nested
- * {@code ShPostAttr} + {@code ShRelatorItem} graph) from a unified post
- * payload and delegates to {@link ShPostAPI#postSave(ShPost)} so the
- * existing publish/draft state machine and side-effects (Turing indexing,
- * furl generation, history commit) stay authoritative.
- *
- * <p>Once {@code postSave} returns, the sync hook in {@code ShPostAPI}
- * re-projects the row into {@code sh_post_unified}.</p>
+ * Stand-alone writer for the unified post model. No legacy bridge — every
+ * create / update / publish / unpublish / delete writes directly against
+ * {@code sh_post_unified} and its composite key.
  */
 @Service
 public class ShPostUnifiedWriteService {
 
-    private final ShPostAPI shPostAPI;
     private final ShFolderRepository shFolderRepository;
     private final ShSiteRepository shSiteRepository;
     private final ShPostTypeRepository shPostTypeRepository;
-    private final ShPostRepository shPostRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
+    private final ObjectMapper objectMapper;
 
-    public ShPostUnifiedWriteService(ShPostAPI shPostAPI,
-                                     ShFolderRepository shFolderRepository,
+    public ShPostUnifiedWriteService(ShFolderRepository shFolderRepository,
                                      ShSiteRepository shSiteRepository,
                                      ShPostTypeRepository shPostTypeRepository,
-                                     ShPostRepository shPostRepository,
-                                     ShPostUnifiedRepository shPostUnifiedRepository) {
-        this.shPostAPI = shPostAPI;
+                                     ShPostUnifiedRepository shPostUnifiedRepository,
+                                     ObjectMapper objectMapper) {
         this.shFolderRepository = shFolderRepository;
         this.shSiteRepository = shSiteRepository;
         this.shPostTypeRepository = shPostTypeRepository;
-        this.shPostRepository = shPostRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
+        this.objectMapper = objectMapper;
     }
 
-    /**
-     * Resolves the caller-supplied container id into an actual {@link ShFolder}.
-     *
-     * <p>The React folder list (and preview / search entry points) navigate
-     * to {@code /content/object/{objectId}}, where {@code objectId} can be
-     * either a real folder id or a site id — clicking a site opens its root
-     * contents, but the URL still carries the site id. When "New post" is
-     * clicked there, that same id is propagated into the create URL. So we
-     * need to accept both shapes and transparently fall back to the site's
-     * root folder when the id belongs to a {@code ShSite}.</p>
-     */
     private ShFolder resolveContainerFolder(String containerId) {
         return shFolderRepository.findById(containerId).orElseGet(() -> {
             ShSite site = shSiteRepository.findById(containerId)
@@ -103,189 +75,137 @@ public class ShPostUnifiedWriteService {
         ShPostType postType = shPostTypeRepository.findById(req.postTypeId())
                 .orElseThrow(() -> new IllegalArgumentException("Post type not found: " + req.postTypeId()));
 
-        ShPost post = new ShPost();
-        post.setShFolder(folder);
-        post.setShPostType(postType);
-        post.setOwner(req.owner());
-        post.setDate(new Date().toInstant());
-        post.setModifiedDate(new Date());
-
         ShPostState state = req.state() != null ? req.state() : ShPostState.DRAFT;
-        post.setPublishStatus(state == ShPostState.PUBLISHED
-                ? ShObjectPublishStatus.PUBLISH
-                : ShObjectPublishStatus.DRAFT);
 
-        Set<ShPostAttr> attrs = buildAttrs(postType, req.data());
-        attrs.forEach(a -> a.setShPost(post));
-        post.setShPostAttrs(new HashSet<>(attrs));
+        ShPostUnified row = new ShPostUnified();
+        row.setState(state);
+        row.setShFolder(folder);
+        row.setShSite(folder.getShSite());
+        row.setShPostType(postType);
+        row.setOwner(req.owner());
+        row.setDate(new Date().toInstant());
+        row.setModifiedDate(new Date());
+        row.setPublished(state == ShPostState.PUBLISHED);
+        row.setPublishStatus(state == ShPostState.PUBLISHED
+                ? ShObjectPublishStatus.PUBLISH : ShObjectPublishStatus.DRAFT);
+        if (state == ShPostState.PUBLISHED) row.setPublicationDate(new Date());
 
-        shPostAPI.postSave(post);
+        String dataJson = writeJson(req.data() != null ? req.data() : objectMapper.createObjectNode());
+        row.setData(dataJson);
 
-        return shPostUnifiedRepository.findByIdAndState(post.getId(), state)
-                .or(() -> shPostUnifiedRepository.findByIdAndState(post.getId(), ShPostState.PUBLISHED))
-                .or(() -> shPostUnifiedRepository.findByIdAndState(post.getId(), ShPostState.DRAFT))
-                .orElseThrow(() -> new IllegalStateException(
-                        "Post saved but not projected to unified table: " + post.getId()));
+        applyTitleAndSummary(row, req.data(), postType);
+
+        return shPostUnifiedRepository.save(row);
     }
 
-    /**
-     * Updates an existing post from the unified payload. Existing
-     * {@code ShPostAttr} rows are kept in place (preserving their ids and
-     * bidirectional links) — only their scalar values are replaced. Relator
-     * subtrees are preserved as-is for now; editing nested relator items via
-     * the unified payload is not supported in this iteration.
-     */
     @Transactional
     public ShPostUnified update(String postId, UpdateRequest req) {
-        ShPost post = shPostRepository.findByIdFull(postId)
-                .or(() -> shPostRepository.findById(postId))
-                .orElseThrow(() -> new IllegalArgumentException("Post not found: " + postId));
-
         ShPostState state = req.state() != null ? req.state() : ShPostState.DRAFT;
-        post.setPublishStatus(state == ShPostState.PUBLISHED
-                ? ShObjectPublishStatus.PUBLISH
-                : ShObjectPublishStatus.DRAFT);
-        post.setModifiedDate(new Date());
-        if (req.modifier() != null) post.setModifier(req.modifier());
+        ShPostUnified row = shPostUnifiedRepository.findByIdAndState(postId, state)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Post not found: " + postId + " state=" + state));
 
-        Map<String, ShPostAttr> existingByName = post.getShPostAttrsNonDraft().stream()
-                .filter(a -> a.getShPostTypeAttr() != null && a.getShPostTypeAttr().getName() != null)
-                .collect(Collectors.toMap(
-                        a -> a.getShPostTypeAttr().getName(),
-                        a -> a,
-                        (left, right) -> left));
-
-        ShPostType postType = post.getShPostType();
-        if (postType != null && postType.getShPostTypeAttrs() != null) {
-            List<ShPostTypeAttr> sorted = postType.getShPostTypeAttrs().stream()
-                    .filter(a -> a.getShParentPostTypeAttr() == null)
-                    .sorted(Comparator.comparingInt(ShPostTypeAttr::getOrdinal))
-                    .toList();
-            for (ShPostTypeAttr typeAttr : sorted) {
-                JsonNode value = req.data() != null ? req.data().get(typeAttr.getName()) : null;
-                ShPostAttr existing = existingByName.get(typeAttr.getName());
-                if (existing != null) {
-                    applyValue(existing, typeAttr, value);
-                } else {
-                    ShPostAttr fresh = buildAttr(typeAttr, value);
-                    fresh.setShPost(post);
-                    post.getShPostAttrsNonDraft().add(fresh);
-                }
-            }
+        if (req.data() != null) {
+            row.setData(writeJson(req.data()));
+            applyTitleAndSummary(row, req.data(), row.getShPostType());
         }
+        row.setModifiedDate(new Date());
+        if (req.modifier() != null) row.setModifier(req.modifier());
+        row.setPublished(state == ShPostState.PUBLISHED);
+        row.setPublishStatus(state == ShPostState.PUBLISHED
+                ? ShObjectPublishStatus.PUBLISH : ShObjectPublishStatus.DRAFT);
 
-        shPostAPI.postSave(post);
-
-        return shPostUnifiedRepository.findByIdAndState(post.getId(), state)
-                .or(() -> shPostUnifiedRepository.findByIdAndState(post.getId(), ShPostState.PUBLISHED))
-                .or(() -> shPostUnifiedRepository.findByIdAndState(post.getId(), ShPostState.DRAFT))
-                .orElseThrow(() -> new IllegalStateException(
-                        "Post saved but not projected to unified table: " + post.getId()));
+        return shPostUnifiedRepository.save(row);
     }
 
-    private void applyValue(ShPostAttr target, ShPostTypeAttr typeAttr, JsonNode value) {
-        if (value != null && value.isArray() && !value.isEmpty() && value.get(0).isObject()) {
-            // Relator payload — preserve existing subtree, skip overwrite
-            return;
-        }
-        target.setStrValue(null);
-        target.setArrayValue(new HashSet<>());
-        target.setDateValue(null);
-        if (value == null || value.isNull()) return;
-        if (value.isArray()) {
-            Set<String> strings = new HashSet<>();
-            for (JsonNode v : value) {
-                if (v != null && !v.isNull()) strings.add(v.asString());
-            }
-            target.setArrayValue(strings);
-            return;
-        }
-        if (value.isTextual()) {
-            target.setStrValue(value.asString());
-        } else if (value.isNumber()) {
-            target.setIntValue(value.asInt());
-            target.setStrValue(value.asString());
-        } else if (value.isBoolean()) {
-            target.setStrValue(Boolean.toString(value.asBoolean()));
-        }
+    @Transactional
+    public ShPostUnified publish(String postId, String publisher) {
+        ShPostUnified draft = shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT)
+                .orElseThrow(() -> new IllegalArgumentException("Draft not found: " + postId));
+
+        shPostUnifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED)
+                .ifPresent(shPostUnifiedRepository::delete);
+
+        ShPostUnified pub = new ShPostUnified();
+        pub.setId(postId);
+        pub.setState(ShPostState.PUBLISHED);
+        pub.setShFolder(draft.getShFolder());
+        pub.setShSite(draft.getShSite());
+        pub.setShPostType(draft.getShPostType());
+        pub.setTitle(draft.getTitle());
+        pub.setSummary(draft.getSummary());
+        pub.setFurl(draft.getFurl());
+        pub.setOwner(draft.getOwner());
+        pub.setDate(draft.getDate());
+        pub.setModifiedDate(new Date());
+        pub.setPublisher(publisher);
+        pub.setPublicationDate(new Date());
+        pub.setPublished(true);
+        pub.setPublishStatus(ShObjectPublishStatus.PUBLISH);
+        pub.setData(draft.getData());
+        return shPostUnifiedRepository.save(pub);
     }
 
-    private Set<ShPostAttr> buildAttrs(ShPostType postType, JsonNode data) {
-        Set<ShPostAttr> result = new HashSet<>();
-        if (postType.getShPostTypeAttrs() == null) return result;
+    @Transactional
+    public void unpublish(String postId) {
+        shPostUnifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED)
+                .ifPresent(shPostUnifiedRepository::delete);
+    }
 
-        List<ShPostTypeAttr> sorted = postType.getShPostTypeAttrs().stream()
+    @Transactional
+    public void delete(String postId) {
+        shPostUnifiedRepository.findById(postId).forEach(shPostUnifiedRepository::delete);
+    }
+
+    private void applyTitleAndSummary(ShPostUnified row, JsonNode data, ShPostType postType) {
+        if (postType == null || postType.getShPostTypeAttrs() == null || data == null) return;
+        StringBuilder title = new StringBuilder();
+        StringBuilder summary = new StringBuilder();
+        postType.getShPostTypeAttrs().stream()
                 .filter(a -> a.getShParentPostTypeAttr() == null)
-                .sorted(Comparator.comparingInt(ShPostTypeAttr::getOrdinal))
-                .toList();
-
-        for (ShPostTypeAttr typeAttr : sorted) {
-            ShPostAttr attr = buildAttr(typeAttr, data != null ? data.get(typeAttr.getName()) : null);
-            result.add(attr);
-        }
-        return result;
+                .sorted((a, b) -> Integer.compare(a.getOrdinal(), b.getOrdinal()))
+                .forEach(attr -> {
+                    JsonNode value = data.get(attr.getName());
+                    if (value == null || value.isNull()) return;
+                    String text = value.isTextual() ? value.asString() : value.toString();
+                    if (attr.getIsTitle() == 1) {
+                        if (!title.isEmpty()) title.append(", ");
+                        title.append(text);
+                    }
+                    if (attr.getIsSummary() == 1) {
+                        if (!summary.isEmpty()) summary.append(", ");
+                        summary.append(text);
+                    }
+                });
+        row.setTitle(title.toString());
+        row.setSummary(summary.toString());
     }
 
-    private ShPostAttr buildAttr(ShPostTypeAttr typeAttr, JsonNode value) {
-        ShPostAttr attr = new ShPostAttr();
-        attr.setShPostTypeAttr(typeAttr);
-
-        if (value == null || value.isNull()) return attr;
-
-        if (value.isArray()) {
-            populateArray(attr, typeAttr, (ArrayNode) value);
-            return attr;
+    private String writeJson(JsonNode data) {
+        if (data == null) {
+            ObjectNode empty = objectMapper.createObjectNode();
+            try {
+                return objectMapper.writeValueAsString(empty);
+            } catch (JacksonException e) {
+                throw new IllegalStateException(e);
+            }
         }
-
-        if (value.isTextual()) {
-            attr.setStrValue(value.asString());
-        } else if (value.isNumber()) {
-            attr.setIntValue(value.asInt());
-            attr.setStrValue(value.asString());
-        } else if (value.isBoolean()) {
-            attr.setStrValue(Boolean.toString(value.asBoolean()));
+        try {
+            return objectMapper.writeValueAsString(data);
+        } catch (JacksonException e) {
+            throw new IllegalStateException("Failed to serialize post data", e);
         }
-        return attr;
     }
 
-    private void populateArray(ShPostAttr attr, ShPostTypeAttr typeAttr, ArrayNode array) {
-        boolean isRelator = !array.isEmpty() && array.get(0).isObject();
-        if (!isRelator) {
-            Set<String> strings = new HashSet<>();
-            for (JsonNode v : array) {
-                if (v != null && !v.isNull()) strings.add(v.asString());
-            }
-            attr.setArrayValue(strings);
-            return;
-        }
+    // Reused helper so existing callers of objectType keep compiling
+    @SuppressWarnings("unused")
+    private static String postObjectType() {
+        return ShObjectType.POST;
+    }
 
-        Set<ShRelatorItem> items = new HashSet<>();
-        int ordinal = 0;
-        for (JsonNode child : array) {
-            if (!child.isObject()) continue;
-            ObjectNode obj = (ObjectNode) child;
-            ShRelatorItem item = new ShRelatorItem();
-            if (obj.has("_title")) item.setTitle(obj.get("_title").asString());
-            if (obj.has("_summary")) item.setSummary(obj.get("_summary").asString());
-            if (obj.has("_ordinal") && obj.get("_ordinal").isInt()) {
-                item.setOrdinal(obj.get("_ordinal").asInt());
-            } else {
-                item.setOrdinal(ordinal++);
-            }
-            Set<ShPostAttr> childAttrs = new HashSet<>();
-            if (typeAttr.getShPostTypeAttrs() != null) {
-                for (ShPostTypeAttr childTypeAttr : typeAttr.getShPostTypeAttrs()) {
-                    JsonNode childValue = obj.get(childTypeAttr.getName());
-                    ShPostAttr childAttr = buildAttr(childTypeAttr, childValue);
-                    childAttr.setShParentRelatorItem(item);
-                    childAttrs.add(childAttr);
-                }
-            }
-            item.setShChildrenPostAttrs(childAttrs);
-            item.setShParentPostAttr(attr);
-            items.add(item);
-        }
-        attr.setShChildrenRelatorItems(items);
+    // Convenience factory for API layer
+    public ShPostUnifiedId idOf(String postId, ShPostState state) {
+        return new ShPostUnifiedId(postId, state);
     }
 
     public record CreateRequest(String folderId, String postTypeId, JsonNode data,

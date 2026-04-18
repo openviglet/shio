@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
-import { useUnifiedEditor } from "@/contexts/unified-editor.context"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import type { ShPostType } from "@/models/post-type/post-type"
 import { IconFileText } from "@tabler/icons-react"
@@ -20,7 +19,6 @@ export default function PostTypeSelectPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { resetBreadcrumb } = useBreadcrumb()
-  const { enabled: useUnified } = useUnifiedEditor()
   const [postTypes, setPostTypes] = useState<ShPostType[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -54,8 +52,7 @@ export default function PostTypeSelectPage() {
 
   const handleSelect = (pt: ShPostType) => {
     localStorage.setItem("sh-last-post-type", pt.id)
-    const suffix = useUnified ? "new-unified" : "new"
-    navigate(`${ROUTES.CONTENT_ROOT}/folder/${folderId}/post-type/${pt.id}/${suffix}`)
+    navigate(`${ROUTES.CONTENT_ROOT}/folder/${folderId}/post-type/${pt.id}/new`)
   }
 
   return (
