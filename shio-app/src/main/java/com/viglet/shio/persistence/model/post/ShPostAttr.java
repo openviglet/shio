@@ -60,6 +60,11 @@ public class ShPostAttr implements Serializable, ShPostAttrImpl {
 	@ShAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
+
+	@TenantId
+	@Column(name = "tenant_id", updatable = false)
+	private String tenantId;
+
 	@Column(name = "date_value")
 	private Date dateValue;
 

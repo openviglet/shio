@@ -12,6 +12,7 @@ import java.time.Instant;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.TenantId;
 
 /**
  * CDA (Content Delivery API) Token entity.
@@ -33,6 +34,10 @@ public class ShApiToken implements Serializable {
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", updatable = false, nullable = false)
     private String id;
+
+    @TenantId
+    @Column(name = "tenant_id", updatable = false)
+    private String tenantId;
 
     @Column(name = "title", length = 100, nullable = false)
     private String title;

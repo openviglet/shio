@@ -29,6 +29,7 @@ import jakarta.persistence.NamedQuery;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.TenantId;
 import com.viglet.shio.persistence.model.object.ShObject;
 import com.viglet.shio.persistence.model.object.ShObjectDraft;
 import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
@@ -50,7 +51,11 @@ public class ShReferenceDraft implements Serializable{
 	@ShAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
-	
+
+	@TenantId
+	@Column(name = "tenant_id", updatable = false)
+	private String tenantId;
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "object_from" , nullable = false)
 	private ShObjectDraft shObjectFrom;

@@ -1,8 +1,6 @@
--- Multi-tenant support: add tenant_id to ShObject.
--- Single shared schema: the tenant discriminator is filtered by Hibernate via @TenantId.
-
-ALTER TABLE "SH_OBJECT" ADD COLUMN IF NOT EXISTS "TENANT_ID" VARCHAR(255);
-
-UPDATE "SH_OBJECT" SET "TENANT_ID" = 'shio' WHERE "TENANT_ID" IS NULL;
-
-CREATE INDEX IF NOT EXISTS "IDX_SH_OBJECT_TENANT" ON "SH_OBJECT" ("TENANT_ID");
+-- Flyway baseline for multi-tenant support.
+--
+-- Hibernate (ddl-auto=update) creates the `tenant_id` columns from @TenantId
+-- annotations; rows predating this feature are backfilled at boot by
+-- ShTenantBackfillRunner. Future schema tweaks live in V2+.
+SELECT 1;
