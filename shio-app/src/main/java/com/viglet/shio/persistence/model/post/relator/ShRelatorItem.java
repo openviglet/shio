@@ -56,6 +56,10 @@ public class ShRelatorItem implements Serializable, ShRelatorItemImpl {
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 
+	@TenantId
+	@Column(name = "tenant_id", updatable = false)
+	private String tenantId;
+
 	private String title;
 
 	private String summary;

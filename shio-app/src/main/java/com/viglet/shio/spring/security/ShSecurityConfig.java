@@ -25,6 +25,7 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
 import com.viglet.shio.property.ShAppProperties;
 import com.viglet.shio.spring.security.auth.ShApiTokenFilter;
 import com.viglet.shio.spring.security.auth.ShLogoutHandler;
+import com.viglet.shio.tenant.ShTenantFilter;
 
 /**
  * @author Alexandre Oliveira
@@ -63,7 +64,8 @@ public class ShSecurityConfig {
             ShAppProperties shAppProperties,
             ShAuthenticationEntryPoint shAuthenticationEntryPoint,
             ShOAuth2UserService shOAuth2UserService,
-            ShOidcUserService shOidcUserService) {
+            ShOidcUserService shOidcUserService,
+            ShTenantFilter shTenantFilter) {
 
         http.headers(header -> header.frameOptions(
                 HeadersConfigurer.FrameOptionsConfig::disable)
@@ -88,6 +90,7 @@ public class ShSecurityConfig {
                         mvc.matcher(LOGIN_PATH)))
                 .addFilterAfter(new ShCsrfHeaderFilter(), BasicAuthenticationFilter.class);
         http.addFilterBefore(shApiTokenFilter, BasicAuthenticationFilter.class);
+        http.addFilterAfter(shTenantFilter, BasicAuthenticationFilter.class);
 
         if (shAppProperties.isKeycloak()) {
             String keycloakUrlFormat = String.format(

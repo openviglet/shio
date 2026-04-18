@@ -26,6 +26,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.NamedQuery;
 
 import lombok.Getter;
+import org.hibernate.annotations.TenantId;
 import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
 
 /**
@@ -45,6 +46,10 @@ public class ShHistory implements Serializable {
 	@ShAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
+
+	@TenantId
+	@Column(name = "tenant_id", updatable = false)
+	private String tenantId;
 
 	private String owner;
 

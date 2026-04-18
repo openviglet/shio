@@ -11,7 +11,7 @@ import ApiTokenPage from "../console/admin/api-token/api-token.page"
 import { ROUTES } from "../routes.const"
 
 export const AdminRoutes = (
-  <Route path={ROUTES.ADMIN_ROOT} element={<AdminRootPage />}>
+  <Route path="admin" element={<AdminRootPage />}>
     <Route index element={<Navigate to={`${ROUTES.ADMIN_ROOT}/users`} replace />} />
     <Route path="users" element={<AdminUsersListPage />} />
     <Route path="users/:userId" element={<AdminUserPage />} />
