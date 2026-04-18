@@ -96,6 +96,12 @@ public class ShPostUnified implements Serializable {
     @Column(length = 255)
     private String owner;
 
+    @Column(length = 255)
+    private String modifier;
+
+    @Column(length = 255)
+    private String publisher;
+
     private boolean published;
 
     @Column(name = "publish_status", length = 32)
@@ -182,6 +188,12 @@ public class ShPostUnified implements Serializable {
     public void setOwner(String owner) {
         this.owner = owner;
     }
+
+    public String getModifier() { return modifier; }
+    public void setModifier(String modifier) { this.modifier = modifier; }
+
+    public String getPublisher() { return publisher; }
+    public void setPublisher(String publisher) { this.publisher = publisher; }
 
     public boolean isPublished() {
         return published;

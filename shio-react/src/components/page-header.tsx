@@ -10,7 +10,6 @@ import { NavLink, useNavigate } from "react-router-dom"
 import { LanguageSwitcher, VigletAppSwitcher } from "@viglet/viglet-design-system"
 import { HeaderUserMenu } from "./header-user-menu"
 import { ModeToggle } from "./mode-toggle"
-import { UnifiedEditorToggle } from "./unified-editor-toggle"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "./ui/breadcrumb"
 
 interface MyComponentProps { turIcon?: React.ElementType; title: string; urlBase?: string }
@@ -66,7 +65,6 @@ export const PageHeader: React.FC<MyComponentProps> = ({ turIcon: TurIcon, title
         </div>
         <div className="ml-auto flex items-center gap-1">
           <div className="hidden md:flex items-center gap-1">
-            <UnifiedEditorToggle />
             <LanguageSwitcher />
             <ModeToggle />
             {discovery?.multiTenant && (

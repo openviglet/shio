@@ -22,11 +22,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.viglet.shio.api.post.ShPostAPI;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.UpdateRequest;
-import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
@@ -36,31 +34,21 @@ import tools.jackson.databind.JsonNode;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-/**
- * Read-only preview API exposing the unified post model.
- *
- * <p>Kept deliberately minimal: the legacy {@code /api/v2/post} endpoints
- * remain the source of truth until the migration lands in production and
- * write paths are switched over.</p>
- */
 @RestController
 @RequestMapping("/api/v2/post-unified")
-@Tag(name = "PostUnified", description = "Preview API for the unified post model")
+@Tag(name = "PostUnified", description = "Unified post model API")
 public class ShPostUnifiedAPI {
 
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
-    private final ShPostAPI shPostAPI;
 
     public ShPostUnifiedAPI(ShPostUnifiedRepository shPostUnifiedRepository,
                             ShFolderRepository shFolderRepository,
-                            ShPostUnifiedWriteService shPostUnifiedWriteService,
-                            ShPostAPI shPostAPI) {
+                            ShPostUnifiedWriteService shPostUnifiedWriteService) {
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
-        this.shPostAPI = shPostAPI;
     }
 
     @PostMapping
@@ -83,9 +71,22 @@ public class ShPostUnifiedAPI {
                 principal != null ? principal.getName() : null));
     }
 
+    @PostMapping("/{id}/publish")
+    public ShPostUnified publish(@PathVariable String id, Principal principal) {
+        return shPostUnifiedWriteService.publish(id,
+                principal != null ? principal.getName() : null);
+    }
+
+    @PostMapping("/{id}/unpublish")
+    public ResponseEntity<Void> unpublish(@PathVariable String id) {
+        shPostUnifiedWriteService.unpublish(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<Boolean> delete(@PathVariable String id, Principal principal) {
-        return shPostAPI.shPostDelete(id, principal);
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        shPostUnifiedWriteService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 
     public record CreatePayload(String folderId, String postTypeId, JsonNode data, ShPostState state) {

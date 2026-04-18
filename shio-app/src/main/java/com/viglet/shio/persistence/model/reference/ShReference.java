@@ -29,21 +29,19 @@ import jakarta.persistence.NamedQuery;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.TenantId;
 import com.viglet.shio.persistence.model.object.ShObject;
-import com.viglet.shio.persistence.model.object.impl.ShObjectImpl;
 import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
 
 /**
  * The persistent class for the ShReference database table.
- * 
+ *
  * @author Alexandre Oliveira
  */
 @Setter
 @Entity
 @NamedQuery(name = "ShReference.findAll", query = "SELECT r FROM ShReference r")
 public class ShReference implements Serializable{
-	
+
 	@Serial
 	private static final long serialVersionUID = 1L;
 	@Getter
@@ -52,24 +50,19 @@ public class ShReference implements Serializable{
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 
-	@Getter
-	@TenantId
-	@Column(name = "TENANT_ID", updatable = false)
-	private String tenantId;
-
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "object_from" , nullable = false)
 	private ShObject shObjectFrom;
-	
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "object_to", nullable = false)
 	private ShObject shObjectTo;
 
-    public ShObjectImpl getShObjectFrom() {
+    public ShObject getShObjectFrom() {
 		return shObjectFrom;
 	}
 
-    public ShObjectImpl getShObjectTo() {
+    public ShObject getShObjectTo() {
 		return shObjectTo;
 	}
 
