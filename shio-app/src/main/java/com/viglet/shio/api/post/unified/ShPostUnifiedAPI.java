@@ -8,20 +8,27 @@
  */
 package com.viglet.shio.api.post.unified;
 
+import java.security.Principal;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+
+import tools.jackson.databind.JsonNode;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -39,11 +46,27 @@ public class ShPostUnifiedAPI {
 
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShFolderRepository shFolderRepository;
+    private final ShPostUnifiedWriteService shPostUnifiedWriteService;
 
     public ShPostUnifiedAPI(ShPostUnifiedRepository shPostUnifiedRepository,
-                            ShFolderRepository shFolderRepository) {
+                            ShFolderRepository shFolderRepository,
+                            ShPostUnifiedWriteService shPostUnifiedWriteService) {
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shFolderRepository = shFolderRepository;
+        this.shPostUnifiedWriteService = shPostUnifiedWriteService;
+    }
+
+    @PostMapping
+    public ShPostUnified create(@RequestBody CreatePayload payload, Principal principal) {
+        return shPostUnifiedWriteService.create(new CreateRequest(
+                payload.folderId(),
+                payload.postTypeId(),
+                payload.data(),
+                payload.state() != null ? payload.state() : ShPostState.DRAFT,
+                principal != null ? principal.getName() : null));
+    }
+
+    public record CreatePayload(String folderId, String postTypeId, JsonNode data, ShPostState state) {
     }
 
     @GetMapping("/folder/{folderId}")
