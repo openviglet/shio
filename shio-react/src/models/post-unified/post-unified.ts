@@ -40,3 +40,43 @@ export function parseSchema(schemaJson?: string | null): ShPostTypeSchemaField[]
     return []
   }
 }
+
+interface LegacyPostTypeAttr {
+  name: string
+  label: string
+  description?: string
+  ordinal: number
+  required: number
+  isTitle: number
+  isSummary: number
+  shWidget: { name: string }
+  widgetSettings?: string
+  shPostTypeAttrs?: LegacyPostTypeAttr[]
+}
+
+export function buildSchemaFromPostType(postType: {
+  schemaJson?: string
+  shPostTypeAttrs?: LegacyPostTypeAttr[]
+}): ShPostTypeSchemaField[] {
+  const fromJson = parseSchema(postType.schemaJson)
+  if (fromJson.length > 0) return fromJson
+  return projectLegacyAttrs(postType.shPostTypeAttrs ?? [])
+}
+
+function projectLegacyAttrs(attrs: LegacyPostTypeAttr[]): ShPostTypeSchemaField[] {
+  return attrs
+    .filter((a) => a.name)
+    .sort((a, b) => a.ordinal - b.ordinal)
+    .map((a) => ({
+      name: a.name,
+      label: a.label,
+      description: a.description,
+      ordinal: a.ordinal,
+      required: a.required === 1,
+      isTitle: a.isTitle === 1,
+      isSummary: a.isSummary === 1,
+      widget: a.shWidget?.name ?? "Text",
+      widgetSettings: a.widgetSettings,
+      children: a.shPostTypeAttrs ? projectLegacyAttrs(a.shPostTypeAttrs) : undefined,
+    }))
+}

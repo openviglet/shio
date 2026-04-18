@@ -1,6 +1,13 @@
 import axios from "axios"
 import type { ShPostState, ShPostUnified } from "@/models/post-unified/post-unified"
 
+export interface CreateUnifiedPostRequest {
+  folderId: string
+  postTypeId: string
+  data: Record<string, unknown>
+  state?: ShPostState
+}
+
 export class ShPostUnifiedService {
   async get(id: string, state: ShPostState = "PUBLISHED"): Promise<ShPostUnified> {
     const response = await axios.get<ShPostUnified>(`/v2/post-unified/${id}`, {
@@ -18,6 +25,11 @@ export class ShPostUnifiedService {
     const response = await axios.get<ShPostUnified[]>(`/v2/post-unified/folder/${folderId}`, {
       params: { state },
     })
+    return response.data
+  }
+
+  async create(req: CreateUnifiedPostRequest): Promise<ShPostUnified> {
+    const response = await axios.post<ShPostUnified>("/v2/post-unified", req)
     return response.data
   }
 }

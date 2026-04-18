@@ -9,6 +9,7 @@ import FolderNewPage from "../console/content/folder.new.page"
 import PostEditPage from "../console/content/post.edit.page"
 import PostNewPage from "../console/content/post.new.page"
 import PostUnifiedEditPage from "../console/content/post-unified.edit.page"
+import PostUnifiedNewPage from "../console/content/post-unified.new.page"
 import PostTypeListPage from "../console/content/post-type.list.page"
 import PostTypeEditPage from "../console/content/post-type.edit.page"
 import PostTypeNewPage from "../console/content/post-type.new.page"
@@ -27,6 +28,7 @@ export const ContentRoutes = (
     <Route path="content/folder/:folderId/new-folder" element={<FolderNewPage />} />
     <Route path="content/folder/:folderId/post-type-select" element={<PostTypeSelectPage />} />
     <Route path="content/folder/:folderId/post-type/:postTypeId/new" element={<PostNewPage />} />
+    <Route path="content/folder/:folderId/post-type/:postTypeId/new-unified" element={<PostUnifiedNewPage />} />
     <Route path="content/post/:postId" element={<PostEditPage />} />
     <Route path="content/post-unified/:postId" element={<PostUnifiedEditPage />} />
     <Route path="content/post-type" element={<PostTypeListPage />} />

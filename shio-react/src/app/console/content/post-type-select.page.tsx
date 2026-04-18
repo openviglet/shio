@@ -1,16 +1,20 @@
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import type { ShPostType } from "@/models/post-type/post-type"
 import { IconFileText } from "@tabler/icons-react"
-import { FolderPlus, Pencil, Star } from "lucide-react"
+import { FolderPlus, Pencil, Sparkles, Star } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import axios from "axios"
+
+const UNIFIED_EDITOR_PREF_KEY = "sh-use-unified-editor"
 
 const postTypeService = new ShPostTypeService()
 
@@ -21,6 +25,7 @@ export default function PostTypeSelectPage() {
   const { resetBreadcrumb } = useBreadcrumb()
   const [postTypes, setPostTypes] = useState<ShPostType[]>([])
   const [loading, setLoading] = useState(true)
+  const [useUnified, setUseUnified] = useState(() => localStorage.getItem(UNIFIED_EDITOR_PREF_KEY) === "1")
 
   useEffect(() => {
     // Build breadcrumb from folder path
@@ -52,16 +57,27 @@ export default function PostTypeSelectPage() {
 
   const handleSelect = (pt: ShPostType) => {
     localStorage.setItem("sh-last-post-type", pt.id)
-    navigate(`${ROUTES.CONTENT_ROOT}/folder/${folderId}/post-type/${pt.id}/new`)
+    const suffix = useUnified ? "new-unified" : "new"
+    navigate(`${ROUTES.CONTENT_ROOT}/folder/${folderId}/post-type/${pt.id}/${suffix}`)
+  }
+
+  const handleToggleUnified = (on: boolean) => {
+    setUseUnified(on)
+    localStorage.setItem(UNIFIED_EDITOR_PREF_KEY, on ? "1" : "0")
   }
 
   return (
     <>
       <PageHeader title="Select Post Type" turIcon={IconFileText} urlBase={ROUTES.CONTENT_ROOT} />
       <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <h2 className="text-xl font-semibold">What would you like to post?</h2>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center flex-wrap">
+            <div className="flex items-center gap-2 pr-2 border-r">
+              <Sparkles className="h-4 w-4 text-orange-500" />
+              <Label htmlFor="unified-toggle" className="text-sm cursor-pointer">Unified editor</Label>
+              <Switch id="unified-toggle" checked={useUnified} onCheckedChange={handleToggleUnified} />
+            </div>
             <Button
               variant="outline"
               size="sm"
