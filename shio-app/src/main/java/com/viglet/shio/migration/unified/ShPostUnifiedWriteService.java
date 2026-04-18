@@ -29,10 +29,12 @@ import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
+import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ArrayNode;
@@ -53,26 +55,51 @@ public class ShPostUnifiedWriteService {
 
     private final ShPostAPI shPostAPI;
     private final ShFolderRepository shFolderRepository;
+    private final ShSiteRepository shSiteRepository;
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShPostRepository shPostRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
 
     public ShPostUnifiedWriteService(ShPostAPI shPostAPI,
                                      ShFolderRepository shFolderRepository,
+                                     ShSiteRepository shSiteRepository,
                                      ShPostTypeRepository shPostTypeRepository,
                                      ShPostRepository shPostRepository,
                                      ShPostUnifiedRepository shPostUnifiedRepository) {
         this.shPostAPI = shPostAPI;
         this.shFolderRepository = shFolderRepository;
+        this.shSiteRepository = shSiteRepository;
         this.shPostTypeRepository = shPostTypeRepository;
         this.shPostRepository = shPostRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
     }
 
+    /**
+     * Resolves the caller-supplied container id into an actual {@link ShFolder}.
+     *
+     * <p>The React folder list (and preview / search entry points) navigate
+     * to {@code /content/object/{objectId}}, where {@code objectId} can be
+     * either a real folder id or a site id — clicking a site opens its root
+     * contents, but the URL still carries the site id. When "New post" is
+     * clicked there, that same id is propagated into the create URL. So we
+     * need to accept both shapes and transparently fall back to the site's
+     * root folder when the id belongs to a {@code ShSite}.</p>
+     */
+    private ShFolder resolveContainerFolder(String containerId) {
+        return shFolderRepository.findById(containerId).orElseGet(() -> {
+            ShSite site = shSiteRepository.findById(containerId)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Folder or site not found: " + containerId));
+            return shFolderRepository.findByShSiteAndRootFolder(site, (byte) 1).stream()
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Site " + containerId + " has no root folder"));
+        });
+    }
+
     @Transactional
     public ShPostUnified create(CreateRequest req) {
-        ShFolder folder = shFolderRepository.findById(req.folderId())
-                .orElseThrow(() -> new IllegalArgumentException("Folder not found: " + req.folderId()));
+        ShFolder folder = resolveContainerFolder(req.folderId());
         ShPostType postType = shPostTypeRepository.findById(req.postTypeId())
                 .orElseThrow(() -> new IllegalArgumentException("Post type not found: " + req.postTypeId()));
 

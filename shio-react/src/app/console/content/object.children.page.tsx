@@ -12,7 +12,8 @@ import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { IconFileText } from "@tabler/icons-react"
 import { DialogDelete } from "@/components/dialog.delete"
-import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, ChevronDown, Copy, Move, Trash2, Search, Upload, LayoutGrid, List, Sheet, RefreshCw, ClipboardCopy, Sparkles } from "lucide-react"
+import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, ChevronDown, Copy, Move, Trash2, Search, Upload, LayoutGrid, List, Sheet, RefreshCw, ClipboardCopy } from "lucide-react"
+import { useUnifiedEditor } from "@/contexts/unified-editor.context"
 import { useEffect, useState, useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -54,6 +55,7 @@ export default function ObjectChildrenPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { resetBreadcrumb } = useBreadcrumb()
+  const { enabled: unifiedEditor } = useUnifiedEditor()
   const [listData, setListData] = useState<ObjectListResponse>({ shFolders: [], shPosts: [] })
   const [breadcrumbPath, setBreadcrumbPath] = useState<BreadcrumbPathItem[]>([])
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
@@ -220,7 +222,8 @@ export default function ObjectChildrenPage() {
     if (item.objectType === "FOLDER") {
       navigate(`${ROUTES.CONTENT_ROOT}/object/${item.id}`)
     } else {
-      navigate(`${ROUTES.CONTENT_ROOT}/post/${item.id}`)
+      const postPath = unifiedEditor ? "post-unified" : "post"
+      navigate(`${ROUTES.CONTENT_ROOT}/${postPath}/${item.id}`)
     }
   }
 
@@ -527,14 +530,9 @@ export default function ObjectChildrenPage() {
 
                   {/* Hover actions - wrap in grid like AngularJS */}
                   <div className="shrink-0 hidden group-hover:flex flex-wrap gap-x-4 gap-y-1 items-start text-xs max-w-70 justify-end">
-                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); item.objectType === "FOLDER" ? navigate(`${ROUTES.CONTENT_ROOT}/folder/${item.id}/edit`) : navigate(`${ROUTES.CONTENT_ROOT}/post/${item.id}`) }}>
+                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); item.objectType === "FOLDER" ? navigate(`${ROUTES.CONTENT_ROOT}/folder/${item.id}/edit`) : navigate(`${ROUTES.CONTENT_ROOT}/${unifiedEditor ? "post-unified" : "post"}/${item.id}`) }}>
                       <Pencil className="h-3 w-3" /> Edit
                     </button>
-                    {item.objectType !== "FOLDER" && (
-                      <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); navigate(`${ROUTES.CONTENT_ROOT}/post-unified/${item.id}`) }}>
-                        <Sparkles className="h-3 w-3" /> Edit (JSON)
-                      </button>
-                    )}
                     <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); handleClone(item.id) }}>
                       <ClipboardCopy className="h-3 w-3" /> Clone
                     </button>
