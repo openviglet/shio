@@ -4,6 +4,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { Input } from "@/components/ui/input"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
+import { useUnifiedEditor } from "@/contexts/unified-editor.context"
 import { IconFileText } from "@tabler/icons-react"
 import { Search } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -24,6 +25,7 @@ interface SearchResult {
 export default function SearchPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { enabled: unifiedEditor } = useUnifiedEditor()
   const [searchParams, setSearchParams] = useSearchParams()
   const { resetBreadcrumb } = useBreadcrumb()
   const [results, setResults] = useState<SearchResult[]>([])
@@ -60,7 +62,7 @@ export default function SearchPage() {
     if (result.type === "folder" && result.id) {
       navigate(`${ROUTES.CONTENT_ROOT}/object/${result.id}`)
     } else if (result.id) {
-      navigate(`${ROUTES.CONTENT_ROOT}/post/${result.id}`)
+      navigate(`${ROUTES.CONTENT_ROOT}/${unifiedEditor ? "post-unified" : "post"}/${result.id}`)
     }
   }
 

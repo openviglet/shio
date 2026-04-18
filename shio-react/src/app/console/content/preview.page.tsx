@@ -21,6 +21,7 @@ import {
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
+import { useUnifiedEditor } from "@/contexts/unified-editor.context"
 import axios from "axios"
 import { toast } from "@viglet/viglet-design-system"
 
@@ -35,6 +36,7 @@ export default function PreviewPage() {
   const { objectId } = useParams() as { objectId: string }
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { enabled: unifiedEditor } = useUnifiedEditor()
   const [isMobile, setIsMobile] = useState(false)
   const [objectInfo, setObjectInfo] = useState<ObjectInfo | null>(null)
   const [previewUrl, setPreviewUrl] = useState("")
@@ -65,7 +67,7 @@ export default function PreviewPage() {
 
   const handleEdit = () => {
     if (objectType === "POST" && objectInfo?.shPost) {
-      navigate(`${ROUTES.CONTENT_ROOT}/post/${objectId}`)
+      navigate(`${ROUTES.CONTENT_ROOT}/${unifiedEditor ? "post-unified" : "post"}/${objectId}`)
     } else if (objectType === "FOLDER") {
       navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/edit`)
     } else if (objectType === "SITE" && objectInfo?.shSite) {
