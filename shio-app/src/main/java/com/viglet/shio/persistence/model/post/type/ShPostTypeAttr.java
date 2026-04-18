@@ -19,10 +19,9 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.*;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
-import com.fasterxml.jackson.annotation.JsonView;
-import com.viglet.shio.api.ShJsonView;
 import com.viglet.shio.persistence.model.widget.ShWidget;
 
 import java.util.HashSet;
@@ -60,7 +59,7 @@ public class ShPostTypeAttr implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.ALL)
     @JoinColumn(name = "postType_id")
-    @JsonView({ShJsonView.ShJsonViewPostTypeAttr.class})
+    @JsonIgnore
     private ShPostType shPostType;
 
     @ManyToOne(cascade = jakarta.persistence.CascadeType.ALL)
@@ -72,7 +71,7 @@ public class ShPostTypeAttr implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.ALL)
     @JoinColumn(name = "parent_relator_id")
-    @JsonView({ShJsonView.ShJsonViewPostTypeAttr.class})
+    @JsonIgnore
     private ShPostTypeAttr shParentPostTypeAttr;
 
     @Transient

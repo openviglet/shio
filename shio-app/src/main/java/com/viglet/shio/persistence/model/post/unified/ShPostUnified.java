@@ -17,6 +17,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -64,6 +65,7 @@ public class ShPostUnified implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
+    @ShAssignableUuidGenerator
     @Column(name = "id", length = 36, nullable = false)
     private String id;
 

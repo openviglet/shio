@@ -16,6 +16,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.NamedQuery;
 
+import org.hibernate.annotations.TenantId;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
 

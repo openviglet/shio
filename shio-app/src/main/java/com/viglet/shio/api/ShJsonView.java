@@ -35,6 +35,4 @@ public class ShJsonView implements Serializable {
 	public interface ShJsonViewPostType extends ShJsonViewGenericType {}
 
 	public interface ShJsonViewPost extends ShJsonViewGenericType {}
-
-	public interface ShJsonViewPostTypeAttr extends ShJsonViewGenericType {}
 }

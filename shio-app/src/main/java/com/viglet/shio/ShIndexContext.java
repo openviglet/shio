@@ -41,18 +41,15 @@ public class ShIndexContext {
 
 	}
 
-	@GetMapping("/content")
-	public String content() {
-		return "content/content-index";
-	}
-
-	@GetMapping("/welcome")
-	public String welcome() {
-		return "welcome/welcome-index";
-	}
-
-	@GetMapping("/preview")
-	public String preview() {
-		return "preview/preview-index";
+	@GetMapping({
+			"/login",
+			"/setup",
+			"/console",
+			"/console/**",
+			"/*/console",
+			"/*/console/**"
+	})
+	public String spa() {
+		return "forward:/index.html";
 	}
 }
