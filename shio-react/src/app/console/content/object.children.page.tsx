@@ -195,7 +195,7 @@ export default function ObjectChildrenPage() {
     if (objectType === "FOLDER") {
       await axios.delete(`/v2/folder/${id}`)
     } else {
-      await axios.delete(`/v2/post/${id}`)
+      await axios.delete(`/v2/post-unified/${id}`)
     }
   }
 

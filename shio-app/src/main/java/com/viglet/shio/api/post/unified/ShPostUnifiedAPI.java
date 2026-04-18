@@ -12,16 +12,20 @@ import java.security.Principal;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.api.post.ShPostAPI;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.UpdateRequest;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
@@ -47,13 +51,16 @@ public class ShPostUnifiedAPI {
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
+    private final ShPostAPI shPostAPI;
 
     public ShPostUnifiedAPI(ShPostUnifiedRepository shPostUnifiedRepository,
                             ShFolderRepository shFolderRepository,
-                            ShPostUnifiedWriteService shPostUnifiedWriteService) {
+                            ShPostUnifiedWriteService shPostUnifiedWriteService,
+                            ShPostAPI shPostAPI) {
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
+        this.shPostAPI = shPostAPI;
     }
 
     @PostMapping
@@ -66,7 +73,25 @@ public class ShPostUnifiedAPI {
                 principal != null ? principal.getName() : null));
     }
 
+    @PutMapping("/{id}")
+    public ShPostUnified update(@PathVariable String id,
+                                @RequestBody UpdatePayload payload,
+                                Principal principal) {
+        return shPostUnifiedWriteService.update(id, new UpdateRequest(
+                payload.data(),
+                payload.state() != null ? payload.state() : ShPostState.DRAFT,
+                principal != null ? principal.getName() : null));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Boolean> delete(@PathVariable String id, Principal principal) {
+        return shPostAPI.shPostDelete(id, principal);
+    }
+
     public record CreatePayload(String folderId, String postTypeId, JsonNode data, ShPostState state) {
+    }
+
+    public record UpdatePayload(JsonNode data, ShPostState state) {
     }
 
     @GetMapping("/folder/{folderId}")

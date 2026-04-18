@@ -6,19 +6,16 @@ import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { UnifiedPostFormFields } from "@/components/widgets/unified-post-form-fields"
 import { IconFileText } from "@tabler/icons-react"
-import { Loader2, Save, ShieldCheck, Sparkles } from "lucide-react"
+import { Loader2, Save, Sparkles } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
-import { ShPostService } from "@/services/post/post.service"
-import type { ShPost, ShPostAttr } from "@/models/post/post"
-import type { ShPostUnified } from "@/models/post-unified/post-unified"
+import type { ShPostUnified, ShPostState } from "@/models/post-unified/post-unified"
 import { parseSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, StickySaveBar, toast } from "@viglet/viglet-design-system"
 
 const unifiedService = new ShPostUnifiedService()
-const legacyService = new ShPostService()
 
 export default function PostUnifiedEditPage() {
   const { postId } = useParams() as { postId: string }
@@ -26,8 +23,7 @@ export default function PostUnifiedEditPage() {
   const navigate = useNavigate()
   const { resetBreadcrumb } = useBreadcrumb()
   const [post, setPost] = useState<ShPostUnified | null>(null)
-  const [legacyPost, setLegacyPost] = useState<ShPost | null>(null)
-  const [allowPublish, setAllowPublish] = useState(false)
+  const [state, setState] = useState<ShPostState>("DRAFT")
   const [data, setData] = useState<Record<string, unknown>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [parentFolderId, setParentFolderId] = useState<string | null>(null)
@@ -35,16 +31,16 @@ export default function PostUnifiedEditPage() {
   useEffect(() => {
     async function load() {
       let unified: ShPostUnified
+      let resolvedState: ShPostState = "DRAFT"
       try {
         unified = await unifiedService.get(postId, "DRAFT")
       } catch {
         unified = await unifiedService.get(postId, "PUBLISHED")
+        resolvedState = "PUBLISHED"
       }
 
-      const legacy = await legacyService.get(postId)
       setPost(unified)
-      setLegacyPost(legacy.shPost)
-      setAllowPublish(legacy.allowPublish)
+      setState(resolvedState)
       setData(unified.data || {})
 
       const items: { label: string; href?: string }[] = [
@@ -78,26 +74,14 @@ export default function PostUnifiedEditPage() {
       ? navigate(`${ROUTES.CONTENT_ROOT}/object/${parentFolderId}`)
       : navigate(ROUTES.CONTENT_ROOT)
 
-  /**
-   * Save path bridges the unified JSON back to the legacy ShPost.
-   * For each shPostAttr on the legacy post, overlay its string/array/date
-   * value from the current data map. Relator items are preserved as-is.
-   * The legacy PUT triggers the server-side sync hook so the unified row
-   * is re-projected automatically.
-   */
   async function handleSave(close: boolean) {
-    if (!legacyPost) return
     setIsLoading(true)
     try {
-      const merged: ShPost = {
-        ...legacyPost,
-        shPostAttrs: (legacyPost.shPostAttrs ?? []).map((attr) => applyDataToAttr(attr, data)),
-      }
-      await legacyService.update(merged)
+      const updated = await unifiedService.update(postId, { data, state })
       toast.success(t("common.saved"))
-      if (close) navigateBack()
-      else {
-        const updated = await unifiedService.get(postId, "DRAFT").catch(() => unifiedService.get(postId, "PUBLISHED"))
+      if (close) {
+        navigateBack()
+      } else {
         setPost(updated)
         setData(updated.data || {})
       }
@@ -130,17 +114,10 @@ export default function PostUnifiedEditPage() {
             <>
               <BadgeColorful text={postTypeName || ""} className="text-xs" />
               <BadgeColorful
-                text={post.state}
+                text={state}
                 className="text-xs"
                 prefix={<Sparkles className="h-3 w-3" />}
               />
-              {allowPublish && (
-                <BadgeColorful
-                  text={t("content.publish")}
-                  className="text-xs"
-                  prefix={<ShieldCheck className="h-3 w-3" />}
-                />
-              )}
               <Badge variant="secondary" className="text-xs">
                 {visibleFieldCount} {t("content.fields").toLowerCase()}
               </Badge>
@@ -184,31 +161,4 @@ export default function PostUnifiedEditPage() {
       </div>
     </>
   )
-}
-
-function applyDataToAttr(attr: ShPostAttr, data: Record<string, unknown>): ShPostAttr {
-  const fieldName = attr.shPostTypeAttr?.name
-  if (!fieldName || !(fieldName in data)) return attr
-
-  const value = data[fieldName]
-  const widget = attr.shPostTypeAttr?.shWidget?.name
-
-  if (value == null) {
-    return { ...attr, strValue: "", arrayValue: [], dateValue: "" }
-  }
-
-  if (Array.isArray(value) && value.length > 0 && typeof value[0] === "object") {
-    // Relator — preserve legacy children rather than reconstructing them
-    return attr
-  }
-
-  if (Array.isArray(value)) {
-    return { ...attr, arrayValue: (value as unknown[]).map(String) }
-  }
-
-  if (widget === "Date") {
-    return { ...attr, dateValue: String(value) }
-  }
-
-  return { ...attr, strValue: String(value) }
 }

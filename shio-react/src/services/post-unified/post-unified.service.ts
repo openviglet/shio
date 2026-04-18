@@ -8,6 +8,11 @@ export interface CreateUnifiedPostRequest {
   state?: ShPostState
 }
 
+export interface UpdateUnifiedPostRequest {
+  data: Record<string, unknown>
+  state?: ShPostState
+}
+
 export class ShPostUnifiedService {
   async get(id: string, state: ShPostState = "PUBLISHED"): Promise<ShPostUnified> {
     const response = await axios.get<ShPostUnified>(`/v2/post-unified/${id}`, {
@@ -31,6 +36,15 @@ export class ShPostUnifiedService {
   async create(req: CreateUnifiedPostRequest): Promise<ShPostUnified> {
     const response = await axios.post<ShPostUnified>("/v2/post-unified", req)
     return response.data
+  }
+
+  async update(id: string, req: UpdateUnifiedPostRequest): Promise<ShPostUnified> {
+    const response = await axios.put<ShPostUnified>(`/v2/post-unified/${id}`, req)
+    return response.data
+  }
+
+  async delete(id: string): Promise<void> {
+    await axios.delete(`/v2/post-unified/${id}`)
   }
 }
 
