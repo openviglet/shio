@@ -29,10 +29,6 @@ updates:
     open-pull-requests-limit: 15
     ignore:
       - dependency-name: "typescript"
-      - dependency-name: "eslint"
-        versions: [">=10.0.0"]
-      - dependency-name: "@eslint/js"
-        versions: [">=10.0.0"]
     groups:
       angular:
         applies-to: version-updates
