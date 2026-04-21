@@ -1,10 +1,23 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { vigletBootLoader } from "@viglet/viglet-design-system/vite";
 import path from "node:path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    vigletBootLoader({
+      title: "Viglet Shio CMS",
+      subtitle: "Content Management System",
+      color: "#FF6347",
+      colorDark: "#e0341b",
+      prefix: "shio",
+      storageKey: "shio-ui-theme",
+      testFlag: "__SHIO_LOADING_TEST__",
+    }),
+    react(),
+    tailwindcss(),
+  ],
   build: {
     emptyOutDir: true,
     chunkSizeWarningLimit: 1000,
