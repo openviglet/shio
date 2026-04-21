@@ -18,14 +18,19 @@ axios.interceptors.request.use(async (config) => {
   return config;
 });
 
-createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <ErrorBoundary>
-        <BackendStatusProvider healthEndpoint="/api/v2/ping">
-          <App />
-        </BackendStatusProvider>
-      </ErrorBoundary>
-    </BrowserRouter>
-  </React.StrictMode>
-)
+// `?loading=1` holds the index.html boot loader for design/regression testing
+// (see the guard in index.html). Bail out before React mounts — the static
+// markup inside `#root` stays visible, animations keep playing.
+if (!(globalThis as Record<string, unknown>).__SHIO_LOADING_TEST__) {
+  createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <BrowserRouter>
+        <ErrorBoundary>
+          <BackendStatusProvider healthEndpoint="/api/v2/ping">
+            <App />
+          </BackendStatusProvider>
+        </ErrorBoundary>
+      </BrowserRouter>
+    </React.StrictMode>
+  )
+}

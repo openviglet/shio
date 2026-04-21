@@ -56,59 +56,78 @@
       .shio-boot-ring.delay-3 { animation-delay: 1.8s; }
       .shio-boot-logo-mark {
         position: relative;
-        width: 88px;
-        height: 88px;
-        box-sizing: border-box;
-        background-color: #FF6347;
+        width: 110px;
+        height: 110px;
         color: #FFDEAD;
-        padding: 8px;
-        border-radius: 12px;
-        border: 3px solid #FFDEAD;
-        box-shadow:
-          0 1px 3px rgba(0, 0, 0, 0.22),
-          0 2px 6px rgba(0, 0, 0, 0.19),
-          0 20px 40px -10px rgba(255, 99, 71, 0.45);
         display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        overflow: hidden;
+        align-items: center;
+        justify-content: center;
+        -webkit-user-select: none;
         user-select: none;
         animation: shio-boot-breathe 2.2s ease-in-out infinite;
       }
+      /* Outer aura — blurred gradient halo. */
       .shio-boot-logo-mark::before {
         content: "";
         position: absolute;
-        inset: -6px;
-        border-radius: 16px;
+        inset: 0;
+        border-radius: 50%;
         background: linear-gradient(135deg, #ff9a76, #ff6347, #e0341b, #ff9a76);
         background-size: 300% 300%;
-        z-index: -1;
-        filter: blur(14px);
-        opacity: 0.55;
+        z-index: -2;
+        filter: blur(18px);
+        opacity: 0.5;
         animation: shio-boot-glow 6s linear infinite;
       }
-      .shio-boot-logo-section {
-        font-size: 11px;
-        font-weight: 300;
-        line-height: 1;
-        opacity: 0.85;
-        letter-spacing: 0.04em;
-        align-self: flex-end;
+      /* Gas cloud — soft disc, almost imperceptible edge. */
+      .shio-boot-logo-mark::after {
+        content: "";
+        position: absolute;
+        inset: 8px;
+        border-radius: 50%;
+        background: radial-gradient(circle at center, #FF6347 0%, rgba(255,99,71,0.6) 55%, rgba(255,99,71,0) 100%);
+        filter: blur(5px);
+        z-index: -1;
+        animation: shio-boot-gas 4s ease-in-out infinite;
       }
-      .shio-boot-logo-acronym {
-        font-size: 40px;
-        font-weight: 900;
-        line-height: 1;
-        align-self: flex-start;
+      @keyframes shio-boot-gas {
+        0%, 100% { transform: scale(1); opacity: 0.85; }
+        50%      { transform: scale(1.08); opacity: 1; }
       }
-      .shio-boot-logo-acronym span {
-        display: inline-block;
-        animation: shio-boot-acronym-glow 2s ease-in-out both infinite;
+
+      /* Chemical-bond animation inside the circle — 6 molecules that fade
+         through each other in a 10s loop. Pure SVG + CSS so no font load is
+         required before the loader looks right. */
+      .shio-boot-molecules {
+        width: 62px;
+        height: 62px;
+        overflow: visible;
       }
-      @keyframes shio-boot-acronym-glow {
-        0%, 100% { text-shadow: 0 0 8px snow, 0 -25px 50px tomato, -25px 25px 50px yellow, 25px 25px 50px tomato; }
-        33%      { text-shadow: 0 0 8px snow, 0 -25px 50px cyan, -25px 25px 50px tomato, 25px 25px 50px cyan; }
-        66%      { text-shadow: 0 0 8px snow, 0 -25px 50px yellow, -25px 25px 50px cyan, 25px 25px 50px yellow; }
+      .shio-boot-molecules line,
+      .shio-boot-molecules path {
+        stroke: #FFDEAD;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+      }
+      .shio-boot-molecules circle { fill: #FFDEAD; }
+      .shio-boot-molecule {
+        opacity: 0;
+        transform-origin: center;
+        animation: shio-boot-molecule-cycle 10s ease-in-out infinite both;
+      }
+      .shio-boot-molecule.m-2 { animation-delay: -1.667s; }
+      .shio-boot-molecule.m-3 { animation-delay: -3.333s; }
+      .shio-boot-molecule.m-4 { animation-delay: -5.000s; }
+      .shio-boot-molecule.m-5 { animation-delay: -6.667s; }
+      .shio-boot-molecule.m-6 { animation-delay: -8.333s; }
+      @keyframes shio-boot-molecule-cycle {
+        0%   { opacity: 0; transform: scale(0.7); }
+        3%   { opacity: 1; transform: scale(1); }
+        14%  { opacity: 1; transform: scale(1); }
+        17%  { opacity: 0; transform: scale(0.7); }
+        100% { opacity: 0; transform: scale(0.7); }
       }
 
       .shio-boot-text {
@@ -187,12 +206,33 @@
         .shio-boot-ring,
         .shio-boot-logo-mark,
         .shio-boot-logo-mark::before,
-        .shio-boot-logo-acronym span,
+        .shio-boot-logo-mark::after,
+        .shio-boot-molecule,
         .shio-boot-text .shio-boot-title,
         .shio-boot-progress::after {
           animation: none !important;
         }
         .shio-boot-ring { opacity: 0.2; transform: scale(1); }
+        .shio-boot-molecule { opacity: 0; }
+        .shio-boot-molecule.m-1 { opacity: 1; transform: scale(1); }
+      }
+
+      /* Visible badge shown only when the loader is held via ?loading=1. */
+      .shio-boot-test-badge {
+        position: fixed;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 6px 12px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #fff;
+        background: linear-gradient(135deg, #dc2626, #ea580c);
+        border-radius: 999px;
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+        z-index: 10000;
       }
     </style>
     <script>
@@ -209,6 +249,21 @@
             });
           }
         } catch (e) { /* ignore */ }
+
+        // ?loading=1 → hold the boot loader indefinitely for design/regression
+        // testing. main.tsx has a matching guard that skips React mount, so
+        // the static markup inside #root stays visible with animations playing.
+        try {
+          if (new URLSearchParams(globalThis.location.search).has("loading")) {
+            globalThis.__SHIO_LOADING_TEST__ = true;
+            document.addEventListener("DOMContentLoaded", function () {
+              var badge = document.createElement("div");
+              badge.className = "shio-boot-test-badge";
+              badge.textContent = "Loading · Test Mode · ?loading=1";
+              document.body.appendChild(badge);
+            });
+          }
+        } catch (e) { /* ignore */ }
       })();
     </script>
   </head>
@@ -220,12 +275,53 @@
           <div class="shio-boot-ring delay-1"></div>
           <div class="shio-boot-ring delay-2"></div>
           <div class="shio-boot-ring delay-3"></div>
-          <div class="shio-boot-logo-mark" aria-label="Sh CMS">
-            <div class="shio-boot-logo-section">CMS</div>
-            <div class="shio-boot-logo-acronym">
-            <span style="animation-delay: -1.0000s">S</span>
-            <span style="animation-delay: -2.0000s">h</span>
-            </div>
+          <div class="shio-boot-logo-mark" aria-label="Viglet Shio CMS">
+            <svg class="shio-boot-molecules" viewBox="0 0 100 100" aria-hidden="true">
+              <g class="shio-boot-molecule m-1">
+                <line x1="28" y1="50" x2="72" y2="50" />
+                <circle cx="28" cy="50" r="7" />
+                <circle cx="72" cy="50" r="7" />
+              </g>
+              <g class="shio-boot-molecule m-2">
+                <path d="M28,68 L50,38 L72,68" />
+                <circle cx="28" cy="68" r="5" />
+                <circle cx="50" cy="38" r="8" />
+                <circle cx="72" cy="68" r="5" />
+              </g>
+              <g class="shio-boot-molecule m-3">
+                <line x1="50" y1="50" x2="25" y2="28" />
+                <line x1="50" y1="50" x2="75" y2="28" />
+                <line x1="50" y1="50" x2="25" y2="72" />
+                <line x1="50" y1="50" x2="75" y2="72" />
+                <circle cx="50" cy="50" r="7" />
+                <circle cx="25" cy="28" r="4.5" />
+                <circle cx="75" cy="28" r="4.5" />
+                <circle cx="25" cy="72" r="4.5" />
+                <circle cx="75" cy="72" r="4.5" />
+              </g>
+              <g class="shio-boot-molecule m-4">
+                <path d="M50,28 L28,68 L72,68 Z" />
+                <circle cx="50" cy="28" r="7" />
+                <circle cx="28" cy="68" r="5" />
+                <circle cx="72" cy="68" r="5" />
+              </g>
+              <g class="shio-boot-molecule m-5">
+                <line x1="18" y1="50" x2="82" y2="50" />
+                <circle cx="18" cy="50" r="5.5" />
+                <circle cx="39.3" cy="50" r="5.5" />
+                <circle cx="60.6" cy="50" r="5.5" />
+                <circle cx="82" cy="50" r="5.5" />
+              </g>
+              <g class="shio-boot-molecule m-6">
+                <path d="M50,22 L74,36 L74,64 L50,78 L26,64 L26,36 Z" />
+                <circle cx="50" cy="22" r="4.5" />
+                <circle cx="74" cy="36" r="4.5" />
+                <circle cx="74" cy="64" r="4.5" />
+                <circle cx="50" cy="78" r="4.5" />
+                <circle cx="26" cy="64" r="4.5" />
+                <circle cx="26" cy="36" r="4.5" />
+              </g>
+            </svg>
           </div>
         </div>
         <div class="shio-boot-text">
