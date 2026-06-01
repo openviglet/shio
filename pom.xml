@@ -85,7 +85,7 @@
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
-                <version>5.6.0.6792</version>
+                <version>5.7.0.6970</version>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -172,17 +172,17 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-core</artifactId>
-                <version>1.5.32</version>
+                <version>1.5.33</version>
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.5.32</version>
+                <version>1.5.33</version>
             </dependency>
             <dependency>
                 <groupId>org.json</groupId>
                 <artifactId>json</artifactId>
-                <version>20251224</version>
+                <version>20260522</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -207,7 +207,7 @@
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
-                <version>2.0.17</version>
+                <version>2.0.18</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
