@@ -169,14 +169,21 @@ Shipped: [`create-shio-app/`](../create-shio-app) scaffolder + Next.js 15 App-Ro
 template (catch-all `[...slug]` → `getPostByUrl`, SSG via `generateStaticParams`,
 ISR via `revalidate`). Detail in [CHANGELOG.md](CHANGELOG.md) Block B. Consumes the
 SH6 client, which consumes the SH1 CDA — the full headless chain end to end.
-**Follow-up (SH9):** swap the fixed `revalidate` for on-demand revalidation driven
-by publish webhooks (needs SH12) + draft preview (needs SH13).
+**Follow-up (SH9 — ✅ shipped):** the fixed `revalidate` is now backed by an
+on-demand revalidation receiver + draft preview (see §II.4).
 
-### II.4 SSG/ISR/SSR recipes + on-demand revalidation (SH9)
+### II.4 SSG/ISR/SSR recipes + on-demand revalidation (SH9) — ✅ shipped
 
-Document the three rendering modes against the CDA and wire publish webhooks
-(§III.1) to Next.js `revalidatePath`/`revalidateTag`, so editing in Shio updates a
-statically-generated site within seconds.
+Shipped (Next.js consumer side): the `create-shio-app` template documents and
+implements all three rendering modes against the CDA — SSG (`generateStaticParams`),
+ISR (`revalidate`), and on-demand revalidation via a signed webhook receiver
+(`app/api/revalidate` → `revalidatePath`/`revalidateTag`), plus SSR draft preview
+(`app/api/preview` + Draft Mode through a PREVIEW-env client, riding on SH5).
+Full recipe + the webhook contract: [recipes/nextjs-rendering.md](recipes/nextjs-rendering.md).
+Detail in [CHANGELOG.md](CHANGELOG.md) Block B. **Dependency note:** the receiver
+defines and is ready for the publish webhook, but the **emitter** lives in the
+backend publish path — that's **SH12** (§III.1). Console "preview this draft" UX
+is **SH13** (§III.2); the rendering side is in place today.
 
 ### II.5 Mature the Universal Editor bridge (SH10)
 

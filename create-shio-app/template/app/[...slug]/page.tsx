@@ -1,7 +1,12 @@
 import { notFound } from "next/navigation";
+import { draftMode } from "next/headers";
 import type { Metadata } from "next";
-import { shio, SITE_ID, slugToUrl } from "@/lib/shio";
+import { getShioClient, shio, SITE_ID, slugToUrl } from "@/lib/shio";
 
+// ISR: pages not pre-rendered at build are rendered on-demand and cached for
+// 60s. For instant updates, wire publish webhooks to `/api/revalidate` (SH9) —
+// then this fixed window is just a fallback. In Draft Mode the route renders
+// dynamically (SSR) and this value is ignored.
 export const revalidate = 60;
 
 type Params = { slug?: string[] };
@@ -24,7 +29,9 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const post = SITE_ID ? await shio.getPostByUrl(SITE_ID, slugToUrl(slug)) : null;
+  if (!SITE_ID) return {};
+  const client = await getShioClient();
+  const post = await client.getPostByUrl(SITE_ID, slugToUrl(slug));
   if (!post) return {};
   return {
     title: post.title ?? undefined,
@@ -40,7 +47,11 @@ export default async function CatchAllPage({
   const { slug } = await params;
   if (!SITE_ID) notFound();
 
-  const post = await shio.getPostByUrl(SITE_ID, slugToUrl(slug));
+  // PREVIEW client when Draft Mode is on (SSR draft preview), PROD otherwise.
+  const { isEnabled: isDraft } = await draftMode();
+  const client = await getShioClient();
+
+  const post = await client.getPostByUrl(SITE_ID, slugToUrl(slug));
   if (!post) notFound();
 
   // `attrs` is the post-type field map (e.g. content, body, image...). This
@@ -50,6 +61,7 @@ export default async function CatchAllPage({
 
   return (
     <article>
+      {isDraft && <DraftBanner />}
       <h1>{post.title}</h1>
       {post.summary && <p style={{ color: "#666" }}>{post.summary}</p>}
       {html ? (
@@ -76,4 +88,23 @@ function pickHtml(attrs: Record<string, unknown>): string | null {
     if (typeof value === "string" && value.trim()) return value;
   }
   return null;
+}
+
+/** Shown while Draft Mode is active; links to disable it. */
+function DraftBanner() {
+  return (
+    <div
+      style={{
+        background: "#fff7ed",
+        border: "1px solid #fdba74",
+        borderRadius: 8,
+        padding: "0.5rem 0.75rem",
+        marginBottom: "1rem",
+        fontSize: "0.85rem",
+      }}
+    >
+      Draft preview is on.{" "}
+      <a href="/api/preview?disable=1">Exit preview</a>
+    </div>
+  );
 }

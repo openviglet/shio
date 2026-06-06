@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { shio, SITE_ID } from "@/lib/shio";
+import { getShioClient, SITE_ID } from "@/lib/shio";
 
 // ISR: re-fetch from the CDA at most once per minute. Pair with publish
-// webhooks + on-demand revalidation later (see Shio roadmap SH9/SH12).
+// webhooks + on-demand revalidation (`/api/revalidate`) for instant updates
+// (see Shio roadmap SH9/SH12). In Draft Mode this renders dynamically (SSR).
 export const revalidate = 60;
 
 export default async function HomePage() {
@@ -10,6 +11,7 @@ export default async function HomePage() {
     return <SetupHint />;
   }
 
+  const shio = await getShioClient();
   const site = await shio.getSite(SITE_ID);
   const listing = await shio.query({ siteId: SITE_ID, size: 50 });
 

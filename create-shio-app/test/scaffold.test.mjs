@@ -40,6 +40,8 @@ test("scaffolds the full template tree", async () => {
       "app/layout.tsx",
       "app/page.tsx",
       "app/[...slug]/page.tsx",
+      "app/api/revalidate/route.ts",
+      "app/api/preview/route.ts",
     ]) {
       assert.ok(files.includes(expected), `missing ${expected}`);
     }
@@ -80,6 +82,37 @@ test("writes .env.local from the supplied connection details", async () => {
     assert.match(env, /SHIO_URL=https:\/\/cms\.example\.test/);
     assert.match(env, /SHIO_SITE_ID=site-123/);
     assert.match(env, /SHIO_CDA_TOKEN=tok-xyz/);
+    // SH9 preview/webhook keys are scaffolded empty.
+    assert.match(env, /SHIO_PREVIEW_TOKEN=\n/);
+    assert.match(env, /SHIO_PREVIEW_SECRET=\n/);
+    assert.match(env, /SHIO_WEBHOOK_SECRET=\n/);
+  });
+});
+
+test("revalidate route verifies the webhook signature and calls revalidatePath", async () => {
+  await withTmp(async (base) => {
+    const targetDir = join(base, "my-site");
+    await scaffold({ targetDir, projectName: "my-site" });
+    const route = await readFile(
+      join(targetDir, "app/api/revalidate/route.ts"),
+      "utf8"
+    );
+    assert.match(route, /x-shio-signature/);
+    assert.match(route, /timingSafeEqual/);
+    assert.match(route, /revalidatePath/);
+  });
+});
+
+test("preview route gates on the secret and toggles draft mode", async () => {
+  await withTmp(async (base) => {
+    const targetDir = join(base, "my-site");
+    await scaffold({ targetDir, projectName: "my-site" });
+    const route = await readFile(
+      join(targetDir, "app/api/preview/route.ts"),
+      "utf8"
+    );
+    assert.match(route, /draftMode/);
+    assert.match(route, /PREVIEW_SECRET/);
   });
 });
 

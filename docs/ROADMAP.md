@@ -45,7 +45,7 @@
 - ✅ **SH6** — shipped → [CHANGELOG.md](CHANGELOG.md) Block B. Standalone zero-dep `@viglet/shio-client` consuming the CDA. (Rebasing `shio-react-sdk` onto it is part of SH7.)
 - ✅ **SH7** — shipped → [CHANGELOG.md](CHANGELOG.md) Block B. `shio-react-sdk` rebased onto `@viglet/shio-client`; new hooks + `ShioRichText`/`ShioImage`/`ShioRelator`/`ShioField`.
 - ✅ **SH8** — shipped → [CHANGELOG.md](CHANGELOG.md) Block B. `create-shio-app` scaffolds a Next.js App-Router site wired to the CDA (`[...slug]` routing, SSG/ISR).
-- 📋 **SH9** (deps: SH8, SH13) **SSG/ISR/SSR recipes + on-demand revalidation** — document the three rendering modes against the CDA; wire publish webhooks (SH12) to Next.js `revalidatePath`/`revalidateTag`. → §II.4
+- ✅ **SH9** — shipped → [CHANGELOG.md](CHANGELOG.md) Block B. SSG/ISR/SSR recipes + on-demand revalidation on the Next.js side: `/api/revalidate` (HMAC-verified webhook → `revalidatePath`/`revalidateTag`) + `/api/preview` (Draft Mode SSR on SH5 PREVIEW keys). Recipe: [recipes/nextjs-rendering.md](recipes/nextjs-rendering.md). The webhook **emitter** is SH12.
 - ⏳ **SH10** (deps: SH1) **Mature the Universal Editor bridge** — `@viglet/shio-editor-cors` exists; harden the inline-edit handshake (field mapping, save-back through CDA write scope, draft preview) so any JS-rendered page becomes visually editable. → §II.5
 - 💭 **SH11** (deps: SH6) **TypeScript type generation from post-types** — a `shio types` codegen step turns each post-type into a `.d.ts`, so page code gets autocomplete on `post.attrs.*`. → §II.6
 

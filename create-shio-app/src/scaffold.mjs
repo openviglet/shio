@@ -52,11 +52,15 @@ export async function scaffold({ targetDir, projectName, url, site, token }) {
     "{{PROJECT_NAME}}": projectName,
   });
 
-  // 4. Write .env.local with the supplied connection details.
+  // 4. Write .env.local with the supplied connection details. The preview /
+  //    webhook keys (SH9) are optional and start empty — see .env.example.
   const env =
     `SHIO_URL=${url ?? "http://localhost:2710"}\n` +
     `SHIO_SITE_ID=${site ?? ""}\n` +
-    `SHIO_CDA_TOKEN=${token ?? ""}\n`;
+    `SHIO_CDA_TOKEN=${token ?? ""}\n` +
+    `SHIO_PREVIEW_TOKEN=\n` +
+    `SHIO_PREVIEW_SECRET=\n` +
+    `SHIO_WEBHOOK_SECRET=\n`;
   await writeFile(join(targetDir, ".env.local"), env, "utf8");
 
   const files = await listFiles(targetDir);
