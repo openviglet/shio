@@ -22,6 +22,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.viglet.shio.api.cda.ShCdaProperties;
+import com.viglet.shio.api.cda.ShCdaRateLimiter;
 import com.viglet.shio.persistence.model.token.ShApiToken;
 import com.viglet.shio.persistence.model.token.ShApiTokenScope;
 import com.viglet.shio.persistence.repository.token.ShApiTokenRepository;
@@ -44,8 +46,21 @@ class ShApiTokenFilterTest {
         SecurityContextHolder.clearContext();
     }
 
+    /** A limiter with a generous budget so it never interferes. */
     private ShApiTokenFilter filter() {
-        return new ShApiTokenFilter(shApiTokenRepository);
+        return new ShApiTokenFilter(shApiTokenRepository, new ShCdaRateLimiter(new ShCdaProperties()));
+    }
+
+    private ShApiTokenFilter filter(ShCdaRateLimiter rateLimiter) {
+        return new ShApiTokenFilter(shApiTokenRepository, rateLimiter);
+    }
+
+    private ShCdaRateLimiter limiterWithCapacity(long capacity) {
+        ShCdaProperties props = new ShCdaProperties();
+        props.getRateLimit().setCapacity(capacity);
+        props.getRateLimit().setRefillTokens(capacity);
+        props.getRateLimit().setRefillPeriodSeconds(60);
+        return new ShCdaRateLimiter(props);
     }
 
     private ShApiToken token(ShApiTokenScope scope, Set<String> siteIds) {
@@ -148,5 +163,26 @@ class ShApiTokenFilterTest {
         filter().doFilter(request("POST", "/api/v2/cda/site"), res, new MockFilterChain());
 
         assertThat(res.getStatus()).isEqualTo(403);
+    }
+
+    @Test
+    void exceedingRateLimitReturns429() throws Exception {
+        when(shApiTokenRepository.findByToken("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of())));
+        ShApiTokenFilter filter = filter(limiterWithCapacity(1));
+
+        // First call within budget → authenticates.
+        MockHttpServletResponse first = new MockHttpServletResponse();
+        filter.doFilter(request("GET", "/api/v2/cda/site"), first, new MockFilterChain());
+        assertThat(first.getStatus()).isEqualTo(200);
+        assertThat(first.getHeader("X-Rate-Limit-Remaining")).isEqualTo("0");
+        SecurityContextHolder.clearContext();
+
+        // Second call exhausts the bucket → 429 + Retry-After, no auth set.
+        MockHttpServletResponse second = new MockHttpServletResponse();
+        filter.doFilter(request("GET", "/api/v2/cda/site"), second, new MockFilterChain());
+        assertThat(second.getStatus()).isEqualTo(429);
+        assertThat(second.getHeader("Retry-After")).isNotNull();
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 }

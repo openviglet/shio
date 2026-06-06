@@ -17,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.viglet.shio.api.cda.ShCdaRateLimiter;
 import com.viglet.shio.persistence.model.token.ShApiToken;
 import com.viglet.shio.persistence.model.token.ShApiTokenScope;
 import com.viglet.shio.persistence.repository.token.ShApiTokenRepository;
@@ -30,8 +31,10 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * CDA (Content Delivery API) Token authentication filter.
  * <p>
- * Authenticates requests with a {@code Key} header containing a valid API token.
- * Grants read-only access (GET only) to content delivery endpoints.
+ * Authenticates requests with a {@code Key} header containing a valid API token,
+ * confined to the {@code /api/v2/cda/**} namespace. Grants authorities by token
+ * scope (SH2 — {@code READ}/{@code PREVIEW}/{@code WRITE}) and enforces a
+ * per-token rate limit (SH3), returning {@code 429} when the budget is spent.
  * </p>
  *
  * @author Alexandre Oliveira
@@ -46,10 +49,14 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
     /** Token auth only applies to the CDA namespace (SH2 — confinement). */
     private static final String CDA_PATH_PREFIX = "/api/v2/cda";
 
-    private final ShApiTokenRepository shApiTokenRepository;
+    private static final String RATE_LIMIT_REMAINING_HEADER = "X-Rate-Limit-Remaining";
 
-    public ShApiTokenFilter(ShApiTokenRepository shApiTokenRepository) {
+    private final ShApiTokenRepository shApiTokenRepository;
+    private final ShCdaRateLimiter rateLimiter;
+
+    public ShApiTokenFilter(ShApiTokenRepository shApiTokenRepository, ShCdaRateLimiter rateLimiter) {
         this.shApiTokenRepository = shApiTokenRepository;
+        this.rateLimiter = rateLimiter;
     }
 
     @Override
@@ -91,6 +98,18 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"CDA tokens only allow read (GET) requests\"}");
+            return;
+        }
+
+        // Per-token rate limit (SH3): keyed by token id, so clients sharing a key
+        // share a budget. Done after the token is known but before granting access.
+        ShCdaRateLimiter.Decision decision = rateLimiter.tryConsume(apiToken.getId());
+        response.setHeader(RATE_LIMIT_REMAINING_HEADER, Long.toString(Math.max(decision.remaining(), 0)));
+        if (!decision.allowed()) {
+            response.setStatus(429); // 429 Too Many Requests
+            response.setHeader("Retry-After", Long.toString(decision.retryAfterSeconds()));
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"Rate limit exceeded\"}");
             return;
         }
 
