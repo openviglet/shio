@@ -29,6 +29,7 @@ public class ShCdaProperties {
 
     private Cache cache = new Cache();
     private RateLimit rateLimit = new RateLimit();
+    private Preview preview = new Preview();
 
     @Getter
     @Setter
@@ -51,5 +52,27 @@ public class ShCdaProperties {
         private long refillTokens = 120;
         /** Refill cadence in seconds. */
         private long refillPeriodSeconds = 60;
+    }
+
+    /**
+     * Short-lived preview tokens (SH13): the console mints an expiring PREVIEW-env
+     * token for a single post and hands the editor a ready-to-open preview URL at
+     * the site's front-end.
+     */
+    @Getter
+    @Setter
+    public static class Preview {
+        /** Master switch for minting preview tokens (the mint endpoint 404s when off). */
+        private boolean enabled = true;
+        /** Default lifetime of a minted preview token, in seconds. */
+        private long ttlSeconds = 900;
+        /** Hard ceiling on a requested ttl, in seconds. */
+        private long maxTtlSeconds = 3600;
+        /** Front-end Draft-Mode route the preview URL points at (SH9 convention). */
+        private String path = "/api/preview";
+        /** Query parameter carrying the minted token to the front-end. */
+        private String tokenParam = "token";
+        /** Query parameter carrying the target page URL to the front-end. */
+        private String urlParam = "url";
     }
 }

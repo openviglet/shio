@@ -1,0 +1,37 @@
+databaseChangeLog:
+  # SH13 — Short-lived preview tokens.
+  # Add expiry + ephemeral flag to api_token. Types kept DB-agnostic
+  # (TIMESTAMP / boolean) per ShLiquibaseChangelogAgnosticTest.
+  - changeSet:
+      id: sh13-api-token-expires-at
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: api_token
+                columnName: expires_at
+      changes:
+        - addColumn:
+            tableName: api_token
+            columns:
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP
+  - changeSet:
+      id: sh13-api-token-ephemeral
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: api_token
+                columnName: ephemeral
+      changes:
+        - addColumn:
+            tableName: api_token
+            columns:
+              - column:
+                  name: ephemeral
+                  type: boolean
+                  defaultValueBoolean: false

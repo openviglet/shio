@@ -115,12 +115,18 @@ token only ever sees `PUBLISHED`.
    Mode on, the route renders dynamically (SSR) through the preview client.
 
 ```
-Enable:  /api/preview?secret=<SHIO_PREVIEW_SECRET>&url=/blog/hello
-Disable: /api/preview?disable=1
+Enable (static secret):  /api/preview?secret=<SHIO_PREVIEW_SECRET>&url=/blog/hello
+Enable (console token):  /api/preview?token=<minted-token>&url=/blog/hello
+Disable:                 /api/preview?disable=1
 ```
 
-This is the link Shio's console hands an editor for "preview this draft"
-(console UX is **SH13**); the rendering side is ready today.
+**SH13** is the console-issued form: the editor clicks **Preview Draft** on a
+post and Shio mints a short-lived, single-site `PREVIEW`-env token, opening
+`/api/preview?token=…`. The route stashes that token in an httpOnly cookie and
+`getShioClient()` reads draft-preferred through it for the session; the token
+expires server-side on its own (no shared secret to leak, nothing to revoke).
+The static-`secret` form (with the long-lived `SHIO_PREVIEW_TOKEN`) still works
+for a permanent preview *deployment*.
 
 ---
 

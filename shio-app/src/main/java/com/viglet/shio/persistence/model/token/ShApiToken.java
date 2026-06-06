@@ -85,4 +85,26 @@ public class ShApiToken implements Serializable {
 
     @Column(name = "enabled")
     private boolean enabled = true;
+
+    /**
+     * Optional expiry (SH13). A {@code null} value (every durable token) never
+     * expires; a non-null value is enforced by {@code ShApiTokenFilter}, which
+     * stops authenticating the token once {@code expiresAt} is in the past. Set
+     * on short-lived preview tokens minted by {@code ShPreviewTokenAPI}.
+     */
+    @Column(name = "expires_at")
+    private Instant expiresAt;
+
+    /**
+     * Whether this token was minted by the SH13 preview flow. Ephemeral tokens
+     * are hidden from the token-management list and are the only rows the
+     * opportunistic expiry purge deletes.
+     */
+    @Column(name = "ephemeral")
+    private boolean ephemeral = false;
+
+    /** @return {@code true} when this token carries an expiry that has passed. */
+    public boolean isExpired(Instant now) {
+        return expiresAt != null && expiresAt.isBefore(now);
+    }
 }

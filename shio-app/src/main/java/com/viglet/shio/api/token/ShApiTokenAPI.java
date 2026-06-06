@@ -45,7 +45,8 @@ public class ShApiTokenAPI {
 
     @GetMapping
     public List<ShApiToken> list() {
-        return shApiTokenRepository.findAllByOrderByTitleAsc();
+        // Durable tokens only — short-lived preview tokens (SH13) are hidden here.
+        return shApiTokenRepository.findByEphemeralFalseOrderByTitleAsc();
     }
 
     @GetMapping("/{id}")

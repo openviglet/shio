@@ -6,16 +6,19 @@ import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconFileText } from "@tabler/icons-react"
-import { Loader2, Save, Sparkles } from "lucide-react"
+import { Eye, Loader2, Save, Sparkles } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
+import axios from "axios"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
+import { ShPreviewTokenService } from "@/services/preview-token/preview-token.service"
 import type { ShPostUnified, ShPostState } from "@/models/post-unified/post-unified"
 import { parseSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, StickySaveBar, toast } from "@viglet/viglet-design-system"
 
 const unifiedService = new ShPostUnifiedService()
+const previewService = new ShPreviewTokenService()
 
 export default function PostUnifiedEditPage() {
   const { postId } = useParams() as { postId: string }
@@ -26,6 +29,7 @@ export default function PostUnifiedEditPage() {
   const [state, setState] = useState<ShPostState>("DRAFT")
   const [data, setData] = useState<Record<string, unknown>>({})
   const [isLoading, setIsLoading] = useState(false)
+  const [isPreviewing, setIsPreviewing] = useState(false)
   const [parentFolderId, setParentFolderId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -69,10 +73,29 @@ export default function PostUnifiedEditPage() {
     [schema]
   )
 
+  const hasSite = Boolean(post?.shFolder?.shSite?.id || post?.shSite?.id)
+
   const navigateBack = () =>
     parentFolderId
       ? navigate(`${ROUTES.CONTENT_ROOT}/object/${parentFolderId}`)
       : navigate(ROUTES.CONTENT_ROOT)
+
+  async function handlePreview() {
+    setIsPreviewing(true)
+    try {
+      const { previewUrl } = await previewService.mint(postId)
+      window.open(previewUrl, "_blank", "noopener")
+    } catch (error) {
+      // 400 = the site has no front-end url configured; 404 = preview disabled / gone.
+      if (axios.isAxiosError(error) && error.response?.status === 400) {
+        toast.error(t("content.previewNoUrl"))
+      } else {
+        toast.error(t("content.previewError"))
+      }
+    } finally {
+      setIsPreviewing(false)
+    }
+  }
 
   async function handleSave(close: boolean) {
     setIsLoading(true)
@@ -125,6 +148,18 @@ export default function PostUnifiedEditPage() {
           }
           actions={
             <>
+              {hasSite && (
+                <GradientButton
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  loading={isPreviewing}
+                  onClick={handlePreview}
+                >
+                  <Eye className="size-4" />
+                  {t("content.previewDraft")}
+                </GradientButton>
+              )}
               <GradientButton type="button" size="sm" loading={isLoading} onClick={() => handleSave(false)}>
                 <Save className="size-4" />
                 {t("common.save")}

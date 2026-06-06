@@ -6,6 +6,7 @@
 package com.viglet.shio.spring.security.auth;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -97,6 +98,13 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         // Look up the token
         ShApiToken apiToken = shApiTokenRepository.findByToken(tokenValue).orElse(null);
         if (apiToken == null || !apiToken.isEnabled()) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // Short-lived preview tokens (SH13) carry an expiry; once it passes the token
+        // stops authenticating — no separate revocation step. Treated like disabled.
+        if (apiToken.isExpired(Instant.now())) {
             filterChain.doFilter(request, response);
             return;
         }

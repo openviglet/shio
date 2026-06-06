@@ -8,6 +8,7 @@ package com.viglet.shio.spring.security.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
 
@@ -244,6 +245,36 @@ class ShApiTokenFilterTest {
         assertThat(auth.getAuthorities()).extracting("authority").contains("ROLE_CDA");
         assertThat(auth.getDetails()).isInstanceOf(ShApiTokenContext.class);
         assertThat(((ShApiTokenContext) auth.getDetails()).allowsSite("siteA")).isTrue();
+    }
+
+    @Test
+    void expiredTokenIsIgnored() throws Exception {
+        // SH13: a short-lived preview token past its expiry stops authenticating.
+        ShApiToken expired = token(ShApiTokenScope.PREVIEW, Set.of(), ShApiTokenEnv.PREVIEW);
+        expired.setExpiresAt(Instant.now().minusSeconds(60));
+        when(shApiTokenRepository.findByToken("the-key")).thenReturn(Optional.of(expired));
+        MockFilterChain chain = new MockFilterChain();
+
+        filter().doFilter(request("GET", "/api/v2/cda/site"), new MockHttpServletResponse(), chain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        assertThat(chain.getRequest()).isNotNull(); // proceeded unauthenticated
+    }
+
+    @Test
+    void unexpiredEphemeralTokenAuthenticates() throws Exception {
+        // SH13: a not-yet-expired ephemeral preview token authenticates and is preview-capable.
+        ShApiToken fresh = token(ShApiTokenScope.PREVIEW, Set.of("siteA"), ShApiTokenEnv.PREVIEW);
+        fresh.setEphemeral(true);
+        fresh.setExpiresAt(Instant.now().plusSeconds(900));
+        when(shApiTokenRepository.findByToken("the-key")).thenReturn(Optional.of(fresh));
+
+        filter().doFilter(request("GET", "/api/v2/cda/site"), new MockHttpServletResponse(), new MockFilterChain());
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(auth).isNotNull();
+        assertThat(auth.getAuthorities()).extracting("authority").contains("ROLE_CDA_PREVIEW");
+        assertThat(((ShApiTokenContext) auth.getDetails()).preview()).isTrue();
     }
 
     @Test
