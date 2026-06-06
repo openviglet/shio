@@ -14,7 +14,10 @@ import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashSet;
+
 import com.viglet.shio.persistence.model.token.ShApiToken;
+import com.viglet.shio.persistence.model.token.ShApiTokenScope;
 import com.viglet.shio.persistence.repository.token.ShApiTokenRepository;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -60,6 +63,8 @@ public class ShApiTokenAPI {
         token.setOwner(principal != null ? principal.getName() : "system");
         token.setCreatedDate(Instant.now());
         token.setEnabled(true);
+        token.setScope(body.getScope() != null ? body.getScope() : ShApiTokenScope.READ);
+        token.setSiteIds(body.getSiteIds() != null ? new HashSet<>(body.getSiteIds()) : new HashSet<>());
 
         shApiTokenRepository.saveAndFlush(token);
         log.info("Created CDA API token '{}' by {}", token.getTitle(), token.getOwner());
@@ -73,6 +78,8 @@ public class ShApiTokenAPI {
                     existing.setTitle(body.getTitle());
                     existing.setDescription(body.getDescription());
                     existing.setEnabled(body.isEnabled());
+                    existing.setScope(body.getScope() != null ? body.getScope() : ShApiTokenScope.READ);
+                    existing.setSiteIds(body.getSiteIds() != null ? new HashSet<>(body.getSiteIds()) : new HashSet<>());
                     // Token value is never updated
                     shApiTokenRepository.saveAndFlush(existing);
                     return ResponseEntity.ok(existing);

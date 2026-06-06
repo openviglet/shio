@@ -2,8 +2,10 @@ import { PageHeader } from "@/components/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -15,9 +17,14 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { toast } from "@viglet/viglet-design-system"
 import { ShApiTokenService } from "@/services/token/api-token.service"
-import type { ShApiToken } from "@/models/token/api-token.model"
+import type { ShApiToken, ShApiTokenScope } from "@/models/token/api-token.model"
+import { ShSiteService } from "@/services/site/site.service"
+import type { ShSite } from "@/models/site/site"
 
 const service = new ShApiTokenService()
+const siteService = new ShSiteService()
+
+const SCOPES: ShApiTokenScope[] = ["READ", "PREVIEW", "WRITE"]
 
 export default function ApiTokenPage() {
   const { t } = useTranslation()
@@ -28,7 +35,9 @@ export default function ApiTokenPage() {
 
   const [item, setItem] = useState<ShApiToken>({
     id: "", title: "", description: "", token: "", owner: "", createdDate: "", enabled: true,
+    scope: "READ", siteIds: [],
   })
+  const [sites, setSites] = useState<ShSite[]>([])
   const [copied, setCopied] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -39,9 +48,21 @@ export default function ApiTokenPage() {
       { label: isNew ? t("common.create") : item.title || tokenId },
     ])
     if (!isNew) {
-      service.get(tokenId).then(setItem)
+      service.get(tokenId).then((token) =>
+        setItem({ ...token, scope: token.scope ?? "READ", siteIds: token.siteIds ?? [] }))
     }
   }, [resetBreadcrumb, t, tokenId, isNew, item.title])
+
+  useEffect(() => {
+    siteService.query().then(setSites).catch(() => setSites([]))
+  }, [])
+
+  const allSites = (item.siteIds?.length ?? 0) === 0
+  const toggleSite = (siteId: string, checked: boolean) => {
+    const current = item.siteIds ?? []
+    const next = checked ? [...current, siteId] : current.filter((id) => id !== siteId)
+    setItem({ ...item, siteIds: next })
+  }
 
   const handleSave = async () => {
     if (!item.title.trim()) {
@@ -142,6 +163,74 @@ export default function ApiTokenPage() {
                   onCheckedChange={(checked) => setItem({ ...item, enabled: checked })} />
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Access section (SH2 — scope + per-site allow-list) */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">{t("apiToken.access")}</CardTitle>
+            <CardDescription>{t("apiToken.accessDesc")}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="scope">{t("apiToken.scope")}</Label>
+                <Tooltip>
+                  <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
+                  <TooltipContent>{t("apiToken.scopeHint")}</TooltipContent>
+                </Tooltip>
+              </div>
+              <Select value={item.scope}
+                onValueChange={(value) => setItem({ ...item, scope: value as ShApiTokenScope })}>
+                <SelectTrigger id="scope">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SCOPES.map((scope) => (
+                    <SelectItem key={scope} value={scope}>
+                      {t(`apiToken.scope${scope.charAt(0)}${scope.slice(1).toLowerCase()}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {t(`apiToken.scope${item.scope.charAt(0)}${item.scope.slice(1).toLowerCase()}Desc`)}
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="allSites">{t("apiToken.allSites")}</Label>
+                  <Tooltip>
+                    <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
+                    <TooltipContent>{t("apiToken.siteAccessHint")}</TooltipContent>
+                  </Tooltip>
+                </div>
+                <Switch id="allSites" checked={allSites}
+                  onCheckedChange={(checked) =>
+                    setItem({ ...item, siteIds: checked ? [] : sites.map((s) => s.id) })} />
+              </div>
+              {!allSites && (
+                <div className="space-y-2 rounded-md border p-3">
+                  <p className="text-xs text-muted-foreground">{t("apiToken.siteAccessDesc")}</p>
+                  {sites.map((site) => (
+                    <div key={site.id} className="flex items-center gap-2">
+                      <Checkbox id={`site-${site.id}`}
+                        checked={item.siteIds?.includes(site.id) ?? false}
+                        onCheckedChange={(checked) => toggleSite(site.id, checked === true)} />
+                      <Label htmlFor={`site-${site.id}`} className="font-normal cursor-pointer">
+                        {site.name}
+                      </Label>
+                    </div>
+                  ))}
+                  {sites.length === 0 && (
+                    <p className="text-xs text-muted-foreground">{t("apiToken.noSites")}</p>
+                  )}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 

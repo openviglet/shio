@@ -70,6 +70,7 @@ export default function ApiTokenListPage() {
                   <TableRow>
                     <TableHead>{t("common.title")}</TableHead>
                     <TableHead>{t("common.description")}</TableHead>
+                    <TableHead>{t("apiToken.scope")}</TableHead>
                     <TableHead>{t("common.status")}</TableHead>
                     <TableHead>{t("common.owner")}</TableHead>
                     <TableHead className="w-24">{t("common.actions")}</TableHead>
@@ -81,6 +82,18 @@ export default function ApiTokenListPage() {
                       onClick={() => navigate(`${ROUTES.ADMIN_TOKENS}/${item.id}`)}>
                       <TableCell className="font-medium">{item.title}</TableCell>
                       <TableCell className="text-muted-foreground">{item.description}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Badge variant="outline">
+                            {t(`apiToken.scope${(item.scope ?? "READ").charAt(0)}${(item.scope ?? "READ").slice(1).toLowerCase()}`)}
+                          </Badge>
+                          {(item.siteIds?.length ?? 0) > 0 && (
+                            <Badge variant="secondary" className="text-xs">
+                              {t("apiToken.sitesCount", { count: item.siteIds.length })}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant={item.enabled ? "default" : "secondary"}>
                           {item.enabled ? t("common.enabled") : t("common.disabled")}

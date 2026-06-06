@@ -6,16 +6,19 @@
 package com.viglet.shio.spring.security.auth;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.jetbrains.annotations.NotNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.viglet.shio.persistence.model.token.ShApiToken;
+import com.viglet.shio.persistence.model.token.ShApiTokenScope;
 import com.viglet.shio.persistence.repository.token.ShApiTokenRepository;
 
 import jakarta.servlet.FilterChain;
@@ -40,6 +43,9 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
 
     private static final String TOKEN_HEADER = "Key";
 
+    /** Token auth only applies to the CDA namespace (SH2 — confinement). */
+    private static final String CDA_PATH_PREFIX = "/api/v2/cda";
+
     private final ShApiTokenRepository shApiTokenRepository;
 
     public ShApiTokenFilter(ShApiTokenRepository shApiTokenRepository) {
@@ -57,6 +63,13 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
             return;
         }
 
+        // Confine token auth to the CDA namespace (SH2). A Key header on any other
+        // path is ignored, so a token can never authenticate a console request.
+        if (!isCdaPath(request)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String tokenValue = request.getHeader(TOKEN_HEADER);
         if (tokenValue == null || tokenValue.isBlank()) {
             filterChain.doFilter(request, response);
@@ -70,27 +83,49 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
             return;
         }
 
-        // CDA tokens are read-only: only allow GET requests
-        if (!"GET".equalsIgnoreCase(request.getMethod())) {
+        ShApiTokenScope scope = apiToken.getScope() != null ? apiToken.getScope() : ShApiTokenScope.READ;
+
+        // READ/PREVIEW tokens are read-only: only allow GET requests. WRITE tokens
+        // may use any method (the CDA write surface itself lands in SH10).
+        if (scope != ShApiTokenScope.WRITE && !"GET".equalsIgnoreCase(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"CDA tokens only allow read (GET) requests\"}");
             return;
         }
 
-        // Grant read-only authority
-        var authorities = List.of(
+        // Grant authorities by scope
+        var authorities = new ArrayList<GrantedAuthority>(List.of(
                 new SimpleGrantedAuthority("ROLE_CDA"),
-                new SimpleGrantedAuthority("ROLE_USER")
-        );
+                new SimpleGrantedAuthority("ROLE_USER")));
+        if (scope == ShApiTokenScope.PREVIEW) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_CDA_PREVIEW"));
+        } else if (scope == ShApiTokenScope.WRITE) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_CDA_WRITE"));
+        }
 
         var authentication = new UsernamePasswordAuthenticationToken(
                 apiToken.getOwner(), null, authorities);
+        // Carry scope + per-site allow-list to the service boundary (SH2).
+        authentication.setDetails(new ShApiTokenContext(
+                apiToken.getId(), scope, apiToken.getSiteIds()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        log.debug("CDA token auth: '{}' by {}", apiToken.getTitle(), apiToken.getOwner());
+        log.debug("CDA token auth: '{}' ({}) by {}", apiToken.getTitle(), scope, apiToken.getOwner());
 
         filterChain.doFilter(request, response);
+    }
+
+    private static boolean isCdaPath(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        if (path == null) {
+            return false;
+        }
+        String contextPath = request.getContextPath();
+        if (contextPath != null && !contextPath.isEmpty() && path.startsWith(contextPath)) {
+            path = path.substring(contextPath.length());
+        }
+        return path.startsWith(CDA_PATH_PREFIX);
     }
 }

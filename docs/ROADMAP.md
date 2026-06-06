@@ -30,7 +30,7 @@
 > seed into a stable, documented, public-grade delivery surface. → §I
 
 - ✅ **SH1** — shipped → [CHANGELOG.md](CHANGELOG.md) Block A. Stable `/api/v2/cda/**` read namespace + frozen DTO contract. Spec: [specs/SH1-cda-read-contract.md](specs/SH1-cda-read-contract.md).
-- 📋 **SH2** (deps: SH1) **API-token scopes + per-site keys** — extend `ShApiToken` with `scope` (read/preview/write) and an optional `siteId` allow-list; `ShApiTokenFilter` enforces them so a public delivery key can read one site and nothing else. → §I.2
+- ✅ **SH2** — shipped → [CHANGELOG.md](CHANGELOG.md) Block A. API-token `scope` (READ/PREVIEW/WRITE) + optional per-site allow-list, enforced in `ShApiTokenFilter` (namespace-confined) + at the `ShCdaService` boundary. Spec: [specs/SH2-token-scopes.md](specs/SH2-token-scopes.md).
 - 📋 **SH3** (deps: SH1) **CDA rate limiting + caching headers** — `Cache-Control`/`ETag` on CDA reads + a per-token bucket limiter, so a key can sit safely on the public internet behind a CDN. → §I.3
 - 📋 **SH4** (deps: SH1) **Real GraphQL delivery schema** — replace the placeholder `schema.graphqls` content surface with a generated read schema over post-types (the programmatic `ShGraphQLSchema` already exists) so JS clients can query exactly the fields a page needs. → §I.4
 - 💭 **SH5** (deps: SH2) **Per-environment keys (prod/preview)** — a key carries `env`; preview keys see drafts (ties into SH13), prod keys see only published. → §I.5

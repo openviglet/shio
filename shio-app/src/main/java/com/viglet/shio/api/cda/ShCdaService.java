@@ -32,6 +32,7 @@ import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 
 /**
  * Content Delivery API (CDA) read service (SH1). All reads are pinned to
@@ -66,17 +67,23 @@ public class ShCdaService {
 
     public List<ShCdaSite> listSites() {
         return shSiteRepository.findAll().stream()
+                .filter(site -> siteAllowed(site.getId()))
                 .map(site -> mapper.toSite(site, rootFolderId(site)))
                 .toList();
     }
 
     public Optional<ShCdaSite> getSite(String siteId) {
+        if (!siteAllowed(siteId)) {
+            return Optional.empty();
+        }
         return shSiteRepository.findById(siteId)
                 .map(site -> mapper.toSite(site, rootFolderId(site)));
     }
 
     public Optional<ShCdaListing> listChildren(String folderId, int page, int size) {
-        return shFolderRepository.findById(folderId).map(folder -> {
+        return shFolderRepository.findById(folderId)
+                .filter(folder -> siteAllowed(siteIdOf(folder)))
+                .map(folder -> {
             List<ShCdaFolder> folders = shFolderRepository.findByParentFolderOrderByPositionAsc(folder).stream()
                     .map(mapper::toFolder)
                     .toList();
@@ -90,18 +97,26 @@ public class ShCdaService {
     public Optional<ShCdaPath> path(String objectId) {
         Optional<ShFolder> asFolder = shFolderRepository.findById(objectId);
         if (asFolder.isPresent()) {
-            return Optional.of(buildPath(asFolder.get()));
+            return asFolder
+                    .filter(folder -> siteAllowed(siteIdOf(folder)))
+                    .map(this::buildPath);
         }
         return shPostUnifiedRepository.findByIdAndState(objectId, STATE)
+                .filter(post -> siteAllowed(siteIdOf(post)))
                 .map(ShPostUnified::getShFolder)
                 .map(this::buildPath);
     }
 
     public Optional<ShCdaPost> getPost(String id) {
-        return shPostUnifiedRepository.findByIdAndState(id, STATE).map(mapper::toPost);
+        return shPostUnifiedRepository.findByIdAndState(id, STATE)
+                .filter(post -> siteAllowed(siteIdOf(post)))
+                .map(mapper::toPost);
     }
 
     public Optional<ShCdaPost> getPostByUrl(String siteId, String url) {
+        if (!siteAllowed(siteId)) {
+            return Optional.empty();
+        }
         for (String candidate : urlCandidates(url)) {
             Optional<ShCdaPost> found = shPostUnifiedRepository
                     .findByShSite_IdAndFurlAndState(siteId, candidate, STATE)
@@ -118,8 +133,11 @@ public class ShCdaService {
         Page<ShPostUnified> posts;
         if (folderId != null && !folderId.isBlank()) {
             posts = shFolderRepository.findById(folderId)
+                    .filter(folder -> siteAllowed(siteIdOf(folder)))
                     .map(folder -> shPostUnifiedRepository.findByShFolderAndState(folder, STATE, pageable))
                     .orElse(Page.empty(pageable));
+        } else if (siteId != null && !siteId.isBlank() && !siteAllowed(siteId)) {
+            posts = Page.empty(pageable);
         } else if (siteId != null && !siteId.isBlank() && postType != null && !postType.isBlank()) {
             posts = shPostUnifiedRepository
                     .findByShSite_IdAndShPostType_NameAndState(siteId, postType, STATE, pageable);
@@ -133,6 +151,28 @@ public class ShCdaService {
     }
 
     // --- helpers ---
+
+    /**
+     * Per-site enforcement (SH2). True when the current token has no allow-list
+     * (or there is no token at all — console/test access), or the site is in the
+     * token's allow-list. A disallowed site collapses to the existing 404/empty
+     * path, so a per-site key cannot distinguish "wrong site" from "missing".
+     */
+    private boolean siteAllowed(String siteId) {
+        return ShApiTokenContext.current()
+                .map(context -> context.allowsSite(siteId))
+                .orElse(true);
+    }
+
+    private static String siteIdOf(ShFolder folder) {
+        ShSite site = folder != null ? folder.getShSite() : null;
+        return site != null ? site.getId() : null;
+    }
+
+    private static String siteIdOf(ShPostUnified post) {
+        ShSite site = post != null ? post.getShSite() : null;
+        return site != null ? site.getId() : null;
+    }
 
     private List<ShCdaPostSummary> summaries(Page<ShPostUnified> posts) {
         return posts.getContent().stream().map(mapper::toSummary).toList();
