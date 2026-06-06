@@ -157,12 +157,14 @@ render components `ShioRichText`, `ShioImage`, `ShioRelator`, plus a `<ShioField
 resolver that mirrors the console's widget map so the *same* field types render
 consistently on the delivery side.
 
-### II.3 `create-shio-app` — Next.js starter (SH8)
+### II.3 `create-shio-app` — Next.js starter (SH8) — ✅ shipped
 
-`npx create-shio-app` scaffolds an App-Router site: env-based instance URL + token,
-a catch-all `[...slug]/page.tsx` that resolves CDA paths to posts, typed content,
-and example layouts. **This is the flagship "JS dev, zero Java" deliverable** — the
-single artifact that proves the whole strategy.
+Shipped: [`create-shio-app/`](../create-shio-app) scaffolder + Next.js 15 App-Router
+template (catch-all `[...slug]` → `getPostByUrl`, SSG via `generateStaticParams`,
+ISR via `revalidate`). Detail in [CHANGELOG.md](CHANGELOG.md) Block B. Consumes the
+SH6 client, which consumes the SH1 CDA — the full headless chain end to end.
+**Follow-up (SH9):** swap the fixed `revalidate` for on-demand revalidation driven
+by publish webhooks (needs SH12) + draft preview (needs SH13).
 
 ### II.4 SSG/ISR/SSR recipes + on-demand revalidation (SH9)
 
