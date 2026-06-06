@@ -33,6 +33,14 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
 
     List<ShPostUnified> findByState(ShPostState state);
 
+    // --- Scheduled publish/unpublish (SH15) sweep finders ---
+
+    /** Rows of {@code state} whose publish schedule is set and now due. */
+    List<ShPostUnified> findByStateAndPublishScheduledDateLessThanEqual(ShPostState state, java.util.Date now);
+
+    /** Rows of {@code state} whose unpublish schedule is set and now due. */
+    List<ShPostUnified> findByStateAndUnpublishScheduledDateLessThanEqual(ShPostState state, java.util.Date now);
+
     // --- CDA (SH1) read finders ---
 
     /** Resolve a post by site + friendly URL; rides {@code idx_post_unified_furl (furl, state)}. */

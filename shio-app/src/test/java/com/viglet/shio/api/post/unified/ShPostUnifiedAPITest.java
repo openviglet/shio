@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.security.Principal;
 import java.time.Instant;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -57,7 +58,7 @@ import jakarta.persistence.PersistenceContext;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
-@SpringBootTest
+@SpringBootTest(properties = "shio.schedule.enabled=false")
 @TestMethodOrder(MethodOrderer.MethodName.class)
 @TestInstance(Lifecycle.PER_CLASS)
 class ShPostUnifiedAPITest {
@@ -68,6 +69,8 @@ class ShPostUnifiedAPITest {
     private ShWidgetRepository shWidgetRepository;
     @Autowired
     private ShPostUnifiedRepository shPostUnifiedRepository;
+    @Autowired
+    private com.viglet.shio.migration.unified.ShPostUnifiedWriteService shPostUnifiedWriteService;
     @Autowired
     private PlatformTransactionManager transactionManager;
 
@@ -271,6 +274,99 @@ class ShPostUnifiedAPITest {
     void stage07cPostUnifiedRestoreUnknownReturnsNotFound() throws Exception {
         mockMvc.perform(post("/api/v2/post-unified/" + UUID.randomUUID() + "/restore")
                         .principal(mockPrincipal))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void stage07dScheduleFuturePublishNotDue() throws Exception {
+        // A future publishAt must be accepted but NOT picked up by the sweep yet.
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("publishAt", System.currentTimeMillis() + 86_400_000L); // +1 day
+
+        mockMvc.perform(post("/api/v2/post-unified/" + newPostId + "/schedule")
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.publishScheduledDate").exists());
+
+        org.junit.jupiter.api.Assertions.assertFalse(
+                shPostUnifiedWriteService.findScheduledPublishDue(new Date()).contains(newPostId),
+                "A future schedule must not be due");
+    }
+
+    @Test
+    void stage07eScheduledPublishFires() throws Exception {
+        // Diverge the draft, schedule a publish in the past, then run the sweep step.
+        ObjectNode update = objectMapper.createObjectNode();
+        update.put("state", "DRAFT");
+        update.putObject("data").put(ShSystemPostTypeAttr.TITLE, "Scheduled Title");
+        mockMvc.perform(put("/api/v2/post-unified/" + newPostId)
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update)))
+                .andExpect(status().isOk());
+
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("publishAt", System.currentTimeMillis() - 1000L);
+        mockMvc.perform(post("/api/v2/post-unified/" + newPostId + "/schedule")
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isOk());
+
+        org.junit.jupiter.api.Assertions.assertTrue(
+                shPostUnifiedWriteService.findScheduledPublishDue(new Date()).contains(newPostId),
+                "A past schedule must be due");
+
+        // Fire the due publish (what ShPostScheduler.sweep() delegates to).
+        shPostUnifiedWriteService.publishScheduled(newPostId);
+
+        mockMvc.perform(get("/api/v2/post-unified/" + newPostId)
+                        .param("state", "PUBLISHED")
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.published").value(true))
+                .andExpect(jsonPath("$.title").value("Scheduled Title"));
+
+        // Schedule field cleared, so it cannot re-fire on the next sweep.
+        org.junit.jupiter.api.Assertions.assertFalse(
+                shPostUnifiedWriteService.findScheduledPublishDue(new Date()).contains(newPostId),
+                "publishScheduledDate must be cleared after firing");
+    }
+
+    @Test
+    void stage07fScheduledUnpublishFires() throws Exception {
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("unpublishAt", System.currentTimeMillis() - 1000L);
+        mockMvc.perform(post("/api/v2/post-unified/" + newPostId + "/schedule")
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isOk());
+
+        shPostUnifiedWriteService.unpublishScheduled(newPostId);
+
+        // The published row is gone after a scheduled unpublish.
+        mockMvc.perform(get("/api/v2/post-unified/" + newPostId)
+                        .param("state", "PUBLISHED")
+                        .principal(mockPrincipal))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void stage07gScheduleUnknownReturnsNotFound() throws Exception {
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("publishAt", System.currentTimeMillis());
+        mockMvc.perform(post("/api/v2/post-unified/" + UUID.randomUUID() + "/schedule")
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isNotFound());
     }
 

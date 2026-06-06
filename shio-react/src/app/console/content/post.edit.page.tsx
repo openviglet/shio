@@ -6,7 +6,7 @@ import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconFileText } from "@tabler/icons-react"
-import { Eye, History, Loader2, Save, Sparkles } from "lucide-react"
+import { Clock, Eye, History, Loader2, Save, Sparkles } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -14,6 +14,7 @@ import axios from "axios"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { ShPreviewTokenService } from "@/services/preview-token/preview-token.service"
 import { PostVersionsDialog } from "@/components/post-versions.dialog"
+import { PostScheduleDialog } from "@/components/post-schedule.dialog"
 import type { ShPostUnified, ShPostState } from "@/models/post-unified/post-unified"
 import { parseSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, StickySaveBar, toast } from "@viglet/viglet-design-system"
@@ -33,6 +34,7 @@ export default function PostUnifiedEditPage() {
   const [isPreviewing, setIsPreviewing] = useState(false)
   const [parentFolderId, setParentFolderId] = useState<string | null>(null)
   const [versionsOpen, setVersionsOpen] = useState(false)
+  const [scheduleOpen, setScheduleOpen] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -171,6 +173,15 @@ export default function PostUnifiedEditPage() {
                 <History className="size-4" />
                 {t("content.versionHistory")}
               </GradientButton>
+              <GradientButton
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setScheduleOpen(true)}
+              >
+                <Clock className="size-4" />
+                {t("content.schedule")}
+              </GradientButton>
               <GradientButton type="button" size="sm" loading={isLoading} onClick={() => handleSave(false)}>
                 <Save className="size-4" />
                 {t("common.save")}
@@ -215,6 +226,15 @@ export default function PostUnifiedEditPage() {
           setPost(d)
           setData(d.data || {})
         }}
+      />
+
+      <PostScheduleDialog
+        postId={postId}
+        publishAt={post.publishScheduledDate}
+        unpublishAt={post.unpublishScheduledDate}
+        open={scheduleOpen}
+        setOpen={setScheduleOpen}
+        onScheduled={(d) => setPost(d)}
       />
     </>
   )

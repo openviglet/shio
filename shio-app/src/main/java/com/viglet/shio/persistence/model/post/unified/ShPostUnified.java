@@ -115,6 +115,14 @@ public class ShPostUnified implements Serializable {
 
     private Date publicationDate;
 
+    /** When set, the scheduler publishes this draft at/after this instant (SH15). */
+    @Column(name = "publish_scheduled_date")
+    private Date publishScheduledDate;
+
+    /** When set, the scheduler unpublishes this post at/after this instant (SH15). */
+    @Column(name = "unpublish_scheduled_date")
+    private Date unpublishScheduledDate;
+
     @Lob
     @Column(name = "data", nullable = false)
     private String data;
@@ -235,6 +243,22 @@ public class ShPostUnified implements Serializable {
 
     public void setPublicationDate(Date publicationDate) {
         this.publicationDate = publicationDate;
+    }
+
+    public Date getPublishScheduledDate() {
+        return publishScheduledDate;
+    }
+
+    public void setPublishScheduledDate(Date publishScheduledDate) {
+        this.publishScheduledDate = publishScheduledDate;
+    }
+
+    public Date getUnpublishScheduledDate() {
+        return unpublishScheduledDate;
+    }
+
+    public void setUnpublishScheduledDate(Date unpublishScheduledDate) {
+        this.unpublishScheduledDate = unpublishScheduledDate;
     }
 
     public String getData() {

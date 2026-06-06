@@ -241,10 +241,17 @@ unified model is **two-row-per-state** (one `DRAFT`, one `PUBLISHED`), not a
 per-save history — a richer version *timeline* (an N-snapshot history table)
 remains a separate, larger task and is deliberately not folded in here.
 
-### III.4 Scheduled publish/unpublish (SH15)
+### III.4 Scheduled publish/unpublish (SH15) — ✅ shipped
 
-`publishAt`/`unpublishAt` on a post + a sweep that fires the transition and the
-webhook (§III.1).
+Shipped: two nullable instants on the post's `DRAFT` row
+(`publishScheduledDate`/`unpublishScheduledDate`) set via `POST
+/api/v2/post-unified/{id}/schedule`, and a `@Scheduled` sweep (`ShPostScheduler`,
+`shio.schedule.*`) that fires each due transition through the existing
+`publish`/`unpublish` path — reusing the §III.1 webhook emitter rather than
+re-firing it. Each due post runs in its own transaction (one failure is skipped,
+not fatal). This introduced the codebase's first `@EnableScheduling`. Detail in
+[CHANGELOG.md](CHANGELOG.md) Block C; spec:
+[specs/SH15-scheduled-publish.md](specs/SH15-scheduled-publish.md).
 
 ### III.5 `shio` CLI (SH16)
 

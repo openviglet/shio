@@ -9,6 +9,7 @@
 package com.viglet.shio.migration.unified;
 
 import java.util.Date;
+import java.util.List;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,9 @@ import tools.jackson.databind.node.ObjectNode;
  */
 @Service
 public class ShPostUnifiedWriteService {
+
+    /** Recorded as the {@code publisher} for transitions fired by the SH15 sweep. */
+    private static final String SCHEDULER_ACTOR = "scheduler";
 
     private final ShFolderRepository shFolderRepository;
     private final ShSiteRepository shSiteRepository;
@@ -190,6 +194,93 @@ public class ShPostUnifiedWriteService {
         draft.setPublished(false);
         draft.setPublishStatus(ShObjectPublishStatus.DRAFT);
         return shPostUnifiedRepository.save(draft);
+    }
+
+    /**
+     * Set (or clear) the scheduled publish/unpublish timestamps on the editable
+     * {@code DRAFT} row (SH15). A {@code null} value clears that schedule. If no
+     * draft row exists, one is re-created from the published row so the sweep has
+     * something to scan. Returns the updated draft.
+     */
+    @Transactional
+    public ShPostUnified schedule(String postId, Date publishAt, Date unpublishAt, String modifier) {
+        ShPostUnified draft = shPostUnifiedRepository
+                .findByIdAndState(postId, ShPostState.DRAFT)
+                .orElseGet(() -> draftFromPublished(postId));
+
+        draft.setPublishScheduledDate(publishAt);
+        draft.setUnpublishScheduledDate(unpublishAt);
+        draft.setModifiedDate(new Date());
+        if (modifier != null) draft.setModifier(modifier);
+        return shPostUnifiedRepository.save(draft);
+    }
+
+    /** Ids of drafts whose scheduled publish instant is now due (SH15 sweep). */
+    @Transactional(readOnly = true)
+    public List<String> findScheduledPublishDue(Date now) {
+        return shPostUnifiedRepository
+                .findByStateAndPublishScheduledDateLessThanEqual(ShPostState.DRAFT, now)
+                .stream().map(ShPostUnified::getId).toList();
+    }
+
+    /** Ids of drafts whose scheduled unpublish instant is now due (SH15 sweep). */
+    @Transactional(readOnly = true)
+    public List<String> findScheduledUnpublishDue(Date now) {
+        return shPostUnifiedRepository
+                .findByStateAndUnpublishScheduledDateLessThanEqual(ShPostState.DRAFT, now)
+                .stream().map(ShPostUnified::getId).toList();
+    }
+
+    /**
+     * Fire a due scheduled publish: clear the schedule field first (same tx, so it
+     * cannot re-fire) then delegate to {@link #publish} — which emits the SH12
+     * {@code PUBLISH} webhook exactly as a manual publish would.
+     */
+    @Transactional
+    public void publishScheduled(String postId) {
+        shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT)
+                .ifPresent(draft -> {
+                    draft.setPublishScheduledDate(null);
+                    shPostUnifiedRepository.save(draft);
+                });
+        publish(postId, SCHEDULER_ACTOR);
+    }
+
+    /**
+     * Fire a due scheduled unpublish: clear the schedule field then delegate to
+     * {@link #unpublish} (a no-op + no webhook if the post is not published).
+     */
+    @Transactional
+    public void unpublishScheduled(String postId) {
+        shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT)
+                .ifPresent(draft -> {
+                    draft.setUnpublishScheduledDate(null);
+                    shPostUnifiedRepository.save(draft);
+                });
+        unpublish(postId);
+    }
+
+    /** Re-create a {@code DRAFT} row from the {@code PUBLISHED} snapshot (shared by restore/schedule). */
+    private ShPostUnified draftFromPublished(String postId) {
+        ShPostUnified published = shPostUnifiedRepository
+                .findByIdAndState(postId, ShPostState.PUBLISHED)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No draft or published version for: " + postId));
+        ShPostUnified draft = new ShPostUnified();
+        draft.setId(postId);
+        draft.setState(ShPostState.DRAFT);
+        draft.setShFolder(published.getShFolder());
+        draft.setShSite(published.getShSite());
+        draft.setShPostType(published.getShPostType());
+        draft.setOwner(published.getOwner());
+        draft.setDate(published.getDate());
+        draft.setData(published.getData());
+        draft.setTitle(published.getTitle());
+        draft.setSummary(published.getSummary());
+        draft.setFurl(published.getFurl());
+        draft.setPublished(false);
+        draft.setPublishStatus(ShObjectPublishStatus.DRAFT);
+        return draft;
     }
 
     @Transactional

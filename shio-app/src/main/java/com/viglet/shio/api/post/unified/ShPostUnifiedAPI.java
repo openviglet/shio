@@ -9,6 +9,7 @@
 package com.viglet.shio.api.post.unified;
 
 import java.security.Principal;
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -124,5 +125,26 @@ public class ShPostUnifiedAPI {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    /**
+     * Set or clear the scheduled publish/unpublish timestamps (SH15). A
+     * {@code null} field clears that schedule; the background sweep fires the
+     * transition once the instant passes.
+     */
+    @PostMapping("/{id}/schedule")
+    public ResponseEntity<ShPostUnified> schedule(@PathVariable String id,
+                                                  @RequestBody SchedulePayload payload,
+                                                  Principal principal) {
+        try {
+            return ResponseEntity.ok(shPostUnifiedWriteService.schedule(
+                    id, payload.publishAt(), payload.unpublishAt(),
+                    principal != null ? principal.getName() : null));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    public record SchedulePayload(Date publishAt, Date unpublishAt) {
     }
 }

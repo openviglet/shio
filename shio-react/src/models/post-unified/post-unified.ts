@@ -14,6 +14,8 @@ export interface ShPostUnified {
   date?: string
   modifiedDate?: string
   publicationDate?: string
+  publishScheduledDate?: string
+  unpublishScheduledDate?: string
   shPostType?: { id: string; name: string; title: string; schemaJson?: string }
   shFolder?: { id: string; name: string; shSite?: { id: string; name: string } }
   shSite?: { id: string; name: string }

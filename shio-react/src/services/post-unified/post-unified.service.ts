@@ -52,6 +52,15 @@ export class ShPostUnifiedService {
     const response = await axios.post<ShPostUnified>(`/v2/post-unified/${id}/restore`)
     return response.data
   }
+
+  /** Set or clear the scheduled publish/unpublish timestamps (SH15). null clears. */
+  async schedule(
+    id: string,
+    req: { publishAt: string | null; unpublishAt: string | null }
+  ): Promise<ShPostUnified> {
+    const response = await axios.post<ShPostUnified>(`/v2/post-unified/${id}/schedule`, req)
+    return response.data
+  }
 }
 
 export class ShPostUnifiedMigrationService {
