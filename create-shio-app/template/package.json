@@ -10,7 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@viglet/shio-client": "^2026.2.0",
+    "@viglet/shio-client": "^2026.2.1",
     "next": "^15.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
