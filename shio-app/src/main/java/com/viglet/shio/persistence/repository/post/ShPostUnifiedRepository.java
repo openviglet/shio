@@ -11,6 +11,8 @@ package com.viglet.shio.persistence.repository.post;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -29,4 +31,16 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     List<ShPostUnified> findByShFolderAndState(ShFolder shFolder, ShPostState state);
 
     List<ShPostUnified> findByState(ShPostState state);
+
+    // --- CDA (SH1) read finders ---
+
+    /** Resolve a post by site + friendly URL; rides {@code idx_post_unified_furl (furl, state)}. */
+    Optional<ShPostUnified> findByShSite_IdAndFurlAndState(String siteId, String furl, ShPostState state);
+
+    Page<ShPostUnified> findByShFolderAndState(ShFolder shFolder, ShPostState state, Pageable pageable);
+
+    Page<ShPostUnified> findByShSite_IdAndState(String siteId, ShPostState state, Pageable pageable);
+
+    Page<ShPostUnified> findByShSite_IdAndShPostType_NameAndState(String siteId, String postType,
+                                                                 ShPostState state, Pageable pageable);
 }

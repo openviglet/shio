@@ -116,6 +116,8 @@ public class ShSecurityConfig {
                         mvc.matcher("/sites/**"),
                         mvc.matcher("/api/v2/setup"),
                         mvc.matcher(LOGIN_PATH)).permitAll();
+                authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.GET, "/api/v2/cda/**"))
+                        .hasRole("CDA");
                 authorizeRequests.anyRequest().authenticated();
             });
             http.logout(logout -> logout.addLogoutHandler(shLogoutHandler)
@@ -162,6 +164,8 @@ public class ShSecurityConfig {
                                 mvc.matcher("/setup"),
                                 mvc.matcher("/setup/**"),
                                 mvc.matcher(LOGIN_PATH)).permitAll();
+                        authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.GET, "/api/v2/cda/**"))
+                                .hasRole("CDA");
                         authorizeRequests.anyRequest().authenticated();
                     });
             http.logout(logout -> logout

@@ -1,0 +1,41 @@
+# Shio — Shipped Ledger (CHANGELOG)
+
+> Concise index of work that has shipped. **`git log` is the authoritative
+> history** — this file is just a searchable map of *what* shipped and *where*
+> the rationale lived. Full implementation detail is intentionally kept out of
+> the roadmap once shipped (see [IMPROVEMENTS.md](IMPROVEMENTS.md) header rule).
+>
+> Maintenance: when a task in [ROADMAP.md](ROADMAP.md) ships, move its one-line
+> entry here (under its block), reference the commit if useful, and delete it
+> from ROADMAP.
+
+## Block 0 — Headless groundwork already in the tree (pre-roadmap)
+
+These shipped before this roadmap was written and are the foundation the
+backlog builds on. Listed so the roadmap doesn't re-propose them.
+
+- **SH-0a** — **`@viglet/shio-react-sdk`** — React SDK consuming the Content Delivery API, with hooks `useShioPost`, `useShioChildren`, `useShioQuery`, `useShioSites`, a `ShioProvider`, and shared `types.ts`. ([shio-react-sdk/src](../shio-react-sdk/src))
+- **SH-0b** — **`@viglet/shio-editor-cors`** — Universal Editor bridge enabling inline visual editing for any externally-rendered page. ([shio-js-sdk/src/shio-editor-cors.ts](../shio-js-sdk/src/shio-editor-cors.ts))
+- **SH-0c** — **API-token auth** — `ShApiToken` model + `ShApiTokenFilter` allow headless, non-session content consumption. ([ShApiTokenFilter](../shio-app/src/main/java/com/viglet/shio/spring/security/auth/ShApiTokenFilter.java))
+- **SH-0d** — **Unified Post API** — `/api/v2/post-unified` with create/update, `publish`/`unpublish`, `versions`, and folder listing — the seed of a delivery + lifecycle contract. ([ShPostUnifiedAPI](../shio-app/src/main/java/com/viglet/shio/api/post/unified/ShPostUnifiedAPI.java))
+- **SH-0e** — **Discovery endpoint** — `/api/v2/discovery` exposes instance/API metadata for clients. ([ShDiscoveryAPI](../shio-app/src/main/java/com/viglet/shio/api/discovery/ShDiscoveryAPI.java))
+- **SH-0f** — **GraphQL scaffold** — Spring for GraphQL wired with a programmatic schema (`ShGraphQLSchema`); placeholder `schema.graphqls` in place (real delivery schema is SH4).
+- **SH-0g** — **CSRF + Basic/OAuth2 security** — `CookieCsrfTokenRepository` + `ShCsrfHeaderFilter` + OAuth2 client, matching the Turing security pattern.
+- **SH-0h** — **Modern backend baseline** — Spring Boot 4 + Java 21, JPA + Flyway (Postgres/MySQL/H2), Hazelcast cache, Tika extraction, Actuator/OpenAPI.
+
+## Block A — Headless foundation (Content Delivery API)
+
+- **SH1** — **Versioned, read-only CDA contract.** New `/api/v2/cda/**` namespace ([ShCdaAPI](../shio-app/src/main/java/com/viglet/shio/api/cda/ShCdaAPI.java)) with 7 GET endpoints (sites, site-by-id, folder children listing, breadcrumb path, post-by-id, **post-by-url** for `[...slug]` routing, query) backed by `ShPostUnified` pinned to `PUBLISHED`. Returns frozen DTO records ([api/cda/dto](../shio-app/src/main/java/com/viglet/shio/api/cda/dto)) via [ShCdaMapper](../shio-app/src/main/java/com/viglet/shio/api/cda/ShCdaMapper.java) — never the JPA entity; authoring fields (`owner`/`publisher`/`publishStatus`/`modifier`) excluded; malformed `data` → `attrs:{}`. Furl resolution rides the existing `idx_post_unified_furl` index. Secured by `hasRole("CDA")` (GET-only via the existing `ShApiTokenFilter`). 17 tests green (`ShCdaAPITest` 11, `ShCdaMapperTest` 6). Spec: `docs/specs/SH1-cda-read-contract.md`.
+
+## Block B — JavaScript-for-pages DX
+
+- **SH6** — **`@viglet/shio-client` — framework-agnostic TS core.** New zero-runtime-dependency package ([shio-client/](../shio-client)) consuming the SH1 CDA contract (`/api/v2/cda/**`). `ShioClient` with `getSites`/`getSite`/`listChildren`/`getPath`/`getPost`/`getPostByUrl`/`query`; injectable `fetch` (Node/browser/edge/SSR), `Key`-header auth, 404→`null` on single-resource getters, typed `ShioHttpError` otherwise, `AbortSignal` support. TS types mirror the CDA DTOs. vite lib build (ESM + UMD + `.d.ts`, ~3.5 kB). 11 `node:test` tests green (network-free, injected fetch). Targets the CDA — **not** the legacy console endpoints the old `shio-react-sdk/src/client.ts` used.
+
+## Block E — Console migration (in flight)
+
+- **SH-19a** — React console (`shio-react`, Vite + shadcn/ui + TS) stood up following Turing-React patterns: content navigation, post/post-type editors, 14 dynamic widgets, i18n (en/pt). Ongoing replacement of the legacy AngularJS UI (tracked as **SH19** in ROADMAP). See project memory `project_shio_react_migration.md`.
+
+---
+
+> No backlog tasks (SH1+) have shipped yet — they live in [ROADMAP.md](ROADMAP.md).
+> As each ships, append its one-line entry here under the matching block.

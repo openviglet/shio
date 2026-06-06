@@ -61,3 +61,5 @@ src/main/resources/js/client-side/build
 /shio-react-sdk/dist
 /shio-examples/corporate-site/dist
 /shio-examples/blog-site/dist
+/shio-client/node_modules
+/shio-client/dist

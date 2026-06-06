@@ -1,0 +1,187 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * Licensed under GPL-3.0.
+ */
+import { ShioHttpError } from "./errors";
+import type {
+  ShioClientConfig,
+  ShioListing,
+  ShioPageParams,
+  ShioPath,
+  ShioPost,
+  ShioQueryParams,
+  ShioRequestOptions,
+  ShioSite,
+} from "./types";
+
+const CDA_PREFIX = "/api/v2/cda";
+
+/**
+ * Framework-agnostic client for the Shio Content Delivery API (CDA, SH1).
+ *
+ * <p>Zero runtime dependencies; uses the global `fetch` (override via
+ * {@link ShioClientConfig.fetch} for other runtimes or testing). Single-resource
+ * getters return `null` on 404 and throw {@link ShioHttpError} on any other
+ * non-OK status. Safe to instantiate once and share (e.g. a module singleton in
+ * a Next.js app).</p>
+ *
+ * @example
+ * const shio = new ShioClient({ baseUrl: "https://cms.example.com", apiToken: "..." });
+ * const post = await shio.getPostByUrl(siteId, "/blog/hello");
+ */
+export class ShioClient {
+  private readonly baseUrl: string;
+  private readonly headers: Record<string, string>;
+  private readonly fetchFn: typeof fetch;
+  private readonly credentials?: RequestCredentials;
+
+  constructor(config: ShioClientConfig) {
+    if (!config?.baseUrl) {
+      throw new Error("ShioClient: `baseUrl` is required");
+    }
+    this.baseUrl = config.baseUrl.replace(/\/+$/, "");
+    this.headers = { Accept: "application/json", ...(config.headers ?? {}) };
+    if (config.apiToken) {
+      this.headers["Key"] = config.apiToken;
+    }
+    const resolvedFetch = config.fetch ?? globalThis.fetch;
+    if (typeof resolvedFetch !== "function") {
+      throw new Error(
+        "ShioClient: no global `fetch` available — pass `fetch` in the config"
+      );
+    }
+    // Bind to avoid `Illegal invocation` when fetch is detached from its receiver.
+    this.fetchFn = resolvedFetch.bind(globalThis);
+    this.credentials = config.credentials;
+  }
+
+  // --- Sites ---
+
+  /** List all published sites. */
+  getSites(opts?: ShioRequestOptions): Promise<ShioSite[]> {
+    return this.request<ShioSite[]>("/site", opts);
+  }
+
+  /** Get one site (with its root folder id), or `null` if not found. */
+  getSite(siteId: string, opts?: ShioRequestOptions): Promise<ShioSite | null> {
+    return this.requestOrNull<ShioSite>(`/site/${seg(siteId)}`, opts);
+  }
+
+  // --- Navigation ---
+
+  /** List a folder's children (subfolders + published posts), or `null` if the folder is unknown. */
+  listChildren(
+    folderId: string,
+    params?: ShioPageParams,
+    opts?: ShioRequestOptions
+  ): Promise<ShioListing | null> {
+    const qs = buildQuery({ page: params?.page, size: params?.size });
+    return this.requestOrNull<ShioListing>(
+      `/object/${seg(folderId)}/list${qs}`,
+      opts
+    );
+  }
+
+  /** Get the breadcrumb path for a folder or post, or `null` if unknown. */
+  getPath(objectId: string, opts?: ShioRequestOptions): Promise<ShioPath | null> {
+    return this.requestOrNull<ShioPath>(`/object/${seg(objectId)}/path`, opts);
+  }
+
+  // --- Posts ---
+
+  /** Get a published post by id (attributes expanded), or `null` if not found / not published. */
+  getPost(postId: string, opts?: ShioRequestOptions): Promise<ShioPost | null> {
+    return this.requestOrNull<ShioPost>(`/post/${seg(postId)}`, opts);
+  }
+
+  /**
+   * Resolve a published post by site + friendly URL — the call behind catch-all
+   * routing (e.g. Next.js `[...slug]`). Returns `null` if unresolved.
+   */
+  getPostByUrl(
+    siteId: string,
+    url: string,
+    opts?: ShioRequestOptions
+  ): Promise<ShioPost | null> {
+    const qs = buildQuery({ siteId, url });
+    return this.requestOrNull<ShioPost>(`/post/by-url${qs}`, opts);
+  }
+
+  /** Query published posts by site / folder / post type (always returns a listing). */
+  query(params?: ShioQueryParams, opts?: ShioRequestOptions): Promise<ShioListing> {
+    const qs = buildQuery({
+      siteId: params?.siteId,
+      folderId: params?.folderId,
+      postType: params?.postType,
+      page: params?.page,
+      size: params?.size,
+    });
+    return this.request<ShioListing>(`/query${qs}`, opts);
+  }
+
+  // --- internals ---
+
+  private async send(path: string, opts?: ShioRequestOptions): Promise<Response> {
+    return this.fetchFn(`${this.baseUrl}${CDA_PREFIX}${path}`, {
+      method: "GET",
+      headers: this.headers,
+      signal: opts?.signal,
+      ...(this.credentials ? { credentials: this.credentials } : {}),
+    });
+  }
+
+  private async request<T>(path: string, opts?: ShioRequestOptions): Promise<T> {
+    const res = await this.send(path, opts);
+    if (!res.ok) {
+      throw new ShioHttpError(res.status, path, await safeText(res));
+    }
+    return (await res.json()) as T;
+  }
+
+  private async requestOrNull<T>(
+    path: string,
+    opts?: ShioRequestOptions
+  ): Promise<T | null> {
+    const res = await this.send(path, opts);
+    if (res.status === 404) {
+      return null;
+    }
+    if (!res.ok) {
+      throw new ShioHttpError(res.status, path, await safeText(res));
+    }
+    return (await res.json()) as T;
+  }
+}
+
+/** Convenience factory mirroring `new ShioClient(config)`. */
+export function createShioClient(config: ShioClientConfig): ShioClient {
+  return new ShioClient(config);
+}
+
+/** Encode a single path segment. */
+function seg(value: string): string {
+  return encodeURIComponent(value);
+}
+
+/** Build a `?a=b&c=d` string, skipping `undefined`/`null`/empty values. */
+function buildQuery(
+  params: Record<string, string | number | undefined | null>
+): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== "") {
+      search.append(key, String(value));
+    }
+  }
+  const qs = search.toString();
+  return qs ? `?${qs}` : "";
+}
+
+async function safeText(res: Response): Promise<string | undefined> {
+  try {
+    return await res.text();
+  } catch {
+    return undefined;
+  }
+}

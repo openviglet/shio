@@ -1,0 +1,42 @@
+{
+  "name": "@viglet/shio-client",
+  "version": "2026.2.0",
+  "description": "Framework-agnostic TypeScript client for the Shio CMS Content Delivery API (CDA). Zero runtime dependencies — works in Node, the browser, edge runtimes, Next.js server components, Astro, Vue, Svelte and plain scripts.",
+  "type": "module",
+  "main": "dist/shio-client.umd.cjs",
+  "module": "dist/shio-client.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/shio-client.js",
+      "require": "./dist/shio-client.umd.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build && tsc --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"test/*.test.mjs\"",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^6.3.1"
+  },
+  "keywords": [
+    "shio",
+    "cms",
+    "headless",
+    "cda",
+    "content-delivery",
+    "typescript",
+    "sdk"
+  ],
+  "author": "Viglet Team",
+  "license": "GPL-3.0"
+}
