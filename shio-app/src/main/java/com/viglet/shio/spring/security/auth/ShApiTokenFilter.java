@@ -49,6 +49,14 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
     /** Token auth only applies to the CDA namespace (SH2 — confinement). */
     private static final String CDA_PATH_PREFIX = "/api/v2/cda";
 
+    /**
+     * The GraphQL delivery endpoint (SH4) is a second CDA surface: it carries the
+     * same {@code Key} auth and rate limit. Unlike REST, GraphQL reads via
+     * {@code POST}, so the SH2 GET-only gate is skipped for it — the generated
+     * schema has no {@code Mutation}, so a write is impossible by construction.
+     */
+    private static final String GRAPHQL_PATH = "/graphql";
+
     private static final String RATE_LIMIT_REMAINING_HEADER = "X-Rate-Limit-Remaining";
 
     private final ShApiTokenRepository shApiTokenRepository;
@@ -70,9 +78,11 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Confine token auth to the CDA namespace (SH2). A Key header on any other
+        // Confine token auth to the CDA surfaces (SH2). A Key header on any other
         // path is ignored, so a token can never authenticate a console request.
-        if (!isCdaPath(request)) {
+        // The GraphQL delivery endpoint (SH4) is the second such surface.
+        boolean graphQl = isGraphQlPath(request);
+        if (!isCdaPath(request) && !graphQl) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -93,8 +103,9 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         ShApiTokenScope scope = apiToken.getScope() != null ? apiToken.getScope() : ShApiTokenScope.READ;
 
         // READ/PREVIEW tokens are read-only: only allow GET requests. WRITE tokens
-        // may use any method (the CDA write surface itself lands in SH10).
-        if (scope != ShApiTokenScope.WRITE && !"GET".equalsIgnoreCase(request.getMethod())) {
+        // may use any method (the CDA write surface itself lands in SH10). GraphQL
+        // (SH4) is exempt — it reads via POST and the schema exposes no mutation.
+        if (scope != ShApiTokenScope.WRITE && !graphQl && !"GET".equalsIgnoreCase(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"CDA tokens only allow read (GET) requests\"}");
@@ -137,14 +148,24 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
     }
 
     private static boolean isCdaPath(HttpServletRequest request) {
+        return relativePath(request).startsWith(CDA_PATH_PREFIX);
+    }
+
+    private static boolean isGraphQlPath(HttpServletRequest request) {
+        String path = relativePath(request);
+        return path.equals(GRAPHQL_PATH) || path.startsWith(GRAPHQL_PATH + "/");
+    }
+
+    /** Request URI with any servlet context path stripped. */
+    private static String relativePath(HttpServletRequest request) {
         String path = request.getRequestURI();
         if (path == null) {
-            return false;
+            return "";
         }
         String contextPath = request.getContextPath();
         if (contextPath != null && !contextPath.isEmpty() && path.startsWith(contextPath)) {
             path = path.substring(contextPath.length());
         }
-        return path.startsWith(CDA_PATH_PREFIX);
+        return path;
     }
 }

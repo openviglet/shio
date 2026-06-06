@@ -166,6 +166,23 @@ class ShApiTokenFilterTest {
     }
 
     @Test
+    void readTokenOnGraphQlPostAuthenticates() throws Exception {
+        // GraphQL (SH4) reads via POST; the SH2 GET-only gate must not fire for it.
+        when(shApiTokenRepository.findByToken("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of("siteA"))));
+        MockHttpServletResponse res = new MockHttpServletResponse();
+
+        filter().doFilter(request("POST", "/graphql"), res, new MockFilterChain());
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(res.getStatus()).isEqualTo(200);
+        assertThat(auth).isNotNull();
+        assertThat(auth.getAuthorities()).extracting("authority").contains("ROLE_CDA");
+        assertThat(auth.getDetails()).isInstanceOf(ShApiTokenContext.class);
+        assertThat(((ShApiTokenContext) auth.getDetails()).allowsSite("siteA")).isTrue();
+    }
+
+    @Test
     void exceedingRateLimitReturns429() throws Exception {
         when(shApiTokenRepository.findByToken("the-key"))
                 .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of())));

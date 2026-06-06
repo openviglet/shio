@@ -32,7 +32,7 @@
 - ✅ **SH1** — shipped → [CHANGELOG.md](CHANGELOG.md) Block A. Stable `/api/v2/cda/**` read namespace + frozen DTO contract. Spec: [specs/SH1-cda-read-contract.md](specs/SH1-cda-read-contract.md).
 - ✅ **SH2** — shipped → [CHANGELOG.md](CHANGELOG.md) Block A. API-token `scope` (READ/PREVIEW/WRITE) + optional per-site allow-list, enforced in `ShApiTokenFilter` (namespace-confined) + at the `ShCdaService` boundary. Spec: [specs/SH2-token-scopes.md](specs/SH2-token-scopes.md).
 - ✅ **SH3** — shipped → [CHANGELOG.md](CHANGELOG.md) Block A. `Cache-Control` + body-hash `ETag` (304 on `If-None-Match`) on CDA reads + an in-memory per-token bucket limiter (429 + `Retry-After`), tunable via `shio.cda.*`. Spec: [specs/SH3-cda-rate-limit-cache.md](specs/SH3-cda-rate-limit-cache.md).
-- 📋 **SH4** (deps: SH1) **Real GraphQL delivery schema** — replace the placeholder `schema.graphqls` content surface with a generated read schema over post-types (the programmatic `ShGraphQLSchema` already exists) so JS clients can query exactly the fields a page needs. → §I.4
+- ✅ **SH4** — shipped → [CHANGELOG.md](CHANGELOG.md) Block A. Programmatic `ShGraphQLSchema` generated from content post-types (`ShContent` interface + one object type per post-type with a field per attr); `Query` (`post`/`postByUrl`/`posts`) delegates to `ShCdaService` so it inherits SH2 scoping; `/graphql` put behind `ROLE_CDA`. Spec: [specs/SH4-cda-graphql-schema.md](specs/SH4-cda-graphql-schema.md).
 - 💭 **SH5** (deps: SH2) **Per-environment keys (prod/preview)** — a key carries `env`; preview keys see drafts (ties into SH13), prod keys see only published. → §I.5
 
 ## Block B — JavaScript-for-pages DX (the core objective)

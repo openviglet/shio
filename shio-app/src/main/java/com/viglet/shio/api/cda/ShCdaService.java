@@ -129,25 +129,40 @@ public class ShCdaService {
     }
 
     public ShCdaListing query(String siteId, String folderId, String postType, int page, int size) {
-        Pageable pageable = pageable(page, size);
-        Page<ShPostUnified> posts;
+        Page<ShPostUnified> posts = queryPage(siteId, folderId, postType, pageable(page, size));
+        return new ShCdaListing(folderId, List.of(), summaries(posts),
+                page, size, posts.getTotalElements());
+    }
+
+    /**
+     * Full posts (attributes expanded) for the same query as {@link #query} —
+     * GraphQL clients (SH4) select individual attr fields, so the attr-less
+     * {@link ShCdaPostSummary} that {@link #query} returns is not enough.
+     * Honours the same per-site allow-list (SH2) and {@code PUBLISHED}-only rule.
+     */
+    public List<ShCdaPost> queryPosts(String siteId, String folderId, String postType, int page, int size) {
+        return queryPage(siteId, folderId, postType, pageable(page, size))
+                .getContent().stream()
+                .map(mapper::toPost)
+                .toList();
+    }
+
+    private Page<ShPostUnified> queryPage(String siteId, String folderId, String postType, Pageable pageable) {
         if (folderId != null && !folderId.isBlank()) {
-            posts = shFolderRepository.findById(folderId)
+            return shFolderRepository.findById(folderId)
                     .filter(folder -> siteAllowed(siteIdOf(folder)))
                     .map(folder -> shPostUnifiedRepository.findByShFolderAndState(folder, STATE, pageable))
                     .orElse(Page.empty(pageable));
         } else if (siteId != null && !siteId.isBlank() && !siteAllowed(siteId)) {
-            posts = Page.empty(pageable);
+            return Page.empty(pageable);
         } else if (siteId != null && !siteId.isBlank() && postType != null && !postType.isBlank()) {
-            posts = shPostUnifiedRepository
+            return shPostUnifiedRepository
                     .findByShSite_IdAndShPostType_NameAndState(siteId, postType, STATE, pageable);
         } else if (siteId != null && !siteId.isBlank()) {
-            posts = shPostUnifiedRepository.findByShSite_IdAndState(siteId, STATE, pageable);
+            return shPostUnifiedRepository.findByShSite_IdAndState(siteId, STATE, pageable);
         } else {
-            posts = Page.empty(pageable);
+            return Page.empty(pageable);
         }
-        return new ShCdaListing(folderId, List.of(), summaries(posts),
-                page, size, posts.getTotalElements());
     }
 
     // --- helpers ---

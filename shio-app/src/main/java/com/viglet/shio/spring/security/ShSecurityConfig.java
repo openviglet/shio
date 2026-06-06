@@ -118,6 +118,9 @@ public class ShSecurityConfig {
                         mvc.matcher(LOGIN_PATH)).permitAll();
                 authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.GET, "/api/v2/cda/**"))
                         .hasRole("CDA");
+                // GraphQL delivery (SH4) is a CDA surface — token-authenticated, POST reads.
+                authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, "/graphql"))
+                        .hasRole("CDA");
                 authorizeRequests.anyRequest().authenticated();
             });
             http.logout(logout -> logout.addLogoutHandler(shLogoutHandler)
@@ -149,7 +152,6 @@ public class ShSecurityConfig {
                                 mvc.matcher("/media/**"),
                                 mvc.matcher("/console/**"),
                                 mvc.matcher("/*/console/**"),
-                                mvc.matcher("/graphql/**"),
                                 mvc.matcher("/graphiql/**"),
                                 mvc.matcher("/css/**"),
                                 mvc.matcher("/js/**"),
@@ -165,6 +167,9 @@ public class ShSecurityConfig {
                                 mvc.matcher("/setup/**"),
                                 mvc.matcher(LOGIN_PATH)).permitAll();
                         authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.GET, "/api/v2/cda/**"))
+                                .hasRole("CDA");
+                        // GraphQL delivery (SH4) is a CDA surface — token-authenticated, POST reads.
+                        authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, "/graphql"))
                                 .hasRole("CDA");
                         authorizeRequests.anyRequest().authenticated();
                     });
