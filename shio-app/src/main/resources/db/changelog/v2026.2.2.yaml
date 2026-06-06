@@ -2,6 +2,9 @@ databaseChangeLog:
   # SH13 — Short-lived preview tokens.
   # Add expiry + ephemeral flag to api_token. Types kept DB-agnostic
   # (TIMESTAMP / boolean) per ShLiquibaseChangelogAgnosticTest.
+  # SH26: preserve identifier case on PostgreSQL (does not propagate from the
+  # baseline through `include`, so repeated per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
   - changeSet:
       id: sh13-api-token-expires-at
       author: alexandre

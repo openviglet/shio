@@ -2,6 +2,9 @@ databaseChangeLog:
   # SH12 — Outbound webhooks on publish/unpublish/delete.
   # Per-site webhook subscriptions + their event filter. Types kept DB-agnostic
   # (VARCHAR / TIMESTAMP / boolean) per ShLiquibaseChangelogAgnosticTest.
+  # SH26: preserve identifier case on PostgreSQL (does not propagate from the
+  # baseline through `include`, so repeated per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
   - changeSet:
       id: sh12-create-site-webhook
       author: alexandre

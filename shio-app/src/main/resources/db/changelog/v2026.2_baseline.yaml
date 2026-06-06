@@ -1,4 +1,13 @@
 databaseChangeLog:
+# SH26: this baseline was generated from H2 with PascalCase, case-bearing
+# identifiers (ShPostType, TENANT_ID, DTYPE). Hibernate references them quoted
+# (globally_quoted_identifiers=true). PostgreSQL folds *unquoted* identifiers to
+# lower-case, so without quoting Liquibase would create `shposttype` while
+# Hibernate looks for "ShPostType" -> mismatch. QUOTE_ALL_OBJECTS makes Liquibase
+# preserve the exact case on every engine, matching Hibernate. Set at the
+# changelog level (not per-changeSet) so it does not alter changeset checksums.
+# It does NOT propagate through `include`, so each changelog file repeats it.
+- objectQuotingStrategy: QUOTE_ALL_OBJECTS
 - changeSet:
     id: 1780773187985-1
     author: alexa (generated)
@@ -1121,6 +1130,14 @@ databaseChangeLog:
 - changeSet:
     id: 1780773187985-39
     author: alexa (generated)
+    # SH26: the generated baseline emitted an inline enum type for this column
+    # (H2/MySQL/MariaDB accept it). PostgreSQL does NOT — it rejects that type
+    # ("type \"enum\" does not exist"), so the changelog never applied there. The
+    # entity maps it @Enumerated(STRING) @Column(length=16), so VARCHAR(16) is the
+    # DB-agnostic equivalent and reads back identically on every engine.
+    # validCheckSum: ANY lets databases that already ran the original baseline
+    # accept the edited checksum.
+    validCheckSum: ANY
     changes:
     - createTable:
         columns:
@@ -1137,7 +1154,7 @@ databaseChangeLog:
               primaryKey: true
               primaryKeyName: CONSTRAINT_F6
             name: state
-            type: ENUM('DRAFT', 'PUBLISHED')
+            type: VARCHAR(16)
         - column:
             constraints:
               nullable: false

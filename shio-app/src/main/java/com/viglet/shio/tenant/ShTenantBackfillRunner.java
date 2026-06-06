@@ -23,20 +23,30 @@ public class ShTenantBackfillRunner {
 
     private static final Logger log = LoggerFactory.getLogger(ShTenantBackfillRunner.class);
 
-    /** Hibernate's default naming strategy produces these table names. */
-    private static final List<String> TENANT_TABLES = List.of(
-            "sh_object",
-            "sh_object_draft",
-            "sh_post_attr",
-            "sh_post_draft_attr",
-            "sh_post_type_attr",
-            "sh_relator_item",
-            "sh_relator_item_draft",
-            "sh_history",
-            "sh_reference",
-            "sh_reference_draft",
-            "sh_workflow_task",
-            "api_token"
+    /**
+     * Tables that carry a {@code TENANT_ID} column, by their real (Liquibase +
+     * Hibernate) names. Most entities have no {@code @Table}, so Hibernate names
+     * the table after the entity's simple name verbatim — PascalCase, NOT
+     * snake_case. An earlier snake_case list (e.g. {@code sh_post_type_attr})
+     * matched nothing, so the pre-multi-tenant backfill silently no-op'd; the
+     * SH26 cross-DB ITs assert each of these resolves against the applied
+     * changelog. Two entities pin an explicit {@code @Table}: {@code api_token}
+     * (ShApiToken) and {@code site_webhook} (ShSiteWebhook).
+     */
+    static final List<String> TENANT_TABLES = List.of(
+            "ShHistory",
+            "ShObject",
+            "ShObjectDraft",
+            "ShPostAttr",
+            "ShPostDraftAttr",
+            "ShPostTypeAttr",
+            "ShReference",
+            "ShReferenceDraft",
+            "ShRelatorItem",
+            "ShRelatorItemDraft",
+            "ShWorkflowTask",
+            "api_token",
+            "site_webhook"
     );
 
     @PersistenceContext

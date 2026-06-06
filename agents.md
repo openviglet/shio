@@ -447,8 +447,23 @@ them you get `Column "..." not found` at runtime.
 2. Add the `include` line to `db.changelog-master.yaml`.
 3. Keep types **DB-agnostic** — `ShLiquibaseChangelogAgnosticTest` fails the build on
    `TIMESTAMP WITH TIME ZONE`, `CHARACTER LARGE OBJECT`, `BINARY LARGE OBJECT`,
-   `BOOLEAN`. Use `TIMESTAMP`, `CLOB`, lowercase `boolean` instead. `ENUM(...)` is
-   allowed (Hibernate maps Java enums natively on H2).
+   `BOOLEAN`, and `ENUM(`. Use `TIMESTAMP`, `CLOB`, lowercase `boolean`, and
+   `VARCHAR` (map enums `@Enumerated(STRING)`) instead. **`ENUM(...)` is NOT
+   allowed** — H2/MySQL/MariaDB accept inline `ENUM`, but PostgreSQL rejects it
+   (`type "enum" does not exist`), so the SH26 cross-DB ITs would fail. The lint
+   is only a textual guard; the real proof that the changelog applies on
+   MariaDB + PostgreSQL is the SH26 Testcontainers ITs (see below).
+
+### Cross-DB schema-drift ITs (SH26)
+`ShMariaDbSchemaIT` / `ShPostgresSchemaIT` (extending `ShCrossDatabaseSchemaITBase`,
+package `com.viglet.shio.tenant`) boot the **full Spring context** against a real
+MariaDB / PostgreSQL Testcontainers engine with `spring.liquibase.enabled=true` +
+`ddl-auto=none`, proving the full `db.changelog-master.yaml` applies, every entity
+maps onto it (the `ShOnStartup` seed inserts run real DML), and
+`ShTenantBackfillRunner.TENANT_TABLES` resolves to real tables. Run via `mvn verify`
+(failsafe); auto-skipped without Docker (`@Testcontainers(disabledWithoutDocker=true)`).
+Note: most tables are **PascalCase** entity names (no `@Table`, e.g. `ShPostTypeAttr`)
+— the backfill list must use those, not snake_case, or it silently no-ops.
 
 ### Tests
 Tests skip Liquibase (`spring.liquibase.enabled=false`) and build the schema from

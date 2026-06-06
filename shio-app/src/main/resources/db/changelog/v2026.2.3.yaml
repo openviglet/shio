@@ -2,6 +2,9 @@ databaseChangeLog:
   # SH15 — Scheduled publish/unpublish.
   # Two nullable instants on sh_post_unified (carried on the DRAFT row). Types
   # kept DB-agnostic (TIMESTAMP) per ShLiquibaseChangelogAgnosticTest.
+  # SH26: preserve identifier case on PostgreSQL (does not propagate from the
+  # baseline through `include`, so repeated per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
   - changeSet:
       id: sh15-post-unified-publish-scheduled-date
       author: alexandre

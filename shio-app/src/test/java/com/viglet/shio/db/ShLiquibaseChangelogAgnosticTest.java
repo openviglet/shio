@@ -30,7 +30,12 @@ class ShLiquibaseChangelogAgnosticTest {
             "TIMESTAMP WITH TIME ZONE",
             "CHARACTER LARGE OBJECT",
             "BINARY LARGE OBJECT",
-            "BOOLEAN");
+            "BOOLEAN",
+            // SH26: inline ENUM('A','B') is accepted by H2/MySQL/MariaDB but
+            // PostgreSQL rejects it ("type \"enum\" does not exist"), so the
+            // changelog never applied there. Map enums as VARCHAR (the entity
+            // uses @Enumerated(STRING)); the cross-DB ITs guard the real apply.
+            "ENUM(");
 
     @Test
     void testChangelogFilesAvoidDatabaseSpecificTypes() throws IOException {

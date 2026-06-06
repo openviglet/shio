@@ -175,6 +175,32 @@
             <artifactId>spring-boot-starter-webflux</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Testcontainers — SH26 cross-DB schema-drift guard. The Liquibase
+             changelogs ship for MariaDB/Postgres but are only ever applied on
+             H2 in dev/tests; these *IT.java tests (mvn verify, failsafe) apply
+             the full changelog set against real MariaDB + Postgres engines and
+             boot the context. Versions come from the spring-boot-dependencies
+             BOM (it imports the Testcontainers BOM). Skipped without Docker. -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-mariadb</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
