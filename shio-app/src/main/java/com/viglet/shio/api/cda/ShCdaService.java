@@ -10,10 +10,13 @@ package com.viglet.shio.api.cda;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -35,10 +38,12 @@ import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 
 /**
- * Content Delivery API (CDA) read service (SH1). All reads are pinned to
- * {@link ShPostState#PUBLISHED} — drafts are never exposed. Preview state is a
- * deliberate later choice (SH5/SH13) and remains a service-level concern, not a
- * URL segment, so the public contract stays stable.
+ * Content Delivery API (CDA) read service (SH1). The read state is a
+ * service-level concern resolved per request (SH5), never a URL segment, so the
+ * public contract stays stable. A {@code PROD} token (the default, and any
+ * console/no-token access) reads {@link ShPostState#PUBLISHED} only; a
+ * {@code PREVIEW} token reads draft-preferred — preferring the {@code DRAFT} row
+ * of a post, falling back to {@code PUBLISHED}.
  *
  * @author Alexandre Oliveira
  * @since 2026.2
@@ -48,6 +53,8 @@ import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 public class ShCdaService {
 
     private static final ShPostState STATE = ShPostState.PUBLISHED;
+    /** Preview reads see both states, draft-preferred (SH5). */
+    private static final List<ShPostState> PREVIEW_STATES = List.of(ShPostState.DRAFT, ShPostState.PUBLISHED);
     private static final byte ROOT_FOLDER = 1;
 
     private final ShSiteRepository shSiteRepository;
@@ -87,8 +94,10 @@ public class ShCdaService {
             List<ShCdaFolder> folders = shFolderRepository.findByParentFolderOrderByPositionAsc(folder).stream()
                     .map(mapper::toFolder)
                     .toList();
-            Page<ShPostUnified> posts = shPostUnifiedRepository
-                    .findByShFolderAndState(folder, STATE, pageable(page, size));
+            Page<ShPostUnified> posts = preview()
+                    ? draftPreferred(shPostUnifiedRepository.findByShFolderAndStateIn(folder, PREVIEW_STATES),
+                            pageable(page, size))
+                    : shPostUnifiedRepository.findByShFolderAndState(folder, STATE, pageable(page, size));
             return new ShCdaListing(folderId, folders, summaries(posts),
                     page, size, posts.getTotalElements());
         });
@@ -101,14 +110,14 @@ public class ShCdaService {
                     .filter(folder -> siteAllowed(siteIdOf(folder)))
                     .map(this::buildPath);
         }
-        return shPostUnifiedRepository.findByIdAndState(objectId, STATE)
+        return resolvePost(objectId)
                 .filter(post -> siteAllowed(siteIdOf(post)))
                 .map(ShPostUnified::getShFolder)
                 .map(this::buildPath);
     }
 
     public Optional<ShCdaPost> getPost(String id) {
-        return shPostUnifiedRepository.findByIdAndState(id, STATE)
+        return resolvePost(id)
                 .filter(post -> siteAllowed(siteIdOf(post)))
                 .map(mapper::toPost);
     }
@@ -118,11 +127,13 @@ public class ShCdaService {
             return Optional.empty();
         }
         for (String candidate : urlCandidates(url)) {
-            Optional<ShCdaPost> found = shPostUnifiedRepository
-                    .findByShSite_IdAndFurlAndState(siteId, candidate, STATE)
-                    .map(mapper::toPost);
-            if (found.isPresent()) {
-                return found;
+            for (ShPostState state : readStates()) {
+                Optional<ShCdaPost> found = shPostUnifiedRepository
+                        .findByShSite_IdAndFurlAndState(siteId, candidate, state)
+                        .map(mapper::toPost);
+                if (found.isPresent()) {
+                    return found;
+                }
             }
         }
         return Optional.empty();
@@ -151,21 +162,73 @@ public class ShCdaService {
         if (folderId != null && !folderId.isBlank()) {
             return shFolderRepository.findById(folderId)
                     .filter(folder -> siteAllowed(siteIdOf(folder)))
-                    .map(folder -> shPostUnifiedRepository.findByShFolderAndState(folder, STATE, pageable))
+                    .map(folder -> preview()
+                            ? draftPreferred(shPostUnifiedRepository
+                                    .findByShFolderAndStateIn(folder, PREVIEW_STATES), pageable)
+                            : shPostUnifiedRepository.findByShFolderAndState(folder, STATE, pageable))
                     .orElse(Page.empty(pageable));
         } else if (siteId != null && !siteId.isBlank() && !siteAllowed(siteId)) {
             return Page.empty(pageable);
         } else if (siteId != null && !siteId.isBlank() && postType != null && !postType.isBlank()) {
-            return shPostUnifiedRepository
-                    .findByShSite_IdAndShPostType_NameAndState(siteId, postType, STATE, pageable);
+            return preview()
+                    ? draftPreferred(shPostUnifiedRepository
+                            .findByShSite_IdAndShPostType_NameAndStateIn(siteId, postType, PREVIEW_STATES), pageable)
+                    : shPostUnifiedRepository
+                            .findByShSite_IdAndShPostType_NameAndState(siteId, postType, STATE, pageable);
         } else if (siteId != null && !siteId.isBlank()) {
-            return shPostUnifiedRepository.findByShSite_IdAndState(siteId, STATE, pageable);
+            return preview()
+                    ? draftPreferred(shPostUnifiedRepository
+                            .findByShSite_IdAndStateIn(siteId, PREVIEW_STATES), pageable)
+                    : shPostUnifiedRepository.findByShSite_IdAndState(siteId, STATE, pageable);
         } else {
             return Page.empty(pageable);
         }
     }
 
     // --- helpers ---
+
+    /**
+     * Environment resolution (SH5). True when the current token targets the
+     * preview environment. No token (console/tests) ⇒ {@code PROD} ⇒ published-only,
+     * preserving the SH1 behaviour.
+     */
+    private boolean preview() {
+        return ShApiTokenContext.current().map(ShApiTokenContext::preview).orElse(false);
+    }
+
+    /** States a read considers, in preference order (SH5). */
+    private List<ShPostState> readStates() {
+        return preview() ? PREVIEW_STATES : List.of(STATE);
+    }
+
+    /** First existing row for {@code id} across {@link #readStates()} (draft-preferred under preview). */
+    private Optional<ShPostUnified> resolvePost(String id) {
+        for (ShPostState state : readStates()) {
+            Optional<ShPostUnified> found = shPostUnifiedRepository.findByIdAndState(id, state);
+            if (found.isPresent()) {
+                return found;
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Collapse rows spanning {@link #PREVIEW_STATES} to one per post id — the
+     * {@code DRAFT} row when present, else {@code PUBLISHED} — then slice the
+     * requested page in memory (SH5 preview path). Preview traffic is internal and
+     * low-volume, so this avoids duplicating every paged query for the rare case.
+     */
+    private Page<ShPostUnified> draftPreferred(List<ShPostUnified> rows, Pageable pageable) {
+        Map<String, ShPostUnified> byId = new LinkedHashMap<>();
+        for (ShPostUnified row : rows) {
+            byId.merge(row.getId(), row, (existing, candidate) ->
+                    existing.getState() == ShPostState.DRAFT ? existing : candidate);
+        }
+        List<ShPostUnified> deduped = new ArrayList<>(byId.values());
+        int from = (int) Math.min(pageable.getOffset(), deduped.size());
+        int to = Math.min(from + pageable.getPageSize(), deduped.size());
+        return new PageImpl<>(deduped.subList(from, to), pageable, deduped.size());
+    }
 
     /**
      * Per-site enforcement (SH2). True when the current token has no allow-list

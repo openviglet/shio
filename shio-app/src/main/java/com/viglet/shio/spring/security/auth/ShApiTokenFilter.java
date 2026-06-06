@@ -19,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.viglet.shio.api.cda.ShCdaRateLimiter;
 import com.viglet.shio.persistence.model.token.ShApiToken;
+import com.viglet.shio.persistence.model.token.ShApiTokenEnv;
 import com.viglet.shio.persistence.model.token.ShApiTokenScope;
 import com.viglet.shio.persistence.repository.token.ShApiTokenRepository;
 
@@ -101,6 +102,7 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         }
 
         ShApiTokenScope scope = apiToken.getScope() != null ? apiToken.getScope() : ShApiTokenScope.READ;
+        ShApiTokenEnv env = apiToken.getEnv() != null ? apiToken.getEnv() : ShApiTokenEnv.PROD;
 
         // READ/PREVIEW tokens are read-only: only allow GET requests. WRITE tokens
         // may use any method (the CDA write surface itself lands in SH10). GraphQL
@@ -124,25 +126,27 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Grant authorities by scope
+        // Grant authorities by scope. A PREVIEW environment (SH5) is preview-capable
+        // by definition, so it also carries ROLE_CDA_PREVIEW regardless of scope.
         var authorities = new ArrayList<GrantedAuthority>(List.of(
                 new SimpleGrantedAuthority("ROLE_CDA"),
                 new SimpleGrantedAuthority("ROLE_USER")));
-        if (scope == ShApiTokenScope.PREVIEW) {
+        if (scope == ShApiTokenScope.PREVIEW || env == ShApiTokenEnv.PREVIEW) {
             authorities.add(new SimpleGrantedAuthority("ROLE_CDA_PREVIEW"));
-        } else if (scope == ShApiTokenScope.WRITE) {
+        }
+        if (scope == ShApiTokenScope.WRITE) {
             authorities.add(new SimpleGrantedAuthority("ROLE_CDA_WRITE"));
         }
 
         var authentication = new UsernamePasswordAuthenticationToken(
                 apiToken.getOwner(), null, authorities);
-        // Carry scope + per-site allow-list to the service boundary (SH2).
+        // Carry scope + per-site allow-list (SH2) + environment (SH5) to the service.
         authentication.setDetails(new ShApiTokenContext(
-                apiToken.getId(), scope, apiToken.getSiteIds()));
+                apiToken.getId(), scope, apiToken.getSiteIds(), env));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        log.debug("CDA token auth: '{}' ({}) by {}", apiToken.getTitle(), scope, apiToken.getOwner());
+        log.debug("CDA token auth: '{}' ({}/{}) by {}", apiToken.getTitle(), scope, env, apiToken.getOwner());
 
         filterChain.doFilter(request, response);
     }

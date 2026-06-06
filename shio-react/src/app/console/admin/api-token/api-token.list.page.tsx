@@ -87,6 +87,12 @@ export default function ApiTokenListPage() {
                           <Badge variant="outline">
                             {t(`apiToken.scope${(item.scope ?? "READ").charAt(0)}${(item.scope ?? "READ").slice(1).toLowerCase()}`)}
                           </Badge>
+                          {(item.env ?? "PROD") === "PREVIEW" && (
+                            <Badge variant="outline"
+                              className="border-amber-300 text-amber-600 dark:border-amber-700 dark:text-amber-400">
+                              {t("apiToken.envPreview")}
+                            </Badge>
+                          )}
                           {(item.siteIds?.length ?? 0) > 0 && (
                             <Badge variant="secondary" className="text-xs">
                               {t("apiToken.sitesCount", { count: item.siteIds.length })}

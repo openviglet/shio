@@ -17,7 +17,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { toast } from "@viglet/viglet-design-system"
 import { ShApiTokenService } from "@/services/token/api-token.service"
-import type { ShApiToken, ShApiTokenScope } from "@/models/token/api-token.model"
+import type { ShApiToken, ShApiTokenScope, ShApiTokenEnv } from "@/models/token/api-token.model"
 import { ShSiteService } from "@/services/site/site.service"
 import type { ShSite } from "@/models/site/site"
 
@@ -25,6 +25,7 @@ const service = new ShApiTokenService()
 const siteService = new ShSiteService()
 
 const SCOPES: ShApiTokenScope[] = ["READ", "PREVIEW", "WRITE"]
+const ENVS: ShApiTokenEnv[] = ["PROD", "PREVIEW"]
 
 export default function ApiTokenPage() {
   const { t } = useTranslation()
@@ -35,7 +36,7 @@ export default function ApiTokenPage() {
 
   const [item, setItem] = useState<ShApiToken>({
     id: "", title: "", description: "", token: "", owner: "", createdDate: "", enabled: true,
-    scope: "READ", siteIds: [],
+    scope: "READ", siteIds: [], env: "PROD",
   })
   const [sites, setSites] = useState<ShSite[]>([])
   const [copied, setCopied] = useState(false)
@@ -49,7 +50,7 @@ export default function ApiTokenPage() {
     ])
     if (!isNew) {
       service.get(tokenId).then((token) =>
-        setItem({ ...token, scope: token.scope ?? "READ", siteIds: token.siteIds ?? [] }))
+        setItem({ ...token, scope: token.scope ?? "READ", siteIds: token.siteIds ?? [], env: token.env ?? "PROD" }))
     }
   }, [resetBreadcrumb, t, tokenId, isNew, item.title])
 
@@ -196,6 +197,33 @@ export default function ApiTokenPage() {
               </Select>
               <p className="text-xs text-muted-foreground">
                 {t(`apiToken.scope${item.scope.charAt(0)}${item.scope.slice(1).toLowerCase()}Desc`)}
+              </p>
+            </div>
+
+            {/* Environment (SH5 — prod / preview) */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="env">{t("apiToken.env")}</Label>
+                <Tooltip>
+                  <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
+                  <TooltipContent>{t("apiToken.envHint")}</TooltipContent>
+                </Tooltip>
+              </div>
+              <Select value={item.env}
+                onValueChange={(value) => setItem({ ...item, env: value as ShApiTokenEnv })}>
+                <SelectTrigger id="env">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ENVS.map((env) => (
+                    <SelectItem key={env} value={env}>
+                      {t(`apiToken.env${env.charAt(0)}${env.slice(1).toLowerCase()}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {t(`apiToken.env${item.env.charAt(0)}${item.env.slice(1).toLowerCase()}Desc`)}
               </p>
             </div>
 

@@ -8,6 +8,7 @@
  */
 package com.viglet.shio.persistence.repository.post;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,4 +44,14 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
 
     Page<ShPostUnified> findByShSite_IdAndShPostType_NameAndState(String siteId, String postType,
                                                                  ShPostState state, Pageable pageable);
+
+    // --- CDA preview (SH5) finders: fetch across a state set so the service can
+    //     dedup draft-preferred. Used only by the PREVIEW-environment read path. ---
+
+    List<ShPostUnified> findByShFolderAndStateIn(ShFolder shFolder, Collection<ShPostState> states);
+
+    List<ShPostUnified> findByShSite_IdAndStateIn(String siteId, Collection<ShPostState> states);
+
+    List<ShPostUnified> findByShSite_IdAndShPostType_NameAndStateIn(String siteId, String postType,
+                                                                    Collection<ShPostState> states);
 }

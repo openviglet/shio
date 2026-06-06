@@ -33,7 +33,7 @@
 - ✅ **SH2** — shipped → [CHANGELOG.md](CHANGELOG.md) Block A. API-token `scope` (READ/PREVIEW/WRITE) + optional per-site allow-list, enforced in `ShApiTokenFilter` (namespace-confined) + at the `ShCdaService` boundary. Spec: [specs/SH2-token-scopes.md](specs/SH2-token-scopes.md).
 - ✅ **SH3** — shipped → [CHANGELOG.md](CHANGELOG.md) Block A. `Cache-Control` + body-hash `ETag` (304 on `If-None-Match`) on CDA reads + an in-memory per-token bucket limiter (429 + `Retry-After`), tunable via `shio.cda.*`. Spec: [specs/SH3-cda-rate-limit-cache.md](specs/SH3-cda-rate-limit-cache.md).
 - ✅ **SH4** — shipped → [CHANGELOG.md](CHANGELOG.md) Block A. Programmatic `ShGraphQLSchema` generated from content post-types (`ShContent` interface + one object type per post-type with a field per attr); `Query` (`post`/`postByUrl`/`posts`) delegates to `ShCdaService` so it inherits SH2 scoping; `/graphql` put behind `ROLE_CDA`. Spec: [specs/SH4-cda-graphql-schema.md](specs/SH4-cda-graphql-schema.md).
-- 💭 **SH5** (deps: SH2) **Per-environment keys (prod/preview)** — a key carries `env`; preview keys see drafts (ties into SH13), prod keys see only published. → §I.5
+- ✅ **SH5** — shipped → [CHANGELOG.md](CHANGELOG.md) Block A. Tokens carry an `env` (`PROD`/`PREVIEW`); a `PROD` key reads `PUBLISHED` only, a `PREVIEW` key reads draft-preferred (prefers the `DRAFT` row, falls back to `PUBLISHED`) — resolved centrally in `ShCdaService` so REST + GraphQL inherit it. Spec: [specs/SH5-per-environment-keys.md](specs/SH5-per-environment-keys.md).
 
 ## Block B — JavaScript-for-pages DX (the core objective)
 
@@ -55,7 +55,7 @@
 > assumes. Versioning is partly there (`/api/v2/post-unified/{id}/versions`). → §III
 
 - 📋 **SH12** (deps: SH1) **Outbound webhooks on publish/unpublish/delete** — configurable per-site webhook targets with HMAC signing + retry, emitted from the unified publish path. The backbone for incremental static regeneration (SH9). → §III.1
-- 📋 **SH13** (deps: SH2) **Draft / preview mode** — short-lived preview tokens that expose unpublished content via the CDA so the JS front can render a live preview before publish. → §III.2
+- 📋 **SH13** (deps: SH2, SH5) **Draft / preview mode** — short-lived preview tokens + an in-console "preview this draft" UX, layered on SH5's draft-visibility machinery (the `PREVIEW` env already exposes draft-preferred content via the CDA). → §III.2
 - ⏳ **SH14** (deps: —) **Versioning UI** — the `/versions` endpoint exists; add console UI to diff/restore versions. → §III.3
 - 💭 **SH15** (deps: SH12) **Scheduled publish/unpublish** — `publishAt`/`unpublishAt` on a post + a sweep that fires the transition and the webhook. → §III.4
 - 💭 **SH16** (deps: SH6) **`shio` CLI** — `init` (scaffold), `dev` (proxy + types watch), `pull`/`push` (post-types as code), `deploy`. Mirrors Turing's `turing` CLI direction. → §III.5

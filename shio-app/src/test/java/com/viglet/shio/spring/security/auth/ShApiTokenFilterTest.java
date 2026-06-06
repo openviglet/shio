@@ -25,6 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import com.viglet.shio.api.cda.ShCdaProperties;
 import com.viglet.shio.api.cda.ShCdaRateLimiter;
 import com.viglet.shio.persistence.model.token.ShApiToken;
+import com.viglet.shio.persistence.model.token.ShApiTokenEnv;
 import com.viglet.shio.persistence.model.token.ShApiTokenScope;
 import com.viglet.shio.persistence.repository.token.ShApiTokenRepository;
 
@@ -64,6 +65,10 @@ class ShApiTokenFilterTest {
     }
 
     private ShApiToken token(ShApiTokenScope scope, Set<String> siteIds) {
+        return token(scope, siteIds, ShApiTokenEnv.PROD);
+    }
+
+    private ShApiToken token(ShApiTokenScope scope, Set<String> siteIds, ShApiTokenEnv env) {
         ShApiToken t = new ShApiToken();
         t.setId("tok-1");
         t.setTitle("test");
@@ -72,6 +77,7 @@ class ShApiTokenFilterTest {
         t.setEnabled(true);
         t.setScope(scope);
         t.setSiteIds(siteIds);
+        t.setEnv(env);
         return t;
     }
 
@@ -152,6 +158,36 @@ class ShApiTokenFilterTest {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         assertThat(auth).isNotNull();
         assertThat(auth.getAuthorities()).extracting("authority").contains("ROLE_CDA_PREVIEW");
+    }
+
+    @Test
+    void previewEnvTokenCarriesPreviewAuthorityAndContext() throws Exception {
+        // SH5: a READ-scope token whose environment is PREVIEW is preview-capable —
+        // it carries ROLE_CDA_PREVIEW and a context whose preview() drives drafts.
+        when(shApiTokenRepository.findByToken("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of(), ShApiTokenEnv.PREVIEW)));
+        MockHttpServletRequest req = request("GET", "/api/v2/cda/site");
+
+        filter().doFilter(req, new MockHttpServletResponse(), new MockFilterChain());
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(auth).isNotNull();
+        assertThat(auth.getAuthorities()).extracting("authority").contains("ROLE_CDA_PREVIEW");
+        ShApiTokenContext ctx = (ShApiTokenContext) auth.getDetails();
+        assertThat(ctx.env()).isEqualTo(ShApiTokenEnv.PREVIEW);
+        assertThat(ctx.preview()).isTrue();
+    }
+
+    @Test
+    void prodEnvTokenIsNotPreview() throws Exception {
+        when(shApiTokenRepository.findByToken("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of(), ShApiTokenEnv.PROD)));
+
+        filter().doFilter(request("GET", "/api/v2/cda/site"), new MockHttpServletResponse(), new MockFilterChain());
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(auth.getAuthorities()).extracting("authority").doesNotContain("ROLE_CDA_PREVIEW");
+        assertThat(((ShApiTokenContext) auth.getDetails()).preview()).isFalse();
     }
 
     @Test

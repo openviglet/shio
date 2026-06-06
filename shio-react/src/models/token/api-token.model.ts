@@ -1,4 +1,5 @@
 export type ShApiTokenScope = "READ" | "PREVIEW" | "WRITE"
+export type ShApiTokenEnv = "PROD" | "PREVIEW"
 
 export type ShApiToken = {
   id: string
@@ -10,4 +11,5 @@ export type ShApiToken = {
   enabled: boolean
   scope: ShApiTokenScope
   siteIds: string[]
+  env: ShApiTokenEnv
 }

@@ -71,6 +71,15 @@ public class ShApiToken implements Serializable {
     @Column(name = "site_id")
     private Set<String> siteIds = new HashSet<>();
 
+    /**
+     * Target content environment of this token (SH5). Defaults to {@code PROD}
+     * (published-only). A {@code PREVIEW} token reads draft-preferred. A
+     * {@code null} value (pre-SH5 rows) is treated as {@code PROD}.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "environment", length = 16)
+    private ShApiTokenEnv env = ShApiTokenEnv.PROD;
+
     @Column(name = "created_date")
     private Instant createdDate;
 
