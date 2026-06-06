@@ -10,6 +10,7 @@ import type {
   ShioPageParams,
   ShioPath,
   ShioPost,
+  ShioPostTypeSchema,
   ShioQueryParams,
   ShioRequestOptions,
   ShioSite,
@@ -106,6 +107,25 @@ export class ShioClient {
   ): Promise<ShioPost | null> {
     const qs = buildQuery({ siteId, url });
     return this.requestOrNull<ShioPost>(`/post/by-url${qs}`, opts);
+  }
+
+  // --- Schema (SH11) ---
+
+  /**
+   * List every post-type's content-model schema — the input to
+   * {@link generateShioTypes}. The schema is global (not site-scoped), so a
+   * per-site token sees every post-type.
+   */
+  getPostTypes(opts?: ShioRequestOptions): Promise<ShioPostTypeSchema[]> {
+    return this.request<ShioPostTypeSchema[]>("/post-type", opts);
+  }
+
+  /** Get one post-type's content-model schema by its API name, or `null` if unknown. */
+  getPostType(
+    name: string,
+    opts?: ShioRequestOptions
+  ): Promise<ShioPostTypeSchema | null> {
+    return this.requestOrNull<ShioPostTypeSchema>(`/post-type/${seg(name)}`, opts);
   }
 
   /** Query published posts by site / folder / post type (always returns a listing). */

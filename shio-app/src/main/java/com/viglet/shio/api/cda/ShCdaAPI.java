@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.viglet.shio.api.cda.dto.ShCdaListing;
 import com.viglet.shio.api.cda.dto.ShCdaPath;
 import com.viglet.shio.api.cda.dto.ShCdaPost;
+import com.viglet.shio.api.cda.dto.ShCdaPostTypeSchema;
 import com.viglet.shio.api.cda.dto.ShCdaSite;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -85,6 +86,18 @@ public class ShCdaAPI {
     public ResponseEntity<ShCdaPost> postByUrl(@RequestParam String siteId,
                                                @RequestParam String url) {
         return ResponseEntity.of(shCdaService.getPostByUrl(siteId, url));
+    }
+
+    @GetMapping("/post-type")
+    @Operation(summary = "List every post-type's content-model schema (for type generation)")
+    public List<ShCdaPostTypeSchema> postTypes() {
+        return shCdaService.listPostTypes();
+    }
+
+    @GetMapping("/post-type/{name}")
+    @Operation(summary = "Get one post-type's content-model schema by its API name")
+    public ResponseEntity<ShCdaPostTypeSchema> postType(@PathVariable String name) {
+        return ResponseEntity.of(shCdaService.getPostType(name));
     }
 
     @GetMapping("/query")

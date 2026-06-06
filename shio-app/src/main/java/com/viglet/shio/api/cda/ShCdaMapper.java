@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
@@ -19,6 +20,8 @@ import com.viglet.shio.api.cda.dto.ShCdaField;
 import com.viglet.shio.api.cda.dto.ShCdaFolder;
 import com.viglet.shio.api.cda.dto.ShCdaPost;
 import com.viglet.shio.api.cda.dto.ShCdaPostSummary;
+import com.viglet.shio.api.cda.dto.ShCdaPostTypeSchema;
+import com.viglet.shio.api.cda.dto.ShCdaSchemaField;
 import com.viglet.shio.api.cda.dto.ShCdaSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -44,6 +47,11 @@ import tools.jackson.databind.ObjectMapper;
 public class ShCdaMapper {
 
     private static final byte ROOT_FOLDER = 1;
+
+    /** Widgets whose delivered value is an array of scalars (SH11). */
+    private static final Set<String> ARRAY_WIDGETS = Set.of("Check Box", "Multi Select");
+    /** Layout-only widgets that carry no delivered value — omitted from the schema (SH11). */
+    private static final Set<String> CONTAINER_WIDGETS = Set.of("Tab");
 
     private final ObjectMapper objectMapper;
 
@@ -131,6 +139,70 @@ public class ShCdaMapper {
                 attr.getIsTitle() == 1,
                 attr.getIsSummary() == 1,
                 attr.getOrdinal());
+    }
+
+    /**
+     * The full content model of a post-type (SH11) — its API name plus every
+     * top-level, value-bearing attribute as a {@link ShCdaSchemaField}, ordered
+     * by {@code ordinal}. Backs {@code shio-types} code generation.
+     */
+    public ShCdaPostTypeSchema toPostTypeSchema(ShPostType postType) {
+        if (postType == null) {
+            return null;
+        }
+        return new ShCdaPostTypeSchema(
+                postType.getName(),
+                postType.getTitle(),
+                postType.getNamePlural(),
+                postType.getDescription(),
+                schemaFields(postType.getShPostTypeAttrs(), true));
+    }
+
+    /**
+     * One schema field, recursing into a Relator's sub-attributes. {@code multiple}
+     * is true for a Relator (its delivered value is an item list) or an
+     * array-valued widget ({@code Check Box} / {@code Multi Select}).
+     */
+    public ShCdaSchemaField toSchemaField(ShPostTypeAttr attr) {
+        if (attr == null) {
+            return null;
+        }
+        String widget = attr.getShWidget() != null ? attr.getShWidget().getName() : null;
+        List<ShCdaSchemaField> children = schemaFields(attr.getShPostTypeAttrs(), false);
+        boolean multiple = !children.isEmpty() || (widget != null && ARRAY_WIDGETS.contains(widget));
+        return new ShCdaSchemaField(
+                attr.getName(),
+                attr.getLabel(),
+                attr.getDescription(),
+                widget,
+                attr.getRequired() == 1,
+                multiple,
+                attr.getIsTitle() == 1,
+                attr.getIsSummary() == 1,
+                attr.getOrdinal(),
+                children);
+    }
+
+    /**
+     * Map a set of attributes to ordered schema fields, dropping container-only
+     * widgets ({@code Tab}). When {@code topLevel}, also drops Relator children
+     * (those are emitted nested within their parent).
+     */
+    private List<ShCdaSchemaField> schemaFields(Set<ShPostTypeAttr> attrs, boolean topLevel) {
+        if (attrs == null) {
+            return List.of();
+        }
+        return attrs.stream()
+                .filter(attr -> !topLevel || attr.getShParentPostTypeAttr() == null)
+                .filter(attr -> !isContainer(attr))
+                .sorted(Comparator.comparingInt(ShPostTypeAttr::getOrdinal))
+                .map(this::toSchemaField)
+                .toList();
+    }
+
+    private static boolean isContainer(ShPostTypeAttr attr) {
+        return attr != null && attr.getShWidget() != null
+                && CONTAINER_WIDGETS.contains(attr.getShWidget().getName());
     }
 
     private static Instant toInstant(Date date) {

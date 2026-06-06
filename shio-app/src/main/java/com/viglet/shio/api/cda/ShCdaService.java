@@ -10,6 +10,7 @@ package com.viglet.shio.api.cda;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ import com.viglet.shio.api.cda.dto.ShCdaListing;
 import com.viglet.shio.api.cda.dto.ShCdaPath;
 import com.viglet.shio.api.cda.dto.ShCdaPost;
 import com.viglet.shio.api.cda.dto.ShCdaPostSummary;
+import com.viglet.shio.api.cda.dto.ShCdaPostTypeSchema;
 import com.viglet.shio.api.cda.dto.ShCdaSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -34,6 +36,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 
@@ -60,16 +63,38 @@ public class ShCdaService {
     private final ShSiteRepository shSiteRepository;
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
+    private final ShPostTypeRepository shPostTypeRepository;
     private final ShCdaMapper mapper;
 
     public ShCdaService(ShSiteRepository shSiteRepository,
                         ShFolderRepository shFolderRepository,
                         ShPostUnifiedRepository shPostUnifiedRepository,
+                        ShPostTypeRepository shPostTypeRepository,
                         ShCdaMapper mapper) {
         this.shSiteRepository = shSiteRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
+        this.shPostTypeRepository = shPostTypeRepository;
         this.mapper = mapper;
+    }
+
+    /**
+     * The content model of every post-type (SH11), ordered by name. The schema is
+     * a global, non-site-scoped contract (post-types are shared across sites), so
+     * it is not gated by the SH2 per-site allow-list — it carries the field shape
+     * only, never content. Backs {@code shio-types} code generation.
+     */
+    public List<ShCdaPostTypeSchema> listPostTypes() {
+        return shPostTypeRepository.findAll().stream()
+                .sorted(Comparator.comparing(pt -> pt.getName() == null ? "" : pt.getName()))
+                .map(mapper::toPostTypeSchema)
+                .toList();
+    }
+
+    /** The content model of one post-type by its API name (SH11), or empty if unknown. */
+    public Optional<ShCdaPostTypeSchema> getPostType(String name) {
+        return Optional.ofNullable(shPostTypeRepository.findByName(name))
+                .map(mapper::toPostTypeSchema);
     }
 
     public List<ShCdaSite> listSites() {

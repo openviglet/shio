@@ -102,6 +102,44 @@ export interface ShioPath {
   currentFolder: ShioFolder | null;
 }
 
+/**
+ * One field of a post-type's content model (SH11). Recursive: a Relator field
+ * carries its item sub-fields in {@link fields}. Mirrors the backend
+ * `ShCdaSchemaField` record one-for-one.
+ */
+export interface ShioFieldSchema {
+  name: string;
+  label: string | null;
+  description: string | null;
+  /** The Shio widget name (e.g. `"Text"`, `"Relator"`), or `null`. */
+  widget: string | null;
+  required: boolean;
+  /**
+   * The delivered value is an array — a `Check Box` / `Multi Select` value, or a
+   * Relator's item list (in which case {@link fields} is non-empty).
+   */
+  multiple: boolean;
+  isTitle: boolean;
+  isSummary: boolean;
+  ordinal: number;
+  /** Sub-fields, for a Relator; empty for scalar fields. */
+  fields: ShioFieldSchema[];
+}
+
+/**
+ * A post-type's content model (SH11): its API {@link name} plus the ordered
+ * fields a post of this type exposes under {@link ShioPost.attrs}. Mirrors the
+ * backend `ShCdaPostTypeSchema` record. Feed an array of these to
+ * {@link generateShioTypes} to emit `.d.ts` declarations.
+ */
+export interface ShioPostTypeSchema {
+  name: string;
+  title: string | null;
+  namePlural: string | null;
+  description: string | null;
+  fields: ShioFieldSchema[];
+}
+
 /** Parameters for {@link ShioClient.query}. */
 export interface ShioQueryParams {
   siteId?: string;

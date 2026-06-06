@@ -131,3 +131,21 @@ test("createShioClient factory works and requires baseUrl", async () => {
   assert.ok(client instanceof ShioClient);
   assert.throws(() => new ShioClient({}), /baseUrl/);
 });
+
+test("getPostTypes builds GET /post-type (SH11)", async () => {
+  const fetchFn = fakeFetch({ body: [{ name: "News", fields: [] }] });
+  const client = new ShioClient({ baseUrl: BASE, fetch: fetchFn });
+  const schemas = await client.getPostTypes();
+  assert.equal(fetchFn.calls[0].url, `${BASE}/api/v2/cda/post-type`);
+  assert.deepEqual(schemas, [{ name: "News", fields: [] }]);
+});
+
+test("getPostType encodes the name and translates 404 to null (SH11)", async () => {
+  const found = fakeFetch({ body: { name: "News", fields: [] } });
+  const client = new ShioClient({ baseUrl: BASE, fetch: found });
+  await client.getPostType("News Article");
+  assert.equal(new URL(found.calls[0].url).pathname, "/api/v2/cda/post-type/News%20Article");
+
+  const missing = new ShioClient({ baseUrl: BASE, fetch: fakeFetch({ status: 404 }) });
+  assert.equal(await missing.getPostType("Nope"), null);
+});

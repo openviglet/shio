@@ -80,6 +80,28 @@ attribute names). The catch-all page renders a `content`/`body`/`text`/`html`
 field if present, and otherwise dumps `attrs` so you can see the shape. Adapt the
 rendering to your own post types.
 
+## Typed content (`post.attrs.*` autocomplete)
+
+`post.attrs` is `Record<string, unknown>` by default. Generate TypeScript
+declarations from your live post-types so you get autocomplete and type-checking:
+
+```bash
+npm run shio:types   # reads SHIO_URL / SHIO_CDA_TOKEN, writes lib/shio-types.d.ts
+```
+
+This emits one `Post` interface per post-type plus a `ShioPostTypes` name→type
+map. Cast a fetched post to its generated type to unlock typed `attrs`:
+
+```ts
+import type { ArticlePost } from "@/lib/shio-types";
+
+const post = (await client.getPostByUrl(SITE_ID, url)) as ArticlePost | null;
+post?.attrs.title; // string — autocompleted
+```
+
+Re-run after changing a post-type. The output is auto-generated — don't edit it
+by hand.
+
 ## Learn more
 
 - [Shio CMS](https://github.com/openviglet/shio)

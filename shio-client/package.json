@@ -11,10 +11,15 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/shio-client.js",
       "require": "./dist/shio-client.umd.cjs"
-    }
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "shio-types": "bin/shio-types.mjs"
   },
   "files": [
-    "dist"
+    "dist",
+    "bin"
   ],
   "sideEffects": false,
   "scripts": {

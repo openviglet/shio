@@ -200,11 +200,18 @@ draft preview** rides on the draft-targeted writes + SH5 PREVIEW-env reads; the
 in-console "preview this draft" UX is **SH13** (§III.2), and the publish webhook
 emitter is **SH12** (§III.1).
 
-### II.6 Type generation from post-types (SH11)
+### II.6 Type generation from post-types (SH11) — ✅ shipped
 
-A `shio types` step turns each post-type into a `.d.ts`. Page authors get
-autocomplete on `post.attrs.*`, closing the loop between the dynamic content model
-and the statically-typed JS front.
+Shipped: a public CDA post-type schema (`GET /api/v2/cda/post-type[/{name}]`,
+recursive into Relator sub-fields and array-aware) + a pure, dependency-free
+`generateShioTypes` in `@viglet/shio-client` and a `shio-types` CLI that turn each
+post-type into a `.d.ts` — one typed `…Post` (a `ShioPost & {…}` intersection)
+per type plus a `ShioPostTypes` name→type map. Page authors get autocomplete on `post.attrs.*`,
+closing the loop between the dynamic content model and the statically-typed JS
+front. Wired into `create-shio-app` (`npm run shio:types`). Detail in
+[CHANGELOG.md](CHANGELOG.md) Block B; spec: [specs/SH11-type-generation.md](specs/SH11-type-generation.md).
+The schema is also what the §II.2 `ShioField` follow-up needs to resolve widgets
+by their real type instead of heuristically.
 
 ---
 

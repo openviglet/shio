@@ -47,7 +47,7 @@
 - ✅ **SH8** — shipped → [CHANGELOG.md](CHANGELOG.md) Block B. `create-shio-app` scaffolds a Next.js App-Router site wired to the CDA (`[...slug]` routing, SSG/ISR).
 - ✅ **SH9** — shipped → [CHANGELOG.md](CHANGELOG.md) Block B. SSG/ISR/SSR recipes + on-demand revalidation on the Next.js side: `/api/revalidate` (HMAC-verified webhook → `revalidatePath`/`revalidateTag`) + `/api/preview` (Draft Mode SSR on SH5 PREVIEW keys). Recipe: [recipes/nextjs-rendering.md](recipes/nextjs-rendering.md). The webhook **emitter** is SH12.
 - ✅ **SH10** — shipped → [CHANGELOG.md](CHANGELOG.md) Block B. CDA write surface (`/api/v2/cda` `PATCH`/`publish`/`editable`, gated by `ROLE_CDA_WRITE`, draft-targeted) + the React console editor shell that drives the `shio-editor.js` bridge over `postMessage` and saves back with a WRITE token. Spec: [specs/SH10-universal-editor-bridge.md](specs/SH10-universal-editor-bridge.md).
-- 💭 **SH11** (deps: SH6) **TypeScript type generation from post-types** — a `shio types` codegen step turns each post-type into a `.d.ts`, so page code gets autocomplete on `post.attrs.*`. → §II.6
+- ✅ **SH11** — shipped → [CHANGELOG.md](CHANGELOG.md) Block B. Public CDA post-type schema (`GET /api/v2/cda/post-type[/{name}]`, recursive into Relator sub-fields, array-aware) + a pure `generateShioTypes` in `@viglet/shio-client` and a `shio-types` CLI that turns it into a `.d.ts`, so page code gets autocomplete on `post.attrs.*`; wired into `create-shio-app` (`npm run shio:types`). Spec: [specs/SH11-type-generation.md](specs/SH11-type-generation.md).
 
 ## Block C — Composable platform primitives
 

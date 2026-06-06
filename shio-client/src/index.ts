@@ -10,6 +10,10 @@ export { ShioClient, createShioClient } from "./client";
 // Errors
 export { ShioHttpError } from "./errors";
 
+// Code generation (SH11)
+export { generateShioTypes } from "./codegen";
+export type { GenerateTypesOptions } from "./codegen";
+
 // Types
 export type {
   ShioClientConfig,
@@ -22,4 +26,6 @@ export type {
   ShioPath,
   ShioQueryParams,
   ShioPageParams,
+  ShioFieldSchema,
+  ShioPostTypeSchema,
 } from "./types";
