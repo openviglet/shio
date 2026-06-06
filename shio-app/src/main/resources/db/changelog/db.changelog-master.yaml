@@ -1,3 +1,5 @@
 databaseChangeLog:
   - include:
       file: db/changelog/v2026.2_baseline.yaml
+  - include:
+      file: db/changelog/v2026.2.1.yaml

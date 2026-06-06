@@ -54,7 +54,7 @@
 > The table-stakes features the headless market (Contentful/Strapi/Sanity)
 > assumes. Versioning is partly there (`/api/v2/post-unified/{id}/versions`). → §III
 
-- 📋 **SH12** (deps: SH1) **Outbound webhooks on publish/unpublish/delete** — configurable per-site webhook targets with HMAC signing + retry, emitted from the unified publish path. The backbone for incremental static regeneration (SH9). → §III.1
+- ✅ **SH12** — shipped → [CHANGELOG.md](CHANGELOG.md) Block C. Per-site outbound webhooks (`ShSiteWebhook` + `/api/v2/site-webhook` CRUD) fired on publish/unpublish/delete from the unified write path via a Spring `@TransactionalEventListener(AFTER_COMMIT)`; HMAC-SHA256 signed (matching the SH9 receiver), retried best-effort off the request thread. Spec: [specs/SH12-outbound-webhooks.md](specs/SH12-outbound-webhooks.md).
 - 📋 **SH13** (deps: SH2, SH5) **Draft / preview mode** — short-lived preview tokens + an in-console "preview this draft" UX, layered on SH5's draft-visibility machinery (the `PREVIEW` env already exposes draft-preferred content via the CDA). → §III.2
 - ⏳ **SH14** (deps: —) **Versioning UI** — the `/versions` endpoint exists; add console UI to diff/restore versions. → §III.3
 - 💭 **SH15** (deps: SH12) **Scheduled publish/unpublish** — `publishAt`/`unpublishAt` on a post + a sweep that fires the transition and the webhook. → §III.4

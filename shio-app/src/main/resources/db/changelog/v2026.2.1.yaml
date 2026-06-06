@@ -1,0 +1,75 @@
+databaseChangeLog:
+  # SH12 — Outbound webhooks on publish/unpublish/delete.
+  # Per-site webhook subscriptions + their event filter. Types kept DB-agnostic
+  # (VARCHAR / TIMESTAMP / boolean) per ShLiquibaseChangelogAgnosticTest.
+  - changeSet:
+      id: sh12-create-site-webhook
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: site_webhook
+      changes:
+        - createTable:
+            tableName: site_webhook
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: PK_site_webhook
+              - column:
+                  name: TENANT_ID
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: site_id
+                  type: VARCHAR(255)
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+              - column:
+                  name: target_url
+                  type: VARCHAR(1024)
+              - column:
+                  name: secret
+                  type: VARCHAR(255)
+              - column:
+                  name: enabled
+                  type: boolean
+              - column:
+                  name: created_date
+                  type: TIMESTAMP
+              - column:
+                  name: owner
+                  type: VARCHAR(255)
+  - changeSet:
+      id: sh12-create-site-webhook-event
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: site_webhook_event
+      changes:
+        - createTable:
+            tableName: site_webhook_event
+            columns:
+              - column:
+                  name: site_webhook_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: VARCHAR(16)
+        - addForeignKeyConstraint:
+            constraintName: fk_site_webhook_event_webhook
+            baseTableName: site_webhook_event
+            baseColumnNames: site_webhook_id
+            referencedTableName: site_webhook
+            referencedColumnNames: id

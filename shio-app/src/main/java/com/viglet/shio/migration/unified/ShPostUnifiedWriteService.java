@@ -10,6 +10,7 @@ package com.viglet.shio.migration.unified;
 
 import java.util.Date;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,10 +22,12 @@ import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnifiedId;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.persistence.model.webhook.ShWebhookEventType;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.webhook.ShPostLifecycleEvent;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -44,17 +47,20 @@ public class ShPostUnifiedWriteService {
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ShPostUnifiedWriteService(ShFolderRepository shFolderRepository,
                                      ShSiteRepository shSiteRepository,
                                      ShPostTypeRepository shPostTypeRepository,
                                      ShPostUnifiedRepository shPostUnifiedRepository,
-                                     ObjectMapper objectMapper) {
+                                     ObjectMapper objectMapper,
+                                     ApplicationEventPublisher eventPublisher) {
         this.shFolderRepository = shFolderRepository;
         this.shSiteRepository = shSiteRepository;
         this.shPostTypeRepository = shPostTypeRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.objectMapper = objectMapper;
+        this.eventPublisher = eventPublisher;
     }
 
     private ShFolder resolveContainerFolder(String containerId) {
@@ -143,18 +149,51 @@ public class ShPostUnifiedWriteService {
         pub.setPublished(true);
         pub.setPublishStatus(ShObjectPublishStatus.PUBLISH);
         pub.setData(draft.getData());
-        return shPostUnifiedRepository.save(pub);
+        ShPostUnified saved = shPostUnifiedRepository.save(pub);
+        publishLifecycle(ShWebhookEventType.PUBLISH, saved);
+        return saved;
     }
 
     @Transactional
     public void unpublish(String postId) {
         shPostUnifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED)
-                .ifPresent(shPostUnifiedRepository::delete);
+                .ifPresent(published -> {
+                    // Snapshot the published row before it is removed so the
+                    // webhook can still carry its site + url (SH12).
+                    ShPostLifecycleEvent event = lifecycleEvent(ShWebhookEventType.UNPUBLISH, published);
+                    shPostUnifiedRepository.delete(published);
+                    eventPublisher.publishEvent(event);
+                });
     }
 
     @Transactional
     public void delete(String postId) {
-        shPostUnifiedRepository.findById(postId).forEach(shPostUnifiedRepository::delete);
+        var rows = shPostUnifiedRepository.findById(postId);
+        if (rows.isEmpty()) {
+            return;
+        }
+        // Snapshot from any existing row (DRAFT or PUBLISHED) before deletion.
+        ShPostLifecycleEvent event = lifecycleEvent(ShWebhookEventType.DELETE, rows.get(0));
+        rows.forEach(shPostUnifiedRepository::delete);
+        eventPublisher.publishEvent(event);
+    }
+
+    private void publishLifecycle(ShWebhookEventType type, ShPostUnified row) {
+        eventPublisher.publishEvent(lifecycleEvent(type, row));
+    }
+
+    private ShPostLifecycleEvent lifecycleEvent(ShWebhookEventType type, ShPostUnified row) {
+        String siteId = row.getShSite() != null ? row.getShSite().getId() : null;
+        return new ShPostLifecycleEvent(type, row.getId(), siteId,
+                normalizeUrl(row.getFurl()), new Date().toInstant());
+    }
+
+    /** Friendly URL normalised to a leading slash; {@code null}/blank stays null. */
+    private static String normalizeUrl(String furl) {
+        if (furl == null || furl.isBlank()) {
+            return null;
+        }
+        return furl.startsWith("/") ? furl : "/" + furl;
     }
 
     private void applyTitleAndSummary(ShPostUnified row, JsonNode data, ShPostType postType) {
