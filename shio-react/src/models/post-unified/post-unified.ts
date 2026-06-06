@@ -7,6 +7,8 @@ export interface ShPostUnified {
   summary?: string
   furl?: string
   owner?: string
+  modifier?: string
+  publisher?: string
   published: boolean
   publishStatus?: string
   date?: string

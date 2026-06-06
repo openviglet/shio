@@ -237,6 +237,44 @@ class ShPostUnifiedAPITest {
     }
 
     @Test
+    void stage07bPostUnifiedRestore() throws Exception {
+        // Diverge the draft from the published snapshot...
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("state", "DRAFT");
+        ObjectNode data = payload.putObject("data");
+        data.put(ShSystemPostTypeAttr.TITLE, "Draft Pending Change");
+
+        mockMvc.perform(put("/api/v2/post-unified/" + newPostId)
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Draft Pending Change"));
+
+        // ...then restore the draft to the last published version.
+        mockMvc.perform(post("/api/v2/post-unified/" + newPostId + "/restore")
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.state").value("DRAFT"))
+                .andExpect(jsonPath("$.published").value(false))
+                .andExpect(jsonPath("$.title").value("Hello Updated"));
+
+        mockMvc.perform(get("/api/v2/post-unified/" + newPostId)
+                        .param("state", "DRAFT")
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Hello Updated"));
+    }
+
+    @Test
+    void stage07cPostUnifiedRestoreUnknownReturnsNotFound() throws Exception {
+        mockMvc.perform(post("/api/v2/post-unified/" + UUID.randomUUID() + "/restore")
+                        .principal(mockPrincipal))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void stage08PostUnifiedUnpublish() throws Exception {
         mockMvc.perform(post("/api/v2/post-unified/" + newPostId + "/unpublish")
                         .principal(mockPrincipal))

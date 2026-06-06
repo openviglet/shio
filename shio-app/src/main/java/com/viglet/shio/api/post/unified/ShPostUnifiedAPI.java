@@ -115,4 +115,14 @@ public class ShPostUnifiedAPI {
     public List<ShPostUnified> versions(@PathVariable String id) {
         return shPostUnifiedRepository.findById(id);
     }
+
+    @PostMapping("/{id}/restore")
+    public ResponseEntity<ShPostUnified> restore(@PathVariable String id, Principal principal) {
+        try {
+            return ResponseEntity.ok(shPostUnifiedWriteService.restoreDraftFromPublished(
+                    id, principal != null ? principal.getName() : null));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

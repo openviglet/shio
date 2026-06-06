@@ -46,6 +46,12 @@ export class ShPostUnifiedService {
   async delete(id: string): Promise<void> {
     await axios.delete(`/v2/post-unified/${id}`)
   }
+
+  /** Revert the draft to the last published snapshot (SH14). */
+  async restore(id: string): Promise<ShPostUnified> {
+    const response = await axios.post<ShPostUnified>(`/v2/post-unified/${id}/restore`)
+    return response.data
+  }
 }
 
 export class ShPostUnifiedMigrationService {

@@ -230,10 +230,16 @@ publish/unpublish/delete path. The backbone for incremental static regeneration
 Short-lived preview tokens expose unpublished content via the CDA so the JS front
 renders a live preview before publishing. Pairs with the editor bridge (§II.5).
 
-### III.3 Versioning UI (SH14)
+### III.3 Versioning UI (SH14) — ✅ shipped
 
-`/api/v2/post-unified/{id}/versions` already returns history; add console UI to
-diff and restore versions.
+Shipped: a console **History** dialog on the post editor that diffs the
+unpublished `DRAFT` against the live `PUBLISHED` snapshot (field-level,
+schema-driven) + a `POST /api/v2/post-unified/{id}/restore` that reverts the
+draft to published. Detail in [CHANGELOG.md](CHANGELOG.md) Block C; spec:
+[specs/SH14-versioning-ui.md](specs/SH14-versioning-ui.md). Design note: the
+unified model is **two-row-per-state** (one `DRAFT`, one `PUBLISHED`), not a
+per-save history — a richer version *timeline* (an N-snapshot history table)
+remains a separate, larger task and is deliberately not folded in here.
 
 ### III.4 Scheduled publish/unpublish (SH15)
 

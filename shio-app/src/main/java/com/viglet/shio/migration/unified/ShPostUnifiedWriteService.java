@@ -154,6 +154,44 @@ public class ShPostUnifiedWriteService {
         return saved;
     }
 
+    /**
+     * Revert the editable {@code DRAFT} row to the last {@code PUBLISHED}
+     * snapshot, discarding any unpublished edits (SH14 "restore version"). If no
+     * draft row exists, one is re-created from the published row. The public
+     * content (the published row) is left untouched, so no webhook fires.
+     */
+    @Transactional
+    public ShPostUnified restoreDraftFromPublished(String postId, String modifier) {
+        ShPostUnified published = shPostUnifiedRepository
+                .findByIdAndState(postId, ShPostState.PUBLISHED)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No published version to restore from: " + postId));
+
+        ShPostUnified draft = shPostUnifiedRepository
+                .findByIdAndState(postId, ShPostState.DRAFT)
+                .orElseGet(() -> {
+                    ShPostUnified d = new ShPostUnified();
+                    d.setId(postId);
+                    d.setState(ShPostState.DRAFT);
+                    d.setShFolder(published.getShFolder());
+                    d.setShSite(published.getShSite());
+                    d.setShPostType(published.getShPostType());
+                    d.setOwner(published.getOwner());
+                    d.setDate(published.getDate());
+                    return d;
+                });
+
+        draft.setData(published.getData());
+        draft.setTitle(published.getTitle());
+        draft.setSummary(published.getSummary());
+        draft.setFurl(published.getFurl());
+        draft.setModifiedDate(new Date());
+        if (modifier != null) draft.setModifier(modifier);
+        draft.setPublished(false);
+        draft.setPublishStatus(ShObjectPublishStatus.DRAFT);
+        return shPostUnifiedRepository.save(draft);
+    }
+
     @Transactional
     public void unpublish(String postId) {
         shPostUnifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED)
