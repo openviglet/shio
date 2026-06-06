@@ -1,9 +1,10 @@
 name: Publish JS packages (npm)
 
-# Publishes the three Shio JavaScript packages to npm, in dependency order:
+# Publishes the Shio JavaScript packages to npm, in dependency order:
 #   1. @viglet/shio-client      (framework-agnostic core)
 #   2. @viglet/shio-react-sdk   (depends on the core via workspace:*)
 #   3. create-shio-app          (Next.js starter generator)
+#   4. @viglet/shio             (CLI; depends on the core + create-shio-app)
 #
 # pnpm workspace: `pnpm publish` automatically rewrites the `workspace:*`
 # dependency to the published version. The console (shio-react) is private and
@@ -64,6 +65,7 @@ jobs:
           pnpm --filter @viglet/shio-client \
                --filter @viglet/shio-react-sdk \
                --filter create-shio-app \
+               --filter @viglet/shio \
                exec -- npm version "${{ inputs.release-type }}" --no-git-tag-version
           VERSION=$(node -p "require('./shio-client/package.json').version")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -96,10 +98,16 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Publish @viglet/shio (CLI)
+        run: pnpm --filter @viglet/shio publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       # ── Commit the version bumps ──
       - name: Commit version bump
         run: |
           git add shio-client/package.json shio-react-sdk/package.json \
-                  create-shio-app/package.json create-shio-app/template/package.json
+                  create-shio-app/package.json create-shio-app/template/package.json \
+                  cli/package.json
           git commit -m "chore: release JS packages v${{ steps.version.outputs.version }} [skip ci]" || echo "No changes to commit"
           git push

@@ -38,6 +38,14 @@ public interface ShWidgetRepository extends JpaRepository<ShWidget, String> {
 	
 	ShWidget findByName(String name);
 
+	/**
+	 * First widget with the given name. The seeded catalog is unique by name, but
+	 * resolving by name (SH16 post-type push) must not blow up if duplicates exist
+	 * — {@link #findByName} throws {@code IncorrectResultSizeDataAccessException}
+	 * when more than one row matches.
+	 */
+	ShWidget findFirstByName(String name);
+
 	@SuppressWarnings("unchecked")
 	ShWidget save(ShWidget shWidget);
 

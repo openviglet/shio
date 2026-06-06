@@ -6,6 +6,10 @@
   "bin": {
     "create-shio-app": "src/index.mjs"
   },
+  "exports": {
+    "./scaffold": "./src/scaffold.mjs",
+    "./package.json": "./package.json"
+  },
   "files": [
     "src",
     "template"

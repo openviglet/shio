@@ -78,6 +78,16 @@ export class ShSiteService {
 ### There is NO generic `DELETE /api/v2/object/{id}` endpoint
 Delete must be done by type: `/v2/post/{id}` or `/v2/folder/{id}`
 
+### Post Types — lossless admin API (SH16, used by the `shio` CLI)
+- `GET /api/v2/post-type` - List all post-types as **lossless** `ShPostTypeDef`s (keeps `Tab`, verbatim `widgetSettings`, nested Relator fields — the authoring inverse of the lossy SH11 CDA schema)
+- `GET /api/v2/post-type/{name}` - One def (404 unknown)
+- `PUT /api/v2/post-type/{name}` - Upsert (idempotent by name); rejects system types (409), unknown widgets (400)
+- `DELETE /api/v2/post-type/{name}` - Delete a non-system type (204/404/409)
+- Console-authenticated (HTTP Basic) + **CSRF-exempt** (stateless CLI), like the CDA writes. **Cascade gotcha:** `ShPostTypeAttr` maps `shWidget`/`shPostType`/`shParentPostTypeAttr` as `@ManyToOne(cascade=ALL)`, so `ShPostTypeAdminService` detaches those before the orphan-removal replace — otherwise an update would cascade-delete the shared widget catalog.
+
+### `shio` CLI (`@viglet/shio`, in `cli/`)
+The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`), `dev`, `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
+
 ## Security Configuration
 
 ### CSRF (follows Turing pattern)
@@ -376,8 +386,9 @@ Full page with grid of post types:
 ### JavaScript workspace (pnpm)
 The JS packages live in a **pnpm workspace** (`pnpm-workspace.yaml` + root
 `package.json`): `shio-react` (console), `shio-client` (CDA core),
-`shio-react-sdk` (React SDK, depends on the core via `workspace:*`), and
-`create-shio-app` (Next.js starter). Run `pnpm install` once at the repo root.
+`shio-react-sdk` (React SDK, depends on the core via `workspace:*`),
+`create-shio-app` (Next.js starter), and `cli` (`@viglet/shio`, the `shio`
+command — SH16). Run `pnpm install` once at the repo root.
 Native build scripts are allowlisted via `pnpm.onlyBuiltDependencies`
 (`esbuild`, `@tailwindcss/oxide`). `@viglet/viglet-design-system` resolves from
 public npmjs (no scope mapping needed).

@@ -13,7 +13,7 @@
     "build:sdk": "pnpm --filter @viglet/shio-client run build && pnpm --filter @viglet/shio-react-sdk run build",
     "build:console": "pnpm --filter shio-react run compile:build",
     "typecheck": "pnpm --filter @viglet/shio-client --filter @viglet/shio-react-sdk run typecheck",
-    "test": "pnpm --filter @viglet/shio-client --filter create-shio-app run test"
+    "test": "pnpm --filter @viglet/shio-client --filter create-shio-app --filter @viglet/shio run test"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

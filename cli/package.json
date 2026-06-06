@@ -1,0 +1,33 @@
+{
+  "name": "@viglet/shio",
+  "version": "2026.2.1",
+  "description": "The Shio CMS command-line interface — scaffold sites, generate types, and manage your content model as code (post-types pull/push). The 'JS dev, zero Java' workflow.",
+  "type": "module",
+  "bin": {
+    "shio": "src/index.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "@viglet/shio-client": "workspace:*",
+    "create-shio-app": "workspace:*"
+  },
+  "keywords": [
+    "shio",
+    "cms",
+    "headless",
+    "cli",
+    "content-as-code",
+    "post-types",
+    "gitops"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "author": "Viglet Team",
+  "license": "GPL-3.0"
+}

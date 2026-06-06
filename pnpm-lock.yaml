@@ -8,6 +8,15 @@ importers:
 
   .: {}
 
+  cli:
+    dependencies:
+      '@viglet/shio-client':
+        specifier: workspace:*
+        version: link:../shio-client
+      create-shio-app:
+        specifier: workspace:*
+        version: link:../create-shio-app
+
   create-shio-app: {}
 
   shio-client:

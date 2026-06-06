@@ -40,6 +40,8 @@ public class ShSecurityConfig {
     public static final String ERROR_PATH = "/error/**";
     /** The CDA namespace (SH1) — read (GET) for ROLE_CDA, write (SH10) for ROLE_CDA_WRITE. */
     private static final String CDA_PATH = "/api/v2/cda/**";
+    /** Post-types-as-code admin API (SH16) — console-authenticated, used by the stateless {@code shio} CLI. */
+    private static final String POST_TYPE_PATH = "/api/v2/post-type/**";
 
     private final UserDetailsService userDetailsService;
 
@@ -88,6 +90,9 @@ public class ShSecurityConfig {
                         // CDA writes (SH10) are token-authenticated (Key header) and stateless,
                         // so there is no session/XSRF cookie to validate; reads were never CSRF-checked.
                         mvc.matcher(CDA_PATH),
+                        // Post-types-as-code admin API (SH16) — the shio CLI calls it statelessly
+                        // with HTTP Basic, so there is no session/XSRF cookie; same rationale as CDA.
+                        mvc.matcher(POST_TYPE_PATH),
                         mvc.matcher("/api/v2/setup"),
                         mvc.matcher(ERROR_PATH),
                         mvc.matcher(LOGOUT_PATH),

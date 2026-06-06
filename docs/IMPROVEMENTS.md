@@ -253,8 +253,21 @@ not fatal). This introduced the codebase's first `@EnableScheduling`. Detail in
 [CHANGELOG.md](CHANGELOG.md) Block C; spec:
 [specs/SH15-scheduled-publish.md](specs/SH15-scheduled-publish.md).
 
-### III.5 `shio` CLI (SH16)
+### III.5 `shio` CLI (SH16) — ✅ shipped
 
+Shipped: the `@viglet/shio` CLI (`init`/`types`/`pull`/`push`/`dev`/`deploy`)
+backed by a new **lossless, console-authenticated** post-type admin API
+(`GET/PUT/DELETE /api/v2/post-type`). Design notes: (1) the CLI uses **two auth
+models** — console Basic auth for the content model (`pull`/`push`, an admin act)
+and a CDA token for delivery (`types`); (2) the admin API is **lossless** where
+the SH11 CDA schema is deliberately lossy (it keeps `Tab`, `widgetSettings` and
+nested Relator fields so the JSON round-trips), and is CSRF-exempt for the same
+reason CDA writes are (stateless, no session cookie); (3) `init` delegates to
+`create-shio-app`'s scaffolder rather than duplicating it. Detail in
+[CHANGELOG.md](CHANGELOG.md) Block C; spec:
+[specs/SH16-shio-cli.md](specs/SH16-shio-cli.md).
+
+Original direction:
 `init` (scaffold), `dev` (local proxy + type watch), `pull`/`push` (post-types as
 code, GitOps-friendly), `deploy`. Mirrors the `turing` CLI direction in the
 ecosystem.
