@@ -38,6 +38,8 @@ public class ShSecurityConfig {
     private static final String LOGIN_PATH = "/api/v2/login";
     private static final String LOGOUT_PATH = "/logout";
     public static final String ERROR_PATH = "/error/**";
+    /** The CDA namespace (SH1) — read (GET) for ROLE_CDA, write (SH10) for ROLE_CDA_WRITE. */
+    private static final String CDA_PATH = "/api/v2/cda/**";
 
     private final UserDetailsService userDetailsService;
 
@@ -83,7 +85,9 @@ public class ShSecurityConfig {
                 .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
                 .ignoringRequestMatchers(
                         mvc.matcher("/graphql"),
-                        mvc.matcher("/api/v2/universal-editor/**"),
+                        // CDA writes (SH10) are token-authenticated (Key header) and stateless,
+                        // so there is no session/XSRF cookie to validate; reads were never CSRF-checked.
+                        mvc.matcher(CDA_PATH),
                         mvc.matcher("/api/v2/setup"),
                         mvc.matcher(ERROR_PATH),
                         mvc.matcher(LOGOUT_PATH),
@@ -116,7 +120,13 @@ public class ShSecurityConfig {
                         mvc.matcher("/sites/**"),
                         mvc.matcher("/api/v2/setup"),
                         mvc.matcher(LOGIN_PATH)).permitAll();
-                authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.GET, "/api/v2/cda/**"))
+                // CDA write surface (SH10) — must precede the GET rule; a WRITE-scope token
+                // carries ROLE_CDA_WRITE (see ShApiTokenFilter).
+                authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.PATCH, CDA_PATH))
+                        .hasRole("CDA_WRITE");
+                authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, CDA_PATH))
+                        .hasRole("CDA_WRITE");
+                authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.GET, CDA_PATH))
                         .hasRole("CDA");
                 // GraphQL delivery (SH4) is a CDA surface — token-authenticated, POST reads.
                 authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, "/graphql"))
@@ -166,7 +176,13 @@ public class ShSecurityConfig {
                                 mvc.matcher("/setup"),
                                 mvc.matcher("/setup/**"),
                                 mvc.matcher(LOGIN_PATH)).permitAll();
-                        authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.GET, "/api/v2/cda/**"))
+                        // CDA write surface (SH10) — must precede the GET rule; a WRITE-scope token
+                        // carries ROLE_CDA_WRITE (see ShApiTokenFilter).
+                        authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.PATCH, CDA_PATH))
+                                .hasRole("CDA_WRITE");
+                        authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, CDA_PATH))
+                                .hasRole("CDA_WRITE");
+                        authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.GET, CDA_PATH))
                                 .hasRole("CDA");
                         // GraphQL delivery (SH4) is a CDA surface — token-authenticated, POST reads.
                         authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, "/graphql"))

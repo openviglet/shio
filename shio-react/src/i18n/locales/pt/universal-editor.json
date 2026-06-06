@@ -23,5 +23,13 @@
   "universalEditor.openUrl": "Abrir URL Externa",
   "universalEditor.urlPlaceholder": "https://seu-site.com/pagina",
   "universalEditor.urlHint": "Abra qualquer pagina instrumentada com atributos data-sh-* para edicao visual.",
-  "universalEditor.open": "Abrir"
+  "universalEditor.open": "Abrir",
+  "universalEditor.save": "Salvar rascunho",
+  "universalEditor.saving": "Salvando...",
+  "universalEditor.publish": "Publicar",
+  "universalEditor.draftSaved": "Rascunho salvo",
+  "universalEditor.published": "Publicado",
+  "universalEditor.saveError": "Nao foi possivel salvar as alteracoes",
+  "universalEditor.selectToken": "Token de gravacao (escopo WRITE)",
+  "universalEditor.noWriteToken": "Nenhum token de API com escopo WRITE encontrado. Crie um em Admin → Tokens de API para habilitar o salvamento."
 }

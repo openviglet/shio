@@ -406,6 +406,43 @@ three publishable packages, builds, and runs `pnpm publish` in dependency order
 - `/thirdparty/**` → `classpath:/META-INF/resources/webjars/`
 - `/console/**` → React SPA (permitAll in security)
 
+## Database Schema (Liquibase, follows Turing)
+
+The schema is owned by **Liquibase**, NOT by Hibernate. `spring.jpa.hibernate.ddl-auto=none`
+in `application.properties` — never set it back to `update`/`create` for the app
+(schema drift on `@TenantId` columns was the reason we moved off it).
+
+### Layout
+- Changelogs: `shio-app/src/main/resources/db/changelog/`
+  - `db.changelog-master.yaml` — `include`s every versioned file in order (wired via `spring.liquibase.change-log`).
+  - `v2026.2_baseline.yaml` — generated baseline (full `createTable` set incl. `TENANT_ID`).
+  - New features add `vX.Y.Z.yaml` + one `include` line in the master.
+- `shio-app/liquibase.properties` — config for the `liquibase-maven-plugin` (diff/generate only; the app applies changelogs at boot via `spring.liquibase.*`).
+- Dev DB: `jdbc:h2:file:./store/db/shioDB` (relative to `shio-app/`).
+
+### Load-bearing H2 URL params
+The datasource URL **must** keep `;DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true`.
+Liquibase creates tables with unquoted mixed-case names (`ShPostTypeAttr`), while
+Hibernate (`globally_quoted_identifiers=true`) queries them **quoted**
+(`"ShPostTypeAttr"`, `"TENANT_ID"`). The params make the casing match — without
+them you get `Column "..." not found` at runtime.
+
+### Adding a migration
+1. Hand-write a `vX.Y.Z.yaml` changeset (preferred for incremental changes — see
+   Turing's `turing-app/.../db/changelog/vX.Y.Z.yaml` for the `addColumn` /
+   `preConditions: onFail: MARK_RAN` pattern), **or** regenerate via diff:
+   `mvn -pl shio-app org.liquibase:liquibase-maven-plugin:5.0.3:generateChangeLog -Dliquibase.url=... -Dliquibase.outputChangeLogFile=...`
+   (invoke the plugin goal directly so the frontend build is skipped).
+2. Add the `include` line to `db.changelog-master.yaml`.
+3. Keep types **DB-agnostic** — `ShLiquibaseChangelogAgnosticTest` fails the build on
+   `TIMESTAMP WITH TIME ZONE`, `CHARACTER LARGE OBJECT`, `BINARY LARGE OBJECT`,
+   `BOOLEAN`. Use `TIMESTAMP`, `CLOB`, lowercase `boolean` instead. `ENUM(...)` is
+   allowed (Hibernate maps Java enums natively on H2).
+
+### Tests
+Tests skip Liquibase (`spring.liquibase.enabled=false`) and build the schema from
+entity metadata via `ddl-auto=create-drop` on a fresh in-memory H2 per run.
+
 ## Common Issues & Solutions
 
 ### Optimistic Locking on Startup
@@ -435,6 +472,9 @@ After installing/removing packages (`pnpm add`/`pnpm remove`), clear Vite cache:
 
 ### Unused Imports Fail TypeScript Build
 `tsc -b` with strict mode flags unused imports as errors (TS6133). When refactoring (e.g., replacing `Checkbox` with `Switch`), always remove unused imports.
+
+### `Column "..._.TENANT_ID" not found` (or any column) at startup
+Schema drift. The schema is Liquibase-managed (`ddl-auto=none`) — a column referenced by an entity does not exist because no changeset created it. Fix by adding a Liquibase changeset (see **Database Schema** above), not by flipping `ddl-auto` back to `update`. Also confirm the datasource URL still has `DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true` — dropping those reintroduces quoted-vs-unquoted casing mismatches that surface as "column not found".
 
 ## Color Theme
 - Primary: Orange/Amber (vs Turing's Blue/Indigo)

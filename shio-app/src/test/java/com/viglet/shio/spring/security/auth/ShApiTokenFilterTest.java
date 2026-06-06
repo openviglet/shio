@@ -148,6 +148,34 @@ class ShApiTokenFilterTest {
     }
 
     @Test
+    void readTokenOnCdaPatchIsForbidden() throws Exception {
+        // SH10 write surface uses PATCH; a READ token must still be GET-gated.
+        when(shApiTokenRepository.findByToken("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of())));
+        MockHttpServletResponse res = new MockHttpServletResponse();
+
+        filter().doFilter(request("PATCH", "/api/v2/cda/post/abc"), res, new MockFilterChain());
+
+        assertThat(res.getStatus()).isEqualTo(403);
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void writeTokenOnCdaPatchAuthenticatesWithWriteAuthority() throws Exception {
+        // SH10: a WRITE token may PATCH the CDA write surface and carries ROLE_CDA_WRITE.
+        when(shApiTokenRepository.findByToken("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.WRITE, Set.of())));
+        MockHttpServletResponse res = new MockHttpServletResponse();
+
+        filter().doFilter(request("PATCH", "/api/v2/cda/post/abc"), res, new MockFilterChain());
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(res.getStatus()).isEqualTo(200);
+        assertThat(auth).isNotNull();
+        assertThat(auth.getAuthorities()).extracting("authority").contains("ROLE_CDA_WRITE");
+    }
+
+    @Test
     void previewTokenCarriesPreviewAuthority() throws Exception {
         when(shApiTokenRepository.findByToken("the-key"))
                 .thenReturn(Optional.of(token(ShApiTokenScope.PREVIEW, Set.of())));

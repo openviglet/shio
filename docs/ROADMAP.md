@@ -46,7 +46,7 @@
 - ✅ **SH7** — shipped → [CHANGELOG.md](CHANGELOG.md) Block B. `shio-react-sdk` rebased onto `@viglet/shio-client`; new hooks + `ShioRichText`/`ShioImage`/`ShioRelator`/`ShioField`.
 - ✅ **SH8** — shipped → [CHANGELOG.md](CHANGELOG.md) Block B. `create-shio-app` scaffolds a Next.js App-Router site wired to the CDA (`[...slug]` routing, SSG/ISR).
 - ✅ **SH9** — shipped → [CHANGELOG.md](CHANGELOG.md) Block B. SSG/ISR/SSR recipes + on-demand revalidation on the Next.js side: `/api/revalidate` (HMAC-verified webhook → `revalidatePath`/`revalidateTag`) + `/api/preview` (Draft Mode SSR on SH5 PREVIEW keys). Recipe: [recipes/nextjs-rendering.md](recipes/nextjs-rendering.md). The webhook **emitter** is SH12.
-- ⏳ **SH10** (deps: SH1) **Mature the Universal Editor bridge** — `@viglet/shio-editor-cors` exists; harden the inline-edit handshake (field mapping, save-back through CDA write scope, draft preview) so any JS-rendered page becomes visually editable. → §II.5
+- ✅ **SH10** — shipped → [CHANGELOG.md](CHANGELOG.md) Block B. CDA write surface (`/api/v2/cda` `PATCH`/`publish`/`editable`, gated by `ROLE_CDA_WRITE`, draft-targeted) + the React console editor shell that drives the `shio-editor.js` bridge over `postMessage` and saves back with a WRITE token. Spec: [specs/SH10-universal-editor-bridge.md](specs/SH10-universal-editor-bridge.md).
 - 💭 **SH11** (deps: SH6) **TypeScript type generation from post-types** — a `shio types` codegen step turns each post-type into a `.d.ts`, so page code gets autocomplete on `post.attrs.*`. → §II.6
 
 ## Block C — Composable platform primitives
@@ -59,6 +59,7 @@
 - ⏳ **SH14** (deps: —) **Versioning UI** — the `/versions` endpoint exists; add console UI to diff/restore versions. → §III.3
 - 💭 **SH15** (deps: SH12) **Scheduled publish/unpublish** — `publishAt`/`unpublishAt` on a post + a sweep that fires the transition and the webhook. → §III.4
 - 💭 **SH16** (deps: SH6) **`shio` CLI** — `init` (scaffold), `dev` (proxy + types watch), `pull`/`push` (post-types as code), `deploy`. Mirrors Turing's `turing` CLI direction. → §III.5
+- 📋 **SH26** (deps: —) **Cross-DB schema-drift guard** — the schema is now Liquibase-managed (baseline + `db.changelog-master.yaml`, `ddl-auto=none`), and changelogs are kept DB-agnostic by `ShLiquibaseChangelogAgnosticTest` — but that is only a lint; the changelogs are never actually applied on MariaDB/Postgres (both drivers ship). Add Testcontainers MariaDB + Postgres ITs that run the full changelog set and boot the context (mirror Turing's `TurChatFlowSubFlowMigrationIT` + `testcontainers-mysql`). Fold in the `ShTenantBackfillRunner` fix: its `TENANT_TABLES` list is snake_case (`sh_post_type_attr`) but the real tables are PascalCase entity names (`ShPostTypeAttr`, no `@Table`), so the pre-multi-tenant backfill silently no-ops.
 
 ## Block D — Optional server-side JS rendering (GraalJS)
 

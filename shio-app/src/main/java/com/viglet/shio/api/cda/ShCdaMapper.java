@@ -9,15 +9,20 @@
 package com.viglet.shio.api.cda;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.viglet.shio.api.cda.dto.ShCdaField;
 import com.viglet.shio.api.cda.dto.ShCdaFolder;
 import com.viglet.shio.api.cda.dto.ShCdaPost;
 import com.viglet.shio.api.cda.dto.ShCdaPostSummary;
 import com.viglet.shio.api.cda.dto.ShCdaSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
+import com.viglet.shio.persistence.model.post.type.ShPostType;
+import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 
@@ -95,6 +100,37 @@ public class ShCdaMapper {
 
     private String postTypeName(ShPostUnified post) {
         return post.getShPostType() != null ? post.getShPostType().getName() : null;
+    }
+
+    /**
+     * The post-type's editable fields (SH10) — top-level attributes only
+     * ({@code shParentPostTypeAttr == null}; Relator children are edited within
+     * their parent), ordered by {@code ordinal}. Backs the editor properties panel.
+     */
+    public List<ShCdaField> toFields(ShPostType postType) {
+        if (postType == null || postType.getShPostTypeAttrs() == null) {
+            return List.of();
+        }
+        return postType.getShPostTypeAttrs().stream()
+                .filter(attr -> attr.getShParentPostTypeAttr() == null)
+                .sorted(Comparator.comparingInt(ShPostTypeAttr::getOrdinal))
+                .map(this::toField)
+                .toList();
+    }
+
+    public ShCdaField toField(ShPostTypeAttr attr) {
+        if (attr == null) {
+            return null;
+        }
+        return new ShCdaField(
+                attr.getName(),
+                attr.getLabel(),
+                attr.getDescription(),
+                attr.getShWidget() != null ? attr.getShWidget().getName() : null,
+                attr.getRequired() == 1,
+                attr.getIsTitle() == 1,
+                attr.getIsSummary() == 1,
+                attr.getOrdinal());
     }
 
     private static Instant toInstant(Date date) {

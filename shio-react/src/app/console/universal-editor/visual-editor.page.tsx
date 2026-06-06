@@ -1,0 +1,220 @@
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { ROUTES } from "@/app/routes.const"
+import {
+  ArrowLeft,
+  Loader2,
+  Monitor,
+  RefreshCw,
+  Save,
+  Smartphone,
+  Upload,
+} from "lucide-react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
+import { useNavigate, useParams, useSearchParams } from "react-router-dom"
+import { toast } from "@viglet/viglet-design-system"
+import { ShSiteService } from "@/services/site/site.service"
+import { ShUniversalEditorService } from "@/services/universal-editor/universal-editor.service"
+import { UE_TOKEN_KEY } from "./editor-sites.page"
+import type { ContentChange, SelectedElement } from "@/models/universal-editor/universal-editor.model"
+
+const siteService = new ShSiteService()
+const editorService = new ShUniversalEditorService()
+
+export default function VisualEditorPage() {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { siteId } = useParams()
+  const [searchParams] = useSearchParams()
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+
+  const [src, setSrc] = useState<string>("")
+  const [ready, setReady] = useState(false)
+  const [editMode, setEditMode] = useState(true)
+  const [mobile, setMobile] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [selected, setSelected] = useState<SelectedElement | null>(null)
+  // Pending edits keyed by `${postId}:${prop}` so re-edits of the same field collapse.
+  const [changes, setChanges] = useState<Map<string, ContentChange>>(new Map())
+
+  const token = useMemo(() => localStorage.getItem(UE_TOKEN_KEY) ?? "", [])
+
+  // Resolve the iframe URL: an explicit ?url= (external mode) or the site's url.
+  useEffect(() => {
+    const external = searchParams.get("url")
+    if (siteId === "external" && external) {
+      setSrc(external)
+      return
+    }
+    if (siteId) {
+      siteService.get(siteId).then((site) => setSrc(site.url ?? ""))
+    }
+  }, [siteId, searchParams])
+
+  const postToIframe = useCallback((type: string, data: Record<string, unknown>) => {
+    iframeRef.current?.contentWindow?.postMessage({ type, data }, "*")
+  }, [])
+
+  // Bridge messages from the rendered page (shio-editor.js).
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      const msg = event.data
+      if (!msg || typeof msg.type !== "string" || !msg.type.startsWith("sh:")) return
+      switch (msg.type) {
+        case "sh:ready":
+          setReady(true)
+          break
+        case "sh:element-selected":
+          setSelected(msg.data as SelectedElement)
+          break
+        case "sh:content-changed": {
+          const c = msg.data as ContentChange
+          if (!c.postId || !c.prop) break
+          setChanges((prev) => {
+            const next = new Map(prev)
+            next.set(`${c.postId}:${c.prop}`, c)
+            return next
+          })
+          break
+        }
+      }
+    }
+    window.addEventListener("message", onMessage)
+    return () => window.removeEventListener("message", onMessage)
+  }, [])
+
+  // Push the current mode to the iframe whenever it changes (once ready).
+  useEffect(() => {
+    if (ready) postToIframe("sh:mode-change", { mode: editMode ? "edit" : "preview" })
+  }, [ready, editMode, postToIframe])
+
+  const persist = async (publish: boolean) => {
+    if (!token) {
+      toast.error(t("universalEditor.noWriteToken"))
+      return
+    }
+    if (changes.size === 0 && !publish) return
+
+    // Group pending changes into one attr patch per post.
+    const byPost = new Map<string, Record<string, unknown>>()
+    for (const change of changes.values()) {
+      const attrs = byPost.get(change.postId) ?? {}
+      attrs[change.prop] = change.value
+      byPost.set(change.postId, attrs)
+    }
+
+    setSaving(true)
+    try {
+      for (const [postId, attrs] of byPost) {
+        await editorService.patch(postId, attrs, token, publish)
+      }
+      // Publish requested but nothing was edited in this session: publish the selected post.
+      if (publish && byPost.size === 0 && selected?.postId) {
+        await editorService.publish(selected.postId, token)
+      }
+      setChanges(new Map())
+      toast.success(publish ? t("universalEditor.published") : t("universalEditor.draftSaved"))
+    } catch {
+      toast.error(t("universalEditor.saveError"))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const refresh = () => {
+    setReady(false)
+    if (iframeRef.current) iframeRef.current.src = src
+  }
+
+  return (
+    <div className="flex flex-col h-screen">
+      {/* Sticky save bar */}
+      <div className="sticky top-0 z-10 flex items-center justify-between bg-orange-50 dark:bg-orange-950/30 px-4 py-3 border-b">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.UNIVERSAL_EDITOR)}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <span className="font-semibold">{t("universalEditor.title")}</span>
+          <div className="flex items-center gap-2">
+            <Switch id="edit-mode" checked={editMode} onCheckedChange={setEditMode} />
+            <Label htmlFor="edit-mode" className="text-sm">
+              {editMode ? t("universalEditor.editMode") : t("universalEditor.previewMode")}
+            </Label>
+          </div>
+          {changes.size > 0 && (
+            <Badge variant="secondary">{changes.size} {t("universalEditor.changes")}</Badge>
+          )}
+          <Badge variant="outline" className={ready ? "border-green-400 text-green-600" : ""}>
+            {ready ? t("universalEditor.connected") : t("universalEditor.connecting")}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="h-8 w-8" title={t("universalEditor.desktop")}
+            onClick={() => setMobile(false)}>
+            <Monitor className={`h-4 w-4 ${!mobile ? "text-orange-600" : ""}`} />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" title={t("universalEditor.mobile")}
+            onClick={() => setMobile(true)}>
+            <Smartphone className={`h-4 w-4 ${mobile ? "text-orange-600" : ""}`} />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" title={t("universalEditor.refresh")} onClick={refresh}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => persist(true)} disabled={saving}>
+            <Upload className="h-4 w-4 mr-1" />
+            {t("universalEditor.publish")}
+          </Button>
+          <Button size="sm" onClick={() => persist(false)} disabled={saving || changes.size === 0}>
+            {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+            {saving ? t("universalEditor.saving") : t("universalEditor.save")}
+          </Button>
+        </div>
+      </div>
+
+      {/* Editor body: iframe + properties panel */}
+      <div className="flex flex-1 min-h-0">
+        <div className="flex-1 flex items-stretch justify-center bg-muted/30 overflow-auto p-4">
+          {src ? (
+            <iframe
+              ref={iframeRef}
+              src={src}
+              title={t("universalEditor.title")}
+              className={`bg-white shadow-sm border ${mobile ? "w-[390px]" : "w-full"} h-full`}
+            />
+          ) : (
+            <div className="flex items-center justify-center text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin mr-2" /> {t("universalEditor.connecting")}
+            </div>
+          )}
+        </div>
+
+        <aside className="w-80 border-l bg-background overflow-auto p-4">
+          {selected ? (
+            <div className="space-y-3">
+              <div>
+                <div className="font-semibold">{selected.label || selected.prop || selected.model}</div>
+                {selected.model && <div className="text-xs text-muted-foreground">{selected.model}</div>}
+              </div>
+              <div className="space-y-2">
+                {(selected.fields ?? []).map((f) => (
+                  <div key={f.prop} className="rounded-md border p-2">
+                    <div className="text-xs font-medium text-muted-foreground">{f.label || f.prop}</div>
+                    <div className="text-sm break-words">{f.value || <span className="italic text-muted-foreground">—</span>}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <h3 className="font-semibold mb-1">{t("universalEditor.noSelection")}</h3>
+              <p className="text-sm text-muted-foreground">{t("universalEditor.noSelectionDescription")}</p>
+            </div>
+          )}
+        </aside>
+      </div>
+    </div>
+  )
+}

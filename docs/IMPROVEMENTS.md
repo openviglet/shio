@@ -49,7 +49,7 @@ the backend in Node/Go/PHP" is the strategic trap this roadmap avoids.
 ### 0.2 What Shio is today (the facts that drive the decision)
 
 - Backend is **small and modern**: ~136 Java files / ~9k LOC, Spring Boot 4 +
-  Java 21, REST + GraphQL, JPA/Flyway, OAuth2, Hazelcast, Tika. Not a legacy
+  Java 21, REST + GraphQL, JPA/Liquibase, OAuth2, Hazelcast, Tika. Not a legacy
   monolith.
 - It is **part of an ecosystem** that is entirely Java/Spring — Turing (search/AI),
   Dumont (connectors). Shared models, security patterns, and SDKs.
@@ -185,11 +185,20 @@ defines and is ready for the publish webhook, but the **emitter** lives in the
 backend publish path — that's **SH12** (§III.1). Console "preview this draft" UX
 is **SH13** (§III.2); the rendering side is in place today.
 
-### II.5 Mature the Universal Editor bridge (SH10)
+### II.5 Mature the Universal Editor bridge (SH10) — ✅ shipped
 
-`shio-editor-cors` exists. Harden the inline-edit handshake: field→DOM mapping,
-save-back through the CDA write scope (§I.2), and live draft preview (§III.2), so
-any JS-rendered page becomes WYSIWYG-editable without bespoke glue.
+Shipped: the save-back half of the inline editor. A CDA write surface
+(`ShCdaWriteAPI`/`ShCdaWriteService` under `/api/v2/cda`, gated by
+`ROLE_CDA_WRITE` — the SH2 WRITE scope, §I.2) merges attribute patches into a
+post's `DRAFT` row and publishes on demand, re-enforcing the SH2 per-site
+allow-list; `getEditable` returns the post-type field schema for the editor
+panel (field→DOM mapping). A React console editor shell (`/console/universal-editor`)
+drives the existing `shio-editor.js` bridge over `postMessage` and saves back
+with a WRITE token (a credential-less request so the token, not the console
+session, authenticates). Detail in [CHANGELOG.md](CHANGELOG.md) Block B. **Live
+draft preview** rides on the draft-targeted writes + SH5 PREVIEW-env reads; the
+in-console "preview this draft" UX is **SH13** (§III.2), and the publish webhook
+emitter is **SH12** (§III.1).
 
 ### II.6 Type generation from post-types (SH11)
 

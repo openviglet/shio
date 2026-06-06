@@ -1,0 +1,2506 @@
+databaseChangeLog:
+- changeSet:
+    id: 1780773187985-1
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_2
+            name: id
+            type: VARCHAR(255)
+        tableName: ShAuthProviderVendor
+- changeSet:
+    id: 1780773187985-2
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_7
+            name: id
+            type: VARCHAR(255)
+        tableName: ShExchangeProviderVendor
+- changeSet:
+    id: 1780773187985-3
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            name: name
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: rootFolder
+            type: TINYINT
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_A
+            name: object_id
+            type: VARCHAR(255)
+        - column:
+            name: parent_folder_id
+            type: VARCHAR(255)
+        - column:
+            name: site_id
+            type: VARCHAR(255)
+        tableName: ShFolder
+- changeSet:
+    id: 1780773187985-4
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            name: name
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: rootFolder
+            type: TINYINT
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_D
+            name: object_id
+            type: VARCHAR(255)
+        - column:
+            name: parent_folder_id
+            type: VARCHAR(255)
+        - column:
+            name: site_id
+            type: VARCHAR(255)
+        tableName: ShFolderDraft
+- changeSet:
+    id: 1780773187985-5
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_DC
+            name: id
+            type: VARCHAR(255)
+        - column:
+            name: description
+            type: VARCHAR(255)
+        - column:
+            name: name
+            type: VARCHAR(255)
+        tableName: ShGroup
+- changeSet:
+    id: 1780773187985-6
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_E0
+            name: id
+            type: VARCHAR(255)
+        - column:
+            name: date
+            type: TIMESTAMP
+        - column:
+            name: description
+            type: VARCHAR(255)
+        - column:
+            name: owner
+            type: VARCHAR(255)
+        - column:
+            name: shObject
+            type: VARCHAR(255)
+        - column:
+            name: shSite
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: TENANT_ID
+            type: VARCHAR(255)
+        tableName: ShHistory
+- changeSet:
+    id: 1780773187985-7
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_B7
+            name: id
+            type: VARCHAR(255)
+        - column:
+            name: date
+            type: TIMESTAMP
+        - column:
+            name: furl
+            type: VARCHAR(255)
+        - column:
+            name: modifiedDate
+            type: TIMESTAMP
+        - column:
+            name: modifier
+            type: VARCHAR(255)
+        - column:
+            name: objectType
+            type: VARCHAR(255)
+        - column:
+            name: owner
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: pageAllowGuestUser
+            type: boolean
+        - column:
+            constraints:
+              nullable: false
+            name: pageAllowRegisterUser
+            type: boolean
+        - column:
+            constraints:
+              nullable: false
+            name: position
+            type: INT
+        - column:
+            name: publicationDate
+            type: TIMESTAMP
+        - column:
+            name: publishStatus
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: published
+            type: boolean
+        - column:
+            name: publisher
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: TENANT_ID
+            type: VARCHAR(255)
+        tableName: ShObject
+- changeSet:
+    id: 1780773187985-8
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_8A
+            name: id
+            type: VARCHAR(255)
+        - column:
+            name: date
+            type: TIMESTAMP
+        - column:
+            name: draft
+            type: CLOB
+        - column:
+            name: furl
+            type: VARCHAR(255)
+        - column:
+            name: modifiedDate
+            type: TIMESTAMP
+        - column:
+            name: modifier
+            type: VARCHAR(255)
+        - column:
+            name: objectType
+            type: VARCHAR(255)
+        - column:
+            name: owner
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: pageAllowGuestUser
+            type: boolean
+        - column:
+            constraints:
+              nullable: false
+            name: pageAllowRegisterUser
+            type: boolean
+        - column:
+            constraints:
+              nullable: false
+            name: position
+            type: INT
+        - column:
+            name: publicationDate
+            type: TIMESTAMP
+        - column:
+            name: publishStatus
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: published
+            type: boolean
+        - column:
+            name: publisher
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: TENANT_ID
+            type: VARCHAR(255)
+        tableName: ShObjectDraft
+- changeSet:
+    id: 1780773187985-9
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: ShObjectDraft_id
+            type: VARCHAR(255)
+        - column:
+            name: shGroups
+            type: VARCHAR(255)
+        tableName: ShObjectDraft_shGroups
+- changeSet:
+    id: 1780773187985-10
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: ShObjectDraft_id
+            type: VARCHAR(255)
+        - column:
+            name: shPageGroups
+            type: VARCHAR(255)
+        tableName: ShObjectDraft_shPageGroups
+- changeSet:
+    id: 1780773187985-11
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: ShObjectDraft_id
+            type: VARCHAR(255)
+        - column:
+            name: shUsers
+            type: VARCHAR(255)
+        tableName: ShObjectDraft_shUsers
+- changeSet:
+    id: 1780773187985-12
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: ShObject_id
+            type: VARCHAR(255)
+        - column:
+            name: shGroups
+            type: VARCHAR(255)
+        tableName: ShObject_shGroups
+- changeSet:
+    id: 1780773187985-13
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: ShObject_id
+            type: VARCHAR(255)
+        - column:
+            name: shPageGroups
+            type: VARCHAR(255)
+        tableName: ShObject_shPageGroups
+- changeSet:
+    id: 1780773187985-14
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: ShObject_id
+            type: VARCHAR(255)
+        - column:
+            name: shUsers
+            type: VARCHAR(255)
+        tableName: ShObject_shUsers
+- changeSet:
+    id: 1780773187985-15
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            name: summary
+            type: VARCHAR(255)
+        - column:
+            name: title
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_93
+            name: object_id
+            type: VARCHAR(255)
+        - column:
+            name: folder_id
+            type: VARCHAR(255)
+        - column:
+            name: post_type_id
+            type: VARCHAR(255)
+        - column:
+            name: site_id
+            type: VARCHAR(255)
+        tableName: ShPost
+- changeSet:
+    id: 1780773187985-16
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_A0
+            name: id
+            type: VARCHAR(255)
+        - column:
+            name: date_value
+            type: TIMESTAMP
+        - column:
+            name: int_value
+            type: INT
+        - column:
+            name: str_value
+            type: CLOB
+        - column:
+            constraints:
+              nullable: false
+            name: TENANT_ID
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: type
+            type: INT
+        - column:
+            name: object_id
+            type: VARCHAR(255)
+        - column:
+            name: post_attr_id
+            type: VARCHAR(255)
+        - column:
+            name: post_id
+            type: VARCHAR(255)
+        - column:
+            name: post_type_attr_id
+            type: VARCHAR(255)
+        tableName: ShPostAttr
+- changeSet:
+    id: 1780773187985-17
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: ShPostAttr_id
+            type: VARCHAR(255)
+        - column:
+            name: arrayValue
+            type: VARCHAR(255)
+        tableName: ShPostAttr_arrayValue
+- changeSet:
+    id: 1780773187985-18
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            name: summary
+            type: VARCHAR(255)
+        - column:
+            name: title
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_71
+            name: object_id
+            type: VARCHAR(255)
+        - column:
+            name: folder_id
+            type: VARCHAR(255)
+        - column:
+            name: post_type_id
+            type: VARCHAR(255)
+        - column:
+            name: site_id
+            type: VARCHAR(255)
+        tableName: ShPostDraft
+- changeSet:
+    id: 1780773187985-19
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_BB
+            name: id
+            type: VARCHAR(255)
+        - column:
+            name: date_value
+            type: TIMESTAMP
+        - column:
+            name: int_value
+            type: INT
+        - column:
+            name: str_value
+            type: CLOB
+        - column:
+            constraints:
+              nullable: false
+            name: TENANT_ID
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: type
+            type: INT
+        - column:
+            name: object_id
+            type: VARCHAR(255)
+        - column:
+            name: post_attr_id
+            type: VARCHAR(255)
+        - column:
+            name: post_id
+            type: VARCHAR(255)
+        - column:
+            name: post_type_attr_id
+            type: VARCHAR(255)
+        tableName: ShPostDraftAttr
+- changeSet:
+    id: 1780773187985-20
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: ShPostDraftAttr_id
+            type: VARCHAR(255)
+        - column:
+            name: arrayValue
+            type: VARCHAR(255)
+        tableName: ShPostDraftAttr_arrayValue
+- changeSet:
+    id: 1780773187985-21
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            name: description
+            type: VARCHAR(255)
+        - column:
+            name: name
+            type: VARCHAR(255)
+        - column:
+            name: namePlural
+            type: VARCHAR(255)
+        - column:
+            name: schema_json
+            type: CLOB
+        - column:
+            constraints:
+              nullable: false
+            name: system
+            type: TINYINT
+        - column:
+            name: title
+            type: VARCHAR(255)
+        - column:
+            name: workflowPublishEntity
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_A09
+            name: object_id
+            type: VARCHAR(255)
+        tableName: ShPostType
+- changeSet:
+    id: 1780773187985-22
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_DE
+            name: id
+            type: VARCHAR(255)
+        - column:
+            name: description
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: isSummary
+            type: TINYINT
+        - column:
+            constraints:
+              nullable: false
+            name: isTitle
+            type: TINYINT
+        - column:
+            name: label
+            type: VARCHAR(255)
+        - column:
+            name: name
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: ordinal
+            type: INT
+        - column:
+            constraints:
+              nullable: false
+            name: required
+            type: TINYINT
+        - column:
+            constraints:
+              nullable: false
+            name: TENANT_ID
+            type: VARCHAR(255)
+        - column:
+            name: widget_settings
+            type: CLOB
+        - column:
+            name: parent_relator_id
+            type: VARCHAR(255)
+        - column:
+            name: postType_id
+            type: VARCHAR(255)
+        - column:
+            name: widget_id
+            type: VARCHAR(255)
+        tableName: ShPostTypeAttr
+- changeSet:
+    id: 1780773187985-23
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: DTYPE
+            type: VARCHAR(31)
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_BEB
+            name: id
+            type: VARCHAR(255)
+        - column:
+            name: description
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: enabled
+            type: boolean
+        - column:
+            name: name
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: position
+            type: INT
+        - column:
+            name: vendor_id
+            type: VARCHAR(255)
+        tableName: ShProviderInstance
+- changeSet:
+    id: 1780773187985-24
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_A6
+            name: id
+            type: VARCHAR(255)
+        - column:
+            name: class_name
+            type: VARCHAR(255)
+        - column:
+            name: configurationPage
+            type: VARCHAR(255)
+        - column:
+            name: description
+            type: VARCHAR(255)
+        - column:
+            name: name
+            type: VARCHAR(255)
+        tableName: ShProviderVendor
+- changeSet:
+    id: 1780773187985-25
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_C4
+            name: id
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: TENANT_ID
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: object_from
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: object_to
+            type: VARCHAR(255)
+        tableName: ShReference
+- changeSet:
+    id: 1780773187985-26
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_F4
+            name: id
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: TENANT_ID
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: object_from
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: object_to
+            type: VARCHAR(255)
+        tableName: ShReferenceDraft
+- changeSet:
+    id: 1780773187985-27
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_2C
+            name: id
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: ordinal
+            type: INT
+        - column:
+            name: summary
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: TENANT_ID
+            type: VARCHAR(255)
+        - column:
+            name: title
+            type: VARCHAR(255)
+        - column:
+            name: post_attr_id
+            type: VARCHAR(255)
+        tableName: ShRelatorItem
+- changeSet:
+    id: 1780773187985-28
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_A8
+            name: id
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: ordinal
+            type: INT
+        - column:
+            name: summary
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: TENANT_ID
+            type: VARCHAR(255)
+        - column:
+            name: title
+            type: VARCHAR(255)
+        - column:
+            name: post_attr_id
+            type: VARCHAR(255)
+        tableName: ShRelatorItemDraft
+- changeSet:
+    id: 1780773187985-29
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            name: description
+            type: VARCHAR(255)
+        - column:
+            name: formSuccess
+            type: VARCHAR(255)
+        - column:
+            name: name
+            type: VARCHAR(255)
+        - column:
+            name: post_type_layout
+            type: CLOB
+        - column:
+            name: searchable_post_types
+            type: CLOB
+        - column:
+            name: url
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_938
+            name: object_id
+            type: VARCHAR(255)
+        tableName: ShSite
+- changeSet:
+    id: 1780773187985-30
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_9384
+            name: username
+            type: VARCHAR(255)
+        - column:
+            name: confirmEmail
+            type: VARCHAR(255)
+        - column:
+            name: email
+            type: VARCHAR(255)
+        - column:
+            name: enabled
+            type: INT
+        - column:
+            name: firstName
+            type: VARCHAR(255)
+        - column:
+            name: lastLogin
+            type: TIMESTAMP
+        - column:
+            name: lastName
+            type: VARCHAR(255)
+        - column:
+            name: lastPostType
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: loginTimes
+            type: INT
+        - column:
+            name: password
+            type: VARCHAR(255)
+        - column:
+            name: realm
+            type: VARCHAR(255)
+        - column:
+            name: recoverPassword
+            type: VARCHAR(255)
+        tableName: ShUser
+- changeSet:
+    id: 1780773187985-31
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_BE3
+            name: shUsers_username
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_BE3
+            name: shGroups_id
+            type: VARCHAR(255)
+        tableName: ShUser_shGroups
+- changeSet:
+    id: 1780773187985-32
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_C5
+            name: id
+            type: VARCHAR(255)
+        - column:
+            name: class_name
+            type: VARCHAR(255)
+        - column:
+            name: description
+            type: VARCHAR(255)
+        - column:
+            name: implementation_code
+            type: VARCHAR(255)
+        - column:
+            name: name
+            type: VARCHAR(255)
+        - column:
+            name: setting_path
+            type: VARCHAR(255)
+        - column:
+            name: type
+            type: VARCHAR(255)
+        tableName: ShWidget
+- changeSet:
+    id: 1780773187985-33
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_86
+            name: id
+            type: VARCHAR(255)
+        - column:
+            name: date
+            type: TIMESTAMP
+        - column:
+            name: requested
+            type: VARCHAR(255)
+        - column:
+            name: requester
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: TENANT_ID
+            type: VARCHAR(255)
+        - column:
+            name: title
+            type: VARCHAR(255)
+        - column:
+            name: object_id
+            type: VARCHAR(255)
+        tableName: ShWorkflowTask
+- changeSet:
+    id: 1780773187985-34
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_FB
+            name: id
+            type: VARCHAR(255)
+        - column:
+            name: created_date
+            type: TIMESTAMP
+        - column:
+            name: description
+            type: VARCHAR(255)
+        - column:
+            name: enabled
+            type: boolean
+        - column:
+            name: owner
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: TENANT_ID
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: title
+            type: VARCHAR(100)
+        - column:
+            name: token
+            type: VARCHAR(255)
+        tableName: api_token
+- changeSet:
+    id: 1780773187985-35
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_6
+            name: id
+            type: VARCHAR(255)
+        - column:
+            name: name
+            type: VARCHAR(255)
+        - column:
+            name: path
+            type: VARCHAR(255)
+        - column:
+            name: value
+            type: VARCHAR(255)
+        tableName: shConfigVar
+- changeSet:
+    id: 1780773187985-36
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_AF
+            name: initials
+            type: VARCHAR(5)
+        - column:
+            name: en
+            type: VARCHAR(255)
+        - column:
+            name: pt
+            type: VARCHAR(255)
+        tableName: shLocale
+- changeSet:
+    id: 1780773187985-37
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_CA
+            name: id
+            type: VARCHAR(255)
+        - column:
+            name: description
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(50)
+        tableName: shRole
+- changeSet:
+    id: 1780773187985-38
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_B9
+            name: shRoles_id
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_B9
+            name: shGroups_id
+            type: VARCHAR(255)
+        tableName: shRole_shGroups
+- changeSet:
+    id: 1780773187985-39
+    author: alexa (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_F6
+            name: id
+            type: VARCHAR(36)
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: CONSTRAINT_F6
+            name: state
+            type: ENUM('DRAFT', 'PUBLISHED')
+        - column:
+            constraints:
+              nullable: false
+            name: data
+            type: CLOB
+        - column:
+            name: date
+            type: TIMESTAMP
+        - column:
+            name: furl
+            type: VARCHAR(510)
+        - column:
+            name: modifiedDate
+            type: TIMESTAMP
+        - column:
+            name: owner
+            type: VARCHAR(255)
+        - column:
+            name: publicationDate
+            type: TIMESTAMP
+        - column:
+            name: publish_status
+            type: VARCHAR(32)
+        - column:
+            constraints:
+              nullable: false
+            name: published
+            type: boolean
+        - column:
+            name: summary
+            type: CLOB
+        - column:
+            name: title
+            type: VARCHAR(510)
+        - column:
+            name: folder_id
+            type: VARCHAR(255)
+        - column:
+            name: post_type_id
+            type: VARCHAR(255)
+        - column:
+            name: site_id
+            type: VARCHAR(255)
+        - column:
+            name: modifier
+            type: VARCHAR(255)
+        - column:
+            name: publisher
+            type: VARCHAR(255)
+        tableName: sh_post_unified
+- changeSet:
+    id: 1780773187985-40
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: parent_relator_id
+        indexName: FK1jp5hn9ek1p8ewkf27jqdlig6_INDEX_D
+        tableName: ShPostTypeAttr
+- changeSet:
+    id: 1780773187985-41
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: object_id
+        indexName: FK1rx7l6t7tphdi071etdwbdcqx_INDEX_B
+        tableName: ShPostDraftAttr
+- changeSet:
+    id: 1780773187985-42
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: shGroups_id
+        indexName: FK3dgg9cv1au5s4b58wam9up2ld_INDEX_B
+        tableName: shRole_shGroups
+- changeSet:
+    id: 1780773187985-43
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: post_id
+        indexName: FK3fsy7a73bji2gal1y0vjilevl_INDEX_B
+        tableName: ShPostDraftAttr
+- changeSet:
+    id: 1780773187985-44
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: parent_folder_id
+        indexName: FK4o4gqdxh5bqj5qrrr047koajj_INDEX_A
+        tableName: ShFolder
+- changeSet:
+    id: 1780773187985-45
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: ShObjectDraft_id
+        indexName: FK6fgdvhi2b0u03uwvkmusx5k5e_INDEX_C
+        tableName: ShObjectDraft_shPageGroups
+- changeSet:
+    id: 1780773187985-46
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: post_id
+        indexName: FK6gfm523a263ohba0pwp4hacow_INDEX_A
+        tableName: ShPostAttr
+- changeSet:
+    id: 1780773187985-47
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: folder_id
+        indexName: FK79anqjyo97naomcfy07ecb3m_INDEX_6
+        tableName: sh_post_unified
+- changeSet:
+    id: 1780773187985-48
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: vendor_id
+        indexName: FK8en4sl3c0fyt0ojulllre8mao_INDEX_B
+        tableName: ShProviderInstance
+- changeSet:
+    id: 1780773187985-49
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: folder_id
+        indexName: FK8i1ldq8qfv52twf7ir63lgpa8_INDEX_9
+        tableName: ShPost
+- changeSet:
+    id: 1780773187985-50
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: ShObjectDraft_id
+        indexName: FK9d5euw5dun0y5k88rmo2yh0du_INDEX_E
+        tableName: ShObjectDraft_shGroups
+- changeSet:
+    id: 1780773187985-51
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: shGroups_id
+        indexName: FKanqqqddglcxwnf1uej5arkevl_INDEX_B
+        tableName: ShUser_shGroups
+- changeSet:
+    id: 1780773187985-52
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: postType_id
+        indexName: FKax0ndna9ns30ym5fuuaab6l6h_INDEX_D
+        tableName: ShPostTypeAttr
+- changeSet:
+    id: 1780773187985-53
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: post_type_id
+        indexName: FKbhplr83eyocxpvte2n7w3by5d_INDEX_9
+        tableName: ShPost
+- changeSet:
+    id: 1780773187985-54
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: site_id
+        indexName: FKckov22klmv23k7ej2gmedy9gy_INDEX_9
+        tableName: ShPost
+- changeSet:
+    id: 1780773187985-55
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: post_type_attr_id
+        indexName: FKdlf9kedm5t18ac0npoowvob1n_INDEX_B
+        tableName: ShPostDraftAttr
+- changeSet:
+    id: 1780773187985-56
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: site_id
+        indexName: FKe2xggamhubju1r83mfyiwh0q1_INDEX_7
+        tableName: ShPostDraft
+- changeSet:
+    id: 1780773187985-57
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: shRoles_id
+        indexName: FKfno7fduqpwmkgmbbg86hc293s_INDEX_B
+        tableName: shRole_shGroups
+- changeSet:
+    id: 1780773187985-58
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: object_from
+        indexName: FKgkcfdi2dobnuem9ifjnuphovl_INDEX_C
+        tableName: ShReference
+- changeSet:
+    id: 1780773187985-59
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: post_attr_id
+        indexName: FKgp4xoau3h6pb6j9crq39655n2_INDEX_B
+        tableName: ShPostDraftAttr
+- changeSet:
+    id: 1780773187985-60
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: ShObject_id
+        indexName: FKh7n2jf6jwvgph6a2cfqv9dldr_INDEX_B
+        tableName: ShObject_shGroups
+- changeSet:
+    id: 1780773187985-61
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: post_type_id
+        indexName: FKhghfnpyqoj1sjxc33yn2bvk60_INDEX_6
+        tableName: sh_post_unified
+- changeSet:
+    id: 1780773187985-62
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: site_id
+        indexName: FKi6063d19y5o2gex5wip8wsfr2_INDEX_A
+        tableName: ShFolder
+- changeSet:
+    id: 1780773187985-63
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: ShPostDraftAttr_id
+        indexName: FKisf57dpw4k4d69slqihdmht6v_INDEX_F
+        tableName: ShPostDraftAttr_arrayValue
+- changeSet:
+    id: 1780773187985-64
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: object_from
+        indexName: FKjbcsroivhqi0if60ghk6lpbr9_INDEX_F
+        tableName: ShReferenceDraft
+- changeSet:
+    id: 1780773187985-65
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: folder_id
+        indexName: FKkrs3ewtvy935fcfxgk07p37t7_INDEX_7
+        tableName: ShPostDraft
+- changeSet:
+    id: 1780773187985-66
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: ShObject_id
+        indexName: FKl2fdgsm7ki955v4stu3f4q732_INDEX_4
+        tableName: ShObject_shUsers
+- changeSet:
+    id: 1780773187985-67
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: object_id
+        indexName: FKmpi4k2l266n544abh4vo2w2qk_INDEX_A
+        tableName: ShPostAttr
+- changeSet:
+    id: 1780773187985-68
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: object_to
+        indexName: FKn8l61xj04wxerteggxrvdq5u0_INDEX_C
+        tableName: ShReference
+- changeSet:
+    id: 1780773187985-69
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: post_type_id
+        indexName: FKna0i3tiucgcgosolboiy4h0ff_INDEX_7
+        tableName: ShPostDraft
+- changeSet:
+    id: 1780773187985-70
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: site_id
+        indexName: FKnqidxh4yk1lbbyakgnp3tfrsc_INDEX_6
+        tableName: sh_post_unified
+- changeSet:
+    id: 1780773187985-71
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: post_attr_id
+        indexName: FKo08co6v1lk4ar5enmx2a5aj51_INDEX_A
+        tableName: ShRelatorItemDraft
+- changeSet:
+    id: 1780773187985-72
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: ShObjectDraft_id
+        indexName: FKo8hd4w2sab8egfhgcq9hjykmg_INDEX_2
+        tableName: ShObjectDraft_shUsers
+- changeSet:
+    id: 1780773187985-73
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: object_id
+        indexName: FKoahv0ukmuhcr5pm7l9e913od2_INDEX_8
+        tableName: ShWorkflowTask
+- changeSet:
+    id: 1780773187985-74
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: object_to
+        indexName: FKoej437buejsxlegiut4vb7exx_INDEX_F
+        tableName: ShReferenceDraft
+- changeSet:
+    id: 1780773187985-75
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: ShObject_id
+        indexName: FKoi9ndcga0mrfh74e910454xwy_INDEX_8
+        tableName: ShObject_shPageGroups
+- changeSet:
+    id: 1780773187985-76
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: post_attr_id
+        indexName: FKoolginrfqlvi1ufif5jkoja60_INDEX_A
+        tableName: ShPostAttr
+- changeSet:
+    id: 1780773187985-77
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: parent_folder_id
+        indexName: FKpca0x5mplgcaqsdld38pxs4aq_INDEX_D
+        tableName: ShFolderDraft
+- changeSet:
+    id: 1780773187985-78
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: shUsers_username
+        indexName: FKpn08puh8kq98utuntr5hub2g6_INDEX_B
+        tableName: ShUser_shGroups
+- changeSet:
+    id: 1780773187985-79
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: ShPostAttr_id
+        indexName: FKpqi9gq3aprynipdwflqscuv79_INDEX_C
+        tableName: ShPostAttr_arrayValue
+- changeSet:
+    id: 1780773187985-80
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: post_attr_id
+        indexName: FKq9jmr172k8bk788qx24ju6yo2_INDEX_2
+        tableName: ShRelatorItem
+- changeSet:
+    id: 1780773187985-81
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: widget_id
+        indexName: FKs3p35oyg2or1gxfr6tok5gyps_INDEX_D
+        tableName: ShPostTypeAttr
+- changeSet:
+    id: 1780773187985-82
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: post_type_attr_id
+        indexName: FKs5val5yfd330p3dim9l70kepm_INDEX_A
+        tableName: ShPostAttr
+- changeSet:
+    id: 1780773187985-83
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: site_id
+        indexName: FKtl0lrh0luh698jblnyewdmyjj_INDEX_D
+        tableName: ShFolderDraft
+- changeSet:
+    id: 1780773187985-84
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: name
+        indexName: UK8q73y8bnx7kpktylf71gcco05_INDEX_9
+        tableName: ShSite
+        unique: true
+- changeSet:
+    id: 1780773187985-85
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: folder_id
+        - column:
+            name: state
+        indexName: idx_post_unified_folder
+        tableName: sh_post_unified
+- changeSet:
+    id: 1780773187985-86
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: furl
+        - column:
+            name: state
+        indexName: idx_post_unified_furl
+        tableName: sh_post_unified
+- changeSet:
+    id: 1780773187985-87
+    author: alexa (generated)
+    changes:
+    - createIndex:
+        associatedWith: ''
+        columns:
+        - column:
+            name: post_type_id
+        - column:
+            name: state
+        indexName: idx_post_unified_type
+        tableName: sh_post_unified
+- changeSet:
+    id: 1780773187985-88
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: id
+        baseTableName: ShExchangeProviderVendor
+        constraintName: FK1gmpoum3om7ds10wliqc98l1u
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShProviderVendor
+        validate: true
+- changeSet:
+    id: 1780773187985-89
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: parent_relator_id
+        baseTableName: ShPostTypeAttr
+        constraintName: FK1jp5hn9ek1p8ewkf27jqdlig6
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: CASCADE
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShPostTypeAttr
+        validate: true
+- changeSet:
+    id: 1780773187985-90
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: object_id
+        baseTableName: ShPostDraftAttr
+        constraintName: FK1rx7l6t7tphdi071etdwbdcqx
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObject
+        validate: true
+- changeSet:
+    id: 1780773187985-91
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: shGroups_id
+        baseTableName: shRole_shGroups
+        constraintName: FK3dgg9cv1au5s4b58wam9up2ld
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShGroup
+        validate: true
+- changeSet:
+    id: 1780773187985-92
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: post_id
+        baseTableName: ShPostDraftAttr
+        constraintName: FK3fsy7a73bji2gal1y0vjilevl
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: CASCADE
+        onUpdate: NO ACTION
+        referencedColumnNames: object_id
+        referencedTableName: ShPostDraft
+        validate: true
+- changeSet:
+    id: 1780773187985-93
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: parent_folder_id
+        baseTableName: ShFolder
+        constraintName: FK4o4gqdxh5bqj5qrrr047koajj
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: object_id
+        referencedTableName: ShFolder
+        validate: true
+- changeSet:
+    id: 1780773187985-94
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: ShObjectDraft_id
+        baseTableName: ShObjectDraft_shPageGroups
+        constraintName: FK6fgdvhi2b0u03uwvkmusx5k5e
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObjectDraft
+        validate: true
+- changeSet:
+    id: 1780773187985-95
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: post_id
+        baseTableName: ShPostAttr
+        constraintName: FK6gfm523a263ohba0pwp4hacow
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: CASCADE
+        onUpdate: NO ACTION
+        referencedColumnNames: object_id
+        referencedTableName: ShPost
+        validate: true
+- changeSet:
+    id: 1780773187985-96
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: folder_id
+        baseTableName: sh_post_unified
+        constraintName: FK79anqjyo97naomcfy07ecb3m
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: object_id
+        referencedTableName: ShFolder
+        validate: true
+- changeSet:
+    id: 1780773187985-97
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: vendor_id
+        baseTableName: ShProviderInstance
+        constraintName: FK8en4sl3c0fyt0ojulllre8mao
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShProviderVendor
+        validate: true
+- changeSet:
+    id: 1780773187985-98
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: folder_id
+        baseTableName: ShPost
+        constraintName: FK8i1ldq8qfv52twf7ir63lgpa8
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: object_id
+        referencedTableName: ShFolder
+        validate: true
+- changeSet:
+    id: 1780773187985-99
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: ShObjectDraft_id
+        baseTableName: ShObjectDraft_shGroups
+        constraintName: FK9d5euw5dun0y5k88rmo2yh0du
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObjectDraft
+        validate: true
+- changeSet:
+    id: 1780773187985-100
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: shGroups_id
+        baseTableName: ShUser_shGroups
+        constraintName: FKanqqqddglcxwnf1uej5arkevl
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShGroup
+        validate: true
+- changeSet:
+    id: 1780773187985-101
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: object_id
+        baseTableName: ShSite
+        constraintName: FKarplm0wmruhlaotfdr23mlbev
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObject
+        validate: true
+- changeSet:
+    id: 1780773187985-102
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: postType_id
+        baseTableName: ShPostTypeAttr
+        constraintName: FKax0ndna9ns30ym5fuuaab6l6h
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: CASCADE
+        onUpdate: NO ACTION
+        referencedColumnNames: object_id
+        referencedTableName: ShPostType
+        validate: true
+- changeSet:
+    id: 1780773187985-103
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: post_type_id
+        baseTableName: ShPost
+        constraintName: FKbhplr83eyocxpvte2n7w3by5d
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: CASCADE
+        onUpdate: NO ACTION
+        referencedColumnNames: object_id
+        referencedTableName: ShPostType
+        validate: true
+- changeSet:
+    id: 1780773187985-104
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: site_id
+        baseTableName: ShPost
+        constraintName: FKckov22klmv23k7ej2gmedy9gy
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: object_id
+        referencedTableName: ShSite
+        validate: true
+- changeSet:
+    id: 1780773187985-105
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: post_type_attr_id
+        baseTableName: ShPostDraftAttr
+        constraintName: FKdlf9kedm5t18ac0npoowvob1n
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: CASCADE
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShPostTypeAttr
+        validate: true
+- changeSet:
+    id: 1780773187985-106
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: site_id
+        baseTableName: ShPostDraft
+        constraintName: FKe2xggamhubju1r83mfyiwh0q1
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: object_id
+        referencedTableName: ShSite
+        validate: true
+- changeSet:
+    id: 1780773187985-107
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: object_id
+        baseTableName: ShPostType
+        constraintName: FKeeqxls1ucnfaagqeoi83rkkvq
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObject
+        validate: true
+- changeSet:
+    id: 1780773187985-108
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: shRoles_id
+        baseTableName: shRole_shGroups
+        constraintName: FKfno7fduqpwmkgmbbg86hc293s
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: shRole
+        validate: true
+- changeSet:
+    id: 1780773187985-109
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: object_from
+        baseTableName: ShReference
+        constraintName: FKgkcfdi2dobnuem9ifjnuphovl
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObject
+        validate: true
+- changeSet:
+    id: 1780773187985-110
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: post_attr_id
+        baseTableName: ShPostDraftAttr
+        constraintName: FKgp4xoau3h6pb6j9crq39655n2
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: CASCADE
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShRelatorItemDraft
+        validate: true
+- changeSet:
+    id: 1780773187985-111
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: object_id
+        baseTableName: ShPostDraft
+        constraintName: FKgpbc54rm05utntay247xlk5b2
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObjectDraft
+        validate: true
+- changeSet:
+    id: 1780773187985-112
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: ShObject_id
+        baseTableName: ShObject_shGroups
+        constraintName: FKh7n2jf6jwvgph6a2cfqv9dldr
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObject
+        validate: true
+- changeSet:
+    id: 1780773187985-113
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: post_type_id
+        baseTableName: sh_post_unified
+        constraintName: FKhghfnpyqoj1sjxc33yn2bvk60
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: object_id
+        referencedTableName: ShPostType
+        validate: true
+- changeSet:
+    id: 1780773187985-114
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: site_id
+        baseTableName: ShFolder
+        constraintName: FKi6063d19y5o2gex5wip8wsfr2
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: object_id
+        referencedTableName: ShSite
+        validate: true
+- changeSet:
+    id: 1780773187985-115
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: ShPostDraftAttr_id
+        baseTableName: ShPostDraftAttr_arrayValue
+        constraintName: FKisf57dpw4k4d69slqihdmht6v
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShPostDraftAttr
+        validate: true
+- changeSet:
+    id: 1780773187985-116
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: object_from
+        baseTableName: ShReferenceDraft
+        constraintName: FKjbcsroivhqi0if60ghk6lpbr9
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObjectDraft
+        validate: true
+- changeSet:
+    id: 1780773187985-117
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: folder_id
+        baseTableName: ShPostDraft
+        constraintName: FKkrs3ewtvy935fcfxgk07p37t7
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: object_id
+        referencedTableName: ShFolder
+        validate: true
+- changeSet:
+    id: 1780773187985-118
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: ShObject_id
+        baseTableName: ShObject_shUsers
+        constraintName: FKl2fdgsm7ki955v4stu3f4q732
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObject
+        validate: true
+- changeSet:
+    id: 1780773187985-119
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: object_id
+        baseTableName: ShFolder
+        constraintName: FKloxewrbg5ebt57npg1k7ijwtk
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObject
+        validate: true
+- changeSet:
+    id: 1780773187985-120
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: object_id
+        baseTableName: ShPostAttr
+        constraintName: FKmpi4k2l266n544abh4vo2w2qk
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObject
+        validate: true
+- changeSet:
+    id: 1780773187985-121
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: object_id
+        baseTableName: ShFolderDraft
+        constraintName: FKmpkc8yx2vwnbjwl9lejyivl10
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObjectDraft
+        validate: true
+- changeSet:
+    id: 1780773187985-122
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: id
+        baseTableName: ShAuthProviderVendor
+        constraintName: FKn8gbxcoc32huk3ef87yva567k
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShProviderVendor
+        validate: true
+- changeSet:
+    id: 1780773187985-123
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: object_to
+        baseTableName: ShReference
+        constraintName: FKn8l61xj04wxerteggxrvdq5u0
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObject
+        validate: true
+- changeSet:
+    id: 1780773187985-124
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: post_type_id
+        baseTableName: ShPostDraft
+        constraintName: FKna0i3tiucgcgosolboiy4h0ff
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: CASCADE
+        onUpdate: NO ACTION
+        referencedColumnNames: object_id
+        referencedTableName: ShPostType
+        validate: true
+- changeSet:
+    id: 1780773187985-125
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: site_id
+        baseTableName: sh_post_unified
+        constraintName: FKnqidxh4yk1lbbyakgnp3tfrsc
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: object_id
+        referencedTableName: ShSite
+        validate: true
+- changeSet:
+    id: 1780773187985-126
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: post_attr_id
+        baseTableName: ShRelatorItemDraft
+        constraintName: FKo08co6v1lk4ar5enmx2a5aj51
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: CASCADE
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShPostDraftAttr
+        validate: true
+- changeSet:
+    id: 1780773187985-127
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: ShObjectDraft_id
+        baseTableName: ShObjectDraft_shUsers
+        constraintName: FKo8hd4w2sab8egfhgcq9hjykmg
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObjectDraft
+        validate: true
+- changeSet:
+    id: 1780773187985-128
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: object_id
+        baseTableName: ShWorkflowTask
+        constraintName: FKoahv0ukmuhcr5pm7l9e913od2
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObject
+        validate: true
+- changeSet:
+    id: 1780773187985-129
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: object_to
+        baseTableName: ShReferenceDraft
+        constraintName: FKoej437buejsxlegiut4vb7exx
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObject
+        validate: true
+- changeSet:
+    id: 1780773187985-130
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: ShObject_id
+        baseTableName: ShObject_shPageGroups
+        constraintName: FKoi9ndcga0mrfh74e910454xwy
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObject
+        validate: true
+- changeSet:
+    id: 1780773187985-131
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: post_attr_id
+        baseTableName: ShPostAttr
+        constraintName: FKoolginrfqlvi1ufif5jkoja60
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: CASCADE
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShRelatorItem
+        validate: true
+- changeSet:
+    id: 1780773187985-132
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: parent_folder_id
+        baseTableName: ShFolderDraft
+        constraintName: FKpca0x5mplgcaqsdld38pxs4aq
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: object_id
+        referencedTableName: ShFolderDraft
+        validate: true
+- changeSet:
+    id: 1780773187985-133
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: shUsers_username
+        baseTableName: ShUser_shGroups
+        constraintName: FKpn08puh8kq98utuntr5hub2g6
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: username
+        referencedTableName: ShUser
+        validate: true
+- changeSet:
+    id: 1780773187985-134
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: ShPostAttr_id
+        baseTableName: ShPostAttr_arrayValue
+        constraintName: FKpqi9gq3aprynipdwflqscuv79
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShPostAttr
+        validate: true
+- changeSet:
+    id: 1780773187985-135
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: post_attr_id
+        baseTableName: ShRelatorItem
+        constraintName: FKq9jmr172k8bk788qx24ju6yo2
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: CASCADE
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShPostAttr
+        validate: true
+- changeSet:
+    id: 1780773187985-136
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: widget_id
+        baseTableName: ShPostTypeAttr
+        constraintName: FKs3p35oyg2or1gxfr6tok5gyps
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShWidget
+        validate: true
+- changeSet:
+    id: 1780773187985-137
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: post_type_attr_id
+        baseTableName: ShPostAttr
+        constraintName: FKs5val5yfd330p3dim9l70kepm
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: CASCADE
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShPostTypeAttr
+        validate: true
+- changeSet:
+    id: 1780773187985-138
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: object_id
+        baseTableName: ShPost
+        constraintName: FKs9jymabh7u61mxhf3088emep5
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: ShObject
+        validate: true
+- changeSet:
+    id: 1780773187985-139
+    author: alexa (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: site_id
+        baseTableName: ShFolderDraft
+        constraintName: FKtl0lrh0luh698jblnyewdmyjj
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: object_id
+        referencedTableName: ShSite
+        validate: true
+

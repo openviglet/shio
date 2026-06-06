@@ -3,7 +3,7 @@ import ConsoleRootPage from "./app/console/console.root.page"
 import HomePage from "./app/console/home/home.page"
 import LoginPage from "./app/login/login.page"
 import SetupPage from "./app/setup/setup.page"
-import { AdminRoutes, ContentRoutes } from "./app/routes"
+import { AdminRoutes, ContentRoutes, UniversalEditorRoutes } from "./app/routes"
 import { ROUTES } from "./app/routes.const"
 import { ThemeProvider } from "./components/theme-provider"
 import { Toaster } from "./components/ui/sonner"
@@ -26,6 +26,7 @@ function App() {
                 <Route path="home" element={<HomePage />} />
                 {ContentRoutes}
                 {AdminRoutes}
+                {UniversalEditorRoutes}
               </Route>
             </Routes>
           </ShioServiceProvider>
