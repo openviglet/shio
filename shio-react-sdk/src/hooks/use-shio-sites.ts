@@ -1,21 +1,19 @@
-import { useEffect, useState } from "react";
+import type { ShioSite } from "@viglet/shio-client";
 import { useShioClient } from "../provider";
-import type { ShSite } from "../types";
+import { useAsync } from "./use-async";
 
+/** List all published sites. */
 export function useShioSites() {
   const client = useShioClient();
-  const [sites, setSites] = useState<ShSite[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  return useAsync<ShioSite[]>((signal) => client.getSites({ signal }), [client]);
+}
 
-  useEffect(() => {
-    setLoading(true);
-    client
-      .getSites()
-      .then(setSites)
-      .catch(setError)
-      .finally(() => setLoading(false));
-  }, [client]);
-
-  return { sites, loading, error };
+/** Get one site (with its root folder id) by id. */
+export function useShioSite(siteId: string | undefined) {
+  const client = useShioClient();
+  return useAsync<ShioSite | null>(
+    (signal) => client.getSite(siteId!, { signal }),
+    [client, siteId],
+    !!siteId
+  );
 }

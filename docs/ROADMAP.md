@@ -43,7 +43,7 @@
 > we complete it, add a framework-agnostic core, and ship a real starter. → §II
 
 - ✅ **SH6** — shipped → [CHANGELOG.md](CHANGELOG.md) Block B. Standalone zero-dep `@viglet/shio-client` consuming the CDA. (Rebasing `shio-react-sdk` onto it is part of SH7.)
-- 📋 **SH7** (deps: SH6) **Complete the React SDK surface** — add `useShioBreadcrumb`, `useShioSearch`, typed `ShioImage`/`ShioRichText`/`ShioRelator` render components, and a `<ShioField>` resolver mirroring the console's widget map. → §II.2
+- ✅ **SH7** — shipped → [CHANGELOG.md](CHANGELOG.md) Block B. `shio-react-sdk` rebased onto `@viglet/shio-client`; new hooks + `ShioRichText`/`ShioImage`/`ShioRelator`/`ShioField`.
 - ✅ **SH8** — shipped → [CHANGELOG.md](CHANGELOG.md) Block B. `create-shio-app` scaffolds a Next.js App-Router site wired to the CDA (`[...slug]` routing, SSG/ISR).
 - 📋 **SH9** (deps: SH8, SH13) **SSG/ISR/SSR recipes + on-demand revalidation** — document the three rendering modes against the CDA; wire publish webhooks (SH12) to Next.js `revalidatePath`/`revalidateTag`. → §II.4
 - ⏳ **SH10** (deps: SH1) **Mature the Universal Editor bridge** — `@viglet/shio-editor-cors` exists; harden the inline-edit handshake (field mapping, save-back through CDA write scope, draft preview) so any JS-rendered page becomes visually editable. → §II.5

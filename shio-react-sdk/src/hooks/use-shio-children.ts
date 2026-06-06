@@ -1,22 +1,16 @@
-import { useEffect, useState } from "react";
+import type { ShioListing, ShioPageParams } from "@viglet/shio-client";
 import { useShioClient } from "../provider";
-import type { ShObjectItem } from "../types";
+import { useAsync } from "./use-async";
 
-export function useShioChildren(objectId: string | undefined) {
+/** List a folder's children (subfolders + published posts). `null` when the folder is unknown. */
+export function useShioChildren(
+  folderId: string | undefined,
+  params?: ShioPageParams
+) {
   const client = useShioClient();
-  const [items, setItems] = useState<ShObjectItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    if (!objectId) return;
-    setLoading(true);
-    client
-      .getChildren(objectId)
-      .then(setItems)
-      .catch(setError)
-      .finally(() => setLoading(false));
-  }, [client, objectId]);
-
-  return { items, loading, error };
+  return useAsync<ShioListing | null>(
+    (signal) => client.listChildren(folderId!, params, { signal }),
+    [client, folderId, params?.page, params?.size],
+    !!folderId
+  );
 }

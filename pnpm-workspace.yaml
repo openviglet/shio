@@ -1,0 +1,5 @@
+packages:
+  - "shio-client"
+  - "shio-react-sdk"
+  - "create-shio-app"
+  - "shio-react"

@@ -63,3 +63,4 @@ src/main/resources/js/client-side/build
 /shio-examples/blog-site/dist
 /shio-client/node_modules
 /shio-client/dist
+/create-shio-app/node_modules

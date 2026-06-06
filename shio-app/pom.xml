@@ -425,9 +425,9 @@
                 <version>2.0.0</version>
                 <executions>
                     <execution>
-                        <id>react install node and npm</id>
+                        <id>react install node and pnpm</id>
                         <goals>
-                            <goal>install-node-and-npm</goal>
+                            <goal>install-node-and-pnpm</goal>
                         </goals>
                         <configuration>
                             <workingDirectory>../shio-react</workingDirectory>
@@ -435,19 +435,32 @@
                         <phase>generate-resources</phase>
                     </execution>
                     <execution>
-                        <id>react compile</id>
+                        <id>react install workspace deps (pnpm)</id>
                         <goals>
-                            <goal>npm</goal>
+                            <goal>pnpm</goal>
                         </goals>
                         <configuration>
-                            <arguments>run compile</arguments>
+                            <!-- Run from the console package; pnpm finds the
+                                 workspace root (../) and installs all members. -->
+                            <arguments>install</arguments>
+                            <workingDirectory>../shio-react</workingDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>react compile</id>
+                        <goals>
+                            <goal>pnpm</goal>
+                        </goals>
+                        <configuration>
+                            <!-- Deps already installed above; build only. -->
+                            <arguments>run compile:build</arguments>
                             <workingDirectory>../shio-react</workingDirectory>
                         </configuration>
                     </execution>
                 </executions>
                 <configuration>
                     <nodeVersion>v24.12.0</nodeVersion>
-                    <npmVersion>11.6.2</npmVersion>
+                    <pnpmVersion>10.13.1</pnpmVersion>
                 </configuration>
             </plugin>
             <plugin>

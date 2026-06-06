@@ -11,9 +11,15 @@ export default defineConfig({
         format === "umd" ? "shio-react-sdk.umd.cjs" : "shio-react-sdk.js",
     },
     rollupOptions: {
-      external: ["react", "react/jsx-runtime"],
+      // @viglet/shio-client is a declared dependency — keep it external so it
+      // isn't duplicated into the bundle.
+      external: ["react", "react/jsx-runtime", "@viglet/shio-client"],
       output: {
-        globals: { react: "React", "react/jsx-runtime": "jsxRuntime" },
+        globals: {
+          react: "React",
+          "react/jsx-runtime": "jsxRuntime",
+          "@viglet/shio-client": "ShioClient",
+        },
       },
     },
     outDir: "dist",

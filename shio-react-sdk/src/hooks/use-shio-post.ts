@@ -1,22 +1,29 @@
-import { useEffect, useState } from "react";
+import type { ShioPost } from "@viglet/shio-client";
 import { useShioClient } from "../provider";
-import type { ShPost } from "../types";
+import { useAsync } from "./use-async";
 
+/** Get a published post by id (attributes expanded). `null` when not found. */
 export function useShioPost(postId: string | undefined) {
   const client = useShioClient();
-  const [post, setPost] = useState<ShPost | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  return useAsync<ShioPost | null>(
+    (signal) => client.getPost(postId!, { signal }),
+    [client, postId],
+    !!postId
+  );
+}
 
-  useEffect(() => {
-    if (!postId) return;
-    setLoading(true);
-    client
-      .getPost(postId)
-      .then(setPost)
-      .catch(setError)
-      .finally(() => setLoading(false));
-  }, [client, postId]);
-
-  return { post, loading, error };
+/**
+ * Resolve a published post by site + friendly URL — the client-side analog of
+ * the catch-all route. `null` when unresolved.
+ */
+export function useShioPostByUrl(
+  siteId: string | undefined,
+  url: string | undefined
+) {
+  const client = useShioClient();
+  return useAsync<ShioPost | null>(
+    (signal) => client.getPostByUrl(siteId!, url!, { signal }),
+    [client, siteId, url],
+    !!siteId && !!url
+  );
 }

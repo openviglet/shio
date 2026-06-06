@@ -373,10 +373,26 @@ Full page with grid of post types:
 
 ## Build & Deploy
 
+### JavaScript workspace (pnpm)
+The JS packages live in a **pnpm workspace** (`pnpm-workspace.yaml` + root
+`package.json`): `shio-react` (console), `shio-client` (CDA core),
+`shio-react-sdk` (React SDK, depends on the core via `workspace:*`), and
+`create-shio-app` (Next.js starter). Run `pnpm install` once at the repo root.
+Native build scripts are allowlisted via `pnpm.onlyBuiltDependencies`
+(`esbuild`, `@tailwindcss/oxide`). `@viglet/viglet-design-system` resolves from
+public npmjs (no scope mapping needed).
+
 ### Maven Integration
-`frontend-maven-plugin` in `shio-app/pom.xml` runs:
-1. `install-node-and-npm` from `../shio-react`
-2. `npm run compile` (which runs `npm ci` + `tsc -b` + `vite build`)
+`frontend-maven-plugin` (2.0.0) in `shio-app/pom.xml` runs, all from `../shio-react`:
+1. `install-node-and-pnpm` (Node + pnpm `10.13.1`)
+2. `pnpm install` — pnpm finds the workspace root (`../`) and installs all members
+3. `pnpm run compile:build` (`tsc -b` + `vite build`)
+
+### Publishing to npm
+`.github/workflows/publish-js-sdk.yml` (manual `workflow_dispatch`): bumps the
+three publishable packages, builds, and runs `pnpm publish` in dependency order
+(`shio-client` → `shio-react-sdk` → `create-shio-app`). `pnpm publish` rewrites
+`workspace:*` to the published version automatically. Needs the `NPM_TOKEN` secret.
 
 ### Vite Config
 - Output: `../shio-app/src/main/resources/public/`
@@ -410,7 +426,7 @@ return p && typeof p === "object" ? p : {};
 The `parseSettings()` helper in `post-type.edit.page.tsx` centralizes this pattern.
 
 ### Vite "Outdated Optimize Dep" (504)
-After installing/removing npm packages, clear Vite cache: `rm -rf node_modules/.vite` and restart dev server.
+After installing/removing packages (`pnpm add`/`pnpm remove`), clear Vite cache: `rm -rf node_modules/.vite` and restart dev server.
 
 ### Static Files 404
 - WebJars served from `classpath:/META-INF/resources/webjars/`

@@ -150,12 +150,18 @@ console endpoints the old `shio-react-sdk` client hit — that's why SH6 depends
 SH1. **Follow-up (SH7):** rebase `shio-react-sdk`'s hooks onto this core so React
 becomes one consumer, not a parallel implementation.
 
-### II.2 Complete the React SDK (SH7)
+### II.2 Complete the React SDK (SH7) — ✅ shipped
 
-Add the missing hooks/components: `useShioBreadcrumb`, `useShioSearch`, and typed
-render components `ShioRichText`, `ShioImage`, `ShioRelator`, plus a `<ShioField>`
-resolver that mirrors the console's widget map so the *same* field types render
-consistently on the delivery side.
+Shipped: `shio-react-sdk` rebased onto `@viglet/shio-client` (React is now one
+consumer, not a parallel client) + new hooks (`useShioBreadcrumb`,
+`useShioPostByUrl`, `useShioSite`) and render components (`ShioRichText`,
+`ShioImage`, `ShioRelator`, `ShioField`). Detail in [CHANGELOG.md](CHANGELOG.md)
+Block B. Design caveat: `ShioField`'s widget resolution is **heuristic** (by value
+shape) because the CDA delivers `attrs` as a plain JSON map with no per-field
+widget metadata. **Follow-up (SH11):** expose post-type schema in the CDA so
+`ShioField` can resolve by the real widget type. `useShioSearch` was descoped to
+SH11-adjacent work — the CDA has no full-text endpoint yet; `useShioQuery` covers
+site/folder/post-type filtering.
 
 ### II.3 `create-shio-app` — Next.js starter (SH8) — ✅ shipped
 
