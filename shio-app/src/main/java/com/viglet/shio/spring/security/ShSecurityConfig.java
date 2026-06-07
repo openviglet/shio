@@ -42,6 +42,9 @@ public class ShSecurityConfig {
     private static final String CDA_PATH = "/api/v2/cda/**";
     /** Post-types-as-code admin API (SH16) — console-authenticated, used by the stateless {@code shio} CLI. */
     private static final String POST_TYPE_PATH = "/api/v2/post-type/**";
+    /** Tenant catalog (SH22) — writes are admin-only; {@code GET /current} stays open to any user. */
+    private static final String TENANT_PATH = "/api/v2/tenant";
+    private static final String TENANT_SUBPATH = "/api/v2/tenant/**";
 
     private final UserDetailsService userDetailsService;
 
@@ -136,6 +139,12 @@ public class ShSecurityConfig {
                 // GraphQL delivery (SH4) is a CDA surface — token-authenticated, POST reads.
                 authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, "/graphql"))
                         .hasRole("CDA");
+                // Tenant catalog writes (SH22) are admin-only; GET /current + listing stay authenticated.
+                authorizeRequests.requestMatchers(
+                        mvc.matcher(HttpMethod.POST, TENANT_PATH),
+                        mvc.matcher(HttpMethod.PUT, TENANT_SUBPATH),
+                        mvc.matcher(HttpMethod.DELETE, TENANT_SUBPATH))
+                        .hasRole("ADMIN");
                 authorizeRequests.anyRequest().authenticated();
             });
             http.logout(logout -> logout.addLogoutHandler(shLogoutHandler)
@@ -192,6 +201,12 @@ public class ShSecurityConfig {
                         // GraphQL delivery (SH4) is a CDA surface — token-authenticated, POST reads.
                         authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, "/graphql"))
                                 .hasRole("CDA");
+                        // Tenant catalog writes (SH22) are admin-only; GET /current + listing stay authenticated.
+                        authorizeRequests.requestMatchers(
+                                mvc.matcher(HttpMethod.POST, TENANT_PATH),
+                                mvc.matcher(HttpMethod.PUT, TENANT_SUBPATH),
+                                mvc.matcher(HttpMethod.DELETE, TENANT_SUBPATH))
+                                .hasRole("ADMIN");
                         authorizeRequests.anyRequest().authenticated();
                     });
             http.logout(logout -> logout

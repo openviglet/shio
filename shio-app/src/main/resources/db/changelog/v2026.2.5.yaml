@@ -1,0 +1,46 @@
+databaseChangeLog:
+  # SH22 follow-up (Part A) — tenant catalog. A persistent record per tenant; the
+  # `name` column is the tenant identifier carried by Hibernate's @TenantId
+  # discriminator on content rows. NOT itself @TenantId-scoped (it is the global
+  # catalog). Types kept DB-agnostic (VARCHAR / boolean / TIMESTAMP) per
+  # ShLiquibaseChangelogAgnosticTest. SH26: preserve identifier case on PostgreSQL
+  # (does not propagate from the baseline through `include`, so repeated per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh22-create-sh-tenant
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_tenant
+      changes:
+        - createTable:
+            tableName: sh_tenant
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: PK_sh_tenant
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: UK_sh_tenant_name
+              - column:
+                  name: description
+                  type: VARCHAR(510)
+              - column:
+                  name: enabled
+                  type: boolean
+              - column:
+                  name: owner
+                  type: VARCHAR(255)
+              - column:
+                  name: created_date
+                  type: TIMESTAMP
