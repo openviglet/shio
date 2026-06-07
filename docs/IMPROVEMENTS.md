@@ -565,85 +565,44 @@ site creation, (2) explicit export/import for backup and content migration betwe
 installs, and (3) the copy-the-default-model step SaaS tenant provisioning already
 does by hand (`ShTenantProvisioningService`). Rebuilding it once pays all three.
 
-### VII.1 Exchange package format on the unified model (SH68) — 🛠 code complete
+### VII.1 Exchange package format on the unified model (SH68) — ✅ shipped
 
-**Status:** implemented in `com.viglet.shio.exchange` — the DTO records
-(`ShExchangePackage` root + `ShExchangeSite`/`ShExchangeFolder`/`ShExchangePost`/
-`ShExchangeFile`, post-types reusing the SH16 `ShPostTypeDef`) and the
-`ShExchangePackageCodec` (manifest JSON read/write, directory layout, zip/unzip
-with wrapped-single-dir unwrapping and zip-slip guard). Post `data` is carried
-**verbatim as a `JsonNode`** — no split-model flattening. Pure round-trip test
-green; pending commit, then it moves to CHANGELOG. The rationale below is the
-as-built design.
+Shipped → [CHANGELOG.md](CHANGELOG.md) Block G. The `com.viglet.shio.exchange.model`
+DTOs + `ShExchangePackageCodec`; post `data` carried verbatim as a `JsonNode`,
+post-types reuse the SH16 `ShPostTypeDef` (one interchange shape). Design note: the
+format is deliberately decoupled from the JPA entities (references by id/name,
+`state` as a string) so the on-disk shape can evolve independently; the codec does
+format plumbing only — entity↔DTO mapping, tree-walking and id-remapping live in
+SH69/SH70.
 
-The foundation: a DTO set + serializer/deserializer for the on-disk package
-(`export.json` + a sibling files directory), modeling site → folders →
-`ShPostUnified` posts (`data` JSON, **not** the deleted split attrs) → the
-post-types the content references. Replaces `ShExchange`/`ShSiteExchange`/
-`ShFolderExchange`/`ShPostExchange`. Decide up front: package version field (so
-future readers can migrate old zips), id strategy (export keeps source ids;
-import/clone remaps), and whether post-types embed in the package or reference the
-SH16 `ShPostTypeDef` JSON shape (prefer the latter so the two stay one format).
+### VII.2 Site export → zip (SH69) — ✅ shipped
 
-### VII.2 Site export → zip (SH69) — 🛠 code complete
+Shipped → [CHANGELOG.md](CHANGELOG.md) Block G. `ShSiteExportService` walks the
+site tree (both DRAFT + PUBLISHED rows) into a package and streams it at
+`GET /api/v2/site/{id}/export` (the console Download action). Design note: static
+binary assets are deferred until the file_source subsystem exists (SH38) — `files`
+is empty for now; that collection pass is the one future addition here.
 
-**Status:** implemented as `ShSiteExportService` (+ the `ShExchangeArchive`
-filename/bytes record) in `com.viglet.shio.exchange.site`, wired at
-`GET /api/v2/site/{id}/export` (`ShSiteAPI.export`, streams `application/zip` with
-a `Content-Disposition` filename; 404 on unknown site). It walks site → root
-folders → child folders (recursive) → the unified posts in each (**both** `DRAFT`
-and `PUBLISHED` rows) → the post-types they reference (emitted once as the SH16
-`ShPostTypeDef` via `ShPostTypeAdminMapper`), parses each post's `data` CLOB back
-to a `JsonNode` carried verbatim, then zips through the SH68 codec via a temp dir.
-**Static files are deferred:** the file_source subsystem isn't implemented (SH38),
-so `files` is empty and there's no `files/` dir yet — that pass is the one future
-addition here. Round-trip-through-the-zip + endpoint tests green; pending commit.
+### VII.3 Site import / clone (SH70) — ✅ shipped
 
-The original direction below is the as-built design.
+Shipped → [CHANGELOG.md](CHANGELOG.md) Block G. `ShSiteImportService` clones a
+package with fresh UUIDs (no PK collision on re-import), provisions post-types by
+name (`provisionFromDef`), persists folders parent-first, and rewrites embedded
+`data` id references via the remap; `POST /api/v2/import` + the React import page
+wire the Import button. Design note: clone-into-same-install **is** "duplicate a
+site"; a future "import into an existing target site" (merge) would layer on this.
+Binary assets deferred with the export side (SH38).
 
-Rebuild `ShSiteExport` against SH68: walk a site's folder tree + unified posts +
-referenced post-types + static files, write the package, stream it as a zip. Wire
-`GET /api/v2/site/{id}/export` — the console **Download** action already calls it.
-This is the read-only half and the natural first deliverable (lower risk than
-import, and immediately useful for backup).
+### VII.4 Default template on site creation — bootstrap-site (SH71) — ✅ shipped
 
-### VII.3 Site import / clone (SH70) — 🛠 code complete
-
-**Status:** implemented as `ShSiteImportService` (clone semantics) + the
-`ShExchangeImportAPI` controller at `POST /api/v2/import` (multipart, returns the
-new site), plus the React `site.import.page.tsx` wired to the `SITE_IMPORT` route
-(the content-nav **Import** button was navigating to a dead route). The clone:
-provisions each `ShPostTypeDef` via `provisionFromDef` (idempotent — reuses the
-live model), pre-generates a fresh UUID for every site/folder/post id (a post's
-DRAFT+PUBLISHED rows share one), persists sites (name/furl de-duplicated),
-folders parent-first (FK-safe), then posts — rewriting embedded `data` id
-references through the remap (a widget-agnostic string swap over the unique UUID
-tokens, covering Content Select / File targets). One transaction = atomic import.
-Binary assets deferred with the export side (SH38). Export→import round-trip +
-reference-remap + endpoint tests green; pending commit.
-
-The original direction below is the as-built design.
-
-The write half: rebuild `ShCloneExchange`/`ShSiteImport` to read a package, remap
-object ids (so a clone doesn't collide with the source), and persist folders +
-unified posts + post-types under a **new or target** site — reusing SH16's
-`ShPostTypeAdminService.provisionFromDef` for the types instead of a parallel
-importer. Wire the content-nav **Import/Upload** action + a site-import endpoint.
-**Clone = import into the same install** (duplicate a site), which is also how a
-"copy site" console action would work. Watch the unified model's `(id, state)`
-composite PK + `@TenantId` on insert (CLAUDE.md): remapped rows must carry the
-active tenant.
-
-### VII.4 Default template on site creation — bootstrap-site (SH71)
-
-The fix for the reported regression. Regenerate a **unified-model** `bootstrap-site`
-package (a minimal but real starter — home/folders/sample content/static assets),
-ship it at `classpath:/import/`, and have `ShSiteWriteService.create()` clone it via
-the SH70 path when present, keeping the current plain-root-folder behaviour as the
-**fallback** (template missing, or clone fails — never block site creation on the
-template). This restores "new site → full basic structure" without reviving the
-legacy GitHub-zip download path (`openviglet/bootstrap-site`); the template is a
-versioned in-repo artifact.
+Shipped → [CHANGELOG.md](CHANGELOG.md) Block G — **the fix for the reported
+regression**. `ShBootstrapSiteProvider` clones a versioned in-repo exchange package
+(`classpath:/import/bootstrap-site/export.json`) on `ShSiteWriteService.create()`,
+rewriting the template site's metadata with the user's input, with a plain-root-folder
+fallback so creation is never blocked. Design note: the template is an in-repo
+SH68 artifact (not the legacy `openviglet/bootstrap-site` GitHub-zip download), and
+the clone reuses the SH70 import path via a no-unzip `importPackage(pkg, owner)`
+overload. Static assets in the starter await SH38, like the rest of the exchange.
 
 ### VII.5 Unify tenant provisioning onto the exchange engine (SH72)
 

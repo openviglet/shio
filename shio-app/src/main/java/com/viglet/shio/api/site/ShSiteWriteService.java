@@ -16,6 +16,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.exchange.site.ShBootstrapSiteProvider;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
@@ -33,14 +34,25 @@ public class ShSiteWriteService {
 
     private final ShSiteRepository shSiteRepository;
     private final ShFolderRepository shFolderRepository;
+    private final ShBootstrapSiteProvider bootstrapSiteProvider;
 
-    public ShSiteWriteService(ShSiteRepository shSiteRepository, ShFolderRepository shFolderRepository) {
+    public ShSiteWriteService(ShSiteRepository shSiteRepository, ShFolderRepository shFolderRepository,
+                              ShBootstrapSiteProvider bootstrapSiteProvider) {
         this.shSiteRepository = shSiteRepository;
         this.shFolderRepository = shFolderRepository;
+        this.bootstrapSiteProvider = bootstrapSiteProvider;
     }
 
     @Transactional
     public ShSite create(ShSite payload, String owner) {
+        // SH71: clone the bundled bootstrap-site starter (post-types, folders, sample
+        // pages) so a new site isn't blank. Best-effort — falls through to a plain
+        // site + empty root folder if the template is absent or fails to clone.
+        ShSite fromTemplate = bootstrapSiteProvider.provision(payload, owner);
+        if (fromTemplate != null) {
+            return fromTemplate;
+        }
+
         ShSite site = new ShSite();
         site.setName(payload.getName());
         site.setDescription(payload.getDescription());

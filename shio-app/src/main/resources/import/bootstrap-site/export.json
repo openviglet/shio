@@ -1,0 +1,80 @@
+{
+  "version" : 1,
+  "generator" : "shio-bootstrap",
+  "sites" : [ {
+    "id" : "b0075140-0000-4000-8000-000000000001",
+    "name" : "Bootstrap Site",
+    "description" : "Starter site",
+    "furl" : "bootstrap-site",
+    "rootFolderIds" : [ "b0075140-0000-4000-8000-000000000010" ]
+  } ],
+  "postTypes" : [ {
+    "name" : "Page",
+    "title" : "Page",
+    "namePlural" : "Pages",
+    "description" : "A simple content page",
+    "system" : false,
+    "fields" : [ {
+      "name" : "title",
+      "label" : "Title",
+      "widget" : "Text",
+      "required" : true,
+      "isTitle" : true,
+      "isSummary" : false,
+      "ordinal" : 1,
+      "fields" : [ ]
+    }, {
+      "name" : "content",
+      "label" : "Content",
+      "widget" : "HTML Editor",
+      "required" : false,
+      "isTitle" : false,
+      "isSummary" : true,
+      "ordinal" : 2,
+      "fields" : [ ]
+    } ]
+  } ],
+  "folders" : [ {
+    "id" : "b0075140-0000-4000-8000-000000000010",
+    "name" : "Home",
+    "furl" : "/",
+    "rootFolder" : true,
+    "siteId" : "b0075140-0000-4000-8000-000000000001",
+    "position" : 0
+  }, {
+    "id" : "b0075140-0000-4000-8000-000000000011",
+    "name" : "Pages",
+    "furl" : "pages",
+    "rootFolder" : false,
+    "parentFolderId" : "b0075140-0000-4000-8000-000000000010",
+    "position" : 1
+  } ],
+  "posts" : [ {
+    "id" : "b0075140-0000-4000-8000-000000000020",
+    "folderId" : "b0075140-0000-4000-8000-000000000010",
+    "postTypeName" : "Page",
+    "state" : "DRAFT",
+    "title" : "Welcome",
+    "furl" : "welcome",
+    "published" : false,
+    "position" : 0,
+    "data" : {
+      "title" : "Welcome",
+      "content" : "<h1>Welcome to your new Shio site</h1><p>This starter page was created automatically. Edit or delete it, and start building.</p>"
+    }
+  }, {
+    "id" : "b0075140-0000-4000-8000-000000000021",
+    "folderId" : "b0075140-0000-4000-8000-000000000011",
+    "postTypeName" : "Page",
+    "state" : "DRAFT",
+    "title" : "About",
+    "furl" : "about",
+    "published" : false,
+    "position" : 1,
+    "data" : {
+      "title" : "About",
+      "content" : "<p>Tell visitors about this site.</p>"
+    }
+  } ],
+  "files" : [ ]
+}

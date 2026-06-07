@@ -119,6 +119,15 @@ public class ShSiteImportService {
         }
     }
 
+    /**
+     * Clone an already-parsed package into the install (no unzip step). Used by the
+     * bootstrap-template provisioning (SH71), which reads a bundled classpath package.
+     */
+    @Transactional
+    public ShSite importPackage(ShExchangePackage pkg, String owner) {
+        return cloneInto(pkg, owner);
+    }
+
     private ShSite cloneInto(ShExchangePackage pkg, String owner) {
         if (pkg.sites().isEmpty()) {
             throw new ShExchangeException("Package contains no site to import");
