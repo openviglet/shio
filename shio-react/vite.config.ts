@@ -59,7 +59,7 @@ export default defineConfig({
     // optimizer fixes that interop. The Monaco `?worker` imports are kept in app
     // source (src/lib/monaco-workers.ts), not graphiql's dep entry, so the
     // pre-bundler never tries to load a `?worker` query (which it can't).
-    include: ["graphiql", "@graphiql/react", "@graphiql/toolkit"],
+    include: ["graphiql", "@graphiql/toolkit"],
   },
   server: {
     proxy: {
