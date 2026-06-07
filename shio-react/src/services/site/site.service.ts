@@ -31,9 +31,10 @@ export class ShSiteService {
     return response.data;
   }
 
-  async import(file: File): Promise<void> {
+  async import(file: File): Promise<ShSite> {
     const formData = new FormData();
     formData.append("file", file);
-    await axios.post("/v2/import", formData);
+    const response = await axios.post<ShSite>("/v2/import", formData);
+    return response.data;
   }
 }

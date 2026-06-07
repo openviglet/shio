@@ -1,6 +1,7 @@
-// GraphiQL v5 ships the editor as Monaco web workers; this side-effect import
-// wires them up for Vite and must run before <GraphiQL/> mounts.
-import "graphiql/setup-workers/vite"
+// GraphiQL v5 renders via Monaco web workers; this side-effect import wires them
+// up (in app source, not graphiql's dep entry — see monaco-workers.ts) and must
+// run before <GraphiQL/> mounts.
+import "@/lib/monaco-workers"
 import "graphiql/style.css"
 
 import { GraphiQL } from "graphiql"

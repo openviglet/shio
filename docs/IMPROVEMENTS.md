@@ -607,7 +607,22 @@ referenced post-types + static files, write the package, stream it as a zip. Wir
 This is the read-only half and the natural first deliverable (lower risk than
 import, and immediately useful for backup).
 
-### VII.3 Site import / clone (SH70)
+### VII.3 Site import / clone (SH70) — 🛠 code complete
+
+**Status:** implemented as `ShSiteImportService` (clone semantics) + the
+`ShExchangeImportAPI` controller at `POST /api/v2/import` (multipart, returns the
+new site), plus the React `site.import.page.tsx` wired to the `SITE_IMPORT` route
+(the content-nav **Import** button was navigating to a dead route). The clone:
+provisions each `ShPostTypeDef` via `provisionFromDef` (idempotent — reuses the
+live model), pre-generates a fresh UUID for every site/folder/post id (a post's
+DRAFT+PUBLISHED rows share one), persists sites (name/furl de-duplicated),
+folders parent-first (FK-safe), then posts — rewriting embedded `data` id
+references through the remap (a widget-agnostic string swap over the unique UUID
+tokens, covering Content Select / File targets). One transaction = atomic import.
+Binary assets deferred with the export side (SH38). Export→import round-trip +
+reference-remap + endpoint tests green; pending commit.
+
+The original direction below is the as-built design.
 
 The write half: rebuild `ShCloneExchange`/`ShSiteImport` to read a package, remap
 object ids (so a clone doesn't collide with the source), and persist folders +

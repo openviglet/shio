@@ -52,11 +52,14 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    // GraphiQL v5 wires Monaco via `?worker` imports inside @graphiql/react's
-    // setup-workers/vite entry. Vite's dep pre-bundler can't load those worker
-    // queries (fails the dev server on Windows), so keep these unbundled and let
-    // Vite handle the worker imports natively. Production `vite build` is unaffected.
-    exclude: ["graphiql", "@graphiql/react", "@graphiql/toolkit", "monaco-editor", "monaco-graphql"],
+    // GraphiQL is reached only via a dynamic import (lazy route), so Vite's dep
+    // scanner doesn't pre-bundle it — its CJS deps (react-compiler-runtime's `c`,
+    // nullthrows' default, …) then get served raw and ESM interop fails at runtime.
+    // Force pre-bundling of the GraphiQL tree (incl. its Monaco/CJS deps) so the
+    // optimizer fixes that interop. The Monaco `?worker` imports are kept in app
+    // source (src/lib/monaco-workers.ts), not graphiql's dep entry, so the
+    // pre-bundler never tries to load a `?worker` query (which it can't).
+    include: ["graphiql", "@graphiql/react", "@graphiql/toolkit"],
   },
   server: {
     proxy: {
