@@ -399,6 +399,14 @@ public npmjs (no scope mapping needed).
 2. `pnpm install` — pnpm finds the workspace root (`../`) and installs all members
 3. `pnpm run compile:build` (`tsc -b` + `vite build`)
 
+**Skip the frontend build for backend-only work.** The three frontend executions
+bind to `generate-resources`, so a plain `mvn compile`/`test` triggers the
+(slow, Node-dependent) React build. For backend compile/test, always pass
+`-Dskip.installnodepnpm=true -Dskip.pnpm=true` — these are the
+`frontend-maven-plugin` per-goal skip flags and leave the Java build untouched:
+`./mvnw -pl shio-app -am test -Dskip.installnodepnpm=true -Dskip.pnpm=true`.
+(Still run the **full** suite, not a single `-Dtest` class.)
+
 ### Publishing to npm
 `.github/workflows/publish-js-sdk.yml` (manual `workflow_dispatch`): bumps the
 three publishable packages, builds, and runs `pnpm publish` in dependency order

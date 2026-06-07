@@ -1,0 +1,26 @@
+{
+  "authProvider": {
+    "title": "Authentication Providers",
+    "description": "Configure external identity providers (LDAP, SAML, OAuth) used to authenticate console users.",
+    "blankTitle": "No authentication providers yet",
+    "blankDescription": "Add a provider to let users sign in through an external identity source.",
+    "newInstance": "New Provider",
+    "untitled": "Untitled Auth Provider",
+    "general": "General",
+    "generalDesc": "Basic information about the authentication provider.",
+    "vendor": "Vendor",
+    "vendorPlaceholder": "Select a provider type",
+    "namePlaceholder": "e.g. Corporate LDAP",
+    "descriptionPlaceholder": "e.g. Authenticates employees against the corporate directory.",
+    "enabledHint": "Disable to temporarily stop using this provider without deleting it.",
+    "properties": "Configuration",
+    "propertiesDesc": "Vendor-specific settings (host, base DN, client id, secret, …).",
+    "noProperties": "No configuration properties yet. Add one below.",
+    "keyPlaceholder": "property name",
+    "valuePlaceholder": "value",
+    "addProperty": "Add",
+    "nameRequired": "Name is required.",
+    "created": "Authentication provider created.",
+    "updated": "Authentication provider updated."
+  }
+}

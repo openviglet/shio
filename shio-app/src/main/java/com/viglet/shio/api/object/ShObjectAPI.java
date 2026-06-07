@@ -1,0 +1,82 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.api.object;
+
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.viglet.shio.api.object.ShObjectNavigationService.ShObjectList;
+import com.viglet.shio.api.object.ShObjectNavigationService.ShObjectPath;
+import com.viglet.shio.persistence.model.object.ShObject;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+/**
+ * Content-tree navigation and move/copy API, rebuilt for the unified post model
+ * (the legacy {@code ShObjectAPI} was removed in the nuclear refactor). Backs the
+ * React console's content browser: {@code /list}, {@code /path}, {@code /copyto},
+ * {@code /moveto}.
+ *
+ * @author Alexandre Oliveira
+ */
+@RestController
+@RequestMapping("/api/v2/object")
+@Tag(name = "Object", description = "Content object navigation API")
+public class ShObjectAPI {
+
+    private final ShObjectNavigationService shObjectNavigationService;
+    private final ShObjectWriteService shObjectWriteService;
+
+    public ShObjectAPI(ShObjectNavigationService shObjectNavigationService,
+                       ShObjectWriteService shObjectWriteService) {
+        this.shObjectNavigationService = shObjectNavigationService;
+        this.shObjectWriteService = shObjectWriteService;
+    }
+
+    @GetMapping("/{id}/list")
+    public ResponseEntity<ShObjectList> list(@PathVariable String id) {
+        return shObjectNavigationService.list(id)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/path")
+    public ResponseEntity<ShObjectPath> path(@PathVariable String id) {
+        return shObjectNavigationService.path(id)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/copyto/{destId}")
+    public List<ShObject> copyTo(@PathVariable String destId, @RequestBody List<String> ids) {
+        return shObjectWriteService.copyTo(destId, ids);
+    }
+
+    @PutMapping("/moveto/{destId}")
+    public List<ShObject> moveTo(@PathVariable String destId, @RequestBody List<String> ids) {
+        return shObjectWriteService.moveTo(destId, ids);
+    }
+
+    /**
+     * Cache invalidation hook. The page-cache subsystem the legacy endpoint drove
+     * is not part of the current backend, so this is a no-op kept for the console's
+     * "clear cache" action (it expects a 200).
+     */
+    @GetMapping("/{id}/clear-cache")
+    public ResponseEntity<Void> clearCache(@PathVariable String id) {
+        return ResponseEntity.ok().build();
+    }
+}

@@ -80,7 +80,13 @@
 > Shio carries a legacy AngularJS UI (`src/main/resources/ui/`) + Thymeleaf
 > templates. The new console is `shio-react`. → §V
 
-- ⏳ **SH19** (deps: —) **Finish AngularJS → React console migration** — continue moving console pages to `shio-react` (see [project memory]); the migration is the precondition for deleting `resources/ui/`. → §V.1
+- ⏳ **SH19** (deps: —) **Finish AngularJS → React console migration** — continue moving console pages to `shio-react` (see [project memory]); the migration is the precondition for deleting `resources/ui/`. The remaining legacy-only surface (the `config/` section + static files + legacy commerce widgets) is decomposed into SH56–SH61 below so each ships independently. → §V.1
+  - ✅ **SH56** (deps: SH19) **Auth Providers console page** — list + edit for `/api/v2/provider/auth` (vendor select, enabled toggle, dynamic config-properties editor), wired into the Administration sidebar. The v2 API already existed; this migrates the legacy `config/provider/auth` AngularJS screens. Shipped → [CHANGELOG.md](CHANGELOG.md) Block E. → §V.1
+  - 💭 **SH57** (deps: SH19) **Exchange Providers — v2 API + console page** — the legacy `config/provider/exchange` screens have **no v2 backend** (only `/api/v2/provider/auth` exists); add `ShExchangeProviderAPI` mirroring the auth provider, then a console page reusing the SH56 pattern. → §V.1
+  - 💭 **SH58** (deps: SH19) **Email/SMTP config — v2 API + console page** — migrate legacy `config/email`; needs a v2 settings endpoint over `ShConfigVar` then a console form. → §V.1
+  - 💭 **SH59** (deps: SH19, SH52) **Search config console page** — migrate legacy `config/search`; depends on the content full-text search backend (SH52) since there is no v2 search-config endpoint today. → §V.1
+  - 💭 **SH60** (deps: SH19) **Legacy commerce/recaptcha widgets — port or deprecate** — the AngularJS `payment` (payment-slip/rede-card/shopline) and `recaptcha` widgets have no React equivalent; decide whether they belong in the headless-first product before porting, else mark for removal with SH21. → §V.1
+  - 💭 **SH61** (deps: SH19, SH38) **Static-file manager console page** — migrate legacy `staticFile` upload/select screens; blocked on the upload/serve subsystem (SH38), which the current backend doesn't implement. → §V.1
 - 💭 **SH20** (deps: SH19, SH8) **Deprecate Thymeleaf site rendering** — once Block B is the documented delivery path (or SH18 ships), mark server-side Thymeleaf site templates `@Deprecated`, then delete. → §V.2
 - 💭 **SH21** (deps: SH19) **Delete `resources/ui/` (AngularJS)** — terminal step after SH19; reclaim the legacy frontend tree. → §V.3
 - 💭 **SH48** (deps: SH12, SH19) **Webhooks console UI** — admin page for the shipped `ShSiteWebhook` CRUD API (SH12). The backend exists; there is **no console page** to manage per-site webhooks. → §V.4

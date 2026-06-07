@@ -1,0 +1,26 @@
+{
+  "authProvider": {
+    "title": "Provedores de Autenticação",
+    "description": "Configure provedores de identidade externos (LDAP, SAML, OAuth) usados para autenticar usuários do console.",
+    "blankTitle": "Nenhum provedor de autenticação ainda",
+    "blankDescription": "Adicione um provedor para permitir que usuários entrem por uma fonte de identidade externa.",
+    "newInstance": "Novo Provedor",
+    "untitled": "Provedor de Autenticação sem título",
+    "general": "Geral",
+    "generalDesc": "Informações básicas sobre o provedor de autenticação.",
+    "vendor": "Fornecedor",
+    "vendorPlaceholder": "Selecione um tipo de provedor",
+    "namePlaceholder": "ex.: LDAP Corporativo",
+    "descriptionPlaceholder": "ex.: Autentica funcionários no diretório corporativo.",
+    "enabledHint": "Desative para parar de usar este provedor temporariamente sem excluí-lo.",
+    "properties": "Configuração",
+    "propertiesDesc": "Configurações específicas do fornecedor (host, base DN, client id, secret, …).",
+    "noProperties": "Nenhuma propriedade de configuração ainda. Adicione uma abaixo.",
+    "keyPlaceholder": "nome da propriedade",
+    "valuePlaceholder": "valor",
+    "addProperty": "Adicionar",
+    "nameRequired": "O nome é obrigatório.",
+    "created": "Provedor de autenticação criado.",
+    "updated": "Provedor de autenticação atualizado."
+  }
+}

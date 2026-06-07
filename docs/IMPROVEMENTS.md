@@ -343,6 +343,24 @@ Continue migrating console pages to `shio-react` (Vite + shadcn/ui + TS), follow
 the Turing-React patterns documented in `agents.md`. This is the precondition for
 deleting the legacy tree. See project memory `project_shio_react_migration.md`.
 
+The legacy-only console surface that still blocks SH21 is decomposed so each piece
+ships on its own:
+
+- **SH56 — Auth Providers console page** ✅ (shipped). The `/api/v2/provider/auth`
+  API already existed; this migrated the `config/provider/auth` screens (list + edit
+  with a vendor select and a dynamic config-properties editor).
+- **SH57 — Exchange Providers (v2 API + page)**. The `config/provider/exchange`
+  screens have no v2 backend — add `ShExchangeProviderAPI` mirroring the auth one,
+  then a console page on the SH56 pattern.
+- **SH58 — Email/SMTP config (v2 API + page)**. Migrate `config/email`; needs a v2
+  settings endpoint over `ShConfigVar`.
+- **SH59 — Search config page** (deps SH52). Migrate `config/search`; depends on the
+  content full-text search backend.
+- **SH60 — Legacy commerce/recaptcha widgets**. Decide port-or-deprecate for the
+  AngularJS `payment` + `recaptcha` widgets before they block SH21.
+- **SH61 — Static-file manager page** (deps SH38). Migrate `staticFile`; blocked on
+  the upload/serve subsystem the current backend lacks.
+
 ### V.2 Deprecate Thymeleaf site rendering (SH20)
 
 Once Block B is the documented delivery path (or GraalJS §IV ships), mark the

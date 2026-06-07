@@ -7,6 +7,7 @@ import {
   IconLayersIntersect,
   IconKey,
   IconBuildingSkyscraper,
+  IconFingerprint,
 } from "@tabler/icons-react"
 import * as React from "react"
 import { useTranslation } from "react-i18next"
@@ -50,6 +51,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         { title: t("admin.title"), url: ROUTES.ADMIN_ROOT, icon: IconShieldCog },
         { title: t("apiToken.title"), url: ROUTES.ADMIN_TOKENS, icon: IconKey },
         { title: t("tenantAdmin.title"), url: ROUTES.ADMIN_TENANTS, icon: IconBuildingSkyscraper },
+        { title: t("authProvider.title"), url: ROUTES.ADMIN_AUTH_PROVIDERS, icon: IconFingerprint },
         { title: t("graphql.title"), url: ROUTES.GRAPHQL_ROOT, icon: IconBrandGraphql },
       ],
     },

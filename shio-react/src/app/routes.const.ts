@@ -45,6 +45,7 @@ export const ROUTES = {
   SETUP: "/setup",
   ADMIN_TOKENS: scoped(`${consolePath}/admin/tokens`),
   ADMIN_TENANTS: scoped(`${consolePath}/admin/tenants`),
+  ADMIN_AUTH_PROVIDERS: scoped(`${consolePath}/admin/auth-providers`),
   UNIVERSAL_EDITOR: scoped(`${consolePath}/universal-editor`),
 };
 

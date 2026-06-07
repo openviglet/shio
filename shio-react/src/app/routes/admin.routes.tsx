@@ -10,6 +10,8 @@ import ApiTokenListPage from "../console/admin/api-token/api-token.list.page"
 import ApiTokenPage from "../console/admin/api-token/api-token.page"
 import TenantListPage from "../console/admin/tenant/tenant.list.page"
 import TenantPage from "../console/admin/tenant/tenant.page"
+import AuthProviderListPage from "../console/admin/auth-provider/auth-provider.list.page"
+import AuthProviderPage from "../console/admin/auth-provider/auth-provider.page"
 import { ROUTES } from "../routes.const"
 
 export const AdminRoutes = (
@@ -25,5 +27,7 @@ export const AdminRoutes = (
     <Route path="tokens/:tokenId" element={<ApiTokenPage />} />
     <Route path="tenants" element={<TenantListPage />} />
     <Route path="tenants/:tenantId" element={<TenantPage />} />
+    <Route path="auth-providers" element={<AuthProviderListPage />} />
+    <Route path="auth-providers/:authProviderId" element={<AuthProviderPage />} />
   </Route>
 )
