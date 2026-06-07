@@ -80,6 +80,24 @@ deleted in the nuclear refactor). All post CRUD is the unified API:
 - `PUT /api/v2/folder/{id}` - Update folder
 - `DELETE /api/v2/folder/{id}` - Delete folder
 
+### Static files — upload/serve subsystem (SH38)
+Binary files are first-class `File`-post-type unified posts; the bytes live on
+disk, **keyed by the file post's id** (not the folder tree), under
+`shio.file-source.path` (default `store/file_source/<postId>/<fileName>`).
+- `POST /api/v2/staticfile/upload` (multipart: `file`, `folderId`, `createPost`) —
+  creates a **published** `File` `ShPostUnified` (`data.FILE` = original name) +
+  writes the bytes in the same tx; returns the created post (the `File` widget
+  stores its `id`). `ShStaticFileService.resolveOrCreateFilePostType()` bootstraps
+  the system `File` post type on first use (system post types are **not** seeded).
+- `GET /api/v2/staticfile/{id}` — streams the bytes; `GET /pre-upload/{folderId}/{fileName}`
+  is a legacy-parity existence check (never blocks upload).
+- Bytes are also public at `/file_source/<postId>/<fileName>` via
+  `ShStaticResourceConfiguration` (a purely-additive `WebMvcConfigurer`; only
+  `/file_source/**` is exposed — **not** `/store/**`, which holds the H2 DB/logs).
+- Deleting the post removes its bytes (`ShStaticFileCleanupListener` on the `DELETE`
+  `ShPostLifecycleEvent`). Owner: `com.viglet.shio.api.staticfile` +
+  `ShFileSourceProperties`. Per-tenant isolation (SH47) will prefix `tenantId`.
+
 ### There is NO generic `DELETE /api/v2/object/{id}` endpoint
 Delete must be done by type: `/v2/post-unified/{id}` or `/v2/folder/{id}`.
 (Deleting a folder cascades: `ShFolderWriteService` first removes the unified posts
@@ -557,9 +575,10 @@ write-under-new-tenant in separate txns; `ShPostTypeAdminService.provisionFromDe
 `system` flag `upsert` guards). **Cache:** `Vary: Key` on CDA responses. **Console:** a Tenants
 admin page. **Gotcha (drift):** SH2/SH5 added `api_token.scope`/`.environment` + `api_token_site`
 via `ddl-auto=update` with no changeset — invisible to the SH26 ITs (which never touch a token) —
-so a clean Liquibase DB couldn't authenticate a CDA token; fixed in `v2026.2.6.yaml`. **N/A:**
-per-tenant `file_source` storage — the file upload/serve subsystem isn't implemented in the
-current backend (only a legacy security matcher), so there's nothing to isolate yet.
+so a clean Liquibase DB couldn't authenticate a CDA token; fixed in `v2026.2.6.yaml`. **Follow-up
+(SH47):** per-tenant `file_source` storage — the upload/serve subsystem now ships (SH38, see
+**Static files** above), id-keyed under `shio.file-source.path`; SH47 prefixes `tenantId` into
+that layout from `ShTenantContext`.
 
 ### Tests
 Tests skip Liquibase (`spring.liquibase.enabled=false`) and build the schema from

@@ -92,7 +92,7 @@
   - 💭 **SH58** (deps: SH19) **Email/SMTP config — v2 API + console page** — migrate legacy `config/email`; needs a v2 settings endpoint over `ShConfigVar` then a console form. → §V.1
   - 💭 **SH59** (deps: SH19, SH52) **Search config console page** — migrate legacy `config/search`; depends on the content full-text search backend (SH52) since there is no v2 search-config endpoint today. → §V.1
   - 💭 **SH60** (deps: SH19) **Legacy commerce/recaptcha widgets — port or deprecate** — the AngularJS `payment` (payment-slip/rede-card/shopline) and `recaptcha` widgets have no React equivalent; decide whether they belong in the headless-first product before porting, else mark for removal with SH21. → §V.1
-  - 💭 **SH61** (deps: SH19, SH38) **Static-file manager console page** — migrate legacy `staticFile` upload/select screens; blocked on the upload/serve subsystem (SH38), which the current backend doesn't implement. → §V.1
+  - 💭 **SH61** (deps: SH19, SH38) **Static-file manager console page** — migrate legacy `staticFile` upload/select screens; the upload/serve subsystem (SH38) now ships, so this is unblocked (the `File` widget already uploads via `POST /v2/staticfile/upload`; this adds a dedicated browse/manage page). → §V.1
 - 💭 **SH20** (deps: SH19, SH8) **Deprecate Thymeleaf site rendering** — once Block B is the documented delivery path (or SH18 ships), mark server-side Thymeleaf site templates `@Deprecated`, then delete. → §V.2
 - 💭 **SH21** (deps: SH19) **Delete `resources/ui/` (AngularJS)** — terminal step after SH19; reclaim the legacy frontend tree. → §V.3
 - 💭 **SH48** (deps: SH12, SH19) **Webhooks console UI** — admin page for the shipped `ShSiteWebhook` CRUD API (SH12). The backend exists; there is **no console page** to manage per-site webhooks. → §V.4
@@ -107,7 +107,7 @@
   - 💭 **SH44** (deps: SH22) **Superadmin impersonation** — let a privileged operator act as / switch into any tenant from the console (audited), beyond the principal-derived `ShTenantContext`. → §VI.1
   - 💭 **SH45** (deps: SH22) **Tenant quotas & billing** — per-tenant usage metering (content count, API calls, storage) + quota enforcement + billing-export hooks. → §VI.1
   - 💭 **SH46** (deps: SH22) **Nav/feature gating by tenant** — show/hide console nav + features by `multiTenant`/role so single-tenant installs don't see SaaS surfaces. → §VI.1
-  - 💭 **SH47** (deps: SH22, SH38) **Per-tenant file storage** — isolate `file_source` per tenant; blocked on the upload/serve subsystem (SH38). → §VI.1
+  - 💭 **SH47** (deps: SH22, SH38) **Per-tenant file storage** — isolate `file_source` per tenant; SH38 now ships, so this prefixes `tenantId` into the id-keyed `ShFileStorageService` layout (`file_source/{tenantId}/<postId>/...`) from `ShTenantContext`. → §VI.1
 
 **SH23 — Starter marketplace** (epic; curated `create-shio-app` templates the community can publish) → §VI.2:
 - 💭 **SH27** (deps: SH8) **Multi-template scaffolder** — `create-shio-app --template <name>` + a per-template manifest/metadata format. → §VI.2
@@ -125,7 +125,7 @@
 - 💭 **SH37** (deps: SH32, SH22) **Turing integration + tenant-awareness** — wire into the ecosystem; scope tools per tenant. → §VI.3
 
 **SH25 — Image/asset transformation API** (epic; on-the-fly resize/format/crop on the file-source delivery path) → §VI.4:
-- 💭 **SH38** (deps: —) ⚠️ **Prereq: file_source upload/serve subsystem** — the file upload/serve backend doesn't exist yet (SH22 "N/A"); nothing to transform until it does. → §VI.4
+- ✅ **SH38** — shipped → [CHANGELOG.md](CHANGELOG.md) Block F. file_source upload/serve subsystem rebuilt on the unified model (`ShFileStorageService` id-keyed storage + `ShStaticFileService`/`ShStaticFileAPI` upload/serve + `/file_source/**` resource handler + delete-cleanup listener). Unblocks SH39–43, SH47, SH61, and the exchange binary-asset walk.
 - 💭 **SH39** (deps: SH38) **Query-param interception** — parse `?w=&h=&format=&crop=` on the delivery path. → §VI.4
 - 💭 **SH40** (deps: SH39) **Transform pipeline** — resize/crop via imageio. → §VI.4
 - 💭 **SH41** (deps: SH40) **Format conversion** — webp/avif/jpeg output. → §VI.4
