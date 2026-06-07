@@ -272,6 +272,42 @@ Original direction:
 code, GitOps-friendly), `deploy`. Mirrors the `turing` CLI direction in the
 ecosystem.
 
+### III.6 Audit / history API + viewer (SH51)
+
+The `ShHistory` entity is already persisted on writes but is **never read back** —
+SH14 only diffs the DRAFT against the PUBLISHED snapshot, it does not expose the
+audit trail. Close the gap: a read endpoint for who/what/when + a console activity
+view. Foundation already exists (the entity), so this is wiring, not new modeling.
+
+### III.7 Content full-text search (SH52)
+
+A real gap: `ShSite.searchablePostTypes` (a CLOB) and the **Search/Semantic
+widgets** exist in the model, but there is no search service and the CDA `/query`
+endpoint is filter-only (`siteId`/`folderId`/`postType`) — not full-text. SH33
+(MCP read tools) already assumes a search primitive. Decide the engine up front:
+in-DB vs the ecosystem's Turing (which is exactly the search/AI component) — the
+latter keeps the Java/Spring sinergy (§0.2).
+
+### III.8 Content i18n / locales (SH53)
+
+`ShLocale` exists in the model but is **unused** by `ShPostUnified` — a post is
+single-language. Add a locale axis to the content (locale field / translation
+linkage) and a `locale` parameter on CDA reads, so a headless front can request
+`post` per language. Table-stakes for the markets Contentful/Strapi target.
+
+### III.9 Content-level ACL / permissions (SH54)
+
+`ShUser`/`ShGroup`/`ShRole` have full CRUD, but **nothing ties them to content** —
+there are no folder/post ACLs and no `@PreAuthorize` on the content controllers, so
+any authenticated user can reach all content through the unified API. Add an ACL
+model on folders/posts + enforcement at the `ShCdaService`/console boundary.
+
+### III.10 Trash / soft-delete + restore (SH55)
+
+Deletes are hard today. A recycle bin (soft-delete flag + restore + purge) is a
+table-stakes safety net for an editorial CMS; it also composes with the SH14
+restore work.
+
 ---
 
 ## IV. Optional server-side JS rendering (GraalJS)
@@ -316,6 +352,32 @@ remove.
 ### V.3 Delete `resources/ui/` (SH21)
 
 Terminal step after SH19 — reclaim the AngularJS frontend tree.
+
+> The next three are **console-completion gaps** surfaced by an audit of
+> `shio-react`: backend (or service) exists, the console surface doesn't. They
+> belong to the same "reach React-console parity" effort as SH19.
+
+### V.4 Webhooks console UI (SH48)
+
+SH12 shipped the full `ShSiteWebhook` CRUD API + delivery, but there is **no
+console page** to create/edit/delete per-site webhooks — they can only be managed
+by hitting the API directly. A standard admin CRUD page (the pattern already used
+for tokens/tenants) closes it.
+
+### V.5 Console dashboard / home (SH49)
+
+`home.page.tsx` is a placeholder ("Welcome to Viglet Shio CMS"). Meanwhile
+`system-info.service.ts` is built but **consumed by no page**. Turn the home route
+into a real dashboard (content counts, recent activity once SH51 lands, quick
+actions) using that service.
+
+### V.6 Complete console i18n coverage (SH50)
+
+The i18n framework (en/pt) exists, but several pages bypass it with hardcoded
+English — `site.list.page.tsx` ("Tasks", "New", "Find a site…", action labels),
+`object.children.page.tsx` ("New Folder", "Delete", "Filter items…"), and
+placeholders in `post-type.edit.page.tsx`. Move them to keys in both locales
+(per agents.md: always add `en` + `pt` together).
 
 ---
 

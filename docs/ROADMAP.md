@@ -60,6 +60,11 @@
 - ✅ **SH15** — shipped → [CHANGELOG.md](CHANGELOG.md) Block C. `publishScheduledDate`/`unpublishScheduledDate` on the post's `DRAFT` row + a `@Scheduled` sweep (`ShPostScheduler`, guarded by `shio.schedule.enabled`) that fires the due transition through the existing `publish`/`unpublish` path (each in its own tx) — so the SH12 webhook fires identically to a manual transition. `POST /api/v2/post-unified/{id}/schedule` sets/clears the timestamps; a **Schedule** console dialog drives it. Introduces `@EnableScheduling`. Spec: [specs/SH15-scheduled-publish.md](specs/SH15-scheduled-publish.md).
 - ✅ **SH16** — shipped → [CHANGELOG.md](CHANGELOG.md) Block C. `@viglet/shio` **CLI** (`init`/`types`/`pull`/`push`/`dev`/`deploy`) **+** a new lossless, console-authenticated post-type admin API (`GET/PUT/DELETE /api/v2/post-type`) so the content model round-trips as code (`pull` → edit JSON → `push --dry-run`/`--prune`). `init` reuses `create-shio-app`'s scaffolder; `types` wraps the SH11 codegen. Spec: [specs/SH16-shio-cli.md](specs/SH16-shio-cli.md).
 - ✅ **SH26** — shipped → [CHANGELOG.md](CHANGELOG.md) Block C. Cross-DB schema-drift guard: Testcontainers H2/MariaDB/PostgreSQL ITs boot the full context against the real changelog set; fixed the cross-DB drift they surfaced (inline `ENUM`→`VARCHAR`, `QUOTE_ALL_OBJECTS` identifier quoting) + the silent snake_case `ShTenantBackfillRunner.TENANT_TABLES` no-op. Spec: [specs/SH26-cross-db-schema-guard.md](specs/SH26-cross-db-schema-guard.md).
+- 💭 **SH51** (deps: —) **Audit / history API + viewer** — the `ShHistory` entity is persisted but **never read back** (SH14 only diffs DRAFT↔PUBLISHED); expose who/what/when via a read endpoint + a console activity view. → §III.6
+- 💭 **SH52** (deps: —) **Content full-text search** — a search service + full-text CDA endpoint consuming the existing `ShSite.searchablePostTypes`; wires up the Search/Semantic widgets that exist in the model. SH33 (MCP read tools) already assumes it. → §III.7
+- 💭 **SH53** (deps: —) **Content i18n / locales** — multi-language posts: put the unused `ShLocale` to work, add a locale axis to `ShPostUnified` + a `locale` param on CDA reads. → §III.8
+- 💭 **SH54** (deps: —) **Content-level ACL / permissions** — folder/post access control tying the existing `ShUser`/`ShGroup`/`ShRole` to content; enforced at the `ShCdaService`/console boundary (today any authenticated user reaches all content). → §III.9
+- 💭 **SH55** (deps: —) **Trash / soft-delete + restore** — a recycle bin instead of hard delete on posts/folders. → §III.10
 
 ## Block D — Optional server-side JS rendering (GraalJS)
 
@@ -78,6 +83,9 @@
 - ⏳ **SH19** (deps: —) **Finish AngularJS → React console migration** — continue moving console pages to `shio-react` (see [project memory]); the migration is the precondition for deleting `resources/ui/`. → §V.1
 - 💭 **SH20** (deps: SH19, SH8) **Deprecate Thymeleaf site rendering** — once Block B is the documented delivery path (or SH18 ships), mark server-side Thymeleaf site templates `@Deprecated`, then delete. → §V.2
 - 💭 **SH21** (deps: SH19) **Delete `resources/ui/` (AngularJS)** — terminal step after SH19; reclaim the legacy frontend tree. → §V.3
+- 💭 **SH48** (deps: SH12, SH19) **Webhooks console UI** — admin page for the shipped `ShSiteWebhook` CRUD API (SH12). The backend exists; there is **no console page** to manage per-site webhooks. → §V.4
+- 💭 **SH49** (deps: SH19) **Console dashboard / home** — replace the placeholder `home.page.tsx` ("Welcome…") with content stats + quick actions, consuming the already-built-but-unused `system-info.service.ts`. → §V.5
+- 💭 **SH50** (deps: SH19) **Complete console i18n coverage** — replace hardcoded English (`site.list`, `object.children`, `post-type.edit`: "New", "Delete", "Find a site…", "Tasks"…) with i18n keys in both `en` + `pt`. → §V.6
 
 ## Block F — Market positioning / bold bets
 
