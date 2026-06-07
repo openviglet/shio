@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.FileSystemUtils;
 
 import com.viglet.shio.api.post.type.ShPostTypeAdminMapper;
+import com.viglet.shio.api.post.type.ShPostTypeAdminService;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 import com.viglet.shio.exchange.ShExchangeException;
 import com.viglet.shio.exchange.ShExchangePackageCodec;
@@ -76,6 +77,7 @@ public class ShSiteExportService {
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShPostTypeAdminMapper postTypeMapper;
+    private final ShPostTypeAdminService shPostTypeAdminService;
     private final ShExchangePackageCodec codec;
     private final ObjectMapper objectMapper;
 
@@ -83,12 +85,14 @@ public class ShSiteExportService {
                                ShFolderRepository shFolderRepository,
                                ShPostUnifiedRepository shPostUnifiedRepository,
                                ShPostTypeAdminMapper postTypeMapper,
+                               ShPostTypeAdminService shPostTypeAdminService,
                                ShExchangePackageCodec codec,
                                ObjectMapper objectMapper) {
         this.shSiteRepository = shSiteRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.postTypeMapper = postTypeMapper;
+        this.shPostTypeAdminService = shPostTypeAdminService;
         this.codec = codec;
         this.objectMapper = objectMapper;
     }
@@ -129,16 +133,50 @@ public class ShSiteExportService {
             }
         }
 
-        List<String> rootFolderIds = roots.stream().map(ShFolder::getId).toList();
-        ShExchangeSite exSite = new ShExchangeSite(site.getId(), site.getName(),
-                site.getDescription(), site.getUrl(), site.getFurl(), site.getPostTypeLayout(),
-                site.getSearchablePostTypes(), site.getFormSuccess(), site.getOwner(), rootFolderIds);
-
         List<ShExchangeFolder> exFolders = folders.stream().map(this::toExchangeFolder).toList();
 
         return new ShExchangePackage(ShExchangePackage.CURRENT_VERSION, Instant.now().toString(),
-                "shio-export", List.of(exSite), List.copyOf(postTypes.values()),
+                "shio-export", List.of(toExchangeSite(site, roots)), List.copyOf(postTypes.values()),
                 exFolders, posts, List.of());
+    }
+
+    /**
+     * Build a package for the <strong>entire current tenant</strong> — every site
+     * (with its full folder/post tree) plus <strong>all</strong> post-types (not
+     * just the referenced subset, so orphan types are carried too). This is the
+     * source side of SH72 tenant provisioning: the default tenant is exported here
+     * and {@link ShSiteImportService#provisionInto} clones it into a new tenant.
+     */
+    @Transactional(readOnly = true)
+    public ShExchangePackage buildTenantPackage() {
+        List<ShExchangeSite> exSites = new ArrayList<>();
+        List<ShExchangeFolder> exFolders = new ArrayList<>();
+        List<ShExchangePost> exPosts = new ArrayList<>();
+
+        for (ShSite site : shSiteRepository.findAll()) {
+            Set<ShFolder> roots = shFolderRepository.findByShSiteAndRootFolder(site, (byte) 1);
+            List<ShFolder> folders = new ArrayList<>();
+            roots.forEach(root -> collectFolders(root, folders));
+
+            exSites.add(toExchangeSite(site, roots));
+            folders.forEach(folder -> exFolders.add(toExchangeFolder(folder)));
+            for (ShFolder folder : folders) {
+                for (ShPostUnified row : shPostUnifiedRepository.findByShFolderAndStateIn(folder, ALL_STATES)) {
+                    exPosts.add(toExchangePost(row));
+                }
+            }
+        }
+
+        return new ShExchangePackage(ShExchangePackage.CURRENT_VERSION, Instant.now().toString(),
+                "shio-tenant-export", exSites, shPostTypeAdminService.list(),
+                exFolders, exPosts, List.of());
+    }
+
+    private ShExchangeSite toExchangeSite(ShSite site, Set<ShFolder> roots) {
+        List<String> rootFolderIds = roots.stream().map(ShFolder::getId).toList();
+        return new ShExchangeSite(site.getId(), site.getName(), site.getDescription(),
+                site.getUrl(), site.getFurl(), site.getPostTypeLayout(),
+                site.getSearchablePostTypes(), site.getFormSuccess(), site.getOwner(), rootFolderIds);
     }
 
     private void collectFolders(ShFolder folder, List<ShFolder> acc) {

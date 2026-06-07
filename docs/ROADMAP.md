@@ -150,7 +150,7 @@
 - ✅ **SH69** — shipped → [CHANGELOG.md](CHANGELOG.md) Block G. Site export → zip (`ShSiteExportService`, `GET /api/v2/site/{id}/export` — the console Download action; static files deferred to SH38).
 - ✅ **SH70** — shipped → [CHANGELOG.md](CHANGELOG.md) Block G. Site import / clone (`ShSiteImportService` + `POST /api/v2/import` + React `site.import.page.tsx`; fresh-UUID clone with `data` reference remap).
 - ✅ **SH71** — shipped → [CHANGELOG.md](CHANGELOG.md) Block G. Default bootstrap-site template on site creation (`ShBootstrapSiteProvider` + `classpath:/import/bootstrap-site/export.json`; `ShSiteWriteService.create()` clones it with the user's metadata, plain-root-folder fallback) — **closes the original regression** (new sites were blank).
-- 💭 **SH72** (deps: SH70, SH22) **Unify tenant provisioning onto the exchange engine** — `ShTenantProvisioningService` hand-copies the default model today; rebase it onto the SH70 clone path so "new site" and "new tenant" share one provisioning engine. → §VII.5
+- ✅ **SH72** — shipped → [CHANGELOG.md](CHANGELOG.md) Block G. Tenant provisioning rebased onto the exchange engine — `ShTenantProvisioningService` now exports the default tenant (`buildTenantPackage`) and clones it into the new tenant via `ShSiteImportService.provisionInto` (full content: sites + folders + posts + post-types), idempotent (content only into an empty tenant; tenant-suffixed site names dodge the global unique-name index).
 
 ---
 

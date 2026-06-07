@@ -604,13 +604,19 @@ SH68 artifact (not the legacy `openviglet/bootstrap-site` GitHub-zip download), 
 the clone reuses the SH70 import path via a no-unzip `importPackage(pkg, owner)`
 overload. Static assets in the starter await SH38, like the rest of the exchange.
 
-### VII.5 Unify tenant provisioning onto the exchange engine (SH72)
+### VII.5 Unify tenant provisioning onto the exchange engine (SH72) — ✅ shipped
 
-SH22 shipped `ShTenantProvisioningService`, which copies the default model into a
-new tenant by hand (read-under-`shio`, write-under-new-tenant in separate txns).
-That is the same operation as SH70's clone. Rebase provisioning onto the SH70 path
-so there is **one** provisioning engine for "new site" (SH71) and "new tenant"
-(SH72), instead of two code paths that can drift.
+Shipped → [CHANGELOG.md](CHANGELOG.md) Block G. `ShTenantProvisioningService` now
+exports the default tenant (`buildTenantPackage`) and clones it into the new tenant
+via `ShSiteImportService.provisionInto` — one engine shared with site export/import
+(SH69/SH70) and bootstrap (SH71). A new tenant gets the default tenant's **full
+content** (sites + folders + posts + post-types), not just the model. Design notes:
+(1) idempotent — content clones only into an empty tenant, so a re-provision just
+tops up post-types and never duplicates sites; (2) `ShSite.name` is **globally**
+unique and `tenant_id` sits on the JOINED `ShObject` root (not on `ShSite`), so a
+tenant-scoped composite unique isn't possible without denormalising — provisioned
+site names are tenant-suffixed (`"Blog (acme)"`) to clear the index. A truly
+tenant-scoped site name (denormalise `tenant_id` onto `ShSite`) is a follow-up.
 
 > **Non-goal (do not re-add):** the legacy `ShSitesNodeJS` "export site as a
 > runnable Node app" is **superseded by `create-shio-app` (SH8)** — the headless

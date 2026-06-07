@@ -8,6 +8,7 @@ package com.viglet.shio.tenant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
@@ -20,12 +21,20 @@ import org.springframework.test.context.DynamicPropertySource;
 
 import com.viglet.shio.api.post.type.ShPostTypeAdminService;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
+import com.viglet.shio.api.site.ShSiteWriteService;
+import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 
 /**
- * SH22 Part C — per-tenant post-type provisioning. A post-type defined in the
- * default {@code shio} tenant is copied into a freshly-provisioned tenant
- * ({@code acme}) and is invisible to an unrelated tenant ({@code beta}); a second
- * provision is a no-op (idempotent). No Docker (H2, {@code multi-tenant=true}).
+ * SH22 Part C / SH72 — per-tenant provisioning via the exchange engine. A post-type
+ * defined in the default {@code shio} tenant is copied into a freshly-provisioned
+ * tenant ({@code acme}) and is invisible to an unrelated tenant ({@code beta}); a
+ * second provision is a no-op (idempotent). SH72 also clones the default tenant's
+ * <strong>sites + content</strong> into a new tenant ({@code gamma}), once.
+ * No Docker (H2, {@code multi-tenant=true}).
  *
  * @author Alexandre Oliveira
  */
@@ -50,6 +59,12 @@ class ShTenantProvisioningIT {
     private ShPostTypeAdminService adminService;
     @Autowired
     private ShTenantProvisioningService provisioningService;
+    @Autowired
+    private ShSiteWriteService shSiteWriteService;
+    @Autowired
+    private ShSiteRepository shSiteRepository;
+    @Autowired
+    private ShPostUnifiedRepository shPostUnifiedRepository;
 
     @Test
     void provisionsDefaultModelIntoNewTenantAndIsolatesIt() {
@@ -72,6 +87,38 @@ class ShTenantProvisioningIT {
 
         // Idempotent: re-provisioning creates nothing new.
         assertThat(provisioningService.provision("acme")).isZero();
+    }
+
+    @Test
+    void clonesDefaultTenantSitesAndContentIntoNewTenant() {
+        // Create a site in the default tenant — SH71 bootstraps a starter (Page
+        // post-type + Home/Pages folders + Welcome/About sample pages).
+        String siteName = "Flagship-" + UUID.randomUUID();
+        ShSite payload = new ShSite();
+        payload.setName(siteName);
+        payload.setUrl("http://example.test");
+        asTenant("shio", () -> shSiteWriteService.create(payload, "admin"));
+
+        provisioningService.provision("gamma");
+
+        // gamma gets a CLONE of the default tenant's site (fresh id, tenant-suffixed
+        // name — ShSite.name is globally unique, so the clone can't reuse it verbatim).
+        ShSite gammaSite = asTenant("gamma", () -> shSiteRepository.findAll().stream()
+                .filter(s -> s.getName() != null && s.getName().startsWith(siteName)).findFirst().orElse(null));
+        assertThat(gammaSite).as("gamma must receive a clone of shio's site").isNotNull();
+
+        // ...and the cloned pages came along.
+        List<String> titles = asTenant("gamma", () -> shPostUnifiedRepository
+                .findByShSite_IdAndStateIn(gammaSite.getId(),
+                        List.of(ShPostState.DRAFT, ShPostState.PUBLISHED))
+                .stream().map(ShPostUnified::getTitle).toList());
+        assertThat(titles).contains("Welcome", "About");
+
+        // Idempotent: re-provisioning an already-seeded tenant doesn't duplicate sites.
+        long before = asTenant("gamma", () -> shSiteRepository.count());
+        provisioningService.provision("gamma");
+        long after = asTenant("gamma", () -> shSiteRepository.count());
+        assertThat(after).as("re-provision must not duplicate cloned sites").isEqualTo(before);
     }
 
     private <T> T asTenant(String tenant, Supplier<T> work) {

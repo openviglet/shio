@@ -16,6 +16,7 @@ import java.text.Normalizer;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -109,7 +110,11 @@ public class ShSiteImportService {
         try {
             dest = Files.createTempDirectory("shio-import-");
             Path root = codec.unzip(zipStream, dest);
-            return cloneInto(codec.readPackage(root), owner);
+            ShExchangePackage pkg = codec.readPackage(root);
+            if (pkg.sites().isEmpty()) {
+                throw new ShExchangeException("Package contains no site to import");
+            }
+            return cloneInto(pkg, owner).site();
         } catch (IOException e) {
             throw new ShExchangeException("Failed to read import package", e);
         } finally {
@@ -125,16 +130,56 @@ public class ShSiteImportService {
      */
     @Transactional
     public ShSite importPackage(ShExchangePackage pkg, String owner) {
-        return cloneInto(pkg, owner);
+        return cloneInto(pkg, owner).site();
     }
 
-    private ShSite cloneInto(ShExchangePackage pkg, String owner) {
-        if (pkg.sites().isEmpty()) {
-            throw new ShExchangeException("Package contains no site to import");
+    /**
+     * Provision the <em>current</em> tenant from a package (SH72) — the SH70 clone
+     * path reused as the single provisioning engine. Always tops up the post-type
+     * model (idempotent); clones the package's sites/content <strong>only into an
+     * empty tenant</strong> (a tenant that already has at least one site is treated
+     * as already-seeded, so a re-provision never duplicates its content). Returns
+     * the number of post-types created.
+     */
+    @Transactional
+    public int provisionInto(ShExchangePackage pkg, String tenantId) {
+        // Already seeded → only top up the post-type model (no duplicate content).
+        if (shSiteRepository.count() > 0) {
+            return cloneInto(withoutContent(pkg), tenantId).postTypesCreated();
         }
+        // Empty tenant → clone everything, but make site names globally unique:
+        // ShSite.name carries a GLOBAL unique index (tenant_id lives on the JOINED
+        // ShObject root, not on ShSite, so a tenant-scoped composite isn't possible
+        // without denormalising). A tenant suffix sidesteps the collision with the
+        // source tenant's identically-named site.
+        return cloneInto(tenantScopedSiteNames(pkg, tenantId), tenantId).postTypesCreated();
+    }
 
+    /** Strip sites/folders/posts, keeping only the post-type model. */
+    private static ShExchangePackage withoutContent(ShExchangePackage pkg) {
+        return new ShExchangePackage(pkg.version(), pkg.exportedAt(), pkg.generator(),
+                List.of(), pkg.postTypes(), List.of(), List.of(), pkg.files());
+    }
+
+    /** Append the tenant to each site name so the clone clears the global unique-name index. */
+    private static ShExchangePackage tenantScopedSiteNames(ShExchangePackage pkg, String tenantId) {
+        List<ShExchangeSite> sites = pkg.sites().stream()
+                .map(s -> new ShExchangeSite(s.id(), s.name() + " (" + tenantId + ")",
+                        s.description(), s.url(), s.furl(), s.postTypeLayout(),
+                        s.searchablePostTypes(), s.formSuccess(), s.owner(), s.rootFolderIds()))
+                .toList();
+        return new ShExchangePackage(pkg.version(), pkg.exportedAt(), pkg.generator(),
+                sites, pkg.postTypes(), pkg.folders(), pkg.posts(), pkg.files());
+    }
+
+    private CloneResult cloneInto(ShExchangePackage pkg, String owner) {
         // 1. Ensure the content model exists (idempotent — reuses live post-types).
-        pkg.postTypes().forEach(shPostTypeAdminService::provisionFromDef);
+        int postTypesCreated = 0;
+        for (var def : pkg.postTypes()) {
+            if (shPostTypeAdminService.provisionFromDef(def)) {
+                postTypesCreated++;
+            }
+        }
 
         // 2. Fresh id for every structural object (DRAFT+PUBLISHED rows share one).
         Map<String, String> idRemap = new HashMap<>();
@@ -201,7 +246,11 @@ public class ShSiteImportService {
             shPostUnifiedRepository.save(row);
         }
 
-        return firstSite;
+        return new CloneResult(firstSite, postTypesCreated);
+    }
+
+    /** Outcome of a clone: the first created site (or {@code null} for a model-only package) and the number of post-types created. */
+    private record CloneResult(ShSite site, int postTypesCreated) {
     }
 
     private ShFolder saveFolder(String oldId, Map<String, ShExchangeFolder> exFolders,
