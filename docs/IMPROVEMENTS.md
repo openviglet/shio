@@ -325,9 +325,19 @@ Terminal step after SH19 — reclaim the AngularJS frontend tree.
 
 ### VI.1 Multi-tenancy / SaaS (SH22)
 
-One shared JVM, many isolated tenants. `ShTenantAPI` is a seed; the design can
-mirror Turing's multi-tenancy block (shared `@TenantId`, tenant-scoped cache/
-storage/keys, isolation IT suite). Unlocks a hosted Shio Cloud.
+One shared JVM, many isolated tenants. **Core DB isolation shipped** (see
+[CHANGELOG.md](CHANGELOG.md) Block F): Hibernate `@TenantId` extended across the
+active content tree — the JOINED `ShObject` root (covering `ShSite`/`ShFolder`/
+`ShPostType`), `ShPostUnified`, and `ShReference` — with the `sh_post_unified`
+`TENANT_ID` migration + backfill, and `ShTenantIsolationIT` proving tenant A's
+rows are invisible to tenant B. The identity model is the existing
+`workspace_id`-claim/username resolution (`ShTenantFilter`).
+
+**Remaining to unlock a hosted Shio Cloud** (deferred follow-ups): a tenant
+**catalog** (`ShTenant` entity + CRUD/provisioning — `ShTenantAPI` is still only a
+read-only `/current` seed), per-tenant cache/storage/keys (tenant-scoped
+`file_source` + CDA HTTP cache), per-tenant post-type seeding, and a console
+tenant-management UI.
 
 ### VI.2 Starter marketplace (SH23)
 

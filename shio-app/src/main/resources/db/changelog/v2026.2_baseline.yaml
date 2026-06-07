@@ -115,6 +115,11 @@ databaseChangeLog:
 - changeSet:
     id: 1780773187985-6
     author: alexa (generated)
+    # SH22: TENANT_ID -> tenant_id so PostgreSQL matches Hibernate's UNQUOTED @TenantId
+    # filter predicate (it folds the unquoted ref to lower-case; an exact-case TENANT_ID
+    # column is never found). validCheckSum: ANY accepts the edited checksum on databases
+    # that already ran the original baseline.
+    validCheckSum: ANY
     changes:
     - createTable:
         columns:
@@ -143,12 +148,14 @@ databaseChangeLog:
         - column:
             constraints:
               nullable: false
-            name: TENANT_ID
+            name: tenant_id
             type: VARCHAR(255)
         tableName: ShHistory
 - changeSet:
     id: 1780773187985-7
     author: alexa (generated)
+    # SH22: TENANT_ID -> tenant_id (PostgreSQL @TenantId predicate fix, see changeset -6).
+    validCheckSum: ANY
     changes:
     - createTable:
         columns:
@@ -209,7 +216,7 @@ databaseChangeLog:
         - column:
             constraints:
               nullable: false
-            name: TENANT_ID
+            name: tenant_id
             type: VARCHAR(255)
         tableName: ShObject
 - changeSet:
@@ -589,6 +596,8 @@ databaseChangeLog:
 - changeSet:
     id: 1780773187985-22
     author: alexa (generated)
+    # SH22: TENANT_ID -> tenant_id (PostgreSQL @TenantId predicate fix, see changeset -6).
+    validCheckSum: ANY
     changes:
     - createTable:
         columns:
@@ -631,7 +640,7 @@ databaseChangeLog:
         - column:
             constraints:
               nullable: false
-            name: TENANT_ID
+            name: tenant_id
             type: VARCHAR(255)
         - column:
             name: widget_settings
@@ -713,6 +722,8 @@ databaseChangeLog:
 - changeSet:
     id: 1780773187985-25
     author: alexa (generated)
+    # SH22: TENANT_ID -> tenant_id (PostgreSQL @TenantId predicate fix, see changeset -6).
+    validCheckSum: ANY
     changes:
     - createTable:
         columns:
@@ -726,7 +737,7 @@ databaseChangeLog:
         - column:
             constraints:
               nullable: false
-            name: TENANT_ID
+            name: tenant_id
             type: VARCHAR(255)
         - column:
             constraints:
@@ -771,6 +782,8 @@ databaseChangeLog:
 - changeSet:
     id: 1780773187985-27
     author: alexa (generated)
+    # SH22: TENANT_ID -> tenant_id (PostgreSQL @TenantId predicate fix, see changeset -6).
+    validCheckSum: ANY
     changes:
     - createTable:
         columns:
@@ -792,7 +805,7 @@ databaseChangeLog:
         - column:
             constraints:
               nullable: false
-            name: TENANT_ID
+            name: tenant_id
             type: VARCHAR(255)
         - column:
             name: title
@@ -971,6 +984,8 @@ databaseChangeLog:
 - changeSet:
     id: 1780773187985-33
     author: alexa (generated)
+    # SH22: TENANT_ID -> tenant_id (PostgreSQL @TenantId predicate fix, see changeset -6).
+    validCheckSum: ANY
     changes:
     - createTable:
         columns:
@@ -993,7 +1008,7 @@ databaseChangeLog:
         - column:
             constraints:
               nullable: false
-            name: TENANT_ID
+            name: tenant_id
             type: VARCHAR(255)
         - column:
             name: title
@@ -1005,6 +1020,8 @@ databaseChangeLog:
 - changeSet:
     id: 1780773187985-34
     author: alexa (generated)
+    # SH22: TENANT_ID -> tenant_id (PostgreSQL @TenantId predicate fix, see changeset -6).
+    validCheckSum: ANY
     changes:
     - createTable:
         columns:
@@ -1030,7 +1047,7 @@ databaseChangeLog:
         - column:
             constraints:
               nullable: false
-            name: TENANT_ID
+            name: tenant_id
             type: VARCHAR(255)
         - column:
             constraints:

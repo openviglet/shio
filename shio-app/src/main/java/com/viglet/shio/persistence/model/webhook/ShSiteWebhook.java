@@ -44,7 +44,7 @@ public class ShSiteWebhook implements Serializable {
     private String id;
 
     @TenantId
-    @Column(name = "TENANT_ID", updatable = false)
+    @Column(name = "tenant_id", updatable = false)
     private String tenantId;
 
     /**

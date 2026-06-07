@@ -1,6 +1,5 @@
 package com.viglet.shio.tenant;
 
-import com.viglet.shio.property.ShAppProperties;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.boot.hibernate.autoconfigure.HibernatePropertiesCustomizer;
 import org.springframework.stereotype.Component;
@@ -11,19 +10,17 @@ import java.util.Map;
 public class ShTenantResolver
         implements CurrentTenantIdentifierResolver<String>, HibernatePropertiesCustomizer {
 
-    private final ShAppProperties shAppProperties;
-
-    public ShTenantResolver(ShAppProperties shAppProperties) {
-        this.shAppProperties = shAppProperties;
-    }
-
     @Override
     public String resolveCurrentTenantIdentifier() {
+        // The multi-tenant gating lives entirely in ShTenantFilter, which only
+        // populates the context when shio.multi-tenant=true. Here the contract is
+        // simply: current tenant if set, otherwise the default ('shio') — so
+        // single-tenant installs bind every row to 'shio' with no behavior change.
         String tenant = ShTenantContext.getTenantId();
         if (tenant != null && !tenant.isBlank()) {
             return tenant;
         }
-        return shAppProperties.isMultiTenant() ? ShTenantContext.DEFAULT_TENANT : ShTenantContext.DEFAULT_TENANT;
+        return ShTenantContext.DEFAULT_TENANT;
     }
 
     @Override

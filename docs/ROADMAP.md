@@ -83,7 +83,7 @@
 
 > Differentiators once the headless foundation is solid. → §VI
 
-- 💭 **SH22** (deps: SH2) **Multi-tenancy / SaaS** — one shared JVM, many isolated tenants (mirror Turing's Block J approach: `ShTenant` exists as a seed — `api/tenant/ShTenantAPI.java`). → §VI.1
+- ⏳ **SH22** (deps: SH2) **Multi-tenancy / SaaS** — one shared JVM, many isolated tenants. **Core DB isolation shipped** → [CHANGELOG.md](CHANGELOG.md) Block F (`@TenantId` extended across the active content tree incl. `sh_post_unified`, proven by `ShTenantIsolationIT`). **Remaining follow-ups:** tenant catalog (`ShTenant` entity + CRUD/provisioning), per-tenant `file_source` storage, tenant-keyed CDA HTTP cache, per-tenant post-type seeding, console tenant-management UI. → §VI.1
 - 💭 **SH23** (deps: SH8) **Starter marketplace** — curated `create-shio-app` templates (blog, docs, e-commerce front) the community can publish. → §VI.2
 - 💭 **SH24** (deps: SH4) **AI authoring via Turing/MCP** — expose Shio content + authoring as MCP tools so Claude/agents (and Turing) can draft, restructure, and translate content. Reuses the ecosystem's Java/Spring sinergy. → §VI.3
 - 💭 **SH25** (deps: SH6) **Image/asset transformation API** — on-the-fly resize/format/crop on the file-source delivery path (Tika + imageio already present), so the JS front requests `?w=800&format=webp`. → §VI.4

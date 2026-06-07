@@ -1,0 +1,35 @@
+databaseChangeLog:
+  # SH22 — Core DB multi-tenant isolation.
+  # Tenant discriminator (@TenantId) on the active unified content store.
+  #
+  # Column is named LOWERCASE `tenant_id` on purpose. Hibernate emits the
+  # @TenantId *filter predicate* (`where x.tenant_id = ?`) UNQUOTED even with
+  # globally_quoted_identifiers=true, so on PostgreSQL it folds to lower-case;
+  # an exact-case `TENANT_ID` column (what QUOTE_ALL_OBJECTS would create) is
+  # then never matched (`column does not exist`). A lower-case name matches the
+  # folded predicate, the quoted projection (`"tenant_id"`) AND the lower-case
+  # native backfill — see v2026.2.5 which renames the pre-existing columns.
+  #
+  # VARCHAR to stay DB-agnostic per ShLiquibaseChangelogAgnosticTest. Left
+  # NULLABLE: sh_post_unified is already populated in existing installs and
+  # ShTenantBackfillRunner sets 'shio' at startup (after Liquibase, before the
+  # first request) — adding it NOT NULL would fail the ALTER.
+  # SH26: preserve identifier case on PostgreSQL (does not propagate from the
+  # baseline through `include`, so repeated per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh22-post-unified-tenant-id
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_post_unified
+                columnName: tenant_id
+      changes:
+        - addColumn:
+            tableName: sh_post_unified
+            columns:
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)

@@ -8,6 +8,10 @@ databaseChangeLog:
   - changeSet:
       id: sh12-create-site-webhook
       author: alexandre
+      # SH22: TENANT_ID -> tenant_id (PostgreSQL @TenantId predicate fix, see
+      # v2026.2_baseline.yaml changeset -6). validCheckSum: ANY accepts the edited
+      # checksum on databases that already ran the original changeset.
+      validCheckSum: ANY
       preConditions:
         - onFail: MARK_RAN
         - not:
@@ -25,7 +29,7 @@ databaseChangeLog:
                     primaryKey: true
                     primaryKeyName: PK_site_webhook
               - column:
-                  name: TENANT_ID
+                  name: tenant_id
                   type: VARCHAR(255)
                   constraints:
                     nullable: false

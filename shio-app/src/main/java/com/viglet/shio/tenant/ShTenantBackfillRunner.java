@@ -30,8 +30,10 @@ public class ShTenantBackfillRunner {
      * snake_case. An earlier snake_case list (e.g. {@code sh_post_type_attr})
      * matched nothing, so the pre-multi-tenant backfill silently no-op'd; the
      * SH26 cross-DB ITs assert each of these resolves against the applied
-     * changelog. Two entities pin an explicit {@code @Table}: {@code api_token}
-     * (ShApiToken) and {@code site_webhook} (ShSiteWebhook).
+     * changelog. Three names pin an explicit {@code @Table}: {@code api_token}
+     * (ShApiToken), {@code site_webhook} (ShSiteWebhook) and
+     * {@code sh_post_unified} (ShPostUnified, the active content store — its
+     * {@code TENANT_ID} column lands via SH22's {@code v2026.2.4.yaml}).
      */
     static final List<String> TENANT_TABLES = List.of(
             "ShHistory",
@@ -45,6 +47,7 @@ public class ShTenantBackfillRunner {
             "ShRelatorItem",
             "ShRelatorItemDraft",
             "ShWorkflowTask",
+            "sh_post_unified",
             "api_token",
             "site_webhook"
     );

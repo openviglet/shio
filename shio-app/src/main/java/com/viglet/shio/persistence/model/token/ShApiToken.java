@@ -38,7 +38,7 @@ public class ShApiToken implements Serializable {
     private String id;
 
     @TenantId
-    @Column(name = "TENANT_ID", updatable = false)
+    @Column(name = "tenant_id", updatable = false)
     private String tenantId;
 
     @Column(name = "title", length = 100, nullable = false)

@@ -32,6 +32,7 @@ import jakarta.persistence.InheritanceType;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.TenantId;
 import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -55,6 +56,10 @@ public class ShObject implements Serializable {
 	@ShAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
+
+	@TenantId
+	@Column(name = "tenant_id", updatable = false)
+	private String tenantId;
 
 	private Instant date;
 
@@ -97,6 +102,9 @@ public class ShObject implements Serializable {
 
 	public String getId() { return id; }
 	public void setId(String id) { this.id = id; }
+
+	public String getTenantId() { return tenantId; }
+	public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
 	public String getOwner() { return owner; }
 	public void setOwner(String owner) { this.owner = owner; }

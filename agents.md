@@ -465,6 +465,38 @@ maps onto it (the `ShOnStartup` seed inserts run real DML), and
 Note: most tables are **PascalCase** entity names (no `@Table`, e.g. `ShPostTypeAttr`)
 — the backfill list must use those, not snake_case, or it silently no-ops.
 
+### Multi-tenancy (SH22 — core DB isolation)
+Tenant isolation uses Hibernate's native `@TenantId` (DISCRIMINATOR), gated by
+`shio.multi-tenant` (default `false`). `ShTenantFilter` resolves the tenant from the
+OIDC `workspace_id` claim → username and sets `ShTenantContext` (ThreadLocal, default
+`"shio"`); `ShTenantResolver` (a `CurrentTenantIdentifierResolver`) hands it to Hibernate.
+`@TenantId` covers the active content tree: **`ShObject`** (the JOINED root — one `@TenantId`
+there filters polymorphic *and* `ShSite`/`ShFolder`/`ShPostType` subclass queries; subclasses
+need **no** column of their own), **`ShPostUnified`** (`tenantId` is **not** part of its
+composite `@IdClass` — Hibernate adds `tenant_id=?` next to the `(id,state)` PK), and
+`ShReference`, plus the 6 pre-existing ones (ShApiToken/ShSiteWebhook/ShPostTypeAttr/
+ShRelatorItem/ShWorkflowTask/ShHistory). **Gotchas:**
+1. **The discriminator column MUST be lowercase `tenant_id`.** Hibernate emits the
+   `@TenantId` *filter predicate* UNQUOTED (`where x.tenant_id = ?`) even with
+   `globally_quoted_identifiers=true` (only the SELECT projection is quoted). PostgreSQL
+   folds the unquoted ref to lower-case, so an exact-case `TENANT_ID` column (what
+   `QUOTE_ALL_OBJECTS` creates) is never matched (`column does not exist`). A default H2
+   folds it UP instead, so a quoted lower-case `"tenant_id"` column would be missed there.
+   Lower-case `tenant_id` + the load-bearing `DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true`
+   H2 params (which both the dev DB **and the unit-test datasource** must carry) make all
+   three engines agree. Backtick-quoting the column does NOT help — it quotes the projection,
+   not the predicate. The baseline + `v2026.2.1` columns were renamed `TENANT_ID`→`tenant_id`
+   with `validCheckSum: ANY`; unmapped legacy/draft tables keep `TENANT_ID` (never queried).
+2. A populated table's new `tenant_id` must be added **nullable** and listed in
+   `ShTenantBackfillRunner.TENANT_TABLES` so the startup backfill sets `'shio'` (a `NOT NULL`
+   ALTER fails; a NULL `tenant_id` under live `@TenantId` is invisible).
+3. The resolver resolves the tenant **once per session-open**
+   (`validateExistingCurrentSessions()=false`), so tests that switch tenants must use a **new
+   transaction per tenant** — see `ShTenantIsolationIT` (the proof that A can't see B; no Docker).
+
+Out of scope for this slice (follow-ups): tenant catalog/CRUD, per-tenant storage/cache,
+per-tenant post-type seeding, console UI.
+
 ### Tests
 Tests skip Liquibase (`spring.liquibase.enabled=false`) and build the schema from
 entity metadata via `ddl-auto=create-drop` on a fresh in-memory H2 per run.

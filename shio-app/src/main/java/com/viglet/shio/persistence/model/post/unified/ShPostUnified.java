@@ -32,6 +32,8 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import org.hibernate.annotations.TenantId;
+
 /**
  * Unified post row — single table backing both DRAFT and PUBLISHED states.
  *
@@ -73,6 +75,16 @@ public class ShPostUnified implements Serializable {
     @Enumerated(EnumType.STRING)
     @Column(name = "state", length = 16, nullable = false)
     private ShPostState state;
+
+    /**
+     * SH22 — tenant discriminator. NOT part of the composite {@code @IdClass}
+     * ({@link ShPostUnifiedId}); Hibernate adds {@code tenant_id = ?} as an extra
+     * predicate alongside the {@code (id, state)} key. Column lands via
+     * {@code v2026.2.4.yaml}; legacy rows are backfilled to 'shio' at startup.
+     */
+    @TenantId
+    @Column(name = "tenant_id", updatable = false)
+    private String tenantId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_type_id")
@@ -141,6 +153,14 @@ public class ShPostUnified implements Serializable {
 
     public void setState(ShPostState state) {
         this.state = state;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public ShPostType getShPostType() {
