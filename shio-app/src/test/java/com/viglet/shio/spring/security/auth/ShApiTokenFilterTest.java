@@ -103,7 +103,7 @@ class ShApiTokenFilterTest {
 
     @Test
     void readTokenOnCdaGetAuthenticatesWithContext() throws Exception {
-        when(shApiTokenRepository.findByToken("the-key"))
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
                 .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of("siteA"))));
         MockHttpServletRequest req = request("GET", "/api/v2/cda/site");
 
@@ -122,7 +122,7 @@ class ShApiTokenFilterTest {
 
     @Test
     void readTokenOnCdaNonGetIsForbidden() throws Exception {
-        when(shApiTokenRepository.findByToken("the-key"))
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
                 .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of())));
         MockHttpServletRequest req = request("POST", "/api/v2/cda/site");
         MockHttpServletResponse res = new MockHttpServletResponse();
@@ -135,7 +135,7 @@ class ShApiTokenFilterTest {
 
     @Test
     void writeTokenIsNotMethodGated() throws Exception {
-        when(shApiTokenRepository.findByToken("the-key"))
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
                 .thenReturn(Optional.of(token(ShApiTokenScope.WRITE, Set.of())));
         MockHttpServletRequest req = request("POST", "/api/v2/cda/post/abc");
         MockHttpServletResponse res = new MockHttpServletResponse();
@@ -151,7 +151,7 @@ class ShApiTokenFilterTest {
     @Test
     void readTokenOnCdaPatchIsForbidden() throws Exception {
         // SH10 write surface uses PATCH; a READ token must still be GET-gated.
-        when(shApiTokenRepository.findByToken("the-key"))
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
                 .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of())));
         MockHttpServletResponse res = new MockHttpServletResponse();
 
@@ -164,7 +164,7 @@ class ShApiTokenFilterTest {
     @Test
     void writeTokenOnCdaPatchAuthenticatesWithWriteAuthority() throws Exception {
         // SH10: a WRITE token may PATCH the CDA write surface and carries ROLE_CDA_WRITE.
-        when(shApiTokenRepository.findByToken("the-key"))
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
                 .thenReturn(Optional.of(token(ShApiTokenScope.WRITE, Set.of())));
         MockHttpServletResponse res = new MockHttpServletResponse();
 
@@ -178,7 +178,7 @@ class ShApiTokenFilterTest {
 
     @Test
     void previewTokenCarriesPreviewAuthority() throws Exception {
-        when(shApiTokenRepository.findByToken("the-key"))
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
                 .thenReturn(Optional.of(token(ShApiTokenScope.PREVIEW, Set.of())));
         MockHttpServletRequest req = request("GET", "/api/v2/cda/site");
 
@@ -193,7 +193,7 @@ class ShApiTokenFilterTest {
     void previewEnvTokenCarriesPreviewAuthorityAndContext() throws Exception {
         // SH5: a READ-scope token whose environment is PREVIEW is preview-capable —
         // it carries ROLE_CDA_PREVIEW and a context whose preview() drives drafts.
-        when(shApiTokenRepository.findByToken("the-key"))
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
                 .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of(), ShApiTokenEnv.PREVIEW)));
         MockHttpServletRequest req = request("GET", "/api/v2/cda/site");
 
@@ -209,7 +209,7 @@ class ShApiTokenFilterTest {
 
     @Test
     void prodEnvTokenIsNotPreview() throws Exception {
-        when(shApiTokenRepository.findByToken("the-key"))
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
                 .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of(), ShApiTokenEnv.PROD)));
 
         filter().doFilter(request("GET", "/api/v2/cda/site"), new MockHttpServletResponse(), new MockFilterChain());
@@ -221,7 +221,7 @@ class ShApiTokenFilterTest {
 
     @Test
     void nullScopeDefaultsToReadGetOnly() throws Exception {
-        when(shApiTokenRepository.findByToken("the-key"))
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
                 .thenReturn(Optional.of(token(null, Set.of())));
         MockHttpServletResponse res = new MockHttpServletResponse();
 
@@ -233,7 +233,7 @@ class ShApiTokenFilterTest {
     @Test
     void readTokenOnGraphQlPostAuthenticates() throws Exception {
         // GraphQL (SH4) reads via POST; the SH2 GET-only gate must not fire for it.
-        when(shApiTokenRepository.findByToken("the-key"))
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
                 .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of("siteA"))));
         MockHttpServletResponse res = new MockHttpServletResponse();
 
@@ -252,7 +252,7 @@ class ShApiTokenFilterTest {
         // SH13: a short-lived preview token past its expiry stops authenticating.
         ShApiToken expired = token(ShApiTokenScope.PREVIEW, Set.of(), ShApiTokenEnv.PREVIEW);
         expired.setExpiresAt(Instant.now().minusSeconds(60));
-        when(shApiTokenRepository.findByToken("the-key")).thenReturn(Optional.of(expired));
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key")).thenReturn(Optional.of(expired));
         MockFilterChain chain = new MockFilterChain();
 
         filter().doFilter(request("GET", "/api/v2/cda/site"), new MockHttpServletResponse(), chain);
@@ -267,7 +267,7 @@ class ShApiTokenFilterTest {
         ShApiToken fresh = token(ShApiTokenScope.PREVIEW, Set.of("siteA"), ShApiTokenEnv.PREVIEW);
         fresh.setEphemeral(true);
         fresh.setExpiresAt(Instant.now().plusSeconds(900));
-        when(shApiTokenRepository.findByToken("the-key")).thenReturn(Optional.of(fresh));
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key")).thenReturn(Optional.of(fresh));
 
         filter().doFilter(request("GET", "/api/v2/cda/site"), new MockHttpServletResponse(), new MockFilterChain());
 
@@ -279,7 +279,7 @@ class ShApiTokenFilterTest {
 
     @Test
     void exceedingRateLimitReturns429() throws Exception {
-        when(shApiTokenRepository.findByToken("the-key"))
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
                 .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of())));
         ShApiTokenFilter filter = filter(limiterWithCapacity(1));
 

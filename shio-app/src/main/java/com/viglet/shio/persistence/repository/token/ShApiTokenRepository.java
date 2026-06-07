@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,18 @@ import com.viglet.shio.persistence.model.token.ShApiToken;
 public interface ShApiTokenRepository extends JpaRepository<ShApiToken, String> {
 
     Optional<ShApiToken> findByToken(String token);
+
+    /**
+     * Tenant-agnostic token lookup (SH22 Part D). {@code findByToken} carries the
+     * Hibernate {@code @TenantId} discriminator, so during authentication — before
+     * the tenant context is known — it would only find tokens of the default
+     * tenant. A native query bypasses the discriminator filter, returning the row
+     * regardless of tenant; the caller then resolves the request tenant from the
+     * token's {@code tenant_id}. (In single-tenant mode every row is {@code shio},
+     * so behaviour is identical.)
+     */
+    @Query(value = "SELECT * FROM api_token WHERE token = :token", nativeQuery = true)
+    Optional<ShApiToken> findByTokenAcrossTenants(@Param("token") String token);
 
     List<ShApiToken> findAllByOrderByTitleAsc();
 

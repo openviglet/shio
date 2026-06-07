@@ -23,6 +23,7 @@ import com.viglet.shio.persistence.model.token.ShApiToken;
 import com.viglet.shio.persistence.model.token.ShApiTokenEnv;
 import com.viglet.shio.persistence.model.token.ShApiTokenScope;
 import com.viglet.shio.persistence.repository.token.ShApiTokenRepository;
+import com.viglet.shio.tenant.ShTenantFilter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -95,8 +96,10 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Look up the token
-        ShApiToken apiToken = shApiTokenRepository.findByToken(tokenValue).orElse(null);
+        // Look up the token tenant-agnostically (SH22 Part D): this runs before the
+        // request tenant is known, so a normal (tenant-filtered) lookup would miss
+        // tokens of other tenants. The token's own tenant is then propagated below.
+        ShApiToken apiToken = shApiTokenRepository.findByTokenAcrossTenants(tokenValue).orElse(null);
         if (apiToken == null || !apiToken.isEnabled()) {
             filterChain.doFilter(request, response);
             return;
@@ -153,6 +156,13 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
                 apiToken.getId(), scope, apiToken.getSiteIds(), env));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        // Propagate the token's tenant so the downstream ShTenantFilter scopes the
+        // request to the content owner's tenant (SH22 Part D), not the token owner's
+        // username. No-op in single-tenant mode (ShTenantFilter ignores it).
+        if (apiToken.getTenantId() != null) {
+            request.setAttribute(ShTenantFilter.TENANT_REQUEST_ATTR, apiToken.getTenantId());
+        }
 
         log.debug("CDA token auth: '{}' ({}/{}) by {}", apiToken.getTitle(), scope, env, apiToken.getOwner());
 

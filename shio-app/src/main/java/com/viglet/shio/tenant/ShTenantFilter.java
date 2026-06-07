@@ -19,6 +19,14 @@ public class ShTenantFilter extends OncePerRequestFilter {
 
     private static final String WORKSPACE_ID_CLAIM = "workspace_id";
 
+    /**
+     * Request attribute carrying the tenant of an authenticated CDA token (SH22
+     * Part D). {@code ShApiTokenFilter} runs earlier in the chain and sets it; this
+     * filter prefers it over the principal-derived tenant, so token delivery is
+     * scoped to the content owner's tenant rather than the token owner's username.
+     */
+    public static final String TENANT_REQUEST_ATTR = "sh.tenantId";
+
     private final ShAppProperties shAppProperties;
 
     public ShTenantFilter(ShAppProperties shAppProperties) {
@@ -30,16 +38,21 @@ public class ShTenantFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         try {
-            ShTenantContext.setTenantId(resolveTenant());
+            ShTenantContext.setTenantId(resolveTenant(request));
             filterChain.doFilter(request, response);
         } finally {
             ShTenantContext.clear();
         }
     }
 
-    private String resolveTenant() {
+    private String resolveTenant(HttpServletRequest request) {
         if (!shAppProperties.isMultiTenant()) {
             return ShTenantContext.DEFAULT_TENANT;
+        }
+        // A CDA token resolved its own tenant in ShApiTokenFilter (SH22 Part D).
+        Object tokenTenant = request.getAttribute(TENANT_REQUEST_ATTR);
+        if (tokenTenant instanceof String tenant && !tenant.isBlank()) {
+            return tenant;
         }
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
