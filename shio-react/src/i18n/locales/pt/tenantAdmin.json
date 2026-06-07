@@ -1,0 +1,21 @@
+{
+  "tenantAdmin.title": "Tenants",
+  "tenantAdmin.description": "Workspaces isolados dentro desta instância. Cada tenant tem seu próprio conteúdo; o tenant reservado \"shio\" é o padrão de tenant único.",
+  "tenantAdmin.newInstance": "Novo Tenant",
+  "tenantAdmin.blankTitle": "Nenhum tenant ainda",
+  "tenantAdmin.blankDescription": "Crie um tenant para hospedar um workspace isolado. Novos tenants recebem uma cópia do modelo de conteúdo padrão.",
+  "tenantAdmin.general": "Geral",
+  "tenantAdmin.generalDesc": "O identificador do tenant e seus detalhes.",
+  "tenantAdmin.name": "Nome",
+  "tenantAdmin.namePlaceholder": "acme",
+  "tenantAdmin.nameHint": "O identificador do tenant carregado em seu conteúdo. Minúsculas, sem espaços. Imutável após a criação.",
+  "tenantAdmin.nameImmutable": "O nome do tenant não pode ser alterado após a criação.",
+  "tenantAdmin.defaultBadge": "Padrão",
+  "tenantAdmin.defaultHint": "O tenant padrão reservado não pode ser renomeado, desativado ou excluído.",
+  "tenantAdmin.provision": "Provisionar tipos de post",
+  "tenantAdmin.provisionHint": "Copia o modelo de tipos de post do tenant padrão para este tenant. Idempotente.",
+  "tenantAdmin.provisioned": "{{count}} tipo(s) de post provisionado(s)",
+  "tenantAdmin.nameRequired": "O nome do tenant é obrigatório",
+  "tenantAdmin.created": "Tenant criado",
+  "tenantAdmin.updated": "Tenant atualizado"
+}

@@ -60,6 +60,14 @@ class ShCdaCacheControlFilterTest {
     }
 
     @Test
+    void cdaGetVariesByToken() throws Exception {
+        // SH22 Part F: shared caches must key by the Key token (→ tenant/site/env).
+        mockMvc.perform(get("/api/v2/cda/site"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Vary", containsString("Key")));
+    }
+
+    @Test
     void ifNoneMatchYields304() throws Exception {
         MvcResult first = mockMvc.perform(get("/api/v2/cda/site"))
                 .andExpect(status().isOk())

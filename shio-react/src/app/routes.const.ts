@@ -44,6 +44,7 @@ export const ROUTES = {
   GRAPHQL_ROOT: scoped(`${consolePath}/graphql`),
   SETUP: "/setup",
   ADMIN_TOKENS: scoped(`${consolePath}/admin/tokens`),
+  ADMIN_TENANTS: scoped(`${consolePath}/admin/tenants`),
   UNIVERSAL_EDITOR: scoped(`${consolePath}/universal-editor`),
 };
 

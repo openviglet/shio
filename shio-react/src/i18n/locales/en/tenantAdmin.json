@@ -1,0 +1,21 @@
+{
+  "tenantAdmin.title": "Tenants",
+  "tenantAdmin.description": "Workspaces isolated within this instance. Each tenant has its own content; the reserved \"shio\" tenant is the single-tenant default.",
+  "tenantAdmin.newInstance": "New Tenant",
+  "tenantAdmin.blankTitle": "No tenants yet",
+  "tenantAdmin.blankDescription": "Create a tenant to host an isolated workspace. New tenants are seeded with a copy of the default content model.",
+  "tenantAdmin.general": "General",
+  "tenantAdmin.generalDesc": "The tenant identifier and its details.",
+  "tenantAdmin.name": "Name",
+  "tenantAdmin.namePlaceholder": "acme",
+  "tenantAdmin.nameHint": "The tenant identifier carried on its content. Lowercase, no spaces. Immutable once created.",
+  "tenantAdmin.nameImmutable": "The tenant name cannot be changed after creation.",
+  "tenantAdmin.defaultBadge": "Default",
+  "tenantAdmin.defaultHint": "The reserved default tenant cannot be renamed, disabled or deleted.",
+  "tenantAdmin.provision": "Provision post-types",
+  "tenantAdmin.provisionHint": "Copy the default tenant's post-type model into this tenant. Idempotent.",
+  "tenantAdmin.provisioned": "Provisioned {{count}} post-type(s)",
+  "tenantAdmin.nameRequired": "A tenant name is required",
+  "tenantAdmin.created": "Tenant created",
+  "tenantAdmin.updated": "Tenant updated"
+}

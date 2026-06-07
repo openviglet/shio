@@ -1,0 +1,174 @@
+import { PageHeader } from "@/components/page-header"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Textarea } from "@/components/ui/textarea"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { ROUTES } from "@/app/routes.const"
+import { useBreadcrumb } from "@/contexts/breadcrumb.context"
+import { Building2, Save, ArrowLeft, Trash2, Info, Sparkles } from "lucide-react"
+import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
+import { useNavigate, useParams } from "react-router-dom"
+import { toast } from "@viglet/viglet-design-system"
+import { ShTenantService } from "@/services/tenant/tenant.service"
+import type { ShTenant } from "@/models/tenant/tenant.model"
+
+const service = new ShTenantService()
+
+export default function TenantPage() {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { tenantId } = useParams() as { tenantId: string }
+  const { resetBreadcrumb } = useBreadcrumb()
+  const isNew = tenantId === "new"
+
+  const [item, setItem] = useState<ShTenant>({
+    id: "", name: "", description: "", enabled: true, owner: "", createdDate: "",
+  })
+  const [saving, setSaving] = useState(false)
+  const isDefault = item.name === "shio"
+
+  useEffect(() => {
+    resetBreadcrumb([
+      { label: t("admin.title"), href: ROUTES.ADMIN_ROOT },
+      { label: t("tenantAdmin.title"), href: ROUTES.ADMIN_TENANTS },
+      { label: isNew ? t("common.create") : item.name || tenantId },
+    ])
+    if (!isNew) {
+      service.get(tenantId).then(setItem).catch(() => toast.error(t("common.error")))
+    }
+  }, [resetBreadcrumb, t, tenantId, isNew, item.name])
+
+  const handleSave = async () => {
+    if (!item.name.trim()) {
+      toast.error(t("tenantAdmin.nameRequired"))
+      return
+    }
+    setSaving(true)
+    try {
+      if (isNew) {
+        const created = await service.create(item)
+        toast.success(t("tenantAdmin.created"))
+        navigate(`${ROUTES.ADMIN_TENANTS}/${created.id}`, { replace: true })
+      } else {
+        await service.update(item)
+        toast.success(t("tenantAdmin.updated"))
+      }
+    } catch {
+      toast.error(t("common.error"))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (isDefault) return
+    if (confirm(t("dialog.deleteMessage"))) {
+      await service.delete(item.id)
+      navigate(ROUTES.ADMIN_TENANTS)
+    }
+  }
+
+  const handleProvision = async () => {
+    try {
+      const result = await service.provision(item.id)
+      toast.success(t("tenantAdmin.provisioned", { count: result.postTypesCreated }))
+    } catch {
+      toast.error(t("common.error"))
+    }
+  }
+
+  return (
+    <>
+      <PageHeader title={t("tenantAdmin.title")} turIcon={Building2} urlBase={ROUTES.ADMIN_ROOT} />
+      <div className="p-6 max-w-2xl">
+        {/* Sticky save bar */}
+        <div className="sticky top-0 z-10 flex items-center justify-between bg-orange-50 dark:bg-orange-950/30 rounded-lg px-4 py-3 mb-6 border">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.ADMIN_TENANTS)}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <span className="font-semibold">{isNew ? t("tenantAdmin.newInstance") : item.name}</span>
+            {isDefault && (
+              <Badge variant="secondary" className="text-xs">{t("tenantAdmin.defaultBadge")}</Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {!isNew && !isDefault && (
+              <Button variant="ghost" size="sm" className="text-destructive" onClick={handleDelete}>
+                <Trash2 className="h-4 w-4 mr-1" />
+                {t("common.delete")}
+              </Button>
+            )}
+            <Button size="sm" onClick={handleSave} disabled={saving}>
+              <Save className="h-4 w-4 mr-1" />
+              {saving ? t("common.loading") : t("common.save")}
+            </Button>
+          </div>
+        </div>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">{t("tenantAdmin.general")}</CardTitle>
+            <CardDescription>{t("tenantAdmin.generalDesc")}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="name">{t("tenantAdmin.name")}</Label>
+                <Tooltip>
+                  <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
+                  <TooltipContent>{isDefault ? t("tenantAdmin.nameImmutable") : t("tenantAdmin.nameHint")}</TooltipContent>
+                </Tooltip>
+              </div>
+              <Input id="name" value={item.name} className="font-mono"
+                disabled={!isNew}
+                onChange={(e) => setItem({ ...item, name: e.target.value })}
+                placeholder={t("tenantAdmin.namePlaceholder")} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">{t("common.description")}</Label>
+              <Textarea id="description" value={item.description || ""}
+                onChange={(e) => setItem({ ...item, description: e.target.value })} rows={3} />
+            </div>
+            {!isNew && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="enabled">{t("common.enabled")}</Label>
+                  {isDefault && (
+                    <Tooltip>
+                      <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent>{t("tenantAdmin.defaultHint")}</TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+                <Switch id="enabled" checked={item.enabled} disabled={isDefault}
+                  onCheckedChange={(checked) => setItem({ ...item, enabled: checked })} />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Provisioning (SH22 Part C) — copy the default content model into this tenant */}
+        {!isNew && !isDefault && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">{t("tenantAdmin.provision")}</CardTitle>
+              <CardDescription>{t("tenantAdmin.provisionHint")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" size="sm" onClick={handleProvision}>
+                <Sparkles className="h-4 w-4 mr-1" />
+                {t("tenantAdmin.provision")}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </>
+  )
+}
