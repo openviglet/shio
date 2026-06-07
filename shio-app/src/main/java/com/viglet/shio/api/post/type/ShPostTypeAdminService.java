@@ -102,6 +102,34 @@ public class ShPostTypeAdminService {
         return mapper.toDef(shPostTypeRepository.save(postType));
     }
 
+    /**
+     * Create a post-type from {@code def} in the <em>current</em> tenant, preserving
+     * its {@code system} flag (SH22 Part C — per-tenant provisioning). Unlike
+     * {@link #upsert} this is allowed to create system post-types — the point is to
+     * seed a freshly-provisioned tenant with a copy of the default tenant's model —
+     * but it never overwrites: idempotent, a no-op if a post-type of that name
+     * already exists in the current tenant (returns {@code false}). A brand-new
+     * {@link ShPostType} is built (fresh id assigned by {@code @ShAssignableUuidGenerator}),
+     * so the row lands under {@code ShTenantContext}'s tenant via Hibernate's
+     * {@code @TenantId}; the attribute graph is rebuilt with {@link #buildAttrs}
+     * (resolving the shared, non-tenant-scoped widget catalog).
+     */
+    @Transactional
+    public boolean provisionFromDef(ShPostTypeDef def) {
+        if (def == null || def.name() == null || shPostTypeRepository.findByName(def.name()) != null) {
+            return false;
+        }
+        ShPostType postType = newPostType(def.name());
+        postType.setSystem((byte) (def.system() ? 1 : 0));
+        postType.setTitle(def.title());
+        postType.setNamePlural(def.namePlural());
+        postType.setDescription(def.description());
+        postType.setWorkflowPublishEntity(def.workflowPublishEntity());
+        postType.setShPostTypeAttrs(buildAttrs(def.fields(), postType, null));
+        shPostTypeRepository.save(postType);
+        return true;
+    }
+
     /** Delete a non-system post-type. Returns {@code false} if it does not exist. */
     @Transactional
     public boolean delete(String name) {

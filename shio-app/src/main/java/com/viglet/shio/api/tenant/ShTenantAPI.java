@@ -21,6 +21,7 @@ import com.viglet.shio.persistence.model.tenant.ShTenant;
 import com.viglet.shio.persistence.repository.tenant.ShTenantRepository;
 import com.viglet.shio.property.ShAppProperties;
 import com.viglet.shio.tenant.ShTenantContext;
+import com.viglet.shio.tenant.ShTenantProvisioningService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -48,10 +49,13 @@ public class ShTenantAPI {
 
     private final ShAppProperties shAppProperties;
     private final ShTenantRepository shTenantRepository;
+    private final ShTenantProvisioningService shTenantProvisioningService;
 
-    public ShTenantAPI(ShAppProperties shAppProperties, ShTenantRepository shTenantRepository) {
+    public ShTenantAPI(ShAppProperties shAppProperties, ShTenantRepository shTenantRepository,
+                       ShTenantProvisioningService shTenantProvisioningService) {
         this.shAppProperties = shAppProperties;
         this.shTenantRepository = shTenantRepository;
+        this.shTenantProvisioningService = shTenantProvisioningService;
     }
 
     @GetMapping("/current")
@@ -101,7 +105,33 @@ public class ShTenantAPI {
         tenant.setCreatedDate(Instant.now());
         shTenantRepository.saveAndFlush(tenant);
         log.info("Created tenant '{}' by {}", tenant.getName(), tenant.getOwner());
+        // Seed the new tenant with a copy of the default tenant's content model (SH22
+        // Part C). Best-effort: a provisioning failure must not undo the catalog row
+        // (the explicit /provision endpoint can retry). Only meaningful multi-tenant.
+        if (shAppProperties.isMultiTenant()) {
+            try {
+                shTenantProvisioningService.provision(tenant.getName());
+            } catch (RuntimeException e) {
+                log.warn("Tenant '{}' created but provisioning failed: {}", tenant.getName(), e.getMessage());
+            }
+        }
         return ResponseEntity.ok(tenant);
+    }
+
+    /**
+     * Re-run post-type provisioning for an existing tenant (SH22 Part C) — idempotent,
+     * admin-only. Useful when the default model changed, or when auto-provisioning on
+     * create failed.
+     */
+    @PostMapping("/{id}/provision")
+    public ResponseEntity<Map<String, Object>> provision(@PathVariable String id) {
+        return shTenantRepository.findById(id)
+                .map(tenant -> {
+                    int created = shTenantProvisioningService.provision(tenant.getName());
+                    return ResponseEntity.ok(Map.<String, Object>of(
+                            "tenant", tenant.getName(), "postTypesCreated", created));
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{id}")

@@ -142,6 +142,7 @@ public class ShSecurityConfig {
                 // Tenant catalog writes (SH22) are admin-only; GET /current + listing stay authenticated.
                 authorizeRequests.requestMatchers(
                         mvc.matcher(HttpMethod.POST, TENANT_PATH),
+                        mvc.matcher(HttpMethod.POST, TENANT_SUBPATH),
                         mvc.matcher(HttpMethod.PUT, TENANT_SUBPATH),
                         mvc.matcher(HttpMethod.DELETE, TENANT_SUBPATH))
                         .hasRole("ADMIN");
@@ -204,6 +205,7 @@ public class ShSecurityConfig {
                         // Tenant catalog writes (SH22) are admin-only; GET /current + listing stay authenticated.
                         authorizeRequests.requestMatchers(
                                 mvc.matcher(HttpMethod.POST, TENANT_PATH),
+                                mvc.matcher(HttpMethod.POST, TENANT_SUBPATH),
                                 mvc.matcher(HttpMethod.PUT, TENANT_SUBPATH),
                                 mvc.matcher(HttpMethod.DELETE, TENANT_SUBPATH))
                                 .hasRole("ADMIN");

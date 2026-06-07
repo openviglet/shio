@@ -1,0 +1,63 @@
+databaseChangeLog:
+  # SH22 Part D — close api_token Liquibase drift. SH2 (token `scope` + the
+  # per-site `api_token_site` allow-list) and SH5 (`environment`) added these to
+  # ShApiToken via ddl-auto=update with "no migration", so a clean Liquibase-built
+  # database (ddl-auto=none — production, or a freshly-provisioned tenant) was
+  # missing them and could not authenticate a CDA token at all (the entity maps
+  # columns the schema lacked). The SH26 cross-DB ITs boot the context but never
+  # insert/select a token, so they didn't catch it; ShTenantCdaDeliveryIT does.
+  # Types kept DB-agnostic per ShLiquibaseChangelogAgnosticTest. SH26: preserve
+  # identifier case on PostgreSQL (does not propagate through `include`).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh22-api-token-scope
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: api_token
+                columnName: scope
+      changes:
+        - addColumn:
+            tableName: api_token
+            columns:
+              - column:
+                  name: scope
+                  type: VARCHAR(16)
+  - changeSet:
+      id: sh22-api-token-environment
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: api_token
+                columnName: environment
+      changes:
+        - addColumn:
+            tableName: api_token
+            columns:
+              - column:
+                  name: environment
+                  type: VARCHAR(16)
+  - changeSet:
+      id: sh22-create-api-token-site
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: api_token_site
+      changes:
+        - createTable:
+            tableName: api_token_site
+            columns:
+              - column:
+                  name: api_token_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: site_id
+                  type: VARCHAR(255)
