@@ -25,6 +25,19 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes("node_modules")) {
+            // GraphiQL + Monaco + graphql are only reached via the lazily-loaded
+            // GraphQL Explorer page. Keep them in their own chunk so the generic
+            // vendor-lib rule below doesn't pull this multi-MB editor into the
+            // eager bundle (it would, since it matches every node_modules id).
+            if (
+              id.includes("graphiql") ||
+              id.includes("@graphiql") ||
+              id.includes("monaco") ||
+              id.includes("node_modules/graphql/") ||
+              id.includes("codemirror")
+            ) {
+              return "vendor-graphiql";
+            }
             if (id.includes("@radix-ui")) return "vendor-ui";
             return "vendor-lib";
           }

@@ -88,7 +88,7 @@
 
 - ⏳ **SH19** (deps: —) **Finish AngularJS → React console migration** — continue moving console pages to `shio-react` (see [project memory]); the migration is the precondition for deleting `resources/ui/`. The remaining legacy-only surface (the `config/` section + static files + legacy commerce widgets) is decomposed into SH56–SH61 below so each ships independently. → §V.1
   - ✅ **SH56** (deps: SH19) **Auth Providers console page** — list + edit for `/api/v2/provider/auth` (vendor select, enabled toggle, dynamic config-properties editor), wired into the Administration sidebar. The v2 API already existed; this migrates the legacy `config/provider/auth` AngularJS screens. Shipped → [CHANGELOG.md](CHANGELOG.md) Block E. → §V.1
-  - 💭 **SH57** (deps: SH19) **Exchange Providers — v2 API + console page** — the legacy `config/provider/exchange` screens have **no v2 backend** (only `/api/v2/provider/auth` exists); add `ShExchangeProviderAPI` mirroring the auth provider, then a console page reusing the SH56 pattern. → §V.1
+  - 💭 **SH57** (deps: SH19) **Exchange Providers — v2 API + console page** — the legacy `config/provider/exchange` screens have **no v2 backend** (only `/api/v2/provider/auth` exists); add `ShExchangeProviderAPI` mirroring the auth provider, then a console page reusing the SH56 pattern. (Gains real utility once the SH67 exchange engine lands — providers are remote sources to import/export against.) → §V.1
   - 💭 **SH58** (deps: SH19) **Email/SMTP config — v2 API + console page** — migrate legacy `config/email`; needs a v2 settings endpoint over `ShConfigVar` then a console form. → §V.1
   - 💭 **SH59** (deps: SH19, SH52) **Search config console page** — migrate legacy `config/search`; depends on the content full-text search backend (SH52) since there is no v2 search-config endpoint today. → §V.1
   - 💭 **SH60** (deps: SH19) **Legacy commerce/recaptcha widgets — port or deprecate** — the AngularJS `payment` (payment-slip/rede-card/shopline) and `recaptcha` widgets have no React equivalent; decide whether they belong in the headless-first product before porting, else mark for removal with SH21. → §V.1
@@ -131,6 +131,26 @@
 - 💭 **SH41** (deps: SH40) **Format conversion** — webp/avif/jpeg output. → §VI.4
 - 💭 **SH42** (deps: SH40, SH22) **Result cache** — disk/memory keyed by source+params + ETag, tenant-aware. → §VI.4
 - 💭 **SH43** (deps: SH40) **Limits & security** — max dimensions, allowed formats, signed URLs. → §VI.4
+
+## Block G — Content portability (exchange: export / import / clone / templates)
+
+> The nuclear refactor (commit `2d3eb353`) deleted the entire
+> `com.viglet.shio.exchange` subsystem (`ShCloneExchange`, `ShSiteImport`,
+> `ShFolderImport`, `ShPostExchange`, `ShSiteExport`…) along with the legacy split
+> model it serialized. **Visible regression:** creating a site used to clone a
+> `bootstrap-site` template (post-types + folders + sample pages + static files);
+> the rebuilt `ShSiteWriteService.create()` now only persists the `ShSite` + an
+> empty root folder. The console **Download** / **Import** actions in
+> `site.list.page.tsx` still render but their endpoints (`GET /api/v2/site/{id}/export`,
+> site import) 404. This block rebuilds the exchange — now on the **unified post
+> model** (`ShPostUnified.data`, not the deleted `ShPost`/`ShPostDraft`). → §VII
+
+**SH67 — Content exchange / portability** (epic; rebuild the deleted exchange subsystem on the unified model so sites export/import/clone as portable packages and new sites provision the full basic structure again) → §VII:
+- 🛠 **SH68** (deps: —) **Exchange package format (unified model)** — DTOs + serializer/deserializer for the exchange package (`export.json` + files dir) modeling site → folders → `ShPostUnified.data` posts → referenced post-types, replacing the deleted split-model `ShExchange`/`ShFolderExchange`/`ShPostExchange`. The foundation the rest hangs off. **Code complete** (`com.viglet.shio.exchange` — `ShExchangePackage`/`ShExchangeSite`/`ShExchangeFolder`/`ShExchangePost`/`ShExchangeFile` + `ShExchangePackageCodec`, post-types reuse SH16 `ShPostTypeDef`, post `data` carried verbatim as `JsonNode`; round-trip + zip-slip + wrapped-zip tests green); pending commit. → §VII.1
+- 💭 **SH69** (deps: SH68) **Site export → zip** — rebuild `ShSiteExport`; wire `GET /api/v2/site/{id}/export` so the console **Download** action (already in `site.list.page.tsx`, currently 404) streams a portable package (site + folders + unified posts + post-types + static files). → §VII.2
+- 💭 **SH70** (deps: SH68, SH16) **Site import / clone** — rebuild `ShCloneExchange`/`ShSiteImport`: read a package, remap object ids, persist folders + unified posts + post-types under a new or target site (reusing SH16 `ShPostTypeAdminService.provisionFromDef` for the types); wire the content-nav **Import/Upload** action + a site-import endpoint. Clone = import into the same install (duplicate a site). → §VII.3
+- 💭 **SH71** (deps: SH70) **Default template on site creation (bootstrap-site)** — regenerate a unified-model `bootstrap-site` package shipped at `classpath:/import/` and have `ShSiteWriteService.create()` clone it (closing the regression: today it only creates the site + an empty root folder), keeping the plain-root-folder fallback when the template is absent. → §VII.4
+- 💭 **SH72** (deps: SH70, SH22) **Unify tenant provisioning onto the exchange engine** — `ShTenantProvisioningService` hand-copies the default model today; rebase it onto the SH70 clone path so "new site" and "new tenant" share one provisioning engine. → §VII.5
 
 ---
 

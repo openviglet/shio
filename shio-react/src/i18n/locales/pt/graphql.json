@@ -1,3 +1,12 @@
 {
-  "graphql.title": "Explorador GraphQL"
+  "graphql.title": "Explorador GraphQL",
+  "graphql.token": "Token CDA",
+  "graphql.tokenPlaceholder": "Selecione um token CDA",
+  "graphql.tokenHelp": "A entrega GraphQL é exclusiva por token. Escolha um token CDA para autorizar as queries — ele é enviado no header 'Key'.",
+  "graphql.noToken": "Nenhuma query será executada até você selecionar um token CDA.",
+  "graphql.noTokensTitle": "Nenhum token CDA ainda",
+  "graphql.noTokensDescription": "A entrega GraphQL requer um token de API CDA. Crie um para começar a executar queries no explorador.",
+  "graphql.createToken": "Criar Token de API",
+  "graphql.disabledSuffix": "(desabilitado)",
+  "graphql.loading": "Carregando o Explorador GraphQL…"
 }

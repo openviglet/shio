@@ -28,6 +28,7 @@ verify against `git ls-files` before acting.
 - [IV. Optional server-side JS rendering (GraalJS)](#iv-optional-server-side-js-rendering-graaljs)
 - [V. Legacy retirement](#v-legacy-retirement)
 - [VI. Market positioning / bold bets](#vi-market-positioning--bold-bets)
+- [VII. Content portability — the exchange subsystem](#vii-content-portability--the-exchange-subsystem)
 
 ---
 
@@ -394,7 +395,9 @@ ships on its own:
   with a vendor select and a dynamic config-properties editor).
 - **SH57 — Exchange Providers (v2 API + page)**. The `config/provider/exchange`
   screens have no v2 backend — add `ShExchangeProviderAPI` mirroring the auth one,
-  then a console page on the SH56 pattern.
+  then a console page on the SH56 pattern. Providers are remote sources to
+  import/export against, so this gains real utility once the SH67 exchange engine
+  (§VII) lands.
 - **SH58 — Email/SMTP config (v2 API + page)**. Migrate `config/email`; needs a v2
   settings endpoint over `ShConfigVar`.
 - **SH59 — Search config page** (deps SH52). Migrate `config/search`; depends on the
@@ -532,3 +535,96 @@ results are cached. Removes the need for an external image CDN. Decomposed into:
   tenant-aware (SH22).
 - **SH43 — Limits & security**: max dimensions, allowed formats, signed URLs to
   prevent transform-bombing.
+
+---
+
+## VII. Content portability — the exchange subsystem
+
+> A capability Shio **had and lost**. Before the nuclear refactor (commit
+> `2d3eb353`), `com.viglet.shio.exchange` let a site export to a zip, import/clone
+> from one, and — the part users feel most — **bootstrap a new site with a full
+> starter structure**. The refactor deleted the subsystem wholesale because it was
+> welded to the split post model (`ShPost`/`ShPostDraft`). This section rebuilds it
+> on the **unified** model (`ShPostUnified.data`). It is not a bold bet; it is
+> restoring table-stakes content portability that the headless story (Block A/B),
+> SaaS provisioning (SH22), and the exchange-provider console (SH57) all lean on.
+
+### VII.0 What regressed, and why it matters
+
+The old `ShSiteAPI.shSiteAdd()` didn't just persist a row — it called
+`ShCloneExchange.getDefaultTemplateToSite()`, which loaded
+`classpath:/import/bootstrap-site.zip` (GitHub fallback) and cloned an entire
+starter: post-types, a root folder with sub-folders, sample pages, and static
+files. The rebuilt `ShSiteWriteService.create()` provisions only the `ShSite` + an
+empty root folder (the navigation anchor) — so a freshly created site is blank.
+The console **Download** and **Import/Upload** actions still render in
+`site.list.page.tsx` but their backends are gone (404).
+
+The exchange is **one engine reused three ways**: (1) the default-template clone on
+site creation, (2) explicit export/import for backup and content migration between
+installs, and (3) the copy-the-default-model step SaaS tenant provisioning already
+does by hand (`ShTenantProvisioningService`). Rebuilding it once pays all three.
+
+### VII.1 Exchange package format on the unified model (SH68) — 🛠 code complete
+
+**Status:** implemented in `com.viglet.shio.exchange` — the DTO records
+(`ShExchangePackage` root + `ShExchangeSite`/`ShExchangeFolder`/`ShExchangePost`/
+`ShExchangeFile`, post-types reusing the SH16 `ShPostTypeDef`) and the
+`ShExchangePackageCodec` (manifest JSON read/write, directory layout, zip/unzip
+with wrapped-single-dir unwrapping and zip-slip guard). Post `data` is carried
+**verbatim as a `JsonNode`** — no split-model flattening. Pure round-trip test
+green; pending commit, then it moves to CHANGELOG. The rationale below is the
+as-built design.
+
+The foundation: a DTO set + serializer/deserializer for the on-disk package
+(`export.json` + a sibling files directory), modeling site → folders →
+`ShPostUnified` posts (`data` JSON, **not** the deleted split attrs) → the
+post-types the content references. Replaces `ShExchange`/`ShSiteExchange`/
+`ShFolderExchange`/`ShPostExchange`. Decide up front: package version field (so
+future readers can migrate old zips), id strategy (export keeps source ids;
+import/clone remaps), and whether post-types embed in the package or reference the
+SH16 `ShPostTypeDef` JSON shape (prefer the latter so the two stay one format).
+
+### VII.2 Site export → zip (SH69)
+
+Rebuild `ShSiteExport` against SH68: walk a site's folder tree + unified posts +
+referenced post-types + static files, write the package, stream it as a zip. Wire
+`GET /api/v2/site/{id}/export` — the console **Download** action already calls it.
+This is the read-only half and the natural first deliverable (lower risk than
+import, and immediately useful for backup).
+
+### VII.3 Site import / clone (SH70)
+
+The write half: rebuild `ShCloneExchange`/`ShSiteImport` to read a package, remap
+object ids (so a clone doesn't collide with the source), and persist folders +
+unified posts + post-types under a **new or target** site — reusing SH16's
+`ShPostTypeAdminService.provisionFromDef` for the types instead of a parallel
+importer. Wire the content-nav **Import/Upload** action + a site-import endpoint.
+**Clone = import into the same install** (duplicate a site), which is also how a
+"copy site" console action would work. Watch the unified model's `(id, state)`
+composite PK + `@TenantId` on insert (CLAUDE.md): remapped rows must carry the
+active tenant.
+
+### VII.4 Default template on site creation — bootstrap-site (SH71)
+
+The fix for the reported regression. Regenerate a **unified-model** `bootstrap-site`
+package (a minimal but real starter — home/folders/sample content/static assets),
+ship it at `classpath:/import/`, and have `ShSiteWriteService.create()` clone it via
+the SH70 path when present, keeping the current plain-root-folder behaviour as the
+**fallback** (template missing, or clone fails — never block site creation on the
+template). This restores "new site → full basic structure" without reviving the
+legacy GitHub-zip download path (`openviglet/bootstrap-site`); the template is a
+versioned in-repo artifact.
+
+### VII.5 Unify tenant provisioning onto the exchange engine (SH72)
+
+SH22 shipped `ShTenantProvisioningService`, which copies the default model into a
+new tenant by hand (read-under-`shio`, write-under-new-tenant in separate txns).
+That is the same operation as SH70's clone. Rebase provisioning onto the SH70 path
+so there is **one** provisioning engine for "new site" (SH71) and "new tenant"
+(SH72), instead of two code paths that can drift.
+
+> **Non-goal (do not re-add):** the legacy `ShSitesNodeJS` "export site as a
+> runnable Node app" is **superseded by `create-shio-app` (SH8)** — the headless
+> starter is the JS-first delivery story (§0.5), so the exchange rebuild stops at
+> the portable content package and does not regenerate a Node project.

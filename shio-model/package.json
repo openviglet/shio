@@ -1,0 +1,44 @@
+{
+  "name": "@viglet/shio-model",
+  "version": "2026.2.1",
+  "description": "Typed TypeScript DSL for the Shio CMS content model. Author post-types as code — `postType()`, `text()`, `comboBox()`, `relator()`, … — and compile to the canonical Shio post-type JSON that the `shio` CLI pushes. The authoring inverse of @viglet/shio-client's type generation. Zero runtime dependencies. (SH62)",
+  "type": "module",
+  "main": "dist/shio-model.umd.cjs",
+  "module": "dist/shio-model.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/shio-model.js",
+      "require": "./dist/shio-model.umd.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build && tsc --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"test/*.test.mjs\"",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^6.3.1"
+  },
+  "keywords": [
+    "shio",
+    "cms",
+    "headless",
+    "post-types",
+    "content-as-code",
+    "dsl",
+    "typescript",
+    "gitops"
+  ],
+  "author": "Viglet Team",
+  "license": "GPL-3.0"
+}

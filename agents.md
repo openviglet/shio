@@ -413,6 +413,16 @@ Full page with grid of post types:
 }
 ```
 
+## Committing
+
+**When a task is done, commit by running `run-commit.cmd` from the repo root.**
+It lives at `d:\dev\bin\run-commit.cmd` and is on the system PATH, so just invoke
+`run-commit.cmd` (no path needed). It runs `git add *` then `ai_commit.py`, which
+generates a Conventional-Commits message from the staged diff via the OpenAI API
+(`OPENAI_API_KEY` must be set) and runs `git commit`. It does **not** push and
+does **not** create a branch — it commits on the current branch. Don't hand-author
+commits or run `git commit` manually for this repo; always use the script.
+
 ## Build & Deploy
 
 ### JavaScript workspace (pnpm)

@@ -1,5 +1,6 @@
 packages:
   - "shio-client"
+  - "shio-model"
   - "shio-react-sdk"
   - "create-shio-app"
   - "cli"
