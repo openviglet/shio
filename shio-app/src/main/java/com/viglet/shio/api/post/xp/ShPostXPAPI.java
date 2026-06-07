@@ -1,0 +1,68 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.api.post.xp;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+/**
+ * Post "XP" resolution endpoint ({@code /api/v2/post/xp/{id}}) — rebuilt on the
+ * unified model. The React content widgets (Content Select, File) call it to
+ * resolve a referenced post's title and containing folder for display.
+ *
+ * <p>Returns {@code { shPost, allowPublish }} for the editable (DRAFT-preferred,
+ * else PUBLISHED) snapshot, matching the shape the legacy endpoint exposed.</p>
+ *
+ * @author Alexandre Oliveira
+ */
+@RestController
+@RequestMapping("/api/v2/post/xp")
+@Tag(name = "Post XP", description = "Post resolution for content references")
+public class ShPostXPAPI {
+
+    private final ShPostUnifiedRepository shPostUnifiedRepository;
+
+    public ShPostXPAPI(ShPostUnifiedRepository shPostUnifiedRepository) {
+        this.shPostUnifiedRepository = shPostUnifiedRepository;
+    }
+
+    @GetMapping("/{id}")
+    @Transactional(readOnly = true)
+    public ResponseEntity<ShPostXP> get(@PathVariable String id) {
+        ShPostUnified post = shPostUnifiedRepository.findByIdAndState(id, ShPostState.DRAFT)
+                .or(() -> shPostUnifiedRepository.findByIdAndState(id, ShPostState.PUBLISHED))
+                .orElse(null);
+        if (post == null) {
+            return ResponseEntity.notFound().build();
+        }
+        // Initialize the (LAZY) folder + its site inside the tx so they serialize
+        // for the widget's display/path resolution (open-in-view is off).
+        if (post.getShFolder() != null) {
+            post.getShFolder().getName();
+            if (post.getShFolder().getShSite() != null) {
+                post.getShFolder().getShSite().getName();
+            }
+        }
+        return ResponseEntity.ok(new ShPostXP(post, post.getState() == ShPostState.DRAFT));
+    }
+
+    /** Editing envelope expected by the console: the post plus a publish-permission flag. */
+    public record ShPostXP(ShPostUnified shPost, boolean allowPublish) {
+    }
+}

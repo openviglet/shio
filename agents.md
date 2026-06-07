@@ -58,11 +58,16 @@ export class ShSiteService {
   - Returns `{ breadcrumb: [...folders], shSite: {...}, currentFolder: {...} }`
   - Each breadcrumb item has `rootFolder: 1` for the site's root folder
 
-### Posts
-- `GET /api/v2/post/xp/{id}` - Get post for editing (returns `{ shPost, allowPublish }`)
-- `PUT /api/v2/post/{id}` - Update post
-- `POST /api/v2/post` - Create post (needs `shFolder: { id }` in body)
-- `DELETE /api/v2/post/{id}` - Delete post
+### Posts (unified model only)
+Content posts live in `sh_post_unified` (NOT the legacy split `ShPost`/`ShPostDraft`,
+deleted in the nuclear refactor). All post CRUD is the unified API:
+- `GET /api/v2/post-unified/{id}?state=DRAFT|PUBLISHED`, `/folder/{folderId}`, `/{id}/versions`
+- `POST /api/v2/post-unified` (body `{ folderId, postTypeId, data, state }`)
+- `PUT /api/v2/post-unified/{id}`, `POST .../publish|unpublish|restore|schedule`
+- `DELETE /api/v2/post-unified/{id}`
+- `GET /api/v2/post/xp/{id}` - resolve a referenced post for display (returns
+  `{ shPost, allowPublish }`, DRAFT-preferred); used by Content Select / File widgets
+- There is **no** `/api/v2/post` controller — do not add one.
 
 ### Object Operations
 - `PUT /api/v2/object/copyto/{destFolderId}` - Copy objects (body: `[id1, id2]`)
@@ -76,7 +81,18 @@ export class ShSiteService {
 - `DELETE /api/v2/folder/{id}` - Delete folder
 
 ### There is NO generic `DELETE /api/v2/object/{id}` endpoint
-Delete must be done by type: `/v2/post/{id}` or `/v2/folder/{id}`
+Delete must be done by type: `/v2/post-unified/{id}` or `/v2/folder/{id}`.
+(Deleting a folder cascades: `ShFolderWriteService` first removes the unified posts
+in the folder + all descendant folders — the `sh_post_unified.folder_id → ShObject`
+FK is `onDelete NO ACTION`, so they must go before the folder rows.)
+
+**Backend ownership (rebuilt 2026.2 after the nuclear refactor wiped them):**
+- `ShFolderAPI` + `ShFolderWriteService` (`com.viglet.shio.api.folder`)
+- `ShObjectAPI` + `ShObjectNavigationService` + `ShObjectWriteService` (`...api.object`)
+  — list/path/copyto/moveto; `clear-cache` is a no-op (no page-cache subsystem yet).
+  Folders/sites are `ShObject` subclasses; **posts are not** (`ShPostUnified` is its
+  own table) — so copy/move resolves folder ids via `ShObjectRepository` and post ids
+  via `ShPostUnifiedRepository`. `/list` dedups posts by id, DRAFT-preferred.
 
 ### Post Types — lossless admin API (SH16, used by the `shio` CLI)
 - `GET /api/v2/post-type` - List all post-types as **lossless** `ShPostTypeDef`s (keeps `Tab`, verbatim `widgetSettings`, nested Relator fields — the authoring inverse of the lossy SH11 CDA schema)
@@ -84,6 +100,22 @@ Delete must be done by type: `/v2/post/{id}` or `/v2/folder/{id}`
 - `PUT /api/v2/post-type/{name}` - Upsert (idempotent by name); rejects system types (409), unknown widgets (400)
 - `DELETE /api/v2/post-type/{name}` - Delete a non-system type (204/404/409)
 - Console-authenticated (HTTP Basic) + **CSRF-exempt** (stateless CLI), like the CDA writes. **Cascade gotcha:** `ShPostTypeAttr` maps `shWidget`/`shPostType`/`shParentPostTypeAttr` as `@ManyToOne(cascade=ALL)`, so `ShPostTypeAdminService` detaches those before the orphan-removal replace — otherwise an update would cascade-delete the shared widget catalog.
+
+### Post Types — console API (id-keyed, entity-shaped) — DIFFERENT from SH16
+The React console (`ShPostTypeService`, post-type editor, "New [PostType]" pickers)
+uses a **separate** surface at **`/api/v2/post/type`** (note the slash, not a hyphen):
+- `GET /api/v2/post/type` (list) and `/{id}` (one) — return the **`ShPostType` entity**
+  with its `shPostTypeAttrs` tree (NOT `ShPostTypeDef`). Reads run through
+  `ShPostTypeConsoleWriteService.list/get` which initializes the LAZY attr graph
+  inside a tx (open-in-view is off) — do **not** rely on `@JsonView` here: with
+  `DEFAULT_VIEW_INCLUSION` off, activating a view *hides* the unannotated scalar
+  fields. No `@JsonView` → all fields serialize, `@JsonIgnore` back-refs stay hidden.
+- `POST /api/v2/post/type`, `PUT /{id}`, `DELETE /{id}` (id-keyed; system types 409).
+- Backed by `ShPostTypeConsoleAPI` + `ShPostTypeConsoleWriteService` (`...api.post.type`),
+  which reuses the same detach-before-replace cascade safety as the SH16 service.
+- **This is session/CSRF-protected** (unlike SH16's `/api/v2/post-type`, which is
+  CSRF-exempt). Two post-type APIs coexist on purpose: console (by id, entity) vs
+  CLI (by name, lossless `Def`).
 
 ### `shio` CLI (`@viglet/shio`, in `cli/`)
 The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`), `dev`, `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
