@@ -51,6 +51,13 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    // GraphiQL v5 wires Monaco via `?worker` imports inside @graphiql/react's
+    // setup-workers/vite entry. Vite's dep pre-bundler can't load those worker
+    // queries (fails the dev server on Windows), so keep these unbundled and let
+    // Vite handle the worker imports natively. Production `vite build` is unaffected.
+    exclude: ["graphiql", "@graphiql/react", "@graphiql/toolkit", "monaco-editor", "monaco-graphql"],
+  },
   server: {
     proxy: {
       "/api": "http://localhost:2710",

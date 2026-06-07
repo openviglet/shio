@@ -585,7 +585,21 @@ future readers can migrate old zips), id strategy (export keeps source ids;
 import/clone remaps), and whether post-types embed in the package or reference the
 SH16 `ShPostTypeDef` JSON shape (prefer the latter so the two stay one format).
 
-### VII.2 Site export → zip (SH69)
+### VII.2 Site export → zip (SH69) — 🛠 code complete
+
+**Status:** implemented as `ShSiteExportService` (+ the `ShExchangeArchive`
+filename/bytes record) in `com.viglet.shio.exchange.site`, wired at
+`GET /api/v2/site/{id}/export` (`ShSiteAPI.export`, streams `application/zip` with
+a `Content-Disposition` filename; 404 on unknown site). It walks site → root
+folders → child folders (recursive) → the unified posts in each (**both** `DRAFT`
+and `PUBLISHED` rows) → the post-types they reference (emitted once as the SH16
+`ShPostTypeDef` via `ShPostTypeAdminMapper`), parses each post's `data` CLOB back
+to a `JsonNode` carried verbatim, then zips through the SH68 codec via a temp dir.
+**Static files are deferred:** the file_source subsystem isn't implemented (SH38),
+so `files` is empty and there's no `files/` dir yet — that pass is the one future
+addition here. Round-trip-through-the-zip + endpoint tests green; pending commit.
+
+The original direction below is the as-built design.
 
 Rebuild `ShSiteExport` against SH68: walk a site's folder tree + unified posts +
 referenced post-types + static files, write the package, stream it as a zip. Wire

@@ -11,7 +11,10 @@ package com.viglet.shio.api.site;
 import java.security.Principal;
 import java.util.List;
 
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.exchange.site.ShSiteExportService;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 
@@ -41,10 +45,13 @@ public class ShSiteAPI {
 
     private final ShSiteRepository shSiteRepository;
     private final ShSiteWriteService shSiteWriteService;
+    private final ShSiteExportService shSiteExportService;
 
-    public ShSiteAPI(ShSiteRepository shSiteRepository, ShSiteWriteService shSiteWriteService) {
+    public ShSiteAPI(ShSiteRepository shSiteRepository, ShSiteWriteService shSiteWriteService,
+                     ShSiteExportService shSiteExportService) {
         this.shSiteRepository = shSiteRepository;
         this.shSiteWriteService = shSiteWriteService;
+        this.shSiteExportService = shSiteExportService;
     }
 
     @GetMapping
@@ -83,5 +90,20 @@ public class ShSiteAPI {
         return shSiteWriteService.delete(id)
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
+    }
+
+    /**
+     * Export a site as a portable exchange zip (SH69) — the console "Download"
+     * action. 404 if the site does not exist.
+     */
+    @GetMapping(value = "/{id}/export", produces = "application/zip")
+    public ResponseEntity<byte[]> export(@PathVariable String id) {
+        return shSiteExportService.exportSite(id)
+                .<ResponseEntity<byte[]>>map(archive -> ResponseEntity.ok()
+                        .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                                .filename(archive.fileName()).build().toString())
+                        .contentType(MediaType.parseMediaType("application/zip"))
+                        .body(archive.content()))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }
