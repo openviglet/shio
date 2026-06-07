@@ -153,14 +153,59 @@ transaction** via `TransactionTemplate` (an `asTenant(tenant, supplier)` helper 
   exclude alpha's row (proving the discriminator hits the polymorphic root *and* the concrete
   subclass), and `beta` cannot resolve alpha's folder by id while `alpha` still can.
 
-## 6. Known limitation (documented, not a bug)
+## 6. Known limitation (addressed by the follow-ups, §8)
 
-In true multi-tenant mode a brand-new tenant (a `workspace_id` other than `shio`) does **not**
-see the system post-types seeded under `'shio'` at startup — those rows belong to the `shio`
-tenant. Per-tenant post-type seeding/provisioning is a deliberate follow-up (the tenant-catalog
-slice), not part of this DB-isolation core.
+In true multi-tenant mode a brand-new tenant does **not** automatically see the system
+post-types of `'shio'` — those rows belong to the `shio` tenant. This is closed by the
+per-tenant provisioning follow-up (§8 Part C).
 
 ## 7. Verification
+
+- `./mvnw -pl shio-app test` — full module suite incl. `ShLiquibaseChangelogAgnosticTest`
+  (confirms `v2026.2.4` is `VARCHAR` / no banned types).
+- `mvn verify` — Failsafe ITs: `ShTenantIsolationIT` + `ShH2SchemaIT` need no Docker;
+  `ShMariaDbSchemaIT`/`ShPostgresSchemaIT` run when Docker is present and now assert
+  `sh_post_unified.TENANT_ID` on MariaDB/PostgreSQL.
+
+## 8. Follow-ups — the SaaS layer (shipped on top of the core)
+
+Built incrementally, each part green on `mvn verify` (112 unit + 14 IT) + the console build.
+
+- **A · Tenant catalog.** `ShTenant` (`sh_tenant`, **not** `@TenantId` — the global catalog)
+  + repository + admin CRUD on `ShTenantAPI` (`ROLE_ADMIN`-gated writes via `ShSecurityConfig`;
+  the reserved `shio` tenant is rename/disable/delete-proof, seeded each boot by
+  `ShTenantOnStartup`). Liquibase `v2026.2.5.yaml`. Tests: `ShTenantAPITest`.
+- **D · Delivery-path tenant resolution.** `ShApiTokenFilter` resolves the token
+  **tenant-agnostically** (`ShApiTokenRepository.findByTokenAcrossTenants`, native — the derived
+  finder is itself `@TenantId`-filtered) and propagates the token's tenant via a request
+  attribute (`ShTenantFilter.TENANT_REQUEST_ATTR`) that `ShTenantFilter` prefers over the
+  principal. So token CDA/GraphQL delivery is scoped to the content owner's tenant. Proof:
+  `ShTenantCdaDeliveryIT`. **Drift fix:** `v2026.2.6.yaml` adds `api_token.scope`,
+  `api_token.environment` and the `api_token_site` table — SH2/SH5 added these via
+  `ddl-auto=update` with no changeset, so a clean Liquibase DB couldn't authenticate a token
+  (the SH26 ITs never insert/select one, so they missed it).
+- **C · Per-tenant provisioning.** `ShTenantProvisioningService.provision(tenantId)` copies the
+  default tenant's post-types into a new tenant — reads under `shio`, writes under the new
+  tenant in **separate transactions** (resolver binds tenant per session-open) — via
+  `ShPostTypeAdminService.provisionFromDef` (reuses the SH16 attr/widget engine but preserves
+  `system`, which `upsert` guards). Auto-run on `create`; idempotent
+  `POST /api/v2/tenant/{id}/provision`. Proof: `ShTenantProvisioningIT`.
+- **F · Tenant-keyed cache.** `ShCdaCacheControlFilter` emits `Vary: Key` so shared caches key
+  by token (→ tenant/site/env); a body-hash `ETag` collision is harmless (a `304` reuses the
+  requester's own body). Test: `ShCdaCacheControlFilterTest.cdaGetVariesByToken`.
+- **B · Console UI.** A **Tenants** admin page (`tenant.list.page.tsx` / `tenant.page.tsx`)
+  mirroring the API-token pages — list/create/edit/delete + Provision — wired into routes,
+  sidebar and en/pt i18n (`tenantAdmin.json`); `ShTenantService` gains the CRUD + `provision`.
+- **E · Not applicable.** Per-tenant `file_source` storage: the file upload/serve subsystem is
+  **not implemented** in the current backend (no `WebMvcConfigurer`/resource handler, no upload
+  controller, no storage service — only a legacy `permitAll` matcher on `/file_source/**`).
+  There is nothing to isolate; when the feature is (re)built it must resolve
+  `file_source/{tenantId}/...` from `ShTenantContext` with a path-traversal guard (mirror
+  Turing's `TurFilesystemStorageService`).
+
+### Still open (future)
+Cross-tenant superadmin impersonation, tenant quotas/billing, nav gating by `multiTenant`/role,
+and the per-tenant file storage of Part E once the upload feature exists.
 
 - `./mvnw -pl shio-app test` — full module suite incl. `ShLiquibaseChangelogAgnosticTest`
   (confirms `v2026.2.4` is `VARCHAR` / no banned types).

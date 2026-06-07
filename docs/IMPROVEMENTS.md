@@ -333,11 +333,17 @@ active content tree — the JOINED `ShObject` root (covering `ShSite`/`ShFolder`
 rows are invisible to tenant B. The identity model is the existing
 `workspace_id`-claim/username resolution (`ShTenantFilter`).
 
-**Remaining to unlock a hosted Shio Cloud** (deferred follow-ups): a tenant
-**catalog** (`ShTenant` entity + CRUD/provisioning — `ShTenantAPI` is still only a
-read-only `/current` seed), per-tenant cache/storage/keys (tenant-scoped
-`file_source` + CDA HTTP cache), per-tenant post-type seeding, and a console
-tenant-management UI.
+**Follow-ups shipped** (see [CHANGELOG.md](CHANGELOG.md) Block F): a tenant
+**catalog** (`ShTenant` + admin CRUD on `ShTenantAPI`, beyond the read-only
+`/current`), **delivery-path token→tenant resolution** (`ShApiTokenFilter` +
+`ShTenantFilter`, plus the `api_token` Liquibase drift fix it surfaced),
+**per-tenant post-type provisioning** (`ShTenantProvisioningService`),
+**tenant-keyed CDA cache** (`Vary: Key`), and a **console Tenants page**.
+
+**Not applicable / future:** per-tenant `file_source` storage is moot until the
+file upload/serve subsystem is (re)implemented (it doesn't exist in the current
+backend); remaining bold bets are superadmin impersonation, tenant quotas/billing,
+and nav gating by `multiTenant`/role.
 
 ### VI.2 Starter marketplace (SH23)
 

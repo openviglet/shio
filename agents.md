@@ -494,8 +494,22 @@ ShRelatorItem/ShWorkflowTask/ShHistory). **Gotchas:**
    (`validateExistingCurrentSessions()=false`), so tests that switch tenants must use a **new
    transaction per tenant** — see `ShTenantIsolationIT` (the proof that A can't see B; no Docker).
 
-Out of scope for this slice (follow-ups): tenant catalog/CRUD, per-tenant storage/cache,
-per-tenant post-type seeding, console UI.
+**SaaS follow-ups (shipped on top of the core):** a tenant **catalog** — `ShTenant`
+(`sh_tenant`, deliberately **not** `@TenantId`, the global catalog) + admin CRUD on
+`ShTenantAPI` (`ROLE_ADMIN`-gated writes; reserved `shio` tenant seeded by `ShTenantOnStartup`,
+undeletable). **Delivery-path tenant resolution:** `ShApiTokenFilter` looks up the token via
+`ShApiTokenRepository.findByTokenAcrossTenants` (native — the derived `findByToken` is itself
+`@TenantId`-filtered, a chicken-and-egg) and propagates the token's tenant via
+`ShTenantFilter.TENANT_REQUEST_ATTR`, which `ShTenantFilter` prefers over the principal — so CDA
+delivery is scoped to the content owner's tenant. **Per-tenant provisioning:**
+`ShTenantProvisioningService` copies the default model into a new tenant (read-under-`shio` +
+write-under-new-tenant in separate txns; `ShPostTypeAdminService.provisionFromDef` preserves the
+`system` flag `upsert` guards). **Cache:** `Vary: Key` on CDA responses. **Console:** a Tenants
+admin page. **Gotcha (drift):** SH2/SH5 added `api_token.scope`/`.environment` + `api_token_site`
+via `ddl-auto=update` with no changeset — invisible to the SH26 ITs (which never touch a token) —
+so a clean Liquibase DB couldn't authenticate a CDA token; fixed in `v2026.2.6.yaml`. **N/A:**
+per-tenant `file_source` storage — the file upload/serve subsystem isn't implemented in the
+current backend (only a legacy security matcher), so there's nothing to isolate yet.
 
 ### Tests
 Tests skip Liquibase (`spring.liquibase.enabled=false`) and build the schema from
