@@ -340,25 +340,72 @@ rows are invisible to tenant B. The identity model is the existing
 **per-tenant post-type provisioning** (`ShTenantProvisioningService`),
 **tenant-keyed CDA cache** (`Vary: Key`), and a **console Tenants page**.
 
-**Not applicable / future:** per-tenant `file_source` storage is moot until the
-file upload/serve subsystem is (re)implemented (it doesn't exist in the current
-backend); remaining bold bets are superadmin impersonation, tenant quotas/billing,
-and nav gating by `multiTenant`/role.
+**Follow-ups still open** (decomposed into tasks):
 
-### VI.2 Starter marketplace (SH23)
+- **SH44 — Superadmin impersonation**: let a privileged operator act as / switch
+  into any tenant from the console (audited), beyond the principal-derived
+  `ShTenantContext` resolution.
+- **SH45 — Tenant quotas & billing**: per-tenant usage metering (content count,
+  API calls, storage) + quota enforcement + billing-export hooks.
+- **SH46 — Nav/feature gating by tenant**: show/hide console nav + features by
+  `multiTenant`/role so single-tenant installs don't surface SaaS-only UI.
+- **SH47 — Per-tenant file storage**: isolate `file_source` per tenant. Blocked
+  on the upload/serve subsystem (SH38) — that subsystem doesn't exist in the
+  current backend, so there's nothing to isolate yet.
+
+### VI.2 Starter marketplace (SH23 epic)
 
 Curated `create-shio-app` templates (blog, docs site, e-commerce front,
 landing-page kit) the community can publish — accelerates adoption and showcases
-the JS-first story.
+the JS-first story. Decomposed into:
 
-### VI.3 AI authoring via Turing / MCP (SH24)
+- **SH27 — Multi-template scaffolder**: teach `create-shio-app` to take
+  `--template <name>` and read a per-template manifest (metadata: name,
+  description, required SDK version, prompts/defaults). The foundation everything
+  else hangs off.
+- **SH28 — Community publishing convention**: a `shio-template-*` npm naming
+  convention + manifest validation, so a third party can publish a template
+  without touching the core repo.
+- **SH29 — Template registry + CLI browse**: a curated index (repo JSON or npm
+  scope) wired into the `shio` CLI (`shio init --template`, browse/list).
+- **SH30 — Curated official templates**: the first-party set — blog, docs site,
+  e-commerce front, landing-page kit.
+- **SH31 — Template listing page**: a public catalog page on the docs/site.
+
+### VI.3 AI authoring via Turing / MCP (SH24 epic)
 
 Expose Shio content + authoring as MCP tools so Claude/agents (and Turing) draft,
 restructure, and translate content. This is exactly where the Java/Spring
-ecosystem sinergy pays off — Turing already speaks this language.
+ecosystem sinergy pays off — Turing already speaks this language. Decomposed into:
 
-### VI.4 Image/asset transformation API (SH25)
+- **SH32 — MCP server skeleton**: a Spring-hosted MCP server + transport, with
+  auth reusing SH2 token scopes. The host every tool plugs into.
+- **SH33 — Read tools**: list sites/folders/posts, get a post, search — all over
+  the CDA so they inherit SH2 scoping.
+- **SH34 — Schema discovery tool**: post-type/schema introspection reusing the
+  SH11 codegen surface, so the agent knows the shape of `attrs`.
+- **SH35 — Authoring/write tools**: create/update/publish over the SH10 write
+  surface (draft-targeted, `ROLE_CDA_WRITE`).
+- **SH36 — High-level authoring ops**: composite draft / restructure / translate
+  operations built on the read+write primitives.
+- **SH37 — Turing integration + tenant-awareness**: wire into the ecosystem and
+  scope every tool per SH22 tenant.
+
+### VI.4 Image/asset transformation API (SH25 epic)
 
 On-the-fly resize/format/crop on the file-source delivery path (Tika + jai-imageio
 are already dependencies). The JS front requests `image.jpg?w=800&format=webp`;
-results are cached. Removes the need for an external image CDN.
+results are cached. Removes the need for an external image CDN. Decomposed into:
+
+- **SH38 — Prereq: file_source upload/serve subsystem** ⚠️: the file upload/serve
+  backend doesn't exist in the current code (only a legacy security matcher — see
+  the SH22 "N/A" note). There's nothing to transform until this is
+  (re)implemented, so it blocks the rest of VI.4.
+- **SH39 — Query-param interception**: parse `?w=&h=&format=&crop=` on the
+  delivery path and route to the transform pipeline.
+- **SH40 — Transform pipeline**: resize/crop via imageio.
+- **SH41 — Format conversion**: webp/avif/jpeg output negotiation.
+- **SH42 — Result cache**: disk/memory keyed by source + params, with ETag,
+  tenant-aware (SH22).
+- **SH43 — Limits & security**: max dimensions, allowed formats, signed URLs to
+  prevent transform-bombing.

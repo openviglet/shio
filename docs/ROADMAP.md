@@ -83,10 +83,34 @@
 
 > Differentiators once the headless foundation is solid. → §VI
 
-- ✅ **SH22** (deps: SH2) **Multi-tenancy / SaaS** — one shared JVM, many isolated tenants. Shipped → [CHANGELOG.md](CHANGELOG.md) Block F: core DB isolation (`@TenantId` across the content tree incl. `sh_post_unified`, `ShTenantIsolationIT`) **+ follow-ups** — tenant catalog (`ShTenant` + admin CRUD), delivery-path token→tenant resolution (+ `api_token` Liquibase drift fix), per-tenant post-type provisioning, tenant-keyed CDA cache (`Vary: Key`), and a console Tenants page. **N/A:** per-tenant `file_source` storage (the file-upload/serve subsystem isn't implemented in the current backend). **Future:** superadmin impersonation, quotas/billing, nav gating, file storage once upload exists. → §VI.1
-- 💭 **SH23** (deps: SH8) **Starter marketplace** — curated `create-shio-app` templates (blog, docs, e-commerce front) the community can publish. → §VI.2
-- 💭 **SH24** (deps: SH4) **AI authoring via Turing/MCP** — expose Shio content + authoring as MCP tools so Claude/agents (and Turing) can draft, restructure, and translate content. Reuses the ecosystem's Java/Spring sinergy. → §VI.3
-- 💭 **SH25** (deps: SH6) **Image/asset transformation API** — on-the-fly resize/format/crop on the file-source delivery path (Tika + imageio already present), so the JS front requests `?w=800&format=webp`. → §VI.4
+- ✅ **SH22** (deps: SH2) **Multi-tenancy / SaaS** — one shared JVM, many isolated tenants. Shipped → [CHANGELOG.md](CHANGELOG.md) Block F: core DB isolation (`@TenantId` across the content tree incl. `sh_post_unified`, `ShTenantIsolationIT`) **+ follow-ups** — tenant catalog (`ShTenant` + admin CRUD), delivery-path token→tenant resolution (+ `api_token` Liquibase drift fix), per-tenant post-type provisioning, tenant-keyed CDA cache (`Vary: Key`), and a console Tenants page. **N/A:** per-tenant `file_source` storage (the file-upload/serve subsystem isn't implemented in the current backend). → §VI.1
+  - 💭 **SH44** (deps: SH22) **Superadmin impersonation** — let a privileged operator act as / switch into any tenant from the console (audited), beyond the principal-derived `ShTenantContext`. → §VI.1
+  - 💭 **SH45** (deps: SH22) **Tenant quotas & billing** — per-tenant usage metering (content count, API calls, storage) + quota enforcement + billing-export hooks. → §VI.1
+  - 💭 **SH46** (deps: SH22) **Nav/feature gating by tenant** — show/hide console nav + features by `multiTenant`/role so single-tenant installs don't see SaaS surfaces. → §VI.1
+  - 💭 **SH47** (deps: SH22, SH38) **Per-tenant file storage** — isolate `file_source` per tenant; blocked on the upload/serve subsystem (SH38). → §VI.1
+
+**SH23 — Starter marketplace** (epic; curated `create-shio-app` templates the community can publish) → §VI.2:
+- 💭 **SH27** (deps: SH8) **Multi-template scaffolder** — `create-shio-app --template <name>` + a per-template manifest/metadata format. → §VI.2
+- 💭 **SH28** (deps: SH27) **Community publishing convention** — `shio-template-*` npm naming + manifest validation so third parties can ship templates. → §VI.2
+- 💭 **SH29** (deps: SH27, SH16) **Template registry + CLI browse** — curated index (repo JSON or npm scope) wired into `shio init --template`/browse. → §VI.2
+- 💭 **SH30** (deps: SH27) **Curated official templates** — blog, docs site, e-commerce front, landing-page kit. → §VI.2
+- 💭 **SH31** (deps: SH29) **Template listing page** — public catalog on the docs/site. → §VI.2
+
+**SH24 — AI authoring via Turing/MCP** (epic; expose Shio content + authoring as MCP tools for Claude/agents/Turing) → §VI.3:
+- 💭 **SH32** (deps: SH2) **MCP server skeleton** — Spring-hosted MCP server + transport + auth via SH2 token scopes. → §VI.3
+- 💭 **SH33** (deps: SH32, SH1) **Read tools** — list sites/folders/posts, get, search, over the CDA. → §VI.3
+- 💭 **SH34** (deps: SH32, SH11) **Schema discovery tool** — post-type/schema introspection reusing the SH11 codegen surface. → §VI.3
+- 💭 **SH35** (deps: SH32, SH10) **Authoring/write tools** — create/update/publish over the SH10 write surface. → §VI.3
+- 💭 **SH36** (deps: SH35) **High-level authoring ops** — draft / restructure / translate. → §VI.3
+- 💭 **SH37** (deps: SH32, SH22) **Turing integration + tenant-awareness** — wire into the ecosystem; scope tools per tenant. → §VI.3
+
+**SH25 — Image/asset transformation API** (epic; on-the-fly resize/format/crop on the file-source delivery path) → §VI.4:
+- 💭 **SH38** (deps: —) ⚠️ **Prereq: file_source upload/serve subsystem** — the file upload/serve backend doesn't exist yet (SH22 "N/A"); nothing to transform until it does. → §VI.4
+- 💭 **SH39** (deps: SH38) **Query-param interception** — parse `?w=&h=&format=&crop=` on the delivery path. → §VI.4
+- 💭 **SH40** (deps: SH39) **Transform pipeline** — resize/crop via imageio. → §VI.4
+- 💭 **SH41** (deps: SH40) **Format conversion** — webp/avif/jpeg output. → §VI.4
+- 💭 **SH42** (deps: SH40, SH22) **Result cache** — disk/memory keyed by source+params + ETag, tenant-aware. → §VI.4
+- 💭 **SH43** (deps: SH40) **Limits & security** — max dimensions, allowed formats, signed URLs. → §VI.4
 
 ---
 
