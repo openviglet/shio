@@ -140,6 +140,25 @@ class ShStaticFileAPITest {
     }
 
     @Test
+    void stage02bServeWithTransformParamsPassesThroughUntilPipelineExists() throws Exception {
+        // SH39: ?w=&format= is intercepted, but the no-op pipeline serves the original bytes.
+        mockMvc.perform(get("/api/v2/staticfile/" + uploadedPostId)
+                        .param("w", "100").param("format", "webp")
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertTrue(result.getResponse().getContentAsString().contains("hello world")));
+    }
+
+    @Test
+    void stage02cServeWithMalformedTransformParamIsBadRequest() throws Exception {
+        // SH39: a non-positive dimension fails validation before reaching the pipeline.
+        mockMvc.perform(get("/api/v2/staticfile/" + uploadedPostId)
+                        .param("w", "-5")
+                        .principal(mockPrincipal))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void stage03PreUploadReportsExisting() throws Exception {
         mockMvc.perform(get("/api/v2/staticfile/pre-upload/" + folderId + "/hello.txt")
                         .principal(mockPrincipal))

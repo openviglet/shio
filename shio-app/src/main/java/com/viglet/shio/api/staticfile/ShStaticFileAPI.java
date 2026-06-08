@@ -11,7 +11,9 @@ package com.viglet.shio.api.staticfile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Principal;
+import java.util.Optional;
 
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -27,6 +29,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.viglet.shio.api.staticfile.transform.ShImageTransformPipeline;
+import com.viglet.shio.api.staticfile.transform.ShImageTransformResult;
+import com.viglet.shio.api.staticfile.transform.ShImageTransformSpec;
 import com.viglet.shio.bean.error.ShHttpMessageBean;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
@@ -53,13 +58,16 @@ public class ShStaticFileAPI {
     private final ShStaticFileService shStaticFileService;
     private final ShFileStorageService storage;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
+    private final ShImageTransformPipeline imageTransformPipeline;
 
     public ShStaticFileAPI(ShStaticFileService shStaticFileService,
                            ShFileStorageService storage,
-                           ShPostUnifiedRepository shPostUnifiedRepository) {
+                           ShPostUnifiedRepository shPostUnifiedRepository,
+                           ShImageTransformPipeline imageTransformPipeline) {
         this.shStaticFileService = shStaticFileService;
         this.storage = storage;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
+        this.imageTransformPipeline = imageTransformPipeline;
     }
 
     /**
@@ -101,9 +109,19 @@ public class ShStaticFileAPI {
     /**
      * Stream the bytes of a {@code File} post by id. 404 if the post or its
      * stored file is missing.
+     *
+     * <p>SH39: the optional {@code w}/{@code h}/{@code format}/{@code crop} query
+     * parameters are parsed into an {@link ShImageTransformSpec}; when present they
+     * are routed to the {@link ShImageTransformPipeline}. Until SH40 supplies the
+     * real pipeline this is a no-op (the original bytes are served), but a malformed
+     * parameter still yields 400 here.</p>
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Resource> serve(@PathVariable String id) {
+    public ResponseEntity<Resource> serve(@PathVariable String id,
+                                          @RequestParam(name = "w", required = false) String w,
+                                          @RequestParam(name = "h", required = false) String h,
+                                          @RequestParam(name = "format", required = false) String format,
+                                          @RequestParam(name = "crop", required = false) String crop) {
         ShPostUnified post = shPostUnifiedRepository.findById(id).stream().findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "File post not found"));
 
@@ -118,6 +136,20 @@ public class ShStaticFileAPI {
         }
 
         String contentType = storage.probeContentType(path);
+
+        Optional<ShImageTransformSpec> spec = ShImageTransformSpec.parse(w, h, format, crop);
+        if (spec.isPresent()) {
+            Optional<ShImageTransformResult> result =
+                    imageTransformPipeline.transform(new PathResource(path), contentType, spec.get());
+            if (result.isPresent()) {
+                ShImageTransformResult transformed = result.get();
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(transformed.contentType()))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
+                        .body(new ByteArrayResource(transformed.bytes()));
+            }
+        }
+
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")

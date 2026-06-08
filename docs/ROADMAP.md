@@ -126,7 +126,7 @@
 
 **SH25 — Image/asset transformation API** (epic; on-the-fly resize/format/crop on the file-source delivery path) → §VI.4:
 - ✅ **SH38** — shipped → [CHANGELOG.md](CHANGELOG.md) Block F. file_source upload/serve subsystem rebuilt on the unified model (`ShFileStorageService` id-keyed storage + `ShStaticFileService`/`ShStaticFileAPI` upload/serve + `/file_source/**` resource handler + delete-cleanup listener). Unblocks SH39–43, SH47, SH61, and the exchange binary-asset walk.
-- 💭 **SH39** (deps: SH38) **Query-param interception** — parse `?w=&h=&format=&crop=` on the delivery path. → §VI.4
+- ✅ **SH39** — shipped → [CHANGELOG.md](CHANGELOG.md) Block F. Query-param interception on the file_source delivery path: `ShImageTransformSpec.parse` (validate `?w=&h=&format=&crop=`, 400 on malformed) + `ShImageTransformPipeline` seam (no-op `ShNoOpImageTransformPipeline` until SH40) routed from **both** the `/api/v2/staticfile/{id}` controller and a `ShImageTransformResourceTransformer` on the `/file_source/**` resource chain. Unblocks SH40.
 - 💭 **SH40** (deps: SH39) **Transform pipeline** — resize/crop via imageio. → §VI.4
 - 💭 **SH41** (deps: SH40) **Format conversion** — webp/avif/jpeg output. → §VI.4
 - 💭 **SH42** (deps: SH40, SH22) **Result cache** — disk/memory keyed by source+params + ETag, tenant-aware. → §VI.4

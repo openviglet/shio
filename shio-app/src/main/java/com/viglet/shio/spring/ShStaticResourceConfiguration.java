@@ -13,6 +13,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import com.viglet.shio.api.staticfile.transform.ShImageTransformPipeline;
+import com.viglet.shio.api.staticfile.transform.ShImageTransformResourceTransformer;
 import com.viglet.shio.property.ShFileSourceProperties;
 
 /**
@@ -23,6 +25,13 @@ import com.viglet.shio.property.ShFileSourceProperties;
  * {@code permitAll} in {@code ShSecurityConfig}). Only the file_source root is
  * exposed — deliberately <em>not</em> the whole {@code store/} tree, which also
  * holds the H2 database and logs.</p>
+ *
+ * <p>SH39 adds a {@link ShImageTransformResourceTransformer} to this handler's
+ * resource chain so {@code ?w=&h=&format=&crop=} on a {@code /file_source/**} URL
+ * is intercepted and routed to the {@link ShImageTransformPipeline}. The chain is
+ * created with {@code cacheResources=false} on purpose: the built-in resource
+ * cache keys on the request path only (ignoring the query string), which would
+ * serve one transform for a different one — proper per-params caching is SH42.</p>
  *
  * <p>This {@code WebMvcConfigurer} only registers a resource handler, so it is
  * purely additive to Spring Boot's default static-resource handling and the
@@ -37,9 +46,12 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
     private static final int CACHE_SECONDS = 3600 * 24;
 
     private final ShFileSourceProperties fileSourceProperties;
+    private final ShImageTransformPipeline imageTransformPipeline;
 
-    public ShStaticResourceConfiguration(ShFileSourceProperties fileSourceProperties) {
+    public ShStaticResourceConfiguration(ShFileSourceProperties fileSourceProperties,
+                                         ShImageTransformPipeline imageTransformPipeline) {
         this.fileSourceProperties = fileSourceProperties;
+        this.imageTransformPipeline = imageTransformPipeline;
     }
 
     @Override
@@ -47,6 +59,8 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
         String fileSourceLocation = fileSourceProperties.getRootDir().toUri().toString();
         registry.addResourceHandler("/file_source/**")
                 .addResourceLocations(fileSourceLocation)
-                .setCachePeriod(CACHE_SECONDS);
+                .setCachePeriod(CACHE_SECONDS)
+                .resourceChain(false)
+                .addTransformer(new ShImageTransformResourceTransformer(imageTransformPipeline));
     }
 }
