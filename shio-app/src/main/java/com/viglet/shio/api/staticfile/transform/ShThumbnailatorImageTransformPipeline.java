@@ -19,7 +19,6 @@ import java.util.Optional;
 
 import javax.imageio.ImageIO;
 
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
@@ -29,9 +28,10 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * The SH40 resize/crop transform pipeline, built on Thumbnailator (over ImageIO),
- * extended in SH41 with output-format conversion. It is the {@code @Primary}
- * {@link ShImageTransformPipeline}, so the {@code /api/v2/staticfile/{id}} controller
- * and the {@code /file_source/**} resource transformer route through it.
+ * extended in SH41 with output-format conversion. The actual transform engine: SH42
+ * fronts it with the {@code @Primary} {@link ShCachingImageTransformPipeline}, which
+ * delegates here on a cache miss, so the {@code /api/v2/staticfile/{id}} controller
+ * and the {@code /file_source/**} resource transformer ultimately route through it.
  *
  * <p><strong>Resize/crop (SH40)</strong> — the {@link ShImageCropMode} decides how
  * {@code w}/{@code h} constrain the resize:</p>
@@ -61,7 +61,6 @@ import lombok.extern.slf4j.Slf4j;
  * @since 2026.2
  */
 @Service
-@Primary
 @Slf4j
 public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPipeline {
 

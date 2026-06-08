@@ -39,6 +39,12 @@ import jakarta.servlet.http.HttpServletRequest;
  * resource file name, the wrapper implements {@link HttpResource} to pin the
  * transform's content type as a response header, overriding the file-name guess.</p>
  *
+ * <p>SH42: a cached result carries a stable ETag. The wrapper exposes it via
+ * {@link ShTransformedImageResource#getEtag()} so the resource handler's
+ * {@code etagGenerator} (wired in {@code ShStaticResourceConfiguration}) can emit an
+ * {@code ETag} header and short-circuit {@code If-None-Match} to a 304 on this
+ * public delivery path too.</p>
+ *
  * @author Alexandre Oliveira
  * @since 2026.2
  */
@@ -79,15 +85,23 @@ public class ShImageTransformResourceTransformer implements ResourceTransformer 
      * via {@link HttpResource#getResponseHeaders()}. The resource handler resolves
      * {@code Content-Type} from the (unchanged) file name first, then applies these
      * headers — so a SH41 format conversion (jpeg → webp) is served as the correct
-     * type even though the file name still ends in {@code .jpg}.
+     * type even though the file name still ends in {@code .jpg}. SH42 additionally
+     * carries the cached result's ETag (consumed by the handler's {@code etagGenerator}).
      */
-    private static final class ShTransformedImageResource extends TransformedResource implements HttpResource {
+    public static final class ShTransformedImageResource extends TransformedResource implements HttpResource {
 
         private final String contentType;
+        private final String etag;
 
         ShTransformedImageResource(Resource original, ShImageTransformResult result) {
             super(original, result.bytes());
             this.contentType = result.contentType();
+            this.etag = result.etag();
+        }
+
+        /** The cached result's ETag (SH42), or {@code null} when the cache is disabled. */
+        public String getEtag() {
+            return etag;
         }
 
         @Override

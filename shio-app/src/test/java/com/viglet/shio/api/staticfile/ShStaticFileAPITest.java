@@ -17,12 +17,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.UUID;
+
+import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -64,9 +68,12 @@ class ShStaticFileAPITest {
         }
     }
 
+    private static final Path IMAGE_CACHE_DIR = createTempRoot();
+
     @DynamicPropertySource
     static void fileSourcePath(DynamicPropertyRegistry registry) {
         registry.add("shio.file-source.path", () -> FILE_SOURCE_DIR.toAbsolutePath().toString());
+        registry.add("shio.image-cache.path", () -> IMAGE_CACHE_DIR.toAbsolutePath().toString());
     }
 
     @Autowired
@@ -187,5 +194,39 @@ class ShStaticFileAPITest {
 
         assertFalse(storage.exists(uploadedPostId, "hello.txt"),
                 "cleanup listener must remove bytes on post delete");
+    }
+
+    @Test
+    void stage06ImageTransformIsCachedWithEtagAnd304() throws Exception {
+        // SH42: a real image transform produces a stable ETag; a follow-up request
+        // carrying that ETag in If-None-Match must short-circuit to 304 Not Modified.
+        BufferedImage img = new BufferedImage(200, 100, BufferedImage.TYPE_INT_RGB);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        assertTrue(ImageIO.write(img, "png", baos), "fixture must encode");
+        MockMultipartFile imageFile = new MockMultipartFile(
+                "file", "pic.png", "image/png", baos.toByteArray());
+
+        String response = mockMvc.perform(multipart("/api/v2/staticfile/upload")
+                        .file(imageFile)
+                        .param("folderId", folderId)
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String imagePostId = com.jayway.jsonpath.JsonPath.read(response, "$.id");
+
+        String etag = mockMvc.perform(get("/api/v2/staticfile/" + imagePostId)
+                        .param("w", "100").param("format", "webp")
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertNotNull(result.getResponse().getHeader("ETag"),
+                        "a transformed image is served with an ETag (SH42)"))
+                .andReturn().getResponse().getHeader("ETag");
+
+        assertNotNull(etag);
+        mockMvc.perform(get("/api/v2/staticfile/" + imagePostId)
+                        .param("w", "100").param("format", "webp")
+                        .header("If-None-Match", etag)
+                        .principal(mockPrincipal))
+                .andExpect(status().isNotModified());
     }
 }

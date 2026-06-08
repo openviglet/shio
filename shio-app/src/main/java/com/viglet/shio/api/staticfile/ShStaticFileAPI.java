@@ -23,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -122,7 +123,8 @@ public class ShStaticFileAPI {
                                           @RequestParam(name = "w", required = false) String w,
                                           @RequestParam(name = "h", required = false) String h,
                                           @RequestParam(name = "format", required = false) String format,
-                                          @RequestParam(name = "crop", required = false) String crop) {
+                                          @RequestParam(name = "crop", required = false) String crop,
+                                          @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
         ShPostUnified post = shPostUnifiedRepository.findById(id).stream().findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "File post not found"));
 
@@ -144,10 +146,19 @@ public class ShStaticFileAPI {
                     imageTransformPipeline.transform(new PathResource(path), contentType, spec.get());
             if (result.isPresent()) {
                 ShImageTransformResult transformed = result.get();
-                return ResponseEntity.ok()
+                // SH42: a cached result carries a stable ETag — emit it and honour
+                // If-None-Match with a 304 so an unchanged transform is not re-sent.
+                String etag = transformed.etag() != null ? "\"" + transformed.etag() + "\"" : null;
+                if (etag != null && ifNoneMatchMatches(ifNoneMatch, etag)) {
+                    return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(etag).build();
+                }
+                ResponseEntity.BodyBuilder builder = ResponseEntity.ok()
                         .contentType(MediaType.parseMediaType(transformed.contentType()))
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
-                        .body(new ByteArrayResource(transformed.bytes()));
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"");
+                if (etag != null) {
+                    builder.eTag(etag);
+                }
+                return builder.body(new ByteArrayResource(transformed.bytes()));
             }
         }
 
@@ -155,5 +166,14 @@ public class ShStaticFileAPI {
                 .contentType(MediaType.parseMediaType(contentType))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
                 .body(new PathResource(path));
+    }
+
+    /** Whether the {@code If-None-Match} header (a list, or {@code *}) covers {@code etag}. */
+    private static boolean ifNoneMatchMatches(String ifNoneMatch, String etag) {
+        if (ifNoneMatch == null || ifNoneMatch.isBlank()) {
+            return false;
+        }
+        String trimmed = ifNoneMatch.trim();
+        return trimmed.equals("*") || trimmed.contains(etag);
     }
 }

@@ -15,6 +15,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.viglet.shio.api.staticfile.transform.ShImageTransformPipeline;
 import com.viglet.shio.api.staticfile.transform.ShImageTransformResourceTransformer;
+import com.viglet.shio.api.staticfile.transform.ShImageTransformResourceTransformer.ShTransformedImageResource;
 import com.viglet.shio.property.ShFileSourceProperties;
 
 /**
@@ -31,7 +32,13 @@ import com.viglet.shio.property.ShFileSourceProperties;
  * is intercepted and routed to the {@link ShImageTransformPipeline}. The chain is
  * created with {@code cacheResources=false} on purpose: the built-in resource
  * cache keys on the request path only (ignoring the query string), which would
- * serve one transform for a different one — proper per-params caching is SH42.</p>
+ * serve one transform for a different one — proper per-params caching is SH42's
+ * {@code ShImageTransformCache} (keyed by source + params, inside the pipeline).</p>
+ *
+ * <p>SH42 also registers an {@code etagGenerator} on the handler: for a transformed
+ * resource it returns the cached result's stable ETag, so the handler emits an
+ * {@code ETag} header and answers {@code If-None-Match} with a 304 on this public
+ * path (a plain, untransformed download returns {@code null} → default behaviour).</p>
  *
  * <p>This {@code WebMvcConfigurer} only registers a resource handler, so it is
  * purely additive to Spring Boot's default static-resource handling and the
@@ -60,6 +67,8 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
         registry.addResourceHandler("/file_source/**")
                 .addResourceLocations(fileSourceLocation)
                 .setCachePeriod(CACHE_SECONDS)
+                .setEtagGenerator(resource -> resource instanceof ShTransformedImageResource transformed
+                        ? transformed.getEtag() : null)
                 .resourceChain(false)
                 .addTransformer(new ShImageTransformResourceTransformer(imageTransformPipeline));
     }
