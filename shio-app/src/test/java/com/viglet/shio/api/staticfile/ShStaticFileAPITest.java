@@ -140,8 +140,9 @@ class ShStaticFileAPITest {
     }
 
     @Test
-    void stage02bServeWithTransformParamsPassesThroughUntilPipelineExists() throws Exception {
-        // SH39: ?w=&format= is intercepted, but the no-op pipeline serves the original bytes.
+    void stage02bServeWithTransformParamsPassesThroughForNonImage() throws Exception {
+        // SH39/SH40: ?w=&format= is intercepted, but a text/plain source is not a
+        // re-encodable image, so the pipeline declines and the original bytes serve.
         mockMvc.perform(get("/api/v2/staticfile/" + uploadedPostId)
                         .param("w", "100").param("format", "webp")
                         .principal(mockPrincipal))
