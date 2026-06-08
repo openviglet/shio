@@ -530,7 +530,9 @@ results are cached. Removes the need for an external image CDN. Decomposed into:
 - **SH39 — Query-param interception**: parse `?w=&h=&format=&crop=` on the
   delivery path and route to the transform pipeline.
 - **SH40 — Transform pipeline**: resize/crop via imageio.
-- **SH41 — Format conversion**: webp/avif/jpeg output negotiation.
+- **SH41 — Format conversion** ✅: webp/avif/jpeg output negotiation. `?format=`
+  re-encodes + retargets the content type; webp via the `webp-imageio` SPI,
+  jpeg/png/gif/bmp via ImageIO, avif degrades gracefully (no Java writer).
 - **SH42 — Result cache**: disk/memory keyed by source + params, with ETag,
   tenant-aware (SH22).
 - **SH43 — Limits & security**: max dimensions, allowed formats, signed URLs to

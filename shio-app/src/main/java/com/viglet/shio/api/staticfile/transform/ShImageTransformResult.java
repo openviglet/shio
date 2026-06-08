@@ -10,8 +10,8 @@ package com.viglet.shio.api.staticfile.transform;
 
 /**
  * The output of a {@link ShImageTransformPipeline}: the transformed bytes plus the
- * content type they should be served as (which may differ from the source when a
- * {@code format} conversion happened — SH41).
+ * content type they should be served as (which differs from the source when a
+ * {@code format} conversion happened — SH41, e.g. jpeg → webp).
  *
  * @author Alexandre Oliveira
  * @since 2026.2

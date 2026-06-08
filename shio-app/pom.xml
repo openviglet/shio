@@ -239,6 +239,15 @@
             <artifactId>thumbnailator</artifactId>
             <version>0.4.21</version>
         </dependency>
+        <!-- SH41 — webp output. Registers an ImageIO writer SPI (bundles native
+             libwebp for win/mac/linux), so ImageIO.write(img, "webp", out) works.
+             jai-imageio covers jpeg/png/gif/bmp/jp2; avif has no mature Java
+             writer, so ?format=avif gracefully degrades to source-format passthrough. -->
+        <dependency>
+            <groupId>org.sejda.imageio</groupId>
+            <artifactId>webp-imageio</artifactId>
+            <version>0.1.6</version>
+        </dependency>
         <dependency>
             <groupId>net.lingala.zip4j</groupId>
             <artifactId>zip4j</artifactId>

@@ -8,6 +8,8 @@
  */
 package com.viglet.shio.api.staticfile.transform;
 
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -26,16 +28,13 @@ import net.coobird.thumbnailator.geometry.Positions;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * The SH40 resize/crop transform pipeline, built on Thumbnailator (over ImageIO).
- * It replaces the SH39 no-op as the {@code @Primary} {@link ShImageTransformPipeline},
- * so the {@code /api/v2/staticfile/{id}} controller and the {@code /file_source/**}
- * resource transformer now actually transform images.
+ * The SH40 resize/crop transform pipeline, built on Thumbnailator (over ImageIO),
+ * extended in SH41 with output-format conversion. It is the {@code @Primary}
+ * {@link ShImageTransformPipeline}, so the {@code /api/v2/staticfile/{id}} controller
+ * and the {@code /file_source/**} resource transformer route through it.
  *
- * <p><strong>Scope (deliberately resize/crop only):</strong> the output is always
- * re-encoded in the <em>source</em> format. Honouring the {@code format} parameter
- * (webp/avif/jpeg negotiation) is SH41, so a {@code ?format=} with no dimension is
- * a no-op here (returns empty → original bytes). The {@link ShImageCropMode}
- * decides how {@code w}/{@code h} constrain the resize:</p>
+ * <p><strong>Resize/crop (SH40)</strong> — the {@link ShImageCropMode} decides how
+ * {@code w}/{@code h} constrain the resize:</p>
  * <ul>
  *   <li>{@code FIT} (default) — scale to fit inside {@code w}×{@code h}, preserve aspect.</li>
  *   <li>{@code FILL} — scale to cover {@code w}×{@code h}, then centre-crop the overflow.</li>
@@ -43,8 +42,18 @@ import lombok.extern.slf4j.Slf4j;
  *   <li>{@code SCALE} — stretch to exactly {@code w}×{@code h}, ignore aspect.</li>
  * </ul>
  *
+ * <p><strong>Format conversion (SH41)</strong> — when {@code ?format=} is present the
+ * output is re-encoded in that format (the served content type changes to match);
+ * otherwise the <em>source</em> format is preserved. A format-only request (no
+ * dimension) is now a valid transcode — the image is decoded and re-encoded without
+ * resizing. Supported writers: jpeg/png/gif/bmp (ImageIO/jai-imageio) and
+ * <strong>webp</strong> (the {@code webp-imageio} SPI). {@code avif} has no Java
+ * writer, so {@code ?format=avif} falls through to the graceful passthrough below.
+ * Converting an image with alpha to a format that can't carry it (jpeg/bmp) flattens
+ * onto a white background first, otherwise the alpha channel garbles the colours.</p>
+ *
  * <p>Anything that cannot be safely transformed — a non-raster/unreadable source,
- * a format ImageIO can't re-encode, or an I/O failure — falls back to
+ * a target format with no ImageIO writer, or an I/O failure — falls back to
  * {@link Optional#empty()} so the delivery path serves the original bytes rather
  * than 500ing. Resource ceilings (max dimensions, decode bombs) are SH43.</p>
  *
@@ -59,15 +68,20 @@ public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPi
     @Override
     public Optional<ShImageTransformResult> transform(Resource source, String sourceContentType,
                                                       ShImageTransformSpec spec) {
-        // Resize/crop needs at least one target dimension; a format-only request is SH41's job.
-        if (spec.width() == null && spec.height() == null) {
+        boolean resizes = spec.width() != null || spec.height() != null;
+        boolean converts = spec.format() != null;
+        // Nothing to do: neither a dimension nor a target format was requested.
+        if (!resizes && !converts) {
             return Optional.empty();
         }
 
-        String imageFormat = imageFormatOf(sourceContentType, source.getFilename());
-        if (imageFormat == null) {
-            log.debug("Source {} is not a re-encodable image (content-type {}); serving original",
-                    source.getFilename(), sourceContentType);
+        // Target ImageIO format name: the requested format (SH41) or, absent that, the source's.
+        String outputFormat = converts
+                ? imageFormatOfParam(spec.format())
+                : imageFormatOf(sourceContentType, source.getFilename());
+        if (outputFormat == null) {
+            log.debug("No re-encodable target format for {} (content-type {}, requested {}); serving original",
+                    source.getFilename(), sourceContentType, spec.format());
             return Optional.empty();
         }
 
@@ -78,19 +92,43 @@ public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPi
                 return Optional.empty();
             }
 
-            BufferedImage transformed = resize(src, spec);
+            BufferedImage transformed = resizes ? resize(src, spec) : src;
+            transformed = flattenIfOpaqueFormat(transformed, outputFormat);
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            if (!ImageIO.write(transformed, imageFormat, out)) {
-                log.debug("No ImageIO writer for format {}; serving original", imageFormat);
+            if (!ImageIO.write(transformed, outputFormat, out)) {
+                log.debug("No ImageIO writer for format {}; serving original", outputFormat);
                 return Optional.empty();
             }
-            String contentType = sourceContentType != null ? sourceContentType : "image/" + imageFormat;
-            return Optional.of(new ShImageTransformResult(out.toByteArray(), contentType));
+            return Optional.of(new ShImageTransformResult(out.toByteArray(), contentTypeFor(outputFormat)));
         } catch (IOException e) {
             log.warn("Image transform failed for {}; serving original", source.getFilename(), e);
             return Optional.empty();
         }
+    }
+
+    /**
+     * Flatten an image with an alpha channel onto a white background when the target
+     * format ({@code jpeg}/{@code bmp}) cannot carry transparency — otherwise the
+     * alpha bytes are reinterpreted as colour and the result is garbled.
+     */
+    private BufferedImage flattenIfOpaqueFormat(BufferedImage img, String format) {
+        boolean opaqueFormat = "jpeg".equals(format) || "bmp".equals(format);
+        if (!opaqueFormat || !img.getColorModel().hasAlpha()) {
+            return img;
+        }
+        BufferedImage rgb = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = rgb.createGraphics();
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, img.getWidth(), img.getHeight());
+        g.drawImage(img, 0, 0, null);
+        g.dispose();
+        return rgb;
+    }
+
+    /** The content type to serve a given ImageIO output format as. */
+    private String contentTypeFor(String format) {
+        return "jpeg".equals(format) ? "image/jpeg" : "image/" + format;
     }
 
     private BufferedImage resize(BufferedImage src, ShImageTransformSpec spec) throws IOException {
@@ -134,8 +172,27 @@ public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPi
     }
 
     /**
-     * The ImageIO format name to re-encode in (= the source format; SH40 does not
-     * convert), or {@code null} if the source is not a raster image we handle.
+     * Map a validated {@code ?format=} value (SH41) to its ImageIO writer-format
+     * name. {@code avif} has no Java writer, so it returns {@code null} → graceful
+     * passthrough. The value has already passed {@link ShImageTransformSpec}'s
+     * allow-list, so anything unexpected here also degrades to {@code null}.
+     */
+    private String imageFormatOfParam(String format) {
+        return switch (format) {
+            case "jpg", "jpeg" -> "jpeg";
+            case "png" -> "png";
+            case "gif" -> "gif";
+            case "bmp" -> "bmp";
+            case "webp" -> "webp";
+            // avif has no Java writer, so it (and anything unhandled) degrades to null
+            default -> null;
+        };
+    }
+
+    /**
+     * The ImageIO format name to re-encode in (= the source format; used when no
+     * {@code ?format=} conversion was requested), or {@code null} if the source is
+     * not a raster image we handle.
      */
     private String imageFormatOf(String contentType, String fileName) {
         String ct = contentType != null ? contentType.toLowerCase(Locale.ROOT) : "";

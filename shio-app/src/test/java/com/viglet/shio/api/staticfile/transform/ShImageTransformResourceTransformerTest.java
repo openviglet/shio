@@ -9,6 +9,8 @@
 package com.viglet.shio.api.staticfile.transform;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -19,7 +21,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.servlet.resource.HttpResource;
 import org.springframework.web.servlet.resource.ResourceResolverChain;
 import org.springframework.web.servlet.resource.ResourceTransformerChain;
 
@@ -95,6 +99,23 @@ class ShImageTransformResourceTransformerTest {
 
         assertArrayEquals(produced, out.getContentAsByteArray(),
                 "a non-empty pipeline result replaces the served bytes");
+    }
+
+    @Test
+    void exposesConvertedContentTypeViaHttpResource() throws IOException {
+        // SH41: a jpeg→webp conversion must override the file-name-derived Content-Type.
+        ShImageTransformPipeline pipeline = (s, ct, spec) ->
+                Optional.of(new ShImageTransformResult("webp-bytes".getBytes(StandardCharsets.UTF_8), "image/webp"));
+        var transformer = new ShImageTransformResourceTransformer(pipeline);
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setParameter("format", "webp");
+
+        Resource out = transformer.transform(request, ORIGINAL, echoChain());
+
+        HttpResource httpResource = assertInstanceOf(HttpResource.class, out,
+                "the transformed resource carries response headers");
+        assertEquals("image/webp", httpResource.getResponseHeaders().getFirst(HttpHeaders.CONTENT_TYPE));
     }
 
     @Test

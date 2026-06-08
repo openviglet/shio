@@ -121,12 +121,80 @@ class ShThumbnailatorImageTransformPipelineTest {
     }
 
     @Test
-    void formatOnlyRequestIsNoOpUntilSh41() throws IOException {
+    void formatOnlyRequestConvertsWithoutResizing() throws IOException {
+        Resource src = image(200, 100, "png", "wide.png");
+        ShImageTransformResult out = pipeline.transform(src, "image/png",
+                new ShImageTransformSpec(null, null, "jpeg", null)).orElseThrow();
+
+        assertEquals("image/jpeg", out.contentType(), "format-only request transcodes (SH41)");
+        BufferedImage img = decode(out);
+        assertEquals(200, img.getWidth(), "no dimension → original size preserved");
+        assertEquals(100, img.getHeight());
+    }
+
+    @Test
+    void convertsPngToJpegChangingContentType() throws IOException {
+        Resource src = image(200, 100, "png", "wide.png");
+        ShImageTransformResult out = pipeline.transform(src, "image/png",
+                new ShImageTransformSpec(100, null, "jpeg", null)).orElseThrow();
+
+        assertEquals("image/jpeg", out.contentType(), "output content type follows ?format=");
+        assertEquals(100, decode(out).getWidth());
+    }
+
+    @Test
+    void convertsToWebp() throws IOException {
+        Resource src = image(200, 100, "png", "wide.png");
+        ShImageTransformResult out = pipeline.transform(src, "image/png",
+                new ShImageTransformSpec(100, null, "webp", null)).orElseThrow();
+
+        assertEquals("image/webp", out.contentType());
+        BufferedImage img = decode(out); // webp-imageio registers a reader too
+        assertEquals(100, img.getWidth());
+    }
+
+    @Test
+    void flattensAlphaWhenConvertingToJpeg() throws IOException {
+        // A transparent ARGB source converted to JPEG (which has no alpha) must
+        // flatten cleanly rather than garble — the result must stay decodable.
+        BufferedImage argb = new BufferedImage(120, 80, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = argb.createGraphics();
+        g.setColor(new Color(0, 0, 255, 128));
+        g.fillRect(0, 0, 120, 80);
+        g.dispose();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        assertTrue(ImageIO.write(argb, "png", baos));
+        Resource src = new ByteArrayResource(baos.toByteArray()) {
+            @Override
+            public String getFilename() {
+                return "alpha.png";
+            }
+        };
+
+        ShImageTransformResult out = pipeline.transform(src, "image/png",
+                new ShImageTransformSpec(null, null, "jpeg", null)).orElseThrow();
+
+        assertEquals("image/jpeg", out.contentType());
+        assertNotNull(decode(out));
+    }
+
+    @Test
+    void avifFormatGracefullyDegrades() throws IOException {
+        // No Java AVIF writer is bundled, so ?format=avif serves the original bytes.
         Resource src = image(200, 100, "png", "wide.png");
         Optional<ShImageTransformResult> out = pipeline.transform(src, "image/png",
-                new ShImageTransformSpec(null, null, "webp", null));
+                new ShImageTransformSpec(100, null, "avif", null));
 
-        assertTrue(out.isEmpty(), "no dimension → SH40 has nothing to resize; format conversion is SH41");
+        assertTrue(out.isEmpty(), "avif has no Java writer → graceful passthrough");
+    }
+
+    @Test
+    void noParametersIsNoOp() throws IOException {
+        Resource src = image(200, 100, "png", "wide.png");
+        Optional<ShImageTransformResult> out = pipeline.transform(src, "image/png",
+                new ShImageTransformSpec(null, null, null, null));
+
+        assertTrue(out.isEmpty(), "neither dimension nor format → nothing to do");
     }
 
     @Test

@@ -13,6 +13,8 @@ import java.net.URLConnection;
 import java.util.Optional;
 
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.servlet.resource.HttpResource;
 import org.springframework.web.servlet.resource.ResourceTransformer;
 import org.springframework.web.servlet.resource.ResourceTransformerChain;
 import org.springframework.web.servlet.resource.TransformedResource;
@@ -31,6 +33,11 @@ import jakarta.servlet.http.HttpServletRequest;
  * {@link TransformedResource} (which preserves the original file name and
  * last-modified). A malformed query string raises {@link ShImageTransformException}
  * (→ 400) from {@link ShImageTransformSpec#parse}.</p>
+ *
+ * <p>SH41 format conversion can change the result's content type (e.g. jpeg → webp).
+ * Because the resource handler derives the served {@code Content-Type} from the
+ * resource file name, the wrapper implements {@link HttpResource} to pin the
+ * transform's content type as a response header, overriding the file-name guess.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.2
@@ -64,6 +71,32 @@ public class ShImageTransformResourceTransformer implements ResourceTransformer 
         if (result.isEmpty()) {
             return resolved;
         }
-        return new TransformedResource(resolved, result.get().bytes());
+        return new ShTransformedImageResource(resolved, result.get());
+    }
+
+    /**
+     * A {@link TransformedResource} that also advertises the transform's content type
+     * via {@link HttpResource#getResponseHeaders()}. The resource handler resolves
+     * {@code Content-Type} from the (unchanged) file name first, then applies these
+     * headers — so a SH41 format conversion (jpeg → webp) is served as the correct
+     * type even though the file name still ends in {@code .jpg}.
+     */
+    private static final class ShTransformedImageResource extends TransformedResource implements HttpResource {
+
+        private final String contentType;
+
+        ShTransformedImageResource(Resource original, ShImageTransformResult result) {
+            super(original, result.bytes());
+            this.contentType = result.contentType();
+        }
+
+        @Override
+        public HttpHeaders getResponseHeaders() {
+            HttpHeaders headers = new HttpHeaders();
+            if (contentType != null) {
+                headers.set(HttpHeaders.CONTENT_TYPE, contentType);
+            }
+            return headers;
+        }
     }
 }

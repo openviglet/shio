@@ -30,7 +30,7 @@ import java.util.Set;
  */
 public record ShImageTransformSpec(Integer width, Integer height, String format, ShImageCropMode crop) {
 
-    /** Output formats accepted on the {@code format} parameter (SH41 does the actual encoding). */
+    /** Output formats accepted on the {@code format} parameter (SH41 encodes them; avif degrades gracefully). */
     private static final Set<String> ALLOWED_FORMATS = Set.of("jpg", "jpeg", "png", "gif", "webp", "avif");
 
     /**

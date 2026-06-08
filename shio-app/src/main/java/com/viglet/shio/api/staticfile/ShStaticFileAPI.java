@@ -112,9 +112,10 @@ public class ShStaticFileAPI {
      *
      * <p>SH39: the optional {@code w}/{@code h}/{@code format}/{@code crop} query
      * parameters are parsed into an {@link ShImageTransformSpec}; when present they
-     * are routed to the {@link ShImageTransformPipeline}. Until SH40 supplies the
-     * real pipeline this is a no-op (the original bytes are served), but a malformed
-     * parameter still yields 400 here.</p>
+     * are routed to the {@link ShImageTransformPipeline} (SH40 resize/crop, SH41
+     * format conversion — the response content type follows the transformed result).
+     * The pipeline gracefully declines (serves the original bytes) for a non-image
+     * or unsupported target, but a malformed parameter still yields 400 here.</p>
      */
     @GetMapping("/{id}")
     public ResponseEntity<Resource> serve(@PathVariable String id,
