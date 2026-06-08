@@ -441,6 +441,18 @@
                     <version>3.15.0</version>
                     <configuration>
                         <parameters>true</parameters>
+                        <!-- Pin Lombok as an annotation processor explicitly.
+                             Newer javac (JDK 23+) no longer auto-discovers
+                             processors from the classpath, which silently
+                             dropped every Lombok-generated getter/setter in
+                             Docker builds on newer JDKs. -->
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>1.18.46</version>
+                            </path>
+                        </annotationProcessorPaths>
                     </configuration>
                 </plugin>
             </plugins>
