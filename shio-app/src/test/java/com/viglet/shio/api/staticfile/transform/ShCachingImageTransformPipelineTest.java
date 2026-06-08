@@ -58,7 +58,7 @@ class ShCachingImageTransformPipelineTest {
     /** A delegate that counts calls and returns a fixed (un-stamped) result. */
     private static ShThumbnailatorImageTransformPipeline countingDelegate(AtomicInteger calls,
                                                                           Optional<ShImageTransformResult> answer) {
-        return new ShThumbnailatorImageTransformPipeline() {
+        return new ShThumbnailatorImageTransformPipeline(new com.viglet.shio.property.ShImageTransformProperties()) {
             @Override
             public Optional<ShImageTransformResult> transform(Resource source, String ct, ShImageTransformSpec spec) {
                 calls.incrementAndGet();

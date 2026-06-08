@@ -27,9 +27,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 
+import com.viglet.shio.property.ShImageTransformProperties;
+
 class ShThumbnailatorImageTransformPipelineTest {
 
-    private final ShThumbnailatorImageTransformPipeline pipeline = new ShThumbnailatorImageTransformPipeline();
+    private final ShImageTransformProperties properties = new ShImageTransformProperties();
+    private final ShThumbnailatorImageTransformPipeline pipeline =
+            new ShThumbnailatorImageTransformPipeline(properties);
 
     private static Resource image(int w, int h, String format, String fileName) throws IOException {
         BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
@@ -219,5 +223,28 @@ class ShThumbnailatorImageTransformPipelineTest {
                 new ShImageTransformSpec(100, 100, null, null));
 
         assertTrue(out.isEmpty(), "non-image content type → serve original");
+    }
+
+    @Test
+    void sourceOverPixelCeilingDeclines() throws IOException {
+        // SH43 decode-bomb guard: a source whose declared dimensions exceed
+        // max-source-pixels is refused before decode → original bytes serve.
+        properties.setMaxSourcePixels(10_000L); // 100x100 = 10_000, so 200x100 is over
+        Resource src = image(200, 100, "png", "big.png");
+        Optional<ShImageTransformResult> out = pipeline.transform(src, "image/png",
+                new ShImageTransformSpec(50, 50, null, null));
+
+        assertTrue(out.isEmpty(), "over-ceiling source declines without decoding");
+    }
+
+    @Test
+    void sourceWithinPixelCeilingTransforms() throws IOException {
+        // The same ceiling still permits a within-bounds source.
+        properties.setMaxSourcePixels(100_000L); // 200x100 = 20_000, under
+        Resource src = image(200, 100, "png", "ok.png");
+        ShImageTransformResult out = pipeline.transform(src, "image/png",
+                new ShImageTransformSpec(50, null, null, null)).orElseThrow();
+
+        assertEquals(50, decode(out).getWidth());
     }
 }

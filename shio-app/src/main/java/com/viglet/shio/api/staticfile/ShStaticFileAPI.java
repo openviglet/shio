@@ -30,8 +30,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.viglet.shio.api.staticfile.transform.ShImageTransformGuard;
 import com.viglet.shio.api.staticfile.transform.ShImageTransformPipeline;
 import com.viglet.shio.api.staticfile.transform.ShImageTransformResult;
+import com.viglet.shio.api.staticfile.transform.ShImageTransformSigner;
 import com.viglet.shio.api.staticfile.transform.ShImageTransformSpec;
 import com.viglet.shio.bean.error.ShHttpMessageBean;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
@@ -60,15 +62,21 @@ public class ShStaticFileAPI {
     private final ShFileStorageService storage;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShImageTransformPipeline imageTransformPipeline;
+    private final ShImageTransformGuard imageTransformGuard;
+    private final ShImageTransformSigner imageTransformSigner;
 
     public ShStaticFileAPI(ShStaticFileService shStaticFileService,
                            ShFileStorageService storage,
                            ShPostUnifiedRepository shPostUnifiedRepository,
-                           ShImageTransformPipeline imageTransformPipeline) {
+                           ShImageTransformPipeline imageTransformPipeline,
+                           ShImageTransformGuard imageTransformGuard,
+                           ShImageTransformSigner imageTransformSigner) {
         this.shStaticFileService = shStaticFileService;
         this.storage = storage;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.imageTransformPipeline = imageTransformPipeline;
+        this.imageTransformGuard = imageTransformGuard;
+        this.imageTransformSigner = imageTransformSigner;
     }
 
     /**
@@ -124,6 +132,7 @@ public class ShStaticFileAPI {
                                           @RequestParam(name = "h", required = false) String h,
                                           @RequestParam(name = "format", required = false) String format,
                                           @RequestParam(name = "crop", required = false) String crop,
+                                          @RequestParam(name = "sig", required = false) String sig,
                                           @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
         ShPostUnified post = shPostUnifiedRepository.findById(id).stream().findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "File post not found"));
@@ -142,6 +151,9 @@ public class ShStaticFileAPI {
 
         Optional<ShImageTransformSpec> spec = ShImageTransformSpec.parse(w, h, format, crop);
         if (spec.isPresent()) {
+            // SH43: enforce the limits & security policy (signed URL, allowed formats, max
+            // dimensions) before spending CPU on the transform.
+            imageTransformGuard.check(id, spec.get(), sig);
             Optional<ShImageTransformResult> result =
                     imageTransformPipeline.transform(new PathResource(path), contentType, spec.get());
             if (result.isPresent()) {
@@ -168,6 +180,54 @@ public class ShStaticFileAPI {
                 .body(new PathResource(path));
     }
 
+    /**
+     * Mint a signed transform URL for a {@code File} post (SH43). When signed delivery is
+     * enabled ({@code shio.image-transform.signing.enabled=true}), the public
+     * {@code /file_source/**} and {@code /api/v2/staticfile/{id}} transform routes reject
+     * any request whose {@code sig} this can't reproduce — so the console / SDK call this
+     * (console-authenticated) endpoint to obtain the signature for a given param set.
+     *
+     * <p>Returns the {@code sig} plus a ready-to-append {@code query} string (the same
+     * {@code w/h/format/crop} echoed back with {@code &sig=…}). 409 if no signing secret
+     * is configured (nothing can be minted).</p>
+     */
+    @GetMapping("/{id}/signed-url")
+    public ResponseEntity<ShSignedTransformUrl> signedUrl(@PathVariable String id,
+                                                          @RequestParam(name = "w", required = false) String w,
+                                                          @RequestParam(name = "h", required = false) String h,
+                                                          @RequestParam(name = "format", required = false) String format,
+                                                          @RequestParam(name = "crop", required = false) String crop) {
+        ShImageTransformSpec spec = ShImageTransformSpec.parse(w, h, format, crop)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "No transform parameters to sign"));
+        String sig;
+        try {
+            sig = imageTransformSigner.sign(id, spec);
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+        }
+        return ResponseEntity.ok(new ShSignedTransformUrl(sig, buildQuery(spec, sig)));
+    }
+
+    /** The query string (with {@code sig}) for a signed transform, in canonical param order. */
+    private static String buildQuery(ShImageTransformSpec spec, String sig) {
+        StringBuilder query = new StringBuilder();
+        if (spec.width() != null) {
+            query.append("w=").append(spec.width()).append('&');
+        }
+        if (spec.height() != null) {
+            query.append("h=").append(spec.height()).append('&');
+        }
+        if (spec.format() != null) {
+            query.append("format=").append(spec.format()).append('&');
+        }
+        if (spec.crop() != null) {
+            query.append("crop=").append(spec.crop().name().toLowerCase(java.util.Locale.ROOT)).append('&');
+        }
+        query.append("sig=").append(sig);
+        return query.toString();
+    }
+
     /** Whether the {@code If-None-Match} header (a list, or {@code *}) covers {@code etag}. */
     private static boolean ifNoneMatchMatches(String ifNoneMatch, String etag) {
         if (ifNoneMatch == null || ifNoneMatch.isBlank()) {
@@ -175,5 +235,9 @@ public class ShStaticFileAPI {
         }
         String trimmed = ifNoneMatch.trim();
         return trimmed.equals("*") || trimmed.contains(etag);
+    }
+
+    /** Response of {@code GET /{id}/signed-url}: the HMAC signature and the query to append. */
+    public record ShSignedTransformUrl(String sig, String query) {
     }
 }

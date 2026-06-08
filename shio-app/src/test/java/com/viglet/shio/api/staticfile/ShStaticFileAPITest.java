@@ -229,4 +229,42 @@ class ShStaticFileAPITest {
                         .principal(mockPrincipal))
                 .andExpect(status().isNotModified());
     }
+
+    @Test
+    void stage07TransformOverMaxDimensionIsBadRequest() throws Exception {
+        // SH43: a requested dimension above shio.image-transform.max-width (default 5000)
+        // is rejected with 400 before any transform work.
+        String imagePostId = uploadImagePost();
+        mockMvc.perform(get("/api/v2/staticfile/" + imagePostId)
+                        .param("w", "99999")
+                        .principal(mockPrincipal))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void stage08SignedUrlWithoutSecretIsConflict() throws Exception {
+        // SH43: minting a signed URL needs a configured secret; with none set (the test
+        // default) the endpoint reports 409 rather than handing out an unusable token.
+        String imagePostId = uploadImagePost();
+        mockMvc.perform(get("/api/v2/staticfile/" + imagePostId + "/signed-url")
+                        .param("w", "100")
+                        .principal(mockPrincipal))
+                .andExpect(status().isConflict());
+    }
+
+    /** Upload a small PNG and return its File-post id. */
+    private String uploadImagePost() throws Exception {
+        BufferedImage img = new BufferedImage(120, 80, BufferedImage.TYPE_INT_RGB);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        assertTrue(ImageIO.write(img, "png", baos), "fixture must encode");
+        MockMultipartFile imageFile = new MockMultipartFile(
+                "file", "pic.png", "image/png", baos.toByteArray());
+        String response = mockMvc.perform(multipart("/api/v2/staticfile/upload")
+                        .file(imageFile)
+                        .param("folderId", folderId)
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return com.jayway.jsonpath.JsonPath.read(response, "$.id");
+    }
 }

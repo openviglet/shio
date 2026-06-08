@@ -21,9 +21,10 @@ import java.util.Set;
  * <p>{@link #parse} is the single entry point. It returns {@link Optional#empty()}
  * when <em>no</em> transform parameter is present (the common case — the request
  * is for the original bytes), and throws {@link ShImageTransformException} (→ 400)
- * for a present-but-invalid value. Hard ceilings (max dimensions, signed URLs) are
- * deliberately out of scope here — that is SH43; this stage only parses + sanity
- * checks, then routes to the {@link ShImageTransformPipeline}.</p>
+ * for a present-but-invalid value. This stage only parses + sanity-checks the
+ * <em>syntax</em>; the policy ceilings (max output dimensions, allowed-format
+ * narrowing, signed URLs) live downstream in {@link ShImageTransformGuard} (SH43),
+ * which both delivery routes invoke before transforming.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.2

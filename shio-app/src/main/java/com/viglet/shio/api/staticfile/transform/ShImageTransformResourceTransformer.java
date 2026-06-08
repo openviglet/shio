@@ -45,15 +45,26 @@ import jakarta.servlet.http.HttpServletRequest;
  * {@code ETag} header and short-circuit {@code If-None-Match} to a 304 on this
  * public delivery path too.</p>
  *
+ * <p>SH43: before transforming, the {@link ShImageTransformGuard} enforces the limits
+ * &amp; security policy — allowed formats, max output dimensions (→ 400), and, when
+ * signed delivery is enabled, a valid {@code sig} (→ 403). The signature is bound to
+ * the {@code File} post id, which on this route is the first path segment after
+ * {@code /file_source/} (see {@link #postIdOf}) — identical to what the controller
+ * route signs with, so one minted token verifies on either path.</p>
+ *
  * @author Alexandre Oliveira
  * @since 2026.2
  */
 public class ShImageTransformResourceTransformer implements ResourceTransformer {
 
-    private final ShImageTransformPipeline pipeline;
+    private static final String FILE_SOURCE_SEGMENT = "/file_source/";
 
-    public ShImageTransformResourceTransformer(ShImageTransformPipeline pipeline) {
+    private final ShImageTransformPipeline pipeline;
+    private final ShImageTransformGuard guard;
+
+    public ShImageTransformResourceTransformer(ShImageTransformPipeline pipeline, ShImageTransformGuard guard) {
         this.pipeline = pipeline;
+        this.guard = guard;
     }
 
     @Override
@@ -70,6 +81,12 @@ public class ShImageTransformResourceTransformer implements ResourceTransformer 
             return resolved;
         }
 
+        // SH43: enforce the limits & security policy (signed URL, allowed formats, max
+        // dimensions) before transforming. The signature is bound to the File post id —
+        // the first path segment after /file_source/ — so a URL signed for the controller
+        // route (which signs with the bare id) verifies identically here.
+        guard.check(postIdOf(request), spec.get(), request.getParameter("sig"));
+
         String fileName = resolved.getFilename();
         String contentType = fileName != null ? URLConnection.guessContentTypeFromName(fileName) : null;
 
@@ -78,6 +95,27 @@ public class ShImageTransformResourceTransformer implements ResourceTransformer 
             return resolved;
         }
         return new ShTransformedImageResource(resolved, result.get());
+    }
+
+    /**
+     * The {@code File} post id a {@code /file_source/<postId>/<fileName>} request targets:
+     * the first path segment after {@code /file_source/}. This is the resource identity the
+     * SH43 signature is bound to (the controller route signs with the same bare id), so a
+     * URL signed once verifies on either route. Returns {@code null} when the path doesn't
+     * match (signature verification then fails closed under signed delivery).
+     */
+    private static String postIdOf(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        if (uri == null) {
+            return null;
+        }
+        int start = uri.indexOf(FILE_SOURCE_SEGMENT);
+        if (start < 0) {
+            return null;
+        }
+        String rest = uri.substring(start + FILE_SOURCE_SEGMENT.length());
+        int slash = rest.indexOf('/');
+        return slash >= 0 ? rest.substring(0, slash) : rest;
     }
 
     /**

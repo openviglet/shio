@@ -14,13 +14,18 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.Optional;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+
+import com.viglet.shio.property.ShImageTransformProperties;
 
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.geometry.Positions;
@@ -55,7 +60,11 @@ import lombok.extern.slf4j.Slf4j;
  * <p>Anything that cannot be safely transformed — a non-raster/unreadable source,
  * a target format with no ImageIO writer, or an I/O failure — falls back to
  * {@link Optional#empty()} so the delivery path serves the original bytes rather
- * than 500ing. Resource ceilings (max dimensions, decode bombs) are SH43.</p>
+ * than 500ing. SH43 adds the <strong>decode-bomb guard</strong> here: the source
+ * pixel dimensions are read off the image header and a source over
+ * {@code shio.image-transform.max-source-pixels} declines the same way, before any
+ * raster is allocated (the requested-output ceilings and signed-URL gate live in
+ * {@link ShImageTransformGuard}, upstream of this pipeline).</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.2
@@ -63,6 +72,12 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPipeline {
+
+    private final ShImageTransformProperties properties;
+
+    public ShThumbnailatorImageTransformPipeline(ShImageTransformProperties properties) {
+        this.properties = properties;
+    }
 
     @Override
     public Optional<ShImageTransformResult> transform(Resource source, String sourceContentType,
@@ -84,10 +99,16 @@ public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPi
             return Optional.empty();
         }
 
-        try (InputStream in = source.getInputStream()) {
-            BufferedImage src = ImageIO.read(in);
+        try (InputStream in = source.getInputStream();
+             ImageInputStream iis = ImageIO.createImageInputStream(in)) {
+            if (iis == null) {
+                log.debug("No ImageInputStream for {}; serving original", source.getFilename());
+                return Optional.empty();
+            }
+            BufferedImage src = decodeWithinPixelCeiling(iis, source.getFilename());
             if (src == null) {
-                log.debug("ImageIO could not decode {}; serving original", source.getFilename());
+                // Either undecodable or a decode-bomb over the source-pixel ceiling (SH43);
+                // in both cases serve the original bytes rather than allocate / 500.
                 return Optional.empty();
             }
 
@@ -103,6 +124,37 @@ public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPi
         } catch (IOException e) {
             log.warn("Image transform failed for {}; serving original", source.getFilename(), e);
             return Optional.empty();
+        }
+    }
+
+    /**
+     * Decode {@code iis} to a {@link BufferedImage}, but first read the source dimensions
+     * from the image header and <em>refuse to decode</em> when {@code width × height}
+     * exceeds {@code shio.image-transform.max-source-pixels} (SH43). This is the
+     * decode-bomb guard: a few-KB file can declare enormous dimensions and only blow up the
+     * heap once decoded, so the ceiling is checked off the header before any raster is
+     * allocated. Returns {@code null} for an undecodable source or an over-ceiling one
+     * (the caller serves the original bytes in both cases).
+     */
+    private BufferedImage decodeWithinPixelCeiling(ImageInputStream iis, String fileName) throws IOException {
+        Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
+        if (!readers.hasNext()) {
+            log.debug("No ImageIO reader for {}; serving original", fileName);
+            return null;
+        }
+        ImageReader reader = readers.next();
+        try {
+            reader.setInput(iis, true, true);
+            long pixels = (long) reader.getWidth(0) * reader.getHeight(0);
+            long ceiling = properties.getMaxSourcePixels();
+            if (ceiling > 0 && pixels > ceiling) {
+                log.warn("Source {} is {} px, over the {} px transform ceiling; serving original",
+                        fileName, pixels, ceiling);
+                return null;
+            }
+            return reader.read(0);
+        } finally {
+            reader.dispose();
         }
     }
 

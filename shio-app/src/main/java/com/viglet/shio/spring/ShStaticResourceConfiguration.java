@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import com.viglet.shio.api.staticfile.transform.ShImageTransformGuard;
 import com.viglet.shio.api.staticfile.transform.ShImageTransformPipeline;
 import com.viglet.shio.api.staticfile.transform.ShImageTransformResourceTransformer;
 import com.viglet.shio.api.staticfile.transform.ShImageTransformResourceTransformer.ShTransformedImageResource;
@@ -54,11 +55,14 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
 
     private final ShFileSourceProperties fileSourceProperties;
     private final ShImageTransformPipeline imageTransformPipeline;
+    private final ShImageTransformGuard imageTransformGuard;
 
     public ShStaticResourceConfiguration(ShFileSourceProperties fileSourceProperties,
-                                         ShImageTransformPipeline imageTransformPipeline) {
+                                         ShImageTransformPipeline imageTransformPipeline,
+                                         ShImageTransformGuard imageTransformGuard) {
         this.fileSourceProperties = fileSourceProperties;
         this.imageTransformPipeline = imageTransformPipeline;
+        this.imageTransformGuard = imageTransformGuard;
     }
 
     @Override
@@ -70,6 +74,6 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
                 .setEtagGenerator(resource -> resource instanceof ShTransformedImageResource transformed
                         ? transformed.getEtag() : null)
                 .resourceChain(false)
-                .addTransformer(new ShImageTransformResourceTransformer(imageTransformPipeline));
+                .addTransformer(new ShImageTransformResourceTransformer(imageTransformPipeline, imageTransformGuard));
     }
 }
