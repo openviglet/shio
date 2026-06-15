@@ -11,7 +11,7 @@
     <description>Viglet Shio CMS</description>
 
     <properties>
-        <revision>2026.2</revision>
+        <revision>2026.3</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <spring-boot.version>4.0.6</spring-boot.version>

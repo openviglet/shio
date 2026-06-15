@@ -1,7 +1,7 @@
 {
   "name": "shio-react",
   "private": true,
-  "version": "2026.2",
+  "version": "2026.3",
   "type": "module",
   "scripts": {
     "dev": "vite",

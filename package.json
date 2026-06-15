@@ -1,7 +1,7 @@
 {
   "name": "@viglet/shio-js",
   "private": true,
-  "version": "2026.2.0",
+  "version": "2026.3.1",
   "description": "Shio CMS JavaScript workspace — console (shio-react), CDA client, React SDK and the Next.js starter generator.",
   "type": "module",
   "packageManager": "pnpm@10.13.1",

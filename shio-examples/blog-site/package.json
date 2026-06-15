@@ -1,7 +1,7 @@
 {
   "name": "blog-site",
   "private": true,
-  "version": "2026.2.0",
+  "version": "2026.3.1",
   "type": "module",
   "scripts": {
     "dev": "vite",

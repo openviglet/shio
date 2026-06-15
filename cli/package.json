@@ -1,6 +1,6 @@
 {
   "name": "@viglet/shio",
-  "version": "2026.2.1",
+  "version": "2026.3.1",
   "description": "The Shio CMS command-line interface — scaffold sites, generate types, and manage your content model as code (post-types pull/push). The 'JS dev, zero Java' workflow.",
   "type": "module",
   "bin": {

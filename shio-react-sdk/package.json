@@ -1,6 +1,6 @@
 {
   "name": "@viglet/shio-react-sdk",
-  "version": "2026.2.1",
+  "version": "2026.3.1",
   "description": "React SDK for consuming Shio CMS content via the Content Delivery API (CDA). Hooks + render components built on @viglet/shio-client.",
   "type": "module",
   "main": "dist/shio-react-sdk.umd.cjs",

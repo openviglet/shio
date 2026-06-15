@@ -1,6 +1,6 @@
 {
   "name": "@viglet/shio-editor-cors",
-  "version": "2026.2.0",
+  "version": "2026.3.1",
   "description": "Shio CMS Universal Editor bridge - enables inline visual editing for any page",
   "type": "module",
   "main": "dist/shio-editor-cors.umd.cjs",
