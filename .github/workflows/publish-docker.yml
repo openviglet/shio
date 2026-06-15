@@ -8,9 +8,6 @@ name: Publish Docker Image
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - "2026.3"
 
 env:
   REGISTRY: ghcr.io
