@@ -1,35 +1,40 @@
-FROM eclipse-temurin:21-jdk-centos7 as shiobuild
+# Multi-stage build for Viglet Shio CMS.
+# Ported from viglet/cloud docker/Dockerfile.shio — the `viglet/jdk-build`
+# base (eclipse-temurin:25-jdk + git) is inlined here so the build is
+# self-contained and needs no externally published base image.
+FROM eclipse-temurin:25-jdk AS build
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+ARG REPO_BRANCH=2026.3
+ARG CACHE_BUST=none
+# Reference CACHE_BUST in the RUN so a new SHA invalidates the git clone layer.
+# `github_token` is a BuildKit secret. It's only present at build time via the
+# runtime mount and never lands in any image layer. Optional — falls back to
+# anonymous clone if the secret is empty.
+RUN --mount=type=secret,id=github_token,required=false \
+    echo "cache_bust=${CACHE_BUST}" && \
+    if [ -s /run/secrets/github_token ]; then \
+        URL="https://x-access-token:$(cat /run/secrets/github_token)@github.com/openviglet/shio.git"; \
+    else \
+        URL="https://github.com/openviglet/shio.git"; \
+    fi && \
+    git clone --depth 1 --branch ${REPO_BRANCH} "$URL" .
+RUN chmod +x mvnw
+RUN --mount=type=cache,target=/root/.m2 \
+    --mount=type=cache,target=/src/shio-react/node_modules \
+    --mount=type=cache,target=/src/shio-react/node \
+    ./mvnw clean package -DskipTests 2>&1
+
+FROM eclipse-temurin:25-jre
+ARG CACHE_BUST=none
+LABEL org.opencontainers.image.revision=$CACHE_BUST
+RUN groupadd -r java && useradd -r -g java -u 1001 java
 WORKDIR /app
-COPY . .
-RUN ./mvnw shio-app:build
-
-FROM eclipse-temurin:21-jdk-centos7
-WORKDIR /app
-ENV JAVA_OPTS=${JAVA_OPTS:-'-Xmx512m'}
-ENV DEBUG_OPTS=${DEBUG_OPTS}
-ENV PORT=${PORT:-2710}
-
-RUN useradd --system --create-home --uid 1001 --gid 0 java
-
-RUN sh -c 'mkdir -p /app/store'
-
-COPY --from=shiobuild  /app/shio-app/build/libs/shio-app.jar /app/app.jar
-RUN sh -c 'touch /app/app.jar'
-RUN sh -c 'chown -R java /app'
-
-VOLUME /tmp
-VOLUME /app/store
-
+COPY --from=build /src/shio-app/target/viglet-shio.jar app.jar
+RUN mkdir -p /app/store && chown -R java:java /app
 USER java
-
-EXPOSE ${PORT:-2710}
-
-CMD java ${JAVA_OPTS} --add-modules java.se \
-  --add-exports java.base/jdk.internal.ref=ALL-UNNAMED \
-  --add-opens java.base/java.lang=ALL-UNNAMED \
-  --add-opens java.base/java.nio=ALL-UNNAMED \
-  --add-opens java.base/sun.nio.ch=ALL-UNNAMED \
-  --add-opens java.management/sun.management=ALL-UNNAMED \
-  --add-opens jdk.management/com.ibm.lang.management.internal=ALL-UNNAMED \
-  --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED \
-  ${DEBUG_OPTS} -Djava.security.egd=file:/dev/./urandom -jar /app/app.jar
+VOLUME ["/app/store"]
+EXPOSE 2710
+ENV JAVA_OPTS="-Xmx512m -Xms512m"
+ENV DEBUG_OPTS=""
+ENTRYPOINT ["sh", "-c", "exec java ${JAVA_OPTS} ${DEBUG_OPTS} -Djava.security.egd=file:/dev/./urandom -Dlogging.config=classpath:logback-spring-console.xml -jar /app/app.jar"]
