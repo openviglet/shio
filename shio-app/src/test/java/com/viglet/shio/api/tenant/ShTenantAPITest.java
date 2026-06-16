@@ -142,8 +142,32 @@ class ShTenantAPITest {
     }
 
     @Test
-    void stage06Delete() throws Exception {
+    void stage05aSuspend() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v2/tenant/" + newTenantId + "/suspend")
+                .principal(mockPrincipal)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUSPENDED"));
+    }
+
+    @Test
+    void stage05bActivate() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v2/tenant/" + newTenantId + "/activate")
+                .principal(mockPrincipal)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    @Test
+    void stage06DeleteDryRunKeepsTenant() throws Exception {
+        mockMvc.perform(delete("/api/v2/tenant/" + newTenantId).queryParam("dryRun", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dryRun").value(true))
+                .andExpect(jsonPath("$.catalogRemoved").value(false));
+        // The dry run mutates nothing — the tenant is still resolvable.
+        mockMvc.perform(get("/api/v2/tenant/" + newTenantId)).andExpect(status().isOk());
+    }
+
+    @Test
+    void stage07Delete() throws Exception {
         mockMvc.perform(delete("/api/v2/tenant/" + newTenantId)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.deleted").value(true));
+                .andExpect(jsonPath("$.catalogRemoved").value(true));
     }
 }

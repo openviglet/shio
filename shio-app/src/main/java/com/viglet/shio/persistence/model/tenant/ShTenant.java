@@ -11,6 +11,8 @@ import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -67,6 +69,14 @@ public class ShTenant implements Serializable {
     @Column(name = "enabled")
     private boolean enabled = true;
 
+    /**
+     * Lifecycle state (SH22 / Turing parity). {@code SUSPENDED} keeps the tenant's
+     * data but blocks its members at {@code ShTenantFilter} with HTTP 403.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 16)
+    private ShTenantStatus status = ShTenantStatus.ACTIVE;
+
     @Column(name = "owner", length = 255)
     private String owner;
 
@@ -76,5 +86,10 @@ public class ShTenant implements Serializable {
     /** True for the reserved {@code shio} default tenant (never rename/delete). */
     public boolean isDefaultTenant() {
         return DEFAULT_TENANT_NAME.equals(name);
+    }
+
+    /** Whether this tenant is currently suspended (members blocked). */
+    public boolean isSuspended() {
+        return status == ShTenantStatus.SUSPENDED;
     }
 }

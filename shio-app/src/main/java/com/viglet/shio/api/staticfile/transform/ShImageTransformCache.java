@@ -121,6 +121,35 @@ public class ShImageTransformCache {
         return stamped;
     }
 
+    /**
+     * Evict a whole tenant's cached entries (SH22/B teardown): removes the tenant's
+     * {@code <root>/<tenant>} disk sub-directory and clears the shared in-memory LRU
+     * (coarse — per-tenant memory keys cannot be enumerated cheaply). Best-effort,
+     * never throws.
+     */
+    public void purgeTenant(String tenantId) {
+        if (tenantId == null || tenantId.isBlank()) {
+            return;
+        }
+        memory.clear();
+        Path root = properties.getRootDir();
+        Path dir = root.resolve(sanitize(tenantId)).normalize();
+        if (!dir.startsWith(root) || dir.equals(root) || !Files.isDirectory(dir)) {
+            return;
+        }
+        try (var paths = Files.walk(dir)) {
+            paths.sorted(java.util.Comparator.reverseOrder()).forEach(p -> {
+                try {
+                    Files.deleteIfExists(p);
+                } catch (IOException e) {
+                    log.warn("Could not delete image-cache entry {}", p, e);
+                }
+            });
+        } catch (IOException e) {
+            log.warn("Could not walk image-cache dir {}", dir, e);
+        }
+    }
+
     private Optional<ShImageTransformResult> readDisk(String key) {
         Path bytesPath = entryPath(key);
         Path ctPath = entryPath(key + CONTENT_TYPE_SUFFIX);

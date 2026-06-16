@@ -1,10 +1,14 @@
 package com.viglet.shio.tenant;
 
+import com.viglet.shio.persistence.model.tenant.ShTenant;
+import com.viglet.shio.persistence.repository.tenant.ShTenantRepository;
 import com.viglet.shio.property.ShAppProperties;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
@@ -19,6 +23,9 @@ public class ShTenantFilter extends OncePerRequestFilter {
 
     private static final String WORKSPACE_ID_CLAIM = "workspace_id";
 
+    /** Authority that bypasses tenant lifecycle gates (the platform admin). */
+    private static final String ROLE_ADMIN = "ROLE_ADMIN";
+
     /**
      * Request attribute carrying the tenant of an authenticated CDA token (SH22
      * Part D). {@code ShApiTokenFilter} runs earlier in the chain and sets it; this
@@ -28,21 +35,56 @@ public class ShTenantFilter extends OncePerRequestFilter {
     public static final String TENANT_REQUEST_ATTR = "sh.tenantId";
 
     private final ShAppProperties shAppProperties;
+    private final ShTenantRepository shTenantRepository;
 
-    public ShTenantFilter(ShAppProperties shAppProperties) {
+    public ShTenantFilter(ShAppProperties shAppProperties, ShTenantRepository shTenantRepository) {
         this.shAppProperties = shAppProperties;
+        this.shTenantRepository = shTenantRepository;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        String tenantId = resolveTenant(request);
+        ShTenantContext.setTenantId(tenantId);
         try {
-            ShTenantContext.setTenantId(resolveTenant(request));
+            // SH22/B — a suspended tenant blocks its members (non-admins) with 403.
+            if (shAppProperties.isMultiTenant() && isSuspendedForCurrentUser(tenantId)) {
+                reject(response);
+                return;
+            }
             filterChain.doFilter(request, response);
         } finally {
             ShTenantContext.clear();
         }
+    }
+
+    /**
+     * Whether the resolved tenant is suspended and the current authenticated
+     * principal is a non-admin member (admins still reach a suspended tenant to
+     * manage it; the reserved default tenant is never suspended).
+     */
+    private boolean isSuspendedForCurrentUser(String tenantId) {
+        if (tenantId == null || ShTenantContext.DEFAULT_TENANT.equals(tenantId)) {
+            return false;
+        }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || isAdmin(authentication)) {
+            return false;
+        }
+        return shTenantRepository.findByName(tenantId).map(ShTenant::isSuspended).orElse(false);
+    }
+
+    private static boolean isAdmin(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> ROLE_ADMIN.equals(a.getAuthority()));
+    }
+
+    private void reject(HttpServletResponse response) throws IOException {
+        response.setStatus(HttpStatus.FORBIDDEN.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.getWriter().write("{\"error\":\"Forbidden: tenant is suspended\"}");
     }
 
     private String resolveTenant(HttpServletRequest request) {

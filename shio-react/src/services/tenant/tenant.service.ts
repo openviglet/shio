@@ -42,6 +42,18 @@ export class ShTenantService {
     await axios.delete(`/v2/tenant/${id}`)
   }
 
+  /** Suspend a tenant — blocks its members with 403 (SH22/B). */
+  async suspend(id: string): Promise<ShTenant> {
+    const response = await axios.post<ShTenant>(`/v2/tenant/${id}/suspend`)
+    return response.data
+  }
+
+  /** Re-activate a suspended tenant (SH22/B). */
+  async activate(id: string): Promise<ShTenant> {
+    const response = await axios.post<ShTenant>(`/v2/tenant/${id}/activate`)
+    return response.data
+  }
+
   /** Re-run post-type provisioning for the tenant (SH22 Part C). */
   async provision(id: string): Promise<ShProvisionResult> {
     const response = await axios.post<ShProvisionResult>(`/v2/tenant/${id}/provision`)

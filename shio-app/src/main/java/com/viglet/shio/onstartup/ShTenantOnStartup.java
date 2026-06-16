@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.persistence.model.tenant.ShTenant;
+import com.viglet.shio.persistence.model.tenant.ShTenantStatus;
 import com.viglet.shio.persistence.repository.tenant.ShTenantRepository;
 
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +49,7 @@ public class ShTenantOnStartup implements ApplicationRunner {
             tenant.setName(ShTenant.DEFAULT_TENANT_NAME);
             tenant.setDescription("Default single-tenant workspace");
             tenant.setEnabled(true);
+            tenant.setStatus(ShTenantStatus.ACTIVE);
             tenant.setOwner("system");
             tenant.setCreatedDate(Instant.now());
             shTenantRepository.save(tenant);

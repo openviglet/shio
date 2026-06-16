@@ -1,0 +1,31 @@
+databaseChangeLog:
+  # SH22 follow-up (Turing parity, Phase B) — tenant lifecycle. Adds the
+  # `status` discriminator to the tenant catalog so a tenant can be suspended
+  # (members blocked at ShTenantFilter) without deleting its data. Nullable on
+  # add + backfilled to ACTIVE so existing rows (incl. the seeded `shio` row)
+  # stay live. Types kept DB-agnostic (VARCHAR) per ShLiquibaseChangelogAgnosticTest;
+  # SH26: preserve identifier case on PostgreSQL (re-declared per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh22-tenant-status
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_tenant
+                columnName: status
+      changes:
+        - addColumn:
+            tableName: sh_tenant
+            columns:
+              - column:
+                  name: status
+                  type: VARCHAR(16)
+        - update:
+            tableName: sh_tenant
+            columns:
+              - column:
+                  name: status
+                  value: ACTIVE
+            where: status IS NULL

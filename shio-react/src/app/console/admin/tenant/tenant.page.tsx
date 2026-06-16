@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
-import { Building2, Save, ArrowLeft, Trash2, Info, Sparkles } from "lucide-react"
+import { Building2, Save, ArrowLeft, Trash2, Info, Sparkles, Ban, CircleCheck } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -27,10 +27,11 @@ export default function TenantPage() {
   const isNew = tenantId === "new"
 
   const [item, setItem] = useState<ShTenant>({
-    id: "", name: "", description: "", enabled: true, owner: "", createdDate: "",
+    id: "", name: "", description: "", enabled: true, status: "ACTIVE", owner: "", createdDate: "",
   })
   const [saving, setSaving] = useState(false)
   const isDefault = item.name === "shio"
+  const isSuspended = item.status === "SUSPENDED"
 
   useEffect(() => {
     resetBreadcrumb([
@@ -82,6 +83,16 @@ export default function TenantPage() {
     }
   }
 
+  const handleToggleSuspend = async () => {
+    try {
+      const updated = isSuspended ? await service.activate(item.id) : await service.suspend(item.id)
+      setItem(updated)
+      toast.success(isSuspended ? t("tenantAdmin.activated") : t("tenantAdmin.suspended"))
+    } catch {
+      toast.error(t("common.error"))
+    }
+  }
+
   return (
     <>
       <PageHeader title={t("tenantAdmin.title")} turIcon={Building2} urlBase={ROUTES.ADMIN_ROOT} />
@@ -96,8 +107,20 @@ export default function TenantPage() {
             {isDefault && (
               <Badge variant="secondary" className="text-xs">{t("tenantAdmin.defaultBadge")}</Badge>
             )}
+            {!isNew && isSuspended && (
+              <Badge variant="outline" className="text-xs border-amber-300 text-amber-600 dark:border-amber-700 dark:text-amber-400">
+                {t("tenantAdmin.statusSuspended")}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-2">
+            {!isNew && !isDefault && (
+              <Button variant="ghost" size="sm" onClick={handleToggleSuspend}>
+                {isSuspended
+                  ? <><CircleCheck className="h-4 w-4 mr-1" />{t("tenantAdmin.activate")}</>
+                  : <><Ban className="h-4 w-4 mr-1" />{t("tenantAdmin.suspend")}</>}
+              </Button>
+            )}
             {!isNew && !isDefault && (
               <Button variant="ghost" size="sm" className="text-destructive" onClick={handleDelete}>
                 <Trash2 className="h-4 w-4 mr-1" />

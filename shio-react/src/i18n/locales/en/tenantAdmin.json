@@ -17,5 +17,10 @@
   "tenantAdmin.provisioned": "Provisioned {{count}} post-type(s)",
   "tenantAdmin.nameRequired": "A tenant name is required",
   "tenantAdmin.created": "Tenant created",
-  "tenantAdmin.updated": "Tenant updated"
+  "tenantAdmin.updated": "Tenant updated",
+  "tenantAdmin.suspend": "Suspend",
+  "tenantAdmin.activate": "Activate",
+  "tenantAdmin.suspended": "Tenant suspended",
+  "tenantAdmin.activated": "Tenant activated",
+  "tenantAdmin.statusSuspended": "Suspended"
 }

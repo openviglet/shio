@@ -22,6 +22,10 @@ import com.viglet.shio.persistence.repository.tenant.ShTenantRepository;
 import com.viglet.shio.property.ShAppProperties;
 import com.viglet.shio.tenant.ShTenantContext;
 import com.viglet.shio.tenant.ShTenantProvisioningService;
+import com.viglet.shio.tenant.ShTenantTeardownService;
+import com.viglet.shio.tenant.ShTenantTeardownService.ShTenantTeardownReport;
+
+import org.springframework.web.bind.annotation.RequestParam;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -50,12 +54,15 @@ public class ShTenantAPI {
     private final ShAppProperties shAppProperties;
     private final ShTenantRepository shTenantRepository;
     private final ShTenantProvisioningService shTenantProvisioningService;
+    private final ShTenantTeardownService shTenantTeardownService;
 
     public ShTenantAPI(ShAppProperties shAppProperties, ShTenantRepository shTenantRepository,
-                       ShTenantProvisioningService shTenantProvisioningService) {
+                       ShTenantProvisioningService shTenantProvisioningService,
+                       ShTenantTeardownService shTenantTeardownService) {
         this.shAppProperties = shAppProperties;
         this.shTenantRepository = shTenantRepository;
         this.shTenantProvisioningService = shTenantProvisioningService;
+        this.shTenantTeardownService = shTenantTeardownService;
     }
 
     @GetMapping("/current")
@@ -151,18 +158,31 @@ public class ShTenantAPI {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    /** Suspend a tenant — blocks its members at {@code ShTenantFilter} (admin-only). */
+    @PostMapping("/{id}/suspend")
+    public ResponseEntity<ShTenant> suspend(@PathVariable String id) {
+        return ResponseEntity.ok(shTenantTeardownService.suspend(id));
+    }
+
+    /** Re-activate a suspended tenant (admin-only). */
+    @PostMapping("/{id}/activate")
+    public ResponseEntity<ShTenant> activate(@PathVariable String id) {
+        return ResponseEntity.ok(shTenantTeardownService.activate(id));
+    }
+
+    /**
+     * Tear a tenant down (admin-only): purges its stored bytes (file_source +
+     * image cache) and removes the catalog row. {@code ?dryRun=true} reports the
+     * plan without mutating anything. 409 for the reserved {@code shio} tenant,
+     * 404 (in the report) for an unknown id.
+     */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Boolean>> delete(@PathVariable String id) {
-        return shTenantRepository.findById(id)
-                .map(tenant -> {
-                    if (tenant.isDefaultTenant()) {
-                        // 409 — the reserved default tenant is never deletable.
-                        return ResponseEntity.status(409).body(Map.of("deleted", false));
-                    }
-                    shTenantRepository.delete(tenant);
-                    log.info("Deleted tenant '{}'", tenant.getName());
-                    return ResponseEntity.ok(Map.of("deleted", true));
-                })
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<ShTenantTeardownReport> delete(@PathVariable String id,
+                                                         @RequestParam(name = "dryRun", defaultValue = "false") boolean dryRun) {
+        ShTenantTeardownReport report = shTenantTeardownService.delete(id, dryRun);
+        if (!report.tenantExisted()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(report);
     }
 }
