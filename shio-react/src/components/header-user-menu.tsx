@@ -1,6 +1,6 @@
-import axios from "axios";
 import { UserMenu } from "@viglet/viglet-design-system";
 
+import { ROUTES } from "@/app/routes.const";
 import type { ShCurrentUser } from "@/models/auth/current-user";
 
 interface HeaderUserMenuProps {
@@ -9,15 +9,12 @@ interface HeaderUserMenuProps {
 
 /**
  * Thin wrapper over the design-system UserMenu that wires Shio's logout flow.
- * Shio uses Spring Boot native authentication — logout posts to /logout
- * and redirects to the login page.
+ * A full-page navigation to /logout lets the browser follow the backend's
+ * redirect to the Keycloak end-session endpoint when Keycloak is enabled
+ * (and to /login otherwise). An XHR POST would swallow that redirect, so the
+ * browser must drive the logout. Mirrors Turing's logout behavior.
  */
 export function HeaderUserMenu({ user }: Readonly<HeaderUserMenuProps>) {
-  const handleSignOut = async () => {
-    await axios.post("/logout", {}).catch(() => {});
-    globalThis.location.href = "/login";
-  };
-
   return (
     <UserMenu
       user={{
@@ -26,7 +23,9 @@ export function HeaderUserMenu({ user }: Readonly<HeaderUserMenuProps>) {
         lastName: user.lastName,
         email: user.email,
       }}
-      onSignOut={handleSignOut}
+      onSignOut={() => {
+        globalThis.location.href = ROUTES.LOGOUT;
+      }}
     />
   );
 }
