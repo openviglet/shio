@@ -59,4 +59,16 @@ export class ShTenantService {
     const response = await axios.post<ShProvisionResult>(`/v2/tenant/${id}/provision`)
     return response.data
   }
+
+  /** The tenants the current user actively belongs to (SH22/C). */
+  async mine(): Promise<ShTenant[]> {
+    const response = await axios.get<ShTenant[]>("/v2/tenant/mine")
+    return response.data
+  }
+
+  /** Switch the session's active tenant by name (SH22/C). */
+  async switchTo(name: string): Promise<ShTenant> {
+    const response = await axios.post<ShTenant>(`/v2/tenant/${name}/switch`)
+    return response.data
+  }
 }

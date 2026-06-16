@@ -1,0 +1,60 @@
+databaseChangeLog:
+  # SH22 follow-up (Turing parity, Phase C) — tenant membership. Joins a principal
+  # (username) to a tenant with a role + status; only ACTIVE grants access (the
+  # hard-403 gate in ShTenantFilter). NOT itself @TenantId-scoped (queried before
+  # the request tenant is known). Types kept DB-agnostic (VARCHAR / TIMESTAMP) per
+  # ShLiquibaseChangelogAgnosticTest. SH26: preserve identifier case on PostgreSQL
+  # (re-declared per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh22-create-sh-tenant-membership
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_tenant_membership
+      changes:
+        - createTable:
+            tableName: sh_tenant_membership
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: PK_sh_tenant_membership
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: username
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_date
+                  type: TIMESTAMP
+        - addUniqueConstraint:
+            tableName: sh_tenant_membership
+            columnNames: tenant_id, username
+            constraintName: UK_sh_tenant_membership
+        - addForeignKeyConstraint:
+            baseTableName: sh_tenant_membership
+            baseColumnNames: tenant_id
+            referencedTableName: sh_tenant
+            referencedColumnNames: id
+            constraintName: FK_sh_tenant_membership_tenant

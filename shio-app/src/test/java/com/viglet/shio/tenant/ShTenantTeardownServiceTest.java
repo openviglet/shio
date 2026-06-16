@@ -28,6 +28,7 @@ import com.viglet.shio.api.staticfile.ShFileStorageService;
 import com.viglet.shio.api.staticfile.transform.ShImageTransformCache;
 import com.viglet.shio.persistence.model.tenant.ShTenant;
 import com.viglet.shio.persistence.model.tenant.ShTenantStatus;
+import com.viglet.shio.persistence.repository.tenant.ShTenantMembershipRepository;
 import com.viglet.shio.persistence.repository.tenant.ShTenantRepository;
 import com.viglet.shio.tenant.ShTenantTeardownService.ShTenantTeardownReport;
 
@@ -43,6 +44,8 @@ class ShTenantTeardownServiceTest {
 
     @Mock
     private ShTenantRepository shTenantRepository;
+    @Mock
+    private ShTenantMembershipRepository shTenantMembershipRepository;
     @Mock
     private ShFileStorageService shFileStorageService;
     @Mock

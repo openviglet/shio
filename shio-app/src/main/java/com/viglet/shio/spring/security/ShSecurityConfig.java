@@ -45,6 +45,9 @@ public class ShSecurityConfig {
     /** Tenant catalog (SH22) — writes are admin-only; {@code GET /current} stays open to any user. */
     private static final String TENANT_PATH = "/api/v2/tenant";
     private static final String TENANT_SUBPATH = "/api/v2/tenant/**";
+    /** Self-service signup + tenant switch (SH22/C) — authenticated, not admin-gated. */
+    private static final String TENANT_SIGNUP_PATH = "/api/v2/tenant/signup";
+    private static final String TENANT_SWITCH_PATH = "/api/v2/tenant/*/switch";
 
     private final UserDetailsService userDetailsService;
 
@@ -139,6 +142,12 @@ public class ShSecurityConfig {
                 // GraphQL delivery (SH4) is a CDA surface — token-authenticated, POST reads.
                 authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, "/graphql"))
                         .hasRole("CDA");
+                // Self-service tenant signup + switch (SH22/C) are for any authenticated
+                // user — must precede the admin catch-all below.
+                authorizeRequests.requestMatchers(
+                        mvc.matcher(HttpMethod.POST, TENANT_SIGNUP_PATH),
+                        mvc.matcher(HttpMethod.POST, TENANT_SWITCH_PATH))
+                        .authenticated();
                 // Tenant catalog writes (SH22) are admin-only; GET /current + listing stay authenticated.
                 authorizeRequests.requestMatchers(
                         mvc.matcher(HttpMethod.POST, TENANT_PATH),

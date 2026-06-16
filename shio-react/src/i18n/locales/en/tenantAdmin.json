@@ -22,5 +22,6 @@
   "tenantAdmin.activate": "Activate",
   "tenantAdmin.suspended": "Tenant suspended",
   "tenantAdmin.activated": "Tenant activated",
-  "tenantAdmin.statusSuspended": "Suspended"
+  "tenantAdmin.statusSuspended": "Suspended",
+  "tenantSwitcher.label": "Switch tenant"
 }

@@ -31,15 +31,23 @@ public class ShTenantFilter extends OncePerRequestFilter {
      * Part D). {@code ShApiTokenFilter} runs earlier in the chain and sets it; this
      * filter prefers it over the principal-derived tenant, so token delivery is
      * scoped to the content owner's tenant rather than the token owner's username.
+     * A token-scoped request is exempt from the membership gate — the token itself
+     * authorizes delivery to its tenant.
      */
     public static final String TENANT_REQUEST_ATTR = "sh.tenantId";
 
+    /** Session attribute set by {@code POST /tenant/{name}/switch} and {@code /impersonate} (SH22/C). */
+    public static final String TENANT_SESSION_ATTR = "SH_TENANT";
+
     private final ShAppProperties shAppProperties;
     private final ShTenantRepository shTenantRepository;
+    private final ShTenantMembershipService shTenantMembershipService;
 
-    public ShTenantFilter(ShAppProperties shAppProperties, ShTenantRepository shTenantRepository) {
+    public ShTenantFilter(ShAppProperties shAppProperties, ShTenantRepository shTenantRepository,
+                          ShTenantMembershipService shTenantMembershipService) {
         this.shAppProperties = shAppProperties;
         this.shTenantRepository = shTenantRepository;
+        this.shTenantMembershipService = shTenantMembershipService;
     }
 
     @Override
@@ -49,10 +57,18 @@ public class ShTenantFilter extends OncePerRequestFilter {
         String tenantId = resolveTenant(request);
         ShTenantContext.setTenantId(tenantId);
         try {
-            // SH22/B — a suspended tenant blocks its members (non-admins) with 403.
-            if (shAppProperties.isMultiTenant() && isSuspendedForCurrentUser(tenantId)) {
-                reject(response);
-                return;
+            if (shAppProperties.isMultiTenant()) {
+                // SH22/B — a suspended tenant blocks its members (non-admins) with 403.
+                if (isSuspendedForCurrentUser(tenantId)) {
+                    reject(response, "tenant is suspended");
+                    return;
+                }
+                // SH22/C — a non-default tenant requires an ACTIVE membership (hard 403),
+                // unless authorized by a CDA token (token-scoped delivery) or an admin.
+                if (!isTokenScoped(request) && isMembershipDenied(tenantId)) {
+                    reject(response, "no active membership in tenant");
+                    return;
+                }
             }
             filterChain.doFilter(request, response);
         } finally {
@@ -76,15 +92,35 @@ public class ShTenantFilter extends OncePerRequestFilter {
         return shTenantRepository.findByName(tenantId).map(ShTenant::isSuspended).orElse(false);
     }
 
+    /**
+     * Whether the authenticated, non-admin principal lacks an ACTIVE membership in
+     * the resolved non-default tenant. Unauthenticated requests are left to Spring
+     * Security; the default {@code shio} tenant and admins always pass.
+     */
+    private boolean isMembershipDenied(String tenantId) {
+        if (tenantId == null || ShTenantContext.DEFAULT_TENANT.equals(tenantId)) {
+            return false;
+        }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || isAdmin(authentication)) {
+            return false;
+        }
+        return !shTenantMembershipService.isActiveMember(tenantId, authentication.getName());
+    }
+
+    private static boolean isTokenScoped(HttpServletRequest request) {
+        return request.getAttribute(TENANT_REQUEST_ATTR) instanceof String t && !t.isBlank();
+    }
+
     private static boolean isAdmin(Authentication authentication) {
         return authentication.getAuthorities().stream()
                 .anyMatch(a -> ROLE_ADMIN.equals(a.getAuthority()));
     }
 
-    private void reject(HttpServletResponse response) throws IOException {
+    private void reject(HttpServletResponse response, String reason) throws IOException {
         response.setStatus(HttpStatus.FORBIDDEN.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write("{\"error\":\"Forbidden: tenant is suspended\"}");
+        response.getWriter().write("{\"error\":\"Forbidden: " + reason + "\"}");
     }
 
     private String resolveTenant(HttpServletRequest request) {
@@ -95,6 +131,11 @@ public class ShTenantFilter extends OncePerRequestFilter {
         Object tokenTenant = request.getAttribute(TENANT_REQUEST_ATTR);
         if (tokenTenant instanceof String tenant && !tenant.isBlank()) {
             return tenant;
+        }
+        // An explicit tenant switch (SH22/C) is held on the session.
+        String sessionTenant = sessionTenant(request);
+        if (sessionTenant != null) {
+            return sessionTenant;
         }
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -115,5 +156,14 @@ public class ShTenantFilter extends OncePerRequestFilter {
         }
         String name = authentication.getName();
         return (name == null || name.isBlank()) ? ShTenantContext.DEFAULT_TENANT : name;
+    }
+
+    private static String sessionTenant(HttpServletRequest request) {
+        var session = request.getSession(false);
+        if (session == null) {
+            return null;
+        }
+        Object value = session.getAttribute(TENANT_SESSION_ATTR);
+        return value instanceof String tenant && !tenant.isBlank() ? tenant : null;
     }
 }

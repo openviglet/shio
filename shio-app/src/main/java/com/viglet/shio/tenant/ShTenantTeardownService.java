@@ -17,6 +17,7 @@ import com.viglet.shio.api.staticfile.ShFileStorageService;
 import com.viglet.shio.api.staticfile.transform.ShImageTransformCache;
 import com.viglet.shio.persistence.model.tenant.ShTenant;
 import com.viglet.shio.persistence.model.tenant.ShTenantStatus;
+import com.viglet.shio.persistence.repository.tenant.ShTenantMembershipRepository;
 import com.viglet.shio.persistence.repository.tenant.ShTenantRepository;
 
 import lombok.extern.slf4j.Slf4j;
@@ -41,13 +42,16 @@ import lombok.extern.slf4j.Slf4j;
 public class ShTenantTeardownService {
 
     private final ShTenantRepository shTenantRepository;
+    private final ShTenantMembershipRepository shTenantMembershipRepository;
     private final ShFileStorageService shFileStorageService;
     private final ShImageTransformCache shImageTransformCache;
 
     public ShTenantTeardownService(ShTenantRepository shTenantRepository,
+                                   ShTenantMembershipRepository shTenantMembershipRepository,
                                    ShFileStorageService shFileStorageService,
                                    ShImageTransformCache shImageTransformCache) {
         this.shTenantRepository = shTenantRepository;
+        this.shTenantMembershipRepository = shTenantMembershipRepository;
         this.shFileStorageService = shFileStorageService;
         this.shImageTransformCache = shImageTransformCache;
     }
@@ -99,6 +103,8 @@ public class ShTenantTeardownService {
         log.warn("[TenantTeardown] DELETING tenant '{}' (audited)", name);
         shFileStorageService.deleteTenant(name);
         shImageTransformCache.purgeTenant(name);
+        // Memberships FK the tenant row — remove them first (SH22/C).
+        shTenantMembershipRepository.deleteByTenant_Id(tenant.getId());
         shTenantRepository.delete(tenant);
         return new ShTenantTeardownReport(id, name, false, true, true);
     }
