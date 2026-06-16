@@ -5,23 +5,19 @@
  */
 package com.viglet.shio.webhook;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import com.viglet.core.webhook.VigletWebhookDispatcher;
+import com.viglet.core.webhook.VigletWebhookRequest;
+import com.viglet.core.webhook.VigletWebhookRetryPolicy;
 import com.viglet.shio.persistence.model.webhook.ShSiteWebhook;
 import com.viglet.shio.persistence.repository.webhook.ShSiteWebhookRepository;
 
-import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -36,6 +32,14 @@ import tools.jackson.databind.node.ObjectNode;
  * request body, sent as {@code x-shio-signature: sha256=<hex>}. The same byte
  * array is signed and sent, so no re-serialisation can drift the digest.
  *
+ * <p>Delivery (signing + POST + bounded linear retry/back-off, off the request
+ * thread) is delegated to the shared {@link VigletWebhookDispatcher}
+ * (viglet-core). Only the Shio-specific concerns stay here: reacting to the
+ * post-lifecycle event, filtering matching targets, and building the SH9 JSON
+ * body. Behaviour is preserved — the retry/back-off, timeouts and async
+ * dispatch map one-to-one onto {@link VigletWebhookRetryPolicy} +
+ * {@link VigletWebhookDispatcher#dispatchAsync}.
+ *
  * @author Alexandre Oliveira
  * @since 2026.2
  */
@@ -46,22 +50,16 @@ public class ShWebhookDispatcher {
     private final ShSiteWebhookRepository shSiteWebhookRepository;
     private final ShWebhookProperties properties;
     private final ObjectMapper objectMapper;
-    private final HttpClient httpClient;
-    private final ExecutorService executor = Executors.newFixedThreadPool(2, r -> {
-        Thread t = new Thread(r, "sh-webhook-dispatch");
-        t.setDaemon(true);
-        return t;
-    });
+    private final VigletWebhookDispatcher dispatcher;
 
     public ShWebhookDispatcher(ShSiteWebhookRepository shSiteWebhookRepository,
                                ShWebhookProperties properties,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               VigletWebhookDispatcher dispatcher) {
         this.shSiteWebhookRepository = shSiteWebhookRepository;
         this.properties = properties;
         this.objectMapper = objectMapper;
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(properties.getConnectTimeoutMillis()))
-                .build();
+        this.dispatcher = dispatcher;
     }
 
     /**
@@ -81,11 +79,51 @@ public class ShWebhookDispatcher {
         }
 
         byte[] body = buildBody(event);
+        VigletWebhookRetryPolicy policy = new VigletWebhookRetryPolicy(
+                properties.getMaxAttempts(),
+                Duration.ofMillis(properties.getReadTimeoutMillis()),
+                Duration.ofMillis(properties.getRetryBackoffMillis()));
+
         for (ShSiteWebhook target : targets) {
-            // Off the request thread: a slow/failing subscriber must never block
-            // the editor's publish response.
-            executor.submit(() -> deliver(target, body, event));
+            deliver(target, body, event, policy);
         }
+    }
+
+    private void deliver(ShSiteWebhook target, byte[] body, ShPostLifecycleEvent event,
+                         VigletWebhookRetryPolicy policy) {
+        if (target.getUrl() == null || target.getUrl().isBlank()) {
+            return;
+        }
+        if (target.getSecret() == null || target.getSecret().isBlank()) {
+            // Can't HMAC-sign without a key, and an unsigned webhook would be
+            // rejected by the receiver anyway — skip rather than throw.
+            log.warn("Webhook '{}' has no secret — skipping delivery to {}", target.getName(), target.getUrl());
+            return;
+        }
+        VigletWebhookRequest request = VigletWebhookRequest.builder()
+                .url(target.getUrl())
+                .body(body)
+                .contentType("application/json")
+                .signingSecret(target.getSecret())
+                .signatureHeaderName(ShWebhookSigner.SIGNATURE_HEADER)
+                .build();
+
+        // Off the request thread: a slow/failing subscriber must never block the
+        // editor's publish response. The shared dispatcher owns the async pool.
+        dispatcher.dispatchAsync(request, policy).whenComplete((result, error) -> {
+            if (error != null) {
+                log.warn("Webhook '{}' dispatch errored for {}: {}",
+                        target.getName(), target.getUrl(), error.getMessage());
+            } else if (result.delivered()) {
+                log.debug("Webhook '{}' delivered ({} {}) for post {} -> {}",
+                        target.getName(), event.type().wire(), result.statusCode(), event.postId(),
+                        target.getUrl());
+            } else {
+                log.warn("Webhook '{}' failed after {} attempt(s) for {} (last status {}) — dropping {} of post {}",
+                        target.getName(), result.attempts(), target.getUrl(), result.statusCode(),
+                        event.type().wire(), event.postId());
+            }
+        });
     }
 
     private byte[] buildBody(ShPostLifecycleEvent event) {
@@ -100,61 +138,5 @@ public class ShWebhookDispatcher {
             node.put("occurredAt", event.occurredAt().toString());
         }
         return objectMapper.writeValueAsBytes(node);
-    }
-
-    private void deliver(ShSiteWebhook target, byte[] body, ShPostLifecycleEvent event) {
-        if (target.getUrl() == null || target.getUrl().isBlank()) {
-            return;
-        }
-        if (target.getSecret() == null || target.getSecret().isBlank()) {
-            // Can't HMAC-sign without a key, and an unsigned webhook would be
-            // rejected by the receiver anyway — skip rather than throw.
-            log.warn("Webhook '{}' has no secret — skipping delivery to {}", target.getName(), target.getUrl());
-            return;
-        }
-        String signature = ShWebhookSigner.header(target.getSecret(), body);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(target.getUrl()))
-                .timeout(Duration.ofMillis(properties.getReadTimeoutMillis()))
-                .header("Content-Type", "application/json")
-                .header(ShWebhookSigner.SIGNATURE_HEADER, signature)
-                .POST(HttpRequest.BodyPublishers.ofByteArray(body))
-                .build();
-
-        int maxAttempts = Math.max(1, properties.getMaxAttempts());
-        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            try {
-                HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
-                int status = response.statusCode();
-                if (status >= 200 && status < 300) {
-                    log.debug("Webhook '{}' delivered ({} {}) for post {} -> {}",
-                            target.getName(), event.type().wire(), status, event.postId(), target.getUrl());
-                    return;
-                }
-                log.warn("Webhook '{}' got HTTP {} (attempt {}/{}) for {}",
-                        target.getName(), status, attempt, maxAttempts, target.getUrl());
-            } catch (Exception e) {
-                log.warn("Webhook '{}' delivery failed (attempt {}/{}) for {}: {}",
-                        target.getName(), attempt, maxAttempts, target.getUrl(), e.getMessage());
-            }
-            if (attempt < maxAttempts) {
-                sleep(properties.getRetryBackoffMillis() * attempt);
-            }
-        }
-        log.warn("Webhook '{}' exhausted {} attempts for {} — dropping {} of post {}",
-                target.getName(), maxAttempts, target.getUrl(), event.type().wire(), event.postId());
-    }
-
-    private static void sleep(long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    @PreDestroy
-    void shutdown() {
-        executor.shutdown();
     }
 }

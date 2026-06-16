@@ -5,16 +5,17 @@
  */
 package com.viglet.shio.webhook;
 
-import java.nio.charset.StandardCharsets;
-import java.util.HexFormat;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
+import com.viglet.core.webhook.VigletWebhookSigner;
 
 /**
  * HMAC-SHA256 signing for outbound webhooks (SH12). The scheme matches the
  * {@code create-shio-app} receiver (SH9): the digest is computed over the exact
  * request body and emitted as {@code x-shio-signature: sha256=<lowercase hex>}.
+ *
+ * <p>The signing algorithm now delegates to the shared
+ * {@link VigletWebhookSigner} (viglet-core) — byte-for-byte identical
+ * ({@code sha256=<lowercase hex>}, empty key rejected). Only the Shio-specific
+ * header <i>name</i> stays here.
  *
  * @author Alexandre Oliveira
  * @since 2026.2
@@ -24,25 +25,16 @@ public final class ShWebhookSigner {
     /** Header carrying the signature, matching {@code /api/revalidate}. */
     public static final String SIGNATURE_HEADER = "x-shio-signature";
 
-    private static final String HMAC_ALGORITHM = "HmacSHA256";
-
     private ShWebhookSigner() {
     }
 
     /** Lowercase hex of {@code HMAC-SHA256(secret, body)}. */
     public static String hex(String secret, byte[] body) {
-        try {
-            Mac mac = Mac.getInstance(HMAC_ALGORITHM);
-            mac.init(new SecretKeySpec(
-                    (secret == null ? "" : secret).getBytes(StandardCharsets.UTF_8), HMAC_ALGORITHM));
-            return HexFormat.of().formatHex(mac.doFinal(body));
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to compute webhook signature", e);
-        }
+        return VigletWebhookSigner.hex(secret, body);
     }
 
     /** The full {@code sha256=<hex>} header value the receiver expects. */
     public static String header(String secret, byte[] body) {
-        return "sha256=" + hex(secret, body);
+        return VigletWebhookSigner.header(secret, body);
     }
 }

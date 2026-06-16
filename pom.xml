@@ -15,6 +15,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <spring-boot.version>4.0.6</spring-boot.version>
+        <!-- Shared backend platform — external project (github.com/openviglet/viglet-core),
+             published to GitHub Packages and versioned independently. -->
+        <viglet-core.version>2026.3.4</viglet-core.version>
         <sonar.organization>viglet</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
@@ -169,6 +172,14 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- viglet-core — shared backend platform; the BOM pins every module version. -->
+            <dependency>
+                <groupId>com.viglet.core</groupId>
+                <artifactId>viglet-core-bom</artifactId>
+                <version>${viglet-core.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-core</artifactId>
@@ -235,6 +246,20 @@
         <repository>
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
+        </repository>
+        <!-- viglet-core is published here. GitHub Packages requires auth even to
+             download: add a matching <server id="github-viglet-core"> with a PAT
+             (read:packages) to ~/.m2/settings.xml. Local builds resolve from ~/.m2. -->
+        <repository>
+            <id>github-viglet-core</id>
+            <name>GitHub openviglet viglet-core</name>
+            <url>https://maven.pkg.github.com/openviglet/viglet-core</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
         </repository>
     </repositories>
 </project>
