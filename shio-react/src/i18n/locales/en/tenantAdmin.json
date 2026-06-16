@@ -23,5 +23,7 @@
   "tenantAdmin.suspended": "Tenant suspended",
   "tenantAdmin.activated": "Tenant activated",
   "tenantAdmin.statusSuspended": "Suspended",
+  "tenantAdmin.plan": "Plan",
+  "tenantAdmin.planHint": "Billing plan that drives create limits. FREE is bounded; any other value is unlimited.",
   "tenantSwitcher.label": "Switch tenant"
 }

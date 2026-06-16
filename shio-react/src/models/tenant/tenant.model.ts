@@ -6,6 +6,7 @@ export type ShTenant = {
   description: string
   enabled: boolean
   status?: ShTenantStatus
+  plan?: string
   owner: string
   createdDate: string
 }

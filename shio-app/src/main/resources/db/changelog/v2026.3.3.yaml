@@ -1,0 +1,30 @@
+databaseChangeLog:
+  # SH22 follow-up (Turing parity, Phase D) — plan-based quotas. Adds the `plan`
+  # identifier to the tenant catalog; ShTenantQuotaService maps it to per-tenant
+  # create limits (HTTP 402). Nullable on add + backfilled to FREE. Types kept
+  # DB-agnostic (VARCHAR) per ShLiquibaseChangelogAgnosticTest; SH26: preserve
+  # identifier case on PostgreSQL (re-declared per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh22-tenant-plan
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_tenant
+                columnName: plan
+      changes:
+        - addColumn:
+            tableName: sh_tenant
+            columns:
+              - column:
+                  name: plan
+                  type: VARCHAR(50)
+        - update:
+            tableName: sh_tenant
+            columns:
+              - column:
+                  name: plan
+                  value: FREE
+            where: plan IS NULL

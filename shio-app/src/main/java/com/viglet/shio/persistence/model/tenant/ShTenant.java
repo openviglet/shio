@@ -77,6 +77,14 @@ public class ShTenant implements Serializable {
     @Column(name = "status", length = 16)
     private ShTenantStatus status = ShTenantStatus.ACTIVE;
 
+    /**
+     * Billing/plan identifier (e.g. {@code FREE}, {@code PRO}). Free-form rather
+     * than an enum so plans can evolve without a migration; {@code ShTenantQuotaService}
+     * maps it to per-tenant create limits (SH22/D).
+     */
+    @Column(name = "plan", length = 50)
+    private String plan = "FREE";
+
     @Column(name = "owner", length = 255)
     private String owner;
 

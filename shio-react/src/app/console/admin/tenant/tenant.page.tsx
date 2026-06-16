@@ -27,7 +27,7 @@ export default function TenantPage() {
   const isNew = tenantId === "new"
 
   const [item, setItem] = useState<ShTenant>({
-    id: "", name: "", description: "", enabled: true, status: "ACTIVE", owner: "", createdDate: "",
+    id: "", name: "", description: "", enabled: true, status: "ACTIVE", plan: "FREE", owner: "", createdDate: "",
   })
   const [saving, setSaving] = useState(false)
   const isDefault = item.name === "shio"
@@ -158,6 +158,20 @@ export default function TenantPage() {
               <Textarea id="description" value={item.description || ""}
                 onChange={(e) => setItem({ ...item, description: e.target.value })} rows={3} />
             </div>
+            {!isNew && !isDefault && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="plan">{t("tenantAdmin.plan")}</Label>
+                  <Tooltip>
+                    <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
+                    <TooltipContent>{t("tenantAdmin.planHint")}</TooltipContent>
+                  </Tooltip>
+                </div>
+                <Input id="plan" value={item.plan || ""} className="font-mono"
+                  onChange={(e) => setItem({ ...item, plan: e.target.value })}
+                  placeholder="FREE" />
+              </div>
+            )}
             {!isNew && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

@@ -23,5 +23,7 @@
   "tenantAdmin.suspended": "Tenant suspenso",
   "tenantAdmin.activated": "Tenant ativado",
   "tenantAdmin.statusSuspended": "Suspenso",
+  "tenantAdmin.plan": "Plano",
+  "tenantAdmin.planHint": "Plano de cobrança que define os limites de criação. FREE é limitado; qualquer outro valor é ilimitado.",
   "tenantSwitcher.label": "Trocar de tenant"
 }

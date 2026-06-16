@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.viglet.shio.exchange.site.ShSiteExportService;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.tenant.ShTenantQuotaService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -46,12 +47,15 @@ public class ShSiteAPI {
     private final ShSiteRepository shSiteRepository;
     private final ShSiteWriteService shSiteWriteService;
     private final ShSiteExportService shSiteExportService;
+    private final ShTenantQuotaService shTenantQuotaService;
 
     public ShSiteAPI(ShSiteRepository shSiteRepository, ShSiteWriteService shSiteWriteService,
-                     ShSiteExportService shSiteExportService) {
+                     ShSiteExportService shSiteExportService,
+                     ShTenantQuotaService shTenantQuotaService) {
         this.shSiteRepository = shSiteRepository;
         this.shSiteWriteService = shSiteWriteService;
         this.shSiteExportService = shSiteExportService;
+        this.shTenantQuotaService = shTenantQuotaService;
     }
 
     @GetMapping
@@ -74,6 +78,8 @@ public class ShSiteAPI {
         if (shSiteRepository.findByName(payload.getName()) != null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
+        // SH22/D — enforce the tenant's plan site quota (402); no-op single-tenant.
+        shTenantQuotaService.checkCanCreateSite();
         ShSite created = shSiteWriteService.create(payload, principal != null ? principal.getName() : null);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }

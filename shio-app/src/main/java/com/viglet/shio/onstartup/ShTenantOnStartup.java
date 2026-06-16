@@ -50,6 +50,7 @@ public class ShTenantOnStartup implements ApplicationRunner {
             tenant.setDescription("Default single-tenant workspace");
             tenant.setEnabled(true);
             tenant.setStatus(ShTenantStatus.ACTIVE);
+            tenant.setPlan("FREE");
             tenant.setOwner("system");
             tenant.setCreatedDate(Instant.now());
             shTenantRepository.save(tenant);

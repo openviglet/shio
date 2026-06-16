@@ -164,6 +164,10 @@ public class ShTenantAPI {
                     }
                     existing.setDescription(body.getDescription());
                     existing.setEnabled(existing.isDefaultTenant() || body.isEnabled());
+                    // SH22/D — the plan drives quotas; editable for non-default tenants.
+                    if (!existing.isDefaultTenant() && body.getPlan() != null && !body.getPlan().isBlank()) {
+                        existing.setPlan(body.getPlan().trim());
+                    }
                     shTenantRepository.saveAndFlush(existing);
                     return ResponseEntity.ok(existing);
                 })

@@ -30,6 +30,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.tenant.ShTenantQuotaService;
 
 import tools.jackson.databind.JsonNode;
 
@@ -43,17 +44,22 @@ public class ShPostUnifiedAPI {
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
+    private final ShTenantQuotaService shTenantQuotaService;
 
     public ShPostUnifiedAPI(ShPostUnifiedRepository shPostUnifiedRepository,
                             ShFolderRepository shFolderRepository,
-                            ShPostUnifiedWriteService shPostUnifiedWriteService) {
+                            ShPostUnifiedWriteService shPostUnifiedWriteService,
+                            ShTenantQuotaService shTenantQuotaService) {
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
+        this.shTenantQuotaService = shTenantQuotaService;
     }
 
     @PostMapping
     public ShPostUnified create(@RequestBody CreatePayload payload, Principal principal) {
+        // SH22/D — enforce the tenant's plan post quota (402); no-op single-tenant.
+        shTenantQuotaService.checkCanCreatePost();
         return shPostUnifiedWriteService.create(new CreateRequest(
                 payload.folderId(),
                 payload.postTypeId(),
