@@ -31,9 +31,11 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.persistence.model.tenant.ShTenant;
 import com.viglet.shio.persistence.model.token.ShApiToken;
 import com.viglet.shio.persistence.model.token.ShApiTokenScope;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.persistence.repository.tenant.ShTenantRepository;
 import com.viglet.shio.persistence.repository.token.ShApiTokenRepository;
 
 /**
@@ -74,6 +76,8 @@ class ShTenantCdaDeliveryIT {
     @Autowired
     private ShApiTokenRepository shApiTokenRepository;
     @Autowired
+    private ShTenantRepository shTenantRepository;
+    @Autowired
     private PlatformTransactionManager txManager;
 
     private MockMvc mockMvc;
@@ -81,8 +85,22 @@ class ShTenantCdaDeliveryIT {
     @BeforeAll
     void setup() {
         mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+        // The re-homed ShTenantFilter canonicalizes the token's tenant through the
+        // ShTenant catalog (T397), so each delivery tenant needs a catalog row.
+        catalogTenant(ALPHA);
+        catalogTenant(BETA);
         asTenant(ALPHA, () -> { seedSite("Alpha Site"); seedToken("alpha-key"); return null; });
         asTenant(BETA, () -> { seedSite("Beta Site"); seedToken("beta-key"); return null; });
+    }
+
+    private void catalogTenant(String name) {
+        new TransactionTemplate(txManager).executeWithoutResult(s -> {
+            ShTenant tenant = new ShTenant();
+            tenant.setName(name);
+            tenant.setEnabled(true);
+            tenant.setCreatedDate(Instant.now());
+            shTenantRepository.saveAndFlush(tenant);
+        });
     }
 
     @Test

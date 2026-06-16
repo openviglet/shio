@@ -66,6 +66,27 @@ class ShTenantAPITest {
         Mockito.when(mockPrincipal.getName()).thenReturn("admin");
     }
 
+    /**
+     * T397 — the re-homed teardown (suspend/activate/delete) self-gates on the
+     * shared platform-admin check ({@code ShPlatformAdminService} honours
+     * {@code ROLE_ADMIN}). This test bypasses the security filter chain, so it
+     * binds an admin authentication directly to satisfy that gate, mirroring the
+     * {@code ROLE_ADMIN}-gated endpoints in production.
+     */
+    @org.junit.jupiter.api.BeforeEach
+    void authenticateAsAdmin() {
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        "admin", "n/a", java.util.List.of(
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                                        "ROLE_ADMIN"))));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void clearAuthentication() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+    }
+
     @Test
     void shTenantCurrent() throws Exception {
         mockMvc.perform(get("/api/v2/tenant/current")).andExpect(status().isOk())

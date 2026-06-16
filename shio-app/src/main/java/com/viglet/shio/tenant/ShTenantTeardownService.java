@@ -13,71 +13,62 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.viglet.shio.api.staticfile.ShFileStorageService;
-import com.viglet.shio.api.staticfile.transform.ShImageTransformCache;
+import com.viglet.core.tenancy.VigletTenantTeardownService;
+import com.viglet.core.tenancy.VigletTenantTeardownService.VigletTenantTeardownReport;
 import com.viglet.shio.persistence.model.tenant.ShTenant;
-import com.viglet.shio.persistence.model.tenant.ShTenantStatus;
-import com.viglet.shio.persistence.repository.tenant.ShTenantMembershipRepository;
 import com.viglet.shio.persistence.repository.tenant.ShTenantRepository;
 
-import lombok.extern.slf4j.Slf4j;
-
 /**
- * Tenant lifecycle operations (SH22 / Turing parity, mirrors Turing's
- * {@code TurTenantTeardownService}): suspend / activate a tenant and tear it down.
+ * Tenant lifecycle operations (SH22 / Turing parity): suspend / activate a tenant
+ * and tear it down (purge bytes + catalog row).
  *
- * <p><strong>Teardown</strong> ({@link #delete}) purges the tenant's on-disk
- * footprint — its {@code file_source} byte directory and image-cache sub-directory
- * — and removes the {@code sh_tenant} catalog row. It deliberately leaves the
- * tenant's {@code @TenantId} content rows in place (they become invisible once the
- * catalog row is gone); a physical row sweep is a separate, heavier operation.
- * Idempotent (an unknown id is a no-op report) and audited via {@code log.warn};
- * the reserved {@code shio} default tenant can never be torn down (409).</p>
+ * <p>T397 / §XIV.9 — re-homed onto the shared {@link VigletTenantTeardownService}:
+ * the orchestration (platform-admin gate, dry-run, audit, registry deletion) now
+ * lives once in {@code viglet-core-tenancy}. The physical purge stays Shio-specific
+ * behind {@link ShVigletTenantPurger} ({@code file_source} bytes + image-cache);
+ * the registry rows are removed via {@link ShVigletTenantStore}. The {@code @TenantId}
+ * content rows are left in place (they become invisible once the catalog row is
+ * gone).
+ *
+ * <p>This adapter keeps Shio's surrogate-UUID API ({@code suspend(id)} /
+ * {@code delete(id, …)}) and its {@link ShTenantTeardownReport} shape, resolving
+ * the UUID to the tenant <em>name</em> the shared service (and Shio's discriminator)
+ * works in. The reserved {@code shio} default tenant is refused with HTTP 409 here,
+ * before delegating.
  *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
 @Service
-@Slf4j
 public class ShTenantTeardownService {
 
+    private final VigletTenantTeardownService delegate;
     private final ShTenantRepository shTenantRepository;
-    private final ShTenantMembershipRepository shTenantMembershipRepository;
-    private final ShFileStorageService shFileStorageService;
-    private final ShImageTransformCache shImageTransformCache;
 
-    public ShTenantTeardownService(ShTenantRepository shTenantRepository,
-                                   ShTenantMembershipRepository shTenantMembershipRepository,
-                                   ShFileStorageService shFileStorageService,
-                                   ShImageTransformCache shImageTransformCache) {
+    public ShTenantTeardownService(VigletTenantTeardownService delegate,
+                                   ShTenantRepository shTenantRepository) {
+        this.delegate = delegate;
         this.shTenantRepository = shTenantRepository;
-        this.shTenantMembershipRepository = shTenantMembershipRepository;
-        this.shFileStorageService = shFileStorageService;
-        this.shImageTransformCache = shImageTransformCache;
     }
 
     /** Set {@code SUSPENDED} (blocks the tenant's members at {@code ShTenantFilter}). */
     @Transactional
     public ShTenant suspend(String id) {
-        return setStatus(id, ShTenantStatus.SUSPENDED);
+        ShTenant tenant = requireTenant(id);
+        if (tenant.isDefaultTenant()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "The reserved default tenant cannot be suspended");
+        }
+        delegate.suspend(tenant.getName());
+        return requireTenant(id);
     }
 
     /** Set {@code ACTIVE} (re-opens a suspended tenant). */
     @Transactional
     public ShTenant activate(String id) {
-        return setStatus(id, ShTenantStatus.ACTIVE);
-    }
-
-    private ShTenant setStatus(String id, ShTenantStatus status) {
         ShTenant tenant = requireTenant(id);
-        // The reserved default tenant is always live; refuse to suspend it.
-        if (tenant.isDefaultTenant() && status == ShTenantStatus.SUSPENDED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "The reserved default tenant cannot be suspended");
-        }
-        tenant.setStatus(status);
-        log.warn("[TenantLifecycle] tenant '{}' -> {}", tenant.getName(), status);
-        return shTenantRepository.saveAndFlush(tenant);
+        delegate.activate(tenant.getName());
+        return requireTenant(id);
     }
 
     /**
@@ -95,18 +86,9 @@ public class ShTenantTeardownService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "The reserved default tenant cannot be deleted");
         }
-        String name = tenant.getName();
-        if (dryRun) {
-            log.info("[TenantTeardown] DRY-RUN for tenant '{}': would purge bytes + catalog row", name);
-            return new ShTenantTeardownReport(id, name, true, true, false);
-        }
-        log.warn("[TenantTeardown] DELETING tenant '{}' (audited)", name);
-        shFileStorageService.deleteTenant(name);
-        shImageTransformCache.purgeTenant(name);
-        // Memberships FK the tenant row — remove them first (SH22/C).
-        shTenantMembershipRepository.deleteByTenant_Id(tenant.getId());
-        shTenantRepository.delete(tenant);
-        return new ShTenantTeardownReport(id, name, false, true, true);
+        VigletTenantTeardownReport report = delegate.delete(tenant.getName(), dryRun);
+        return new ShTenantTeardownReport(id, tenant.getName(), report.dryRun(),
+                report.tenantExisted(), report.purged());
     }
 
     private ShTenant requireTenant(String id) {
@@ -116,8 +98,7 @@ public class ShTenantTeardownService {
 
     /**
      * Outcome of a teardown. {@code tenantExisted} is false (and {@code name} null)
-     * for an unknown id; {@code bytesPurged}/{@code catalogRemoved} are false on a
-     * dry run.
+     * for an unknown id; {@code catalogRemoved} is false on a dry run.
      */
     public record ShTenantTeardownReport(String id, String name, boolean dryRun,
                                          boolean tenantExisted, boolean catalogRemoved) {

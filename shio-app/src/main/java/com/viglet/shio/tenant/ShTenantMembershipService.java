@@ -10,17 +10,15 @@ package com.viglet.shio.tenant;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
-import java.util.regex.Pattern;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import org.springframework.web.server.ResponseStatusException;
 
+import com.viglet.core.tenancy.VigletTenantMembershipService;
+import com.viglet.core.tenancy.VigletTenantRef;
+import com.viglet.core.tenancy.VigletTenantSlugValidator;
 import com.viglet.shio.persistence.model.tenant.ShTenant;
 import com.viglet.shio.persistence.model.tenant.ShTenantMembership;
 import com.viglet.shio.persistence.model.tenant.ShTenantMembershipStatus;
@@ -31,15 +29,20 @@ import com.viglet.shio.persistence.repository.tenant.ShTenantRepository;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Tenant membership + self-service signup (SH22 / Turing parity, mirrors
- * {@code TurTenantService}). Owns the user&harr;tenant&harr;role join and the
- * rules that gate access: {@link #isActiveMember} drives the hard-403 gate in
- * {@code ShTenantFilter}, {@link #tenantsOf} backs {@code GET /tenant/mine}, and
- * {@link #signup} creates a tenant with an {@code OWNER} membership.
+ * Tenant membership + self-service signup (SH22 / Turing parity). Owns the
+ * user&harr;tenant&harr;role join and the self-service signup.
+ *
+ * <p>T397 / §XIV.9 — re-homed onto the shared {@link VigletTenantMembershipService}
+ * + {@link VigletTenantSlugValidator} (lifted from this class and Turing's
+ * {@code TurTenantService}): the idempotent-signup / slug-validation / post-create
+ * provisioning logic now lives once in {@code viglet-core-tenancy} and drives all
+ * three products. This class is the thin Shio-facing adapter that maps the neutral
+ * {@link VigletTenantRef} the shared service returns back to the {@link ShTenant}
+ * entity the controllers expect; the membership reads/writes that don't carry
+ * shared logic stay repository-direct here.
  *
  * <p>Shio identifies a tenant by its {@code name} (no separate slug), so the name
- * doubles as the slug — validated to a safe, lowercase, hyphenated token and
- * checked against a reserved list.</p>
+ * doubles as the slug the shared service validates.
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -48,90 +51,43 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ShTenantMembershipService {
 
-    /** 2&ndash;63 lowercase letters, digits or inner hyphens (the tenant name doubles as a slug). */
-    private static final Pattern NAME_PATTERN = Pattern.compile("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$");
-
-    private static final Set<String> RESERVED_NAMES = Set.of(
-            "www", "app", "api", "admin", "console", "shio", "localhost", "signup",
-            "login", "logout", "oauth2", "static", "assets", "default", "system",
-            "platform", "support", "mail", "root", "store", "file_source");
-
+    private final VigletTenantMembershipService membershipService;
+    private final VigletTenantSlugValidator slugValidator;
     private final ShTenantRepository shTenantRepository;
     private final ShTenantMembershipRepository shTenantMembershipRepository;
-    private final ShTenantProvisioningService shTenantProvisioningService;
 
-    public ShTenantMembershipService(ShTenantRepository shTenantRepository,
-                                     ShTenantMembershipRepository shTenantMembershipRepository,
-                                     ShTenantProvisioningService shTenantProvisioningService) {
+    public ShTenantMembershipService(VigletTenantMembershipService membershipService,
+                                     VigletTenantSlugValidator slugValidator,
+                                     ShTenantRepository shTenantRepository,
+                                     ShTenantMembershipRepository shTenantMembershipRepository) {
+        this.membershipService = membershipService;
+        this.slugValidator = slugValidator;
         this.shTenantRepository = shTenantRepository;
         this.shTenantMembershipRepository = shTenantMembershipRepository;
-        this.shTenantProvisioningService = shTenantProvisioningService;
     }
 
     /** Normalize + validate a tenant name; rejects bad shapes (400) and reserved names (400). */
     public String normalizeName(String name) {
-        if (!StringUtils.hasText(name)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A tenant name is required");
-        }
-        String normalized = name.trim().toLowerCase(Locale.ROOT);
-        if (!NAME_PATTERN.matcher(normalized).matches()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Invalid name: use 2-63 lowercase letters, digits or hyphens");
-        }
-        if (RESERVED_NAMES.contains(normalized)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Name '" + normalized + "' is reserved");
-        }
-        return normalized;
+        return slugValidator.normalizeSlug(name);
     }
 
     /**
      * Self-service signup: create a tenant named {@code name} with {@code owner} as
-     * its {@code OWNER}, then provision the default content model. Idempotent — if the
-     * tenant already exists and {@code owner} already owns it, returns it; otherwise 409.
+     * its {@code OWNER}, then provision the default content model (via the shared
+     * provisioner hook). Idempotent — if the tenant already exists and {@code owner}
+     * already owns it, returns it; otherwise 409.
      */
     @Transactional
     public ShTenant signup(String name, String owner) {
-        String normalized = normalizeName(name);
-        if (!StringUtils.hasText(owner)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "An owner is required");
-        }
-        ShTenant existing = shTenantRepository.findByName(normalized).orElse(null);
-        if (existing != null) {
-            boolean ownedByCaller = shTenantMembershipRepository
-                    .findByTenant_IdAndUsername(existing.getId(), owner)
-                    .filter(m -> m.getRole() == ShTenantRole.OWNER)
-                    .isPresent();
-            if (ownedByCaller) {
-                return existing;
-            }
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Tenant name '" + normalized + "' is already taken");
-        }
-
-        ShTenant tenant = new ShTenant();
-        tenant.setName(normalized);
-        tenant.setOwner(owner);
-        tenant.setEnabled(true);
-        tenant.setCreatedDate(Instant.now());
-        ShTenant saved = shTenantRepository.saveAndFlush(tenant);
-
-        addMembership(saved, owner, ShTenantRole.OWNER);
-        log.info("Tenant '{}' signed up by '{}'", normalized, owner);
-
-        // Best-effort: a provisioning failure must not undo the tenant + membership.
-        try {
-            shTenantProvisioningService.provision(normalized);
-        } catch (RuntimeException e) {
-            log.warn("Tenant '{}' created but provisioning failed: {}", normalized, e.getMessage());
-        }
-        return saved;
+        VigletTenantRef ref = membershipService.signup(name, name, owner);
+        return shTenantRepository.findByName(ref.id())
+                .orElseThrow(() -> new IllegalStateException("Tenant vanished: " + ref.id()));
     }
 
     /**
      * Ensure {@code username} has a membership of at least {@code role} in {@code tenant}
-     * (idempotent). Used by signup and by the admin create path so the creator is never
-     * locked out by the hard-403 gate.
+     * (idempotent). Used by the admin create path so the creator is never locked out
+     * by the hard-403 gate.
      */
     @Transactional
     public ShTenantMembership addMembership(ShTenant tenant, String username, ShTenantRole role) {

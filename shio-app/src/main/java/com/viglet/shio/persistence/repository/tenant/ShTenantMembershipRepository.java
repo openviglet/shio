@@ -37,6 +37,9 @@ public interface ShTenantMembershipRepository extends JpaRepository<ShTenantMemb
 
     Optional<ShTenantMembership> findByTenant_NameAndUsername(String tenantName, String username);
 
+    /** Count the memberships of a tenant by name — feeds the shared teardown dry-run plan (T397). */
+    long countByTenant_Name(String tenantName);
+
     /** Remove all memberships of a tenant — called by teardown before deleting the tenant row. */
     void deleteByTenant_Id(String tenantId);
 }

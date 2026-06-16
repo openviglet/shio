@@ -29,17 +29,20 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.viglet.shio.persistence.model.tenant.ShTenant;
-import com.viglet.shio.persistence.model.tenant.ShTenantStatus;
-import com.viglet.shio.persistence.repository.tenant.ShTenantRepository;
-import com.viglet.shio.property.ShAppProperties;
+import com.viglet.core.tenancy.VigletTenantContext;
+import com.viglet.core.tenancy.VigletTenantRef;
+import com.viglet.core.tenancy.VigletTenantStatus;
 
 import jakarta.servlet.FilterChain;
 
 /**
- * SH22/B+C — {@code ShTenantFilter} gates: a suspended tenant blocks its non-admin
- * members with 403, and a non-default tenant requires an ACTIVE membership (hard
- * 403) unless the request is CDA-token-scoped or the principal is an admin.
+ * T397 / §XIV.9 — {@code ShTenantFilter}, re-homed onto the shared
+ * {@code VigletTenantResolutionFilter}, still applies Shio's gates: a suspended
+ * tenant blocks its non-admin members (403), a non-default tenant requires an
+ * ACTIVE membership (403) unless the request is CDA-token-scoped ({@code trusted})
+ * or the principal is an admin. An authenticated request that resolves <em>no</em>
+ * explicit tenant now drops to the default {@code shio} tenant and is served
+ * (Turing-parity drop-to-default adopted in T397), rather than being denied.
  *
  * @author Alexandre Oliveira
  */
@@ -47,22 +50,22 @@ import jakarta.servlet.FilterChain;
 class ShTenantSuspendedAccessTest {
 
     @Mock
-    private ShAppProperties shAppProperties;
-    @Mock
-    private ShTenantRepository shTenantRepository;
-    @Mock
-    private ShTenantMembershipService shTenantMembershipService;
+    private ShVigletTenantStore store;
     @Mock
     private FilterChain chain;
+
+    private final VigletTenantContext context = new VigletTenantContext(true, "shio");
+    private final ShVigletTenantResolver resolver = new ShVigletTenantResolver();
+    private final ShPlatformAdminService platformAdmin = new ShPlatformAdminService(context);
 
     @AfterEach
     void clearContext() {
         SecurityContextHolder.clearContext();
-        ShTenantContext.clear();
+        context.clear();
     }
 
     private ShTenantFilter filter() {
-        return new ShTenantFilter(shAppProperties, shTenantRepository, shTenantMembershipService);
+        return new ShTenantFilter(context, store, resolver, platformAdmin);
     }
 
     private void authenticateAs(String username, String... roles) {
@@ -71,24 +74,27 @@ class ShTenantSuspendedAccessTest {
                 new UsernamePasswordAuthenticationToken(username, "n/a", authorities));
     }
 
-    private ShTenant tenant(String name, ShTenantStatus status) {
-        ShTenant t = new ShTenant();
-        t.setName(name);
-        t.setStatus(status);
-        return t;
+    private VigletTenantRef ref(String name, VigletTenantStatus status) {
+        return new VigletTenantRef(name, name, name, status, "FREE");
     }
 
-    /** A token-scoped request to tenant "beta" (exempt from the membership gate). */
+    /** A token-scoped request to {@code tenant} (the {@code trusted} CDA-token path). */
     private MockHttpServletRequest tokenRequestTo(String tenant) {
         var request = new MockHttpServletRequest();
         request.setAttribute(ShTenantFilter.TENANT_REQUEST_ATTR, tenant);
         return request;
     }
 
+    /** A request carrying a session-pinned tenant (the {@code /switch} path — membership-checked). */
+    private MockHttpServletRequest sessionRequestTo(String tenant) {
+        var request = new MockHttpServletRequest();
+        request.getSession(true).setAttribute(ShTenantFilter.TENANT_SESSION_ATTR, tenant);
+        return request;
+    }
+
     @Test
     void suspendedTenantBlocksNonAdminMember() throws Exception {
-        when(shAppProperties.isMultiTenant()).thenReturn(true);
-        when(shTenantRepository.findByName("beta")).thenReturn(Optional.of(tenant("beta", ShTenantStatus.SUSPENDED)));
+        when(store.findById("beta")).thenReturn(Optional.of(ref("beta", VigletTenantStatus.SUSPENDED)));
         authenticateAs("alice", "ROLE_USER");
         var response = new MockHttpServletResponse();
 
@@ -100,7 +106,7 @@ class ShTenantSuspendedAccessTest {
 
     @Test
     void suspendedTenantStillReachableByAdmin() throws Exception {
-        when(shAppProperties.isMultiTenant()).thenReturn(true);
+        when(store.findById("beta")).thenReturn(Optional.of(ref("beta", VigletTenantStatus.SUSPENDED)));
         authenticateAs("root", "ROLE_ADMIN");
         var response = new MockHttpServletResponse();
 
@@ -112,8 +118,7 @@ class ShTenantSuspendedAccessTest {
 
     @Test
     void activeTokenScopedTenantPassesThrough() throws Exception {
-        when(shAppProperties.isMultiTenant()).thenReturn(true);
-        when(shTenantRepository.findByName("beta")).thenReturn(Optional.of(tenant("beta", ShTenantStatus.ACTIVE)));
+        when(store.findById("beta")).thenReturn(Optional.of(ref("beta", VigletTenantStatus.ACTIVE)));
         authenticateAs("alice", "ROLE_USER");
         var response = new MockHttpServletResponse();
 
@@ -125,13 +130,12 @@ class ShTenantSuspendedAccessTest {
 
     @Test
     void nonMemberIsDeniedOnNonDefaultTenant() throws Exception {
-        when(shAppProperties.isMultiTenant()).thenReturn(true);
-        when(shTenantMembershipService.isActiveMember("alice", "alice")).thenReturn(false);
-        // No token attr: tenant resolves from the username fallback ("alice").
+        when(store.findById("beta")).thenReturn(Optional.of(ref("beta", VigletTenantStatus.ACTIVE)));
+        when(store.isActiveMember("beta", "alice")).thenReturn(false);
         authenticateAs("alice", "ROLE_USER");
         var response = new MockHttpServletResponse();
 
-        filter().doFilter(new MockHttpServletRequest(), response, chain);
+        filter().doFilter(sessionRequestTo("beta"), response, chain);
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.FORBIDDEN.value());
         verify(chain, never()).doFilter(any(), any());
@@ -139,8 +143,21 @@ class ShTenantSuspendedAccessTest {
 
     @Test
     void activeMemberPassesNonDefaultTenant() throws Exception {
-        when(shAppProperties.isMultiTenant()).thenReturn(true);
-        when(shTenantMembershipService.isActiveMember("alice", "alice")).thenReturn(true);
+        when(store.findById("beta")).thenReturn(Optional.of(ref("beta", VigletTenantStatus.ACTIVE)));
+        when(store.isActiveMember("beta", "alice")).thenReturn(true);
+        authenticateAs("alice", "ROLE_USER");
+        var response = new MockHttpServletResponse();
+
+        filter().doFilter(sessionRequestTo("beta"), response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+        verify(chain).doFilter(any(), any());
+    }
+
+    @Test
+    void unresolvedTenantDropsToDefaultAndIsServed() throws Exception {
+        // No token / session / workspace_id claim — resolves to nothing, so the
+        // shared filter binds the default 'shio' tenant and serves the request.
         authenticateAs("alice", "ROLE_USER");
         var response = new MockHttpServletResponse();
 

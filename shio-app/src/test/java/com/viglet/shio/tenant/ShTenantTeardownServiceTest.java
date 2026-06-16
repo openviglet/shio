@@ -17,13 +17,19 @@ import static org.mockito.Mockito.when;
 
 import java.util.Optional;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.viglet.core.tenancy.VigletTenantContext;
+import com.viglet.core.tenancy.VigletTenantTeardownService;
 import com.viglet.shio.api.staticfile.ShFileStorageService;
 import com.viglet.shio.api.staticfile.transform.ShImageTransformCache;
 import com.viglet.shio.persistence.model.tenant.ShTenant;
@@ -33,9 +39,12 @@ import com.viglet.shio.persistence.repository.tenant.ShTenantRepository;
 import com.viglet.shio.tenant.ShTenantTeardownService.ShTenantTeardownReport;
 
 /**
- * SH22/B — the tenant lifecycle service: suspend/activate flips status, and
- * teardown purges bytes + catalog while refusing the reserved {@code shio} tenant
- * and being idempotent for unknown ids and dry runs.
+ * T397 / §XIV.9 — {@code ShTenantTeardownService}, re-homed onto the shared
+ * {@code VigletTenantTeardownService}, still: purges bytes ({@code file_source} +
+ * image cache) + removes the catalog row, refuses the reserved {@code shio} tenant
+ * (409), and is idempotent for unknown ids and dry runs. The shared orchestration
+ * gates on platform-admin (Shio's {@code ROLE_ADMIN}), so each test authenticates
+ * as an admin.
  *
  * @author Alexandre Oliveira
  */
@@ -51,8 +60,28 @@ class ShTenantTeardownServiceTest {
     @Mock
     private ShImageTransformCache shImageTransformCache;
 
-    @InjectMocks
-    private ShTenantTeardownService service;
+    @BeforeEach
+    void authenticateAsAdmin() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("root", "n/a",
+                        java.util.List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
+    }
+
+    @AfterEach
+    void clearContext() {
+        SecurityContextHolder.clearContext();
+    }
+
+    /** Builds the adapter over the shared teardown delegate, wired with the SPI adapters. */
+    private ShTenantTeardownService service() {
+        VigletTenantContext context = new VigletTenantContext(true, ShTenant.DEFAULT_TENANT_NAME);
+        ShPlatformAdminService platformAdmin = new ShPlatformAdminService(context);
+        ShVigletTenantStore store = new ShVigletTenantStore(shTenantRepository, shTenantMembershipRepository);
+        ShVigletTenantPurger purger = new ShVigletTenantPurger(shFileStorageService, shImageTransformCache);
+        VigletTenantTeardownService delegate =
+                new VigletTenantTeardownService(platformAdmin, context, store, purger);
+        return new ShTenantTeardownService(delegate, shTenantRepository);
+    }
 
     private ShTenant tenant(String name) {
         ShTenant t = new ShTenant();
@@ -66,8 +95,10 @@ class ShTenantTeardownServiceTest {
     void deletePurgesBytesAndCatalogRow() {
         ShTenant acme = tenant("acme");
         when(shTenantRepository.findById("id-acme")).thenReturn(Optional.of(acme));
+        when(shTenantRepository.findByName("acme")).thenReturn(Optional.of(acme));
+        when(shTenantMembershipRepository.countByTenant_Name("acme")).thenReturn(0L);
 
-        ShTenantTeardownReport report = service.delete("id-acme", false);
+        ShTenantTeardownReport report = service().delete("id-acme", false);
 
         assertThat(report.tenantExisted()).isTrue();
         assertThat(report.catalogRemoved()).isTrue();
@@ -80,8 +111,10 @@ class ShTenantTeardownServiceTest {
     void deleteDryRunMutatesNothing() {
         ShTenant acme = tenant("acme");
         when(shTenantRepository.findById("id-acme")).thenReturn(Optional.of(acme));
+        when(shTenantRepository.findByName("acme")).thenReturn(Optional.of(acme));
+        when(shTenantMembershipRepository.countByTenant_Name("acme")).thenReturn(0L);
 
-        ShTenantTeardownReport report = service.delete("id-acme", true);
+        ShTenantTeardownReport report = service().delete("id-acme", true);
 
         assertThat(report.dryRun()).isTrue();
         assertThat(report.tenantExisted()).isTrue();
@@ -94,7 +127,7 @@ class ShTenantTeardownServiceTest {
     void deleteUnknownIdIsNoOp() {
         when(shTenantRepository.findById("missing")).thenReturn(Optional.empty());
 
-        ShTenantTeardownReport report = service.delete("missing", false);
+        ShTenantTeardownReport report = service().delete("missing", false);
 
         assertThat(report.tenantExisted()).isFalse();
         verify(shFileStorageService, never()).deleteTenant(any());
@@ -105,7 +138,7 @@ class ShTenantTeardownServiceTest {
         ShTenant shio = tenant(ShTenant.DEFAULT_TENANT_NAME);
         when(shTenantRepository.findById("id-shio")).thenReturn(Optional.of(shio));
 
-        assertThatThrownBy(() -> service.delete("id-shio", false))
+        assertThatThrownBy(() -> service().delete("id-shio", false))
                 .isInstanceOf(ResponseStatusException.class);
         verify(shTenantRepository, never()).delete(any());
     }
@@ -114,8 +147,10 @@ class ShTenantTeardownServiceTest {
     void suspendThenActivateFlipsStatus() {
         ShTenant acme = tenant("acme");
         when(shTenantRepository.findById("id-acme")).thenReturn(Optional.of(acme));
+        when(shTenantRepository.findByName("acme")).thenReturn(Optional.of(acme));
         when(shTenantRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
 
+        ShTenantTeardownService service = service();
         assertThat(service.suspend("id-acme").getStatus()).isEqualTo(ShTenantStatus.SUSPENDED);
         assertThat(service.activate("id-acme").getStatus()).isEqualTo(ShTenantStatus.ACTIVE);
     }
@@ -125,7 +160,7 @@ class ShTenantTeardownServiceTest {
         ShTenant shio = tenant(ShTenant.DEFAULT_TENANT_NAME);
         when(shTenantRepository.findById("id-shio")).thenReturn(Optional.of(shio));
 
-        assertThatThrownBy(() -> service.suspend("id-shio"))
+        assertThatThrownBy(() -> service().suspend("id-shio"))
                 .isInstanceOf(ResponseStatusException.class);
     }
 }
