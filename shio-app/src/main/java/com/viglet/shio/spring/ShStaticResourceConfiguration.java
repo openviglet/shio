@@ -74,6 +74,9 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
                 .setEtagGenerator(resource -> resource instanceof ShTransformedImageResource transformed
                         ? transformed.getEtag() : null)
                 .resourceChain(false)
+                // SH47: root the lookup at the current tenant's sub-directory so the
+                // public delivery path mirrors the per-tenant on-disk layout.
+                .addResolver(new ShTenantFileSourceResourceResolver())
                 .addTransformer(new ShImageTransformResourceTransformer(imageTransformPipeline, imageTransformGuard));
     }
 }

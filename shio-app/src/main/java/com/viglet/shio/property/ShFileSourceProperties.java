@@ -24,10 +24,12 @@ import lombok.Setter;
  * live. A relative value (the default {@code store/file_source}) resolves
  * against {@code user.dir}, matching the dev H2 database location
  * ({@code ./store/db/shioDB}). Each uploaded file is stored under
- * {@code <root>/<filePostId>/<fileName>} — keying by the (globally unique) post
- * id rather than the folder tree means a folder rename/move never invalidates a
- * stored path, and per-tenant isolation (SH47) can later prefix the tenant id
- * without touching this layout.</p>
+ * {@code <root>/<tenant>/<filePostId>/<fileName>} — keying by the (globally
+ * unique) post id rather than the folder tree means a folder rename/move never
+ * invalidates a stored path, and the per-tenant prefix (SH47, applied by
+ * {@code ShFileStorageService}) isolates each tenant's bytes on disk. Files
+ * uploaded before SH47 live in the old flat {@code <root>/<filePostId>/<fileName>}
+ * layout and are still served via a read fallback.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.2

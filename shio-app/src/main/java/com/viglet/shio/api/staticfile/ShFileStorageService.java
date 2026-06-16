@@ -15,17 +15,27 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.Locale;
 
 import org.springframework.stereotype.Service;
 
 import com.viglet.shio.property.ShFileSourceProperties;
+import com.viglet.shio.tenant.ShTenantContext;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Physical storage for the file_source subsystem (SH38). Bytes live on disk at
- * {@code <root>/<fileId>/<fileName>}; the database only keeps a {@code File}
- * post pointing at them (its id <em>is</em> the {@code fileId}).
+ * {@code <root>/<tenant>/<fileId>/<fileName>}; the database only keeps a
+ * {@code File} post pointing at them (its id <em>is</em> the {@code fileId}).
+ *
+ * <p><strong>Tenant-aware (SH47)</strong> — every lookup is rooted at the current
+ * {@link ShTenantContext} tenant (default {@code shio}) sub-directory, so tenant A
+ * and B never share a stored file even for an identical post id, mirroring the
+ * {@code ShImageTransformCache} layout. Bytes written before SH47 live in the old
+ * flat {@code <root>/<fileId>/<fileName>} layout; reads (and deletes) fall back to
+ * it when the tenant-scoped path is absent, so no bulk migration is required —
+ * new writes always go to the tenant path.</p>
  *
  * <p>All public lookups go through {@link #resolve}, which normalizes the
  * candidate path and rejects anything that would escape the configured root —
@@ -48,6 +58,24 @@ public class ShFileStorageService {
     /** The on-disk root directory for stored binaries. */
     public Path rootDir() {
         return properties.getRootDir();
+    }
+
+    /** The current tenant's storage sub-directory, {@code <root>/<tenant>}. */
+    private Path tenantRoot() {
+        return rootDir().resolve(sanitizeTenant(tenantId()));
+    }
+
+    /** The current tenant, defaulting to {@code shio} when unset (matches the resolver). */
+    private static String tenantId() {
+        String tenant = ShTenantContext.getTenantId();
+        return tenant != null && !tenant.isBlank() ? tenant : ShTenantContext.DEFAULT_TENANT;
+    }
+
+    /** Reduce a tenant id to a safe single path segment for the disk sub-directory. */
+    private static String sanitizeTenant(String value) {
+        String cleaned = value.replaceAll("[^A-Za-z0-9._-]", "_");
+        return cleaned.isEmpty() || cleaned.equals(".") || cleaned.equals("..")
+                ? "_" : cleaned.toLowerCase(Locale.ROOT);
     }
 
     /**
@@ -73,29 +101,53 @@ public class ShFileStorageService {
 
     /**
      * Resolve the absolute path of {@code fileName} within {@code fileId}'s
-     * directory, guaranteed to stay under the storage root.
+     * directory under the current tenant, guaranteed to stay under the storage
+     * root. New writes target {@code <root>/<tenant>/<fileId>/<fileName>}; a read
+     * of a pre-SH47 file falls back to the flat {@code <root>/<fileId>/<fileName>}
+     * layout when the tenant-scoped path holds no regular file.
      */
     public Path resolve(String fileId, String fileName) {
         if (fileId == null || fileId.isBlank()) {
             throw new IllegalArgumentException("File id must not be blank");
         }
         Path root = rootDir();
-        Path candidate = root.resolve(fileId).resolve(sanitizeFileName(fileName)).normalize();
-        if (!candidate.startsWith(root)) {
+        Path tenantRoot = tenantRoot();
+        String safeName = sanitizeFileName(fileName);
+        Path candidate = tenantRoot.resolve(fileId).resolve(safeName).normalize();
+        // Guard against the tenant segment escaping (e.g. a "../" file id): the
+        // candidate must stay under the tenant sub-directory, not merely the root.
+        if (!candidate.startsWith(tenantRoot)) {
             throw new IllegalArgumentException("Resolved path escapes file_source root");
+        }
+        if (!Files.isRegularFile(candidate)) {
+            Path legacy = root.resolve(fileId).resolve(safeName).normalize();
+            if (legacy.startsWith(root) && Files.isRegularFile(legacy)) {
+                return legacy;
+            }
         }
         return candidate;
     }
 
-    /** The directory holding a single file id's bytes. */
+    /**
+     * The directory holding a single file id's bytes for the current tenant
+     * ({@code <root>/<tenant>/<fileId>}), falling back to the pre-SH47 flat
+     * {@code <root>/<fileId>} directory when only that exists.
+     */
     public Path dirOf(String fileId) {
         if (fileId == null || fileId.isBlank()) {
             throw new IllegalArgumentException("File id must not be blank");
         }
         Path root = rootDir();
-        Path dir = root.resolve(fileId).normalize();
-        if (!dir.startsWith(root)) {
+        Path tenantRoot = tenantRoot();
+        Path dir = tenantRoot.resolve(fileId).normalize();
+        if (!dir.startsWith(tenantRoot)) {
             throw new IllegalArgumentException("Resolved path escapes file_source root");
+        }
+        if (!Files.isDirectory(dir)) {
+            Path legacy = root.resolve(fileId).normalize();
+            if (legacy.startsWith(root) && Files.isDirectory(legacy)) {
+                return legacy;
+            }
         }
         return dir;
     }
@@ -124,19 +176,34 @@ public class ShFileStorageService {
 
     /**
      * Best-effort recursive removal of a file id's directory. Never throws — a
-     * missing directory (e.g. a non-file post being deleted) is a no-op.
+     * missing directory (e.g. a non-file post being deleted) is a no-op. Removes
+     * both the current tenant's {@code <root>/<tenant>/<fileId>} directory and any
+     * pre-SH47 flat {@code <root>/<fileId>} directory.
      */
     public void delete(String fileId) {
         if (fileId == null || fileId.isBlank()) {
             return;
         }
-        Path dir;
-        try {
-            dir = dirOf(fileId);
-        } catch (IllegalArgumentException e) {
+        Path root = rootDir();
+        deleteDirRecursive(tenantRoot().resolve(fileId).normalize(), root);
+        deleteDirRecursive(root.resolve(fileId).normalize(), root);
+    }
+
+    /**
+     * Best-effort recursive removal of a whole tenant's storage sub-directory
+     * ({@code <root>/<tenant>}), used by tenant teardown (SH47/B). Never throws.
+     */
+    public void deleteTenant(String tenantId) {
+        if (tenantId == null || tenantId.isBlank()) {
             return;
         }
-        if (!Files.isDirectory(dir)) {
+        Path root = rootDir();
+        deleteDirRecursive(root.resolve(sanitizeTenant(tenantId)).normalize(), root);
+    }
+
+    /** Recursively delete {@code dir} when it is a directory under {@code root}; never throws. */
+    private void deleteDirRecursive(Path dir, Path root) {
+        if (!dir.startsWith(root) || dir.equals(root) || !Files.isDirectory(dir)) {
             return;
         }
         try (var paths = Files.walk(dir)) {
@@ -148,7 +215,7 @@ public class ShFileStorageService {
                 }
             });
         } catch (IOException e) {
-            log.warn("Could not walk file_source dir for {}", fileId, e);
+            log.warn("Could not walk file_source dir {}", dir, e);
         }
     }
 

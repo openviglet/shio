@@ -38,13 +38,17 @@ class ShFileStorageServiceTest {
         storage = new ShFileStorageService(props);
     }
 
+    // With no tenant bound on the thread (plain unit test), the storage roots at the
+    // default "shio" tenant sub-directory: <root>/shio/<fileId>/<fileName> (SH47).
+    private static final String DEFAULT_TENANT = "shio";
+
     @Test
     void storeThenResolveAndRead() throws Exception {
         byte[] bytes = "hello".getBytes(StandardCharsets.UTF_8);
         Path stored = storage.store("post-1", "doc.txt", new ByteArrayInputStream(bytes));
 
         assertTrue(Files.isRegularFile(stored));
-        assertTrue(stored.startsWith(tempDir));
+        assertTrue(stored.startsWith(tempDir.resolve(DEFAULT_TENANT)));
         assertTrue(storage.exists("post-1", "doc.txt"));
         assertEquals("hello", Files.readString(storage.resolve("post-1", "doc.txt")));
     }
@@ -54,14 +58,14 @@ class ShFileStorageServiceTest {
         Path stored = storage.store("post-2", "/etc/evil.txt",
                 new ByteArrayInputStream("x".getBytes(StandardCharsets.UTF_8)));
         assertEquals("evil.txt", stored.getFileName().toString());
-        assertTrue(stored.startsWith(tempDir.resolve("post-2")));
+        assertTrue(stored.startsWith(tempDir.resolve(DEFAULT_TENANT).resolve("post-2")));
     }
 
     @Test
     void resolveNeutralizesTraversalInFileName() {
         // A traversal file name is reduced to its last segment and stays under root.
         Path resolved = storage.resolve("post-3", "../../escape");
-        assertTrue(resolved.startsWith(tempDir.resolve("post-3")));
+        assertTrue(resolved.startsWith(tempDir.resolve(DEFAULT_TENANT).resolve("post-3")));
         assertEquals("escape", resolved.getFileName().toString());
     }
 
