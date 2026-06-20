@@ -257,13 +257,13 @@ public class ShUserAPI {
 
 	@PutMapping("/{username}")
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
-	public ShUser shUserUpdate(@PathVariable String username, @RequestBody ShUser shUser) {
+	public ShUser shUserUpdate(@PathVariable String username, @RequestBody ShUserRequest shUser) {
 		ShUser shUserEdit = shUserRepository.findByUsername(username);
 		if (shUserEdit != null) {
-			shUserEdit.setFirstName(shUser.getFirstName());
-			shUserEdit.setLastName(shUser.getLastName());
-			shUserEdit.setEmail(shUser.getEmail());
-			shUserEdit.setShGroups(shUser.getShGroups());
+			shUserEdit.setFirstName(shUser.firstName());
+			shUserEdit.setLastName(shUser.lastName());
+			shUserEdit.setEmail(shUser.email());
+			shUserEdit.setShGroups(shUser.toShGroups());
 			shUserRepository.save(shUserEdit);
 		}
 		return shUserEdit;
@@ -278,10 +278,11 @@ public class ShUserAPI {
 
 	@PostMapping("/{username}")
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
-	public ShUser shUserAdd(@PathVariable String username, @RequestBody ShUser shUser) {
-				shUserRepository.save(shUser);
+	public ShUser shUserAdd(@PathVariable String username, @RequestBody ShUserRequest shUser) {
+		ShUser shUserAdd = shUser.toNewShUser();
+		shUserRepository.save(shUserAdd);
 
-		return shUser;
+		return shUserAdd;
 	}
 
 	@GetMapping("/model")

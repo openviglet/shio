@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.api.widget.dto.ShWidgetRequest;
 import com.viglet.shio.persistence.model.widget.ShWidget;
 import com.viglet.shio.persistence.repository.widget.ShWidgetRepository;
 
@@ -64,15 +65,15 @@ public class ShWidgetAPI {
 	}
 
 	@PutMapping("/{id}")
-	public ShWidget shWidgetUpdate(@PathVariable String id, @RequestBody ShWidget shWidget) {
+	public ShWidget shWidgetUpdate(@PathVariable String id, @RequestBody ShWidgetRequest shWidgetRequest) {
 		Optional<ShWidget> shWidgetOptional = shWidgetRepository.findById(id);
 		if (shWidgetOptional.isPresent()) {
 			ShWidget shWidgetEdit = shWidgetOptional.get();
-			shWidgetEdit.setName(shWidget.getName());
-			shWidgetEdit.setType(shWidget.getType());
-			shWidgetEdit.setClassName(shWidget.getClassName());
-			shWidgetEdit.setDescription(shWidget.getDescription());
-			shWidgetEdit.setImplementationCode(shWidget.getImplementationCode());
+			shWidgetEdit.setName(shWidgetRequest.name());
+			shWidgetEdit.setType(shWidgetRequest.type());
+			shWidgetEdit.setClassName(shWidgetRequest.className());
+			shWidgetEdit.setDescription(shWidgetRequest.description());
+			shWidgetEdit.setImplementationCode(shWidgetRequest.implementationCode());
 			shWidgetRepository.save(shWidgetEdit);
 			return shWidgetEdit;
 		}
@@ -88,7 +89,13 @@ public class ShWidgetAPI {
 	}
 
 	@PostMapping
-	public ShWidget shWidgetAdd(@RequestBody ShWidget shWidget) {
+	public ShWidget shWidgetAdd(@RequestBody ShWidgetRequest shWidgetRequest) {
+		ShWidget shWidget = new ShWidget();
+		shWidget.setName(shWidgetRequest.name());
+		shWidget.setType(shWidgetRequest.type());
+		shWidget.setClassName(shWidgetRequest.className());
+		shWidget.setDescription(shWidgetRequest.description());
+		shWidget.setImplementationCode(shWidgetRequest.implementationCode());
 		shWidgetRepository.save(shWidget);
 		return shWidget;
 

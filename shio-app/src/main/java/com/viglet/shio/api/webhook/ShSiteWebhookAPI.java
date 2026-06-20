@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.api.webhook.dto.ShSiteWebhookRequest;
 import com.viglet.shio.persistence.model.webhook.ShSiteWebhook;
 import com.viglet.shio.persistence.repository.webhook.ShSiteWebhookRepository;
 
@@ -61,17 +62,17 @@ public class ShSiteWebhookAPI {
     }
 
     @PostMapping
-    public ShSiteWebhook create(@RequestBody ShSiteWebhook body, Principal principal) {
+    public ShSiteWebhook create(@RequestBody ShSiteWebhookRequest body, Principal principal) {
         ShSiteWebhook webhook = new ShSiteWebhook();
-        webhook.setName(body.getName());
-        webhook.setSiteId(body.getSiteId());
-        webhook.setUrl(body.getUrl());
+        webhook.setName(body.name());
+        webhook.setSiteId(body.siteId());
+        webhook.setUrl(body.url());
         // Auto-generate a shared secret when the caller doesn't supply one.
-        webhook.setSecret(body.getSecret() != null && !body.getSecret().isBlank()
-                ? body.getSecret()
+        webhook.setSecret(body.secret() != null && !body.secret().isBlank()
+                ? body.secret()
                 : UUID.randomUUID().toString().replace("-", ""));
-        webhook.setEvents(body.getEvents() != null ? new HashSet<>(body.getEvents()) : new HashSet<>());
-        webhook.setEnabled(body.isEnabled());
+        webhook.setEvents(body.events() != null ? new HashSet<>(body.events()) : new HashSet<>());
+        webhook.setEnabled(body.enabled());
         webhook.setOwner(principal != null ? principal.getName() : "system");
         webhook.setCreatedDate(Instant.now());
 
@@ -81,18 +82,18 @@ public class ShSiteWebhookAPI {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ShSiteWebhook> update(@PathVariable String id, @RequestBody ShSiteWebhook body) {
+    public ResponseEntity<ShSiteWebhook> update(@PathVariable String id, @RequestBody ShSiteWebhookRequest body) {
         return shSiteWebhookRepository.findById(id)
                 .map(existing -> {
-                    existing.setName(body.getName());
-                    existing.setSiteId(body.getSiteId());
-                    existing.setUrl(body.getUrl());
-                    existing.setEvents(body.getEvents() != null ? new HashSet<>(body.getEvents()) : new HashSet<>());
-                    existing.setEnabled(body.isEnabled());
+                    existing.setName(body.name());
+                    existing.setSiteId(body.siteId());
+                    existing.setUrl(body.url());
+                    existing.setEvents(body.events() != null ? new HashSet<>(body.events()) : new HashSet<>());
+                    existing.setEnabled(body.enabled());
                     // Only replace the secret when a non-blank one is supplied —
                     // never clobber it to blank on a routine update.
-                    if (body.getSecret() != null && !body.getSecret().isBlank()) {
-                        existing.setSecret(body.getSecret());
+                    if (body.secret() != null && !body.secret().isBlank()) {
+                        existing.setSecret(body.secret());
                     }
                     shSiteWebhookRepository.saveAndFlush(existing);
                     return ResponseEntity.ok(existing);

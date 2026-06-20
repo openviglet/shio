@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import com.viglet.shio.api.ShJsonView;
+import com.viglet.shio.api.auth.dto.ShRoleRequest;
 import com.viglet.shio.persistence.model.auth.ShRole;
 import com.viglet.shio.persistence.repository.auth.ShRoleRepository;
 
@@ -64,9 +65,15 @@ public class ShRoleAPI {
 
 	@PutMapping("/{id}")
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
-	public ShRole shRoleUpdate(@PathVariable String id, @RequestBody ShRole shRole) {
-		shRoleRepository.save(shRole);
-		return shRole;
+	public ShRole shRoleUpdate(@PathVariable String id, @RequestBody ShRoleRequest shRoleRequest) {
+		ShRole shRoleEdit = shRoleRepository.findById(id).orElse(null);
+		if (shRoleEdit != null) {
+			shRoleEdit.setName(shRoleRequest.name());
+			shRoleEdit.setDescription(shRoleRequest.description());
+			shRoleEdit.setShGroups(shRoleRequest.shGroups());
+			shRoleRepository.save(shRoleEdit);
+		}
+		return shRoleEdit;
 	}
 
 	@Transactional
@@ -78,7 +85,12 @@ public class ShRoleAPI {
 
 	@PostMapping
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
-	public ShRole shRoleAdd(@RequestBody ShRole shRole) {
+	public ShRole shRoleAdd(@RequestBody ShRoleRequest shRoleRequest) {
+
+		ShRole shRole = new ShRole();
+		shRole.setName(shRoleRequest.name());
+		shRole.setDescription(shRoleRequest.description());
+		shRole.setShGroups(shRoleRequest.shGroups());
 
 		shRoleRepository.save(shRole);
 

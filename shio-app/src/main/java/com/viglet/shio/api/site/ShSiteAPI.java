@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.api.site.dto.ShSiteRequest;
 import com.viglet.shio.exchange.site.ShSiteExportService;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
@@ -71,24 +72,43 @@ public class ShSiteAPI {
     }
 
     @PostMapping
-    public ResponseEntity<ShSite> create(@RequestBody ShSite payload, Principal principal) {
-        if (payload.getName() == null || payload.getName().isBlank()) {
+    public ResponseEntity<ShSite> create(@RequestBody ShSiteRequest payload, Principal principal) {
+        if (payload.name() == null || payload.name().isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-        if (shSiteRepository.findByName(payload.getName()) != null) {
+        if (shSiteRepository.findByName(payload.name()) != null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
         // SH22/D — enforce the tenant's plan site quota (402); no-op single-tenant.
         shTenantQuotaService.checkCanCreateSite();
-        ShSite created = shSiteWriteService.create(payload, principal != null ? principal.getName() : null);
+        ShSite created = shSiteWriteService.create(toEntity(payload),
+                principal != null ? principal.getName() : null);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ShSite> update(@PathVariable String id, @RequestBody ShSite payload, Principal principal) {
-        return shSiteWriteService.update(id, payload, principal != null ? principal.getName() : null)
+    public ResponseEntity<ShSite> update(@PathVariable String id, @RequestBody ShSiteRequest payload,
+                                         Principal principal) {
+        return shSiteWriteService.update(id, toEntity(payload), principal != null ? principal.getName() : null)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Map the request DTO onto a transient {@link ShSite} carrier (SonarQube
+     * java:S4684) so the existing {@link ShSiteWriteService} signatures stay
+     * unchanged. Only the fields the write service reads are populated.
+     */
+    private static ShSite toEntity(ShSiteRequest payload) {
+        ShSite site = new ShSite();
+        site.setName(payload.name());
+        site.setDescription(payload.description());
+        site.setUrl(payload.url());
+        site.setFurl(payload.furl());
+        site.setPostTypeLayout(payload.postTypeLayout());
+        site.setSearchablePostTypes(payload.searchablePostTypes());
+        site.setFormSuccess(payload.formSuccess());
+        return site;
     }
 
     @DeleteMapping("/{id}")

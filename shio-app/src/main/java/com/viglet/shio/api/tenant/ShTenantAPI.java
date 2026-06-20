@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.api.tenant.dto.ShTenantRequest;
 import com.viglet.shio.persistence.model.tenant.ShTenant;
 import com.viglet.shio.persistence.model.tenant.ShTenantRole;
 import com.viglet.shio.persistence.repository.tenant.ShTenantRepository;
@@ -105,8 +106,8 @@ public class ShTenantAPI {
     }
 
     @PostMapping
-    public ResponseEntity<ShTenant> create(@RequestBody ShTenant body, Principal principal) {
-        String name = body.getName() != null ? body.getName().trim() : "";
+    public ResponseEntity<ShTenant> create(@RequestBody ShTenantRequest body, Principal principal) {
+        String name = body.name() != null ? body.name().trim() : "";
         if (name.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
@@ -115,7 +116,7 @@ public class ShTenantAPI {
         }
         ShTenant tenant = new ShTenant();
         tenant.setName(name);
-        tenant.setDescription(body.getDescription());
+        tenant.setDescription(body.description());
         tenant.setEnabled(true);
         tenant.setOwner(principal != null ? principal.getName() : "system");
         tenant.setCreatedDate(Instant.now());
@@ -154,19 +155,19 @@ public class ShTenantAPI {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ShTenant> update(@PathVariable String id, @RequestBody ShTenant body) {
+    public ResponseEntity<ShTenant> update(@PathVariable String id, @RequestBody ShTenantRequest body) {
         return shTenantRepository.findById(id)
                 .map(existing -> {
                     // The reserved default tenant cannot be renamed; its name is the
                     // discriminator value every legacy/single-tenant row carries.
-                    if (!existing.isDefaultTenant() && body.getName() != null && !body.getName().isBlank()) {
-                        existing.setName(body.getName().trim());
+                    if (!existing.isDefaultTenant() && body.name() != null && !body.name().isBlank()) {
+                        existing.setName(body.name().trim());
                     }
-                    existing.setDescription(body.getDescription());
-                    existing.setEnabled(existing.isDefaultTenant() || body.isEnabled());
+                    existing.setDescription(body.description());
+                    existing.setEnabled(existing.isDefaultTenant() || body.enabled());
                     // SH22/D — the plan drives quotas; editable for non-default tenants.
-                    if (!existing.isDefaultTenant() && body.getPlan() != null && !body.getPlan().isBlank()) {
-                        existing.setPlan(body.getPlan().trim());
+                    if (!existing.isDefaultTenant() && body.plan() != null && !body.plan().isBlank()) {
+                        existing.setPlan(body.plan().trim());
                     }
                     shTenantRepository.saveAndFlush(existing);
                     return ResponseEntity.ok(existing);
@@ -188,11 +189,11 @@ public class ShTenantAPI {
      * user, with an {@code OWNER} membership, then provision the default model.
      */
     @PostMapping("/signup")
-    public ResponseEntity<ShTenant> signup(@RequestBody ShTenant body, Principal principal) {
+    public ResponseEntity<ShTenant> signup(@RequestBody ShTenantRequest body, Principal principal) {
         if (principal == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
-        ShTenant tenant = shTenantMembershipService.signup(body.getName(), principal.getName());
+        ShTenant tenant = shTenantMembershipService.signup(body.name(), principal.getName());
         return ResponseEntity.ok(tenant);
     }
 

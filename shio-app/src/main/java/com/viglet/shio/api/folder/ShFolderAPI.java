@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.api.folder.dto.ShFolderRequest;
 import com.viglet.shio.api.object.ShObjectNavigationService;
 import com.viglet.shio.api.object.ShObjectNavigationService.ShObjectPath;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -59,21 +60,34 @@ public class ShFolderAPI {
     }
 
     @PostMapping("/{parentFolderId}")
-    public ResponseEntity<ShFolder> create(@PathVariable String parentFolderId, @RequestBody ShFolder payload,
+    public ResponseEntity<ShFolder> create(@PathVariable String parentFolderId, @RequestBody ShFolderRequest payload,
                                            Principal principal) {
-        if (payload.getName() == null || payload.getName().isBlank()) {
+        if (payload.name() == null || payload.name().isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-        return shFolderWriteService.create(parentFolderId, payload, principal != null ? principal.getName() : null)
+        return shFolderWriteService.create(parentFolderId, toEntity(payload),
+                        principal != null ? principal.getName() : null)
                 .map(folder -> ResponseEntity.status(HttpStatus.CREATED).body(folder))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ShFolder> update(@PathVariable String id, @RequestBody ShFolder payload, Principal principal) {
-        return shFolderWriteService.update(id, payload, principal != null ? principal.getName() : null)
+    public ResponseEntity<ShFolder> update(@PathVariable String id, @RequestBody ShFolderRequest payload,
+                                           Principal principal) {
+        return shFolderWriteService.update(id, toEntity(payload), principal != null ? principal.getName() : null)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Map the request DTO onto a transient {@link ShFolder} carrier (SonarQube
+     * java:S4684) so the existing {@link ShFolderWriteService} signatures stay
+     * unchanged. The write service reads only the folder name off it.
+     */
+    private static ShFolder toEntity(ShFolderRequest payload) {
+        ShFolder folder = new ShFolder();
+        folder.setName(payload.name());
+        return folder;
     }
 
     @DeleteMapping("/{id}")

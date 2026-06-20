@@ -67,22 +67,23 @@ public class ShPostTypeConsoleAPI {
     }
 
     @PostMapping
-    public ResponseEntity<ShPostType> create(@RequestBody ShPostType payload, Principal principal) {
-        if (payload.getName() == null || payload.getName().isBlank()) {
+    public ResponseEntity<ShPostType> create(@RequestBody ShPostTypeRequest request, Principal principal) {
+        if (request.name() == null || request.name().isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-        if (shPostTypeRepository.findByName(payload.getName()) != null) {
+        if (shPostTypeRepository.findByName(request.name()) != null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
-        ShPostType created = shPostTypeConsoleWriteService.create(payload,
+        ShPostType created = shPostTypeConsoleWriteService.create(request.toShPostType(),
                 principal != null ? principal.getName() : null);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ShPostType> update(@PathVariable String id, @RequestBody ShPostType payload,
+    public ResponseEntity<ShPostType> update(@PathVariable String id, @RequestBody ShPostTypeRequest request,
                                              Principal principal) {
-        return shPostTypeConsoleWriteService.update(id, payload, principal != null ? principal.getName() : null)
+        return shPostTypeConsoleWriteService.update(id, request.toShPostType(),
+                        principal != null ? principal.getName() : null)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
