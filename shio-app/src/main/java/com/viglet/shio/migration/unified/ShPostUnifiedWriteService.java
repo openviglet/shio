@@ -8,7 +8,7 @@
  */
 package com.viglet.shio.migration.unified;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.beans.factory.ObjectProvider;
@@ -100,12 +100,12 @@ public class ShPostUnifiedWriteService {
         row.setShSite(folder.getShSite());
         row.setShPostType(postType);
         row.setOwner(req.owner());
-        row.setDate(new Date().toInstant());
-        row.setModifiedDate(new Date());
+        row.setDate(Instant.now());
+        row.setModifiedDate(Instant.now());
         row.setPublished(state == ShPostState.PUBLISHED);
         row.setPublishStatus(state == ShPostState.PUBLISHED
                 ? ShObjectPublishStatus.PUBLISH : ShObjectPublishStatus.DRAFT);
-        if (state == ShPostState.PUBLISHED) row.setPublicationDate(new Date());
+        if (state == ShPostState.PUBLISHED) row.setPublicationDate(Instant.now());
 
         String dataJson = writeJson(req.data() != null ? req.data() : objectMapper.createObjectNode());
         row.setData(dataJson);
@@ -126,7 +126,7 @@ public class ShPostUnifiedWriteService {
             row.setData(writeJson(req.data()));
             applyTitleAndSummary(row, req.data(), row.getShPostType());
         }
-        row.setModifiedDate(new Date());
+        row.setModifiedDate(Instant.now());
         if (req.modifier() != null) row.setModifier(req.modifier());
         row.setPublished(state == ShPostState.PUBLISHED);
         row.setPublishStatus(state == ShPostState.PUBLISHED
@@ -154,9 +154,9 @@ public class ShPostUnifiedWriteService {
         pub.setFurl(draft.getFurl());
         pub.setOwner(draft.getOwner());
         pub.setDate(draft.getDate());
-        pub.setModifiedDate(new Date());
+        pub.setModifiedDate(Instant.now());
         pub.setPublisher(publisher);
-        pub.setPublicationDate(new Date());
+        pub.setPublicationDate(Instant.now());
         pub.setPublished(true);
         pub.setPublishStatus(ShObjectPublishStatus.PUBLISH);
         pub.setData(draft.getData());
@@ -196,7 +196,7 @@ public class ShPostUnifiedWriteService {
         draft.setTitle(published.getTitle());
         draft.setSummary(published.getSummary());
         draft.setFurl(published.getFurl());
-        draft.setModifiedDate(new Date());
+        draft.setModifiedDate(Instant.now());
         if (modifier != null) draft.setModifier(modifier);
         draft.setPublished(false);
         draft.setPublishStatus(ShObjectPublishStatus.DRAFT);
@@ -210,21 +210,21 @@ public class ShPostUnifiedWriteService {
      * something to scan. Returns the updated draft.
      */
     @Transactional
-    public ShPostUnified schedule(String postId, Date publishAt, Date unpublishAt, String modifier) {
+    public ShPostUnified schedule(String postId, Instant publishAt, Instant unpublishAt, String modifier) {
         ShPostUnified draft = shPostUnifiedRepository
                 .findByIdAndState(postId, ShPostState.DRAFT)
                 .orElseGet(() -> draftFromPublished(postId));
 
         draft.setPublishScheduledDate(publishAt);
         draft.setUnpublishScheduledDate(unpublishAt);
-        draft.setModifiedDate(new Date());
+        draft.setModifiedDate(Instant.now());
         if (modifier != null) draft.setModifier(modifier);
         return shPostUnifiedRepository.save(draft);
     }
 
     /** Ids of drafts whose scheduled publish instant is now due (SH15 sweep). */
     @Transactional(readOnly = true)
-    public List<String> findScheduledPublishDue(Date now) {
+    public List<String> findScheduledPublishDue(Instant now) {
         return shPostUnifiedRepository
                 .findByStateAndPublishScheduledDateLessThanEqual(ShPostState.DRAFT, now)
                 .stream().map(ShPostUnified::getId).toList();
@@ -232,7 +232,7 @@ public class ShPostUnifiedWriteService {
 
     /** Ids of drafts whose scheduled unpublish instant is now due (SH15 sweep). */
     @Transactional(readOnly = true)
-    public List<String> findScheduledUnpublishDue(Date now) {
+    public List<String> findScheduledUnpublishDue(Instant now) {
         return shPostUnifiedRepository
                 .findByStateAndUnpublishScheduledDateLessThanEqual(ShPostState.DRAFT, now)
                 .stream().map(ShPostUnified::getId).toList();
@@ -321,7 +321,7 @@ public class ShPostUnifiedWriteService {
     private ShPostLifecycleEvent lifecycleEvent(ShWebhookEventType type, ShPostUnified row) {
         String siteId = row.getShSite() != null ? row.getShSite().getId() : null;
         return new ShPostLifecycleEvent(type, row.getId(), siteId,
-                normalizeUrl(row.getFurl()), new Date().toInstant());
+                normalizeUrl(row.getFurl()), Instant.now());
     }
 
     /** Friendly URL normalised to a leading slash; {@code null}/blank stays null. */

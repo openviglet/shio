@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.text.Normalizer;
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -186,7 +186,7 @@ public class ShSiteImportService {
         pkg.folders().forEach(f -> idRemap.put(f.id(), newId()));
         pkg.posts().forEach(p -> idRemap.putIfAbsent(p.id(), newId()));
 
-        Date now = new Date();
+        Instant now = Instant.now();
 
         // 3. Sites.
         Map<String, ShSite> sitesByOldId = new HashMap<>();
@@ -202,7 +202,7 @@ public class ShSiteImportService {
             site.setFormSuccess(exSite.formSuccess());
             site.setFurl(uniqueFurl(exSite.furl(), exSite.name()));
             site.setOwner(owner);
-            site.setDate(now.toInstant());
+            site.setDate(now);
             ShSite saved = shSiteRepository.save(site);
             sitesByOldId.put(exSite.id(), saved);
             if (firstSite == null) {
@@ -236,7 +236,7 @@ public class ShSiteImportService {
             row.setOwner(owner);
             row.setPublished(exPost.published());
             row.setPublishStatus(exPost.publishStatus());
-            row.setDate(now.toInstant());
+            row.setDate(now);
             row.setModifiedDate(now);
             if (exPost.published()) {
                 row.setPublicationDate(now);
@@ -254,7 +254,7 @@ public class ShSiteImportService {
 
     private ShFolder saveFolder(String oldId, Map<String, ShExchangeFolder> exFolders,
                                 Map<String, ShFolder> savedByOldId, Map<String, ShSite> sitesByOldId,
-                                Map<String, String> idRemap, String owner, Date now) {
+                                Map<String, String> idRemap, String owner, Instant now) {
         ShFolder already = savedByOldId.get(oldId);
         if (already != null) {
             return already;
@@ -270,7 +270,7 @@ public class ShSiteImportService {
         folder.setRootFolder((byte) (exf.rootFolder() ? 1 : 0));
         folder.setPosition(exf.position());
         folder.setOwner(owner);
-        folder.setDate(now.toInstant());
+        folder.setDate(now);
         if (exf.rootFolder()) {
             folder.setShSite(exf.siteId() != null ? sitesByOldId.get(exf.siteId()) : null);
         } else if (exf.parentFolderId() != null) {

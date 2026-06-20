@@ -18,7 +18,7 @@ package com.viglet.shio.persistence.model.history;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.Date;
+import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -53,7 +53,7 @@ public class ShHistory implements Serializable {
 
 	private String owner;
 
-	private Date date;
+	private Instant date;
 
 	private String description;
 
@@ -69,7 +69,7 @@ public class ShHistory implements Serializable {
 		this.owner = owner;
 	}
 
-    public void setDate(Date date) {
+    public void setDate(Instant date) {
 		this.date = date;
 	}
 

@@ -9,7 +9,6 @@
 package com.viglet.shio.api.folder;
 
 import java.time.Instant;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -85,7 +84,7 @@ public class ShFolderWriteService {
             folder.setName(payload.getName());
             folder.setFurl(ShURLFormatter.format(payload.getName()));
             folder.setModifier(modifier);
-            folder.setModifiedDate(new Date());
+            folder.setModifiedDate(Instant.now());
             return shFolderRepository.save(folder);
         });
     }

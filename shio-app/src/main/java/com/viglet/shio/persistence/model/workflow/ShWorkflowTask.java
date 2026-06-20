@@ -18,7 +18,7 @@ package com.viglet.shio.persistence.model.workflow;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.Date;
+import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -54,7 +54,7 @@ public class ShWorkflowTask implements Serializable {
 	@Column(name = "tenant_id", updatable = false)
 	private String tenantId;
 
-	private Date date;
+	private Instant date;
 
 	private String title;
 
@@ -73,7 +73,7 @@ public class ShWorkflowTask implements Serializable {
 		this.id = id;
 	}
 
-    public void setDate(Date date) {
+    public void setDate(Instant date) {
 		this.date = date;
 	}
 

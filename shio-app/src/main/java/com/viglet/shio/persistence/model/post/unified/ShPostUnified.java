@@ -11,7 +11,6 @@ package com.viglet.shio.persistence.model.post.unified;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -123,17 +122,17 @@ public class ShPostUnified implements Serializable {
 
     private Instant date;
 
-    private Date modifiedDate;
+    private Instant modifiedDate;
 
-    private Date publicationDate;
+    private Instant publicationDate;
 
     /** When set, the scheduler publishes this draft at/after this instant (SH15). */
     @Column(name = "publish_scheduled_date")
-    private Date publishScheduledDate;
+    private Instant publishScheduledDate;
 
     /** When set, the scheduler unpublishes this post at/after this instant (SH15). */
     @Column(name = "unpublish_scheduled_date")
-    private Date unpublishScheduledDate;
+    private Instant unpublishScheduledDate;
 
     @Lob
     @Column(name = "data", nullable = false)
@@ -249,35 +248,35 @@ public class ShPostUnified implements Serializable {
         this.date = date;
     }
 
-    public Date getModifiedDate() {
+    public Instant getModifiedDate() {
         return modifiedDate;
     }
 
-    public void setModifiedDate(Date modifiedDate) {
+    public void setModifiedDate(Instant modifiedDate) {
         this.modifiedDate = modifiedDate;
     }
 
-    public Date getPublicationDate() {
+    public Instant getPublicationDate() {
         return publicationDate;
     }
 
-    public void setPublicationDate(Date publicationDate) {
+    public void setPublicationDate(Instant publicationDate) {
         this.publicationDate = publicationDate;
     }
 
-    public Date getPublishScheduledDate() {
+    public Instant getPublishScheduledDate() {
         return publishScheduledDate;
     }
 
-    public void setPublishScheduledDate(Date publishScheduledDate) {
+    public void setPublishScheduledDate(Instant publishScheduledDate) {
         this.publishScheduledDate = publishScheduledDate;
     }
 
-    public Date getUnpublishScheduledDate() {
+    public Instant getUnpublishScheduledDate() {
         return unpublishScheduledDate;
     }
 
-    public void setUnpublishScheduledDate(Date unpublishScheduledDate) {
+    public void setUnpublishScheduledDate(Instant unpublishScheduledDate) {
         this.unpublishScheduledDate = unpublishScheduledDate;
     }
 

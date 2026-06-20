@@ -9,7 +9,7 @@
 package com.viglet.shio.api.post.unified;
 
 import java.security.Principal;
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -144,13 +144,18 @@ public class ShPostUnifiedAPI {
                                                   Principal principal) {
         try {
             return ResponseEntity.ok(shPostUnifiedWriteService.schedule(
-                    id, payload.publishAt(), payload.unpublishAt(),
+                    id, toInstant(payload.publishAt()), toInstant(payload.unpublishAt()),
                     principal != null ? principal.getName() : null));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    public record SchedulePayload(Date publishAt, Date unpublishAt) {
+    private static Instant toInstant(Long epochMillis) {
+        return epochMillis != null ? Instant.ofEpochMilli(epochMillis) : null;
+    }
+
+    /** {@code publishAt}/{@code unpublishAt} arrive as epoch millis in the JSON body. */
+    public record SchedulePayload(Long publishAt, Long unpublishAt) {
     }
 }

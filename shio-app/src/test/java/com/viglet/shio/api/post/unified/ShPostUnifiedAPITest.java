@@ -18,7 +18,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.security.Principal;
 import java.time.Instant;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -292,7 +291,7 @@ class ShPostUnifiedAPITest {
                 .andExpect(jsonPath("$.publishScheduledDate").exists());
 
         org.junit.jupiter.api.Assertions.assertFalse(
-                shPostUnifiedWriteService.findScheduledPublishDue(new Date()).contains(newPostId),
+                shPostUnifiedWriteService.findScheduledPublishDue(Instant.now()).contains(newPostId),
                 "A future schedule must not be due");
     }
 
@@ -319,7 +318,7 @@ class ShPostUnifiedAPITest {
                 .andExpect(status().isOk());
 
         org.junit.jupiter.api.Assertions.assertTrue(
-                shPostUnifiedWriteService.findScheduledPublishDue(new Date()).contains(newPostId),
+                shPostUnifiedWriteService.findScheduledPublishDue(Instant.now()).contains(newPostId),
                 "A past schedule must be due");
 
         // Fire the due publish (what ShPostScheduler.sweep() delegates to).
@@ -334,7 +333,7 @@ class ShPostUnifiedAPITest {
 
         // Schedule field cleared, so it cannot re-fire on the next sweep.
         org.junit.jupiter.api.Assertions.assertFalse(
-                shPostUnifiedWriteService.findScheduledPublishDue(new Date()).contains(newPostId),
+                shPostUnifiedWriteService.findScheduledPublishDue(Instant.now()).contains(newPostId),
                 "publishScheduledDate must be cleared after firing");
     }
 

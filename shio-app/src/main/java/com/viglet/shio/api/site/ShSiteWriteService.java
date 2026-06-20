@@ -10,7 +10,6 @@ package com.viglet.shio.api.site;
 
 import java.text.Normalizer;
 import java.time.Instant;
-import java.util.Date;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -91,7 +90,7 @@ public class ShSiteWriteService {
             site.setSearchablePostTypes(payload.getSearchablePostTypes());
             site.setFormSuccess(payload.getFormSuccess());
             site.setModifier(modifier);
-            site.setModifiedDate(new Date());
+            site.setModifiedDate(Instant.now());
             return shSiteRepository.save(site);
         });
     }

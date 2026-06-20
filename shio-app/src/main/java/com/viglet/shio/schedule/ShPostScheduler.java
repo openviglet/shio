@@ -5,7 +5,7 @@
  */
 package com.viglet.shio.schedule;
 
-import java.util.Date;
+import java.time.Instant;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -45,7 +45,7 @@ public class ShPostScheduler {
         if (!properties.isEnabled()) {
             return;
         }
-        Date now = new Date();
+        Instant now = Instant.now();
 
         for (String id : writeService.findScheduledPublishDue(now)) {
             try {

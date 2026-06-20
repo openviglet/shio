@@ -1,13 +1,13 @@
 package com.viglet.shio.stock.beans;
 
-import java.util.Date;
+import java.time.Instant;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class ShSPhotoBean {
 	private String name;
 	
-	private Date date;
+	private Instant date;
 	
 	@JsonProperty("preview_xxs")
 	private ShSPhotoPreviewBean previewXXS;
@@ -39,11 +39,11 @@ public class ShSPhotoBean {
 		this.name = name;
 	}
 
-	public Date getDate() {
+	public Instant getDate() {
 		return date;
 	}
 
-	public void setDate(Date date) {
+	public void setDate(Instant date) {
 		this.date = date;
 	}
 

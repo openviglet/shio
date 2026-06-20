@@ -9,7 +9,6 @@
 package com.viglet.shio.api.post.type;
 
 import java.time.Instant;
-import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -113,7 +112,7 @@ public class ShPostTypeConsoleWriteService {
             postType.setDescription(payload.getDescription());
             postType.setWorkflowPublishEntity(payload.getWorkflowPublishEntity());
             postType.setModifier(modifier);
-            postType.setModifiedDate(new Date());
+            postType.setModifiedDate(Instant.now());
 
             // Detach cascade-bearing associations so the orphan removal deletes only
             // the old attributes, never the shared widget catalog.

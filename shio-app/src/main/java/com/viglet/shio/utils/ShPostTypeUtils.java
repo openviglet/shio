@@ -16,7 +16,7 @@
  */
 package com.viglet.shio.utils;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -70,9 +70,9 @@ public class ShPostTypeUtils {
 		}
 
 		ShPostType shPostTypeClone = new ShPostType();
-		shPostTypeClone.setDate(new Date().toInstant());
+		shPostTypeClone.setDate(Instant.now());
 		shPostTypeClone.setDescription(shPostType.getDescription());
-		shPostTypeClone.setModifiedDate(new Date());
+		shPostTypeClone.setModifiedDate(Instant.now());
 
 		shPostTypeClone.setObjectType(shPostType.getObjectType());
 		shPostTypeClone.setOwner(shPostType.getOwner());

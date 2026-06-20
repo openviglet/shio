@@ -8,9 +8,7 @@
  */
 package com.viglet.shio.api.cda;
 
-import java.time.Instant;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -84,7 +82,7 @@ public class ShCdaMapper {
                 post.getFurl(),
                 postTypeName(post),
                 post.getDate(),
-                toInstant(post.getModifiedDate()));
+                post.getModifiedDate());
     }
 
     public ShCdaPost toPost(ShPostUnified post) {
@@ -101,8 +99,8 @@ public class ShCdaMapper {
                 post.getShFolder() != null ? post.getShFolder().getId() : null,
                 post.isPublished(),
                 post.getDate(),
-                toInstant(post.getModifiedDate()),
-                toInstant(post.getPublicationDate()),
+                post.getModifiedDate(),
+                post.getPublicationDate(),
                 parseAttrs(post.getData()));
     }
 
@@ -203,10 +201,6 @@ public class ShCdaMapper {
     private static boolean isContainer(ShPostTypeAttr attr) {
         return attr != null && attr.getShWidget() != null
                 && CONTAINER_WIDGETS.contains(attr.getShWidget().getName());
-    }
-
-    private static Instant toInstant(Date date) {
-        return date != null ? date.toInstant() : null;
     }
 
     /**

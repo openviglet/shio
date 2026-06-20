@@ -19,7 +19,6 @@ package com.viglet.shio.persistence.model.object;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -71,9 +70,9 @@ public class ShObject implements Serializable {
 
 	private String publisher;
 
-	private Date modifiedDate;
+	private Instant modifiedDate;
 
-	private Date publicationDate;
+	private Instant publicationDate;
 
 	private int position;
 
@@ -121,11 +120,11 @@ public class ShObject implements Serializable {
 	public String getPublisher() { return publisher; }
 	public void setPublisher(String publisher) { this.publisher = publisher; }
 
-	public Date getModifiedDate() { return modifiedDate; }
-	public void setModifiedDate(Date modifiedDate) { this.modifiedDate = modifiedDate; }
+	public Instant getModifiedDate() { return modifiedDate; }
+	public void setModifiedDate(Instant modifiedDate) { this.modifiedDate = modifiedDate; }
 
-	public Date getPublicationDate() { return publicationDate; }
-	public void setPublicationDate(Date publicationDate) { this.publicationDate = publicationDate; }
+	public Instant getPublicationDate() { return publicationDate; }
+	public void setPublicationDate(Instant publicationDate) { this.publicationDate = publicationDate; }
 
 	public int getPosition() { return position; }
 	public void setPosition(int position) { this.position = position; }

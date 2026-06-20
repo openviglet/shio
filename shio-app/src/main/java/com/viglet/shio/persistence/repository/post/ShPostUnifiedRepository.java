@@ -8,6 +8,7 @@
  */
 package com.viglet.shio.persistence.repository.post;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -36,10 +37,10 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     // --- Scheduled publish/unpublish (SH15) sweep finders ---
 
     /** Rows of {@code state} whose publish schedule is set and now due. */
-    List<ShPostUnified> findByStateAndPublishScheduledDateLessThanEqual(ShPostState state, java.util.Date now);
+    List<ShPostUnified> findByStateAndPublishScheduledDateLessThanEqual(ShPostState state, Instant now);
 
     /** Rows of {@code state} whose unpublish schedule is set and now due. */
-    List<ShPostUnified> findByStateAndUnpublishScheduledDateLessThanEqual(ShPostState state, java.util.Date now);
+    List<ShPostUnified> findByStateAndUnpublishScheduledDateLessThanEqual(ShPostState state, Instant now);
 
     // --- CDA (SH1) read finders ---
 
