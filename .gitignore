@@ -51,6 +51,11 @@ src/main/resources/js/client-side/build
 # === Mobile Tools for Java (J2ME) ===
 .mtj.tmp/
 
+# === SonarQube (local analysis) ===
+.sonar_lock
+/scripts/sonar/.sonar-token
+/scripts/sonar/scan.log
+
 # === AI / Tooling ===
 /.claude/
 /shio-examples/corporate-site/node_modules
