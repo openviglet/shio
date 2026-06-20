@@ -144,8 +144,9 @@ class ShExchangePackageCodecTest {
         }
 
         Path dest = tmp.resolve("dest");
-        assertThatExceptionOfType(ShExchangeException.class).isThrownBy(() ->
-                codec.unzip(new ByteArrayInputStream(evil.toByteArray()), dest));
+        var evilZip = new ByteArrayInputStream(evil.toByteArray());
+        assertThatExceptionOfType(ShExchangeException.class)
+                .isThrownBy(() -> codec.unzip(evilZip, dest));
     }
 
     @Test

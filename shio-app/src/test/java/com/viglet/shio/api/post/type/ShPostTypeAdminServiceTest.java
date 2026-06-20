@@ -116,9 +116,10 @@ class ShPostTypeAdminServiceTest {
     @Test
     void upsertRejectsUnknownWidget() {
         String name = "PT-BADW-" + UUID.randomUUID();
-        assertThatExceptionOfType(ShUnknownWidgetException.class).isThrownBy(() ->
-                service.upsert(name, new ShPostTypeDef(name, "x", "xs", null, null, false,
-                        List.of(field("f", "No Such Widget", 0, false, null, List.of())))));
+        ShPostTypeDef def = new ShPostTypeDef(name, "x", "xs", null, null, false,
+                List.of(field("f", "No Such Widget", 0, false, null, List.of())));
+        assertThatExceptionOfType(ShUnknownWidgetException.class)
+                .isThrownBy(() -> service.upsert(name, def));
     }
 
     @Test
@@ -135,8 +136,9 @@ class ShPostTypeAdminServiceTest {
             entityManager.persist(pt);
         });
 
-        assertThatExceptionOfType(ShSystemPostTypeException.class).isThrownBy(() ->
-                service.upsert(name, new ShPostTypeDef(name, "hacked", null, null, null, false, List.of())));
+        ShPostTypeDef def = new ShPostTypeDef(name, "hacked", null, null, null, false, List.of());
+        assertThatExceptionOfType(ShSystemPostTypeException.class)
+                .isThrownBy(() -> service.upsert(name, def));
         assertThatExceptionOfType(ShSystemPostTypeException.class).isThrownBy(() -> service.delete(name));
     }
 

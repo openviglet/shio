@@ -37,24 +37,30 @@ class ShImageTransformGuardTest {
     void rejectsWidthOverCeiling() {
         ShImageTransformProperties properties = new ShImageTransformProperties();
         properties.setMaxWidth(1000);
+        ShImageTransformGuard guard = guard(properties);
+        ShImageTransformSpec spec = spec("4000", null, null, null);
         assertThrows(ShImageTransformException.class,
-                () -> guard(properties).check("post-1", spec("4000", null, null, null), null));
+                () -> guard.check("post-1", spec, null));
     }
 
     @Test
     void rejectsHeightOverCeiling() {
         ShImageTransformProperties properties = new ShImageTransformProperties();
         properties.setMaxHeight(1000);
+        ShImageTransformGuard guard = guard(properties);
+        ShImageTransformSpec spec = spec(null, "4000", null, null);
         assertThrows(ShImageTransformException.class,
-                () -> guard(properties).check("post-1", spec(null, "4000", null, null), null));
+                () -> guard.check("post-1", spec, null));
     }
 
     @Test
     void rejectsDisallowedFormat() {
         ShImageTransformProperties properties = new ShImageTransformProperties();
         properties.setAllowedFormats(List.of("webp", "png")); // jpeg dropped from the policy
+        ShImageTransformGuard guard = guard(properties);
+        ShImageTransformSpec spec = spec(null, null, "jpeg", null);
         assertThrows(ShImageTransformException.class,
-                () -> guard(properties).check("post-1", spec(null, null, "jpeg", null), null));
+                () -> guard.check("post-1", spec, null));
     }
 
     @Test
@@ -76,8 +82,10 @@ class ShImageTransformGuardTest {
         ShImageTransformProperties properties = new ShImageTransformProperties();
         properties.getSigning().setEnabled(true);
         properties.getSigning().setSecret("secret");
+        ShImageTransformGuard guard = guard(properties);
+        ShImageTransformSpec spec = spec("100", null, null, null);
         assertThrows(ShImageTransformForbiddenException.class,
-                () -> guard(properties).check("post-1", spec("100", null, null, null), null));
+                () -> guard.check("post-1", spec, null));
     }
 
     @Test
@@ -100,7 +108,9 @@ class ShImageTransformGuardTest {
         properties.getSigning().setEnabled(true);
         properties.getSigning().setSecret("secret");
         properties.setMaxWidth(10);
+        ShImageTransformGuard guard = guard(properties);
+        ShImageTransformSpec spec = spec("9000", null, null, null);
         assertThrows(ShImageTransformForbiddenException.class,
-                () -> guard(properties).check("post-1", spec("9000", null, null, null), null));
+                () -> guard.check("post-1", spec, null));
     }
 }

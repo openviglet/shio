@@ -83,8 +83,9 @@ class ShImageTransformSignerTest {
     @Test
     void signWithoutSecretThrows() {
         ShImageTransformSigner signer = signer("");
+        ShImageTransformSpec spec = spec("800", null, null, null);
         assertThrows(IllegalStateException.class,
-                () -> signer.sign("post-1", spec("800", null, null, null)),
+                () -> signer.sign("post-1", spec),
                 "nothing can be minted without a secret");
     }
 }

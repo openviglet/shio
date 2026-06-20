@@ -134,8 +134,9 @@ class ShImageTransformResourceTransformerTest {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setParameter("w", "-1");
 
+        var chain = echoChain();
         assertThrows(ShImageTransformException.class,
-                () -> transformer.transform(request, ORIGINAL, echoChain()));
+                () -> transformer.transform(request, ORIGINAL, chain));
     }
 
     @Test
@@ -152,8 +153,9 @@ class ShImageTransformResourceTransformerTest {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setParameter("w", "9000");
 
+        var chain = echoChain();
         assertThrows(ShImageTransformException.class,
-                () -> transformer.transform(request, ORIGINAL, echoChain()));
+                () -> transformer.transform(request, ORIGINAL, chain));
     }
 
     @Test
@@ -172,8 +174,9 @@ class ShImageTransformResourceTransformerTest {
         request.setRequestURI("/file_source/post-123/photo.png");
         request.setParameter("w", "100");
 
+        var chain = echoChain();
         assertThrows(ShImageTransformForbiddenException.class,
-                () -> transformer.transform(request, ORIGINAL, echoChain()));
+                () -> transformer.transform(request, ORIGINAL, chain));
     }
 
     @Test

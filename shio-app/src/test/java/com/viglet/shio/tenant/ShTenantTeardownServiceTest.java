@@ -138,7 +138,8 @@ class ShTenantTeardownServiceTest {
         ShTenant shio = tenant(ShTenant.DEFAULT_TENANT_NAME);
         when(shTenantRepository.findById("id-shio")).thenReturn(Optional.of(shio));
 
-        assertThatThrownBy(() -> service().delete("id-shio", false))
+        ShTenantTeardownService service = service();
+        assertThatThrownBy(() -> service.delete("id-shio", false))
                 .isInstanceOf(ResponseStatusException.class);
         verify(shTenantRepository, never()).delete(any());
     }
@@ -160,7 +161,8 @@ class ShTenantTeardownServiceTest {
         ShTenant shio = tenant(ShTenant.DEFAULT_TENANT_NAME);
         when(shTenantRepository.findById("id-shio")).thenReturn(Optional.of(shio));
 
-        assertThatThrownBy(() -> service().suspend("id-shio"))
+        ShTenantTeardownService service = service();
+        assertThatThrownBy(() -> service.suspend("id-shio"))
                 .isInstanceOf(ResponseStatusException.class);
     }
 }
