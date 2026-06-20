@@ -110,7 +110,7 @@ class ShSiteExportServiceTest {
             site.setDescription("Export API Test Site");
             site.setUrl("http://example.test");
             site.setFurl("export-test");
-            site.setDate(Instant.now());
+            site.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             site.setOwner("admin");
             entityManager.persist(site);
             siteId = site.getId();
@@ -119,7 +119,7 @@ class ShSiteExportServiceTest {
             root.setName("root");
             root.setRootFolder((byte) 1);
             root.setShSite(site);
-            root.setDate(Instant.now());
+            root.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             root.setOwner("admin");
             entityManager.persist(root);
             rootFolderId = root.getId();
@@ -129,7 +129,7 @@ class ShSiteExportServiceTest {
             child.setRootFolder((byte) 0);
             child.setParentFolder(root);
             child.setFurl("news");
-            child.setDate(Instant.now());
+            child.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             child.setOwner("admin");
             entityManager.persist(child);
             childFolderId = child.getId();
@@ -141,7 +141,7 @@ class ShSiteExportServiceTest {
             postType.setName("PT-EXP-" + UUID.randomUUID());
             postType.setTitle("Export Test Post Type");
             postType.setSystem((byte) 0);
-            postType.setDate(Instant.now());
+            postType.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             postType.setOwner("admin");
 
             ShPostTypeAttr titleAttr = new ShPostTypeAttr();

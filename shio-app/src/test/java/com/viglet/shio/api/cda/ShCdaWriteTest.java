@@ -83,7 +83,7 @@ class ShCdaWriteTest {
             postType.setName("PT-WR-" + UUID.randomUUID());
             postType.setTitle("Write Test Post Type");
             postType.setSystem((byte) 0);
-            postType.setDate(Instant.now());
+            postType.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             postType.setOwner("admin");
             entityManager.persist(postType);
 
@@ -97,7 +97,7 @@ class ShCdaWriteTest {
             ShSite site = new ShSite();
             site.setName("wr-site-" + UUID.randomUUID());
             site.setUrl("http://wr.example.test");
-            site.setDate(Instant.now());
+            site.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             site.setOwner("admin");
             entityManager.persist(site);
 
@@ -105,7 +105,7 @@ class ShCdaWriteTest {
             root.setName("root");
             root.setRootFolder((byte) 1);
             root.setShSite(site);
-            root.setDate(Instant.now());
+            root.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             root.setOwner("admin");
             entityManager.persist(root);
 
@@ -144,7 +144,7 @@ class ShCdaWriteTest {
         post.setTitle(title);
         post.setPublished(state == ShPostState.PUBLISHED);
         post.setOwner("admin");
-        post.setDate(Instant.now());
+        post.setDate(Instant.parse("2026-01-01T00:00:00Z"));
         post.setData("{\"title\":\"" + title + "\"}");
         entityManager.persist(post);
     }

@@ -104,7 +104,7 @@ class ShStaticFileAPITest {
             site.setName("file-site-" + UUID.randomUUID());
             site.setDescription("Static File Test Site");
             site.setUrl("http://example.test");
-            site.setDate(Instant.now());
+            site.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             site.setOwner("admin");
             entityManager.persist(site);
 
@@ -112,7 +112,7 @@ class ShStaticFileAPITest {
             rootFolder.setName("root");
             rootFolder.setRootFolder((byte) 1);
             rootFolder.setShSite(site);
-            rootFolder.setDate(Instant.now());
+            rootFolder.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             rootFolder.setOwner("admin");
             entityManager.persist(rootFolder);
             folderId = rootFolder.getId();

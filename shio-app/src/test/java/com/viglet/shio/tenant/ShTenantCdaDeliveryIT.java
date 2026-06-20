@@ -98,7 +98,7 @@ class ShTenantCdaDeliveryIT {
             ShTenant tenant = new ShTenant();
             tenant.setName(name);
             tenant.setEnabled(true);
-            tenant.setCreatedDate(Instant.now());
+            tenant.setCreatedDate(Instant.parse("2026-01-01T00:00:00Z"));
             shTenantRepository.saveAndFlush(tenant);
         });
     }
@@ -135,7 +135,7 @@ class ShTenantCdaDeliveryIT {
         token.setEnabled(true);
         token.setScope(ShApiTokenScope.READ);
         token.setOwner("system");
-        token.setCreatedDate(Instant.now());
+        token.setCreatedDate(Instant.parse("2026-01-01T00:00:00Z"));
         shApiTokenRepository.save(token);
     }
 

@@ -97,7 +97,7 @@ class ShPostUnifiedAPITest {
             site.setName("ut-site-" + UUID.randomUUID());
             site.setDescription("Unified API Test Site");
             site.setUrl("http://example.test");
-            site.setDate(Instant.now());
+            site.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             site.setOwner("admin");
             entityManager.persist(site);
 
@@ -105,7 +105,7 @@ class ShPostUnifiedAPITest {
             rootFolder.setName("root");
             rootFolder.setRootFolder((byte) 1);
             rootFolder.setShSite(site);
-            rootFolder.setDate(Instant.now());
+            rootFolder.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             rootFolder.setOwner("admin");
             entityManager.persist(rootFolder);
             folderId = rootFolder.getId();
@@ -118,7 +118,7 @@ class ShPostUnifiedAPITest {
             postType.setTitle("Unified Test Post Type");
             postType.setDescription("Post type for unified API tests");
             postType.setSystem((byte) 0);
-            postType.setDate(Instant.now());
+            postType.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             postType.setOwner("admin");
 
             ShPostTypeAttr titleAttr = new ShPostTypeAttr();

@@ -90,7 +90,7 @@ class ShCdaAPITest {
             site.setName("cda-site-" + UUID.randomUUID());
             site.setDescription("CDA Test Site");
             site.setUrl("http://cda.example.test");
-            site.setDate(Instant.now());
+            site.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             site.setOwner("admin");
             entityManager.persist(site);
             siteId = site.getId();
@@ -99,7 +99,7 @@ class ShCdaAPITest {
             root.setName("root");
             root.setRootFolder((byte) 1);
             root.setShSite(site);
-            root.setDate(Instant.now());
+            root.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             root.setOwner("admin");
             entityManager.persist(root);
             rootFolderId = root.getId();
@@ -108,7 +108,7 @@ class ShCdaAPITest {
             postType.setName("PT-CDA-" + UUID.randomUUID());
             postType.setTitle("CDA Test Post Type");
             postType.setSystem((byte) 0);
-            postType.setDate(Instant.now());
+            postType.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             postType.setOwner("admin");
             entityManager.persist(postType);
 
@@ -136,7 +136,7 @@ class ShCdaAPITest {
         post.setOwner("admin");
         post.setPublisher("admin");
         post.setPublishStatus("PUBLISHED");
-        post.setDate(Instant.now());
+        post.setDate(Instant.parse("2026-01-01T00:00:00Z"));
         post.setData(data);
         entityManager.persist(post);
         return post.getId();

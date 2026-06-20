@@ -83,7 +83,7 @@ class ShCdaEnvTest {
             postType.setName("PT-ENV-" + UUID.randomUUID());
             postType.setTitle("Env Test Post Type");
             postType.setSystem((byte) 0);
-            postType.setDate(Instant.now());
+            postType.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             postType.setOwner("admin");
             entityManager.persist(postType);
 
@@ -91,7 +91,7 @@ class ShCdaEnvTest {
             site.setName("env-site-" + UUID.randomUUID());
             site.setDescription("Env Test Site");
             site.setUrl("http://env.example.test");
-            site.setDate(Instant.now());
+            site.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             site.setOwner("admin");
             entityManager.persist(site);
             siteId = site.getId();
@@ -100,7 +100,7 @@ class ShCdaEnvTest {
             root.setName("root");
             root.setRootFolder((byte) 1);
             root.setShSite(site);
-            root.setDate(Instant.now());
+            root.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             root.setOwner("admin");
             entityManager.persist(root);
 
@@ -127,7 +127,7 @@ class ShCdaEnvTest {
         post.setFurl(furl);
         post.setPublished(published);
         post.setOwner("admin");
-        post.setDate(Instant.now());
+        post.setDate(Instant.parse("2026-01-01T00:00:00Z"));
         post.setData("{\"title\":\"" + title + "\"}");
         entityManager.persist(post);
     }

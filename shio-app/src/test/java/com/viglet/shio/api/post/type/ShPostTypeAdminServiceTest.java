@@ -131,7 +131,7 @@ class ShPostTypeAdminServiceTest {
             pt.setName(name);
             pt.setTitle("System");
             pt.setSystem((byte) 1);
-            pt.setDate(Instant.now());
+            pt.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             pt.setOwner("admin");
             entityManager.persist(pt);
         });

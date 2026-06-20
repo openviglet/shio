@@ -69,7 +69,7 @@ class ShCdaPostTypeSchemaTest {
             postType.setNamePlural("Schema Tests");
             postType.setDescription("a content model");
             postType.setSystem((byte) 0);
-            postType.setDate(Instant.now());
+            postType.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             postType.setOwner("admin");
             entityManager.persist(postType);
 

@@ -101,7 +101,7 @@ class ShFolderAPITest {
             site.setName("ut-folder-site-" + UUID.randomUUID());
             site.setDescription("Folder API Test Site");
             site.setUrl("http://example.test");
-            site.setDate(Instant.now());
+            site.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             site.setOwner("admin");
             entityManager.persist(site);
             siteId = site.getId();
@@ -110,7 +110,7 @@ class ShFolderAPITest {
             rootFolder.setName("root");
             rootFolder.setRootFolder((byte) 1);
             rootFolder.setShSite(site);
-            rootFolder.setDate(Instant.now());
+            rootFolder.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             rootFolder.setOwner("admin");
             entityManager.persist(rootFolder);
             rootFolderId = rootFolder.getId();
@@ -122,7 +122,7 @@ class ShFolderAPITest {
             postType.setName("PT-FUT-" + UUID.randomUUID());
             postType.setTitle("Folder Test Post Type");
             postType.setSystem((byte) 0);
-            postType.setDate(Instant.now());
+            postType.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             postType.setOwner("admin");
 
             ShPostTypeAttr titleAttr = new ShPostTypeAttr();

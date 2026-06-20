@@ -77,7 +77,7 @@ class ShCdaScopeTest {
             postType.setName("PT-SCOPE-" + UUID.randomUUID());
             postType.setTitle("Scope Test Post Type");
             postType.setSystem((byte) 0);
-            postType.setDate(Instant.now());
+            postType.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             postType.setOwner("admin");
             entityManager.persist(postType);
 
@@ -101,7 +101,7 @@ class ShCdaScopeTest {
         site.setName("scope-site-" + UUID.randomUUID());
         site.setDescription("Scope Test Site");
         site.setUrl("http://scope.example.test");
-        site.setDate(Instant.now());
+        site.setDate(Instant.parse("2026-01-01T00:00:00Z"));
         site.setOwner("admin");
         entityManager.persist(site);
         return site;
@@ -112,7 +112,7 @@ class ShCdaScopeTest {
         root.setName("root");
         root.setRootFolder((byte) 1);
         root.setShSite(site);
-        root.setDate(Instant.now());
+        root.setDate(Instant.parse("2026-01-01T00:00:00Z"));
         root.setOwner("admin");
         entityManager.persist(root);
         return root;
@@ -129,7 +129,7 @@ class ShCdaScopeTest {
         post.setFurl(furl);
         post.setPublished(true);
         post.setOwner("admin");
-        post.setDate(Instant.now());
+        post.setDate(Instant.parse("2026-01-01T00:00:00Z"));
         post.setData("{\"title\":\"Scoped\"}");
         entityManager.persist(post);
         return post.getId();
