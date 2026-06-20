@@ -7,7 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -55,21 +56,34 @@ public class ShTenantBackfillRunner {
     @PersistenceContext
     private EntityManager entityManager;
 
+    private final PlatformTransactionManager transactionManager;
+
+    public ShTenantBackfillRunner(PlatformTransactionManager transactionManager) {
+        this.transactionManager = transactionManager;
+    }
+
     @Bean
     ApplicationRunner tenantBackfill() {
         return args -> backfill();
     }
 
-    @Transactional
+    /**
+     * Each table is updated in its own transaction (programmatic, via
+     * {@link TransactionTemplate}) rather than relying on a {@code @Transactional}
+     * proxy: this runs from an {@code ApplicationRunner} lambda where a self-call
+     * would bypass the proxy (S6809), and a per-table boundary keeps a missing
+     * table from poisoning the others with a rollback-only mark.
+     */
     public void backfill() {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
         for (String table : TENANT_TABLES) {
             try {
-                int updated = entityManager
+                Integer updated = tx.execute(status -> entityManager
                         .createNativeQuery("UPDATE " + table + " SET tenant_id = '"
                                 + ShTenantContext.DEFAULT_TENANT
                                 + "' WHERE tenant_id IS NULL")
-                        .executeUpdate();
-                if (updated > 0) {
+                        .executeUpdate());
+                if (updated != null && updated > 0) {
                     log.info("Backfilled tenant_id on {} rows of {}", updated, table);
                 }
             } catch (RuntimeException e) {

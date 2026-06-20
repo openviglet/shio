@@ -10,7 +10,6 @@ package com.viglet.shio.exchange.site;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.Normalizer;
 import java.util.Date;
@@ -108,7 +107,7 @@ public class ShSiteImportService {
     public ShSite importPackage(InputStream zipStream, String owner) {
         Path dest = null;
         try {
-            dest = Files.createTempDirectory("shio-import-");
+            dest = ShExchangeTempDir.create("shio-import-");
             Path root = codec.unzip(zipStream, dest);
             ShExchangePackage pkg = codec.readPackage(root);
             if (pkg.sites().isEmpty()) {

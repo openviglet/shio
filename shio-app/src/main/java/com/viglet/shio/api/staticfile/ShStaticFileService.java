@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -64,6 +65,9 @@ public class ShStaticFileService {
     private final ShFolderRepository shFolderRepository;
     private final ShFileStorageService storage;
     private final ObjectMapper objectMapper;
+    /** Self-reference so upload() bootstraps the File post type through the
+     *  transactional proxy instead of a bare {@code this} call (S6809). */
+    private final ObjectProvider<ShStaticFileService> self;
 
     public ShStaticFileService(ShPostUnifiedWriteService shPostUnifiedWriteService,
                                ShPostUnifiedRepository shPostUnifiedRepository,
@@ -71,7 +75,8 @@ public class ShStaticFileService {
                                ShWidgetRepository shWidgetRepository,
                                ShFolderRepository shFolderRepository,
                                ShFileStorageService storage,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               ObjectProvider<ShStaticFileService> self) {
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostTypeRepository = shPostTypeRepository;
@@ -79,6 +84,7 @@ public class ShStaticFileService {
         this.shFolderRepository = shFolderRepository;
         this.storage = storage;
         this.objectMapper = objectMapper;
+        this.self = self;
     }
 
     /**
@@ -95,7 +101,7 @@ public class ShStaticFileService {
     public ShPostUnified upload(MultipartFile file, String folderId, String owner) {
         String fileName = ShFileStorageService.sanitizeFileName(file.getOriginalFilename());
 
-        ShPostType fileType = resolveOrCreateFilePostType();
+        ShPostType fileType = self.getObject().resolveOrCreateFilePostType();
 
         ObjectNode data = objectMapper.createObjectNode();
         data.put(ShSystemPostTypeAttr.FILE, fileName);

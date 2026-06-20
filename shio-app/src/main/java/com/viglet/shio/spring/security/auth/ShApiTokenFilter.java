@@ -137,20 +137,8 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Grant authorities by scope. A PREVIEW environment (SH5) is preview-capable
-        // by definition, so it also carries ROLE_CDA_PREVIEW regardless of scope.
-        var authorities = new ArrayList<GrantedAuthority>(List.of(
-                new SimpleGrantedAuthority("ROLE_CDA"),
-                new SimpleGrantedAuthority("ROLE_USER")));
-        if (scope == ShApiTokenScope.PREVIEW || env == ShApiTokenEnv.PREVIEW) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_CDA_PREVIEW"));
-        }
-        if (scope == ShApiTokenScope.WRITE) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_CDA_WRITE"));
-        }
-
         var authentication = new UsernamePasswordAuthenticationToken(
-                apiToken.getOwner(), null, authorities);
+                apiToken.getOwner(), null, authoritiesFor(scope, env));
         // Carry scope + per-site allow-list (SH2) + environment (SH5) to the service.
         authentication.setDetails(new ShApiTokenContext(
                 apiToken.getId(), scope, apiToken.getSiteIds(), env));
@@ -167,6 +155,23 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         log.debug("CDA token auth: '{}' ({}/{}) by {}", apiToken.getTitle(), scope, env, apiToken.getOwner());
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Authorities by scope. A PREVIEW environment (SH5) is preview-capable by
+     * definition, so it also carries ROLE_CDA_PREVIEW regardless of scope.
+     */
+    private static List<GrantedAuthority> authoritiesFor(ShApiTokenScope scope, ShApiTokenEnv env) {
+        var authorities = new ArrayList<GrantedAuthority>(List.of(
+                new SimpleGrantedAuthority("ROLE_CDA"),
+                new SimpleGrantedAuthority("ROLE_USER")));
+        if (scope == ShApiTokenScope.PREVIEW || env == ShApiTokenEnv.PREVIEW) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_CDA_PREVIEW"));
+        }
+        if (scope == ShApiTokenScope.WRITE) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_CDA_WRITE"));
+        }
+        return authorities;
     }
 
     private static boolean isCdaPath(HttpServletRequest request) {

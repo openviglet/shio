@@ -10,7 +10,6 @@ package com.viglet.shio.exchange.site;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.Normalizer;
 import java.time.Instant;
@@ -227,7 +226,7 @@ public class ShSiteExportService {
     private byte[] zip(ShExchangePackage pkg) {
         Path dir = null;
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            dir = Files.createTempDirectory("shio-export-");
+            dir = ShExchangeTempDir.create("shio-export-");
             codec.writePackage(pkg, dir);
             codec.zip(dir, out);
             return out.toByteArray();

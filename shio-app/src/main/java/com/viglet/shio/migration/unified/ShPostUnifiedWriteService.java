@@ -11,6 +11,7 @@ package com.viglet.shio.migration.unified;
 import java.util.Date;
 import java.util.List;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ import com.viglet.shio.object.ShObjectPublishStatus;
 import com.viglet.shio.object.ShObjectType;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
+import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnifiedId;
@@ -52,19 +54,24 @@ public class ShPostUnifiedWriteService {
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
+    /** Self-reference so the scheduled sweep re-enters publish/unpublish through the
+     *  transactional proxy instead of a bare {@code this} call (S6809). */
+    private final ObjectProvider<ShPostUnifiedWriteService> self;
 
     public ShPostUnifiedWriteService(ShFolderRepository shFolderRepository,
                                      ShSiteRepository shSiteRepository,
                                      ShPostTypeRepository shPostTypeRepository,
                                      ShPostUnifiedRepository shPostUnifiedRepository,
                                      ObjectMapper objectMapper,
-                                     ApplicationEventPublisher eventPublisher) {
+                                     ApplicationEventPublisher eventPublisher,
+                                     ObjectProvider<ShPostUnifiedWriteService> self) {
         this.shFolderRepository = shFolderRepository;
         this.shSiteRepository = shSiteRepository;
         this.shPostTypeRepository = shPostTypeRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.objectMapper = objectMapper;
         this.eventPublisher = eventPublisher;
+        this.self = self;
     }
 
     private ShFolder resolveContainerFolder(String containerId) {
@@ -243,7 +250,7 @@ public class ShPostUnifiedWriteService {
                     draft.setPublishScheduledDate(null);
                     shPostUnifiedRepository.save(draft);
                 });
-        publish(postId, SCHEDULER_ACTOR);
+        self.getObject().publish(postId, SCHEDULER_ACTOR);
     }
 
     /**
@@ -257,7 +264,7 @@ public class ShPostUnifiedWriteService {
                     draft.setUnpublishScheduledDate(null);
                     shPostUnifiedRepository.save(draft);
                 });
-        unpublish(postId);
+        self.getObject().unpublish(postId);
     }
 
     /** Re-create a {@code DRAFT} row from the {@code PUBLISHED} snapshot (shared by restore/schedule). */
@@ -332,21 +339,31 @@ public class ShPostUnifiedWriteService {
         postType.getShPostTypeAttrs().stream()
                 .filter(a -> a.getShParentPostTypeAttr() == null)
                 .sorted((a, b) -> Integer.compare(a.getOrdinal(), b.getOrdinal()))
-                .forEach(attr -> {
-                    JsonNode value = data.get(attr.getName());
-                    if (value == null || value.isNull()) return;
-                    String text = value.isTextual() ? value.asString() : value.toString();
-                    if (attr.getIsTitle() == 1) {
-                        if (!title.isEmpty()) title.append(", ");
-                        title.append(text);
-                    }
-                    if (attr.getIsSummary() == 1) {
-                        if (!summary.isEmpty()) summary.append(", ");
-                        summary.append(text);
-                    }
-                });
+                .forEach(attr -> collectTitleSummary(attr, data, title, summary));
         row.setTitle(title.toString());
         row.setSummary(summary.toString());
+    }
+
+    private static void collectTitleSummary(ShPostTypeAttr attr, JsonNode data,
+                                            StringBuilder title, StringBuilder summary) {
+        JsonNode value = data.get(attr.getName());
+        if (value == null || value.isNull()) {
+            return;
+        }
+        String text = value.isString() ? value.asString() : value.toString();
+        if (attr.getIsTitle() == 1) {
+            appendCsv(title, text);
+        }
+        if (attr.getIsSummary() == 1) {
+            appendCsv(summary, text);
+        }
+    }
+
+    private static void appendCsv(StringBuilder target, String text) {
+        if (!target.isEmpty()) {
+            target.append(", ");
+        }
+        target.append(text);
     }
 
     private String writeJson(JsonNode data) {

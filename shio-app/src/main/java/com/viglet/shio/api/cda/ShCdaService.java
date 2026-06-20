@@ -187,27 +187,38 @@ public class ShCdaService {
         if (folderId != null && !folderId.isBlank()) {
             return shFolderRepository.findById(folderId)
                     .filter(folder -> siteAllowed(siteIdOf(folder)))
-                    .map(folder -> preview()
-                            ? draftPreferred(shPostUnifiedRepository
-                                    .findByShFolderAndStateIn(folder, PREVIEW_STATES), pageable)
-                            : shPostUnifiedRepository.findByShFolderAndState(folder, STATE, pageable))
+                    .map(folder -> pageByFolder(folder, pageable))
                     .orElse(Page.empty(pageable));
-        } else if (siteId != null && !siteId.isBlank() && !siteAllowed(siteId)) {
-            return Page.empty(pageable);
-        } else if (siteId != null && !siteId.isBlank() && postType != null && !postType.isBlank()) {
-            return preview()
-                    ? draftPreferred(shPostUnifiedRepository
-                            .findByShSite_IdAndShPostType_NameAndStateIn(siteId, postType, PREVIEW_STATES), pageable)
-                    : shPostUnifiedRepository
-                            .findByShSite_IdAndShPostType_NameAndState(siteId, postType, STATE, pageable);
-        } else if (siteId != null && !siteId.isBlank()) {
-            return preview()
-                    ? draftPreferred(shPostUnifiedRepository
-                            .findByShSite_IdAndStateIn(siteId, PREVIEW_STATES), pageable)
-                    : shPostUnifiedRepository.findByShSite_IdAndState(siteId, STATE, pageable);
-        } else {
+        }
+        if (siteId == null || siteId.isBlank() || !siteAllowed(siteId)) {
             return Page.empty(pageable);
         }
+        if (postType != null && !postType.isBlank()) {
+            return pageBySiteAndType(siteId, postType, pageable);
+        }
+        return pageBySite(siteId, pageable);
+    }
+
+    private Page<ShPostUnified> pageByFolder(ShFolder folder, Pageable pageable) {
+        return preview()
+                ? draftPreferred(shPostUnifiedRepository
+                        .findByShFolderAndStateIn(folder, PREVIEW_STATES), pageable)
+                : shPostUnifiedRepository.findByShFolderAndState(folder, STATE, pageable);
+    }
+
+    private Page<ShPostUnified> pageBySiteAndType(String siteId, String postType, Pageable pageable) {
+        return preview()
+                ? draftPreferred(shPostUnifiedRepository
+                        .findByShSite_IdAndShPostType_NameAndStateIn(siteId, postType, PREVIEW_STATES), pageable)
+                : shPostUnifiedRepository
+                        .findByShSite_IdAndShPostType_NameAndState(siteId, postType, STATE, pageable);
+    }
+
+    private Page<ShPostUnified> pageBySite(String siteId, Pageable pageable) {
+        return preview()
+                ? draftPreferred(shPostUnifiedRepository
+                        .findByShSite_IdAndStateIn(siteId, PREVIEW_STATES), pageable)
+                : shPostUnifiedRepository.findByShSite_IdAndState(siteId, STATE, pageable);
     }
 
     // --- helpers ---
