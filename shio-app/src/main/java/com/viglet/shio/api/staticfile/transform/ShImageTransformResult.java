@@ -44,12 +44,12 @@ public record ShImageTransformResult(byte[] bytes, String contentType, String et
         if (this == o) {
             return true;
         }
-        if (!(o instanceof ShImageTransformResult other)) {
+        if (!(o instanceof ShImageTransformResult(byte[] otherBytes, String otherContentType, String otherEtag))) {
             return false;
         }
-        return Arrays.equals(bytes, other.bytes)
-                && Objects.equals(contentType, other.contentType)
-                && Objects.equals(etag, other.etag);
+        return Arrays.equals(bytes, otherBytes)
+                && Objects.equals(contentType, otherContentType)
+                && Objects.equals(etag, otherEtag);
     }
 
     @Override

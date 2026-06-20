@@ -27,10 +27,10 @@ public record ShExchangeArchive(String fileName, byte[] content) {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof ShExchangeArchive other)) {
+        if (!(o instanceof ShExchangeArchive(String otherFileName, byte[] otherContent))) {
             return false;
         }
-        return Objects.equals(fileName, other.fileName) && Arrays.equals(content, other.content);
+        return Objects.equals(fileName, otherFileName) && Arrays.equals(content, otherContent);
     }
 
     @Override
