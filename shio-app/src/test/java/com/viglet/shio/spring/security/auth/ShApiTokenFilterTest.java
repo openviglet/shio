@@ -8,7 +8,9 @@ package com.viglet.shio.spring.security.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.Set;
 
@@ -40,6 +42,9 @@ import com.viglet.shio.persistence.repository.token.ShApiTokenRepository;
 @ExtendWith(MockitoExtension.class)
 class ShApiTokenFilterTest {
 
+    /** A fixed reference instant so expiry semantics are deterministic (no system clock). */
+    private static final Instant FIXED_NOW = Instant.parse("2026-06-01T00:00:00Z");
+
     @Mock
     private ShApiTokenRepository shApiTokenRepository;
 
@@ -50,11 +55,12 @@ class ShApiTokenFilterTest {
 
     /** A limiter with a generous budget so it never interferes. */
     private ShApiTokenFilter filter() {
-        return new ShApiTokenFilter(shApiTokenRepository, new ShCdaRateLimiter(new ShCdaProperties()));
+        return new ShApiTokenFilter(shApiTokenRepository, new ShCdaRateLimiter(new ShCdaProperties()),
+                Clock.fixed(FIXED_NOW, ZoneOffset.UTC));
     }
 
     private ShApiTokenFilter filter(ShCdaRateLimiter rateLimiter) {
-        return new ShApiTokenFilter(shApiTokenRepository, rateLimiter);
+        return new ShApiTokenFilter(shApiTokenRepository, rateLimiter, Clock.fixed(FIXED_NOW, ZoneOffset.UTC));
     }
 
     private ShCdaRateLimiter limiterWithCapacity(long capacity) {
@@ -251,7 +257,7 @@ class ShApiTokenFilterTest {
     void expiredTokenIsIgnored() throws Exception {
         // SH13: a short-lived preview token past its expiry stops authenticating.
         ShApiToken expired = token(ShApiTokenScope.PREVIEW, Set.of(), ShApiTokenEnv.PREVIEW);
-        expired.setExpiresAt(Instant.now().minusSeconds(60));
+        expired.setExpiresAt(FIXED_NOW.minusSeconds(60));
         when(shApiTokenRepository.findByTokenAcrossTenants("the-key")).thenReturn(Optional.of(expired));
         MockFilterChain chain = new MockFilterChain();
 
@@ -266,7 +272,7 @@ class ShApiTokenFilterTest {
         // SH13: a not-yet-expired ephemeral preview token authenticates and is preview-capable.
         ShApiToken fresh = token(ShApiTokenScope.PREVIEW, Set.of("siteA"), ShApiTokenEnv.PREVIEW);
         fresh.setEphemeral(true);
-        fresh.setExpiresAt(Instant.now().plusSeconds(900));
+        fresh.setExpiresAt(FIXED_NOW.plusSeconds(900));
         when(shApiTokenRepository.findByTokenAcrossTenants("the-key")).thenReturn(Optional.of(fresh));
 
         filter().doFilter(request("GET", "/api/v2/cda/site"), new MockHttpServletResponse(), new MockFilterChain());

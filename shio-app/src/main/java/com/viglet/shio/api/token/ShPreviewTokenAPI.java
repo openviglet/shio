@@ -8,6 +8,7 @@ package com.viglet.shio.api.token;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -56,13 +57,16 @@ public class ShPreviewTokenAPI {
     private final ShApiTokenRepository shApiTokenRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShCdaProperties shCdaProperties;
+    private final Clock clock;
 
     public ShPreviewTokenAPI(ShApiTokenRepository shApiTokenRepository,
                              ShPostUnifiedRepository shPostUnifiedRepository,
-                             ShCdaProperties shCdaProperties) {
+                             ShCdaProperties shCdaProperties,
+                             Clock clock) {
         this.shApiTokenRepository = shApiTokenRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shCdaProperties = shCdaProperties;
+        this.clock = clock;
     }
 
     /** Request body: the post to preview + an optional requested lifetime. */
@@ -97,7 +101,7 @@ public class ShPreviewTokenAPI {
             return ResponseEntity.badRequest().body(Map.of("error", "site has no url"));
         }
 
-        Instant now = Instant.now();
+        Instant now = Instant.now(clock);
         long ttl = clampTtl(body.ttlSeconds(), cfg);
 
         ShApiToken token = new ShApiToken();

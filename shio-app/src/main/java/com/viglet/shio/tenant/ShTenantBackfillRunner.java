@@ -78,12 +78,12 @@ public class ShTenantBackfillRunner {
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         for (String table : TENANT_TABLES) {
             try {
-                Integer updated = tx.execute(status -> entityManager
+                int updated = tx.execute(status -> entityManager
                         .createNativeQuery("UPDATE " + table + " SET tenant_id = '"
                                 + ShTenantContext.DEFAULT_TENANT
                                 + "' WHERE tenant_id IS NULL")
                         .executeUpdate());
-                if (updated != null && updated > 0) {
+                if (updated > 0) {
                     log.info("Backfilled tenant_id on {} rows of {}", updated, table);
                 }
             } catch (RuntimeException e) {

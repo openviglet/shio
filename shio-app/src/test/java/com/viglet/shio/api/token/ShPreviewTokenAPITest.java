@@ -10,7 +10,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -41,6 +43,9 @@ import com.viglet.shio.persistence.repository.token.ShApiTokenRepository;
 @ExtendWith(MockitoExtension.class)
 class ShPreviewTokenAPITest {
 
+    /** A fixed reference instant so expiry semantics are deterministic (no system clock). */
+    private static final Instant FIXED_NOW = Instant.parse("2026-06-01T00:00:00Z");
+
     @Mock
     private ShApiTokenRepository shApiTokenRepository;
     @Mock
@@ -51,7 +56,8 @@ class ShPreviewTokenAPITest {
     }
 
     private ShPreviewTokenAPI api(ShCdaProperties props) {
-        return new ShPreviewTokenAPI(shApiTokenRepository, shPostUnifiedRepository, props);
+        return new ShPreviewTokenAPI(shApiTokenRepository, shPostUnifiedRepository, props,
+                Clock.fixed(FIXED_NOW, ZoneOffset.UTC));
     }
 
     private ShPostUnified post(String id, ShPostState state, String furl, String siteId, String siteUrl) {
@@ -85,7 +91,7 @@ class ShPreviewTokenAPITest {
         assertThat(body).isNotNull();
         assertThat(body.token()).hasSize(25);
         assertThat(body.ttlSeconds()).isEqualTo(900);
-        assertThat(body.expiresAt()).isAfter(Instant.now());
+        assertThat(body.expiresAt()).isEqualTo(FIXED_NOW.plusSeconds(900));
         // <base><path>?token=<token>&url=<encoded furl>
         assertThat(body.previewUrl())
                 .isEqualTo("https://front.example.com/api/preview?token=" + body.token() + "&url=%2Fblog%2Fhello");
