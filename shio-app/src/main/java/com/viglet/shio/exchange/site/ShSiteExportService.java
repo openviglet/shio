@@ -226,10 +226,9 @@ public class ShSiteExportService {
 
     private byte[] zip(ShExchangePackage pkg) {
         Path dir = null;
-        try {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             dir = Files.createTempDirectory("shio-export-");
             codec.writePackage(pkg, dir);
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
             codec.zip(dir, out);
             return out.toByteArray();
         } catch (IOException e) {
@@ -253,7 +252,7 @@ public class ShSiteExportService {
                 .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
         String slug = normalized.toLowerCase()
                 .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("(^-|-$)", "");
+                .replaceAll("(^-)|(-$)", "");
         return slug.isBlank() ? "site" : slug;
     }
 }

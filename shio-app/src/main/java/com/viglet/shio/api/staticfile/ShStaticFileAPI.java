@@ -14,7 +14,7 @@ import java.security.Principal;
 import java.util.Optional;
 
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.PathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -155,7 +155,7 @@ public class ShStaticFileAPI {
             // dimensions) before spending CPU on the transform.
             imageTransformGuard.check(id, spec.get(), sig);
             Optional<ShImageTransformResult> result =
-                    imageTransformPipeline.transform(new PathResource(path), contentType, spec.get());
+                    imageTransformPipeline.transform(new FileSystemResource(path), contentType, spec.get());
             if (result.isPresent()) {
                 ShImageTransformResult transformed = result.get();
                 // SH42: a cached result carries a stable ETag — emit it and honour
@@ -177,7 +177,7 @@ public class ShStaticFileAPI {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
-                .body(new PathResource(path));
+                .body(new FileSystemResource(path));
     }
 
     /**

@@ -92,9 +92,9 @@ public class ShUserAPI {
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
 	public ShCurrentUser shUserCurrent(HttpSession session) {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (!(authentication instanceof AnonymousAuthenticationToken)) {
-			if (authentication.getPrincipal() instanceof OAuth2User) {
-				return oauth2User(authentication);
+		if (authentication != null && !(authentication instanceof AnonymousAuthenticationToken)) {
+			if (authentication.getPrincipal() instanceof OAuth2User oAuthUser) {
+				return oauth2User(authentication, oAuthUser);
 			} else {
 				return regularUser(session, authentication.getName());
 			}
@@ -110,8 +110,7 @@ public class ShUserAPI {
 		return null;
 	}
 
-	private ShCurrentUser oauth2User(Authentication authentication) {
-		OAuth2User user = ((OAuth2User) authentication.getPrincipal());
+	private ShCurrentUser oauth2User(Authentication authentication, OAuth2User user) {
 		String realm = (authentication instanceof OAuth2AuthenticationToken oauthToken)
 				? oauthToken.getAuthorizedClientRegistrationId()
 				: "oauth2";

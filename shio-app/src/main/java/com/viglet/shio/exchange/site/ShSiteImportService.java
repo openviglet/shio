@@ -344,7 +344,7 @@ public class ShSiteImportService {
                 .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
         String slug = normalized.toLowerCase()
                 .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("(^-|-$)", "");
+                .replaceAll("(^-)|(-$)", "");
         return slug.isBlank() ? "site" : slug;
     }
 }

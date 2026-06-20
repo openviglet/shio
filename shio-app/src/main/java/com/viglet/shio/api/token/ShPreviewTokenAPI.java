@@ -70,7 +70,7 @@ public class ShPreviewTokenAPI {
     }
 
     @PostMapping
-    public ResponseEntity<?> mint(@RequestBody MintRequest body, Principal principal) {
+    public ResponseEntity<Object> mint(@RequestBody MintRequest body, Principal principal) {
         ShCdaProperties.Preview cfg = shCdaProperties.getPreview();
         if (!cfg.isEnabled()) {
             // Feature off — the console treats a 404 as "preview disabled" and stays quiet.
@@ -85,8 +85,10 @@ public class ShPreviewTokenAPI {
             return ResponseEntity.notFound().build();
         }
 
-        ShSite site = post.getShSite() != null ? post.getShSite()
-                : (post.getShFolder() != null ? post.getShFolder().getShSite() : null);
+        ShSite site = post.getShSite();
+        if (site == null && post.getShFolder() != null) {
+            site = post.getShFolder().getShSite();
+        }
         if (site == null) {
             return ResponseEntity.notFound().build();
         }

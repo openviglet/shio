@@ -8,6 +8,9 @@
  */
 package com.viglet.shio.exchange.site;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 /**
  * A built exchange archive ready to stream (SH69): the suggested download
  * {@code fileName} (e.g. {@code my-site.zip}) and the zipped package bytes.
@@ -16,4 +19,28 @@ package com.viglet.shio.exchange.site;
  * @since 2026.2
  */
 public record ShExchangeArchive(String fileName, byte[] content) {
+
+    // Records compare/hash array components by reference by default (S6218); the zipped
+    // bytes are the payload, so compare them by content.
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof ShExchangeArchive other)) {
+            return false;
+        }
+        return Objects.equals(fileName, other.fileName) && Arrays.equals(content, other.content);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(fileName, Arrays.hashCode(content));
+    }
+
+    @Override
+    public String toString() {
+        return "ShExchangeArchive[fileName=" + fileName
+                + ", content=" + (content == null ? "null" : content.length + " bytes") + "]";
+    }
 }

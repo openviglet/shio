@@ -200,17 +200,33 @@ public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPi
                 }
             }
             case FILL -> {
-                int tw = w != null ? w : h;
-                int th = h != null ? h : w;
+                int tw = dim(w, h);
+                int th = dim(h, w);
                 builder.size(tw, th).crop(Positions.CENTER);
             }
             case CROP -> {
-                int tw = w != null ? w : h;
-                int th = h != null ? h : w;
+                int tw = dim(w, h);
+                int th = dim(h, w);
                 builder.sourceRegion(Positions.CENTER, tw, th).scale(1.0);
             }
         }
         return builder.asBufferedImage();
+    }
+
+    /**
+     * Resolve a target dimension: the requested value, else the other axis (FILL/CROP
+     * produce a square when only one axis is given). resize() is only entered when at
+     * least one dimension is set, so the {@code 0} default is unreachable — it just
+     * keeps the unboxing provably null-safe.
+     */
+    private static int dim(Integer primary, Integer fallback) {
+        if (primary != null) {
+            return primary;
+        }
+        if (fallback != null) {
+            return fallback;
+        }
+        return 0;
     }
 
     /** Fit within the given bounds preserving aspect ratio; a single dimension scales by that axis. */

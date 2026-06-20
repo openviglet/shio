@@ -150,5 +150,24 @@ public class ShImageTransformResourceTransformer implements ResourceTransformer 
             }
             return headers;
         }
+
+        // This subclass adds contentType + etag, so equals/hashCode must consider them
+        // on top of the superclass byte-content comparison (S2160).
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof ShTransformedImageResource other) || !super.equals(o)) {
+                return false;
+            }
+            return java.util.Objects.equals(contentType, other.contentType)
+                    && java.util.Objects.equals(etag, other.etag);
+        }
+
+        @Override
+        public int hashCode() {
+            return java.util.Objects.hash(super.hashCode(), contentType, etag);
+        }
     }
 }

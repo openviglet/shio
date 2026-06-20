@@ -8,6 +8,9 @@
  */
 package com.viglet.shio.api.staticfile.transform;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 /**
  * The output of a {@link ShImageTransformPipeline}: the transformed bytes plus the
  * content type they should be served as (which differs from the source when a
@@ -32,5 +35,31 @@ public record ShImageTransformResult(byte[] bytes, String contentType, String et
     /** A copy of this result carrying {@code etag}. */
     public ShImageTransformResult withEtag(String etag) {
         return new ShImageTransformResult(bytes, contentType, etag);
+    }
+
+    // Records compare/hash array components by reference by default (S6218); the bytes
+    // are the payload, so compare them by content.
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof ShImageTransformResult other)) {
+            return false;
+        }
+        return Arrays.equals(bytes, other.bytes)
+                && Objects.equals(contentType, other.contentType)
+                && Objects.equals(etag, other.etag);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(Arrays.hashCode(bytes), contentType, etag);
+    }
+
+    @Override
+    public String toString() {
+        return "ShImageTransformResult[bytes=" + (bytes == null ? "null" : bytes.length + " bytes")
+                + ", contentType=" + contentType + ", etag=" + etag + "]";
     }
 }

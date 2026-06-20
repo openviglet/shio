@@ -118,6 +118,6 @@ public class ShSiteWriteService {
                 .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
         return normalized.toLowerCase()
                 .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("(^-|-$)", "");
+                .replaceAll("(^-)|(-$)", "");
     }
 }
