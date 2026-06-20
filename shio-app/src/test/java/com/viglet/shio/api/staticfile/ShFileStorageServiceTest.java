@@ -8,6 +8,7 @@
  */
 package com.viglet.shio.api.staticfile;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -96,7 +97,7 @@ class ShFileStorageServiceTest {
     @Test
     void deleteIsNoOpForUnknownId() {
         // Must not throw for a post that never had bytes (every delete fires this).
-        storage.delete("never-stored");
+        assertDoesNotThrow(() -> storage.delete("never-stored"));
     }
 
     @Test

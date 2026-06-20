@@ -14,7 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -144,7 +143,7 @@ class ShImageTransformCacheTest {
     }
 
     @Test
-    void diskLayoutIsTenantPrefixed() throws IOException {
+    void diskLayoutIsTenantPrefixed() {
         ShImageTransformCache cache = new ShImageTransformCache(props(true));
         ShTenantContext.setTenantId("alpha");
         Resource src = res("a.png", "x".getBytes(StandardCharsets.UTF_8), 1L);

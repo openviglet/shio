@@ -148,7 +148,7 @@ class ShPostTypeConsoleAPITest {
                 .andExpect(jsonPath("$.shPostTypeAttrs.length()").value(1))
                 .andExpect(jsonPath("$.shPostTypeAttrs[0].shWidget.name").value(ShSystemWidget.TEXT))
                 .andReturn().getResponse().getContentAsString();
-        postTypeId = objectMapper.readTree(response).get("id").asText();
+        postTypeId = objectMapper.readTree(response).get("id").asString();
     }
 
     @Test
@@ -213,7 +213,7 @@ class ShPostTypeConsoleAPITest {
                                 postTypePayload("PT-CONSOLE-del-" + UUID.randomUUID(), "Disposable"))))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String disposableId = objectMapper.readTree(response).get("id").asText();
+        String disposableId = objectMapper.readTree(response).get("id").asString();
 
         mockMvc.perform(delete("/api/v2/post/type/" + disposableId).principal(mockPrincipal))
                 .andExpect(status().isNoContent());

@@ -164,7 +164,7 @@ class ShFolderAPITest {
                 .andExpect(jsonPath("$.rootFolder").value(0))
                 .andReturn().getResponse().getContentAsString();
 
-        childFolderId = objectMapper.readTree(response).get("id").asText();
+        childFolderId = objectMapper.readTree(response).get("id").asString();
     }
 
     @Test

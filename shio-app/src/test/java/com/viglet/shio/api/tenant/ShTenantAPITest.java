@@ -115,7 +115,7 @@ class ShTenantAPITest {
                 .andExpect(jsonPath("$.name").value("acme"))
                 .andExpect(jsonPath("$.owner").value("admin"));
         JsonNode node = objectMapper.readTree(resultActions.andReturn().getResponse().getContentAsString());
-        newTenantId = node.path("id").asText();
+        newTenantId = node.path("id").asString();
     }
 
     @Test
@@ -155,8 +155,8 @@ class ShTenantAPITest {
         JsonNode arr = objectMapper.readTree(list.andReturn().getResponse().getContentAsString());
         String shioId = null;
         for (JsonNode n : arr) {
-            if ("shio".equals(n.path("name").asText())) {
-                shioId = n.path("id").asText();
+            if ("shio".equals(n.path("name").asString())) {
+                shioId = n.path("id").asString();
             }
         }
         mockMvc.perform(delete("/api/v2/tenant/" + shioId)).andExpect(status().isConflict());

@@ -67,7 +67,6 @@ class ShCdaEnvTest {
     private EntityManager entityManager;
 
     private String siteId;
-    private String rootFolderId;
     private String dualPostId;       // has divergent DRAFT + PUBLISHED rows
     private String draftOnlyPostId;  // has only a DRAFT row (never published)
 
@@ -104,7 +103,6 @@ class ShCdaEnvTest {
             root.setDate(Instant.now());
             root.setOwner("admin");
             entityManager.persist(root);
-            rootFolderId = root.getId();
 
             // A post with divergent published + draft rows under the same id.
             dualPostId = UUID.randomUUID().toString();

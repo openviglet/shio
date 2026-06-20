@@ -130,7 +130,7 @@ class ShExchangePackageCodecTest {
         Path root = codec.unzip(new ByteArrayInputStream(zipped.toByteArray()), dest);
 
         // unzip returns the wrapping sub-directory that actually holds export.json.
-        assertThat(root.getFileName().toString()).isEqualTo("bootstrap-site");
+        assertThat(root.getFileName()).hasToString("bootstrap-site");
         assertThat(codec.readPackage(root).sites()).hasSize(1);
     }
 

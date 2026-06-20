@@ -29,7 +29,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.viglet.shio.api.cda.dto.ShCdaEditablePost;
 import com.viglet.shio.api.cda.dto.ShCdaField;
 import com.viglet.shio.api.cda.dto.ShCdaPost;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -72,7 +71,6 @@ class ShCdaWriteTest {
     @PersistenceContext
     private EntityManager entityManager;
 
-    private String siteId;
     private String draftPostId;       // DRAFT row only
     private String publishedOnlyId;   // PUBLISHED row only
     private String toPublishId;       // DRAFT row, promoted in the publish test
@@ -102,7 +100,6 @@ class ShCdaWriteTest {
             site.setDate(Instant.now());
             site.setOwner("admin");
             entityManager.persist(site);
-            siteId = site.getId();
 
             ShFolder root = new ShFolder();
             root.setName("root");

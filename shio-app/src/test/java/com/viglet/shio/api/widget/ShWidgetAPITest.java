@@ -96,7 +96,7 @@ class ShWidgetAPITest {
 
 		ResultActions resultActions = mockMvc.perform(requestBuilder).andExpect(status().isOk());
 		JsonNode resultNode = objectMapper.readTree(resultActions.andReturn().getResponse().getContentAsString());
-		newWidgetId = resultNode.path("id").asText(newWidgetId);
+		newWidgetId = resultNode.path("id").asString(newWidgetId);
 	}
 
 	@Test
