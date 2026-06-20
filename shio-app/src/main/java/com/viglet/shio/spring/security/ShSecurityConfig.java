@@ -40,6 +40,12 @@ public class ShSecurityConfig {
     public static final String ERROR_PATH = "/error/**";
     /** The CDA namespace (SH1) — read (GET) for ROLE_CDA, write (SH10) for ROLE_CDA_WRITE. */
     private static final String CDA_PATH = "/api/v2/cda/**";
+    /** GraphQL delivery (SH4) — a CDA surface, token-authenticated POST reads. */
+    private static final String GRAPHQL_PATH = "/graphql";
+    /** First-run setup (SH6) — open until a tenant exists. */
+    private static final String SETUP_PATH = "/api/v2/setup";
+    /** Role required for CDA writes (SH10); {@code hasRole} prepends {@code ROLE_}. */
+    private static final String ROLE_CDA_WRITE = "CDA_WRITE";
     /** Post-types-as-code admin API (SH16) — console-authenticated, used by the stateless {@code shio} CLI. */
     private static final String POST_TYPE_PATH = "/api/v2/post-type/**";
     /** Tenant catalog (SH22) — writes are admin-only; {@code GET /current} stays open to any user. */
@@ -92,14 +98,14 @@ public class ShSecurityConfig {
                 .csrfTokenRepository(csrfTokenRepository)
                 .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
                 .ignoringRequestMatchers(
-                        mvc.matcher("/graphql"),
+                        mvc.matcher(GRAPHQL_PATH),
                         // CDA writes (SH10) are token-authenticated (Key header) and stateless,
                         // so there is no session/XSRF cookie to validate; reads were never CSRF-checked.
                         mvc.matcher(CDA_PATH),
                         // Post-types-as-code admin API (SH16) — the shio CLI calls it statelessly
                         // with HTTP Basic, so there is no session/XSRF cookie; same rationale as CDA.
                         mvc.matcher(POST_TYPE_PATH),
-                        mvc.matcher("/api/v2/setup"),
+                        mvc.matcher(SETUP_PATH),
                         mvc.matcher(ERROR_PATH),
                         mvc.matcher(LOGOUT_PATH),
                         mvc.matcher(LOGIN_PATH)))
@@ -129,21 +135,21 @@ public class ShSecurityConfig {
                         mvc.matcher("/content/**"),
                         mvc.matcher("/preview/**"),
                         mvc.matcher("/sites/**"),
-                        mvc.matcher("/api/v2/setup"),
+                        mvc.matcher(SETUP_PATH),
                         mvc.matcher(LOGIN_PATH)).permitAll();
                 // CDA write surface (SH10) — must precede the GET rule; a WRITE-scope token
                 // carries ROLE_CDA_WRITE (see ShApiTokenFilter).
                 authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.PATCH, CDA_PATH))
-                        .hasRole("CDA_WRITE");
+                        .hasRole(ROLE_CDA_WRITE);
                 authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, CDA_PATH))
-                        .hasRole("CDA_WRITE");
+                        .hasRole(ROLE_CDA_WRITE);
                 authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.GET, CDA_PATH))
                         .hasRole("CDA");
                 // GraphQL delivery (SH4) is a CDA surface — token-authenticated, POST reads.
-                authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, "/graphql"))
+                authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, GRAPHQL_PATH))
                         .hasRole("CDA");
-                // Self-service tenant signup + switch (SH22/C) are for any authenticated
-                // user — must precede the admin catch-all below.
+                // Self-service tenant signup and switch from SH22 part C are for any
+                // authenticated user, so they must precede the admin catch-all below.
                 authorizeRequests.requestMatchers(
                         mvc.matcher(HttpMethod.POST, TENANT_SIGNUP_PATH),
                         mvc.matcher(HttpMethod.POST, TENANT_SWITCH_PATH))
@@ -196,20 +202,20 @@ public class ShSecurityConfig {
                                 mvc.matcher("/vendor/**"),
                                 mvc.matcher("/svg/**"),
                                 mvc.matcher("/universal-editor/**"),
-                                mvc.matcher("/api/v2/setup"),
+                                mvc.matcher(SETUP_PATH),
                                 mvc.matcher("/setup"),
                                 mvc.matcher("/setup/**"),
                                 mvc.matcher(LOGIN_PATH)).permitAll();
                         // CDA write surface (SH10) — must precede the GET rule; a WRITE-scope token
                         // carries ROLE_CDA_WRITE (see ShApiTokenFilter).
                         authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.PATCH, CDA_PATH))
-                                .hasRole("CDA_WRITE");
+                                .hasRole(ROLE_CDA_WRITE);
                         authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, CDA_PATH))
-                                .hasRole("CDA_WRITE");
+                                .hasRole(ROLE_CDA_WRITE);
                         authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.GET, CDA_PATH))
                                 .hasRole("CDA");
                         // GraphQL delivery (SH4) is a CDA surface — token-authenticated, POST reads.
-                        authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, "/graphql"))
+                        authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.POST, GRAPHQL_PATH))
                                 .hasRole("CDA");
                         // Tenant catalog writes (SH22) are admin-only; GET /current + listing stay authenticated.
                         authorizeRequests.requestMatchers(

@@ -73,6 +73,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPipeline {
 
+    private static final String IMAGE_PREFIX = "image/";
+
     private final ShImageTransformProperties properties;
 
     public ShThumbnailatorImageTransformPipeline(ShImageTransformProperties properties) {
@@ -107,8 +109,8 @@ public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPi
             }
             BufferedImage src = decodeWithinPixelCeiling(iis, source.getFilename());
             if (src == null) {
-                // Either undecodable or a decode-bomb over the source-pixel ceiling (SH43);
-                // in both cases serve the original bytes rather than allocate / 500.
+                // Either undecodable, or a decode-bomb above the source-pixel ceiling per SH43.
+                // In both cases serve the original bytes rather than allocate memory or fail.
                 return Optional.empty();
             }
 
@@ -179,7 +181,7 @@ public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPi
 
     /** The content type to serve a given ImageIO output format as. */
     private String contentTypeFor(String format) {
-        return "jpeg".equals(format) ? "image/jpeg" : "image/" + format;
+        return "jpeg".equals(format) ? "image/jpeg" : IMAGE_PREFIX + format;
     }
 
     private BufferedImage resize(BufferedImage src, ShImageTransformSpec spec) throws IOException {
@@ -247,8 +249,8 @@ public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPi
      */
     private String imageFormatOf(String contentType, String fileName) {
         String ct = contentType != null ? contentType.toLowerCase(Locale.ROOT) : "";
-        if (ct.startsWith("image/")) {
-            String subtype = ct.substring("image/".length()).trim();
+        if (ct.startsWith(IMAGE_PREFIX)) {
+            String subtype = ct.substring(IMAGE_PREFIX.length()).trim();
             switch (subtype) {
                 case "jpeg", "jpg" -> { return "jpeg"; }
                 case "png" -> { return "png"; }

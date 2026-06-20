@@ -37,11 +37,10 @@ import org.hibernate.generator.GeneratorCreationContext;
 public class ShUuidGenerator
         implements BeforeExecutionGenerator, AnnotationBasedGenerator<ShAssignableUuidGenerator> {
 
-    public ShUuidGenerator() {
-    }
-
     @Override
     public void initialize(ShAssignableUuidGenerator annotation, Member member, GeneratorCreationContext context) {
+        // No annotation-driven state to initialize: id assignment is decided per-row
+        // in generate() (pre-assigned id wins, else a random UUID).
     }
 
     @Override

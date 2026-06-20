@@ -70,6 +70,10 @@ public class ShGraphQLSchema {
 
     private static final byte SYSTEM = 1;
 
+    private static final String FIELD_POST_TYPE = "postType";
+    private static final String FIELD_SITE_ID = "siteId";
+    private static final String FIELD_FOLDER_ID = "folderId";
+
     /** Common post fields shared by every content type, with their resolvers. */
     private static final Map<String, Function<ShCdaPost, Object>> COMMON_FIELDS = new LinkedHashMap<>();
     static {
@@ -77,9 +81,9 @@ public class ShGraphQLSchema {
         COMMON_FIELDS.put("title", ShCdaPost::title);
         COMMON_FIELDS.put("summary", ShCdaPost::summary);
         COMMON_FIELDS.put("furl", ShCdaPost::furl);
-        COMMON_FIELDS.put("postType", ShCdaPost::postType);
-        COMMON_FIELDS.put("siteId", ShCdaPost::siteId);
-        COMMON_FIELDS.put("folderId", ShCdaPost::folderId);
+        COMMON_FIELDS.put(FIELD_POST_TYPE, ShCdaPost::postType);
+        COMMON_FIELDS.put(FIELD_SITE_ID, ShCdaPost::siteId);
+        COMMON_FIELDS.put(FIELD_FOLDER_ID, ShCdaPost::folderId);
         COMMON_FIELDS.put("published", ShCdaPost::published);
         COMMON_FIELDS.put("date", post -> asText(post.date()));
         COMMON_FIELDS.put("modifiedDate", post -> asText(post.modifiedDate()));
@@ -177,16 +181,16 @@ public class ShGraphQLSchema {
                 .build();
         GraphQLFieldDefinition postByUrl = GraphQLFieldDefinition.newFieldDefinition()
                 .name("postByUrl").type(contentRef)
-                .argument(arg("siteId", new GraphQLNonNull(Scalars.GraphQLString)))
+                .argument(arg(FIELD_SITE_ID, new GraphQLNonNull(Scalars.GraphQLString)))
                 .argument(arg("url", new GraphQLNonNull(Scalars.GraphQLString)))
                 .build();
         // Note: scalars / non-null-of-scalar are both GraphQLInputType and
         // GraphQLOutputType, so they are valid argument types.
         GraphQLFieldDefinition posts = GraphQLFieldDefinition.newFieldDefinition()
                 .name("posts").type(new GraphQLNonNull(GraphQLList.list(new GraphQLNonNull(contentRef))))
-                .argument(arg("siteId", Scalars.GraphQLString))
-                .argument(arg("folderId", Scalars.GraphQLString))
-                .argument(arg("postType", Scalars.GraphQLString))
+                .argument(arg(FIELD_SITE_ID, Scalars.GraphQLString))
+                .argument(arg(FIELD_FOLDER_ID, Scalars.GraphQLString))
+                .argument(arg(FIELD_POST_TYPE, Scalars.GraphQLString))
                 .argument(argDefault("page", Scalars.GraphQLInt, 0))
                 .argument(argDefault("size", Scalars.GraphQLInt, 50))
                 .build();
@@ -195,10 +199,10 @@ public class ShGraphQLSchema {
                 (DataFetcher<Object>) env -> shCdaService.getPost(env.getArgument("id")).orElse(null));
         codeRegistry.dataFetcher(FieldCoordinates.coordinates(QUERY_TYPE, "postByUrl"),
                 (DataFetcher<Object>) env -> shCdaService
-                        .getPostByUrl(env.getArgument("siteId"), env.getArgument("url")).orElse(null));
+                        .getPostByUrl(env.getArgument(FIELD_SITE_ID), env.getArgument("url")).orElse(null));
         codeRegistry.dataFetcher(FieldCoordinates.coordinates(QUERY_TYPE, "posts"),
                 (DataFetcher<Object>) env -> shCdaService.queryPosts(
-                        env.getArgument("siteId"), env.getArgument("folderId"), env.getArgument("postType"),
+                        env.getArgument(FIELD_SITE_ID), env.getArgument(FIELD_FOLDER_ID), env.getArgument(FIELD_POST_TYPE),
                         intArg(env.getArgument("page"), 0), intArg(env.getArgument("size"), 50)));
 
         return GraphQLObjectType.newObject().name(QUERY_TYPE)

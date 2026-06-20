@@ -95,12 +95,12 @@ public class ShLoginAPI {
         currentUser.setLastName(shUser.getLastName());
         currentUser.setEmail(shUser.getEmail());
         currentUser.setAdmin(isAdmin);
-        currentUser.setPrivileges(resolvePrivileges(shUser, groups));
+        currentUser.setPrivileges(resolvePrivileges(groups));
 
         return ResponseEntity.ok(currentUser);
     }
 
-    private List<String> resolvePrivileges(ShUser shUser, Set<ShGroup> groups) {
+    private List<String> resolvePrivileges(Set<ShGroup> groups) {
         var privileges = new LinkedHashSet<String>();
         for (var group : groups) {
             for (ShRole role : shRoleRepository.findByShGroupsIn(Set.of(group))) {
