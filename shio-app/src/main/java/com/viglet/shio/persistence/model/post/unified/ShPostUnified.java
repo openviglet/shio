@@ -31,6 +31,7 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.TenantId;
 
 /**
@@ -59,6 +60,10 @@ import org.hibernate.annotations.TenantId;
                 @Index(name = "idx_post_unified_furl", columnList = "furl, state")
         })
 @IdClass(ShPostUnifiedId.class)
+// SH55 — soft-delete: every Hibernate-generated read of this entity (CDA, console
+// navigation, search, listings) automatically excludes trashed rows. Trash
+// listing/restore/purge use native queries that bypass this restriction.
+@SQLRestriction("deleted_date is null")
 @JsonIgnoreProperties({"$$_hibernate_interceptor", "hibernateLazyInitializer"})
 public class ShPostUnified implements Serializable {
 
@@ -155,6 +160,14 @@ public class ShPostUnified implements Serializable {
      */
     @Column(name = "translation_group_id", length = 36)
     private String translationGroupId;
+
+    /**
+     * SH55 — soft-delete (trash) marker. When non-null the post is in the trash:
+     * the {@code @SQLRestriction} hides it from every normal read, but the row
+     * survives so it can be restored or purged. {@code null} = live.
+     */
+    @Column(name = "deleted_date")
+    private Instant deletedDate;
 
     public String getId() {
         return id;
@@ -320,5 +333,13 @@ public class ShPostUnified implements Serializable {
 
     public void setTranslationGroupId(String translationGroupId) {
         this.translationGroupId = translationGroupId;
+    }
+
+    public Instant getDeletedDate() {
+        return deletedDate;
+    }
+
+    public void setDeletedDate(Instant deletedDate) {
+        this.deletedDate = deletedDate;
     }
 }

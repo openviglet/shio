@@ -1,0 +1,25 @@
+databaseChangeLog:
+  # SH55 — trash / soft-delete. Adds a nullable `deleted_date` to the unified post
+  # store. A non-null value means the post is in the trash: a Hibernate
+  # @SQLRestriction("deleted_date is null") hides it from every normal read, while
+  # the row survives for restore/purge (driven by native queries that bypass the
+  # restriction). Nullable, no backfill (existing rows stay live = null). Type
+  # DB-agnostic (TIMESTAMP) per ShLiquibaseChangelogAgnosticTest; SH26: preserve
+  # identifier case on PostgreSQL (QUOTE_ALL_OBJECTS, re-declared per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh55-post-deleted-date
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_post_unified
+                columnName: deleted_date
+      changes:
+        - addColumn:
+            tableName: sh_post_unified
+            columns:
+              - column:
+                  name: deleted_date
+                  type: TIMESTAMP

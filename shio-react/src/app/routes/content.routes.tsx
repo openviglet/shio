@@ -13,11 +13,13 @@ import PostTypeEditPage from "../console/content/post-type.edit.page"
 import PostTypeNewPage from "../console/content/post-type.new.page"
 import PostTypeSelectPage from "../console/content/post-type-select.page"
 import SearchPage from "../console/content/search.page"
+import TrashPage from "../console/content/trash.page"
 
 export const ContentRoutes = (
   <>
     <Route path="content" element={<SiteListPage />} />
     <Route path="content/search" element={<SearchPage />} />
+    <Route path="content/trash" element={<TrashPage />} />
     <Route path="content/site/new" element={<SiteNewPage />} />
     <Route path="content/site/import" element={<SiteImportPage />} />
     <Route path="content/site/:siteId" element={<SiteEditPage />} />

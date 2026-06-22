@@ -283,11 +283,7 @@ ecosystem.
 
 > ✅ **III.9 Content-level ACL / permissions (SH54) — shipped.** See [CHANGELOG.md](CHANGELOG.md) Block C. Design recorded there: per-object `ShContentAcl` grants (USER/GROUP/ROLE × READ/WRITE), folder-tree inheritance (nearest level wins), default-allow + admin bypass, enforced at the console authoring boundary.
 
-### III.10 Trash / soft-delete + restore (SH55)
-
-Deletes are hard today. A recycle bin (soft-delete flag + restore + purge) is a
-table-stakes safety net for an editorial CMS; it also composes with the SH14
-restore work.
+> ✅ **III.10 Trash / soft-delete + restore (SH55) — shipped.** See [CHANGELOG.md](CHANGELOG.md) Block C. Design recorded there: `deletedDate` + Hibernate `@SQLRestriction` (auto-hides trashed rows from all reads), native trash/restore/purge queries, no side effects until permanent purge. Posts only; folder soft-delete is a follow-up.
 
 ---
 

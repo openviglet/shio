@@ -34,6 +34,7 @@ import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.tenant.ShTenantContext;
 import com.viglet.shio.webhook.ShPostLifecycleEvent;
 
 import tools.jackson.core.JacksonException;
@@ -402,13 +403,64 @@ public class ShPostUnifiedWriteService {
         if (rows.isEmpty()) {
             return;
         }
-        // Snapshot from any existing row (DRAFT or PUBLISHED) before deletion.
         ShPostUnified snapshot = rows.get(0);
-        ShPostLifecycleEvent event = lifecycleEvent(ShWebhookEventType.DELETE, snapshot);
+        // SH55 — soft-delete (trash): hide the rows via deleted_date and keep them
+        // for restore. A reversible trash fires NO lifecycle event, so it has no
+        // side effects — the SH12 webhook and SH38 file-byte cleanup run only on a
+        // permanent purge (see #purge). The @SQLRestriction hides it from every read.
+        Instant now = Instant.now();
+        rows.forEach(row -> {
+            row.setDeletedDate(now);
+            shPostUnifiedRepository.save(row);
+        });
         shContentAuditService.record(ShContentAction.DELETE, postId,
                 siteIdOf(snapshot), snapshot.getTitle(), actor);
-        rows.forEach(shPostUnifiedRepository::delete);
+    }
+
+    /** Posts currently in the trash for the active tenant (SH55), one row per id (DRAFT-preferred). */
+    @Transactional(readOnly = true)
+    public List<ShPostUnified> listTrash() {
+        java.util.Map<String, ShPostUnified> byId = new java.util.LinkedHashMap<>();
+        for (ShPostUnified row : shPostUnifiedRepository.findTrash(tenantId())) {
+            byId.merge(row.getId(), row, (existing, candidate) ->
+                    existing.getState() == ShPostState.DRAFT ? existing : candidate);
+        }
+        return List.copyOf(byId.values());
+    }
+
+    /** Restore a trashed post (SH55): clear its {@code deleted_date} so it becomes live again. */
+    @Transactional
+    public boolean restoreFromTrash(String postId, String actor) {
+        if (shPostUnifiedRepository.restoreFromTrash(postId, tenantId()) == 0) {
+            return false;
+        }
+        shPostUnifiedRepository.findById(postId).stream().findFirst().ifPresent(p ->
+                shContentAuditService.record(ShContentAction.RESTORE, postId,
+                        siteIdOf(p), p.getTitle(), actor));
+        return true;
+    }
+
+    /**
+     * Permanently delete a trashed post (SH55). Fires the {@code DELETE} lifecycle
+     * event <i>now</i> (purge is irreversible) so the SH38 file-byte cleanup and
+     * SH12 webhook run; the row itself is removed with a native delete that
+     * bypasses the soft-delete {@code @SQLRestriction}.
+     */
+    @Transactional
+    public boolean purge(String postId) {
+        List<ShPostUnified> rows = shPostUnifiedRepository.findTrashedById(postId, tenantId());
+        if (rows.isEmpty()) {
+            return false;
+        }
+        ShPostLifecycleEvent event = lifecycleEvent(ShWebhookEventType.DELETE, rows.get(0));
+        shPostUnifiedRepository.purge(postId, tenantId());
         eventPublisher.publishEvent(event);
+        return true;
+    }
+
+    private static String tenantId() {
+        String tenant = ShTenantContext.getTenantId();
+        return tenant != null ? tenant : ShTenantContext.DEFAULT_TENANT;
     }
 
     private void publishLifecycle(ShWebhookEventType type, ShPostUnified row) {

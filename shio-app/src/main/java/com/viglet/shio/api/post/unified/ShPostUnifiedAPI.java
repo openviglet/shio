@@ -141,6 +141,30 @@ public class ShPostUnifiedAPI {
         return shPostUnifiedRepository.findById(id);
     }
 
+    /** SH55 — posts currently in the trash for the active tenant. */
+    @GetMapping("/trash")
+    public List<ShPostUnified> trash() {
+        return shPostUnifiedWriteService.listTrash();
+    }
+
+    /** SH55 — restore a trashed post (clear its soft-delete marker). */
+    @PostMapping("/{id}/untrash")
+    public ResponseEntity<Void> untrash(@PathVariable String id, Principal principal) {
+        shContentAclService.requireWrite(id);
+        return shPostUnifiedWriteService.restoreFromTrash(id, principal != null ? principal.getName() : null)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
+    }
+
+    /** SH55 — permanently delete a trashed post (irreversible; fires byte-cleanup + webhook). */
+    @DeleteMapping("/{id}/purge")
+    public ResponseEntity<Void> purge(@PathVariable String id) {
+        shContentAclService.requireWrite(id);
+        return shPostUnifiedWriteService.purge(id)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
+    }
+
     /** SH53 — the sibling translations of this post's group (DRAFT-preferred, one per id). */
     @GetMapping("/{id}/translations")
     public List<ShPostUnified> translations(@PathVariable String id) {

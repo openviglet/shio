@@ -16,6 +16,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -65,6 +66,28 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
 
     List<ShPostUnified> findByShSite_IdAndShPostType_NameAndStateIn(String siteId, String postType,
                                                                     Collection<ShPostState> states);
+
+    // --- Trash / soft-delete (SH55). Native so they bypass the entity's
+    //     @SQLRestriction("deleted_date is null") and can see/clear trashed rows.
+    //     Tenant-scoped explicitly since native SQL also bypasses @TenantId. ---
+
+    @Query(value = "select * from sh_post_unified where deleted_date is not null and tenant_id = :tenant",
+            nativeQuery = true)
+    List<ShPostUnified> findTrash(@Param("tenant") String tenant);
+
+    @Query(value = "select * from sh_post_unified where id = :id and deleted_date is not null and tenant_id = :tenant",
+            nativeQuery = true)
+    List<ShPostUnified> findTrashedById(@Param("id") String id, @Param("tenant") String tenant);
+
+    @Modifying
+    @Query(value = "update sh_post_unified set deleted_date = null where id = :id and tenant_id = :tenant",
+            nativeQuery = true)
+    int restoreFromTrash(@Param("id") String id, @Param("tenant") String tenant);
+
+    @Modifying
+    @Query(value = "delete from sh_post_unified where id = :id and tenant_id = :tenant",
+            nativeQuery = true)
+    int purge(@Param("id") String id, @Param("tenant") String tenant);
 
     // --- Content i18n / locales (SH53) ---
 

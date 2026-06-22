@@ -186,14 +186,22 @@ class ShStaticFileAPITest {
     }
 
     @Test
-    void stage05DeletingPostRemovesBytes() throws Exception {
+    void stage05SoftDeleteKeepsBytesPurgeRemovesThem() throws Exception {
         assertTrue(storage.exists(uploadedPostId, "hello.txt"));
 
+        // SH55: deleting a post now moves it to the trash (reversible) — the file
+        // bytes are kept so the post can be restored, so NO cleanup fires yet.
         mockMvc.perform(delete("/api/v2/post-unified/" + uploadedPostId).principal(mockPrincipal))
                 .andExpect(status().isNoContent());
+        assertTrue(storage.exists(uploadedPostId, "hello.txt"),
+                "a reversible trash must keep the file bytes");
 
+        // Purging is permanent: it fires the DELETE lifecycle event, so the SH38
+        // cleanup listener removes the bytes.
+        mockMvc.perform(delete("/api/v2/post-unified/" + uploadedPostId + "/purge").principal(mockPrincipal))
+                .andExpect(status().isNoContent());
         assertFalse(storage.exists(uploadedPostId, "hello.txt"),
-                "cleanup listener must remove bytes on post delete");
+                "purge must remove bytes via the cleanup listener");
     }
 
     @Test

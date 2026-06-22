@@ -47,9 +47,9 @@
 > The table-stakes features the headless market (Contentful/Strapi/Sanity)
 > assumes. Versioning is partly there (`/api/v2/post-unified/{id}/versions`). → §III
 
-> ✅ **Shipped: SH12–SH16, SH26, SH51–SH54** → see [CHANGELOG.md](CHANGELOG.md) Block C.
-
-- 💭 **SH55** (deps: —) **Trash / soft-delete + restore** — a recycle bin instead of hard delete on posts/folders. → §III.10
+> ✅ **All tasks shipped (SH12–SH16, SH26, SH51–SH55)** → see [CHANGELOG.md](CHANGELOG.md) Block C.
+> Follow-up worth noting: SH55 shipped soft-delete for **posts**; folder soft-delete
+> (subtree-hide semantics) remains a deliberate future task.
 
 ## Block D — Optional server-side JS rendering (GraalJS)
 

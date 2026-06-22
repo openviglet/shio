@@ -75,6 +75,22 @@ export class ShPostUnifiedService {
     const response = await axios.post<ShPostUnified>(`/v2/post-unified/${id}/translate`, { locale, data })
     return response.data
   }
+
+  /** Posts currently in the trash for the active tenant (SH55). */
+  async trash(): Promise<ShPostUnified[]> {
+    const response = await axios.get<ShPostUnified[]>("/v2/post-unified/trash")
+    return response.data
+  }
+
+  /** Restore a trashed post (SH55). */
+  async untrash(id: string): Promise<void> {
+    await axios.post(`/v2/post-unified/${id}/untrash`)
+  }
+
+  /** Permanently delete a trashed post (SH55). */
+  async purge(id: string): Promise<void> {
+    await axios.delete(`/v2/post-unified/${id}/purge`)
+  }
 }
 
 export class ShPostUnifiedMigrationService {
