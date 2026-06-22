@@ -1,0 +1,26 @@
+{
+  "emailConfig": {
+    "title": "Email",
+    "description": "Configure the SMTP server used to send e-mail from Shio.",
+    "server": "Server",
+    "serverDesc": "Connection details for the outgoing mail (SMTP) server.",
+    "host": "Host",
+    "port": "Port",
+    "username": "Username",
+    "password": "Password",
+    "enabledHint": "Enable to allow Shio to send e-mail through this server.",
+    "testConnection": "Test Connection",
+    "testConnectionHint": "Verify the connection to the mail server when saving.",
+    "smtp": "SMTP",
+    "smtpDesc": "Authentication and transport security options.",
+    "smtpAuth": "Auth",
+    "smtpAuthHint": "Authenticate against the SMTP server with the username and password.",
+    "tlsEnabled": "TLS Enabled",
+    "tlsEnabledHint": "Use STARTTLS to upgrade the connection to a secure channel.",
+    "tlsRequired": "TLS Required",
+    "tlsRequiredHint": "Refuse to send if TLS cannot be negotiated.",
+    "sslEnabled": "SSL Enabled",
+    "sslEnabledHint": "Connect over SSL/TLS from the start (implicit TLS).",
+    "saved": "Email settings saved."
+  }
+}

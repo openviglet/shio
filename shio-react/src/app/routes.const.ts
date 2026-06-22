@@ -47,6 +47,7 @@ export const ROUTES = {
   ADMIN_TENANTS: scoped(`${consolePath}/admin/tenants`),
   ADMIN_AUTH_PROVIDERS: scoped(`${consolePath}/admin/auth-providers`),
   ADMIN_EXCHANGE_PROVIDERS: scoped(`${consolePath}/admin/exchange-providers`),
+  ADMIN_EMAIL_CONFIG: scoped(`${consolePath}/admin/email-config`),
   UNIVERSAL_EDITOR: scoped(`${consolePath}/universal-editor`),
 };
 

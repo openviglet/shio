@@ -9,6 +9,7 @@ import {
   IconBuildingSkyscraper,
   IconFingerprint,
   IconArrowsExchange,
+  IconMail,
 } from "@tabler/icons-react"
 import * as React from "react"
 import { useTranslation } from "react-i18next"
@@ -54,6 +55,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         { title: t("tenantAdmin.title"), url: ROUTES.ADMIN_TENANTS, icon: IconBuildingSkyscraper },
         { title: t("authProvider.title"), url: ROUTES.ADMIN_AUTH_PROVIDERS, icon: IconFingerprint },
         { title: t("exchangeProvider.title"), url: ROUTES.ADMIN_EXCHANGE_PROVIDERS, icon: IconArrowsExchange },
+        { title: t("emailConfig.title"), url: ROUTES.ADMIN_EMAIL_CONFIG, icon: IconMail },
         { title: t("graphql.title"), url: ROUTES.GRAPHQL_ROOT, icon: IconBrandGraphql },
       ],
     },

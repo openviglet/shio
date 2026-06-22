@@ -70,8 +70,7 @@
 > templates. The new console is `shio-react`. → §V
 
 - ⏳ **SH19** (deps: —) **Finish AngularJS → React console migration** — continue moving console pages to `shio-react` (see [project memory]); the migration is the precondition for deleting `resources/ui/`. The remaining legacy-only surface (the `config/` section + static files + legacy commerce widgets) is decomposed into SH56–SH61 below so each ships independently. → §V.1
-  - ✅ **SH56–SH57** — shipped → [CHANGELOG.md](CHANGELOG.md) Block E (Auth + Exchange Providers console pages).
-  - 💭 **SH58** (deps: SH19) **Email/SMTP config — v2 API + console page** — migrate legacy `config/email`; needs a v2 settings endpoint over `ShConfigVar` then a console form. → §V.1
+  - ✅ **SH56–SH58** — shipped → [CHANGELOG.md](CHANGELOG.md) Block E (Auth + Exchange Providers + Email/SMTP console pages).
   - 💭 **SH59** (deps: SH19, SH52) **Search config console page** — migrate legacy `config/search`; depends on the content full-text search backend (SH52) since there is no v2 search-config endpoint today. → §V.1
   - 💭 **SH60** (deps: SH19) **Legacy commerce/recaptcha widgets — port or deprecate** — the AngularJS `payment` (payment-slip/rede-card/shopline) and `recaptcha` widgets have no React equivalent; decide whether they belong in the headless-first product before porting, else mark for removal with SH21. → §V.1
   - 💭 **SH61** (deps: SH19, SH38) **Static-file manager console page** — migrate legacy `staticFile` upload/select screens; the upload/serve subsystem (SH38) now ships, so this is unblocked (the `File` widget already uploads via `POST /v2/staticfile/upload`; this adds a dedicated browse/manage page). → §V.1
