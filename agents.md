@@ -431,6 +431,42 @@ Full page with grid of post types:
 }
 ```
 
+## Roadmap & docs maintenance
+
+The roadmap lives in `docs/`, **split across three files that must be kept in
+sync**. Each has one job — never duplicate content between them, and when you
+touch one, check whether a sibling needs updating:
+
+| File | Single responsibility | Granularity |
+|---|---|---|
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | **Active backlog only** — the source of truth for what's *unshipped* (📋 designed · 💭 idea · ⏳ partial · 🛠 in-progress). | one line per task |
+| [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | What has **shipped** — a searchable "Shipped Ledger" indexed by Block (A–G); `git log` is authoritative for detail. | one entry per shipped task, under its block |
+| [`docs/IMPROVEMENTS.md`](docs/IMPROVEMENTS.md) | **Design rationale** (the what/why) for *unshipped* sections only. No status tables, no shipped implementation reports. | prose per active section |
+
+Tasks are numbered `SH<n>` (not contiguous across blocks — epics like SH25/SH62/SH67
+own sub-ranges). The `→ §x.y` pointer on a task line is its IMPROVEMENTS.md design section.
+
+**The cross-file update rules — follow these every time:**
+
+1. **When a task ships (mark it ✅):** move its full entry from `ROADMAP.md` →
+   `CHANGELOG.md` (under its Block heading; the detailed shipped report lives
+   *there*, not in the roadmap), and replace it in `ROADMAP.md` with **nothing**
+   (delete it) or, if siblings still reference it or it's an epic header, a single
+   terse pointer line: `> ✅ **<scope> shipped (SH..–SH..)** → see [CHANGELOG.md](CHANGELOG.md) Block X.`
+   Then **delete** its design subsection from `IMPROVEMENTS.md` — `git log` is the
+   history; do not leave a shipped implementation report behind. **The roadmap must
+   never carry a multi-sentence ✅ task body** — that's the changelog's job. When an
+   epic's children all ship, collapse the whole epic to one shipped pointer.
+2. **When you add a new task:** add the one-liner to `ROADMAP.md` (with `deps:` +
+   a `→ §x.y` pointer) and, if it needs design, add the rationale subsection to
+   `IMPROVEMENTS.md`. Status markers (✅/📋/💭/⏳/🛠) live **only** in `ROADMAP.md`.
+3. **Status belongs to exactly one file.** If a marker in `IMPROVEMENTS.md`
+   disagrees with `ROADMAP.md`/`CHANGELOG.md`, the roadmap files win — fix it.
+4. **Keep ROADMAP entries terse** (≈1 sentence: *what + why + pointer*).
+   Implementation detail goes in the CHANGELOG entry, code, and commits.
+5. **Non-goals are binding.** Check `ROADMAP.md` → "Non-goals" (and IMPROVEMENTS §0)
+   before proposing new work.
+
 ## Committing
 
 **When a task is done, commit by running `run-commit.cmd` from the repo root.**
