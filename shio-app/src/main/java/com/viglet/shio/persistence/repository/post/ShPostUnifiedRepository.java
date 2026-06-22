@@ -57,6 +57,16 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     Page<ShPostUnified> findByShSite_IdAndShPostType_NameAndState(String siteId, String postType,
                                                                  ShPostState state, Pageable pageable);
 
+    /**
+     * All posts of a given post type (by id) in a given state (tenant-scoped) — used by
+     * the SH61 static-file manager. Keyed by id (the {@code post_type_id} FK column on
+     * {@code sh_post_unified}), NOT by name: navigating {@code shPostType.name} forces a
+     * join onto the {@code @TenantId} JOINED {@code ShObject}/{@code ShPostType} table,
+     * which Hibernate's tenant predicate references with an alias that isn't joined
+     * ({@code Column "..._.tenant_id" not found}). The FK column needs no join.
+     */
+    List<ShPostUnified> findByShPostType_IdAndState(String postTypeId, ShPostState state);
+
     // --- CDA preview (SH5) finders: fetch across a state set so the service can
     //     dedup draft-preferred. Used only by the PREVIEW-environment read path. ---
 

@@ -1,0 +1,14 @@
+{
+  "staticFile": {
+    "title": "Arquivos",
+    "description": "Navegue, envie, baixe e exclua os arquivos estáticos (imagens, documentos) armazenados em seus sites.",
+    "blankTitle": "Nenhum arquivo ainda",
+    "blankDescription": "Envie um arquivo ou adicione um através de um campo Arquivo em um post.",
+    "upload": "Enviar",
+    "uploadTarget": "Site",
+    "pickSiteFirst": "Escolha primeiro um site para enviar.",
+    "fileName": "Nome do arquivo",
+    "type": "Tipo",
+    "size": "Tamanho"
+  }
+}

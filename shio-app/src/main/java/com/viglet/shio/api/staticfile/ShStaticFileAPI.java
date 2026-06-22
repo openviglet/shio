@@ -80,6 +80,16 @@ public class ShStaticFileAPI {
     }
 
     /**
+     * List every {@code File} post in the active tenant (SH61 file manager).
+     * Returns a flat view ({@link ShStaticFileItem}) with on-disk size + content
+     * type, newest first.
+     */
+    @GetMapping
+    public java.util.List<ShStaticFileItem> list() {
+        return shStaticFileService.listFiles();
+    }
+
+    /**
      * Upload a file into {@code folderId}, creating a {@code File} post for it.
      * Returns the created post (200) so the caller can store its id.
      */

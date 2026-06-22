@@ -37,6 +37,7 @@ export const ROUTES = {
   POST_TYPE_NEW: scoped(`${consolePath}/content/post-type/new`),
   SEARCH: scoped(`${consolePath}/content/search`),
   TRASH: scoped(`${consolePath}/content/trash`),
+  FILES: scoped(`${consolePath}/content/files`),
   PREVIEW: scoped(`${consolePath}/preview`),
   ADMIN_ROOT: scoped(`${consolePath}/admin`),
   ADMIN_USERS: scoped(`${consolePath}/admin/users`),

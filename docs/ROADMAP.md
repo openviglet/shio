@@ -66,14 +66,9 @@
 > templates. The new console is `shio-react`. → §V
 
 - ⏳ **SH19** (deps: —) **Finish AngularJS → React console migration** — continue moving console pages to `shio-react` (see [project memory]); the migration is the precondition for deleting `resources/ui/`. The remaining legacy-only surface (the `config/` section + static files + legacy commerce widgets) is decomposed into SH56–SH61 below so each ships independently. → §V.1
-  - ✅ **SH56–SH58** — shipped → [CHANGELOG.md](CHANGELOG.md) Block E (Auth + Exchange Providers + Email/SMTP console pages).
-  - 💭 **SH59** (deps: SH19, SH52) **Search config console page** — migrate legacy `config/search`; depends on the content full-text search backend (SH52) since there is no v2 search-config endpoint today. → §V.1
-  - ✅ **SH60** — **deprecated, not ported** → see [CHANGELOG.md](CHANGELOG.md) Block E. `payment`/`recaptcha` widgets are non-goals in a headless-first product; the `payment` UI retires with `resources/ui/` (SH21), the orphaned `reCAPTCHA` backend seed was removed now.
-  - 💭 **SH61** (deps: SH19, SH38) **Static-file manager console page** — migrate legacy `staticFile` upload/select screens; the upload/serve subsystem (SH38) now ships, so this is unblocked (the `File` widget already uploads via `POST /v2/staticfile/upload`; this adds a dedicated browse/manage page). → §V.1
+  - ✅ **SH56–SH61** — all shipped/decided → [CHANGELOG.md](CHANGELOG.md) Block E (Auth + Exchange Providers + Email/SMTP pages; SH59 = searchable-post-types in the site editor; SH60 = `payment`/`recaptcha` deprecated, not ported; SH61 = static-file manager page over the SH38 subsystem). SH19's `config/` + static-file decomposition is fully addressed; SH19 stays ⏳ only until the legacy tree itself is deleted (SH20/SH21).
 - 💭 **SH20** (deps: SH19, SH8) **Deprecate Thymeleaf site rendering** — once Block B is the documented delivery path (or SH18 ships), mark server-side Thymeleaf site templates `@Deprecated`, then delete. → §V.2
 - 💭 **SH21** (deps: SH19) **Delete `resources/ui/` (AngularJS)** — terminal step after SH19; reclaim the legacy frontend tree. → §V.3
-- 💭 **SH49** (deps: SH19) **Console dashboard / home** — replace the placeholder `home.page.tsx` ("Welcome…") with content stats + quick actions, consuming the already-built-but-unused `system-info.service.ts`. → §V.5
-- 💭 **SH50** (deps: SH19) **Complete console i18n coverage** — replace hardcoded English (`site.list`, `object.children`, `post-type.edit`: "New", "Delete", "Find a site…", "Tasks"…) with i18n keys in both `en` + `pt`. → §V.6
 
 ## Block F — Market positioning / bold bets
 

@@ -10,8 +10,12 @@ package com.viglet.shio.api.staticfile;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.beans.factory.ObjectProvider;
@@ -133,6 +137,50 @@ public class ShStaticFileService {
                                 && ShSystemPostType.FILE.equals(p.getShPostType().getName())
                                 && name.equals(p.getTitle())))
                 .orElse(false);
+    }
+
+    /**
+     * List every published {@code File} post in the active tenant as a flat
+     * {@link ShStaticFileItem} view (newest first) for the SH61 file-manager
+     * console page. Reads each file's on-disk size + content type; a file whose
+     * bytes are missing is reported with {@code size = -1}.
+     */
+    @Transactional(readOnly = true)
+    public List<ShStaticFileItem> listFiles() {
+        ShPostType fileType = shPostTypeRepository.findByName(ShSystemPostType.FILE);
+        if (fileType == null) {
+            return List.of(); // no File post type yet => nothing uploaded
+        }
+        return shPostUnifiedRepository
+                .findByShPostType_IdAndState(fileType.getId(), ShPostState.PUBLISHED)
+                .stream()
+                .map(this::toItem)
+                .sorted(Comparator.comparing(ShStaticFileItem::date,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    private ShStaticFileItem toItem(ShPostUnified post) {
+        String fileName = fileNameOf(post);
+        long size = -1;
+        String contentType = null;
+        if (fileName != null) {
+            Path path = storage.resolve(post.getId(), fileName);
+            if (Files.isRegularFile(path)) {
+                contentType = storage.probeContentType(path);
+                try {
+                    size = Files.size(path);
+                } catch (IOException e) {
+                    log.debug("Could not stat file {} for post {}", fileName, post.getId(), e);
+                }
+            }
+        }
+        return new ShStaticFileItem(
+                post.getId(), fileName, contentType, size, post.getOwner(), post.getDate(),
+                post.getShFolder() != null ? post.getShFolder().getId() : null,
+                post.getShFolder() != null ? post.getShFolder().getName() : null,
+                post.getShSite() != null ? post.getShSite().getId() : null,
+                post.getShSite() != null ? post.getShSite().getName() : null);
     }
 
     /** The original file name stored on a {@code File} post's {@code data.FILE}. */

@@ -140,6 +140,16 @@ class ShStaticFileAPITest {
     }
 
     @Test
+    void stage01bListReturnsUploadedFile() throws Exception {
+        // SH61: the file-manager listing endpoint returns the uploaded File post,
+        // carrying its file name, size and content type.
+        mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.fileName == 'hello.txt')]").exists())
+                .andExpect(jsonPath("$[?(@.fileName == 'hello.txt')].size").exists());
+    }
+
+    @Test
     void stage02ServeReturnsBytes() throws Exception {
         mockMvc.perform(get("/api/v2/staticfile/" + uploadedPostId).principal(mockPrincipal))
                 .andExpect(status().isOk())

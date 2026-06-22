@@ -320,16 +320,9 @@ Continue migrating console pages to `shio-react` (Vite + shadcn/ui + TS), follow
 the Turing-React patterns documented in `agents.md`. This is the precondition for
 deleting the legacy tree. See project memory `project_shio_react_migration.md`.
 
-The legacy-only console surface that still blocks SH21 is decomposed so each piece
-ships on its own:
-
-> SH56 (Auth Providers), SH57 (Exchange Providers) and SH58 (Email/SMTP config)
-> shipped → see [CHANGELOG.md](CHANGELOG.md) Block E.
-
-- **SH59 — Search config page** (deps SH52). Migrate `config/search`; depends on the
-  content full-text search backend.
-- **SH61 — Static-file manager page** (deps SH38). Migrate `staticFile`; blocked on
-  the upload/serve subsystem the current backend lacks.
+The legacy-only console surface is fully decomposed and shipped/decided
+(SH56–SH61) → see [CHANGELOG.md](CHANGELOG.md) Block E. What still blocks SH21 is
+the Thymeleaf deprecation (SH20) and the tree deletion itself.
 
 ### V.2 Deprecate Thymeleaf site rendering (SH20)
 
@@ -344,21 +337,6 @@ Terminal step after SH19 — reclaim the AngularJS frontend tree.
 > The next three are **console-completion gaps** surfaced by an audit of
 > `shio-react`: backend (or service) exists, the console surface doesn't. They
 > belong to the same "reach React-console parity" effort as SH19.
-
-### V.5 Console dashboard / home (SH49)
-
-`home.page.tsx` is a placeholder ("Welcome to Viglet Shio CMS"). Meanwhile
-`system-info.service.ts` is built but **consumed by no page**. Turn the home route
-into a real dashboard (content counts, recent activity once SH51 lands, quick
-actions) using that service.
-
-### V.6 Complete console i18n coverage (SH50)
-
-The i18n framework (en/pt) exists, but several pages bypass it with hardcoded
-English — `site.list.page.tsx` ("Tasks", "New", "Find a site…", action labels),
-`object.children.page.tsx` ("New Folder", "Delete", "Filter items…"), and
-placeholders in `post-type.edit.page.tsx`. Move them to keys in both locales
-(per agents.md: always add `en` + `pt` together).
 
 ---
 

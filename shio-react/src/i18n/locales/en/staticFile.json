@@ -1,0 +1,14 @@
+{
+  "staticFile": {
+    "title": "Files",
+    "description": "Browse, upload, download, and delete the static files (images, documents) stored across your sites.",
+    "blankTitle": "No files yet",
+    "blankDescription": "Upload a file, or add one through a File field on a post.",
+    "upload": "Upload",
+    "uploadTarget": "Site",
+    "pickSiteFirst": "Pick a site to upload into first.",
+    "fileName": "File name",
+    "type": "Type",
+    "size": "Size"
+  }
+}
