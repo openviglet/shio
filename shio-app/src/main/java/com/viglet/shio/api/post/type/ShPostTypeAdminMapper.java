@@ -46,6 +46,7 @@ public class ShPostTypeAdminMapper {
                 postType.getDescription(),
                 postType.getWorkflowPublishEntity(),
                 postType.getSystem() == 1,
+                postType.isManaged(),
                 attrDefs(postType.getShPostTypeAttrs(), true));
     }
 

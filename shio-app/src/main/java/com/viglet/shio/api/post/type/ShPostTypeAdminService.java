@@ -89,6 +89,9 @@ public class ShPostTypeAdminService {
         postType.setNamePlural(def.namePlural());
         postType.setDescription(def.description());
         postType.setWorkflowPublishEntity(def.workflowPublishEntity());
+        // SH66: every admin-API upsert originates from the CLI `push`, so the type
+        // is owned by code — mark it managed (the console then renders it read-only).
+        postType.setManaged(true);
 
         if (existing != null) {
             // Detach cascade-bearing associations so the orphan removal below
@@ -121,6 +124,7 @@ public class ShPostTypeAdminService {
         }
         ShPostType postType = newPostType(def.name());
         postType.setSystem((byte) (def.system() ? 1 : 0));
+        postType.setManaged(def.managed());
         postType.setTitle(def.title());
         postType.setNamePlural(def.namePlural());
         postType.setDescription(def.description());

@@ -50,6 +50,15 @@ public class ShPostType extends ShObject {
     private String title;
     private byte system;
 
+    /**
+     * SH66 — "managed by code" lock. Set true by the SH16 admin-API {@code upsert}
+     * (the {@code shio} CLI {@code push} path), false for GUI-created/console types.
+     * When true the React console renders the post-type read-only so the DSL↔GUI
+     * boundary is explicit instead of a silent last-writer-wins race. Distinct from
+     * {@link #system} (backend-owned platform types).
+     */
+    private boolean managed;
+
     @OneToMany(mappedBy = "shPostType", orphanRemoval = true, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JsonView({ShJsonView.ShJsonViewPostType.class})

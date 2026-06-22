@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 
 import com.viglet.shio.exchange.model.ShExchangePackage;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationFeature;
 
@@ -60,6 +61,11 @@ public class ShExchangePackageCodec {
 
     private final ObjectMapper mapper = new ObjectMapper().rebuild()
             .configure(SerializationFeature.INDENT_OUTPUT, true)
+            // Forward/backward-tolerant: a manifest written before a primitive field
+            // existed (e.g. ShPostTypeDef.managed, SH66) omits it. Jackson 3 defaults
+            // FAIL_ON_NULL_FOR_PRIMITIVES to true, which would reject such an absent
+            // primitive — let it fall back to the type default (false/0) instead.
+            .configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false)
             .build();
 
     // ------------------------------------------------------------------

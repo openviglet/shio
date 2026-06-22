@@ -5,6 +5,7 @@ export type ShPostType = {
   title: string;
   description: string;
   system: number;
+  managed?: boolean;
   date: string;
   owner: string;
   workflowPublishEntity?: string;

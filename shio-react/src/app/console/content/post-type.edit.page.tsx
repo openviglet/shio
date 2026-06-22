@@ -20,6 +20,7 @@ import {
   GripVertical,
   Info,
   Layers,
+  Lock,
   Plus,
   Save,
   Settings2,
@@ -772,6 +773,7 @@ export default function PostTypeEditPage() {
   }
 
   const title = form.watch("title")
+  const managed = Boolean(form.watch("managed"))
 
   return (
     <>
@@ -781,10 +783,25 @@ export default function PostTypeEditPage() {
           title={t("content.modelPostType", { title: title ?? "" })}
           actions={
             <>
+              {managed && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className="gap-1.5 border-violet-300 text-violet-600 dark:border-violet-700 dark:text-violet-400"
+                    >
+                      <Lock className="size-3.5" />
+                      {t("content.managedByCode")}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>{t("content.managedByCodeHint")}</TooltipContent>
+                </Tooltip>
+              )}
               <GradientButton
                 type="button"
                 size="sm"
                 loading={isLoading}
+                disabled={managed}
                 onClick={form.handleSubmit(onSubmit)}
               >
                 <Save className="size-4" />
@@ -794,7 +811,7 @@ export default function PostTypeEditPage() {
                 type="button"
                 size="sm"
                 variant="outline"
-                disabled={isLoading}
+                disabled={isLoading || managed}
                 onClick={form.handleSubmit(onSubmitAndClose)}
               >
                 {t("content.saveAndClose")}
@@ -806,6 +823,19 @@ export default function PostTypeEditPage() {
           }
         />
 
+        {managed && (
+          <div className="flex items-start gap-3 rounded-lg border border-violet-200 bg-violet-50 p-4 text-sm dark:border-violet-900 dark:bg-violet-950/30">
+            <Lock className="mt-0.5 size-4 shrink-0 text-violet-600 dark:text-violet-400" />
+            <div className="space-y-1">
+              <p className="font-medium text-violet-800 dark:text-violet-300">{t("content.managedByCode")}</p>
+              <p className="text-violet-700/80 dark:text-violet-400/80">{t("content.managedByCodeDescription")}</p>
+            </div>
+          </div>
+        )}
+
+        {/* When managed by code, the native `disabled` fieldset cascades to every
+            nested control (inputs, switches, dnd handles), making the model read-only. */}
+        <fieldset disabled={managed} className="m-0 min-w-0 space-y-6 border-0 p-0 disabled:opacity-70">
         {/* Post Type details + Workflow tabs */}
         <Card>
           <Tabs defaultValue="details">
@@ -914,6 +944,7 @@ export default function PostTypeEditPage() {
             />
           </CardContent>
         </Card>
+        </fieldset>
       </div>
     </>
   )

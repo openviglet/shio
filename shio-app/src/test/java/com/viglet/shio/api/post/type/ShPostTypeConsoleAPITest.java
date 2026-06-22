@@ -39,6 +39,7 @@ import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.model.widget.ShWidget;
 import com.viglet.shio.persistence.repository.widget.ShWidgetRepository;
@@ -219,6 +220,35 @@ class ShPostTypeConsoleAPITest {
                 .andExpect(status().isNoContent());
         mockMvc.perform(get("/api/v2/post/type/" + disposableId).principal(mockPrincipal))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void stage08ManagedTypeIsReadOnlyInConsole() throws Exception {
+        // SH66: a code-owned (managed) type is locked in the console — GET exposes
+        // the flag (so the editor can render read-only) and PUT is rejected (409).
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        String managedId = tx.execute(status -> {
+            ShPostType pt = new ShPostType();
+            pt.setName("PT-MANAGED-" + UUID.randomUUID());
+            pt.setTitle("Code Owned");
+            pt.setManaged(true);
+            pt.setSystem((byte) 0);
+            pt.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            pt.setOwner("admin");
+            entityManager.persist(pt);
+            return pt.getId();
+        });
+
+        mockMvc.perform(get("/api/v2/post/type/" + managedId).principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.managed").value(true));
+
+        mockMvc.perform(put("/api/v2/post/type/" + managedId)
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(postTypePayload("hacked", "Hacked"))))
+                .andExpect(status().isConflict());
     }
 
     private String createPost(String folderId, String typeId, String title) {

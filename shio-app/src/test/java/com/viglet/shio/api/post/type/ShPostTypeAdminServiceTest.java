@@ -66,7 +66,7 @@ class ShPostTypeAdminServiceTest {
         String name = "PT-ADMIN-" + UUID.randomUUID();
 
         ShPostTypeDef created = service.upsert(name, new ShPostTypeDef(
-                name, "Admin Test", "Admin Tests", "round-trip", "EntityWorkflow", false,
+                name, "Admin Test", "Admin Tests", "round-trip", "EntityWorkflow", false, false,
                 List.of(
                         field("title", "Text", 0, true, null, List.of()),
                         field("tags", "Multi Select", 1, false, "{\"choices\":\"a:A\"}", List.of()),
@@ -94,13 +94,13 @@ class ShPostTypeAdminServiceTest {
     @Test
     void upsertUpdateReplacesFieldsAndPreservesSharedWidget() {
         String name = "PT-UPD-" + UUID.randomUUID();
-        service.upsert(name, new ShPostTypeDef(name, "v1", "v1s", null, null, false,
+        service.upsert(name, new ShPostTypeDef(name, "v1", "v1s", null, null, false, false,
                 List.of(field("a", "Text", 0, true, null, List.of()),
                         field("b", "Text", 1, false, null, List.of()))));
 
         // Update: drop "b". orphanRemoval deletes its attr — but must NOT cascade
         // a REMOVE into the shared "Text" widget catalog row.
-        ShPostTypeDef updated = service.upsert(name, new ShPostTypeDef(name, "v2", "v2s", null, null, false,
+        ShPostTypeDef updated = service.upsert(name, new ShPostTypeDef(name, "v2", "v2s", null, null, false, false,
                 List.of(field("a", "Text", 0, true, null, List.of()))));
 
         assertThat(updated.title()).isEqualTo("v2");
@@ -114,9 +114,26 @@ class ShPostTypeAdminServiceTest {
     }
 
     @Test
+    void upsertMarksTypeManagedAndPullReportsIt() {
+        String name = "PT-MNG-" + UUID.randomUUID();
+
+        // SH66: an admin-API upsert originates from `shio push`, so it owns the type.
+        // The flag is set server-side regardless of the (false) value sent on the def.
+        ShPostTypeDef created = service.upsert(name, new ShPostTypeDef(
+                name, "Managed", "Managed", null, null, false, false,
+                List.of(field("title", "Text", 0, true, null, List.of()))));
+        assertThat(created.managed()).as("upsert must mark the type managed").isTrue();
+
+        // ...and it is delivered on the next pull so the console can lock it.
+        assertThat(service.get(name).orElseThrow().managed()).isTrue();
+        // managed is orthogonal to system — this is a custom type.
+        assertThat(created.system()).isFalse();
+    }
+
+    @Test
     void upsertRejectsUnknownWidget() {
         String name = "PT-BADW-" + UUID.randomUUID();
-        ShPostTypeDef def = new ShPostTypeDef(name, "x", "xs", null, null, false,
+        ShPostTypeDef def = new ShPostTypeDef(name, "x", "xs", null, null, false, false,
                 List.of(field("f", "No Such Widget", 0, false, null, List.of())));
         assertThatExceptionOfType(ShUnknownWidgetException.class)
                 .isThrownBy(() -> service.upsert(name, def));
@@ -136,7 +153,7 @@ class ShPostTypeAdminServiceTest {
             entityManager.persist(pt);
         });
 
-        ShPostTypeDef def = new ShPostTypeDef(name, "hacked", null, null, null, false, List.of());
+        ShPostTypeDef def = new ShPostTypeDef(name, "hacked", null, null, null, false, false, List.of());
         assertThatExceptionOfType(ShSystemPostTypeException.class)
                 .isThrownBy(() -> service.upsert(name, def));
         assertThatExceptionOfType(ShSystemPostTypeException.class).isThrownBy(() -> service.delete(name));
@@ -145,7 +162,7 @@ class ShPostTypeAdminServiceTest {
     @Test
     void deleteRemovesNonSystemType() {
         String name = "PT-DEL-" + UUID.randomUUID();
-        service.upsert(name, new ShPostTypeDef(name, "doomed", null, null, null, false,
+        service.upsert(name, new ShPostTypeDef(name, "doomed", null, null, null, false, false,
                 List.of(field("a", "Text", 0, true, null, List.of()))));
 
         assertThat(service.delete(name)).isTrue();

@@ -70,7 +70,7 @@ class ShTenantProvisioningIT {
     void provisionsDefaultModelIntoNewTenantAndIsolatesIt() {
         // Seed a post-type in the default tenant (the provisioning source).
         ShPostTypeDef article = new ShPostTypeDef(
-                "ArticleProv", "Article", "Articles", "An article", null, false, List.of());
+                "ArticleProv", "Article", "Articles", "An article", null, false, false, List.of());
         asTenant("shio", () -> adminService.provisionFromDef(article));
 
         // Provision a brand-new tenant -> the post-type is copied in.

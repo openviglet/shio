@@ -1,0 +1,31 @@
+databaseChangeLog:
+  # SH66 — "managed by code" lock. Adds the `managed` flag to ShPostType: set true
+  # by the SH16 admin-API upsert (the `shio` CLI `push` path), so the React console
+  # renders code-owned post-types read-only instead of racing the DSL. Nullable on
+  # add + backfilled to false. Type kept DB-agnostic (lowercase `boolean`) per
+  # ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on PostgreSQL
+  # (re-declared per file). Table is the PascalCase entity name `ShPostType`.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh66-posttype-managed
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShPostType
+                columnName: managed
+      changes:
+        - addColumn:
+            tableName: ShPostType
+            columns:
+              - column:
+                  name: managed
+                  type: boolean
+        - update:
+            tableName: ShPostType
+            columns:
+              - column:
+                  name: managed
+                  valueBoolean: false
+            where: managed IS NULL

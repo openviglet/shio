@@ -104,6 +104,11 @@ public class ShPostTypeConsoleWriteService {
             if (postType.getSystem() == 1) {
                 throw new ShSystemPostTypeException(postType.getName());
             }
+            // SH66: code-owned types are read-only in the console — the editor disables
+            // save, this is the server-side backstop against a silent GUI overwrite.
+            if (postType.isManaged()) {
+                throw new ShManagedPostTypeException(postType.getName());
+            }
             if (payload.getName() != null && !payload.getName().isBlank()) {
                 postType.setName(payload.getName());
             }

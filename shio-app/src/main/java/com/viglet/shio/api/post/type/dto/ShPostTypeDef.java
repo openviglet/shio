@@ -21,6 +21,13 @@ import java.util.List;
  * service refuses to create or overwrite a system post-type regardless of the
  * value sent.</p>
  *
+ * <p>The {@code managed} flag (SH66) is likewise <em>delivered</em> (so operators
+ * and the console can see which types are owned by code) but not <em>authored</em>:
+ * {@code upsert} always sets it true (every admin-API write originates from the
+ * CLI {@code push}), regardless of the value sent. It is deliberately excluded
+ * from the CLI's canonical serialization, so a hand-written {@code *.json} that
+ * omits it never shows as drift.</p>
+ *
  * @author Alexandre Oliveira
  * @since 2026.2
  */
@@ -31,5 +38,6 @@ public record ShPostTypeDef(
         String description,
         String workflowPublishEntity,
         boolean system,
+        boolean managed,
         List<ShPostTypeAttrDef> fields) {
 }

@@ -59,7 +59,7 @@ class ShExchangePackageCodecTest {
                 List.of(new ShExchangeSite("site-1", "Sample", "desc", "http://example.test",
                         "sample", "{\"News\":\"layout\"}", "News", null, "admin",
                         List.of("folder-root"))),
-                List.of(new ShPostTypeDef("News", "News", "News", "the news", null, false,
+                List.of(new ShPostTypeDef("News", "News", "News", "the news", null, false, false,
                         List.of(new ShPostTypeAttrDef("title", "Title", null, "Text",
                                 true, true, false, 0, null, List.of())))),
                 List.of(new ShExchangeFolder("folder-root", "Sample", "/", true, "site-1", null, 0, "admin"),

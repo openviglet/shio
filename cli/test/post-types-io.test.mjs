@@ -58,6 +58,18 @@ test("diffDefs classifies added / changed / unchanged / removed", () => {
   assert.deepEqual(d.removed, ["Legacy"]);
 });
 
+test("managed flag (SH66) is server-only and never registers as drift", () => {
+  // The server stamps `managed: true` on code-owned types; a hand-authored local
+  // def omits it. normalizeDef excludes the field, so the two stay equal.
+  const remote = { ...news, managed: true };
+  assert.equal(serializeDef(news), serializeDef(remote));
+  assert.equal(normalizeDef(remote).managed, undefined);
+
+  const d = diffDefs([news], [remote]);
+  assert.deepEqual(d.unchanged, ["News"]);
+  assert.deepEqual(d.changed, []);
+});
+
 test("planPush PUTs added+changed and only prunes non-system removals", () => {
   const local = [news];
   const remote = [

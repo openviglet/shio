@@ -214,48 +214,7 @@ front. Wired into `create-shio-app` (`npm run shio:types`). Detail in
 The schema is also what the §II.2 `ShioField` follow-up needs to resolve widgets
 by their real type instead of heuristically.
 
-### II.7 Post-types as typed TS code (SH62)
-
-**The idea.** SH16 already round-trips the content model as code — `pull` writes
-`shio/post-types/*.json`, `push` applies it back. But hand-editing that JSON is
-blind: a wrong widget name or a malformed `widgetSettings` only fails at `push`
-time with a 400. A **typed TypeScript DSL** fixes this at the source — the
-developer writes `postType("News", { fields: [ text("title", { isTitle: true }),
-comboBox("category", { choices: { tech: "Tech" } }) ] })` and the `tsserver`
-already running in their editor gives autocomplete, refactor/rename, and
-compile-time validation **with no custom VSCode extension to build or maintain**.
-It is the authoring inverse of SH11: SH11 turns the live model *into* types for
-**consuming** content; SH62 turns typed code *into* the model for **authoring** it.
-
-**The middle path (why not "DSL as the only source of truth").** Making the DSL
-the sole source of truth breaks down against two facts of this codebase: the
-React console has a first-class post-type **GUI editor** (a second legitimate
-writer), and `pull` can't losslessly regenerate hand-written DSL (comments,
-loops, shared field helpers) from flattened JSON. So the DSL is a **layer**, not
-a replacement:
-
-- **JSON stays the canonical interchange/push format.** The DSL *compiles to* the
-  same normalized `ShPostTypeDef` JSON that SH16 already defines (reusing
-  `normalizeDef`/`serializeDef` in `post-types-io.mjs`), and the admin API
-  (`PUT /api/v2/post-type/{name}`) is untouched. The DSL is the source, the JSON
-  is the build output, the wire format is unchanged.
-- **The DSL owns only the custom subset.** System post-types are backend-owned
-  (`push` already refuses them — 409); the DSL never claims them.
-- **Two guards keep it single-sourced** instead of split-brained: a CI **drift
-  check** (`shio push --check` — compile, diff, fail on divergence, so a pipeline
-  can assert git == server) and a console **"managed by code" lock** (a `managed`
-  flag + a read-only badge in the GUI editor, so a content author *sees* a
-  code-owned model but can't silently overwrite it).
-
-**Shape.** A pure, dependency-free package (`@viglet/shio-model`, sibling to the
-equally-pure `generateShioTypes` in `@viglet/shio-client`): one factory per the
-14 widgets, with `widgetSettings` typed as **per-widget discriminated unions** so
-the editor enforces the right settings shape per widget (e.g. `choices` as an
-object instead of the backend's `"id:label\nid2:label2"` string, typed
-File/ContentSelect/MultiSelect/Relator/Search settings). The `cli` recognizes
-`*.ts`/`*.mjs` sources in `shio/post-types/` and compiles them before the diff.
-Tasks: **SH63** (DSL core) → **SH64** (CLI compile step) → **SH65** (CI drift
-guard) → **SH66** (console managed-by-code lock).
+> ✅ **II.7 Post-types as typed TS code (SH62, tasks SH63–SH66) — shipped.** See [CHANGELOG.md](CHANGELOG.md) Block B and spec [specs/SH62-post-types-dsl.md](specs/SH62-post-types-dsl.md).
 
 ---
 
