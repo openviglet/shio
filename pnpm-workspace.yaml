@@ -7,3 +7,14 @@ packages:
   - "cli"
   - "shio-react"
   - "shio-examples/*"
+
+# pnpm 11 no longer reads the "pnpm" field in package.json — native build
+# scripts must be allowlisted here instead (was package.json > pnpm.onlyBuiltDependencies).
+onlyBuiltDependencies:
+  - esbuild
+  - "@tailwindcss/oxide"
+
+# pnpm 11 prompts before purging a node_modules created by an older pnpm layout.
+# The frontend-maven-plugin and CI run pnpm with no TTY, where that prompt aborts
+# the install (ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY) — let it purge silently.
+confirmModulesPurge: false

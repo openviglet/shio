@@ -26,7 +26,8 @@
     "gitops"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=26",
+    "npm": ">=11"
   },
   "author": "Viglet Team",
   "license": "GPL-3.0"

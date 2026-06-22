@@ -4,9 +4,11 @@
   "version": "2026.3.1",
   "description": "Shio CMS JavaScript workspace — console (shio-react), CDA client, React SDK, Universal Editor bridge, the Next.js starter generator and the example sites.",
   "type": "module",
-  "packageManager": "pnpm@10.13.1",
+  "packageManager": "pnpm@11.8.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=26",
+    "pnpm": ">=11",
+    "npm": ">=11"
   },
   "scripts": {
     "build:client": "pnpm --filter @viglet/shio-client run build",
@@ -23,12 +25,6 @@
   },
   "devDependencies": {
     "rimraf": "^6.0.1"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "@tailwindcss/oxide"
-    ]
   },
   "license": "GPL-3.0"
 }

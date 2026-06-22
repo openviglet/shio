@@ -506,8 +506,8 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <nodeVersion>v24.12.0</nodeVersion>
-                    <pnpmVersion>10.13.1</pnpmVersion>
+                    <nodeVersion>v26.3.1</nodeVersion>
+                    <pnpmVersion>11.8.0</pnpmVersion>
                 </configuration>
             </plugin>
             <plugin>

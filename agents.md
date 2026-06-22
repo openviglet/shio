@@ -485,13 +485,14 @@ The JS packages live in a **pnpm workspace** (`pnpm-workspace.yaml` + root
 `shio-react-sdk` (React SDK, depends on the core via `workspace:*`),
 `create-shio-app` (Next.js starter), and `cli` (`@viglet/shio`, the `shio`
 command — SH16). Run `pnpm install` once at the repo root.
-Native build scripts are allowlisted via `pnpm.onlyBuiltDependencies`
-(`esbuild`, `@tailwindcss/oxide`). `@viglet/viglet-design-system` resolves from
-public npmjs (no scope mapping needed).
+Native build scripts are allowlisted via `onlyBuiltDependencies` in
+`pnpm-workspace.yaml` (`esbuild`, `@tailwindcss/oxide`) — pnpm 11 no longer reads
+the `pnpm` field in `package.json`, so this setting lives in the workspace file.
+`@viglet/viglet-design-system` resolves from public npmjs (no scope mapping needed).
 
 ### Maven Integration
 `frontend-maven-plugin` (2.0.0) in `shio-app/pom.xml` runs, all from `../shio-react`:
-1. `install-node-and-pnpm` (Node + pnpm `10.13.1`)
+1. `install-node-and-pnpm` (Node `v26.3.1` + pnpm `11.8.0`)
 2. `pnpm install` — pnpm finds the workspace root (`../`) and installs all members
 3. `pnpm run compile:build` (`tsc -b` + `vite build`)
 

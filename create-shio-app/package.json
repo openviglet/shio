@@ -27,7 +27,8 @@
     "scaffold"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=26",
+    "npm": ">=11"
   },
   "author": "Viglet Team",
   "license": "GPL-3.0"
