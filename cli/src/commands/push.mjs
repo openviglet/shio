@@ -6,8 +6,10 @@
  * `shio push` — apply local post-type defs back to Shio. Computes a diff against
  * the live model, then PUTs added/changed types (and, with `--prune`, DELETEs
  * remote types absent locally — never a system type). `--dry-run` prints the
- * plan without writing. Local sources may be `*.json` or `*.ts`/`*.mjs` DSL
- * modules (SH64) — both are compiled to canonical defs before the diff.
+ * plan without writing. `--check` (SH65) is the CI drift guard: same compile +
+ * diff, writes nothing, but exits non-zero when the plan is non-empty so a
+ * pipeline can assert "git == server". Local sources may be `*.json` or
+ * `*.ts`/`*.mjs` DSL modules (SH64) — both are compiled to canonical defs first.
  */
 import { ShioAdminClient } from "../admin-client.mjs";
 import { resolveAdmin } from "../context.mjs";
@@ -19,6 +21,7 @@ export async function run(flags, _positionals, ctx) {
   const dir = flags.dir ?? "shio/post-types";
   const dryRun = Boolean(flags.dryRun);
   const prune = Boolean(flags.prune);
+  const check = Boolean(flags.check);
 
   const client = new ShioAdminClient({ baseUrl, user, password, fetch: ctx.fetch });
   const localDefs = await readLocalDefs(ctx, dir);
@@ -36,6 +39,19 @@ export async function run(flags, _positionals, ctx) {
   for (const name of toDelete) ctx.stdout.write(`  - ${name}\n`);
   if (prune && removed.length > toDelete.length) {
     ctx.stdout.write(`  (skipped ${removed.length - toDelete.length} system type(s) — read-only)\n`);
+  }
+
+  if (check) {
+    const drift = toPut.length + toDelete.length;
+    if (drift === 0) {
+      ctx.stdout.write("shio push --check: in sync — git matches server.\n");
+      return { toPut, toDelete, check: true, drift: false, exitCode: 0 };
+    }
+    const deletePart = prune ? `, ${toDelete.length} to delete` : "";
+    ctx.stdout.write(
+      `shio push --check: drift detected — ${toPut.length} to upsert${deletePart} (no changes applied).\n`
+    );
+    return { toPut, toDelete, check: true, drift: true, exitCode: 1 };
   }
 
   if (dryRun) {

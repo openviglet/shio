@@ -41,8 +41,7 @@
 > ✅ **Foundation shipped (SH6–SH11)** → see [CHANGELOG.md](CHANGELOG.md) Block B.
 
 **SH62 — Post-types as typed TS code** (epic; a typed TypeScript DSL for the content model that **compiles to the canonical SH16 post-type JSON** — the authoring inverse of SH11's model→types codegen. The middle path: **JSON stays the interchange/push format** the admin API consumes, the DSL is an *optional* authoring layer on top of it, and two guards — a CI drift check + a console "managed by code" lock — keep the model single-sourced instead of split-brained between the DSL and the GUI editor) → §II.7 · spec: [specs/SH62-post-types-dsl.md](specs/SH62-post-types-dsl.md):
-> ✅ **SH63–SH64 shipped** — DSL core (`@viglet/shio-model`) + CLI compile step (`shio push`/`build` compile `*.ts`/`*.mjs` DSL sources to canonical JSON) → see [CHANGELOG.md](CHANGELOG.md) Block B.
-- 💭 **SH65** (deps: SH64) **Drift guard for CI** — `shio push --check`: compile the DSL, diff against the live model, exit non-zero on drift (no writes). Lets a pipeline assert "git == server" so code stays the source of truth; complements the existing `--dry-run`/`--prune`. → §II.7
+> ✅ **SH63–SH65 shipped** — DSL core (`@viglet/shio-model`) + CLI compile step (`shio push`/`build` compile `*.ts`/`*.mjs` DSL sources to canonical JSON) + CI drift guard (`shio push --check`, exits non-zero on drift) → see [CHANGELOG.md](CHANGELOG.md) Block B.
 - 💭 **SH66** (deps: SH63) **Console "managed by code" lock** — a `managed` flag set on `push` + a read-only badge/lock in the React post-type editor for code-owned types, resolving the DSL↔GUI split-brain explicitly (the GUI shows but won't silently overwrite a code-owned model). System types stay backend-owned; the DSL owns only the custom subset. → §II.7
 
 ## Block C — Composable platform primitives

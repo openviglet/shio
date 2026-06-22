@@ -23,7 +23,7 @@ import { argv, exit } from "node:process";
 import { parseArgs } from "./args.mjs";
 import { defaultContext } from "./context.mjs";
 
-const BOOLEANS = ["help", "yes", "dry-run", "prune", "skip-types"];
+const BOOLEANS = ["help", "yes", "dry-run", "prune", "check", "skip-types"];
 
 const COMMANDS = {
   init: () => import("./commands/init.mjs"),
@@ -63,6 +63,7 @@ Common options:
   --dir <dir>          Post-types directory   (default shio/post-types) [pull/push/build]
   --out <file>         Output path            (.d.ts for types; dir for pull/build, default shio/.out)
   --dry-run            push: print the plan, change nothing
+  --check              push: drift guard — exit non-zero if the plan is non-empty (no writes; CI)
   --prune              push: delete remote types absent locally (never system types)
   -h, --help           Show help
 `;
@@ -88,7 +89,11 @@ async function main() {
   }
 
   const mod = await loader();
-  await mod.run(flags, positionals, defaultContext());
+  const result = await mod.run(flags, positionals, defaultContext());
+  // Commands may request a non-zero exit (e.g. `push --check` drift guard, SH65).
+  if (result && typeof result.exitCode === "number" && result.exitCode !== 0) {
+    exit(result.exitCode);
+  }
 }
 
 main().catch((err) => {

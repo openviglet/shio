@@ -110,6 +110,58 @@ test("push --dry-run reports the plan and writes nothing remotely", async () => 
   assert.equal(fetchFn.calls.filter((c) => c.method === "PUT").length, 0);
 });
 
+test("push --check exits non-zero on drift and writes nothing", async () => {
+  const local = JSON.stringify({ name: "News", title: "News", fields: [] });
+  const fs = memFs({ "/proj/shio/post-types/News.json": local });
+  const fetchFn = fetchScript((url, method) => (method === "GET" ? { body: [] } : { body: { name: "News" } }));
+  const stdout = sink();
+  const ctx = { env: {}, cwd: "/proj", stdout, stderr: sink(), fetch: fetchFn, fs };
+
+  const result = await push.run({ check: true, user: "u", password: "p" }, [], ctx);
+
+  assert.equal(result.check, true);
+  assert.equal(result.drift, true);
+  assert.equal(result.exitCode, 1);
+  assert.match(stdout.text, /drift detected/);
+  // No writes: only the GET (remote fetch), no PUT/DELETE.
+  assert.equal(fetchFn.calls.filter((c) => c.method !== "GET").length, 0);
+});
+
+test("push --check exits zero when git matches server", async () => {
+  const local = JSON.stringify({ name: "News", title: "News", fields: [] });
+  const fs = memFs({ "/proj/shio/post-types/News.json": local });
+  // Remote returns the same def → unchanged, no drift.
+  const remote = { name: "News", title: "News", fields: [] };
+  const fetchFn = fetchScript((url, method) => (method === "GET" ? { body: [remote] } : { body: { name: "News" } }));
+  const stdout = sink();
+  const ctx = { env: {}, cwd: "/proj", stdout, stderr: sink(), fetch: fetchFn, fs };
+
+  const result = await push.run({ check: true, user: "u", password: "p" }, [], ctx);
+
+  assert.equal(result.drift, false);
+  assert.equal(result.exitCode, 0);
+  assert.match(stdout.text, /in sync/);
+  assert.equal(fetchFn.calls.filter((c) => c.method !== "GET").length, 0);
+});
+
+test("push --check --prune counts prunable deletes as drift (skips system types)", async () => {
+  const fs = memFs(); // no local defs
+  const remote = [
+    { name: "News", title: "News", fields: [] }, // not local → prunable delete
+    { name: "Folder", title: "Folder", system: true, fields: [] }, // system → never deleted
+  ];
+  const fetchFn = fetchScript((url, method) => (method === "GET" ? { body: remote } : { body: {} }));
+  const stdout = sink();
+  const ctx = { env: {}, cwd: "/proj", stdout, stderr: sink(), fetch: fetchFn, fs };
+
+  const result = await push.run({ check: true, prune: true, user: "u", password: "p" }, [], ctx);
+
+  assert.equal(result.drift, true);
+  assert.equal(result.exitCode, 1);
+  assert.deepEqual(result.toDelete, ["News"]); // system type excluded
+  assert.equal(fetchFn.calls.filter((c) => c.method !== "GET").length, 0);
+});
+
 test("push applies upserts (PUT) when not a dry run", async () => {
   const local = JSON.stringify({ name: "News", title: "News", fields: [] });
   const fs = memFs({ "/proj/shio/post-types/News.json": local });
