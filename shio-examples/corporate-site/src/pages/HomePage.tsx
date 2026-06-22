@@ -1,36 +1,51 @@
-import { useShioPost, useShioQuery } from "@viglet/shio-react-sdk"
+import {
+  useShioPost,
+  useShioQuery,
+  useShioSites,
+  type ShioPostSummary,
+} from "@viglet/shio-react-sdk"
 
-const SITE_NAME = "viglet_corporate"
+const SITE_NAME = "Viglet Corporate"
 const HOMEPAGE_ID = "d1e2f3a4-0001-4000-d000-000000000001"
 
 export function HomePage() {
-  const { post: page, loading: pageLoading } = useShioPost(HOMEPAGE_ID)
-  const { posts: services, loading: servicesLoading } = useShioQuery("Service", { siteName: SITE_NAME })
+  const { data: page, loading: pageLoading } = useShioPost(HOMEPAGE_ID)
+
+  // The CDA query filters by site id, not name — resolve it from the sites list.
+  const { data: sites } = useShioSites()
+  const siteId = sites?.find((s) => s.name === SITE_NAME)?.id
+  const { data: listing, loading: servicesLoading } = useShioQuery({
+    siteId,
+    postType: "Service",
+  })
 
   if (pageLoading) return <div className="loading">Loading...</div>
+
+  const attrs = (page?.attrs ?? {}) as Record<string, string>
+  const services = listing?.posts ?? []
 
   return (
     <>
       {/* Hero Section */}
       <section className="hero" id="home">
         <div className="hero-content">
-          <h1>{page?.attrs.TITLE || "Welcome to Viglet"}</h1>
-          <p className="subtitle">{page?.attrs.SUBTITLE || "Building the future of content management"}</p>
-          <a className="hero-cta" href={page?.attrs.CTA_URL as string || "/services"}>
-            {page?.attrs.CTA_TEXT || "Get Started"}
+          <h1>{attrs.TITLE || "Welcome to Viglet"}</h1>
+          <p className="subtitle">{attrs.SUBTITLE || "Building the future of content management"}</p>
+          <a className="hero-cta" href={attrs.CTA_URL || "/services"}>
+            {attrs.CTA_TEXT || "Get Started"}
           </a>
         </div>
-        {page?.attrs.HERO_IMAGE && (
+        {attrs.HERO_IMAGE && (
           <div className="hero-image">
-            <img src={page.attrs.HERO_IMAGE as string} alt="Hero" />
+            <img src={attrs.HERO_IMAGE} alt="Hero" />
           </div>
         )}
       </section>
 
       {/* Body Content */}
-      {page?.attrs.BODY && (
+      {attrs.BODY && (
         <section className="body-section">
-          <div dangerouslySetInnerHTML={{ __html: page.attrs.BODY as string }} />
+          <div dangerouslySetInnerHTML={{ __html: attrs.BODY }} />
         </section>
       )}
 
@@ -44,16 +59,27 @@ export function HomePage() {
           {servicesLoading ? (
             <div className="loading">Loading services...</div>
           ) : (
-            services.map((svc) => (
-              <div key={svc.id} className="service-card">
-                <div className="service-icon">{svc.attrs.ICON || "⚡"}</div>
-                <h3>{svc.attrs.TITLE || svc.title}</h3>
-                <p>{svc.attrs.DESCRIPTION || svc.summary}</p>
-              </div>
-            ))
+            services.map((svc) => <ServiceCard key={svc.id} service={svc} />)
           )}
         </div>
       </section>
     </>
+  )
+}
+
+/**
+ * A listing item carries metadata only, so the card hydrates the full post to
+ * render the icon and description from its attributes.
+ */
+function ServiceCard({ service }: Readonly<{ service: ShioPostSummary }>) {
+  const { data: post } = useShioPost(service.id)
+  const attrs = (post?.attrs ?? {}) as Record<string, string>
+
+  return (
+    <div className="service-card">
+      <div className="service-icon">{attrs.ICON || "⚡"}</div>
+      <h3>{attrs.TITLE || service.title}</h3>
+      <p>{attrs.DESCRIPTION || service.summary}</p>
+    </div>
   )
 }

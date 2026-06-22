@@ -14,7 +14,7 @@
     "build:editor": "pnpm --filter @viglet/shio-editor-cors run build",
     "build:console": "pnpm --filter shio-react run compile:build",
     "build:examples": "pnpm --filter blog-site --filter corporate-site run build",
-    "build": "pnpm run build:sdk && pnpm run build:editor && pnpm run build:console",
+    "build": "pnpm run build:sdk && pnpm run build:editor && pnpm run build:console && pnpm run build:examples",
     "dev:console": "pnpm --filter shio-react run dev",
     "typecheck": "pnpm --filter @viglet/shio-client --filter @viglet/shio-react-sdk run typecheck",
     "lint": "pnpm -r run lint",

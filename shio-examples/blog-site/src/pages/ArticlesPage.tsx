@@ -1,37 +1,60 @@
 import { Link } from "react-router-dom"
-import { useShioQuery } from "@viglet/shio-react-sdk"
+import {
+  useShioPost,
+  useShioQuery,
+  useShioSites,
+  type ShioPostSummary,
+} from "@viglet/shio-react-sdk"
 
-const SITE_NAME = "tech_blog"
+const SITE_NAME = "Tech Blog"
 
 export function ArticlesPage() {
-  const { posts, loading } = useShioQuery("Article", { siteName: SITE_NAME, folderPath: "Home/Articles" })
+  // The CDA query filters by site id, not name — resolve it from the sites list.
+  const { data: sites } = useShioSites()
+  const siteId = sites?.find((s) => s.name === SITE_NAME)?.id
+
+  // A listing returns lightweight summaries (title/summary/date) — no attributes.
+  const { data: listing, loading } = useShioQuery({ siteId, postType: "Article" })
 
   if (loading) return <div className="loading">Loading articles...</div>
 
+  const articles = listing?.posts ?? []
+
   return (
     <div className="articles-grid">
-      {posts.map((article) => (
-        <Link key={article.id} to={`/post/${article.id}`} className="article-card">
-          {article.attrs.COVER_IMAGE && (
-            <img src={article.attrs.COVER_IMAGE as string} alt={article.title} />
-          )}
-          <div className="article-card-body">
-            <div className="article-card-meta">
-              {article.attrs.CATEGORY && (
-                <span className="tag">{article.attrs.CATEGORY}</span>
-              )}
-              <span>{article.attrs.AUTHOR || article.title}</span>
-            </div>
-            <h2>{article.attrs.TITLE || article.title}</h2>
-            <p>{article.attrs.EXCERPT || article.summary}</p>
-          </div>
-        </Link>
+      {articles.map((article) => (
+        <ArticleCard key={article.id} article={article} />
       ))}
-      {posts.length === 0 && (
+      {articles.length === 0 && (
         <div className="loading" style={{ gridColumn: "1 / -1" }}>
           No articles found. Import content into Shio CMS first.
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * A listing item carries metadata only, so the card hydrates the full post to
+ * render the cover image, category and author from its attributes.
+ */
+function ArticleCard({ article }: Readonly<{ article: ShioPostSummary }>) {
+  const { data: post } = useShioPost(article.id)
+  const attrs = (post?.attrs ?? {}) as Record<string, string>
+
+  return (
+    <Link to={`/post/${article.id}`} className="article-card">
+      {attrs.COVER_IMAGE && (
+        <img src={attrs.COVER_IMAGE} alt={article.title ?? ""} />
+      )}
+      <div className="article-card-body">
+        <div className="article-card-meta">
+          {attrs.CATEGORY && <span className="tag">{attrs.CATEGORY}</span>}
+          <span>{attrs.AUTHOR || article.title}</span>
+        </div>
+        <h2>{attrs.TITLE || article.title}</h2>
+        <p>{attrs.EXCERPT || article.summary}</p>
+      </div>
+    </Link>
   )
 }
