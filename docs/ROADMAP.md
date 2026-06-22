@@ -72,7 +72,6 @@
   - 💭 **SH61** (deps: SH19, SH38) **Static-file manager console page** — migrate legacy `staticFile` upload/select screens; the upload/serve subsystem (SH38) now ships, so this is unblocked (the `File` widget already uploads via `POST /v2/staticfile/upload`; this adds a dedicated browse/manage page). → §V.1
 - 💭 **SH20** (deps: SH19, SH8) **Deprecate Thymeleaf site rendering** — once Block B is the documented delivery path (or SH18 ships), mark server-side Thymeleaf site templates `@Deprecated`, then delete. → §V.2
 - 💭 **SH21** (deps: SH19) **Delete `resources/ui/` (AngularJS)** — terminal step after SH19; reclaim the legacy frontend tree. → §V.3
-- 💭 **SH48** (deps: SH12, SH19) **Webhooks console UI** — admin page for the shipped `ShSiteWebhook` CRUD API (SH12). The backend exists; there is **no console page** to manage per-site webhooks. → §V.4
 - 💭 **SH49** (deps: SH19) **Console dashboard / home** — replace the placeholder `home.page.tsx` ("Welcome…") with content stats + quick actions, consuming the already-built-but-unused `system-info.service.ts`. → §V.5
 - 💭 **SH50** (deps: SH19) **Complete console i18n coverage** — replace hardcoded English (`site.list`, `object.children`, `post-type.edit`: "New", "Delete", "Find a site…", "Tasks"…) with i18n keys in both `en` + `pt`. → §V.6
 

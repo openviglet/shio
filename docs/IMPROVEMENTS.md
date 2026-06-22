@@ -345,13 +345,6 @@ Terminal step after SH19 — reclaim the AngularJS frontend tree.
 > `shio-react`: backend (or service) exists, the console surface doesn't. They
 > belong to the same "reach React-console parity" effort as SH19.
 
-### V.4 Webhooks console UI (SH48)
-
-SH12 shipped the full `ShSiteWebhook` CRUD API + delivery, but there is **no
-console page** to create/edit/delete per-site webhooks — they can only be managed
-by hitting the API directly. A standard admin CRUD page (the pattern already used
-for tokens/tenants) closes it.
-
 ### V.5 Console dashboard / home (SH49)
 
 `home.page.tsx` is a placeholder ("Welcome to Viglet Shio CMS"). Meanwhile
