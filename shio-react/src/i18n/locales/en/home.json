@@ -1,0 +1,21 @@
+{
+  "home": {
+    "welcomeTitle": "Welcome to Viglet Shio",
+    "welcomeSubtitle": "Your headless CMS at a glance — content, activity, and quick actions.",
+    "statSites": "Sites",
+    "statPostTypes": "Post Types",
+    "recentActivity": "Recent Activity",
+    "recentActivityDesc": "The latest content changes across your tenant.",
+    "noActivity": "No activity yet.",
+    "viewAll": "View all",
+    "quickActions": "Quick Actions",
+    "quickActionsDesc": "Jump straight into common tasks.",
+    "actionNewSite": "New Site",
+    "actionBrowseContent": "Browse Content",
+    "actionSearch": "Search",
+    "actionPostTypes": "Post Types",
+    "actionWebhooks": "Webhooks",
+    "actionActivity": "Activity",
+    "version": "Viglet Shio CMS · version {{version}}"
+  }
+}
