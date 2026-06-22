@@ -277,14 +277,7 @@ ecosystem.
 
 > ✅ **III.6 Audit / history API + viewer (SH51) — shipped.** See [CHANGELOG.md](CHANGELOG.md) Block C.
 
-### III.7 Content full-text search (SH52)
-
-A real gap: `ShSite.searchablePostTypes` (a CLOB) and the **Search/Semantic
-widgets** exist in the model, but there is no search service and the CDA `/query`
-endpoint is filter-only (`siteId`/`folderId`/`postType`) — not full-text. SH33
-(MCP read tools) already assumes a search primitive. Decide the engine up front:
-in-DB vs the ecosystem's Turing (which is exactly the search/AI component) — the
-latter keeps the Java/Spring sinergy (§0.2).
+> ✅ **III.7 Content full-text search (SH52) — shipped.** See [CHANGELOG.md](CHANGELOG.md) Block C. Engine decision recorded there: in-DB portable `LIKE` (cross-DB safe), not Turing.
 
 ### III.8 Content i18n / locales (SH53)
 

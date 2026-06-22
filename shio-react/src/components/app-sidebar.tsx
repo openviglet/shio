@@ -11,6 +11,7 @@ import {
   IconArrowsExchange,
   IconMail,
   IconHistory,
+  IconSearch,
 } from "@tabler/icons-react"
 import * as React from "react"
 import { useTranslation } from "react-i18next"
@@ -44,6 +45,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       label: t("sidebar.content"),
       items: [
         { title: t("content.sites"), url: `${ROUTES.CONSOLE}/content`, icon: IconFileText },
+        { title: t("content.searchTitle"), url: ROUTES.SEARCH, icon: IconSearch },
         { title: t("content.postTypes"), url: ROUTES.POST_TYPE_ROOT, icon: IconForms },
         { title: t("sidebar.universalEditor"), url: ROUTES.UNIVERSAL_EDITOR, icon: IconLayersIntersect },
       ],

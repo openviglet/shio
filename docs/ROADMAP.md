@@ -47,9 +47,8 @@
 > The table-stakes features the headless market (Contentful/Strapi/Sanity)
 > assumes. Versioning is partly there (`/api/v2/post-unified/{id}/versions`). → §III
 
-> ✅ **Shipped: SH12–SH16, SH26, SH51** → see [CHANGELOG.md](CHANGELOG.md) Block C.
+> ✅ **Shipped: SH12–SH16, SH26, SH51, SH52** → see [CHANGELOG.md](CHANGELOG.md) Block C.
 
-- 💭 **SH52** (deps: —) **Content full-text search** — a search service + full-text CDA endpoint consuming the existing `ShSite.searchablePostTypes`; wires up the Search/Semantic widgets that exist in the model. SH33 (MCP read tools) already assumes it. → §III.7
 - 💭 **SH53** (deps: —) **Content i18n / locales** — multi-language posts: put the unused `ShLocale` to work, add a locale axis to `ShPostUnified` + a `locale` param on CDA reads. → §III.8
 - 💭 **SH54** (deps: —) **Content-level ACL / permissions** — folder/post access control tying the existing `ShUser`/`ShGroup`/`ShRole` to content; enforced at the `ShCdaService`/console boundary (today any authenticated user reaches all content). → §III.9
 - 💭 **SH55** (deps: —) **Trash / soft-delete + restore** — a recycle bin instead of hard delete on posts/folders. → §III.10

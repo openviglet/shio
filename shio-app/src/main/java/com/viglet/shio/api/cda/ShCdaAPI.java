@@ -109,4 +109,13 @@ public class ShCdaAPI {
                               @RequestParam(name = "size", defaultValue = "50") int size) {
         return shCdaService.query(siteId, folderId, postType, page, size);
     }
+
+    @GetMapping("/search")
+    @Operation(summary = "Full-text search published posts by title, summary and content")
+    public ShCdaListing search(@RequestParam(name = "q") String q,
+                               @RequestParam(name = "siteId", required = false) String siteId,
+                               @RequestParam(name = "page", defaultValue = "0") int page,
+                               @RequestParam(name = "size", defaultValue = "50") int size) {
+        return shCdaService.search(q, siteId, page, size);
+    }
 }

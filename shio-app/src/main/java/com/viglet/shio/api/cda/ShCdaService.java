@@ -9,12 +9,15 @@
 package com.viglet.shio.api.cda;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -180,6 +183,102 @@ public class ShCdaService {
         return queryPage(siteId, folderId, postType, pageable(page, size))
                 .getContent().stream()
                 .map(mapper::toPost)
+                .toList();
+    }
+
+    /**
+     * Full-text search (SH52) over the post title, summary and raw attribute data,
+     * matching a single query term. Honours the same per-site allow-list (SH2) and
+     * environment rule (SH5: published-only in PROD, draft-preferred in PREVIEW) as
+     * {@link #query}. When a single {@code siteId} is targeted, results are
+     * restricted to that site's configured {@code searchablePostTypes} (when any
+     * resolve to a real post-type); an unscoped search spans the token's allowed
+     * sites, or every site when the token has no allow-list.
+     */
+    public ShCdaListing search(String q, String siteId, int page, int size) {
+        Pageable pageable = pageable(page, size);
+        if (q == null || q.isBlank()) {
+            return new ShCdaListing(null, List.of(), List.of(), page, size, 0);
+        }
+        String like = "%" + q.trim().toLowerCase() + "%";
+        Page<ShPostUnified> posts = searchPage(siteId, like, pageable);
+        return new ShCdaListing(null, List.of(), summaries(posts), page, size, posts.getTotalElements());
+    }
+
+    private Page<ShPostUnified> searchPage(String siteId, String like, Pageable pageable) {
+        if (siteId != null && !siteId.isBlank()) {
+            if (!siteAllowed(siteId)) {
+                return Page.empty(pageable);
+            }
+            List<String> types = searchablePostTypeNames(siteId);
+            if (!types.isEmpty()) {
+                return preview()
+                        ? draftPreferred(shPostUnifiedRepository
+                                .searchBySiteAndTypesAndStateIn(siteId, types, PREVIEW_STATES, like), pageable)
+                        : shPostUnifiedRepository.searchBySiteAndTypesAndState(siteId, types, STATE, like, pageable);
+            }
+            return searchBySites(List.of(siteId), like, pageable);
+        }
+        // No explicit site: restrict to the token's allow-list when present, else all sites.
+        Set<String> allowed = allowedSiteIds();
+        if (allowed != null) {
+            return allowed.isEmpty() ? Page.empty(pageable) : searchBySites(allowed, like, pageable);
+        }
+        return preview()
+                ? draftPreferred(shPostUnifiedRepository.searchByStateIn(PREVIEW_STATES, like), pageable)
+                : shPostUnifiedRepository.searchByState(STATE, like, pageable);
+    }
+
+    private Page<ShPostUnified> searchBySites(Collection<String> siteIds, String like, Pageable pageable) {
+        return preview()
+                ? draftPreferred(shPostUnifiedRepository.searchBySitesAndStateIn(siteIds, PREVIEW_STATES, like), pageable)
+                : shPostUnifiedRepository.searchBySitesAndState(siteIds, STATE, like, pageable);
+    }
+
+    /**
+     * The current token's site allow-list, or {@code null} when unrestricted (no
+     * token, or a token whose allow-list is empty). Mirrors {@link #siteAllowed}.
+     */
+    private Set<String> allowedSiteIds() {
+        return ShApiTokenContext.current()
+                .map(ShApiTokenContext::siteIds)
+                .filter(ids -> ids != null && !ids.isEmpty())
+                .orElse(null);
+    }
+
+    /**
+     * A site's configured searchable post-type names (SH52), keeping only those
+     * that resolve to a real post-type — so a malformed/foreign config degrades to
+     * "search all types" rather than silently returning nothing.
+     */
+    private List<String> searchablePostTypeNames(String siteId) {
+        List<String> names = shSiteRepository.findById(siteId)
+                .map(ShSite::getSearchablePostTypes)
+                .map(ShCdaService::parsePostTypeNames)
+                .orElseGet(List::of);
+        if (names.isEmpty()) {
+            return List.of();
+        }
+        return names.stream()
+                .filter(name -> shPostTypeRepository.findByName(name) != null)
+                .toList();
+    }
+
+    /**
+     * Tolerant parse of the {@code searchablePostTypes} CLOB into post-type names.
+     * Accepts a JSON string array ({@code ["News","Page"]}) or a plain
+     * comma/semicolon/newline-separated list; bracket and quote noise is stripped.
+     */
+    private static List<String> parsePostTypeNames(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        String cleaned = raw.replace("[", " ").replace("]", " ")
+                .replace("\"", " ").replace("'", " ");
+        return Arrays.stream(cleaned.split("[,;\\n\\r]"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .distinct()
                 .toList();
     }
 

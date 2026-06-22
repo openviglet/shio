@@ -16,6 +16,8 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -63,4 +65,44 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
 
     List<ShPostUnified> findByShSite_IdAndShPostType_NameAndStateIn(String siteId, String postType,
                                                                     Collection<ShPostState> states);
+
+    // --- Full-text search (SH52). The :q term is pre-lowercased and %-wrapped by
+    //     ShCdaService; the predicate matches title, summary and the raw attribute
+    //     data CLOB (portable LIKE — keeps the SH26 cross-DB guarantee, unlike
+    //     engine-specific FULLTEXT/tsvector). PROD paths are paged; PREVIEW paths
+    //     fetch across the state set so the service can dedup draft-preferred. ---
+
+    // summary and data are CLOB-mapped; Hibernate rejects lower() on a CLOB
+    // argument, so they are cast to string first. title is a plain VARCHAR.
+    String FULLTEXT_PREDICATE =
+            "(lower(p.title) like :q or lower(cast(p.summary as string)) like :q "
+            + "or lower(cast(p.data as string)) like :q)";
+
+    @Query("select p from ShPostUnified p where p.state = :state and " + FULLTEXT_PREDICATE)
+    Page<ShPostUnified> searchByState(@Param("state") ShPostState state, @Param("q") String q, Pageable pageable);
+
+    @Query("select p from ShPostUnified p where p.state in :states and " + FULLTEXT_PREDICATE)
+    List<ShPostUnified> searchByStateIn(@Param("states") Collection<ShPostState> states, @Param("q") String q);
+
+    @Query("select p from ShPostUnified p where p.shSite.id in :siteIds and p.state = :state and " + FULLTEXT_PREDICATE)
+    Page<ShPostUnified> searchBySitesAndState(@Param("siteIds") Collection<String> siteIds,
+                                              @Param("state") ShPostState state, @Param("q") String q, Pageable pageable);
+
+    @Query("select p from ShPostUnified p where p.shSite.id in :siteIds and p.state in :states and " + FULLTEXT_PREDICATE)
+    List<ShPostUnified> searchBySitesAndStateIn(@Param("siteIds") Collection<String> siteIds,
+                                                @Param("states") Collection<ShPostState> states, @Param("q") String q);
+
+    @Query("select p from ShPostUnified p where p.shSite.id = :siteId and p.shPostType.name in :postTypes "
+            + "and p.state = :state and " + FULLTEXT_PREDICATE)
+    Page<ShPostUnified> searchBySiteAndTypesAndState(@Param("siteId") String siteId,
+                                                     @Param("postTypes") Collection<String> postTypes,
+                                                     @Param("state") ShPostState state, @Param("q") String q,
+                                                     Pageable pageable);
+
+    @Query("select p from ShPostUnified p where p.shSite.id = :siteId and p.shPostType.name in :postTypes "
+            + "and p.state in :states and " + FULLTEXT_PREDICATE)
+    List<ShPostUnified> searchBySiteAndTypesAndStateIn(@Param("siteId") String siteId,
+                                                       @Param("postTypes") Collection<String> postTypes,
+                                                       @Param("states") Collection<ShPostState> states,
+                                                       @Param("q") String q);
 }
