@@ -1,0 +1,57 @@
+databaseChangeLog:
+  # SH54 — content-level ACL. A grant table: "principal may permission object".
+  # object_id is a folder/site/post id (no FK — two backing tables). Carries
+  # @TenantId (tenant_id) like the rest of the active tree. Enum columns mapped
+  # @Enumerated(STRING) to VARCHAR (inline DB enum types are rejected by
+  # PostgreSQL, per ShLiquibaseChangelogAgnosticTest). SH26: preserve identifier
+  # case on PostgreSQL (QUOTE_ALL_OBJECTS, re-declared per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh54-content-acl
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_content_acl
+      changes:
+        - createTable:
+            tableName: sh_content_acl
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(255)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: object_id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: principal_type
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: principal_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: permission
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: sh_content_acl
+            indexName: idx_content_acl_object
+            columns:
+              - column:
+                  name: object_id

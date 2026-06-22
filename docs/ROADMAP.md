@@ -47,9 +47,8 @@
 > The table-stakes features the headless market (Contentful/Strapi/Sanity)
 > assumes. Versioning is partly there (`/api/v2/post-unified/{id}/versions`). → §III
 
-> ✅ **Shipped: SH12–SH16, SH26, SH51–SH53** → see [CHANGELOG.md](CHANGELOG.md) Block C.
+> ✅ **Shipped: SH12–SH16, SH26, SH51–SH54** → see [CHANGELOG.md](CHANGELOG.md) Block C.
 
-- 💭 **SH54** (deps: —) **Content-level ACL / permissions** — folder/post access control tying the existing `ShUser`/`ShGroup`/`ShRole` to content; enforced at the `ShCdaService`/console boundary (today any authenticated user reaches all content). → §III.9
 - 💭 **SH55** (deps: —) **Trash / soft-delete + restore** — a recycle bin instead of hard delete on posts/folders. → §III.10
 
 ## Block D — Optional server-side JS rendering (GraalJS)

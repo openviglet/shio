@@ -18,8 +18,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.api.acl.ShContentAclService;
+import com.viglet.shio.api.acl.ShContentAclService.AclEntry;
 import com.viglet.shio.api.object.ShObjectNavigationService.ShObjectList;
 import com.viglet.shio.api.object.ShObjectNavigationService.ShObjectPath;
+import com.viglet.shio.persistence.model.acl.ShContentAcl;
 import com.viglet.shio.persistence.model.object.ShObject;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,15 +42,19 @@ public class ShObjectAPI {
 
     private final ShObjectNavigationService shObjectNavigationService;
     private final ShObjectWriteService shObjectWriteService;
+    private final ShContentAclService shContentAclService;
 
     public ShObjectAPI(ShObjectNavigationService shObjectNavigationService,
-                       ShObjectWriteService shObjectWriteService) {
+                       ShObjectWriteService shObjectWriteService,
+                       ShContentAclService shContentAclService) {
         this.shObjectNavigationService = shObjectNavigationService;
         this.shObjectWriteService = shObjectWriteService;
+        this.shContentAclService = shContentAclService;
     }
 
     @GetMapping("/{id}/list")
     public ResponseEntity<ShObjectList> list(@PathVariable String id) {
+        shContentAclService.requireRead(id);
         return shObjectNavigationService.list(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -55,6 +62,7 @@ public class ShObjectAPI {
 
     @GetMapping("/{id}/path")
     public ResponseEntity<ShObjectPath> path(@PathVariable String id) {
+        shContentAclService.requireRead(id);
         return shObjectNavigationService.path(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -62,12 +70,28 @@ public class ShObjectAPI {
 
     @PutMapping("/copyto/{destId}")
     public List<ShObject> copyTo(@PathVariable String destId, @RequestBody List<String> ids) {
+        shContentAclService.requireWrite(destId);
         return shObjectWriteService.copyTo(destId, ids);
     }
 
     @PutMapping("/moveto/{destId}")
     public List<ShObject> moveTo(@PathVariable String destId, @RequestBody List<String> ids) {
+        shContentAclService.requireWrite(destId);
         return shObjectWriteService.moveTo(destId, ids);
+    }
+
+    /** The explicit ACL grants set directly on an object (SH54); inherited grants are not expanded. */
+    @GetMapping("/{id}/acl")
+    public ResponseEntity<List<ShContentAcl>> getAcl(@PathVariable String id) {
+        shContentAclService.requireRead(id);
+        return ResponseEntity.ok(shContentAclService.getAcl(id));
+    }
+
+    /** Replace an object's ACL grants (SH54). Editing requires WRITE on the object (admins always pass). */
+    @PutMapping("/{id}/acl")
+    public ResponseEntity<List<ShContentAcl>> putAcl(@PathVariable String id, @RequestBody List<AclEntry> entries) {
+        shContentAclService.requireWrite(id);
+        return ResponseEntity.ok(shContentAclService.replaceAcl(id, entries));
     }
 
     /**

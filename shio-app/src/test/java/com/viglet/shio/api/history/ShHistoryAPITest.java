@@ -106,7 +106,7 @@ class ShHistoryAPITest {
             folderId = rootFolder.getId();
 
             ShWidget textWidget = entityManager.find(ShWidget.class,
-                    shWidgetRepository.findByName(ShSystemWidget.TEXT).getId());
+                    shWidgetRepository.findFirstByName(ShSystemWidget.TEXT).getId());
 
             ShPostType postType = new ShPostType();
             postType.setName("PT-HIST-" + UUID.randomUUID());

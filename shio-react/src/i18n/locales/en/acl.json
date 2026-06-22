@@ -1,0 +1,15 @@
+{
+  "acl.title": "Permissions",
+  "acl.permissions": "Permissions",
+  "acl.description": "Control who can read and write this content.",
+  "acl.descriptionFor": "Control who can read and write \"{{name}}\".",
+  "acl.openHint": "No restrictions — anyone signed in can access this. Add a grant to restrict it.",
+  "acl.addGrant": "Add grant",
+  "acl.saved": "Permissions saved",
+  "acl.principalNamePlaceholder": "username / group / role name",
+  "acl.principal.USER": "User",
+  "acl.principal.GROUP": "Group",
+  "acl.principal.ROLE": "Role",
+  "acl.permission.READ": "Read",
+  "acl.permission.WRITE": "Write"
+}

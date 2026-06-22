@@ -281,12 +281,7 @@ ecosystem.
 
 > ✅ **III.8 Content i18n / locales (SH53) — shipped.** See [CHANGELOG.md](CHANGELOG.md) Block C. Model decision recorded there: `locale` + `translationGroupId` as plain columns (not in the composite key); translations are linked sibling posts.
 
-### III.9 Content-level ACL / permissions (SH54)
-
-`ShUser`/`ShGroup`/`ShRole` have full CRUD, but **nothing ties them to content** —
-there are no folder/post ACLs and no `@PreAuthorize` on the content controllers, so
-any authenticated user can reach all content through the unified API. Add an ACL
-model on folders/posts + enforcement at the `ShCdaService`/console boundary.
+> ✅ **III.9 Content-level ACL / permissions (SH54) — shipped.** See [CHANGELOG.md](CHANGELOG.md) Block C. Design recorded there: per-object `ShContentAcl` grants (USER/GROUP/ROLE × READ/WRITE), folder-tree inheritance (nearest level wins), default-allow + admin bypass, enforced at the console authoring boundary.
 
 ### III.10 Trash / soft-delete + restore (SH55)
 

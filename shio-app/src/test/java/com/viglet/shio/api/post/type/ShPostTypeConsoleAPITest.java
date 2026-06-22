@@ -92,7 +92,7 @@ class ShPostTypeConsoleAPITest {
         mockPrincipal = Mockito.mock(Principal.class);
         Mockito.when(mockPrincipal.getName()).thenReturn("admin");
 
-        ShWidget textWidget = shWidgetRepository.findByName(ShSystemWidget.TEXT);
+        ShWidget textWidget = shWidgetRepository.findFirstByName(ShSystemWidget.TEXT);
         textWidgetId = textWidget.getId();
 
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
@@ -183,7 +183,7 @@ class ShPostTypeConsoleAPITest {
                 .andExpect(jsonPath("$.shPostTypeAttrs.length()").value(1));
 
         org.junit.jupiter.api.Assertions.assertNotNull(
-                shWidgetRepository.findByName(ShSystemWidget.TEXT),
+                shWidgetRepository.findFirstByName(ShSystemWidget.TEXT),
                 "The shared Text widget must survive a post-type attribute replace");
     }
 

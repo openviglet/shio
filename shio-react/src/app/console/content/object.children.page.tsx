@@ -12,7 +12,8 @@ import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { IconFileText } from "@tabler/icons-react"
 import { DialogDelete } from "@/components/dialog.delete"
-import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, ChevronDown, Copy, Move, Trash2, Search, Upload, LayoutGrid, List, Sheet, RefreshCw, ClipboardCopy } from "lucide-react"
+import { PermissionsDialog } from "@/components/permissions.dialog"
+import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, ChevronDown, Copy, Move, Trash2, Search, Upload, LayoutGrid, List, Sheet, RefreshCw, ClipboardCopy, ShieldCheck } from "lucide-react"
 import { useEffect, useState, useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -65,6 +66,8 @@ export default function ObjectChildrenPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<ObjectChild | null>(null)
+  const [permsTarget, setPermsTarget] = useState<ObjectChild | null>(null)
+  const [permsOpen, setPermsOpen] = useState(false)
   const [folderDialogOpen, setFolderDialogOpen] = useState(false)
   const [folderDialogMode, setFolderDialogMode] = useState<"copy" | "move">("copy")
   const [folderDialogIds, setFolderDialogIds] = useState<string[]>([])
@@ -539,6 +542,9 @@ export default function ObjectChildrenPage() {
                     <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); openFolderDialog("copy", [item.id]) }}>
                       <Copy className="h-3 w-3" /> Copy
                     </button>
+                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); setPermsTarget(item); setPermsOpen(true) }}>
+                      <ShieldCheck className="h-3 w-3" /> {t("acl.permissions")}
+                    </button>
                     <button type="button" className="flex items-center gap-1 text-destructive/70 hover:text-destructive whitespace-nowrap" onClick={(e) => { e.stopPropagation(); setDeleteTarget(item); setDeleteDialogOpen(true) }}>
                       <Trash2 className="h-3 w-3" /> Delete
                     </button>
@@ -643,6 +649,13 @@ export default function ObjectChildrenPage() {
           setDeleteTarget(null)
           await refreshList()
         }}
+      />
+
+      <PermissionsDialog
+        objectId={permsTarget?.id ?? null}
+        objectName={permsTarget?.name}
+        open={permsOpen}
+        setOpen={setPermsOpen}
       />
     </>
   )

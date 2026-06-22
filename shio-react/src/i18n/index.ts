@@ -18,6 +18,7 @@ import enAuthProvider from "./locales/en/authProvider.json";
 import enExchangeProvider from "./locales/en/exchangeProvider.json";
 import enEmailConfig from "./locales/en/emailConfig.json";
 import enActivity from "./locales/en/activity.json";
+import enAcl from "./locales/en/acl.json";
 
 import ptCommon from "./locales/pt/common.json";
 import ptLogin from "./locales/pt/login.json";
@@ -34,19 +35,20 @@ import ptAuthProvider from "./locales/pt/authProvider.json";
 import ptExchangeProvider from "./locales/pt/exchangeProvider.json";
 import ptEmailConfig from "./locales/pt/emailConfig.json";
 import ptActivity from "./locales/pt/activity.json";
+import ptAcl from "./locales/pt/acl.json";
 
 const en = {
   ...enCommon, ...enLogin, ...enSidebar, ...enNav, ...enDialog,
   ...enContent, ...enAdmin, ...enGraphql, ...enUniversalEditor, ...enApiToken,
   ...enTenantAdmin, ...enAuthProvider, ...enExchangeProvider, ...enEmailConfig,
-  ...enActivity,
+  ...enActivity, ...enAcl,
 };
 
 const pt = {
   ...ptCommon, ...ptLogin, ...ptSidebar, ...ptNav, ...ptDialog,
   ...ptContent, ...ptAdmin, ...ptGraphql, ...ptUniversalEditor, ...ptApiToken,
   ...ptTenantAdmin, ...ptAuthProvider, ...ptExchangeProvider, ...ptEmailConfig,
-  ...ptActivity,
+  ...ptActivity, ...ptAcl,
 };
 
 i18n

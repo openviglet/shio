@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.folder.dto.ShFolderRequest;
 import com.viglet.shio.api.object.ShObjectNavigationService;
 import com.viglet.shio.api.object.ShObjectNavigationService.ShObjectPath;
@@ -44,16 +45,20 @@ public class ShFolderAPI {
     private final ShFolderRepository shFolderRepository;
     private final ShFolderWriteService shFolderWriteService;
     private final ShObjectNavigationService shObjectNavigationService;
+    private final ShContentAclService shContentAclService;
 
     public ShFolderAPI(ShFolderRepository shFolderRepository, ShFolderWriteService shFolderWriteService,
-                       ShObjectNavigationService shObjectNavigationService) {
+                       ShObjectNavigationService shObjectNavigationService,
+                       ShContentAclService shContentAclService) {
         this.shFolderRepository = shFolderRepository;
         this.shFolderWriteService = shFolderWriteService;
         this.shObjectNavigationService = shObjectNavigationService;
+        this.shContentAclService = shContentAclService;
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ShFolder> get(@PathVariable String id) {
+        shContentAclService.requireRead(id);
         return shFolderRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -65,6 +70,7 @@ public class ShFolderAPI {
         if (payload.name() == null || payload.name().isBlank()) {
             return ResponseEntity.badRequest().build();
         }
+        shContentAclService.requireWrite(parentFolderId);
         return shFolderWriteService.create(parentFolderId, toEntity(payload),
                         principal != null ? principal.getName() : null)
                 .map(folder -> ResponseEntity.status(HttpStatus.CREATED).body(folder))
@@ -74,6 +80,7 @@ public class ShFolderAPI {
     @PutMapping("/{id}")
     public ResponseEntity<ShFolder> update(@PathVariable String id, @RequestBody ShFolderRequest payload,
                                            Principal principal) {
+        shContentAclService.requireWrite(id);
         return shFolderWriteService.update(id, toEntity(payload), principal != null ? principal.getName() : null)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -92,6 +99,7 @@ public class ShFolderAPI {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable String id) {
+        shContentAclService.requireWrite(id);
         return shFolderWriteService.delete(id)
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
@@ -99,6 +107,7 @@ public class ShFolderAPI {
 
     @GetMapping("/{id}/path")
     public ResponseEntity<ShObjectPath> path(@PathVariable String id) {
+        shContentAclService.requireRead(id);
         return shObjectNavigationService.path(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());

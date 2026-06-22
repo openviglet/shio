@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.UpdateRequest;
@@ -45,20 +46,24 @@ public class ShPostUnifiedAPI {
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
     private final ShTenantQuotaService shTenantQuotaService;
+    private final ShContentAclService shContentAclService;
 
     public ShPostUnifiedAPI(ShPostUnifiedRepository shPostUnifiedRepository,
                             ShFolderRepository shFolderRepository,
                             ShPostUnifiedWriteService shPostUnifiedWriteService,
-                            ShTenantQuotaService shTenantQuotaService) {
+                            ShTenantQuotaService shTenantQuotaService,
+                            ShContentAclService shContentAclService) {
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shTenantQuotaService = shTenantQuotaService;
+        this.shContentAclService = shContentAclService;
     }
 
     @PostMapping
     public ShPostUnified create(@RequestBody CreatePayload payload, Principal principal) {
-        // SH22/D — enforce the tenant's plan post quota (402); no-op single-tenant.
+        // SH54 — WRITE on the target folder; SH22/D — tenant plan post quota (402).
+        shContentAclService.requireWrite(payload.folderId());
         shTenantQuotaService.checkCanCreatePost();
         return shPostUnifiedWriteService.create(new CreateRequest(
                 payload.folderId(),
@@ -74,6 +79,7 @@ public class ShPostUnifiedAPI {
     public ShPostUnified update(@PathVariable String id,
                                 @RequestBody UpdatePayload payload,
                                 Principal principal) {
+        shContentAclService.requireWrite(id);
         return shPostUnifiedWriteService.update(id, new UpdateRequest(
                 payload.data(),
                 payload.state() != null ? payload.state() : ShPostState.DRAFT,
@@ -82,18 +88,21 @@ public class ShPostUnifiedAPI {
 
     @PostMapping("/{id}/publish")
     public ShPostUnified publish(@PathVariable String id, Principal principal) {
+        shContentAclService.requireWrite(id);
         return shPostUnifiedWriteService.publish(id,
                 principal != null ? principal.getName() : null);
     }
 
     @PostMapping("/{id}/unpublish")
     public ResponseEntity<Void> unpublish(@PathVariable String id, Principal principal) {
+        shContentAclService.requireWrite(id);
         shPostUnifiedWriteService.unpublish(id, principal != null ? principal.getName() : null);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable String id, Principal principal) {
+        shContentAclService.requireWrite(id);
         shPostUnifiedWriteService.delete(id, principal != null ? principal.getName() : null);
         return ResponseEntity.noContent().build();
     }
@@ -112,6 +121,7 @@ public class ShPostUnifiedAPI {
     @GetMapping("/folder/{folderId}")
     public List<ShPostUnified> listByFolder(@PathVariable String folderId,
                                             @RequestParam(name = "state", defaultValue = "PUBLISHED") ShPostState state) {
+        shContentAclService.requireRead(folderId);
         return shFolderRepository.findById(folderId)
                 .map(folder -> shPostUnifiedRepository.findByShFolderAndState(folder, state))
                 .orElse(List.of());
@@ -120,6 +130,7 @@ public class ShPostUnifiedAPI {
     @GetMapping("/{id}")
     public ResponseEntity<ShPostUnified> get(@PathVariable String id,
                                              @RequestParam(name = "state", defaultValue = "PUBLISHED") ShPostState state) {
+        shContentAclService.requireRead(id);
         return shPostUnifiedRepository.findByIdAndState(id, state)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -141,6 +152,7 @@ public class ShPostUnifiedAPI {
     public ResponseEntity<ShPostUnified> translate(@PathVariable String id,
                                                    @RequestBody TranslatePayload payload,
                                                    Principal principal) {
+        shContentAclService.requireWrite(id);
         try {
             return ResponseEntity.ok(shPostUnifiedWriteService.translate(
                     id, payload.locale(), payload.data(),
@@ -152,6 +164,7 @@ public class ShPostUnifiedAPI {
 
     @PostMapping("/{id}/restore")
     public ResponseEntity<ShPostUnified> restore(@PathVariable String id, Principal principal) {
+        shContentAclService.requireWrite(id);
         try {
             return ResponseEntity.ok(shPostUnifiedWriteService.restoreDraftFromPublished(
                     id, principal != null ? principal.getName() : null));
@@ -169,6 +182,7 @@ public class ShPostUnifiedAPI {
     public ResponseEntity<ShPostUnified> schedule(@PathVariable String id,
                                                   @RequestBody SchedulePayload payload,
                                                   Principal principal) {
+        shContentAclService.requireWrite(id);
         try {
             return ResponseEntity.ok(shPostUnifiedWriteService.schedule(
                     id, toInstant(payload.publishAt()), toInstant(payload.unpublishAt()),
