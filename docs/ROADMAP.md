@@ -62,12 +62,8 @@
 
 ## Block E — Legacy retirement
 
-> Shio carries a legacy AngularJS UI (`src/main/resources/ui/`) + Thymeleaf
-> templates. The new console is `shio-react`. → §V
-
-- ⏳ **SH19** (deps: —) **Finish AngularJS → React console migration** — continue moving console pages to `shio-react` (see [project memory]); the migration is the precondition for deleting `resources/ui/`. The remaining legacy-only surface (the `config/` section + static files + legacy commerce widgets) is decomposed into SH56–SH61 below so each ships independently. → §V.1
-  - ✅ **SH56–SH61** — all shipped/decided → [CHANGELOG.md](CHANGELOG.md) Block E (Auth + Exchange Providers + Email/SMTP pages; SH59 = searchable-post-types in the site editor; SH60 = `payment`/`recaptcha` deprecated, not ported; SH61 = static-file manager page over the SH38 subsystem). SH19's `config/` + static-file decomposition is fully addressed; SH19 stays ⏳ only until the legacy tree itself is deleted (SH20/SH21).
-- 💭 **SH21** (deps: SH19, SH20) **Delete `resources/ui/` (AngularJS)** — terminal step; reclaim the legacy frontend tree. → §V.3
+> ✅ **All tasks shipped (SH19–SH21, SH48–SH50, SH56–SH61)** → see [CHANGELOG.md](CHANGELOG.md) Block E.
+> The legacy AngularJS UI + Thymeleaf templates are gone; `shio-react` (+ the headless CDA) is the only console/delivery surface.
 
 ## Block F — Market positioning / bold bets
 

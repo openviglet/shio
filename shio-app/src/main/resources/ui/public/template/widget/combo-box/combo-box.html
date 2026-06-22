@@ -1,7 +1,0 @@
-<div >
-	<select class="form-control" ng-controller="ShWidgetComboBoxCtrl"
-	ng-init="init(shPostAttr.shPostTypeAttr.widgetSettings)" ng-model="shPostAttr.strValue"
-		ng-options="selectItem.id as selectItem.label for selectItem in choices">
-		<option ng-if="widgetSettingsObject.allowNull === 1" value="">-- Pick One --</option>
-	</select>
-</div>

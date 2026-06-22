@@ -1,9 +1,0 @@
-<div class="form-group">
-	<label th:text="|${shPostTypeAttr.label}|"></label>
-	<select
-		class="form-control"
-		th:name="${'__sh-post-type-attr-' + shPostTypeAttr.name}">
-		<option th:each="choice : ${choices}" th:value="${choice.key}"
-			th:text="|${choice.value}|"></option>
-	</select>
-</div>

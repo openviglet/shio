@@ -1,9 +1,0 @@
-<div ng-controller="ShWidgetCheckBoxCtrl" ng-init="init(shPostAttr.shPostTypeAttr.widgetSettings, shPostAttr.arrayValue)">
-    <div class="checkbox" ng-repeat="selectItem in choices">
-        <label>
-            <input type="checkbox" name="checkbox[]" value="{{selectItem.id}}" ng-model="selectItem.checked"
-                ng-click="shPostAttr.arrayValue = updateCheckBox(selectItem)">
-            {{selectItem.label}}
-        </label>
-    </div>
-</div>

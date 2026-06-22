@@ -1,7 +1,0 @@
-<div layout-gt-xs="row">
-	<div vc-recaptcha theme="'light'" th:key="${'''' + siteKey + ''''}" on-create="setWidgetId(widgetId)"
-		on-success="setResponse(response)" on-expire="cbExpiration()" th:ng-model="${shPostTypeAttr.name}"></div>
-</div>
-<input type="text"
-	style="width: .1px; border: none; position: absolute; margin-top: -40px; outline: 0; background-color: transparent;"
-	th:ng-model="${shPostTypeAttr.name}" required autocomplete="new-password" />

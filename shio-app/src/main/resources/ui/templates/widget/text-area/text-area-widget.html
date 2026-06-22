@@ -1,9 +1,0 @@
-<div layout-gt-xs="row">
-	<md-input-container class="md-block" flex-gt-xs>
-		<label th:text="|${shPostTypeAttr.label}|"></label>
-		<textarea th:if="${shPostTypeAttr.required} == 1"
-			th:name="${'__sh-post-type-attr-' + shPostTypeAttr.name}" rows="5" md-select-on-focus required></textarea>
-		<textarea th:if="${shPostTypeAttr.required} != 1"
-			th:name="${'__sh-post-type-attr-' + shPostTypeAttr.name}" rows="5" md-select-on-focus></textarea>	
-	</md-input-container>
-</div>

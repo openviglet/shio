@@ -311,26 +311,9 @@ only on a proven SH17 result.
 
 ## V. Legacy retirement
 
-> Shio carries a legacy AngularJS UI (`shio-app/src/main/resources/ui/`) plus
-> Thymeleaf templates. The replacement console is `shio-react`.
-
-### V.1 Finish AngularJS → React console migration (SH19)
-
-Continue migrating console pages to `shio-react` (Vite + shadcn/ui + TS), following
-the Turing-React patterns documented in `agents.md`. This is the precondition for
-deleting the legacy tree. See project memory `project_shio_react_migration.md`.
-
-The legacy-only console surface is fully decomposed and shipped/decided
-(SH56–SH61) → see [CHANGELOG.md](CHANGELOG.md) Block E. What still blocks SH21 is
-the Thymeleaf deprecation (SH20) and the tree deletion itself.
-
-### V.3 Delete `resources/ui/` (SH21)
-
-Terminal step after SH19 — reclaim the AngularJS frontend tree.
-
-> The next three are **console-completion gaps** surfaced by an audit of
-> `shio-react`: backend (or service) exists, the console surface doesn't. They
-> belong to the same "reach React-console parity" effort as SH19.
+> ✅ **Fully shipped (SH19–SH21, SH48–SH50, SH56–SH61)** → see [CHANGELOG.md](CHANGELOG.md)
+> Block E. The legacy AngularJS `resources/ui/` tree and the dead Thymeleaf engine
+> are deleted; `shio-react` + the headless CDA are the only console/delivery surfaces.
 
 ---
 

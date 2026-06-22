@@ -1,8 +1,0 @@
-<form action=""  th:method="${shFormConfiguration.method}">
-	<input type="hidden" name="_csrf" th:value="${token}"> <input
-		type="hidden" name="__sh-post-type" th:value="${shPostType.name}">
-	  <div th:each="field : ${fields}"> 
-		  <div th:utext="|${field}|"></div>      
-      </div>
-	<button type="submit">Save</button>
-</form>

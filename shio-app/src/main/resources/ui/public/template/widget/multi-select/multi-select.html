@@ -1,9 +1,0 @@
-<div ng-controller="ShWidgetMultiSelectCtrl as ctrl" ng-init="ctrl.init(shPostAttr.shPostTypeAttr.widgetSettings)">
-	<ui-select class="form-control" multiple ng-model="shPostAttr.arrayValue" theme="bootstrap"
-		ng-disabled="false" sortable="true" close-on-select="false"
-		> <ui-select-match
-		placeholder="Select ...">{{$item.title}}</ui-select-match> <ui-select-choices
-		repeat="post.id as post in ctrl.posts | propsFilter: {title: $select.search, summary: $select.search}">
-	<div ng-bind-html="post.title | highlight: $select.search"></div>	
-	</ui-select-choices> </ui-select>
-</div>
