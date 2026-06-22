@@ -107,7 +107,7 @@ public class ShStaticFileService {
         data.put(ShSystemPostTypeAttr.FILE, fileName);
 
         ShPostUnified post = shPostUnifiedWriteService.create(new CreateRequest(
-                folderId, fileType.getId(), data, ShPostState.PUBLISHED, owner));
+                folderId, fileType.getId(), data, ShPostState.PUBLISHED, owner, null, null));
 
         try {
             storage.store(post.getId(), fileName, file.getInputStream());

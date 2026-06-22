@@ -6,6 +6,8 @@ export interface CreateUnifiedPostRequest {
   postTypeId: string
   data: Record<string, unknown>
   state?: ShPostState
+  locale?: string
+  translationGroupId?: string
 }
 
 export interface UpdateUnifiedPostRequest {
@@ -59,6 +61,18 @@ export class ShPostUnifiedService {
     req: { publishAt: string | null; unpublishAt: string | null }
   ): Promise<ShPostUnified> {
     const response = await axios.post<ShPostUnified>(`/v2/post-unified/${id}/schedule`, req)
+    return response.data
+  }
+
+  /** Sibling translations of this post's group (SH53), DRAFT-preferred. */
+  async translations(id: string): Promise<ShPostUnified[]> {
+    const response = await axios.get<ShPostUnified[]>(`/v2/post-unified/${id}/translations`)
+    return response.data
+  }
+
+  /** Create a linked translation of this post in another locale (SH53). */
+  async translate(id: string, locale: string, data?: Record<string, unknown>): Promise<ShPostUnified> {
+    const response = await axios.post<ShPostUnified>(`/v2/post-unified/${id}/translate`, { locale, data })
     return response.data
   }
 }

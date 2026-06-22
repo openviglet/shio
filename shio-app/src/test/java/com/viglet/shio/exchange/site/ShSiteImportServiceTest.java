@@ -162,7 +162,7 @@ class ShSiteImportServiceTest {
             ObjectNode targetData = objectMapper.createObjectNode();
             targetData.put(ShSystemPostTypeAttr.TITLE, "Target Post");
             sourceRefPostId = shPostUnifiedWriteService.create(
-                    new CreateRequest(sourceChildFolderId, postTypeId, targetData, ShPostState.DRAFT, "admin"))
+                    new CreateRequest(sourceChildFolderId, postTypeId, targetData, ShPostState.DRAFT, "admin", null, null))
                     .getId();
 
             // A second post whose data embeds a reference to the first post's id
@@ -171,7 +171,7 @@ class ShSiteImportServiceTest {
             data.put(ShSystemPostTypeAttr.TITLE, "Source Post");
             data.put("related", sourceRefPostId);
             sourcePostId = shPostUnifiedWriteService.create(
-                    new CreateRequest(sourceChildFolderId, postTypeId, data, ShPostState.DRAFT, "admin"))
+                    new CreateRequest(sourceChildFolderId, postTypeId, data, ShPostState.DRAFT, "admin", null, null))
                     .getId();
         });
 

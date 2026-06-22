@@ -9,6 +9,7 @@
 package com.viglet.shio.api.cda.dto;
 
 import java.time.Instant;
+import java.util.List;
 
 import tools.jackson.databind.JsonNode;
 
@@ -36,5 +37,7 @@ public record ShCdaPost(
         Instant date,
         Instant modifiedDate,
         Instant publicationDate,
+        String locale,
+        List<String> availableLocales,
         JsonNode attrs) {
 }

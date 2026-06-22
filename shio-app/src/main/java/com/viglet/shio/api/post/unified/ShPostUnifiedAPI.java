@@ -65,7 +65,9 @@ public class ShPostUnifiedAPI {
                 payload.postTypeId(),
                 payload.data(),
                 payload.state() != null ? payload.state() : ShPostState.DRAFT,
-                principal != null ? principal.getName() : null));
+                principal != null ? principal.getName() : null,
+                payload.locale(),
+                payload.translationGroupId()));
     }
 
     @PutMapping("/{id}")
@@ -96,10 +98,15 @@ public class ShPostUnifiedAPI {
         return ResponseEntity.noContent().build();
     }
 
-    public record CreatePayload(String folderId, String postTypeId, JsonNode data, ShPostState state) {
+    public record CreatePayload(String folderId, String postTypeId, JsonNode data, ShPostState state,
+                                String locale, String translationGroupId) {
     }
 
     public record UpdatePayload(JsonNode data, ShPostState state) {
+    }
+
+    /** SH53 — body of {@code POST /{id}/translate}: the target locale + optional seed data. */
+    public record TranslatePayload(String locale, JsonNode data) {
     }
 
     @GetMapping("/folder/{folderId}")
@@ -121,6 +128,26 @@ public class ShPostUnifiedAPI {
     @GetMapping("/{id}/versions")
     public List<ShPostUnified> versions(@PathVariable String id) {
         return shPostUnifiedRepository.findById(id);
+    }
+
+    /** SH53 — the sibling translations of this post's group (DRAFT-preferred, one per id). */
+    @GetMapping("/{id}/translations")
+    public List<ShPostUnified> translations(@PathVariable String id) {
+        return shPostUnifiedWriteService.listTranslations(id);
+    }
+
+    /** SH53 — create a linked translation of this post in another locale. */
+    @PostMapping("/{id}/translate")
+    public ResponseEntity<ShPostUnified> translate(@PathVariable String id,
+                                                   @RequestBody TranslatePayload payload,
+                                                   Principal principal) {
+        try {
+            return ResponseEntity.ok(shPostUnifiedWriteService.translate(
+                    id, payload.locale(), payload.data(),
+                    principal != null ? principal.getName() : null));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @PostMapping("/{id}/restore")

@@ -15,6 +15,7 @@ import { ShPostUnifiedService } from "@/services/post-unified/post-unified.servi
 import { ShPreviewTokenService } from "@/services/preview-token/preview-token.service"
 import { PostVersionsDialog } from "@/components/post-versions.dialog"
 import { PostScheduleDialog } from "@/components/post-schedule.dialog"
+import { PostTranslationsMenu } from "@/components/post-translations.menu"
 import type { ShPostUnified, ShPostState } from "@/models/post-unified/post-unified"
 import { parseSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, StickySaveBar, toast } from "@viglet/viglet-design-system"
@@ -164,6 +165,7 @@ export default function PostUnifiedEditPage() {
                   {t("content.previewDraft")}
                 </GradientButton>
               )}
+              <PostTranslationsMenu postId={postId} currentLocale={post.locale} />
               <GradientButton
                 type="button"
                 size="sm"

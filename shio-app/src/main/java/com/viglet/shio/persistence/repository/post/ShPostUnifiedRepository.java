@@ -66,6 +66,15 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     List<ShPostUnified> findByShSite_IdAndShPostType_NameAndStateIn(String siteId, String postType,
                                                                     Collection<ShPostState> states);
 
+    // --- Content i18n / locales (SH53) ---
+
+    /** All sibling translation rows (across states) sharing a translation group. */
+    List<ShPostUnified> findByTranslationGroupId(String translationGroupId);
+
+    /** Resolve a post by site + friendly URL + locale (SH53 locale-aware delivery). */
+    Optional<ShPostUnified> findByShSite_IdAndFurlAndStateAndLocale(String siteId, String furl,
+                                                                    ShPostState state, String locale);
+
     // --- Full-text search (SH52). The :q term is pre-lowercased and %-wrapped by
     //     ShCdaService; the predicate matches title, summary and the raw attribute
     //     data CLOB (portable LIKE — keeps the SH26 cross-DB guarantee, unlike

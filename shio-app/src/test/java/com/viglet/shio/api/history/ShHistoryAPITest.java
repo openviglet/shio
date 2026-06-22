@@ -138,7 +138,7 @@ class ShHistoryAPITest {
         ObjectNode data = objectMapper.createObjectNode();
         data.put(ShSystemPostTypeAttr.TITLE, "Audited Post");
         ShPostUnified created = shPostUnifiedWriteService.create(new CreateRequest(
-                folderId, postTypeId, data, ShPostState.DRAFT, "admin"));
+                folderId, postTypeId, data, ShPostState.DRAFT, "admin", null, null));
         postId = created.getId();
         shPostUnifiedWriteService.publish(postId, "admin");
     }

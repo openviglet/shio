@@ -74,7 +74,7 @@ class ShGraphQLSchemaTest {
         ObjectNode node = MAPPER.createObjectNode();
         attrs.forEach(node::put);
         return new ShCdaPost(id, title, null, "/news/hello", postType,
-                "siteA", "folderA", true, null, null, null, node);
+                "siteA", "folderA", true, null, null, null, "en", java.util.List.of(), node);
     }
 
     @Test

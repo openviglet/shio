@@ -138,6 +138,24 @@ public class ShPostUnified implements Serializable {
     @Column(name = "data", nullable = false)
     private String data;
 
+    /**
+     * SH53 — the language this post is authored in (BCP-47-ish code, e.g.
+     * {@code en}, {@code pt-br}), matching a {@link com.viglet.shio.persistence.model.system.ShLocale}
+     * {@code initials}. Defaults to {@code en} so every row (including those
+     * written by paths that don't set it) carries a locale.
+     */
+    @Column(name = "locale", length = 16)
+    private String locale = "en";
+
+    /**
+     * SH53 — groups the sibling translations of one logical piece of content.
+     * Standalone/master posts carry their own id here; a translation created via
+     * {@code /translate} inherits the source's group id, so all translations of
+     * the same content share it. Not part of the {@code (id, state)} key.
+     */
+    @Column(name = "translation_group_id", length = 36)
+    private String translationGroupId;
+
     public String getId() {
         return id;
     }
@@ -286,5 +304,21 @@ public class ShPostUnified implements Serializable {
 
     public void setData(String data) {
         this.data = data;
+    }
+
+    public String getLocale() {
+        return locale;
+    }
+
+    public void setLocale(String locale) {
+        this.locale = locale;
+    }
+
+    public String getTranslationGroupId() {
+        return translationGroupId;
+    }
+
+    public void setTranslationGroupId(String translationGroupId) {
+        this.translationGroupId = translationGroupId;
     }
 }

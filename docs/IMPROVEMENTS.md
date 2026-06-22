@@ -279,12 +279,7 @@ ecosystem.
 
 > ✅ **III.7 Content full-text search (SH52) — shipped.** See [CHANGELOG.md](CHANGELOG.md) Block C. Engine decision recorded there: in-DB portable `LIKE` (cross-DB safe), not Turing.
 
-### III.8 Content i18n / locales (SH53)
-
-`ShLocale` exists in the model but is **unused** by `ShPostUnified` — a post is
-single-language. Add a locale axis to the content (locale field / translation
-linkage) and a `locale` parameter on CDA reads, so a headless front can request
-`post` per language. Table-stakes for the markets Contentful/Strapi target.
+> ✅ **III.8 Content i18n / locales (SH53) — shipped.** See [CHANGELOG.md](CHANGELOG.md) Block C. Model decision recorded there: `locale` + `translationGroupId` as plain columns (not in the composite key); translations are linked sibling posts.
 
 ### III.9 Content-level ACL / permissions (SH54)
 

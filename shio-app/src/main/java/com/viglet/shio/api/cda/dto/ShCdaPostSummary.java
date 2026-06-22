@@ -24,6 +24,7 @@ public record ShCdaPostSummary(
         String summary,
         String furl,
         String postType,
+        String locale,
         Instant date,
         Instant modifiedDate) {
 }

@@ -147,24 +147,45 @@ public class ShCdaService {
     public Optional<ShCdaPost> getPost(String id) {
         return resolvePost(id)
                 .filter(post -> siteAllowed(siteIdOf(post)))
-                .map(mapper::toPost);
+                .map(post -> mapper.toPost(post, availableLocales(post)));
     }
 
     public Optional<ShCdaPost> getPostByUrl(String siteId, String url) {
+        return getPostByUrl(siteId, url, null);
+    }
+
+    /**
+     * Resolve a published (or draft-preferred, under PREVIEW) post by site +
+     * friendly URL, optionally constrained to a {@code locale} (SH53). When a
+     * locale is given, only that translation matches; otherwise any locale at the
+     * URL resolves (back-compat). The returned post carries its sibling locales.
+     */
+    public Optional<ShCdaPost> getPostByUrl(String siteId, String url, String locale) {
         if (!siteAllowed(siteId)) {
             return Optional.empty();
         }
         for (String candidate : urlCandidates(url)) {
             for (ShPostState state : readStates()) {
-                Optional<ShCdaPost> found = shPostUnifiedRepository
-                        .findByShSite_IdAndFurlAndState(siteId, candidate, state)
-                        .map(mapper::toPost);
+                Optional<ShPostUnified> found = (locale != null && !locale.isBlank())
+                        ? shPostUnifiedRepository.findByShSite_IdAndFurlAndStateAndLocale(siteId, candidate, state, locale)
+                        : shPostUnifiedRepository.findByShSite_IdAndFurlAndState(siteId, candidate, state);
                 if (found.isPresent()) {
-                    return found;
+                    return found.map(post -> mapper.toPost(post, availableLocales(post)));
                 }
             }
         }
         return Optional.empty();
+    }
+
+    /** The distinct locales this post's translation group is available in (SH53), sorted. */
+    private List<String> availableLocales(ShPostUnified post) {
+        String group = post.getTranslationGroupId() != null ? post.getTranslationGroupId() : post.getId();
+        return shPostUnifiedRepository.findByTranslationGroupId(group).stream()
+                .map(ShPostUnified::getLocale)
+                .filter(l -> l != null && !l.isBlank())
+                .distinct()
+                .sorted()
+                .toList();
     }
 
     public ShCdaListing query(String siteId, String folderId, String postType, int page, int size) {

@@ -160,7 +160,7 @@ class ShSiteExportServiceTest {
             ObjectNode data = objectMapper.createObjectNode();
             data.put(ShSystemPostTypeAttr.TITLE, "Exported Post");
             postId = shPostUnifiedWriteService.create(
-                    new CreateRequest(childFolderId, postType.getId(), data, ShPostState.DRAFT, "admin"))
+                    new CreateRequest(childFolderId, postType.getId(), data, ShPostState.DRAFT, "admin", null, null))
                     .getId();
         });
     }

@@ -81,11 +81,21 @@ public class ShCdaMapper {
                 post.getSummary(),
                 post.getFurl(),
                 postTypeName(post),
+                post.getLocale(),
                 post.getDate(),
                 post.getModifiedDate());
     }
 
     public ShCdaPost toPost(ShPostUnified post) {
+        return toPost(post, java.util.List.of());
+    }
+
+    /**
+     * Full post including the SH53 locale axis. {@code availableLocales} lists
+     * the locales this content is translated into (computed by the service from
+     * the translation group) so a headless front can render a language switcher.
+     */
+    public ShCdaPost toPost(ShPostUnified post, java.util.List<String> availableLocales) {
         if (post == null) {
             return null;
         }
@@ -101,6 +111,8 @@ public class ShCdaMapper {
                 post.getDate(),
                 post.getModifiedDate(),
                 post.getPublicationDate(),
+                post.getLocale(),
+                availableLocales != null ? availableLocales : java.util.List.of(),
                 parseAttrs(post.getData()));
     }
 

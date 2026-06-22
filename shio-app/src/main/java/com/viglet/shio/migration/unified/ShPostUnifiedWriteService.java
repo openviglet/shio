@@ -10,6 +10,8 @@ package com.viglet.shio.migration.unified;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
@@ -104,7 +106,12 @@ public class ShPostUnifiedWriteService {
 
         ShPostState state = req.state() != null ? req.state() : ShPostState.DRAFT;
 
+        // Pre-assign the id so a standalone post can be its own translation group
+        // (SH53). ShAssignableUuidGenerator honours an explicitly-set id.
+        String postId = UUID.randomUUID().toString();
+
         ShPostUnified row = new ShPostUnified();
+        row.setId(postId);
         row.setState(state);
         row.setShFolder(folder);
         row.setShSite(folder.getShSite());
@@ -112,6 +119,9 @@ public class ShPostUnifiedWriteService {
         row.setOwner(req.owner());
         row.setDate(Instant.now());
         row.setModifiedDate(Instant.now());
+        row.setLocale(req.locale() != null && !req.locale().isBlank() ? req.locale() : "en");
+        row.setTranslationGroupId(req.translationGroupId() != null && !req.translationGroupId().isBlank()
+                ? req.translationGroupId() : postId);
         row.setPublished(state == ShPostState.PUBLISHED);
         row.setPublishStatus(state == ShPostState.PUBLISHED
                 ? ShObjectPublishStatus.PUBLISH : ShObjectPublishStatus.DRAFT);
@@ -151,6 +161,61 @@ public class ShPostUnifiedWriteService {
         return saved;
     }
 
+    /**
+     * Create a translation of an existing post (SH53): a brand-new {@code DRAFT}
+     * post (its own id) in the same folder / post-type / site, authored in
+     * {@code locale} and sharing the source's {@code translationGroupId} so the
+     * two are linked as siblings. Its data is seeded from {@code data} when
+     * supplied, otherwise copied verbatim from the source post.
+     */
+    @Transactional
+    public ShPostUnified translate(String sourceId, String locale, JsonNode data, String owner) {
+        if (locale == null || locale.isBlank()) {
+            throw new IllegalArgumentException("A target locale is required");
+        }
+        ShPostUnified source = resolveAnyState(sourceId)
+                .orElseThrow(() -> new IllegalArgumentException("Source post not found: " + sourceId));
+        String groupId = source.getTranslationGroupId() != null ? source.getTranslationGroupId() : sourceId;
+        JsonNode payload = data != null ? data : readTree(source.getData());
+        return create(new CreateRequest(
+                source.getShFolder() != null ? source.getShFolder().getId() : null,
+                source.getShPostType() != null ? source.getShPostType().getId() : null,
+                payload, ShPostState.DRAFT, owner, locale, groupId));
+    }
+
+    /** All sibling translations of a post's group (SH53), DRAFT-preferred, one per id. */
+    @Transactional(readOnly = true)
+    public List<ShPostUnified> listTranslations(String postId) {
+        ShPostUnified anchor = resolveAnyState(postId).orElse(null);
+        if (anchor == null) {
+            return List.of();
+        }
+        String groupId = anchor.getTranslationGroupId() != null ? anchor.getTranslationGroupId() : postId;
+        java.util.Map<String, ShPostUnified> byId = new java.util.LinkedHashMap<>();
+        for (ShPostUnified row : shPostUnifiedRepository.findByTranslationGroupId(groupId)) {
+            byId.merge(row.getId(), row, (existing, candidate) ->
+                    existing.getState() == ShPostState.DRAFT ? existing : candidate);
+        }
+        return List.copyOf(byId.values());
+    }
+
+    private Optional<ShPostUnified> resolveAnyState(String postId) {
+        Optional<ShPostUnified> draft = shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT);
+        return draft.isPresent() ? draft
+                : shPostUnifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED);
+    }
+
+    private JsonNode readTree(String json) {
+        if (json == null || json.isBlank()) {
+            return objectMapper.createObjectNode();
+        }
+        try {
+            return objectMapper.readTree(json);
+        } catch (JacksonException e) {
+            return objectMapper.createObjectNode();
+        }
+    }
+
     @Transactional
     public ShPostUnified publish(String postId, String publisher) {
         ShPostUnified draft = shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT)
@@ -176,6 +241,8 @@ public class ShPostUnifiedWriteService {
         pub.setPublished(true);
         pub.setPublishStatus(ShObjectPublishStatus.PUBLISH);
         pub.setData(draft.getData());
+        pub.setLocale(draft.getLocale());
+        pub.setTranslationGroupId(draft.getTranslationGroupId());
         ShPostUnified saved = shPostUnifiedRepository.save(pub);
         shContentAuditService.record(ShContentAction.PUBLISH, postId,
                 siteIdOf(saved), saved.getTitle(), publisher);
@@ -207,6 +274,8 @@ public class ShPostUnifiedWriteService {
                     d.setShPostType(published.getShPostType());
                     d.setOwner(published.getOwner());
                     d.setDate(published.getDate());
+                    d.setLocale(published.getLocale());
+                    d.setTranslationGroupId(published.getTranslationGroupId());
                     return d;
                 });
 
@@ -306,6 +375,8 @@ public class ShPostUnifiedWriteService {
         draft.setTitle(published.getTitle());
         draft.setSummary(published.getSummary());
         draft.setFurl(published.getFurl());
+        draft.setLocale(published.getLocale());
+        draft.setTranslationGroupId(published.getTranslationGroupId());
         draft.setPublished(false);
         draft.setPublishStatus(ShObjectPublishStatus.DRAFT);
         return draft;
@@ -420,7 +491,8 @@ public class ShPostUnifiedWriteService {
     }
 
     public record CreateRequest(String folderId, String postTypeId, JsonNode data,
-                                ShPostState state, String owner) {
+                                ShPostState state, String owner, String locale,
+                                String translationGroupId) {
     }
 
     public record UpdateRequest(JsonNode data, ShPostState state, String modifier) {

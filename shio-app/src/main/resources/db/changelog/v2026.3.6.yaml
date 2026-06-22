@@ -1,0 +1,57 @@
+databaseChangeLog:
+  # SH53 — content i18n / locales. Adds a locale axis to the unified post store:
+  # `locale` (the language the row is authored in; backfilled 'en') and
+  # `translation_group_id` (groups sibling translations of one logical content;
+  # backfilled to the row's own id so every existing post is its own group).
+  # Neither joins the (id, state) composite key — they are plain columns, so the
+  # PK and the cross-DB (SH26) schema stay untouched. Nullable on add + backfilled.
+  # Types DB-agnostic (VARCHAR) per ShLiquibaseChangelogAgnosticTest; SH26: preserve
+  # identifier case on PostgreSQL (re-declared per file). Table is sh_post_unified.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh53-post-locale
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_post_unified
+                columnName: locale
+      changes:
+        - addColumn:
+            tableName: sh_post_unified
+            columns:
+              - column:
+                  name: locale
+                  type: VARCHAR(16)
+        - update:
+            tableName: sh_post_unified
+            columns:
+              - column:
+                  name: locale
+                  value: en
+            where: locale IS NULL
+  - changeSet:
+      id: sh53-post-translation-group
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_post_unified
+                columnName: translation_group_id
+      changes:
+        - addColumn:
+            tableName: sh_post_unified
+            columns:
+              - column:
+                  name: translation_group_id
+                  type: VARCHAR(36)
+        # Backfill each existing post as its own translation group.
+        - update:
+            tableName: sh_post_unified
+            columns:
+              - column:
+                  name: translation_group_id
+                  valueComputed: id
+            where: translation_group_id IS NULL

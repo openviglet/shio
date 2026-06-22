@@ -256,6 +256,6 @@ class ShPostTypeConsoleAPITest {
         data.put(ShSystemPostTypeAttr.TITLE, title);
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         return tx.execute(status -> shPostUnifiedWriteService.create(
-                new CreateRequest(folderId, typeId, data, ShPostState.DRAFT, "admin")).getId());
+                new CreateRequest(folderId, typeId, data, ShPostState.DRAFT, "admin", null, null)).getId());
     }
 }

@@ -82,10 +82,11 @@ public class ShCdaAPI {
     }
 
     @GetMapping("/post/by-url")
-    @Operation(summary = "Resolve a published post by site + friendly URL")
+    @Operation(summary = "Resolve a published post by site + friendly URL (optionally per locale)")
     public ResponseEntity<ShCdaPost> postByUrl(@RequestParam String siteId,
-                                               @RequestParam String url) {
-        return ResponseEntity.of(shCdaService.getPostByUrl(siteId, url));
+                                               @RequestParam String url,
+                                               @RequestParam(name = "locale", required = false) String locale) {
+        return ResponseEntity.of(shCdaService.getPostByUrl(siteId, url, locale));
     }
 
     @GetMapping("/post-type")
