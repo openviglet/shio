@@ -93,7 +93,7 @@ function ChoicesSettings({ settings, onChange }: {
         <Textarea
           rows={5}
           className="font-mono text-sm"
-          placeholder={"value1: Label 1\nvalue2: Label 2"}
+          placeholder={t("content.choicesExample")}
           value={(settings.choices as string) ?? ""}
           onChange={(e) => onChange({ ...settings, choices: e.target.value })}
         />
@@ -120,7 +120,7 @@ function FolderSettings({ settingsKey, settings, onChange }: {
     <div className="space-y-2">
       <p className="font-medium text-sm">{t("content.folder")}</p>
       <Input
-        placeholder="Folder ID"
+        placeholder={t("content.folderId")}
         value={nested.folderId ?? ""}
         onChange={(e) => onChange({ ...settings, [settingsKey]: { ...nested, folderId: e.target.value } })}
       />
@@ -158,7 +158,7 @@ function MultiSelectSettings({ settings, onChange, postTypes }: {
       <div className="space-y-2">
         <p className="font-medium text-sm">{t("content.folder")}</p>
         <Input
-          placeholder="Folder ID"
+          placeholder={t("content.folderId")}
           value={ms.folderId ?? ""}
           onChange={(e) => onChange({ ...settings, multiselect: { ...ms, folderId: e.target.value } })}
         />
@@ -282,11 +282,11 @@ function SemanticNavigationSettings({ attr, onAttrChange }: {
           onValueChange={(v) => updateSearch({ ...search, association: v })}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="NONE" />
+            <SelectValue placeholder={t("content.none")} />
           </SelectTrigger>
           <SelectContent>
             {SEARCH_ASSOCIATIONS.map((a) => (
-              <SelectItem key={a || "none"} value={a || "none"}>{a || "NONE"}</SelectItem>
+              <SelectItem key={a || "none"} value={a || "none"}>{a || t("content.none")}</SelectItem>
             ))}
           </SelectContent>
         </Select>

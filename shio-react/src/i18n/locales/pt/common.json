@@ -27,5 +27,6 @@
   "common.title": "Titulo",
   "common.enabled": "Habilitado",
   "common.disabled": "Desabilitado",
-  "common.status": "Status"
+  "common.status": "Status",
+  "common.new": "Novo"
 }

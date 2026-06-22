@@ -234,7 +234,7 @@ export default function ObjectChildrenPage() {
 
   const handleClone = async (itemId: string) => {
     await axios.put(`/v2/object/copyto/${objectId}`, [itemId])
-    toast.success("Cloned successfully")
+    toast.success(t("content.clonedSuccess"))
     await refreshList()
   }
 
@@ -277,7 +277,7 @@ export default function ObjectChildrenPage() {
     }
     const endpoint = folderDialogMode === "copy" ? "copyto" : "moveto"
     await axios.put(`/v2/object/${endpoint}/${folderDialogCurrentId}`, folderDialogIds)
-    toast.success(folderDialogMode === "copy" ? "Copied successfully" : "Moved successfully")
+    toast.success(folderDialogMode === "copy" ? t("content.copiedSuccess") : t("content.movedSuccess"))
     setFolderDialogOpen(false)
     setSelectedItems(new Set())
     await refreshList()
@@ -302,14 +302,14 @@ export default function ObjectChildrenPage() {
               className="bg-green-600 hover:bg-green-700 text-white"
               onClick={() => siteId && navigate(`${ROUTES.PREVIEW}/${siteId}`)}
             >
-              <Eye className="mr-2 h-4 w-4" /> View Site
+              <Eye className="mr-2 h-4 w-4" /> {t("content.viewSite")}
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => navigate(`${ROUTES.CONTENT_ROOT}/site/${siteId}`)}
             >
-              <Settings className="mr-2 h-4 w-4" /> Site Properties
+              <Settings className="mr-2 h-4 w-4" /> {t("content.siteProperties")}
             </Button>
           </div>
         )}
@@ -319,11 +319,11 @@ export default function ObjectChildrenPage() {
           <CardContent className="flex items-center gap-8 py-3 px-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <Folder className="h-4 w-4" />
-              <span>{folderCount} {folderCount === 1 ? "folder" : "folders"}</span>
+              <span>{t("content.folderCount", { count: folderCount })}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <FileText className="h-4 w-4" />
-              <span>{postCount} {postCount === 1 ? "post" : "posts"}</span>
+              <span>{t("content.postCount", { count: postCount })}</span>
             </div>
           </CardContent>
         </Card>
@@ -345,7 +345,7 @@ export default function ObjectChildrenPage() {
                   }
                 }}
               >
-                <Plus className="mr-2 h-4 w-4" /> New {lastPostType?.title || lastPostType?.name || "Article"}
+                <Plus className="mr-2 h-4 w-4" /> {t("content.newItem", { type: lastPostType?.title || lastPostType?.name || t("content.defaultPostType") })}
               </Button>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -358,17 +358,17 @@ export default function ObjectChildrenPage() {
                     <LayoutGrid className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Select post type</TooltipContent>
+                <TooltipContent>{t("content.selectPostTypeTooltip")}</TooltipContent>
               </Tooltip>
             </div>
           </TooltipProvider>
 
           <Button variant="outline" size="sm" onClick={() => navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/new-folder`)}>
-            <FolderPlus className="mr-2 h-4 w-4" /> New Folder
+            <FolderPlus className="mr-2 h-4 w-4" /> {t("content.newFolder")}
           </Button>
 
           <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.SITE_IMPORT)}>
-            <Upload className="mr-2 h-4 w-4" /> Import
+            <Upload className="mr-2 h-4 w-4" /> {t("content.import")}
           </Button>
 
           <div className="flex-1" />
@@ -377,41 +377,41 @@ export default function ObjectChildrenPage() {
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="order">Order</SelectItem>
-              <SelectItem value="name">Name</SelectItem>
-              <SelectItem value="date">Date</SelectItem>
+              <SelectItem value="order">{t("content.order")}</SelectItem>
+              <SelectItem value="name">{t("common.name")}</SelectItem>
+              <SelectItem value="date">{t("common.date")}</SelectItem>
             </SelectContent>
           </Select>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">Select <ChevronDown className="ml-1 h-3.5 w-3.5" /></Button>
+              <Button variant="outline" size="sm">{t("content.select")} <ChevronDown className="ml-1 h-3.5 w-3.5" /></Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleSelectAction("content")}><FileText className="mr-2 h-4 w-4 text-green-600" /> Content</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleSelectAction("folder")}><Folder className="mr-2 h-4 w-4" /> Folder</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSelectAction("content")}><FileText className="mr-2 h-4 w-4 text-green-600" /> {t("content.batchContent")}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSelectAction("folder")}><Folder className="mr-2 h-4 w-4" /> {t("content.folder")}</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleSelectAction("everything")}>Everything</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleSelectAction("invert")}>Invert Selection</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleSelectAction("nothing")}>Nothing</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSelectAction("everything")}>{t("content.selectEverything")}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSelectAction("invert")}>{t("content.selectInvert")}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSelectAction("nothing")}>{t("content.selectNothing")}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" disabled={selectedItems.size === 0}>Action in Batch <ChevronDown className="ml-1 h-3.5 w-3.5" /></Button>
+              <Button variant="outline" size="sm" disabled={selectedItems.size === 0}>{t("content.actionInBatch")} <ChevronDown className="ml-1 h-3.5 w-3.5" /></Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => openFolderDialog("copy", [...selectedItems])}><Copy className="mr-2 h-4 w-4" /> Copy</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => openFolderDialog("move", [...selectedItems])}><Move className="mr-2 h-4 w-4" /> Move</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openFolderDialog("copy", [...selectedItems])}><Copy className="mr-2 h-4 w-4" /> {t("content.copy")}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openFolderDialog("move", [...selectedItems])}><Move className="mr-2 h-4 w-4" /> {t("content.move")}</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleBatchAction("delete")} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleBatchAction("delete")} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> {t("common.delete")}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
           {siteId && (
             <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => window.open(`/api/v2/site/${siteId}/export`, "_blank")}>
-              <Download className="mr-2 h-4 w-4" /> Download Site
+              <Download className="mr-2 h-4 w-4" /> {t("content.downloadSite")}
             </Button>
           )}
         </div>
@@ -452,7 +452,7 @@ export default function ObjectChildrenPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               className="w-full pl-10 pr-4 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Filter items..."
+              placeholder={t("content.filterItems")}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               autoFocus
@@ -464,7 +464,7 @@ export default function ObjectChildrenPage() {
         <Card className="overflow-hidden">
           <CardContent className="p-0">
             {loading && (
-              <div className="px-4 py-12 text-center text-sm text-muted-foreground">Loading...</div>
+              <div className="px-4 py-12 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
             )}
 
             {!loading && sortedItems.map((item, index) => (
@@ -509,11 +509,11 @@ export default function ObjectChildrenPage() {
                     <div className="flex flex-wrap gap-1 mt-1.5">
                       {item.objectType === "POST" && (
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                          Post
+                          {t("content.postLabel")}
                         </Badge>
                       )}
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-                        {item.objectType === "FOLDER" ? "Folder" : item.postTypeName || "Post"}
+                        {item.objectType === "FOLDER" ? t("content.folder") : item.postTypeName || t("content.postLabel")}
                       </Badge>
                       {siteName && (
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
@@ -531,28 +531,28 @@ export default function ObjectChildrenPage() {
                   {/* Hover actions - wrap in grid like AngularJS */}
                   <div className="shrink-0 hidden group-hover:flex flex-wrap gap-x-4 gap-y-1 items-start text-xs max-w-70 justify-end">
                     <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); item.objectType === "FOLDER" ? navigate(`${ROUTES.CONTENT_ROOT}/folder/${item.id}/edit`) : navigate(`${ROUTES.CONTENT_ROOT}/post/${item.id}`) }}>
-                      <Pencil className="h-3 w-3" /> Edit
+                      <Pencil className="h-3 w-3" /> {t("common.edit")}
                     </button>
                     <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); handleClone(item.id) }}>
-                      <ClipboardCopy className="h-3 w-3" /> Clone
+                      <ClipboardCopy className="h-3 w-3" /> {t("content.clone")}
                     </button>
-                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); axios.get(`/v2/object/${item.id}/clear-cache`).then(() => toast.success("Cache cleared")) }}>
-                      <RefreshCw className="h-3 w-3" /> Clear Cache
+                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); axios.get(`/v2/object/${item.id}/clear-cache`).then(() => toast.success(t("content.cacheCleared"))) }}>
+                      <RefreshCw className="h-3 w-3" /> {t("content.clearCacheAction")}
                     </button>
                     <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); openFolderDialog("copy", [item.id]) }}>
-                      <Copy className="h-3 w-3" /> Copy
+                      <Copy className="h-3 w-3" /> {t("content.copy")}
                     </button>
                     <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); setPermsTarget(item); setPermsOpen(true) }}>
                       <ShieldCheck className="h-3 w-3" /> {t("acl.permissions")}
                     </button>
                     <button type="button" className="flex items-center gap-1 text-destructive/70 hover:text-destructive whitespace-nowrap" onClick={(e) => { e.stopPropagation(); setDeleteTarget(item); setDeleteDialogOpen(true) }}>
-                      <Trash2 className="h-3 w-3" /> Delete
+                      <Trash2 className="h-3 w-3" /> {t("common.delete")}
                     </button>
                     <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); openFolderDialog("move", [item.id]) }}>
-                      <Move className="h-3 w-3" /> Move
+                      <Move className="h-3 w-3" /> {t("content.move")}
                     </button>
                     <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); navigate(`${ROUTES.PREVIEW}/${item.id}`) }}>
-                      <Eye className="h-3 w-3" /> View Page
+                      <Eye className="h-3 w-3" /> {t("content.viewPage")}
                     </button>
                   </div>
                 </div>
@@ -563,7 +563,7 @@ export default function ObjectChildrenPage() {
               <div className="px-4 py-16 text-center">
                 <Folder className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
                 <p className="text-sm text-muted-foreground">{t("common.noResults")}</p>
-                <p className="text-xs text-muted-foreground/70 mt-1">Create a folder or post to get started.</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">{t("content.createFolderOrPost")}</p>
               </div>
             )}
           </CardContent>
@@ -572,10 +572,10 @@ export default function ObjectChildrenPage() {
         {/* Selection info bar */}
         {selectedItems.size > 0 && (
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <span>{selectedItems.size} item{selectedItems.size !== 1 ? "s" : ""} selected</span>
+            <span>{t("content.itemsSelected", { count: selectedItems.size })}</span>
             <Separator orientation="vertical" className="h-4" />
             <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setSelectedItems(new Set())}>
-              Clear selection
+              {t("content.clearSelection")}
             </Button>
           </div>
         )}
@@ -585,12 +585,12 @@ export default function ObjectChildrenPage() {
       <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{folderDialogMode === "copy" ? "Copy to..." : "Move to..."}</DialogTitle>
+            <DialogTitle>{folderDialogMode === "copy" ? t("content.copyTo") : t("content.moveTo")}</DialogTitle>
           </DialogHeader>
           {/* Breadcrumb inside dialog */}
           <div className="flex items-center gap-1 text-sm text-muted-foreground flex-wrap">
             <button type="button" className="hover:text-foreground hover:underline" onClick={() => goBackFolderDialog(0)}>
-              Root
+              {t("content.root")}
             </button>
             {folderDialogPath.map((item, i) => (
               <span key={item.id} className="flex items-center gap-1">
@@ -604,7 +604,7 @@ export default function ObjectChildrenPage() {
           {/* Folder list */}
           <div className="max-h-60 overflow-y-auto border rounded-md divide-y">
             {folderDialogFolders.length === 0 && (
-              <div className="px-4 py-6 text-center text-sm text-muted-foreground">No subfolders</div>
+              <div className="px-4 py-6 text-center text-sm text-muted-foreground">{t("content.noSubfolders")}</div>
             )}
             {folderDialogFolders.map(folder => (
               <button
@@ -619,9 +619,9 @@ export default function ObjectChildrenPage() {
             ))}
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => setFolderDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" size="sm" onClick={() => setFolderDialogOpen(false)}>{t("common.cancel")}</Button>
             <Button size="sm" onClick={confirmFolderDialog}>
-              {folderDialogMode === "copy" ? "Copy here" : "Move here"}
+              {folderDialogMode === "copy" ? t("content.copyHere") : t("content.moveHere")}
             </Button>
           </div>
         </DialogContent>
@@ -629,20 +629,20 @@ export default function ObjectChildrenPage() {
 
       {/* Delete confirmation dialog */}
       <DialogDelete
-        feature={deleteTarget ? (deleteTarget.objectType === "FOLDER" ? "Folder" : "Post") : "Item"}
+        feature={deleteTarget ? (deleteTarget.objectType === "FOLDER" ? t("content.folder") : t("content.postLabel")) : t("content.batchContent")}
         name={deleteTarget?.name || `${selectedItems.size} item(s)`}
         open={deleteDialogOpen}
         setOpen={setDeleteDialogOpen}
         onDelete={async () => {
           if (deleteTarget) {
             await deleteObject(deleteTarget.id, deleteTarget.objectType).catch(() => {})
-            toast.success("Deleted")
+            toast.success(t("content.deletedShort"))
           } else {
             for (const id of selectedItems) {
               const item = combinedItems.find(i => i.id === id)
               await deleteObject(id, item?.objectType || "POST").catch(() => {})
             }
-            toast.success(`${selectedItems.size} item(s) deleted`)
+            toast.success(t("content.itemsDeleted", { count: selectedItems.size }))
             setSelectedItems(new Set())
           }
           setDeleteDialogOpen(false)
