@@ -12,12 +12,13 @@ export function HomePage() {
   const { data: page, loading: pageLoading } = useShioPost(HOMEPAGE_ID)
 
   // The CDA query filters by site id, not name — resolve it from the sites list.
-  const { data: sites } = useShioSites()
+  // Gate the query on the resolved site id so it never fires with siteId=undefined.
+  const { data: sites, loading: sitesLoading } = useShioSites()
   const siteId = sites?.find((s) => s.name === SITE_NAME)?.id
-  const { data: listing, loading: servicesLoading } = useShioQuery({
-    siteId,
-    postType: "Service",
-  })
+  const { data: listing, loading: servicesLoading } = useShioQuery(
+    { siteId, postType: "Service" },
+    !!siteId
+  )
 
   if (pageLoading) return <div className="loading">Loading...</div>
 
@@ -56,7 +57,7 @@ export function HomePage() {
           <p>Everything you need to build and manage modern digital experiences.</p>
         </div>
         <div className="services-grid">
-          {servicesLoading ? (
+          {sitesLoading || servicesLoading ? (
             <div className="loading">Loading services...</div>
           ) : (
             services.map((svc) => <ServiceCard key={svc.id} service={svc} />)

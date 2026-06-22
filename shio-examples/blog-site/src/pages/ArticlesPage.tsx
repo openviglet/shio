@@ -10,13 +10,17 @@ const SITE_NAME = "Tech Blog"
 
 export function ArticlesPage() {
   // The CDA query filters by site id, not name — resolve it from the sites list.
-  const { data: sites } = useShioSites()
+  const { data: sites, loading: sitesLoading } = useShioSites()
   const siteId = sites?.find((s) => s.name === SITE_NAME)?.id
 
   // A listing returns lightweight summaries (title/summary/date) — no attributes.
-  const { data: listing, loading } = useShioQuery({ siteId, postType: "Article" })
+  // Gate the query on the resolved site id so it never fires with siteId=undefined.
+  const { data: listing, loading } = useShioQuery(
+    { siteId, postType: "Article" },
+    !!siteId
+  )
 
-  if (loading) return <div className="loading">Loading articles...</div>
+  if (sitesLoading || loading) return <div className="loading">Loading articles...</div>
 
   const articles = listing?.posts ?? []
 
