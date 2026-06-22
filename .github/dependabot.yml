@@ -1,8 +1,11 @@
 # Dependabot configuration for the Shio monorepo.
-# Frontend uses a pnpm workspace at the repo root (pnpm-workspace.yaml) — Dependabot
-# discovers every workspace member (shio-react, shio-client, shio-model,
-# shio-react-sdk, create-shio-app, cli) from the root manifest + pnpm-lock.yaml,
-# so a single `npm` block covers them all. Grouping bundles each ecosystem's
+# Frontend uses a single pnpm workspace at the repo root (pnpm-workspace.yaml) —
+# Dependabot discovers EVERY workspace member (shio-react, shio-client, shio-model,
+# shio-react-sdk, shio-js-sdk/@viglet/shio-editor-cors, create-shio-app, cli and the
+# shio-examples/* sites) from the root manifest + the single pnpm-lock.yaml, so one
+# `npm` block covers them all. Folding the examples + editor bridge into the workspace
+# (and dropping their stray package-lock.json files) is what collapsed the former
+# per-project npm PRs into this one grouped PR. Grouping bundles each ecosystem's
 # updates into one PR instead of one-per-dependency-per-project.
 #
 # https://help.github.com/github/administering-a-repository/configuration-options-for-dependency-updates

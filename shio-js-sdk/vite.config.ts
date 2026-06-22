@@ -15,6 +15,8 @@ export default defineConfig({
     },
     outDir: "dist",
     emptyOutDir: true,
-    minify: "esbuild",
+    // vite 8 no longer bundles esbuild; use the default (oxc) minifier, like the
+    // sibling lib packages (shio-react-sdk / shio-client).
+    minify: true,
   },
 });

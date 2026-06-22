@@ -2,7 +2,7 @@
   "name": "@viglet/shio-js",
   "private": true,
   "version": "2026.3.1",
-  "description": "Shio CMS JavaScript workspace — console (shio-react), CDA client, React SDK and the Next.js starter generator.",
+  "description": "Shio CMS JavaScript workspace — console (shio-react), CDA client, React SDK, Universal Editor bridge, the Next.js starter generator and the example sites.",
   "type": "module",
   "packageManager": "pnpm@10.13.1",
   "engines": {
@@ -11,9 +11,18 @@
   "scripts": {
     "build:client": "pnpm --filter @viglet/shio-client run build",
     "build:sdk": "pnpm --filter @viglet/shio-client run build && pnpm --filter @viglet/shio-react-sdk run build",
+    "build:editor": "pnpm --filter @viglet/shio-editor-cors run build",
     "build:console": "pnpm --filter shio-react run compile:build",
+    "build:examples": "pnpm --filter blog-site --filter corporate-site run build",
+    "build": "pnpm run build:sdk && pnpm run build:editor && pnpm run build:console",
+    "dev:console": "pnpm --filter shio-react run dev",
     "typecheck": "pnpm --filter @viglet/shio-client --filter @viglet/shio-react-sdk run typecheck",
-    "test": "pnpm --filter @viglet/shio-client --filter create-shio-app --filter @viglet/shio run test"
+    "lint": "pnpm -r run lint",
+    "test": "pnpm --filter @viglet/shio-client --filter create-shio-app --filter @viglet/shio run test",
+    "clean": "rimraf \"**/node_modules\" \"**/dist\" \"**/build\""
+  },
+  "devDependencies": {
+    "rimraf": "^6.0.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
