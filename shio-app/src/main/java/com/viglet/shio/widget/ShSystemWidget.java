@@ -35,7 +35,7 @@ public class ShSystemWidget {
 	public static final String COMBO_BOX = "Combo Box";
 	public static final String CONTENT_SELECT = "Content Select";
 	public static final String RELATOR = "Relator";
-	public static final String RECAPTCHA = "reCAPTCHA";
+	// SH60: reCAPTCHA widget deprecated (orphaned seed removed; not ported to React).
 	public static final String FORM_CONFIGURATION = "Form Configuration";
 	public static final String DATE = "Date";
 	public static final String MULTI_SELECT = "Multi Select";

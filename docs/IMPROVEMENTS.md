@@ -354,8 +354,6 @@ ships on its own:
 
 - **SH59 — Search config page** (deps SH52). Migrate `config/search`; depends on the
   content full-text search backend.
-- **SH60 — Legacy commerce/recaptcha widgets**. Decide port-or-deprecate for the
-  AngularJS `payment` + `recaptcha` widgets before they block SH21.
 - **SH61 — Static-file manager page** (deps SH38). Migrate `staticFile`; blocked on
   the upload/serve subsystem the current backend lacks.
 

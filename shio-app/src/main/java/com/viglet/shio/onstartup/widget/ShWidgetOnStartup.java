@@ -135,17 +135,13 @@ public class ShWidgetOnStartup {
 			shWidget.setType(TEXT_TYPE);
 
 			shWidgetRepository.save(shWidget);
-			
-			shWidget = new ShWidget();
-			shWidget.setName(ShSystemWidget.RECAPTCHA);
-			shWidget.setDescription("reCAPTCHA Widget");
-			shWidget.setClassName("com.viglet.shio.widget.ShReCaptchaWidget");
-			shWidget.setImplementationCode("template/widget/recaptcha/recaptcha.html");
-			shWidget.setSettingPath("template/widget/recaptcha/setting/recaptcha-setting.html");
-			shWidget.setType(TEXT_TYPE);
 
-			shWidgetRepository.save(shWidget);			
-			
+			// SH60: the legacy reCAPTCHA widget is deprecated (not ported to React).
+			// Its server-side class (com.viglet.shio.widget.ShReCaptchaWidget) was
+			// removed in the nuclear refactor and form-spam protection is the
+			// consuming front-end app's concern in a headless-first product — so the
+			// orphaned seed is dropped. AngularJS templates go with SH21.
+
 			shWidget = new ShWidget();
 			shWidget.setName(ShSystemWidget.FORM_CONFIGURATION);
 			shWidget.setDescription("Form Configuraion Widget");
