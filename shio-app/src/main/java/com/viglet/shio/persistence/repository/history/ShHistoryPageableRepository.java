@@ -33,10 +33,12 @@ public interface ShHistoryPageableRepository extends PagingAndSortingRepository<
 
 	List<ShHistory> findAll();
 
+	List<ShHistory> findAllByOrderByDateDesc(Pageable pageable);
+
 	List<ShHistory> findByShObjectOrderByDateDesc(String shObject,  Pageable pageable);
-	
+
 	List<ShHistory> findByShSiteOrderByDateDesc(String shSite,  Pageable pageable);
-	
+
 	Optional<ShHistory> findById(String id);
 	
 }

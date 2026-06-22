@@ -1,0 +1,26 @@
+databaseChangeLog:
+  # SH51 — Audit / history. The ShHistory entity is now written on every unified
+  # post lifecycle transition (create/update/publish/unpublish/delete/restore) and
+  # read back by ShHistoryAPI + the console Activity viewer. Adds a structured
+  # `action` column so the trail records *what* happened (not just a free-text
+  # description). Nullable on add (old rows — none in practice — stay null). Type
+  # kept DB-agnostic (VARCHAR) per ShLiquibaseChangelogAgnosticTest; SH26:
+  # preserve identifier case on PostgreSQL (re-declared per file). Table is the
+  # PascalCase entity name `ShHistory`.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh51-history-action
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShHistory
+                columnName: action
+      changes:
+        - addColumn:
+            tableName: ShHistory
+            columns:
+              - column:
+                  name: action
+                  type: VARCHAR(255)

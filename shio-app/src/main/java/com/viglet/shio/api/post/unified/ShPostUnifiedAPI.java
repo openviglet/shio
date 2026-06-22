@@ -85,14 +85,14 @@ public class ShPostUnifiedAPI {
     }
 
     @PostMapping("/{id}/unpublish")
-    public ResponseEntity<Void> unpublish(@PathVariable String id) {
-        shPostUnifiedWriteService.unpublish(id);
+    public ResponseEntity<Void> unpublish(@PathVariable String id, Principal principal) {
+        shPostUnifiedWriteService.unpublish(id, principal != null ? principal.getName() : null);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
-        shPostUnifiedWriteService.delete(id);
+    public ResponseEntity<Void> delete(@PathVariable String id, Principal principal) {
+        shPostUnifiedWriteService.delete(id, principal != null ? principal.getName() : null);
         return ResponseEntity.noContent().build();
     }
 

@@ -55,6 +55,9 @@ public class ShHistory implements Serializable {
 
 	private Instant date;
 
+	/** Structured transition kind (SH51): CREATE / UPDATE / PUBLISH / UNPUBLISH / DELETE / RESTORE. */
+	private String action;
+
 	private String description;
 
 	private String shObject;
@@ -67,6 +70,10 @@ public class ShHistory implements Serializable {
 
     public void setOwner(String owner) {
 		this.owner = owner;
+	}
+
+    public void setAction(String action) {
+		this.action = action;
 	}
 
     public void setDate(Instant date) {

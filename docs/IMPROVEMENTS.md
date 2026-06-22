@@ -275,12 +275,7 @@ Original direction:
 code, GitOps-friendly), `deploy`. Mirrors the `turing` CLI direction in the
 ecosystem.
 
-### III.6 Audit / history API + viewer (SH51)
-
-The `ShHistory` entity is already persisted on writes but is **never read back** —
-SH14 only diffs the DRAFT against the PUBLISHED snapshot, it does not expose the
-audit trail. Close the gap: a read endpoint for who/what/when + a console activity
-view. Foundation already exists (the entity), so this is wiring, not new modeling.
+> ✅ **III.6 Audit / history API + viewer (SH51) — shipped.** See [CHANGELOG.md](CHANGELOG.md) Block C.
 
 ### III.7 Content full-text search (SH52)
 

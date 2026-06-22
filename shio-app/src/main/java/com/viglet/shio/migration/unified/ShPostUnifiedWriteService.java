@@ -16,6 +16,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.history.ShContentAction;
+import com.viglet.shio.api.history.ShContentAuditService;
 import com.viglet.shio.object.ShObjectPublishStatus;
 import com.viglet.shio.object.ShObjectType;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -54,6 +56,7 @@ public class ShPostUnifiedWriteService {
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final ShContentAuditService shContentAuditService;
     /** Self-reference so the scheduled sweep re-enters publish/unpublish through the
      *  transactional proxy instead of a bare {@code this} call (S6809). */
     private final ObjectProvider<ShPostUnifiedWriteService> self;
@@ -64,6 +67,7 @@ public class ShPostUnifiedWriteService {
                                      ShPostUnifiedRepository shPostUnifiedRepository,
                                      ObjectMapper objectMapper,
                                      ApplicationEventPublisher eventPublisher,
+                                     ShContentAuditService shContentAuditService,
                                      ObjectProvider<ShPostUnifiedWriteService> self) {
         this.shFolderRepository = shFolderRepository;
         this.shSiteRepository = shSiteRepository;
@@ -71,7 +75,13 @@ public class ShPostUnifiedWriteService {
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.objectMapper = objectMapper;
         this.eventPublisher = eventPublisher;
+        this.shContentAuditService = shContentAuditService;
         this.self = self;
+    }
+
+    /** Site id of a row, or {@code null} when unresolved (shared by the audit calls). */
+    private static String siteIdOf(ShPostUnified row) {
+        return row.getShSite() != null ? row.getShSite().getId() : null;
     }
 
     private ShFolder resolveContainerFolder(String containerId) {
@@ -112,7 +122,10 @@ public class ShPostUnifiedWriteService {
 
         applyTitleAndSummary(row, req.data(), postType);
 
-        return shPostUnifiedRepository.save(row);
+        ShPostUnified saved = shPostUnifiedRepository.save(row);
+        shContentAuditService.record(ShContentAction.CREATE, saved.getId(),
+                siteIdOf(saved), saved.getTitle(), req.owner());
+        return saved;
     }
 
     @Transactional
@@ -132,7 +145,10 @@ public class ShPostUnifiedWriteService {
         row.setPublishStatus(state == ShPostState.PUBLISHED
                 ? ShObjectPublishStatus.PUBLISH : ShObjectPublishStatus.DRAFT);
 
-        return shPostUnifiedRepository.save(row);
+        ShPostUnified saved = shPostUnifiedRepository.save(row);
+        shContentAuditService.record(ShContentAction.UPDATE, postId,
+                siteIdOf(saved), saved.getTitle(), req.modifier());
+        return saved;
     }
 
     @Transactional
@@ -161,6 +177,8 @@ public class ShPostUnifiedWriteService {
         pub.setPublishStatus(ShObjectPublishStatus.PUBLISH);
         pub.setData(draft.getData());
         ShPostUnified saved = shPostUnifiedRepository.save(pub);
+        shContentAuditService.record(ShContentAction.PUBLISH, postId,
+                siteIdOf(saved), saved.getTitle(), publisher);
         publishLifecycle(ShWebhookEventType.PUBLISH, saved);
         return saved;
     }
@@ -200,7 +218,10 @@ public class ShPostUnifiedWriteService {
         if (modifier != null) draft.setModifier(modifier);
         draft.setPublished(false);
         draft.setPublishStatus(ShObjectPublishStatus.DRAFT);
-        return shPostUnifiedRepository.save(draft);
+        ShPostUnified saved = shPostUnifiedRepository.save(draft);
+        shContentAuditService.record(ShContentAction.RESTORE, postId,
+                siteIdOf(saved), saved.getTitle(), modifier);
+        return saved;
     }
 
     /**
@@ -264,7 +285,7 @@ public class ShPostUnifiedWriteService {
                     draft.setUnpublishScheduledDate(null);
                     shPostUnifiedRepository.save(draft);
                 });
-        self.getObject().unpublish(postId);
+        self.getObject().unpublish(postId, SCHEDULER_ACTOR);
     }
 
     /** Re-create a {@code DRAFT} row from the {@code PUBLISHED} snapshot (shared by restore/schedule). */
@@ -291,25 +312,30 @@ public class ShPostUnifiedWriteService {
     }
 
     @Transactional
-    public void unpublish(String postId) {
+    public void unpublish(String postId, String actor) {
         shPostUnifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED)
                 .ifPresent(published -> {
                     // Snapshot the published row before it is removed so the
                     // webhook can still carry its site + url (SH12).
                     ShPostLifecycleEvent event = lifecycleEvent(ShWebhookEventType.UNPUBLISH, published);
+                    shContentAuditService.record(ShContentAction.UNPUBLISH, postId,
+                            siteIdOf(published), published.getTitle(), actor);
                     shPostUnifiedRepository.delete(published);
                     eventPublisher.publishEvent(event);
                 });
     }
 
     @Transactional
-    public void delete(String postId) {
+    public void delete(String postId, String actor) {
         var rows = shPostUnifiedRepository.findById(postId);
         if (rows.isEmpty()) {
             return;
         }
         // Snapshot from any existing row (DRAFT or PUBLISHED) before deletion.
-        ShPostLifecycleEvent event = lifecycleEvent(ShWebhookEventType.DELETE, rows.get(0));
+        ShPostUnified snapshot = rows.get(0);
+        ShPostLifecycleEvent event = lifecycleEvent(ShWebhookEventType.DELETE, snapshot);
+        shContentAuditService.record(ShContentAction.DELETE, postId,
+                siteIdOf(snapshot), snapshot.getTitle(), actor);
         rows.forEach(shPostUnifiedRepository::delete);
         eventPublisher.publishEvent(event);
     }

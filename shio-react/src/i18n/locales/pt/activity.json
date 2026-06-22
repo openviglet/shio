@@ -1,0 +1,17 @@
+{
+  "activity.title": "Atividade",
+  "activity.description": "O histórico de auditoria das alterações de conteúdo — quem publicou, editou ou excluiu o quê, e quando.",
+  "activity.blankTitle": "Nenhuma atividade ainda",
+  "activity.blankDescription": "As alterações de conteúdo (criar, atualizar, publicar, despublicar, excluir, restaurar) aparecerão aqui conforme acontecem.",
+  "activity.when": "Quando",
+  "activity.who": "Quem",
+  "activity.action": "Ação",
+  "activity.what": "O quê",
+  "activity.refresh": "Atualizar",
+  "activity.actionCreate": "Criado",
+  "activity.actionUpdate": "Atualizado",
+  "activity.actionPublish": "Publicado",
+  "activity.actionUnpublish": "Despublicado",
+  "activity.actionDelete": "Excluído",
+  "activity.actionRestore": "Restaurado"
+}
