@@ -89,3 +89,40 @@ export function encodeMultiSelect(s: MultiSelectSettings): string | null {
 export function encodeRelator(title: string | undefined): string | null {
   return title ? emit({ relator: { title } }) : null;
 }
+
+/* --------------------------- wrapper decoders -------------------------- */
+// Symmetric to the encoders above: read one nested wrapper key back into the
+// ergonomic settings shape. `undefined` is preserved (the field was absent) so
+// re-encoding is byte-identical. Used to scaffold a starter `.ts` from `pull`ed
+// JSON and to let SH64's diff compare apples to apples.
+
+/** Read the inner object under a single wrapper key (e.g. `file`, `relator`). */
+function inner(raw: string | null, key: string): Record<string, unknown> {
+  const wrapper = parse(raw)[key];
+  return wrapper && typeof wrapper === "object"
+    ? (wrapper as Record<string, unknown>)
+    : {};
+}
+
+/** Read a string field from a wrapper, or `undefined` when absent/non-string. */
+function str(obj: Record<string, unknown>, key: string): string | undefined {
+  const v = obj[key];
+  return typeof v === "string" ? v : undefined;
+}
+
+export function decodeFile(raw: string | null): FolderSettings {
+  return { folderId: str(inner(raw, "file"), "folderId") };
+}
+
+export function decodeContentSelect(raw: string | null): FolderSettings {
+  return { folderId: str(inner(raw, "contentSelect"), "folderId") };
+}
+
+export function decodeMultiSelect(raw: string | null): MultiSelectSettings {
+  const o = inner(raw, "multiselect");
+  return { postType: str(o, "postType"), folderId: str(o, "folderId") };
+}
+
+export function decodeRelator(raw: string | null): { title?: string } {
+  return { title: str(inner(raw, "relator"), "title") };
+}

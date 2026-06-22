@@ -50,6 +50,8 @@ stays canonical and the console GUI editor stays a legitimate writer. See
 
 ## Status
 
-🚧 Skeleton (SH63). The CLI compile step (SH64), CI drift guard (SH65) and the
-console "managed by code" lock (SH66) are tracked in the
+✅ **SH63 shipped** — DSL core, the `widgetSettings` codec (encode + symmetric
+decode), and the canonical serialization shared with the CLI are complete (see
+[CHANGELOG.md](../docs/CHANGELOG.md) Block B). The CLI compile step (SH64), CI
+drift guard (SH65) and console "managed by code" lock (SH66) are tracked in the
 [roadmap](../docs/ROADMAP.md) Block B.

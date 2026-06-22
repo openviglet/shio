@@ -47,6 +47,15 @@ export function normalizeDef(def: ShPostTypeDef): ShPostTypeDef {
   };
 }
 
+/**
+ * Return the plain, canonical `ShPostTypeDef` a builder produced (§4.3) — a thin
+ * alias for `normalizeDef` so callers that hold a DSL value can get the exact
+ * object `serializeDef` would write, e.g. to feed SH64's `diffDefs` directly.
+ */
+export function toDef(def: ShPostTypeDef): ShPostTypeDef {
+  return normalizeDef(def);
+}
+
 /** Deterministic, pretty JSON for a def — what `pull` writes / `build` emits. */
 export function serializeDef(def: ShPostTypeDef): string {
   return `${JSON.stringify(normalizeDef(def), null, 2)}\n`;

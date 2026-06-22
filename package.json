@@ -18,7 +18,7 @@
     "dev:console": "pnpm --filter shio-react run dev",
     "typecheck": "pnpm --filter @viglet/shio-client --filter @viglet/shio-react-sdk run typecheck",
     "lint": "pnpm -r run lint",
-    "test": "pnpm --filter @viglet/shio-client --filter create-shio-app --filter @viglet/shio run test",
+    "test": "pnpm --filter @viglet/shio-client --filter @viglet/shio-model --filter create-shio-app --filter @viglet/shio run test",
     "clean": "rimraf \"**/node_modules\" \"**/dist\" \"**/build\""
   },
   "devDependencies": {

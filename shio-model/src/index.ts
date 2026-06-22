@@ -25,16 +25,20 @@ export {
 } from "./builders";
 
 // Canonical serialization — shared with the CLI (SH16/SH64)
-export { normalizeDef, serializeDef } from "./serialize";
+export { normalizeDef, serializeDef, toDef } from "./serialize";
 
-// widgetSettings codec — encode (build) + decode (scaffold-from-pull)
+// widgetSettings codec — encode (build) + symmetric decode (scaffold-from-pull)
 export {
   encodeChoices,
   decodeChoices,
   encodeFile,
+  decodeFile,
   encodeContentSelect,
+  decodeContentSelect,
   encodeMultiSelect,
+  decodeMultiSelect,
   encodeRelator,
+  decodeRelator,
 } from "./widget-settings";
 
 // Types
