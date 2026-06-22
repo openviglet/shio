@@ -180,7 +180,6 @@ public class ShSecurityConfig {
                                 mvc.matcher("/__tur/**"),
                                 mvc.matcher("/"),
                                 mvc.matcher("/assets/**"),
-                                mvc.matcher("/thirdparty/**"),
                                 mvc.matcher("/favicon.ico"),
                                 mvc.matcher("/*.png"),
                                 mvc.matcher("/manifest.json"),
