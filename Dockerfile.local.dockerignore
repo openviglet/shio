@@ -1,0 +1,9 @@
+# Per-Dockerfile ignore for Dockerfile.local (BuildKit uses <dockerfile>.dockerignore
+# in preference to .dockerignore). The runtime-only image needs ONLY the
+# host-built fat-jar, so exclude everything else and keep the build context tiny.
+*
+!shio-app/
+shio-app/*
+!shio-app/target/
+shio-app/target/*
+!shio-app/target/viglet-shio.jar

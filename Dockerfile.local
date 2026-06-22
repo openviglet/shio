@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1.7
+# Runtime-only image for LOCAL publishing (publish-docker.cmd).
+#
+# Unlike the root Dockerfile (which clones + builds the source inside the
+# container — the CI path), this one copies a jar you already built on the
+# host with `mvnw package`. That sidesteps the private viglet-core GitHub
+# Packages 401 (the host ~/.m2 is already authenticated) and guarantees the
+# image contains your local working-tree changes.
+#
+# The jar at shio-app/target/viglet-shio.jar is a Spring Boot fat-jar with the
+# SPA bundled under BOOT-INF/classes/public/, so no Node/Maven is needed here.
+FROM eclipse-temurin:25-jre
+ARG CACHE_BUST=none
+LABEL org.opencontainers.image.revision=$CACHE_BUST
+RUN groupadd -r java && useradd -r -g java -u 1001 java
+WORKDIR /app
+COPY shio-app/target/viglet-shio.jar app.jar
+RUN mkdir -p /app/store && chown -R java:java /app
+USER java
+VOLUME ["/app/store"]
+EXPOSE 2710
+ENV JAVA_OPTS="-Xmx512m -Xms512m"
+ENV DEBUG_OPTS=""
+ENTRYPOINT ["sh", "-c", "exec java ${JAVA_OPTS} ${DEBUG_OPTS} -Djava.security.egd=file:/dev/./urandom -Dlogging.config=classpath:logback-spring-console.xml -jar /app/app.jar"]
