@@ -30,6 +30,7 @@ const COMMANDS = {
   types: () => import("./commands/types.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),
+  build: () => import("./commands/build.mjs"),
   dev: () => import("./commands/dev.mjs"),
   deploy: () => import("./commands/deploy.mjs"),
 };
@@ -43,9 +44,14 @@ Commands:
   init [name]    Scaffold a Next.js site wired to the Shio CDA
   pull           Pull post-types into ./shio/post-types/*.json (Basic auth)
   push           Apply local post-types back to Shio (--dry-run, --prune)
+  build          Compile local DSL/JSON post-types to canonical JSON (--out)
   types          Generate a TypeScript .d.ts from the live post-types (CDA token)
   dev            Generate types, start the site dev server, watch the model
   deploy         push (apply) then types
+
+Post-types as code:
+  shio/post-types/ may hold *.json or *.ts/*.mjs DSL sources (@viglet/shio-model).
+  push and build compile DSL sources to canonical JSON before diffing/emitting.
 
 Connection:
   --url <baseUrl>      Shio base URL          (env SHIO_URL, default http://localhost:2710)
@@ -54,8 +60,8 @@ Connection:
   --token <token>      CDA token              (env SHIO_CDA_TOKEN)   [types/dev]
 
 Common options:
-  --dir <dir>          Post-types directory   (default shio/post-types) [pull/push]
-  --out <file>         Output path            (.d.ts for types; dir for pull)
+  --dir <dir>          Post-types directory   (default shio/post-types) [pull/push/build]
+  --out <file>         Output path            (.d.ts for types; dir for pull/build, default shio/.out)
   --dry-run            push: print the plan, change nothing
   --prune              push: delete remote types absent locally (never system types)
   -h, --help           Show help

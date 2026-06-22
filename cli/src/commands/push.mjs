@@ -6,29 +6,13 @@
  * `shio push` — apply local post-type defs back to Shio. Computes a diff against
  * the live model, then PUTs added/changed types (and, with `--prune`, DELETEs
  * remote types absent locally — never a system type). `--dry-run` prints the
- * plan without writing.
+ * plan without writing. Local sources may be `*.json` or `*.ts`/`*.mjs` DSL
+ * modules (SH64) — both are compiled to canonical defs before the diff.
  */
-import { join } from "node:path";
-
 import { ShioAdminClient } from "../admin-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { diffDefs, planPush } from "../post-types-io.mjs";
-
-async function readLocalDefs(ctx, dir) {
-  const target = join(ctx.cwd, dir);
-  let entries;
-  try {
-    entries = await ctx.fs.readdir(target);
-  } catch {
-    throw new Error(`shio push: no post-type directory at "${dir}" — run "shio pull" first.`);
-  }
-  const defs = [];
-  for (const name of entries.filter((f) => f.endsWith(".json")).sort()) {
-    const raw = await ctx.fs.readFile(join(target, name), "utf8");
-    defs.push(JSON.parse(raw));
-  }
-  return defs;
-}
+import { readLocalDefs } from "../post-types-compile.mjs";
 
 export async function run(flags, _positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);

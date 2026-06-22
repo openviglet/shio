@@ -18,6 +18,9 @@ export function defaultContext(overrides = {}) {
     stderr: process.stderr,
     fetch: globalThis.fetch,
     fs: nodeFs,
+    // Dynamic module loader for the SH64 compile step; injectable so tests can
+    // supply a fake loader for `*.ts`/`*.mjs` DSL sources without touching disk.
+    import: (url) => import(url),
     ...overrides,
   };
 }
