@@ -15,6 +15,7 @@ import enUniversalEditor from "./locales/en/universal-editor.json";
 import enApiToken from "./locales/en/apiToken.json";
 import enTenantAdmin from "./locales/en/tenantAdmin.json";
 import enAuthProvider from "./locales/en/authProvider.json";
+import enExchangeProvider from "./locales/en/exchangeProvider.json";
 
 import ptCommon from "./locales/pt/common.json";
 import ptLogin from "./locales/pt/login.json";
@@ -28,17 +29,18 @@ import ptUniversalEditor from "./locales/pt/universal-editor.json";
 import ptApiToken from "./locales/pt/apiToken.json";
 import ptTenantAdmin from "./locales/pt/tenantAdmin.json";
 import ptAuthProvider from "./locales/pt/authProvider.json";
+import ptExchangeProvider from "./locales/pt/exchangeProvider.json";
 
 const en = {
   ...enCommon, ...enLogin, ...enSidebar, ...enNav, ...enDialog,
   ...enContent, ...enAdmin, ...enGraphql, ...enUniversalEditor, ...enApiToken,
-  ...enTenantAdmin, ...enAuthProvider,
+  ...enTenantAdmin, ...enAuthProvider, ...enExchangeProvider,
 };
 
 const pt = {
   ...ptCommon, ...ptLogin, ...ptSidebar, ...ptNav, ...ptDialog,
   ...ptContent, ...ptAdmin, ...ptGraphql, ...ptUniversalEditor, ...ptApiToken,
-  ...ptTenantAdmin, ...ptAuthProvider,
+  ...ptTenantAdmin, ...ptAuthProvider, ...ptExchangeProvider,
 };
 
 i18n

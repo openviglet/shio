@@ -1,0 +1,26 @@
+{
+  "exchangeProvider": {
+    "title": "Exchange Providers",
+    "description": "Configure remote sources to import content from and export content to (packages, external repositories).",
+    "blankTitle": "No exchange providers yet",
+    "blankDescription": "Add a provider to import from or export to a remote content source.",
+    "newInstance": "New Provider",
+    "untitled": "Untitled Exchange Provider",
+    "general": "General",
+    "generalDesc": "Basic information about the exchange provider.",
+    "vendor": "Vendor",
+    "vendorPlaceholder": "Select a provider type",
+    "namePlaceholder": "e.g. Staging Package Source",
+    "descriptionPlaceholder": "e.g. Imports and exports site packages against the staging environment.",
+    "enabledHint": "Disable to temporarily stop using this provider without deleting it.",
+    "properties": "Configuration",
+    "propertiesDesc": "Vendor-specific settings (endpoint, path, credentials, …).",
+    "noProperties": "No configuration properties yet. Add one below.",
+    "keyPlaceholder": "property name",
+    "valuePlaceholder": "value",
+    "addProperty": "Add",
+    "nameRequired": "Name is required.",
+    "created": "Exchange provider created.",
+    "updated": "Exchange provider updated."
+  }
+}

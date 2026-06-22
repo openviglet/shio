@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.onstartup.provider.auth.ShAuthProviderInstanceOnStartup;
 import com.viglet.shio.onstartup.provider.auth.ShAuthProviderVendorOnStartup;
+import com.viglet.shio.onstartup.provider.exchange.ShExchangeProviderVendorOnStartup;
 import com.viglet.shio.onstartup.system.ShConfigVarOnStartup;
 import com.viglet.shio.onstartup.system.ShLocaleOnStartup;
 import com.viglet.shio.onstartup.user.ShGroupOnStartup;
@@ -36,6 +37,7 @@ public class ShOnStartup implements ApplicationRunner {
 	private final ShUserOnStartup shUserOnStartup;
 	private final ShAuthProviderVendorOnStartup shAuthProviderVendorOnStartup;
 	private final ShAuthProviderInstanceOnStartup shAuthProviderInstanceOnStartup;
+	private final ShExchangeProviderVendorOnStartup shExchangeProviderVendorOnStartup;
 
 	public ShOnStartup(ShConfigProperties shConfigProperties,
 					   ShConfigVarRepository shConfigVarRepository,
@@ -45,7 +47,8 @@ public class ShOnStartup implements ApplicationRunner {
 					   ShGroupOnStartup shGroupOnStartup,
 					   ShUserOnStartup shUserOnStartup,
 					   ShAuthProviderVendorOnStartup shAuthProviderVendorOnStartup,
-					   ShAuthProviderInstanceOnStartup shAuthProviderInstanceOnStartup) {
+					   ShAuthProviderInstanceOnStartup shAuthProviderInstanceOnStartup,
+					   ShExchangeProviderVendorOnStartup shExchangeProviderVendorOnStartup) {
 		this.shConfigProperties = shConfigProperties;
 		this.shConfigVarRepository = shConfigVarRepository;
 		this.shLocaleOnStartup = shLocaleOnStartup;
@@ -55,6 +58,7 @@ public class ShOnStartup implements ApplicationRunner {
 		this.shUserOnStartup = shUserOnStartup;
 		this.shAuthProviderVendorOnStartup = shAuthProviderVendorOnStartup;
 		this.shAuthProviderInstanceOnStartup = shAuthProviderInstanceOnStartup;
+		this.shExchangeProviderVendorOnStartup = shExchangeProviderVendorOnStartup;
 	}
 
 	@Override
@@ -72,6 +76,7 @@ public class ShOnStartup implements ApplicationRunner {
 			shUserOnStartup.createDefaultRows();
 			shAuthProviderVendorOnStartup.createDefaultRows();
 			shAuthProviderInstanceOnStartup.createDefaultRows();
+			shExchangeProviderVendorOnStartup.createDefaultRows();
 			shConfigVarOnStartup.createDefaultRows();
 
 			log.info("Configuration finished.");

@@ -349,14 +349,9 @@ deleting the legacy tree. See project memory `project_shio_react_migration.md`.
 The legacy-only console surface that still blocks SH21 is decomposed so each piece
 ships on its own:
 
-- **SH56 — Auth Providers console page** ✅ (shipped). The `/api/v2/provider/auth`
-  API already existed; this migrated the `config/provider/auth` screens (list + edit
-  with a vendor select and a dynamic config-properties editor).
-- **SH57 — Exchange Providers (v2 API + page)**. The `config/provider/exchange`
-  screens have no v2 backend — add `ShExchangeProviderAPI` mirroring the auth one,
-  then a console page on the SH56 pattern. Providers are remote sources to
-  import/export against, so this gains real utility once the SH67 exchange engine
-  (§VII) lands.
+> SH56 (Auth Providers) and SH57 (Exchange Providers) shipped → see
+> [CHANGELOG.md](CHANGELOG.md) Block E.
+
 - **SH58 — Email/SMTP config (v2 API + page)**. Migrate `config/email`; needs a v2
   settings endpoint over `ShConfigVar`.
 - **SH59 — Search config page** (deps SH52). Migrate `config/search`; depends on the

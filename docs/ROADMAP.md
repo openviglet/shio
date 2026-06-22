@@ -70,8 +70,7 @@
 > templates. The new console is `shio-react`. → §V
 
 - ⏳ **SH19** (deps: —) **Finish AngularJS → React console migration** — continue moving console pages to `shio-react` (see [project memory]); the migration is the precondition for deleting `resources/ui/`. The remaining legacy-only surface (the `config/` section + static files + legacy commerce widgets) is decomposed into SH56–SH61 below so each ships independently. → §V.1
-  - ✅ **SH56** — shipped → [CHANGELOG.md](CHANGELOG.md) Block E (Auth Providers console page).
-  - 💭 **SH57** (deps: SH19) **Exchange Providers — v2 API + console page** — the legacy `config/provider/exchange` screens have **no v2 backend** (only `/api/v2/provider/auth` exists); add `ShExchangeProviderAPI` mirroring the auth provider, then a console page reusing the SH56 pattern. (Gains real utility once the SH67 exchange engine lands — providers are remote sources to import/export against.) → §V.1
+  - ✅ **SH56–SH57** — shipped → [CHANGELOG.md](CHANGELOG.md) Block E (Auth + Exchange Providers console pages).
   - 💭 **SH58** (deps: SH19) **Email/SMTP config — v2 API + console page** — migrate legacy `config/email`; needs a v2 settings endpoint over `ShConfigVar` then a console form. → §V.1
   - 💭 **SH59** (deps: SH19, SH52) **Search config console page** — migrate legacy `config/search`; depends on the content full-text search backend (SH52) since there is no v2 search-config endpoint today. → §V.1
   - 💭 **SH60** (deps: SH19) **Legacy commerce/recaptcha widgets — port or deprecate** — the AngularJS `payment` (payment-slip/rede-card/shopline) and `recaptcha` widgets have no React equivalent; decide whether they belong in the headless-first product before porting, else mark for removal with SH21. → §V.1

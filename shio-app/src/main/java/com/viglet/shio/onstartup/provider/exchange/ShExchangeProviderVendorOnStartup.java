@@ -1,0 +1,56 @@
+/*
+ * Copyright (C) 2016-2020 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+package com.viglet.shio.onstartup.provider.exchange;
+
+import com.viglet.shio.persistence.model.provider.exchange.ShExchangeProviderVendor;
+import com.viglet.shio.persistence.repository.provider.exchange.ShExchangeProviderVendorRepository;
+import com.viglet.shio.provider.exchange.ShExchangeSystemProviderVendor;
+
+import org.springframework.stereotype.Component;
+
+/**
+ * @author Alexandre Oliveira
+ */
+@Component
+public class ShExchangeProviderVendorOnStartup {
+
+	private final ShExchangeProviderVendorRepository shExchangeProviderVendorRepository;
+
+	public ShExchangeProviderVendorOnStartup(ShExchangeProviderVendorRepository shExchangeProviderVendorRepository) {
+		this.shExchangeProviderVendorRepository = shExchangeProviderVendorRepository;
+	}
+
+	public void createDefaultRows() {
+
+		if (shExchangeProviderVendorRepository.findAll().isEmpty()) {
+			embedded();
+		}
+
+	}
+
+	private void embedded() {
+		ShExchangeProviderVendor shExchangeProviderVendor = new ShExchangeProviderVendor();
+		shExchangeProviderVendor.setId(ShExchangeSystemProviderVendor.PACKAGE);
+		shExchangeProviderVendor.setName("Shio Package");
+		shExchangeProviderVendor.setDescription("Shio Package import and export (local exchange archive)");
+		shExchangeProviderVendor.setClassName(null);
+		shExchangeProviderVendor.setConfigurationPage(null);
+
+		shExchangeProviderVendorRepository.save(shExchangeProviderVendor);
+	}
+
+}

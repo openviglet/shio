@@ -12,6 +12,8 @@ import TenantListPage from "../console/admin/tenant/tenant.list.page"
 import TenantPage from "../console/admin/tenant/tenant.page"
 import AuthProviderListPage from "../console/admin/auth-provider/auth-provider.list.page"
 import AuthProviderPage from "../console/admin/auth-provider/auth-provider.page"
+import ExchangeProviderListPage from "../console/admin/exchange-provider/exchange-provider.list.page"
+import ExchangeProviderPage from "../console/admin/exchange-provider/exchange-provider.page"
 import { ROUTES } from "../routes.const"
 
 export const AdminRoutes = (
@@ -29,5 +31,7 @@ export const AdminRoutes = (
     <Route path="tenants/:tenantId" element={<TenantPage />} />
     <Route path="auth-providers" element={<AuthProviderListPage />} />
     <Route path="auth-providers/:authProviderId" element={<AuthProviderPage />} />
+    <Route path="exchange-providers" element={<ExchangeProviderListPage />} />
+    <Route path="exchange-providers/:exchangeProviderId" element={<ExchangeProviderPage />} />
   </Route>
 )

@@ -1,0 +1,26 @@
+{
+  "exchangeProvider": {
+    "title": "Provedores de Intercâmbio",
+    "description": "Configure fontes remotas para importar e exportar conteúdo (pacotes, repositórios externos).",
+    "blankTitle": "Nenhum provedor de intercâmbio ainda",
+    "blankDescription": "Adicione um provedor para importar de ou exportar para uma fonte de conteúdo remota.",
+    "newInstance": "Novo Provedor",
+    "untitled": "Provedor de Intercâmbio sem título",
+    "general": "Geral",
+    "generalDesc": "Informações básicas sobre o provedor de intercâmbio.",
+    "vendor": "Fornecedor",
+    "vendorPlaceholder": "Selecione um tipo de provedor",
+    "namePlaceholder": "ex.: Fonte de Pacotes de Homologação",
+    "descriptionPlaceholder": "ex.: Importa e exporta pacotes de site no ambiente de homologação.",
+    "enabledHint": "Desative para parar de usar este provedor temporariamente sem excluí-lo.",
+    "properties": "Configuração",
+    "propertiesDesc": "Configurações específicas do fornecedor (endpoint, caminho, credenciais, …).",
+    "noProperties": "Nenhuma propriedade de configuração ainda. Adicione uma abaixo.",
+    "keyPlaceholder": "nome da propriedade",
+    "valuePlaceholder": "valor",
+    "addProperty": "Adicionar",
+    "nameRequired": "O nome é obrigatório.",
+    "created": "Provedor de intercâmbio criado.",
+    "updated": "Provedor de intercâmbio atualizado."
+  }
+}
