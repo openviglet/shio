@@ -324,12 +324,6 @@ The legacy-only console surface is fully decomposed and shipped/decided
 (SH56–SH61) → see [CHANGELOG.md](CHANGELOG.md) Block E. What still blocks SH21 is
 the Thymeleaf deprecation (SH20) and the tree deletion itself.
 
-### V.2 Deprecate Thymeleaf site rendering (SH20)
-
-Once Block B is the documented delivery path (or GraalJS §IV ships), mark the
-server-side Thymeleaf site templates `@Deprecated` with a migration note, then
-remove.
-
 ### V.3 Delete `resources/ui/` (SH21)
 
 Terminal step after SH19 — reclaim the AngularJS frontend tree.

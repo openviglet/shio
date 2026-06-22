@@ -67,8 +67,7 @@
 
 - ⏳ **SH19** (deps: —) **Finish AngularJS → React console migration** — continue moving console pages to `shio-react` (see [project memory]); the migration is the precondition for deleting `resources/ui/`. The remaining legacy-only surface (the `config/` section + static files + legacy commerce widgets) is decomposed into SH56–SH61 below so each ships independently. → §V.1
   - ✅ **SH56–SH61** — all shipped/decided → [CHANGELOG.md](CHANGELOG.md) Block E (Auth + Exchange Providers + Email/SMTP pages; SH59 = searchable-post-types in the site editor; SH60 = `payment`/`recaptcha` deprecated, not ported; SH61 = static-file manager page over the SH38 subsystem). SH19's `config/` + static-file decomposition is fully addressed; SH19 stays ⏳ only until the legacy tree itself is deleted (SH20/SH21).
-- 💭 **SH20** (deps: SH19, SH8) **Deprecate Thymeleaf site rendering** — once Block B is the documented delivery path (or SH18 ships), mark server-side Thymeleaf site templates `@Deprecated`, then delete. → §V.2
-- 💭 **SH21** (deps: SH19) **Delete `resources/ui/` (AngularJS)** — terminal step after SH19; reclaim the legacy frontend tree. → §V.3
+- 💭 **SH21** (deps: SH19, SH20) **Delete `resources/ui/` (AngularJS)** — terminal step; reclaim the legacy frontend tree. → §V.3
 
 ## Block F — Market positioning / bold bets
 
