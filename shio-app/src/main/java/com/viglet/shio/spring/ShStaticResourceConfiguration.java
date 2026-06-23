@@ -8,10 +8,16 @@
  */
 package com.viglet.shio.spring;
 
+import java.io.IOException;
+
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.resource.PathResourceResolver;
 
 import com.viglet.shio.api.staticfile.transform.ShImageTransformGuard;
 import com.viglet.shio.api.staticfile.transform.ShImageTransformPipeline;
@@ -51,7 +57,13 @@ import com.viglet.shio.property.ShFileSourceProperties;
 @Configuration
 public class ShStaticResourceConfiguration implements WebMvcConfigurer {
 
+    /** Forward an SPA entry route to the React shell so client-side routing takes over. */
+    public static final String FORWARD_INDEX_HTML = "forward:/index.html";
+
     private static final int CACHE_SECONDS = 3600 * 24;
+
+    /** React SPA contexts served from {@code classpath:/public/} (mirrors Turing's TurStaticResourceConfiguration). */
+    private static final String[] REACT_CONTEXTS = { "/login", "/setup", "/console" };
 
     private final ShFileSourceProperties fileSourceProperties;
     private final ShImageTransformPipeline imageTransformPipeline;
@@ -65,8 +77,28 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
         this.imageTransformGuard = imageTransformGuard;
     }
 
+    /**
+     * Forward the React SPA entry routes (exact + trailing slash) to {@code /index.html}
+     * so the client-side router renders them. Deeper paths are covered by the
+     * {@code /<context>/**} resource handlers below (with their index.html fallback).
+     * Mirrors Turing's {@code TurStaticResourceConfiguration}.
+     */
+    @Override
+    public void addViewControllers(@NotNull ViewControllerRegistry registry) {
+        for (String context : REACT_CONTEXTS) {
+            registry.addViewController(context).setViewName(FORWARD_INDEX_HTML);
+            registry.addViewController(context + "/").setViewName(FORWARD_INDEX_HTML);
+        }
+    }
+
     @Override
     public void addResourceHandlers(@NotNull ResourceHandlerRegistry registry) {
+        // React SPA: each context's sub-paths resolve from classpath:/public/, falling
+        // back to the SPA shell so client-side routes (and their assets) are served.
+        for (String context : REACT_CONTEXTS) {
+            registryReact(registry, context);
+        }
+
         String fileSourceLocation = fileSourceProperties.getRootDir().toUri().toString();
         registry.addResourceHandler("/file_source/**")
                 .addResourceLocations(fileSourceLocation)
@@ -78,5 +110,24 @@ public class ShStaticResourceConfiguration implements WebMvcConfigurer {
                 // public delivery path mirrors the per-tenant on-disk layout.
                 .addResolver(new ShTenantFileSourceResourceResolver())
                 .addTransformer(new ShImageTransformResourceTransformer(imageTransformPipeline, imageTransformGuard));
+    }
+
+    /** Map {@code <context>/**} to {@code classpath:/public/}, falling back to the SPA shell. */
+    private static void registryReact(ResourceHandlerRegistry registry, String context) {
+        registryFrontend(registry, "%s/**".formatted(context), "classpath:/public/", "/public/index.html");
+    }
+
+    private static void registryFrontend(ResourceHandlerRegistry registry, String context, String location,
+            String path) {
+        registry.addResourceHandler(context).addResourceLocations(location)
+                .resourceChain(true).addResolver(new PathResourceResolver() {
+                    @Override
+                    protected Resource getResource(@NotNull String resourcePath, @NotNull Resource location)
+                            throws IOException {
+                        Resource requestedResource = location.createRelative(resourcePath);
+                        return requestedResource.exists() && requestedResource.isReadable() ? requestedResource
+                                : new ClassPathResource(path);
+                    }
+                });
     }
 }

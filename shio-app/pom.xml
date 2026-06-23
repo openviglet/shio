@@ -15,6 +15,10 @@
     <packaging>jar</packaging>
     <properties>
         <spring-boot.version>4.1.0</spring-boot.version>
+        <!-- Single toggle for the React build (frontend-maven-plugin), mirroring Turing.
+             Default false = build the console; pass -Dskip.npm=true to skip it and run
+             against a previously-built src/main/resources/public. -->
+        <skip.npm>false</skip.npm>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>21</maven.compiler.source>
@@ -325,6 +329,20 @@
             </plugins>
         </pluginManagement>
         <plugins>
+            <!-- Force a full resource copy. The React build (frontend-maven-plugin,
+                 generate-resources) regenerates src/main/resources/public/index.html
+                 in the same invocation; maven-resources' incremental copy otherwise
+                 skips that stable-named file (while copying the freshly-hashed
+                 assets/*), so index.html never reaches target/classes/public and the
+                 SPA 404s at runtime and in the packaged jar. overwrite=true disables
+                 the staleness check so index.html is always copied. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <overwrite>true</overwrite>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
@@ -351,6 +369,7 @@
                             <arguments>install</arguments>
                             <workingDirectory>../shio-react</workingDirectory>
                         </configuration>
+                        <phase>generate-resources</phase>
                     </execution>
                     <execution>
                         <id>react compile</id>
@@ -362,11 +381,13 @@
                             <arguments>run compile:build</arguments>
                             <workingDirectory>../shio-react</workingDirectory>
                         </configuration>
+                        <phase>generate-resources</phase>
                     </execution>
                 </executions>
                 <configuration>
                     <nodeVersion>v26.3.1</nodeVersion>
                     <pnpmVersion>11.8.0</pnpmVersion>
+                    <skip>${skip.npm}</skip>
                 </configuration>
             </plugin>
             <plugin>

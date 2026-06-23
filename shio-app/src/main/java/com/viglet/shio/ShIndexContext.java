@@ -41,11 +41,14 @@ public class ShIndexContext {
 
 	}
 
+	/**
+	 * Tenant-prefixed SPA routes ({@code /<tenant>/console/**}). The non-tenant
+	 * React contexts (/login, /setup, /console and their sub-paths) are served by
+	 * {@code ShStaticResourceConfiguration}'s view controllers + resource handlers
+	 * (Turing parity); only the tenant-segment variant — which a static pattern
+	 * can't express as cleanly — is forwarded here.
+	 */
 	@GetMapping({
-			"/login",
-			"/setup",
-			"/console",
-			"/console/**",
 			"/*/console",
 			"/*/console/**"
 	})
