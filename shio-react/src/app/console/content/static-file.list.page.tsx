@@ -447,6 +447,9 @@ function DetailDialog({ item, onClose, onDelete, onCopyUrl, t }: {
 
         <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
           <Meta label={t("staticFile.size")} value={formatBytes(item.size)} />
+          {item.width && item.height && (
+            <Meta label={t("staticFile.dimensions")} value={`${item.width} × ${item.height} px`} />
+          )}
           <Meta label={t("content.siteLabel")} value={item.siteName ?? "—"} />
           <Meta label={t("staticFile.folder")} value={item.folderName ?? "—"} />
           <Meta label={t("common.owner")} value={item.owner ?? "—"} />

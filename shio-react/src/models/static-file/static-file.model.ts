@@ -1,6 +1,6 @@
 /**
- * A static file (a `File`-post-type unified post, SH38) as listed by the SH61
- * file-manager page. Mirrors the backend `ShStaticFileItem` record.
+ * A static file (a `File`-post-type unified post, SH38) as listed by the
+ * Media Library (SH61/SH62) page. Mirrors the backend `ShStaticFileItem` record.
  */
 export type ShStaticFileItem = {
   id: string
@@ -14,4 +14,17 @@ export type ShStaticFileItem = {
   folderName: string | null
   siteId: string | null
   siteName: string | null
+  /** Image pixel dimensions stamped at upload (SH62); null for non-images / pre-SH62 files. */
+  width: number | null
+  height: number | null
+}
+
+/** Optional server-side filters for the Media Library listing (SH62). */
+export type ShStaticFileFilter = {
+  folderId?: string
+  siteId?: string
+  /** Media category: image | video | audio | document | archive | other. */
+  category?: string
+  /** Case-insensitive file-name substring. */
+  q?: string
 }

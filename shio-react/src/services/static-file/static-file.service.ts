@@ -1,5 +1,5 @@
 import axios from "@/lib/axios"
-import type { ShStaticFileItem } from "@/models/static-file/static-file.model"
+import type { ShStaticFileItem, ShStaticFileFilter } from "@/models/static-file/static-file.model"
 
 /** Options for {@link ShStaticFileService.thumbUrl} / transform URLs (SH39–43 pipeline). */
 export interface ShTransformOptions {
@@ -17,8 +17,15 @@ export interface ShTransformOptions {
  * bytes via `ShStaticFileCleanupListener`).
  */
 export class ShStaticFileService {
-  async list(): Promise<ShStaticFileItem[]> {
-    const response = await axios.get<ShStaticFileItem[]>("/v2/staticfile")
+  async list(filter?: ShStaticFileFilter): Promise<ShStaticFileItem[]> {
+    const params = new URLSearchParams()
+    if (filter?.folderId) params.set("folderId", filter.folderId)
+    if (filter?.siteId) params.set("siteId", filter.siteId)
+    if (filter?.category) params.set("category", filter.category)
+    if (filter?.q) params.set("q", filter.q)
+    const qs = params.toString()
+    const url = qs ? `/v2/staticfile?${qs}` : "/v2/staticfile"
+    const response = await axios.get<ShStaticFileItem[]>(url)
     return response.data
   }
 
