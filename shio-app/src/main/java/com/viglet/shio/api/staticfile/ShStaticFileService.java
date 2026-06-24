@@ -8,7 +8,9 @@
  */
 package com.viglet.shio.api.staticfile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,6 +18,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import org.springframework.beans.factory.ObjectProvider;
@@ -68,10 +71,15 @@ public class ShStaticFileService {
     private final ShWidgetRepository shWidgetRepository;
     private final ShFolderRepository shFolderRepository;
     private final ShFileStorageService storage;
+    private final ShImageDimensionReader dimensionReader;
     private final ObjectMapper objectMapper;
     /** Self-reference so upload() bootstraps the File post type through the
      *  transactional proxy instead of a bare {@code this} call (S6809). */
     private final ObjectProvider<ShStaticFileService> self;
+
+    /** {@code data} keys for image pixel dimensions stamped at upload (SH62). */
+    static final String DATA_WIDTH = "WIDTH";
+    static final String DATA_HEIGHT = "HEIGHT";
 
     public ShStaticFileService(ShPostUnifiedWriteService shPostUnifiedWriteService,
                                ShPostUnifiedRepository shPostUnifiedRepository,
@@ -79,6 +87,7 @@ public class ShStaticFileService {
                                ShWidgetRepository shWidgetRepository,
                                ShFolderRepository shFolderRepository,
                                ShFileStorageService storage,
+                               ShImageDimensionReader dimensionReader,
                                ObjectMapper objectMapper,
                                ObjectProvider<ShStaticFileService> self) {
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
@@ -87,6 +96,7 @@ public class ShStaticFileService {
         this.shWidgetRepository = shWidgetRepository;
         this.shFolderRepository = shFolderRepository;
         this.storage = storage;
+        this.dimensionReader = dimensionReader;
         this.objectMapper = objectMapper;
         this.self = self;
     }
@@ -110,11 +120,31 @@ public class ShStaticFileService {
         ObjectNode data = objectMapper.createObjectNode();
         data.put(ShSystemPostTypeAttr.FILE, fileName);
 
+        // SH62: for images, stamp pixel dimensions on the post so the Media
+        // Library shows them without re-reading the bytes on every listing. The
+        // upload is buffered once and replayed to both the dimension reader (header
+        // only) and disk storage, so the multipart stream is consumed exactly once.
+        byte[] buffered = null;
+        String contentType = file.getContentType();
+        if (contentType != null && contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
+            try {
+                buffered = file.getBytes();
+            } catch (IOException e) {
+                throw new UncheckedIOException("Failed to read upload " + fileName, e);
+            }
+            int[] dims = dimensionReader.read(new ByteArrayInputStream(buffered));
+            if (dims != null) {
+                data.put(DATA_WIDTH, dims[0]);
+                data.put(DATA_HEIGHT, dims[1]);
+            }
+        }
+
         ShPostUnified post = shPostUnifiedWriteService.create(new CreateRequest(
                 folderId, fileType.getId(), data, ShPostState.PUBLISHED, owner, null, null));
 
-        try {
-            storage.store(post.getId(), fileName, file.getInputStream());
+        try (InputStream bytes = buffered != null
+                ? new ByteArrayInputStream(buffered) : file.getInputStream()) {
+            storage.store(post.getId(), fileName, bytes);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read upload " + fileName, e);
         }
@@ -140,24 +170,97 @@ public class ShStaticFileService {
     }
 
     /**
-     * List every published {@code File} post in the active tenant as a flat
-     * {@link ShStaticFileItem} view (newest first) for the SH61 file-manager
-     * console page. Reads each file's on-disk size + content type; a file whose
-     * bytes are missing is reported with {@code size = -1}.
+     * List every published {@code File} post in the active tenant (no filter).
+     *
+     * @see #listFiles(String, String, String, String)
+     */
+    public List<ShStaticFileItem> listFiles() {
+        return self.getObject().listFiles(null, null, null, null);
+    }
+
+    /**
+     * List published {@code File} posts in the active tenant as a flat
+     * {@link ShStaticFileItem} view (newest first) for the Media Library (SH61/SH62).
+     * Reads each file's on-disk size + content type; a file whose bytes are missing
+     * is reported with {@code size = -1}.
+     *
+     * <p>All filters are optional (SH62): {@code folderId}/{@code siteId} scope to a
+     * container, {@code category} keeps only that media category (see
+     * {@link #categoryOf(String)} — {@code image}/{@code video}/{@code audio}/
+     * {@code document}/{@code archive}/{@code other}), and {@code q} is a
+     * case-insensitive file-name substring match. A blank/null filter is ignored.</p>
      */
     @Transactional(readOnly = true)
-    public List<ShStaticFileItem> listFiles() {
+    public List<ShStaticFileItem> listFiles(String folderId, String siteId, String category, String q) {
         ShPostType fileType = shPostTypeRepository.findByName(ShSystemPostType.FILE);
         if (fileType == null) {
             return List.of(); // no File post type yet => nothing uploaded
         }
+        String wantCategory = isBlank(category) ? null : category.toLowerCase(Locale.ROOT);
+        String wantQuery = isBlank(q) ? null : q.toLowerCase(Locale.ROOT);
         return shPostUnifiedRepository
                 .findByShPostType_IdAndState(fileType.getId(), ShPostState.PUBLISHED)
                 .stream()
                 .map(this::toItem)
+                .filter(item -> matches(item, folderId, siteId, wantCategory, wantQuery))
                 .sorted(Comparator.comparing(ShStaticFileItem::date,
                         Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
+    }
+
+    private static boolean matches(ShStaticFileItem item, String folderId, String siteId,
+                                   String category, String query) {
+        if (!isBlank(folderId) && !folderId.equals(item.folderId())) {
+            return false;
+        }
+        if (!isBlank(siteId) && !siteId.equals(item.siteId())) {
+            return false;
+        }
+        if (category != null && !category.equals(categoryOf(item.contentType()))) {
+            return false;
+        }
+        if (query != null) {
+            String name = item.fileName();
+            return name != null && name.toLowerCase(Locale.ROOT).contains(query);
+        }
+        return true;
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
+
+    /**
+     * Classify a content type into a Media Library category (SH62) — the Java
+     * mirror of the React {@code media-type.ts} classifier, kept in sync so the
+     * {@code ?category=} server filter agrees with the client's filter chips.
+     */
+    static String categoryOf(String contentType) {
+        if (contentType == null) {
+            return "other";
+        }
+        String ct = contentType.toLowerCase(Locale.ROOT);
+        if (ct.startsWith("image/")) {
+            return "image";
+        }
+        if (ct.startsWith("video/")) {
+            return "video";
+        }
+        if (ct.startsWith("audio/")) {
+            return "audio";
+        }
+        if (ct.contains("zip") || ct.contains("compressed") || ct.contains("tar")
+                || ct.equals("application/gzip") || ct.contains("rar")) {
+            return "archive";
+        }
+        if (ct.startsWith("text/") || ct.equals("application/pdf")
+                || ct.contains("officedocument") || ct.contains("opendocument")
+                || ct.contains("msword") || ct.contains("ms-excel") || ct.contains("ms-powerpoint")
+                || ct.equals("application/rtf") || ct.equals("application/json")
+                || ct.equals("application/xml")) {
+            return "document";
+        }
+        return "other";
     }
 
     private ShStaticFileItem toItem(ShPostUnified post) {
@@ -175,12 +278,30 @@ public class ShStaticFileService {
                 }
             }
         }
+        Integer width = intFromData(post, DATA_WIDTH);
+        Integer height = intFromData(post, DATA_HEIGHT);
         return new ShStaticFileItem(
                 post.getId(), fileName, contentType, size, post.getOwner(), post.getDate(),
                 post.getShFolder() != null ? post.getShFolder().getId() : null,
                 post.getShFolder() != null ? post.getShFolder().getName() : null,
                 post.getShSite() != null ? post.getShSite().getId() : null,
-                post.getShSite() != null ? post.getShSite().getName() : null);
+                post.getShSite() != null ? post.getShSite().getName() : null,
+                width, height);
+    }
+
+    /** Read an integer {@code data} key (e.g. SH62 {@code WIDTH}/{@code HEIGHT}); null if absent/non-numeric. */
+    private Integer intFromData(ShPostUnified post, String key) {
+        if (post == null || post.getData() == null) {
+            return null;
+        }
+        try {
+            var node = objectMapper.readTree(post.getData());
+            var value = node != null ? node.get(key) : null;
+            return value != null && value.isNumber() ? value.asInt() : null;
+        } catch (RuntimeException e) {
+            log.debug("Could not read {} from post {} data", key, post.getId(), e);
+            return null;
+        }
     }
 
     /** The original file name stored on a {@code File} post's {@code data.FILE}. */

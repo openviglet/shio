@@ -270,6 +270,49 @@ class ShStaticFileAPITest {
                 .andExpect(status().isConflict());
     }
 
+    @Test
+    void stage09ImageUploadStampsDimensions() throws Exception {
+        // SH62: an image upload records its pixel dimensions on the File post, so the
+        // Media Library listing exposes width/height without re-reading the bytes.
+        BufferedImage img = new BufferedImage(640, 480, BufferedImage.TYPE_INT_RGB);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        assertTrue(ImageIO.write(img, "png", baos), "fixture must encode");
+        MockMultipartFile imageFile = new MockMultipartFile(
+                "file", "dimensions.png", "image/png", baos.toByteArray());
+        mockMvc.perform(multipart("/api/v2/staticfile/upload")
+                        .file(imageFile)
+                        .param("folderId", folderId)
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.fileName == 'dimensions.png')].width").value(640))
+                .andExpect(jsonPath("$[?(@.fileName == 'dimensions.png')].height").value(480));
+    }
+
+    @Test
+    void stage10ListFiltersByCategoryAndQuery() throws Exception {
+        // SH62: ?category=image keeps only images; ?q is a file-name substring match.
+        MockMultipartFile doc = new MockMultipartFile(
+                "file", "report.txt", "text/plain", "data".getBytes(StandardCharsets.UTF_8));
+        mockMvc.perform(multipart("/api/v2/staticfile/upload")
+                        .file(doc).param("folderId", folderId).principal(mockPrincipal))
+                .andExpect(status().isOk());
+
+        // category=image excludes the text file
+        mockMvc.perform(get("/api/v2/staticfile").param("category", "image").principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.fileName == 'report.txt')]").doesNotExist())
+                .andExpect(jsonPath("$[?(@.fileName == 'dimensions.png')]").exists());
+
+        // q matches by name (case-insensitive)
+        mockMvc.perform(get("/api/v2/staticfile").param("q", "REPORT").principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.fileName == 'report.txt')]").exists())
+                .andExpect(jsonPath("$[?(@.fileName == 'dimensions.png')]").doesNotExist());
+    }
+
     /** Upload a small PNG and return its File-post id. */
     private String uploadImagePost() throws Exception {
         BufferedImage img = new BufferedImage(120, 80, BufferedImage.TYPE_INT_RGB);

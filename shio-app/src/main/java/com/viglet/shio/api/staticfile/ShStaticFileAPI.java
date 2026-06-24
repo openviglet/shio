@@ -80,13 +80,22 @@ public class ShStaticFileAPI {
     }
 
     /**
-     * List every {@code File} post in the active tenant (SH61 file manager).
+     * List {@code File} posts in the active tenant (Media Library, SH61/SH62).
      * Returns a flat view ({@link ShStaticFileItem}) with on-disk size + content
      * type, newest first.
+     *
+     * <p>All query params are optional filters (SH62): {@code folderId}/{@code siteId}
+     * scope to a container, {@code category} keeps one media category
+     * ({@code image}/{@code video}/{@code audio}/{@code document}/{@code archive}/{@code other}),
+     * and {@code q} is a case-insensitive file-name substring.</p>
      */
     @GetMapping
-    public java.util.List<ShStaticFileItem> list() {
-        return shStaticFileService.listFiles();
+    public java.util.List<ShStaticFileItem> list(
+            @RequestParam(name = "folderId", required = false) String folderId,
+            @RequestParam(name = "siteId", required = false) String siteId,
+            @RequestParam(name = "category", required = false) String category,
+            @RequestParam(name = "q", required = false) String q) {
+        return shStaticFileService.listFiles(folderId, siteId, category, q);
     }
 
     /**

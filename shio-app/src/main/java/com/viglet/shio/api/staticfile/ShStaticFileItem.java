@@ -12,8 +12,11 @@ import java.time.Instant;
 
 /**
  * A single static file (a {@code File}-post-type {@link com.viglet.shio.persistence.model.post.unified.ShPostUnified})
- * as listed by the SH61 file-manager console page. The bytes are served from
- * {@code /api/v2/staticfile/{id}} (and {@code /file_source/{id}/{fileName}}).
+ * as listed by the Media Library (SH61/SH62) console page. The bytes are served
+ * from {@code /api/v2/staticfile/{id}} (and {@code /file_source/{id}/{fileName}}).
+ *
+ * <p>{@code width}/{@code height} are the image pixel dimensions stamped at upload
+ * time (SH62); {@code null} for non-images or files uploaded before SH62.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -28,5 +31,7 @@ public record ShStaticFileItem(
         String folderId,
         String folderName,
         String siteId,
-        String siteName) {
+        String siteName,
+        Integer width,
+        Integer height) {
 }
