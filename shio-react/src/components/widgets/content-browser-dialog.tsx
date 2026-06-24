@@ -151,6 +151,12 @@ export function ContentBrowserDialog({
     }
   }, [breadcrumb, loadSites, loadChildren])
 
+  // In "file" select mode, only File-type posts are pickable (SH62) — folders stay
+  // navigable, but other content types are hidden so the user can't pick a non-file.
+  const visiblePosts = selectMode === "file"
+    ? posts.filter((p) => p.shPostType?.name === "File")
+    : posts
+
   // Handle content selection confirm
   const handleSelect = useCallback(() => {
     if (!selectedItem) return
@@ -268,7 +274,7 @@ export function ContentBrowserDialog({
               ))}
 
               {/* Posts */}
-              {posts.map((post) => (
+              {visiblePosts.map((post) => (
                 <button
                   key={post.id}
                   type="button"
@@ -296,7 +302,7 @@ export function ContentBrowserDialog({
               ))}
 
               {/* Empty state */}
-              {sites.length === 0 && folders.length === 0 && posts.length === 0 && (
+              {sites.length === 0 && folders.length === 0 && visiblePosts.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
                   <Folder className="h-10 w-10 mb-3 opacity-30" />
                   <p className="text-sm">{t("content.emptyFolder")}</p>
