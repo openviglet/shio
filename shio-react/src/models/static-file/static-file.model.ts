@@ -30,6 +30,16 @@ export type ShStaticFileMeta = {
   tags?: string[]
 }
 
+/** A post that references a file ("used in", SH62). Mirrors backend `ShStaticFileUsage`. */
+export type ShStaticFileUsage = {
+  postId: string
+  title: string | null
+  postTypeName: string | null
+  folderName: string | null
+  siteName: string | null
+  published: boolean
+}
+
 /** Optional server-side filters for the Media Library listing (SH62). */
 export type ShStaticFileFilter = {
   folderId?: string

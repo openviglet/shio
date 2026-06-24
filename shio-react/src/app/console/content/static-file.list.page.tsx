@@ -16,14 +16,14 @@ import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import {
   Image as ImageIcon, Download, Trash2, Upload, Loader2, Search, LayoutGrid, List as ListIcon,
-  X, Link as LinkIcon, CheckCircle2, AlertCircle, FolderInput, Copy,
+  X, Link as LinkIcon, CheckCircle2, AlertCircle, FolderInput, Copy, FileText,
 } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
 import { cn } from "@/lib/utils"
 import { ShStaticFileService } from "@/services/static-file/static-file.service"
-import type { ShStaticFileItem } from "@/models/static-file/static-file.model"
+import type { ShStaticFileItem, ShStaticFileUsage } from "@/models/static-file/static-file.model"
 import { ShSiteService } from "@/services/site/site.service"
 import type { ShSite } from "@/models/site/site"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
@@ -529,6 +529,11 @@ function DetailDialog({ item, onClose, onDelete, onCopyUrl, onSaved, t }: {
   const [tags, setTags] = useState<string[]>(item.tags ?? [])
   const [tagDraft, setTagDraft] = useState("")
   const [saving, setSaving] = useState(false)
+  const [usage, setUsage] = useState<ShStaticFileUsage[] | null>(null)
+
+  useEffect(() => {
+    service.usage(item.id).then(setUsage).catch(() => setUsage([]))
+  }, [item.id])
 
   const dirty = alt !== (item.alt ?? "") || caption !== (item.caption ?? "")
     || tags.join(" ") !== (item.tags ?? []).join(" ")
@@ -613,6 +618,32 @@ function DetailDialog({ item, onClose, onDelete, onCopyUrl, onSaved, t }: {
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag() } }}
               placeholder={t("staticFile.tagsPlaceholder")} />
           </div>
+        </div>
+
+        {/* Used in (SH62) */}
+        <div className="border-t pt-3">
+          <p className="text-sm font-medium mb-2">
+            {t("staticFile.usedIn")}
+            {usage && usage.length > 0 && (
+              <Badge variant="secondary" className="ml-2">{usage.length}</Badge>
+            )}
+          </p>
+          {usage === null ? (
+            <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+          ) : usage.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("staticFile.usedInNone")}</p>
+          ) : (
+            <ul className="space-y-1 max-h-40 overflow-y-auto">
+              {usage.map((u) => (
+                <li key={u.postId} className="flex items-center gap-2 text-sm">
+                  <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="truncate flex-1">{u.title || u.postId}</span>
+                  {u.postTypeName && <Badge variant="outline" className="text-xs">{u.postTypeName}</Badge>}
+                  {u.siteName && <span className="text-xs text-muted-foreground">{u.siteName}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <DialogFooter className="flex-wrap gap-2 sm:justify-between">

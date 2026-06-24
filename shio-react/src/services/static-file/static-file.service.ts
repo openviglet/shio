@@ -1,5 +1,7 @@
 import axios from "@/lib/axios"
-import type { ShStaticFileItem, ShStaticFileFilter, ShStaticFileMeta } from "@/models/static-file/static-file.model"
+import type {
+  ShStaticFileItem, ShStaticFileFilter, ShStaticFileMeta, ShStaticFileUsage,
+} from "@/models/static-file/static-file.model"
 
 /** Options for {@link ShStaticFileService.thumbUrl} / transform URLs (SH39–43 pipeline). */
 export interface ShTransformOptions {
@@ -52,6 +54,12 @@ export class ShStaticFileService {
   /** Update editable metadata (alt/caption/tags) of a File post (SH62). Returns the refreshed item. */
   async updateMeta(id: string, meta: ShStaticFileMeta): Promise<ShStaticFileItem> {
     const response = await axios.put<ShStaticFileItem>(`/v2/staticfile/${id}/meta`, meta)
+    return response.data
+  }
+
+  /** List the posts that reference this file ("used in", SH62). */
+  async usage(id: string): Promise<ShStaticFileUsage[]> {
+    const response = await axios.get<ShStaticFileUsage[]>(`/v2/staticfile/${id}/usage`)
     return response.data
   }
 

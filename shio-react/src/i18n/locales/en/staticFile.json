@@ -42,6 +42,8 @@
     "tags": "Tags",
     "tagsPlaceholder": "Type a tag and press Enter",
     "removeTag": "Remove tag",
+    "usedIn": "Used in",
+    "usedInNone": "Not referenced by any content.",
     "catAll": "All",
     "cat_image": "Images",
     "cat_video": "Videos",

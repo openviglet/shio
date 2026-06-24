@@ -42,6 +42,8 @@
     "tags": "Etiquetas",
     "tagsPlaceholder": "Digite uma etiqueta e pressione Enter",
     "removeTag": "Remover etiqueta",
+    "usedIn": "Usado em",
+    "usedInNone": "Não referenciado por nenhum conteúdo.",
     "catAll": "Todos",
     "cat_image": "Imagens",
     "cat_video": "Vídeos",
