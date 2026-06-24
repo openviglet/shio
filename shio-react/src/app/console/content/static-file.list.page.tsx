@@ -5,14 +5,16 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog"
+import { ContentBrowserDialog, type ContentBrowserSelection } from "@/components/widgets/content-browser-dialog"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import {
   Image as ImageIcon, Download, Trash2, Upload, Loader2, Search, LayoutGrid, List as ListIcon,
-  X, Link as LinkIcon, CheckCircle2, AlertCircle,
+  X, Link as LinkIcon, CheckCircle2, AlertCircle, FolderInput, Copy,
 } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -53,6 +55,8 @@ export default function StaticFileListPage() {
   const [uploads, setUploads] = useState<UploadEntry[]>([])
   const [dragging, setDragging] = useState(false)
   const [detail, setDetail] = useState<ShStaticFileItem | null>(null)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [folderDialog, setFolderDialog] = useState<"move" | "copy" | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dragDepth = useRef(0)
 
@@ -145,8 +149,44 @@ export default function StaticFileListPage() {
     if (!confirm(t("dialog.deleteMessage"))) return
     await postService.delete(item.id).catch(() => {})
     setItems((prev) => prev.filter((i) => i.id !== item.id))
+    setSelected((prev) => { const next = new Set(prev); next.delete(item.id); return next })
     if (detail?.id === item.id) setDetail(null)
     toast.success(t("content.deletedShort"))
+  }
+
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  const clearSelection = () => setSelected(new Set())
+  const selectAllFiltered = () => setSelected(new Set(filtered.map((i) => i.id)))
+
+  const bulkDelete = async () => {
+    const ids = [...selected]
+    if (ids.length === 0 || !confirm(t("staticFile.confirmBulkDelete", { count: ids.length }))) return
+    await Promise.all(ids.map((id) => postService.delete(id).catch(() => {})))
+    setItems((prev) => prev.filter((i) => !selected.has(i.id)))
+    clearSelection()
+    toast.success(t("content.deletedShort"))
+  }
+
+  const handleFolderPicked = async (sel: ContentBrowserSelection) => {
+    const mode = folderDialog
+    setFolderDialog(null)
+    if (!mode || sel.type !== "FOLDER") return
+    const ids = [...selected]
+    if (ids.length === 0) return
+    try {
+      if (mode === "move") await service.moveTo(sel.id, ids)
+      else await service.copyTo(sel.id, ids)
+      toast.success(t(mode === "move" ? "staticFile.moved" : "staticFile.copied", { count: ids.length }))
+      clearSelection()
+      load()
+    } catch {
+      toast.error(t("common.error"))
+    }
   }
 
   const copyUrl = (url: string) => {
@@ -236,6 +276,27 @@ export default function StaticFileListPage() {
           </div>
         </div>
 
+        {/* Bulk-selection toolbar */}
+        {selected.size > 0 && (
+          <div className="flex items-center gap-2 flex-wrap mb-4 rounded-lg border bg-orange-50 dark:bg-orange-950/30 px-3 py-2">
+            <span className="text-sm font-medium">{t("staticFile.selectedCount", { count: selected.size })}</span>
+            <div className="flex-1" />
+            <Button variant="outline" size="sm" onClick={selectAllFiltered}>{t("staticFile.selectAll")}</Button>
+            <Button variant="outline" size="sm" onClick={() => setFolderDialog("move")}>
+              <FolderInput className="mr-2 h-4 w-4" />{t("staticFile.move")}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setFolderDialog("copy")}>
+              <Copy className="mr-2 h-4 w-4" />{t("staticFile.copy")}
+            </Button>
+            <Button variant="outline" size="sm" className="text-destructive" onClick={bulkDelete}>
+              <Trash2 className="mr-2 h-4 w-4" />{t("common.delete")}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={clearSelection}>
+              <X className="mr-2 h-4 w-4" />{t("staticFile.clearSelection")}
+            </Button>
+          </div>
+        )}
+
         {/* Upload queue */}
         {uploads.length > 0 && (
           <Card className="mb-4">
@@ -271,16 +332,23 @@ export default function StaticFileListPage() {
         ) : view === "grid" ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
             {filtered.map((item) => (
-              <MediaCard key={item.id} item={item} onOpen={() => setDetail(item)} />
+              <MediaCard key={item.id} item={item} onOpen={() => setDetail(item)}
+                selected={selected.has(item.id)} onToggleSelect={() => toggleSelect(item.id)} />
             ))}
           </div>
         ) : (
-          <FileTable items={filtered} onOpen={setDetail} onDelete={handleDelete} t={t} />
+          <FileTable items={filtered} onOpen={setDetail} onDelete={handleDelete} t={t}
+            selected={selected} onToggleSelect={toggleSelect} />
         )}
       </div>
 
       <DetailDialog item={detail} onClose={() => setDetail(null)}
         onDelete={handleDelete} onCopyUrl={copyUrl} t={t} />
+
+      {folderDialog && (
+        <ContentBrowserDialog open onOpenChange={(open) => !open && setFolderDialog(null)}
+          onSelect={handleFolderPicked} />
+      )}
     </>
   )
 }
@@ -302,35 +370,51 @@ function CategoryChip({ active, label, count, onClick }: {
   )
 }
 
-function MediaCard({ item, onOpen }: { item: ShStaticFileItem; onOpen: () => void }) {
+function MediaCard({ item, onOpen, selected, onToggleSelect }: {
+  item: ShStaticFileItem; onOpen: () => void; selected: boolean; onToggleSelect: () => void
+}) {
   const image = isImageType(item.contentType)
   const Icon = mediaCategoryIcon(mediaCategory(item.contentType))
   return (
-    <button type="button" onClick={onOpen}
-      className="group flex flex-col overflow-hidden rounded-lg border bg-background text-left hover:shadow-md hover:border-orange-300 transition-all">
-      <div className="aspect-square bg-muted/50 flex items-center justify-center overflow-hidden">
-        {image ? (
-          <img src={service.thumbUrl(item)} alt={item.fileName ?? ""} loading="lazy"
-            className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
-        ) : (
-          <Icon className="h-10 w-10 text-muted-foreground" />
-        )}
+    <div
+      className={cn(
+        "group relative flex flex-col overflow-hidden rounded-lg border bg-background hover:shadow-md transition-all",
+        selected ? "border-orange-400 ring-2 ring-orange-300" : "hover:border-orange-300",
+      )}>
+      {/* Selection checkbox (always visible when selected, on hover otherwise) */}
+      <div className={cn("absolute left-2 top-2 z-10 transition-opacity",
+        selected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}
+        onClick={(e) => e.stopPropagation()}>
+        <Checkbox checked={selected} onCheckedChange={onToggleSelect}
+          className="bg-background/90 border-muted-foreground" />
       </div>
-      <div className="p-2">
-        <p className="truncate text-xs font-medium" title={item.fileName ?? item.id}>
-          {item.fileName ?? item.id}
-        </p>
-        <p className="text-[10px] text-muted-foreground">{formatBytes(item.size)}</p>
-      </div>
-    </button>
+      <button type="button" onClick={onOpen} className="flex flex-col text-left">
+        <div className="aspect-square bg-muted/50 flex items-center justify-center overflow-hidden">
+          {image ? (
+            <img src={service.thumbUrl(item)} alt={item.fileName ?? ""} loading="lazy"
+              className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
+          ) : (
+            <Icon className="h-10 w-10 text-muted-foreground" />
+          )}
+        </div>
+        <div className="p-2">
+          <p className="truncate text-xs font-medium" title={item.fileName ?? item.id}>
+            {item.fileName ?? item.id}
+          </p>
+          <p className="text-[10px] text-muted-foreground">{formatBytes(item.size)}</p>
+        </div>
+      </button>
+    </div>
   )
 }
 
-function FileTable({ items, onOpen, onDelete, t }: {
+function FileTable({ items, onOpen, onDelete, t, selected, onToggleSelect }: {
   items: ShStaticFileItem[]
   onOpen: (item: ShStaticFileItem) => void
   onDelete: (item: ShStaticFileItem) => void
   t: (key: string) => string
+  selected: Set<string>
+  onToggleSelect: (id: string) => void
 }) {
   return (
     <Card>
@@ -338,6 +422,7 @@ function FileTable({ items, onOpen, onDelete, t }: {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10"></TableHead>
               <TableHead className="w-14"></TableHead>
               <TableHead>{t("staticFile.fileName")}</TableHead>
               <TableHead>{t("staticFile.type")}</TableHead>
@@ -349,7 +434,12 @@ function FileTable({ items, onOpen, onDelete, t }: {
           </TableHeader>
           <TableBody>
             {items.map((item) => (
-              <TableRow key={item.id} className="cursor-pointer" onClick={() => onOpen(item)}>
+              <TableRow key={item.id} className={cn("cursor-pointer", selected.has(item.id) && "bg-orange-50 dark:bg-orange-950/20")}
+                onClick={() => onOpen(item)}>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Checkbox checked={selected.has(item.id)} onCheckedChange={() => onToggleSelect(item.id)}
+                    aria-label={item.fileName ?? item.id} />
+                </TableCell>
                 <TableCell>
                   {isImageType(item.contentType) ? (
                     <img src={service.thumbUrl(item, 72)} alt={item.fileName ?? ""}

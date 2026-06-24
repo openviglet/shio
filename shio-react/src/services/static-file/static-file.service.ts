@@ -49,6 +49,16 @@ export class ShStaticFileService {
     return response.data.id
   }
 
+  /** Move File posts into another folder (SH62 bulk action). Reuses the generic object move. */
+  async moveTo(destFolderId: string, ids: string[]): Promise<void> {
+    await axios.put(`/v2/object/moveto/${destFolderId}`, ids)
+  }
+
+  /** Copy File posts into another folder (SH62 bulk action). Reuses the generic object copy. */
+  async copyTo(destFolderId: string, ids: string[]): Promise<void> {
+    await axios.put(`/v2/object/copyto/${destFolderId}`, ids)
+  }
+
   /** Public byte URL (permitAll `/file_source/**`) — usable as an `<img>` src or download href. */
   fileUrl(item: Pick<ShStaticFileItem, "id" | "fileName">): string {
     return `/file_source/${item.id}/${encodeURIComponent(item.fileName ?? "")}`
