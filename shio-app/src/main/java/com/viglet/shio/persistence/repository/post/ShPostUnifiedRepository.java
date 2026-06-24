@@ -67,6 +67,17 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
      */
     List<ShPostUnified> findByShPostType_IdAndState(String postTypeId, ShPostState state);
 
+    /**
+     * Posts whose {@code data} JSON contains {@code fileId} (SH62 "used in"): the
+     * {@code File}/{@code Content Select} widgets store a referenced post's id as a
+     * plain string in {@code data}, so a substring match on the (UUID) id finds every
+     * referrer with no false positives. Excludes the file post itself; tenant-scoped
+     * via {@code @TenantId}. The state filter lets the caller dedupe draft-preferred.
+     */
+    @Query("select p from ShPostUnified p where p.id <> :fileId and p.state = :state "
+            + "and p.data like concat('%', :fileId, '%')")
+    List<ShPostUnified> findReferencingFileId(@Param("fileId") String fileId, @Param("state") ShPostState state);
+
     // --- CDA preview (SH5) finders: fetch across a state set so the service can
     //     dedup draft-preferred. Used only by the PREVIEW-environment read path. ---
 

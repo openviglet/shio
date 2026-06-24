@@ -326,6 +326,28 @@ public class ShStaticFileService {
         return toItem(shPostUnifiedRepository.save(post));
     }
 
+    /**
+     * Posts that reference this file (SH62 "used in"). Scans PUBLISHED then DRAFT
+     * referrers (a referenced id appears as a plain string in a post's {@code data}),
+     * deduped by post id (PUBLISHED preferred), so an editor can see where a file is
+     * used before deleting it.
+     */
+    @Transactional(readOnly = true)
+    public List<ShStaticFileUsage> listUsage(String id) {
+        java.util.LinkedHashMap<String, ShStaticFileUsage> byId = new java.util.LinkedHashMap<>();
+        for (ShPostState state : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT)) {
+            for (ShPostUnified ref : shPostUnifiedRepository.findReferencingFileId(id, state)) {
+                byId.putIfAbsent(ref.getId(), new ShStaticFileUsage(
+                        ref.getId(), ref.getTitle(),
+                        ref.getShPostType() != null ? ref.getShPostType().getName() : null,
+                        ref.getShFolder() != null ? ref.getShFolder().getName() : null,
+                        ref.getShSite() != null ? ref.getShSite().getName() : null,
+                        state == ShPostState.PUBLISHED));
+            }
+        }
+        return List.copyOf(byId.values());
+    }
+
     private static void putOrRemove(ObjectNode data, String key, String value) {
         if (value == null || value.isBlank()) {
             data.remove(key);

@@ -123,6 +123,15 @@ public class ShStaticFileAPI {
     }
 
     /**
+     * List the posts that reference this file (SH62 "used in") so an editor can see
+     * where it is used before deleting it. Empty list if the file is unused/unknown.
+     */
+    @GetMapping("/{id}/usage")
+    public java.util.List<ShStaticFileUsage> usage(@PathVariable String id) {
+        return shStaticFileService.listUsage(id);
+    }
+
+    /**
      * Upload a file into {@code folderId}, creating a {@code File} post for it.
      * Returns the created post (200) so the caller can store its id.
      */

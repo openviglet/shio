@@ -82,6 +82,12 @@ class ShStaticFileAPITest {
     @Autowired
     private ShFileStorageService storage;
     @Autowired
+    private ShStaticFileService shStaticFileService;
+    @Autowired
+    private com.viglet.shio.migration.unified.ShPostUnifiedWriteService writeService;
+    @Autowired
+    private tools.jackson.databind.ObjectMapper objectMapper;
+    @Autowired
     private PlatformTransactionManager transactionManager;
 
     @PersistenceContext
@@ -341,6 +347,35 @@ class ShStaticFileAPITest {
                         .content("{\"alt\":\"x\"}")
                         .principal(mockPrincipal))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void stage13UsageListsReferencingPosts() throws Exception {
+        // SH62 "used in": a post whose data carries the file id is found as a referrer;
+        // a file referenced by nobody returns an empty list.
+        String fileId = uploadImagePost();
+
+        // unused yet
+        mockMvc.perform(get("/api/v2/staticfile/" + fileId + "/usage").principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.postId)]").doesNotExist());
+
+        // create a (File-type) post that references the file id in its data, as a
+        // Content Select / File widget would
+        String fileTypeId = shStaticFileService.resolveOrCreateFilePostType().getId();
+        var data = objectMapper.createObjectNode();
+        data.put("FILE", "referrer.txt");
+        data.put("REF", fileId);
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        String referrerId = tx.execute(s -> writeService.create(
+                new com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest(
+                        folderId, fileTypeId, data,
+                        com.viglet.shio.persistence.model.post.unified.ShPostState.PUBLISHED,
+                        "admin", null, null)).getId());
+
+        mockMvc.perform(get("/api/v2/staticfile/" + fileId + "/usage").principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.postId == '" + referrerId + "')]").exists());
     }
 
     /** Upload a small PNG and return its File-post id. */
