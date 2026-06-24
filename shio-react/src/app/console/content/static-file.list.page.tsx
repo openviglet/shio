@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -189,6 +191,11 @@ export default function StaticFileListPage() {
     }
   }
 
+  const handleMetaSaved = (updated: ShStaticFileItem) => {
+    setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+    setDetail(updated)
+  }
+
   const copyUrl = (url: string) => {
     const absolute = new URL(url, window.location.origin).toString()
     navigator.clipboard.writeText(absolute).then(
@@ -342,8 +349,10 @@ export default function StaticFileListPage() {
         )}
       </div>
 
-      <DetailDialog item={detail} onClose={() => setDetail(null)}
-        onDelete={handleDelete} onCopyUrl={copyUrl} t={t} />
+      {detail && (
+        <DetailDialog key={detail.id} item={detail} onClose={() => setDetail(null)}
+          onDelete={handleDelete} onCopyUrl={copyUrl} onSaved={handleMetaSaved} t={t} />
+      )}
 
       {folderDialog && (
         <ContentBrowserDialog open onOpenChange={(open) => !open && setFolderDialog(null)}
@@ -505,19 +514,47 @@ function EmptyState({ items, query, category, t }: {
   )
 }
 
-function DetailDialog({ item, onClose, onDelete, onCopyUrl, t }: {
-  item: ShStaticFileItem | null
+function DetailDialog({ item, onClose, onDelete, onCopyUrl, onSaved, t }: {
+  item: ShStaticFileItem
   onClose: () => void
   onDelete: (item: ShStaticFileItem) => void
   onCopyUrl: (url: string) => void
+  onSaved: (item: ShStaticFileItem) => void
   t: (key: string, opts?: Record<string, unknown>) => string
 }) {
-  if (!item) return null
   const image = isImageType(item.contentType)
   const Icon = mediaCategoryIcon(mediaCategory(item.contentType))
+  const [alt, setAlt] = useState(item.alt ?? "")
+  const [caption, setCaption] = useState(item.caption ?? "")
+  const [tags, setTags] = useState<string[]>(item.tags ?? [])
+  const [tagDraft, setTagDraft] = useState("")
+  const [saving, setSaving] = useState(false)
+
+  const dirty = alt !== (item.alt ?? "") || caption !== (item.caption ?? "")
+    || tags.join(" ") !== (item.tags ?? []).join(" ")
+
+  const addTag = () => {
+    const v = tagDraft.trim()
+    if (v && !tags.includes(v)) setTags([...tags, v])
+    setTagDraft("")
+  }
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      const updated = await service.updateMeta(item.id, { alt, caption, tags })
+      toast.success(t("common.saved"))
+      onSaved(updated)
+    } catch {
+      toast.error(t("common.error"))
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
-    <Dialog open={!!item} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl">
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="truncate pr-6">{item.fileName ?? item.id}</DialogTitle>
           <DialogDescription>{item.contentType ?? t("staticFile.unknownType")}</DialogDescription>
@@ -526,7 +563,7 @@ function DetailDialog({ item, onClose, onDelete, onCopyUrl, t }: {
         <div className="rounded-lg border bg-muted/30 flex items-center justify-center overflow-hidden max-h-80">
           {image ? (
             <img src={service.transformUrl(item, { w: 800, format: "webp" })}
-              alt={item.fileName ?? ""} className="max-h-80 w-auto object-contain" />
+              alt={item.alt ?? item.fileName ?? ""} className="max-h-80 w-auto object-contain" />
           ) : (
             <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
               <Icon className="h-12 w-12" />
@@ -547,6 +584,37 @@ function DetailDialog({ item, onClose, onDelete, onCopyUrl, t }: {
           <Meta label="ID" value={item.id} mono />
         </dl>
 
+        {/* Editable metadata (SH62) */}
+        <div className="space-y-3 border-t pt-3">
+          <div className="space-y-1">
+            <Label htmlFor="sf-alt">{t("staticFile.altText")}</Label>
+            <Input id="sf-alt" value={alt} onChange={(e) => setAlt(e.target.value)}
+              placeholder={t("staticFile.altPlaceholder")} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="sf-caption">{t("staticFile.caption")}</Label>
+            <Textarea id="sf-caption" rows={2} value={caption} onChange={(e) => setCaption(e.target.value)}
+              placeholder={t("staticFile.captionPlaceholder")} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="sf-tags">{t("staticFile.tags")}</Label>
+            <div className="flex flex-wrap gap-1.5 mb-1">
+              {tags.map((tag) => (
+                <Badge key={tag} variant="secondary" className="gap-1">
+                  {tag}
+                  <button type="button" aria-label={`${t("staticFile.removeTag")} ${tag}`}
+                    onClick={() => setTags(tags.filter((x) => x !== tag))}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+            <Input id="sf-tags" value={tagDraft} onChange={(e) => setTagDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag() } }}
+              placeholder={t("staticFile.tagsPlaceholder")} />
+          </div>
+        </div>
+
         <DialogFooter className="flex-wrap gap-2 sm:justify-between">
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => onCopyUrl(service.fileUrl(item))}>
@@ -562,6 +630,10 @@ function DetailDialog({ item, onClose, onDelete, onCopyUrl, t }: {
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" className="text-destructive" onClick={() => onDelete(item)}>
               <Trash2 className="mr-2 h-4 w-4" />{t("common.delete")}
+            </Button>
+            <Button size="sm" disabled={!dirty || saving} onClick={save}>
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {t("common.save")}
             </Button>
             <Button variant="secondary" size="sm" onClick={onClose}>
               <X className="mr-2 h-4 w-4" />{t("common.close")}

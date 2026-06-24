@@ -80,6 +80,10 @@ public class ShStaticFileService {
     /** {@code data} keys for image pixel dimensions stamped at upload (SH62). */
     static final String DATA_WIDTH = "WIDTH";
     static final String DATA_HEIGHT = "HEIGHT";
+    /** {@code data} keys for editable Media Library metadata (SH62). */
+    static final String DATA_ALT = "ALT";
+    static final String DATA_CAPTION = "CAPTION";
+    static final String DATA_TAGS = "TAGS";
 
     public ShStaticFileService(ShPostUnifiedWriteService shPostUnifiedWriteService,
                                ShPostUnifiedRepository shPostUnifiedRepository,
@@ -286,7 +290,48 @@ public class ShStaticFileService {
                 post.getShFolder() != null ? post.getShFolder().getName() : null,
                 post.getShSite() != null ? post.getShSite().getId() : null,
                 post.getShSite() != null ? post.getShSite().getName() : null,
-                width, height);
+                width, height,
+                stringFromData(post, DATA_ALT), stringFromData(post, DATA_CAPTION),
+                tagsFromData(post));
+    }
+
+    /**
+     * Update the editable Media Library metadata (SH62) of a {@code File} post —
+     * {@code alt}/{@code caption}/{@code tags} merged into its {@code data},
+     * leaving {@code FILE}/{@code WIDTH}/{@code HEIGHT} intact. A blank/null value
+     * clears the key. 404 if the id is not a published {@code File} post.
+     */
+    @Transactional
+    public ShStaticFileItem updateMeta(String id, String alt, String caption, List<String> tags) {
+        ShPostUnified post = shPostUnifiedRepository.findByIdAndState(id, ShPostState.PUBLISHED)
+                .filter(p -> p.getShPostType() != null
+                        && ShSystemPostType.FILE.equals(p.getShPostType().getName()))
+                .orElseThrow(() -> new java.util.NoSuchElementException("File post not found: " + id));
+
+        ObjectNode data;
+        var existing = post.getData() != null ? objectMapper.readTree(post.getData()) : null;
+        data = existing instanceof ObjectNode node ? node : objectMapper.createObjectNode();
+
+        putOrRemove(data, DATA_ALT, alt);
+        putOrRemove(data, DATA_CAPTION, caption);
+        if (tags == null || tags.isEmpty()) {
+            data.remove(DATA_TAGS);
+        } else {
+            var arr = data.putArray(DATA_TAGS);
+            tags.stream().filter(s -> s != null && !s.isBlank()).map(String::trim).forEach(arr::add);
+        }
+
+        post.setData(objectMapper.writeValueAsString(data));
+        post.setModifiedDate(Instant.now());
+        return toItem(shPostUnifiedRepository.save(post));
+    }
+
+    private static void putOrRemove(ObjectNode data, String key, String value) {
+        if (value == null || value.isBlank()) {
+            data.remove(key);
+        } else {
+            data.put(key, value.trim());
+        }
     }
 
     /** Read an integer {@code data} key (e.g. SH62 {@code WIDTH}/{@code HEIGHT}); null if absent/non-numeric. */
@@ -301,6 +346,45 @@ public class ShStaticFileService {
         } catch (RuntimeException e) {
             log.debug("Could not read {} from post {} data", key, post.getId(), e);
             return null;
+        }
+    }
+
+    /** Read a string {@code data} key (e.g. SH62 {@code ALT}/{@code CAPTION}); null if absent/blank. */
+    private String stringFromData(ShPostUnified post, String key) {
+        if (post == null || post.getData() == null) {
+            return null;
+        }
+        try {
+            var node = objectMapper.readTree(post.getData());
+            var value = node != null ? node.get(key) : null;
+            if (value == null || value.isNull()) {
+                return null;
+            }
+            String text = value.asString();
+            return text != null && !text.isBlank() ? text : null;
+        } catch (RuntimeException e) {
+            log.debug("Could not read {} from post {} data", key, post.getId(), e);
+            return null;
+        }
+    }
+
+    /** Read the SH62 {@code TAGS} string array off a {@code File} post's data; empty list if absent. */
+    private List<String> tagsFromData(ShPostUnified post) {
+        if (post == null || post.getData() == null) {
+            return List.of();
+        }
+        try {
+            var node = objectMapper.readTree(post.getData());
+            var value = node != null ? node.get(DATA_TAGS) : null;
+            if (value == null || !value.isArray()) {
+                return List.of();
+            }
+            List<String> tags = new java.util.ArrayList<>();
+            value.forEach(t -> { if (t != null && !t.isNull()) tags.add(t.asString()); });
+            return tags;
+        } catch (RuntimeException e) {
+            log.debug("Could not read TAGS from post {} data", post.getId(), e);
+            return List.of();
         }
     }
 

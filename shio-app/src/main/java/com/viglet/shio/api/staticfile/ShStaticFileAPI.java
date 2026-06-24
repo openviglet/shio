@@ -23,6 +23,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -96,6 +98,28 @@ public class ShStaticFileAPI {
             @RequestParam(name = "category", required = false) String category,
             @RequestParam(name = "q", required = false) String q) {
         return shStaticFileService.listFiles(folderId, siteId, category, q);
+    }
+
+    /**
+     * Update the editable Media Library metadata of a {@code File} post (SH62):
+     * {@code alt}/{@code caption}/{@code tags}. Returns the refreshed
+     * {@link ShStaticFileItem}; 404 if the id is not a published {@code File} post.
+     */
+    @PutMapping("/{id}/meta")
+    public ShStaticFileItem updateMeta(@PathVariable String id,
+                                       @RequestBody ShStaticFileMetaRequest req) {
+        try {
+            return shStaticFileService.updateMeta(id,
+                    req != null ? req.alt() : null,
+                    req != null ? req.caption() : null,
+                    req != null ? req.tags() : null);
+        } catch (java.util.NoSuchElementException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        }
+    }
+
+    /** Body of {@code PUT /{id}/meta}: editable Media Library metadata (SH62). */
+    public record ShStaticFileMetaRequest(String alt, String caption, java.util.List<String> tags) {
     }
 
     /**

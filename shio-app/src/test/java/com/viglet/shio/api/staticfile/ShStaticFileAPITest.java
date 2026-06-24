@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -311,6 +312,35 @@ class ShStaticFileAPITest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.fileName == 'report.txt')]").exists())
                 .andExpect(jsonPath("$[?(@.fileName == 'dimensions.png')]").doesNotExist());
+    }
+
+    @Test
+    void stage11UpdateMetaPersistsAltCaptionTags() throws Exception {
+        // SH62: alt/caption/tags are editable metadata merged into the File post data
+        // and surfaced on the listing.
+        String id = uploadImagePost();
+        mockMvc.perform(put("/api/v2/staticfile/" + id + "/meta")
+                        .contentType("application/json")
+                        .content("{\"alt\":\"a logo\",\"caption\":\"Our logo\",\"tags\":[\"brand\",\"logo\"]}")
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.alt").value("a logo"))
+                .andExpect(jsonPath("$.caption").value("Our logo"))
+                .andExpect(jsonPath("$.tags[0]").value("brand"));
+
+        // and it is still readable through the listing
+        mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == '" + id + "')].alt").value("a logo"));
+    }
+
+    @Test
+    void stage12UpdateMetaUnknownIsNotFound() throws Exception {
+        mockMvc.perform(put("/api/v2/staticfile/" + UUID.randomUUID() + "/meta")
+                        .contentType("application/json")
+                        .content("{\"alt\":\"x\"}")
+                        .principal(mockPrincipal))
+                .andExpect(status().isNotFound());
     }
 
     /** Upload a small PNG and return its File-post id. */

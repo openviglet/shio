@@ -17,6 +17,17 @@ export type ShStaticFileItem = {
   /** Image pixel dimensions stamped at upload (SH62); null for non-images / pre-SH62 files. */
   width: number | null
   height: number | null
+  /** Editable Media Library metadata (SH62). */
+  alt: string | null
+  caption: string | null
+  tags: string[]
+}
+
+/** Editable metadata payload for `PUT /v2/staticfile/{id}/meta` (SH62). */
+export type ShStaticFileMeta = {
+  alt?: string | null
+  caption?: string | null
+  tags?: string[]
 }
 
 /** Optional server-side filters for the Media Library listing (SH62). */

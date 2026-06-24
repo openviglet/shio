@@ -1,5 +1,5 @@
 import axios from "@/lib/axios"
-import type { ShStaticFileItem, ShStaticFileFilter } from "@/models/static-file/static-file.model"
+import type { ShStaticFileItem, ShStaticFileFilter, ShStaticFileMeta } from "@/models/static-file/static-file.model"
 
 /** Options for {@link ShStaticFileService.thumbUrl} / transform URLs (SH39–43 pipeline). */
 export interface ShTransformOptions {
@@ -47,6 +47,12 @@ export class ShStaticFileService {
       },
     })
     return response.data.id
+  }
+
+  /** Update editable metadata (alt/caption/tags) of a File post (SH62). Returns the refreshed item. */
+  async updateMeta(id: string, meta: ShStaticFileMeta): Promise<ShStaticFileItem> {
+    const response = await axios.put<ShStaticFileItem>(`/v2/staticfile/${id}/meta`, meta)
+    return response.data
   }
 
   /** Move File posts into another folder (SH62 bulk action). Reuses the generic object move. */

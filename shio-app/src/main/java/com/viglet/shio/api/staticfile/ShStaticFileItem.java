@@ -9,6 +9,7 @@
 package com.viglet.shio.api.staticfile;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * A single static file (a {@code File}-post-type {@link com.viglet.shio.persistence.model.post.unified.ShPostUnified})
@@ -16,7 +17,9 @@ import java.time.Instant;
  * from {@code /api/v2/staticfile/{id}} (and {@code /file_source/{id}/{fileName}}).
  *
  * <p>{@code width}/{@code height} are the image pixel dimensions stamped at upload
- * time (SH62); {@code null} for non-images or files uploaded before SH62.</p>
+ * time (SH62); {@code null} for non-images or files uploaded before SH62.
+ * {@code alt}/{@code caption}/{@code tags} are editable Media Library metadata
+ * (SH62), stored on the post's {@code data}.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -33,5 +36,8 @@ public record ShStaticFileItem(
         String siteId,
         String siteName,
         Integer width,
-        Integer height) {
+        Integer height,
+        String alt,
+        String caption,
+        List<String> tags) {
 }
