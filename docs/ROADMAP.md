@@ -62,8 +62,9 @@
 
 ## Block E — Legacy retirement
 
-> ✅ **All tasks shipped (SH19–SH21, SH48–SH50, SH56–SH61)** → see [CHANGELOG.md](CHANGELOG.md) Block E.
+> ✅ **All tasks shipped (SH19–SH21, SH48–SH50, SH56–SH61, SH73)** → see [CHANGELOG.md](CHANGELOG.md) Block E.
 > The legacy AngularJS UI + Thymeleaf templates are gone; `shio-react` (+ the headless CDA) is the only console/delivery surface.
+> SH73 = Media Library (the SH61 file manager rebuilt as a visual asset manager over the SH38–43 backend: gallery + real category filters + drag-drop + transform thumbnails + alt/caption/tags + "used in").
 
 ## Block F — Market positioning / bold bets
 
