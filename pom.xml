@@ -21,6 +21,9 @@
         <sonar.organization>viglet</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
+    <modules>
+        <module>shio-app</module>
+    </modules>
     <build>
         <plugins>
             <plugin>
@@ -120,25 +123,6 @@
         </plugins>
     </build>
     <profiles>
-        <profile>
-            <id>default</id>
-            <activation>
-                <property>
-                    <name>!env.JITPACK</name>
-                </property>
-            </activation>
-            <modules>
-                <module>shio-app</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>jitpack</id>
-            <activation>
-                <property>
-                    <name>env.JITPACK</name>
-                </property>
-            </activation>
-        </profile>
         <profile>
             <id>coverage</id>
             <activation>
