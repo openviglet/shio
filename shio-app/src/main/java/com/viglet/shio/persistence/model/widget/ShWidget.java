@@ -24,7 +24,7 @@ import lombok.Getter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.widget.ShSystemWidget;
-import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
+import com.viglet.core.jpa.VigletAssignableUuidGenerator;
 
 import java.util.List;
 
@@ -42,7 +42,7 @@ public class ShWidget implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Id
-	@ShAssignableUuidGenerator
+	@VigletAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 

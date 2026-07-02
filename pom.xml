@@ -17,7 +17,7 @@
         <spring-boot.version>4.1.0</spring-boot.version>
         <!-- Shared backend platform — external project (github.com/openviglet/viglet-core),
              published to GitHub Packages and versioned independently. -->
-        <viglet-core.version>2026.3.8</viglet-core.version>
+        <viglet-core.version>2026.3.9</viglet-core.version>
         <sonar.organization>viglet</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>

@@ -21,7 +21,7 @@ import java.io.Serializable;
 import jakarta.persistence.*;
 
 import lombok.Getter;
-import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
+import com.viglet.core.jpa.VigletAssignableUuidGenerator;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -40,7 +40,7 @@ public class ShRole implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Id
-	@ShAssignableUuidGenerator
+	@VigletAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 

@@ -32,7 +32,7 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.TenantId;
-import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
+import com.viglet.core.jpa.VigletAssignableUuidGenerator;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.viglet.shio.persistence.model.workflow.ShWorkflowTask;
@@ -52,7 +52,7 @@ public class ShObject implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Id
-	@ShAssignableUuidGenerator
+	@VigletAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 

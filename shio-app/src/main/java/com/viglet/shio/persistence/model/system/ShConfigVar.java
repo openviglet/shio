@@ -22,7 +22,7 @@ import jakarta.persistence.*;
 
 import lombok.Getter;
 import lombok.Setter;
-import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
+import com.viglet.core.jpa.VigletAssignableUuidGenerator;
 
 /**
  * The persistent class for the ShConfigVar database table.
@@ -39,7 +39,7 @@ public class ShConfigVar implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Id
-	@ShAssignableUuidGenerator
+	@VigletAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 

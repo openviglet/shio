@@ -19,7 +19,7 @@ import jakarta.persistence.NamedQuery;
 import org.hibernate.annotations.TenantId;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
+import com.viglet.core.jpa.VigletAssignableUuidGenerator;
 
 /**
  * Minimal relator row left over from the legacy EAV model.
@@ -37,7 +37,7 @@ public class ShRelatorItem implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Id
-	@ShAssignableUuidGenerator
+	@VigletAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 

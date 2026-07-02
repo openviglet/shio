@@ -112,7 +112,7 @@ public class ShPostTypeAdminService {
      * seed a freshly-provisioned tenant with a copy of the default tenant's model —
      * but it never overwrites: idempotent, a no-op if a post-type of that name
      * already exists in the current tenant (returns {@code false}). A brand-new
-     * {@link ShPostType} is built (fresh id assigned by {@code @ShAssignableUuidGenerator}),
+     * {@link ShPostType} is built (fresh id assigned by {@code @VigletAssignableUuidGenerator}),
      * so the row lands under {@code ShTenantContext}'s tenant via Hibernate's
      * {@code @TenantId}; the attribute graph is rebuilt with {@link #buildAttrs}
      * (resolving the shared, non-tenant-scoped widget catalog).

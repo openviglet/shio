@@ -108,7 +108,7 @@ public class ShPostUnifiedWriteService {
         ShPostState state = req.state() != null ? req.state() : ShPostState.DRAFT;
 
         // Pre-assign the id so a standalone post can be its own translation group
-        // (SH53). ShAssignableUuidGenerator honours an explicitly-set id.
+        // (SH53). VigletAssignableUuidGenerator honours an explicitly-set id.
         String postId = UUID.randomUUID().toString();
 
         ShPostUnified row = new ShPostUnified();

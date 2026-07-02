@@ -21,7 +21,7 @@ import org.hibernate.annotations.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
+import com.viglet.core.jpa.VigletAssignableUuidGenerator;
 import com.viglet.shio.persistence.model.widget.ShWidget;
 
 import java.util.HashSet;
@@ -37,7 +37,7 @@ public class ShPostTypeAttr implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
-    @ShAssignableUuidGenerator
+    @VigletAssignableUuidGenerator
     @Column(name = "id", updatable = false, nullable = false)
     private String id;
 

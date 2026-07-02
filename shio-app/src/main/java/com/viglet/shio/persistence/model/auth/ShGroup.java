@@ -23,7 +23,7 @@ import java.util.Set;
 
 import jakarta.persistence.*;
 
-import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
+import com.viglet.core.jpa.VigletAssignableUuidGenerator;
 
 /**
  * The persistent class for the ShGroup database table.
@@ -37,7 +37,7 @@ public class ShGroup implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Id
-	@ShAssignableUuidGenerator
+	@VigletAssignableUuidGenerator
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 

@@ -13,7 +13,7 @@ import java.io.Serializable;
 
 import org.hibernate.annotations.TenantId;
 
-import com.viglet.shio.persistence.utils.ShAssignableUuidGenerator;
+import com.viglet.core.jpa.VigletAssignableUuidGenerator;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -48,7 +48,7 @@ public class ShContentAcl implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
-    @ShAssignableUuidGenerator
+    @VigletAssignableUuidGenerator
     @Column(name = "id", updatable = false, nullable = false)
     private String id;
 
