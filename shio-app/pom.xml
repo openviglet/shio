@@ -275,11 +275,6 @@
             <artifactId>rome</artifactId>
             <version>2.1.0</version>
         </dependency>
-        <dependency>
-            <groupId>com.github.openturing</groupId>
-            <artifactId>turing-java-sdk</artifactId>
-            <version>0.3.3</version>
-        </dependency>
        <dependency>
             <groupId>tools.jackson.datatype</groupId>
             <artifactId>jackson-datatype-hibernate7</artifactId>

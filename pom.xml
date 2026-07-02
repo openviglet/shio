@@ -242,24 +242,4 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-    <repositories>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-        <!-- viglet-core is published here. GitHub Packages requires auth even to
-             download: add a matching <server id="github-viglet-core"> with a PAT
-             (read:packages) to ~/.m2/settings.xml. Local builds resolve from ~/.m2. -->
-        <repository>
-            <id>github-viglet-core</id>
-            <name>GitHub openviglet viglet-core</name>
-            <url>https://maven.pkg.github.com/openviglet/viglet-core</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
 </project>
