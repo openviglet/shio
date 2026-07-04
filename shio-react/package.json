@@ -36,7 +36,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@uiw/codemirror-theme-github": "^4.25.10",
     "@uiw/react-codemirror": "^4.25.10",
-    "@viglet/viglet-design-system": "^2026.2.57",
+    "@viglet/viglet-design-system": "^2026.3.2",
     "axios": "^1.18.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

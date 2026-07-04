@@ -18,3 +18,6 @@ onlyBuiltDependencies:
 # The frontend-maven-plugin and CI run pnpm with no TTY, where that prompt aborts
 # the install (ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY) — let it purge silently.
 confirmModulesPurge: false
+
+minimumReleaseAgeExclude:
+  - '@viglet/viglet-design-system@2026.3.2'
