@@ -109,7 +109,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.7.11</version>
+            <version>42.7.13</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -278,7 +278,7 @@
        <dependency>
             <groupId>tools.jackson.datatype</groupId>
             <artifactId>jackson-datatype-hibernate7</artifactId>
-            <version>3.2.0</version>
+            <version>3.2.1</version>
         </dependency>
         <!-- Used directly by ShUtils; previously came transitively via the
              now-removed turing-java-sdk. -->
