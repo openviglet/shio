@@ -37,6 +37,13 @@ public class ShSecurityConfig {
 
     private static final String LOGIN_PATH = "/api/v2/login";
     private static final String LOGOUT_PATH = "/logout";
+    // OIDC Back-Channel Logout callback (Single Logout). Keycloak POSTs a signed
+    // logout token here when the SSO session ends (e.g. logout from the Console),
+    // and Spring invalidates the matching local session on its own. Server-to-
+    // server, token-authenticated: no browser cookie/CSRF, so it must be CSRF-
+    // exempt and permitAll (the logout token IS the credential). Path is Spring's
+    // default: /logout/connect/back-channel/{registrationId} (registrationId=keycloak).
+    private static final String BACK_CHANNEL_LOGOUT_PATH = "/logout/connect/back-channel/**";
     public static final String ERROR_PATH = "/error/**";
     /** The CDA namespace (SH1) — read (GET) for ROLE_CDA, write (SH10) for ROLE_CDA_WRITE. */
     private static final String CDA_PATH = "/api/v2/cda/**";
@@ -108,6 +115,7 @@ public class ShSecurityConfig {
                         mvc.matcher(SETUP_PATH),
                         mvc.matcher(ERROR_PATH),
                         mvc.matcher(LOGOUT_PATH),
+                        mvc.matcher(BACK_CHANNEL_LOGOUT_PATH),
                         mvc.matcher(LOGIN_PATH)))
                 .addFilterAfter(new ShCsrfHeaderFilter(), BasicAuthenticationFilter.class);
         http.addFilterBefore(shApiTokenFilter, BasicAuthenticationFilter.class);
@@ -121,9 +129,19 @@ public class ShSecurityConfig {
                     userInfo -> userInfo
                             .userService(shOAuth2UserService)
                             .oidcUserService(shOidcUserService)));
+            // Single Logout: accept Keycloak's OIDC Back-Channel Logout so a logout
+            // at the Console (which ends the shared SSO session) cascades here — shio
+            // invalidates its own session without the user having to visit /logout.
+            // Requires this app's own Keycloak client (viglet-shio / per-silo
+            // viglet-shio-<key>) with a Backchannel Logout URL; the shared viglet-cloud
+            // client cannot fan out to every app.
+            http.oidcLogout(oidc -> oidc.backChannel(Customizer.withDefaults()));
             http.authorizeHttpRequests(authorizeRequests -> {
                 authorizeRequests.requestMatchers(
                         mvc.matcher(ERROR_PATH),
+                        // OIDC Back-Channel Logout callback (Single Logout) —
+                        // authenticated by Keycloak's signed logout token, not a session.
+                        mvc.matcher(BACK_CHANNEL_LOGOUT_PATH),
                         mvc.matcher("/api/v2/discovery"),
                         mvc.matcher("/api/v2/csrf"),
                         mvc.matcher("/api/v2/ping"),
