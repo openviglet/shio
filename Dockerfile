@@ -1,8 +1,12 @@
 # Multi-stage build for Viglet Shio CMS.
 # Ported from viglet/cloud docker/Dockerfile.shio — the `viglet/jdk-build`
-# base (eclipse-temurin:25-jdk + git) is inlined here so the build is
+# base (eclipse-temurin:21-jdk + git) is inlined here so the build is
 # self-contained and needs no externally published base image.
-FROM eclipse-temurin:25-jdk AS build
+#
+# Java 21 (NOT 25): embedded Artemis 2.43.0 (via Netty) crashes on Java 25 with
+# "Cannot clean arbitrary ByteBuffer instances" (CleanerJava25) while loading its
+# NIO journal, which takes down the broker and every JMS listener.
+FROM eclipse-temurin:21-jdk AS build
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 ARG REPO_BRANCH=2026.3
@@ -25,7 +29,7 @@ RUN --mount=type=cache,target=/root/.m2 \
     --mount=type=cache,target=/src/shio-react/node \
     ./mvnw clean package -DskipTests 2>&1
 
-FROM eclipse-temurin:25-jre
+FROM eclipse-temurin:21-jre
 ARG CACHE_BUST=none
 LABEL org.opencontainers.image.revision=$CACHE_BUST
 RUN groupadd -r java && useradd -r -g java -u 1001 java

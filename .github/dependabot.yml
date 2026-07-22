@@ -42,6 +42,25 @@ updates:
         patterns:
           - "*"
 
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "2026.3"
+    open-pull-requests-limit: 5
+    # Track only the JDK/JRE base image; keep it on Java 21 LTS. Java 25 breaks
+    # embedded Artemis 2.43.0 (Netty CleanerJava25 "Cannot clean arbitrary
+    # ByteBuffer instances"). Allow 21.x patch/minor bumps, never a major to 25+.
+    allow:
+      - dependency-name: "eclipse-temurin"
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
+    groups:
+      docker:
+        patterns:
+          - "*"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

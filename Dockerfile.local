@@ -9,7 +9,10 @@
 #
 # The jar at shio-app/target/viglet-shio.jar is a Spring Boot fat-jar with the
 # SPA bundled under BOOT-INF/classes/public/, so no Node/Maven is needed here.
-FROM eclipse-temurin:25-jre
+# Java 21 (NOT 25): embedded Artemis 2.43.0 (via Netty) crashes on Java 25 with
+# "Cannot clean arbitrary ByteBuffer instances" (CleanerJava25) while loading its
+# NIO journal, which takes down the broker and every JMS listener.
+FROM eclipse-temurin:21-jre
 ARG CACHE_BUST=none
 LABEL org.opencontainers.image.revision=$CACHE_BUST
 RUN groupadd -r java && useradd -r -g java -u 1001 java
