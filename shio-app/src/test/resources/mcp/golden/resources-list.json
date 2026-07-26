@@ -1,0 +1,17 @@
+{
+  "id" : 1,
+  "jsonrpc" : "2.0",
+  "result" : {
+    "resources" : [ {
+      "description" : "#string",
+      "mimeType" : "text/plain",
+      "name" : "Shio context pack",
+      "uri" : "shio://context"
+    }, {
+      "description" : "#string",
+      "mimeType" : "application/json",
+      "name" : "Shio capability manifest",
+      "uri" : "shio://manifest"
+    } ]
+  }
+}

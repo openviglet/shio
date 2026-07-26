@@ -1,0 +1,9 @@
+{
+  "error" : {
+    "code" : -32601,
+    "data" : [ "initialize", "ping", "tools/list", "tools/call", "resources/list", "resources/templates/list", "resources/read", "prompts/list", "prompts/get" ],
+    "message" : "#string"
+  },
+  "id" : 1,
+  "jsonrpc" : "2.0"
+}

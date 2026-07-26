@@ -1,0 +1,11 @@
+{
+  "id" : 1,
+  "jsonrpc" : "2.0",
+  "result" : {
+    "content" : [ {
+      "text" : "#string",
+      "type" : "text"
+    } ],
+    "isError" : true
+  }
+}

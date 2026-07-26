@@ -1,0 +1,25 @@
+{
+  "id" : 1,
+  "jsonrpc" : "2.0",
+  "result" : {
+    "capabilities" : {
+      "prompts" : {
+        "listChanged" : false
+      },
+      "resources" : {
+        "listChanged" : false,
+        "subscribe" : false
+      },
+      "tools" : {
+        "listChanged" : false
+      }
+    },
+    "instructions" : "#string",
+    "protocolVersion" : "2025-06-18",
+    "serverInfo" : {
+      "name" : "shio",
+      "title" : "#string",
+      "version" : "#string"
+    }
+  }
+}

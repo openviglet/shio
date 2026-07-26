@@ -1,0 +1,12 @@
+{
+  "id" : 1,
+  "jsonrpc" : "2.0",
+  "result" : {
+    "resourceTemplates" : [ {
+      "description" : "#string",
+      "mimeType" : "application/json",
+      "name" : "Post-type schema",
+      "uriTemplate" : "shio://schema/{postType}"
+    } ]
+  }
+}

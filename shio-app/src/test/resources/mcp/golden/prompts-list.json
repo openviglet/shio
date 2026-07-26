@@ -1,0 +1,55 @@
+{
+  "id" : 1,
+  "jsonrpc" : "2.0",
+  "result" : {
+    "prompts" : [ {
+      "arguments" : [ {
+        "description" : "#string",
+        "name" : "site",
+        "required" : true
+      }, {
+        "description" : "#string",
+        "name" : "path",
+        "required" : true
+      }, {
+        "description" : "#string",
+        "name" : "brief",
+        "required" : false
+      } ],
+      "description" : "#string",
+      "name" : "add-section"
+    }, {
+      "arguments" : [ {
+        "description" : "#string",
+        "name" : "site",
+        "required" : true
+      } ],
+      "description" : "#string",
+      "name" : "audit-content"
+    }, {
+      "arguments" : [ {
+        "description" : "#string",
+        "name" : "site",
+        "required" : true
+      }, {
+        "description" : "#string",
+        "name" : "brief",
+        "required" : false
+      } ],
+      "description" : "#string",
+      "name" : "new-site"
+    }, {
+      "arguments" : [ {
+        "description" : "#string",
+        "name" : "site",
+        "required" : true
+      }, {
+        "description" : "#string",
+        "name" : "locale",
+        "required" : true
+      } ],
+      "description" : "#string",
+      "name" : "translate-site"
+    } ]
+  }
+}
