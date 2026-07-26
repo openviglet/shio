@@ -189,6 +189,70 @@ public class ShPostUnifiedWriteService {
     }
 
     /**
+     * Move a post: change its folder, its friendly URL, or both, keeping its id (SH134).
+     *
+     * <h2>Why this is not upsert-somewhere-else</h2>
+     *
+     * <p>The address-native vocabulary could create, update and delete an address but not
+     * <em>change</em> one, and the obvious workaround — upsert at the new address — is
+     * silently destructive: it creates a second post and orphans the first, taking the
+     * original's id, its SH51 audit trail, its SH14 version history and every inbound
+     * reference with it. Keeping the id is the entire content of this operation.</p>
+     *
+     * <h2>Every state row moves together</h2>
+     *
+     * <p>The unified model stores {@code DRAFT} and {@code PUBLISHED} as separate rows
+     * sharing an id, and both are re-addressed here. Moving only the draft would leave
+     * the live page at the old URL while every read (which is draft-preferred) reported
+     * the new one — the post's identity would depend on who was asking. The consequence
+     * is that a move of a published post <b>changes the live URL immediately, without a
+     * publish step</b>. That is what a move means, and the batch reports it in the change
+     * detail rather than letting the caller discover it (P7); an agent that wants the
+     * live URL to hold still should unpublish first.</p>
+     *
+     * <p>Inbound references are id-keyed ({@code ShReference} joins {@code ShObject} ids),
+     * so they survive a move untouched. URLs written into another post's body as text do
+     * not, and nothing here can know which strings were meant as links — SH100's route
+     * verification is where that gets caught.</p>
+     *
+     * @param postId       the post to move
+     * @param targetFolder the destination folder, or {@code null} to stay put
+     * @param furl         the new friendly URL, or {@code null} to keep the current one
+     * @param actor        recorded as the modifier in the audit trail
+     * @return the rows that were touched, DRAFT first
+     */
+    @Transactional
+    public List<ShPostUnified> move(String postId, ShFolder targetFolder, String furl, String actor) {
+        String normalized = furl == null ? null : normalizeUrl(furl);
+        Instant now = Instant.now();
+        List<ShPostUnified> moved = shPostUnifiedRepository.findById(postId).stream()
+                .sorted(Comparator.comparing(row -> row.getState() == ShPostState.DRAFT ? 0 : 1))
+                .map(row -> {
+                    if (targetFolder != null) {
+                        row.setShFolder(targetFolder);
+                        // Walked, never read off the target folder (SH128) — a move into
+                        // a nested folder would otherwise blank the post's site.
+                        row.setShSite(ShFolderSite.of(targetFolder));
+                    }
+                    if (normalized != null) {
+                        row.setFurl(normalized);
+                    }
+                    row.setModifiedDate(now);
+                    if (actor != null) {
+                        row.setModifier(actor);
+                    }
+                    return shPostUnifiedRepository.save(row);
+                })
+                .toList();
+        if (!moved.isEmpty()) {
+            ShPostUnified first = moved.get(0);
+            shContentAuditService.record(ShContentAction.UPDATE, postId,
+                    siteIdOf(first), first.getTitle(), actor);
+        }
+        return moved;
+    }
+
+    /**
      * Create a translation of an existing post (SH53): a brand-new {@code DRAFT}
      * post (its own id) in the same folder / post-type / site, authored in
      * {@code locale} and sharing the source's {@code translationGroupId} so the

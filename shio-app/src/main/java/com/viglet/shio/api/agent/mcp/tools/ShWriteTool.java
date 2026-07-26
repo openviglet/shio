@@ -52,11 +52,11 @@ public class ShWriteTool implements ShMcpTool {
 
     @Override
     public String description() {
-        return "Create, update or delete content: N operations applied as one transaction, all "
-                + "or nothing. Ops are addressed, so you never need an id — folder.upsert, "
-                + "post.upsert, post.publish, post.unpublish, folder.delete, post.delete. "
-                + "Everything lands in DRAFT; nothing is visible until you publish. Set "
-                + "dryRun=true first to see what would change.";
+        return "Create, move, update or delete content: N operations applied as one "
+                + "transaction, all or nothing. Ops are addressed, so you never need an id. To "
+                + "rename or relocate a page use post.move — re-addressing a post.upsert makes a "
+                + "second post and orphans the first. Everything lands in DRAFT; nothing is "
+                + "visible until you publish. Set dryRun=true first to see what would change.";
     }
 
     @Override
@@ -77,7 +77,10 @@ public class ShWriteTool implements ShMcpTool {
                                         "type", ShMcpTool.string(
                                                 "Post-type name; required only when creating a post."),
                                         "folder", ShMcpTool.string(
-                                                "Folder path for a new post; required only when creating."),
+                                                "Folder path — where a new post goes, or where "
+                                                        + "post.move sends it."),
+                                        "to", ShMcpTool.string(
+                                                "post.move only: the post's new address or URL."),
                                         "data", ShMcpTool.object(
                                                 "Field values keyed by post-type field name.")))),
                 "dryRun", ShMcpTool.bool("Report what would change and write nothing.")),
@@ -96,6 +99,7 @@ public class ShWriteTool implements ShMcpTool {
                 ShMcpArgs.string(op, "address"),
                 ShMcpArgs.string(op, "type"),
                 ShMcpArgs.string(op, "folder"),
+                ShMcpArgs.string(op, "to"),
                 ShMcpArgs.node(op, "data"))));
 
         return ShAgentReadTerse.changes(shAgentBatchService.run(

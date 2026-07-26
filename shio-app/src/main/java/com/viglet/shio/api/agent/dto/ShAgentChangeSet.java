@@ -40,8 +40,10 @@ public record ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change
      * What one op did, or would do.
      *
      * @param op      the requested operation, echoed so a result row stands alone
-     * @param address the canonical address it acted on
-     * @param action  {@code create} · {@code update} · {@code publish} ·
+     * @param address the canonical address it acted on. For a {@code move} this is the
+     *                <b>destination</b>, because that is where the post is now and where
+     *                the next op has to address it
+     * @param action  {@code create} · {@code update} · {@code move} · {@code publish} ·
      *                {@code unpublish} · {@code delete} · {@code noop}. An unchanged
      *                object reports {@code noop} rather than being omitted: "I looked
      *                and there was nothing to do" is an answer, and omitting it would
@@ -57,6 +59,7 @@ public record ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change
         public static final String NOOP = "noop";
         public static final String CREATE = "create";
         public static final String UPDATE = "update";
+        public static final String MOVE = "move";
         public static final String PUBLISH = "publish";
         public static final String UNPUBLISH = "unpublish";
         public static final String DELETE = "delete";
