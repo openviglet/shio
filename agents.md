@@ -1,5 +1,38 @@
 # Shio CMS - Development Guide
 
+## Product orientation — read this before writing code
+
+**Shio is a CMS whose primary operator is a coding agent.** The agent builds and
+maintains the site (MCP tools + content as files + blueprints); the **human
+curates** — approves, corrects, tweaks (React console, Universal Editor, preview
+links); the **CDA delivers** (REST/GraphQL + the TS SDKs). Every design decision is
+judged by *agent cycles and tokens*, not by clicks.
+
+Shio hosts **no model and no prompts** — it is the substrate an external agent
+drives. The differentiator is protocol quality (discoverability, determinism,
+verifiability, token economy), not intelligence. The Java/Spring content engine and
+the headless JS/TS delivery layer stay as they are; we do **not** rewrite the backend.
+
+**The ten design laws** — a feature that violates one is wrong even if requested:
+
+| # | Law |
+|---|---|
+| P1 | **Agent-first design order** — every capability lands MCP → files/CLI → REST → console. A console-only feature is incomplete. |
+| P2 | **One call replaces a session** — discovery is a product feature (manifest + context pack), not a docs problem. |
+| P3 | **Tokens are a measured budget** — response budgets + a CI benchmark; a token regression is a build failure. |
+| P4 | **Files beat APIs for authoring** — project content to disk; `Edit`/`Write`/`Grep` are the agent's cheapest tools. |
+| P5 | **Determinism over cleverness** — stable ordering, path addressing, idempotent writes, byte-identical serialization. |
+| P6 | **Errors are instructions** — every 4xx carries `fix`/`allowed`/`didYouMean`/`example`. |
+| P7 | **Never surprise the human** — draft-default, dry-run, explicit publish, confirm tokens, attribution, review queue. |
+| P8 | **Skipping steps needs appliable units** — blueprints, not prose recipes. |
+| P9 | **Close the perception loop** — cheap textual proof (lint, routes, render digest) instead of a human round trip. |
+| P10 | **Compose, don't fork** — MCP is a *shape* over the CDA + console services, never a third contract. |
+
+Full concept, protocol design, tool surface and worked example:
+[docs/specs/SH74-agent-native-cms.md](docs/specs/SH74-agent-native-cms.md).
+Backlog: [docs/ROADMAP.md](docs/ROADMAP.md) Blocks H–N. Rationale:
+[docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md) §0 and §VIII–§XIV.
+
 ## Project Structure
 
 ### Backend (Spring Boot 4 + Java 21)
@@ -443,8 +476,12 @@ touch one, check whether a sibling needs updating:
 | [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | What has **shipped** — a searchable "Shipped Ledger" indexed by Block (A–G); `git log` is authoritative for detail. | one entry per shipped task, under its block |
 | [`docs/IMPROVEMENTS.md`](docs/IMPROVEMENTS.md) | **Design rationale** (the what/why) for *unshipped* sections only. No status tables, no shipped implementation reports. | prose per active section |
 
-Tasks are numbered `SH<n>` (not contiguous across blocks — epics like SH25/SH62/SH67
-own sub-ranges). The `→ §x.y` pointer on a task line is its IMPROVEMENTS.md design section.
+Tasks are numbered `SH<n>` (not contiguous across blocks — epics like SH25/SH62/SH67/SH74
+own sub-ranges; superseded ids are retired, never reused). The `→ §x.y` pointer on a task
+line is its IMPROVEMENTS.md design section. Per-task implementable specs live in
+`docs/specs/SH<n>-<slug>.md`; the product concept is `docs/specs/SH74-agent-native-cms.md`.
+The current focus is **Blocks H–N** (the agent-native reorientation); Blocks A–G are
+shipped except the SH44–SH47 tenant follow-ups.
 
 **The cross-file update rules — follow these every time:**
 
