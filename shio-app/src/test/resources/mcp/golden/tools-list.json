@@ -92,6 +92,10 @@
             "description" : "#string",
             "type" : "integer"
           },
+          "since" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "site" : {
             "description" : "#string",
             "type" : "string"

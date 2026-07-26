@@ -36,6 +36,40 @@ public class ShAgentProperties {
 
     private Render render = new Render();
 
+    private Changes changes = new Changes();
+
+    /** Change-feed limits and its ordering guard (SH88). */
+    @Setter
+    @Getter
+    public static class Changes {
+
+        /**
+         * Entries a feed returns when the caller names no limit. Larger than a {@code find}
+         * default because a delta is read in full by definition — a caller that has to
+         * page twice to catch up pays two round trips for one question.
+         */
+        private int defaultLimit = 50;
+
+        /** Ceiling on a caller-supplied limit. */
+        private int maxLimit = 500;
+
+        /**
+         * How long an entry is held back before the feed will report it.
+         *
+         * <p>SH51 writes the audit row inside the writer's transaction, so its timestamp
+         * is assigned before the commit: a slow transaction can commit an older timestamp
+         * after a reader has already moved its cursor past it. Waiting this long before
+         * reporting an entry gives any transaction that already stamped an earlier one
+         * that much time to commit. One second covers ordinary writes; a bulk apply that
+         * runs longer can still be reported late, which the response says out loud.</p>
+         *
+         * <p>Set to {@code 0} to disable — appropriate only where writes are serialized
+         * (a single-writer import) and never for the console-plus-agent case this feed
+         * exists to reconcile.</p>
+         */
+        private long lagMillis = 1000;
+    }
+
     /** Verification-report limits (SH99, SH100). */
     @Setter
     @Getter

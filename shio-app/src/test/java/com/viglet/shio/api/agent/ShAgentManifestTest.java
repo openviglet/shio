@@ -66,15 +66,21 @@ class ShAgentManifestTest {
 
         assertThat(manifest.features())
                 .containsEntry("blueprints", false)
-                .containsEntry("contentAsFiles", false)
-                // SH88's cursor: shio_changes reads a window, but "everything since I
-                // last looked" is not expressible yet, and faking it over a timestamp
-                // would look resumable while dropping same-timestamp entries.
-                .containsEntry("changeCursor", false)
                 // SH102's PNG: a screenshot is for the human handoff, and advertising it
                 // here would invite an agent to spend three orders of magnitude more
                 // tokens than the SH101 digest costs to learn less.
                 .containsEntry("visualSnapshot", false);
+    }
+
+    @Test
+    void theFileProjectionAndItsCursorAreReportedShipped() {
+        // Both were false through Blocks H and K on purpose. changeCursor in particular:
+        // faking a cursor over a timestamp would have looked resumable while dropping
+        // same-timestamp entries, so the flag stayed false until SH88 made the position a
+        // (date, id) pair. Flipping it is a claim that catching up cannot lose an edit.
+        assertThat(shAgentManifestService.manifest().features())
+                .containsEntry("changeCursor", true)
+                .containsEntry("contentAsFiles", true);
     }
 
     @Test

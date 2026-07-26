@@ -37,10 +37,11 @@
 
 > **Numbering.** `SH<n>` ids are permanent and **not contiguous** — epics own
 > sub-ranges and superseded tasks keep their numbers (never reuse them). **SH74** is
-> the agent-native epic; Blocks H–N run **SH75–SH144** with deliberate gaps
+> the agent-native epic; Blocks H–N run **SH75–SH150** with deliberate gaps
 > (SH85 · SH91 · SH98 · SH105 · SH111 · SH118 are reserved, unused block-header
 > slots). **SH121–SH127** and **SH128–SH135** were added from findings while
-> implementing Block H, and **SH141–SH144** from findings while implementing Block K —
+> implementing Block H, **SH141–SH144** from findings while implementing Block K, and
+> **SH145–SH150** from findings while implementing Block I —
 > new tasks are expected to accrete this way, and each one's
 > line says what measurement or failure produced it. Superseded and therefore retired: **SH17/SH18** (GraalJS), **SH23 +
 > SH27–SH31** (marketplace → Block J), **SH24 + SH32–SH37** (CRUD-over-MCP → Block H).
@@ -54,7 +55,7 @@
 > **SH74** is the epic (this concept) — it is complete when the three roadmap docs
 > and `agents.md` carry the orientation; the code lands as SH75+.
 >
-> Suggested order: **H → K → I → J → L → M**. Block H is the protocol everything
+> Suggested order: **H → K → I → J → L → M** (H, K and I are shipped). Block H is the protocol everything
 > else speaks; Block K (verification) is next because it removes the most expensive
 > unit in the system — the human round trip.
 
@@ -126,11 +127,11 @@
 > already needs to fix (**SH144**).
 
 - 💭 **SH102** (deps: SH101 ✅) **Visual snapshot + diff** — optional Playwright PNG + diff vs previous, for the human handoff rather than for the agent. → §IX.4
-- 📋 **SH104** (deps: SH88, SH101 ✅) **Handoff report** — `shio report` renders the human-facing change summary (what changed, preview links, open questions) for a PR body or console banner. Blocked on SH88: "what changed" over a window rather than a cursor would be a summary that silently starts mid-story. → §IX.6
+- 📋 **SH104** (deps: SH88 ✅, SH101 ✅) **Handoff report** — `shio report` renders the human-facing change summary (what changed, preview links, open questions) for a PR body or console banner. Unblocked by SH88: the cursor exists, so the summary can start where the last one ended instead of mid-story. → §IX.6
 - 📋 **SH141** (deps: SH100 ✅, SH101 ✅) **Prove a route from the delivery side** — SH100 resolves links against the content graph, so a page that exists in the CMS and 404s on the site is still only a *warning*. SH101 already fetches one URL safely (origin-checked, opt-in); this walks the published set through the same path and turns "the front end does not serve this" into an error, with the front-end-owns-routes case declared rather than guessed. → §IX.2
 - 📋 **SH142** (deps: SH99 ✅) **Baseline / accepted findings** — a verify report has two states, and real content has a third: known and accepted. Without it the first legitimate warning teaches everyone to ignore the exit code. A committed `shio/verify-baseline.json` (rule + address) that `shio verify` subtracts, and that fails when an accepted finding no longer exists — so the file cannot rot into a blanket suppression. → §IX.1
-- 📋 **SH143** (deps: SH99 ✅) **Scope a verify run to what changed** — the pass reads every post in every readable site, which is right for CI and wrong for the call an agent makes after writing three pages. Needs `?folder=`/`?address=` scoping and, once SH88 lands, `?since=` — plus an honest header saying the report covers a subset, because a partial report that reads as a full one is the SH138 hazard again. → §IX.1
-- 💭 **SH144** (deps: SH103 ✅, SH88) **Durable incident feed** — the SH103 window is in memory and says so, which is the correct answer for now and the wrong one for "was anything failing while I was away". The durable form is the same cursor SH88 builds for content changes; folding incidents into it is cheaper than a second retention policy. → §IX.5
+- 📋 **SH143** (deps: SH99 ✅, SH88 ✅) **Scope a verify run to what changed** — the pass reads every post in every readable site, which is right for CI and wrong for the call an agent makes after writing three pages. Needs `?folder=`/`?address=` scoping and `?since=` over SH88's cursor — plus an honest header saying the report covers a subset, because a partial report that reads as a full one is the SH138 hazard again. → §IX.1
+- 💭 **SH144** (deps: SH103 ✅, SH88 ✅) **Durable incident feed** — the SH103 window is in memory and says so, which is the correct answer for now and the wrong one for "was anything failing while I was away". The durable form is the same cursor SH88 builds for content changes; folding incidents into it is cheaper than a second retention policy. → §IX.5
 
 ## Block I — Content as files (local-first authoring)
 
@@ -138,11 +139,33 @@
 > tree than with read-modify-write over HTTP. Project content to disk, reconcile
 > with the server. Largest cycle reducer in the proposal. → §X
 
-- 📋 **SH86** (deps: SH79) **Filesystem projection format** — `shio/content/<site>/<path>.md` (frontmatter = attrs, body = primary rich-text field) + `shio/assets/`; lossless round-trip, deterministic serialization (same discipline as SH68/SH63). → §X.1
-- 📋 **SH87** (deps: SH86, SH82) **Two-way content sync** — `shio pull --content` / `push --content` on the plan/apply engine, with `--check` drift for CI. → §X.2
-- 📋 **SH88** (deps: SH51, SH79) **Change feed / cursor API** — `GET /api/v2/agent/changes?since=<cursor>` over the audit trail, so the human's console edits flow back and a follow-up session reads only the delta. SH83's `shio_changes` is the window this makes resumable; it also flips the manifest's `changeCursor`. → §X.3
-- 📋 **SH89** (deps: SH87, SH88) **Conflict policy** — per-field 3-way merge with explicit conflicts and `--ours/--theirs`; never a silent clobber (both actors are legitimate writers, cf. the SH66 lock). → §X.4
-- 💭 **SH90** (deps: SH87) **Watch mode** — `shio dev` syncs both directions and emits an agent-readable event log. → §X.5
+> ✅ **The projection and its sync are shipped** → [CHANGELOG.md](CHANGELOG.md) Block I:
+> **SH86** (projection format) · **SH88** (change feed + cursor, and `changeCursor`
+> finally true) · **SH87** (`pull --content` / `push --content`) · **SH89** (three-way
+> merge) · **SH90** (`shio dev --content` + the JSONL event log).
+>
+> **What is deliberately not in it, and why:** `shio/assets/` does not project — a
+> binary's bytes are id-keyed on the server (SH38) and a projected `File` field still
+> holds a UUID, so the tree is not yet self-contained (**SH145**). Conflicts are
+> *reported*, never written as `<<<<<<<` markers: a marker in a field value is content,
+> and the next push would send it to the server and the next publish would put it on the
+> site. And a pull refuses to write a projection built from a truncated post list rather
+> than let a later `--prune` read the gaps as deletions (**SH146** removes the cap).
+>
+> **What building it opened.** The projection made three gaps conspicuous: a file rename
+> pushes as delete-plus-create instead of SH134's `post.move`, which loses the post's id
+> and history (**SH150**); an empty folder cannot be authored at all, because folders are
+> only implied by the posts inside them (**SH149**); and the merge base keeps a second copy
+> of every field value when per-field digests would decide the same cases (**SH148**). The
+> change feed's own honesty note is the fourth: the lag narrows the stamp-before-commit
+> window, it does not close it (**SH147**).
+
+- 📋 **SH145** (deps: SH86 ✅, SH38 ✅) **Project assets too** — `shio/assets/` with the bytes, and a `File` field that reads as a path rather than a UUID. Today a content tree cannot be moved to another instance or reviewed in a diff without the ids resolving to nothing, which is most of what "content as files" promises. → §X.6
+- 📋 **SH146** (deps: SH83 ✅, SH88 ✅) **Page `find`** — the projection reads the post list through `find`, which caps at `shio.agent.read.max-limit` and has no cursor, so a site past the cap cannot be projected at all (pull refuses rather than silently omitting). The cursor SH88 built for changes is the shape to reuse. → §X.7
+- 📋 **SH147** (deps: SH88 ✅) **Commit-ordered change feed** — SH51 stamps the audit row inside the writer's transaction, so a slow commit can land an older timestamp behind a cursor that already passed it. The 1s lag narrows that window; only commit-ordered sequencing (an outbox, or a sequence assigned at commit) closes it, and a feed used for sync has to be exact. → §X.3
+- 💭 **SH148** (deps: SH89 ✅) **Digest-only merge base** — `shio/.shio/content-base.json` holds a full copy of every projected field. A per-field hash decides all three merge cases; only a genuine conflict needs values, and those can be re-read. Turns the snapshot from O(content) into O(fields). → §X.8
+- 📋 **SH149** (deps: SH87 ✅) **Folders as files** — a folder exists in the projection only because a post names it, so an empty section cannot be authored locally and a pull silently drops one. Needs a folder marker file (`_folder.md` or similar) that `push --content` declares directly. → §X.9
+- 📋 **SH150** (deps: SH87 ✅, SH134 ✅) **A renamed file is a move, not a re-creation** — `push --content --prune` sends a rename as `post.delete` + `post.upsert`, which is exactly the workaround SH134 exists to prevent: the new post gets a new id and loses the audit trail and version history. The file already refuses to rename halfway (path vs `url:`), so the honest fix is to detect the pair and emit `post.move`. → §X.10
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 

@@ -181,6 +181,15 @@ the CDA + console services (law P10) and holds no business logic of its own.
   delivered page but is **off** unless `shio.agent.render.allow-fetch=true`, and only for
   the origins of readable sites — an endpoint that fetches arbitrary URLs server-side is a
   request-forgery surface.
+- `GET /agent/changes` — **the change feed (SH88)**: content transitions with an SH79
+  address each, and a `cursor` to pass back as `since=`. The cursor is `<instant>|<id>`,
+  never a bare timestamp — audit rows share timestamps, so a timestamp cursor would drop
+  the entries that tie (a bare one is a teaching 400, not an interpretation). Both modes
+  are ordered **oldest → newest** so the cursor is always the last row. An entry younger
+  than `shio.agent.changes.lag-millis` (1s) is **held back**: SH51 stamps the audit row
+  inside the writer's transaction, so a slow commit could otherwise land behind a cursor
+  that already passed it — the `notes` say so, and SH147 is the real fix. Site-scoped by
+  the SH2 allow-list.
 - `GET /agent/diagnostics` — asynchronous failures (SH103): webhook deliveries, image
   transforms, scheduled publishes, 5xx. A **bounded in-memory** window that reports its own
   bound (`since`/`dropped`/`notes`), because "no incidents" must not read as "nothing ever
@@ -238,8 +247,38 @@ uses a **separate** surface at **`/api/v2/post/type`** (note the slash, not a hy
   CLI (by name, lossless `Def`).
 
 ### `shio` CLI (`@viglet/shio`, in `cli/`)
-The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`), `context`, `resolve`, `apply` (SH129 — a desired-state content document; `--check` is the CI drift guard, `-` reads stdin), `verify` (SH99/SH100 — the content lint; **exits 1 on an error**, `--strict` also on warnings), `digest` (SH101 — one page's structure), `mcp`, `dev`, `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
-**CI gates, in the order they should run:** `shio push --check` (model drift) → `shio apply --check` (content drift) → `shio verify` (content defects). The CLI test suite needs `@viglet/shio-client` built first (`pnpm -C shio-client run build`), or every command test fails on a missing module rather than on its own logic.
+The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`; **`--content` switches both verbs to content**, see below), `context`, `resolve`, `apply` (SH129 — a desired-state content document; `--check` is the CI drift guard, `-` reads stdin), `verify` (SH99/SH100 — the content lint; **exits 1 on an error**, `--strict` also on warnings), `digest` (SH101 — one page's structure), `changes` (SH88 — the feed; `--since last` reads the last content pull's position, `--cursor` prints only the position), `mcp`, `dev` (`--content` runs the SH90 sync loop instead of the site's dev server), `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
+**CI gates, in the order they should run:** `shio push --check` (model drift) → `shio push --content --check` (content-tree drift) → `shio apply --check` (document drift) → `shio verify` (content defects). The CLI test suite needs `@viglet/shio-client` built first (`pnpm -C shio-client run build`), or every command test fails on a missing module rather than on its own logic.
+
+### Content as files — `shio/content/**` (Block I)
+Content projects to **one Markdown file per post**, `shio/content/<site>/<url>.md`: YAML
+frontmatter for the metadata + `fields:`, and the post's first `HTML Editor` field as the
+document body (the file records which field that was as `body:`, so reading it back never
+needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
+`content-sync.mjs` (the three-way merge, pure) and `content-store.mjs` (disk + wire).
+- **The path is the URL, not the folder chain.** A URL is unique per site, so the tree
+  cannot collide; the folder travels in frontmatter because SH79 keeps the two namespaces
+  apart. A file whose path and `url:` **disagree** is an error — a half-done rename is a
+  move on one side and a create on the other (SH134's lesson).
+- **Only the DRAFT projects.** `publish:` in a file is an *instruction* push forwards, not
+  state pull writes back — the merge deliberately ignores it.
+- **Losslessness beats prettiness:** a value that would not survive the round trip stays in
+  `fields:` (as JSON) instead of becoming the body. The one normalization is CRLF → LF in
+  the body, so a pull cannot report a change nobody made.
+- **`shio pull --content`** merges three ways against `shio/.shio/content-base.json` (the
+  last-synced base + the SH88 cursor): one side changed → that side, different fields →
+  merged, same field → **conflict**, which writes nothing, exits 1, and offers
+  `--ours`/`--theirs`/`--show-remote`. **There are no conflict markers on purpose** —
+  `<<<<<<<` in a field value is content the next push would publish.
+- **`shio push --content`** compiles the tree into one desired-state document per site and
+  applies it through `/agent/plan|apply` (law P10). It declares a post the server changed
+  with the **server's** values — declaring the base would revert a console edit, omitting
+  the post would expose it to `--prune`. `--check` is the drift guard.
+- **Two refusals to keep:** a truncated `find` result makes the projection partial, so pull
+  refuses (`--allow-partial` marks the snapshot, and `push --prune` then refuses too), and
+  `push --content` over an empty directory is an error, not an empty document.
+- Not projected yet: **assets** (SH145) and **empty folders** (SH149); a rename still
+  pushes as delete + create rather than `post.move` (SH150).
 
 ## Security Configuration
 

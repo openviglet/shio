@@ -23,7 +23,11 @@ import { argv, exit } from "node:process";
 import { parseArgs } from "./args.mjs";
 import { defaultContext } from "./context.mjs";
 
-const BOOLEANS = ["help", "yes", "dry-run", "prune", "check", "skip-types", "id", "ids", "strict"];
+const BOOLEANS = [
+  "help", "yes", "dry-run", "prune", "check", "skip-types", "id", "ids", "strict",
+  // Content-as-files (Block I): `--content` picks the resource, the rest resolve a sync.
+  "content", "ours", "theirs", "force", "allow-partial", "show-remote", "cursor", "json",
+];
 
 const COMMANDS = {
   init: () => import("./commands/init.mjs"),
@@ -33,6 +37,7 @@ const COMMANDS = {
   resolve: () => import("./commands/resolve.mjs"),
   apply: () => import("./commands/apply.mjs"),
   verify: () => import("./commands/verify.mjs"),
+  changes: () => import("./commands/changes.mjs"),
   digest: () => import("./commands/digest.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),
@@ -53,12 +58,14 @@ Commands:
   resolve <addr> Resolve a content address (post:/folder:/site:/id:) to its object
   apply [file]   Plan/apply a desired-state content document (--dry-run, --check, - for stdin)
   verify         Lint the content and its routes; exits non-zero on an error (CI gate)
+  changes        What changed, with a cursor to resume from (--since, --cursor)
   digest <page>  Structural digest of one page: outline, landmarks, links, images
-  pull           Pull post-types into ./shio/post-types/*.json (Basic auth)
-  push           Apply local post-types back to Shio (--dry-run, --prune)
+  pull           Pull post-types into ./shio/post-types/*.json (--content for pages)
+  push           Apply local post-types back to Shio (--dry-run, --prune, --content)
   build          Compile local DSL/JSON post-types to canonical JSON (--out)
   types          Generate a TypeScript .d.ts from the live post-types (CDA token)
   dev            Generate types, start the site dev server, watch the model
+                 (--content: sync shio/content/** both ways and log events instead)
   deploy         push (apply) then types
 
 Post-types as code:
@@ -106,6 +113,28 @@ Verification (shio verify / shio digest):
   --strict             Fail on warnings too (off by default — see the severity rule)
   shio digest <page>   post:<site>/<url>, or a delivery URL when fetching is enabled
   --address / --url    Same, as explicit flags
+
+Content as files (shio pull/push --content, shio dev --content):
+  Content projects to shio/content/<site>/<url>.md — YAML frontmatter is the fields,
+  the body is the post's rich-text field. Edit with Edit/Write/Grep, then push.
+  A pull merges three ways (last-synced base, server, files): only a field both sides
+  changed is a conflict, and a conflict writes nothing and exits non-zero.
+  --site <name>        Only this site
+  --content-dir <dir>  Content root            (default shio/content)
+  --prune              push: delete server posts the file tree does not declare
+  --check / --dry-run  push: drift guard / plan only, same meanings as for post-types
+  --ours / --theirs    pull: resolve conflicts in one direction
+  --show-remote        pull: write the server's copy as <file>.remote next to a conflict
+  --allow-partial      pull: accept a truncated post list (marks the snapshot partial)
+  --force              push: proceed despite conflicts or a partial snapshot
+  The last-synced base and the change cursor live in shio/.shio/content-base.json.
+
+Change feed (shio changes):
+  --since <cursor>     Only what happened after that position ("last" = last pull's)
+  --cursor             Print only the cursor (SINCE=$(shio changes --cursor))
+  --site <name>        Scope to one site
+  --limit <n>          Entries to print
+  --json               Raw JSON instead of lines
 
 Addresses (shio resolve):
   post:<site>/<url>    A post, by its friendly URL

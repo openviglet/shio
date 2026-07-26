@@ -495,8 +495,8 @@ a blanket suppression that hides the next real defect at the same address.
 **A full pass is the wrong shape for the common call.** Verification is read twice for
 different reasons: once in CI, where "every post in every site" is exactly right, and
 once by an agent that has just written three pages, where it is a hundred times more
-work than the question needs. Scoping by folder or address — and by SH88's cursor once
-it exists — makes the second call cheap. The constraint is the SH138 one: a report over
+work than the question needs. Scoping by folder or address — and by SH88's cursor, which
+now exists — makes the second call cheap. The constraint is the SH138 one: a report over
 a subset must say so in the payload, because a partial report that reads as a full one
 is worse than no report.
 
@@ -534,7 +534,7 @@ also an admission. "Was anything failing while I was away" is a question about a
 the window may no longer cover.
 
 The durable form is not a second table with its own retention policy. It is the same
-cursor SH88 builds for content changes: an incident is a thing that happened at a
+cursor SH88 built for content changes: an incident is a thing that happened at a
 position, which is exactly what a change feed already models. Folding the two is cheaper
 to build and cheaper to read — one `since=` for "what changed and what broke".
 
@@ -555,48 +555,99 @@ summary with links, not a wall of prose.
 > is measurably better and cheaper with `Edit`/`Write`/`Grep` than with
 > read-modify-write over an API.
 
-### X.1 Filesystem projection format (SH86)
+> ✅ **SH86, SH87, SH88, SH89 and SH90 shipped** → [CHANGELOG.md](CHANGELOG.md) Block I.
+> What follows is the design rationale for what the projection **still owes**.
 
-`shio/content/<site>/<path>.md` — YAML frontmatter = attrs, body = the primary
-rich-text field; `shio/assets/` for binaries. Lossless round-trip and deterministic
-serialization, following exactly the discipline that made SH68 (exchange) and SH63
-(DSL) work: one canonical byte-for-byte serialization so a diff means something and
-two writers cannot disagree about formatting.
+### X.3 Commit-ordered change feed (SH147)
 
-Open design questions to settle in the SH86 spec: Relator items (nested files vs
-inline arrays), locale siblings (SH53 — suffix vs directory), and whether DRAFT and
-PUBLISHED both project or only DRAFT (leaning: only DRAFT projects; publish stays an
-explicit act, per P7).
+The feed's cursor is exact about ties (it is an `(instant, id)` pair) and inexact about
+one thing it cannot fix from the read side: SH51 assigns the audit row's timestamp
+**inside the writer's transaction**, so a slow transaction can commit an older timestamp
+after a faster one has already been read and the cursor has moved past it. That entry is
+then invisible for ever, which for a *sync* feed means a lost edit rather than a late one.
 
-### X.2 Two-way content sync (SH87)
+The shipped mitigation is a lag — the feed will not report an entry younger than
+`now - lag` (1s), which gives any transaction that already stamped an earlier timestamp
+that long to commit — and the response states the rule rather than implying exactness. It
+narrows the window; it does not close it, and a bulk apply of hundreds of posts can still
+outrun it.
 
-`shio pull --content` / `shio push --content` over the §VIII.7 plan/apply engine,
-with `--check` drift for CI — the same three verbs post-types already have (SH16/
-SH65), extended to content. During authoring the API cost collapses to **one plan +
-one apply**, with everything in between happening in the agent's cheapest tools.
+Closing it properly means changing how the row is *written*, not how it is read: a
+sequence assigned at commit, or an outbox the reader drains in commit order. That is why
+it is a separate task — SH88 is the read shape, and the read shape is right.
 
-### X.3 Change feed / cursor API (SH88)
+### X.6 Project assets too (SH145)
 
-`GET /api/v2/agent/changes?since=<cursor>` over the SH51 audit trail. Two jobs:
-the human's console edits flow **back** into the file tree, and a follow-up session
-reads only the delta instead of re-reading the world. This is one of the three
-mechanisms that make session N+1 cheaper than session N (§XIII).
+`shio/content/**` holds the posts; the binaries stay on the server, id-keyed under
+`store/file_source/<postId>/` (SH38). So a projected `File` field still reads as a UUID,
+which means a content tree cannot be moved to another instance, reviewed usefully in a
+diff, or committed as a complete description of a site — three of the four things "content
+as files" is supposed to buy.
 
-### X.4 Conflict policy (SH89)
+The shape follows the SH86 rules: bytes under `shio/assets/`, addressed by a path, and a
+`File` field that projects as that path instead of an id. The interesting question is the
+inverse direction — a push has to resolve a path back to a File post, creating one when it
+does not exist, and it must be idempotent by path so a second push does not upload a
+second copy. That is the same idempotency argument SH81's `post.upsert` settled for posts,
+applied to bytes.
 
-Per-field 3-way merge with explicit conflict markers and `--ours/--theirs`; never a
-silent clobber. Both actors are legitimate writers — the same reasoning that
-produced the SH66 "managed by code" lock, applied to content instead of the model.
-The lesson from SH66 is worth restating: the fix for two writers is an **explicit
-boundary**, not last-writer-wins.
+### X.7 Page `find` (SH146)
 
-### X.5 Watch mode (SH90)
+The projection reads the post list through `find`, which caps at
+`shio.agent.read.max-limit` and has **no cursor**. A site past the cap therefore cannot be
+projected at all: pull refuses rather than writing a tree that omits posts, because the
+very next `push --prune` would read those omissions as deletions (the SH138 hazard, on the
+file side).
 
-`shio dev` syncs both directions and emits an agent-readable event log (structured,
-greppable) so a failure during a long build surfaces as a line the agent can read,
-not a scrollback it has to reconstruct.
+Refusing is the right behaviour for a cap that exists; removing the cap is the fix. The
+cursor SH88 built for the change feed is the shape to reuse — keyset over a stable sort,
+never an offset, since content is being written while the walk runs.
 
----
+### X.8 Digest-only merge base (SH148)
+
+The three-way merge needs a base, and the base currently keeps a full copy of every
+projected field value in `shio/.shio/content-base.json`. That is one extra copy of the
+whole site on disk, and if the file is committed (which is the reasonable choice for a
+team, since it makes the merge base shared) it is one extra copy in every clone.
+
+A per-field **hash** decides all three cases the merge asks about — did this side change,
+did that side change, did both — because every one of them is an equality test against the
+base rather than a read of it. Only a genuine conflict needs the base *value*, and by then
+the server has been read anyway. The snapshot goes from O(content) to O(fields).
+
+Left as an idea rather than designed: it trades a clear data structure for a smaller one,
+and the merge is new. It is worth doing after the merge has been used enough to trust.
+
+### X.9 Folders as files (SH149)
+
+A folder exists in the projection only because a post names it — `push --content` derives
+the declared folder set from the posts' `folder` values plus their ancestors. So an empty
+section cannot be authored locally (there is no file to write), and a pull drops one that
+exists on the server (there is nothing to write it to).
+
+That is a real gap for the agent-first workflow: "scaffold the structure, then fill it" is
+exactly how a site gets built, and the structure step currently has to go through the API
+while the content step goes through files. The fix is a folder marker file — `_folder.md`
+or similar, carrying nothing but its own existence and any folder-level metadata — that
+push declares directly as a `folder.upsert`.
+
+### X.10 A renamed file is a move, not a re-creation (SH150)
+
+`push --content --prune` sends a rename as `post.delete` plus `post.upsert`, which is
+precisely the workaround **SH134** exists to prevent: the replacement gets a new id and
+loses the post's audit trail and version history, and any inbound `ShReference` to it
+breaks.
+
+The file format already refuses to rename *halfway* — a path that disagrees with its
+`url:` frontmatter is an error, because one is a move and the other is a create and
+guessing between them either duplicates or deletes a post. So the information needed is
+already there: a post present in the base under one address and in the tree under another,
+with the same fields, is a **move**, and push should emit `post.move` (SH134) for it.
+
+Two details to settle in the task: how much divergence still counts as the same post (an
+address change plus a body rewrite is still a move), and what to do when two files could
+each claim the same base post — which, like every other ambiguity in this block, should be
+a refusal rather than a guess.
 
 ## XI. Blueprints + Claude Code plugin (Block J)
 

@@ -16,7 +16,18 @@ import { resolveAdmin } from "../context.mjs";
 import { diffDefs, planPush } from "../post-types-io.mjs";
 import { readLocalDefs } from "../post-types-compile.mjs";
 
-export async function run(flags, _positionals, ctx) {
+export async function run(flags, positionals, ctx) {
+  if (flags.content) {
+    // SH87: the same verb over content instead of the model. It compiles the file tree to
+    // a desired-state document and applies it, so `--dry-run`/`--check`/`--prune` keep the
+    // meanings they already have here.
+    const content = await import("./content-push.mjs");
+    return content.run(flags, positionals, ctx);
+  }
+  return pushPostTypes(flags, ctx);
+}
+
+async function pushPostTypes(flags, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
   const dir = flags.dir ?? "shio/post-types";
   const dryRun = Boolean(flags.dryRun);
