@@ -197,6 +197,33 @@ the CDA + console services (law P10) and holds no business logic of its own.
   transforms, scheduled publishes, 5xx. A **bounded in-memory** window that reports its own
   bound (`since`/`dropped`/`notes`), because "no incidents" must not read as "nothing ever
   failed". Recorded by `ShAgentIncidentLog`; repeats fold into one row with a count.
+- `GET/PUT/DELETE /agent/memory` — **the instance memory (SH114)**: keyed notes that come
+  back in the context pack's `conventions`, attributed to whoever wrote them. Upsert by
+  `(tenant, scope, key)`, so re-stating a convention rewrites one row; `scope` is a site name
+  or `""` for the whole instance (empty, never `NULL` — a unique index does not treat `NULL`s
+  as equal). Deliberately **not** content: read on the hot path, never delivered, and it must
+  survive an SH82 `prune`. **No MCP tool** — a tool schema is paid every turn and a coding
+  agent has a shell, so the write path is `shio remember`; SH160 is the open question for a
+  client without one, and SH161 is that notes do not yet travel with an exported site.
+
+**Conditional reads (SH116).** `manifest`, `context` and `blueprints` carry strong ETags;
+`If-None-Match` on an unchanged instance answers `304`, which measures as **0** on
+`X-Shio-Est-Tokens`. A tag names a **representation**, not a state — the SH77 digest covers
+content only, so JSON and terse share it and every tag mixes in `format` + `ids`. Responses
+say `Cache-Control: no-cache` (store it, ask first), never a freshness lifetime. The rest of
+the surface is still unconditional (SH159).
+
+**`?format=` on `/agent/context` has three values (SH78, SH115):** `json`, `terse`, and
+`agents-md` — the same pack rendered as project agent instructions, which is what
+`shio context --as agents-md --out AGENTS.md` writes. An unknown value is a teaching **400**,
+not a silent fallback to JSON.
+
+**The cost of all of it is measured, not asserted (Block M).** `ShAgentTaskBenchmarkTest`
+runs four canonical jobs over the agent surface *and* over the id-keyed console/CDA path and
+asserts both ratios; `ShAgentResponseBudgetTest` guards eleven canonical response sizes. Both
+read their ceilings from `shio-app/src/test/resources/token-budgets.properties` — the same
+file as the SH132 MCP budgets, because a second place to keep a number is a place that goes
+stale. Raising a ceiling is allowed and must be justified in the commit.
 
 ### MCP — `POST /mcp` (SH75/SH83)
 Same capabilities over the Model Context Protocol (JSON-RPC 2.0, revision `2025-06-18`),
@@ -257,7 +284,8 @@ uses a **separate** surface at **`/api/v2/post/type`** (note the slash, not a hy
   CLI (by name, lossless `Def`).
 
 ### `shio` CLI (`@viglet/shio`, in `cli/`)
-The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`; **`--content` switches both verbs to content**, see below), `context`, `resolve`, `apply` (SH129 — a desired-state content document; `--check` is the CI drift guard, `-` reads stdin; **`--blueprint <name>` applies a package instead**, with `--param k=v` repeatable, `--params <file>`, `--site`, `--force`), `blueprints` (SH92 — the catalogue; `blueprints <name>` for one package's parameters), `verify` (SH99/SH100 — the content lint; **exits 1 on an error**, `--strict` also on warnings), `digest` (SH101 — one page's structure), `changes` (SH88 — the feed; `--since last` reads the last content pull's position, `--cursor` prints only the position), `mcp`, `dev` (`--content` runs the SH90 sync loop instead of the site's dev server), `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
+The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`; **`--content` switches both verbs to content**, see below), `context` (`--as agents-md` renders the pack as project agent instructions — SH115),
+`resolve`, `apply` (SH129 — a desired-state content document; `--check` is the CI drift guard, `-` reads stdin; **`--blueprint <name>` applies a package instead**, with `--param k=v` repeatable, `--params <file>`, `--site`, `--force`), `blueprints` (SH92 — the catalogue; `blueprints <name>` for one package's parameters), `verify` (SH99/SH100 — the content lint; **exits 1 on an error**, `--strict` also on warnings), `digest` (SH101 — one page's structure), `changes` (SH88 — the feed; `--since last` reads the last content pull's position, `--cursor` prints only the position), `remember` (SH114 — the instance memory; bare lists it, `<key> "<note>"` writes one, `--forget` drops one, `--site` scopes it), `mcp`, `dev` (`--content` runs the SH90 sync loop instead of the site's dev server), `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
 **CI gates, in the order they should run:** `shio push --check` (model drift) → `shio push --content --check` (content-tree drift) → `shio apply --check` (document drift) → `shio verify` (content defects). The CLI test suite needs `@viglet/shio-client` built first (`pnpm -C shio-client run build`), or every command test fails on a missing module rather than on its own logic; `shio-sections`' suite needs `@viglet/shio-model` built (`pnpm -C shio-model run build`) for the same reason.
 
 ### Content as files — `shio/content/**` (Block I)

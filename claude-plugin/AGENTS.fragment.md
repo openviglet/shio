@@ -2,9 +2,11 @@
   Paste this into your project's AGENTS.md (or CLAUDE.md) when the project's content lives
   in Shio. It is the minimum an agent needs to stop discovering the CMS on every session.
 
-  This fragment is written by hand and therefore rots. SH115 replaces it with
-  `shio context --as agents-md`, which renders the same thing from the live instance —
-  prefer that once it ships.
+  This fragment is written by hand and therefore rots. **Prefer the generated form:**
+  `shio context --as agents-md --out AGENTS.md` (SH115) renders the same guidance plus this
+  instance's actual content model, folder tree and remembered conventions, so it cannot
+  drift from the CMS. Regenerate it and the diff is the drift. Use this hand-written
+  fragment only when the instance is not reachable at authoring time.
 -->
 
 ## Content lives in Shio
@@ -14,8 +16,15 @@ The CMS is Shio, driven over MCP (`shio_*` tools) or the `shio` CLI. The console
 
 **Every session, first:** `shio_context` — the content model, the sitemap and this
 instance's conventions in one call. Keep the `digest` it returns; next session, compare it
-before re-reading anything. Then `shio_changes` to see what a human changed while you were
-away.
+before re-reading anything (over HTTP it is also the `ETag`, so an unchanged instance
+answers `304` and costs nothing). Then `shio_changes` to see what a human changed while you
+were away.
+
+**Read the conventions, and add to them.** Lines prefixed `[memory:key]` were written by an
+earlier session or by a human, and the attribution is part of the claim. When you work
+something out that the next session would otherwise re-derive — "this site's blog uses
+`Article`, not `Post`" — record it: `shio remember blog.post-type "..."`. That is the one
+thing that makes session N+1 cheaper than session N.
 
 **Before modelling anything by hand:** read `shio://blueprints`. A blueprint applies a whole
 section — post-types, folders, sample pages — in one call, and re-applying it changes
