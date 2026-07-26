@@ -28,6 +28,40 @@ public class ShAgentProperties {
 
     private Context context = new Context();
 
+    private Batch batch = new Batch();
+
+    private Read read = new Read();
+
+    /** Agent content-read limits (SH83's `find`). */
+    @Setter
+    @Getter
+    public static class Read {
+
+        /**
+         * Rows a {@code find} returns when the caller names no limit. Small on purpose:
+         * find exists to narrow, and a default that returns everything would make the
+         * tool a listing endpoint by accident.
+         */
+        private int defaultLimit = 25;
+
+        /** Ceiling on a caller-supplied limit. */
+        private int maxLimit = 200;
+    }
+
+    /** Batch + plan/apply limits (SH81, SH82). */
+    @Setter
+    @Getter
+    public static class Batch {
+
+        /**
+         * Ops allowed in one atomic batch. A ceiling exists because the whole batch is
+         * one transaction: an unbounded one holds locks for as long as an agent is
+         * willing to keep typing. Sized well above the "build a small site" case the
+         * endpoint is for, so hitting it means the caller should be using plan/apply.
+         */
+        private int maxOps = 200;
+    }
+
     /** Context-pack defaults (SH77) and its token ceiling (SH78). */
     @Setter
     @Getter

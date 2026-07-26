@@ -23,12 +23,13 @@ import { argv, exit } from "node:process";
 import { parseArgs } from "./args.mjs";
 import { defaultContext } from "./context.mjs";
 
-const BOOLEANS = ["help", "yes", "dry-run", "prune", "check", "skip-types", "id"];
+const BOOLEANS = ["help", "yes", "dry-run", "prune", "check", "skip-types", "id", "ids"];
 
 const COMMANDS = {
   init: () => import("./commands/init.mjs"),
   types: () => import("./commands/types.mjs"),
   context: () => import("./commands/context.mjs"),
+  mcp: () => import("./commands/mcp.mjs"),
   resolve: () => import("./commands/resolve.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),
@@ -45,6 +46,7 @@ Usage:
 Commands:
   init [name]    Scaffold a Next.js site wired to the Shio CDA
   context        Print the agent context pack: model + sitemap + conventions (one call)
+  mcp            Bridge stdio to this instance's MCP endpoint (claude mcp add shio -- shio mcp)
   resolve <addr> Resolve a content address (post:/folder:/site:/id:) to its object
   pull           Pull post-types into ./shio/post-types/*.json (Basic auth)
   push           Apply local post-types back to Shio (--dry-run, --prune)
@@ -70,6 +72,13 @@ Context pack (shio context):
   --depth <n>          Folder-tree depth to walk
   --budget <tokens>    Estimated-token ceiling (0 = unbounded)
   --from <id>          Resume cursor from a truncated pack
+  --ids                Put object ids back on every row (off by default — rows are
+                       addressable without one, and a UUID is the priciest field)
+
+MCP (shio mcp):
+  Speaks newline-delimited JSON-RPC on stdin/stdout and forwards it to POST /mcp.
+  Register it with:  claude mcp add shio -- shio mcp
+  Uses the same --url/--user/--password (or SHIO_URL/SHIO_USER/SHIO_PASSWORD).
 
 Addresses (shio resolve):
   post:<site>/<url>    A post, by its friendly URL

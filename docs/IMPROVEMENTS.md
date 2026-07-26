@@ -174,18 +174,30 @@ AI the product contains.
 > reproduced every discovery and write cost it was meant to remove. Full protocol
 > design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
 
-### VIII.1 MCP server host (SH75)
+### VIII.1 MCP server host (SH75) — ✅ shipped
 
-Spring-hosted MCP at `/mcp` over **streamable HTTP**, plus `shio mcp` in the CLI as
-a **stdio bridge** so local dev is `claude mcp add shio -- shio mcp` with no
-CORS/auth ceremony. Auth extends the SH2 token model with an **`AGENT` scope**
-(§XII.1) rather than inventing a credential. Every session carries an **agent
-session id**, stamped into the SH51 audit trail on every write — that id is what
-makes the §XII.4 review queue possible, so it belongs in the host, not bolted on later.
+Shipped: `POST /mcp` + `shio mcp` → [CHANGELOG.md](CHANGELOG.md) Block H. Design
+records that bind what follows:
 
-Design constraint (P10): the host is a **transport + tool registry only**. Tools
-delegate to existing services (`ShCdaService`, `ShPostUnifiedWriteService`,
-`ShPostTypeAdminService`, `ShSiteImportService`…). No business logic in the MCP layer.
+- **Two error channels is the load-bearing decision.** A JSON-RPC `error` is read by
+  the *client*; a result with `isError` is read by the *model*. Everything the caller
+  could fix therefore travels as a result, because routing an SH80 teaching error the
+  other way silently discards the `fix` and `didYouMean` that make the retry succeed.
+  Any future protocol surface inherits this: ask who has to change, and send the error
+  where that party will see it.
+- **Implementing beat importing, for a stated reason and not on principle.** The SDK is
+  Jackson-2/Boot-3; this app is Jackson-3/Boot-4. When a dependency would add a second
+  copy of core infrastructure to save a few hundred lines of well-specified envelope
+  handling, the lines are cheaper. That calculus flips if MCP grows a hard part
+  (sampling, elicitation, server-initiated streams) — revisit then, not before.
+- **Refusing a capability is a feature when you say so.** `GET /mcp` returns `405`
+  rather than opening a stream that never emits, because the two are indistinguishable
+  to a client and only one of them is honest.
+- **Attribution cannot be retrofitted.** The session id is minted by the transport on
+  the first `initialize`, because rows written before it existed simply do not have one.
+  It rides in the audit *actor string* (`alice (agent:7f3c…)`) rather than a column:
+  SH106 owns the credential model and should migrate the schema once, and the human
+  stays visible because an agent acts *as* someone.
 
 ### VIII.2 Agent manifest (SH76) — ✅ shipped
 
@@ -242,8 +254,13 @@ remembers (SH125).
 
 Anti-goal (P3 corollary), unchanged: terseness must not cost a second round trip. A
 response that omits something the agent then has to ask for is a regression — which
-is why per-field projection on content reads was **not** forced into SH78 and waits
-for SH123, when there are content reads to project.
+is why per-field projection on content reads was **not** forced into SH78 and waited
+for **SH123** (✅ shipped with SH83, when there were finally content reads to project).
+Its own record, in the same spirit: a projection naming a field the type does not have
+is a *teaching error*, because an empty projection is indistinguishable from an empty
+post and the agent's next move would be to overwrite real content with nothing. The
+response also echoes which fields came back — a few tokens that remove an "is this all
+of it?" round trip, which is the trade this whole section is about.
 
 ### VIII.5 Path addressing (SH79) — ✅ shipped
 
@@ -265,12 +282,16 @@ follows:
 - **Absent, not forbidden.** An address outside the SH2 allow-list resolves to 404,
   never 403, so a scoped credential cannot use the error to prove a site exists. Every
   future address-taking surface inherits this.
-- **`addressOf` is the inverse and is round-trip tested**, because SH121 removes the
+- **`addressOf` is the inverse and is round-trip tested**, because SH121 removed the
   id from context rows and that only stays honest if everything shown is addressable.
 
-**Still open:** writes are not yet address-native — `resolve` is the bridge to
-today's id-keyed endpoints. SH81/SH82 take the address directly, at which point
-"upsert this address" becomes the idempotent write this task was really for.
+Both follow-ups have since shipped: **SH121** (id-free reads) and **SH81/SH82**
+(address-native writes) → [CHANGELOG.md](CHANGELOG.md) Block H. One record from SH121
+that later tasks inherit: **the cursor is not a row field.** Pagination still travels
+as an id, because it is one value per *response* rather than one per row — the cost
+argument that removed ids from rows does not apply to it, and an id needs no
+namespace disambiguation to be exact. Before dropping an identifier, ask how often it
+is paid, not whether it is ugly.
 
 ### VIII.6 Teaching errors (SH80) — ✅ shipped
 
@@ -287,29 +308,87 @@ caller who learned a different one: **translate dialects first, correct spelling
 second.** Candidate next surfaces: post-state names, locale codes, and the
 blueprint parameter vocabulary (§XI.1).
 
-### VIII.7 Batch + plan/apply (SH81, SH82)
+### VIII.7 Batch + plan/apply (SH81, SH82) — ✅ shipped
 
-- **Batch** — `POST /api/v2/agent/batch`: N ops, atomic, `dryRun`, per-op results.
-  A 12-page site structure becomes one call instead of ~24.
-- **Plan/apply** — generalize `shio push --check` (SH65) from post-types to
-  **content**: a declarative desired-state document → `plan` (a diff, zero writes)
-  → `apply`. This is the pattern that removes read-modify-write loops *and* gives
-  the human a reviewable artifact before anything changes (P7). SH65 already proved
-  the shape; this is the same engine over a second resource type.
+Shipped: `POST /api/v2/agent/batch` · `/plan` · `/apply` →
+[CHANGELOG.md](CHANGELOG.md) Block H. Design records that bind what follows:
 
-### VIII.8 The nine tools (SH83)
+- **A dry run must not write.** The tempting implementation — apply, then roll back —
+  is wrong for a reason that generalizes past this endpoint: by the time the rollback
+  is decided, the audit rows, lifecycle events and quota counters have already
+  happened. Anything that calls itself a *plan* has to be computed, which means it also
+  has to model what earlier steps in the same plan would have created. Every future
+  `--dry-run`/`plan` surface (SH93's blueprints, SH108's confirm tokens) inherits this.
+- **The plan and the apply must be the same code path**, differing only in a flag.
+  SH82's `plan` is literally `apply(dryRun=true)`, and both compile down to SH81's ops.
+  The one place an early version let them diverge — a dry-run shortcut that also fired
+  in real runs — silently skipped a publish, which is exactly the failure mode "the
+  plan lied" that makes a plan worthless.
+- **Imperative and declarative are both needed, and one is built on the other.** A
+  batch answers "do this now"; a document answers "this is the site". Only the second
+  survives a context compaction, because it does not require the agent to remember what
+  it already did. Keeping the document a *compiler* over the ops, rather than a second
+  engine, is what stops the two from disagreeing (P10).
+- **Destructive scope is declared, never inferred.** `prune` deletes only inside the
+  folders the document declares, and declaring none is an error. A blast radius that
+  depends on what the author forgot to mention is the definition of a surprise (P7).
+  Same rule for the tri-state `publish`: absent means "leave it alone", because
+  treating a trimmed field as `false` would unpublish live pages.
 
-`shio_context` · `shio_find` · `shio_read` · `shio_write` · `shio_apply` ·
-`shio_publish` · `shio_verify` · `shio_assets` · `shio_changes`. Plus resources
-(`shio://schema/{postType}`, `shio://blueprints`) and prompts (`new-site`,
-`add-section`, `translate-site`, `audit-content`).
+**Still open, and the two gaps are more interesting than the debt.** The debt first:
+the CLI verbs (**SH129**) — law P1's order is MCP → files/CLI → REST, and this landed
+at REST and MCP but not the CLI, because `shio apply` over a JSON blob would be a worse
+command than `shio push --content` over a directory (SH87). Worth naming rather than
+pretending the order held.
 
-Why nine and not forty: **tool schemas are context**. A 40-tool CRUD surface costs
-tokens on every single turn of every session, before any work happens. The tools
-are therefore *intent-named* (what the agent is trying to do) rather than
-resource×verb, path-addressed, terse by default, and dry-runnable wherever they
-write. `find` returns **identifiers, not bodies** — the agent then `read`s exactly
-what it needs with a `fields` projection.
+The gaps, both found by writing the tools on top of this engine and both invisible
+while *building* a site:
+
+- **`post.move` (SH134).** The vocabulary can create, update and delete an address, but
+  not *change* one. Re-addressing an upsert creates a second post, so renaming a page
+  orphans the original and loses its history — and an agent following the obvious path
+  will do exactly that. The design must decide what a move means to the published row
+  and to inbound references, which is why it is a task and not a patch.
+- **Folder prune (SH135).** `prune` removes undeclared posts but never an undeclared
+  folder, so a section that moves leaves its shell behind and the document quietly stops
+  describing the site — which erodes the one property (convergence) that justifies
+  declarative apply at all. Same declared-scope rule; the ordering question is whether a
+  folder is prunable while it still holds undeclared content.
+
+The general lesson: a write vocabulary designed against "build a site" will be missing
+the verbs for "change a site", and the second is the harder half of the north star.
+
+### VIII.8 The agent tools (SH83) — ✅ shipped
+
+Shipped: eight tools, three resources, four prompts →
+[CHANGELOG.md](CHANGELOG.md) Block H. The original framing — *why nine and not
+forty: **tool schemas are context*** — held up and is now enforced by a test. Design
+records that bind what follows:
+
+- **A tool that cannot be a shape over REST is a design smell.** `find`/`read` had no
+  REST equivalent, and the tempting move was to put the query logic in the tool. Adding
+  `GET /agent/find` and `/read` first cost an hour and kept P10 true; it also means the
+  CLI and a plain HTTP caller got the capability for free.
+- **Eight, not nine, and the ninth is not a stub.** `shio_verify` waits for SH99 because
+  a verify that only pretends is *worse than absent*: the agent stops looking. The same
+  reasoning downgraded `shio_changes` to an explicitly-labelled window rather than a
+  fake cursor. Generalize: when a capability is partly available, the honest surface is
+  the part that works plus a manifest flag saying the rest is not here — never a
+  plausible-looking shim.
+- **Prompts are procedures, never content.** They encode the call order that avoids
+  mistakes (plan before write, publish as its own step) and say nothing about tone or
+  copy. §0.7 stands: there is no inference in Shio, and an MCP prompt is a protocol
+  object, not a system prompt.
+- **Read the drafts.** Composition said "route reads through the CDA"; the CDA only
+  sees `PUBLISHED`. An agent that cannot read back its own unpublished work is not
+  composing, it is blind — so these reads go to the unified model, DRAFT-preferred,
+  with the same SH2 allow-list applied. Compose with the *rule*, not necessarily the
+  code path.
+
+**Still open, and both are gaps the tools revealed rather than design debt:** the write
+vocabulary has no `post.move` (**SH134**) and prune does not cover folders (**SH135**).
+Neither shows up while *building* a site — only when changing one, which is exactly the
+half of the north star that is harder to test by demo.
 
 ### VIII.9 Tenant/scope-aware tools + ecosystem (SH84)
 
@@ -317,6 +396,40 @@ Scope every tool per SH22 tenant and wire into Turing (replaces old SH37). Defer
 behind SH83 because tenant scoping is an enforcement pass over a finished tool set,
 not a design input to it — but the invariant is fixed from day one: the agent path
 is **never** a privilege escalation (§XII).
+
+### VIII.10 Guarding the "wrong at runtime, valid at compile time" class (SH128)
+
+Three of these have now been found: SH122's `@TenantId` JOINED-join hazard (three
+broken CDA paths), and SH81's discovery that `ShPostUnifiedWriteService#create` read
+`folder.getShSite()` on a folder tree where only the *root* carries the site — so
+every post created below the root was site-less, invisible to the console (which
+navigates by folder) and fatal to anything querying by site.
+
+The shape is always the same: code that compiles, passes review, and is wrong only
+when the data is queried along an axis the author was not thinking about. Reviews do
+not catch it; a test that states the invariant does. SH128 is that test for the
+site-resolution invariant — every write path resolves a folder's owning site by
+walking to the root — and the general lesson is that this class deserves a guard
+*per invariant*, added the first time the invariant is violated, not a general
+promise to be careful.
+
+### VIII.11 Two guards the hand-rolled surfaces earned (SH130, SH131)
+
+Both come from the same observation: the failure mode of these surfaces is **silence**,
+not an exception.
+
+- **SH130 — wire conformance.** A hand-rolled protocol has no compiler checking it
+  against the spec. The tests assert behaviour ("an unknown tool is a protocol error"),
+  which is right, but nothing pins the exact bytes — so a refactor that renamed
+  `inputSchema` would pass every test and break every client. Golden transcripts are the
+  cheap fix, and the version string should be checked against what the envelopes
+  actually do rather than asserted equal to itself.
+- **SH131 — the bind-parameter contract.** `FULLTEXT_PREDICATE` lower()s its columns but
+  not its parameter and does no wildcarding; the requirement lives in a comment.
+  SH83 read the comment, wrote the caller, and still got it wrong — and the symptom was
+  *an empty result set*, which reads as "nothing matched". A contract that can only be
+  honoured by remembering, and whose breach looks like valid data, belongs inside the
+  method rather than beside it.
 
 ---
 

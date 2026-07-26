@@ -9,6 +9,7 @@
 package com.viglet.shio.migration.unified;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -87,6 +88,29 @@ public class ShPostUnifiedWriteService {
         return row.getShSite() != null ? row.getShSite().getId() : null;
     }
 
+    /**
+     * The owning site, found by walking up to the root folder — which is the only
+     * folder in a tree that carries {@code shSite} ({@code ShFolderWriteService}
+     * deliberately nulls it on children, and {@code ShObjectNavigationService} resolves
+     * it the same way).
+     *
+     * <p>Reading {@code folder.getShSite()} directly, as this did, silently produced a
+     * site-less post for every post created below the root — invisible in the console
+     * (which navigates by folder) but fatal to anything that queries by site: CDA
+     * {@code /query}, the by-url lookup, and the SH79 address resolver. Found while
+     * building the SH81 batch, whose whole addressing scheme is site + url.</p>
+     */
+    private static ShSite siteOf(ShFolder folder) {
+        ShFolder current = folder;
+        while (current != null) {
+            if (current.getShSite() != null) {
+                return current.getShSite();
+            }
+            current = current.getParentFolder();
+        }
+        return null;
+    }
+
     private ShFolder resolveContainerFolder(String containerId) {
         return shFolderRepository.findById(containerId).orElseGet(() -> {
             ShSite site = shSiteRepository.findById(containerId)
@@ -115,7 +139,7 @@ public class ShPostUnifiedWriteService {
         row.setId(postId);
         row.setState(state);
         row.setShFolder(folder);
-        row.setShSite(folder.getShSite());
+        row.setShSite(siteOf(folder));
         row.setShPostType(postType);
         row.setOwner(req.owner());
         row.setDate(Instant.now());
@@ -160,6 +184,30 @@ public class ShPostUnifiedWriteService {
         shContentAuditService.record(ShContentAction.UPDATE, postId,
                 siteIdOf(saved), saved.getTitle(), req.modifier());
         return saved;
+    }
+
+    /**
+     * Set a post's friendly URL on every state row it has (SH81).
+     *
+     * <p>Needed because an address-native write makes the {@code furl} the post's
+     * <em>identity</em>, not a derived label: {@code post.upsert post:Blog/blog/hello}
+     * has to land at exactly that URL or the next run of the same document creates a
+     * second post instead of updating the first. Applied to both the {@code DRAFT} and
+     * {@code PUBLISHED} rows so the address does not change meaning across a publish.</p>
+     *
+     * @return the rows that were touched, DRAFT first
+     */
+    @Transactional
+    public List<ShPostUnified> setFurl(String postId, String furl) {
+        String normalized = normalizeUrl(furl);
+        return shPostUnifiedRepository.findById(postId).stream()
+                .sorted(Comparator.comparing(row -> row.getState() == ShPostState.DRAFT ? 0 : 1))
+                .map(row -> {
+                    row.setFurl(normalized);
+                    row.setModifiedDate(Instant.now());
+                    return shPostUnifiedRepository.save(row);
+                })
+                .toList();
     }
 
     /**

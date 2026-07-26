@@ -145,6 +145,47 @@ FK is `onDelete NO ACTION`, so they must go before the folder rows.)
   own table) — so copy/move resolves folder ids via `ShObjectRepository` and post ids
   via `ShPostUnifiedRepository`. `/list` dedups posts by id, DRAFT-preferred.
 
+### The agent surface — `/api/v2/agent/**` (Block H)
+The namespace shaped for a coding agent rather than a browser. It is a **shape over**
+the CDA + console services (law P10) and holds no business logic of its own.
+- `GET /agent/manifest` — capabilities, limits, a curated endpoint index. **Read this
+  first**; unshipped capabilities are reported `false`, never omitted.
+- `GET /agent/context` — model + sitemap + conventions in one call. `?format=terse`,
+  `?include=`, `?budget=`, `?from=`, `?ids=true` (rows are **id-free by default**, SH121).
+  The `digest` is how a later session skips re-reading.
+- `GET /agent/resolve?address=…` — an address → an object id, for id-keyed endpoints.
+- `POST /agent/batch` — **writes**: N addressed ops (`folder.upsert`, `post.upsert`,
+  `post.publish`, `post.unpublish`, `folder.delete`, `post.delete`) in one transaction;
+  `{"dryRun":true}` reports without writing.
+- `POST /agent/plan` / `POST /agent/apply` — a declarative desired-state content
+  document; `plan` never writes, and `changed:0` is the content drift guard.
+- `GET /agent/find` — posts by site/type/folder-subtree/text; **addresses, not bodies**.
+- `GET /agent/read?address=…&fields=…` — post content, DRAFT-preferred, projected.
+
+### MCP — `POST /mcp` (SH75/SH83)
+Same capabilities over the Model Context Protocol (JSON-RPC 2.0, revision `2025-06-18`),
+hand-rolled in `com.viglet.shio.api.agent.mcp` — **not** the MCP Java SDK, which is
+Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate `405`
+(this server sends nothing unprompted). `shio mcp` in the CLI is a stdio bridge:
+`claude mcp add shio -- shio mcp`.
+- **Tools** (`ShMcpTool` beans, auto-registered): `shio_context` · `shio_find` ·
+  `shio_read` · `shio_write` · `shio_apply` · `shio_publish` · `shio_assets` ·
+  `shio_changes`. `shio_verify` arrives with SH99. Every tool is a *shape* over a REST
+  surface — if a tool needs new logic, the logic goes on the REST side first.
+- **Resources**: `shio://manifest` · `shio://context` · `shio://schema/{postType}`.
+- **Prompts**: `new-site` · `add-section` · `translate-site` · `audit-content`.
+- **Error routing matters**: a fixable failure (bad address, unknown post-type) is a
+  tool *result* with `isError:true` so the model reads the SH80 `fix`; a JSON-RPC
+  `error` is only for an unusable message (unknown method/tool), which the client
+  swallows. Getting this backwards throws away the teaching error.
+- A tool-count test fails the build past 12 — tool schemas are context paid every turn.
+
+Addresses (SH79): `post:<site>/<friendly-url>` · `folder:<site>/<name-chain>` ·
+`site:<name>` · `id:<uuid>`. **Writes take only `post:`/`folder:`** — a folder path and
+a friendly URL are separate namespaces, and a write that guessed wrong would create
+content in the wrong place silently. CSRF-exempt (stateless callers), authenticated
+like every other API; the SH54 ACL and SH22 quota apply on the agent path identically.
+
 ### Post Types — lossless admin API (SH16, used by the `shio` CLI)
 - `GET /api/v2/post-type` - List all post-types as **lossless** `ShPostTypeDef`s (keeps `Tab`, verbatim `widgetSettings`, nested Relator fields — the authoring inverse of the lossy SH11 CDA schema)
 - `GET /api/v2/post-type/{name}` - One def (404 unknown)

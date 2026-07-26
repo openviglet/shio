@@ -301,10 +301,13 @@ class ShAgentContextTest {
         ShAgentContext second = shAgentContextService.context(siteName, null, budget, null,
                 first.budget().truncatedAfter());
 
-        List<String> firstIds = first.sitemap().stream().map(ShAgentContext.Node::id).toList();
-        List<String> secondIds = second.sitemap().stream().map(ShAgentContext.Node::id).toList();
+        // Compared on the rendered row, not on `id`: under SH121 the default response
+        // carries no ids, and resume has to keep working precisely because of that —
+        // the cursor is one id in the budget block, never a field on every row.
+        List<String> firstRows = first.sitemap().stream().map(ShAgentContextTerse::node).toList();
+        List<String> secondRows = second.sitemap().stream().map(ShAgentContextTerse::node).toList();
 
-        assertThat(secondIds).isNotEmpty().doesNotContainAnyElementsOf(firstIds);
+        assertThat(secondRows).isNotEmpty().doesNotContainAnyElementsOf(firstRows);
     }
 
     @Test
@@ -345,8 +348,11 @@ class ShAgentContextTest {
 
     @Test
     void siteResolvesByIdAsWellAsName() {
+        // An id is still accepted *as input* — SH121 only stopped emitting it, and the
+        // asymmetry is deliberate: a caller that has an id should never be made to
+        // translate it first.
         assertThat(shAgentContextService.context(siteId, null, 0, null, null).sites())
-                .extracting(ShAgentContext.Site::id).containsExactly(siteId);
+                .extracting(ShAgentContext.Site::name).containsExactly(siteName);
     }
 
     @Test
@@ -442,5 +448,95 @@ class ShAgentContextTest {
 
         // One digest for both encodings: the terse body *is* the canonical form.
         assertThat(terse).contains("digest " + pack.digest());
+    }
+
+    // --- SH121: id-free reads ---
+
+    private ShAgentContext withIds() {
+        return shAgentContextService.context(siteName, null, 0, null, null, true);
+    }
+
+    @Test
+    void rowsCarryNoIdByDefault() {
+        ShAgentContext pack = context();
+
+        assertThat(pack.sitemap()).isNotEmpty()
+                .allSatisfy(node -> assertThat(node.id()).isNull());
+        assertThat(pack.sites()).isNotEmpty().allSatisfy(site -> {
+            assertThat(site.id()).isNull();
+            assertThat(site.rootFolderId()).isNull();
+        });
+    }
+
+    @Test
+    void idsTrueRestoresThem() {
+        ShAgentContext pack = withIds();
+
+        assertThat(pack.sitemap()).isNotEmpty()
+                .allSatisfy(node -> assertThat(node.id()).isNotBlank());
+        assertThat(pack.sites()).isNotEmpty().allSatisfy(site -> {
+            assertThat(site.id()).isEqualTo(siteId);
+            assertThat(site.rootFolderId()).isNotBlank();
+        });
+    }
+
+    @Test
+    void droppingIdsIsTheLargestRemainingPerRowSaving() {
+        // The measured basis for SH121, asserted rather than assumed (P3): the 36-char
+        // UUID is the single most expensive field a row can carry, so the id-free row
+        // must be materially — not marginally — cheaper. 25% is well inside the
+        // measured margin and leaves room for the row's other fields to change.
+        ShAgentContext.Node lean = firstPost(context());
+        ShAgentContext.Node fat = firstPost(withIds());
+
+        int leanTokens = ShTokenBudget.estimate(ShAgentContextTerse.node(lean));
+        int fatTokens = ShTokenBudget.estimate(ShAgentContextTerse.node(fat));
+
+        assertThat(leanTokens).isLessThan(fatTokens * 3 / 4);
+    }
+
+    @Test
+    void everyIdFreeRowIsStillAddressable() {
+        // The honesty condition for dropping the id (SH79's `addressOf` round-trip is
+        // the other half): a row you cannot name is a row you cannot act on.
+        assertThat(context().sitemap()).isNotEmpty().allSatisfy(node -> {
+            assertThat(node.path()).isNotBlank();
+            if ("post".equals(node.kind())) {
+                assertThat(node.url()).isNotBlank();
+            }
+        });
+    }
+
+    @Test
+    void idFreePacksSayHowToGetIdsBack() {
+        assertThat(context().conventions())
+                .anySatisfy(convention -> assertThat(convention).contains("?ids=true"));
+        assertThat(withIds().conventions())
+                .noneSatisfy(convention -> assertThat(convention).contains("?ids=true"));
+    }
+
+    @Test
+    void theIdsFlagChangesTheDigestBecauseItChangesTheAnswer() {
+        // Two representations must not share an entity tag — SH116 hands this value
+        // straight to If-None-Match.
+        assertThat(withIds().digest()).isNotEqualTo(context().digest());
+    }
+
+    @Test
+    void resumeWorksWithoutIdsOnTheRows() {
+        int budget = budgetThatCutsTheSitemap();
+        ShAgentContext first = shAgentContextService.context(siteName, null, budget, null, null);
+
+        assertThat(first.budget().truncated()).isTrue();
+        // The cursor is an id even though no row carries one: it is a single value per
+        // response, so it costs nothing measurable and stays exact.
+        assertThat(first.budget().truncatedAfter()).isNotBlank();
+        assertThat(first.sitemap()).allSatisfy(node -> assertThat(node.id()).isNull());
+    }
+
+    private static ShAgentContext.Node firstPost(ShAgentContext pack) {
+        return pack.sitemap().stream()
+                .filter(candidate -> "post".equals(candidate.kind()))
+                .findFirst().orElseThrow();
     }
 }

@@ -65,10 +65,13 @@ class ShAgentManifestTest {
         ShAgentManifest manifest = shAgentManifestService.manifest();
 
         assertThat(manifest.features())
-                .containsEntry("mcp", false)
                 .containsEntry("blueprints", false)
-                .containsEntry("batchWrites", false)
-                .containsEntry("contentAsFiles", false);
+                .containsEntry("contentAsFiles", false)
+                // SH99's lint and SH88's cursor: reported false rather than shipped as
+                // stub tools, because an agent that believes its work was verified is
+                // worse off than one that knows it was not.
+                .containsEntry("contentLint", false)
+                .containsEntry("changeCursor", false);
     }
 
     @Test
@@ -84,7 +87,15 @@ class ShAgentManifestTest {
                 .containsEntry("teachingErrors", true)
                 .containsEntry("agentContext", true)
                 .containsEntry("terseResponses", true)
-                .containsEntry("pathAddressing", true);
+                .containsEntry("pathAddressing", true)
+                // SH81 flipped `batchWrites` from the false SH76 pre-declared, exactly
+                // as intended: a reader that saw the key yesterday needs no new key to
+                // notice the capability arrived. `desiredState` (SH82) is new — SH76
+                // could not pre-declare a capability nobody had designed yet.
+                .containsEntry("batchWrites", true)
+                .containsEntry("desiredState", true)
+                .containsEntry("mcp", true)
+                .containsEntry("fieldProjection", true);
     }
 
     @Test
