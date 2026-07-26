@@ -72,3 +72,6 @@ src/main/resources/js/client-side/build
 /cli/node_modules
 /shio-model/node_modules
 /shio-model/dist
+/shio-sections/node_modules
+/shio-sections/dist
+/claude-plugin/node_modules

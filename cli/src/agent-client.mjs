@@ -256,6 +256,36 @@ export class ShioAgentClient {
     return res.json();
   }
 
+  /**
+   * GET /api/v2/agent/blueprints (SH92) — the appliable starting points.
+   *
+   * @returns {Promise<Array<{name: string, title: string, description: string,
+   *   version: string, postTypes: number, posts: number, files: number, params: object}>>}
+   */
+  async blueprints() {
+    return this.#get("blueprints", {});
+  }
+
+  /**
+   * GET /api/v2/agent/blueprints/{name} — one package, with its `params` schema.
+   *
+   * @param {string} name
+   * @param {{ files?: boolean }} [options] include the carried front-end file bodies
+   */
+  async blueprint(name, { files = false } = {}) {
+    return this.#get(`blueprints/${encodeURIComponent(name)}`, files ? { include: "files" } : {});
+  }
+
+  /**
+   * POST /api/v2/agent/blueprints/{name}/apply (SH93).
+   *
+   * @param {string} name
+   * @param {{ site: string, params?: object, dryRun?: boolean }} body
+   */
+  async applyBlueprint(name, body) {
+    return this.#post(`blueprints/${encodeURIComponent(name)}/apply`, body, {});
+  }
+
   /** GET /api/v2/agent/manifest. */
   async getManifest() {
     const url = `${this.baseUrl}/api/v2/agent/manifest`;

@@ -548,6 +548,28 @@ summary with links, not a wall of prose.
 
 ---
 
+### IX.7 Verify a page's section references (SH154)
+
+The lint's `dangling-reference` rule knows two kinds of reference: a `Content Select` field
+holding a post id and a `File` field holding an asset id. SH95's section vocabulary
+introduced a third — a `Page`'s `sections`, a `Multi Select` of section **friendly URLs**,
+in render order — and the lint does not know about it. So a page can name a section that
+does not exist, or one that was renamed, and `shio verify` reports `ok: true` over a page
+that renders with a hole in it.
+
+This is the one check that makes composition safe, and it is worth stating why the gap
+exists rather than treating it as an oversight: `Multi Select` is a free-form list of
+strings by design, and most of them are tags. A rule that treated every Multi Select value
+as a URL would report a defect for every tag on every post. So the rule needs a way to know
+which field holds addresses — the honest options are a widget setting the vocabulary sets
+(`multiselect: {postType: …}` already exists and is nearly this), or a convention the
+context pack states. Picking one is most of the task.
+
+Two properties to keep. A reference to an **unpublished** section on a published page is
+the existing `unpublished-dependency` case, not a new one. And a reference the credential
+cannot read must not be reported as dangling — SH99 already re-checks by id for exactly
+this reason, so the allow-list never manufactures a defect.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -655,61 +677,131 @@ a refusal rather than a guess.
 > thing is **appliable**, not readable. A prose recipe an agent must read and
 > reimplement saves nothing — it just moves the work. **Absorbs the old SH23
 > marketplace epic** (SH27–SH31).
-
-### XI.1 Blueprint package format (SH92)
-
-A versioned, parameterized bundle: an SH68 exchange package (post-types + folders +
-content) **+** `@viglet/shio-model` DSL modules **+** optional front-end files **+**
-a `params` JSON-schema **+** post-apply verification (§IX). One format for "a
-starting point", where today there are two half-formats (the `create-shio-app`
-template tree and the bootstrap-site exchange package). The exchange engine
-(SH70/SH71) already imports most of it — this is largely a manifest + parameter
-substitution layer over shipped machinery.
-
-### XI.2 `shio apply <blueprint>` (SH93)
-
-The verb, with plan/dry-run, as CLI command and MCP tool. Replaces old SH27's
-`create-shio-app --template`: applying a blueprint to an *existing* instance is the
-common case, and scaffolding a new project is the special case of it.
-
-### XI.3 First-party set (SH94)
-
-`marketing-site`, `blog`, `docs`, `landing`, `product-catalog` — each shipping
-model + sample content + routes + verification. Replaces old SH30. The
-verification part is what makes them trustworthy to apply unattended: a blueprint
-that cannot prove it worked is a liability.
-
-### XI.4 Section library (SH95) — the highest-leverage item
-
-Composable page-section post-types **plus** matching React components
-(`@viglet/shio-sections`): `hero`, `feature-grid`, `cta`, `logo-wall`, `testimonial`,
-`faq`, `rich-text`… A page becomes an ordered list of **known** sections instead of
-invented ad-hoc post-types.
-
-Why this matters more than the blueprints themselves: the brief's real pain is
-*"if I need to change the site, I want less friction"*. Friction on change comes
-from **archaeology** — an agent re-deriving what the previous session invented. A
-fixed section vocabulary means the agent, the console and the front end share one
-language, so "add a testimonial section to the pricing page" is a single known
-operation rather than a design exercise. It is also exactly what the human's
-Universal Editor (SH10) gets to manipulate, and what SH101's render digest can
-verify structurally — a known section vocabulary makes "the hero is missing" a
-statement the digest's landmark and heading inventory can actually make.
+>
+> The format, the verb, the first-party set, the section vocabulary and the Claude Code
+> plugin are shipped — see [CHANGELOG.md](CHANGELOG.md) Block J. What remains is the
+> distribution question (§XI.5) and the five mismatches that shipping the two halves
+> exposed (§XI.7–§XI.11).
 
 ### XI.5 Blueprint registry + community convention (SH96)
 
 `shio-blueprint-*` npm naming, manifest validation, a curated index (absorbs old
-SH28/SH29/SH31). Deferred until the first-party set proves the format.
+SH28/SH29/SH31).
 
-### XI.6 Claude Code plugin for Shio (SH97)
+This is now the **only** thing standing between the first-party set and a community one,
+and the reason it was deferred has sharpened rather than softened. A blueprint is code the
+instance runs against its own content: it provisions post-types and writes pages under the
+caller's credentials. So "where may a package come from" is a trust question, not a
+plumbing one, and the registry deliberately loads from the classpath alone until that
+question has an answer. Shipping a scanned directory or a fetch-by-URL first would be
+shipping the distribution channel without the trust model — which is the shape of every
+supply-chain incident anyone has had.
 
-Shio ships a `.claude` plugin: MCP server config, skills (`shio-site`,
-`shio-content-model`, `shio-verify`), slash commands, and a generated `AGENTS.md`
-fragment (§XIII.4). An agent session starts *already knowing* Shio instead of
-discovering it — and this is the **distribution channel for the whole concept**:
-the plugin is how a developer adopts agent-native Shio in one command.
+What the task actually owns: the naming convention, a validation pass a publisher can run
+before publishing (the load-time checks SH92 already implements, exposed as a command), a
+statement of what an applied package is *allowed* to do, and the index. The format itself
+needs nothing: a package is already a directory whose contents are validated on load, and
+`formatVersion` already refuses a package written for a newer instance rather than
+mis-reading it.
 
----
+### XI.7 A blueprint can create the site it needs (SH151)
+
+Applying a blueprint refuses when the target site does not exist, which is correct and is
+also the seam in the §3.1 story: *"`shio_apply blueprint marketing-site` → plan → confirm
+→ applied"* is one call only if there is already a site to apply it into. Creating one is
+not currently a step a blueprint can take, because `ShSiteWriteService.create()` clones the
+SH71 bootstrap template — so "create a site for this package" would mean applying a package
+on top of a Welcome page and an About page nobody asked for, and then pruning them.
+
+The fix has two parts and the order matters. First a **blank** site-creation path (a site,
+a root folder, no template), which is worth having on its own: the bootstrap clone exists
+because an empty site used to be useless, and a blueprint is exactly the thing that makes
+it useful. Then `site: {create: true}` on the apply request, and `shio init --blueprint
+<name>` in the CLI so scaffolding a project and seeding its content are one command.
+
+The thing to be careful about is P7: creating a site is the most visible side effect in the
+system, so it must be explicit in the request, named in the plan before it happens, and
+never inferred from "the site you named does not exist".
+
+### XI.8 Additive post-type reconciliation (SH152)
+
+A blueprint provisions a post-type only when the instance does not already have one of that
+name, and reports the fields the existing type lacks. That is honest — the alternative,
+upserting, reverts a field a human added and flips SH66's `managed` flag from a package the
+user never wrote — but it stops one step short of useful: the caller reads
+`exists · Page · missing: description, sections`, and until they add those fields by hand
+the package's content is writing values the console cannot render and the front end cannot
+find.
+
+The middle position is an **additive** merge, opt-in per apply: add the fields the package
+declares and the type lacks, never change a field's widget or settings, never remove one,
+never touch a system type. That is a well-defined and reversible operation, and it is what
+the collision the first-party set actually hits (the bootstrap `Page` versus the section
+vocabulary's `Page`) needs.
+
+Two things to settle in the task. A field's **ordinal** has to go somewhere — appending
+after the highest existing ordinal is the only choice that cannot reorder somebody's form.
+And the report must distinguish "added" from "already there", because a merge that reads as
+a provision would hide the fact that the type is now a hybrid of two models.
+
+### XI.9 A plan that needs no write transaction (SH153)
+
+The blueprint plan provisions the package's post-types inside its transaction, plans the
+content against them, and marks the transaction rollback-only. It is accurate — without it,
+a plan for a package that brings its own types fails on its first post with *"no post-type
+named Article"*, which is useless for exactly the case blueprints exist for — and the
+reasoning for why this is acceptable where `ShAgentBatchService` refuses it is sound:
+provisioning a post-type emits no audit rows, no webhooks, no lifecycle events and no quota
+movement, so nothing outside the transaction observes it.
+
+What it costs is a property nobody asked to give up: **a plan can no longer run read-only**.
+A read-only credential, a read replica, or a future `AGENT` token scope (SH106) with no
+write permission cannot plan a blueprint, even though planning writes nothing that survives.
+For a surface whose whole safety story is "look before you write", that is the wrong
+constraint to leave in place.
+
+The fix is to thread the *declared* post-types through the batch planner the way it already
+threads pending folders: `ShAgentBatchService`'s dry-run session keeps a set of objects
+earlier ops would have created, precisely so "create /blog, then put a post in /blog" does
+not report a spurious 404. A pending **post-type** set is the same idea one resource wider,
+and it removes the transaction rather than justifying it.
+
+### XI.10 Record which blueprint a site received (SH155)
+
+`changed: 0` on a re-apply proves a site matches the document the package compiles to. It
+does not record that the document came from `marketing-site 1.0.0` — so a newer version of a
+package is undetectable, "which blueprint is this site" is unanswerable, and the version in
+the apply response is a fact that exists only in whatever transcript captured it.
+
+The cheap version is a row per applied package (name, version, parameters, when, by whom).
+The right version is SH114's instance memory: this is exactly a *decision about the site*
+that a later session should not have to re-derive, and it belongs in the store that already
+exists to serve those in the context pack. That also answers the question the cheap version
+cannot — the parameters are part of the record, so a re-apply can default to what was used
+last time instead of asking again.
+
+Not to be confused with drift detection: knowing a site received `marketing-site 1.0.0`
+does not mean it still matches it. That answer is already available (`dryRun` and read
+`changed`), and this is the fact that makes it possible to *ask* without a human
+remembering.
+
+### XI.11 Blueprints carry their front-end half (SH156)
+
+The format supports front-end files, the CLI writes them, and the first-party set ships
+none. So a blueprint delivers content that the site cannot render until somebody wires the
+components up — which for a section-based package means installing `@viglet/shio-sections`
+and writing a page that resolves a `Page`'s section URLs and dispatches on their type. That
+is a dozen lines, and a dozen lines an agent has to write from a description is exactly the
+prose recipe P8 objects to.
+
+The reason it is not simply "add the files" is that there would then be two starters: the
+`create-shio-app` template tree and the packages. SH119 already exists to fold the first
+into the second, so this task is that fold seen from the blueprint side, and doing them
+together is the only way it results in one starter rather than three.
+
+Whatever ships must keep the rule SH93 established: the **server never writes a project
+file**. It returns them, the CLI writes them, and it refuses to overwrite without `--force`
+— a blueprint applied twice must not revert a page somebody has since edited.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

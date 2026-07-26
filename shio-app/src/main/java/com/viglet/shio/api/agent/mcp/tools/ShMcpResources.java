@@ -20,16 +20,19 @@ import com.viglet.shio.api.agent.mcp.ShMcpResource;
 import com.viglet.shio.api.cda.ShCdaService;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.blueprint.ShBlueprintRegistry;
+import com.viglet.shio.blueprint.ShBlueprintTerse;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * The MCP resources (SH83): {@code shio://manifest}, {@code shio://context} and the
+ * The MCP resources (SH83, extended by SH93): {@code shio://manifest},
+ * {@code shio://blueprints}, {@code shio://context} and the
  * {@code shio://schema/{postType}} template.
  *
- * <p>All three are documents a human might reasonably want to pin into a conversation,
+ * <p>All four are documents a human might reasonably want to pin into a conversation,
  * which is the test for "resource rather than tool". {@code shio://context} closes the
  * last item SH77 left open — the pack has been reachable over HTTP and from the CLI
  * since SH126, but not as something a client could attach.</p>
@@ -52,6 +55,27 @@ public class ShMcpResources {
                         + "index. Read it before assuming a capability exists.",
                 JSON,
                 uri -> objectMapper.writeValueAsString(manifestService.manifest()));
+    }
+
+    /**
+     * The blueprint catalogue (SH92/SH93).
+     *
+     * <p>A resource rather than a tool because it is a <em>document about what is
+     * available</em>, not an action — and because the alternative is worse: an agent that
+     * cannot see the catalogue will model a blog by hand, which is the exact cost Block J
+     * exists to remove. Terse, and without the per-package parameter schemas: choosing
+     * between five packages must not cost five schemas, and the one the agent picks is a
+     * cheap second call.</p>
+     */
+    @Bean
+    ShMcpResource shMcpBlueprintsResource(ShBlueprintRegistry registry) {
+        return resource("shio://blueprints", "Shio blueprint catalogue",
+                "The appliable starting points this instance carries — a whole section (content "
+                        + "model + folders + pages) per package, with the parameters each takes. "
+                        + "Read it before building a blog, a docs tree or a marketing site by "
+                        + "hand; apply one with shio_apply's `blueprint` argument.",
+                TEXT,
+                uri -> ShBlueprintTerse.catalogue(registry.summaries()));
     }
 
     @Bean

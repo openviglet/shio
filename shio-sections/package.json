@@ -1,0 +1,58 @@
+{
+  "name": "@viglet/shio-sections",
+  "version": "2026.3.1",
+  "description": "The Shio page-section vocabulary (SH95): composable section post-types authored with @viglet/shio-model, plus the matching React components. One shared language for the agent, the console and the front end — a page is an ordered list of known sections instead of an ad-hoc content model per site.",
+  "type": "module",
+  "main": "dist/shio-sections.umd.cjs",
+  "module": "dist/shio-sections.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/shio-sections.js",
+      "require": "./dist/shio-sections.umd.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build && tsc --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit",
+    "emit": "node scripts/emit.mjs",
+    "test": "node --test \"test/*.test.mjs\"",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@viglet/shio-model": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.2",
+    "react": "^19.1.0",
+    "typescript": "^5.8.3",
+    "vite": "^8.1.5"
+  },
+  "keywords": [
+    "shio",
+    "cms",
+    "headless",
+    "sections",
+    "blocks",
+    "page-builder",
+    "react",
+    "content-as-code"
+  ],
+  "author": "Viglet Team",
+  "license": "GPL-3.0"
+}

@@ -1,0 +1,34 @@
+{
+  "formatVersion": 1,
+  "name": "docs",
+  "title": "Documentation",
+  "version": "1.0.0",
+  "description": "A documentation tree: a DocPage post-type, /docs with guides and reference sections, and four pages wired together — an index, two guides and one reference page.",
+  "params": {
+    "type": "object",
+    "required": [
+      "productName"
+    ],
+    "properties": {
+      "productName": {
+        "type": "string",
+        "description": "What the documentation is about. It has no sensible default."
+      }
+    }
+  },
+  "postTypes": [
+    "post-types/DocPage.json"
+  ],
+  "content": [
+    "content/docs.json"
+  ],
+  "verify": {
+    "posts": [
+      "/docs",
+      "/docs/guides/getting-started",
+      "/docs/guides/configuration",
+      "/docs/reference/api"
+    ],
+    "checks": "content,routes"
+  }
+}

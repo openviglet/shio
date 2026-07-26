@@ -1,0 +1,50 @@
+{
+  "posts": [
+    {
+      "url": "/",
+      "type": "Page",
+      "folder": "/",
+      "data": {
+        "title": "{{brand}}",
+        "description": "{{tagline}}",
+        "sections": [
+          "/sections/home/hero",
+          "/sections/home/features",
+          "/sections/home/logos",
+          "/sections/home/testimonials",
+          "/sections/home/cta"
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/pricing",
+      "type": "Page",
+      "folder": "/",
+      "data": {
+        "title": "Pricing",
+        "description": "What {{brand}} costs.",
+        "sections": [
+          "/sections/pricing/hero",
+          "/sections/pricing/faq",
+          "/sections/pricing/cta"
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/about",
+      "type": "Page",
+      "folder": "/",
+      "data": {
+        "title": "About {{brand}}",
+        "description": "Who builds {{brand}}, and why.",
+        "sections": [
+          "/sections/about/hero",
+          "/sections/about/story"
+        ]
+      },
+      "publish": true
+    }
+  ]
+}

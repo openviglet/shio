@@ -7,6 +7,11 @@
  * `--key value`, `--key=value`, boolean `--flag`, `-h`/`-y` shorthands and bare
  * positionals. Kebab-case flag names are exposed as camelCase (`--import-from`
  * → `importFrom`).
+ *
+ * A flag named in `repeatable` collects into an array instead of last-one-wins. Added
+ * for `shio apply --blueprint … --param k=v --param k2=v2` (SH93): a blueprint's
+ * parameters are a set, and silently keeping only the last one would apply a package
+ * with defaults the caller thought they had overridden.
  */
 
 function toCamel(key) {
@@ -15,27 +20,38 @@ function toCamel(key) {
 
 /**
  * @param {string[]} args
- * @param {{ booleans?: string[] }} [opts] flag names that take no value.
- * @returns {{ flags: Record<string, string|boolean>, positionals: string[] }}
+ * @param {{ booleans?: string[], repeatable?: string[] }} [opts] `booleans` take no
+ *   value; `repeatable` collect every occurrence into an array.
+ * @returns {{ flags: Record<string, string|boolean|string[]>, positionals: string[] }}
  */
-export function parseArgs(args, { booleans = [] } = {}) {
+export function parseArgs(args, { booleans = [], repeatable = [] } = {}) {
   const flags = {};
   const positionals = [];
   const boolSet = new Set(booleans);
+  const manySet = new Set(repeatable.map(toCamel));
+  const set = (key, value) => {
+    const name = toCamel(key);
+    if (!manySet.has(name)) {
+      flags[name] = value;
+      return;
+    }
+    const existing = flags[name];
+    flags[name] = Array.isArray(existing) ? [...existing, value] : [value];
+  };
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a.startsWith("--")) {
       const eq = a.indexOf("=");
       if (eq !== -1) {
-        flags[toCamel(a.slice(2, eq))] = a.slice(eq + 1);
+        set(a.slice(2, eq), a.slice(eq + 1));
       } else {
         const key = a.slice(2);
         if (boolSet.has(key)) {
-          flags[toCamel(key)] = true;
+          set(key, true);
         } else if (i + 1 < args.length && !args[i + 1].startsWith("-")) {
-          flags[toCamel(key)] = args[++i];
+          set(key, args[++i]);
         } else {
-          flags[toCamel(key)] = true;
+          set(key, true);
         }
       }
     } else if (a === "-h") {

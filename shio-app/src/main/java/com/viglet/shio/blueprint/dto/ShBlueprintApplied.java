@@ -1,0 +1,121 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.blueprint.dto;
+
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
+
+/**
+ * What applying a blueprint did, or would do (SH93).
+ *
+ * <h2>Three sections because there are three kinds of outcome</h2>
+ *
+ * <p>The content half is an SH82 {@link ShAgentChangeSet}, unchanged — a caller that can
+ * read a plan can read this, and there is no second vocabulary for the same facts.
+ * The model half cannot be, because provisioning a post-type is not a content op: it is
+ * reported as its own list so "the Article type already existed" does not have to be
+ * inferred from the absence of a row. The files half is neither: those are bytes the
+ * <em>server never wrote</em>, and saying so is the difference between an honest report
+ * and a claim (P9).</p>
+ *
+ * <h2>Why the model is provisioned, never overwritten</h2>
+ *
+ * <p>A blueprint seeds a content model; it does not own it. So a post-type that already
+ * exists is left exactly as it is — including any field a human has since added — and
+ * reported as {@code exists}. The alternative, upserting, would make re-applying a
+ * blueprint silently revert the model to the package's idea of it, which is precisely
+ * the surprise P7 forbids. (It would also flip SH66's {@code managed} flag and lock the
+ * type in the console, from a package the user never wrote.)</p>
+ *
+ * @param dryRun    nothing was written — the plan
+ * @param blueprint the package's name
+ * @param version   the package's version, so a change set records which revision ran
+ * @param site      the site it was applied to
+ * @param params    the parameter values actually used, defaults included. Echoed because
+ *                  a default the caller did not send is still a decision that shaped the
+ *                  result, and the next apply has to be able to reproduce it (P5)
+ * @param postTypes one row per post-type the package carries
+ * @param content   the SH82 change set for the folders, posts and publishes
+ * @param files     the front-end files the package carries and the server did not write
+ * @param verify    the post-apply proof; {@code null} on a plan, which has nothing to prove
+ *
+ * @author Alexandre Oliveira
+ * @since 2026.3
+ */
+@JsonInclude(Include.NON_NULL)
+public record ShBlueprintApplied(boolean dryRun, String blueprint, String version, String site,
+                                 java.util.Map<String, String> params,
+                                 List<PostType> postTypes, ShAgentChangeSet content,
+                                 List<String> files, Verified verify) {
+
+    /**
+     * One post-type the package carries.
+     *
+     * <h2>Why {@code missing} exists</h2>
+     *
+     * <p>Because names collide. A site created through the console already has a
+     * {@code Page} post-type (the SH71 bootstrap template ships one with {@code title} and
+     * {@code content}), and the section vocabulary's {@code Page} has {@code sections}.
+     * Since a blueprint never overwrites, the older type wins — and the package's content
+     * would then write a field the type does not declare, which the console cannot render
+     * and a human cannot edit. That is exactly the class of silent half-success P9 exists
+     * to prevent, so the difference is named rather than discovered.</p>
+     *
+     * @param name    its API name
+     * @param action  {@code create} when the package provisioned it, {@code exists} when
+     *                the instance already had one of that name and it was left untouched
+     * @param missing fields the package declares that the existing type does not have.
+     *                Only ever set alongside {@code exists}; {@code null} when they agree
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record PostType(String name, String action, List<String> missing) {
+
+        public static final String CREATE = "create";
+        public static final String EXISTS = "exists";
+
+        /** A post-type the package created — nothing to reconcile. */
+        public static PostType created(String name) {
+            return new PostType(name, CREATE, null);
+        }
+
+        /** One the instance already had, with whatever the package expected and did not find. */
+        public static PostType existing(String name, List<String> missing) {
+            return new PostType(name, EXISTS,
+                    missing == null || missing.isEmpty() ? null : List.copyOf(missing));
+        }
+    }
+
+    /**
+     * The blueprint's promise, checked against the instance after the apply committed.
+     *
+     * <p>Reported rather than enforced by rollback, and the distinction is deliberate.
+     * The content apply is already atomic on its own; re-running a blueprint converges.
+     * So the useful answer to "the package promised /pricing and it is not there" is a
+     * report the caller can act on — plus the SH99 findings that usually explain why —
+     * not an unexplained rollback of work that mostly succeeded.</p>
+     *
+     * @param ok       every promised post resolves and the lint found no error
+     * @param missing  promised posts that do not exist; empty is the good case
+     * @param errors   error-severity findings from the SH99 checks over the site
+     * @param warnings warning-severity findings
+     * @param checks   the check groups that ran
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Verified(boolean ok, List<String> missing, int errors, int warnings,
+                           List<String> checks) {
+
+        public Verified {
+            missing = missing == null ? List.of() : List.copyOf(missing);
+            checks = checks == null ? List.of() : List.copyOf(checks);
+        }
+    }
+}

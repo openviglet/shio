@@ -1,0 +1,54 @@
+{
+  "folders": [
+    {
+      "path": "/blog"
+    }
+  ],
+  "posts": [
+    {
+      "url": "/blog/hello-world",
+      "type": "Article",
+      "folder": "/blog",
+      "data": {
+        "headline": "Welcome to {{blogTitle}}",
+        "summary": "Why this blog exists and what you can expect to find here.",
+        "body": "<p>This is the first post on {{blogTitle}}. It exists so that the Article post-type has a worked example: a headline, a summary used in listings, and a body written as HTML.</p><p>Replace it — or delete it — once you have something to say.</p>",
+        "author": "{{authorName}}",
+        "tags": [
+          "announcements"
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/blog/how-we-work",
+      "type": "Article",
+      "folder": "/blog",
+      "data": {
+        "headline": "How we work",
+        "summary": "The conventions this blog follows, so the next post matches the last.",
+        "body": "<p>Posts live in <code>/blog</code>. The friendly URL is the post's identity, so renaming one is a move rather than a re-creation.</p><p>The summary is what listings show; write it as a sentence, not as a truncated first paragraph.</p>",
+        "author": "{{authorName}}",
+        "tags": [
+          "conventions"
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/blog/whats-next",
+      "type": "Article",
+      "folder": "/blog",
+      "data": {
+        "headline": "What's next",
+        "summary": "A placeholder for the roadmap post every blog eventually writes.",
+        "body": "<p>Three sample posts is enough to show the shape and few enough to delete without regret.</p>",
+        "author": "{{authorName}}",
+        "tags": [
+          "roadmap"
+        ]
+      },
+      "publish": true
+    }
+  ]
+}

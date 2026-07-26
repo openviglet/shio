@@ -15,6 +15,7 @@ import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,6 +38,13 @@ import com.viglet.shio.api.agent.verify.ShAgentVerifyService;
 import com.viglet.shio.api.agent.verify.ShAgentVerifyTerse;
 import com.viglet.shio.api.agent.verify.dto.ShAgentDigest;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
+import com.viglet.shio.blueprint.ShBlueprintRegistry;
+import com.viglet.shio.blueprint.ShBlueprintService;
+import com.viglet.shio.blueprint.ShBlueprintTerse;
+import com.viglet.shio.blueprint.dto.ShBlueprint;
+import com.viglet.shio.blueprint.dto.ShBlueprintApplied;
+import com.viglet.shio.blueprint.dto.ShBlueprintDetail;
+import com.viglet.shio.blueprint.dto.ShBlueprintRequest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -72,6 +80,8 @@ public class ShAgentAPI {
     private final ShAgentRenderService shAgentRenderService;
     private final ShAgentChangesService shAgentChangesService;
     private final ShAgentDiagnosticsService shAgentDiagnosticsService;
+    private final ShBlueprintRegistry shBlueprintRegistry;
+    private final ShBlueprintService shBlueprintService;
 
     public ShAgentAPI(ShAgentManifestService shAgentManifestService,
                       ShAgentContextService shAgentContextService,
@@ -82,7 +92,9 @@ public class ShAgentAPI {
                       ShAgentVerifyService shAgentVerifyService,
                       ShAgentRenderService shAgentRenderService,
                       ShAgentChangesService shAgentChangesService,
-                      ShAgentDiagnosticsService shAgentDiagnosticsService) {
+                      ShAgentDiagnosticsService shAgentDiagnosticsService,
+                      ShBlueprintRegistry shBlueprintRegistry,
+                      ShBlueprintService shBlueprintService) {
         this.shAgentManifestService = shAgentManifestService;
         this.shAgentContextService = shAgentContextService;
         this.shAddressResolver = shAddressResolver;
@@ -93,6 +105,8 @@ public class ShAgentAPI {
         this.shAgentRenderService = shAgentRenderService;
         this.shAgentChangesService = shAgentChangesService;
         this.shAgentDiagnosticsService = shAgentDiagnosticsService;
+        this.shBlueprintRegistry = shBlueprintRegistry;
+        this.shBlueprintService = shBlueprintService;
     }
 
     @GetMapping("/manifest")
@@ -245,6 +259,66 @@ public class ShAgentAPI {
                                           defaultValue = "false") boolean ids,
                                   Principal principal) {
         return shAgentDesiredStateService.apply(desired, ids, name(principal));
+    }
+
+    /**
+     * The blueprint catalogue (SH92) — the appliable starting points this instance carries.
+     *
+     * <p>Deliberately cheap to read: a name, a version, what applying it gives you, and
+     * the parameter names. The full schema of the one the caller picks is
+     * {@code /agent/blueprints/{name}}, so choosing between five packages does not cost
+     * five schemas.</p>
+     */
+    @GetMapping("/blueprints")
+    @Operation(summary = "Appliable starting points: blueprint packages this instance can apply")
+    public ResponseEntity<Object> blueprints(
+            @RequestParam(name = "format", required = false) String format) {
+
+        List<ShBlueprint.Summary> summaries = shBlueprintRegistry.summaries();
+        return isTerse(format)
+                ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
+                        .body(ShBlueprintTerse.catalogue(summaries))
+                : ResponseEntity.ok(summaries);
+    }
+
+    /**
+     * One blueprint in detail: its manifest (including the {@code params} schema a caller
+     * has to satisfy), what it provisions, and — with {@code include=files} — the
+     * front-end files it carries, which the server never writes.
+     */
+    @GetMapping("/blueprints/{name}")
+    @Operation(summary = "One blueprint: its parameters, what it provisions, and its carried files")
+    public ResponseEntity<Object> blueprint(
+            @PathVariable(name = "name") String name,
+            @RequestParam(name = "include", required = false) String include,
+            @RequestParam(name = "format", required = false) String format) {
+
+        ShBlueprint blueprint = shBlueprintRegistry.require(name);
+        return isTerse(format)
+                ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
+                        .body(ShBlueprintTerse.detail(blueprint))
+                : ResponseEntity.ok(ShBlueprintDetail.of(blueprint,
+                        split(include).contains("files")));
+    }
+
+    /**
+     * Apply a blueprint to a site (SH93) — the verb the whole block exists for.
+     *
+     * <p>{@code dryRun} in the body returns the complete plan and writes nothing: the
+     * post-types it would create, the SH82 change set for every folder and page, and the
+     * front-end files the caller still has to write itself. A real run additionally
+     * reports whether the package kept its own promise (SH94).</p>
+     */
+    @PostMapping("/blueprints/{name}/apply")
+    @Operation(summary = "Apply a blueprint into a site; dryRun returns the whole plan and writes nothing")
+    public ShBlueprintApplied applyBlueprint(@PathVariable(name = "name") String name,
+                                             @RequestBody(required = false) ShBlueprintRequest request,
+                                             Principal principal) {
+        ShBlueprintRequest body = request == null
+                ? new ShBlueprintRequest(null, null, false) : request;
+        return body.dryRun()
+                ? shBlueprintService.plan(name, body.site(), body.params(), name(principal))
+                : shBlueprintService.apply(name, body.site(), body.params(), name(principal));
     }
 
     /**
