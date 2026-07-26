@@ -198,35 +198,49 @@ endpoint index is **curated, not generated** — it is read every session, so it
 carries a token budget (a test fails the build past 30 entries). The
 `shio://manifest` MCP resource is the same payload once SH75 lands.
 
-### VIII.3 Context pack (SH77) — the highest-value endpoint
+### VIII.3 Context pack (SH77) — ✅ shipped
 
-One deterministic, token-budgeted payload that answers everything an agent asks at
-session start: instance/features, the content **model** in terse form, the
-**sitemap by path** (depth-limited, counted), the instance **conventions** (§XIII.3),
-and a **cursor** for §X.3. Exposed three ways (MCP resource, REST, `shio context`).
+Shipped: `GET /api/v2/agent/context` → [CHANGELOG.md](CHANGELOG.md) Block H.
+Design records later tasks depend on:
 
-Properties that make it work, each load-bearing:
-- **Terse encoding** (§VIII.4) — entity JSON spends most bytes on punctuation,
-  repeated keys and authoring metadata an agent never reads.
-- **Deterministic order** — so it caches (§XIII.5) and so two dumps diff.
-- **Budgeted** — a hard token ceiling with an explicit truncation cursor, never a
-  silent cut (a silently truncated sitemap is worse than a small one).
-- **Path-keyed** (§VIII.5) — no UUIDs in the agent's working memory.
+- **The digest is the product, not a nicety.** It is what turns "re-read the
+  context" from a decision into a free default, so every ordering in the pack is
+  explicit and the digest deliberately excludes the budget/measurement lines. SH116
+  wires the same value to `If-None-Match`; **do not** start hashing measurements.
+- **Only unbounded sections may be truncated.** The model, sites and conventions are
+  charged unconditionally; the sitemap gets the remainder. A partial model is not a
+  smaller answer, it is a wrong one — the agent will invent what is missing. A caller
+  that cannot afford the model drops it explicitly with `include=`.
+- **Charge every bounded section before the gate opens.** Charging one afterwards
+  (the bug that shipped and was caught in test) lets the walk admit rows a later
+  charge pushes over the ceiling.
+- **Conventions are derived, not stored** — the derivable subset only. SH114 adds the
+  author-written store on top; the two must stay distinguishable.
 
-This single endpoint is intended to replace the 10–30 call, 15–40k token discovery
-phase measured in the concept spec §3.
+**Still open from SH77's stated surface:** the `shio context` CLI (SH126) and the
+`shio://context` MCP resource (needs SH75). The REST endpoint is the substrate for both.
 
-### VIII.4 Token-lean responses (SH78)
+### VIII.4 Token-lean responses (SH78) — ✅ shipped
 
-`fields=` projection on every agent-facing read; `format=terse` (compact,
-line-oriented) alongside JSON; an `X-Shio-Est-Tokens` header and a hard per-response
-budget that truncates **with a cursor**. Standing rule: **agent reads never include
-authoring metadata by default** (`owner`, `date`, `publishStatus`, `modifier`) — the
-CDA DTOs (SH1) already made that call; agent responses inherit it.
+Shipped: budget + terse encoding + `include=` + `X-Shio-Est-Tokens` →
+[CHANGELOG.md](CHANGELOG.md) Block H. Standing rule that survives: **agent reads
+never include authoring metadata by default** (`owner`, `date`, `publishStatus`,
+`modifier`) — the CDA DTOs (SH1) already made that call.
 
-Anti-goal (P3 corollary): terseness must not cost a second round trip. A response
-that omits something the agent then has to ask for is a regression, and §XIII.2's
-benchmark is what keeps that honest.
+**The measurement to carry forward, because it reorders the backlog:** the terse
+encoding's saving is **per row, not per payload** (~25–35% on a row; diluted to ~⅓
+overall on a small pack where fixed prose dominates), and the residual per-row cost
+is dominated by the **36-char UUID**. Encoding is therefore the *smaller* lever:
+**path addressing (§VIII.5, SH79) is the bigger one**, and dropping ids once paths
+address content (SH121) is worth roughly as much again as the encoding change. Two
+corollaries became tasks: extend the cost header to the CDA (SH124), and make
+null/default omission a policy with a test rather than an annotation someone
+remembers (SH125).
+
+Anti-goal (P3 corollary), unchanged: terseness must not cost a second round trip. A
+response that omits something the agent then has to ask for is a regression — which
+is why per-field projection on content reads was **not** forced into SH78 and waits
+for SH123, when there are content reads to project.
 
 ### VIII.5 Path addressing (SH79)
 
@@ -561,6 +575,24 @@ wrapper. One appliable format instead of two half-formats.
 
 Where the shapes overlap, the console should return the CDA DTO rather than a
 second shape of the same thing — one shape for the agent to learn (P5/P10).
+
+### XIV.4 Build-time guard for the `@TenantId` JOINED-join hazard (SH122)
+
+Found while building SH77. A JPQL query that navigates **past the `id`** of an
+association whose target is an `ShObject` subclass (`ShSite`, `ShFolder`,
+`ShPostType`) makes Hibernate emit SH22's tenant discriminator predicate against the
+*subclass* table alias — which has no `tenant_id` column, since it lives on the
+JOINED `ShObject` root — and the query fails at prepare time
+(`Column "spt1_1.tenant_id" not found`).
+
+Why it deserves a guard rather than a note: the mapping is **valid JPQL**, the
+failure is **runtime-only**, and the correct form (`select p.shPostType.id … group by
+p.shPostType.id`, resolving id→name in the service) is both safe *and* faster — no
+join at all. Every future aggregate or projection query over content will meet this.
+The guard is a test that scans `@Query` values for a navigation of depth ≥ 2 into one
+of the subclass associations, in the same spirit as
+`ShLiquibaseChangelogAgnosticTest`: a cheap textual lint standing in for a class of
+runtime failure. Documented meanwhile in `agents.md` → Common Issues.
 
 ---
 

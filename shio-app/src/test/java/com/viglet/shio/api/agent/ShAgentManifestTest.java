@@ -66,7 +66,6 @@ class ShAgentManifestTest {
 
         assertThat(manifest.features())
                 .containsEntry("mcp", false)
-                .containsEntry("agentContext", false)
                 .containsEntry("blueprints", false)
                 .containsEntry("batchWrites", false)
                 .containsEntry("contentAsFiles", false);
@@ -82,7 +81,9 @@ class ShAgentManifestTest {
                 .containsEntry("locales", true)
                 .containsEntry("exchange", true)
                 .containsEntry("postTypesAsCode", true)
-                .containsEntry("teachingErrors", true);
+                .containsEntry("teachingErrors", true)
+                .containsEntry("agentContext", true)
+                .containsEntry("terseResponses", true);
     }
 
     @Test
@@ -130,10 +131,10 @@ class ShAgentManifestTest {
     }
 
     @Test
-    void startHerePointsAtTheModelBeforeTheContent() {
+    void startHerePointsAtTheOneCallThatReplacesASession() {
         List<String> startHere = shAgentManifestService.manifest().startHere();
 
         assertThat(startHere).isNotEmpty().hasSizeLessThan(6);
-        assertThat(startHere.get(0)).contains("post-type");
+        assertThat(startHere.get(0)).contains("/agent/context");
     }
 }

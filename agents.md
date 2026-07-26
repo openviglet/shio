@@ -691,6 +691,25 @@ After installing/removing packages (`pnpm add`/`pnpm remove`), clear Vite cache:
 ### `Column "..._.TENANT_ID" not found` (or any column) at startup
 Schema drift. The schema is Liquibase-managed (`ddl-auto=none`) — a column referenced by an entity does not exist because no changeset created it. Fix by adding a Liquibase changeset (see **Database Schema** above), not by flipping `ddl-auto` back to `update`. Also confirm the datasource URL still has `DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true` — dropping those reintroduces quoted-vs-unquoted casing mismatches that surface as "column not found".
 
+### `Column "spt1_1.tenant_id" not found` in a JPQL query (SH22 join hazard)
+**Never navigate past the `id` of an association whose target is an `ShObject`
+subclass** (`ShSite`, `ShFolder`, `ShPostType`). `@TenantId` lives on the JOINED
+`ShObject` **root**, so an implicit association join makes Hibernate emit the tenant
+predicate against the *subclass* table's alias — which has no `tenant_id` column —
+and the query dies at prepare time. Cheap and reliable rule:
+
+```java
+// ✗ breaks: joins ShPostType, tenant predicate hits the subclass table alias
+@Query("select p.shPostType.name, count(distinct p.id) from ShPostUnified p group by p.shPostType.name")
+// ✓ works: uses the FK column already on sh_post_unified — no join at all
+@Query("select p.shPostType.id, count(distinct p.id) from ShPostUnified p group by p.shPostType.id")
+```
+
+Resolve `id → name` in the service from the entity list you already loaded. The
+id-only form is also faster (no join). This is invisible until runtime — the
+mapping is valid JPQL — so it is a code-review item, not a compile error. Found
+while building the SH77 context pack; see `ShPostUnifiedRepository`'s note.
+
 ## Color Theme
 - Primary: Orange/Amber (vs Turing's Blue/Indigo)
 - Gradients: `from-orange-500 to-amber-600`

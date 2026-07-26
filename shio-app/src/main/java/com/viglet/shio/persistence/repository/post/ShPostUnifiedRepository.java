@@ -158,4 +158,29 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
                                                        @Param("postTypes") Collection<String> postTypes,
                                                        @Param("states") Collection<ShPostState> states,
                                                        @Param("q") String q);
+
+    // --- Aggregate counts for the agent context pack (SH77). Grouped so the whole
+    //     instance costs one query instead of one per post-type / per site, and
+    //     counted on `distinct p.id` because the unified model stores up to two rows
+    //     per post (DRAFT + PUBLISHED) — counting rows would double most content.
+    //
+    //     Both group by the association's **id** and never by one of its other
+    //     fields. Reaching a further field (`p.shPostType.name`) forces a join to
+    //     ShPostType, which is an ShObject subclass in the JOINED hierarchy that
+    //     carries SH22's `@TenantId`; Hibernate then emits the tenant predicate
+    //     against the *subclass* table alias, which has no `tenant_id` column, and
+    //     the query dies at prepare time with `Column "spt1_1.tenant_id" not found`.
+    //     Selecting only the id uses the FK column already on sh_post_unified — no
+    //     join, no tenant predicate, and cheaper SQL. Callers resolve id → name from
+    //     the post-type list they already hold. ---
+
+    /** @return rows of {@code [postTypeId (String), posts (Long)]}. */
+    @Query("select p.shPostType.id, count(distinct p.id) from ShPostUnified p "
+            + "where p.shPostType is not null group by p.shPostType.id")
+    List<Object[]> countDistinctByPostTypeId();
+
+    /** @return rows of {@code [siteId (String), posts (Long)]}. */
+    @Query("select p.shSite.id, count(distinct p.id) from ShPostUnified p "
+            + "where p.shSite is not null group by p.shSite.id")
+    List<Object[]> countDistinctBySiteId();
 }
