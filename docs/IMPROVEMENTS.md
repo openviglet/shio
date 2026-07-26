@@ -265,12 +265,16 @@ follows:
 - **Absent, not forbidden.** An address outside the SH2 allow-list resolves to 404,
   never 403, so a scoped credential cannot use the error to prove a site exists. Every
   future address-taking surface inherits this.
-- **`addressOf` is the inverse and is round-trip tested**, because SH121 removes the
+- **`addressOf` is the inverse and is round-trip tested**, because SH121 removed the
   id from context rows and that only stays honest if everything shown is addressable.
 
-**Still open:** writes are not yet address-native — `resolve` is the bridge to
-today's id-keyed endpoints. SH81/SH82 take the address directly, at which point
-"upsert this address" becomes the idempotent write this task was really for.
+Both follow-ups have since shipped: **SH121** (id-free reads) and **SH81/SH82**
+(address-native writes) → [CHANGELOG.md](CHANGELOG.md) Block H. One record from SH121
+that later tasks inherit: **the cursor is not a row field.** Pagination still travels
+as an id, because it is one value per *response* rather than one per row — the cost
+argument that removed ids from rows does not apply to it, and an id needs no
+namespace disambiguation to be exact. Before dropping an identifier, ask how often it
+is paid, not whether it is ugly.
 
 ### VIII.6 Teaching errors (SH80) — ✅ shipped
 
@@ -287,15 +291,38 @@ caller who learned a different one: **translate dialects first, correct spelling
 second.** Candidate next surfaces: post-state names, locale codes, and the
 blueprint parameter vocabulary (§XI.1).
 
-### VIII.7 Batch + plan/apply (SH81, SH82)
+### VIII.7 Batch + plan/apply (SH81, SH82) — ✅ shipped
 
-- **Batch** — `POST /api/v2/agent/batch`: N ops, atomic, `dryRun`, per-op results.
-  A 12-page site structure becomes one call instead of ~24.
-- **Plan/apply** — generalize `shio push --check` (SH65) from post-types to
-  **content**: a declarative desired-state document → `plan` (a diff, zero writes)
-  → `apply`. This is the pattern that removes read-modify-write loops *and* gives
-  the human a reviewable artifact before anything changes (P7). SH65 already proved
-  the shape; this is the same engine over a second resource type.
+Shipped: `POST /api/v2/agent/batch` · `/plan` · `/apply` →
+[CHANGELOG.md](CHANGELOG.md) Block H. Design records that bind what follows:
+
+- **A dry run must not write.** The tempting implementation — apply, then roll back —
+  is wrong for a reason that generalizes past this endpoint: by the time the rollback
+  is decided, the audit rows, lifecycle events and quota counters have already
+  happened. Anything that calls itself a *plan* has to be computed, which means it also
+  has to model what earlier steps in the same plan would have created. Every future
+  `--dry-run`/`plan` surface (SH93's blueprints, SH108's confirm tokens) inherits this.
+- **The plan and the apply must be the same code path**, differing only in a flag.
+  SH82's `plan` is literally `apply(dryRun=true)`, and both compile down to SH81's ops.
+  The one place an early version let them diverge — a dry-run shortcut that also fired
+  in real runs — silently skipped a publish, which is exactly the failure mode "the
+  plan lied" that makes a plan worthless.
+- **Imperative and declarative are both needed, and one is built on the other.** A
+  batch answers "do this now"; a document answers "this is the site". Only the second
+  survives a context compaction, because it does not require the agent to remember what
+  it already did. Keeping the document a *compiler* over the ops, rather than a second
+  engine, is what stops the two from disagreeing (P10).
+- **Destructive scope is declared, never inferred.** `prune` deletes only inside the
+  folders the document declares, and declaring none is an error. A blast radius that
+  depends on what the author forgot to mention is the definition of a surprise (P7).
+  Same rule for the tri-state `publish`: absent means "leave it alone", because
+  treating a trimmed field as `false` would unpublish live pages.
+
+**Still open:** the CLI verbs (**SH129**). Law P1's order is MCP → files/CLI → REST,
+and this landed at REST first because the CLI's content commands belong with SH87's
+file projection — `shio apply` over a JSON blob would be a worse command than
+`shio push --content` over a directory. Worth naming as a debt rather than pretending
+the order held.
 
 ### VIII.8 The nine tools (SH83)
 
@@ -311,12 +338,33 @@ resource×verb, path-addressed, terse by default, and dry-runnable wherever they
 write. `find` returns **identifiers, not bodies** — the agent then `read`s exactly
 what it needs with a `fields` projection.
 
+Now that SH81/SH82 have shipped, `shio_write` and `shio_apply` have no semantics left
+to invent: they are a **shape** over `POST /agent/batch` and `/agent/plan|/apply`
+(P10). That is the point — the tool layer should be thin enough that a bug can only
+live in one of the two places, and it is never the MCP one.
+
 ### VIII.9 Tenant/scope-aware tools + ecosystem (SH84)
 
 Scope every tool per SH22 tenant and wire into Turing (replaces old SH37). Deferred
 behind SH83 because tenant scoping is an enforcement pass over a finished tool set,
 not a design input to it — but the invariant is fixed from day one: the agent path
 is **never** a privilege escalation (§XII).
+
+### VIII.10 Guarding the "wrong at runtime, valid at compile time" class (SH128)
+
+Three of these have now been found: SH122's `@TenantId` JOINED-join hazard (three
+broken CDA paths), and SH81's discovery that `ShPostUnifiedWriteService#create` read
+`folder.getShSite()` on a folder tree where only the *root* carries the site — so
+every post created below the root was site-less, invisible to the console (which
+navigates by folder) and fatal to anything querying by site.
+
+The shape is always the same: code that compiles, passes review, and is wrong only
+when the data is queried along an axis the author was not thinking about. Reviews do
+not catch it; a test that states the invariant does. SH128 is that test for the
+site-resolution invariant — every write path resolves a folder's owning site by
+walking to the root — and the general lesson is that this class deserves a guard
+*per invariant*, added the first time the invariant is violated, not a general
+promise to be careful.
 
 ---
 

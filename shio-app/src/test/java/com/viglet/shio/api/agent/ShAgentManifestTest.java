@@ -67,7 +67,6 @@ class ShAgentManifestTest {
         assertThat(manifest.features())
                 .containsEntry("mcp", false)
                 .containsEntry("blueprints", false)
-                .containsEntry("batchWrites", false)
                 .containsEntry("contentAsFiles", false);
     }
 
@@ -84,7 +83,13 @@ class ShAgentManifestTest {
                 .containsEntry("teachingErrors", true)
                 .containsEntry("agentContext", true)
                 .containsEntry("terseResponses", true)
-                .containsEntry("pathAddressing", true);
+                .containsEntry("pathAddressing", true)
+                // SH81 flipped `batchWrites` from the false SH76 pre-declared, exactly
+                // as intended: a reader that saw the key yesterday needs no new key to
+                // notice the capability arrived. `desiredState` (SH82) is new — SH76
+                // could not pre-declare a capability nobody had designed yet.
+                .containsEntry("batchWrites", true)
+                .containsEntry("desiredState", true);
     }
 
     @Test

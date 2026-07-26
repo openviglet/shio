@@ -1,0 +1,325 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.api.agent;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
+import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
+import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
+import com.viglet.shio.persistence.model.folder.ShFolder;
+import com.viglet.shio.persistence.model.post.type.ShPostType;
+import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
+import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.persistence.model.widget.ShWidget;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+
+/**
+ * SH82 — desired-state plan/apply for content.
+ *
+ * <p>What is actually being tested is the property that makes the document worth
+ * having over a batch: <b>convergence</b>. Apply it, and the plan that follows is
+ * empty; change one field, and the plan names exactly that one change. That empty
+ * plan is the content drift guard, the same signal {@code shio push --check} gives
+ * for post-types (SH65). The other load-bearing rule is that {@code plan} writes
+ * nothing — a plan that perturbs the instance is not a plan.</p>
+ *
+ * @author Alexandre Oliveira
+ */
+@SpringBootTest
+@TestInstance(Lifecycle.PER_CLASS)
+class ShAgentDesiredStateTest {
+
+    @Autowired
+    private ShAgentDesiredStateService shAgentDesiredStateService;
+    @Autowired
+    private ShAddressResolver shAddressResolver;
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    private String siteName;
+    private String postTypeName;
+
+    @BeforeAll
+    void setup() {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            ShSite site = new ShSite();
+            siteName = "state-site-" + UUID.randomUUID();
+            site.setName(siteName);
+            site.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            site.setOwner("admin");
+            entityManager.persist(site);
+
+            ShFolder root = new ShFolder();
+            root.setName("root");
+            root.setRootFolder((byte) 1);
+            root.setShSite(site);
+            root.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            root.setOwner("admin");
+            entityManager.persist(root);
+
+            ShWidget widget = entityManager
+                    .createQuery("select w from ShWidget w where w.name = 'Text'", ShWidget.class)
+                    .getResultStream().findFirst().orElseGet(() -> {
+                        ShWidget created = new ShWidget();
+                        created.setName("Text");
+                        created.setDescription("Text");
+                        entityManager.persist(created);
+                        return created;
+                    });
+
+            ShPostType postType = new ShPostType();
+            postTypeName = "StateArticle" + UUID.randomUUID().toString().substring(0, 8);
+            postType.setName(postTypeName);
+            postType.setTitle("State Article");
+            postType.setSystem((byte) 0);
+            postType.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            postType.setOwner("admin");
+            entityManager.persist(postType);
+
+            ShPostTypeAttr attr = new ShPostTypeAttr();
+            attr.setName("headline");
+            attr.setLabel("Headline");
+            attr.setOrdinal(1);
+            attr.setIsTitle((byte) 1);
+            attr.setRequired((byte) 1);
+            attr.setShWidget(widget);
+            attr.setShPostType(postType);
+            entityManager.persist(attr);
+        });
+    }
+
+    // --- helpers ---
+
+    private JsonNode data(String headline) {
+        return objectMapper.valueToTree(Map.of("headline", headline));
+    }
+
+    private ShAgentDesiredState document(String base, boolean prune, String... headlines) {
+        List<ShAgentDesiredState.Post> posts = new java.util.ArrayList<>();
+        for (int i = 0; i < headlines.length; i++) {
+            posts.add(new ShAgentDesiredState.Post(base + "/p" + i, postTypeName, base,
+                    data(headlines[i]), null));
+        }
+        return new ShAgentDesiredState(siteName,
+                List.of(new ShAgentDesiredState.Folder(base)), posts, prune);
+    }
+
+    private ShAgentChangeSet plan(ShAgentDesiredState desired) {
+        return new TransactionTemplate(transactionManager).execute(status ->
+                shAgentDesiredStateService.plan(desired, false, "tester"));
+    }
+
+    private ShAgentChangeSet apply(ShAgentDesiredState desired) {
+        return new TransactionTemplate(transactionManager).execute(status ->
+                shAgentDesiredStateService.apply(desired, false, "tester"));
+    }
+
+    private static List<String> actions(ShAgentChangeSet result) {
+        return result.results().stream().map(Change::action).toList();
+    }
+
+    private String base() {
+        return "/sec-" + UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    // --- convergence ---
+
+    @Test
+    void applyThenPlanIsEmpty() {
+        // The whole reason a document beats a script: the agent does not have to
+        // remember what it already did, because the document is a fact about the world.
+        ShAgentDesiredState desired = document(base(), false, "One", "Two");
+
+        assertThat(apply(desired).changed()).isEqualTo(3);
+        assertThat(plan(desired).changed()).isZero();
+    }
+
+    @Test
+    void planNamesOnlyWhatActuallyDrifted() {
+        String base = base();
+        apply(document(base, false, "One", "Two"));
+
+        ShAgentChangeSet drift = plan(document(base, false, "One", "Changed"));
+
+        assertThat(drift.changed()).isEqualTo(1);
+        assertThat(drift.results()).filteredOn(Change::isChange).singleElement()
+                .satisfies(change -> {
+                    assertThat(change.action()).isEqualTo(Change.UPDATE);
+                    assertThat(change.address()).endsWith("/p1");
+                });
+    }
+
+    @Test
+    void planWritesNothing() {
+        String base = base();
+        ShAgentChangeSet planned = plan(document(base, false, "One"));
+
+        assertThat(planned.dryRun()).isTrue();
+        assertThat(planned.changed()).isEqualTo(2);
+        assertThatThrownBy(() -> shAddressResolver.resolve("folder:" + siteName + base))
+                .isInstanceOf(ShAddressResolver.UnresolvedAddressException.class);
+    }
+
+    @Test
+    void applyIsAtomicAcrossTheWholeDocument() {
+        String base = base();
+        ShAgentDesiredState broken = new ShAgentDesiredState(siteName,
+                List.of(new ShAgentDesiredState.Folder(base)),
+                List.of(new ShAgentDesiredState.Post(base + "/ok", postTypeName, base,
+                                data("Fine"), null),
+                        new ShAgentDesiredState.Post(base + "/bad", "NoSuchType", base,
+                                data("Broken"), null)),
+                false);
+
+        assertThatThrownBy(() -> apply(broken))
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class);
+        assertThatThrownBy(() -> shAddressResolver.resolve("post:" + siteName + base + "/ok"))
+                .isInstanceOf(ShAddressResolver.UnresolvedAddressException.class);
+    }
+
+    // --- publish semantics ---
+
+    @Test
+    void publishTrueGoesLiveAndStaysConvergent() {
+        String base = base();
+        ShAgentDesiredState desired = new ShAgentDesiredState(siteName,
+                List.of(new ShAgentDesiredState.Folder(base)),
+                List.of(new ShAgentDesiredState.Post(base + "/live", postTypeName, base,
+                        data("Live"), true)),
+                false);
+
+        assertThat(actions(apply(desired)))
+                .containsExactly(Change.CREATE, Change.CREATE, Change.PUBLISH);
+        assertThat(plan(desired).changed()).isZero();
+    }
+
+    @Test
+    void anAbsentPublishFlagLeavesTheLiveStateAlone() {
+        // Treating absence as `false` would unpublish live pages the moment someone
+        // trimmed a field out of the document — exactly the surprise P7 forbids.
+        String base = base();
+        apply(new ShAgentDesiredState(siteName,
+                List.of(new ShAgentDesiredState.Folder(base)),
+                List.of(new ShAgentDesiredState.Post(base + "/live", postTypeName, base,
+                        data("Live"), true)),
+                false));
+
+        ShAgentChangeSet silent = plan(new ShAgentDesiredState(siteName,
+                List.of(new ShAgentDesiredState.Folder(base)),
+                List.of(new ShAgentDesiredState.Post(base + "/live", postTypeName, base,
+                        data("Live"), null)),
+                false));
+
+        assertThat(silent.changed()).isZero();
+        assertThat(actions(silent)).doesNotContain(Change.UNPUBLISH);
+    }
+
+    // --- prune ---
+
+    @Test
+    void prunePlansTheDeletionOfUndeclaredPostsBeforeAnythingIsDeleted() {
+        String base = base();
+        apply(document(base, false, "One", "Two"));
+
+        ShAgentChangeSet planned = plan(document(base, true, "One"));
+
+        // The deletion is visible in the plan first — that is what makes a destructive
+        // apply reviewable by a human rather than a surprise (P7).
+        assertThat(planned.results()).filteredOn(Change::isChange).singleElement()
+                .satisfies(change -> {
+                    assertThat(change.action()).isEqualTo(Change.DELETE);
+                    assertThat(change.address()).endsWith("/p1");
+                });
+        // …and nothing happened yet.
+        assertThat(shAddressResolver.resolve("post:" + siteName + base + "/p1").kind())
+                .isEqualTo("post");
+    }
+
+    @Test
+    void applyWithPruneRemovesTheUndeclaredPost() {
+        String base = base();
+        apply(document(base, false, "One", "Two"));
+
+        assertThat(apply(document(base, true, "One")).changed()).isEqualTo(1);
+
+        assertThatThrownBy(() -> shAddressResolver.resolve("post:" + siteName + base + "/p1"))
+                .isInstanceOf(ShAddressResolver.UnresolvedAddressException.class);
+        assertThat(shAddressResolver.resolve("post:" + siteName + base + "/p0").kind())
+                .isEqualTo("post");
+    }
+
+    @Test
+    void pruneWithoutDeclaredFoldersIsRefused() {
+        // With no folders there is no boundary, and a document about one section would
+        // quietly delete another.
+        ShAgentDesiredState unscoped =
+                new ShAgentDesiredState(siteName, List.of(), List.of(), true);
+
+        assertThatThrownBy(() -> plan(unscoped))
+                .isInstanceOf(ShAgentDesiredStateService.UnscopedPruneException.class);
+    }
+
+    @Test
+    void pruneNeverReachesOutsideTheDeclaredFolders() {
+        String kept = base();
+        String owned = base();
+        apply(document(kept, false, "Untouched"));
+        apply(document(owned, false, "One", "Two"));
+
+        apply(document(owned, true, "One"));
+
+        assertThat(shAddressResolver.resolve("post:" + siteName + kept + "/p0").kind())
+                .isEqualTo("post");
+    }
+
+    // --- teaching errors ---
+
+    @Test
+    void aDocumentWithoutASiteSaysWhatToAdd() {
+        assertThatThrownBy(() -> plan(new ShAgentDesiredState(null, List.of(), List.of(), false)))
+                .isInstanceOf(ShAgentDesiredStateService.MissingSiteException.class)
+                .satisfies(thrown -> assertThat(((ShAgentDesiredStateService.MissingSiteException) thrown)
+                        .toProblemDetail().getProperties()).containsKey("example"));
+    }
+
+    @Test
+    void aPostWithoutAUrlExplainsWhyIdentityMatters() {
+        ShAgentDesiredState anonymous = new ShAgentDesiredState(siteName, List.of(),
+                List.of(new ShAgentDesiredState.Post(null, postTypeName, "/", data("X"), null)),
+                false);
+
+        assertThatThrownBy(() -> plan(anonymous))
+                .isInstanceOf(ShAgentDesiredStateService.MissingPostUrlException.class);
+    }
+}

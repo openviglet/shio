@@ -32,6 +32,10 @@ export async function run(flags, _positionals, ctx) {
     include: flags.include,
     from: flags.from,
     format,
+    // Off unless asked for (SH121). The endpoint already defaults it off; sending
+    // the flag only when set keeps the request URL — and so the server-side cache
+    // key — identical to what a bare `shio context` produced before.
+    ids: flags.ids ? "true" : undefined,
   });
 
   if (flags.out) {

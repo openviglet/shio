@@ -72,10 +72,13 @@ public record ShAgentContext(
     }
 
     /**
-     * @param id           site id — still needed for addressing until SH79 lands
+     * @param id           site id — omitted unless {@code ids=true} (SH121); the site
+     *                     <em>name</em> is what an address uses
      * @param name         site name
      * @param url          the site's public base URL, when configured
-     * @param rootFolderId the folder every path in {@code sitemap} is relative to
+     * @param rootFolderId the folder every path in {@code sitemap} is relative to;
+     *                     omitted unless {@code ids=true}, since {@code folder:<site>/}
+     *                     resolves to the same thing
      * @param posts        number of distinct posts in the site
      */
     @JsonInclude(Include.NON_NULL)
@@ -102,7 +105,9 @@ public record ShAgentContext(
      * @param kind  {@code folder} or {@code post}
      * @param path  structural path from the site root ({@code /}, {@code /blog}) —
      *              for a post, the path of its containing folder
-     * @param id    object id
+     * @param id    object id — omitted unless {@code ids=true} (SH121). A row is
+     *              addressable from {@code site + path/url} alone, and the UUID was
+     *              measured as the single largest per-row cost in this payload
      * @param type  post-type name (posts only)
      * @param state {@code DRAFT} / {@code PUBLISHED} (posts only)
      * @param url   the post's friendly URL, i.e. how it is addressed and delivered

@@ -110,9 +110,10 @@ public class ShAgentManifestService {
         features.put("agentContext", true);
         features.put("terseResponses", true);
         features.put("pathAddressing", true);
+        features.put("batchWrites", true);
+        features.put("desiredState", true);
 
         // Declared-but-unshipped (Block H–J). Reported false so a caller does not probe.
-        features.put("batchWrites", false);
         features.put("blueprints", false);
         features.put("contentAsFiles", false);
         features.put("mcp", false);
@@ -151,6 +152,17 @@ public class ShAgentManifestService {
                                 + "folder:<site>/<path>, site:<name> or id:<uuid>. Build the "
                                 + "address from a context row; you never need to remember a UUID.",
                         "console", "GET /api/v2/agent/resolve?address=post:Blog/blog/hello-world"),
+                new ShAgentEndpoint("POST", "/agent/batch",
+                        "Write: N addressed ops (folder.upsert, post.upsert, post.publish, …) "
+                                + "in one atomic call. Send dryRun to see the plan first.",
+                        "console", "POST /api/v2/agent/batch"),
+                new ShAgentEndpoint("POST", "/agent/plan",
+                        "Diff a desired-state content document against this instance. "
+                                + "Writes nothing; changed=0 means no drift.",
+                        "console", "POST /api/v2/agent/plan"),
+                new ShAgentEndpoint("POST", "/agent/apply",
+                        "Make that document true, atomically. Re-applying it is a no-op.",
+                        "console", "POST /api/v2/agent/apply"),
                 new ShAgentEndpoint("GET", "/cda/site",
                         "List published sites (id, name, root folder id).",
                         "token:READ", "GET /api/v2/cda/site"),
@@ -207,7 +219,9 @@ public class ShAgentManifestService {
                 "GET /api/v2/agent/context?format=terse — model, sitemap and conventions in one call",
                 "store the returned `digest`; next session, compare it before re-reading anything",
                 "address content as post:<site>/<url> or folder:<site>/<path>; "
-                        + "GET /api/v2/agent/resolve turns one into an id when an endpoint needs it");
+                        + "GET /api/v2/agent/resolve turns one into an id when an endpoint needs it",
+                "write with POST /api/v2/agent/batch (atomic, addressed, dryRun-able) rather than "
+                        + "one id-keyed call per object");
     }
 
     /** Same source as {@code /api/v2/system/info}: the jar manifest, {@code dev} in an IDE. */

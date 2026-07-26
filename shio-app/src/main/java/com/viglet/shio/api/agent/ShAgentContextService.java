@@ -89,6 +89,11 @@ public class ShAgentContextService {
         this.properties = properties;
     }
 
+    /** Id-free by default (SH121) — see {@link #context(String, Integer, Integer, String, String, boolean)}. */
+    public ShAgentContext context(String site, Integer depth, Integer budget, String include, String from) {
+        return context(site, depth, budget, include, from, false);
+    }
+
     /**
      * @param site     site id or name; {@code null} selects every readable site (and,
      *                 when exactly one exists, still walks its tree — the common
@@ -98,8 +103,12 @@ public class ShAgentContextService {
      *                 {@code 0} = unbounded (capped by {@code maxNodes} regardless)
      * @param include  comma-separated section list, {@code null} = all
      * @param from     resume cursor: the object id returned as {@code truncatedAfter}
+     * @param ids      emit the raw UUID on every site and sitemap row. Off by default
+     *                 (SH121): the UUID is the largest single per-row cost in this
+     *                 payload and SH79 made every row addressable without one
      */
-    public ShAgentContext context(String site, Integer depth, Integer budget, String include, String from) {
+    public ShAgentContext context(String site, Integer depth, Integer budget, String include,
+                                  String from, boolean ids) {
         Set<ShAgentContextSection> sections = ShAgentContextSection.parse(include);
         ShTokenBudget tokens = new ShTokenBudget(resolveBudget(budget));
         int walkDepth = depth == null || depth < 0 ? properties.getContext().getDefaultDepth() : depth;
@@ -114,14 +123,14 @@ public class ShAgentContextService {
                 ? new ShAgentContext.Instance("Viglet Shio CMS", version(), "en")
                 : null;
         List<ShAgentContext.Site> siteRows = sections.contains(ShAgentContextSection.SITES)
-                ? siteRows(sites, postsBySite)
+                ? siteRows(sites, postsBySite, ids)
                 : List.of();
         List<ShAgentContext.Type> model = sections.contains(ShAgentContextSection.MODEL)
                 ? model(postsByType)
                 : List.of();
 
         List<String> conventions = sections.contains(ShAgentContextSection.CONVENTIONS)
-                ? conventions(sites, model.isEmpty() ? model(postsByType) : model)
+                ? conventions(sites, model.isEmpty() ? model(postsByType) : model, ids)
                 : List.of();
 
         // Charge **every** bounded section before the sitemap gate opens, so the gate
@@ -131,7 +140,7 @@ public class ShAgentContextService {
         chargeBounded(tokens, instance, siteRows, model, conventions);
 
         Walk walk = sections.contains(ShAgentContextSection.SITEMAP)
-                ? walk(sites, walkDepth, tokens, from)
+                ? walk(sites, walkDepth, tokens, from, ids)
                 : new Walk(List.of(), false, null);
 
         ShAgentContext pack = new ShAgentContext(
@@ -144,7 +153,10 @@ public class ShAgentContextService {
 
         // The digest covers the *content* of the pack, not its measurements, so it is
         // identical for the JSON and terse renderings of the same state and does not
-        // churn when a budget hint changes.
+        // churn when a budget hint changes. It does move with `ids` — that flag changes
+        // what the pack *says*, not how the same statement was measured, and SH116 will
+        // hand this value to `If-None-Match`, where two representations must not share
+        // an entity tag.
         return withDigest(pack, digest(ShAgentContextTerse.body(pack)));
     }
 
@@ -185,13 +197,13 @@ public class ShAgentContextService {
         return matched;
     }
 
-    private List<ShAgentContext.Site> siteRows(List<ShSite> sites, Map<String, Long> postsBySite) {
+    private List<ShAgentContext.Site> siteRows(List<ShSite> sites, Map<String, Long> postsBySite, boolean ids) {
         return sites.stream()
                 .map(site -> new ShAgentContext.Site(
-                        site.getId(),
+                        ids ? site.getId() : null,
                         site.getName(),
                         site.getUrl(),
-                        rootFolder(site).map(ShFolder::getId).orElse(null),
+                        ids ? rootFolder(site).map(ShFolder::getId).orElse(null) : null,
                         postsBySite.getOrDefault(site.getId(), 0L)))
                 .toList();
     }
@@ -220,7 +232,7 @@ public class ShAgentContextService {
      * against the budget <em>before</em> committing it, so output is cut at a row
      * boundary and the cut is reported rather than hidden.
      */
-    private Walk walk(List<ShSite> sites, int depth, ShTokenBudget tokens, String from) {
+    private Walk walk(List<ShSite> sites, int depth, ShTokenBudget tokens, String from, boolean ids) {
         List<ShAgentContext.Node> nodes = new ArrayList<>();
         Cursor cursor = new Cursor(from == null || from.isBlank() ? null : from.trim());
         int maxNodes = properties.getContext().getMaxNodes();
@@ -229,7 +241,7 @@ public class ShAgentContextService {
             if (root.isEmpty()) {
                 continue;
             }
-            walkFolder(root.get(), ROOT_PATH, depth, nodes, tokens, cursor, maxNodes);
+            walkFolder(root.get(), ROOT_PATH, depth, nodes, tokens, cursor, maxNodes, ids);
             if (cursor.stopped()) {
                 break;
             }
@@ -239,24 +251,26 @@ public class ShAgentContextService {
 
     private void walkFolder(ShFolder folder, String path, int remainingDepth,
                             List<ShAgentContext.Node> nodes, ShTokenBudget tokens,
-                            Cursor cursor, int maxNodes) {
+                            Cursor cursor, int maxNodes, boolean ids) {
         if (cursor.stopped()) {
             return;
         }
         List<ShFolder> children = childFolders(folder);
         List<ShPostUnified> posts = folderPosts(folder);
 
-        ShAgentContext.Node folderNode = new ShAgentContext.Node(KIND_FOLDER, path, folder.getId(),
+        ShAgentContext.Node folderNode = new ShAgentContext.Node(KIND_FOLDER, path,
+                ids ? folder.getId() : null,
                 null, null, null, null, children.size(), posts.size());
-        if (!offer(folderNode, nodes, tokens, cursor, maxNodes)) {
+        if (!offer(folderNode, folder.getId(), nodes, tokens, cursor, maxNodes)) {
             return;
         }
         for (ShPostUnified post : posts) {
-            ShAgentContext.Node postNode = new ShAgentContext.Node(KIND_POST, path, post.getId(),
+            ShAgentContext.Node postNode = new ShAgentContext.Node(KIND_POST, path,
+                    ids ? post.getId() : null,
                     post.getShPostType() == null ? null : post.getShPostType().getName(),
                     post.getState() == null ? null : post.getState().name(),
                     post.getFurl(), post.getTitle(), 0, 0);
-            if (!offer(postNode, nodes, tokens, cursor, maxNodes)) {
+            if (!offer(postNode, post.getId(), nodes, tokens, cursor, maxNodes)) {
                 return;
             }
         }
@@ -265,7 +279,7 @@ public class ShAgentContextService {
         }
         for (ShFolder child : children) {
             walkFolder(child, childPath(path, child.getName()), remainingDepth - 1,
-                    nodes, tokens, cursor, maxNodes);
+                    nodes, tokens, cursor, maxNodes, ids);
             if (cursor.stopped()) {
                 return;
             }
@@ -276,12 +290,18 @@ public class ShAgentContextService {
      * Offers one row: skipped while resuming, charged and committed once past the
      * cursor, and refused (stopping the walk) when it would breach a limit.
      *
+     * <p>The object id is passed alongside the row rather than read back off it,
+     * because under SH121 the row usually carries no id — and pagination must not
+     * depend on a field the caller asked us not to send. The cursor stays an id on
+     * the wire: it is <em>one</em> per response, not one per row, so it costs nothing
+     * measurable and needs no path/namespace disambiguation to be exact.</p>
+     *
      * @return {@code false} when the walk must stop
      */
-    private boolean offer(ShAgentContext.Node node, List<ShAgentContext.Node> nodes,
+    private boolean offer(ShAgentContext.Node node, String objectId, List<ShAgentContext.Node> nodes,
                           ShTokenBudget tokens, Cursor cursor, int maxNodes) {
         if (cursor.skipping()) {
-            cursor.consider(node);
+            cursor.consider(objectId);
             return true;
         }
         if (nodes.size() >= maxNodes) {
@@ -293,7 +313,7 @@ public class ShAgentContextService {
             return false;
         }
         nodes.add(node);
-        cursor.emitted(node);
+        cursor.emitted(objectId);
         return true;
     }
 
@@ -329,7 +349,7 @@ public class ShAgentContextService {
      * learn by making a mistake. Author-written conventions arrive with SH114; these
      * are the derivable subset, which is why they are computed and never stored.
      */
-    private List<String> conventions(List<ShSite> sites, List<ShAgentContext.Type> model) {
+    private List<String> conventions(List<ShSite> sites, List<ShAgentContext.Type> model, boolean ids) {
         List<String> conventions = new ArrayList<>();
         conventions.add("Writes land in DRAFT. Publishing is a separate, explicit call "
                 + "(POST /api/v2/post-unified/{id}/publish) — nothing you write becomes visible on its own.");
@@ -358,6 +378,12 @@ public class ShAgentContextService {
                 + "folder:<site>/<path> (its chain of folder names) — build it from a sitemap row's "
                 + "site + url/path. GET /api/v2/agent/resolve?address=... returns the id when an "
                 + "id-keyed endpoint needs one. Ids are per-install UUIDs and are not portable.");
+        // Say it once, here, rather than shipping 36 chars per row to prove it (SH121).
+        if (!ids) {
+            conventions.add("Rows in this pack carry no id, because an address names them and a UUID "
+                    + "is the most expensive thing a row can hold. Add ?ids=true if you genuinely "
+                    + "need them on every row.");
+        }
         if (sites.size() > 1) {
             conventions.add("This instance hosts " + sites.size() + " sites; pass ?site= to scope the "
                     + "context pack to the one you are working on.");
@@ -455,14 +481,14 @@ public class ShAgentContextService {
         }
 
         /** While resuming: open the gate once the cursor row has gone by. */
-        private void consider(ShAgentContext.Node node) {
-            if (resumeAfterId.equals(node.id())) {
+        private void consider(String objectId) {
+            if (resumeAfterId.equals(objectId)) {
                 skipping = false;
             }
         }
 
-        private void emitted(ShAgentContext.Node node) {
-            lastEmittedId = node.id();
+        private void emitted(String objectId) {
+            lastEmittedId = objectId;
         }
 
         private void stop() {

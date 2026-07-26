@@ -145,6 +145,27 @@ FK is `onDelete NO ACTION`, so they must go before the folder rows.)
   own table) — so copy/move resolves folder ids via `ShObjectRepository` and post ids
   via `ShPostUnifiedRepository`. `/list` dedups posts by id, DRAFT-preferred.
 
+### The agent surface — `/api/v2/agent/**` (Block H)
+The namespace shaped for a coding agent rather than a browser. It is a **shape over**
+the CDA + console services (law P10) and holds no business logic of its own.
+- `GET /agent/manifest` — capabilities, limits, a curated endpoint index. **Read this
+  first**; unshipped capabilities are reported `false`, never omitted.
+- `GET /agent/context` — model + sitemap + conventions in one call. `?format=terse`,
+  `?include=`, `?budget=`, `?from=`, `?ids=true` (rows are **id-free by default**, SH121).
+  The `digest` is how a later session skips re-reading.
+- `GET /agent/resolve?address=…` — an address → an object id, for id-keyed endpoints.
+- `POST /agent/batch` — **writes**: N addressed ops (`folder.upsert`, `post.upsert`,
+  `post.publish`, `post.unpublish`, `folder.delete`, `post.delete`) in one transaction;
+  `{"dryRun":true}` reports without writing.
+- `POST /agent/plan` / `POST /agent/apply` — a declarative desired-state content
+  document; `plan` never writes, and `changed:0` is the content drift guard.
+
+Addresses (SH79): `post:<site>/<friendly-url>` · `folder:<site>/<name-chain>` ·
+`site:<name>` · `id:<uuid>`. **Writes take only `post:`/`folder:`** — a folder path and
+a friendly URL are separate namespaces, and a write that guessed wrong would create
+content in the wrong place silently. CSRF-exempt (stateless callers), authenticated
+like every other API; the SH54 ACL and SH22 quota apply on the agent path identically.
+
 ### Post Types — lossless admin API (SH16, used by the `shio` CLI)
 - `GET /api/v2/post-type` - List all post-types as **lossless** `ShPostTypeDef`s (keeps `Tab`, verbatim `widgetSettings`, nested Relator fields — the authoring inverse of the lossy SH11 CDA schema)
 - `GET /api/v2/post-type/{name}` - One def (404 unknown)

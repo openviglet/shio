@@ -23,7 +23,7 @@ import { argv, exit } from "node:process";
 import { parseArgs } from "./args.mjs";
 import { defaultContext } from "./context.mjs";
 
-const BOOLEANS = ["help", "yes", "dry-run", "prune", "check", "skip-types", "id"];
+const BOOLEANS = ["help", "yes", "dry-run", "prune", "check", "skip-types", "id", "ids"];
 
 const COMMANDS = {
   init: () => import("./commands/init.mjs"),
@@ -70,6 +70,8 @@ Context pack (shio context):
   --depth <n>          Folder-tree depth to walk
   --budget <tokens>    Estimated-token ceiling (0 = unbounded)
   --from <id>          Resume cursor from a truncated pack
+  --ids                Put object ids back on every row (off by default — rows are
+                       addressable without one, and a UUID is the priciest field)
 
 Addresses (shio resolve):
   post:<site>/<url>    A post, by its friendly URL
