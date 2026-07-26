@@ -16,6 +16,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.ShObject;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -70,7 +71,7 @@ public class ShObjectWriteService {
             } else if (dest instanceof ShFolder destFolder) {
                 for (ShPostUnified row : shPostUnifiedRepository.findById(id)) {
                     row.setShFolder(destFolder);
-                    row.setShSite(siteOf(destFolder));
+                    row.setShSite(ShFolderSite.of(destFolder));
                     row.setFurl(ShURLFormatter.format(safe(row.getTitle())));
                     shPostUnifiedRepository.save(row);
                 }
@@ -136,7 +137,7 @@ public class ShObjectWriteService {
             copy.setState(source.getState());
             copy.setShPostType(source.getShPostType());
             copy.setShFolder(destFolder);
-            copy.setShSite(siteOf(destFolder));
+            copy.setShSite(ShFolderSite.of(destFolder));
             copy.setTitle(source.getTitle());
             copy.setSummary(source.getSummary());
             copy.setFurl(ShURLFormatter.format(safe(source.getTitle())));
@@ -159,17 +160,6 @@ public class ShObjectWriteService {
             }
         }
         return out;
-    }
-
-    private ShSite siteOf(ShFolder folder) {
-        ShFolder current = folder;
-        while (current != null) {
-            if (current.getShSite() != null) {
-                return current.getShSite();
-            }
-            current = current.getParentFolder();
-        }
-        return null;
     }
 
     private static String safe(String value) {

@@ -124,45 +124,113 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     Optional<ShPostUnified> findByShSite_IdAndFurlAndStateAndLocale(String siteId, String furl,
                                                                     ShPostState state, String locale);
 
-    // --- Full-text search (SH52). The :q term is pre-lowercased and %-wrapped by
-    //     ShCdaService; the predicate matches title, summary and the raw attribute
-    //     data CLOB (portable LIKE — keeps the SH26 cross-DB guarantee, unlike
-    //     engine-specific FULLTEXT/tsvector). PROD paths are paged; PREVIEW paths
-    //     fetch across the state set so the service can dedup draft-preferred. ---
+    // --- Full-text search (SH52). The predicate matches title, summary and the raw
+    //     attribute data CLOB (portable LIKE — keeps the SH26 cross-DB guarantee,
+    //     unlike engine-specific FULLTEXT/tsvector). PROD paths are paged; PREVIEW
+    //     paths fetch across the state set so the service can dedup draft-preferred.
+    //
+    //     SH131 — the bind contract is enforced, not documented. The `:q` parameter
+    //     must arrive pre-lowercased and %-wrapped, and for two years that requirement
+    //     lived only in a comment beside the constant. SH83 read the comment, wrote the
+    //     caller, and still got it wrong; the symptom was an *empty result set*, which
+    //     reads as "nothing matched" rather than as a bug and therefore survives review
+    //     and manual testing alike. So the raw `@Query` methods are now suffixed
+    //     `...Like` (their parameter name says what it wants), and every caller uses
+    //     the `search*` default methods below, which take a plain user term and
+    //     normalize it exactly once. A contract that can only be honoured by
+    //     remembering, and whose breach looks like valid data, belongs inside the
+    //     method rather than beside it. ---
 
     // summary and data are CLOB-mapped; Hibernate rejects lower() on a CLOB
     // argument, so they are cast to string first. title is a plain VARCHAR.
     String FULLTEXT_PREDICATE =
-            "(lower(p.title) like :q or lower(cast(p.summary as string)) like :q "
-            + "or lower(cast(p.data as string)) like :q)";
+            "(lower(p.title) like :like or lower(cast(p.summary as string)) like :like "
+            + "or lower(cast(p.data as string)) like :like)";
+
+    /**
+     * Turns a user-typed term into the LIKE pattern {@link #FULLTEXT_PREDICATE} needs:
+     * trimmed, lower-cased and wrapped in {@code %}.
+     *
+     * <p>A blank term becomes {@code %}, which matches every row with a non-null
+     * column — the same thing "search for nothing" means everywhere else. Callers that
+     * want "no filter" should not call a search method at all.</p>
+     */
+    static String fullTextPattern(String term) {
+        String normalized = term == null ? "" : term.trim().toLowerCase(java.util.Locale.ROOT);
+        return "%" + normalized + "%";
+    }
 
     @Query("select p from ShPostUnified p where p.state = :state and " + FULLTEXT_PREDICATE)
-    Page<ShPostUnified> searchByState(@Param("state") ShPostState state, @Param("q") String q, Pageable pageable);
+    Page<ShPostUnified> searchByStateLike(@Param("state") ShPostState state, @Param("like") String like,
+                                          Pageable pageable);
 
     @Query("select p from ShPostUnified p where p.state in :states and " + FULLTEXT_PREDICATE)
-    List<ShPostUnified> searchByStateIn(@Param("states") Collection<ShPostState> states, @Param("q") String q);
+    List<ShPostUnified> searchByStateInLike(@Param("states") Collection<ShPostState> states,
+                                            @Param("like") String like);
 
     @Query("select p from ShPostUnified p where p.shSite.id in :siteIds and p.state = :state and " + FULLTEXT_PREDICATE)
-    Page<ShPostUnified> searchBySitesAndState(@Param("siteIds") Collection<String> siteIds,
-                                              @Param("state") ShPostState state, @Param("q") String q, Pageable pageable);
+    Page<ShPostUnified> searchBySitesAndStateLike(@Param("siteIds") Collection<String> siteIds,
+                                                  @Param("state") ShPostState state, @Param("like") String like,
+                                                  Pageable pageable);
 
     @Query("select p from ShPostUnified p where p.shSite.id in :siteIds and p.state in :states and " + FULLTEXT_PREDICATE)
-    List<ShPostUnified> searchBySitesAndStateIn(@Param("siteIds") Collection<String> siteIds,
-                                                @Param("states") Collection<ShPostState> states, @Param("q") String q);
+    List<ShPostUnified> searchBySitesAndStateInLike(@Param("siteIds") Collection<String> siteIds,
+                                                    @Param("states") Collection<ShPostState> states,
+                                                    @Param("like") String like);
 
     @Query("select p from ShPostUnified p where p.shSite.id = :siteId and p.shPostType.id in :postTypeIds "
             + "and p.state = :state and " + FULLTEXT_PREDICATE)
-    Page<ShPostUnified> searchBySiteAndTypesAndState(@Param("siteId") String siteId,
-                                                     @Param("postTypeIds") Collection<String> postTypeIds,
-                                                     @Param("state") ShPostState state, @Param("q") String q,
-                                                     Pageable pageable);
+    Page<ShPostUnified> searchBySiteAndTypesAndStateLike(@Param("siteId") String siteId,
+                                                         @Param("postTypeIds") Collection<String> postTypeIds,
+                                                         @Param("state") ShPostState state,
+                                                         @Param("like") String like, Pageable pageable);
 
     @Query("select p from ShPostUnified p where p.shSite.id = :siteId and p.shPostType.id in :postTypeIds "
             + "and p.state in :states and " + FULLTEXT_PREDICATE)
-    List<ShPostUnified> searchBySiteAndTypesAndStateIn(@Param("siteId") String siteId,
-                                                       @Param("postTypeIds") Collection<String> postTypeIds,
-                                                       @Param("states") Collection<ShPostState> states,
-                                                       @Param("q") String q);
+    List<ShPostUnified> searchBySiteAndTypesAndStateInLike(@Param("siteId") String siteId,
+                                                           @Param("postTypeIds") Collection<String> postTypeIds,
+                                                           @Param("states") Collection<ShPostState> states,
+                                                           @Param("like") String like);
+
+    // --- The search entry points. Take the term as the user typed it. ---
+
+    /** Full-text search in one state, across the whole instance. */
+    default Page<ShPostUnified> searchByState(ShPostState state, String term, Pageable pageable) {
+        return searchByStateLike(state, fullTextPattern(term), pageable);
+    }
+
+    /** Full-text search across a state set, across the whole instance. */
+    default List<ShPostUnified> searchByStateIn(Collection<ShPostState> states, String term) {
+        return searchByStateInLike(states, fullTextPattern(term));
+    }
+
+    /** Full-text search in one state, scoped to a set of sites. */
+    default Page<ShPostUnified> searchBySitesAndState(Collection<String> siteIds, ShPostState state,
+                                                      String term, Pageable pageable) {
+        return searchBySitesAndStateLike(siteIds, state, fullTextPattern(term), pageable);
+    }
+
+    /** Full-text search across a state set, scoped to a set of sites. */
+    default List<ShPostUnified> searchBySitesAndStateIn(Collection<String> siteIds,
+                                                        Collection<ShPostState> states, String term) {
+        return searchBySitesAndStateInLike(siteIds, states, fullTextPattern(term));
+    }
+
+    /** Full-text search in one state, scoped to a site and a set of post-types. */
+    default Page<ShPostUnified> searchBySiteAndTypesAndState(String siteId,
+                                                             Collection<String> postTypeIds,
+                                                             ShPostState state, String term,
+                                                             Pageable pageable) {
+        return searchBySiteAndTypesAndStateLike(siteId, postTypeIds, state, fullTextPattern(term), pageable);
+    }
+
+    /** Full-text search across a state set, scoped to a site and a set of post-types. */
+    default List<ShPostUnified> searchBySiteAndTypesAndStateIn(String siteId,
+                                                               Collection<String> postTypeIds,
+                                                               Collection<ShPostState> states,
+                                                               String term) {
+        return searchBySiteAndTypesAndStateInLike(siteId, postTypeIds, states, fullTextPattern(term));
+    }
 
     // --- Aggregate counts for the agent context pack (SH77). Grouped so the whole
     //     instance costs one query instead of one per post-type / per site, and

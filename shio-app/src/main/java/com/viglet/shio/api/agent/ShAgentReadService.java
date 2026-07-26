@@ -15,7 +15,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -216,13 +215,12 @@ public class ShAgentReadService {
     // --- query strategies ---
 
     private List<ShPostUnified> searchText(List<ShSite> sites, String q) {
-        // The repository's FULLTEXT_PREDICATE lower()s the columns but not the bind
-        // parameter, and does no wildcarding — both are the caller's job, as they are
-        // in ShCdaService. Passing the raw term matches nothing and looks like an empty
-        // index rather than a bug, which is exactly how it got past a first reading.
-        String term = "%" + q.trim().toLowerCase(Locale.ROOT) + "%";
+        // The term goes in as the caller typed it: SH131 moved the lower-case +
+        // %-wrapping inside the repository, precisely because doing it here was a
+        // contract you could only honour by remembering, and forgetting it produced an
+        // empty result set rather than an error.
         return shPostUnifiedRepository.searchBySitesAndStateIn(
-                sites.stream().map(ShSite::getId).toList(), BOTH_STATES, term);
+                sites.stream().map(ShSite::getId).toList(), BOTH_STATES, q);
     }
 
     private List<ShPostUnified> byFilters(List<ShSite> sites, String type) {

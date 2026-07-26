@@ -190,6 +190,9 @@ public class ShSiteExportService {
                 folder.getName(),
                 folder.getFurl(),
                 root,
+                // ShFolderSite-exempt: the export records shSite on the root folder
+                // only, mirroring how the schema stores it. Walking to the root here
+                // would stamp every child with a site id the importer must then ignore.
                 root && folder.getShSite() != null ? folder.getShSite().getId() : null,
                 folder.getParentFolder() != null ? folder.getParentFolder().getId() : null,
                 folder.getPosition(),

@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.api.cda.ShCdaProperties;
+import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
@@ -90,8 +91,10 @@ public class ShPreviewTokenAPI {
         }
 
         ShSite site = post.getShSite();
-        if (site == null && post.getShFolder() != null) {
-            site = post.getShFolder().getShSite();
+        if (site == null) {
+            // SH128: walk to the root — the immediate folder carries shSite only when
+            // it *is* the root, so a post in /blog/2026 fell through to a 404.
+            site = ShFolderSite.of(post.getShFolder());
         }
         if (site == null) {
             return ResponseEntity.notFound().build();

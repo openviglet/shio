@@ -23,6 +23,7 @@ import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentAuditService;
 import com.viglet.shio.object.ShObjectPublishStatus;
 import com.viglet.shio.object.ShObjectType;
+import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
@@ -88,29 +89,6 @@ public class ShPostUnifiedWriteService {
         return row.getShSite() != null ? row.getShSite().getId() : null;
     }
 
-    /**
-     * The owning site, found by walking up to the root folder — which is the only
-     * folder in a tree that carries {@code shSite} ({@code ShFolderWriteService}
-     * deliberately nulls it on children, and {@code ShObjectNavigationService} resolves
-     * it the same way).
-     *
-     * <p>Reading {@code folder.getShSite()} directly, as this did, silently produced a
-     * site-less post for every post created below the root — invisible in the console
-     * (which navigates by folder) but fatal to anything that queries by site: CDA
-     * {@code /query}, the by-url lookup, and the SH79 address resolver. Found while
-     * building the SH81 batch, whose whole addressing scheme is site + url.</p>
-     */
-    private static ShSite siteOf(ShFolder folder) {
-        ShFolder current = folder;
-        while (current != null) {
-            if (current.getShSite() != null) {
-                return current.getShSite();
-            }
-            current = current.getParentFolder();
-        }
-        return null;
-    }
-
     private ShFolder resolveContainerFolder(String containerId) {
         return shFolderRepository.findById(containerId).orElseGet(() -> {
             ShSite site = shSiteRepository.findById(containerId)
@@ -139,7 +117,7 @@ public class ShPostUnifiedWriteService {
         row.setId(postId);
         row.setState(state);
         row.setShFolder(folder);
-        row.setShSite(siteOf(folder));
+        row.setShSite(ShFolderSite.of(folder));
         row.setShPostType(postType);
         row.setOwner(req.owner());
         row.setDate(Instant.now());

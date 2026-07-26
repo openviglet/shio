@@ -19,6 +19,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.ShObject;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -109,16 +110,9 @@ public class ShObjectNavigationService {
         return chain;
     }
 
-    /** The owning site, found by walking up to the root folder (which carries shSite). */
+    /** The owning site, found by walking up to the root folder (SH128). */
     private ShSite siteOf(ShFolder folder) {
-        ShFolder current = folder;
-        while (current != null) {
-            if (current.getShSite() != null) {
-                return current.getShSite();
-            }
-            current = current.getParentFolder();
-        }
-        return null;
+        return ShFolderSite.of(folder);
     }
 
     private static List<ShFolder> sortedByPosition(Iterable<ShFolder> folders) {

@@ -15,8 +15,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -53,10 +55,16 @@ public class ShPostXPAPI {
         }
         // Initialize the (LAZY) folder + its site inside the tx so they serialize
         // for the widget's display/path resolution (open-in-view is off).
-        if (post.getShFolder() != null) {
-            post.getShFolder().getName();
-            if (post.getShFolder().getShSite() != null) {
-                post.getShFolder().getShSite().getName();
+        ShFolder folder = post.getShFolder();
+        if (folder != null) {
+            folder.getName();
+            // ShFolderSite-exempt: this forces the LAZY proxy on the association so it
+            // survives serialization; it is not resolving ownership. A nested folder has
+            // nothing to initialize here, which is the correct outcome — the console
+            // reads the owning site from the breadcrumb path, not from this field.
+            ShSite site = folder.getShSite();
+            if (site != null) {
+                site.getName();
             }
         }
         return ResponseEntity.ok(new ShPostXP(post, post.getState() == ShPostState.DRAFT));
