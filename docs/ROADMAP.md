@@ -64,33 +64,42 @@
 > too thin: CRUD-over-MCP reproduces every discovery/write cost it was meant to fix.
 > → §VIII
 
-> ✅ **The gateway is shipped** → [CHANGELOG.md](CHANGELOG.md) Block H: **SH76**
-> (manifest) · **SH80** (teaching errors) · **SH77** (context pack) · **SH78**
-> (token-lean responses) · **SH79** (path addressing) · **SH121** (id-free reads) ·
-> **SH81** (batch writes) · **SH82** (desired-state plan/apply) · **SH75** (MCP host +
-> `shio mcp`) · **SH83** (the agent tools, resources and prompts) · **SH123** (field
-> projection) · **SH122** (tenant-join guard) · **SH124** (delivery cost header) ·
-> **SH125** (null-omission policy) · **SH126** (`shio context` CLI).
+> ✅ **The gateway is shipped, and so is the follow-up pass** →
+> [CHANGELOG.md](CHANGELOG.md) Block H: **SH76** (manifest) · **SH80** (teaching errors) ·
+> **SH77** (context pack) · **SH78** (token-lean responses) · **SH79** (path addressing) ·
+> **SH121** (id-free reads) · **SH81** (batch writes) · **SH82** (desired-state
+> plan/apply) · **SH75** (MCP host + `shio mcp`) · **SH83** (the agent tools, resources
+> and prompts) · **SH123** (field projection) · **SH122** (tenant-join guard) ·
+> **SH124** (delivery cost header) · **SH125** (null-omission policy) · **SH126**
+> (`shio context` CLI) · **SH134** (`post.move`) · **SH135** (folder prune) · **SH128**
+> (site-resolution guard) · **SH130** (MCP wire conformance) · **SH131** (full-text bind
+> contract) · **SH132** (tool-list budget) · **SH129** (`shio apply` CLI) · **SH84**
+> (tenant sweep, SH22 half).
 >
 > **What is deliberately not in it, and why:** `shio_verify` waits for **SH99** — a
 > verify that only pretends leaves the agent believing its work was checked, which is
 > worse than knowing it was not. `shio_changes` ships as a *window* over the SH51 audit;
 > the `since=` cursor is **SH88**, and faking one over a timestamp would look resumable
 > while dropping same-timestamp entries. Both are reported `false` in the manifest so no
-> caller has to probe. **Findings that reorder what follows:** the "valid code, wrong at
-> runtime" class has now produced four defects (SH122's three CDA paths, plus SH81's
-> site-less posts) → **SH128**; and building the tools surfaced two gaps in the write
-> vocabulary that only show up once you try to *change* a site rather than build one →
-> **SH134**, **SH135**.
+> caller has to probe.
+>
+> **What the follow-up pass taught, and what it opened.** Two of the guards paid for
+> themselves the day they were written: SH128's lint found four more live instances of
+> the same defect (one of them a scoped CDA token denied on every non-root folder), and
+> SH130's transcript found `tools/list` serializing differently on every boot. Both were
+> invisible to the behavioural tests that already covered those paths. The general
+> lesson is now a working rule — **when a defect class recurs, the fix is a guard per
+> invariant, written the first time the invariant is violated** — and the open items
+> below are what it turned up next: the same move gap one level up (**SH137**), the same
+> byte-stability question across the rest of the surface (**SH136**), and a truncation
+> hazard that only exists because prune got more powerful (**SH138**).
 
-- 💭 **SH84** (deps: SH83 ✅, SH22) **Tenant/scope-aware tools + ecosystem wiring** — the per-tenant enforcement pass over the finished tool set (the SH2 allow-list and SH54 ACL already apply; this is the SH22 tenant sweep and its test), plus Turing integration (replaces old SH37). → §VIII.9
-- 📋 **SH128** (deps: —) **Guard the "site-less object" defect class** — a test that asserts every write path resolves a folder's owning site by walking to the root, not by reading `folder.getShSite()`. Fourth runtime-only defect of this shape; a build-time guard is cheaper than the fifth. → §VIII.10
-- 📋 **SH129** (deps: SH81 ✅) **`shio apply`/`plan` in the CLI** — law P1's order is MCP → files/CLI → REST, and content verbs landed at MCP and REST but not the CLI, because they belong with SH87's file projection. Until then a desired-state document has to be `curl`ed. → §VIII.7
-- 📋 **SH130** (deps: SH75 ✅) **MCP wire-conformance guard** — golden-transcript tests pinning the exact JSON-RPC shapes, plus a check that the advertised `protocolVersion` matches what the envelopes actually implement. The protocol is hand-rolled, so nothing else stops a well-meaning edit from silently breaking every client. → §VIII.11
-- 📋 **SH131** (deps: —) **Make the full-text bind contract unmissable** — `FULLTEXT_PREDICATE` requires a pre-lowercased, `%`-wrapped term and says so only in a comment; SH83 got it wrong and the symptom was an empty result, not an error. Wrap it in a repository method that does the normalizing. → §VIII.11
-- 📋 **SH132** (deps: SH113, SH83 ✅) **Budget the MCP tool-list** — the tool schemas are context re-sent on every turn of every session, so their total token size belongs in the SH113 CI budget alongside the response budgets. A 12-tool cap is a proxy for the number that matters. → §XIII.2
-- 📋 **SH134** (deps: SH81 ✅) **`post.move` in the write vocabulary** — there is no way to change a post's URL or folder: re-addressing an upsert creates a second post, so a rename silently orphans the original and loses its history. Found while writing the tools; it is the first thing an agent needs when *changing* a site rather than building one. → §VIII.7
-- 📋 **SH135** (deps: SH82 ✅) **Prune folders, not just posts** — a desired-state document cannot remove a folder it no longer declares, so a section that moves leaves its empty shell behind and the document stops describing the site. Same declared-scope rule as post prune. → §VIII.7
+- 💭 **SH84** (deps: SH83 ✅, SH22 ✅) **Turing ecosystem wiring** — the SH22 tenant sweep and its test shipped; what remains is the Turing integration (replaces old SH37). → §VIII.9
+- 📋 **SH136** (deps: SH130 ✅) **Byte-stability guard for the whole agent surface** — SH130 pinned `tools/list` and immediately found it unstable across boots (`Map.of` iteration order). The manifest is byte-stable by test and the context pack by digest, but nothing checks the MCP resources, the prompt list, or any future map-backed payload. One lint (no un-canonicalized `Map`/`Set` reaching a JSON writer) plus a per-payload stability assertion. → §VIII.11
+- 📋 **SH137** (deps: SH134 ✅) **`folder.move`** — posts can now be re-addressed; folders cannot. Renaming a section still means `folder.upsert` at the new path plus `folder.delete` of the old, and that delete cascades over every post beneath it. It is the same defect as SH134 one level up and strictly more destructive, and SH134 makes its absence conspicuous. → §VIII.7
+- 📋 **SH138** (deps: SH135 ✅, SH78 ✅) **Never truncate a deletion plan** — SH135 widened prune to whole subtrees, so a plan can now list thousands of deletes and collide with the SH78 response budget. A truncated deletion plan is the most dangerous truncation in the system: it reads as a complete review of what will be destroyed. Either exempt destructive rows from the budget or refuse the apply, but never silently shorten the list. → §VIII.7
+- 📋 **SH139** (deps: SH134 ✅) **The console move must not rewrite a post's URL** — `ShObjectWriteService#moveTo` resets `furl` to a slug of the title on every move, so dragging a published page between folders silently changes its live URL and discards any hand-set one. SH134 made the agent path careful about exactly this; the console path is the one that a human uses by accident. → §VIII.7
+- 💭 **SH140** (deps: SH134 ✅, SH100) **Report inbound links when a post moves** — `ShReference` is id-keyed and survives a move, but a URL typed into another post's rich text does not, and nothing tells the agent which pages it just broke. The cheap version is a count in the change detail; the real one belongs with SH100's route verification. → §IX.2
 
 ## Block K — Perception & verification loop
 
