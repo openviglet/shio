@@ -196,10 +196,12 @@ class ShAgentJsonLeanTest {
         // The counter-rule: leanness must not eat an answer.
         String json = objectMapper.writeValueAsString(shAgentManifestService.manifest());
 
-        // Any still-unshipped capability will do; this one is Block K's content lint.
-        // (`mcp` used to be the example, until SH75 shipped it — the assertion has to
-        // track a flag that is actually false, or it stops testing the rule.)
-        assertThat(json).contains("\"contentLint\":false");
+        // Any still-unshipped capability will do; this one is SH102's visual snapshot.
+        // (`mcp` used to be the example until SH75 shipped it, and `contentLint` until
+        // SH99 did — the assertion has to track a flag that is actually false, or it
+        // stops testing the rule. A flag flipping true is the *good* reason to edit this
+        // line, which is why the trail of previous examples stays in the comment.)
+        assertThat(json).contains("\"visualSnapshot\":false");
     }
 
     @Test

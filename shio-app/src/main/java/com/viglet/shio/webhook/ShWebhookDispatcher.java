@@ -15,6 +15,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import com.viglet.core.webhook.VigletWebhookDispatcher;
 import com.viglet.core.webhook.VigletWebhookRequest;
 import com.viglet.core.webhook.VigletWebhookRetryPolicy;
+import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.persistence.model.webhook.ShSiteWebhook;
 import com.viglet.shio.persistence.repository.webhook.ShSiteWebhookRepository;
 
@@ -47,19 +48,28 @@ import tools.jackson.databind.node.ObjectNode;
 @Component
 public class ShWebhookDispatcher {
 
+    /** Said once here rather than twice below; both failures have the same remedy. */
+    private static final String RETRY_FIX =
+            "The subscriber did not accept the delivery, so its pages may still be stale. "
+                    + "Check the target is up and the shared secret matches, then re-publish "
+                    + "the post to re-fire it.";
+
     private final ShSiteWebhookRepository shSiteWebhookRepository;
     private final ShWebhookProperties properties;
     private final ObjectMapper objectMapper;
     private final VigletWebhookDispatcher dispatcher;
+    private final ShAgentIncidentLog incidentLog;
 
     public ShWebhookDispatcher(ShSiteWebhookRepository shSiteWebhookRepository,
                                ShWebhookProperties properties,
                                ObjectMapper objectMapper,
-                               VigletWebhookDispatcher dispatcher) {
+                               VigletWebhookDispatcher dispatcher,
+                               ShAgentIncidentLog incidentLog) {
         this.shSiteWebhookRepository = shSiteWebhookRepository;
         this.properties = properties;
         this.objectMapper = objectMapper;
         this.dispatcher = dispatcher;
+        this.incidentLog = incidentLog;
     }
 
     /**
@@ -114,6 +124,11 @@ public class ShWebhookDispatcher {
             if (error != null) {
                 log.warn("Webhook '{}' dispatch errored for {}: {}",
                         target.getName(), target.getUrl(), error.getMessage());
+                // SH103: a log line is not a surface an agent has. A revalidation that
+                // never arrived is the difference between "published" and "visible", so
+                // it is recorded where GET /api/v2/agent/diagnostics can report it.
+                incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, target.getUrl(),
+                        "dispatch errored: " + error.getMessage(), RETRY_FIX);
             } else if (result.delivered()) {
                 log.debug("Webhook '{}' delivered ({} {}) for post {} -> {}",
                         target.getName(), event.type().wire(), result.statusCode(), event.postId(),
@@ -122,6 +137,9 @@ public class ShWebhookDispatcher {
                 log.warn("Webhook '{}' failed after {} attempt(s) for {} (last status {}) — dropping {} of post {}",
                         target.getName(), result.attempts(), target.getUrl(), result.statusCode(),
                         event.type().wire(), event.postId());
+                incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, target.getUrl(),
+                        "gave up after " + result.attempts() + " attempt(s), last status "
+                                + result.statusCode(), RETRY_FIX);
             }
         });
     }

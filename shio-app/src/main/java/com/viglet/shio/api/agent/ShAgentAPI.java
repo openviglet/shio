@@ -29,6 +29,13 @@ import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.api.agent.dto.ShAgentFound;
 import com.viglet.shio.api.agent.dto.ShAgentManifest;
 import com.viglet.shio.api.agent.dto.ShAgentResolved;
+import com.viglet.shio.api.agent.diagnostics.ShAgentDiagnosticsService;
+import com.viglet.shio.api.agent.diagnostics.dto.ShAgentDiagnostics;
+import com.viglet.shio.api.agent.verify.ShAgentRenderService;
+import com.viglet.shio.api.agent.verify.ShAgentVerifyService;
+import com.viglet.shio.api.agent.verify.ShAgentVerifyTerse;
+import com.viglet.shio.api.agent.verify.dto.ShAgentDigest;
+import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -60,19 +67,28 @@ public class ShAgentAPI {
     private final ShAgentBatchService shAgentBatchService;
     private final ShAgentDesiredStateService shAgentDesiredStateService;
     private final ShAgentReadService shAgentReadService;
+    private final ShAgentVerifyService shAgentVerifyService;
+    private final ShAgentRenderService shAgentRenderService;
+    private final ShAgentDiagnosticsService shAgentDiagnosticsService;
 
     public ShAgentAPI(ShAgentManifestService shAgentManifestService,
                       ShAgentContextService shAgentContextService,
                       ShAddressResolver shAddressResolver,
                       ShAgentBatchService shAgentBatchService,
                       ShAgentDesiredStateService shAgentDesiredStateService,
-                      ShAgentReadService shAgentReadService) {
+                      ShAgentReadService shAgentReadService,
+                      ShAgentVerifyService shAgentVerifyService,
+                      ShAgentRenderService shAgentRenderService,
+                      ShAgentDiagnosticsService shAgentDiagnosticsService) {
         this.shAgentManifestService = shAgentManifestService;
         this.shAgentContextService = shAgentContextService;
         this.shAddressResolver = shAddressResolver;
         this.shAgentBatchService = shAgentBatchService;
         this.shAgentDesiredStateService = shAgentDesiredStateService;
         this.shAgentReadService = shAgentReadService;
+        this.shAgentVerifyService = shAgentVerifyService;
+        this.shAgentRenderService = shAgentRenderService;
+        this.shAgentDiagnosticsService = shAgentDiagnosticsService;
     }
 
     @GetMapping("/manifest")
@@ -225,6 +241,80 @@ public class ShAgentAPI {
                                           defaultValue = "false") boolean ids,
                                   Principal principal) {
         return shAgentDesiredStateService.apply(desired, ids, name(principal));
+    }
+
+    /**
+     * Verify the content: the agent's own correctness check (SH99 + SH100).
+     *
+     * <p>Every finding carries an address and a fix, and {@code ok} is the single value
+     * a caller branches on — it is false when at least one <em>error</em>-severity
+     * finding exists. Warnings are reported and counted but do not fail the report,
+     * because a check that fails on "this folder is empty" would train callers to ignore
+     * the answer.</p>
+     *
+     * @param site   scope to one site; omit for every readable site
+     * @param checks comma-separated groups ({@code content,routes,diagnostics}); omit for all
+     * @param limit  findings to return — the counts always describe the full run
+     */
+    @GetMapping("/verify")
+    @Operation(summary = "Lint the content and its routes: a machine-readable report with a fix per finding")
+    public ResponseEntity<Object> verify(
+            @RequestParam(name = "site", required = false) String site,
+            @RequestParam(name = "checks", required = false) String checks,
+            @RequestParam(name = "limit", required = false) Integer limit,
+            @RequestParam(name = "format", required = false) String format) {
+
+        ShAgentReport report = shAgentVerifyService.verify(site, checks, limit);
+        return isTerse(format)
+                ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
+                        .body(ShAgentVerifyTerse.report(report))
+                : ResponseEntity.ok(report);
+    }
+
+    /**
+     * A page's structural digest (SH101) — heading outline, landmarks, link and image
+     * inventory with alt text, word count.
+     *
+     * <p>Exactly one target. {@code address} digests the markup Shio holds, which needs
+     * no front end running and is the useful call right after a write; {@code url}
+     * fetches a delivery URL and digests what a visitor actually gets, and is off unless
+     * {@code shio.agent.render.allow-fetch} is set (an endpoint that fetches on the
+     * server's behalf needs an operator's consent, not a caller's).</p>
+     */
+    @GetMapping("/render")
+    @Operation(summary = "Structural digest of a page: outline, landmarks, links, images — not pixels")
+    public ResponseEntity<Object> render(
+            @RequestParam(name = "address", required = false) String address,
+            @RequestParam(name = "url", required = false) String url,
+            @RequestParam(name = "format", required = false) String format) {
+
+        ShAgentDigest digest = shAgentRenderService.digest(address, url);
+        return isTerse(format)
+                ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
+                        .body(ShAgentVerifyTerse.digest(digest))
+                : ResponseEntity.ok(digest);
+    }
+
+    /**
+     * What has failed asynchronously (SH103): webhook deliveries, image transforms,
+     * scheduled publishes, server-side errors — one call instead of grepping
+     * {@code store/logs}.
+     *
+     * <p>The window is in memory and bounded, so the response states when it started
+     * collecting and what it cannot see. An empty report means "nothing since then",
+     * which is a different claim from "nothing ever".</p>
+     */
+    @GetMapping("/diagnostics")
+    @Operation(summary = "Recent asynchronous failures: webhooks, transforms, schedules, 5xx")
+    public ResponseEntity<Object> diagnostics(
+            @RequestParam(name = "limit", required = false) Integer limit,
+            @RequestParam(name = "format", required = false) String format) {
+
+        ShAgentDiagnostics diagnostics = shAgentDiagnosticsService.diagnostics(limit);
+        return isTerse(format)
+                ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
+                        .body(ShAgentVerifyTerse.diagnostics(diagnostics))
+                : ResponseEntity.ok(diagnostics);
     }
 
     private static boolean isTerse(String format) {

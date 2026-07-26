@@ -23,7 +23,7 @@ import { argv, exit } from "node:process";
 import { parseArgs } from "./args.mjs";
 import { defaultContext } from "./context.mjs";
 
-const BOOLEANS = ["help", "yes", "dry-run", "prune", "check", "skip-types", "id", "ids"];
+const BOOLEANS = ["help", "yes", "dry-run", "prune", "check", "skip-types", "id", "ids", "strict"];
 
 const COMMANDS = {
   init: () => import("./commands/init.mjs"),
@@ -32,6 +32,8 @@ const COMMANDS = {
   mcp: () => import("./commands/mcp.mjs"),
   resolve: () => import("./commands/resolve.mjs"),
   apply: () => import("./commands/apply.mjs"),
+  verify: () => import("./commands/verify.mjs"),
+  digest: () => import("./commands/digest.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),
   build: () => import("./commands/build.mjs"),
@@ -50,6 +52,8 @@ Commands:
   mcp            Bridge stdio to this instance's MCP endpoint (claude mcp add shio -- shio mcp)
   resolve <addr> Resolve a content address (post:/folder:/site:/id:) to its object
   apply [file]   Plan/apply a desired-state content document (--dry-run, --check, - for stdin)
+  verify         Lint the content and its routes; exits non-zero on an error (CI gate)
+  digest <page>  Structural digest of one page: outline, landmarks, links, images
   pull           Pull post-types into ./shio/post-types/*.json (Basic auth)
   push           Apply local post-types back to Shio (--dry-run, --prune)
   build          Compile local DSL/JSON post-types to canonical JSON (--out)
@@ -90,6 +94,18 @@ Content as a document (shio apply):
   --ids                Put object ids on the change rows (off by default)
   shio apply site.json --dry-run
   echo '{"site":"Blog","folders":[{"path":"/blog"}]}' | shio apply -
+
+Verification (shio verify / shio digest):
+  shio verify is the content-side type-check: empty required fields, references to posts
+  that do not exist, images with no bytes, two pages on one URL, empty folders, links
+  that resolve to nothing, and anything that failed asynchronously. Errors exit 1;
+  warnings are printed. Run it before handing work over.
+  --site <idOrName>    Scope to one site
+  --checks <groups>    content,routes,diagnostics (default all)
+  --limit <n>          Findings to print (the counts always cover the whole run)
+  --strict             Fail on warnings too (off by default — see the severity rule)
+  shio digest <page>   post:<site>/<url>, or a delivery URL when fetching is enabled
+  --address / --url    Same, as explicit flags
 
 Addresses (shio resolve):
   post:<site>/<url>    A post, by its friendly URL

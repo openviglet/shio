@@ -472,29 +472,51 @@ what follows:
 > The agent cannot see. Two of the three human round trips in a typical build exist
 > only for that reason, which makes this the cheapest large win after Block H —
 > a human cycle is the most expensive unit in the system by orders of magnitude.
+>
+> **The loop itself shipped** — content lint (SH99), route checks (SH100), render digest
+> (SH101), diagnostics (SH103); see [CHANGELOG.md](CHANGELOG.md) Block K. What is left
+> below is the design for what the shipped version deliberately does not do, plus the
+> two tasks it was always going to depend on (SH102's pixels, SH104's handoff report).
 
-### IX.1 Content lint (SH99)
+### IX.1 What the lint still owes (SH142, SH143)
 
-Required fields empty, dangling content/file references, missing assets, duplicate
-`furl`s, orphan folders, published posts depending on unpublished ones → a
-machine-readable report plus an exit code, as `shio verify` and an MCP tool.
-This is the content-side equivalent of `tsc`: the agent's own correctness check,
-not a human's review checklist.
+> The lint itself shipped (SH99). Two things it does not do yet are the difference
+> between a check that is run and a check that is switched off.
 
-### IX.2 Route/link verification (SH100)
+**A report has two states; real content has three.** `ok` / `not ok` cannot express
+*known and accepted*, and every codebase has some: an image that is decorative in a way
+the markup cannot state, a folder deliberately staged empty, a link into a front-end
+route. The first legitimate warning that nobody intends to fix is the moment the exit
+code stops being read — and then the errors stop being read with it. A committed
+baseline of `(rule, address)` pairs that `shio verify` subtracts fixes that, on one
+condition: it must **fail when an accepted finding no longer exists**, or it decays into
+a blanket suppression that hides the next real defect at the same address.
 
-Every `furl` resolves; internal links and images return 200; sitemap coverage
-matches what the applied blueprint (§XI) promised. Catches the single most common
-"looks done but isn't" failure — a page that exists in the CMS and 404s on the site.
+**A full pass is the wrong shape for the common call.** Verification is read twice for
+different reasons: once in CI, where "every post in every site" is exactly right, and
+once by an agent that has just written three pages, where it is a hundred times more
+work than the question needs. Scoping by folder or address — and by SH88's cursor once
+it exists — makes the second call cheap. The constraint is the SH138 one: a report over
+a subset must say so in the payload, because a partial report that reads as a full one
+is worse than no report.
 
-### IX.3 Render digest (SH101)
+### IX.2 Proving a route from the delivery side (SH141)
 
-Fetch a delivery URL and return a **token-lean structural digest**: heading
-outline, landmarks, link and image inventory with alt text, word counts per
-section. Not pixels — the cheap textual proof that the page is *structurally*
-right, which is what actually goes wrong (empty section, missing hero, unstyled
-list, image with no alt). A screenshot costs orders of magnitude more tokens and
-tells the agent less.
+SH100 answers "every furl resolves" and "internal links land" against the **content
+graph**: the set of published friendly URLs, compared through the instance's one
+canonical path form. That was the right first move — it needs no front end, no network
+and no deployment, so it runs everywhere including a cold CI checkout — but it cannot
+see the failure §IX names as the most common one, a page that exists in the CMS and
+404s on the site. So `link-unresolved` is a warning, and a warning is what you emit
+when you are not sure.
+
+What closes it is not a crawler. SH101 already fetches one URL safely — origin-checked
+against the readable sites, opt-in by property — and walking the published set through
+that same path turns "the front end does not serve this" into an error that deserves the
+name. The part that needs design is the legitimate exception: a front end owns generated
+routes the CMS has never heard of, and the answer has to be *declared* (in the site's
+own conventions, alongside SH114's memory store) rather than guessed at per-request.
+Sitemap-coverage-vs-expectation waits for Block J, since the expectation is a blueprint's.
 
 ### IX.4 Visual snapshot + diff (SH102, optional)
 
@@ -502,12 +524,19 @@ Playwright PNG + diff against the previous snapshot — deliberately framed as a
 artifact **for the human handoff** (§IX.6) rather than an agent input, so nobody
 mistakes it for the primary verification path.
 
-### IX.5 Agent diagnostics (SH103)
+### IX.5 A durable incident feed (SH144)
 
-`GET /api/v2/agent/diagnostics`: last N errors, failed webhook deliveries, broken
-transforms, schema drift. One call instead of grepping `store/logs`. The complement
-to §VIII.6 — teaching errors cover *synchronous* failures; this covers the
-asynchronous ones an agent otherwise never learns about.
+Diagnostics shipped (SH103) as a bounded in-memory window, and the payload says so:
+`since`, `dropped`, and a note that an empty report means "nothing since process start",
+not "nothing ever". That honesty is load-bearing — a diagnostics endpoint that cannot
+tell those apart is the kind of clean bill of health that costs a human a day — but it is
+also an admission. "Was anything failing while I was away" is a question about a period
+the window may no longer cover.
+
+The durable form is not a second table with its own retention policy. It is the same
+cursor SH88 builds for content changes: an incident is a thing that happened at a
+position, which is exactly what a change feed already models. Folding the two is cheaper
+to build and cheaper to read — one `since=` for "what changed and what broke".
 
 ### IX.6 Handoff report (SH104)
 
@@ -612,8 +641,9 @@ from **archaeology** — an agent re-deriving what the previous session invented
 fixed section vocabulary means the agent, the console and the front end share one
 language, so "add a testimonial section to the pricing page" is a single known
 operation rather than a design exercise. It is also exactly what the human's
-Universal Editor (SH10) gets to manipulate, and what §IX.3's render digest can
-verify structurally.
+Universal Editor (SH10) gets to manipulate, and what SH101's render digest can
+verify structurally — a known section vocabulary makes "the hero is missing" a
+statement the digest's landmark and heading inventory can actually make.
 
 ### XI.5 Blueprint registry + community convention (SH96)
 

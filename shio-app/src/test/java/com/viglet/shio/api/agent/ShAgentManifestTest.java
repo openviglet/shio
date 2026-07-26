@@ -67,11 +67,27 @@ class ShAgentManifestTest {
         assertThat(manifest.features())
                 .containsEntry("blueprints", false)
                 .containsEntry("contentAsFiles", false)
-                // SH99's lint and SH88's cursor: reported false rather than shipped as
-                // stub tools, because an agent that believes its work was verified is
-                // worse off than one that knows it was not.
-                .containsEntry("contentLint", false)
-                .containsEntry("changeCursor", false);
+                // SH88's cursor: shio_changes reads a window, but "everything since I
+                // last looked" is not expressible yet, and faking it over a timestamp
+                // would look resumable while dropping same-timestamp entries.
+                .containsEntry("changeCursor", false)
+                // SH102's PNG: a screenshot is for the human handoff, and advertising it
+                // here would invite an agent to spend three orders of magnitude more
+                // tokens than the SH101 digest costs to learn less.
+                .containsEntry("visualSnapshot", false);
+    }
+
+    @Test
+    void theVerificationLoopIsReportedShipped() {
+        // contentLint was false for the whole of Block H precisely so that flipping it
+        // would mean something: it is now backed by the SH99/SH100 rules rather than by
+        // a stub that always passes, and an agent that believes its work was verified
+        // when it was not is worse off than one that knows it was not.
+        assertThat(shAgentManifestService.manifest().features())
+                .containsEntry("contentLint", true)
+                .containsEntry("routeCheck", true)
+                .containsEntry("renderDigest", true)
+                .containsEntry("diagnostics", true);
     }
 
     @Test

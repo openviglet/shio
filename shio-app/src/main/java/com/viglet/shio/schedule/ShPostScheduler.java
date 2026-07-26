@@ -10,6 +10,7 @@ import java.time.Instant;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -31,13 +32,22 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class ShPostScheduler {
 
+    /** One remedy for both halves of the sweep: the post's state is not what was asked. */
+    private static final String SCHEDULE_FIX =
+            "The post is still in its previous state. Read it (GET /api/v2/agent/read) and "
+                    + "publish or unpublish it explicitly, then re-schedule if the timing still "
+                    + "matters.";
+
     private final ShPostUnifiedWriteService writeService;
     private final ShScheduleProperties properties;
+    private final ShAgentIncidentLog incidentLog;
 
     public ShPostScheduler(ShPostUnifiedWriteService writeService,
-                           ShScheduleProperties properties) {
+                           ShScheduleProperties properties,
+                           ShAgentIncidentLog incidentLog) {
         this.writeService = writeService;
         this.properties = properties;
+        this.incidentLog = incidentLog;
     }
 
     @Scheduled(fixedDelayString = "${shio.schedule.sweep-interval-millis:60000}")
@@ -53,6 +63,10 @@ public class ShPostScheduler {
                 log.info("Scheduled publish fired for post {}", id);
             } catch (Exception e) {
                 log.warn("Scheduled publish failed for post {}: {}", id, e.getMessage());
+                // SH103: nobody is watching at 03:00, and the post is silently not in
+                // the state it was told to be in. Recorded so /agent/diagnostics says so.
+                incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "id:" + id,
+                        "scheduled publish failed: " + e.getMessage(), SCHEDULE_FIX);
             }
         }
 
@@ -62,6 +76,8 @@ public class ShPostScheduler {
                 log.info("Scheduled unpublish fired for post {}", id);
             } catch (Exception e) {
                 log.warn("Scheduled unpublish failed for post {}: {}", id, e.getMessage());
+                incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "id:" + id,
+                        "scheduled unpublish failed: " + e.getMessage(), SCHEDULE_FIX);
             }
         }
     }

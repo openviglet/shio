@@ -32,6 +32,50 @@ public class ShAgentProperties {
 
     private Read read = new Read();
 
+    private Verify verify = new Verify();
+
+    private Render render = new Render();
+
+    /** Verification-report limits (SH99, SH100). */
+    @Setter
+    @Getter
+    public static class Verify {
+
+        /**
+         * Findings a report returns when the caller names no limit. Generous compared
+         * with a listing default, because a report that hides defects is worse than a
+         * long one — and the count of what was produced travels either way, so a cut is
+         * never silent.
+         */
+        private int defaultLimit = 200;
+
+        /** Ceiling on a caller-supplied limit. */
+        private int maxLimit = 2000;
+    }
+
+    /** Render-digest configuration (SH101). */
+    @Setter
+    @Getter
+    public static class Render {
+
+        /**
+         * Whether {@code ?url=} may fetch a delivery URL. <b>Off by default:</b> an
+         * endpoint that fetches on the server's behalf is a request-forgery surface, and
+         * the authoring digest ({@code ?address=}) answers most of the question with no
+         * network at all. When on, only the origins of readable sites are allowed.
+         */
+        private boolean allowFetch = false;
+
+        /** Connect + read timeout for a fetch. A verification call must not hang a turn. */
+        private int timeoutMillis = 5000;
+
+        /**
+         * Characters of a fetched response that are scanned. A digest of the first
+         * ~512 KB of HTML is the same digest for any page a human would call a page.
+         */
+        private int maxBytes = 512 * 1024;
+    }
+
     /** Agent content-read limits (SH83's `find`). */
     @Setter
     @Getter

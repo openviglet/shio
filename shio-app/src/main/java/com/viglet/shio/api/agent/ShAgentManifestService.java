@@ -58,17 +58,20 @@ public class ShAgentManifestService {
     private final ShWebhookProperties shWebhookProperties;
     private final ShScheduleProperties shScheduleProperties;
     private final ShImageTransformProperties shImageTransformProperties;
+    private final ShAgentProperties shAgentProperties;
 
     public ShAgentManifestService(ShAppProperties shAppProperties,
                                  ShCdaProperties shCdaProperties,
                                  ShWebhookProperties shWebhookProperties,
                                  ShScheduleProperties shScheduleProperties,
-                                 ShImageTransformProperties shImageTransformProperties) {
+                                 ShImageTransformProperties shImageTransformProperties,
+                                 ShAgentProperties shAgentProperties) {
         this.shAppProperties = shAppProperties;
         this.shCdaProperties = shCdaProperties;
         this.shWebhookProperties = shWebhookProperties;
         this.shScheduleProperties = shScheduleProperties;
         this.shImageTransformProperties = shImageTransformProperties;
+        this.shAgentProperties = shAgentProperties;
     }
 
     public ShAgentManifest manifest() {
@@ -120,13 +123,24 @@ public class ShAgentManifestService {
         // exists will reach for the destructive workaround.
         features.put("postMove", true);
         features.put("folderPrune", true);
+        // Block K: the agent can check its own work. contentLint was reported false
+        // through the whole of Block H precisely so that this flag flipping would mean
+        // something — it is now backed by real rules, not a stub that always passes.
+        features.put("contentLint", true);
+        features.put("routeCheck", true);
+        features.put("renderDigest", true);
+        features.put("diagnostics", true);
+        // Whether ?url= may fetch a delivery URL. Configured, not compiled: this one
+        // depends on an operator's decision, and probing it costs a refusal.
+        features.put("renderFetch", shAgentProperties.getRender().isAllowFetch());
 
         // Declared-but-unshipped (Block H–J). Reported false so a caller does not probe.
         features.put("blueprints", false);
         features.put("contentAsFiles", false);
-        // SH99's content lint. False rather than a stub tool, because an agent that
-        // believes its work was verified is worse off than one that knows it was not.
-        features.put("contentLint", false);
+        // SH102's visual snapshot. Deliberately last in the block: a PNG is for the
+        // human handoff, and reporting it here as available would invite an agent to
+        // spend three orders of magnitude more tokens than the digest costs.
+        features.put("visualSnapshot", false);
         // SH88's cursor. shio_changes reads a window today; "everything since I last
         // looked" is not expressible yet.
         features.put("changeCursor", false);
@@ -186,6 +200,20 @@ public class ShAgentManifestService {
                         "Read posts by address (drafts preferred). Repeat ?address= for several, "
                                 + "and pass ?fields= to fetch only the fields you need.",
                         "console", "GET /api/v2/agent/read?address=post:Blog/blog/hello-world"),
+                new ShAgentEndpoint("GET", "/agent/verify",
+                        "Check your own work: required fields, dangling references, missing "
+                                + "assets, duplicate URLs, empty folders, unresolved links. "
+                                + "`ok:false` means at least one error; every finding carries a fix.",
+                        "console", "GET /api/v2/agent/verify?format=terse"),
+                new ShAgentEndpoint("GET", "/agent/render",
+                        "Structural digest of one page — heading outline, landmarks, links and "
+                                + "images with alt, word count. Cheap proof the page came out "
+                                + "right; ?url= digests what a visitor gets when fetching is enabled.",
+                        "console", "GET /api/v2/agent/render?address=post:Blog/blog/hello-world"),
+                new ShAgentEndpoint("GET", "/agent/diagnostics",
+                        "What failed after you moved on: webhook deliveries, image transforms, "
+                                + "scheduled publishes, server errors. One call instead of logs.",
+                        "console", "GET /api/v2/agent/diagnostics"),
                 new ShAgentEndpoint("GET", "/cda/site",
                         "List published sites (id, name, root folder id).",
                         "token:READ", "GET /api/v2/cda/site"),
@@ -239,15 +267,20 @@ public class ShAgentManifestService {
      */
     private List<String> startHere() {
         return List.of(
-                "GET /api/v2/agent/context?format=terse — model, sitemap and conventions in one call",
-                "store the returned `digest`; next session, compare it before re-reading anything",
+                "GET /api/v2/agent/context?format=terse — model, sitemap and conventions in one "
+                        + "call; store the returned `digest` and compare it next session before "
+                        + "re-reading anything",
                 "address content as post:<site>/<url> or folder:<site>/<path>; "
                         + "GET /api/v2/agent/resolve turns one into an id when an endpoint needs it",
                 "write with POST /api/v2/agent/batch (atomic, addressed, dryRun-able) rather than "
                         + "one id-keyed call per object",
+                "then verify instead of asking a human: GET /api/v2/agent/verify?format=terse "
+                        + "reports content and route defects with a fix each, and "
+                        + "GET /api/v2/agent/render?address=... proves a page's structure",
                 "over MCP: POST /mcp speaks the Model Context Protocol, with the same "
                         + "capabilities as tools (shio_context, shio_find, shio_read, shio_write, "
-                        + "shio_apply, shio_publish, shio_assets, shio_changes)");
+                        + "shio_apply, shio_publish, shio_assets, shio_changes, shio_verify, "
+                        + "shio_digest)");
     }
 
     /** Same source as {@code /api/v2/system/info}: the jar manifest, {@code dev} in an IDE. */

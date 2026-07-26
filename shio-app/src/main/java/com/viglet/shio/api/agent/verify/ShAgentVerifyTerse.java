@@ -1,0 +1,138 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.api.agent.verify;
+
+import java.util.List;
+
+import com.viglet.shio.api.agent.ShTerse;
+import com.viglet.shio.api.agent.verify.dto.ShAgentDigest;
+import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
+import com.viglet.shio.api.agent.diagnostics.dto.ShAgentDiagnostics;
+
+/**
+ * Terse renderings for the Block K payloads (SH78's encoding applied to SH99–SH103).
+ *
+ * <p>These are the reads an agent makes most often after a write, and a report is the
+ * worst possible shape for JSON: every finding repeats seven key names. The terse form
+ * states the shape once in the verb and then the values, which is roughly half the
+ * tokens — and unlike a listing, a report is read in full by definition, so the saving
+ * is never wasted.</p>
+ *
+ * <p>The {@code fix} travels on its own {@code fix} line rather than as an attribute,
+ * because it is prose with spaces in it and the one field the agent must not have to
+ * un-quote to read (law P6).</p>
+ *
+ * @author Alexandre Oliveira
+ * @since 2026.3
+ */
+public final class ShAgentVerifyTerse {
+
+    private ShAgentVerifyTerse() {
+        // utility
+    }
+
+    /** A verification report: a {@code report} header, then one {@code finding} + {@code fix}. */
+    public static String report(ShAgentReport report) {
+        StringBuilder out = new StringBuilder(ShTerse.line("report")
+                .word(report.ok() ? "ok" : "failed")
+                .attr("checks", String.join(",", report.checks()))
+                .attr("checked", report.checked())
+                .count("errors", report.errors())
+                .count("warnings", report.warnings())
+                .flag("truncated", report.truncated())
+                .build());
+        for (ShAgentReport.Finding finding : report.findings()) {
+            out.append(ShTerse.line("finding")
+                    .word(finding.severity())
+                    .word(finding.rule())
+                    .attr("at", finding.address())
+                    .attr("field", finding.field())
+                    .attr("msg", finding.message())
+                    .build());
+            if (finding.fix() != null && !finding.fix().isBlank()) {
+                out.append("fix ").append(finding.fix()).append('\n');
+            }
+        }
+        if (report.truncated()) {
+            out.append(ShTerse.line("truncated")
+                    .word(report.findings().size())
+                    .attr("of", report.found())
+                    .attr("note", "raise limit or narrow with checks=/site=")
+                    .build());
+        }
+        return out.toString();
+    }
+
+    /** A structural digest: outline, landmarks, links and images, one line each. */
+    public static String digest(ShAgentDigest digest) {
+        StringBuilder out = new StringBuilder(ShTerse.line("digest")
+                .word(digest.digest())
+                .attr("source", digest.source())
+                .attr("at", digest.address())
+                .attr("url", digest.url())
+                .attr("status", digest.status())
+                .attr("words", digest.words())
+                .attr("fields", digest.fields() == null ? null : String.join(",", digest.fields()))
+                .build());
+        for (ShAgentDigest.Heading heading : digest.headings()) {
+            out.append(ShTerse.line("h").word(heading.level()).word(heading.text()).build());
+        }
+        if (!digest.landmarks().isEmpty()) {
+            ShTerse.Line line = ShTerse.line("landmarks");
+            digest.landmarks().forEach(line::attr);
+            out.append(line.build());
+        }
+        for (ShAgentDigest.Link link : digest.links()) {
+            out.append(ShTerse.line("link")
+                    .word(link.href())
+                    .flag("internal", link.internal())
+                    .attr("text", link.text())
+                    .build());
+        }
+        for (ShAgentDigest.Image image : digest.images()) {
+            // `noalt` is a marker word, not alt="": the absence of the attribute is the
+            // defect, and a marker is both cheaper and impossible to misread as content.
+            out.append(ShTerse.line("img")
+                    .word(image.src())
+                    .flag("noalt", image.alt() == null)
+                    .attr("alt", image.alt())
+                    .build());
+        }
+        return out.toString();
+    }
+
+    /** Diagnostics: a header line plus one {@code incident} per folded failure. */
+    public static String diagnostics(ShAgentDiagnostics diagnostics) {
+        StringBuilder out = new StringBuilder(ShTerse.line("diagnostics")
+                .word(diagnostics.incidents().size())
+                .attr("since", diagnostics.since())
+                .count("dropped", diagnostics.dropped())
+                .build());
+        for (ShAgentDiagnostics.Incident incident : diagnostics.incidents()) {
+            out.append(ShTerse.line("incident")
+                    .word(incident.kind())
+                    .attr("subject", incident.subject())
+                    .attr("msg", incident.message())
+                    .attr("count", incident.count())
+                    .attr("last", incident.lastSeen())
+                    .build());
+            if (incident.fix() != null && !incident.fix().isBlank()) {
+                out.append("fix ").append(incident.fix()).append('\n');
+            }
+        }
+        for (String note : notes(diagnostics)) {
+            out.append("note ").append(note).append('\n');
+        }
+        return out.toString();
+    }
+
+    private static List<String> notes(ShAgentDiagnostics diagnostics) {
+        return diagnostics.notes() == null ? List.of() : diagnostics.notes();
+    }
+}

@@ -132,6 +132,22 @@
       "description" : "#string",
       "inputSchema" : {
         "properties" : {
+          "address" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "url" : {
+            "description" : "#string",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "name" : "shio_digest"
+    }, {
+      "description" : "#string",
+      "inputSchema" : {
+        "properties" : {
           "folder" : {
             "description" : "#string",
             "type" : "string"
@@ -203,6 +219,26 @@
         "type" : "object"
       },
       "name" : "shio_read"
+    }, {
+      "description" : "#string",
+      "inputSchema" : {
+        "properties" : {
+          "checks" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "limit" : {
+            "description" : "#string",
+            "type" : "integer"
+          },
+          "site" : {
+            "description" : "#string",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "name" : "shio_verify"
     }, {
       "description" : "#string",
       "inputSchema" : {

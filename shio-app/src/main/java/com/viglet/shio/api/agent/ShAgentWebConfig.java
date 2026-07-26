@@ -13,6 +13,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 
+import com.viglet.shio.api.agent.diagnostics.ShAgentErrorRecordingFilter;
+import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
+
 /**
  * Servlet wiring for the agent surface (Block H) and the delivery-path cost
  * instrumentation (SH124).
@@ -33,6 +36,7 @@ public class ShAgentWebConfig {
      */
     private static final String AGENT_URL_PATTERN = "/api/v2/agent/*";
     private static final String CDA_URL_PATTERN = "/api/v2/cda/*";
+    private static final String API_URL_PATTERN = "/api/*";
 
     /**
      * One filter, both surfaces. Registered at {@code LOWEST_PRECEDENCE - 30} — that
@@ -47,6 +51,23 @@ public class ShAgentWebConfig {
                 new FilterRegistrationBean<>(new ShEstTokensHeaderFilter());
         registration.addUrlPatterns(AGENT_URL_PATTERN, CDA_URL_PATTERN);
         registration.setName("shEstTokensHeaderFilter");
+        registration.setOrder(Ordered.LOWEST_PRECEDENCE - 30);
+        return registration;
+    }
+
+    /**
+     * SH103's incident recorder, over the whole API. Registered at the same precedence
+     * as the cost header and for the same reason: inside the security chain a 401 or a
+     * 429 would be recorded as an instance fault, and a diagnostics window full of
+     * rejected scans is a window that gets ignored.
+     */
+    @Bean
+    FilterRegistrationBean<ShAgentErrorRecordingFilter> shAgentErrorRecordingFilter(
+            ShAgentIncidentLog incidentLog) {
+        FilterRegistrationBean<ShAgentErrorRecordingFilter> registration =
+                new FilterRegistrationBean<>(new ShAgentErrorRecordingFilter(incidentLog));
+        registration.addUrlPatterns(API_URL_PATTERN);
+        registration.setName("shAgentErrorRecordingFilter");
         registration.setOrder(Ordered.LOWEST_PRECEDENCE - 30);
         return registration;
     }

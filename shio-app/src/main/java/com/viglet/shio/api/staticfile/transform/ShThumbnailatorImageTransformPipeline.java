@@ -25,6 +25,7 @@ import javax.imageio.stream.ImageInputStream;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
+import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.property.ShImageTransformProperties;
 
 import net.coobird.thumbnailator.Thumbnails;
@@ -76,9 +77,12 @@ public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPi
     private static final String IMAGE_PREFIX = "image/";
 
     private final ShImageTransformProperties properties;
+    private final ShAgentIncidentLog incidentLog;
 
-    public ShThumbnailatorImageTransformPipeline(ShImageTransformProperties properties) {
+    public ShThumbnailatorImageTransformPipeline(ShImageTransformProperties properties,
+                                                 ShAgentIncidentLog incidentLog) {
         this.properties = properties;
+        this.incidentLog = incidentLog;
     }
 
     @Override
@@ -125,6 +129,13 @@ public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPi
             return Optional.of(new ShImageTransformResult(out.toByteArray(), contentTypeFor(outputFormat)));
         } catch (IOException e) {
             log.warn("Image transform failed for {}; serving original", source.getFilename(), e);
+            // SH103: the request succeeded, so nothing surfaces to the caller — the page
+            // just quietly serves a full-size original. That is exactly the class of
+            // failure an agent never learns about on its own.
+            incidentLog.record(ShAgentIncidentLog.Kind.TRANSFORM, source.getFilename(),
+                    "transform failed, original served: " + e.getMessage(),
+                    "The image is delivered untransformed (full size, source format). Re-upload "
+                            + "it if the source is corrupt, or serve it without transform params.");
             return Optional.empty();
         }
     }
