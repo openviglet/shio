@@ -19,6 +19,8 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.cda.dto.ShCdaPath;
+import com.viglet.shio.api.object.dto.ShConsoleListing;
 import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.ShObject;
@@ -39,6 +41,13 @@ import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
  * the {@code DRAFT} row so the console always shows the latest editable
  * snapshot.</p>
  *
+ * <p><b>SH120: the responses are DTOs, not entities.</b> {@code /path} returns the CDA's
+ * own {@code ShCdaPath}, and {@code /list} returns rows whose overlapping fields carry the
+ * CDA's names. Serializing {@code ShFolder}/{@code ShPostUnified} straight out was both a
+ * third vocabulary for the same content and a payload that dragged the post-type's whole
+ * field tree along to render a filename. {@link ShConsoleNavigationMapper} owns the
+ * projection.</p>
+ *
  * @author Alexandre Oliveira
  */
 @Service
@@ -49,37 +58,38 @@ public class ShObjectNavigationService {
     private final ShObjectRepository shObjectRepository;
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
+    private final ShConsoleNavigationMapper mapper;
 
     public ShObjectNavigationService(ShObjectRepository shObjectRepository, ShFolderRepository shFolderRepository,
-                                     ShPostUnifiedRepository shPostUnifiedRepository) {
+                                     ShPostUnifiedRepository shPostUnifiedRepository,
+                                     ShConsoleNavigationMapper mapper) {
         this.shObjectRepository = shObjectRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
+        this.mapper = mapper;
     }
 
     @Transactional(readOnly = true)
-    public Optional<ShObjectList> list(String objectId) {
+    public Optional<ShConsoleListing> list(String objectId) {
         return shObjectRepository.findById(objectId).map(object -> switch (object) {
-            case ShFolder folder -> new ShObjectList(
+            case ShFolder folder -> mapper.listing(folder.getId(),
                     new ArrayList<>(shFolderRepository.findByParentFolderOrderByPositionAsc(folder)),
-                    postsInFolder(folder),
-                    siteOf(folder),
-                    breadcrumb(folder));
-            case ShSite site -> new ShObjectList(
+                    postsInFolder(folder));
+            // A site lists its root folders. It has no posts of its own — content lives in
+            // folders — so this is not an empty answer, it is the answer.
+            case ShSite site -> mapper.listing(site.getId(),
                     sortedByPosition(shFolderRepository.findByShSiteAndRootFolder(site, (byte) 1)),
-                    List.of(),
-                    site,
                     List.of());
-            default -> new ShObjectList(List.of(), List.of(), null, List.of());
+            default -> mapper.listing(objectId, List.of(), List.of());
         });
     }
 
     @Transactional(readOnly = true)
-    public Optional<ShObjectPath> path(String objectId) {
+    public Optional<ShCdaPath> path(String objectId) {
         return shObjectRepository.findById(objectId).map(object -> switch (object) {
-            case ShFolder folder -> new ShObjectPath(breadcrumb(folder), siteOf(folder), folder);
-            case ShSite site -> new ShObjectPath(List.of(), site, null);
-            default -> new ShObjectPath(List.of(), null, null);
+            case ShFolder folder -> mapper.path(siteOf(folder), breadcrumb(folder), folder);
+            case ShSite site -> mapper.path(site, List.of(), null);
+            default -> mapper.path(null, List.of(), null);
         });
     }
 
@@ -122,12 +132,4 @@ public class ShObjectNavigationService {
         return list;
     }
 
-    /** Response shape consumed by the content browser's {@code /list} endpoint. */
-    public record ShObjectList(List<ShFolder> shFolders, List<ShPostUnified> shPosts, ShSite shSite,
-                               List<ShFolder> breadcrumb) {
-    }
-
-    /** Response shape consumed by the breadcrumb {@code /path} endpoint. */
-    public record ShObjectPath(List<ShFolder> breadcrumb, ShSite shSite, ShFolder currentFolder) {
-    }
 }

@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.folder.dto.ShFolderRequest;
 import com.viglet.shio.api.object.ShObjectNavigationService;
-import com.viglet.shio.api.object.ShObjectNavigationService.ShObjectPath;
+import com.viglet.shio.api.cda.dto.ShCdaPath;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 
@@ -106,7 +106,7 @@ public class ShFolderAPI {
     }
 
     @GetMapping("/{id}/path")
-    public ResponseEntity<ShObjectPath> path(@PathVariable String id) {
+    public ResponseEntity<ShCdaPath> path(@PathVariable String id) {
         shContentAclService.requireRead(id);
         return shObjectNavigationService.path(id)
                 .map(ResponseEntity::ok)

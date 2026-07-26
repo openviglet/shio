@@ -28,13 +28,19 @@ export default function PostTypeSelectPage() {
       const items: { label: string; href?: string }[] = [
         { label: t("content.sites"), href: `${ROUTES.CONSOLE}/content` },
       ]
-      if (Array.isArray(res.data)) {
-        for (const crumb of res.data) {
-          items.push({
-            label: crumb.name,
-            href: `${ROUTES.CONTENT_ROOT}/object/${crumb.id}`,
-          })
-        }
+      // SH120: `ShCdaPath` — { site, breadcrumb, currentFolder }. This used to read
+      // `res.data` as an array, which the endpoint never returned, so the breadcrumb was
+      // silently just "Sites". One shape, spelled the same way everywhere, is what stops
+      // that from being an easy mistake to make.
+      const data = res.data
+      if (data?.site) {
+        items.push({ label: data.site.name, href: `${ROUTES.CONTENT_ROOT}/object/${data.site.id}` })
+      }
+      for (const crumb of data?.breadcrumb ?? []) {
+        items.push({
+          label: crumb.name,
+          href: `${ROUTES.CONTENT_ROOT}/object/${crumb.id}`,
+        })
       }
       resetBreadcrumb(items)
     }).catch(() => {

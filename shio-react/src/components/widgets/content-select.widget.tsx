@@ -42,8 +42,8 @@ async function resolveFullPath(contentId: string): Promise<ResolvedContent | nul
       const pathRes = await axios.get(`/v2/object/${folderId}/path`).catch(() => null)
       if (pathRes?.data) {
         const data = pathRes.data
-        if (data.shSite) {
-          pathSegments.push({ id: data.shSite.id, name: data.shSite.name })
+        if (data.site) {
+          pathSegments.push({ id: data.site.id, name: data.site.name })
         }
         if (Array.isArray(data.breadcrumb)) {
           for (const c of data.breadcrumb) {
@@ -71,8 +71,8 @@ async function resolveFullPath(contentId: string): Promise<ResolvedContent | nul
       const pathRes = await axios.get(`/v2/object/${parentId}/path`).catch(() => null)
       if (pathRes?.data) {
         const data = pathRes.data
-        if (data.shSite) {
-          pathSegments.push({ id: data.shSite.id, name: data.shSite.name })
+        if (data.site) {
+          pathSegments.push({ id: data.site.id, name: data.site.name })
         }
         if (Array.isArray(data.breadcrumb)) {
           for (const c of data.breadcrumb) {
