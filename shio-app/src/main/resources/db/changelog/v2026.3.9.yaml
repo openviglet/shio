@@ -1,0 +1,89 @@
+databaseChangeLog:
+  # SH114 — instance memory / conventions store. A small, flat table of keyed
+  # notes ("this site's blog uses Article, not Post") that the SH77 context pack
+  # serves to every session, so what one session worked out the next is simply
+  # told. Deliberately not modelled as content: it is read on the hot path, it is
+  # never delivered, and it must survive an SH82 `prune` — a note declared inside
+  # the very desired-state document it exists to inform would delete itself.
+  #
+  # `scope` is a site name or the empty string (instance-wide), NOT NULL, because
+  # the (tenant_id, scope, memory_key) uniqueness is an index and SQL indexes do
+  # not treat NULLs as equal — a nullable scope would admit duplicate keys.
+  #
+  # SH22: the tenant discriminator column MUST be lowercase `tenant_id` (Hibernate
+  # emits the @TenantId predicate unquoted). New table, so it is created NOT NULL
+  # and needs no ShTenantBackfillRunner entry — there are no rows to backfill.
+  # Types kept DB-agnostic (VARCHAR/TIMESTAMP) per ShLiquibaseChangelogAgnosticTest;
+  # SH26: preserve identifier case on PostgreSQL (does not propagate through
+  # `include`, so it is re-declared per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh114-create-agent-memory
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_agent_memory
+      changes:
+        - createTable:
+            tableName: sh_agent_memory
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(255)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: scope
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: memory_key
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: note
+                  type: VARCHAR(2000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: author
+                  type: VARCHAR(255)
+              - column:
+                  name: created_date
+                  type: TIMESTAMP
+              - column:
+                  name: modified_date
+                  type: TIMESTAMP
+  - changeSet:
+      id: sh114-agent-memory-unique-key
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: ux_sh_agent_memory_key
+      changes:
+        # The upsert key. Without it "remember this" is only idempotent by
+        # convention, and two concurrent sessions restating the same rule would
+        # leave the next one two near-identical notes to reconcile.
+        - createIndex:
+            indexName: ux_sh_agent_memory_key
+            tableName: sh_agent_memory
+            unique: true
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: scope
+              - column:
+                  name: memory_key

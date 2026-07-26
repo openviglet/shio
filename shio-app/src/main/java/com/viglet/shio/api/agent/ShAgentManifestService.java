@@ -146,6 +146,12 @@ public class ShAgentManifestService {
         // in rather than configured — the capability is `shio pull --content`, which is a
         // property of the tooling this instance's protocol supports, not of its config.
         features.put("contentAsFiles", true);
+        // Block M: this instance remembers. The flag is what tells a session that
+        // writing a conclusion down will actually be read back next time — without
+        // it, "remember that" is a call an agent has no reason to make.
+        features.put("instanceMemory", true);
+        features.put("conditionalReads", true);
+        features.put("agentsMd", true);
         // SH102's visual snapshot. Deliberately last in the block: a PNG is for the
         // human handoff, and reporting it here as available would invite an agent to
         // spend three orders of magnitude more tokens than the digest costs.
@@ -235,6 +241,12 @@ public class ShAgentManifestService {
                         "What failed after you moved on: webhook deliveries, image transforms, "
                                 + "scheduled publishes, server errors. One call instead of logs.",
                         "console", "GET /api/v2/agent/diagnostics"),
+                new ShAgentEndpoint("PUT", "/agent/memory",
+                        "Remember a decision for the next session: {key, note, scope}. It is "
+                                + "served in the context pack from then on, so what you worked "
+                                + "out here is not re-derived later. Re-using a key rewrites "
+                                + "that note; DELETE ?key= forgets it.",
+                        "console", "PUT /api/v2/agent/memory"),
                 new ShAgentEndpoint("GET", "/cda/site",
                         "List published sites (id, name, root folder id).",
                         "token:READ", "GET /api/v2/cda/site"),
@@ -247,9 +259,12 @@ public class ShAgentManifestService {
                 new ShAgentEndpoint("GET", "/cda/post/{id}",
                         "One published post with expanded attributes.",
                         "token:READ", "GET /api/v2/cda/post/{id}"),
-                new ShAgentEndpoint("GET", "/cda/post/by-url",
-                        "Resolve a post by site + friendly URL — the cheapest addressing available today.",
-                        "token:READ", "GET /api/v2/cda/post/by-url?siteId={siteId}&url=/blog/hello-world"),
+                // `/cda/post/by-url` used to sit here, described as "the cheapest addressing
+                // available today" — a hedge written before addressing existed. SH79 plus
+                // /agent/resolve and /agent/read do the same job without a site id, so the
+                // slot went to /agent/memory. The index is capped on purpose (P3): adding an
+                // entry is meant to cost a decision about which one it displaces, not a
+                // raised ceiling. The endpoint itself is unchanged and still served.
                 new ShAgentEndpoint("GET", "/cda/query",
                         "Query published posts by site / folder / post-type.",
                         "token:READ", "GET /api/v2/cda/query?siteId={siteId}&postType=Article&page=0&size=20"),
@@ -310,6 +325,22 @@ public class ShAgentManifestService {
     private String version() {
         String version = getClass().getPackage().getImplementationVersion();
         return version != null ? version : "dev";
+    }
+
+    /**
+     * A content digest of the manifest (SH116) — the value behind its entity tag.
+     *
+     * <p>Derived from the parts that can actually move at runtime: the build version
+     * and the configured feature flags. The endpoint index and the limits are
+     * constants of the artifact, already covered by the version, and hashing the
+     * serialized document instead would tie the tag to Jackson's field order — a
+     * dependency upgrade would then invalidate every client's cache for no
+     * change.</p>
+     */
+    public String digest() {
+        StringBuilder canonical = new StringBuilder(version()).append('|').append(PROTOCOL);
+        features().forEach((key, value) -> canonical.append('|').append(key).append('=').append(value));
+        return ShAgentContextService.digest(canonical.toString());
     }
 
     /** Exposed for tests: the feature map as an insertion-ordered copy. */

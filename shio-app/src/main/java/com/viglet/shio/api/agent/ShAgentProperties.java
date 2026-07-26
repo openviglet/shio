@@ -38,6 +38,41 @@ public class ShAgentProperties {
 
     private Changes changes = new Changes();
 
+    private Memory memory = new Memory();
+
+    /**
+     * Instance-memory limits (SH114).
+     *
+     * <p>Every ceiling here is really a token ceiling: the notes are rendered into
+     * the context pack, which every session reads before doing anything. Memory
+     * that grows without bound would quietly undo the saving it exists to create —
+     * a hundred remembered notes cost more per session than re-deriving three.</p>
+     */
+    @Setter
+    @Getter
+    public static class Memory {
+
+        /**
+         * Notes the listing returns, and the number the context pack carries. Small
+         * on purpose: a convention that did not make the top 50 is not a convention,
+         * it is a note somebody forgot to delete.
+         */
+        private int defaultLimit = 50;
+
+        /** Ceiling on a caller-supplied limit for the listing endpoint. */
+        private int maxLimit = 500;
+
+        /** A key is an identifier, not a sentence. */
+        private int maxKeyLength = 120;
+
+        /**
+         * A note is one instruction. The limit is enforced rather than advisory
+         * because the alternative is discovering the cost only once the context pack
+         * starts truncating its sitemap to make room for prose.
+         */
+        private int maxNoteLength = 2000;
+    }
+
     /** Change-feed limits and its ordering guard (SH88). */
     @Setter
     @Getter

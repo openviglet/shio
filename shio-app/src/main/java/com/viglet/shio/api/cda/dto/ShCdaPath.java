@@ -8,6 +8,9 @@
  */
 package com.viglet.shio.api.cda.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
 import java.util.List;
 
 /**
@@ -19,6 +22,9 @@ import java.util.List;
  * @author Alexandre Oliveira
  * @since 2026.2
  */
+// SH127: nulls omitted. NON_NULL only — a `false` or a `0` here is an answer.
+// Rationale and the SDK half of the change: ShCdaJsonLeanTest.
+@JsonInclude(Include.NON_NULL)
 public record ShCdaPath(
         ShCdaSite site,
         List<ShCdaFolder> breadcrumb,

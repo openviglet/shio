@@ -22,7 +22,10 @@ const DEFAULT_FORMAT = "terse";
 
 export async function run(flags, _positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
-  const format = normalizeFormat(flags.format);
+  // `--as` and `--format` name the same thing. Both exist because the roadmap word
+  // for the third rendering is "as agents-md" and the first two have always been a
+  // format; refusing one of the two spellings would be a paper cut with no upside.
+  const format = normalizeFormat(flags.as ?? flags.format);
 
   const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
   const { body, estTokens } = await client.getContext({
@@ -54,17 +57,20 @@ export async function run(flags, _positionals, ctx) {
   return { format, estTokens, bytes: body.length };
 }
 
+/** The renderings the endpoint serves (SH78 terse, SH115 agents-md). */
+const FORMATS = ["terse", "json", "agents-md"];
+
 /**
- * Accepts `terse` / `json`; anything else is rejected with the same shape the
- * server's teaching errors use (SH80) — a wrong value costs one message, not a
- * round trip to find out what is allowed.
+ * Accepts `terse` / `json` / `agents-md`; anything else is rejected with the same
+ * shape the server's teaching errors use (SH80) — a wrong value costs one message,
+ * not a round trip to find out what is allowed.
  */
 function normalizeFormat(raw) {
-  if (raw === undefined || raw === null || raw === "") return DEFAULT_FORMAT;
+  if (raw === undefined || raw === null || raw === "" || raw === true) return DEFAULT_FORMAT;
   const format = String(raw).trim().toLowerCase();
-  if (format !== "terse" && format !== "json") {
+  if (!FORMATS.includes(format)) {
     throw new Error(
-      `shio context: unknown --format "${raw}". Allowed: terse, json. ` +
+      `shio context: unknown --format "${raw}". Allowed: ${FORMATS.join(", ")}. ` +
         `Example: shio context --format terse`,
     );
   }

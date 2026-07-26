@@ -9,6 +9,14 @@
  * `/api/v2/cda/**`). Field names track the backend DTO records
  * (`com.viglet.shio.api.cda.dto`) one-for-one — they are a frozen public
  * contract; do not rename.
+ *
+ * **Optional, not nullable (SH127).** A field the CMS has no value for is *absent*
+ * from the JSON rather than present as `null`, so it is declared `field?: T` here.
+ * These two halves shipped together and had to: the backend omits the null because
+ * `"url": null` costs bytes and tokens to say nothing, and this file declares it
+ * optional because a consumer written against `string | null` would otherwise start
+ * receiving `undefined` from a comparison it believed was exhaustive. Narrow with a
+ * falsy check (`if (post.title)`) rather than `=== null`.
  */
 
 /** Configuration for {@link ShioClient}. */
@@ -44,9 +52,9 @@ export interface ShioRequestOptions {
 export interface ShioSite {
   id: string;
   name: string;
-  description: string | null;
-  url: string | null;
-  rootFolderId: string | null;
+  description?: string;
+  url?: string;
+  rootFolderId?: string;
 }
 
 /** A folder (listing item / breadcrumb node). */
@@ -59,34 +67,34 @@ export interface ShioFolder {
 /** A post listing item — no heavy attribute payload. */
 export interface ShioPostSummary {
   id: string;
-  title: string | null;
-  summary: string | null;
-  furl: string | null;
-  postType: string | null;
-  date: string | null;
-  modifiedDate: string | null;
+  title?: string;
+  summary?: string;
+  furl?: string;
+  postType?: string;
+  date?: string;
+  modifiedDate?: string;
 }
 
 /** A full post with its post-type attributes expanded into {@link attrs}. */
 export interface ShioPost {
   id: string;
-  title: string | null;
-  summary: string | null;
-  furl: string | null;
-  postType: string | null;
-  siteId: string | null;
-  folderId: string | null;
+  title?: string;
+  summary?: string;
+  furl?: string;
+  postType?: string;
+  siteId?: string;
+  folderId?: string;
   published: boolean;
-  date: string | null;
-  modifiedDate: string | null;
-  publicationDate: string | null;
+  date?: string;
+  modifiedDate?: string;
+  publicationDate?: string;
   /** Post-type attributes as a JSON object, keyed by attribute name. */
   attrs: Record<string, unknown>;
 }
 
 /** Folder children: subfolders plus a paged slice of published posts. */
 export interface ShioListing {
-  folderId: string | null;
+  folderId?: string;
   folders: ShioFolder[];
   posts: ShioPostSummary[];
   page: number;
@@ -96,10 +104,10 @@ export interface ShioListing {
 
 /** Breadcrumb path for a folder or post. */
 export interface ShioPath {
-  site: ShioSite | null;
+  site?: ShioSite;
   /** Ordered root → ... → current. */
   breadcrumb: ShioFolder[];
-  currentFolder: ShioFolder | null;
+  currentFolder?: ShioFolder;
 }
 
 /**
@@ -109,10 +117,10 @@ export interface ShioPath {
  */
 export interface ShioFieldSchema {
   name: string;
-  label: string | null;
-  description: string | null;
+  label?: string;
+  description?: string;
   /** The Shio widget name (e.g. `"Text"`, `"Relator"`), or `null`. */
-  widget: string | null;
+  widget?: string;
   required: boolean;
   /**
    * The delivered value is an array — a `Check Box` / `Multi Select` value, or a
@@ -134,9 +142,9 @@ export interface ShioFieldSchema {
  */
 export interface ShioPostTypeSchema {
   name: string;
-  title: string | null;
-  namePlural: string | null;
-  description: string | null;
+  title?: string;
+  namePlural?: string;
+  description?: string;
   fields: ShioFieldSchema[];
 }
 
