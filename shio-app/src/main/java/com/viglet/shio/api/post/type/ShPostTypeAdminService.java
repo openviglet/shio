@@ -178,7 +178,9 @@ public class ShPostTypeAdminService {
             if (def.widget() != null) {
                 ShWidget widget = shWidgetRepository.findFirstByName(def.widget());
                 if (widget == null) {
-                    throw new ShUnknownWidgetException(def.widget());
+                    // Only on the error path: load the catalog so the 400 can teach
+                    // the allowed names + nearest match instead of just rejecting (SH80).
+                    throw new ShUnknownWidgetException(def.widget(), widgetCatalogNames());
                 }
                 attr.setShWidget(widget);
             }
@@ -211,5 +213,19 @@ public class ShPostTypeAdminService {
     private String currentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return auth != null && auth.getName() != null ? auth.getName() : "admin";
+    }
+
+    /**
+     * The installed widget names, sorted — the {@code allowed} set of an
+     * unknown-widget teaching error (SH80). Sorted so an identical failure always
+     * produces an identical body (P5).
+     */
+    List<String> widgetCatalogNames() {
+        return shWidgetRepository.findAll().stream()
+                .map(ShWidget::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .distinct()
+                .sorted()
+                .toList();
     }
 }

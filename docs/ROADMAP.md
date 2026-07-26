@@ -62,12 +62,13 @@
 > too thin: CRUD-over-MCP reproduces every discovery/write cost it was meant to fix.
 > → §VIII
 
+> ✅ **SH76** (agent manifest) and ✅ **SH80** (teaching errors) shipped → see [CHANGELOG.md](CHANGELOG.md) Block H.
+> The `/api/v2/agent` namespace and the `problem+json` contract now exist; SH77 builds on both.
+
 - 📋 **SH75** (deps: SH2, SH16) **MCP server host** — Spring-hosted MCP at `/mcp` (streamable HTTP) + a `shio mcp` stdio bridge in the CLI; tool registry; auth via the `AGENT` token scope; per-session agent id stamped into the SH51 audit. → §VIII.1
-- 📋 **SH76** (deps: SH75) **Agent manifest** — `GET /api/v2/agent/manifest` + `shio://manifest`: self-describing version, feature flags, tool/endpoint index with examples. Kills endpoint guessing. → §VIII.2
 - 📋 **SH77** (deps: SH76) **Context pack** — one deterministic, token-budgeted payload (model + sitemap by path + conventions + cursor) as MCP resource, `GET /api/v2/agent/context` and `shio context`. The highest-value endpoint in the block. → §VIII.3
 - 📋 **SH78** (deps: SH77) **Token-lean responses** — `fields=` projection + `format=terse` + `X-Shio-Est-Tokens` + hard response budget with an explicit truncation cursor; no authoring metadata by default. → §VIII.4
 - 📋 **SH79** (deps: SH77) **Path addressing everywhere** — `site:viglet.org/blog/hello-world` addresses reads *and* writes; UUIDs stay valid but stop being the agent's currency (makes writes naturally idempotent). → §VIII.5
-- 📋 **SH80** (deps: —) **Teaching errors** — RFC 9457 `problem+json` extended with `fix`/`allowed`/`didYouMean`/`example`, uniform across CDA, console API and MCP. → §VIII.6
 - 📋 **SH81** (deps: SH79) **Batch transactional mutation** — `POST /api/v2/agent/batch`: N ops, atomic, `dryRun`, per-op results. A 12-page structure in one call. → §VIII.7
 - 📋 **SH82** (deps: SH81) **Desired-state plan/apply for content** — generalize `shio push --check` (SH65) from post-types to content: declarative doc → `plan` (no writes) → `apply`. → §VIII.7
 - 📋 **SH83** (deps: SH77, SH78, SH82) **The nine agent tools** — `shio_context` · `find` · `read` · `write` · `apply` · `publish` · `verify` · `assets` · `changes`, plus MCP resources (`schema/{postType}`, `blueprints`) and prompts (`new-site`, `add-section`, `translate-site`, `audit-content`). Deliberately few and intent-named — tool schemas are context too. → §VIII.8

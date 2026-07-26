@@ -187,15 +187,16 @@ Design constraint (P10): the host is a **transport + tool registry only**. Tools
 delegate to existing services (`ShCdaService`, `ShPostUnifiedWriteService`,
 `ShPostTypeAdminService`, `ShSiteImportService`…). No business logic in the MCP layer.
 
-### VIII.2 Agent manifest (SH76)
+### VIII.2 Agent manifest (SH76) — ✅ shipped
 
-`GET /api/v2/agent/manifest` + the `shio://manifest` resource: version, feature
-flags (`i18n`, `transforms`, `tenants`, `blueprints`…), and a tool/endpoint index
-with a minimal example per entry. Rationale: the dominant agent failure mode
-against any CMS is **guessing an endpoint that doesn't exist** and burning a cycle
-on the 404. A self-describing manifest with examples costs one small cached call
-and eliminates the class. Feature flags also stop capability probing ("does this
-instance have transforms?" → read, don't try).
+Shipped: `GET /api/v2/agent/manifest` → [CHANGELOG.md](CHANGELOG.md) Block H.
+Two design records worth keeping, because later tasks inherit them: (1) **an
+unshipped capability is reported `false`, never omitted** — an absent flag makes a
+caller probe, which is the exact cost the manifest exists to remove, so SH75/SH77/
+SH81/SH92 each flip an already-present flag rather than adding one; (2) the
+endpoint index is **curated, not generated** — it is read every session, so it
+carries a token budget (a test fails the build past 30 entries). The
+`shio://manifest` MCP resource is the same payload once SH75 lands.
 
 ### VIII.3 Context pack (SH77) — the highest-value endpoint
 
@@ -241,13 +242,20 @@ consequences worth stating:
 `furl` already resolves posts by URL in the CDA (SH1) — this generalizes the idea
 into a first-class addressing scheme covering folders, sites and drafts.
 
-### VIII.6 Teaching errors (SH80)
+### VIII.6 Teaching errors (SH80) — ✅ shipped
 
-RFC 9457 `application/problem+json` extended with `fix` (imperative sentence),
-`allowed` (the enumeration), `didYouMean` (nearest match), `example` (a minimal
-correct payload) — uniform across CDA, console API and MCP. Every field is a round
-trip the agent does not spend. Deliberately independent of the rest of the block
-(`deps: —`) so it can ship early and pay off immediately.
+Shipped: RFC 9457 + `fix`/`allowed`/`didYouMean`/`example` across the API →
+[CHANGELOG.md](CHANGELOG.md) Block H. **The finding to carry forward:**
+nearest-string matching is silent on exactly the guess an agent is most likely to
+make. `RichText` is 4 edits from `Text` and further from every other widget,
+because it is a **vocabulary** mismatch (Contentful/Sanity/Strapi/Payload
+dialects), not a spelling one — so a `didYouMean` built only on edit distance
+answers nothing in the common case. The fix was a curated alias map consulted
+before the distance fallback (`ShWidgetAliases`), constrained to only ever suggest
+an installed target. Generalize this wherever a closed vocabulary is exposed to a
+caller who learned a different one: **translate dialects first, correct spelling
+second.** Candidate next surfaces: post-state names, locale codes, and the
+blueprint parameter vocabulary (§XI.1).
 
 ### VIII.7 Batch + plan/apply (SH81, SH82)
 

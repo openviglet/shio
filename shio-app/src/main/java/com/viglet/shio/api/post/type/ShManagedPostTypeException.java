@@ -11,6 +11,9 @@ package com.viglet.shio.api.post.type;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.error.ShTeachingException;
+
 /**
  * Raised when a console write ({@code PUT /api/v2/post/type/{id}}) targets a
  * post-type that is "managed by code" (SH66) — owned by the {@code shio} CLI
@@ -23,10 +26,11 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  * @since 2026.3
  */
 @ResponseStatus(HttpStatus.CONFLICT)
-public class ShManagedPostTypeException extends RuntimeException {
+public class ShManagedPostTypeException extends ShTeachingException {
 
     public ShManagedPostTypeException(String name) {
-        super("Post-type '" + name + "' is managed by code and is read-only in the console. "
-                + "Edit it in the repository and run `shio push`.");
+        super(ShProblem.conflict("managed-post-type", "Post-type '" + name + "' is managed by code")
+                .withDetail("It is owned by the repository (SH66) and is read-only over the console API.")
+                .withFix("Edit the post-type in shio/post-types/ and run `shio push`."));
     }
 }

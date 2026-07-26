@@ -108,6 +108,35 @@ class ShApiTokenFilterTest {
     }
 
     @Test
+    void readTokenOnAgentGetAuthenticates() throws Exception {
+        // SH76: the agent surface is a shape over the CDA, so a delivery key must
+        // read it without also holding a console credential.
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of())));
+
+        filter().doFilter(request("GET", "/api/v2/agent/manifest"),
+                new MockHttpServletResponse(), new MockFilterChain());
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(auth).isNotNull();
+        assertThat(auth.getAuthorities()).extracting("authority").contains("ROLE_CDA");
+    }
+
+    @Test
+    void readTokenOnAgentNonGetIsStillForbidden() throws Exception {
+        // Widening the prefix must widen reads only: the SH2 method gate still holds,
+        // so a READ key cannot write through the agent namespace either.
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of())));
+        MockHttpServletResponse res = new MockHttpServletResponse();
+
+        filter().doFilter(request("POST", "/api/v2/agent/batch"), res, new MockFilterChain());
+
+        assertThat(res.getStatus()).isEqualTo(403);
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
     void readTokenOnCdaGetAuthenticatesWithContext() throws Exception {
         when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
                 .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of("siteA"))));

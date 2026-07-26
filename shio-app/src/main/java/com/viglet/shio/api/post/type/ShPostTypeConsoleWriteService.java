@@ -180,9 +180,23 @@ public class ShPostTypeConsoleWriteService {
             widget = shWidgetRepository.findFirstByName(posted.getName());
         }
         if (widget == null) {
-            throw new ShUnknownWidgetException(posted.getName() != null ? posted.getName() : posted.getId());
+            // Only on the error path: load the catalog so the 400 can teach the
+            // allowed names + nearest match instead of just rejecting (SH80).
+            throw new ShUnknownWidgetException(
+                    posted.getName() != null ? posted.getName() : posted.getId(),
+                    widgetCatalogNames());
         }
         return widget;
+    }
+
+    /** The installed widget names, sorted — see {@link ShPostTypeAdminService#widgetCatalogNames()}. */
+    private List<String> widgetCatalogNames() {
+        return shWidgetRepository.findAll().stream()
+                .map(ShWidget::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .distinct()
+                .sorted()
+                .toList();
     }
 
     private static List<ShPostTypeAttr> flatten(Set<ShPostTypeAttr> attrs) {
