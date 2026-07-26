@@ -31,6 +31,9 @@ import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.api.agent.dto.ShAgentFound;
 import com.viglet.shio.api.agent.dto.ShAgentManifest;
 import com.viglet.shio.api.agent.dto.ShAgentResolved;
+import com.viglet.shio.api.agent.safety.ShAgentSessionContext;
+import com.viglet.shio.api.agent.safety.ShAgentSessionService;
+import com.viglet.shio.api.agent.safety.dto.ShAgentSessionInfo;
 import com.viglet.shio.api.agent.diagnostics.ShAgentDiagnosticsService;
 import com.viglet.shio.api.agent.diagnostics.dto.ShAgentDiagnostics;
 import com.viglet.shio.api.agent.verify.ShAgentRenderService;
@@ -82,6 +85,7 @@ public class ShAgentAPI {
     private final ShAgentDiagnosticsService shAgentDiagnosticsService;
     private final ShBlueprintRegistry shBlueprintRegistry;
     private final ShBlueprintService shBlueprintService;
+    private final ShAgentSessionService shAgentSessionService;
 
     public ShAgentAPI(ShAgentManifestService shAgentManifestService,
                       ShAgentContextService shAgentContextService,
@@ -94,7 +98,9 @@ public class ShAgentAPI {
                       ShAgentChangesService shAgentChangesService,
                       ShAgentDiagnosticsService shAgentDiagnosticsService,
                       ShBlueprintRegistry shBlueprintRegistry,
-                      ShBlueprintService shBlueprintService) {
+                      ShBlueprintService shBlueprintService,
+                      ShAgentSessionService shAgentSessionService) {
+        this.shAgentSessionService = shAgentSessionService;
         this.shAgentManifestService = shAgentManifestService;
         this.shAgentContextService = shAgentContextService;
         this.shAddressResolver = shAddressResolver;
@@ -113,6 +119,21 @@ public class ShAgentAPI {
     @Operation(summary = "Describe this instance to an agent: version, capabilities, limits, endpoints")
     public ShAgentManifest manifest() {
         return shAgentManifestService.manifest();
+    }
+
+    /**
+     * What this credential is and what it may do, right now (SH106).
+     *
+     * <p>Separate from the manifest on purpose: the manifest describes the instance and is
+     * byte-stable so it caches; this describes the caller and changes as the caller spends
+     * its budget. It answers the two questions an agent otherwise discovers by being
+     * refused — "may I publish?" (SH107) and "how much have I got left?" (SH110) — one call
+     * before the work rather than twelve ops into it.</p>
+     */
+    @GetMapping("/session")
+    @Operation(summary = "This credential's session id, publish permission and remaining budget")
+    public ShAgentSessionInfo session() {
+        return shAgentSessionService.info();
     }
 
     /**
@@ -436,7 +457,15 @@ public class ShAgentAPI {
         return Arrays.stream(csv.split(",")).map(String::trim).filter(value -> !value.isEmpty()).toList();
     }
 
+    /**
+     * The actor recorded in the SH51 audit for a write on this surface.
+     *
+     * <p>Decorated with the agent session id (SH106) exactly as the MCP tools do. Before
+     * Block L only MCP did it, and that made attribution a property of the transport: the
+     * same agent writing over REST produced audit rows indistinguishable from a human's,
+     * and SH109's queue would have had a hole shaped like the REST API.</p>
+     */
     private static String name(Principal principal) {
-        return principal != null ? principal.getName() : null;
+        return ShAgentSessionContext.actor(principal != null ? principal.getName() : null);
     }
 }

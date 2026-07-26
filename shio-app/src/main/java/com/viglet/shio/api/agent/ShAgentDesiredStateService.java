@@ -67,10 +67,20 @@ public class ShAgentDesiredStateService {
         return shAgentBatchService.run(new ShAgentBatch(true, compile(desired)), ids, actor);
     }
 
-    /** Makes it so, atomically. */
+    /**
+     * Makes it so, atomically.
+     *
+     * <p>The document's {@code confirm} token (SH108) travels down to the batch unchanged.
+     * This is the verb where it earns its keep: a prune's deletions are computed from
+     * server state rather than written down by the author, so the only honest answer to
+     * "what will this remove?" is the plan — and the token binds the apply to that
+     * answer.</p>
+     */
     @Transactional
     public ShAgentChangeSet apply(ShAgentDesiredState desired, boolean ids, String actor) {
-        return shAgentBatchService.run(new ShAgentBatch(false, compile(desired)), ids, actor);
+        return shAgentBatchService.run(
+                new ShAgentBatch(false, compile(desired), desired == null ? null : desired.confirm()),
+                ids, actor);
     }
 
     /**

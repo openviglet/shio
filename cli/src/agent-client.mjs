@@ -127,6 +127,29 @@ export class ShioAgentClient {
     return this.#post("apply", document, options);
   }
 
+  /**
+   * Apply, taking SH108's two steps when the document can delete something.
+   *
+   * A destructive apply needs the `confirm` token from its own plan, and the token only
+   * ever comes back from a plan — the refusal deliberately does not carry it, so that
+   * nothing is destroyed that a human was not shown first. In a terminal "shown" is
+   * literal: `onPlan` is where the caller prints the deletions before they happen.
+   *
+   * Only a `prune` document can delete, so a non-pruning apply is still one call. Paying a
+   * round trip on every apply to guard the rare destructive one would tax the common case
+   * for a property it does not have.
+   *
+   * @param {object} document a desired-state content document
+   * @param {{ ids?: boolean, onPlan?: (plan: object) => void }} [options]
+   */
+  async applyConfirmed(document, { ids = false, onPlan } = {}) {
+    if (!document?.prune) return this.apply(document, { ids });
+    const plan = await this.plan(document, { ids });
+    if (onPlan) onPlan(plan);
+    if (!plan.confirm) return this.apply(document, { ids });
+    return this.apply({ ...document, confirm: plan.confirm }, { ids });
+  }
+
   async #post(verb, document, { ids = false } = {}) {
     const url = `${this.baseUrl}/api/v2/agent/${verb}${ids ? "?ids=true" : ""}`;
     const res = await this.fetch(url, {

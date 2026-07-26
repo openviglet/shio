@@ -101,4 +101,22 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 			+ "order by h.date asc, h.id asc")
 	List<ShHistory> findSinceInSites(Instant ceiling, Collection<String> siteIds, Instant at,
 			String id, Pageable pageable);
+
+	/**
+	 * The review queue's window (SH109): the newest agent-attributed entries.
+	 *
+	 * <p>Filtered on {@code agent_session is not null} rather than on the {@code owner}
+	 * string containing {@code (agent:…)}. SH75 put the id in the actor string as a
+	 * placeholder and SH106 gave it a column precisely so this query would not have to be
+	 * a {@code like} over a display value — a human whose username happened to contain the
+	 * marker would otherwise appear in the agent's review queue.</p>
+	 */
+	@Query("select h from ShHistory h where h.agentSession is not null "
+			+ "order by h.date desc, h.id desc")
+	List<ShHistory> findAgentActivity(Pageable pageable);
+
+	/** Everything one agent session did, oldest first — the order it happened in. */
+	@Query("select h from ShHistory h where h.agentSession = :session "
+			+ "order by h.date asc, h.id asc")
+	List<ShHistory> findByAgentSession(String session);
 }

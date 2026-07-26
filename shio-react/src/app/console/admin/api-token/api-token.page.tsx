@@ -24,7 +24,7 @@ import type { ShSite } from "@/models/site/site"
 const service = new ShApiTokenService()
 const siteService = new ShSiteService()
 
-const SCOPES: ShApiTokenScope[] = ["READ", "PREVIEW", "WRITE"]
+const SCOPES: ShApiTokenScope[] = ["READ", "PREVIEW", "WRITE", "AGENT"]
 const ENVS: ShApiTokenEnv[] = ["PROD", "PREVIEW"]
 
 export default function ApiTokenPage() {
@@ -261,6 +261,46 @@ export default function ApiTokenPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Agent bounds (SH106/SH107/SH110) — only for the credential they apply to.
+            Hidden for other scopes rather than shown disabled: a publish switch next to a
+            READ token would suggest the gate applies there, and it deliberately does not. */}
+        {item.scope === "AGENT" && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-base">{t("apiToken.agentBounds")}</CardTitle>
+              <CardDescription>{t("apiToken.agentBoundsDesc")}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="mayPublish">{t("apiToken.mayPublish")}</Label>
+                  <Tooltip>
+                    <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
+                    <TooltipContent>{t("apiToken.mayPublishHint")}</TooltipContent>
+                  </Tooltip>
+                </div>
+                <Switch id="mayPublish" checked={item.mayPublish === true}
+                  onCheckedChange={(checked) => setItem({ ...item, mayPublish: checked })} />
+              </div>
+              <p className="text-xs text-muted-foreground">{t("apiToken.mayPublishDesc")}</p>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="maxCalls">{t("apiToken.maxCalls")}</Label>
+                  <Input id="maxCalls" type="number" value={item.maxCalls ?? 0}
+                    onChange={(e) => setItem({ ...item, maxCalls: Number(e.target.value) })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="maxWrites">{t("apiToken.maxWrites")}</Label>
+                  <Input id="maxWrites" type="number" value={item.maxWrites ?? 0}
+                    onChange={(e) => setItem({ ...item, maxWrites: Number(e.target.value) })} />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">{t("apiToken.ceilingsHint")}</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Token section (only on edit) */}
         {!isNew && item.token && (

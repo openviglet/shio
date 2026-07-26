@@ -51,6 +51,14 @@ Rules that matter:
   its id, its history and its audit trail.
 - **`prune` deletes.** It only ever removes undeclared content inside the folders your
   document declares, and every deletion appears in the plan first. Do not pass it casually.
+- **Deleting takes two calls, by design.** A call whose plan contains a `delete` is refused
+  unless it carries the `confirm` value that the *dry run of that same call* returned. So:
+  dry-run it, show the user exactly what would go, then re-send with `confirm`. If the
+  server answers "not for this plan", the content changed underneath you — plan again and
+  show the user the new list rather than retrying with the old token.
+- **You may not be allowed to publish.** Call `GET /agent/session` (or read the refusal) —
+  an agent credential can be issued without publish permission, in which case everything you
+  write stays in DRAFT and the right move is to tell the user what is ready, not to retry.
 
 ## Finishing
 

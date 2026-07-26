@@ -1,0 +1,22 @@
+{
+  "review.title": "Revisão do agente",
+  "review.description": "O que um agente alterou, agrupado por execução. Aprove o que deve ficar, ou desfaça uma execução inteira.",
+  "review.blankTitle": "Nada aguardando revisão",
+  "review.blankDescription": "Quando um agente escreve conteúdo — via MCP ou pela API de agente — a execução aparece aqui com tudo o que ela alterou, pronta para aprovar ou desfazer.",
+  "review.proposed": "{{count}} alteração proposta",
+  "review.proposed_other": "{{count}} alterações propostas",
+  "review.pendingCount": "{{count}} pendente(s)",
+  "review.liveCount": "{{count}} no ar",
+  "review.byAt": "por {{actor}} · {{at}}",
+  "review.approve": "Aprovar",
+  "review.revert": "Desfazer execução",
+  "review.revertConfirm": "Desfazer tudo o que esta execução alterou? Posts excluídos vão para a lixeira, páginas publicadas saem do ar, e o que não puder ser desfeito será listado.",
+  "review.outcome": "{{affected}} alteração(ões) marcada(s) como revisada(s), {{reverted}} desfeita(s).",
+  "review.address": "Endereço",
+  "review.state": "Estado",
+  "review.pending": "Pendente",
+  "review.reviewedBy": "Revisado por {{who}}",
+  "review.notRevertible": "Sem desfazer automático",
+  "review.showingPending": "Somente pendentes",
+  "review.showingAll": "Todas as execuções"
+}

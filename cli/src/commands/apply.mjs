@@ -43,7 +43,13 @@ export async function run(flags, positionals, ctx) {
   const planOnly = Boolean(flags.check || flags.dryRun);
   const result = planOnly
     ? await client.plan(document, { ids: Boolean(flags.ids) })
-    : await client.apply(document, { ids: Boolean(flags.ids) });
+    // A pruning document takes SH108's two steps, and the deletions are printed between
+    // them: the token's promise is that a human could have read the plan, and in a
+    // terminal that means the plan has to reach the terminal.
+    : await client.applyConfirmed(document, {
+        ids: Boolean(flags.ids),
+        onPlan: (plan) => ctx.stdout.write(renderDeletions(plan)),
+      });
 
   ctx.stdout.write(render(result, planOnly));
 
@@ -123,6 +129,21 @@ function render(result, planOnly) {
     `shio ${verb}: ${result.changed} change(s) of ${result.ops} op(s)` +
     (planOnly ? " — nothing written" : "");
   return lines.length ? `${header}\n${lines.join("\n")}\n` : `${header}\n`;
+}
+
+/**
+ * What a pruning apply is about to delete (SH108), printed before it happens.
+ *
+ * Deliberately not behind a `--yes`-style prompt: `shio apply` is a CI verb as much as a
+ * desk one, and a command that blocks on stdin in a pipeline is a command people wrap in
+ * `yes |`. The gate that matters is the server's — the token comes from the plan and
+ * nowhere else — and this is the rendering half of it.
+ */
+function renderDeletions(plan) {
+  const deletions = (plan.results ?? []).filter((change) => change.action === "delete");
+  if (!deletions.length) return "";
+  const lines = deletions.map((change) => `  delete ${change.address}`);
+  return `shio apply: ${deletions.length} deletion(s) confirmed from this plan\n${lines.join("\n")}\n`;
 }
 
 /* -------------------------------------------------------------------------- *

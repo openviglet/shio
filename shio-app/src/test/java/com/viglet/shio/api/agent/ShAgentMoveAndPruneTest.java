@@ -360,9 +360,7 @@ class ShAgentMoveAndPruneTest {
         String base = "/pr-" + UUID.randomUUID().toString().substring(0, 8);
         run(false, folder(base), folder(base + "/shell"));
 
-        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
-                shAgentDesiredStateService.apply(document(base, List.of(base), List.of(), true),
-                        false, "tester"));
+        apply(document(base, List.of(base), List.of(), true));
         ShAgentChangeSet second = plan(base, List.of(base), List.of(), true);
 
         // The whole justification for declarative apply: the document keeps describing
@@ -389,5 +387,20 @@ class ShAgentMoveAndPruneTest {
         return new TransactionTemplate(transactionManager).execute(status ->
                 shAgentDesiredStateService.plan(document(base, folders, posts, prune),
                         true, "tester"));
+    }
+
+    /**
+     * Plan, then apply carrying the plan's {@code confirm} token (SH108) — the two-step a
+     * pruning document has to take. This is the verb the gate exists for: a prune's
+     * deletions are derived from server state rather than written down, so the plan is the
+     * only place "what exactly will this remove?" is answered.
+     */
+    private void apply(ShAgentDesiredState desired) {
+        String confirm = new TransactionTemplate(transactionManager).execute(status ->
+                shAgentDesiredStateService.plan(desired, true, "tester")).confirm();
+        ShAgentDesiredState confirmed = confirm == null ? desired : new ShAgentDesiredState(
+                desired.site(), desired.folders(), desired.posts(), desired.prune(), confirm);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                shAgentDesiredStateService.apply(confirmed, false, "tester"));
     }
 }

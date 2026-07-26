@@ -101,7 +101,10 @@ public class ShApplyTool implements ShMcpTool {
                 "prune", ShMcpTool.bool(
                         "Delete posts inside the declared folders that this document does not "
                                 + "declare. Requires `folders`."),
-                "dryRun", ShMcpTool.bool("Report the diff and write nothing.")),
+                "dryRun", ShMcpTool.bool("Report the diff and write nothing."),
+                "confirm", ShMcpTool.string(
+                        "Required when prune deletes anything: the `confirm` value a dryRun "
+                                + "of this same document returns.")),
                 List.of("site"));
     }
 
@@ -119,7 +122,8 @@ public class ShApplyTool implements ShMcpTool {
                     : shBlueprintService.apply(blueprint, site, params, actor));
         }
         ShAgentDesiredState desired = new ShAgentDesiredState(site, folders(arguments),
-                posts(arguments), ShMcpArgs.bool(arguments, "prune"));
+                posts(arguments), ShMcpArgs.bool(arguments, "prune"),
+                ShMcpArgs.string(arguments, "confirm"));
         return ShAgentReadTerse.changes(dryRun
                 ? shAgentDesiredStateService.plan(desired, false, actor)
                 : shAgentDesiredStateService.apply(desired, false, actor));

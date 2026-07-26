@@ -1,0 +1,22 @@
+{
+  "review.title": "Agent review",
+  "review.description": "What an agent changed, grouped by run. Approve what should stay, or put a whole run back.",
+  "review.blankTitle": "Nothing waiting for review",
+  "review.blankDescription": "When an agent writes content — over MCP or the agent API — its run appears here with everything it changed, ready to approve or revert.",
+  "review.proposed": "{{count}} change proposed",
+  "review.proposed_other": "{{count}} changes proposed",
+  "review.pendingCount": "{{count}} pending",
+  "review.liveCount": "{{count}} live",
+  "review.byAt": "by {{actor}} · {{at}}",
+  "review.approve": "Approve",
+  "review.revert": "Revert run",
+  "review.revertConfirm": "Undo everything this run changed? Deleted posts go to the trash, published pages are taken down, and anything that cannot be undone will be listed.",
+  "review.outcome": "{{affected}} change(s) marked reviewed, {{reverted}} undone.",
+  "review.address": "Address",
+  "review.state": "State",
+  "review.pending": "Pending",
+  "review.reviewedBy": "Reviewed by {{who}}",
+  "review.notRevertible": "No auto-undo",
+  "review.showingPending": "Pending only",
+  "review.showingAll": "All runs"
+}

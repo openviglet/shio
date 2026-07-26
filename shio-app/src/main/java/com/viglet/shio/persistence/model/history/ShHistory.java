@@ -64,6 +64,31 @@ public class ShHistory implements Serializable {
 
 	private String shSite;
 
+	/**
+	 * Which agent session made this change (SH106), or {@code null} for a human.
+	 *
+	 * <p>SH75 minted the id and stamped it into the {@code owner} string as
+	 * {@code alice (agent:7f3c…)}, explicitly as a placeholder: a column is the right
+	 * answer and belongs to the task that owns the credential model, so that the schema
+	 * moves once. This is that column. The {@code owner} suffix stays — an agent acts
+	 * <em>as</em> someone, and the audit trail should keep saying so — but the review
+	 * queue (SH109) selects on this, not on a substring of a display string.</p>
+	 */
+	@Column(name = "agent_session")
+	private String agentSession;
+
+	/**
+	 * When a human accepted this change in the review queue (SH109); {@code null} while
+	 * it is still pending. Stamped per row rather than per session because a reviewer
+	 * who approves nine of ten changes has said something the session-level flag cannot.
+	 */
+	@Column(name = "reviewed_date")
+	private Instant reviewedDate;
+
+	/** Who reviewed it. Only meaningful alongside {@link #reviewedDate}. */
+	@Column(name = "reviewed_by")
+	private String reviewedBy;
+
     public void setId(String id) {
 		this.id = id;
 	}
@@ -91,6 +116,22 @@ public class ShHistory implements Serializable {
     public void setShSite(String shSite) {
 		this.shSite = shSite;
 	}
-	
+
+    public void setAgentSession(String agentSession) {
+		this.agentSession = agentSession;
+	}
+
+    public void setReviewedDate(Instant reviewedDate) {
+		this.reviewedDate = reviewedDate;
+	}
+
+    public void setReviewedBy(String reviewedBy) {
+		this.reviewedBy = reviewedBy;
+	}
+
+	/** @return {@code true} when a human has accepted this change (SH109). */
+	public boolean isReviewed() {
+		return reviewedDate != null;
+	}
 
 }

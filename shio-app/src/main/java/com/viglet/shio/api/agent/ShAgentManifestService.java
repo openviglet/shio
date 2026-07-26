@@ -146,6 +146,20 @@ public class ShAgentManifestService {
         // in rather than configured — the capability is `shio pull --content`, which is a
         // property of the tooling this instance's protocol supports, not of its config.
         features.put("contentAsFiles", true);
+        // Block L: the human can bound the agent and undo it. Reported false through
+        // Blocks H, K, I and J so that these flipping means the gates exist rather than
+        // that they are planned. `agentTokens` is the credential model (SH106);
+        // `publishGate` is what an AGENT token can be denied (SH107); `reviewQueue` is the
+        // console surface a human approves or reverts from (SH109).
+        features.put("agentTokens", true);
+        features.put("publishGate", true);
+        features.put("reviewQueue", true);
+        // Configured, not compiled: an operator can turn either off, and an agent that
+        // assumed a gate was on when it was not would plan a two-step delete that the
+        // instance accepts in one. Probing costs a refusal, which is the cost the manifest
+        // exists to remove.
+        features.put("confirmTokens", shAgentProperties.getConfirm().isRequired());
+        features.put("agentBudgets", shAgentProperties.getBudget().isEnabled());
         // SH102's visual snapshot. Deliberately last in the block: a PNG is for the
         // human handoff, and reporting it here as available would invite an agent to
         // spend three orders of magnitude more tokens than the digest costs.
@@ -179,6 +193,11 @@ public class ShAgentManifestService {
                                 + "Add format=terse for the compact encoding, and re-check `digest` "
                                 + "next session instead of re-reading.",
                         "console", "GET /api/v2/agent/context?format=terse"),
+                new ShAgentEndpoint("GET", "/agent/session",
+                        "What you are allowed to do: session id, whether you may publish, "
+                                + "whether deletes need a confirmation, and what is left of this "
+                                + "session's budget. Cheaper than finding out by being refused.",
+                        "console", "GET /api/v2/agent/session"),
                 new ShAgentEndpoint("GET", "/agent/resolve",
                         "Turn a content address into an object id — post:<site>/<url>, "
                                 + "folder:<site>/<path>, site:<name> or id:<uuid>. Build the "
@@ -188,7 +207,9 @@ public class ShAgentManifestService {
                         "Write: N addressed ops (folder.upsert, post.upsert, post.move, "
                                 + "post.publish, …) in one atomic call. Send dryRun to see the "
                                 + "plan first. Rename or relocate with post.move — re-addressing "
-                                + "an upsert creates a second post.",
+                                + "an upsert creates a second post. Anything that deletes takes "
+                                + "two steps: plan it, show the human, then re-send with the "
+                                + "plan's `confirm`.",
                         "console", "POST /api/v2/agent/batch"),
                 new ShAgentEndpoint("POST", "/agent/plan",
                         "Diff a desired-state content document against this instance. "

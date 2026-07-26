@@ -16,6 +16,7 @@ import ExchangeProviderListPage from "../console/admin/exchange-provider/exchang
 import ExchangeProviderPage from "../console/admin/exchange-provider/exchange-provider.page"
 import EmailConfigPage from "../console/admin/email-config/email-config.page"
 import ActivityListPage from "../console/admin/activity/activity.list.page"
+import ReviewListPage from "../console/admin/review/review.list.page"
 import SiteWebhookListPage from "../console/admin/site-webhook/site-webhook.list.page"
 import SiteWebhookPage from "../console/admin/site-webhook/site-webhook.page"
 import { ROUTES } from "../routes.const"
@@ -39,6 +40,7 @@ export const AdminRoutes = (
     <Route path="exchange-providers/:exchangeProviderId" element={<ExchangeProviderPage />} />
     <Route path="email-config" element={<EmailConfigPage />} />
     <Route path="activity" element={<ActivityListPage />} />
+    <Route path="review" element={<ReviewListPage />} />
     <Route path="webhooks" element={<SiteWebhookListPage />} />
     <Route path="webhooks/:webhookId" element={<SiteWebhookPage />} />
   </Route>

@@ -1,0 +1,104 @@
+databaseChangeLog:
+  # Block L — agent safety and human-in-the-loop.
+  #
+  # One file for the whole block on purpose. SH75 deferred the agent-session column to
+  # "the task that owns the credential model, so that the schema moves once" (SH106), and
+  # the publish gate (SH107), the budgets (SH110) and the review queue (SH109) all need a
+  # column at the same moment. Splitting them across four changelogs would give four
+  # windows in which the schema is half-migrated and two fields disagree about who did
+  # what.
+  #
+  # Every column is nullable with no backfill: an absent value is a meaningful reading in
+  # each case (no gate / no ceiling / not an agent / not yet reviewed), which is why none
+  # of these appears in ShTenantBackfillRunner.TENANT_TABLES. Types stay DB-agnostic per
+  # ShLiquibaseChangelogAgnosticTest — plain TIMESTAMP, lowercase boolean, VARCHAR rather
+  # than an inline enum. SH26: preserve identifier case on PostgreSQL, per file.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+
+  # SH106/SH107/SH110 — the agent credential. `may_publish` is the SH107 gate,
+  # `max_calls`/`max_writes` the SH110 per-session ceilings. All three are read by
+  # ShApiTokenFilter into the request's ShApiTokenContext, so they must exist before an
+  # AGENT-scope token can authenticate at all.
+  - changeSet:
+      id: sh106-api-token-agent-grant
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: api_token
+                columnName: may_publish
+      changes:
+        - addColumn:
+            tableName: api_token
+            columns:
+              - column:
+                  name: may_publish
+                  type: boolean
+              - column:
+                  name: max_calls
+                  type: INT
+              - column:
+                  name: max_writes
+                  type: INT
+
+  # SH106 — session identity on the audit trail. Lower-case column names throughout: the
+  # SH22 note in agents.md is about the @TenantId predicate specifically, but keeping the
+  # whole table's new columns in one casing convention is what makes that rule cheap to
+  # follow rather than a thing to remember per column.
+  - changeSet:
+      id: sh106-history-agent-session
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShHistory
+                columnName: agent_session
+      changes:
+        - addColumn:
+            tableName: ShHistory
+            columns:
+              - column:
+                  name: agent_session
+                  type: VARCHAR(64)
+
+  # SH109 — the review queue's own state. Per row, not per session: a reviewer who
+  # approves nine of ten changes has said something a session-level flag cannot record.
+  - changeSet:
+      id: sh109-history-reviewed
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShHistory
+                columnName: reviewed_date
+      changes:
+        - addColumn:
+            tableName: ShHistory
+            columns:
+              - column:
+                  name: reviewed_date
+                  type: TIMESTAMP
+              - column:
+                  name: reviewed_by
+                  type: VARCHAR(255)
+
+  # The review queue's only non-trivial query is "pending changes of this agent session,
+  # newest first", which is a full scan of a table that only grows without this.
+  - changeSet:
+      id: sh109-history-agent-session-index
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: idx_history_agent_session
+      changes:
+        - createIndex:
+            indexName: idx_history_agent_session
+            tableName: ShHistory
+            columns:
+              - column:
+                  name: agent_session

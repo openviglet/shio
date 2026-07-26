@@ -83,7 +83,14 @@ export async function run(flags, _positionals, ctx) {
   const results = [];
   for (const document of documents) {
     results.push(
-      planOnly ? await client.plan(document) : await client.apply(document),
+      planOnly
+        ? await client.plan(document)
+        // With --prune this is SH108's two-step, and the deletions print between the
+        // plan and the apply: the file tree does not list what is *missing* from it, so
+        // the plan is the only place a person can see what a prune removes.
+        : await client.applyConfirmed(document, {
+            onPlan: (plan) => ctx.stdout.write(renderDeletions(plan)),
+          }),
     );
   }
 
@@ -125,6 +132,17 @@ export async function run(flags, _positionals, ctx) {
     );
   }
   return { changed, ops, documents, behind, removed };
+}
+
+/**
+ * What a pruning push is about to delete (SH108), printed before it happens — the
+ * rendering half of "nothing is destroyed that a human was not shown first".
+ */
+function renderDeletions(plan) {
+  const deletions = (plan.results ?? []).filter((change) => change.action === "delete");
+  if (!deletions.length) return "";
+  const lines = deletions.map((change) => `  delete ${change.address}`);
+  return `shio push --content: ${deletions.length} deletion(s) confirmed from this plan\n${lines.join("\n")}\n`;
 }
 
 function render({ documents, results, changed, ops, behind, removed, planOnly, prune }) {

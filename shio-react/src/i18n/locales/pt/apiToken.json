@@ -40,5 +40,15 @@
     "updated": "Token de API atualizado.",
     "copied": "Token copiado para a área de transferência.",
     "copyFailed": "Falha ao copiar o token."
-  }
+  },
+  "apiToken.scopeAgent": "Agente",
+  "apiToken.scopeAgentDesc": "A credencial usada por um agente de código: lê rascunhos e escreve conteúdo, mas com limites — pode ter a publicação negada e receber tetos por sessão.",
+  "apiToken.agentBounds": "Limites do agente",
+  "apiToken.agentBoundsDesc": "O que esta credencial de agente pode fazer, e quanto. O caminho do agente nunca é um atalho para burlar as regras do console.",
+  "apiToken.mayPublish": "Pode publicar",
+  "apiToken.mayPublishHint": "Abrange publicar e despublicar — tudo o que muda o que os visitantes veem.",
+  "apiToken.mayPublishDesc": "Desligado por padrão. Com ele desligado, tudo o que o agente escreve fica em RASCUNHO e aguarda uma pessoa.",
+  "apiToken.maxCalls": "Chamadas por sessão",
+  "apiToken.maxWrites": "Escritas por sessão",
+  "apiToken.ceilingsHint": "0 usa o padrão da instância; um número negativo significa ilimitado. O teto impede que um laço vire uma conta — é por execução, não por credencial."
 }

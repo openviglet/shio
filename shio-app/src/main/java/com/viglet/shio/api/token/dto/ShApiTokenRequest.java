@@ -28,5 +28,20 @@ public record ShApiTokenRequest(
         ShApiTokenScope scope,
         Set<String> siteIds,
         ShApiTokenEnv env,
-        boolean enabled) {
+        boolean enabled,
+        /*
+         * SH106/SH107/SH110 — the agent grant. Boxed rather than primitive so that
+         * "absent" survives binding: a console form that does not render these fields
+         * yet must not silently set mayPublish=false on an existing token, and a payload
+         * from a pre-Block-L client must not reset its ceilings to zero.
+         */
+        Boolean mayPublish,
+        Integer maxCalls,
+        Integer maxWrites) {
+
+    /** The pre-SH106 six-field form, for callers (and tests) that know nothing of grants. */
+    public ShApiTokenRequest(String title, String description, ShApiTokenScope scope,
+                             Set<String> siteIds, ShApiTokenEnv env, boolean enabled) {
+        this(title, description, scope, siteIds, env, enabled, null, null, null);
+    }
 }

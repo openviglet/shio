@@ -83,7 +83,10 @@ public class ShWriteTool implements ShMcpTool {
                                                 "post.move only: the post's new address or URL."),
                                         "data", ShMcpTool.object(
                                                 "Field values keyed by post-type field name.")))),
-                "dryRun", ShMcpTool.bool("Report what would change and write nothing.")),
+                "dryRun", ShMcpTool.bool("Report what would change and write nothing."),
+                "confirm", ShMcpTool.string(
+                        "Required to delete: the `confirm` value a dryRun of this same call "
+                                + "returns. Show the human what it deletes first.")),
                 List.of("ops"));
     }
 
@@ -103,7 +106,8 @@ public class ShWriteTool implements ShMcpTool {
                 ShMcpArgs.node(op, "data"))));
 
         return ShAgentReadTerse.changes(shAgentBatchService.run(
-                new ShAgentBatch(ShMcpArgs.bool(arguments, "dryRun"), List.copyOf(parsed)),
+                new ShAgentBatch(ShMcpArgs.bool(arguments, "dryRun"), List.copyOf(parsed),
+                        ShMcpArgs.string(arguments, "confirm")),
                 false,
                 // The agent session id travels into the SH51 audit here, which is what
                 // makes "show me what this run changed" answerable later (SH109).

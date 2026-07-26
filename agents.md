@@ -33,6 +33,13 @@ Full concept, protocol design, tool surface and worked example:
 Backlog: [docs/ROADMAP.md](docs/ROADMAP.md) Blocks H–N. Rationale:
 [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md) §0 and §VIII–§XIV.
 
+**The standing safety invariant (Block L, §XII): the agent path is never a privilege
+escalation.** Tenant isolation (SH22), the content ACL (SH54) and the SH2 site allow-list
+apply on `/api/v2/agent/**` and `/mcp` exactly as they do in the console — and on top of
+them an `AGENT` credential starts *more* restricted than a human's. New work on the agent
+surface inherits this: if a capability you are adding can publish, delete, or spend, it
+goes through `ShAgentPolicy` rather than around it.
+
 ## Project Structure
 
 ### Backend (Spring Boot 4 + Java 21)
@@ -153,6 +160,10 @@ the CDA + console services (law P10) and holds no business logic of its own.
 - `GET /agent/context` — model + sitemap + conventions in one call. `?format=terse`,
   `?include=`, `?budget=`, `?from=`, `?ids=true` (rows are **id-free by default**, SH121).
   The `digest` is how a later session skips re-reading.
+- `GET /agent/session` — **what this credential may do** (SH106): its session id, whether it
+  may publish, whether deletes need a confirmation, and what is left of its budget. Kept out
+  of the manifest deliberately — the manifest describes the *instance* and is byte-stable so
+  it caches; this describes the *caller* and changes as the caller spends.
 - `GET /agent/resolve?address=…` — an address → an object id, for id-keyed endpoints.
 - `POST /agent/batch` — **writes**: N addressed ops (`folder.upsert`, `post.upsert`,
   `post.move`, `post.publish`, `post.unpublish`, `folder.delete`, `post.delete`) in one
@@ -168,6 +179,19 @@ the CDA + console services (law P10) and holds no business logic of its own.
   posts first and folders deepest-first; declared folders, their ancestors, and any folder
   a declared post calls home are protected. Also `shio apply <file>` in the CLI
   (`--dry-run` / `--check` / `-` for stdin).
+- **Anything that deletes takes two steps (SH108).** A batch or apply whose plan contains a
+  `delete` is refused unless it carries the `confirm` token from *its own* plan — and the
+  refusal deliberately does **not** contain the token, because a refusal that handed over the
+  key would collapse the two steps into one retry and the human would never see the plan. The
+  token is an HMAC over the plan's destructive rows (op + address, sorted), so content that
+  changed underneath invalidates it; already-absent deletes are noops and stay one step. The
+  CLI takes both steps for you and prints the deletions in between. Turn off only where
+  writes are serialized: `shio.agent.confirm.required=false`.
+- **The publish gate (SH107) and the budget (SH110).** An `AGENT` token may be denied
+  publishing — `post.publish` *and* `post.unpublish`, since both change what visitors see —
+  and carries per-session call/write ceilings. Both are asked in `ShAgentPolicy` from
+  `ShAgentBatchService`, the single choke point every content write funnels through; add a
+  new write path and it inherits them, add a gate somewhere else and the next path will not.
 - `GET /agent/blueprints` · `GET /agent/blueprints/{name}` · `POST /agent/blueprints/{name}/apply`
   — **appliable starting points** (Block J, below). `dryRun` in the body returns the whole
   plan, post-types included, and writes nothing.
@@ -197,6 +221,19 @@ the CDA + console services (law P10) and holds no business logic of its own.
   transforms, scheduled publishes, 5xx. A **bounded in-memory** window that reports its own
   bound (`since`/`dropped`/`notes`), because "no incidents" must not read as "nothing ever
   failed". Recorded by `ShAgentIncidentLog`; repeats fold into one row with a count.
+
+### The review queue — `/api/v2/review` (SH109), and why it is *not* under `/agent`
+"The agent proposed N changes": agent sessions with what each one changed, `approve`, and
+`revert`. It stores nothing of its own — SH51 records the transitions, SH106's
+`ShHistory.agent_session` column says which run made them, SH55 keeps deleted posts
+restorable — so changes an agent made before the queue shipped are already in it.
+**The path is load-bearing.** Token auth is confined by prefix (`ShApiTokenFilter`): a `Key`
+header reaches `/api/v2/cda`, `/graphql`, `/api/v2/agent` and `/mcp`, and nothing else.
+Living outside those prefixes is what makes "an agent cannot approve its own changes" a
+property of the routing table rather than an `if` somebody has to remember — **do not move
+this under `/api/v2/agent`.** Revert undoes create/delete/publish/unpublish exactly and
+reports an `UPDATE` as skipped, because the audit row says *that* a post changed and not what
+it changed *from* (SH158).
 
 ### MCP — `POST /mcp` (SH75/SH83)
 Same capabilities over the Model Context Protocol (JSON-RPC 2.0, revision `2025-06-18`),
@@ -231,7 +268,9 @@ Addresses (SH79): `post:<site>/<friendly-url>` · `folder:<site>/<name-chain>` �
 `site:<name>` · `id:<uuid>`. **Writes take only `post:`/`folder:`** — a folder path and
 a friendly URL are separate namespaces, and a write that guessed wrong would create
 content in the wrong place silently. CSRF-exempt (stateless callers), authenticated
-like every other API; the SH54 ACL and SH22 quota apply on the agent path identically.
+like every other API; the SH54 ACL and SH22 quota apply on the agent path identically —
+as do the SH106 grant, the SH107 publish gate and the SH110 budget when the caller holds
+an `AGENT` token rather than a console credential.
 
 ### Post Types — lossless admin API (SH16, used by the `shio` CLI)
 - `GET /api/v2/post-type` - List all post-types as **lossless** `ShPostTypeDef`s (keeps `Tab`, verbatim `widgetSettings`, nested Relator fields — the authoring inverse of the lossy SH11 CDA schema)

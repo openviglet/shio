@@ -40,8 +40,9 @@
 > the agent-native epic; Blocks H–N run **SH75–SH150** with deliberate gaps
 > (SH85 · SH91 · SH98 · SH105 · SH111 · SH118 are reserved, unused block-header
 > slots). **SH121–SH127** and **SH128–SH135** were added from findings while
-> implementing Block H, **SH141–SH144** from findings while implementing Block K, and
-> **SH145–SH150** from findings while implementing Block I —
+> implementing Block H, **SH141–SH144** from findings while implementing Block K,
+> **SH145–SH150** from findings while implementing Block I, **SH151–SH156** from Block J and
+> **SH157–SH161** from Block L —
 > new tasks are expected to accrete this way, and each one's
 > line says what measurement or failure produced it. Superseded and therefore retired: **SH17/SH18** (GraalJS), **SH23 +
 > SH27–SH31** (marketplace → Block J), **SH24 + SH32–SH37** (CRUD-over-MCP → Block H).
@@ -55,7 +56,7 @@
 > **SH74** is the epic (this concept) — it is complete when the three roadmap docs
 > and `agents.md` carry the orientation; the code lands as SH75+.
 >
-> Suggested order: **H → K → I → J → L → M** (H, K, I and J are shipped). Block H is the protocol everything
+> Suggested order: **H → K → I → J → L → M** (H, K, I, J and L are shipped). Block H is the protocol everything
 > else speaks; Block K (verification) is next because it removes the most expensive
 > unit in the system — the human round trip.
 
@@ -212,15 +213,26 @@
 
 ## Block L — Agent safety & human-in-the-loop
 
-> An agent-driven CMS is only adoptable if a human can bound it and undo it.
-> Invariant: **the agent path is never a privilege escalation** — tenant isolation
-> (SH22), content ACL (SH54) and token scopes apply identically. → §XII
+> ✅ **Block L shipped** → [CHANGELOG.md](CHANGELOG.md) Block L: **SH106** (`AGENT` scope +
+> session identity in a column) · **SH107** (draft-by-default + publish gate) · **SH108**
+> (destructive-op confirm tokens) · **SH109** (review queue) · **SH110** (per-session
+> budgets). The invariant holds: the agent path is never a privilege escalation.
+>
+> **What building it opened.** Five things the block could not honestly finish, each now a
+> task. The confirm token is stateless and therefore per-instance-secret, which is a
+> configuration cliff behind a load balancer (**SH157**). Revert cannot undo an edit,
+> because the audit row says *that* a post changed and not what it changed *from*
+> (**SH158**). The budget counters are in memory, so a restart resets a ceiling that a
+> caller was told it had (**SH159**). The queue reads a fixed window of the audit trail, so
+> an instance with a busy human loses old agent sessions off the bottom (**SH160**). And
+> nothing yet expires an `AGENT` credential automatically, which is the one word in §XII.1
+> — *expiring* — that this block did not deliver (**SH161**).
 
-- 📋 **SH106** (deps: SH2, SH51) **`AGENT` token scope + session identity** — scoped, budgeted, expiring credential; every write tagged with the agent session id. SH75 already mints the id and stamps it into the audit *actor string*; this task owns the credential model, so it is where the id gets a column (one migration, not two). → §XII.1
-- 📋 **SH107** (deps: SH106) **Draft-by-default + publish gate** — MCP writes land in DRAFT; publish is a separate tool, off unless the token says `mayPublish`. → §XII.2
-- 📋 **SH108** (deps: SH82) **Destructive-op confirm tokens** — deletes/prunes/apply-with-prune take two steps, the second carrying the **plan hash**. → §XII.3
-- 📋 **SH109** (deps: SH106, SH14) **Review queue console surface** — "the agent proposed N changes": diff (reuse SH14), approve, revert (reuse SH55 trash). The human's new primary workflow. → §XII.4
-- 💭 **SH110** (deps: SH106, SH45) **Agent budget guards** — per-session call/write/storage ceilings. → §XII.5
+- 📋 **SH157** (deps: SH108 ✅) **Confirm tokens across more than one node** — the token is an HMAC under a secret generated per JVM unless `shio.agent.confirm.secret` is set, so a plan issued by one node is refused by another and the failure reads as "the content changed underneath you". Either make the secret derivable from shared state or make the refusal say which of the two it is. → §XII.6
+- 📋 **SH158** (deps: SH109 ✅, SH14) **Revert an edit, not just a lifecycle change** — four transitions have an exact inverse and `UPDATE` does not, so a reverted run leaves every edit in place and says so. SH14 already stores the versions; the queue needs to offer "restore the version before this run" per post rather than pointing at another screen. → §XII.7
+- 💭 **SH159** (deps: SH110 ✅, SH45) **Budgets that survive a restart** — the ceilings are a bounded in-memory LRU, so a restart resets them and a very large session count evicts the oldest. Honest today (`/agent/session` says so) and wrong for a real ceiling; belongs with SH45's per-tenant metering, where a number that has to persist already lives. → §XII.8
+- 📋 **SH160** (deps: SH109 ✅) **The review queue is a queue, not a window** — it groups the newest 2000 audit rows, so on an instance with busy humans an old unreviewed agent session falls off the bottom silently. Needs a query that selects unreviewed agent rows directly (the index exists) and a count that states what it could not show. → §XII.9
+- 📋 **SH161** (deps: SH106 ✅) **Expiring agent credentials** — §XII.1 asked for a *scoped, budgeted, **expiring*** credential and this block shipped the first two. `ShApiToken.expiresAt` already exists and is honoured by the filter; what is missing is a TTL on creation, a console field, and a rotation story that does not mean editing a token by hand. → §XII.10
 
 ## Block M — Token economy (measured)
 

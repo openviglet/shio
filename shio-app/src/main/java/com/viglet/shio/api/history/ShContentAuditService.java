@@ -12,6 +12,7 @@ import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 
+import com.viglet.shio.api.agent.safety.ShAgentSessionContext;
 import com.viglet.shio.persistence.model.history.ShHistory;
 import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 
@@ -56,6 +57,12 @@ public class ShContentAuditService {
         history.setOwner(actor != null && !actor.isBlank() ? actor : "system");
         history.setDate(Instant.now());
         history.setDescription(describe(action, title));
+        // SH106: which agent run made this, in a column rather than as a substring of the
+        // owner string. Read from the request thread rather than passed in, because every
+        // writer would otherwise have to thread it through — and the one that forgot would
+        // produce a change invisible to the review queue, which is the failure mode that
+        // makes an unreviewable change look like a human's.
+        ShAgentSessionContext.current().ifPresent(history::setAgentSession);
         shHistoryRepository.save(history);
     }
 

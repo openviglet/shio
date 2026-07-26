@@ -37,12 +37,23 @@ import tools.jackson.databind.JsonNode;
  *                here. Off by default and never implied: prune is the one operation
  *                whose blast radius grows with content the author never mentioned (P7),
  *                which is why the plan lists every deletion before {@code apply} runs
+ * @param confirm the token from this document's own plan (SH108), required when applying
+ *                it deletes anything. This is the document where it matters most: a prune's
+ *                deletions are derived from server state rather than written down by the
+ *                author, so "what exactly will this remove" is a question only the plan can
+ *                answer — and the token binds the apply to that answer
  *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
 public record ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
-                                  boolean prune) {
+                                  boolean prune, String confirm) {
+
+    /** The four-field form, for a document that prunes nothing. */
+    public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
+                               boolean prune) {
+        this(site, folders, posts, prune, null);
+    }
 
     /** @param path folder path from the site root, e.g. {@code /blog/2026} */
     public record Folder(String path) {

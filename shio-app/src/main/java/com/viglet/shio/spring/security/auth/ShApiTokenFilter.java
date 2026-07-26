@@ -19,6 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.viglet.shio.api.agent.safety.ShAgentGrant;
 import com.viglet.shio.api.cda.ShCdaRateLimiter;
 import com.viglet.shio.persistence.model.token.ShApiToken;
 import com.viglet.shio.persistence.model.token.ShApiTokenEnv;
@@ -139,10 +140,11 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         ShApiTokenScope scope = apiToken.getScope() != null ? apiToken.getScope() : ShApiTokenScope.READ;
         ShApiTokenEnv env = apiToken.getEnv() != null ? apiToken.getEnv() : ShApiTokenEnv.PROD;
 
-        // READ/PREVIEW tokens are read-only: only allow GET requests. WRITE tokens
-        // may use any method (the CDA write surface itself lands in SH10). GraphQL
-        // (SH4) is exempt — it reads via POST and the schema exposes no mutation.
-        if (scope != ShApiTokenScope.WRITE && !graphQl && !"GET".equalsIgnoreCase(request.getMethod())) {
+        // READ/PREVIEW tokens are read-only: only allow GET requests. WRITE and AGENT
+        // tokens may use any method (the CDA write surface itself lands in SH10; the
+        // agent write surface is SH81/SH82). GraphQL (SH4) is exempt — it reads via POST
+        // and the schema exposes no mutation.
+        if (!scope.canWrite() && !graphQl && !"GET".equalsIgnoreCase(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"CDA tokens only allow read (GET) requests\"}");
@@ -163,9 +165,10 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
 
         var authentication = new UsernamePasswordAuthenticationToken(
                 apiToken.getOwner(), null, authoritiesFor(scope, env));
-        // Carry scope + per-site allow-list (SH2) + environment (SH5) to the service.
+        // Carry scope + per-site allow-list (SH2) + environment (SH5) + the agent grant
+        // (SH106) to the service.
         authentication.setDetails(new ShApiTokenContext(
-                apiToken.getId(), scope, apiToken.getSiteIds(), env));
+                apiToken.getId(), scope, apiToken.getSiteIds(), env, grantFor(apiToken, scope)));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -189,13 +192,38 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         var authorities = new ArrayList<GrantedAuthority>(List.of(
                 new SimpleGrantedAuthority("ROLE_CDA"),
                 new SimpleGrantedAuthority("ROLE_USER")));
-        if (scope == ShApiTokenScope.PREVIEW || env == ShApiTokenEnv.PREVIEW) {
+        if (scope.canPreview() || env == ShApiTokenEnv.PREVIEW) {
             authorities.add(new SimpleGrantedAuthority("ROLE_CDA_PREVIEW"));
         }
-        if (scope == ShApiTokenScope.WRITE) {
+        if (scope.canWrite()) {
             authorities.add(new SimpleGrantedAuthority("ROLE_CDA_WRITE"));
         }
+        if (scope == ShApiTokenScope.AGENT) {
+            // Named separately from ROLE_CDA_WRITE so a surface can require "an agent
+            // credential" rather than "something that can write" — the review queue's
+            // approve/revert endpoints are for the human and must refuse the agent's own
+            // token, which is not a distinction ROLE_CDA_WRITE can express.
+            authorities.add(new SimpleGrantedAuthority("ROLE_AGENT"));
+        }
         return authorities;
+    }
+
+    /**
+     * The credential's agent grant (SH106): the publish gate and the per-session ceilings.
+     *
+     * <p>Only {@code AGENT} tokens are bounded. Every other scope predates Block L, so
+     * handing them a gate now would break integrations to enforce a rule they were never
+     * issued under — the honest place for that decision is the credential a user creates
+     * <em>as</em> an agent credential.</p>
+     */
+    private static ShAgentGrant grantFor(ShApiToken token, ShApiTokenScope scope) {
+        if (scope != ShApiTokenScope.AGENT) {
+            return ShAgentGrant.CONSOLE;
+        }
+        return new ShAgentGrant(
+                token.agentMayPublish(),
+                token.getMaxCalls() == null ? 0 : token.getMaxCalls(),
+                token.getMaxWrites() == null ? 0 : token.getMaxWrites());
     }
 
     private static boolean isCdaPath(HttpServletRequest request) {

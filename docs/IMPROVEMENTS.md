@@ -810,36 +810,82 @@ file**. It returns them, the CLI writes them, and it refuses to overwrite withou
 > (SH22), content ACL (SH54) and token scopes apply identically on every agent
 > surface. An agent-native CMS that quietly runs as root is not adoptable.
 
-### XII.1 `AGENT` token scope + session identity (SH106)
+> ✅ **SH106–SH110 shipped** → [CHANGELOG.md](CHANGELOG.md) Block L. The sections below
+> are what building them opened, and only that.
 
-A scoped, budgeted, expiring credential in the existing SH2/SH5 token model, plus
-an agent session id stamped on every write into the SH51 audit. Extends the token
-model rather than adding a parallel one (P10).
+### XII.6 Confirm tokens across more than one node (SH157)
 
-### XII.2 Draft-by-default + publish gate (SH107)
+SH108's token is an HMAC over the plan's destructive rows, signed with a secret that is
+**random per JVM** unless `shio.agent.confirm.secret` is set. That keeps the surface
+stateless — which is the property that lets any instance answer any MCP request — and it
+means a plan issued by node A is refused by node B.
 
-MCP writes land in `DRAFT`; publishing is a separate tool, disabled unless the token
-carries `mayPublish`. The unified model's two-row-per-state shape (SH-0d/SH14) makes
-this nearly free — draft-targeted writes are already how the Universal Editor
-works (SH10).
+The refusal is the part that needs fixing more than the mechanism does. Today an
+unrecognised signature is reported as `MISMATCH`, whose message says *the content changed
+between the plan and this call* — a true statement about the common cause and a completely
+misleading one here, because it sends the caller round the plan/apply loop forever. Two
+honest fixes, and they are not exclusive: derive the secret from something the cluster
+already shares (the database, an operator-set value validated at boot rather than silently
+defaulted), and make the multi-node case *nameable* so the error can say "this plan was
+issued by another node" instead of guessing. A gate whose failure mode is an infinite retry
+is worse than one that is occasionally strict, because the retry looks like progress.
 
-### XII.3 Destructive-op confirm tokens (SH108)
+### XII.7 Revert an edit, not just a lifecycle change (SH158)
 
-Deletes, prunes and apply-with-prune take two steps, the second carrying the
-**plan hash** from the first. An agent therefore cannot destroy anything it did not
-just render for the human — and cannot destroy something that changed underneath it
-between plan and apply.
+SH109's revert undoes four of the six transitions exactly: create→delete to the SH55 trash,
+delete→restore, publish↔unpublish. `UPDATE` has no inverse, because the audit row records
+*that* a post changed and not what it changed *from*, and `RESTORE` is already an undo.
 
-### XII.4 Review queue console surface (SH109)
+The queue reports both as skipped with the reason, which is honest and half a feature. SH14
+already stores the versions, so the missing piece is not storage but a **decision the
+reviewer has to be shown**: "restore the version immediately before this run" is well
+defined per post, and is not the same as "undo this one edit" when a run edited the same
+post three times. The right shape is probably per-post rather than per-session — a revert
+button on a change row, next to the version it would restore — because bulk-reverting edits
+without showing what comes back is exactly the surprise P7 forbids. Whatever ships must keep
+the current property that a partial undo is never reported as a complete one.
 
-"The agent proposed N changes" → field-level diff (reuse SH14), approve, revert
-(reuse SH55 trash). This becomes the human's **primary** console workflow under the
-new orientation, which is why §VIII.1 puts the session id in the host from the start.
+### XII.8 Budgets that survive a restart (SH159)
 
-### XII.5 Agent budget guards (SH110)
+SH110's counters are a bounded LRU in memory. Three things follow, and `/agent/session`
+states all three rather than hiding them: a restart resets every budget, an idle session is
+forgotten after its TTL, and enough concurrent sessions evict the oldest.
 
-Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
-that lands. A runaway agent should hit a ceiling and report it, not a bill.
+For a runaway guard that is nearly enough — a loop that survives a restart is a different
+problem — but it is not enough for a *ceiling* anyone bills against, and the honest reading
+is that today's numbers are advisory between restarts. The durable version belongs with
+SH45's per-tenant metering rather than in a table of its own: that is where a number which
+has to persist and be aggregated already lives, and duplicating the concept would give an
+operator two answers to "how much has this tenant used". The thing to preserve is the
+current split between **calls** and **writes**: they fail differently, and folding them into
+one number lets the cheap failure consume the budget that exists for the expensive one.
+
+### XII.9 The review queue is a queue, not a window (SH160)
+
+`ShAgentReviewService` groups the newest 2000 audit rows and filters to the agent-attributed
+ones. On an instance where humans are also working, an old *unreviewed* agent session can
+fall off the bottom of that window and disappear from the queue — silently, which is the
+part that matters: the screen would say nothing is waiting.
+
+The fix is small and the reason it was not done first is honest — the window was the cheap
+way to get grouping. The index on `agent_session` already exists; what is needed is a query
+that selects unreviewed agent rows directly (and a session-level projection so the list does
+not load every row of every session to count them), plus a stated bound on the result the
+way SH138 requires: if the queue truncates, it says how many it could not show. A review
+queue that quietly drops the oldest item is the one kind of queue nobody should ship.
+
+### XII.10 Expiring agent credentials (SH161)
+
+§XII.1 asked for a **scoped, budgeted, expiring** credential. Block L shipped the first two.
+
+The machinery for the third is already there: `ShApiToken.expiresAt` exists (SH13 added it
+for preview tokens) and `ShApiTokenFilter` stops authenticating a token once it passes, with
+no separate revocation step. What is missing is everything around it — a TTL chosen at
+creation, a console field, a visible expiry on the token list, and a rotation story that is
+not "edit the row by hand". The reason it matters more for `AGENT` than for the other scopes
+is what an agent credential ends up living in: a config file in a repository, an environment
+variable in CI, a `.mcp.json` on someone's laptop. A delivery key that leaks reads published
+content; an agent key that leaks writes it.
 
 ---
 

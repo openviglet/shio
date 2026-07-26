@@ -27,6 +27,7 @@ import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
+import com.viglet.shio.api.agent.safety.ShAgentPolicy;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
@@ -110,6 +111,7 @@ public class ShAgentBatchService {
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
     private final ShContentAclService shContentAclService;
     private final ShTenantQuotaService shTenantQuotaService;
+    private final ShAgentPolicy shAgentPolicy;
     private final ObjectMapper objectMapper;
     private final ShAgentProperties properties;
 
@@ -121,8 +123,10 @@ public class ShAgentBatchService {
                                ShPostUnifiedWriteService shPostUnifiedWriteService,
                                ShContentAclService shContentAclService,
                                ShTenantQuotaService shTenantQuotaService,
+                               ShAgentPolicy shAgentPolicy,
                                ObjectMapper objectMapper,
                                ShAgentProperties properties) {
+        this.shAgentPolicy = shAgentPolicy;
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -146,7 +150,33 @@ public class ShAgentBatchService {
     @Transactional
     public ShAgentChangeSet run(ShAgentBatch batch, boolean ids, String actor) {
         List<ShAgentBatch.Op> ops = validate(batch);
-        Session session = new Session(batch.dryRun(), ids, actor);
+        // SH110: metered before the work, so the call that breaches a ceiling is refused
+        // rather than being the last one allowed.
+        shAgentPolicy.countCall();
+
+        if (!batch.dryRun() && destroys(ops)) {
+            // SH108: plan first, then check the token against that plan. The confirmation
+            // has to be bound to what this request would *actually* destroy, and only a
+            // simulation knows that — a prune's deletions come from server state, not from
+            // the document. The simulation writes nothing, so this costs a read.
+            shAgentPolicy.requireConfirmation(
+                    execute(ops, new Session(true, ids, actor)), batch.confirm());
+        }
+
+        ShAgentChangeSet result = execute(ops, new Session(batch.dryRun(), ids, actor));
+        if (batch.dryRun()) {
+            // The one place a confirm token is ever emitted (SH108).
+            return shAgentPolicy.withConfirmToken(result);
+        }
+        // Counted after the writes but inside the transaction: a budget refusal is a
+        // rollback, so a batch that breaches the ceiling changes nothing at all rather
+        // than landing half of itself.
+        shAgentPolicy.countWrites(result.changed());
+        return result;
+    }
+
+    /** Runs the ops against a session, real or simulated. */
+    private ShAgentChangeSet execute(List<ShAgentBatch.Op> ops, Session session) {
         List<Change> results = new ArrayList<>(ops.size());
         for (int index = 0; index < ops.size(); index++) {
             try {
@@ -160,6 +190,20 @@ public class ShAgentBatchService {
         }
         int changed = (int) results.stream().filter(Change::isChange).count();
         return new ShAgentChangeSet(session.dryRun, ops.size(), changed, List.copyOf(results));
+    }
+
+    /**
+     * Whether this request contains an op that can destroy content (SH108).
+     *
+     * <p>A cheap pre-scan of op <em>names</em>, not of outcomes: it decides whether the
+     * expensive question ("what exactly would go?") is worth asking, and answering it for
+     * every non-destructive batch would double the cost of the common case.</p>
+     */
+    private static boolean destroys(List<ShAgentBatch.Op> ops) {
+        return ops.stream().anyMatch(op -> {
+            String name = op.op() == null ? "" : op.op().trim().toLowerCase(Locale.ROOT);
+            return POST_DELETE.equals(name) || FOLDER_DELETE.equals(name);
+        });
     }
 
     private List<ShAgentBatch.Op> validate(ShAgentBatch batch) {
@@ -408,6 +452,10 @@ public class ShAgentBatchService {
      */
     private Change postPublish(ShAgentBatch.Op op, Session session) {
         ShAddress address = writeAddress(op, ShAddress.Kind.POST);
+        // SH107: asked before anything is resolved, and in dry-run mode too. A plan that
+        // silently omitted the refusal would let the agent write a whole document before
+        // discovering at apply time that it may not make any of it live.
+        shAgentPolicy.requirePublish("publish");
         ShSite site = requireSite(address.site());
         // Dry run only: in a real run the draft genuinely exists by now and must really
         // be published — short-circuiting here would silently skip the publish and make
@@ -436,6 +484,10 @@ public class ShAgentBatchService {
 
     private Change postUnpublish(ShAgentBatch.Op op, Session session) {
         ShAddress address = writeAddress(op, ShAddress.Kind.POST);
+        // Gated too (SH107). The grant is about changing what visitors see, and taking a
+        // live page down changes that as surely as putting one up — a half-gate would
+        // leave a bounded agent able to empty a site.
+        shAgentPolicy.requirePublish("unpublish");
         ShSite site = requireSite(address.site());
         Optional<ShPostUnified> published = state(site, address, ShPostState.PUBLISHED);
         if (published.isEmpty()) {

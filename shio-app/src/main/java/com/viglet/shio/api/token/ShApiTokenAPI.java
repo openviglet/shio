@@ -69,6 +69,7 @@ public class ShApiTokenAPI {
         token.setScope(body.scope() != null ? body.scope() : ShApiTokenScope.READ);
         token.setSiteIds(body.siteIds() != null ? new HashSet<>(body.siteIds()) : new HashSet<>());
         token.setEnv(body.env() != null ? body.env() : ShApiTokenEnv.PROD);
+        applyAgentGrant(token, body);
 
         shApiTokenRepository.saveAndFlush(token);
         log.info("Created CDA API token '{}' by {}", token.getTitle(), token.getOwner());
@@ -85,11 +86,37 @@ public class ShApiTokenAPI {
                     existing.setScope(body.scope() != null ? body.scope() : ShApiTokenScope.READ);
                     existing.setSiteIds(body.siteIds() != null ? new HashSet<>(body.siteIds()) : new HashSet<>());
                     existing.setEnv(body.env() != null ? body.env() : ShApiTokenEnv.PROD);
+                    applyAgentGrant(existing, body);
                     // Token value is never updated
                     shApiTokenRepository.saveAndFlush(existing);
                     return ResponseEntity.ok(existing);
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * The agent grant (SH106/SH107/SH110): the publish gate and the per-session ceilings.
+     *
+     * <p>Each field is applied only when the payload carries it, so a client that predates
+     * Block L — or a console form that has not grown the fields yet — cannot silently
+     * revoke publish permission or zero a ceiling on a token it was only renaming. An
+     * explicit {@code null} and an omitted field are indistinguishable over JSON, and of
+     * the two readings the safe one is "leave it alone".</p>
+     *
+     * <p>A new {@code AGENT} token with nothing said about publishing starts <b>denied</b>,
+     * which is the entity's default and the direction §XII requires: the credential minted
+     * for agents starts more restricted than the human's, never less.</p>
+     */
+    private static void applyAgentGrant(ShApiToken token, ShApiTokenRequest body) {
+        if (body.mayPublish() != null) {
+            token.setMayPublish(body.mayPublish());
+        }
+        if (body.maxCalls() != null) {
+            token.setMaxCalls(body.maxCalls());
+        }
+        if (body.maxWrites() != null) {
+            token.setMaxWrites(body.maxWrites());
+        }
     }
 
     @DeleteMapping("/{id}")

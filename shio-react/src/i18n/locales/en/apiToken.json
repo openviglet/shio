@@ -40,5 +40,15 @@
     "updated": "API token updated.",
     "copied": "Token copied to clipboard.",
     "copyFailed": "Failed to copy token."
-  }
+  },
+  "apiToken.scopeAgent": "Agent",
+  "apiToken.scopeAgentDesc": "The credential a coding agent runs on: reads drafts and writes content, but bounded — it can be denied publishing and given per-session ceilings.",
+  "apiToken.agentBounds": "Agent bounds",
+  "apiToken.agentBoundsDesc": "What this agent credential may do, and how much of it. The agent path is never a shortcut past the console's rules.",
+  "apiToken.mayPublish": "May publish",
+  "apiToken.mayPublishHint": "Covers both publishing and unpublishing — anything that changes what visitors see.",
+  "apiToken.mayPublishDesc": "Off by default. With it off, everything the agent writes stays in DRAFT and waits for a human.",
+  "apiToken.maxCalls": "Calls per session",
+  "apiToken.maxWrites": "Writes per session",
+  "apiToken.ceilingsHint": "0 uses the instance default; a negative number means unlimited. The ceiling stops a loop from becoming a bill — it is per run, not per credential."
 }

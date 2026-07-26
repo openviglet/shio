@@ -11,6 +11,7 @@ import java.util.Set;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.viglet.shio.api.agent.safety.ShAgentGrant;
 import com.viglet.shio.persistence.model.token.ShApiTokenEnv;
 import com.viglet.shio.persistence.model.token.ShApiTokenScope;
 
@@ -28,11 +29,21 @@ import com.viglet.shio.persistence.model.token.ShApiTokenScope;
  * @param scope   the token's access scope
  * @param siteIds the per-site allow-list (empty = every site)
  * @param env     the target content environment ({@code PROD}/{@code PREVIEW})
+ * @param agent   what this credential may do on the agent surface (SH106) — the publish
+ *                gate and the per-session ceilings. Never {@code null}: a token that
+ *                predates Block L carries {@link ShAgentGrant#CONSOLE}, because applying
+ *                a gate retroactively to credentials issued without one would break
+ *                working integrations to enforce a rule they never agreed to
  *
  * @author Alexandre Oliveira
  * @since 2026.2
  */
-public record ShApiTokenContext(String tokenId, ShApiTokenScope scope, Set<String> siteIds, ShApiTokenEnv env) {
+public record ShApiTokenContext(String tokenId, ShApiTokenScope scope, Set<String> siteIds,
+                                ShApiTokenEnv env, ShAgentGrant agent) {
+
+    public ShApiTokenContext {
+        agent = agent == null ? ShAgentGrant.CONSOLE : agent;
+    }
 
     /**
      * Back-compat constructor defaulting the environment to {@code PROD}, so
@@ -40,6 +51,12 @@ public record ShApiTokenContext(String tokenId, ShApiTokenScope scope, Set<Strin
      */
     public ShApiTokenContext(String tokenId, ShApiTokenScope scope, Set<String> siteIds) {
         this(tokenId, scope, siteIds, ShApiTokenEnv.PROD);
+    }
+
+    /** Back-compat constructor for the pre-SH106 four-field form. */
+    public ShApiTokenContext(String tokenId, ShApiTokenScope scope, Set<String> siteIds,
+                             ShApiTokenEnv env) {
+        this(tokenId, scope, siteIds, env, ShAgentGrant.CONSOLE);
     }
 
     /**

@@ -38,6 +38,82 @@ public class ShAgentProperties {
 
     private Changes changes = new Changes();
 
+    private Confirm confirm = new Confirm();
+
+    private Budget budget = new Budget();
+
+    /** Destructive-op confirmation (SH108). */
+    @Setter
+    @Getter
+    public static class Confirm {
+
+        /**
+         * Whether a destructive write has to carry the {@code confirm} token from its own
+         * plan.
+         *
+         * <p><b>On by default.</b> The alternative reading — "make it opt-in so nothing
+         * breaks" — gets the trade backwards: the cost of the gate is one extra call on
+         * the rare destructive write, and the cost of not having it is content deleted by
+         * a plan nobody looked at. An operator running a single-writer import can turn it
+         * off; an operator running an agent should not.</p>
+         */
+        private boolean required = true;
+
+        /**
+         * Secret the confirm token is signed with. Generated randomly at startup when
+         * unset, which is the right default for a single instance and the wrong one behind
+         * a load balancer — a plan issued by one node would not be honoured by another.
+         * Set it explicitly (same value on every node) when running more than one.
+         */
+        private String secret = "";
+
+        /**
+         * How long a confirm token stays valid. Short on purpose: the token's promise is
+         * that the plan was <em>just</em> rendered, and a token good for an hour is a token
+         * that can outlive the state it described.
+         */
+        private int ttlSeconds = 600;
+    }
+
+    /** Per-session agent budget guards (SH110). */
+    @Setter
+    @Getter
+    public static class Budget {
+
+        /**
+         * Whether the ceilings are enforced at all. On by default, but note that they only
+         * bind {@code AGENT}-scope credentials — a console session carries
+         * {@code ShAgentGrant.CONSOLE} and is never metered here.
+         */
+        private boolean enabled = true;
+
+        /**
+         * Agent-surface calls one session may make when its credential names no ceiling of
+         * its own. Sized well above a real build ("make a 12-page marketing site" is a few
+         * dozen calls including verification) so hitting it means a loop, not ambition.
+         */
+        private int defaultMaxCalls = 2000;
+
+        /**
+         * Content writes one session may make on the same terms. Lower than the call
+         * ceiling because a read that repeats costs tokens and a write that repeats costs
+         * content.
+         */
+        private int defaultMaxWrites = 500;
+
+        /**
+         * How many sessions are metered at once. The counters are in memory and bounded;
+         * the oldest is evicted when the bound is reached, which means a very old session
+         * can have its budget silently reset. Stated rather than hidden — see
+         * {@code ShAgentBudgetService} — and it is the honest trade against an unbounded
+         * map that a caller could grow by inventing session ids.
+         */
+        private int maxSessions = 10000;
+
+        /** How long an idle session's counters survive before they are forgotten. */
+        private int sessionTtlMinutes = 720;
+    }
+
     /** Change-feed limits and its ordering guard (SH88). */
     @Setter
     @Getter

@@ -88,6 +88,15 @@ public final class ShAgentReadTerse {
                     .attr("note", change.detail())
                     .build());
         }
+        if (result.confirm() != null) {
+            // SH108: the only place the token is emitted. Last, and on its own line, so it
+            // reads as the answer to "and now what?" rather than as one attribute of a
+            // summary the model has already skimmed past.
+            out.append(ShTerse.line("confirm")
+                    .word(result.confirm())
+                    .attr("note", "re-send this call with confirm=<value> to apply the deletions")
+                    .build());
+        }
         return out.toString();
     }
 }

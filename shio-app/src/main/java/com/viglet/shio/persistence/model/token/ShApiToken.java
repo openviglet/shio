@@ -80,6 +80,34 @@ public class ShApiToken implements Serializable {
     @Column(name = "environment", length = 16)
     private ShApiTokenEnv env = ShApiTokenEnv.PROD;
 
+    /**
+     * Whether this credential may change what visitors see (SH107).
+     *
+     * <p><b>Default {@code false}, and deliberately so for every scope.</b> Publishing is
+     * the one act an agent cannot walk back without a human noticing, so it is opt-in per
+     * credential rather than implied by the ability to write. A {@code null} value
+     * (pre-SH107 rows) is treated as "no gate" by {@link #agentMayPublish()} — an existing
+     * {@code WRITE} integration must not silently stop working because a column arrived.
+     * Only {@code AGENT} tokens are gated; see {@code ShAgentGrant}.</p>
+     */
+    @Column(name = "may_publish")
+    private Boolean mayPublish;
+
+    /**
+     * Per-session ceiling on agent-surface calls (SH110). {@code null} or {@code <= 0}
+     * means "no ceiling of its own" and the configured default applies.
+     */
+    @Column(name = "max_calls")
+    private Integer maxCalls;
+
+    /**
+     * Per-session ceiling on content writes (SH110) — creates, updates, moves, publishes
+     * and deletes. Counted separately from calls because a runaway agent that reads a
+     * thousand times costs tokens, while one that writes a thousand times costs content.
+     */
+    @Column(name = "max_writes")
+    private Integer maxWrites;
+
     @Column(name = "created_date")
     private Instant createdDate;
 
@@ -106,5 +134,18 @@ public class ShApiToken implements Serializable {
     /** @return {@code true} when this token carries an expiry that has passed. */
     public boolean isExpired(Instant now) {
         return expiresAt != null && expiresAt.isBefore(now);
+    }
+
+    /**
+     * Whether the publish gate (SH107) lets this credential through.
+     *
+     * <p>Only {@code AGENT} tokens are gated. Every other scope predates the gate, so
+     * applying it to them would break working integrations to enforce a rule they were
+     * never issued under — and a {@code null} on an {@code AGENT} row (impossible today,
+     * possible after a hand-written INSERT) is read as denied, because the safe reading
+     * of "unknown" for an irreversible act is no.</p>
+     */
+    public boolean agentMayPublish() {
+        return scope != ShApiTokenScope.AGENT || Boolean.TRUE.equals(mayPublish);
     }
 }

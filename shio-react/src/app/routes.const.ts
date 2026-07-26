@@ -51,6 +51,7 @@ export const ROUTES = {
   ADMIN_EXCHANGE_PROVIDERS: scoped(`${consolePath}/admin/exchange-providers`),
   ADMIN_EMAIL_CONFIG: scoped(`${consolePath}/admin/email-config`),
   ADMIN_ACTIVITY: scoped(`${consolePath}/admin/activity`),
+  ADMIN_REVIEW: scoped(`${consolePath}/admin/review`),
   ADMIN_WEBHOOKS: scoped(`${consolePath}/admin/webhooks`),
   UNIVERSAL_EDITOR: scoped(`${consolePath}/universal-editor`),
 };

@@ -140,9 +140,18 @@ class ShAgentDesiredStateTest {
                 shAgentDesiredStateService.plan(desired, false, "tester"));
     }
 
+    /**
+     * Applies a document the way a well-behaved caller has to since SH108: plan first, and
+     * carry the plan's {@code confirm} token when the plan says it would delete something.
+     * A document that deletes nothing gets no token and this is a plain apply — which is
+     * the point of attaching the token to the plan rather than demanding one always.
+     */
     private ShAgentChangeSet apply(ShAgentDesiredState desired) {
+        String confirm = plan(desired).confirm();
+        ShAgentDesiredState confirmed = confirm == null ? desired : new ShAgentDesiredState(
+                desired.site(), desired.folders(), desired.posts(), desired.prune(), confirm);
         return new TransactionTemplate(transactionManager).execute(status ->
-                shAgentDesiredStateService.apply(desired, false, "tester"));
+                shAgentDesiredStateService.apply(confirmed, false, "tester"));
     }
 
     private static List<String> actions(ShAgentChangeSet result) {

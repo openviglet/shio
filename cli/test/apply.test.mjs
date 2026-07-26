@@ -198,3 +198,71 @@ test("a teaching problem from the server survives intact", async () => {
     },
   );
 });
+
+/* -------------------------------------------------------------------------- *
+ * SH108 — destructive applies take two steps                                 *
+ * -------------------------------------------------------------------------- */
+
+/** A plan whose deletions come with the token that unlocks them. */
+const PRUNE_PLAN = {
+  dryRun: true,
+  ops: 2,
+  changed: 1,
+  results: [
+    { op: "folder.upsert", address: "folder:Blog/blog", action: "noop" },
+    { op: "post.delete", address: "post:Blog/blog/old", action: "delete" },
+  ],
+  confirm: "1900000000.abc123",
+};
+
+/** A fetch that answers each call from a queue, so plan and apply can differ. */
+function scriptedSequence(bodies) {
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url: String(url), init, body: JSON.parse(init.body) });
+    const body = bodies[Math.min(calls.length - 1, bodies.length - 1)];
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      async text() {
+        return JSON.stringify(body);
+      },
+      async json() {
+        return body;
+      },
+    };
+  };
+  fetchImpl.calls = calls;
+  return fetchImpl;
+}
+
+test("a pruning apply plans first and carries the plan's confirm token", async () => {
+  const applied = { ...PRUNE_PLAN, dryRun: false, confirm: undefined };
+  const fetchImpl = scriptedSequence([PRUNE_PLAN, applied]);
+  const ctx = ctxWith(fetchImpl, {
+    file: JSON.stringify({ ...DOCUMENT, prune: true }),
+  });
+
+  await apply.run({}, ["site.json"], ctx);
+
+  assert.equal(fetchImpl.calls.length, 2, "expected a plan followed by an apply");
+  assert.match(fetchImpl.calls[0].url, /\/agent\/plan/);
+  assert.match(fetchImpl.calls[1].url, /\/agent\/apply/);
+  assert.equal(fetchImpl.calls[1].body.confirm, PRUNE_PLAN.confirm);
+  // The token's promise is that a person could have read the plan, so in a terminal the
+  // deletions have to actually reach the terminal.
+  assert.match(ctx.stdout.text, /delete post:Blog\/blog\/old/);
+});
+
+test("a document that cannot delete is still one call", async () => {
+  // Paying a round trip on every apply to guard the rare destructive one would tax the
+  // common case for a property it does not have.
+  const fetchImpl = scriptedSequence([{ dryRun: false, ops: 1, changed: 1, results: [] }]);
+  const ctx = ctxWith(fetchImpl);
+
+  await apply.run({}, ["site.json"], ctx);
+
+  assert.equal(fetchImpl.calls.length, 1);
+  assert.match(fetchImpl.calls[0].url, /\/agent\/apply/);
+});

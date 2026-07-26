@@ -127,6 +127,20 @@ class ShAgentBatchTest {
                 shAgentBatchService.run(new ShAgentBatch(dryRun, List.of(ops)), true, "tester"));
     }
 
+    /**
+     * The two-step a destructive batch takes (SH108): plan it, then re-send it carrying the
+     * plan's own {@code confirm} token. Written as a helper rather than inlined because
+     * every destructive assertion in this class is about the deletion, not about the
+     * ceremony — but the ceremony is not optional, and a helper that skipped it (by turning
+     * the gate off in the test profile) would leave the gate itself untested here.
+     */
+    private ShAgentChangeSet runConfirmed(Op... ops) {
+        String confirm = run(true, ops).confirm();
+        return new TransactionTemplate(transactionManager).execute(status ->
+                shAgentBatchService.run(new ShAgentBatch(false, List.of(ops), confirm),
+                        true, "tester"));
+    }
+
     private JsonNode data(String headline) {
         return objectMapper.valueToTree(Map.of("headline", headline));
     }
@@ -280,7 +294,7 @@ class ShAgentBatchTest {
         String base = "/del-" + UUID.randomUUID().toString().substring(0, 8);
         run(false, folder(base), post(base + "/a", base, "A"));
 
-        Change change = run(false, new Op(ShAgentBatchService.POST_DELETE,
+        Change change = runConfirmed(new Op(ShAgentBatchService.POST_DELETE,
                 "post:" + siteName + base + "/a", null, null, null)).results().get(0);
 
         assertThat(change.action()).isEqualTo(Change.DELETE);

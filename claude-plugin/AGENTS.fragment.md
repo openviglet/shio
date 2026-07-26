@@ -29,6 +29,12 @@ without it. Writes land in **DRAFT**; publishing is a separate step and needs th
 To rename or move a page use `post.move` — an upsert at a new address creates a second post
 and orphans the first.
 
+**Deleting:** a call whose plan contains a `delete` is refused unless it carries the
+`confirm` value the dry run of that same call returned. Dry-run it, show the user what would
+go, then re-send with `confirm`. The refusal never contains the token — that is deliberate,
+so nothing is deleted that a person was not shown first. Your credential may also be denied
+publishing altogether; check `GET /api/v2/agent/session` before planning around it.
+
 **Authoring more than a couple of pages:** `shio pull --content` projects the content to
 `shio/content/<site>/<url>.md`. Edit those files with your normal tools, then
 `shio push --content --dry-run` and apply. That path costs no API tokens for the editing.
