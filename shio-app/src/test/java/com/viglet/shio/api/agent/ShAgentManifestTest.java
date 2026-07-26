@@ -83,7 +83,8 @@ class ShAgentManifestTest {
                 .containsEntry("postTypesAsCode", true)
                 .containsEntry("teachingErrors", true)
                 .containsEntry("agentContext", true)
-                .containsEntry("terseResponses", true);
+                .containsEntry("terseResponses", true)
+                .containsEntry("pathAddressing", true);
     }
 
     @Test

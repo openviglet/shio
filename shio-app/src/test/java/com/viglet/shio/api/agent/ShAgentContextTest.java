@@ -350,12 +350,37 @@ class ShAgentContextTest {
     }
 
     @Test
+    void siteAlsoAcceptsAnAddress() {
+        // One vocabulary for naming a site, whichever surface the caller came from (SH79).
+        assertThat(shAgentContextService.context("site:" + siteName, null, 0, null, null).sites())
+                .extracting(ShAgentContext.Site::name).containsExactly(siteName);
+    }
+
+    @Test
+    void pathAddressingAddsNoPerRowField() {
+        // SH79's shape decision, pinned. A row already carries its site, path and url,
+        // so a built `address=` field would pay tokens to repeat what the caller can
+        // derive — which would have made "the biggest token lever" a token regression.
+        // The grammar is stated once, in the conventions, instead.
+        // Row-scoped, not whole-document: the conventions legitimately mention
+        // `?address=` when they teach the resolve call, and a blunt substring check on
+        // the whole pack would fail on its own documentation.
+        List<String> rows = ShAgentContextTerse.render(context()).lines()
+                .filter(line -> line.startsWith("node ") || line.startsWith("site "))
+                .toList();
+
+        assertThat(rows).isNotEmpty().allSatisfy(row -> assertThat(row).doesNotContain("address="));
+        assertThat(context().conventions())
+                .anySatisfy(line -> assertThat(line).contains("post:<site>/<url>"));
+    }
+
+    @Test
     void conventionsStateTheRulesAnAgentWouldOtherwiseLearnByFailing() {
         List<String> conventions = context().conventions();
 
         assertThat(conventions).anySatisfy(line -> assertThat(line).contains("DRAFT"));
         assertThat(conventions).anySatisfy(line -> assertThat(line).contains("shio push"));
-        assertThat(conventions).anySatisfy(line -> assertThat(line).contains("by-url"));
+        assertThat(conventions).anySatisfy(line -> assertThat(line).contains("post:<site>/<url>"));
     }
 
     @Test

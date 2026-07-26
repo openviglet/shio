@@ -172,8 +172,12 @@ public class ShAgentContextService {
         if (site == null || site.isBlank()) {
             return all;
         }
+        // Accepts a bare name/id or a `site:` address (SH79) — one vocabulary for
+        // naming a site, whichever surface the caller came from.
+        String wanted = site.startsWith("site:") ? ShAddress.parse(site).site() : site;
         List<ShSite> matched = all.stream()
-                .filter(candidate -> site.equals(candidate.getId()) || site.equalsIgnoreCase(candidate.getName()))
+                .filter(candidate -> wanted.equals(candidate.getId())
+                        || wanted.equalsIgnoreCase(nullSafe(candidate.getName())))
                 .toList();
         if (matched.isEmpty()) {
             throw new UnknownSiteException(site, all.stream().map(ShSite::getName).toList());
@@ -347,8 +351,13 @@ public class ShAgentContextService {
             conventions.add("Post-type(s) with no content yet: " + String.join(", ", unused)
                     + " — prefer an existing type over inventing one.");
         }
-        conventions.add("Address a post by site + friendly URL (GET /api/v2/cda/post/by-url?siteId=&url=). "
-                + "Ids are per-install UUIDs and are not portable between instances.");
+        // Deliberately a *rule*, not a per-row field: every sitemap row already carries
+        // its site, path and url, so emitting a built address on each one would pay
+        // tokens to repeat what the caller can derive. State the grammar once (SH79).
+        conventions.add("Address content as post:<site>/<url> (a post's friendly URL) or "
+                + "folder:<site>/<path> (its chain of folder names) — build it from a sitemap row's "
+                + "site + url/path. GET /api/v2/agent/resolve?address=... returns the id when an "
+                + "id-keyed endpoint needs one. Ids are per-install UUIDs and are not portable.");
         if (sites.size() > 1) {
             conventions.add("This instance hosts " + sites.size() + " sites; pass ?site= to scope the "
                     + "context pack to the one you are working on.");

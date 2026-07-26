@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.api.agent.dto.ShAgentContext;
 import com.viglet.shio.api.agent.dto.ShAgentManifest;
+import com.viglet.shio.api.agent.dto.ShAgentResolved;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,11 +45,14 @@ public class ShAgentAPI {
 
     private final ShAgentManifestService shAgentManifestService;
     private final ShAgentContextService shAgentContextService;
+    private final ShAddressResolver shAddressResolver;
 
     public ShAgentAPI(ShAgentManifestService shAgentManifestService,
-                      ShAgentContextService shAgentContextService) {
+                      ShAgentContextService shAgentContextService,
+                      ShAddressResolver shAddressResolver) {
         this.shAgentManifestService = shAgentManifestService;
         this.shAgentContextService = shAgentContextService;
+        this.shAddressResolver = shAddressResolver;
     }
 
     @GetMapping("/manifest")
@@ -85,6 +89,25 @@ public class ShAgentAPI {
                     .body(ShAgentContextTerse.render(pack));
         }
         return ResponseEntity.ok(pack);
+    }
+
+    /**
+     * Resolve a content address (SH79) to the object it names.
+     *
+     * <p>The bridge between path addressing and today's id-keyed endpoints: the
+     * context pack gives an agent what it needs to <em>build</em> an address, and this
+     * turns one back into the id that {@code /api/v2/post-unified/{id}} and friends
+     * still require. Once the agent write surfaces land (SH81/SH82) they accept the
+     * address directly and this becomes a convenience rather than a step.</p>
+     *
+     * @param address e.g. {@code post:Blog/blog/hello-world}, {@code folder:Blog/blog},
+     *                {@code site:Blog}, {@code id:<uuid>}, or the lenient
+     *                {@code site:Blog/blog/hello-world}
+     */
+    @GetMapping("/resolve")
+    @Operation(summary = "Resolve a content address (post:/folder:/site:/id:) to its object")
+    public ShAgentResolved resolve(@RequestParam(name = "address") String address) {
+        return shAddressResolver.resolve(address);
     }
 
     private static boolean isTerse(String format) {

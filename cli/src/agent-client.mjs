@@ -86,6 +86,32 @@ export class ShioAgentClient {
     return { body, terse, estTokens: header ? Number(header) : null };
   }
 
+  /**
+   * GET /api/v2/agent/resolve — turn a content address into an object.
+   *
+   * @param {string} address e.g. `post:Blog/blog/hello-world`
+   */
+  async resolve(address) {
+    const url = `${this.baseUrl}/api/v2/agent/resolve?address=${encodeURIComponent(address)}`;
+    const res = await this.fetch(url, {
+      method: "GET",
+      headers: { Authorization: this.#authHeader(), Accept: "application/json" },
+    });
+    if (!res.ok) {
+      // The server's teaching problem (SH80) is the useful part of a failure here —
+      // it names the allowed schemes or the sibling paths — so pass the body through
+      // rather than collapsing it to a status code.
+      let detail = "";
+      try {
+        detail = await res.text();
+      } catch {
+        /* ignore */
+      }
+      throw new ShioHttpError(res.status, url, detail);
+    }
+    return res.json();
+  }
+
   /** GET /api/v2/agent/manifest. */
   async getManifest() {
     const url = `${this.baseUrl}/api/v2/agent/manifest`;

@@ -23,12 +23,13 @@ import { argv, exit } from "node:process";
 import { parseArgs } from "./args.mjs";
 import { defaultContext } from "./context.mjs";
 
-const BOOLEANS = ["help", "yes", "dry-run", "prune", "check", "skip-types"];
+const BOOLEANS = ["help", "yes", "dry-run", "prune", "check", "skip-types", "id"];
 
 const COMMANDS = {
   init: () => import("./commands/init.mjs"),
   types: () => import("./commands/types.mjs"),
   context: () => import("./commands/context.mjs"),
+  resolve: () => import("./commands/resolve.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),
   build: () => import("./commands/build.mjs"),
@@ -44,6 +45,7 @@ Usage:
 Commands:
   init [name]    Scaffold a Next.js site wired to the Shio CDA
   context        Print the agent context pack: model + sitemap + conventions (one call)
+  resolve <addr> Resolve a content address (post:/folder:/site:/id:) to its object
   pull           Pull post-types into ./shio/post-types/*.json (Basic auth)
   push           Apply local post-types back to Shio (--dry-run, --prune)
   build          Compile local DSL/JSON post-types to canonical JSON (--out)
@@ -68,6 +70,13 @@ Context pack (shio context):
   --depth <n>          Folder-tree depth to walk
   --budget <tokens>    Estimated-token ceiling (0 = unbounded)
   --from <id>          Resume cursor from a truncated pack
+
+Addresses (shio resolve):
+  post:<site>/<url>    A post, by its friendly URL
+  folder:<site>/<path> A folder, by its chain of folder names
+  site:<name>          A site (or site:<name>/<path> to resolve whatever is there)
+  id:<uuid>            An object id, when you have one
+  --id                 Print only the resolved id (pipeline-friendly)
 
 Common options:
   --dir <dir>          Post-types directory   (default shio/post-types) [pull/push/build]

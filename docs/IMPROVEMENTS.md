@@ -245,19 +245,32 @@ response that omits something the agent then has to ask for is a regression — 
 is why per-field projection on content reads was **not** forced into SH78 and waits
 for SH123, when there are content reads to project.
 
-### VIII.5 Path addressing (SH79)
+### VIII.5 Path addressing (SH79) — ✅ shipped
 
-`site:viglet.org/blog/hello-world` addresses reads **and** writes everywhere. UUIDs
-remain the storage key and stay valid; they stop being the agent's currency. Two
-consequences worth stating:
-1. It removes UUID threading across calls — a real and frequent failure mode
-   (the id from call 3 is needed in call 7, and any context compaction loses it).
-2. It makes writes **naturally idempotent**: "upsert this path" instead of
-   "create, remember the id, then update". That is what makes §VIII.7 and §X.2
-   possible at all.
+Shipped: the address grammar, resolver, `GET /api/v2/agent/resolve` and
+`shio resolve` → [CHANGELOG.md](CHANGELOG.md) Block H. Design records that bind what
+follows:
 
-`furl` already resolves posts by URL in the CDA (SH1) — this generalizes the idea
-into a first-class addressing scheme covering folders, sites and drafts.
+- **A capability is not the same as a payload field.** Read naively, "path
+  addressing everywhere" means putting an `address` on every row — which would have
+  made the block's biggest *token lever* a token *regression*, since a row already
+  carries the site, path and url the address is built from. The grammar is stated once
+  in the conventions; the resolver makes it actionable. Generalize: before adding a
+  field, check whether the caller can already derive it.
+- **Folder paths and post URLs are two namespaces.** A folder path is a chain of
+  folder names; a `furl` is arbitrary. The scheme says which is meant, and the lenient
+  `site:` form refuses to guess when both are occupied. SH81/SH82 must keep this —
+  an "upsert this path" write that guessed the namespace would create content in the
+  wrong place silently.
+- **Absent, not forbidden.** An address outside the SH2 allow-list resolves to 404,
+  never 403, so a scoped credential cannot use the error to prove a site exists. Every
+  future address-taking surface inherits this.
+- **`addressOf` is the inverse and is round-trip tested**, because SH121 removes the
+  id from context rows and that only stays honest if everything shown is addressable.
+
+**Still open:** writes are not yet address-native — `resolve` is the bridge to
+today's id-keyed endpoints. SH81/SH82 take the address directly, at which point
+"upsert this address" becomes the idempotent write this task was really for.
 
 ### VIII.6 Teaching errors (SH80) — ✅ shipped
 

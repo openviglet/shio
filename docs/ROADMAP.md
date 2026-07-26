@@ -66,19 +66,20 @@
 
 > ✅ Shipped → [CHANGELOG.md](CHANGELOG.md) Block H: **SH76** (manifest) · **SH80**
 > (teaching errors) · **SH77** (context pack) · **SH78** (token-lean responses) ·
-> **SH122** (tenant-join guard) · **SH124** (delivery cost header) · **SH125**
-> (null-omission policy) · **SH126** (`shio context` CLI).
-> **Two findings that reorder what is left:** (1) the per-row token cost is dominated
-> by the 36-char UUID, not by the encoding — so **SH79 is the largest remaining token
-> lever**, not a convenience; (2) SH122's guard immediately uncovered three shipped
-> CDA paths broken in production, so the "valid-JPQL, runtime-only" class of defect is
-> worth guarding wherever else it exists.
+> **SH79** (path addressing) · **SH122** (tenant-join guard) · **SH124** (delivery
+> cost header) · **SH125** (null-omission policy) · **SH126** (`shio context` CLI).
+> **Findings that reorder what is left:** (1) the per-row token cost is dominated by
+> the 36-char UUID, not by the encoding — SH79 shipped the addressing that makes ids
+> droppable, so **SH121 is now where that win is actually collected**; (2) SH122's
+> guard immediately uncovered three shipped CDA paths broken in production, so the
+> "valid-JPQL, runtime-only" class of defect is worth guarding wherever else it exists;
+> (3) "path addressing" read naively would have *added* a field per row — the grammar
+> belongs in the conventions, not on every row (see the SH79 entry).
 
 - 📋 **SH75** (deps: SH2, SH16) **MCP server host** — Spring-hosted MCP at `/mcp` (streamable HTTP) + a `shio mcp` stdio bridge in the CLI; tool registry; auth via the `AGENT` token scope; per-session agent id stamped into the SH51 audit. → §VIII.1
-- 📋 **SH79** (deps: SH77) **Path addressing everywhere** — `site:viglet.org/blog/hello-world` addresses reads *and* writes; UUIDs stay valid but stop being the agent's currency (makes writes naturally idempotent). Now also the biggest measured token win left in Block H. → §VIII.5
 - 📋 **SH81** (deps: SH79) **Batch transactional mutation** — `POST /api/v2/agent/batch`: N ops, atomic, `dryRun`, per-op results. A 12-page structure in one call. → §VIII.7
 - 📋 **SH82** (deps: SH81) **Desired-state plan/apply for content** — generalize `shio push --check` (SH65) from post-types to content: declarative doc → `plan` (no writes) → `apply`. → §VIII.7
-- 📋 **SH121** (deps: SH79) **Id-free agent reads** — once a path addresses content, drop ids from context/listing rows by default (`ids=true` to restore). Measured basis: the UUID is the single largest per-row cost, so this is a further ~30% on the sitemap after SH78. → §VIII.5
+- 📋 **SH121** (deps: SH79 ✅) **Id-free agent reads** — drop ids from context/sitemap rows by default (`ids=true` to restore), now that SH79 makes every row addressable without one. Measured basis: the UUID is the single largest per-row cost, so this is a further ~30% on the sitemap after SH78. **Next up in this block.** → §VIII.5
 - 📋 **SH123** (deps: SH79, SH83) **Per-field projection on agent content reads** — `fields=` on `shio_read`/post reads (SH78 shipped section-level `include=`; per-field only becomes meaningful once the agent surface reads content). → §VIII.4
 - 📋 **SH83** (deps: SH77, SH78, SH82) **The nine agent tools** — `shio_context` · `find` · `read` · `write` · `apply` · `publish` · `verify` · `assets` · `changes`, plus MCP resources (`schema/{postType}`, `blueprints`) and prompts (`new-site`, `add-section`, `translate-site`, `audit-content`). Deliberately few and intent-named — tool schemas are context too. → §VIII.8
 - 💭 **SH84** (deps: SH83, SH22) **Tenant/scope-aware tools + ecosystem wiring** — scope every tool per tenant; Turing integration (replaces old SH37). → §VIII.9
