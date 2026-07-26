@@ -57,6 +57,8 @@ public class ShSecurityConfig {
     private static final String POST_TYPE_PATH = "/api/v2/post-type/**";
     /** The agent surface (Block H) — stateless callers: a CDA {@code Key} token or the {@code shio} CLI's Basic auth. */
     private static final String AGENT_PATH = "/api/v2/agent/**";
+    /** The MCP endpoint (SH75) — the same surface over JSON-RPC; equally stateless. */
+    private static final String MCP_PATH = "/mcp";
     /** Tenant catalog (SH22) — writes are admin-only; {@code GET /current} stays open to any user. */
     private static final String TENANT_PATH = "/api/v2/tenant";
     private static final String TENANT_SUBPATH = "/api/v2/tenant/**";
@@ -121,6 +123,7 @@ public class ShSecurityConfig {
                         // applies (anyRequest().authenticated()), and the ACL + quota
                         // checks inside the batch engine are what actually bound it.
                         mvc.matcher(AGENT_PATH),
+                        mvc.matcher(MCP_PATH),
                         mvc.matcher(SETUP_PATH),
                         mvc.matcher(ERROR_PATH),
                         mvc.matcher(LOGOUT_PATH),

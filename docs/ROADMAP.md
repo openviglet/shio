@@ -37,11 +37,11 @@
 
 > **Numbering.** `SH<n>` ids are permanent and **not contiguous** — epics own
 > sub-ranges and superseded tasks keep their numbers (never reuse them). **SH74** is
-> the agent-native epic; Blocks H–N run **SH75–SH127** with deliberate gaps
+> the agent-native epic; Blocks H–N run **SH75–SH135** with deliberate gaps
 > (SH85 · SH91 · SH98 · SH105 · SH111 · SH118 are reserved, unused block-header
-> slots). **SH121–SH127** were added from findings while implementing the block —
-> new tasks are expected to accrete this way, and each one's line says what
-> measurement or failure produced it. Superseded and therefore retired: **SH17/SH18** (GraalJS), **SH23 +
+> slots). **SH121–SH127** and **SH128–SH135** were added from findings while
+> implementing Block H — new tasks are expected to accrete this way, and each one's
+> line says what measurement or failure produced it. Superseded and therefore retired: **SH17/SH18** (GraalJS), **SH23 +
 > SH27–SH31** (marketplace → Block J), **SH24 + SH32–SH37** (CRUD-over-MCP → Block H).
 
 ---
@@ -64,34 +64,40 @@
 > too thin: CRUD-over-MCP reproduces every discovery/write cost it was meant to fix.
 > → §VIII
 
-> ✅ Shipped → [CHANGELOG.md](CHANGELOG.md) Block H: **SH76** (manifest) · **SH80**
-> (teaching errors) · **SH77** (context pack) · **SH78** (token-lean responses) ·
-> **SH79** (path addressing) · **SH121** (id-free reads) · **SH81** (batch writes) ·
-> **SH82** (desired-state plan/apply) · **SH122** (tenant-join guard) · **SH124**
-> (delivery cost header) · **SH125** (null-omission policy) · **SH126** (`shio context` CLI).
-> **Findings that reorder what is left:** (1) SH122's guard immediately uncovered three
-> shipped CDA paths broken in production, and SH81 turned up a fourth of the same shape
-> (posts created below a root folder had a null `shSite`) — the "valid code, wrong at
-> runtime, silent until something queries along the other axis" class is worth a guard
-> wherever else it exists, which is now **SH128**; (2) "path addressing" read naively
-> would have *added* a field per row — the grammar belongs in the conventions, not on
-> every row (see the SH79 entry); (3) SH81/SH82 shipped the write engine SH83's `write`
-> and `apply` tools were going to need, so the remaining tool work is a **shape over
-> them**, not new semantics.
+> ✅ **The gateway is shipped** → [CHANGELOG.md](CHANGELOG.md) Block H: **SH76**
+> (manifest) · **SH80** (teaching errors) · **SH77** (context pack) · **SH78**
+> (token-lean responses) · **SH79** (path addressing) · **SH121** (id-free reads) ·
+> **SH81** (batch writes) · **SH82** (desired-state plan/apply) · **SH75** (MCP host +
+> `shio mcp`) · **SH83** (the agent tools, resources and prompts) · **SH123** (field
+> projection) · **SH122** (tenant-join guard) · **SH124** (delivery cost header) ·
+> **SH125** (null-omission policy) · **SH126** (`shio context` CLI).
+>
+> **What is deliberately not in it, and why:** `shio_verify` waits for **SH99** — a
+> verify that only pretends leaves the agent believing its work was checked, which is
+> worse than knowing it was not. `shio_changes` ships as a *window* over the SH51 audit;
+> the `since=` cursor is **SH88**, and faking one over a timestamp would look resumable
+> while dropping same-timestamp entries. Both are reported `false` in the manifest so no
+> caller has to probe. **Findings that reorder what follows:** the "valid code, wrong at
+> runtime" class has now produced four defects (SH122's three CDA paths, plus SH81's
+> site-less posts) → **SH128**; and building the tools surfaced two gaps in the write
+> vocabulary that only show up once you try to *change* a site rather than build one →
+> **SH134**, **SH135**.
 
-- 📋 **SH75** (deps: SH2, SH16) **MCP server host** — Spring-hosted MCP at `/mcp` (streamable HTTP) + a `shio mcp` stdio bridge in the CLI; tool registry; auth via the `AGENT` token scope; per-session agent id stamped into the SH51 audit. **Next up in this block.** → §VIII.1
-- 📋 **SH123** (deps: SH79, SH83) **Per-field projection on agent content reads** — `fields=` on `shio_read`/post reads (SH78 shipped section-level `include=`; per-field only becomes meaningful once the agent surface reads content). → §VIII.4
-- 📋 **SH83** (deps: SH77, SH78, SH82 ✅) **The nine agent tools** — `shio_context` · `find` · `read` · `write` · `apply` · `publish` · `verify` · `assets` · `changes`, plus MCP resources (`schema/{postType}`, `blueprints`) and prompts (`new-site`, `add-section`, `translate-site`, `audit-content`). Deliberately few and intent-named — tool schemas are context too. → §VIII.8
-- 💭 **SH84** (deps: SH83, SH22) **Tenant/scope-aware tools + ecosystem wiring** — scope every tool per tenant; Turing integration (replaces old SH37). → §VIII.9
-- 📋 **SH128** (deps: —) **Guard the "site-less object" defect class** — a test that asserts every write path resolves a folder's owning site by walking to the root, not by reading `folder.getShSite()`. SH81 found the third such runtime-only defect; a build-time guard is cheaper than the fourth. → §VIII.10
-- 📋 **SH129** (deps: SH81) **`shio apply`/`plan` in the CLI** — law P1 says every capability lands MCP → files/CLI → REST; SH81/SH82 stopped at REST because the CLI's content verbs belong with SH87's file projection. Until then a JSON document has to be `curl`ed. → §VIII.7
+- 💭 **SH84** (deps: SH83 ✅, SH22) **Tenant/scope-aware tools + ecosystem wiring** — the per-tenant enforcement pass over the finished tool set (the SH2 allow-list and SH54 ACL already apply; this is the SH22 tenant sweep and its test), plus Turing integration (replaces old SH37). → §VIII.9
+- 📋 **SH128** (deps: —) **Guard the "site-less object" defect class** — a test that asserts every write path resolves a folder's owning site by walking to the root, not by reading `folder.getShSite()`. Fourth runtime-only defect of this shape; a build-time guard is cheaper than the fifth. → §VIII.10
+- 📋 **SH129** (deps: SH81 ✅) **`shio apply`/`plan` in the CLI** — law P1's order is MCP → files/CLI → REST, and content verbs landed at MCP and REST but not the CLI, because they belong with SH87's file projection. Until then a desired-state document has to be `curl`ed. → §VIII.7
+- 📋 **SH130** (deps: SH75 ✅) **MCP wire-conformance guard** — golden-transcript tests pinning the exact JSON-RPC shapes, plus a check that the advertised `protocolVersion` matches what the envelopes actually implement. The protocol is hand-rolled, so nothing else stops a well-meaning edit from silently breaking every client. → §VIII.11
+- 📋 **SH131** (deps: —) **Make the full-text bind contract unmissable** — `FULLTEXT_PREDICATE` requires a pre-lowercased, `%`-wrapped term and says so only in a comment; SH83 got it wrong and the symptom was an empty result, not an error. Wrap it in a repository method that does the normalizing. → §VIII.11
+- 📋 **SH132** (deps: SH113, SH83 ✅) **Budget the MCP tool-list** — the tool schemas are context re-sent on every turn of every session, so their total token size belongs in the SH113 CI budget alongside the response budgets. A 12-tool cap is a proxy for the number that matters. → §XIII.2
+- 📋 **SH134** (deps: SH81 ✅) **`post.move` in the write vocabulary** — there is no way to change a post's URL or folder: re-addressing an upsert creates a second post, so a rename silently orphans the original and loses its history. Found while writing the tools; it is the first thing an agent needs when *changing* a site rather than building one. → §VIII.7
+- 📋 **SH135** (deps: SH82 ✅) **Prune folders, not just posts** — a desired-state document cannot remove a folder it no longer declares, so a section that moves leaves its empty shell behind and the document stops describing the site. Same declared-scope rule as post prune. → §VIII.7
 
 ## Block K — Perception & verification loop
 
 > Two of the three human round trips in a typical build exist only because the
 > agent cannot check its own work. This block is the cheapest large win after H. → §IX
 
-- 📋 **SH99** (deps: SH77) **Content lint** — required fields, dangling references, missing assets, duplicate furls, orphan folders, unpublished dependencies → machine-readable report + exit code (`shio verify`, MCP tool). → §IX.1
+- 📋 **SH99** (deps: SH77) **Content lint** — required fields, dangling references, missing assets, duplicate furls, orphan folders, unpublished dependencies → machine-readable report + exit code. **Ships the ninth tool**: `shio_verify` was held back from SH83 for want of something real to verify, and this task registers it and flips the manifest's `contentLint`. → §IX.1
 - 📋 **SH100** (deps: SH99) **Route/link verification** — every furl resolves; internal links + images 200; sitemap coverage vs the blueprint's expectation. → §IX.2
 - 📋 **SH101** (deps: SH99) **Render digest** — fetch a delivery URL and return a token-lean *structural* digest (heading outline, landmarks, link/image inventory with alt, word counts). Textual proof of layout without pixels. → §IX.3
 - 💭 **SH102** (deps: SH101) **Visual snapshot + diff** — optional Playwright PNG + diff vs previous, for the human handoff rather than for the agent. → §IX.4
@@ -106,7 +112,7 @@
 
 - 📋 **SH86** (deps: SH79) **Filesystem projection format** — `shio/content/<site>/<path>.md` (frontmatter = attrs, body = primary rich-text field) + `shio/assets/`; lossless round-trip, deterministic serialization (same discipline as SH68/SH63). → §X.1
 - 📋 **SH87** (deps: SH86, SH82) **Two-way content sync** — `shio pull --content` / `push --content` on the plan/apply engine, with `--check` drift for CI. → §X.2
-- 📋 **SH88** (deps: SH51, SH79) **Change feed / cursor API** — `GET /api/v2/agent/changes?since=<cursor>` over the audit trail, so the human's console edits flow back and a follow-up session reads only the delta. → §X.3
+- 📋 **SH88** (deps: SH51, SH79) **Change feed / cursor API** — `GET /api/v2/agent/changes?since=<cursor>` over the audit trail, so the human's console edits flow back and a follow-up session reads only the delta. SH83's `shio_changes` is the window this makes resumable; it also flips the manifest's `changeCursor`. → §X.3
 - 📋 **SH89** (deps: SH87, SH88) **Conflict policy** — per-field 3-way merge with explicit conflicts and `--ours/--theirs`; never a silent clobber (both actors are legitimate writers, cf. the SH66 lock). → §X.4
 - 💭 **SH90** (deps: SH87) **Watch mode** — `shio dev` syncs both directions and emits an agent-readable event log. → §X.5
 
@@ -121,7 +127,7 @@
 - 📋 **SH94** (deps: SH93) **First-party blueprint set** — `marketing-site`, `blog`, `docs`, `landing`, `product-catalog`; each ships model + sample content + routes + verification (replaces old SH30). → §XI.3
 - 📋 **SH95** (deps: SH92) **Section library (`@viglet/shio-sections`)** — composable page-section post-types **plus** matching React components (`hero`, `feature-grid`, `cta`, `logo-wall`, …). One shared vocabulary for the agent, the console and the front end — this is what makes *"now change the site"* cheap instead of archaeological. Highest-leverage item in the block. → §XI.4
 - 💭 **SH96** (deps: SH93) **Blueprint registry + community convention** — `shio-blueprint-*` naming, manifest validation, curated index (absorbs old SH28/SH29/SH31). → §XI.5
-- 📋 **SH97** (deps: SH75, SH94) **Claude Code plugin for Shio** — a shipped `.claude` plugin: MCP server config, skills (`shio-site`, `shio-content-model`, `shio-verify`), slash commands, generated `AGENTS.md` fragment. An agent session starts already knowing Shio; the distribution channel for the whole concept. → §XI.6
+- 📋 **SH97** (deps: SH75 ✅, SH94) **Claude Code plugin for Shio** — a shipped `.claude` plugin: MCP server config, skills (`shio-site`, `shio-content-model`, `shio-verify`), slash commands, generated `AGENTS.md` fragment. An agent session starts already knowing Shio; the distribution channel for the whole concept. → §XI.6
 
 ## Block L — Agent safety & human-in-the-loop
 
@@ -129,7 +135,7 @@
 > Invariant: **the agent path is never a privilege escalation** — tenant isolation
 > (SH22), content ACL (SH54) and token scopes apply identically. → §XII
 
-- 📋 **SH106** (deps: SH2, SH51) **`AGENT` token scope + session identity** — scoped, budgeted, expiring credential; every write tagged with the agent session id. → §XII.1
+- 📋 **SH106** (deps: SH2, SH51) **`AGENT` token scope + session identity** — scoped, budgeted, expiring credential; every write tagged with the agent session id. SH75 already mints the id and stamps it into the audit *actor string*; this task owns the credential model, so it is where the id gets a column (one migration, not two). → §XII.1
 - 📋 **SH107** (deps: SH106) **Draft-by-default + publish gate** — MCP writes land in DRAFT; publish is a separate tool, off unless the token says `mayPublish`. → §XII.2
 - 📋 **SH108** (deps: SH82) **Destructive-op confirm tokens** — deletes/prunes/apply-with-prune take two steps, the second carrying the **plan hash**. → §XII.3
 - 📋 **SH109** (deps: SH106, SH14) **Review queue console surface** — "the agent proposed N changes": diff (reuse SH14), approve, revert (reuse SH55 trash). The human's new primary workflow. → §XII.4

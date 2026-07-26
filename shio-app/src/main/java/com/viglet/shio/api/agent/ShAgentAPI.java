@@ -9,6 +9,8 @@
 package com.viglet.shio.api.agent;
 
 import java.security.Principal;
+import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,8 @@ import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentContext;
 import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
+import com.viglet.shio.api.agent.dto.ShAgentDoc;
+import com.viglet.shio.api.agent.dto.ShAgentFound;
 import com.viglet.shio.api.agent.dto.ShAgentManifest;
 import com.viglet.shio.api.agent.dto.ShAgentResolved;
 
@@ -55,17 +59,20 @@ public class ShAgentAPI {
     private final ShAddressResolver shAddressResolver;
     private final ShAgentBatchService shAgentBatchService;
     private final ShAgentDesiredStateService shAgentDesiredStateService;
+    private final ShAgentReadService shAgentReadService;
 
     public ShAgentAPI(ShAgentManifestService shAgentManifestService,
                       ShAgentContextService shAgentContextService,
                       ShAddressResolver shAddressResolver,
                       ShAgentBatchService shAgentBatchService,
-                      ShAgentDesiredStateService shAgentDesiredStateService) {
+                      ShAgentDesiredStateService shAgentDesiredStateService,
+                      ShAgentReadService shAgentReadService) {
         this.shAgentManifestService = shAgentManifestService;
         this.shAgentContextService = shAgentContextService;
         this.shAddressResolver = shAddressResolver;
         this.shAgentBatchService = shAgentBatchService;
         this.shAgentDesiredStateService = shAgentDesiredStateService;
+        this.shAgentReadService = shAgentReadService;
     }
 
     @GetMapping("/manifest")
@@ -128,6 +135,56 @@ public class ShAgentAPI {
     }
 
     /**
+     * Find posts — addresses and titles, never bodies (SH83).
+     *
+     * @param site   site name/id/address; omit for every readable site
+     * @param type   post-type name
+     * @param folder folder path or address; matches the folder and everything beneath it
+     * @param q      full-text over title, summary and content
+     * @param limit  row cap
+     * @param ids    include object ids (SH121 default: off)
+     * @param format {@code json} (default) or {@code terse}
+     */
+    @GetMapping("/find")
+    @Operation(summary = "Find posts by site / type / folder / text — identifiers, not bodies")
+    public ResponseEntity<Object> find(
+            @RequestParam(name = "site", required = false) String site,
+            @RequestParam(name = "type", required = false) String type,
+            @RequestParam(name = "folder", required = false) String folder,
+            @RequestParam(name = "q", required = false) String q,
+            @RequestParam(name = "limit", required = false) Integer limit,
+            @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids,
+            @RequestParam(name = "format", required = false) String format) {
+
+        ShAgentFound found = shAgentReadService.find(site, type, folder, q, limit, ids);
+        return isTerse(format)
+                ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
+                        .body(ShAgentReadTerse.found(found))
+                : ResponseEntity.ok(found);
+    }
+
+    /**
+     * Read one or more posts by address, optionally projected to named fields (SH123).
+     *
+     * @param address repeatable — several posts in one call
+     * @param fields  comma-separated field names; omit for the whole document
+     */
+    @GetMapping("/read")
+    @Operation(summary = "Read posts by address, with an optional per-field projection")
+    public ResponseEntity<Object> read(
+            @RequestParam(name = "address") List<String> address,
+            @RequestParam(name = "fields", required = false) String fields,
+            @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids,
+            @RequestParam(name = "format", required = false) String format) {
+
+        List<ShAgentDoc> docs = shAgentReadService.read(address, split(fields), ids);
+        return isTerse(format)
+                ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
+                        .body(ShAgentReadTerse.docs(docs))
+                : ResponseEntity.ok(docs);
+    }
+
+    /**
      * Apply N content operations as one transaction (SH81).
      *
      * <p>Every op names its target by address, so a twelve-page structure is one call
@@ -172,6 +229,14 @@ public class ShAgentAPI {
 
     private static boolean isTerse(String format) {
         return format != null && "terse".equalsIgnoreCase(format.trim());
+    }
+
+    /** Comma-separated list → trimmed values; blank/absent → empty. */
+    private static List<String> split(String csv) {
+        if (csv == null || csv.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(csv.split(",")).map(String::trim).filter(value -> !value.isEmpty()).toList();
     }
 
     private static String name(Principal principal) {

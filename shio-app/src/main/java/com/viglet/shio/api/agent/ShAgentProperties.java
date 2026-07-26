@@ -30,6 +30,24 @@ public class ShAgentProperties {
 
     private Batch batch = new Batch();
 
+    private Read read = new Read();
+
+    /** Agent content-read limits (SH83's `find`). */
+    @Setter
+    @Getter
+    public static class Read {
+
+        /**
+         * Rows a {@code find} returns when the caller names no limit. Small on purpose:
+         * find exists to narrow, and a default that returns everything would make the
+         * tool a listing endpoint by accident.
+         */
+        private int defaultLimit = 25;
+
+        /** Ceiling on a caller-supplied limit. */
+        private int maxLimit = 200;
+    }
+
     /** Batch + plan/apply limits (SH81, SH82). */
     @Setter
     @Getter

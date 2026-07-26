@@ -112,11 +112,18 @@ public class ShAgentManifestService {
         features.put("pathAddressing", true);
         features.put("batchWrites", true);
         features.put("desiredState", true);
+        features.put("mcp", true);
+        features.put("fieldProjection", true);
 
         // Declared-but-unshipped (Block H–J). Reported false so a caller does not probe.
         features.put("blueprints", false);
         features.put("contentAsFiles", false);
-        features.put("mcp", false);
+        // SH99's content lint. False rather than a stub tool, because an agent that
+        // believes its work was verified is worse off than one that knows it was not.
+        features.put("contentLint", false);
+        // SH88's cursor. shio_changes reads a window today; "everything since I last
+        // looked" is not expressible yet.
+        features.put("changeCursor", false);
 
         return features;
     }
@@ -163,6 +170,14 @@ public class ShAgentManifestService {
                 new ShAgentEndpoint("POST", "/agent/apply",
                         "Make that document true, atomically. Re-applying it is a no-op.",
                         "console", "POST /api/v2/agent/apply"),
+                new ShAgentEndpoint("GET", "/agent/find",
+                        "Find posts by site / type / folder subtree / text. Returns addresses "
+                                + "and titles, never bodies — read only what you pick.",
+                        "console", "GET /api/v2/agent/find?site=Blog&type=Article"),
+                new ShAgentEndpoint("GET", "/agent/read",
+                        "Read posts by address (drafts preferred). Repeat ?address= for several, "
+                                + "and pass ?fields= to fetch only the fields you need.",
+                        "console", "GET /api/v2/agent/read?address=post:Blog/blog/hello-world"),
                 new ShAgentEndpoint("GET", "/cda/site",
                         "List published sites (id, name, root folder id).",
                         "token:READ", "GET /api/v2/cda/site"),
@@ -221,7 +236,10 @@ public class ShAgentManifestService {
                 "address content as post:<site>/<url> or folder:<site>/<path>; "
                         + "GET /api/v2/agent/resolve turns one into an id when an endpoint needs it",
                 "write with POST /api/v2/agent/batch (atomic, addressed, dryRun-able) rather than "
-                        + "one id-keyed call per object");
+                        + "one id-keyed call per object",
+                "over MCP: POST /mcp speaks the Model Context Protocol, with the same "
+                        + "capabilities as tools (shio_context, shio_find, shio_read, shio_write, "
+                        + "shio_apply, shio_publish, shio_assets, shio_changes)");
     }
 
     /** Same source as {@code /api/v2/system/info}: the jar manifest, {@code dev} in an IDE. */

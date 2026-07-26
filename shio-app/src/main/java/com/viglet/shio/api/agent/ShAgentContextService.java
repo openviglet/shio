@@ -36,8 +36,6 @@ import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
-import com.viglet.shio.persistence.repository.site.ShSiteRepository;
-import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 
 /**
  * Builds the context pack (SH77) — the one call that replaces a session of
@@ -62,31 +60,30 @@ import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 @Transactional(readOnly = true)
 public class ShAgentContextService {
 
-    private static final byte ROOT_FOLDER = 1;
     private static final List<ShPostState> BOTH_STATES = List.of(ShPostState.DRAFT, ShPostState.PUBLISHED);
     private static final String KIND_FOLDER = "folder";
     private static final String KIND_POST = "post";
     private static final String ROOT_PATH = "/";
 
-    private final ShSiteRepository shSiteRepository;
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShCdaMapper mapper;
     private final ShAgentProperties properties;
+    private final ShAgentSiteAccess siteAccess;
 
-    public ShAgentContextService(ShSiteRepository shSiteRepository,
-                                ShFolderRepository shFolderRepository,
+    public ShAgentContextService(ShFolderRepository shFolderRepository,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
                                 ShPostTypeRepository shPostTypeRepository,
                                 ShCdaMapper mapper,
-                                ShAgentProperties properties) {
-        this.shSiteRepository = shSiteRepository;
+                                ShAgentProperties properties,
+                                ShAgentSiteAccess siteAccess) {
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostTypeRepository = shPostTypeRepository;
         this.mapper = mapper;
         this.properties = properties;
+        this.siteAccess = siteAccess;
     }
 
     /** Id-free by default (SH121) — see {@link #context(String, Integer, Integer, String, String, boolean)}. */
@@ -113,7 +110,7 @@ public class ShAgentContextService {
         ShTokenBudget tokens = new ShTokenBudget(resolveBudget(budget));
         int walkDepth = depth == null || depth < 0 ? properties.getContext().getDefaultDepth() : depth;
 
-        List<ShSite> sites = readableSites(site);
+        List<ShSite> sites = siteAccess.readable(site);
         // Keyed by id, not by name — see the repository note on the SH22 @TenantId
         // join hazard. Names are resolved from the post-type rows we load anyway.
         Map<String, Long> postsBySite = counts(shPostUnifiedRepository.countDistinctBySiteId());
@@ -169,32 +166,6 @@ public class ShAgentContextService {
             throw new InvalidBudgetException(budget, config.getMaxBudgetTokens());
         }
         return budget == 0 ? 0 : Math.min(budget, config.getMaxBudgetTokens());
-    }
-
-    /**
-     * Sites this credential may read, sorted by name. Reuses the SH2 per-site
-     * allow-list, so a scoped delivery key sees exactly what it sees on the CDA.
-     */
-    private List<ShSite> readableSites(String site) {
-        Optional<ShApiTokenContext> token = ShApiTokenContext.current();
-        List<ShSite> all = shSiteRepository.findAll().stream()
-                .filter(candidate -> token.isEmpty() || token.get().allowsSite(candidate.getId()))
-                .sorted(Comparator.comparing(candidate -> nullSafe(candidate.getName())))
-                .toList();
-        if (site == null || site.isBlank()) {
-            return all;
-        }
-        // Accepts a bare name/id or a `site:` address (SH79) — one vocabulary for
-        // naming a site, whichever surface the caller came from.
-        String wanted = site.startsWith("site:") ? ShAddress.parse(site).site() : site;
-        List<ShSite> matched = all.stream()
-                .filter(candidate -> wanted.equals(candidate.getId())
-                        || wanted.equalsIgnoreCase(nullSafe(candidate.getName())))
-                .toList();
-        if (matched.isEmpty()) {
-            throw new UnknownSiteException(site, all.stream().map(ShSite::getName).toList());
-        }
-        return matched;
     }
 
     private List<ShAgentContext.Site> siteRows(List<ShSite> sites, Map<String, Long> postsBySite, boolean ids) {
@@ -392,8 +363,7 @@ public class ShAgentContextService {
     }
 
     private Optional<ShFolder> rootFolder(ShSite site) {
-        return shFolderRepository.findByShSiteAndRootFolder(site, ROOT_FOLDER).stream()
-                .min(Comparator.comparing(ShFolder::getId));
+        return siteAccess.rootFolder(site);
     }
 
     /**

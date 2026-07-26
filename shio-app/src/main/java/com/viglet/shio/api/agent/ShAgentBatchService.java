@@ -41,8 +41,6 @@ import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
-import com.viglet.shio.persistence.repository.site.ShSiteRepository;
-import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 import com.viglet.shio.tenant.ShTenantQuotaService;
 
 import tools.jackson.core.JacksonException;
@@ -99,11 +97,10 @@ public class ShAgentBatchService {
     public static final List<String> OPS = List.of(
             FOLDER_UPSERT, FOLDER_DELETE, POST_UPSERT, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE);
 
-    private static final byte ROOT_FOLDER = 1;
     private static final List<ShPostState> BOTH_STATES =
             List.of(ShPostState.DRAFT, ShPostState.PUBLISHED);
 
-    private final ShSiteRepository shSiteRepository;
+    private final ShAgentSiteAccess siteAccess;
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShPostTypeRepository shPostTypeRepository;
@@ -114,7 +111,7 @@ public class ShAgentBatchService {
     private final ObjectMapper objectMapper;
     private final ShAgentProperties properties;
 
-    public ShAgentBatchService(ShSiteRepository shSiteRepository,
+    public ShAgentBatchService(ShAgentSiteAccess siteAccess,
                                ShFolderRepository shFolderRepository,
                                ShPostUnifiedRepository shPostUnifiedRepository,
                                ShPostTypeRepository shPostTypeRepository,
@@ -124,7 +121,7 @@ public class ShAgentBatchService {
                                ShTenantQuotaService shTenantQuotaService,
                                ObjectMapper objectMapper,
                                ShAgentProperties properties) {
-        this.shSiteRepository = shSiteRepository;
+        this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostTypeRepository = shPostTypeRepository;
@@ -361,35 +358,22 @@ public class ShAgentBatchService {
     // --- resolution helpers, shared with the desired-state compiler ---
 
     /**
-     * Sites this credential may write to, honouring the SH2 allow-list exactly as the
-     * reads do — and, like them, reporting a disallowed site as absent rather than
-     * forbidden so a scoped credential cannot use the error to prove one exists.
+     * Sites this credential may write to — the same SH2 allow-list the reads use, from
+     * the same place ({@link ShAgentSiteAccess}), so a write can never see a site a
+     * read would hide.
      */
     ShSite requireSite(String nameOrId) {
-        List<ShSite> readable = shSiteRepository.findAll().stream()
-                .filter(candidate -> ShApiTokenContext.current()
-                        .map(token -> token.allowsSite(candidate.getId())).orElse(true))
-                .sorted(Comparator.comparing(candidate -> nullSafe(candidate.getName())))
-                .toList();
-        return readable.stream()
-                .filter(candidate -> nameOrId.equals(candidate.getId())
-                        || nameOrId.equalsIgnoreCase(nullSafe(candidate.getName())))
-                .findFirst()
-                .orElseThrow(() -> new ShAgentContextService.UnknownSiteException(
-                        nameOrId, readable.stream().map(ShSite::getName).toList()));
+        return siteAccess.require(nameOrId);
     }
 
     ShFolder requireRootFolder(ShSite site) {
-        return shFolderRepository.findByShSiteAndRootFolder(site, ROOT_FOLDER).stream()
-                .min(Comparator.comparing(ShFolder::getId))
+        return siteAccess.rootFolder(site)
                 .orElseThrow(() -> new UnresolvableParentException(ShAddress.site(site.getName())));
     }
 
     /** A folder by its path of names under a site's root. */
     Optional<ShFolder> findFolder(ShSite site, String path) {
-        Optional<ShFolder> current = shFolderRepository
-                .findByShSiteAndRootFolder(site, ROOT_FOLDER).stream()
-                .min(Comparator.comparing(ShFolder::getId));
+        Optional<ShFolder> current = siteAccess.rootFolder(site);
         for (String segment : segments(path)) {
             if (current.isEmpty()) {
                 return Optional.empty();

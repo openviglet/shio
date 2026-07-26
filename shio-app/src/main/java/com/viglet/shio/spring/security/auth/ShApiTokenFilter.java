@@ -71,6 +71,16 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
      */
     private static final String AGENT_PATH_PREFIX = "/api/v2/agent";
 
+    /**
+     * The MCP endpoint (SH75) is the same surface again, reached over a different
+     * transport. Like GraphQL it reads via {@code POST}, so the SH2 GET-only gate is
+     * skipped for it — but unlike GraphQL, MCP <em>can</em> write, so the per-tool
+     * checks inside the tools (SH54 ACL, SH22 quota, and the SH2 site allow-list every
+     * agent read already honours) are what bound a token here. Widening this prefix
+     * without those would have been the privilege escalation §XII forbids.
+     */
+    private static final String MCP_PATH = "/mcp";
+
     private static final String RATE_LIMIT_REMAINING_HEADER = "X-Rate-Limit-Remaining";
 
     private final ShApiTokenRepository shApiTokenRepository;
@@ -98,7 +108,7 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         // path is ignored, so a token can never authenticate a console request.
         // The GraphQL delivery endpoint (SH4) and the agent surface (SH76) are the
         // second and third such surfaces.
-        boolean graphQl = isGraphQlPath(request);
+        boolean graphQl = isGraphQlPath(request) || isMcpPath(request);
         if (!isCdaPath(request) && !graphQl && !isAgentPath(request)) {
             filterChain.doFilter(request, response);
             return;
@@ -199,6 +209,11 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
 
     private static boolean isAgentPath(HttpServletRequest request) {
         return relativePath(request).startsWith(AGENT_PATH_PREFIX);
+    }
+
+    private static boolean isMcpPath(HttpServletRequest request) {
+        String path = relativePath(request);
+        return path.equals(MCP_PATH) || path.startsWith(MCP_PATH + "/");
     }
 
     /** Request URI with any servlet context path stripped. */
