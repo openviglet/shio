@@ -1,4 +1,4 @@
-# {{PROJECT_NAME}}
+# {{projectName}}
 
 A [Next.js](https://nextjs.org) (App Router) site powered by **Shio CMS** via the
 Content Delivery API — headless, TypeScript-first, **zero Java**.

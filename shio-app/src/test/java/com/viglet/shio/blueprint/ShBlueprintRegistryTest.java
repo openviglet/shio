@@ -46,7 +46,50 @@ class ShBlueprintRegistryTest {
     @DisplayName("the first-party set loads, validated, in a stable order")
     void firstPartySetLoads() {
         assertThat(registry.names())
-                .containsExactly("blog", "docs", "landing", "marketing-site", "product-catalog");
+                .containsExactly("blog", "docs", "landing", "marketing-site", "nextjs-starter",
+                        "product-catalog");
+    }
+
+    /**
+     * SH119 — the starter is a blueprint, and the only first-party package that carries
+     * front-end files. Two properties matter and neither is obvious from the manifest:
+     * the tree really is attached (a package whose `files` list resolved to nothing would
+     * load clean and deliver half a starter), and a Next.js catch-all route survives the
+     * path-escape guard, which is where `contains("..")` used to reject `[...slug]`.
+     */
+    @Test
+    @DisplayName("the Next.js starter carries its front-end half, catch-all route included")
+    void starterCarriesItsFrontEnd() {
+        ShBlueprint starter = registry.require("nextjs-starter");
+        assertThat(starter.files()).isNotEmpty();
+        assertThat(starter.files()).allSatisfy(file -> {
+            assertThat(file.path()).as("a carried file needs a project-relative path").isNotBlank();
+            assertThat(file.text()).as("%s has no body", file.path()).isNotBlank();
+        });
+        assertThat(starter.files().stream().map(ShBlueprint.File::path))
+                .contains("app/[...slug]/page.tsx", "package.json", ".gitignore");
+        assertThat(starter.postTypeNames()).containsExactly("Page");
+    }
+
+    /**
+     * The path-escape guard, at the boundary SH119 had to move. Asserted directly and in
+     * both directions because a security check that has been loosened is exactly the kind
+     * that needs to be shown still catching what it was written for (§XIV.4: characterize
+     * by execution, and self-test the guard).
+     */
+    @Test
+    @DisplayName("a `..` segment escapes the package; a dot run inside a filename does not")
+    void pathEscapeGuardChecksSegmentsNotSubstrings() {
+        assertThat(ShBlueprintRegistry.traverses("../../etc/passwd")).isTrue();
+        assertThat(ShBlueprintRegistry.traverses("files/../../secret")).isTrue();
+        assertThat(ShBlueprintRegistry.traverses("files/..")).isTrue();
+        assertThat(ShBlueprintRegistry.traverses("files\\..\\secret")).isTrue();
+
+        assertThat(ShBlueprintRegistry.traverses("files/app/[...slug]/page.tsx")).isFalse();
+        assertThat(ShBlueprintRegistry.traverses("content/pages.json")).isFalse();
+        assertThat(ShBlueprintRegistry.traverses("files/next-env.d.ts")).isFalse();
+        // A filename may legitimately be dots-and-more; only a whole segment of `..` walks up.
+        assertThat(ShBlueprintRegistry.traverses("files/...rc")).isFalse();
     }
 
     @Test
