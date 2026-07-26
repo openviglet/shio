@@ -21,6 +21,13 @@ export function detectPackageManager(env = process.env) {
 }
 
 export async function run(flags, positionals, ctx) {
+  if (flags.content) {
+    // SH90: the content loop instead of the site's dev server. It is a different job —
+    // no app to serve, a file tree and an instance to keep in step — and spawning
+    // `run dev` in a repo that only holds content would fail on a script that is not there.
+    const watch = await import("./content-watch.mjs");
+    return watch.run(flags, positionals, ctx);
+  }
   const intervalMs = Math.max(1, Number(flags.interval ?? 5)) * 1000;
 
   // Initial generation (don't abort the dev server if the model isn't reachable yet).

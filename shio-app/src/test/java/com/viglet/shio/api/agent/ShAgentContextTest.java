@@ -254,9 +254,26 @@ class ShAgentContextTest {
      * sitemap. Derived from the actual pack size rather than hard-coded, so the test
      * keeps testing truncation when the fixture or the conventions text changes.
      */
+    /**
+     * A budget that lands <em>inside</em> the sitemap: everything else, plus half of what
+     * the sitemap costs.
+     *
+     * <p>The obvious version — three quarters of the whole pack — is not a cut point at
+     * all. The mandatory sections (instance, sites, model, conventions) are charged first
+     * and the <b>model is instance-wide</b>, so any test class that adds a post-type makes
+     * them a bigger share of the total; once they pass three quarters, "three quarters of
+     * the total" starves the sitemap of every row and the resume assertions fail for a
+     * reason that has nothing to do with resuming. Measuring the sitemap's own cost keeps
+     * the cut where the test means it, whatever else the shared database happens to
+     * hold.</p>
+     */
     private int budgetThatCutsTheSitemap() {
-        return Math.max(shAgentContextService.context(siteName, null, 0, null, null)
-                .budget().estTokens() * 3 / 4, 1);
+        int whole = shAgentContextService.context(siteName, null, 0, null, null)
+                .budget().estTokens();
+        int withoutSitemap = shAgentContextService
+                .context(siteName, null, 0, "instance,sites,model,conventions", null)
+                .budget().estTokens();
+        return Math.max(withoutSitemap + (whole - withoutSitemap) / 2, 1);
     }
 
     @Test

@@ -16,6 +16,8 @@
  */
 package com.viglet.shio.persistence.repository.history;
 
+import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -61,4 +63,42 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 
 	@Query("select h from ShHistory h where h.shSite = :siteId order by h.date desc, h.id desc")
 	List<ShHistory> findRecentBySite(String siteId, Pageable pageable);
+
+	/**
+	 * The change feed's window (SH88): the newest entries up to {@code ceiling}.
+	 *
+	 * <p>The ceiling is the lag rule — an entry younger than it is held back so a
+	 * transaction that is still committing cannot land <em>behind</em> a cursor that has
+	 * already moved past its timestamp. See {@code ShAgentChangesService}.</p>
+	 *
+	 * <p>Two shapes of each query rather than one with an {@code or} on a flag: an
+	 * unrestricted credential reads the whole trail (including entries whose site could
+	 * not be recorded), a site-scoped one reads only the sites it can see, and expressing
+	 * that as a parameter would put an access rule inside a query string.</p>
+	 */
+	@Query("select h from ShHistory h where h.date <= :ceiling order by h.date desc, h.id desc")
+	List<ShHistory> findWindow(Instant ceiling, Pageable pageable);
+
+	@Query("select h from ShHistory h where h.date <= :ceiling and h.shSite in :siteIds "
+			+ "order by h.date desc, h.id desc")
+	List<ShHistory> findWindowInSites(Instant ceiling, Collection<String> siteIds, Pageable pageable);
+
+	/**
+	 * Everything strictly after the {@code (at, id)} position, oldest first (SH88).
+	 *
+	 * <p>The keyset predicate is what makes the feed resumable without dropping ties: an
+	 * entry qualifies when its timestamp is later, <em>or</em> when the timestamp is equal
+	 * and the id sorts after. A plain {@code date >} would skip every entry sharing the
+	 * cursor's second, which on a batch write is most of them.</p>
+	 */
+	@Query("select h from ShHistory h where h.date <= :ceiling "
+			+ "and (h.date > :at or (h.date = :at and h.id > :id)) "
+			+ "order by h.date asc, h.id asc")
+	List<ShHistory> findSince(Instant ceiling, Instant at, String id, Pageable pageable);
+
+	@Query("select h from ShHistory h where h.date <= :ceiling and h.shSite in :siteIds "
+			+ "and (h.date > :at or (h.date = :at and h.id > :id)) "
+			+ "order by h.date asc, h.id asc")
+	List<ShHistory> findSinceInSites(Instant ceiling, Collection<String> siteIds, Instant at,
+			String id, Pageable pageable);
 }

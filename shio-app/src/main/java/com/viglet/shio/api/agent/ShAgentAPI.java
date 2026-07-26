@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
+import com.viglet.shio.api.agent.dto.ShAgentChanges;
 import com.viglet.shio.api.agent.dto.ShAgentContext;
 import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
 import com.viglet.shio.api.agent.dto.ShAgentDoc;
@@ -69,6 +70,7 @@ public class ShAgentAPI {
     private final ShAgentReadService shAgentReadService;
     private final ShAgentVerifyService shAgentVerifyService;
     private final ShAgentRenderService shAgentRenderService;
+    private final ShAgentChangesService shAgentChangesService;
     private final ShAgentDiagnosticsService shAgentDiagnosticsService;
 
     public ShAgentAPI(ShAgentManifestService shAgentManifestService,
@@ -79,6 +81,7 @@ public class ShAgentAPI {
                       ShAgentReadService shAgentReadService,
                       ShAgentVerifyService shAgentVerifyService,
                       ShAgentRenderService shAgentRenderService,
+                      ShAgentChangesService shAgentChangesService,
                       ShAgentDiagnosticsService shAgentDiagnosticsService) {
         this.shAgentManifestService = shAgentManifestService;
         this.shAgentContextService = shAgentContextService;
@@ -88,6 +91,7 @@ public class ShAgentAPI {
         this.shAgentReadService = shAgentReadService;
         this.shAgentVerifyService = shAgentVerifyService;
         this.shAgentRenderService = shAgentRenderService;
+        this.shAgentChangesService = shAgentChangesService;
         this.shAgentDiagnosticsService = shAgentDiagnosticsService;
     }
 
@@ -293,6 +297,35 @@ public class ShAgentAPI {
                 ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
                         .body(ShAgentVerifyTerse.digest(digest))
                 : ResponseEntity.ok(digest);
+    }
+
+    /**
+     * What has changed, resumably (SH88).
+     *
+     * <p>Without {@code since} this is a window — the most recent entries, and a starting
+     * position. With it, everything after that position, oldest first. The {@code cursor}
+     * in the response is always the next {@code since}, which is what makes "what did the
+     * human change while I was away" a single call rather than a guess at a window size.</p>
+     *
+     * @param site   scope to one site; omit for every readable site
+     * @param since  a cursor from a previous call
+     * @param limit  entries to return
+     * @param ids    include object ids (SH121 default: off)
+     */
+    @GetMapping("/changes")
+    @Operation(summary = "Content changes since a cursor: what a human (or another session) did")
+    public ResponseEntity<Object> changes(
+            @RequestParam(name = "site", required = false) String site,
+            @RequestParam(name = "since", required = false) String since,
+            @RequestParam(name = "limit", required = false) Integer limit,
+            @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids,
+            @RequestParam(name = "format", required = false) String format) {
+
+        ShAgentChanges changes = shAgentChangesService.changes(site, since, limit, ids);
+        return isTerse(format)
+                ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
+                        .body(ShAgentChangesTerse.render(changes))
+                : ResponseEntity.ok(changes);
     }
 
     /**

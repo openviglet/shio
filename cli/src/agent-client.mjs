@@ -180,6 +180,54 @@ export class ShioAgentClient {
     return this.#get("diagnostics", query);
   }
 
+  /**
+   * GET /api/v2/agent/find (SH83) — post addresses, never bodies.
+   *
+   * @param {{ site?: string, type?: string, folder?: string, q?: string, limit?: number }} [query]
+   * @returns {Promise<{count: number, truncated: boolean, results: object[]}>}
+   */
+  async find(query = {}) {
+    return this.#get("find", query);
+  }
+
+  /**
+   * GET /api/v2/agent/read (SH83/SH123) — post content by address.
+   *
+   * Several addresses in one call, because the projection reads a whole site and one
+   * request per post would make `pull --content` cost as much as the API-shaped authoring
+   * it exists to replace.
+   *
+   * @param {string[]} addresses
+   */
+  async read(addresses) {
+    const params = new URLSearchParams();
+    for (const address of addresses) params.append("address", address);
+    const url = `${this.baseUrl}/api/v2/agent/read?${params.toString()}`;
+    const res = await this.fetch(url, {
+      method: "GET",
+      headers: { Authorization: this.#authHeader(), Accept: "application/json" },
+    });
+    if (!res.ok) {
+      let detail = "";
+      try {
+        detail = await res.text();
+      } catch {
+        /* ignore */
+      }
+      throw new ShioHttpError(res.status, url, detail);
+    }
+    return res.json();
+  }
+
+  /**
+   * GET /api/v2/agent/changes (SH88) — content transitions and the cursor to resume from.
+   *
+   * @param {{ site?: string, since?: string, limit?: number }} [query]
+   */
+  async changes(query = {}) {
+    return this.#get("changes", query);
+  }
+
   async #get(path, query) {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(query)) {

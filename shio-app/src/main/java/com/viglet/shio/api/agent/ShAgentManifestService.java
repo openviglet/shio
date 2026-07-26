@@ -130,21 +130,24 @@ public class ShAgentManifestService {
         features.put("routeCheck", true);
         features.put("renderDigest", true);
         features.put("diagnostics", true);
+        // SH88: "everything since I last looked" is expressible now. Reported false
+        // through Block H and Block K on purpose, so the flag flipping means the cursor
+        // exists rather than that someone remembered to advertise it.
+        features.put("changeCursor", true);
         // Whether ?url= may fetch a delivery URL. Configured, not compiled: this one
         // depends on an operator's decision, and probing it costs a refusal.
         features.put("renderFetch", shAgentProperties.getRender().isAllowFetch());
 
         // Declared-but-unshipped (Block H–J). Reported false so a caller does not probe.
         features.put("blueprints", false);
-        features.put("contentAsFiles", false);
+        // Block I: content projects to files and syncs both ways from the CLI. Compiled
+        // in rather than configured — the capability is `shio pull --content`, which is a
+        // property of the tooling this instance's protocol supports, not of its config.
+        features.put("contentAsFiles", true);
         // SH102's visual snapshot. Deliberately last in the block: a PNG is for the
         // human handoff, and reporting it here as available would invite an agent to
         // spend three orders of magnitude more tokens than the digest costs.
         features.put("visualSnapshot", false);
-        // SH88's cursor. shio_changes reads a window today; "everything since I last
-        // looked" is not expressible yet.
-        features.put("changeCursor", false);
-
         return features;
     }
 
@@ -210,6 +213,12 @@ public class ShAgentManifestService {
                                 + "images with alt, word count. Cheap proof the page came out "
                                 + "right; ?url= digests what a visitor gets when fetching is enabled.",
                         "console", "GET /api/v2/agent/render?address=post:Blog/blog/hello-world"),
+                new ShAgentEndpoint("GET", "/agent/changes",
+                        "What changed while you were away: content transitions with an "
+                                + "address each, and a `cursor` to pass back as since= so the "
+                                + "next call is only the delta. Read it before trusting a "
+                                + "cached context digest.",
+                        "console", "GET /api/v2/agent/changes?since=2026-07-26T10:00:00Z|<id>"),
                 new ShAgentEndpoint("GET", "/agent/diagnostics",
                         "What failed after you moved on: webhook deliveries, image transforms, "
                                 + "scheduled publishes, server errors. One call instead of logs.",
