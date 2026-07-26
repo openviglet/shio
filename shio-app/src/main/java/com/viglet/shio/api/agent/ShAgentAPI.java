@@ -11,13 +11,18 @@ package com.viglet.shio.api.agent;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,11 +38,17 @@ import com.viglet.shio.api.agent.dto.ShAgentManifest;
 import com.viglet.shio.api.agent.dto.ShAgentResolved;
 import com.viglet.shio.api.agent.diagnostics.ShAgentDiagnosticsService;
 import com.viglet.shio.api.agent.diagnostics.dto.ShAgentDiagnostics;
+import com.viglet.shio.api.agent.memory.ShAgentMemoryService;
+import com.viglet.shio.api.agent.memory.dto.ShAgentMemory;
+import com.viglet.shio.api.agent.memory.dto.ShAgentNote;
+import com.viglet.shio.api.agent.memory.dto.ShAgentNoteRequest;
 import com.viglet.shio.api.agent.verify.ShAgentRenderService;
 import com.viglet.shio.api.agent.verify.ShAgentVerifyService;
 import com.viglet.shio.api.agent.verify.ShAgentVerifyTerse;
 import com.viglet.shio.api.agent.verify.dto.ShAgentDigest;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
+import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.blueprint.ShBlueprintRegistry;
 import com.viglet.shio.blueprint.ShBlueprintService;
 import com.viglet.shio.blueprint.ShBlueprintTerse;
@@ -70,6 +81,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag(name = "Agent", description = "Agent-facing surface — manifest, context, diagnostics")
 public class ShAgentAPI {
 
+    /** {@code AGENTS.md} is Markdown; served as such so a browser or editor renders it. */
+    private static final MediaType MEDIA_TYPE_MARKDOWN =
+            MediaType.parseMediaType("text/markdown;charset=UTF-8");
+
     private final ShAgentManifestService shAgentManifestService;
     private final ShAgentContextService shAgentContextService;
     private final ShAddressResolver shAddressResolver;
@@ -80,6 +95,7 @@ public class ShAgentAPI {
     private final ShAgentRenderService shAgentRenderService;
     private final ShAgentChangesService shAgentChangesService;
     private final ShAgentDiagnosticsService shAgentDiagnosticsService;
+    private final ShAgentMemoryService shAgentMemoryService;
     private final ShBlueprintRegistry shBlueprintRegistry;
     private final ShBlueprintService shBlueprintService;
 
@@ -93,6 +109,7 @@ public class ShAgentAPI {
                       ShAgentRenderService shAgentRenderService,
                       ShAgentChangesService shAgentChangesService,
                       ShAgentDiagnosticsService shAgentDiagnosticsService,
+                      ShAgentMemoryService shAgentMemoryService,
                       ShBlueprintRegistry shBlueprintRegistry,
                       ShBlueprintService shBlueprintService) {
         this.shAgentManifestService = shAgentManifestService;
@@ -105,14 +122,27 @@ public class ShAgentAPI {
         this.shAgentRenderService = shAgentRenderService;
         this.shAgentChangesService = shAgentChangesService;
         this.shAgentDiagnosticsService = shAgentDiagnosticsService;
+        this.shAgentMemoryService = shAgentMemoryService;
         this.shBlueprintRegistry = shBlueprintRegistry;
         this.shBlueprintService = shBlueprintService;
     }
 
+    /**
+     * The manifest (SH76), conditionally (SH116).
+     *
+     * <p>It is deterministic and it changes only when the build or the operator's
+     * configuration does, so after the first read it should cost a header for the
+     * life of the deployment.</p>
+     */
     @GetMapping("/manifest")
     @Operation(summary = "Describe this instance to an agent: version, capabilities, limits, endpoints")
-    public ShAgentManifest manifest() {
-        return shAgentManifestService.manifest();
+    public ResponseEntity<Object> manifest(
+            @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
+        ShAgentManifest manifest = shAgentManifestService.manifest();
+        String etag = ShAgentEtag.of("manifest", shAgentManifestService.digest());
+        return ShAgentEtag.matches(ifNoneMatch, etag)
+                ? ShAgentEtag.notModified(etag)
+                : ShAgentEtag.ok(etag).body(manifest);
     }
 
     /**
@@ -124,10 +154,15 @@ public class ShAgentAPI {
      * @param budget  estimated-token ceiling; {@code 0} = unbounded
      * @param include comma-separated sections ({@code instance,sites,model,sitemap,conventions})
      * @param from    resume cursor — the {@code budget.truncatedAfter} of a prior call
-     * @param format  {@code json} (default) or {@code terse} (SH78, ~⅓–½ fewer tokens)
+     * @param format  {@code json} (default), {@code terse} (SH78, ~⅓–½ fewer tokens),
+     *                or {@code agents-md} (SH115 — the same pack rendered as project
+     *                agent instructions, for a harness that loads a file rather than
+     *                making a call)
      * @param ids     put the raw UUID back on every site and sitemap row (SH121). Off
      *                by default: rows are addressable without one, and the id is the
      *                most expensive field a row can carry
+     * @param ifNoneMatch a tag from a previous read (SH116) — an unchanged pack in the
+     *                    same representation answers {@code 304} and costs no tokens
      */
     @GetMapping("/context")
     @Operation(summary = "One call that replaces a session: content model, sitemap by path, conventions")
@@ -138,15 +173,25 @@ public class ShAgentAPI {
             @RequestParam(name = "include", required = false) String include,
             @RequestParam(name = "from", required = false) String from,
             @RequestParam(name = "format", required = false) String format,
-            @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids) {
+            @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids,
+            @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
         ShAgentContext pack = shAgentContextService.context(site, depth, budget, include, from, ids);
-        if (isTerse(format)) {
-            return ResponseEntity.ok()
-                    .contentType(MediaType.TEXT_PLAIN)
-                    .body(ShAgentContextTerse.render(pack));
+        Representation representation = Representation.of(format);
+        // The digest covers the pack's content; the representation covers its bytes.
+        // Both belong in the tag — see ShAgentEtag.
+        String etag = ShAgentEtag.of("context", pack.digest(), representation.name(),
+                Boolean.toString(ids));
+        if (ShAgentEtag.matches(ifNoneMatch, etag)) {
+            return ShAgentEtag.notModified(etag);
         }
-        return ResponseEntity.ok(pack);
+        return switch (representation) {
+            case TERSE -> ShAgentEtag.ok(etag).contentType(MediaType.TEXT_PLAIN)
+                    .body(ShAgentContextTerse.render(pack));
+            case AGENTS_MD -> ShAgentEtag.ok(etag).contentType(MEDIA_TYPE_MARKDOWN)
+                    .body(ShAgentAgentsMd.render(pack));
+            case JSON -> ShAgentEtag.ok(etag).body(pack);
+        };
     }
 
     /**
@@ -272,13 +317,21 @@ public class ShAgentAPI {
     @GetMapping("/blueprints")
     @Operation(summary = "Appliable starting points: blueprint packages this instance can apply")
     public ResponseEntity<Object> blueprints(
-            @RequestParam(name = "format", required = false) String format) {
+            @RequestParam(name = "format", required = false) String format,
+            @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
         List<ShBlueprint.Summary> summaries = shBlueprintRegistry.summaries();
+        // Packages load from the classpath (SH92), so this catalogue cannot change
+        // without a redeploy — the strongest 304 candidate on the whole surface.
+        String etag = ShAgentEtag.of("blueprints", catalogueDigest(summaries),
+                isTerse(format) ? "terse" : "json");
+        if (ShAgentEtag.matches(ifNoneMatch, etag)) {
+            return ShAgentEtag.notModified(etag);
+        }
         return isTerse(format)
-                ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
+                ? ShAgentEtag.ok(etag).contentType(MediaType.TEXT_PLAIN)
                         .body(ShBlueprintTerse.catalogue(summaries))
-                : ResponseEntity.ok(summaries);
+                : ShAgentEtag.ok(etag).body(summaries);
     }
 
     /**
@@ -403,6 +456,51 @@ public class ShAgentAPI {
     }
 
     /**
+     * What this instance has been told to remember (SH114).
+     *
+     * <p>The same notes the context pack already carries, on their own, for the
+     * cases the pack is the wrong shape for: auditing what an agent has been
+     * writing, or rendering them somewhere else. Reading them here is never
+     * <em>necessary</em> — an agent that read the context has them already.</p>
+     *
+     * @param site  one site's notes plus the instance-wide ones; omit for all
+     * @param limit rows to return; {@code found} always describes the full set
+     */
+    @GetMapping("/memory")
+    @Operation(summary = "Remembered decisions and conventions — what earlier sessions worked out")
+    public ShAgentMemory memory(
+            @RequestParam(name = "site", required = false) String site,
+            @RequestParam(name = "limit", required = false) Integer limit) {
+        return shAgentMemoryService.memory(site, limit);
+    }
+
+    /**
+     * Remember one decision or convention (SH114), idempotently by {@code (scope, key)}.
+     *
+     * <p>{@code PUT} rather than {@code POST} because re-stating a convention must
+     * rewrite one note, not add a second: the next session pays for every near-duplicate
+     * it has to reconcile. The author is taken from the credential, never from the body.</p>
+     */
+    @PutMapping("/memory")
+    @Operation(summary = "Remember a decision or convention; re-using a key rewrites that note")
+    public ShAgentNote remember(@RequestBody ShAgentNoteRequest request, Principal principal) {
+        return shAgentMemoryService.remember(request, name(principal));
+    }
+
+    /**
+     * Forget one note. Idempotent — forgetting what was never remembered is a
+     * {@code 204}, because a retry that reports failure is a retry nobody makes.
+     */
+    @DeleteMapping("/memory")
+    @Operation(summary = "Forget one remembered note")
+    public ResponseEntity<Void> forget(
+            @RequestParam(name = "key") String key,
+            @RequestParam(name = "scope", required = false) String scope) {
+        shAgentMemoryService.forget(scope, key);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * What has failed asynchronously (SH103): webhook deliveries, image transforms,
      * scheduled publishes, server-side errors — one call instead of grepping
      * {@code store/logs}.
@@ -426,6 +524,62 @@ public class ShAgentAPI {
 
     private static boolean isTerse(String format) {
         return format != null && "terse".equalsIgnoreCase(format.trim());
+    }
+
+    /**
+     * Name + version of every package. Enough to notice a redeploy that changed a
+     * package and cheap enough to compute per request; hashing the whole catalogue
+     * would tie the tag to fields (a description's wording) that a caller choosing
+     * between packages already re-reads through {@code /blueprints/{name}}.
+     */
+    private static String catalogueDigest(List<ShBlueprint.Summary> summaries) {
+        StringBuilder canonical = new StringBuilder();
+        for (ShBlueprint.Summary summary : summaries) {
+            canonical.append(summary.name()).append('@').append(summary.version()).append('|');
+        }
+        return ShAgentContextService.digest(canonical.toString());
+    }
+
+    /**
+     * The renderings of a context pack.
+     *
+     * <p>An enum rather than a chain of string comparisons because the value is now
+     * load-bearing twice over: it picks the renderer <em>and</em> it discriminates the
+     * SH116 entity tag. Two representations sharing a tag is the bug this shape makes
+     * hard to write.</p>
+     */
+    private enum Representation {
+        JSON, TERSE, AGENTS_MD;
+
+        static Representation of(String format) {
+            if (format == null || format.isBlank()) {
+                return JSON;
+            }
+            return switch (format.trim().toLowerCase(Locale.ROOT)) {
+                case "json" -> JSON;
+                case "terse" -> TERSE;
+                case "agents-md", "agentsmd" -> AGENTS_MD;
+                // Not a silent fallback to JSON. With two renderings a typo cost a
+                // slightly wrong payload; with three, `agent-md` would quietly return
+                // JSON and the caller would conclude the feature does not exist —
+                // which is the probing cost this whole surface exists to remove (P6).
+                default -> throw new UnknownFormatException(format);
+            };
+        }
+    }
+
+    /** A 400 that names the renderings rather than making the caller guess (SH80). */
+    public static class UnknownFormatException extends ShTeachingException {
+
+        public UnknownFormatException(String sent) {
+            super(ShProblem.badRequest("unknown-format", "Unknown format '" + sent + "'")
+                    .withDetail("The context pack has three renderings.")
+                    .withAllowed(List.of("json", "terse", "agents-md"))
+                    .withDidYouMeanFrom(sent)
+                    .withFix("Use terse for an agent, json for a program, agents-md to write "
+                            + "project instructions to a file.")
+                    .withExample("?format=terse"));
+        }
     }
 
     /** Comma-separated list → trimmed values; blank/absent → empty. */

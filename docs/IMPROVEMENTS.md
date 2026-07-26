@@ -34,7 +34,7 @@ verify against `git ls-files` before acting.
   - [X. Content as files (Block I)](#x-content-as-files-block-i)
   - [XI. Blueprints + Claude Code plugin (Block J)](#xi-blueprints--claude-code-plugin-block-j)
   - [XII. Agent safety & human-in-the-loop (Block L)](#xii-agent-safety--human-in-the-loop-block-l)
-  - [XIII. Token economy, measured (Block M)](#xiii-token-economy-measured-block-m)
+  - [XIII. Token economy, measured (Block M) — what the measurement opened](#xiii-token-economy-measured-block-m--what-the-measurement-opened)
   - [XIV. Realignment of what already shipped (Block N)](#xiv-realignment-of-what-already-shipped-block-n)
 - **Part 2 — pre-existing sections**
   - [I. Headless foundation — the CDA](#i-headless-foundation--the-cda) (shipped)
@@ -843,82 +843,111 @@ that lands. A runaway agent should hit a ceiling and report it, not a bill.
 
 ---
 
-## XIII. Token economy, measured (Block M)
+## XIII. Token economy, measured (Block M) — what the measurement opened
 
-> The brief asks that this get cheaper over time. Then it must be **measured**, not
-> asserted. The concept spec's targets (≈10× tokens, ≈6× tool calls, ≈3× human
-> cycles for a canonical site build) are **acceptance criteria for SH112**, not
-> claims about the present.
+> ✅ **Block M shipped** → [CHANGELOG.md](CHANGELOG.md) Block M. The design rationale for
+> the shipped work lives there and in the code; `git log` is the history. What follows is
+> only the unshipped remainder, and all of it exists because the block did what it was
+> built to do: produce numbers, and then disagree with an assumption.
 
-### XIII.1 Task benchmark harness (SH112)
+### XIII.1 Close the tool-call gap (SH157)
 
-Canonical agent tasks — "build a 5-page marketing site", "add a post-type + 10
-posts", "fix a broken link", "translate a site" — measured in **tool calls +
-tokens + wall clock**, run in CI, recorded per release. Without this, every claim
-in this document is a vibe, and the natural entropy of a codebase (someone adds a
-convenient field to a response) silently erodes the whole position.
+The benchmark's own verdict. Tokens clear the concept spec's ≈10× target on three of the
+four canonical tasks; **tool calls clear nothing** — the best task is 3.3× against a ≈6×
+target, and the worst is 1.8×.
 
-### XIII.2 Response budget enforcement (SH113) + the leanness policy
+The reason is visible in the traces and is not a payload problem: the agent path's calls
+are no longer *content* calls. Every task opens with discovery (manifest, then context)
+and closes with proof (verify), and the actual work in between is one or two calls. So
+the remaining round trips are the framing, and shrinking them means either answering two
+questions in one read or folding the proof into the write:
 
-CI fails when a canonical response's estimated token size regresses past a
-threshold. The cheap, always-on guard between full benchmark runs; the same role
-`ShLiquibaseChangelogAgnosticTest` plays for schema portability. The number it
-regresses against is now emitted by the instance itself on both the agent and
-delivery surfaces (`X-Shio-Est-Tokens`, SH124 — ✅ shipped), so the guard reads a
-header instead of re-tokenizing bodies.
+- **Discovery in one call.** The manifest and the context pack are two reads a session
+  makes back to back, always, in that order. A `?include=manifest` on the context pack —
+  or simply serving the manifest's `startHere` inside the pack — removes one turn from
+  every session in existence. The reason they are separate is that the manifest is
+  instance-scoped and cacheable for a deployment while the pack changes with content;
+  SH116 makes that distinction cheap to preserve (two tags, one response is not possible
+  — which is the actual design problem here, not the merging).
+- **A write that returns its own proof.** `POST /agent/batch` already knows what it
+  touched. Running the SH99 checks over exactly those addresses and returning the findings
+  costs the server almost nothing and removes the verify turn — and it is strictly better
+  than a separate verify, because it scopes the report to the change instead of the site.
+  The risk is a write that reports a pre-existing defect as if the write caused it, so the
+  findings have to be attributed.
 
-**The mechanism already exists — SH132 built it** (✅ shipped) for the MCP tool list,
-which is the payload with no opt-out: it is re-sent on every turn of every session
-before any work happens. SH113 extends the same file,
-`shio-app/src/test/resources/token-budgets.properties`, with the response budgets rather
-than inventing a second place to keep a number. Two decisions from SH132 that carry over:
-**the ceiling lives next to a note on what it guards**, so raising it is a reviewable diff
-with a reason attached instead of an edited magic number three files away; and **a count
-is not a budget** — the 12-tool cap was a proxy, and eight tools with essay-length
-descriptions are worse than twelve terse ones.
+Both are additive and neither changes an existing contract. The benchmark is the
+acceptance test: the ratio floors in `token-budgets.properties` move up when this lands,
+and that is the only evidence that should be accepted for it.
 
-**The leanness policy (SH125 — ✅ shipped) and its binding limit.** Nulls are always
-waste and are omitted from every agent-owned DTO. Dropping zero-defaults is *not* a
-blanket rule, and the reason generalizes beyond JSON: **a default can be an answer.**
-`features: {mcp: false}` is the most valuable thing the manifest says; `truncated:
-false` is the answer to "was anything cut?". Stripping either would make the payload
-smaller and the protocol worse — silence reads as "unknown", and an unknown sends the
-caller probing, which is the cost the whole block exists to remove. So: NON_NULL
-baseline, NON_DEFAULT only where absence and default genuinely coincide (row-shaped
-DTOs). Any future "make it smaller" change must clear that test.
+### XIII.2 Guard the request-reading config against test/prod drift (SH158)
 
-**Still open (SH127):** the delivery path stays null-carrying, because
-`@viglet/shio-client` declares nullable CDA fields as `string | null` rather than
-optional — omitting a null unilaterally would turn a declared `null` into
-`undefined` for typed consumers. Backend and SDK types have to move together, which
-also removes the nulls the SH77 context pack inherits through the shared
-`ShCdaSchemaField` shape (the visible price of P10 composition over a frozen
-contract, currently pinned by a characterization test).
+`src/test/resources/application.properties` **shadows** the main file on the test
+classpath rather than merging with it. That is ordinary Spring Boot behaviour and it is
+also how an entire class of defect hides: a setting that governs how a request is *read*
+can be correct in production and simply absent from every test, and no test can notice,
+because the tests are the thing that is misconfigured.
 
-### XIII.3 Instance memory / conventions store (SH114)
+It is not hypothetical. `spring.jackson.deserialization.fail-on-null-for-primitives=false`
+is required for the write surfaces to accept a body that omits an optional flag, and its
+absence made `POST /agent/batch {"ops":[…]}` a 400 through four blocks — found only when
+SH112 sent real JSON for the first time.
 
-Decisions and conventions stored as first-class content and served in the context
-pack — "sections come from `@viglet/shio-sections`, don't invent layout post-types",
-"copy is authored in files, never via the API", "this site's blog uses `Article`,
-not `Post`". This is the **compounding saving**: what one session learned, the next
-session is told. Written by the agent (with human approval, §XII.4), read by every
-future session.
+The fix is not another setting; it is a test that reads both files and asserts that the
+keys which affect deserialization agree. Cheap, and it closes the class rather than the
+instance. Worth pairing with the narrower guard: at least one test per write surface that
+sends the **minimal** body the documentation shows, since a request record constructed in
+Java exercises none of the binding.
 
-### XIII.4 `AGENTS.md` generator (SH115)
+### XIII.3 Conditional reads for the rest of the surface (SH159)
 
-`shio context --as agents-md` renders project agent instructions from the live
-instance + memory store, so they **cannot rot**. A hand-maintained `CLAUDE.md`
-describing a content model is stale the moment the model changes, and a stale
-instruction file is worse than none — it costs tokens *and* misleads.
+SH116 covers the manifest, the context pack and the blueprint catalogue — the three
+discovery reads. It does not cover `find`, `read`, `changes`, or the SH16 post-type API,
+and each of those is a repeat read with a stable digest already available or cheap to
+compute. `find` in particular is the read an agent makes on every iteration of a loop.
 
-### XIII.5 Agent-read caching (SH116)
+The work is mechanical; the judgement is the same one SH116 already made and must not be
+relaxed: the tag identifies a **representation**, so `format`, `ids` and `fields` all
+belong in it. A `read` projected to two fields must not answer 304 to a caller that asked
+for the whole document.
 
-Strong ETags on manifest/context/schema; an unchanged context returns `304` and
-costs ~0. The infrastructure exists (SH3 already put `ShallowEtagHeaderFilter` on
-the CDA) — this extends it to the agent surface and makes "re-read the context" the
-cheap default instead of a decision the agent has to weigh.
+### XIII.4 Memory for a client with no shell (SH160)
 
----
+`shio remember` was chosen over an eleventh MCP tool on a clear argument: a tool schema is
+paid on every turn of every session, and a coding agent has a terminal, so a capability
+used a handful of times per session should not tax every turn. That argument is right for
+Claude Code and wrong for a pure MCP client, which can *read* the memory (it rides in the
+context pack for free) but has no way to write one.
+
+Three options, and the answer is not obvious:
+
+1. **An eleventh tool.** Measured cost is roughly 110 tokens per turn against a
+   `mcp.tools.list.total` of 2160 with about 60 of headroom — so it also means raising the
+   ceiling, which is the thing the ceiling exists to make deliberate.
+2. **An argument on an existing tool.** `shio_write` is a write and "remember this" is a
+   write; a `remember` property costs perhaps 30 tokens. But it would couple a note to a
+   content transaction that may roll back, and a note is not content — that separation is
+   load-bearing (see the CHANGELOG on why memory is a table).
+3. **Leave it.** Accept that the MCP surface is read-only for memory and say so in the
+   manifest, so a client learns it from a flag rather than from a missing tool.
+
+Option 3 is the honest default and the current state; the task is to decide rather than to
+let it be decided by nobody looking.
+
+### XIII.5 Memory travels with the content (SH161)
+
+A site's notes live only in the instance that learned them. An SH68 exchange package does
+not carry them, and `shio pull --content` does not project them — so exporting a site to
+another instance, or rebuilding one from files, silently drops everything earlier sessions
+worked out. The compounding saving only compounds if it survives a move.
+
+Both halves are small and both have a decision in them. In the exchange package, notes are
+site-scoped data and belong beside the content; the instance-wide ones do **not** travel,
+because they describe the installation rather than the site, and importing another
+instance's house rules would be a surprise (P7). In the file projection, notes are not
+posts and must not become a desired-state document that `--prune` can act on — the natural
+home is a single `shio/content/<site>/.memory.yaml`, read on push and written on pull, with
+the same three-way merge the content tree already uses.
 
 ## XIV. Realignment of what already shipped (Block N)
 
@@ -966,6 +995,19 @@ the next such class rather than waiting for it to bite.
 input (word boundaries fail on both sides of a derived query name). A lint that
 matches nothing passes silently forever, so its patterns are asserted against the
 exact strings that broke production.
+
+### XIV.5 `@viglet/shio-client` is behind the CDA it mirrors (SH162)
+
+`ShCdaPost` delivers `locale` and `availableLocales` — SH52's whole point, the two fields a
+headless front end needs to render a language switcher — and the TypeScript mirror declares
+neither. A typed consumer therefore cannot see the feature at all without casting, which is
+the opposite of what a generated-adjacent type file is for.
+
+Found while editing the same file for SH127, which is the useful part: the drift was
+invisible because nothing compares the two shapes. Adding the two fields fixes today; the
+task is the **mirror-completeness test** — every component of every CDA read record has a
+property in `types.ts` — because this file will drift again the next time a DTO grows and
+nobody is looking at both windows.
 
 ---
 

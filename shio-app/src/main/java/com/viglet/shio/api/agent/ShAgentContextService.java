@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.dto.ShAgentContext;
+import com.viglet.shio.api.agent.memory.ShAgentMemoryService;
 import com.viglet.shio.api.cda.ShCdaMapper;
 import com.viglet.shio.api.cda.dto.ShCdaPostTypeSchema;
 import com.viglet.shio.api.error.ShProblem;
@@ -71,19 +72,22 @@ public class ShAgentContextService {
     private final ShCdaMapper mapper;
     private final ShAgentProperties properties;
     private final ShAgentSiteAccess siteAccess;
+    private final ShAgentMemoryService memoryService;
 
     public ShAgentContextService(ShFolderRepository shFolderRepository,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
                                 ShPostTypeRepository shPostTypeRepository,
                                 ShCdaMapper mapper,
                                 ShAgentProperties properties,
-                                ShAgentSiteAccess siteAccess) {
+                                ShAgentSiteAccess siteAccess,
+                                ShAgentMemoryService memoryService) {
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostTypeRepository = shPostTypeRepository;
         this.mapper = mapper;
         this.properties = properties;
         this.siteAccess = siteAccess;
+        this.memoryService = memoryService;
     }
 
     /** Id-free by default (SH121) — see {@link #context(String, Integer, Integer, String, String, boolean)}. */
@@ -127,7 +131,7 @@ public class ShAgentContextService {
                 : List.of();
 
         List<String> conventions = sections.contains(ShAgentContextSection.CONVENTIONS)
-                ? conventions(sites, model.isEmpty() ? model(postsByType) : model, ids)
+                ? conventions(sites, model.isEmpty() ? model(postsByType) : model, ids, site)
                 : List.of();
 
         // Charge **every** bounded section before the sitemap gate opens, so the gate
@@ -315,12 +319,21 @@ public class ShAgentContextService {
     }
 
     /**
-     * Conventions derived from the instance's own state — how <em>this</em> install
-     * expects to be driven. Everything here is a fact the agent would otherwise
-     * learn by making a mistake. Author-written conventions arrive with SH114; these
-     * are the derivable subset, which is why they are computed and never stored.
+     * Conventions: how <em>this</em> install expects to be driven.
+     *
+     * <p>Two sources, in this order. First the <b>derived</b> ones — facts computed
+     * from the instance's own state, which an agent would otherwise learn by making a
+     * mistake. They are never stored, so they cannot go stale. Then the <b>remembered</b>
+     * ones (SH114), written by a previous session or a human and attributed to whoever
+     * wrote them: the compounding half, and the reason session N+1 costs less than
+     * session N.</p>
+     *
+     * <p>Derived first is deliberate. A derived line is true by construction; a
+     * remembered one is somebody's claim about an earlier decision. Reading the
+     * ground truth before the folklore is the right order when the two disagree.</p>
      */
-    private List<String> conventions(List<ShSite> sites, List<ShAgentContext.Type> model, boolean ids) {
+    private List<String> conventions(List<ShSite> sites, List<ShAgentContext.Type> model,
+                                     boolean ids, String site) {
         List<String> conventions = new ArrayList<>();
         conventions.add("Writes land in DRAFT. Publishing is a separate, explicit call "
                 + "(POST /api/v2/post-unified/{id}/publish) — nothing you write becomes visible on its own.");
@@ -359,7 +372,32 @@ public class ShAgentContextService {
             conventions.add("This instance hosts " + sites.size() + " sites; pass ?site= to scope the "
                     + "context pack to the one you are working on.");
         }
+        // The instruction that makes the memory self-sustaining. Without it an agent
+        // has no reason to write anything down, and a store nobody writes to is a
+        // store that never pays back the row it costs.
+        conventions.add("This instance remembers. When you work something out that the next "
+                + "session would otherwise re-derive, write it down: "
+                + "`shio remember <key> \"<note>\"` (or PUT /api/v2/agent/memory with "
+                + "{key, note, scope}). Notes come back in this section, attributed.");
+        conventions.addAll(remembered(site));
         return conventions;
+    }
+
+    /**
+     * The remembered notes (SH114), rendered as convention lines.
+     *
+     * <p>Each carries its scope and its author inline, because the two facts change
+     * how much weight the line deserves and a separate section would cost a heading
+     * plus a second parse. Capped at the configured limit and never allowed to push
+     * the sitemap out: memory that grows without bound would undo the saving it
+     * exists to create.</p>
+     */
+    private List<String> remembered(String site) {
+        return memoryService.memory(site, null).notes().stream()
+                .map(note -> "[memory:" + note.key() + (note.scope() == null ? "" : "@" + note.scope())
+                        + (note.author() == null || note.author().isBlank() ? "" : " by " + note.author())
+                        + "] " + note.note())
+                .toList();
     }
 
     private Optional<ShFolder> rootFolder(ShSite site) {

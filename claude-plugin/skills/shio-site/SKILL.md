@@ -12,7 +12,12 @@ none of it needs the console.
 
 1. `shio_context` — the content model, the sitemap by path and the instance's conventions,
    in one call. Store the `digest` it returns. Next session, compare it before re-reading
-   anything.
+   anything — over HTTP it is also the `ETag`, so an unchanged instance answers `304`.
+   **Read the conventions properly.** Lines prefixed `[memory:key]` were written down by an
+   earlier session or by a human and name their author; a derived line above them is true by
+   construction. When you work something out that the next session would otherwise
+   re-derive, write it back with `shio remember <key> "<note>"` — that is the only thing
+   here that makes the *next* session cheaper rather than this one.
 2. Read `shio://blueprints`. **Before modelling anything by hand**, check whether a package
    already covers it: `blog`, `docs`, `marketing-site`, `landing`, `product-catalogue`. A
    blueprint brings the post-types, the folder tree and sample pages in one call, and

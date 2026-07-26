@@ -63,14 +63,15 @@ import tools.jackson.databind.ObjectMapper;
  * is genuinely uninformative.</b> "Make the payload smaller" is not a licence to drop
  * an answer.</p>
  *
- * <h2>Not applied to the CDA</h2>
+ * <h2>The CDA followed, later and together</h2>
  *
- * <p>Deliberately scoped to the agent surface. The CDA DTOs are a frozen public
- * contract whose TypeScript mirror in {@code @viglet/shio-client} declares nullable
- * fields as {@code string | null}, <em>not</em> optional — so omitting a null would
- * turn a declared {@code null} into {@code undefined} and break typed consumers that
- * compare against {@code null}. Leaning out the delivery path therefore needs an SDK
- * type change alongside it, which is its own task, not a side effect of this one.</p>
+ * <p>This policy was scoped to the agent surface at first. The CDA DTOs are a frozen
+ * public contract whose TypeScript mirror in {@code @viglet/shio-client} declared
+ * nullable fields as {@code string | null}, <em>not</em> optional — so omitting a null
+ * would have turned a declared {@code null} into {@code undefined} and broken typed
+ * consumers comparing against {@code null}. SH127 moved both halves in one change; the
+ * delivery side of the rule now lives in {@code ShCdaJsonLeanTest}, and the one visible
+ * consequence here is that the {@code model} section no longer inherits a null.</p>
  *
  * @author Alexandre Oliveira
  */
@@ -178,17 +179,20 @@ class ShAgentJsonLeanTest {
     }
 
     @Test
-    void theModelSectionStillCarriesTheCdaShapesNulls() {
-        // Characterization, not an endorsement. The model section reuses
-        // ShCdaSchemaField on purpose (P10: one field shape across the product), and
-        // inherits its frozen null-carrying contract with it — an unset `description`
-        // arrives as an explicit null. That is the measurable price of composing over a
-        // contract we cannot lean out unilaterally, and it is what SH127 (lean the CDA
-        // JSON together with the SDK's `| null` types) exists to remove. Asserting it
-        // keeps the cost visible instead of letting it read as an oversight.
+    void theModelSectionIsLeanToo_sinceSH127() {
+        // This assertion used to be its own inverse. The model section reuses
+        // ShCdaSchemaField on purpose (P10: one field shape across the product), so
+        // through SH125 it inherited that record's frozen null-carrying contract — an
+        // unset `description` arrived as an explicit null, and the test pinned it to keep
+        // the cost visible rather than let it read as an oversight.
+        //
+        // SH127 leaned the CDA DTOs and @viglet/shio-client's `| null` types in one
+        // change, which is the only way that could ship, and the inherited null went with
+        // them. The assertion is kept — inverted — because the composition is still real:
+        // if someone re-introduces a null on the delivery shape, it surfaces here too.
         String json = objectMapper.writeValueAsString(context("model"));
 
-        assertThat(json).contains(":null");
+        assertThat(json).doesNotContain(":null");
     }
 
     @Test

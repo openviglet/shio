@@ -29,6 +29,8 @@ const BOOLEANS = [
   "content", "ours", "theirs", "force", "allow-partial", "show-remote", "cursor", "json",
   // Blueprints (Block J): `--files` asks for the carried front-end bodies.
   "files",
+  // Instance memory (SH114): read the store, or drop one note from it.
+  "list", "forget",
 ];
 
 // Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would
@@ -45,6 +47,7 @@ const COMMANDS = {
   blueprints: () => import("./commands/blueprints.mjs"),
   verify: () => import("./commands/verify.mjs"),
   changes: () => import("./commands/changes.mjs"),
+  remember: () => import("./commands/remember.mjs"),
   digest: () => import("./commands/digest.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),
@@ -68,6 +71,7 @@ Commands:
   blueprints     List the appliable starting points (blueprints <name> for its parameters)
   verify         Lint the content and its routes; exits non-zero on an error (CI gate)
   changes        What changed, with a cursor to resume from (--since, --cursor)
+  remember       Write down a decision the next session should not re-derive
   digest <page>  Structural digest of one page: outline, landmarks, links, images
   pull           Pull post-types into ./shio/post-types/*.json (--content for pages)
   push           Apply local post-types back to Shio (--dry-run, --prune, --content)
@@ -88,7 +92,10 @@ Connection:
   --token <token>      CDA token              (env SHIO_CDA_TOKEN)   [types/dev]
 
 Context pack (shio context):
-  --format <fmt>       terse (default) or json
+  --format <fmt>       terse (default), json, or agents-md
+  --as agents-md       Render the pack as project agent instructions (same as
+                       --format agents-md); pair with --out AGENTS.md so the file
+                       cannot rot — regenerate it and the diff is the drift
   --site <idOrName>    Scope to one site      (omit for every readable site)
   --include <sections> instance,sites,model,sitemap,conventions (default all)
   --depth <n>          Folder-tree depth to walk
@@ -151,6 +158,15 @@ Content as files (shio pull/push --content, shio dev --content):
   --allow-partial      pull: accept a truncated post list (marks the snapshot partial)
   --force              push: proceed despite conflicts or a partial snapshot
   The last-synced base and the change cursor live in shio/.shio/content-base.json.
+
+Instance memory (shio remember):
+  What one session works out, the next is told: notes come back in the context pack's
+  conventions, attributed to whoever wrote them. Re-using a key rewrites that note.
+  shio remember                          List what is already remembered
+  shio remember <key> "<note>"           Remember it
+  shio remember <key> --forget           Forget it
+  --site <name>        Scope the note to one site (default: the whole instance)
+  --limit <n>          Notes to list
 
 Change feed (shio changes):
   --since <cursor>     Only what happened after that position ("last" = last pull's)

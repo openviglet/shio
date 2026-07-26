@@ -64,13 +64,15 @@ export class ShioAgentClient {
     }
     const search = params.toString();
     const terse = query.format === "terse";
+    // Three renderings, three media types (SH115 added the third). Sending
+    // application/json for a Markdown rendering would be a lie the server is
+    // entitled to act on with a 406.
+    const accept =
+      { terse: "text/plain", "agents-md": "text/markdown" }[query.format] ?? "application/json";
     const url = `${this.baseUrl}/api/v2/agent/context${search ? `?${search}` : ""}`;
     const res = await this.fetch(url, {
       method: "GET",
-      headers: {
-        Authorization: this.#authHeader(),
-        Accept: terse ? "text/plain" : "application/json",
-      },
+      headers: { Authorization: this.#authHeader(), Accept: accept },
     });
     if (!res.ok) {
       let detail = "";
@@ -284,6 +286,68 @@ export class ShioAgentClient {
    */
   async applyBlueprint(name, body) {
     return this.#post(`blueprints/${encodeURIComponent(name)}/apply`, body, {});
+  }
+
+  /**
+   * GET /api/v2/agent/memory (SH114) — what this instance has been told to remember.
+   *
+   * @param {{ site?: string, limit?: number }} [query]
+   * @returns {Promise<{found: number, notes: object[]}>}
+   */
+  async memory(query = {}) {
+    return this.#get("memory", query);
+  }
+
+  /**
+   * PUT /api/v2/agent/memory (SH114) — remember one decision, idempotently by key.
+   *
+   * The author is not sent: the server takes it from the credential. A caller that
+   * could name the author could make its own inference look like a human's
+   * instruction, and the attribution exists precisely to keep those apart.
+   *
+   * @param {{ key: string, note: string, scope?: string }} note
+   */
+  async remember(note) {
+    return this.#send("PUT", "memory", note);
+  }
+
+  /**
+   * DELETE /api/v2/agent/memory (SH114). Idempotent — forgetting what was never
+   * remembered succeeds, so a retry is never a failure.
+   *
+   * @param {{ key: string, scope?: string }} target
+   */
+  async forget({ key, scope } = {}) {
+    const params = new URLSearchParams({ key: String(key ?? "") });
+    if (scope) params.set("scope", scope);
+    return this.#send("DELETE", `memory?${params.toString()}`);
+  }
+
+  /** PUT/DELETE against the agent namespace, with the teaching body preserved. */
+  async #send(method, path, body) {
+    const url = `${this.baseUrl}/api/v2/agent/${path}`;
+    const res = await this.fetch(url, {
+      method,
+      headers: {
+        Authorization: this.#authHeader(),
+        Accept: "application/json",
+        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+    if (!res.ok) {
+      let detail = "";
+      try {
+        detail = await res.text();
+      } catch {
+        /* ignore */
+      }
+      throw new ShioHttpError(res.status, url, detail);
+    }
+    // 204 on delete: there is no document to parse, and inventing one would make the
+    // caller branch on a shape the server never promised.
+    if (res.status === 204) return null;
+    return res.json();
   }
 
   /** GET /api/v2/agent/manifest. */

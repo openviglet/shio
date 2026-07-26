@@ -41,7 +41,8 @@
 > (SH85 · SH91 · SH98 · SH105 · SH111 · SH118 are reserved, unused block-header
 > slots). **SH121–SH127** and **SH128–SH135** were added from findings while
 > implementing Block H, **SH141–SH144** from findings while implementing Block K, and
-> **SH145–SH150** from findings while implementing Block I —
+> **SH145–SH150** from findings while implementing Block I, and **SH157–SH162** from
+> what the SH112 benchmark measured while implementing Block M —
 > new tasks are expected to accrete this way, and each one's
 > line says what measurement or failure produced it. Superseded and therefore retired: **SH17/SH18** (GraalJS), **SH23 +
 > SH27–SH31** (marketplace → Block J), **SH24 + SH32–SH37** (CRUD-over-MCP → Block H).
@@ -55,9 +56,12 @@
 > **SH74** is the epic (this concept) — it is complete when the three roadmap docs
 > and `agents.md` carry the orientation; the code lands as SH75+.
 >
-> Suggested order: **H → K → I → J → L → M** (H, K, I and J are shipped). Block H is the protocol everything
-> else speaks; Block K (verification) is next because it removes the most expensive
-> unit in the system — the human round trip.
+> Suggested order: **H → K → I → J → L → M** (H, K, I, J and M are shipped). Block H is the
+> protocol everything else speaks; Block K (verification) removed the most expensive unit in
+> the system — the human round trip. **Block L (agent safety) is the remaining one**, and it
+> is now the gate on adoption rather than on capability: the surface can build, change and
+> check a site, and what it cannot yet do is let a human bound and undo an agent that got it
+> wrong.
 
 ## Block H — The Agent Gateway (MCP + agent-shaped protocol)
 
@@ -207,7 +211,7 @@
 - 📋 **SH151** (deps: SH93 ✅, SH71 ✅) **A blueprint can create the site it needs** — apply refuses when the site is absent, and the only creation path clones the SH71 bootstrap template, so "one call builds a marketing site" is really two calls and a prune. Needs a blank-site create plus `shio init --blueprint`. → §XI.7
 - 📋 **SH152** (deps: SH93 ✅) **Additive post-type reconciliation** — a package's post-type that already exists is left untouched and its missing fields are reported; the caller then has to add them by hand, and until they do the content writes fields the console cannot render. An opt-in additive merge (add the missing fields, never change or remove one) makes the report actionable. → §XI.8
 - 📋 **SH153** (deps: SH93 ✅, SH81 ✅) **A blueprint plan that needs no write transaction** — the plan provisions the package's post-types and rolls back, purely so the content planner can resolve types that do not exist yet. It is correct and it means a plan cannot run on a read-only credential or a replica. Threading the declared types through the batch planner's pending set removes the write entirely. → §XI.9
-- 📋 **SH155** (deps: SH93 ✅, SH114) **Record which blueprint a site received** — `changed:0` proves a site matches a document, but nothing records that the document came from `marketing-site 1.0.0`, so a newer package version is undetectable and "is this still the blueprint" cannot be asked. Belongs with SH114's instance memory rather than a table of its own. → §XI.10
+- 📋 **SH155** (deps: SH93 ✅, SH114 ✅) **Record which blueprint a site received** — `changed:0` proves a site matches a document, but nothing records that the document came from `marketing-site 1.0.0`, so a newer package version is undetectable and "is this still the blueprint" cannot be asked. Belongs in SH114's instance memory (now shipped — a keyed note per site is exactly the shape) rather than a table of its own. → §XI.10
 - 💭 **SH156** (deps: SH92 ✅, SH119) **Blueprints carry their front-end half** — the format supports front-end files and the first-party set ships none, so a blueprint delivers content the site cannot render until someone wires the components. Fold with SH119 (`create-shio-app` templates → blueprints) so there is one starter, not two. → §XI.11
 
 ## Block L — Agent safety & human-in-the-loop
@@ -224,22 +228,37 @@
 
 ## Block M — Token economy (measured)
 
-> The stated goal is that this gets cheaper over time — so it must be measured, not
-> claimed. The concept spec's targets (≈10× tokens, ≈6× tool calls, ≈3× human
-> cycles) are **acceptance criteria for SH112**, not achievements. → §XIII
+> ✅ **Block M shipped (SH112–SH116, SH127)** → see [CHANGELOG.md](CHANGELOG.md) Block M:
+> the task benchmark, response budgets, instance memory, the `AGENTS.md` generator,
+> conditional agent reads, and the lean delivery JSON.
+>
+> **What the measurement actually says.** Tokens: **3.8×–23.3×** cheaper on the agent
+> path across the four canonical tasks, so the concept spec's ≈10× target is met on
+> three of four (the fourth, a blueprint apply, also provisions a model the baseline
+> assumes into existence). Tool calls: **1.8×–3.3×** against a ≈6× target — **not met
+> anywhere**, which is **SH157**. The numbers and their ceilings live in
+> [token-budgets.properties](../shio-app/src/test/resources/token-budgets.properties);
+> the run is archived to `target/agent-benchmark.json`.
+>
+> **What building it opened.** Driving the write surface over real HTTP for the first
+> time found that an omitted optional flag was a 400 — invisible to every test that
+> builds the request record in Java, and a config-drift hazard that is now **SH158**.
+> Memory is readable and writable over REST and the CLI but not over MCP alone
+> (**SH160**), it does not travel with an exported site (**SH161**), and conditional
+> reads stop at the three discovery endpoints (**SH159**).
 
-- 📋 **SH112** (deps: SH83) **Task benchmark harness** — canonical agent tasks ("build a 5-page marketing site", "add a post-type + 10 posts", "fix a broken link", "translate a site") measured in tool calls + tokens + wall clock, in CI, recorded per release. → §XIII.1
-- 📋 **SH113** (deps: SH112) **Response budget enforcement** — CI fails when a canonical response's estimated token size regresses past a threshold; stops the slow re-accretion of entity-shaped payloads. → §XIII.2
-- 📋 **SH114** (deps: SH77) **Instance memory / conventions store** — decisions + conventions as first-class content, served in the context pack. The compounding saving: session N+1 costs less than session N. → §XIII.3
-- 📋 **SH115** (deps: SH114) **`AGENTS.md` generator** — `shio context --as agents-md` renders project agent instructions from the live instance + memory store, so they cannot rot. → §XIII.4
-- 📋 **SH116** (deps: SH77) **Agent-read caching** — strong ETags on manifest/context/schema; an unchanged context costs a `304`. The SH77 `digest` is already the ETag value — this wires it to `If-None-Match`. → §XIII.5
-- 📋 **SH127** (deps: SH125) **Lean the delivery JSON + SDK types together** — drop nulls from the CDA DTOs *and* change `@viglet/shio-client`'s `string | null` fields to optional in the same change. SH125 stopped at the agent surface because omitting a null unilaterally would turn a declared `null` into `undefined` for typed consumers. Also removes the nulls the SH77 `model` section inherits. → §XIII.2
+- 📋 **SH157** (deps: SH112 ✅) **Close the tool-call gap** — the benchmark says tokens clear the ≈10× target and round trips do not (best 3.3× against ≈6×). The remaining calls are discovery (manifest + context) and proof (verify), so the candidates are a discovery read that answers both at once and a write that returns its own verification. → §XIII.1
+- 📋 **SH158** (deps: SH112 ✅) **Guard the request-reading config against test/prod drift** — `src/test/resources/application.properties` *shadows* the main file rather than merging with it, so a deserialization setting can be right in production and absent in every test. That is exactly how the primitive-null 400 survived three blocks. A test that asserts the mirrored keys agree costs nothing and closes the class of bug, not the instance. → §XIII.2
+- 📋 **SH159** (deps: SH116 ✅) **Conditional reads for the rest of the surface** — ETags reach manifest, context and the blueprint catalogue. `find`, `read`, `changes` and the SH16 post-type API are all repeat reads with stable digests available, and each one left unconditional is a full payload an agent pays to learn nothing changed. → §XIII.3
+- 💭 **SH160** (deps: SH114 ✅) **Memory for a client with no shell** — `shio remember` was chosen over an eleventh MCP tool because a tool schema is paid every turn and a coding agent has a terminal. A pure MCP client does not, so it can read the memory (it rides in the context pack) but never write one. Decide between a tool, an argument on an existing tool, and leaving it. → §XIII.4
+- 📋 **SH161** (deps: SH114 ✅, SH68 ✅) **Memory travels with the content** — a site's notes are neither exported by the SH68 exchange package nor projected by `shio pull --content`, so migrating a site or rebuilding it from files silently drops everything earlier sessions worked out. The compounding saving only compounds if it survives a move. → §XIII.5
 
 ## Block N — Realignment of what already shipped
 
 > The reorientation is mostly additive, but it does invalidate some existing
 > choices. See the concept spec §10. → §XIV
 
+- 📋 **SH162** (deps: SH127 ✅, SH52) **`@viglet/shio-client` is behind the CDA it mirrors** — `ShCdaPost` delivers `locale` and `availableLocales` (SH52's language switcher) and the TypeScript mirror declares neither, so the one feature the types exist to make usable is invisible to a typed consumer. Found while leaning the same file in SH127; the fix is a mirror-completeness test, not one more field. → §XIV.5
 - 📋 **SH117** (deps: —) **Unify the two post-type APIs** — one name-keyed surface (`/api/v2/post-type`); migrate the console off the id-keyed `/api/v2/post/type` and retire it. Two APIs for one concept is a tax paid on every agent session. → §XIV.1
 - 📋 **SH119** (deps: SH92) **`create-shio-app` templates → blueprints** — one appliable format; `shio init` stays a thin wrapper. → §XIV.2
 - 💭 **SH120** (deps: SH78) **Align console read shapes with the CDA DTOs** where they overlap — one shape to learn. → §XIV.3
