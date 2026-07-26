@@ -29,10 +29,10 @@ export const ContentRoutes = (
     <Route path="content/folder/:folderId/edit" element={<FolderEditPage />} />
     <Route path="content/folder/:folderId/new-folder" element={<FolderNewPage />} />
     <Route path="content/folder/:folderId/post-type-select" element={<PostTypeSelectPage />} />
-    <Route path="content/folder/:folderId/post-type/:postTypeId/new" element={<PostNewPage />} />
+    <Route path="content/folder/:folderId/post-type/:postTypeName/new" element={<PostNewPage />} />
     <Route path="content/post/:postId" element={<PostEditPage />} />
     <Route path="content/post-type" element={<PostTypeListPage />} />
     <Route path="content/post-type/new" element={<PostTypeNewPage />} />
-    <Route path="content/post-type/:postTypeId" element={<PostTypeEditPage />} />
+    <Route path="content/post-type/:postTypeName" element={<PostTypeEditPage />} />
   </>
 )

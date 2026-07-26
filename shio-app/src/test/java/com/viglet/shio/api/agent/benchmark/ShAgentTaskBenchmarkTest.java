@@ -284,7 +284,7 @@ class ShAgentTaskBenchmarkTest {
         record(agent);
 
         ShAgentBenchmark naive = new ShAgentBenchmark(mockMvc, task, NAIVE);
-        naive.call("list post-types", authed(get("/api/v2/post/type")));
+        naive.call("list post-types", authed(get("/api/v2/post-type")));
         naive.call("list sites", authed(get("/api/v2/site")));
         naive.call("list root", authed(get("/api/v2/object/" + rootFolderId + "/list")));
         String folderBody = "{\"name\":\"pages-" + UUID.randomUUID().toString().substring(0, 6) + "\"}";
@@ -325,13 +325,14 @@ class ShAgentTaskBenchmarkTest {
         record(agent);
 
         ShAgentBenchmark naive = new ShAgentBenchmark(mockMvc, task, NAIVE);
-        naive.call("list post-types", authed(get("/api/v2/post/type")));
-        String consoleType = consolePostType("BenchNaive" + suffix);
-        String typeId = id(naive.call("create post-type", authed(post("/api/v2/post/type"))
-                .contentType(MediaType.APPLICATION_JSON).content(consoleType), consoleType));
+        naive.call("list post-types", authed(get("/api/v2/post-type")));
+        String naiveType = "BenchNaive" + suffix;
+        String consoleType = consolePostType(naiveType);
+        naive.call("create post-type", authed(post("/api/v2/post-type"))
+                .contentType(MediaType.APPLICATION_JSON).content(consoleType), consoleType);
         naive.call("read folder", authed(get("/api/v2/folder/" + blogFolderId)));
         for (int i = 1; i <= BULK_POSTS; i++) {
-            String body = "{\"folderId\":\"" + blogFolderId + "\",\"postTypeId\":\"" + typeId
+            String body = "{\"folderId\":\"" + blogFolderId + "\",\"postType\":\"" + naiveType
                     + "\",\"state\":\"DRAFT\",\"data\":{\"headline\":\"Naive note " + i + "\"}}";
             naive.call("create post " + i, authed(post("/api/v2/post-unified"))
                     .contentType(MediaType.APPLICATION_JSON).content(body), body);
@@ -533,10 +534,16 @@ class ShAgentTaskBenchmarkTest {
                 + "\"required\":true,\"isTitle\":true,\"ordinal\":1}]}";
     }
 
+    /**
+     * A post-type as the <em>console</em> creates one: the same name-keyed surface the
+     * CLI uses, with {@code managed:false} marking it a hand edit (SH117 retired the
+     * id-keyed twin this used to POST to).
+     */
     private static String consolePostType(String name) {
         return "{\"name\":\"" + name + "\",\"title\":\"Note\",\"namePlural\":\"Notes\","
-                + "\"shPostTypeAttrs\":[{\"name\":\"headline\",\"label\":\"Headline\","
-                + "\"ordinal\":1,\"required\":1,\"isTitle\":1,\"shWidget\":{\"name\":\"Text\"}}]}";
+                + "\"managed\":false,"
+                + "\"fields\":[{\"name\":\"headline\",\"label\":\"Headline\","
+                + "\"ordinal\":1,\"required\":true,\"isTitle\":true,\"widget\":\"Text\"}]}";
     }
 
     private String batchOfPosts(String type, String prefix) {

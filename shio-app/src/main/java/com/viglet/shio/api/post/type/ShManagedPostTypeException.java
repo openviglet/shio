@@ -15,12 +15,16 @@ import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
 
 /**
- * Raised when a console write ({@code PUT /api/v2/post/type/{id}}) targets a
- * post-type that is "managed by code" (SH66) — owned by the {@code shio} CLI
- * {@code push}. The React editor already renders such types read-only with the
- * save action disabled; this is the server-side backstop that keeps the GUI from
- * silently overwriting a code-owned model (a last-writer-wins race). The fix is
- * to edit the DSL/JSON in the repo and {@code push}, not the console.
+ * Raised when a hand edit targets a post-type that is "managed by code" (SH66) —
+ * owned by the {@code shio} CLI {@code push}. The React editor already renders such
+ * types read-only with the save action disabled; this is the server-side backstop
+ * that keeps the GUI from silently overwriting a code-owned model (a
+ * last-writer-wins race). The fix is to edit the DSL/JSON in the repo and
+ * {@code push}, not the console.
+ *
+ * <p>Since SH117 both writers share {@code /api/v2/post-type}, so what makes a
+ * write a hand edit is its {@code managed:false} claim rather than which path it
+ * arrived on — see {@link com.viglet.shio.api.post.type.dto.ShPostTypeDef}.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.3

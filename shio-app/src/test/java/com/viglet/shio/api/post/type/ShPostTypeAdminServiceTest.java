@@ -117,17 +117,52 @@ class ShPostTypeAdminServiceTest {
     void upsertMarksTypeManagedAndPullReportsIt() {
         String name = "PT-MNG-" + UUID.randomUUID();
 
-        // SH66: an admin-API upsert originates from `shio push`, so it owns the type.
-        // The flag is set server-side regardless of the (false) value sent on the def.
+        // SH66/SH117: `managed` absent is the CLI's contract — `shio push` owns the
+        // type, so the flag is set server-side. The key is omitted from the canonical
+        // serialization, which is exactly why absent (not `true`) has to mean this.
         ShPostTypeDef created = service.upsert(name, new ShPostTypeDef(
-                name, "Managed", "Managed", null, null, false, false,
+                name, "Managed", "Managed", null, null, false, null,
                 List.of(field("title", "Text", 0, true, null, List.of()))));
-        assertThat(created.managed()).as("upsert must mark the type managed").isTrue();
+        assertThat(created.managed()).as("a write with no `managed` claim owns the type").isTrue();
 
         // ...and it is delivered on the next pull so the console can lock it.
         assertThat(service.get(name).orElseThrow().managed()).isTrue();
         // managed is orthogonal to system — this is a custom type.
         assertThat(created.system()).isFalse();
+    }
+
+    @Test
+    void aHandEditIsRefusedAgainstACodeOwnedType() {
+        String name = "PT-HAND-" + UUID.randomUUID();
+        ShPostTypeDef codeOwned = new ShPostTypeDef(name, "Owned", "Owned", null, null, false, null,
+                List.of(field("title", "Text", 0, true, null, List.of())));
+        service.upsert(name, codeOwned);
+
+        // SH117: the console shares this surface, so `managed:false` is what makes a
+        // write a hand edit. Against a code-owned model that is a conflict — the
+        // server-side backstop behind the editor's disabled save button.
+        ShPostTypeDef handEdit = new ShPostTypeDef(name, "Hand edited", "Owned", null, null, false, false,
+                List.of(field("title", "Text", 0, true, null, List.of())));
+        assertThatExceptionOfType(ShManagedPostTypeException.class)
+                .isThrownBy(() -> service.upsert(name, handEdit));
+        assertThat(service.get(name).orElseThrow().title()).isEqualTo("Owned");
+
+        // The owner may keep converging, and the flag survives the round trip.
+        assertThat(service.upsert(name, codeOwned).managed()).isTrue();
+    }
+
+    @Test
+    void aConsoleWriteLeavesTheTypeEditable() {
+        String name = "PT-CONS-" + UUID.randomUUID();
+        ShPostTypeDef created = service.create(new ShPostTypeDef(
+                name, "Hand made", "Hand made", null, null, false, false,
+                List.of(field("title", "Text", 0, true, null, List.of()))));
+        // A type the console made must not lock itself out of its own editor.
+        assertThat(created.managed()).isFalse();
+
+        assertThatExceptionOfType(ShPostTypeExistsException.class)
+                .isThrownBy(() -> service.create(new ShPostTypeDef(
+                        name, "Again", null, null, null, false, false, List.of())));
     }
 
     @Test

@@ -71,6 +71,8 @@ export interface ShioPostSummary {
   summary?: string;
   furl?: string;
   postType?: string;
+  /** BCP-47 locale of this row (SH52), absent on single-language content. */
+  locale?: string;
   date?: string;
   modifiedDate?: string;
 }
@@ -88,6 +90,14 @@ export interface ShioPost {
   date?: string;
   modifiedDate?: string;
   publicationDate?: string;
+  /** BCP-47 locale of this post (SH52), absent on single-language content. */
+  locale?: string;
+  /**
+   * Every locale this post is translated into, including {@link locale} — the
+   * list a language switcher renders from (SH52). Always present; `[]` on a
+   * post with no translation group.
+   */
+  availableLocales: string[];
   /** Post-type attributes as a JSON object, keyed by attribute name. */
   attrs: Record<string, unknown>;
 }

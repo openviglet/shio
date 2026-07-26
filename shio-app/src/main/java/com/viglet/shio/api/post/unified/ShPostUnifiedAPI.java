@@ -24,13 +24,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.api.acl.ShContentAclService;
+import com.viglet.shio.api.post.type.ShUnknownPostTypeException;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.UpdateRequest;
+import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.tenant.ShTenantQuotaService;
 
 import tools.jackson.databind.JsonNode;
@@ -47,17 +50,20 @@ public class ShPostUnifiedAPI {
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
     private final ShTenantQuotaService shTenantQuotaService;
     private final ShContentAclService shContentAclService;
+    private final ShPostTypeRepository shPostTypeRepository;
 
     public ShPostUnifiedAPI(ShPostUnifiedRepository shPostUnifiedRepository,
                             ShFolderRepository shFolderRepository,
                             ShPostUnifiedWriteService shPostUnifiedWriteService,
                             ShTenantQuotaService shTenantQuotaService,
-                            ShContentAclService shContentAclService) {
+                            ShContentAclService shContentAclService,
+                            ShPostTypeRepository shPostTypeRepository) {
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shTenantQuotaService = shTenantQuotaService;
         this.shContentAclService = shContentAclService;
+        this.shPostTypeRepository = shPostTypeRepository;
     }
 
     @PostMapping
@@ -67,7 +73,7 @@ public class ShPostUnifiedAPI {
         shTenantQuotaService.checkCanCreatePost();
         return shPostUnifiedWriteService.create(new CreateRequest(
                 payload.folderId(),
-                payload.postTypeId(),
+                resolvePostTypeId(payload),
                 payload.data(),
                 payload.state() != null ? payload.state() : ShPostState.DRAFT,
                 principal != null ? principal.getName() : null,
@@ -107,8 +113,47 @@ public class ShPostUnifiedAPI {
         return ResponseEntity.noContent().build();
     }
 
-    public record CreatePayload(String folderId, String postTypeId, JsonNode data, ShPostState state,
-                                String locale, String translationGroupId) {
+    /**
+     * SH117 — {@code postType} (the API name) is accepted in place of
+     * {@code postTypeId}. The console picks a post-type off the name-keyed
+     * {@code /api/v2/post-type} surface and has no id to send; resolving the name
+     * here is one lookup on the server, where the id lives, instead of a round trip
+     * whose only purpose is to translate a name the caller already knows.
+     * {@code postTypeId} still wins when both are present, so every existing caller
+     * is untouched.
+     */
+    public record CreatePayload(String folderId, String postTypeId, String postType, JsonNode data,
+                                ShPostState state, String locale, String translationGroupId) {
+    }
+
+    /**
+     * The post-type id to create under: {@code postTypeId} if given, otherwise
+     * {@code postType} resolved by name. A name that resolves to nothing is a
+     * teaching 400 carrying the installed catalogue, not a null the writer would
+     * fail on later with no idea which of the two fields was wrong.
+     */
+    private String resolvePostTypeId(CreatePayload payload) {
+        if (payload.postTypeId() != null && !payload.postTypeId().isBlank()) {
+            return payload.postTypeId();
+        }
+        String name = payload.postType();
+        if (name == null || name.isBlank()) {
+            throw new ShUnknownPostTypeException(null, postTypeNames());
+        }
+        ShPostType postType = shPostTypeRepository.findByName(name);
+        if (postType == null) {
+            throw new ShUnknownPostTypeException(name, postTypeNames());
+        }
+        return postType.getId();
+    }
+
+    /** The post-type names a caller may use, sorted so an identical failure answers identically (P5). */
+    private List<String> postTypeNames() {
+        return shPostTypeRepository.findAll().stream()
+                .map(ShPostType::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .sorted()
+                .toList();
     }
 
     public record UpdatePayload(JsonNode data, ShPostState state) {

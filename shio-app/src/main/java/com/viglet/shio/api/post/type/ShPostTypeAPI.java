@@ -7,10 +7,12 @@ package com.viglet.shio.api.post.type;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,14 +24,32 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Lossless post-type admin API (SH16) — the console-authenticated surface the
- * {@code shio} CLI uses for {@code pull}/{@code push} (post-types as code). It is
- * the authoring counterpart to the read-only CDA schema (SH11, token-gated).
+ * The post-type API (SH16) — <b>the</b> post-type surface, name-keyed and
+ * lossless. It serves the {@code shio} CLI's {@code pull}/{@code push}
+ * (post-types as code), the agent path, and — since SH117 — the React console's
+ * editor and pickers. It is the authoring counterpart to the read-only CDA schema
+ * (SH11, token-gated).
  *
- * <p>Console-only: it falls under {@code anyRequest().authenticated()} (HTTP
- * Basic) and is CSRF-exempt (see {@code ShSecurityConfig}) so the stateless CLI
- * can call it without a session. System post-types are protected in
- * {@link ShPostTypeAdminService}.</p>
+ * <p><b>SH117 retired the second one.</b> There used to be an id-keyed,
+ * entity-shaped twin at {@code /api/v2/post/type} for the console, so every
+ * caller had to know which of two APIs to use and whether to address a post-type
+ * by id or by name — a tax paid on every agent session and a straight violation of
+ * P5/P10. One concept now has one surface, addressed the way SH79 addresses
+ * everything else: by name.</p>
+ *
+ * <p>The two write verbs are not redundant. {@code PUT /{name}} is an idempotent
+ * upsert, because converging a model that is already declared has to be a no-op
+ * for {@code shio push --check} to mean anything; {@code POST} creates and
+ * conflicts, because a name collision in the console's "new post-type" form is a
+ * mistake to report rather than a model to overwrite. Which of them a write
+ * <em>is</em> — code-owned or hand-edited — travels in the body's {@code managed}
+ * claim (see {@link ShPostTypeDef}), not in the path.</p>
+ *
+ * <p>Console-authenticated: it falls under {@code anyRequest().authenticated()}
+ * (HTTP Basic or a console session). CSRF is required of session-bearing callers
+ * and waived for stateless ones — see {@code ShSecurityConfig}, which is what lets
+ * the CLI and the browser share one path safely. System post-types are protected
+ * in {@link ShPostTypeAdminService}.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.2
@@ -56,6 +76,22 @@ public class ShPostTypeAPI {
         return shPostTypeAdminService.get(name)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Create a post-type, conflicting on an existing name (SH117). The name comes
+     * from the body — there is no id to put in the path, and inventing one would
+     * be the id-keyed twin all over again.
+     */
+    @PostMapping
+    public ResponseEntity<ShPostTypeDef> create(@RequestBody ShPostTypeDef body) {
+        if (body == null || body.name() == null || body.name().isBlank()) {
+            throw new ShMissingPostTypeNameException();
+        }
+        ShPostTypeDef created = shPostTypeAdminService.create(body);
+        log.info("Created post-type '{}' ({} field(s)) via the post-type API",
+                created.name(), created.fields() != null ? created.fields().size() : 0);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{name}")

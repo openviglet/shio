@@ -74,8 +74,27 @@ public class ShPostTypeAdminService {
     }
 
     /**
+     * Create the post-type named by {@code def} — the non-clobbering half of the
+     * surface (SH117). {@code PUT} is an upsert by definition, which is what the CLI
+     * {@code push} wants and exactly what the console's "new post-type" form must
+     * not do: a name collision there is a mistake to report, not content to
+     * overwrite. Conflicts on an existing name; otherwise identical to
+     * {@link #upsert}.
+     */
+    @Transactional
+    public ShPostTypeDef create(ShPostTypeDef def) {
+        String name = def != null ? def.name() : null;
+        if (shPostTypeRepository.findByName(name) != null) {
+            throw new ShPostTypeExistsException(name);
+        }
+        return upsert(name, def);
+    }
+
+    /**
      * Create or fully replace the post-type named {@code name} from {@code def}
-     * (idempotent by name). Rejects writes to a system post-type.
+     * (idempotent by name). Rejects writes to a system post-type, and — when the
+     * write does <em>not</em> claim code ownership (the console; see
+     * {@link ShPostTypeDef#claimsCodeOwnership()}) — to a code-managed one.
      */
     @Transactional
     public ShPostTypeDef upsert(String name, ShPostTypeDef def) {
@@ -83,15 +102,24 @@ public class ShPostTypeAdminService {
         if (existing != null && existing.getSystem() == 1) {
             throw new ShSystemPostTypeException(name);
         }
+        boolean codeOwned = def.claimsCodeOwnership();
+        // SH66/SH117: a hand edit must not silently win a race against the
+        // repository that owns the model. The console's editor already disables
+        // save on a managed type; this is the server-side backstop.
+        if (existing != null && existing.isManaged() && !codeOwned) {
+            throw new ShManagedPostTypeException(name);
+        }
 
         ShPostType postType = existing != null ? existing : newPostType(name);
         postType.setTitle(def.title());
         postType.setNamePlural(def.namePlural());
         postType.setDescription(def.description());
         postType.setWorkflowPublishEntity(def.workflowPublishEntity());
-        // SH66: every admin-API upsert originates from the CLI `push`, so the type
-        // is owned by code — mark it managed (the console then renders it read-only).
-        postType.setManaged(true);
+        postType.setManaged(codeOwned);
+        if (existing != null) {
+            postType.setModifier(currentUser());
+            postType.setModifiedDate(Instant.now());
+        }
 
         if (existing != null) {
             // Detach cascade-bearing associations so the orphan removal below
@@ -124,7 +152,10 @@ public class ShPostTypeAdminService {
         }
         ShPostType postType = newPostType(def.name());
         postType.setSystem((byte) (def.system() ? 1 : 0));
-        postType.setManaged(def.managed());
+        // Provisioning copies the source tenant's flag verbatim (a *copy*, not a
+        // write), so absent means "not managed" here rather than SH117's
+        // "code-owned write" default.
+        postType.setManaged(Boolean.TRUE.equals(def.managed()));
         postType.setTitle(def.title());
         postType.setNamePlural(def.namePlural());
         postType.setDescription(def.description());

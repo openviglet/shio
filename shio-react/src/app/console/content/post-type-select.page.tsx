@@ -51,8 +51,8 @@ export default function PostTypeSelectPage() {
   const customTypes = postTypes.filter(pt => !pt.system)
 
   const handleSelect = (pt: ShPostType) => {
-    localStorage.setItem("sh-last-post-type", pt.id)
-    navigate(`${ROUTES.CONTENT_ROOT}/folder/${folderId}/post-type/${pt.id}/new`)
+    localStorage.setItem("sh-last-post-type", pt.name)
+    navigate(`${ROUTES.CONTENT_ROOT}/folder/${folderId}/post-type/${encodeURIComponent(pt.name)}/new`)
   }
 
   return (
@@ -89,7 +89,7 @@ export default function PostTypeSelectPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {systemTypes.map(pt => (
                   <Card
-                    key={pt.id}
+                    key={pt.name}
                     className="cursor-pointer hover:bg-muted/50 hover:shadow-md transition-all"
                     onClick={() => handleSelect(pt)}
                   >
@@ -106,7 +106,7 @@ export default function PostTypeSelectPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {customTypes.map(pt => (
                   <Card
-                    key={pt.id}
+                    key={pt.name}
                     className="cursor-pointer hover:bg-muted/50 hover:shadow-md transition-all"
                     onClick={() => handleSelect(pt)}
                   >

@@ -1,9 +1,16 @@
 import axios from "axios"
 import type { ShPostState, ShPostUnified } from "@/models/post-unified/post-unified"
 
+/**
+ * The create body. The post-type is named either way: `postType` is its API name
+ * (SH117 — what the console has after reading the name-keyed `/api/v2/post-type`),
+ * `postTypeId` its id, and the server prefers the id when both are sent. Exactly
+ * one is required; neither is a teaching 400 listing the installed types.
+ */
 export interface CreateUnifiedPostRequest {
   folderId: string
-  postTypeId: string
+  postType?: string
+  postTypeId?: string
   data: Record<string, unknown>
   state?: ShPostState
   locale?: string

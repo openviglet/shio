@@ -69,6 +69,7 @@
   "content.subFields": "Sub Fields",
   "content.pickOne": "-- Pick One --",
   "content.apiName": "API Name",
+  "content.apiNameReadOnly": "A post-type is addressed by its API name, so it cannot be changed here — renaming one is a separate operation that has to move its content with it.",
   "content.apiPluralName": "API Plural Name",
   "content.workflow": "Workflow",
   "content.responsiblePublishing": "Responsible for Publishing",

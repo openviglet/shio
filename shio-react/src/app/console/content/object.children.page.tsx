@@ -111,8 +111,8 @@ export default function ObjectChildrenPage() {
 
     Promise.all([fetchPath, fetchChildren]).finally(() => setLoading(false))
     postTypeService.query().then((pts) => {
-      const savedId = localStorage.getItem("sh-last-post-type")
-      const saved = pts.find(p => p.id === savedId)
+      const savedName = localStorage.getItem("sh-last-post-type")
+      const saved = pts.find(p => p.name === savedName)
       setLastPostType(saved || pts.find(p => !p.system) || pts[0] || null)
     })
   }, [objectId])
@@ -340,8 +340,8 @@ export default function ObjectChildrenPage() {
                 disabled={!lastPostType}
                 onClick={() => {
                   if (lastPostType) {
-                    localStorage.setItem("sh-last-post-type", lastPostType.id)
-                    navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/post-type/${lastPostType.id}/new`)
+                    localStorage.setItem("sh-last-post-type", lastPostType.name)
+                    navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/post-type/${encodeURIComponent(lastPostType.name)}/new`)
                   }
                 }}
               >
