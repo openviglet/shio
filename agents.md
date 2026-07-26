@@ -170,6 +170,21 @@ the CDA + console services (law P10) and holds no business logic of its own.
   (`--dry-run` / `--check` / `-` for stdin).
 - `GET /agent/find` — posts by site/type/folder-subtree/text; **addresses, not bodies**.
 - `GET /agent/read?address=…&fields=…` — post content, DRAFT-preferred, projected.
+- `GET /agent/verify` — the content-side `tsc` (SH99/SH100). `checks=content,routes,diagnostics`
+  (all by default), `site=`, `limit=`. **`ok` is false only for an *error*** — a warning is
+  something the CMS cannot prove from inside itself (an empty folder, a link that may be a
+  front-end route), and a gate that failed on those is a gate people bypass. Every finding
+  carries an SH79 address and a `fix`. `found` vs `findings` makes a cut visible (SH138's rule).
+- `GET /agent/render?address=…` — a page's **structural** digest (SH101): heading outline,
+  landmark counts, links, images with alt, word count, plus a `digest` hash over the
+  structure only (a typo fix does not move it; a lost heading does). `?url=` digests the
+  delivered page but is **off** unless `shio.agent.render.allow-fetch=true`, and only for
+  the origins of readable sites — an endpoint that fetches arbitrary URLs server-side is a
+  request-forgery surface.
+- `GET /agent/diagnostics` — asynchronous failures (SH103): webhook deliveries, image
+  transforms, scheduled publishes, 5xx. A **bounded in-memory** window that reports its own
+  bound (`since`/`dropped`/`notes`), because "no incidents" must not read as "nothing ever
+  failed". Recorded by `ShAgentIncidentLog`; repeats fold into one row with a count.
 
 ### MCP — `POST /mcp` (SH75/SH83)
 Same capabilities over the Model Context Protocol (JSON-RPC 2.0, revision `2025-06-18`),
@@ -179,7 +194,7 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
 `claude mcp add shio -- shio mcp`.
 - **Tools** (`ShMcpTool` beans, auto-registered): `shio_context` · `shio_find` ·
   `shio_read` · `shio_write` · `shio_apply` · `shio_publish` · `shio_assets` ·
-  `shio_changes`. `shio_verify` arrives with SH99. Every tool is a *shape* over a REST
+  `shio_changes` · `shio_verify` · `shio_digest`. Every tool is a *shape* over a REST
   surface — if a tool needs new logic, the logic goes on the REST side first.
 - **Resources**: `shio://manifest` · `shio://context` · `shio://schema/{postType}`.
 - **Prompts**: `new-site` · `add-section` · `translate-site` · `audit-content`.
@@ -188,6 +203,10 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
   `error` is only for an unusable message (unknown method/tool), which the client
   swallows. Getting this backwards throws away the teaching error.
 - A tool-count test fails the build past 12 — tool schemas are context paid every turn.
+  The real ceiling is `mcp.tools.list.total` in `src/test/resources/token-budgets.properties`
+  (measured, currently 2110 for 10 tools); raising it is allowed and must be justified in
+  the commit. `ShMcpWireConformanceTest` pins `tools/list` against a golden — regenerate
+  with `-Dshio.mcp.golden.update=true` and review the diff when the surface really changes.
 
 Addresses (SH79): `post:<site>/<friendly-url>` · `folder:<site>/<name-chain>` ·
 `site:<name>` · `id:<uuid>`. **Writes take only `post:`/`folder:`** — a folder path and
@@ -219,7 +238,8 @@ uses a **separate** surface at **`/api/v2/post/type`** (note the slash, not a hy
   CLI (by name, lossless `Def`).
 
 ### `shio` CLI (`@viglet/shio`, in `cli/`)
-The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`), `context`, `resolve`, `apply` (SH129 — a desired-state content document; `--check` is the CI drift guard, `-` reads stdin), `mcp`, `dev`, `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
+The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`), `context`, `resolve`, `apply` (SH129 — a desired-state content document; `--check` is the CI drift guard, `-` reads stdin), `verify` (SH99/SH100 — the content lint; **exits 1 on an error**, `--strict` also on warnings), `digest` (SH101 — one page's structure), `mcp`, `dev`, `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
+**CI gates, in the order they should run:** `shio push --check` (model drift) → `shio apply --check` (content drift) → `shio verify` (content defects). The CLI test suite needs `@viglet/shio-client` built first (`pnpm -C shio-client run build`), or every command test fails on a missing module rather than on its own logic.
 
 ## Security Configuration
 

@@ -153,6 +153,61 @@ export class ShioAgentClient {
     return res.json();
   }
 
+  /**
+   * GET /api/v2/agent/verify (SH99/SH100) — the content lint report.
+   *
+   * Returns the parsed JSON, unlike `getContext`: the caller needs `ok` and the counts
+   * to pick an exit code, and a text body would mean parsing prose to decide whether
+   * the build fails. The terse rendering is for the model; the exit code is for CI.
+   *
+   * @param {{ site?: string, checks?: string, limit?: number|string }} [query]
+   */
+  async verify(query = {}) {
+    return this.#get("verify", query);
+  }
+
+  /**
+   * GET /api/v2/agent/render (SH101) — a page's structural digest.
+   *
+   * @param {{ address?: string, url?: string }} query exactly one of the two
+   */
+  async digest(query = {}) {
+    return this.#get("render", query);
+  }
+
+  /** GET /api/v2/agent/diagnostics (SH103) — recent asynchronous failures. */
+  async diagnostics(query = {}) {
+    return this.#get("diagnostics", query);
+  }
+
+  async #get(path, query) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== null && value !== "") {
+        params.set(key, String(value));
+      }
+    }
+    const search = params.toString();
+    const url = `${this.baseUrl}/api/v2/agent/${path}${search ? `?${search}` : ""}`;
+    const res = await this.fetch(url, {
+      method: "GET",
+      headers: { Authorization: this.#authHeader(), Accept: "application/json" },
+    });
+    if (!res.ok) {
+      // Same reasoning as `resolve`: the SH80 teaching problem is the useful part of a
+      // failure — it names the allowed check groups, or the property that enables
+      // fetching — so the body travels intact.
+      let detail = "";
+      try {
+        detail = await res.text();
+      } catch {
+        /* ignore */
+      }
+      throw new ShioHttpError(res.status, url, detail);
+    }
+    return res.json();
+  }
+
   /** GET /api/v2/agent/manifest. */
   async getManifest() {
     const url = `${this.baseUrl}/api/v2/agent/manifest`;

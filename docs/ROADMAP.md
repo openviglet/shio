@@ -37,10 +37,11 @@
 
 > **Numbering.** `SH<n>` ids are permanent and **not contiguous** — epics own
 > sub-ranges and superseded tasks keep their numbers (never reuse them). **SH74** is
-> the agent-native epic; Blocks H–N run **SH75–SH135** with deliberate gaps
+> the agent-native epic; Blocks H–N run **SH75–SH144** with deliberate gaps
 > (SH85 · SH91 · SH98 · SH105 · SH111 · SH118 are reserved, unused block-header
 > slots). **SH121–SH127** and **SH128–SH135** were added from findings while
-> implementing Block H — new tasks are expected to accrete this way, and each one's
+> implementing Block H, and **SH141–SH144** from findings while implementing Block K —
+> new tasks are expected to accrete this way, and each one's
 > line says what measurement or failure produced it. Superseded and therefore retired: **SH17/SH18** (GraalJS), **SH23 +
 > SH27–SH31** (marketplace → Block J), **SH24 + SH32–SH37** (CRUD-over-MCP → Block H).
 
@@ -106,12 +107,30 @@
 > Two of the three human round trips in a typical build exist only because the
 > agent cannot check its own work. This block is the cheapest large win after H. → §IX
 
-- 📋 **SH99** (deps: SH77) **Content lint** — required fields, dangling references, missing assets, duplicate furls, orphan folders, unpublished dependencies → machine-readable report + exit code. **Ships the ninth tool**: `shio_verify` was held back from SH83 for want of something real to verify, and this task registers it and flips the manifest's `contentLint`. → §IX.1
-- 📋 **SH100** (deps: SH99) **Route/link verification** — every furl resolves; internal links + images 200; sitemap coverage vs the blueprint's expectation. → §IX.2
-- 📋 **SH101** (deps: SH99) **Render digest** — fetch a delivery URL and return a token-lean *structural* digest (heading outline, landmarks, link/image inventory with alt, word counts). Textual proof of layout without pixels. → §IX.3
-- 💭 **SH102** (deps: SH101) **Visual snapshot + diff** — optional Playwright PNG + diff vs previous, for the human handoff rather than for the agent. → §IX.4
-- 📋 **SH103** (deps: SH76) **Agent diagnostics** — `GET /api/v2/agent/diagnostics`: last N errors, failed webhooks, broken transforms, schema drift. One call instead of log grepping. → §IX.5
-- 📋 **SH104** (deps: SH88, SH101) **Handoff report** — `shio report` renders the human-facing change summary (what changed, preview links, open questions) for a PR body or console banner. → §IX.6
+> ✅ **The loop is shipped** → [CHANGELOG.md](CHANGELOG.md) Block K: **SH99** (content
+> lint + the ninth tool `shio_verify`, and `contentLint` finally true) · **SH100**
+> (route/link verification) · **SH101** (render digest + `shio_digest`) · **SH103**
+> (agent diagnostics).
+>
+> **What is deliberately not in it, and why:** SH100 answers "internal links resolve"
+> against the content graph rather than by crawling — a front end may not be running,
+> may be a different deployment, and legitimately owns routes the CMS never sees. So
+> `link-unresolved` is a *warning*, and closing that gap properly is **SH141**.
+> Sitemap-coverage-vs-blueprint waits for Block J to have a blueprint to compare
+> against. SH102's PNG stays an idea and is reported `false` in the manifest.
+>
+> **What building it opened.** The `image-no-alt` rule showed the report has no way to
+> say "known and accepted" (**SH142**); the verify pass reads every post in the instance
+> on every call, which is fine at a hundred posts and not at ten thousand (**SH143**);
+> and the SH103 window is honest about being in memory, which is exactly the shape SH88
+> already needs to fix (**SH144**).
+
+- 💭 **SH102** (deps: SH101 ✅) **Visual snapshot + diff** — optional Playwright PNG + diff vs previous, for the human handoff rather than for the agent. → §IX.4
+- 📋 **SH104** (deps: SH88, SH101 ✅) **Handoff report** — `shio report` renders the human-facing change summary (what changed, preview links, open questions) for a PR body or console banner. Blocked on SH88: "what changed" over a window rather than a cursor would be a summary that silently starts mid-story. → §IX.6
+- 📋 **SH141** (deps: SH100 ✅, SH101 ✅) **Prove a route from the delivery side** — SH100 resolves links against the content graph, so a page that exists in the CMS and 404s on the site is still only a *warning*. SH101 already fetches one URL safely (origin-checked, opt-in); this walks the published set through the same path and turns "the front end does not serve this" into an error, with the front-end-owns-routes case declared rather than guessed. → §IX.2
+- 📋 **SH142** (deps: SH99 ✅) **Baseline / accepted findings** — a verify report has two states, and real content has a third: known and accepted. Without it the first legitimate warning teaches everyone to ignore the exit code. A committed `shio/verify-baseline.json` (rule + address) that `shio verify` subtracts, and that fails when an accepted finding no longer exists — so the file cannot rot into a blanket suppression. → §IX.1
+- 📋 **SH143** (deps: SH99 ✅) **Scope a verify run to what changed** — the pass reads every post in every readable site, which is right for CI and wrong for the call an agent makes after writing three pages. Needs `?folder=`/`?address=` scoping and, once SH88 lands, `?since=` — plus an honest header saying the report covers a subset, because a partial report that reads as a full one is the SH138 hazard again. → §IX.1
+- 💭 **SH144** (deps: SH103 ✅, SH88) **Durable incident feed** — the SH103 window is in memory and says so, which is the correct answer for now and the wrong one for "was anything failing while I was away". The durable form is the same cursor SH88 builds for content changes; folding incidents into it is cheaper than a second retention policy. → §IX.5
 
 ## Block I — Content as files (local-first authoring)
 

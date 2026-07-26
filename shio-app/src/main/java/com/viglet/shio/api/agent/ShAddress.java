@@ -167,8 +167,15 @@ public record ShAddress(Kind kind, String site, String path) {
      * {@code blog//hello} and {@code /blog/hello} are the same address. Trailing
      * slashes are dropped (but the root stays {@code /}) — otherwise {@code /blog}
      * and {@code /blog/} would hash differently and break the digest's stability.
+     *
+     * <p>Public because it is the instance's one canonical path form, and every surface
+     * that compares paths has to use the same one (P5). SH99's duplicate-URL rule and
+     * SH100's link resolution both compare stored {@code furl}s against hrefs written by
+     * hand; a second normalization written next to either of them would eventually
+     * disagree with this one, and the symptom would be a lint that reports a defect that
+     * is not there.</p>
      */
-    static String normalizePath(String path) {
+    public static String normalizePath(String path) {
         if (path == null || path.isBlank()) {
             return "/";
         }

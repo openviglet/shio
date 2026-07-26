@@ -27,13 +27,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 
+import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.property.ShImageTransformProperties;
 
 class ShThumbnailatorImageTransformPipelineTest {
 
     private final ShImageTransformProperties properties = new ShImageTransformProperties();
     private final ShThumbnailatorImageTransformPipeline pipeline =
-            new ShThumbnailatorImageTransformPipeline(properties);
+            new ShThumbnailatorImageTransformPipeline(properties, new ShAgentIncidentLog());
 
     private static Resource image(int w, int h, String format, String fileName) throws IOException {
         BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);

@@ -83,6 +83,22 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
             + "and p.data like concat('%', :fileId, '%')")
     List<ShPostUnified> findReferencingFileId(@Param("fileId") String fileId, @Param("state") ShPostState state);
 
+    /**
+     * Posts that belong to no site (SH99's {@code orphan-post} lint rule).
+     *
+     * <p>Exists because this row is invisible to every other finder here: it is not in
+     * any site's listing, the CDA cannot deliver it and the SH79 resolver cannot address
+     * it, so the only way to see it is to ask for exactly it. That is the SH128 defect's
+     * signature, and a lint that cannot see the defect class its own guard was written
+     * for is not much of a lint.</p>
+     *
+     * <p>{@code p.shSite is null} compiles to {@code site_id is null} on this table — a
+     * null check on the FK column, which needs no join and therefore does not trip the
+     * SH22 tenant-join hazard documented above.</p>
+     */
+    @Query("select p from ShPostUnified p where p.shSite is null and p.state in :states")
+    List<ShPostUnified> findWithoutSite(@Param("states") Collection<ShPostState> states);
+
     // --- CDA preview (SH5) finders: fetch across a state set so the service can
     //     dedup draft-preferred. Used only by the PREVIEW-environment read path. ---
 
