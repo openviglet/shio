@@ -54,8 +54,13 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
 
     Page<ShPostUnified> findByShSite_IdAndState(String siteId, ShPostState state, Pageable pageable);
 
-    Page<ShPostUnified> findByShSite_IdAndShPostType_NameAndState(String siteId, String postType,
-                                                                 ShPostState state, Pageable pageable);
+    /**
+     * Posts of one post-type in a site. Keyed by post-type <b>id</b>, never by name —
+     * see the {@code @TenantId} note on {@link #findByShPostType_IdAndState}. The CDA
+     * takes a post-type *name* from the caller and resolves it to an id first.
+     */
+    Page<ShPostUnified> findByShSite_IdAndShPostType_IdAndState(String siteId, String postTypeId,
+                                                               ShPostState state, Pageable pageable);
 
     /**
      * All posts of a given post type (by id) in a given state (tenant-scoped) — used by
@@ -85,8 +90,8 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
 
     List<ShPostUnified> findByShSite_IdAndStateIn(String siteId, Collection<ShPostState> states);
 
-    List<ShPostUnified> findByShSite_IdAndShPostType_NameAndStateIn(String siteId, String postType,
-                                                                    Collection<ShPostState> states);
+    List<ShPostUnified> findByShSite_IdAndShPostType_IdAndStateIn(String siteId, String postTypeId,
+                                                                  Collection<ShPostState> states);
 
     // --- Trash / soft-delete (SH55). Native so they bypass the entity's
     //     @SQLRestriction("deleted_date is null") and can see/clear trashed rows.
@@ -145,17 +150,42 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     List<ShPostUnified> searchBySitesAndStateIn(@Param("siteIds") Collection<String> siteIds,
                                                 @Param("states") Collection<ShPostState> states, @Param("q") String q);
 
-    @Query("select p from ShPostUnified p where p.shSite.id = :siteId and p.shPostType.name in :postTypes "
+    @Query("select p from ShPostUnified p where p.shSite.id = :siteId and p.shPostType.id in :postTypeIds "
             + "and p.state = :state and " + FULLTEXT_PREDICATE)
     Page<ShPostUnified> searchBySiteAndTypesAndState(@Param("siteId") String siteId,
-                                                     @Param("postTypes") Collection<String> postTypes,
+                                                     @Param("postTypeIds") Collection<String> postTypeIds,
                                                      @Param("state") ShPostState state, @Param("q") String q,
                                                      Pageable pageable);
 
-    @Query("select p from ShPostUnified p where p.shSite.id = :siteId and p.shPostType.name in :postTypes "
+    @Query("select p from ShPostUnified p where p.shSite.id = :siteId and p.shPostType.id in :postTypeIds "
             + "and p.state in :states and " + FULLTEXT_PREDICATE)
     List<ShPostUnified> searchBySiteAndTypesAndStateIn(@Param("siteId") String siteId,
-                                                       @Param("postTypes") Collection<String> postTypes,
+                                                       @Param("postTypeIds") Collection<String> postTypeIds,
                                                        @Param("states") Collection<ShPostState> states,
                                                        @Param("q") String q);
+
+    // --- Aggregate counts for the agent context pack (SH77). Grouped so the whole
+    //     instance costs one query instead of one per post-type / per site, and
+    //     counted on `distinct p.id` because the unified model stores up to two rows
+    //     per post (DRAFT + PUBLISHED) — counting rows would double most content.
+    //
+    //     Both group by the association's **id** and never by one of its other
+    //     fields. Reaching a further field (`p.shPostType.name`) forces a join to
+    //     ShPostType, which is an ShObject subclass in the JOINED hierarchy that
+    //     carries SH22's `@TenantId`; Hibernate then emits the tenant predicate
+    //     against the *subclass* table alias, which has no `tenant_id` column, and
+    //     the query dies at prepare time with `Column "spt1_1.tenant_id" not found`.
+    //     Selecting only the id uses the FK column already on sh_post_unified — no
+    //     join, no tenant predicate, and cheaper SQL. Callers resolve id → name from
+    //     the post-type list they already hold. ---
+
+    /** @return rows of {@code [postTypeId (String), posts (Long)]}. */
+    @Query("select p.shPostType.id, count(distinct p.id) from ShPostUnified p "
+            + "where p.shPostType is not null group by p.shPostType.id")
+    List<Object[]> countDistinctByPostTypeId();
+
+    /** @return rows of {@code [siteId (String), posts (Long)]}. */
+    @Query("select p.shSite.id, count(distinct p.id) from ShPostUnified p "
+            + "where p.shSite is not null group by p.shSite.id")
+    List<Object[]> countDistinctBySiteId();
 }

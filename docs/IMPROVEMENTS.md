@@ -13,486 +13,733 @@
 > **Founding rule:** once a task ships, its detail is removed from here and
 > reduced to a one-line entry in CHANGELOG.md — `git log` is the authoritative
 > history. Do not re-accrete shipped implementation reports into this file.
+> (Sections §I–§V and §VII were collapsed to pointers when Blocks H–M landed; the
+> numbering is preserved so existing `docs/specs/*` cross-references still resolve.)
 
 **Status legend** (status itself lives in ROADMAP.md): ⏳ partial · 📋 designed · 💭 idea.
+
+**Section order** below follows the **suggested work order** in ROADMAP.md
+(H → K → I → J → L → M → N), not the block letters — §VIII is Block H, §IX is
+Block K, §X is Block I, and so on. Each section header names its block.
 
 **Cross-references** use relative paths from `docs/`; linked code may have moved —
 verify against `git ls-files` before acting.
 
 ## Table of contents
 
-- [0. Strategy — why headless-Java, not a rewrite](#0-strategy--why-headless-java-not-a-rewrite)
-- [I. Headless foundation — the Content Delivery API](#i-headless-foundation--the-content-delivery-api)
-- [II. JavaScript-for-pages developer experience](#ii-javascript-for-pages-developer-experience)
-- [III. Composable platform primitives](#iii-composable-platform-primitives)
-- [IV. Optional server-side JS rendering (GraalJS)](#iv-optional-server-side-js-rendering-graaljs)
-- [V. Legacy retirement](#v-legacy-retirement)
-- [VI. Market positioning / bold bets](#vi-market-positioning--bold-bets)
-- [VII. Content portability — the exchange subsystem](#vii-content-portability--the-exchange-subsystem)
+- [0. Strategy — the agent-native reorientation](#0-strategy--the-agent-native-reorientation)
+- **Part 1 — the reorientation (active)**
+  - [VIII. The Agent Gateway (Block H)](#viii-the-agent-gateway-block-h)
+  - [IX. Perception & verification loop (Block K)](#ix-perception--verification-loop-block-k)
+  - [X. Content as files (Block I)](#x-content-as-files-block-i)
+  - [XI. Blueprints + Claude Code plugin (Block J)](#xi-blueprints--claude-code-plugin-block-j)
+  - [XII. Agent safety & human-in-the-loop (Block L)](#xii-agent-safety--human-in-the-loop-block-l)
+  - [XIII. Token economy, measured (Block M)](#xiii-token-economy-measured-block-m)
+  - [XIV. Realignment of what already shipped (Block N)](#xiv-realignment-of-what-already-shipped-block-n)
+- **Part 2 — pre-existing sections**
+  - [I. Headless foundation — the CDA](#i-headless-foundation--the-cda) (shipped)
+  - [II. JavaScript-for-pages DX](#ii-javascript-for-pages-dx) (shipped)
+  - [III. Composable platform primitives](#iii-composable-platform-primitives) (shipped)
+  - [IV. Server-side JS rendering — dropped](#iv-server-side-js-rendering--dropped)
+  - [V. Legacy retirement](#v-legacy-retirement) (shipped)
+  - [VI. Market positioning](#vi-market-positioning)
+  - [VII. Content portability](#vii-content-portability) (shipped)
 
 ---
 
-## 0. Strategy — why headless-Java, not a rewrite
+## 0. Strategy — the agent-native reorientation
 
-### 0.1 The actual goals (separated)
+> Full concept, protocol design and worked example:
+> [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md).
 
-The driving request mixed two goals that are **independent**:
+### 0.1 The goals, restated
 
-1. **"Be relevant to today's market"** → this is an *architecture* decision
-   (headless / API-first / composable), **not** a language decision.
-2. **"Let JavaScript developers build pages, with a low learning curve"** → this
-   is a *developer-experience* decision about templating/frontend, **also not** a
-   backend-language decision.
+The original brief mixed two goals — *"be relevant to today's market"* (an
+architecture decision: headless/API-first) and *"let JavaScript developers build
+pages"* (a DX decision). Both shipped: the CDA (Block A), the SDKs and starter
+(Block B), post-types as typed code (SH62).
 
-Both are achievable without rewriting the backend. Conflating them into "rewrite
-the backend in Node/Go/PHP" is the strategic trap this roadmap avoids.
+A third goal now supersedes them in priority, without contradicting either:
+
+3. **"Be the CMS a coding agent can drive fast."** Optimize the whole system so an
+   agent — Claude Code specifically — needs fewer cycles, fewer tokens, and fewer
+   human round trips to build and then *change* a site.
+
+This is again **not** a language decision, and again not a rewrite. It is a
+decision about **protocol shape, discoverability, determinism and verifiability**.
 
 ### 0.2 What Shio is today (the facts that drive the decision)
 
-- Backend is **small and modern**: ~136 Java files / ~9k LOC, Spring Boot 4 +
-  Java 21, REST + GraphQL, JPA/Liquibase, OAuth2, Hazelcast, Tika. Not a legacy
-  monolith.
-- It is **part of an ecosystem** that is entirely Java/Spring — Turing (search/AI),
-  Dumont (connectors). Shared models, security patterns, and SDKs.
-- The **headless transition has already begun**: `@viglet/shio-react-sdk` (CDA
-  consumer), `@viglet/shio-editor-cors` (visual editor), API-token auth, a
-  unified Post API with publish/versions. See [CHANGELOG.md](CHANGELOG.md) Block 0.
+- The headless foundation is **done**: versioned CDA with scopes/env keys/caching
+  (SH1–SH5), framework-agnostic + React SDKs (SH6/SH7), Next.js starter with
+  SSG/ISR/on-demand revalidation (SH8/SH9), type generation (SH11), post-types as
+  typed TS code with a drift guard and a console lock (SH62–SH66), webhooks,
+  preview, versioning UI, scheduling, audit, search, i18n, ACL, soft-delete
+  (SH12–SH16, SH51–SH55), multi-tenancy (SH22), media + transforms (SH38–SH43,
+  SH73), a full exchange/portability engine (SH68–SH72).
+- Every one of those is shaped for a **human operator**: entity-shaped JSON, UUID
+  addressing, a GUI-first console, docs written as prose recipes.
+- The primitives an agent-native protocol needs are therefore *already here* —
+  declarative sources, canonical serialization, plan/apply (`push --check`), an
+  exchange package format, an audit trail, soft-delete, scoped tokens. What is
+  missing is the **shape**, not the machinery.
 
-### 0.3 Why NOT rewrite the backend (binding non-goal)
+### 0.3 Why NOT rewrite the backend (binding non-goal — unchanged)
 
 - A rewrite costs 6–18 months just to **reach parity** — zero new user value.
-- It **destroys the Turing/Dumont sinergy**: shared models, security, SDKs become
+- It **destroys the Turing/Dumont synergy**: shared models, security, SDKs become
   an HTTP-only island that must be re-integrated.
 - **The language is not the market problem.** Reference composable CMSs are Java
   (Magnolia, dotCMS) or JS; PHP (WordPress/Drupal) *is* the legacy we want to move
   past; Go is great for infra but rare for CMS with weak admin/templating ecosystem.
 - **A CMS's differentiator is never the server language** — it's the content
-  model, the API, the editing experience, and delivery. The end user never knows
-  if the backend is Java or Go.
+  model, the API, the editing experience, and delivery. Under the new orientation
+  it is the *protocol*: an agent cannot tell what the server is written in, only
+  how many calls it costs.
 - Conclusion: rewrite = **high cost, high risk, no perceived value**. Keep Java.
 
-### 0.4 Why Groovy is not the answer to "JS for pages"
+### 0.4 Why in-JVM JS/Groovy templating is not the answer
 
-Groovy would solve *server-side scripting*, but the stated audience is **JavaScript
-developers**, and the learning curve we want to cut is theirs. Groovy is not JS.
-The right answers, in order:
-
-1. **Headless + Next.js/React** (Block B) — pages are a pure JS/TS project that
-   consumes the CDA. Zero Java exposed. This is the primary recommendation.
-2. **GraalJS** (Block D, optional) — if a team insists on server-side rendering
-   *inside* Shio, run real JavaScript on the JVM as the template engine, replacing
-   Thymeleaf. Still JS, still on the existing Java runtime.
+Groovy would solve *server-side scripting*, but the audience never asked for it.
+The same now applies to **GraalJS** (the former Block D, SH17/SH18 — **dropped**):
+an agent builds the front end in Next.js, where it is strongest and where the SSG/
+ISR/preview story already exists (SH8/SH9). An in-JVM script engine adds sandboxing
+risk, a second template language, and hot-reload complexity, and buys the agent
+nothing. The answers stay: **headless + Next.js** (Block B, shipped) for delivery,
+and the **agent protocol** (Block H) for authoring.
 
 ### 0.5 The north star
 
-> Java/Spring stays the content **engine**. Everything a site-builder touches —
-> pages, templates, rendering, data fetching — is **JavaScript/TypeScript**, via a
-> first-class CDA and SDKs. "Headless-first, JS-on-top."
+> **Shio is a CMS whose primary operator is a coding agent.** The agent builds and
+> maintains the site; the **human curates** — approves, corrects, tweaks; the
+> **CDA delivers**. Java/Spring stays the content engine, JS/TS stays the delivery
+> layer, and every new decision is judged by *agent cycles and tokens*, not clicks.
+
+The three actors and their interfaces:
+
+| Actor | Interface | Job |
+|---|---|---|
+| **Agent** (Claude Code) | MCP tools + content files on disk + CLI | Build & maintain: model, structure, content, front end, verification |
+| **Human** | React console, Universal Editor (SH10), preview links, PR review | Curate: approve, correct, tweak copy, decide |
+| **Front end** | CDA (REST/GraphQL) + SDKs | Deliver |
+
+Note what this does *for the human*: with the agent doing data entry and
+scaffolding, the console stops being a form-filling tool and becomes a review and
+visual-tweak surface. That is a better console, not a deprecated one — and it is
+why the Universal Editor and Media Library get *more* important, not less.
+
+### 0.6 The ten design laws
+
+Binding. A feature that violates one is wrong even if it is requested. Each new
+task in Blocks H–N traces to at least one.
+
+| # | Law | Consequence |
+|---|---|---|
+| **P1** | **Agent-first design order** | Every capability lands MCP → files/CLI → REST → console. A console-only feature is incomplete. |
+| **P2** | **One call replaces a session** | Discovery is a product feature (manifest + context pack), not a docs problem. |
+| **P3** | **Tokens are a measured budget** | Response budgets + a CI benchmark; a token regression is a build failure. |
+| **P4** | **Files beat APIs for authoring** | Project content to disk; the agent's cheapest tools are `Edit`/`Write`/`Grep`. |
+| **P5** | **Determinism over cleverness** | Stable order, path addressing, idempotent writes, byte-identical serialization. |
+| **P6** | **Errors are instructions** | Every 4xx carries `fix`/`allowed`/`didYouMean`/`example`. |
+| **P7** | **Never surprise the human** | Draft-default, dry-run, explicit publish, confirm tokens, attribution, review queue. |
+| **P8** | **Skipping steps needs appliable units** | Blueprints, not prose recipes. |
+| **P9** | **Close the perception loop** | Cheap textual proof (lint, routes, render digest) instead of a human round trip. |
+| **P10** | **Compose, don't fork** | MCP is a shape over the CDA + console services, never a third contract. |
+
+### 0.7 What Shio deliberately is *not*
+
+**Shio hosts no model.** No bundled LLM, no prompt runner, no provider API keys in
+the CMS, no "generate this page for me" button. Shio is the substrate an external
+agent drives. The reasoning:
+
+- The defensible asset is **protocol quality** — discoverability, determinism,
+  verifiability, token economy. Inference is a commodity that someone else
+  operates better.
+- Embedding inference imports another vendor's rate limits, cost model, safety
+  posture and outage surface into the content engine.
+- The agent already *is* the intelligence, and it is on the other side of the tool
+  call with far more context than the CMS could ever pass it.
+
+Corollary: "agent-native" is measured in tool calls and tokens, never in how much
+AI the product contains.
 
 ---
 
-## I. Headless foundation — the Content Delivery API
+# Part 1 — the reorientation (active design)
 
-> The CDA seed exists but is not yet a *contract*. Today's reads are spread across
-> `/api/v2/discovery`, `/api/v2/post-unified`, and console endpoints, mixing
-> authenticated console concerns with public delivery. This section carves out a
-> stable, cacheable, public-grade read surface.
+## VIII. The Agent Gateway (Block H)
 
-### I.1 Versioned read-only CDA contract (SH1) — ✅ shipped
+> The core deliverable: an MCP surface designed for an agent. **Supersedes the old
+> SH24 epic** (SH32–SH37), which was CRUD-over-MCP — it would have faithfully
+> reproduced every discovery and write cost it was meant to remove. Full protocol
+> design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
 
-Shipped: `/api/v2/cda/**` read-only namespace + frozen DTO contract. Detail in
-[CHANGELOG.md](CHANGELOG.md) Block A; design record in
-`docs/specs/SH1-cda-read-contract.md`. The forward-compat constraints there
-(state is a service-level param, not a URL segment; `siteId` is a first-class
-query param) bind SH2/SH3/SH5 below.
+### VIII.1 MCP server host (SH75)
 
-### I.2 API-token scopes + per-site keys (SH2)
+Spring-hosted MCP at `/mcp` over **streamable HTTP**, plus `shio mcp` in the CLI as
+a **stdio bridge** so local dev is `claude mcp add shio -- shio mcp` with no
+CORS/auth ceremony. Auth extends the SH2 token model with an **`AGENT` scope**
+(§XII.1) rather than inventing a credential. Every session carries an **agent
+session id**, stamped into the SH51 audit trail on every write — that id is what
+makes the §XII.4 review queue possible, so it belongs in the host, not bolted on later.
 
-`ShApiToken` currently authenticates; it does not *scope*. Add `scope`
-(`READ`/`PREVIEW`/`WRITE`) and an optional `siteId` allow-list, enforced in
-`ShApiTokenFilter`. A public delivery key should read exactly one site's published
-content and nothing else — the precondition for putting a key in a client-side or
-edge environment.
+Design constraint (P10): the host is a **transport + tool registry only**. Tools
+delegate to existing services (`ShCdaService`, `ShPostUnifiedWriteService`,
+`ShPostTypeAdminService`, `ShSiteImportService`…). No business logic in the MCP layer.
 
-### I.3 Rate limiting + caching headers (SH3)
+### VIII.2 Agent manifest (SH76) — ✅ shipped
 
-Emit `Cache-Control` + `ETag`/`Last-Modified` on CDA reads so a CDN absorbs the
-load, and add a per-token token-bucket limiter. This is what makes the CDA safe on
-the open internet.
+Shipped: `GET /api/v2/agent/manifest` → [CHANGELOG.md](CHANGELOG.md) Block H.
+Two design records worth keeping, because later tasks inherit them: (1) **an
+unshipped capability is reported `false`, never omitted** — an absent flag makes a
+caller probe, which is the exact cost the manifest exists to remove, so SH75/SH77/
+SH81/SH92 each flip an already-present flag rather than adding one; (2) the
+endpoint index is **curated, not generated** — it is read every session, so it
+carries a token budget (a test fails the build past 30 entries). The
+`shio://manifest` MCP resource is the same payload once SH75 lands.
 
-### I.4 Real GraphQL delivery schema (SH4)
+### VIII.3 Context pack (SH77) — ✅ shipped
 
-`ShGraphQLSchema` builds a schema programmatically, but the content surface is a
-placeholder. Generate read types from each post-type so a JS client queries only
-the fields a page needs (the headless GraphQL value proposition). REST (I.1)
-remains the simple default; GraphQL is the precision option.
+Shipped: `GET /api/v2/agent/context` → [CHANGELOG.md](CHANGELOG.md) Block H.
+Design records later tasks depend on:
 
-### I.5 Per-environment keys (SH5)
+- **The digest is the product, not a nicety.** It is what turns "re-read the
+  context" from a decision into a free default, so every ordering in the pack is
+  explicit and the digest deliberately excludes the budget/measurement lines. SH116
+  wires the same value to `If-None-Match`; **do not** start hashing measurements.
+- **Only unbounded sections may be truncated.** The model, sites and conventions are
+  charged unconditionally; the sitemap gets the remainder. A partial model is not a
+  smaller answer, it is a wrong one — the agent will invent what is missing. A caller
+  that cannot afford the model drops it explicitly with `include=`.
+- **Charge every bounded section before the gate opens.** Charging one afterwards
+  (the bug that shipped and was caught in test) lets the walk admit rows a later
+  charge pushes over the ceiling.
+- **Conventions are derived, not stored** — the derivable subset only. SH114 adds the
+  author-written store on top; the two must stay distinguishable.
 
-A key carries `env` (`prod`/`preview`). Preview keys see drafts (ties to §III.2),
-prod keys see only published. Lets the same front-end codebase point at either
-with only a token swap.
+**Still open from SH77's stated surface:** the `shio://context` MCP resource (needs
+SH75). The `shio context` CLI shipped as SH126 — note its two divergences from the
+endpoint, both deliberate: `terse` is the CLI's *default* (its caller is an agent,
+not a browser), and the body is passed through as text, never parsed and
+re-serialized, because the digest is computed over exactly those bytes.
+
+### VIII.4 Token-lean responses (SH78) — ✅ shipped
+
+Shipped: budget + terse encoding + `include=` + `X-Shio-Est-Tokens` →
+[CHANGELOG.md](CHANGELOG.md) Block H. Standing rule that survives: **agent reads
+never include authoring metadata by default** (`owner`, `date`, `publishStatus`,
+`modifier`) — the CDA DTOs (SH1) already made that call.
+
+**The measurement to carry forward, because it reorders the backlog:** the terse
+encoding's saving is **per row, not per payload** (~25–35% on a row; diluted to ~⅓
+overall on a small pack where fixed prose dominates), and the residual per-row cost
+is dominated by the **36-char UUID**. Encoding is therefore the *smaller* lever:
+**path addressing (§VIII.5, SH79) is the bigger one**, and dropping ids once paths
+address content (SH121) is worth roughly as much again as the encoding change. Two
+corollaries became tasks: extend the cost header to the CDA (SH124), and make
+null/default omission a policy with a test rather than an annotation someone
+remembers (SH125).
+
+Anti-goal (P3 corollary), unchanged: terseness must not cost a second round trip. A
+response that omits something the agent then has to ask for is a regression — which
+is why per-field projection on content reads was **not** forced into SH78 and waits
+for SH123, when there are content reads to project.
+
+### VIII.5 Path addressing (SH79) — ✅ shipped
+
+Shipped: the address grammar, resolver, `GET /api/v2/agent/resolve` and
+`shio resolve` → [CHANGELOG.md](CHANGELOG.md) Block H. Design records that bind what
+follows:
+
+- **A capability is not the same as a payload field.** Read naively, "path
+  addressing everywhere" means putting an `address` on every row — which would have
+  made the block's biggest *token lever* a token *regression*, since a row already
+  carries the site, path and url the address is built from. The grammar is stated once
+  in the conventions; the resolver makes it actionable. Generalize: before adding a
+  field, check whether the caller can already derive it.
+- **Folder paths and post URLs are two namespaces.** A folder path is a chain of
+  folder names; a `furl` is arbitrary. The scheme says which is meant, and the lenient
+  `site:` form refuses to guess when both are occupied. SH81/SH82 must keep this —
+  an "upsert this path" write that guessed the namespace would create content in the
+  wrong place silently.
+- **Absent, not forbidden.** An address outside the SH2 allow-list resolves to 404,
+  never 403, so a scoped credential cannot use the error to prove a site exists. Every
+  future address-taking surface inherits this.
+- **`addressOf` is the inverse and is round-trip tested**, because SH121 removes the
+  id from context rows and that only stays honest if everything shown is addressable.
+
+**Still open:** writes are not yet address-native — `resolve` is the bridge to
+today's id-keyed endpoints. SH81/SH82 take the address directly, at which point
+"upsert this address" becomes the idempotent write this task was really for.
+
+### VIII.6 Teaching errors (SH80) — ✅ shipped
+
+Shipped: RFC 9457 + `fix`/`allowed`/`didYouMean`/`example` across the API →
+[CHANGELOG.md](CHANGELOG.md) Block H. **The finding to carry forward:**
+nearest-string matching is silent on exactly the guess an agent is most likely to
+make. `RichText` is 4 edits from `Text` and further from every other widget,
+because it is a **vocabulary** mismatch (Contentful/Sanity/Strapi/Payload
+dialects), not a spelling one — so a `didYouMean` built only on edit distance
+answers nothing in the common case. The fix was a curated alias map consulted
+before the distance fallback (`ShWidgetAliases`), constrained to only ever suggest
+an installed target. Generalize this wherever a closed vocabulary is exposed to a
+caller who learned a different one: **translate dialects first, correct spelling
+second.** Candidate next surfaces: post-state names, locale codes, and the
+blueprint parameter vocabulary (§XI.1).
+
+### VIII.7 Batch + plan/apply (SH81, SH82)
+
+- **Batch** — `POST /api/v2/agent/batch`: N ops, atomic, `dryRun`, per-op results.
+  A 12-page site structure becomes one call instead of ~24.
+- **Plan/apply** — generalize `shio push --check` (SH65) from post-types to
+  **content**: a declarative desired-state document → `plan` (a diff, zero writes)
+  → `apply`. This is the pattern that removes read-modify-write loops *and* gives
+  the human a reviewable artifact before anything changes (P7). SH65 already proved
+  the shape; this is the same engine over a second resource type.
+
+### VIII.8 The nine tools (SH83)
+
+`shio_context` · `shio_find` · `shio_read` · `shio_write` · `shio_apply` ·
+`shio_publish` · `shio_verify` · `shio_assets` · `shio_changes`. Plus resources
+(`shio://schema/{postType}`, `shio://blueprints`) and prompts (`new-site`,
+`add-section`, `translate-site`, `audit-content`).
+
+Why nine and not forty: **tool schemas are context**. A 40-tool CRUD surface costs
+tokens on every single turn of every session, before any work happens. The tools
+are therefore *intent-named* (what the agent is trying to do) rather than
+resource×verb, path-addressed, terse by default, and dry-runnable wherever they
+write. `find` returns **identifiers, not bodies** — the agent then `read`s exactly
+what it needs with a `fields` projection.
+
+### VIII.9 Tenant/scope-aware tools + ecosystem (SH84)
+
+Scope every tool per SH22 tenant and wire into Turing (replaces old SH37). Deferred
+behind SH83 because tenant scoping is an enforcement pass over a finished tool set,
+not a design input to it — but the invariant is fixed from day one: the agent path
+is **never** a privilege escalation (§XII).
 
 ---
 
-## II. JavaScript-for-pages developer experience
+## IX. Perception & verification loop (Block K)
 
-> This section *is* the stated objective. The React SDK already exists with data
-> hooks; the work is to (a) make the core framework-agnostic, (b) complete the
-> render surface, and (c) ship a turnkey starter so a JS dev is productive in
-> minutes without seeing Java.
+> The agent cannot see. Two of the three human round trips in a typical build exist
+> only for that reason, which makes this the cheapest large win after Block H —
+> a human cycle is the most expensive unit in the system by orders of magnitude.
 
-### II.1 `@viglet/shio-client` — framework-agnostic core (SH6) — ✅ shipped
+### IX.1 Content lint (SH99)
 
-Shipped: zero-dependency [`shio-client/`](../shio-client) package targeting the
-CDA contract. Detail in [CHANGELOG.md](CHANGELOG.md) Block B. Design note: the new
-core deliberately targets the **CDA** (`/api/v2/cda/**`, SH1), not the legacy
-console endpoints the old `shio-react-sdk` client hit — that's why SH6 depends on
-SH1. **Follow-up (SH7):** rebase `shio-react-sdk`'s hooks onto this core so React
-becomes one consumer, not a parallel implementation.
+Required fields empty, dangling content/file references, missing assets, duplicate
+`furl`s, orphan folders, published posts depending on unpublished ones → a
+machine-readable report plus an exit code, as `shio verify` and an MCP tool.
+This is the content-side equivalent of `tsc`: the agent's own correctness check,
+not a human's review checklist.
 
-### II.2 Complete the React SDK (SH7) — ✅ shipped
+### IX.2 Route/link verification (SH100)
 
-Shipped: `shio-react-sdk` rebased onto `@viglet/shio-client` (React is now one
-consumer, not a parallel client) + new hooks (`useShioBreadcrumb`,
-`useShioPostByUrl`, `useShioSite`) and render components (`ShioRichText`,
-`ShioImage`, `ShioRelator`, `ShioField`). Detail in [CHANGELOG.md](CHANGELOG.md)
-Block B. Design caveat: `ShioField`'s widget resolution is **heuristic** (by value
-shape) because the CDA delivers `attrs` as a plain JSON map with no per-field
-widget metadata. **Follow-up (SH11):** expose post-type schema in the CDA so
-`ShioField` can resolve by the real widget type. `useShioSearch` was descoped to
-SH11-adjacent work — the CDA has no full-text endpoint yet; `useShioQuery` covers
-site/folder/post-type filtering.
+Every `furl` resolves; internal links and images return 200; sitemap coverage
+matches what the applied blueprint (§XI) promised. Catches the single most common
+"looks done but isn't" failure — a page that exists in the CMS and 404s on the site.
 
-### II.3 `create-shio-app` — Next.js starter (SH8) — ✅ shipped
+### IX.3 Render digest (SH101)
 
-Shipped: [`create-shio-app/`](../create-shio-app) scaffolder + Next.js 15 App-Router
-template (catch-all `[...slug]` → `getPostByUrl`, SSG via `generateStaticParams`,
-ISR via `revalidate`). Detail in [CHANGELOG.md](CHANGELOG.md) Block B. Consumes the
-SH6 client, which consumes the SH1 CDA — the full headless chain end to end.
-**Follow-up (SH9 — ✅ shipped):** the fixed `revalidate` is now backed by an
-on-demand revalidation receiver + draft preview (see §II.4).
+Fetch a delivery URL and return a **token-lean structural digest**: heading
+outline, landmarks, link and image inventory with alt text, word counts per
+section. Not pixels — the cheap textual proof that the page is *structurally*
+right, which is what actually goes wrong (empty section, missing hero, unstyled
+list, image with no alt). A screenshot costs orders of magnitude more tokens and
+tells the agent less.
 
-### II.4 SSG/ISR/SSR recipes + on-demand revalidation (SH9) — ✅ shipped
+### IX.4 Visual snapshot + diff (SH102, optional)
 
-Shipped (Next.js consumer side): the `create-shio-app` template documents and
-implements all three rendering modes against the CDA — SSG (`generateStaticParams`),
-ISR (`revalidate`), and on-demand revalidation via a signed webhook receiver
-(`app/api/revalidate` → `revalidatePath`/`revalidateTag`), plus SSR draft preview
-(`app/api/preview` + Draft Mode through a PREVIEW-env client, riding on SH5).
-Full recipe + the webhook contract: [recipes/nextjs-rendering.md](recipes/nextjs-rendering.md).
-Detail in [CHANGELOG.md](CHANGELOG.md) Block B. **Dependency note:** the receiver
-defines and is ready for the publish webhook, but the **emitter** lives in the
-backend publish path — that's **SH12** (§III.1). Console "preview this draft" UX
-is **SH13** (§III.2); the rendering side is in place today.
+Playwright PNG + diff against the previous snapshot — deliberately framed as an
+artifact **for the human handoff** (§IX.6) rather than an agent input, so nobody
+mistakes it for the primary verification path.
 
-### II.5 Mature the Universal Editor bridge (SH10) — ✅ shipped
+### IX.5 Agent diagnostics (SH103)
 
-Shipped: the save-back half of the inline editor. A CDA write surface
-(`ShCdaWriteAPI`/`ShCdaWriteService` under `/api/v2/cda`, gated by
-`ROLE_CDA_WRITE` — the SH2 WRITE scope, §I.2) merges attribute patches into a
-post's `DRAFT` row and publishes on demand, re-enforcing the SH2 per-site
-allow-list; `getEditable` returns the post-type field schema for the editor
-panel (field→DOM mapping). A React console editor shell (`/console/universal-editor`)
-drives the existing `shio-editor.js` bridge over `postMessage` and saves back
-with a WRITE token (a credential-less request so the token, not the console
-session, authenticates). Detail in [CHANGELOG.md](CHANGELOG.md) Block B. **Live
-draft preview** rides on the draft-targeted writes + SH5 PREVIEW-env reads; the
-in-console "preview this draft" UX is **SH13** (§III.2), and the publish webhook
-emitter is **SH12** (§III.1).
+`GET /api/v2/agent/diagnostics`: last N errors, failed webhook deliveries, broken
+transforms, schema drift. One call instead of grepping `store/logs`. The complement
+to §VIII.6 — teaching errors cover *synchronous* failures; this covers the
+asynchronous ones an agent otherwise never learns about.
 
-### II.6 Type generation from post-types (SH11) — ✅ shipped
+### IX.6 Handoff report (SH104)
 
-Shipped: a public CDA post-type schema (`GET /api/v2/cda/post-type[/{name}]`,
-recursive into Relator sub-fields and array-aware) + a pure, dependency-free
-`generateShioTypes` in `@viglet/shio-client` and a `shio-types` CLI that turn each
-post-type into a `.d.ts` — one typed `…Post` (a `ShioPost & {…}` intersection)
-per type plus a `ShioPostTypes` name→type map. Page authors get autocomplete on `post.attrs.*`,
-closing the loop between the dynamic content model and the statically-typed JS
-front. Wired into `create-shio-app` (`npm run shio:types`). Detail in
-[CHANGELOG.md](CHANGELOG.md) Block B; spec: [specs/SH11-type-generation.md](specs/SH11-type-generation.md).
-The schema is also what the §II.2 `ShioField` follow-up needs to resolve widgets
-by their real type instead of heuristically.
-
-> ✅ **II.7 Post-types as typed TS code (SH62, tasks SH63–SH66) — shipped.** See [CHANGELOG.md](CHANGELOG.md) Block B and spec [specs/SH62-post-types-dsl.md](specs/SH62-post-types-dsl.md).
+`shio report` renders the human-facing change summary — what changed (over §X.3's
+feed), preview links per changed page, and explicit open questions — ready to drop
+into a PR body or a console banner. This is the *"help the interaction with the
+developer"* half of the brief: the agent's output for a human is a reviewable
+summary with links, not a wall of prose.
 
 ---
+
+## X. Content as files (Block I)
+
+> The largest cycle reducer, and the least obvious. Authoring over HTTP is the
+> wrong medium for an agent; a git-diffable text tree is the right one — the agent
+> is measurably better and cheaper with `Edit`/`Write`/`Grep` than with
+> read-modify-write over an API.
+
+### X.1 Filesystem projection format (SH86)
+
+`shio/content/<site>/<path>.md` — YAML frontmatter = attrs, body = the primary
+rich-text field; `shio/assets/` for binaries. Lossless round-trip and deterministic
+serialization, following exactly the discipline that made SH68 (exchange) and SH63
+(DSL) work: one canonical byte-for-byte serialization so a diff means something and
+two writers cannot disagree about formatting.
+
+Open design questions to settle in the SH86 spec: Relator items (nested files vs
+inline arrays), locale siblings (SH53 — suffix vs directory), and whether DRAFT and
+PUBLISHED both project or only DRAFT (leaning: only DRAFT projects; publish stays an
+explicit act, per P7).
+
+### X.2 Two-way content sync (SH87)
+
+`shio pull --content` / `shio push --content` over the §VIII.7 plan/apply engine,
+with `--check` drift for CI — the same three verbs post-types already have (SH16/
+SH65), extended to content. During authoring the API cost collapses to **one plan +
+one apply**, with everything in between happening in the agent's cheapest tools.
+
+### X.3 Change feed / cursor API (SH88)
+
+`GET /api/v2/agent/changes?since=<cursor>` over the SH51 audit trail. Two jobs:
+the human's console edits flow **back** into the file tree, and a follow-up session
+reads only the delta instead of re-reading the world. This is one of the three
+mechanisms that make session N+1 cheaper than session N (§XIII).
+
+### X.4 Conflict policy (SH89)
+
+Per-field 3-way merge with explicit conflict markers and `--ours/--theirs`; never a
+silent clobber. Both actors are legitimate writers — the same reasoning that
+produced the SH66 "managed by code" lock, applied to content instead of the model.
+The lesson from SH66 is worth restating: the fix for two writers is an **explicit
+boundary**, not last-writer-wins.
+
+### X.5 Watch mode (SH90)
+
+`shio dev` syncs both directions and emits an agent-readable event log (structured,
+greppable) so a failure during a long build surfaces as a line the agent can read,
+not a scrollback it has to reconstruct.
+
+---
+
+## XI. Blueprints + Claude Code plugin (Block J)
+
+> *"Skip steps with things that are already done"* only works if the ready-made
+> thing is **appliable**, not readable. A prose recipe an agent must read and
+> reimplement saves nothing — it just moves the work. **Absorbs the old SH23
+> marketplace epic** (SH27–SH31).
+
+### XI.1 Blueprint package format (SH92)
+
+A versioned, parameterized bundle: an SH68 exchange package (post-types + folders +
+content) **+** `@viglet/shio-model` DSL modules **+** optional front-end files **+**
+a `params` JSON-schema **+** post-apply verification (§IX). One format for "a
+starting point", where today there are two half-formats (the `create-shio-app`
+template tree and the bootstrap-site exchange package). The exchange engine
+(SH70/SH71) already imports most of it — this is largely a manifest + parameter
+substitution layer over shipped machinery.
+
+### XI.2 `shio apply <blueprint>` (SH93)
+
+The verb, with plan/dry-run, as CLI command and MCP tool. Replaces old SH27's
+`create-shio-app --template`: applying a blueprint to an *existing* instance is the
+common case, and scaffolding a new project is the special case of it.
+
+### XI.3 First-party set (SH94)
+
+`marketing-site`, `blog`, `docs`, `landing`, `product-catalog` — each shipping
+model + sample content + routes + verification. Replaces old SH30. The
+verification part is what makes them trustworthy to apply unattended: a blueprint
+that cannot prove it worked is a liability.
+
+### XI.4 Section library (SH95) — the highest-leverage item
+
+Composable page-section post-types **plus** matching React components
+(`@viglet/shio-sections`): `hero`, `feature-grid`, `cta`, `logo-wall`, `testimonial`,
+`faq`, `rich-text`… A page becomes an ordered list of **known** sections instead of
+invented ad-hoc post-types.
+
+Why this matters more than the blueprints themselves: the brief's real pain is
+*"if I need to change the site, I want less friction"*. Friction on change comes
+from **archaeology** — an agent re-deriving what the previous session invented. A
+fixed section vocabulary means the agent, the console and the front end share one
+language, so "add a testimonial section to the pricing page" is a single known
+operation rather than a design exercise. It is also exactly what the human's
+Universal Editor (SH10) gets to manipulate, and what §IX.3's render digest can
+verify structurally.
+
+### XI.5 Blueprint registry + community convention (SH96)
+
+`shio-blueprint-*` npm naming, manifest validation, a curated index (absorbs old
+SH28/SH29/SH31). Deferred until the first-party set proves the format.
+
+### XI.6 Claude Code plugin for Shio (SH97)
+
+Shio ships a `.claude` plugin: MCP server config, skills (`shio-site`,
+`shio-content-model`, `shio-verify`), slash commands, and a generated `AGENTS.md`
+fragment (§XIII.4). An agent session starts *already knowing* Shio instead of
+discovering it — and this is the **distribution channel for the whole concept**:
+the plugin is how a developer adopts agent-native Shio in one command.
+
+---
+
+## XII. Agent safety & human-in-the-loop (Block L)
+
+> An agent-driven CMS is only adoptable if a human can bound it and undo it.
+> **Invariant: the agent path is never a privilege escalation** — tenant isolation
+> (SH22), content ACL (SH54) and token scopes apply identically on every agent
+> surface. An agent-native CMS that quietly runs as root is not adoptable.
+
+### XII.1 `AGENT` token scope + session identity (SH106)
+
+A scoped, budgeted, expiring credential in the existing SH2/SH5 token model, plus
+an agent session id stamped on every write into the SH51 audit. Extends the token
+model rather than adding a parallel one (P10).
+
+### XII.2 Draft-by-default + publish gate (SH107)
+
+MCP writes land in `DRAFT`; publishing is a separate tool, disabled unless the token
+carries `mayPublish`. The unified model's two-row-per-state shape (SH-0d/SH14) makes
+this nearly free — draft-targeted writes are already how the Universal Editor
+works (SH10).
+
+### XII.3 Destructive-op confirm tokens (SH108)
+
+Deletes, prunes and apply-with-prune take two steps, the second carrying the
+**plan hash** from the first. An agent therefore cannot destroy anything it did not
+just render for the human — and cannot destroy something that changed underneath it
+between plan and apply.
+
+### XII.4 Review queue console surface (SH109)
+
+"The agent proposed N changes" → field-level diff (reuse SH14), approve, revert
+(reuse SH55 trash). This becomes the human's **primary** console workflow under the
+new orientation, which is why §VIII.1 puts the session id in the host from the start.
+
+### XII.5 Agent budget guards (SH110)
+
+Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
+that lands. A runaway agent should hit a ceiling and report it, not a bill.
+
+---
+
+## XIII. Token economy, measured (Block M)
+
+> The brief asks that this get cheaper over time. Then it must be **measured**, not
+> asserted. The concept spec's targets (≈10× tokens, ≈6× tool calls, ≈3× human
+> cycles for a canonical site build) are **acceptance criteria for SH112**, not
+> claims about the present.
+
+### XIII.1 Task benchmark harness (SH112)
+
+Canonical agent tasks — "build a 5-page marketing site", "add a post-type + 10
+posts", "fix a broken link", "translate a site" — measured in **tool calls +
+tokens + wall clock**, run in CI, recorded per release. Without this, every claim
+in this document is a vibe, and the natural entropy of a codebase (someone adds a
+convenient field to a response) silently erodes the whole position.
+
+### XIII.2 Response budget enforcement (SH113) + the leanness policy
+
+CI fails when a canonical response's estimated token size regresses past a
+threshold. The cheap, always-on guard between full benchmark runs; the same role
+`ShLiquibaseChangelogAgnosticTest` plays for schema portability. The number it
+regresses against is now emitted by the instance itself on both the agent and
+delivery surfaces (`X-Shio-Est-Tokens`, SH124 — ✅ shipped), so the guard reads a
+header instead of re-tokenizing bodies.
+
+**The leanness policy (SH125 — ✅ shipped) and its binding limit.** Nulls are always
+waste and are omitted from every agent-owned DTO. Dropping zero-defaults is *not* a
+blanket rule, and the reason generalizes beyond JSON: **a default can be an answer.**
+`features: {mcp: false}` is the most valuable thing the manifest says; `truncated:
+false` is the answer to "was anything cut?". Stripping either would make the payload
+smaller and the protocol worse — silence reads as "unknown", and an unknown sends the
+caller probing, which is the cost the whole block exists to remove. So: NON_NULL
+baseline, NON_DEFAULT only where absence and default genuinely coincide (row-shaped
+DTOs). Any future "make it smaller" change must clear that test.
+
+**Still open (SH127):** the delivery path stays null-carrying, because
+`@viglet/shio-client` declares nullable CDA fields as `string | null` rather than
+optional — omitting a null unilaterally would turn a declared `null` into
+`undefined` for typed consumers. Backend and SDK types have to move together, which
+also removes the nulls the SH77 context pack inherits through the shared
+`ShCdaSchemaField` shape (the visible price of P10 composition over a frozen
+contract, currently pinned by a characterization test).
+
+### XIII.3 Instance memory / conventions store (SH114)
+
+Decisions and conventions stored as first-class content and served in the context
+pack — "sections come from `@viglet/shio-sections`, don't invent layout post-types",
+"copy is authored in files, never via the API", "this site's blog uses `Article`,
+not `Post`". This is the **compounding saving**: what one session learned, the next
+session is told. Written by the agent (with human approval, §XII.4), read by every
+future session.
+
+### XIII.4 `AGENTS.md` generator (SH115)
+
+`shio context --as agents-md` renders project agent instructions from the live
+instance + memory store, so they **cannot rot**. A hand-maintained `CLAUDE.md`
+describing a content model is stale the moment the model changes, and a stale
+instruction file is worse than none — it costs tokens *and* misleads.
+
+### XIII.5 Agent-read caching (SH116)
+
+Strong ETags on manifest/context/schema; an unchanged context returns `304` and
+costs ~0. The infrastructure exists (SH3 already put `ShallowEtagHeaderFilter` on
+the CDA) — this extends it to the agent surface and makes "re-read the context" the
+cheap default instead of a decision the agent has to weigh.
+
+---
+
+## XIV. Realignment of what already shipped (Block N)
+
+> The reorientation is mostly additive, but it does invalidate a few existing
+> choices. Concept spec §10 has the full table.
+
+### XIV.1 Unify the two post-type APIs (SH117)
+
+Today there are two: the SH16 **name-keyed, lossless** `/api/v2/post-type` (CLI,
+CSRF-exempt) and the console **id-keyed, entity-shaped** `/api/v2/post/type`
+(session/CSRF). Two APIs for one concept is a tax paid on every agent session
+("which one, and by id or by name?") and a violation of P5/P10. Converge on the
+name-keyed surface, migrate the console onto it, retire the id-keyed one.
+
+### XIV.2 `create-shio-app` templates → blueprints (SH119)
+
+Fold the template tree into the §XI.1 blueprint format; `shio init` stays a thin
+wrapper. One appliable format instead of two half-formats.
+
+### XIV.3 Align console read shapes with the CDA DTOs (SH120)
+
+Where the shapes overlap, the console should return the CDA DTO rather than a
+second shape of the same thing — one shape for the agent to learn (P5/P10).
+
+### XIV.4 Build-time guard for the `@TenantId` JOINED-join hazard (SH122) — ✅ shipped
+
+Shipped → [CHANGELOG.md](CHANGELOG.md) Block H (with the three production bugs it
+uncovered). **The generalizable lesson, which is why this section survives:**
+
+*Characterize by execution, not by argument.* The hazard's boundary was guessed
+twice and wrong twice — first "projections only", then "not predicates" — each time
+from a plausible reading of the evidence (shipped `WHERE` queries with green tests).
+Executing each form settled it in minutes and produced a rule that is both correct
+and simpler than either guess. When a lint's scope depends on where a runtime
+boundary actually lies, spend the test rather than the reasoning: a lint built on the
+wrong boundary either fails on correct code or misses the defect it was written for.
+
+*A green test is not coverage.* The three broken paths had tests; none reached the
+finder. Where a defect class is invisible to compilation **and** easy for tests to
+miss, a cheap always-on textual guard is the right instrument — the same role
+`ShLiquibaseChangelogAgnosticTest` plays for schema portability. Worth applying to
+the next such class rather than waiting for it to bite.
+
+*Self-test the guard.* Both of this lint's regexes were initially inert on real
+input (word boundaries fail on both sides of a derived query name). A lint that
+matches nothing passes silently forever, so its patterns are asserted against the
+exact strings that broke production.
+
+---
+
+# Part 2 — pre-existing sections
+
+## I. Headless foundation — the CDA
+
+> ✅ **Fully shipped (SH1–SH5)** → [CHANGELOG.md](CHANGELOG.md) Block A; per-task
+> design records in `docs/specs/SH1`–`SH5`. Under the new orientation the CDA is
+> the **read substrate every agent tool composes over** (P10) — unchanged, and more
+> load-bearing than before. The SH1 forward-compat constraints (state is a
+> service-level param, not a URL segment; `siteId` is a first-class query param)
+> still bind, and now also bind the agent surface.
+
+## II. JavaScript-for-pages DX
+
+> ✅ **Fully shipped (SH6–SH11, and the SH62 epic SH63–SH66)** →
+> [CHANGELOG.md](CHANGELOG.md) Block B; specs `SH11-type-generation.md`,
+> `SH62-post-types-dsl.md`. **Why it still matters:** post-types-as-code is the
+> template the whole agent-native protocol follows — declarative source → canonical
+> serialization → plan → apply → drift guard → explicit GUI/code boundary. Blocks H
+> and I are that same pattern applied to content and to the protocol itself.
+> (Historic subsection anchors §II.1–§II.7 map to SH6, SH7, SH8, SH9, SH10, SH11, SH62.)
 
 ## III. Composable platform primitives
 
-> Table-stakes for the headless market (Contentful/Strapi/Sanity parity).
+> ✅ **Fully shipped (SH12–SH16, SH26, SH51–SH55)** → [CHANGELOG.md](CHANGELOG.md)
+> Block C. The agent surface leans directly on four of them: the **audit trail**
+> (SH51 → §X.3 change feed, §XII.1 attribution), **soft-delete** (SH55 → §XII.4
+> revert), the **draft/published diff** (SH14 → §XII.4 review), and **search**
+> (SH52 → `shio_find`). Open follow-up: folder soft-delete (subtree-hide semantics).
+> (Anchors §III.1–§III.10 map to SH12–SH16, SH51–SH55.)
 
-### III.1 Outbound webhooks (SH12)
+## IV. Server-side JS rendering — dropped
 
-Per-site webhook targets with HMAC signing + retry, emitted from the unified
-publish/unpublish/delete path. The backbone for incremental static regeneration
-(§II.4) and downstream integrations.
-
-### III.2 Draft / preview mode (SH13)
-
-Short-lived preview tokens expose unpublished content via the CDA so the JS front
-renders a live preview before publishing. Pairs with the editor bridge (§II.5).
-
-### III.3 Versioning UI (SH14) — ✅ shipped
-
-Shipped: a console **History** dialog on the post editor that diffs the
-unpublished `DRAFT` against the live `PUBLISHED` snapshot (field-level,
-schema-driven) + a `POST /api/v2/post-unified/{id}/restore` that reverts the
-draft to published. Detail in [CHANGELOG.md](CHANGELOG.md) Block C; spec:
-[specs/SH14-versioning-ui.md](specs/SH14-versioning-ui.md). Design note: the
-unified model is **two-row-per-state** (one `DRAFT`, one `PUBLISHED`), not a
-per-save history — a richer version *timeline* (an N-snapshot history table)
-remains a separate, larger task and is deliberately not folded in here.
-
-### III.4 Scheduled publish/unpublish (SH15) — ✅ shipped
-
-Shipped: two nullable instants on the post's `DRAFT` row
-(`publishScheduledDate`/`unpublishScheduledDate`) set via `POST
-/api/v2/post-unified/{id}/schedule`, and a `@Scheduled` sweep (`ShPostScheduler`,
-`shio.schedule.*`) that fires each due transition through the existing
-`publish`/`unpublish` path — reusing the §III.1 webhook emitter rather than
-re-firing it. Each due post runs in its own transaction (one failure is skipped,
-not fatal). This introduced the codebase's first `@EnableScheduling`. Detail in
-[CHANGELOG.md](CHANGELOG.md) Block C; spec:
-[specs/SH15-scheduled-publish.md](specs/SH15-scheduled-publish.md).
-
-### III.5 `shio` CLI (SH16) — ✅ shipped
-
-Shipped: the `@viglet/shio` CLI (`init`/`types`/`pull`/`push`/`dev`/`deploy`)
-backed by a new **lossless, console-authenticated** post-type admin API
-(`GET/PUT/DELETE /api/v2/post-type`). Design notes: (1) the CLI uses **two auth
-models** — console Basic auth for the content model (`pull`/`push`, an admin act)
-and a CDA token for delivery (`types`); (2) the admin API is **lossless** where
-the SH11 CDA schema is deliberately lossy (it keeps `Tab`, `widgetSettings` and
-nested Relator fields so the JSON round-trips), and is CSRF-exempt for the same
-reason CDA writes are (stateless, no session cookie); (3) `init` delegates to
-`create-shio-app`'s scaffolder rather than duplicating it. Detail in
-[CHANGELOG.md](CHANGELOG.md) Block C; spec:
-[specs/SH16-shio-cli.md](specs/SH16-shio-cli.md).
-
-Original direction:
-`init` (scaffold), `dev` (local proxy + type watch), `pull`/`push` (post-types as
-code, GitOps-friendly), `deploy`. Mirrors the `turing` CLI direction in the
-ecosystem.
-
-> ✅ **III.6 Audit / history API + viewer (SH51) — shipped.** See [CHANGELOG.md](CHANGELOG.md) Block C.
-
-> ✅ **III.7 Content full-text search (SH52) — shipped.** See [CHANGELOG.md](CHANGELOG.md) Block C. Engine decision recorded there: in-DB portable `LIKE` (cross-DB safe), not Turing.
-
-> ✅ **III.8 Content i18n / locales (SH53) — shipped.** See [CHANGELOG.md](CHANGELOG.md) Block C. Model decision recorded there: `locale` + `translationGroupId` as plain columns (not in the composite key); translations are linked sibling posts.
-
-> ✅ **III.9 Content-level ACL / permissions (SH54) — shipped.** See [CHANGELOG.md](CHANGELOG.md) Block C. Design recorded there: per-object `ShContentAcl` grants (USER/GROUP/ROLE × READ/WRITE), folder-tree inheritance (nearest level wins), default-allow + admin bypass, enforced at the console authoring boundary.
-
-> ✅ **III.10 Trash / soft-delete + restore (SH55) — shipped.** See [CHANGELOG.md](CHANGELOG.md) Block C. Design recorded there: `deletedDate` + Hibernate `@SQLRestriction` (auto-hides trashed rows from all reads), native trash/restore/purge queries, no side effects until permanent purge. Posts only; folder soft-delete is a follow-up.
-
----
-
-## IV. Optional server-side JS rendering (GraalJS)
-
-> Only for teams that want server-rendered pages **inside Shio** authored in JS
-> instead of Thymeleaf. The headless path (§II) is primary; this is a fallback for
-> the "I don't want a separate Next.js app" case. **Not Groovy** (§0.4).
-
-### IV.1 GraalJS template-engine spike (SH17)
-
-Time-boxed 2–3 day spike: `org.graalvm.polyglot` JS as a Spring `ViewResolver`
-replacing Thymeleaf for site rendering. Decide **before** building: sandboxing
-(untrusted template authors), per-request context binding, hot-reload story, and
-throughput vs Thymeleaf. Default assumption: **don't build it** unless a named
-requirement beats the headless default.
-
-### IV.2 `.js` page templates with content-binding API (SH18)
-
-If the spike clears the bar: expose `post`, `site`, `query()`, `children()` to the
-JS template scope; authors write pages in JS, the JVM renders server-side. Built
-only on a proven SH17 result.
-
----
+> ⛔ **Dropped as a non-goal.** The former Block D (SH17 GraalJS spike, SH18 `.js`
+> page templates) is removed: an agent builds the front end in Next.js, where the
+> SSG/ISR/preview story already exists (SH8/SH9). An in-JVM script engine adds
+> sandboxing risk, a second template language and hot-reload complexity, and buys
+> the agent nothing. See §0.4.
 
 ## V. Legacy retirement
 
-> ✅ **Fully shipped (SH19–SH21, SH48–SH50, SH56–SH61)** → see [CHANGELOG.md](CHANGELOG.md)
-> Block E. The legacy AngularJS `resources/ui/` tree and the dead Thymeleaf engine
-> are deleted; `shio-react` + the headless CDA are the only console/delivery surfaces.
+> ✅ **Fully shipped (SH19–SH21, SH48–SH50, SH56–SH61, SH73)** →
+> [CHANGELOG.md](CHANGELOG.md) Block E. `shio-react` + the headless CDA are the only
+> console/delivery surfaces. Note the reframe: the console surfaces rebuilt here —
+> Universal Editor (SH10), Media Library (SH73) — are now the **human's** curation
+> tools (§0.5), so they gained importance rather than becoming maintenance debt.
 
----
+## VI. Market positioning
 
-## VI. Market positioning / bold bets
+### VI.1 Multi-tenancy / SaaS (SH22) — core shipped, follow-ups open
 
-> Differentiators to pursue once the headless foundation (Blocks A–C) is solid.
-
-### VI.1 Multi-tenancy / SaaS (SH22)
-
-One shared JVM, many isolated tenants. **Core DB isolation shipped** (see
-[CHANGELOG.md](CHANGELOG.md) Block F): Hibernate `@TenantId` extended across the
-active content tree — the JOINED `ShObject` root (covering `ShSite`/`ShFolder`/
-`ShPostType`), `ShPostUnified`, and `ShReference` — with the `sh_post_unified`
-`TENANT_ID` migration + backfill, and `ShTenantIsolationIT` proving tenant A's
-rows are invisible to tenant B. The identity model is the existing
-`workspace_id`-claim/username resolution (`ShTenantFilter`).
-
-**Follow-ups shipped** (see [CHANGELOG.md](CHANGELOG.md) Block F): a tenant
-**catalog** (`ShTenant` + admin CRUD on `ShTenantAPI`, beyond the read-only
-`/current`), **delivery-path token→tenant resolution** (`ShApiTokenFilter` +
-`ShTenantFilter`, plus the `api_token` Liquibase drift fix it surfaced),
-**per-tenant post-type provisioning** (`ShTenantProvisioningService`),
-**tenant-keyed CDA cache** (`Vary: Key`), and a **console Tenants page**.
-
-**Follow-ups still open** (decomposed into tasks):
+Core DB isolation, the tenant catalog, delivery-path token→tenant resolution,
+per-tenant provisioning, tenant-keyed CDA cache and the console Tenants page all
+shipped → [CHANGELOG.md](CHANGELOG.md) Block F; spec
+[specs/SH22-multi-tenancy.md](specs/SH22-multi-tenancy.md). Identity is the
+existing `workspace_id`-claim/username resolution (`ShTenantFilter`). Open:
 
 - **SH44 — Superadmin impersonation**: let a privileged operator act as / switch
   into any tenant from the console (audited), beyond the principal-derived
   `ShTenantContext` resolution.
 - **SH45 — Tenant quotas & billing**: per-tenant usage metering (content count,
-  API calls, storage) + quota enforcement + billing-export hooks.
+  API calls, storage) + quota enforcement + billing-export hooks. §XII.5's
+  per-agent-session guards layer on this.
 - **SH46 — Nav/feature gating by tenant**: show/hide console nav + features by
   `multiTenant`/role so single-tenant installs don't surface SaaS-only UI.
-- **SH47 — Per-tenant file storage**: isolate `file_source` per tenant. Blocked
-  on the upload/serve subsystem (SH38) — that subsystem doesn't exist in the
-  current backend, so there's nothing to isolate yet.
+- **SH47 — Per-tenant file storage**: prefix `tenantId` into the id-keyed
+  `ShFileStorageService` layout (`file_source/{tenantId}/<postId>/...`) from
+  `ShTenantContext` (SH38 shipped, so this is now unblocked).
 
-### VI.2 Starter marketplace (SH23 epic)
+### VI.2 Starter marketplace (SH23 epic) — superseded
 
-Curated `create-shio-app` templates (blog, docs site, e-commerce front,
-landing-page kit) the community can publish — accelerates adoption and showcases
-the JS-first story. Decomposed into:
+> ⛔ **Superseded by Block J** (§XI). A human-browsable template catalog becomes an
+> agent-appliable **blueprint registry**: same goal (accelerate a new site), correct
+> unit (appliable package, not readable template). SH27→SH93, SH30→SH94,
+> SH28/SH29/SH31→SH96.
 
-- **SH27 — Multi-template scaffolder**: teach `create-shio-app` to take
-  `--template <name>` and read a per-template manifest (metadata: name,
-  description, required SDK version, prompts/defaults). The foundation everything
-  else hangs off.
-- **SH28 — Community publishing convention**: a `shio-template-*` npm naming
-  convention + manifest validation, so a third party can publish a template
-  without touching the core repo.
-- **SH29 — Template registry + CLI browse**: a curated index (repo JSON or npm
-  scope) wired into the `shio` CLI (`shio init --template`, browse/list).
-- **SH30 — Curated official templates**: the first-party set — blog, docs site,
-  e-commerce front, landing-page kit.
-- **SH31 — Template listing page**: a public catalog page on the docs/site.
+### VI.3 AI authoring via Turing / MCP (SH24 epic) — superseded
 
-### VI.3 AI authoring via Turing / MCP (SH24 epic)
-
-Expose Shio content + authoring as MCP tools so Claude/agents (and Turing) draft,
-restructure, and translate content. This is exactly where the Java/Spring
-ecosystem sinergy pays off — Turing already speaks this language. Decomposed into:
-
-- **SH32 — MCP server skeleton**: a Spring-hosted MCP server + transport, with
-  auth reusing SH2 token scopes. The host every tool plugs into.
-- **SH33 — Read tools**: list sites/folders/posts, get a post, search — all over
-  the CDA so they inherit SH2 scoping.
-- **SH34 — Schema discovery tool**: post-type/schema introspection reusing the
-  SH11 codegen surface, so the agent knows the shape of `attrs`.
-- **SH35 — Authoring/write tools**: create/update/publish over the SH10 write
-  surface (draft-targeted, `ROLE_CDA_WRITE`).
-- **SH36 — High-level authoring ops**: composite draft / restructure / translate
-  operations built on the read+write primitives.
-- **SH37 — Turing integration + tenant-awareness**: wire into the ecosystem and
-  scope every tool per SH22 tenant.
+> ⛔ **Superseded by Block H** (§VIII). The original decomposition (SH32 skeleton,
+> SH33 read tools, SH34 schema tool, SH35 write tools, SH36 high-level ops, SH37
+> Turing/tenant) was **CRUD-over-MCP** — a faithful wrapper around human-shaped
+> endpoints, which would have reproduced every discovery, write-loop and
+> verification cost it was meant to remove. Block H keeps the ambition and replaces
+> the design: manifest + context pack + terse reads + teaching errors + batch +
+> plan/apply **first**, then a deliberately small intent-named tool set on top.
+> SH32→SH75, SH33/SH34/SH35/SH36→SH83, SH37→SH84.
 
 ### VI.4 Image/asset transformation API (SH25 epic)
 
-On-the-fly resize/format/crop on the file-source delivery path (Tika + jai-imageio
-are already dependencies). The JS front requests `image.jpg?w=800&format=webp`;
-results are cached. Removes the need for an external image CDN. Decomposed into:
+> ✅ **Fully shipped (SH38–SH43)** → [CHANGELOG.md](CHANGELOG.md) Block F. The
+> `shio_assets` tool (§VIII.8) is a shape over this; SH47 (§VI.1) remains the open
+> per-tenant isolation follow-up.
 
-- **SH38 — Prereq: file_source upload/serve subsystem** ⚠️: the file upload/serve
-  backend doesn't exist in the current code (only a legacy security matcher — see
-  the SH22 "N/A" note). There's nothing to transform until this is
-  (re)implemented, so it blocks the rest of VI.4.
-- **SH39 — Query-param interception**: parse `?w=&h=&format=&crop=` on the
-  delivery path and route to the transform pipeline.
-- **SH40 — Transform pipeline**: resize/crop via imageio.
-- **SH41 — Format conversion** ✅: webp/avif/jpeg output negotiation. `?format=`
-  re-encodes + retargets the content type; webp via the `webp-imageio` SPI,
-  jpeg/png/gif/bmp via ImageIO, avif degrades gracefully (no Java writer).
-- **SH42 — Result cache**: disk/memory keyed by source + params, with ETag,
-  tenant-aware (SH22).
-- **SH43 — Limits & security**: max dimensions, allowed formats, signed URLs to
-  prevent transform-bombing.
+## VII. Content portability
 
----
-
-## VII. Content portability — the exchange subsystem
-
-> A capability Shio **had and lost**. Before the nuclear refactor (commit
-> `2d3eb353`), `com.viglet.shio.exchange` let a site export to a zip, import/clone
-> from one, and — the part users feel most — **bootstrap a new site with a full
-> starter structure**. The refactor deleted the subsystem wholesale because it was
-> welded to the split post model (`ShPost`/`ShPostDraft`). This section rebuilds it
-> on the **unified** model (`ShPostUnified.data`). It is not a bold bet; it is
-> restoring table-stakes content portability that the headless story (Block A/B),
-> SaaS provisioning (SH22), and the exchange-provider console (SH57) all lean on.
-
-### VII.0 What regressed, and why it matters
-
-The old `ShSiteAPI.shSiteAdd()` didn't just persist a row — it called
-`ShCloneExchange.getDefaultTemplateToSite()`, which loaded
-`classpath:/import/bootstrap-site.zip` (GitHub fallback) and cloned an entire
-starter: post-types, a root folder with sub-folders, sample pages, and static
-files. The rebuilt `ShSiteWriteService.create()` provisions only the `ShSite` + an
-empty root folder (the navigation anchor) — so a freshly created site is blank.
-The console **Download** and **Import/Upload** actions still render in
-`site.list.page.tsx` but their backends are gone (404).
-
-The exchange is **one engine reused three ways**: (1) the default-template clone on
-site creation, (2) explicit export/import for backup and content migration between
-installs, and (3) the copy-the-default-model step SaaS tenant provisioning already
-does by hand (`ShTenantProvisioningService`). Rebuilding it once pays all three.
-
-### VII.1 Exchange package format on the unified model (SH68) — ✅ shipped
-
-Shipped → [CHANGELOG.md](CHANGELOG.md) Block G. The `com.viglet.shio.exchange.model`
-DTOs + `ShExchangePackageCodec`; post `data` carried verbatim as a `JsonNode`,
-post-types reuse the SH16 `ShPostTypeDef` (one interchange shape). Design note: the
-format is deliberately decoupled from the JPA entities (references by id/name,
-`state` as a string) so the on-disk shape can evolve independently; the codec does
-format plumbing only — entity↔DTO mapping, tree-walking and id-remapping live in
-SH69/SH70.
-
-### VII.2 Site export → zip (SH69) — ✅ shipped
-
-Shipped → [CHANGELOG.md](CHANGELOG.md) Block G. `ShSiteExportService` walks the
-site tree (both DRAFT + PUBLISHED rows) into a package and streams it at
-`GET /api/v2/site/{id}/export` (the console Download action). Design note: static
-binary assets are deferred until the file_source subsystem exists (SH38) — `files`
-is empty for now; that collection pass is the one future addition here.
-
-### VII.3 Site import / clone (SH70) — ✅ shipped
-
-Shipped → [CHANGELOG.md](CHANGELOG.md) Block G. `ShSiteImportService` clones a
-package with fresh UUIDs (no PK collision on re-import), provisions post-types by
-name (`provisionFromDef`), persists folders parent-first, and rewrites embedded
-`data` id references via the remap; `POST /api/v2/import` + the React import page
-wire the Import button. Design note: clone-into-same-install **is** "duplicate a
-site"; a future "import into an existing target site" (merge) would layer on this.
-Binary assets deferred with the export side (SH38).
-
-### VII.4 Default template on site creation — bootstrap-site (SH71) — ✅ shipped
-
-Shipped → [CHANGELOG.md](CHANGELOG.md) Block G — **the fix for the reported
-regression**. `ShBootstrapSiteProvider` clones a versioned in-repo exchange package
-(`classpath:/import/bootstrap-site/export.json`) on `ShSiteWriteService.create()`,
-rewriting the template site's metadata with the user's input, with a plain-root-folder
-fallback so creation is never blocked. Design note: the template is an in-repo
-SH68 artifact (not the legacy `openviglet/bootstrap-site` GitHub-zip download), and
-the clone reuses the SH70 import path via a no-unzip `importPackage(pkg, owner)`
-overload. Static assets in the starter await SH38, like the rest of the exchange.
-
-### VII.5 Unify tenant provisioning onto the exchange engine (SH72) — ✅ shipped
-
-Shipped → [CHANGELOG.md](CHANGELOG.md) Block G. `ShTenantProvisioningService` now
-exports the default tenant (`buildTenantPackage`) and clones it into the new tenant
-via `ShSiteImportService.provisionInto` — one engine shared with site export/import
-(SH69/SH70) and bootstrap (SH71). A new tenant gets the default tenant's **full
-content** (sites + folders + posts + post-types), not just the model. Design notes:
-(1) idempotent — content clones only into an empty tenant, so a re-provision just
-tops up post-types and never duplicates sites; (2) `ShSite.name` is **globally**
-unique and `tenant_id` sits on the JOINED `ShObject` root (not on `ShSite`), so a
-tenant-scoped composite unique isn't possible without denormalising — provisioned
-site names are tenant-suffixed (`"Blog (acme)"`) to clear the index. A truly
-tenant-scoped site name (denormalise `tenant_id` onto `ShSite`) is a follow-up.
-
+> ✅ **Fully shipped (SH67 epic: SH68–SH72)** → [CHANGELOG.md](CHANGELOG.md) Block G.
+> The original "new sites are blank" regression is closed. **Why it still matters:**
+> the SH68 exchange package format is the substrate Block J's blueprints are built
+> on (§XI.1), and `ShSiteImportService.provisionInto` is the engine `shio apply`
+> reuses — one engine now serving site clone, tenant provisioning, bootstrap and
+> blueprints.
+>
 > **Non-goal (do not re-add):** the legacy `ShSitesNodeJS` "export site as a
-> runnable Node app" is **superseded by `create-shio-app` (SH8)** — the headless
-> starter is the JS-first delivery story (§0.5), so the exchange rebuild stops at
-> the portable content package and does not regenerate a Node project.
+> runnable Node app" is superseded by `create-shio-app` (SH8) and, going forward, by
+> blueprints (§XI.1).

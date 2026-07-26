@@ -1,0 +1,141 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.api.agent;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.viglet.shio.api.agent.dto.ShAgentEndpoint;
+import com.viglet.shio.api.agent.dto.ShAgentManifest;
+
+/**
+ * SH76 — the agent manifest. What is asserted is the manifest's *contract*, not
+ * its current contents: it must be deterministic (so it caches and diffs), it must
+ * state unshipped capabilities as {@code false} rather than omitting them (an
+ * absent flag sends a caller probing — the cost the manifest exists to remove),
+ * and every indexed endpoint must carry a runnable example.
+ *
+ * @author Alexandre Oliveira
+ */
+@SpringBootTest
+@TestInstance(Lifecycle.PER_CLASS)
+class ShAgentManifestTest {
+
+    @Autowired
+    private ShAgentManifestService shAgentManifestService;
+
+    @Test
+    void manifestIdentifiesTheInstanceAndTheProtocol() {
+        ShAgentManifest manifest = shAgentManifestService.manifest();
+
+        assertThat(manifest.product()).isEqualTo("Viglet Shio CMS");
+        assertThat(manifest.version()).isNotBlank();
+        assertThat(manifest.protocol()).isEqualTo(ShAgentManifestService.PROTOCOL);
+        assertThat(manifest.apiBase()).isEqualTo("/api/v2");
+    }
+
+    @Test
+    void manifestIsByteStableAcrossCalls() {
+        // Determinism (P5) is what makes the manifest cacheable and diffable; an
+        // unstable key order would defeat the SH116 ETag before it ships.
+        ShAgentManifest first = shAgentManifestService.manifest();
+        ShAgentManifest second = shAgentManifestService.manifest();
+
+        assertThat(second).isEqualTo(first);
+        assertThat(List.copyOf(second.features().keySet()))
+                .isEqualTo(List.copyOf(first.features().keySet()))
+                .isSorted();
+    }
+
+    @Test
+    void unshippedCapabilitiesAreReportedFalseNotOmitted() {
+        ShAgentManifest manifest = shAgentManifestService.manifest();
+
+        assertThat(manifest.features())
+                .containsEntry("mcp", false)
+                .containsEntry("blueprints", false)
+                .containsEntry("batchWrites", false)
+                .containsEntry("contentAsFiles", false);
+    }
+
+    @Test
+    void shippedCapabilitiesAreReportedTrue() {
+        ShAgentManifest manifest = shAgentManifestService.manifest();
+
+        assertThat(manifest.features())
+                .containsEntry("graphql", true)
+                .containsEntry("search", true)
+                .containsEntry("locales", true)
+                .containsEntry("exchange", true)
+                .containsEntry("postTypesAsCode", true)
+                .containsEntry("teachingErrors", true)
+                .containsEntry("agentContext", true)
+                .containsEntry("terseResponses", true)
+                .containsEntry("pathAddressing", true);
+    }
+
+    @Test
+    void configuredCapabilitiesTrackTheLiveInstance() {
+        ShAgentManifest manifest = shAgentManifestService.manifest();
+
+        // The test profile is single-tenant with no OIDC — the manifest must say so
+        // rather than advertising a compiled-in capability that isn't configured.
+        assertThat(manifest.features())
+                .containsEntry("multiTenant", false)
+                .containsEntry("oidc", false);
+    }
+
+    @Test
+    void limitsPublishTheRateBudgetSoAClientCanPaceItself() {
+        var limits = shAgentManifestService.manifest().limits();
+
+        assertThat(limits.rateLimitCapacity()).isPositive();
+        assertThat(limits.rateLimitRefillTokens()).isPositive();
+        assertThat(limits.rateLimitPeriodSeconds()).isPositive();
+        assertThat(limits.defaultPageSize()).isEqualTo(50);
+    }
+
+    @Test
+    void everyIndexedEndpointIsSelfSufficient() {
+        List<ShAgentEndpoint> endpoints = shAgentManifestService.manifest().endpoints();
+
+        assertThat(endpoints).isNotEmpty();
+        assertThat(endpoints).allSatisfy(endpoint -> {
+            assertThat(endpoint.method()).isNotBlank();
+            assertThat(endpoint.path()).startsWith("/");
+            assertThat(endpoint.purpose()).isNotBlank();
+            // The credential must be stated, or the caller learns it from a 401.
+            assertThat(endpoint.auth()).isIn("console", "token:READ", "token:WRITE");
+            // The example must be runnable as-is: verb + absolute path.
+            assertThat(endpoint.example()).startsWith(endpoint.method() + " /api/v2");
+        });
+    }
+
+    @Test
+    void indexIsCuratedNotTheWholeApi() {
+        // P3: the manifest is read every session, so it must stay small on purpose.
+        // If this trips, the index is drifting into a full API dump — prune it.
+        assertThat(shAgentManifestService.manifest().endpoints()).hasSizeLessThan(30);
+    }
+
+    @Test
+    void startHerePointsAtTheOneCallThatReplacesASession() {
+        List<String> startHere = shAgentManifestService.manifest().startHere();
+
+        assertThat(startHere).isNotEmpty().hasSizeLessThan(6);
+        assertThat(startHere.get(0)).contains("/agent/context");
+    }
+}

@@ -36,7 +36,8 @@ import lombok.extern.slf4j.Slf4j;
  * CDA (Content Delivery API) Token authentication filter.
  * <p>
  * Authenticates requests with a {@code Key} header containing a valid API token,
- * confined to the {@code /api/v2/cda/**} namespace. Grants authorities by token
+ * confined to the delivery + agent namespaces ({@code /api/v2/cda/**},
+ * {@code /graphql}, {@code /api/v2/agent/**}). Grants authorities by token
  * scope (SH2 — {@code READ}/{@code PREVIEW}/{@code WRITE}) and enforces a
  * per-token rate limit (SH3), returning {@code 429} when the budget is spent.
  * </p>
@@ -60,6 +61,15 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
      * schema has no {@code Mutation}, so a write is impossible by construction.
      */
     private static final String GRAPHQL_PATH = "/graphql";
+
+    /**
+     * The agent surface (SH76, Block H) is a third token-authenticated surface: it
+     * is a shape over the CDA, so an agent holding a delivery key must be able to
+     * read it without also holding a console credential. The SH2 method gate still
+     * applies unchanged — a non-{@code WRITE} scope stays GET-only here, so adding
+     * this prefix widens *reads* only.
+     */
+    private static final String AGENT_PATH_PREFIX = "/api/v2/agent";
 
     private static final String RATE_LIMIT_REMAINING_HEADER = "X-Rate-Limit-Remaining";
 
@@ -86,9 +96,10 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
 
         // Confine token auth to the CDA surfaces (SH2). A Key header on any other
         // path is ignored, so a token can never authenticate a console request.
-        // The GraphQL delivery endpoint (SH4) is the second such surface.
+        // The GraphQL delivery endpoint (SH4) and the agent surface (SH76) are the
+        // second and third such surfaces.
         boolean graphQl = isGraphQlPath(request);
-        if (!isCdaPath(request) && !graphQl) {
+        if (!isCdaPath(request) && !graphQl && !isAgentPath(request)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -184,6 +195,10 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
     private static boolean isGraphQlPath(HttpServletRequest request) {
         String path = relativePath(request);
         return path.equals(GRAPHQL_PATH) || path.startsWith(GRAPHQL_PATH + "/");
+    }
+
+    private static boolean isAgentPath(HttpServletRequest request) {
+        return relativePath(request).startsWith(AGENT_PATH_PREFIX);
     }
 
     /** Request URI with any servlet context path stripped. */
