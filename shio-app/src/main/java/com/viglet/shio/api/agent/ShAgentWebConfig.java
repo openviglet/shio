@@ -14,7 +14,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 
 /**
- * Servlet wiring for the agent surface (Block H).
+ * Servlet wiring for the agent surface (Block H) and the delivery-path cost
+ * instrumentation (SH124).
  *
  * <p>Ordered after the Spring Security chain, following the SH3 precedent in
  * {@code ShCdaCacheConfig}: a {@code 401}/{@code 403}/{@code 429} must not be
@@ -26,16 +27,27 @@ import org.springframework.core.Ordered;
 @Configuration(proxyBeanMethods = false)
 public class ShAgentWebConfig {
 
-    /** Prefix mapping — also covers nested paths such as {@code /api/v2/agent/context}. */
+    /**
+     * Prefix mappings — each also covers nested paths ({@code /api/v2/agent/context},
+     * {@code /api/v2/cda/object/x/list}).
+     */
     private static final String AGENT_URL_PATTERN = "/api/v2/agent/*";
+    private static final String CDA_URL_PATTERN = "/api/v2/cda/*";
 
+    /**
+     * One filter, both surfaces. Registered at {@code LOWEST_PRECEDENCE - 30} — that
+     * is <em>outside</em> the SH3 ETag filter ({@code -20}), so a conditional
+     * {@code 304} is measured as the zero-byte response it really is rather than as
+     * the body that was never sent. That distinction is the whole point of SH116:
+     * "an unchanged context costs nothing" has to be visible in the number.
+     */
     @Bean
-    FilterRegistrationBean<ShAgentTokenHeaderFilter> shAgentTokenHeaderFilter() {
-        FilterRegistrationBean<ShAgentTokenHeaderFilter> registration =
-                new FilterRegistrationBean<>(new ShAgentTokenHeaderFilter());
-        registration.addUrlPatterns(AGENT_URL_PATTERN);
-        registration.setName("shAgentTokenHeaderFilter");
-        registration.setOrder(Ordered.LOWEST_PRECEDENCE - 20);
+    FilterRegistrationBean<ShEstTokensHeaderFilter> shEstTokensHeaderFilter() {
+        FilterRegistrationBean<ShEstTokensHeaderFilter> registration =
+                new FilterRegistrationBean<>(new ShEstTokensHeaderFilter());
+        registration.addUrlPatterns(AGENT_URL_PATTERN, CDA_URL_PATTERN);
+        registration.setName("shEstTokensHeaderFilter");
+        registration.setOrder(Ordered.LOWEST_PRECEDENCE - 30);
         return registration;
     }
 }

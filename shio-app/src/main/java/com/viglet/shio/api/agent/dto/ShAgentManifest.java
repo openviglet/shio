@@ -11,6 +11,9 @@ package com.viglet.shio.api.agent.dto;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
 /**
  * The agent manifest (SH76) — this instance describing itself to a coding agent.
  *
@@ -39,6 +42,10 @@ import java.util.Map;
  * @author Alexandre Oliveira
  * @since 2026.3
  */
+// NON_NULL only. NON_DEFAULT would strip the `false` entries from `features`, which
+// are the most important thing the manifest says — an absent flag sends the caller
+// probing, which is the cost this document exists to remove.
+@JsonInclude(Include.NON_NULL)
 public record ShAgentManifest(
         String product,
         String version,

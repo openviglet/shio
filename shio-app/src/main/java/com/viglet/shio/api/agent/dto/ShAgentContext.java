@@ -50,6 +50,7 @@ import com.viglet.shio.api.cda.dto.ShCdaSchemaField;
  * @author Alexandre Oliveira
  * @since 2026.3
  */
+@JsonInclude(Include.NON_NULL)
 public record ShAgentContext(
         int protocol,
         String manifest,
@@ -66,6 +67,7 @@ public record ShAgentContext(
      * @param version running build version
      * @param defaultLocale the locale new content gets when none is given
      */
+    @JsonInclude(Include.NON_NULL)
     public record Instance(String product, String version, String defaultLocale) {
     }
 
@@ -76,6 +78,7 @@ public record ShAgentContext(
      * @param rootFolderId the folder every path in {@code sitemap} is relative to
      * @param posts        number of distinct posts in the site
      */
+    @JsonInclude(Include.NON_NULL)
     public record Site(String id, String name, String url, String rootFolderId, long posts) {
     }
 
@@ -136,6 +139,10 @@ public record ShAgentContext(
      *                       {@code include}, because there is no row to resume after
      * @param overBudget     the mandatory sections alone exceeded the limit
      */
+    // NON_NULL, not NON_DEFAULT: `truncated: false` and `overBudget: false` are the
+    // *answer* to "was anything cut?", so they must stay on the wire. Only the absent
+    // cursor is dropped. See ShAgentJsonLeanTest for why this distinction is a policy.
+    @JsonInclude(Include.NON_NULL)
     public record Budget(int estTokens, int limitTokens, boolean truncated,
                          String truncatedAfter, boolean overBudget) {
     }

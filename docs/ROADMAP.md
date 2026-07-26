@@ -37,9 +37,9 @@
 
 > **Numbering.** `SH<n>` ids are permanent and **not contiguous** — epics own
 > sub-ranges and superseded tasks keep their numbers (never reuse them). **SH74** is
-> the agent-native epic; Blocks H–N run **SH75–SH126** with deliberate gaps
+> the agent-native epic; Blocks H–N run **SH75–SH127** with deliberate gaps
 > (SH85 · SH91 · SH98 · SH105 · SH111 · SH118 are reserved, unused block-header
-> slots). **SH121–SH126** were added from findings while implementing the block —
+> slots). **SH121–SH127** were added from findings while implementing the block —
 > new tasks are expected to accrete this way, and each one's line says what
 > measurement or failure produced it. Superseded and therefore retired: **SH17/SH18** (GraalJS), **SH23 +
 > SH27–SH31** (marketplace → Block J), **SH24 + SH32–SH37** (CRUD-over-MCP → Block H).
@@ -64,16 +64,18 @@
 > too thin: CRUD-over-MCP reproduces every discovery/write cost it was meant to fix.
 > → §VIII
 
-> ✅ **SH76** (manifest) · **SH80** (teaching errors) · **SH77** (context pack) · **SH78**
-> (token-lean responses) shipped → see [CHANGELOG.md](CHANGELOG.md) Block H. The
-> `/api/v2/agent` namespace, the `problem+json` contract, the terse encoding and the
-> token budget now exist. **Measured while building SH78:** the per-row token cost is
-> dominated by the 36-char UUID, not by the encoding — which makes SH79 the block's
-> largest remaining token lever, not a convenience.
+> ✅ Shipped → [CHANGELOG.md](CHANGELOG.md) Block H: **SH76** (manifest) · **SH80**
+> (teaching errors) · **SH77** (context pack) · **SH78** (token-lean responses) ·
+> **SH122** (tenant-join guard) · **SH124** (delivery cost header) · **SH125**
+> (null-omission policy) · **SH126** (`shio context` CLI).
+> **Two findings that reorder what is left:** (1) the per-row token cost is dominated
+> by the 36-char UUID, not by the encoding — so **SH79 is the largest remaining token
+> lever**, not a convenience; (2) SH122's guard immediately uncovered three shipped
+> CDA paths broken in production, so the "valid-JPQL, runtime-only" class of defect is
+> worth guarding wherever else it exists.
 
 - 📋 **SH75** (deps: SH2, SH16) **MCP server host** — Spring-hosted MCP at `/mcp` (streamable HTTP) + a `shio mcp` stdio bridge in the CLI; tool registry; auth via the `AGENT` token scope; per-session agent id stamped into the SH51 audit. → §VIII.1
 - 📋 **SH79** (deps: SH77) **Path addressing everywhere** — `site:viglet.org/blog/hello-world` addresses reads *and* writes; UUIDs stay valid but stop being the agent's currency (makes writes naturally idempotent). Now also the biggest measured token win left in Block H. → §VIII.5
-- 📋 **SH126** (deps: SH77) **`shio context` CLI command** — thin client over the shipped endpoint (`--format terse`, `--include`, `--site`), so a file-first workflow reaches the pack without HTTP plumbing. Completes SH77's stated surface. → §VIII.3
 - 📋 **SH81** (deps: SH79) **Batch transactional mutation** — `POST /api/v2/agent/batch`: N ops, atomic, `dryRun`, per-op results. A 12-page structure in one call. → §VIII.7
 - 📋 **SH82** (deps: SH81) **Desired-state plan/apply for content** — generalize `shio push --check` (SH65) from post-types to content: declarative doc → `plan` (no writes) → `apply`. → §VIII.7
 - 📋 **SH121** (deps: SH79) **Id-free agent reads** — once a path addresses content, drop ids from context/listing rows by default (`ids=true` to restore). Measured basis: the UUID is the single largest per-row cost, so this is a further ~30% on the sitemap after SH78. → §VIII.5
@@ -141,8 +143,7 @@
 - 📋 **SH114** (deps: SH77) **Instance memory / conventions store** — decisions + conventions as first-class content, served in the context pack. The compounding saving: session N+1 costs less than session N. → §XIII.3
 - 📋 **SH115** (deps: SH114) **`AGENTS.md` generator** — `shio context --as agents-md` renders project agent instructions from the live instance + memory store, so they cannot rot. → §XIII.4
 - 📋 **SH116** (deps: SH77) **Agent-read caching** — strong ETags on manifest/context/schema; an unchanged context costs a `304`. The SH77 `digest` is already the ETag value — this wires it to `If-None-Match`. → §XIII.5
-- 📋 **SH124** (deps: SH78) **Cost instrumentation on the delivery path** — extend `X-Shio-Est-Tokens` (and the budget mechanics) from `/api/v2/agent/*` to the CDA, so SH112/SH113 can measure the reads an agent actually makes most. → §XIII.2
-- 📋 **SH125** (deps: SH78) **Null/default omission as policy** — apply the agent DTOs' `NON_DEFAULT` rule across agent + CDA JSON, with a test that fails on a payload shipping `null`s or zero defaults. A row must not pay for what it has nothing to say about. → §XIII.2
+- 📋 **SH127** (deps: SH125) **Lean the delivery JSON + SDK types together** — drop nulls from the CDA DTOs *and* change `@viglet/shio-client`'s `string | null` fields to optional in the same change. SH125 stopped at the agent surface because omitting a null unilaterally would turn a declared `null` into `undefined` for typed consumers. Also removes the nulls the SH77 `model` section inherits. → §XIII.2
 
 ## Block N — Realignment of what already shipped
 
@@ -152,7 +153,6 @@
 - 📋 **SH117** (deps: —) **Unify the two post-type APIs** — one name-keyed surface (`/api/v2/post-type`); migrate the console off the id-keyed `/api/v2/post/type` and retire it. Two APIs for one concept is a tax paid on every agent session. → §XIV.1
 - 📋 **SH119** (deps: SH92) **`create-shio-app` templates → blueprints** — one appliable format; `shio init` stays a thin wrapper. → §XIV.2
 - 💭 **SH120** (deps: SH78) **Align console read shapes with the CDA DTOs** where they overlap — one shape to learn. → §XIV.3
-- 📋 **SH122** (deps: —) **Build-time guard for the `@TenantId` JOINED-join hazard** — a test that fails when a JPQL query navigates past the `id` of an `ShObject`-subclass association (`p.shPostType.name`), which makes Hibernate emit the tenant predicate against the subclass table alias and dies at prepare time. Valid JPQL, invisible until runtime; found by SH77. → §XIV.4
 
 ---
 

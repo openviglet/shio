@@ -217,8 +217,11 @@ Design records later tasks depend on:
 - **Conventions are derived, not stored** — the derivable subset only. SH114 adds the
   author-written store on top; the two must stay distinguishable.
 
-**Still open from SH77's stated surface:** the `shio context` CLI (SH126) and the
-`shio://context` MCP resource (needs SH75). The REST endpoint is the substrate for both.
+**Still open from SH77's stated surface:** the `shio://context` MCP resource (needs
+SH75). The `shio context` CLI shipped as SH126 — note its two divergences from the
+endpoint, both deliberate: `terse` is the CLI's *default* (its caller is an agent,
+not a browser), and the body is passed through as text, never parsed and
+re-serialized, because the digest is computed over exactly those bytes.
 
 ### VIII.4 Token-lean responses (SH78) — ✅ shipped
 
@@ -522,11 +525,32 @@ tokens + wall clock**, run in CI, recorded per release. Without this, every clai
 in this document is a vibe, and the natural entropy of a codebase (someone adds a
 convenient field to a response) silently erodes the whole position.
 
-### XIII.2 Response budget enforcement (SH113)
+### XIII.2 Response budget enforcement (SH113) + the leanness policy
 
 CI fails when a canonical response's estimated token size regresses past a
 threshold. The cheap, always-on guard between full benchmark runs; the same role
-`ShLiquibaseChangelogAgnosticTest` plays for schema portability.
+`ShLiquibaseChangelogAgnosticTest` plays for schema portability. The number it
+regresses against is now emitted by the instance itself on both the agent and
+delivery surfaces (`X-Shio-Est-Tokens`, SH124 — ✅ shipped), so the guard reads a
+header instead of re-tokenizing bodies.
+
+**The leanness policy (SH125 — ✅ shipped) and its binding limit.** Nulls are always
+waste and are omitted from every agent-owned DTO. Dropping zero-defaults is *not* a
+blanket rule, and the reason generalizes beyond JSON: **a default can be an answer.**
+`features: {mcp: false}` is the most valuable thing the manifest says; `truncated:
+false` is the answer to "was anything cut?". Stripping either would make the payload
+smaller and the protocol worse — silence reads as "unknown", and an unknown sends the
+caller probing, which is the cost the whole block exists to remove. So: NON_NULL
+baseline, NON_DEFAULT only where absence and default genuinely coincide (row-shaped
+DTOs). Any future "make it smaller" change must clear that test.
+
+**Still open (SH127):** the delivery path stays null-carrying, because
+`@viglet/shio-client` declares nullable CDA fields as `string | null` rather than
+optional — omitting a null unilaterally would turn a declared `null` into
+`undefined` for typed consumers. Backend and SDK types have to move together, which
+also removes the nulls the SH77 context pack inherits through the shared
+`ShCdaSchemaField` shape (the visible price of P10 composition over a frozen
+contract, currently pinned by a characterization test).
 
 ### XIII.3 Instance memory / conventions store (SH114)
 
@@ -576,23 +600,29 @@ wrapper. One appliable format instead of two half-formats.
 Where the shapes overlap, the console should return the CDA DTO rather than a
 second shape of the same thing — one shape for the agent to learn (P5/P10).
 
-### XIV.4 Build-time guard for the `@TenantId` JOINED-join hazard (SH122)
+### XIV.4 Build-time guard for the `@TenantId` JOINED-join hazard (SH122) — ✅ shipped
 
-Found while building SH77. A JPQL query that navigates **past the `id`** of an
-association whose target is an `ShObject` subclass (`ShSite`, `ShFolder`,
-`ShPostType`) makes Hibernate emit SH22's tenant discriminator predicate against the
-*subclass* table alias — which has no `tenant_id` column, since it lives on the
-JOINED `ShObject` root — and the query fails at prepare time
-(`Column "spt1_1.tenant_id" not found`).
+Shipped → [CHANGELOG.md](CHANGELOG.md) Block H (with the three production bugs it
+uncovered). **The generalizable lesson, which is why this section survives:**
 
-Why it deserves a guard rather than a note: the mapping is **valid JPQL**, the
-failure is **runtime-only**, and the correct form (`select p.shPostType.id … group by
-p.shPostType.id`, resolving id→name in the service) is both safe *and* faster — no
-join at all. Every future aggregate or projection query over content will meet this.
-The guard is a test that scans `@Query` values for a navigation of depth ≥ 2 into one
-of the subclass associations, in the same spirit as
-`ShLiquibaseChangelogAgnosticTest`: a cheap textual lint standing in for a class of
-runtime failure. Documented meanwhile in `agents.md` → Common Issues.
+*Characterize by execution, not by argument.* The hazard's boundary was guessed
+twice and wrong twice — first "projections only", then "not predicates" — each time
+from a plausible reading of the evidence (shipped `WHERE` queries with green tests).
+Executing each form settled it in minutes and produced a rule that is both correct
+and simpler than either guess. When a lint's scope depends on where a runtime
+boundary actually lies, spend the test rather than the reasoning: a lint built on the
+wrong boundary either fails on correct code or misses the defect it was written for.
+
+*A green test is not coverage.* The three broken paths had tests; none reached the
+finder. Where a defect class is invisible to compilation **and** easy for tests to
+miss, a cheap always-on textual guard is the right instrument — the same role
+`ShLiquibaseChangelogAgnosticTest` plays for schema portability. Worth applying to
+the next such class rather than waiting for it to bite.
+
+*Self-test the guard.* Both of this lint's regexes were initially inert on real
+input (word boundaries fail on both sides of a derived query name). A lint that
+matches nothing passes silently forever, so its patterns are asserted against the
+exact strings that broke production.
 
 ---
 

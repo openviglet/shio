@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -34,6 +35,7 @@ import com.viglet.shio.api.cda.dto.ShCdaPostSummary;
 import com.viglet.shio.api.cda.dto.ShCdaPostTypeSchema;
 import com.viglet.shio.api.cda.dto.ShCdaSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
+import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
@@ -231,7 +233,7 @@ public class ShCdaService {
             if (!siteAllowed(siteId)) {
                 return Page.empty(pageable);
             }
-            List<String> types = searchablePostTypeNames(siteId);
+            List<String> types = searchablePostTypeIds(siteId);
             if (!types.isEmpty()) {
                 return preview()
                         ? draftPreferred(shPostUnifiedRepository
@@ -268,11 +270,16 @@ public class ShCdaService {
     }
 
     /**
-     * A site's configured searchable post-type names (SH52), keeping only those
-     * that resolve to a real post-type — so a malformed/foreign config degrades to
-     * "search all types" rather than silently returning nothing.
+     * A site's configured searchable post-types (SH52) as post-type <b>ids</b>,
+     * keeping only names that resolve to a real post-type — so a malformed/foreign
+     * config degrades to "search all types" rather than silently returning nothing.
+     *
+     * <p>Ids, not names: the search query filters on {@code p.shPostType.id}, which
+     * uses the FK column already on {@code sh_post_unified}. Filtering by name would
+     * join {@code ShPostType} and trip the SH22 {@code @TenantId} hazard — see the
+     * note in {@code ShPostUnifiedRepository}.</p>
      */
-    private List<String> searchablePostTypeNames(String siteId) {
+    private List<String> searchablePostTypeIds(String siteId) {
         List<String> names = shSiteRepository.findById(siteId)
                 .map(ShSite::getSearchablePostTypes)
                 .map(ShCdaService::parsePostTypeNames)
@@ -281,7 +288,10 @@ public class ShCdaService {
             return List.of();
         }
         return names.stream()
-                .filter(name -> shPostTypeRepository.findByName(name) != null)
+                .map(shPostTypeRepository::findByName)
+                .filter(Objects::nonNull)
+                .map(ShPostType::getId)
+                .distinct()
                 .toList();
     }
 
@@ -326,12 +336,24 @@ public class ShCdaService {
                 : shPostUnifiedRepository.findByShFolderAndState(folder, STATE, pageable);
     }
 
+    /**
+     * Posts of one post-type in a site. The public contract takes a post-type
+     * <b>name</b> (`?postType=Article`), but the finder must filter by <b>id</b> —
+     * filtering by name joins {@code ShPostType} and trips the SH22 {@code @TenantId}
+     * hazard (see {@code ShPostUnifiedRepository}). An unknown name resolves to no
+     * post-type and therefore to an empty page, which is the same answer the caller
+     * would get for a real type with no content — never an error.
+     */
     private Page<ShPostUnified> pageBySiteAndType(String siteId, String postType, Pageable pageable) {
+        ShPostType type = shPostTypeRepository.findByName(postType);
+        if (type == null) {
+            return Page.empty(pageable);
+        }
         return preview()
                 ? draftPreferred(shPostUnifiedRepository
-                        .findByShSite_IdAndShPostType_NameAndStateIn(siteId, postType, PREVIEW_STATES), pageable)
+                        .findByShSite_IdAndShPostType_IdAndStateIn(siteId, type.getId(), PREVIEW_STATES), pageable)
                 : shPostUnifiedRepository
-                        .findByShSite_IdAndShPostType_NameAndState(siteId, postType, STATE, pageable);
+                        .findByShSite_IdAndShPostType_IdAndState(siteId, type.getId(), STATE, pageable);
     }
 
     private Page<ShPostUnified> pageBySite(String siteId, Pageable pageable) {

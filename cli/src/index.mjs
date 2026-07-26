@@ -28,6 +28,7 @@ const BOOLEANS = ["help", "yes", "dry-run", "prune", "check", "skip-types"];
 const COMMANDS = {
   init: () => import("./commands/init.mjs"),
   types: () => import("./commands/types.mjs"),
+  context: () => import("./commands/context.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),
   build: () => import("./commands/build.mjs"),
@@ -42,6 +43,7 @@ Usage:
 
 Commands:
   init [name]    Scaffold a Next.js site wired to the Shio CDA
+  context        Print the agent context pack: model + sitemap + conventions (one call)
   pull           Pull post-types into ./shio/post-types/*.json (Basic auth)
   push           Apply local post-types back to Shio (--dry-run, --prune)
   build          Compile local DSL/JSON post-types to canonical JSON (--out)
@@ -59,9 +61,18 @@ Connection:
   --password <pass>    Console password       (env SHIO_PASSWORD)    [pull/push/deploy]
   --token <token>      CDA token              (env SHIO_CDA_TOKEN)   [types/dev]
 
+Context pack (shio context):
+  --format <fmt>       terse (default) or json
+  --site <idOrName>    Scope to one site      (omit for every readable site)
+  --include <sections> instance,sites,model,sitemap,conventions (default all)
+  --depth <n>          Folder-tree depth to walk
+  --budget <tokens>    Estimated-token ceiling (0 = unbounded)
+  --from <id>          Resume cursor from a truncated pack
+
 Common options:
   --dir <dir>          Post-types directory   (default shio/post-types) [pull/push/build]
-  --out <file>         Output path            (.d.ts for types; dir for pull/build, default shio/.out)
+  --out <file>         Output path            (.d.ts for types; dir for pull/build, default shio/.out;
+                       a file for context)
   --dry-run            push: print the plan, change nothing
   --check              push: drift guard — exit non-zero if the plan is non-empty (no writes; CI)
   --prune              push: delete remote types absent locally (never system types)
