@@ -112,6 +112,47 @@ export class ShioAgentClient {
     return res.json();
   }
 
+  /**
+   * POST /api/v2/agent/plan — what applying this document would change. Writes nothing.
+   *
+   * @param {object} document a desired-state content document (site/folders/posts/prune)
+   * @param {{ ids?: boolean }} [options]
+   */
+  async plan(document, options = {}) {
+    return this.#post("plan", document, options);
+  }
+
+  /** POST /api/v2/agent/apply — make the document true, atomically. */
+  async apply(document, options = {}) {
+    return this.#post("apply", document, options);
+  }
+
+  async #post(verb, document, { ids = false } = {}) {
+    const url = `${this.baseUrl}/api/v2/agent/${verb}${ids ? "?ids=true" : ""}`;
+    const res = await this.fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: this.#authHeader(),
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(document),
+    });
+    if (!res.ok) {
+      // Same reasoning as `resolve`: the teaching problem (SH80) *is* the useful part
+      // of a failure here — it names the op that broke and the fix — so the body
+      // travels intact rather than being collapsed to a status code.
+      let detail = "";
+      try {
+        detail = await res.text();
+      } catch {
+        /* ignore */
+      }
+      throw new ShioHttpError(res.status, url, detail);
+    }
+    return res.json();
+  }
+
   /** GET /api/v2/agent/manifest. */
   async getManifest() {
     const url = `${this.baseUrl}/api/v2/agent/manifest`;

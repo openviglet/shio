@@ -114,6 +114,12 @@ public class ShAgentManifestService {
         features.put("desiredState", true);
         features.put("mcp", true);
         features.put("fieldProjection", true);
+        // SH134/SH135: the vocabulary can change a site, not only build one — an address
+        // can be moved, and a desired-state prune removes undeclared folders as well as
+        // undeclared posts. Advertised because an agent that does not know post.move
+        // exists will reach for the destructive workaround.
+        features.put("postMove", true);
+        features.put("folderPrune", true);
 
         // Declared-but-unshipped (Block H–J). Reported false so a caller does not probe.
         features.put("blueprints", false);
@@ -160,8 +166,10 @@ public class ShAgentManifestService {
                                 + "address from a context row; you never need to remember a UUID.",
                         "console", "GET /api/v2/agent/resolve?address=post:Blog/blog/hello-world"),
                 new ShAgentEndpoint("POST", "/agent/batch",
-                        "Write: N addressed ops (folder.upsert, post.upsert, post.publish, …) "
-                                + "in one atomic call. Send dryRun to see the plan first.",
+                        "Write: N addressed ops (folder.upsert, post.upsert, post.move, "
+                                + "post.publish, …) in one atomic call. Send dryRun to see the "
+                                + "plan first. Rename or relocate with post.move — re-addressing "
+                                + "an upsert creates a second post.",
                         "console", "POST /api/v2/agent/batch"),
                 new ShAgentEndpoint("POST", "/agent/plan",
                         "Diff a desired-state content document against this instance. "

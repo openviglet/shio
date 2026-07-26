@@ -31,6 +31,7 @@ const COMMANDS = {
   context: () => import("./commands/context.mjs"),
   mcp: () => import("./commands/mcp.mjs"),
   resolve: () => import("./commands/resolve.mjs"),
+  apply: () => import("./commands/apply.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),
   build: () => import("./commands/build.mjs"),
@@ -48,6 +49,7 @@ Commands:
   context        Print the agent context pack: model + sitemap + conventions (one call)
   mcp            Bridge stdio to this instance's MCP endpoint (claude mcp add shio -- shio mcp)
   resolve <addr> Resolve a content address (post:/folder:/site:/id:) to its object
+  apply [file]   Plan/apply a desired-state content document (--dry-run, --check, - for stdin)
   pull           Pull post-types into ./shio/post-types/*.json (Basic auth)
   push           Apply local post-types back to Shio (--dry-run, --prune)
   build          Compile local DSL/JSON post-types to canonical JSON (--out)
@@ -80,6 +82,15 @@ MCP (shio mcp):
   Register it with:  claude mcp add shio -- shio mcp
   Uses the same --url/--user/--password (or SHIO_URL/SHIO_USER/SHIO_PASSWORD).
 
+Content as a document (shio apply):
+  A desired-state document says what a site section should contain; applying it
+  twice changes nothing the second time, so it survives a compaction.
+  --dry-run            Print the plan, write nothing
+  --check              Drift guard — plan, and exit non-zero if anything would change
+  --ids                Put object ids on the change rows (off by default)
+  shio apply site.json --dry-run
+  echo '{"site":"Blog","folders":[{"path":"/blog"}]}' | shio apply -
+
 Addresses (shio resolve):
   post:<site>/<url>    A post, by its friendly URL
   folder:<site>/<path> A folder, by its chain of folder names
@@ -91,8 +102,8 @@ Common options:
   --dir <dir>          Post-types directory   (default shio/post-types) [pull/push/build]
   --out <file>         Output path            (.d.ts for types; dir for pull/build, default shio/.out;
                        a file for context)
-  --dry-run            push: print the plan, change nothing
-  --check              push: drift guard — exit non-zero if the plan is non-empty (no writes; CI)
+  --dry-run            push/apply: print the plan, change nothing
+  --check              push/apply: drift guard — exit non-zero if the plan is non-empty (CI)
   --prune              push: delete remote types absent locally (never system types)
   -h, --help           Show help
 `;
