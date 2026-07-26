@@ -1,0 +1,80 @@
+{
+  "folders": [
+    {
+      "path": "/products"
+    },
+    {
+      "path": "/products/accessories"
+    }
+  ],
+  "posts": [
+    {
+      "url": "/products/starter-kit",
+      "type": "Product",
+      "folder": "/products",
+      "data": {
+        "name": "Starter kit",
+        "summary": "Everything needed to get going, and nothing else.",
+        "description": "<p>The entry-level product from {{storeName}}.</p>",
+        "sku": "SK-001",
+        "price": "49.00",
+        "currency": "{{currency}}",
+        "specs": [
+          {
+            "label": "Weight",
+            "value": "1.2 kg"
+          },
+          {
+            "label": "Warranty",
+            "value": "2 years"
+          }
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/products/pro-kit",
+      "type": "Product",
+      "folder": "/products",
+      "data": {
+        "name": "Pro kit",
+        "summary": "The starter kit, plus the parts people ask for a week later.",
+        "description": "<p>{{storeName}}'s full kit.</p>",
+        "sku": "SK-002",
+        "price": "129.00",
+        "currency": "{{currency}}",
+        "specs": [
+          {
+            "label": "Weight",
+            "value": "2.8 kg"
+          },
+          {
+            "label": "Warranty",
+            "value": "3 years"
+          }
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/products/accessories/carry-case",
+      "type": "Product",
+      "folder": "/products/accessories",
+      "data": {
+        "name": "Carry case",
+        "summary": "A hard case sized for either kit.",
+        "description": "<p>An accessory, filed under its own subsection so the catalogue's folder tree is worked rather than flat.</p>",
+        "sku": "AC-010",
+        "price": "29.00",
+        "currency": "{{currency}}",
+        "specs": [
+          {
+            "label": "Material",
+            "value": "Polypropylene"
+          }
+        ]
+      },
+      "publish": true
+    }
+  ]
+}

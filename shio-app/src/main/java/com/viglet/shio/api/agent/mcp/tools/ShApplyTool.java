@@ -19,15 +19,28 @@ import com.viglet.shio.api.agent.ShAgentReadTerse;
 import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
 import com.viglet.shio.api.agent.mcp.ShMcpSessionContext;
 import com.viglet.shio.api.agent.mcp.ShMcpTool;
+import com.viglet.shio.blueprint.ShBlueprintService;
+import com.viglet.shio.blueprint.ShBlueprintTerse;
 
 import tools.jackson.databind.JsonNode;
 
 /**
- * {@code shio_apply} (SH83) — declare what a section should be and converge to it.
+ * {@code shio_apply} (SH83, extended by SH93) — declare what a section should be and
+ * converge to it, or apply a whole ready-made one.
  *
- * <p>Shape over SH82's plan/apply. The one thing this tool adds over
- * {@code shio_write} is <b>re-runnability</b>, and the description says so, because
- * that is the decision the agent actually has to make between the two.</p>
+ * <p>Shape over SH82's plan/apply and, since Block J, over SH93's blueprint apply. The
+ * one thing this tool adds over {@code shio_write} is <b>re-runnability</b>, and the
+ * description says so, because that is the decision the agent actually has to make
+ * between the two.</p>
+ *
+ * <h2>Why the blueprint verb lives here rather than in a tool of its own</h2>
+ *
+ * <p>Because it is the same decision. An agent about to build a blog either declares the
+ * pages itself or asks for the package that already declares them; both answers converge
+ * an instance towards a stated end state, both return a plan first, and both are safe to
+ * re-run. A separate {@code shio_blueprint} tool would cost every session another schema
+ * (P3) to express a branch this one already has — and the branch it would express is
+ * "which tool", which is exactly the question the model should not have to answer.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -36,9 +49,12 @@ import tools.jackson.databind.JsonNode;
 public class ShApplyTool implements ShMcpTool {
 
     private final ShAgentDesiredStateService shAgentDesiredStateService;
+    private final ShBlueprintService shBlueprintService;
 
-    public ShApplyTool(ShAgentDesiredStateService shAgentDesiredStateService) {
+    public ShApplyTool(ShAgentDesiredStateService shAgentDesiredStateService,
+                       ShBlueprintService shBlueprintService) {
         this.shAgentDesiredStateService = shAgentDesiredStateService;
+        this.shBlueprintService = shBlueprintService;
     }
 
     @Override
@@ -51,14 +67,18 @@ public class ShApplyTool implements ShMcpTool {
         return "Declare what a site section should contain and make it so. Unlike shio_write "
                 + "this is a statement, not a script: applying the same document twice changes "
                 + "nothing the second time, so you can re-send it after a compaction without "
-                + "remembering what you already did. Use dryRun=true to see the diff first; a "
-                + "plan with changed=0 means there is no drift.";
+                + "remembering what you already did. Set `blueprint` to apply a ready-made "
+                + "section from shio://blueprints instead of declaring one. Use dryRun=true "
+                + "to see the diff first; a plan with changed=0 means there is no drift.";
     }
 
     @Override
     public Map<String, Object> inputSchema() {
         return ShMcpTool.schema(Map.of(
                 "site", ShMcpTool.string("Site name. Every path below is relative to it."),
+                "blueprint", ShMcpTool.string(
+                        "Blueprint name; applies that package instead of the document below."),
+                "params", ShMcpTool.object("The blueprint's parameter values."),
                 "folders", Map.of(
                         "type", "array",
                         "description", "Folder paths that must exist; intermediates are implicit.",
@@ -87,13 +107,20 @@ public class ShApplyTool implements ShMcpTool {
 
     @Override
     public String call(JsonNode arguments) {
-        ShAgentDesiredState desired = new ShAgentDesiredState(
-                ShMcpArgs.string(arguments, "site"),
-                folders(arguments),
-                posts(arguments),
-                ShMcpArgs.bool(arguments, "prune"));
         String actor = ShMcpSessionContext.actor();
-        return ShAgentReadTerse.changes(ShMcpArgs.bool(arguments, "dryRun")
+        boolean dryRun = ShMcpArgs.bool(arguments, "dryRun");
+        String site = ShMcpArgs.string(arguments, "site");
+        String blueprint = ShMcpArgs.string(arguments, "blueprint");
+
+        if (blueprint != null && !blueprint.isBlank()) {
+            JsonNode params = ShMcpArgs.node(arguments, "params");
+            return ShBlueprintTerse.applied(dryRun
+                    ? shBlueprintService.plan(blueprint, site, params, actor)
+                    : shBlueprintService.apply(blueprint, site, params, actor));
+        }
+        ShAgentDesiredState desired = new ShAgentDesiredState(site, folders(arguments),
+                posts(arguments), ShMcpArgs.bool(arguments, "prune"));
+        return ShAgentReadTerse.changes(dryRun
                 ? shAgentDesiredStateService.plan(desired, false, actor)
                 : shAgentDesiredStateService.apply(desired, false, actor));
     }

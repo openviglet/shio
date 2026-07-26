@@ -1,0 +1,95 @@
+{
+  "name": "SectionFeatureGrid",
+  "title": "Feature Grid Section",
+  "namePlural": "Feature Grid Sections",
+  "description": "A short list of capabilities, each with a title and a sentence.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "heading",
+      "label": "Heading",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "intro",
+      "label": "Intro",
+      "description": null,
+      "widget": "Text Area",
+      "required": false,
+      "isTitle": false,
+      "isSummary": true,
+      "ordinal": 2,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "columns",
+      "label": "Columns",
+      "description": null,
+      "widget": "Combo Box",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 3,
+      "widgetSettings": "{\"choices\":\"2: Two\\n3: Three\\n4: Four\",\"allowNull\":1}",
+      "fields": []
+    },
+    {
+      "name": "features",
+      "label": "Features",
+      "description": null,
+      "widget": "Relator",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 4,
+      "widgetSettings": "{\"relator\":{\"title\":\"Feature\"}}",
+      "fields": [
+        {
+          "name": "title",
+          "label": "Title",
+          "description": null,
+          "widget": "Text",
+          "required": true,
+          "isTitle": false,
+          "isSummary": false,
+          "ordinal": 1,
+          "widgetSettings": null,
+          "fields": []
+        },
+        {
+          "name": "body",
+          "label": "Body",
+          "description": null,
+          "widget": "Text Area",
+          "required": false,
+          "isTitle": false,
+          "isSummary": false,
+          "ordinal": 2,
+          "widgetSettings": null,
+          "fields": []
+        },
+        {
+          "name": "icon",
+          "label": "Icon",
+          "description": "An icon name your front end knows.",
+          "widget": "Text",
+          "required": false,
+          "isTitle": false,
+          "isSummary": false,
+          "ordinal": 3,
+          "widgetSettings": null,
+          "fields": []
+        }
+      ]
+    }
+  ]
+}

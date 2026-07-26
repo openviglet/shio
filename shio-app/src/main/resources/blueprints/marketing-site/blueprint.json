@@ -1,0 +1,56 @@
+{
+  "formatVersion": 1,
+  "name": "marketing-site",
+  "title": "Marketing site",
+  "version": "1.0.0",
+  "description": "A three-page marketing site built from the @viglet/shio-sections vocabulary: home, pricing and about, each composed of known sections (hero, feature grid, logo wall, testimonials, FAQ, call to action). The React components that render these sections ship in @viglet/shio-sections, so the front end is a dependency rather than a rewrite.",
+  "params": {
+    "type": "object",
+    "required": [
+      "brand"
+    ],
+    "properties": {
+      "brand": {
+        "type": "string",
+        "description": "The company or product name. Appears in every heading, so there is no useful default."
+      },
+      "tagline": {
+        "type": "string",
+        "description": "One line under the hero heading.",
+        "default": "Software that gets out of the way"
+      },
+      "ctaLabel": {
+        "type": "string",
+        "description": "Label on the primary call to action.",
+        "default": "Talk to us"
+      },
+      "ctaHref": {
+        "type": "string",
+        "description": "Where the primary call to action points.",
+        "default": "/contact"
+      }
+    }
+  },
+  "postTypes": [
+    "post-types/Page.json",
+    "post-types/SectionCta.json",
+    "post-types/SectionFaq.json",
+    "post-types/SectionFeatureGrid.json",
+    "post-types/SectionHero.json",
+    "post-types/SectionLogoWall.json",
+    "post-types/SectionRichText.json",
+    "post-types/SectionTestimonial.json"
+  ],
+  "content": [
+    "content/sections.json",
+    "content/pages.json"
+  ],
+  "verify": {
+    "posts": [
+      "/",
+      "/pricing",
+      "/about"
+    ],
+    "checks": "content"
+  }
+}

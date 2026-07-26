@@ -53,12 +53,18 @@ public class ShMcpPrompts {
                         1. shio_context(site) — read the model, the existing sitemap and this \
                         instance's conventions. Do not invent a post-type; use one that exists, \
                         or say which one is missing and why.
-                        2. Draft the structure as a single shio_apply document (site, folders, \
-                        posts with url/type/folder/data). One document, not one call per page.
-                        3. Run it with dryRun=true and read the plan. Every line should be a \
+                        2. Read shio://blueprints. If a package already covers this shape (blog, \
+                        docs, marketing site, landing page, product catalogue), apply it with \
+                        shio_apply(site, blueprint, params, dryRun=true) and then without dryRun \
+                        — it brings the model, the folders and the pages in one call. Build by \
+                        hand only for what no package covers.
+                        3. For the rest, draft the structure as a single shio_apply document \
+                        (site, folders, posts with url/type/folder/data). One document, not one \
+                        call per page.
+                        4. Run it with dryRun=true and read the plan. Every line should be a \
                         change you intended; if anything says delete, stop and ask.
-                        4. Run it again without dryRun.
-                        5. Report the addresses you created. Do not publish — the content is in \
+                        5. Run it again without dryRun.
+                        6. Report the addresses you created. Do not publish — the content is in \
                         DRAFT and a human decides when it goes live. If they ask, publish with \
                         shio_publish.""".formatted(
                         text(arguments, "site", "(name the site)"),
@@ -80,9 +86,12 @@ public class ShMcpPrompts {
                         nearest existing section and shio_read on one of its posts. Match what is \
                         already there — field usage, URL style, how the folder tree is shaped — \
                         rather than inventing a second convention alongside it.
-                        2. Write the section as one shio_apply document scoped to that folder.
-                        3. dryRun=true first, read the plan, then apply.
-                        4. Leave it in DRAFT and report the addresses.""".formatted(
+                        2. Check shio://blueprints — if a package covers this section, applying it \
+                        is one call instead of a modelling exercise.
+                        3. Otherwise write the section as one shio_apply document scoped to that \
+                        folder.
+                        4. dryRun=true first, read the plan, then apply.
+                        5. Leave it in DRAFT and report the addresses.""".formatted(
                         text(arguments, "path", "(name the path)"),
                         text(arguments, "site", "(name the site)"),
                         brief(arguments)));

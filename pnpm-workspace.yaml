@@ -1,10 +1,12 @@
 packages:
   - "shio-client"
   - "shio-model"
+  - "shio-sections"
   - "shio-react-sdk"
   - "shio-js-sdk"
   - "create-shio-app"
   - "cli"
+  - "claude-plugin"
   - "shio-react"
   - "shio-examples/*"
 

@@ -1,0 +1,53 @@
+{
+  "formatVersion": 1,
+  "name": "landing",
+  "title": "Landing page",
+  "version": "1.0.0",
+  "description": "One campaign page at /get-started, composed of a hero, a feature grid, an FAQ and a call to action from the @viglet/shio-sections vocabulary. The smallest useful blueprint: apply it, edit four sections, ship.",
+  "params": {
+    "type": "object",
+    "required": [
+      "brand"
+    ],
+    "properties": {
+      "brand": {
+        "type": "string",
+        "description": "The company or product name."
+      },
+      "headline": {
+        "type": "string",
+        "description": "The hero heading — the one sentence the page is about.",
+        "default": "Start in an afternoon, not a quarter"
+      },
+      "ctaLabel": {
+        "type": "string",
+        "description": "Label on the call to action.",
+        "default": "Get started"
+      },
+      "ctaHref": {
+        "type": "string",
+        "description": "Where the call to action points.",
+        "default": "/signup"
+      }
+    }
+  },
+  "postTypes": [
+    "post-types/Page.json",
+    "post-types/SectionCta.json",
+    "post-types/SectionFaq.json",
+    "post-types/SectionFeatureGrid.json",
+    "post-types/SectionHero.json",
+    "post-types/SectionLogoWall.json",
+    "post-types/SectionRichText.json",
+    "post-types/SectionTestimonial.json"
+  ],
+  "content": [
+    "content/landing.json"
+  ],
+  "verify": {
+    "posts": [
+      "/get-started"
+    ],
+    "checks": "content"
+  }
+}

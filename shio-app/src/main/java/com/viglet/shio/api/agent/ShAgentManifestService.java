@@ -138,8 +138,10 @@ public class ShAgentManifestService {
         // depends on an operator's decision, and probing it costs a refusal.
         features.put("renderFetch", shAgentProperties.getRender().isAllowFetch());
 
-        // Declared-but-unshipped (Block H–J). Reported false so a caller does not probe.
-        features.put("blueprints", false);
+        // Block J: appliable starting points. Reported false through Blocks H, K and I so
+        // that this flag flipping means a real package format with a real registry behind
+        // it, rather than a documented intention.
+        features.put("blueprints", true);
         // Block I: content projects to files and syncs both ways from the CLI. Compiled
         // in rather than configured — the capability is `shio pull --content`, which is a
         // property of the tooling this instance's protocol supports, not of its config.
@@ -195,6 +197,16 @@ public class ShAgentManifestService {
                 new ShAgentEndpoint("POST", "/agent/apply",
                         "Make that document true, atomically. Re-applying it is a no-op.",
                         "console", "POST /api/v2/agent/apply"),
+                new ShAgentEndpoint("GET", "/agent/blueprints",
+                        "Appliable starting points — a whole site section (model + folders + "
+                                + "pages) as one package. Read this before modelling a blog, a "
+                                + "docs tree or a marketing site by hand.",
+                        "console", "GET /api/v2/agent/blueprints?format=terse"),
+                new ShAgentEndpoint("POST", "/agent/blueprints/{name}/apply",
+                        "Apply one, into an existing site: {site, params, dryRun}. dryRun "
+                                + "returns the whole plan — post-types included — and writes "
+                                + "nothing. A blueprint adds; it never prunes.",
+                        "console", "POST /api/v2/agent/blueprints/blog/apply"),
                 new ShAgentEndpoint("GET", "/agent/find",
                         "Find posts by site / type / folder subtree / text. Returns addresses "
                                 + "and titles, never bodies — read only what you pick.",
@@ -282,7 +294,9 @@ public class ShAgentManifestService {
                 "address content as post:<site>/<url> or folder:<site>/<path>; "
                         + "GET /api/v2/agent/resolve turns one into an id when an endpoint needs it",
                 "write with POST /api/v2/agent/batch (atomic, addressed, dryRun-able) rather than "
-                        + "one id-keyed call per object",
+                        + "one id-keyed call per object — and before modelling a whole section by "
+                        + "hand, check GET /api/v2/agent/blueprints for a package that already "
+                        + "applies one",
                 "then verify instead of asking a human: GET /api/v2/agent/verify?format=terse "
                         + "reports content and route defects with a fix each, and "
                         + "GET /api/v2/agent/render?address=... proves a page's structure",

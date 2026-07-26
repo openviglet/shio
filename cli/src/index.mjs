@@ -27,7 +27,13 @@ const BOOLEANS = [
   "help", "yes", "dry-run", "prune", "check", "skip-types", "id", "ids", "strict",
   // Content-as-files (Block I): `--content` picks the resource, the rest resolve a sync.
   "content", "ours", "theirs", "force", "allow-partial", "show-remote", "cursor", "json",
+  // Blueprints (Block J): `--files` asks for the carried front-end bodies.
+  "files",
 ];
+
+// Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would
+// apply a package with defaults the caller believed they had overridden (SH93).
+const REPEATABLE = ["param"];
 
 const COMMANDS = {
   init: () => import("./commands/init.mjs"),
@@ -36,6 +42,7 @@ const COMMANDS = {
   mcp: () => import("./commands/mcp.mjs"),
   resolve: () => import("./commands/resolve.mjs"),
   apply: () => import("./commands/apply.mjs"),
+  blueprints: () => import("./commands/blueprints.mjs"),
   verify: () => import("./commands/verify.mjs"),
   changes: () => import("./commands/changes.mjs"),
   digest: () => import("./commands/digest.mjs"),
@@ -57,6 +64,8 @@ Commands:
   mcp            Bridge stdio to this instance's MCP endpoint (claude mcp add shio -- shio mcp)
   resolve <addr> Resolve a content address (post:/folder:/site:/id:) to its object
   apply [file]   Plan/apply a desired-state content document (--dry-run, --check, - for stdin)
+                 or a ready-made package (--blueprint <name> --site <site>)
+  blueprints     List the appliable starting points (blueprints <name> for its parameters)
   verify         Lint the content and its routes; exits non-zero on an error (CI gate)
   changes        What changed, with a cursor to resume from (--since, --cursor)
   digest <page>  Structural digest of one page: outline, landmarks, links, images
@@ -101,6 +110,20 @@ Content as a document (shio apply):
   --ids                Put object ids on the change rows (off by default)
   shio apply site.json --dry-run
   echo '{"site":"Blog","folders":[{"path":"/blog"}]}' | shio apply -
+
+Blueprints (shio blueprints / shio apply --blueprint):
+  A blueprint is a section of a site you do not have to build: a content model, a folder
+  tree, sample pages, the parameters that make it yours, and the promise it keeps about
+  what exists afterwards. Applying one is idempotent, so re-running it is safe.
+  shio blueprints                 The catalogue, with each package's parameters
+  shio blueprints blog            One package in detail (--files for the carried files)
+  --blueprint <name>   apply: the package to apply
+  --site <site>        apply: the site to apply it into (required)
+  --param k=v          apply: one parameter value; repeat for several
+  --params <file.json> apply: parameter values from a file (--param wins over it)
+  --force              apply: overwrite existing front-end files
+  --dry-run            apply: the whole plan, post-types included, written nowhere
+  shio apply --blueprint marketing-site --site Acme --param brand=Acme --dry-run
 
 Verification (shio verify / shio digest):
   shio verify is the content-side type-check: empty required fields, references to posts
@@ -167,7 +190,10 @@ async function main() {
     exit(1);
   }
 
-  const { flags, positionals } = parseArgs(rest, { booleans: BOOLEANS });
+  const { flags, positionals } = parseArgs(rest, {
+    booleans: BOOLEANS,
+    repeatable: REPEATABLE,
+  });
   if (flags.help) {
     process.stdout.write(HELP);
     return;

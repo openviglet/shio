@@ -1,0 +1,106 @@
+{
+  "folders": [
+    {
+      "path": "/sections"
+    },
+    {
+      "path": "/sections/get-started"
+    }
+  ],
+  "posts": [
+    {
+      "url": "/sections/get-started/hero",
+      "type": "SectionHero",
+      "folder": "/sections/get-started",
+      "data": {
+        "heading": "{{headline}}",
+        "subheading": "{{brand}} in one page.",
+        "ctaLabel": "{{ctaLabel}}",
+        "ctaHref": "{{ctaHref}}",
+        "align": "center"
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/get-started/features",
+      "type": "SectionFeatureGrid",
+      "folder": "/sections/get-started",
+      "data": {
+        "heading": "What you get",
+        "intro": "Three things, and no asterisks.",
+        "columns": "3",
+        "features": [
+          {
+            "title": "Set up in an afternoon",
+            "body": "No migration project.",
+            "icon": "clock"
+          },
+          {
+            "title": "Nothing to unlearn",
+            "body": "It works the way you already do.",
+            "icon": "check"
+          },
+          {
+            "title": "Leave whenever",
+            "body": "Your content exports as files.",
+            "icon": "box"
+          }
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/get-started/faq",
+      "type": "SectionFaq",
+      "folder": "/sections/get-started",
+      "data": {
+        "heading": "Before you sign up",
+        "intro": "The three questions that actually stop people.",
+        "questions": [
+          {
+            "question": "How long does setup take?",
+            "answer": "<p>Give a number. A range reads as a guess.</p>"
+          },
+          {
+            "question": "What does it cost?",
+            "answer": "<p>Say it here rather than making them click through.</p>"
+          },
+          {
+            "question": "Can we get our data out?",
+            "answer": "<p>Yes — and say how.</p>"
+          }
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/get-started/cta",
+      "type": "SectionCta",
+      "folder": "/sections/get-started",
+      "data": {
+        "heading": "Try {{brand}}",
+        "body": "One page, one decision.",
+        "ctaLabel": "{{ctaLabel}}",
+        "ctaHref": "{{ctaHref}}",
+        "variant": "primary"
+      },
+      "publish": true
+    },
+    {
+      "url": "/get-started",
+      "type": "Page",
+      "folder": "/",
+      "data": {
+        "title": "{{headline}}",
+        "description": "{{brand}} — {{headline}}",
+        "sections": [
+          "/sections/get-started/hero",
+          "/sections/get-started/features",
+          "/sections/get-started/faq",
+          "/sections/get-started/cta"
+        ]
+      },
+      "publish": true
+    }
+  ]
+}

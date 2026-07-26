@@ -17,13 +17,22 @@
  * engine when SH86's projection format lands. Until then this is the verb, and
  * `--check` already makes it usable as a CI drift guard — the same green light
  * `shio push --check` gives for post-types (SH65), now over content.
+ *
+ * `--blueprint` (SH93) shares this verb rather than getting one of its own, for the same
+ * reason the MCP tool does: "converge this site to a document I wrote" and "converge it to
+ * a package somebody else wrote" are one decision with two inputs. It is also the only
+ * caller that can write a package's front-end files — those belong in the project, and the
+ * server has no business writing into a working tree it cannot see.
  */
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 
 export async function run(flags, positionals, ctx) {
+  if (flags.blueprint) {
+    return applyBlueprint(flags, positionals, ctx);
+  }
   const source = positionals[0] ?? flags.file;
   const document = await readDocument(source, ctx);
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
@@ -114,4 +123,191 @@ function render(result, planOnly) {
     `shio ${verb}: ${result.changed} change(s) of ${result.ops} op(s)` +
     (planOnly ? " — nothing written" : "");
   return lines.length ? `${header}\n${lines.join("\n")}\n` : `${header}\n`;
+}
+
+/* -------------------------------------------------------------------------- *
+ * Blueprints (SH93)                                                          *
+ * -------------------------------------------------------------------------- */
+
+/**
+ * Plans or applies a blueprint into a site.
+ *
+ * The parameter values are coerced against the package's **declared** schema before
+ * being sent, because a terminal has only strings: `--param columns=3` has to arrive as
+ * the number 3 for a package that declared an integer, and guessing from the shape of the
+ * text ("looks numeric, send a number") would silently disagree with the package for a
+ * string parameter whose value happens to be digits — a version, a SKU, a postcode.
+ */
+async function applyBlueprint(flags, positionals, ctx) {
+  const name = typeof flags.blueprint === "string" ? flags.blueprint : positionals[0];
+  if (!name) {
+    throw new Error(
+      "shio apply: --blueprint needs a name. List them with `shio blueprints`. " +
+        "Example: shio apply --blueprint blog --site Acme --dry-run",
+    );
+  }
+  const site = typeof flags.site === "string" ? flags.site : undefined;
+  const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
+  const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
+
+  const detail = await client.blueprint(name, { files: true });
+  const params = coerceParams(await readParams(flags, ctx), detail?.manifest?.params);
+  const planOnly = Boolean(flags.check || flags.dryRun);
+  const result = await client.applyBlueprint(name, { site, params, dryRun: planOnly });
+
+  ctx.stdout.write(renderApplied(result));
+
+  const files = planOnly ? [] : await writeFiles(detail, flags, ctx);
+  if (planOnly && detail?.files?.length) {
+    ctx.stdout.write(
+      `  ${detail.files.length} front-end file(s) would be written into this project\n`,
+    );
+  }
+  for (const line of files) ctx.stdout.write(`  ${line}\n`);
+
+  if (flags.check && result.content?.changed > 0) {
+    ctx.stderr.write(
+      `shio apply: ${result.content.changed} change(s) pending — the site does not match ` +
+        `blueprint ${name}.\n`,
+    );
+    return { ...result, exitCode: 1 };
+  }
+  if (!planOnly && result.verify && result.verify.ok === false) {
+    // The package's own promise, unmet. Exit non-zero: an unattended apply that reported
+    // success here would be the "it applied fine" that SH94 exists to make impossible.
+    const missing = result.verify.missing?.length
+      ? ` Missing: ${result.verify.missing.join(", ")}.`
+      : "";
+    ctx.stderr.write(
+      `shio apply: ${name} applied, but verification failed (${result.verify.errors} error(s)).` +
+        `${missing} Run \`shio verify --site ${result.site}\` for the findings.\n`,
+    );
+    return { ...result, exitCode: 1 };
+  }
+  return result;
+}
+
+/** `--params <file.json>` as the base, `--param k=v` on top. */
+async function readParams(flags, ctx) {
+  const values = {};
+  if (typeof flags.params === "string") {
+    const raw = await ctx.fs.readFile(join(ctx.cwd, flags.params), "utf8").catch((error) => {
+      if (error?.code === "ENOENT") {
+        throw new Error(`shio apply: no such params file "${flags.params}".`);
+      }
+      throw error;
+    });
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (error) {
+      throw new Error(`shio apply: ${flags.params} is not valid JSON (${error.message}).`);
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error(
+        `shio apply: ${flags.params} must hold a JSON object of parameter values, ` +
+          'e.g. {"brand":"Acme"}.',
+      );
+    }
+    Object.assign(values, parsed);
+  }
+  const pairs = flags.param === undefined ? [] : [flags.param].flat();
+  for (const pair of pairs) {
+    if (typeof pair !== "string" || !pair.includes("=")) {
+      throw new Error(
+        `shio apply: --param takes name=value (got "${pair}"). ` +
+          "Example: --param brand=Acme",
+      );
+    }
+    const cut = pair.indexOf("=");
+    values[pair.slice(0, cut)] = pair.slice(cut + 1);
+  }
+  return values;
+}
+
+/**
+ * Coerces string values to the types the package declared. An unknown parameter is left
+ * exactly as typed so the *server* rejects it — its teaching error names the declared
+ * parameters and the nearest match, which is a better message than this file could write.
+ */
+function coerceParams(values, schema) {
+  const properties = schema?.properties ?? {};
+  const out = {};
+  for (const [name, value] of Object.entries(values)) {
+    const type = properties[name]?.type;
+    if (typeof value !== "string" || !type || type === "string") {
+      out[name] = value;
+    } else if (type === "integer" || type === "number") {
+      const parsed = Number(value);
+      out[name] = Number.isFinite(parsed) ? parsed : value;
+    } else if (type === "boolean") {
+      out[name] = value === "true" ? true : value === "false" ? false : value;
+    } else {
+      out[name] = value;
+    }
+  }
+  return out;
+}
+
+/**
+ * Writes the package's front-end files into the project.
+ *
+ * Never over an existing file unless `--force`: a blueprint applied twice must not
+ * silently revert a page somebody has since edited (P7). Each outcome is reported, so
+ * "skipped" is a line the caller reads rather than a silence they interpret.
+ */
+async function writeFiles(detail, flags, ctx) {
+  const files = detail?.files ?? [];
+  const lines = [];
+  for (const file of files) {
+    const target = join(ctx.cwd, file.path);
+    const exists = await ctx.fs
+      .readFile(target, "utf8")
+      .then(() => true)
+      .catch(() => false);
+    if (exists && !flags.force) {
+      lines.push(`skipped ${file.path} (exists — pass --force to overwrite)`);
+      continue;
+    }
+    await ctx.fs.mkdir(dirname(target), { recursive: true });
+    await ctx.fs.writeFile(target, file.text, "utf8");
+    lines.push(`${exists ? "overwrote" : "wrote"} ${file.path}`);
+  }
+  return lines;
+}
+
+/**
+ * The applied/plan report: the header, the model rows, the content change set, then the
+ * verification. Same register as the document form — one line per thing that moved.
+ */
+function renderApplied(result) {
+  const lines = [
+    `shio apply: blueprint ${result.blueprint}${result.version ? ` ${result.version}` : ""}` +
+      ` → site ${result.site}${result.dryRun ? " (plan — nothing written)" : ""}`,
+  ];
+  for (const [name, value] of Object.entries(result.params ?? {})) {
+    if (name !== "site") lines.push(`  param ${name}=${value}`);
+  }
+  for (const postType of result.postTypes ?? []) {
+    const missing = postType.missing?.length
+      ? ` — the existing type has no ${postType.missing.join(", ")}`
+      : "";
+    lines.push(`  post-type ${postType.action} ${postType.name}${missing}`);
+  }
+  const content = result.content ?? { ops: 0, changed: 0, results: [] };
+  lines.push(`  content: ${content.changed} change(s) of ${content.ops} op(s)`);
+  for (const change of content.results ?? []) {
+    if (change.action === "noop") continue;
+    lines.push(`    ${change.action} ${change.address}${change.detail ? ` (${change.detail})` : ""}`);
+  }
+  if (result.verify) {
+    lines.push(
+      `  verify: ${result.verify.ok ? "ok" : "failed"} — ${result.verify.errors} error(s), ` +
+        `${result.verify.warnings} warning(s) [${(result.verify.checks ?? []).join(",")}]`,
+    );
+    for (const missing of result.verify.missing ?? []) {
+      lines.push(`    missing ${missing}`);
+    }
+  }
+  return `${lines.join("\n")}\n`;
 }

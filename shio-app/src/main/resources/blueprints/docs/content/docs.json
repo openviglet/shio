@@ -1,0 +1,67 @@
+{
+  "folders": [
+    {
+      "path": "/docs"
+    },
+    {
+      "path": "/docs/guides"
+    },
+    {
+      "path": "/docs/reference"
+    }
+  ],
+  "posts": [
+    {
+      "url": "/docs",
+      "type": "DocPage",
+      "folder": "/docs",
+      "data": {
+        "title": "{{productName}} documentation",
+        "summary": "Start here.",
+        "body": "<p>Welcome to the {{productName}} documentation.</p><ul><li><a href=\"/docs/guides/getting-started\">Getting started</a></li><li><a href=\"/docs/guides/configuration\">Configuration</a></li><li><a href=\"/docs/reference/api\">API reference</a></li></ul>",
+        "kind": "guide",
+        "weight": "0"
+      },
+      "publish": true
+    },
+    {
+      "url": "/docs/guides/getting-started",
+      "type": "DocPage",
+      "folder": "/docs/guides",
+      "data": {
+        "title": "Getting started",
+        "summary": "Install {{productName}} and see it working.",
+        "body": "<h2>Install</h2><p>Replace this with the real steps.</p><h2>Verify</h2><p>And this with how a reader knows it worked.</p>",
+        "kind": "guide",
+        "weight": "10"
+      },
+      "publish": true
+    },
+    {
+      "url": "/docs/guides/configuration",
+      "type": "DocPage",
+      "folder": "/docs/guides",
+      "data": {
+        "title": "Configuration",
+        "summary": "Every setting {{productName}} reads, and its default.",
+        "body": "<p>Document settings as a table: the name, the default, and what changes when it changes.</p>",
+        "kind": "guide",
+        "weight": "20"
+      },
+      "publish": true
+    },
+    {
+      "url": "/docs/reference/api",
+      "type": "DocPage",
+      "folder": "/docs/reference",
+      "data": {
+        "title": "API reference",
+        "summary": "The endpoints {{productName}} exposes.",
+        "body": "<p>One section per endpoint: the verb, the path, what it returns, and the error it returns when the caller gets it wrong.</p>",
+        "kind": "reference",
+        "weight": "10"
+      },
+      "publish": true
+    }
+  ]
+}

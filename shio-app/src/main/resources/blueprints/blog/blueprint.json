@@ -1,0 +1,36 @@
+{
+  "formatVersion": 1,
+  "name": "blog",
+  "title": "Blog",
+  "version": "1.0.0",
+  "description": "An Article post-type, a /blog folder and three published sample posts. The starting point for anything with a feed: the model is the part that is tedious to get right, and the samples show the field usage a later session should match.",
+  "params": {
+    "type": "object",
+    "properties": {
+      "blogTitle": {
+        "type": "string",
+        "description": "The blog's name, used in the sample copy.",
+        "default": "Blog"
+      },
+      "authorName": {
+        "type": "string",
+        "description": "Byline on the sample posts.",
+        "default": "Editorial"
+      }
+    }
+  },
+  "postTypes": [
+    "post-types/Article.json"
+  ],
+  "content": [
+    "content/blog.json"
+  ],
+  "verify": {
+    "posts": [
+      "/blog/hello-world",
+      "/blog/how-we-work",
+      "/blog/whats-next"
+    ],
+    "checks": "content"
+  }
+}

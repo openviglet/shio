@@ -6,6 +6,10 @@
       "description" : "#string",
       "inputSchema" : {
         "properties" : {
+          "blueprint" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "dryRun" : {
             "description" : "#string",
             "type" : "boolean"
@@ -16,6 +20,10 @@
               "type" : "string"
             },
             "type" : "array"
+          },
+          "params" : {
+            "description" : "#string",
+            "type" : "object"
           },
           "posts" : {
             "description" : "#string",

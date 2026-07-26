@@ -5,6 +5,11 @@
     "resources" : [ {
       "description" : "#string",
       "mimeType" : "text/plain",
+      "name" : "Shio blueprint catalogue",
+      "uri" : "shio://blueprints"
+    }, {
+      "description" : "#string",
+      "mimeType" : "text/plain",
       "name" : "Shio context pack",
       "uri" : "shio://context"
     }, {

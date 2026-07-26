@@ -1,0 +1,41 @@
+{
+  "formatVersion": 1,
+  "name": "product-catalog",
+  "title": "Product catalogue",
+  "version": "1.0.0",
+  "description": "A Product post-type with SKU, price and a repeatable spec list, plus /products with an accessories subsection and three sample products.",
+  "params": {
+    "type": "object",
+    "properties": {
+      "storeName": {
+        "type": "string",
+        "description": "The store's name, used in the sample copy.",
+        "default": "Store"
+      },
+      "currency": {
+        "type": "string",
+        "description": "Currency code the sample products are priced in.",
+        "default": "USD",
+        "enum": [
+          "USD",
+          "EUR",
+          "BRL"
+        ]
+      }
+    }
+  },
+  "postTypes": [
+    "post-types/Product.json"
+  ],
+  "content": [
+    "content/catalog.json"
+  ],
+  "verify": {
+    "posts": [
+      "/products/starter-kit",
+      "/products/pro-kit",
+      "/products/accessories/carry-case"
+    ],
+    "checks": "content"
+  }
+}

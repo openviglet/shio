@@ -168,6 +168,9 @@ the CDA + console services (law P10) and holds no business logic of its own.
   posts first and folders deepest-first; declared folders, their ancestors, and any folder
   a declared post calls home are protected. Also `shio apply <file>` in the CLI
   (`--dry-run` / `--check` / `-` for stdin).
+- `GET /agent/blueprints` · `GET /agent/blueprints/{name}` · `POST /agent/blueprints/{name}/apply`
+  — **appliable starting points** (Block J, below). `dryRun` in the body returns the whole
+  plan, post-types included, and writes nothing.
 - `GET /agent/find` — posts by site/type/folder-subtree/text; **addresses, not bodies**.
 - `GET /agent/read?address=…&fields=…` — post content, DRAFT-preferred, projected.
 - `GET /agent/verify` — the content-side `tsc` (SH99/SH100). `checks=content,routes,diagnostics`
@@ -205,17 +208,24 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
   `shio_read` · `shio_write` · `shio_apply` · `shio_publish` · `shio_assets` ·
   `shio_changes` · `shio_verify` · `shio_digest`. Every tool is a *shape* over a REST
   surface — if a tool needs new logic, the logic goes on the REST side first.
-- **Resources**: `shio://manifest` · `shio://context` · `shio://schema/{postType}`.
+- **Resources**: `shio://manifest` · `shio://blueprints` · `shio://context` ·
+  `shio://schema/{postType}`.
+- `shio_apply` covers **two** verbs on purpose: a desired-state document, or a blueprint
+  (`blueprint` + `params`). "Converge to this document" and "converge to this package" are
+  one decision with two inputs, and an eleventh tool would cost more schema per turn than
+  the two arguments do — see the budget note below.
 - **Prompts**: `new-site` · `add-section` · `translate-site` · `audit-content`.
 - **Error routing matters**: a fixable failure (bad address, unknown post-type) is a
   tool *result* with `isError:true` so the model reads the SH80 `fix`; a JSON-RPC
   `error` is only for an unusable message (unknown method/tool), which the client
   swallows. Getting this backwards throws away the teaching error.
 - A tool-count test fails the build past 12 — tool schemas are context paid every turn.
-  The real ceiling is `mcp.tools.list.total` in `src/test/resources/token-budgets.properties`
-  (measured, currently 2110 for 10 tools); raising it is allowed and must be justified in
-  the commit. `ShMcpWireConformanceTest` pins `tools/list` against a golden — regenerate
-  with `-Dshio.mcp.golden.update=true` and review the diff when the surface really changes.
+  The real ceilings are `mcp.tools.list.total` (2160) and `mcp.tools.list.max-per-tool`
+  (460) in `src/test/resources/token-budgets.properties`, both measured; raising one is
+  allowed and must be justified in the commit. `shio_apply` is the tool to watch — at 437
+  it is the largest, because it carries the blueprint verb as well as the document one.
+  `ShMcpWireConformanceTest` pins `tools/list` against a golden — regenerate with
+  `-Dshio.mcp.golden.update=true` and review the diff when the surface really changes.
 
 Addresses (SH79): `post:<site>/<friendly-url>` · `folder:<site>/<name-chain>` ·
 `site:<name>` · `id:<uuid>`. **Writes take only `post:`/`folder:`** — a folder path and
@@ -247,8 +257,8 @@ uses a **separate** surface at **`/api/v2/post/type`** (note the slash, not a hy
   CLI (by name, lossless `Def`).
 
 ### `shio` CLI (`@viglet/shio`, in `cli/`)
-The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`; **`--content` switches both verbs to content**, see below), `context`, `resolve`, `apply` (SH129 — a desired-state content document; `--check` is the CI drift guard, `-` reads stdin), `verify` (SH99/SH100 — the content lint; **exits 1 on an error**, `--strict` also on warnings), `digest` (SH101 — one page's structure), `changes` (SH88 — the feed; `--since last` reads the last content pull's position, `--cursor` prints only the position), `mcp`, `dev` (`--content` runs the SH90 sync loop instead of the site's dev server), `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
-**CI gates, in the order they should run:** `shio push --check` (model drift) → `shio push --content --check` (content-tree drift) → `shio apply --check` (document drift) → `shio verify` (content defects). The CLI test suite needs `@viglet/shio-client` built first (`pnpm -C shio-client run build`), or every command test fails on a missing module rather than on its own logic.
+The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`; **`--content` switches both verbs to content**, see below), `context`, `resolve`, `apply` (SH129 — a desired-state content document; `--check` is the CI drift guard, `-` reads stdin; **`--blueprint <name>` applies a package instead**, with `--param k=v` repeatable, `--params <file>`, `--site`, `--force`), `blueprints` (SH92 — the catalogue; `blueprints <name>` for one package's parameters), `verify` (SH99/SH100 — the content lint; **exits 1 on an error**, `--strict` also on warnings), `digest` (SH101 — one page's structure), `changes` (SH88 — the feed; `--since last` reads the last content pull's position, `--cursor` prints only the position), `mcp`, `dev` (`--content` runs the SH90 sync loop instead of the site's dev server), `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
+**CI gates, in the order they should run:** `shio push --check` (model drift) → `shio push --content --check` (content-tree drift) → `shio apply --check` (document drift) → `shio verify` (content defects). The CLI test suite needs `@viglet/shio-client` built first (`pnpm -C shio-client run build`), or every command test fails on a missing module rather than on its own logic; `shio-sections`' suite needs `@viglet/shio-model` built (`pnpm -C shio-model run build`) for the same reason.
 
 ### Content as files — `shio/content/**` (Block I)
 Content projects to **one Markdown file per post**, `shio/content/<site>/<url>.md`: YAML
@@ -279,6 +289,87 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   `push --content` over an empty directory is an error, not an empty document.
 - Not projected yet: **assets** (SH145) and **empty folders** (SH149); a rename still
   pushes as delete + create rather than `post.move` (SH150).
+
+### Blueprints — appliable starting points (Block J)
+
+A **blueprint** is a section of a site the instance can apply: a content model, a folder
+tree, sample pages, the parameters that make it somebody's, and the promise it keeps about
+what exists afterwards (law P8 — skipping steps needs *appliable* units, not recipes).
+Owner: `com.viglet.shio.blueprint`; packages live at `shio-app/src/main/resources/blueprints/<name>/`.
+
+A package is a directory with `blueprint.json` plus the files it references:
+`postTypes` are SH16 `ShPostTypeDef` JSON (the same bytes `shio pull` writes), `content`
+files are SH82 desired-state documents, `files` are optional front-end sources, and `verify`
+is the promise. **Nothing in the format is a new serialization**, which is what keeps it
+from becoming a third contract (P10).
+
+**The rules that are load-bearing:**
+- **A package may not name its own site, and may not `prune`.** The site is the caller's; a
+  `site` key in a content document is refused at load rather than ignored (an ignored key
+  looks like it worked). Prune's blast radius depends on what an author forgot to mention,
+  and that author is a package the user did not write.
+- **Substitution is `{{name}}` and nothing else** — no conditionals, no expressions, so the
+  same parameters always produce the same site (P5). `site` is a reserved parameter, always
+  available, never declarable. An unknown parameter is a teaching 400, never ignored.
+- **Everything is validated at load** (`ShBlueprintRegistry`): a missing referenced file, a
+  path that escapes the package, an unknown manifest key, a `{{placeholder}}` with no
+  declared parameter, a `verify.posts` entry the content never declares. These are the
+  *author's* mistakes; a malformed package is a **409, not a 400** — nothing the caller sent
+  caused it. `ShBlueprintRegistryTest` runs without a Spring context, so it is cheap enough
+  to run on every change to a package.
+- **The model is provisioned, never upserted.** An existing post-type of the same name is
+  left exactly as it is (including a field a human added) and the response *names the fields
+  it lacks* — the bootstrap `Page` (SH71: `title` + `content`) versus the section
+  vocabulary's `Page` is the collision this actually happens to. SH152 reconciles.
+- **The plan provisions post-types inside its transaction and rolls back** — otherwise the
+  content planner fails on "no post-type named Article" for exactly the packages blueprints
+  exist for. This is the technique `ShAgentBatchService` refuses for *content*, and the
+  difference is real: post-type provisioning emits no audit rows, webhooks, events or quota
+  movement. The content half of the plan still writes nothing at all. SH153 removes the
+  write entirely.
+- **The server never writes a project file.** `files` are returned and the CLI writes them
+  (never over an existing one without `--force`); an MCP-only caller is told what it has
+  *not* got.
+- **Packages load from the classpath only.** Where a package may come from is a trust
+  question — SH96.
+
+**The first-party set (SH94):** `blog` · `docs` · `product-catalog` · `marketing-site` ·
+`landing`. Each declares a `verify` promise, checked at load against its own content and
+after an apply against the instance (alongside the SH99 lint); `shio apply --blueprint` exits
+non-zero when that fails.
+
+### The section vocabulary — `@viglet/shio-sections` (SH95)
+
+Eight post-types (`Page` + `SectionHero`/`SectionFeatureGrid`/`SectionCta`/`SectionLogoWall`/
+`SectionTestimonial`/`SectionFaq`/`SectionRichText`) authored with `@viglet/shio-model`, and
+the matching React components with a `SECTION_COMPONENTS` registry and a `<Sections>`
+dispatcher. This is what makes *"now change the site"* cheap instead of archaeological: one
+vocabulary for the agent, the console and the front end.
+
+- **A `Page` names its sections by friendly URL, in order**, in a `Multi Select` — not by id
+  (SH79 exists so no UUID has to survive between calls) and not as a `Relator` (one fixed
+  child shape, while sections are deliberately heterogeneous).
+- **The components are unstyled and semantic**: they ship structure (heading level, landmark,
+  alt text) behind stable `shio-*` class names. SH101's digest reads structure, so a shared
+  vocabulary is only verifiable if structure is the shared part. `<Sections>` takes
+  **resolved** sections rather than fetching them.
+- **The definitions are authored once and generated into the packages** that ship them
+  (`pnpm -C shio-sections run emit`), because a running instance reads packages off the
+  classpath and cannot run a JS build. `emit.test.mjs` fails the build the moment the two
+  copies disagree. **If you change `src/post-types.ts`, run `emit`.**
+- Not yet checked by the lint: a `Page` can name a section that does not exist and
+  `shio verify` stays green (**SH154**).
+
+### The Claude Code plugin (SH97)
+
+`claude-plugin/` (published via the repo-root `.claude-plugin/marketplace.json`):
+`claude plugin marketplace add openviglet/shio && claude plugin install shio`. An `.mcp.json`
+entry running the CLI's stdio bridge through `npx`, three skills (`shio-site`,
+`shio-content-model`, `shio-verify`), three commands (`/shio-start`, `/shio-blueprint`,
+`/shio-check`) and an `AGENTS.fragment.md` for sessions without the plugin. It is the
+**distribution channel for the whole concept**. `claude-plugin/test/plugin.test.mjs` validates
+the manifests — a skill whose description does not state its trigger never loads, and that
+failure is invisible to every other test in this repository.
 
 ## Security Configuration
 
@@ -629,8 +720,12 @@ commits or run `git commit` manually for this repo; always use the script.
 The JS packages live in a **pnpm workspace** (`pnpm-workspace.yaml` + root
 `package.json`): `shio-react` (console), `shio-client` (CDA core),
 `shio-react-sdk` (React SDK, depends on the core via `workspace:*`),
-`create-shio-app` (Next.js starter), and `cli` (`@viglet/shio`, the `shio`
-command — SH16). Run `pnpm install` once at the repo root.
+`shio-model` (the post-types DSL — SH63), `shio-sections` (the page-section
+vocabulary — SH95, depends on the DSL), `create-shio-app` (Next.js starter),
+`cli` (`@viglet/shio`, the `shio` command — SH16) and `claude-plugin` (private;
+the package exists so the plugin's manifests have a test — SH97). Run
+`pnpm install` once at the repo root. **Node ≥26** — `shio-sections`' tests import
+`.ts` directly and rely on native type stripping.
 Native build scripts are allowlisted via `onlyBuiltDependencies` in
 `pnpm-workspace.yaml` (`esbuild`, `@tailwindcss/oxide`) — pnpm 11 no longer reads
 the `pnpm` field in `package.json`, so this setting lives in the workspace file.

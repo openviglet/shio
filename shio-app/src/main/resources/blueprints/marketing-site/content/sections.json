@@ -1,0 +1,186 @@
+{
+  "folders": [
+    {
+      "path": "/sections"
+    },
+    {
+      "path": "/sections/home"
+    },
+    {
+      "path": "/sections/pricing"
+    },
+    {
+      "path": "/sections/about"
+    }
+  ],
+  "posts": [
+    {
+      "url": "/sections/home/hero",
+      "type": "SectionHero",
+      "folder": "/sections/home",
+      "data": {
+        "heading": "{{brand}}",
+        "subheading": "{{tagline}}",
+        "body": "<p>Say what you do in one sentence, then let the sections below do the explaining.</p>",
+        "ctaLabel": "{{ctaLabel}}",
+        "ctaHref": "{{ctaHref}}",
+        "align": "center"
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/home/features",
+      "type": "SectionFeatureGrid",
+      "folder": "/sections/home",
+      "data": {
+        "heading": "Why {{brand}}",
+        "intro": "Three reasons, stated plainly.",
+        "columns": "3",
+        "features": [
+          {
+            "title": "Fast to adopt",
+            "body": "It fits the way your team already works.",
+            "icon": "bolt"
+          },
+          {
+            "title": "Honest about limits",
+            "body": "It tells you what it did not do, which is rarer than it should be.",
+            "icon": "shield"
+          },
+          {
+            "title": "Yours to change",
+            "body": "Content is files, the model is code, and nothing is hidden.",
+            "icon": "code"
+          }
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/home/logos",
+      "type": "SectionLogoWall",
+      "folder": "/sections/home",
+      "data": {
+        "heading": "Trusted by teams like yours",
+        "logos": [
+          {
+            "name": "Acme"
+          },
+          {
+            "name": "Globex"
+          },
+          {
+            "name": "Initech"
+          },
+          {
+            "name": "Umbrella"
+          }
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/home/testimonials",
+      "type": "SectionTestimonial",
+      "folder": "/sections/home",
+      "data": {
+        "heading": "What people say",
+        "quotes": [
+          {
+            "quote": "We replaced a week of setup with an afternoon.",
+            "author": "A. Customer",
+            "role": "Head of Engineering"
+          },
+          {
+            "quote": "The part I did not expect was how little we had to unlearn.",
+            "author": "B. Customer",
+            "role": "Product Lead"
+          }
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/home/cta",
+      "type": "SectionCta",
+      "folder": "/sections/home",
+      "data": {
+        "heading": "Ready when you are",
+        "body": "No forms to fill in before you can see whether it fits.",
+        "ctaLabel": "{{ctaLabel}}",
+        "ctaHref": "{{ctaHref}}",
+        "variant": "primary"
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/pricing/hero",
+      "type": "SectionHero",
+      "folder": "/sections/pricing",
+      "data": {
+        "heading": "Pricing",
+        "subheading": "What {{brand}} costs, without a call.",
+        "align": "left"
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/pricing/faq",
+      "type": "SectionFaq",
+      "folder": "/sections/pricing",
+      "data": {
+        "heading": "Questions people ask first",
+        "intro": "If yours is not here, the answer is a reply away.",
+        "questions": [
+          {
+            "question": "Is there a free tier?",
+            "answer": "<p>Answer this honestly. A vague answer here costs you the sale later.</p>"
+          },
+          {
+            "question": "What happens when we outgrow a plan?",
+            "answer": "<p>Describe the upgrade path and what it costs.</p>"
+          },
+          {
+            "question": "Can we self-host?",
+            "answer": "<p>Yes or no. Both are fine; hedging is not.</p>"
+          }
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/pricing/cta",
+      "type": "SectionCta",
+      "folder": "/sections/pricing",
+      "data": {
+        "heading": "Still deciding?",
+        "body": "We will tell you if {{brand}} is the wrong fit.",
+        "ctaLabel": "{{ctaLabel}}",
+        "ctaHref": "{{ctaHref}}",
+        "variant": "subtle"
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/about/hero",
+      "type": "SectionHero",
+      "folder": "/sections/about",
+      "data": {
+        "heading": "About {{brand}}",
+        "subheading": "Who builds this, and why.",
+        "align": "left"
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/about/story",
+      "type": "SectionRichText",
+      "folder": "/sections/about",
+      "data": {
+        "heading": "Our story",
+        "body": "<p>Write the version a customer would repeat, not the version a founder enjoys telling.</p>"
+      },
+      "publish": true
+    }
+  ]
+}

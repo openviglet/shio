@@ -1,0 +1,225 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.blueprint;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+
+import com.viglet.shio.api.agent.ShAddress;
+import com.viglet.shio.api.agent.ShAddressResolver;
+import com.viglet.shio.api.agent.ShAgentSiteAccess;
+import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
+import com.viglet.shio.api.agent.verify.ShAgentVerifyService;
+import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
+import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
+import com.viglet.shio.blueprint.dto.ShBlueprint;
+import com.viglet.shio.blueprint.dto.ShBlueprintApplied;
+import com.viglet.shio.persistence.model.site.ShSite;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
+
+/**
+ * Applying a blueprint (SH93) — the verb, over the format SH92 defines.
+ *
+ * <h2>What this class actually does</h2>
+ *
+ * <p>Very little, on purpose. It resolves the parameters, substitutes them into the
+ * package, compiles the result into the two shapes the instance already understands — a
+ * list of SH16 post-type definitions and one SH82 desired-state document — hands them to
+ * the transactional writer, and then asks the blueprint's own promise whether it worked.
+ * Every hard part (idempotence, atomicity, the plan, the audit trail, the ACL, the tenant
+ * quota) belongs to machinery that shipped in Blocks G and H, which is law P10 read
+ * literally: a blueprint is a <em>shape</em> over plan/apply, not a second write path.</p>
+ *
+ * <h2>Why the content documents are merged into one</h2>
+ *
+ * <p>A package may split its content across several files for the author's benefit, but
+ * they apply as one document. Two documents would be two transactions, so a package could
+ * half-apply; and the ordering guarantees the desired-state compiler makes — folders
+ * before posts, publishes after every upsert — hold within a document, not across a
+ * sequence of them. Merge order is declaration order, so the same package always compiles
+ * to the same plan (P5).</p>
+ *
+ * @author Alexandre Oliveira
+ * @since 2026.3
+ */
+@Service
+public class ShBlueprintService {
+
+    private final ShBlueprintRegistry shBlueprintRegistry;
+    private final ShBlueprintWriteService shBlueprintWriteService;
+    private final ShAgentSiteAccess shAgentSiteAccess;
+    private final ShAddressResolver shAddressResolver;
+    private final ShAgentVerifyService shAgentVerifyService;
+    private final ShBlueprintCodec codec;
+
+    public ShBlueprintService(ShBlueprintRegistry shBlueprintRegistry,
+                              ShBlueprintWriteService shBlueprintWriteService,
+                              ShAgentSiteAccess shAgentSiteAccess,
+                              ShAddressResolver shAddressResolver,
+                              ShAgentVerifyService shAgentVerifyService,
+                              ShBlueprintCodec codec) {
+        this.shBlueprintRegistry = shBlueprintRegistry;
+        this.shBlueprintWriteService = shBlueprintWriteService;
+        this.shAgentSiteAccess = shAgentSiteAccess;
+        this.shAddressResolver = shAddressResolver;
+        this.shAgentVerifyService = shAgentVerifyService;
+        this.codec = codec;
+    }
+
+    /** What applying this blueprint would do. Writes nothing that survives. */
+    public ShBlueprintApplied plan(String name, String site, JsonNode params, String actor) {
+        return run(name, site, params, actor, true);
+    }
+
+    /** Applies it. */
+    public ShBlueprintApplied apply(String name, String site, JsonNode params, String actor) {
+        return run(name, site, params, actor, false);
+    }
+
+    private ShBlueprintApplied run(String name, String site, JsonNode params, String actor,
+                                   boolean dryRun) {
+        ShBlueprint blueprint = shBlueprintRegistry.require(name);
+        if (site == null || site.isBlank()) {
+            throw new MissingSiteException(blueprint.name(), readableSites());
+        }
+        // Resolved up front so a model-only blueprint (no content, so nothing that would
+        // resolve a site later) still refuses an unknown site instead of half-succeeding.
+        ShSite target = shAgentSiteAccess.require(site);
+
+        Map<String, String> values =
+                ShBlueprintParams.resolve(blueprint.manifest(), params, target.getName());
+        List<ShPostTypeDef> defs = defs(blueprint, values);
+        ShAgentDesiredState desired = desired(blueprint, values, target.getName());
+
+        ShBlueprintWriteService.Written written = dryRun
+                ? shBlueprintWriteService.plan(defs, desired, actor)
+                : shBlueprintWriteService.apply(defs, desired, actor);
+
+        return new ShBlueprintApplied(dryRun, blueprint.name(), blueprint.manifest().version(),
+                target.getName(), values, written.postTypes(), written.content(),
+                filePaths(blueprint), dryRun ? null : verify(blueprint, values, target.getName()));
+    }
+
+    /** The post-type definitions, with parameters substituted. */
+    private List<ShPostTypeDef> defs(ShBlueprint blueprint, Map<String, String> values) {
+        List<ShPostTypeDef> defs = new ArrayList<>(blueprint.postTypes().size());
+        for (JsonNode tree : blueprint.postTypes()) {
+            defs.add(codec.convert(
+                    ShBlueprintParams.substitute(tree, values, blueprint.name()),
+                    ShPostTypeDef.class));
+        }
+        return List.copyOf(defs);
+    }
+
+    /**
+     * The merged desired-state document: the package's folders and posts, in declaration
+     * order, addressed to the caller's site and never pruning.
+     */
+    private ShAgentDesiredState desired(ShBlueprint blueprint, Map<String, String> values,
+                                        String site) {
+        ObjectNode document = codec.object();
+        document.put("site", site);
+        ArrayNode folders = document.putArray("folders");
+        ArrayNode posts = document.putArray("posts");
+        for (JsonNode raw : blueprint.content()) {
+            JsonNode tree = ShBlueprintParams.substitute(raw, values, blueprint.name());
+            append(folders, tree.get("folders"));
+            append(posts, tree.get("posts"));
+        }
+        // `prune` is absent, not false-by-omission: see ShBlueprintManifest. A package
+        // never decides that content it has not heard of should be deleted.
+        return codec.convert(document, ShAgentDesiredState.class);
+    }
+
+    private static void append(ArrayNode target, JsonNode source) {
+        if (source != null && source.isArray()) {
+            source.forEach(target::add);
+        }
+    }
+
+    /**
+     * The blueprint's promise, checked against the instance (SH94).
+     *
+     * <p>Two questions, one answer. <em>Did the package produce what it said it would?</em>
+     * — every URL in {@code verify.posts} resolves. <em>Is what it produced sound?</em> —
+     * the SH99 checks over the target site. The first is the package's own claim and the
+     * second is the instance's opinion of the result, and a caller applying a blueprint
+     * unattended needs both: a package can create every page it promised and still leave
+     * a required field empty.</p>
+     *
+     * <p>Run after the writer's transaction has committed, so it reads what a visitor
+     * would read rather than what the transaction hoped for.</p>
+     */
+    private ShBlueprintApplied.Verified verify(ShBlueprint blueprint, Map<String, String> values,
+                                               String site) {
+        List<String> promised = blueprint.manifest().verify() == null
+                ? List.of() : blueprint.manifest().verify().posts();
+        String checks = blueprint.manifest().verify() == null
+                ? null : blueprint.manifest().verify().checks();
+
+        List<String> missing = new ArrayList<>();
+        for (String url : promised) {
+            ShAddress address = ShAddress.post(site,
+                    ShBlueprintParams.text(url, values, blueprint.name()));
+            if (shAddressResolver.find(address).isEmpty()) {
+                missing.add(address.toString());
+            }
+        }
+        ShAgentReport report = shAgentVerifyService.verify(site, checks, null);
+        return new ShBlueprintApplied.Verified(missing.isEmpty() && report.ok(),
+                missing, report.errors(), report.warnings(), report.checks());
+    }
+
+    /**
+     * The front-end files the package carries — reported, never written.
+     *
+     * <p>These belong in the caller's project, not in the CMS, and the server has no
+     * business writing into a working tree it cannot see. So the response names them and
+     * {@code shio apply --blueprint} writes them; a caller on MCP alone learns that the
+     * package has a front-end half rather than silently getting only the content half
+     * (P9: say what was not done).</p>
+     */
+    private static List<String> filePaths(ShBlueprint blueprint) {
+        return blueprint.files().isEmpty()
+                ? null
+                : blueprint.files().stream().map(ShBlueprint.File::path).toList();
+    }
+
+    private List<String> readableSites() {
+        return shAgentSiteAccess.readable().stream()
+                .map(ShSite::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .sorted()
+                .toList();
+    }
+
+    /** A 400: no target site. */
+    public static class MissingSiteException extends ShTeachingException {
+
+        public MissingSiteException(String blueprint, List<String> sites) {
+            super(ShProblem.badRequest("missing-site",
+                            "Applying '" + blueprint + "' needs a target site")
+                    .withDetail("A blueprint is applied into a site that already exists — the "
+                            + "package brings a model and content, not a site of its own.")
+                    .withAllowed(sites)
+                    .withFix(sites.isEmpty()
+                            ? "Create a site first: POST /api/v2/site."
+                            : "Set `site` to one of the listed names.")
+                    .withExample(sites.isEmpty() ? "Acme" : sites.get(0)));
+        }
+    }
+}

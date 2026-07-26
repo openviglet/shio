@@ -1,0 +1,70 @@
+{
+  "name": "DocPage",
+  "title": "Doc Page",
+  "namePlural": "Doc Pages",
+  "description": "One page of documentation, placed in the tree by its folder and ordered by weight.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "title",
+      "label": "Title",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "summary",
+      "label": "Summary",
+      "description": "Shown in the sidebar and in search results.",
+      "widget": "Text Area",
+      "required": false,
+      "isTitle": false,
+      "isSummary": true,
+      "ordinal": 2,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "body",
+      "label": "Body",
+      "description": null,
+      "widget": "HTML Editor",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 3,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "kind",
+      "label": "Kind",
+      "description": null,
+      "widget": "Combo Box",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 4,
+      "widgetSettings": "{\"choices\": \"guide: Guide\\nreference: Reference\\ntutorial: Tutorial\", \"allowNull\": 1}",
+      "fields": []
+    },
+    {
+      "name": "weight",
+      "label": "Weight",
+      "description": "Sort key within its folder. Lower comes first.",
+      "widget": "Text",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 5,
+      "widgetSettings": null,
+      "fields": []
+    }
+  ]
+}

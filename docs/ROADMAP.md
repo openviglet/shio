@@ -55,7 +55,7 @@
 > **SH74** is the epic (this concept) — it is complete when the three roadmap docs
 > and `agents.md` carry the orientation; the code lands as SH75+.
 >
-> Suggested order: **H → K → I → J → L → M** (H, K and I are shipped). Block H is the protocol everything
+> Suggested order: **H → K → I → J → L → M** (H, K, I and J are shipped). Block H is the protocol everything
 > else speaks; Block K (verification) is next because it removes the most expensive
 > unit in the system — the human round trip.
 
@@ -117,8 +117,10 @@
 > against the content graph rather than by crawling — a front end may not be running,
 > may be a different deployment, and legitimately owns routes the CMS never sees. So
 > `link-unresolved` is a *warning*, and closing that gap properly is **SH141**.
-> Sitemap-coverage-vs-blueprint waits for Block J to have a blueprint to compare
-> against. SH102's PNG stays an idea and is reported `false` in the manifest.
+> Sitemap-coverage-vs-blueprint has its comparand now that Block J ships packages with a
+> `verify.posts` promise — but that promise is checked by the *blueprint* surface, and the
+> section vocabulary immediately exposed the lint's own blind spot (**SH154**). SH102's PNG
+> stays an idea and is reported `false` in the manifest.
 >
 > **What building it opened.** The `image-no-alt` rule showed the report has no way to
 > say "known and accepted" (**SH142**); the verify pass reads every post in the instance
@@ -131,6 +133,7 @@
 - 📋 **SH141** (deps: SH100 ✅, SH101 ✅) **Prove a route from the delivery side** — SH100 resolves links against the content graph, so a page that exists in the CMS and 404s on the site is still only a *warning*. SH101 already fetches one URL safely (origin-checked, opt-in); this walks the published set through the same path and turns "the front end does not serve this" into an error, with the front-end-owns-routes case declared rather than guessed. → §IX.2
 - 📋 **SH142** (deps: SH99 ✅) **Baseline / accepted findings** — a verify report has two states, and real content has a third: known and accepted. Without it the first legitimate warning teaches everyone to ignore the exit code. A committed `shio/verify-baseline.json` (rule + address) that `shio verify` subtracts, and that fails when an accepted finding no longer exists — so the file cannot rot into a blanket suppression. → §IX.1
 - 📋 **SH143** (deps: SH99 ✅, SH88 ✅) **Scope a verify run to what changed** — the pass reads every post in every readable site, which is right for CI and wrong for the call an agent makes after writing three pages. Needs `?folder=`/`?address=` scoping and `?since=` over SH88's cursor — plus an honest header saying the report covers a subset, because a partial report that reads as a full one is the SH138 hazard again. → §IX.1
+- 📋 **SH154** (deps: SH99 ✅, SH95 ✅) **Verify a page's section references** — SH95 composes a page from a `Multi Select` of section URLs, and the lint's `dangling-reference` rule only knows `Content Select`/`File` fields, so a page can point at a section that does not exist and the report stays green. The rule the vocabulary needs is the one check that makes composition safe. → §IX.7
 - 💭 **SH144** (deps: SH103 ✅, SH88 ✅) **Durable incident feed** — the SH103 window is in memory and says so, which is the correct answer for now and the wrong one for "was anything failing while I was away". The durable form is the same cursor SH88 builds for content changes; folding incidents into it is cheaper than a second retention policy. → §IX.5
 
 ## Block I — Content as files (local-first authoring)
@@ -173,12 +176,39 @@
 > **appliable**, not readable. **Absorbs the old SH23 epic** (SH27–SH31): a
 > human-browsable template catalog becomes an agent-appliable blueprint registry. → §XI
 
-- 📋 **SH92** (deps: SH68, SH63) **Blueprint package format** — versioned parameterized bundle: exchange package (post-types + folders + content) + `@viglet/shio-model` DSL modules + optional front-end files + a `params` JSON-schema + post-apply verification. → §XI.1
-- 📋 **SH93** (deps: SH92, SH82) **`shio apply <blueprint>`** — the verb, with plan/dry-run, as CLI command and MCP tool (replaces old SH27). → §XI.2
-- 📋 **SH94** (deps: SH93) **First-party blueprint set** — `marketing-site`, `blog`, `docs`, `landing`, `product-catalog`; each ships model + sample content + routes + verification (replaces old SH30). → §XI.3
-- 📋 **SH95** (deps: SH92) **Section library (`@viglet/shio-sections`)** — composable page-section post-types **plus** matching React components (`hero`, `feature-grid`, `cta`, `logo-wall`, …). One shared vocabulary for the agent, the console and the front end — this is what makes *"now change the site"* cheap instead of archaeological. Highest-leverage item in the block. → §XI.4
-- 💭 **SH96** (deps: SH93) **Blueprint registry + community convention** — `shio-blueprint-*` naming, manifest validation, curated index (absorbs old SH28/SH29/SH31). → §XI.5
-- 📋 **SH97** (deps: SH75 ✅, SH94) **Claude Code plugin for Shio** — a shipped `.claude` plugin: MCP server config, skills (`shio-site`, `shio-content-model`, `shio-verify`), slash commands, generated `AGENTS.md` fragment. An agent session starts already knowing Shio; the distribution channel for the whole concept. → §XI.6
+> ✅ **The format, the verb, the first-party set, the section vocabulary and the plugin are
+> shipped** → [CHANGELOG.md](CHANGELOG.md) Block J: **SH92** (package format + load-time
+> validation) · **SH93** (`/agent/blueprints`, `shio apply --blueprint`, `blueprint` on
+> `shio_apply`) · **SH94** (`blog` · `docs` · `product-catalog` · `marketing-site` ·
+> `landing`) · **SH95** (`@viglet/shio-sections`) · **SH97** (the Claude Code plugin).
+>
+> **What is deliberately not in it, and why:** packages load from the **classpath only**. A
+> blueprint is code the instance runs against its own content, so "where may a package come
+> from" is a trust question — and shipping a scanned directory or a URL to fetch would be
+> shipping the distribution channel without the trust model. That is **SH96**, and it is the
+> one thing standing between the first-party set and a community one. The first-party
+> packages also carry **no front-end files**: the format supports them and the CLI writes
+> them, but the front-end half of a section-based site is `@viglet/shio-sections` plus the
+> starter, and duplicating page files into packages would fork the starter before SH119 folds
+> it in (**SH156**).
+>
+> **What building it opened.** The two halves that had to meet each other did not quite fit,
+> and both mismatches are now tasks. A package cannot create the site it needs, because the
+> only site-creation path clones the bootstrap template — content nobody asked for
+> (**SH151**). A package's post-type that already exists is left alone and its missing fields
+> are *named*, which is honest and not yet useful (**SH152**). The plan's accuracy costs a
+> write transaction it then rolls back (**SH153**). A `Page` can name a section that does not
+> exist and `shio verify` stays green, because a Multi Select of addresses is not a reference
+> the lint knows about (**SH154**). And nothing on the instance records which package and
+> version a site received, so "is this site still what the blueprint says" is unanswerable
+> (**SH155**).
+
+- 💭 **SH96** (deps: SH93 ✅) **Blueprint registry + community convention** — `shio-blueprint-*` naming, manifest validation, curated index (absorbs old SH28/SH29/SH31). Now the single blocker on third-party packages: the registry deliberately loads from the classpath alone until there is a trust model for where a package may come from. → §XI.5
+- 📋 **SH151** (deps: SH93 ✅, SH71 ✅) **A blueprint can create the site it needs** — apply refuses when the site is absent, and the only creation path clones the SH71 bootstrap template, so "one call builds a marketing site" is really two calls and a prune. Needs a blank-site create plus `shio init --blueprint`. → §XI.7
+- 📋 **SH152** (deps: SH93 ✅) **Additive post-type reconciliation** — a package's post-type that already exists is left untouched and its missing fields are reported; the caller then has to add them by hand, and until they do the content writes fields the console cannot render. An opt-in additive merge (add the missing fields, never change or remove one) makes the report actionable. → §XI.8
+- 📋 **SH153** (deps: SH93 ✅, SH81 ✅) **A blueprint plan that needs no write transaction** — the plan provisions the package's post-types and rolls back, purely so the content planner can resolve types that do not exist yet. It is correct and it means a plan cannot run on a read-only credential or a replica. Threading the declared types through the batch planner's pending set removes the write entirely. → §XI.9
+- 📋 **SH155** (deps: SH93 ✅, SH114) **Record which blueprint a site received** — `changed:0` proves a site matches a document, but nothing records that the document came from `marketing-site 1.0.0`, so a newer package version is undetectable and "is this still the blueprint" cannot be asked. Belongs with SH114's instance memory rather than a table of its own. → §XI.10
+- 💭 **SH156** (deps: SH92 ✅, SH119) **Blueprints carry their front-end half** — the format supports front-end files and the first-party set ships none, so a blueprint delivers content the site cannot render until someone wires the components. Fold with SH119 (`create-shio-app` templates → blueprints) so there is one starter, not two. → §XI.11
 
 ## Block L — Agent safety & human-in-the-loop
 

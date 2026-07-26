@@ -1,0 +1,131 @@
+{
+  "name": "Product",
+  "title": "Product",
+  "namePlural": "Products",
+  "description": "One sellable item: identity, price, description and a repeatable spec list.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "name",
+      "label": "Name",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "summary",
+      "label": "Summary",
+      "description": null,
+      "widget": "Text Area",
+      "required": false,
+      "isTitle": false,
+      "isSummary": true,
+      "ordinal": 2,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "description",
+      "label": "Description",
+      "description": null,
+      "widget": "HTML Editor",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 3,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "sku",
+      "label": "SKU",
+      "description": "Your own stock identifier. Unique per product.",
+      "widget": "Text",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 4,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "price",
+      "label": "Price",
+      "description": "Held as text on purpose: money is not a float.",
+      "widget": "Text",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 5,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "currency",
+      "label": "Currency",
+      "description": null,
+      "widget": "Combo Box",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 6,
+      "widgetSettings": "{\"choices\": \"USD: US Dollar\\nEUR: Euro\\nBRL: Brazilian Real\", \"allowNull\": 0}",
+      "fields": []
+    },
+    {
+      "name": "image",
+      "label": "Image",
+      "description": null,
+      "widget": "File",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 7,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "specs",
+      "label": "Specifications",
+      "description": null,
+      "widget": "Relator",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 8,
+      "widgetSettings": "{\"relator\": {\"title\": \"Specification\"}}",
+      "fields": [
+        {
+          "name": "label",
+          "label": "Label",
+          "description": null,
+          "widget": "Text",
+          "required": true,
+          "isTitle": false,
+          "isSummary": false,
+          "ordinal": 1,
+          "widgetSettings": null,
+          "fields": []
+        },
+        {
+          "name": "value",
+          "label": "Value",
+          "description": null,
+          "widget": "Text",
+          "required": true,
+          "isTitle": false,
+          "isSummary": false,
+          "ordinal": 2,
+          "widgetSettings": null,
+          "fields": []
+        }
+      ]
+    }
+  ]
+}

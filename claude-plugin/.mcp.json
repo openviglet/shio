@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "shio": {
+      "command": "npx",
+      "args": ["-y", "@viglet/shio", "mcp"],
+      "env": {
+        "SHIO_URL": "${SHIO_URL:-http://localhost:2710}",
+        "SHIO_USER": "${SHIO_USER:-admin}",
+        "SHIO_PASSWORD": "${SHIO_PASSWORD}"
+      }
+    }
+  }
+}

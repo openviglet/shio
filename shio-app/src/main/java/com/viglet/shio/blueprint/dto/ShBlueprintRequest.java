@@ -1,0 +1,33 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.blueprint.dto;
+
+import tools.jackson.databind.JsonNode;
+
+/**
+ * The body of {@code POST /api/v2/agent/blueprints/{name}/apply} (SH93).
+ *
+ * <p>Three fields, and the shape of the request is the whole argument for why blueprints
+ * are worth having: a starting point that would otherwise be a session of discovery,
+ * modelling and writing is a package name, a site, and the handful of values that make
+ * the result somebody's rather than generic.</p>
+ *
+ * @param site   the target site's name or id. Required, and never carried by the package:
+ *               a blueprint applies <em>into</em> an instance
+ * @param params the parameter values, validated against the package's declared schema.
+ *               An unknown name is a 400, not a silent no-op
+ * @param dryRun report what would happen and write nothing. The plan is complete —
+ *               including the post-types the package would create — so a human can
+ *               approve it before anything moves (P7)
+ *
+ * @author Alexandre Oliveira
+ * @since 2026.3
+ */
+public record ShBlueprintRequest(String site, JsonNode params, boolean dryRun) {
+}

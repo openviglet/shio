@@ -65,11 +65,20 @@ class ShAgentManifestTest {
         ShAgentManifest manifest = shAgentManifestService.manifest();
 
         assertThat(manifest.features())
-                .containsEntry("blueprints", false)
                 // SH102's PNG: a screenshot is for the human handoff, and advertising it
                 // here would invite an agent to spend three orders of magnitude more
                 // tokens than the SH101 digest costs to learn less.
                 .containsEntry("visualSnapshot", false);
+    }
+
+    @Test
+    void blueprintsAreReportedShipped() {
+        // False through Blocks H, K and I, so the flag flipping means a real package format
+        // with a real registry behind it rather than a documented intention (SH92/SH93).
+        assertThat(shAgentManifestService.manifest().features())
+                .containsEntry("blueprints", true);
+        assertThat(shAgentManifestService.manifest().endpoints())
+                .anySatisfy(endpoint -> assertThat(endpoint.path()).isEqualTo("/agent/blueprints"));
     }
 
     @Test
