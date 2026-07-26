@@ -1,0 +1,256 @@
+{
+  "id" : 1,
+  "jsonrpc" : "2.0",
+  "result" : {
+    "tools" : [ {
+      "description" : "#string",
+      "inputSchema" : {
+        "properties" : {
+          "dryRun" : {
+            "description" : "#string",
+            "type" : "boolean"
+          },
+          "folders" : {
+            "description" : "#string",
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "posts" : {
+            "description" : "#string",
+            "items" : {
+              "properties" : {
+                "data" : {
+                  "description" : "#string",
+                  "type" : "object"
+                },
+                "folder" : {
+                  "description" : "#string",
+                  "type" : "string"
+                },
+                "publish" : {
+                  "description" : "#string",
+                  "type" : "boolean"
+                },
+                "type" : {
+                  "description" : "#string",
+                  "type" : "string"
+                },
+                "url" : {
+                  "description" : "#string",
+                  "type" : "string"
+                }
+              },
+              "required" : [ "url" ],
+              "type" : "object"
+            },
+            "type" : "array"
+          },
+          "prune" : {
+            "description" : "#string",
+            "type" : "boolean"
+          },
+          "site" : {
+            "description" : "#string",
+            "type" : "string"
+          }
+        },
+        "required" : [ "site" ],
+        "type" : "object"
+      },
+      "name" : "shio_apply"
+    }, {
+      "description" : "#string",
+      "inputSchema" : {
+        "properties" : {
+          "folder" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "limit" : {
+            "description" : "#string",
+            "type" : "integer"
+          },
+          "q" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "site" : {
+            "description" : "#string",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "name" : "shio_assets"
+    }, {
+      "description" : "#string",
+      "inputSchema" : {
+        "properties" : {
+          "limit" : {
+            "description" : "#string",
+            "type" : "integer"
+          },
+          "site" : {
+            "description" : "#string",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "name" : "shio_changes"
+    }, {
+      "description" : "#string",
+      "inputSchema" : {
+        "properties" : {
+          "budget" : {
+            "description" : "#string",
+            "type" : "integer"
+          },
+          "depth" : {
+            "description" : "#string",
+            "type" : "integer"
+          },
+          "from" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "include" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "site" : {
+            "description" : "#string",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "name" : "shio_context"
+    }, {
+      "description" : "#string",
+      "inputSchema" : {
+        "properties" : {
+          "folder" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "limit" : {
+            "description" : "#string",
+            "type" : "integer"
+          },
+          "q" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "site" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "type" : {
+            "description" : "#string",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "name" : "shio_find"
+    }, {
+      "description" : "#string",
+      "inputSchema" : {
+        "properties" : {
+          "address" : {
+            "description" : "#string",
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "dryRun" : {
+            "description" : "#string",
+            "type" : "boolean"
+          },
+          "unpublish" : {
+            "description" : "#string",
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "address" ],
+        "type" : "object"
+      },
+      "name" : "shio_publish"
+    }, {
+      "description" : "#string",
+      "inputSchema" : {
+        "properties" : {
+          "address" : {
+            "description" : "#string",
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "fields" : {
+            "description" : "#string",
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "address" ],
+        "type" : "object"
+      },
+      "name" : "shio_read"
+    }, {
+      "description" : "#string",
+      "inputSchema" : {
+        "properties" : {
+          "dryRun" : {
+            "description" : "#string",
+            "type" : "boolean"
+          },
+          "ops" : {
+            "description" : "#string",
+            "items" : {
+              "properties" : {
+                "address" : {
+                  "description" : "#string",
+                  "type" : "string"
+                },
+                "data" : {
+                  "description" : "#string",
+                  "type" : "object"
+                },
+                "folder" : {
+                  "description" : "#string",
+                  "type" : "string"
+                },
+                "op" : {
+                  "description" : "#string",
+                  "enum" : [ "folder.upsert", "folder.delete", "post.upsert", "post.move", "post.publish", "post.unpublish", "post.delete" ],
+                  "type" : "string"
+                },
+                "to" : {
+                  "description" : "#string",
+                  "type" : "string"
+                },
+                "type" : {
+                  "description" : "#string",
+                  "type" : "string"
+                }
+              },
+              "required" : [ "op", "address" ],
+              "type" : "object"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "ops" ],
+        "type" : "object"
+      },
+      "name" : "shio_write"
+    } ]
+  }
+}

@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.viglet.shio.api.agent.dto.ShAgentResolved;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
@@ -196,8 +197,12 @@ public class ShAddressResolver {
             names.add(0, nullSafe(current.getName()));
             current = current.getParentFolder();
         }
-        String site = folder.getShSite() == null ? null : folder.getShSite().getName();
-        return ShAddress.folder(site, "/" + String.join("/", names));
+        // SH128: the owning site is on the *root* folder, so it is walked to, never
+        // read off this folder — a nested folder read directly yields `folder:null/...`,
+        // an address that resolves to nothing and teaches the agent nothing either.
+        ShSite owner = ShFolderSite.of(folder);
+        return ShAddress.folder(owner == null ? null : owner.getName(),
+                "/" + String.join("/", names));
     }
 
     /** The canonical address of a post — its site plus its friendly URL. */

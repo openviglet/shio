@@ -23,6 +23,7 @@ import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentAuditService;
 import com.viglet.shio.object.ShObjectPublishStatus;
 import com.viglet.shio.object.ShObjectType;
+import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
@@ -88,29 +89,6 @@ public class ShPostUnifiedWriteService {
         return row.getShSite() != null ? row.getShSite().getId() : null;
     }
 
-    /**
-     * The owning site, found by walking up to the root folder — which is the only
-     * folder in a tree that carries {@code shSite} ({@code ShFolderWriteService}
-     * deliberately nulls it on children, and {@code ShObjectNavigationService} resolves
-     * it the same way).
-     *
-     * <p>Reading {@code folder.getShSite()} directly, as this did, silently produced a
-     * site-less post for every post created below the root — invisible in the console
-     * (which navigates by folder) but fatal to anything that queries by site: CDA
-     * {@code /query}, the by-url lookup, and the SH79 address resolver. Found while
-     * building the SH81 batch, whose whole addressing scheme is site + url.</p>
-     */
-    private static ShSite siteOf(ShFolder folder) {
-        ShFolder current = folder;
-        while (current != null) {
-            if (current.getShSite() != null) {
-                return current.getShSite();
-            }
-            current = current.getParentFolder();
-        }
-        return null;
-    }
-
     private ShFolder resolveContainerFolder(String containerId) {
         return shFolderRepository.findById(containerId).orElseGet(() -> {
             ShSite site = shSiteRepository.findById(containerId)
@@ -139,7 +117,7 @@ public class ShPostUnifiedWriteService {
         row.setId(postId);
         row.setState(state);
         row.setShFolder(folder);
-        row.setShSite(siteOf(folder));
+        row.setShSite(ShFolderSite.of(folder));
         row.setShPostType(postType);
         row.setOwner(req.owner());
         row.setDate(Instant.now());
@@ -208,6 +186,70 @@ public class ShPostUnifiedWriteService {
                     return shPostUnifiedRepository.save(row);
                 })
                 .toList();
+    }
+
+    /**
+     * Move a post: change its folder, its friendly URL, or both, keeping its id (SH134).
+     *
+     * <h2>Why this is not upsert-somewhere-else</h2>
+     *
+     * <p>The address-native vocabulary could create, update and delete an address but not
+     * <em>change</em> one, and the obvious workaround — upsert at the new address — is
+     * silently destructive: it creates a second post and orphans the first, taking the
+     * original's id, its SH51 audit trail, its SH14 version history and every inbound
+     * reference with it. Keeping the id is the entire content of this operation.</p>
+     *
+     * <h2>Every state row moves together</h2>
+     *
+     * <p>The unified model stores {@code DRAFT} and {@code PUBLISHED} as separate rows
+     * sharing an id, and both are re-addressed here. Moving only the draft would leave
+     * the live page at the old URL while every read (which is draft-preferred) reported
+     * the new one — the post's identity would depend on who was asking. The consequence
+     * is that a move of a published post <b>changes the live URL immediately, without a
+     * publish step</b>. That is what a move means, and the batch reports it in the change
+     * detail rather than letting the caller discover it (P7); an agent that wants the
+     * live URL to hold still should unpublish first.</p>
+     *
+     * <p>Inbound references are id-keyed ({@code ShReference} joins {@code ShObject} ids),
+     * so they survive a move untouched. URLs written into another post's body as text do
+     * not, and nothing here can know which strings were meant as links — SH100's route
+     * verification is where that gets caught.</p>
+     *
+     * @param postId       the post to move
+     * @param targetFolder the destination folder, or {@code null} to stay put
+     * @param furl         the new friendly URL, or {@code null} to keep the current one
+     * @param actor        recorded as the modifier in the audit trail
+     * @return the rows that were touched, DRAFT first
+     */
+    @Transactional
+    public List<ShPostUnified> move(String postId, ShFolder targetFolder, String furl, String actor) {
+        String normalized = furl == null ? null : normalizeUrl(furl);
+        Instant now = Instant.now();
+        List<ShPostUnified> moved = shPostUnifiedRepository.findById(postId).stream()
+                .sorted(Comparator.comparing(row -> row.getState() == ShPostState.DRAFT ? 0 : 1))
+                .map(row -> {
+                    if (targetFolder != null) {
+                        row.setShFolder(targetFolder);
+                        // Walked, never read off the target folder (SH128) — a move into
+                        // a nested folder would otherwise blank the post's site.
+                        row.setShSite(ShFolderSite.of(targetFolder));
+                    }
+                    if (normalized != null) {
+                        row.setFurl(normalized);
+                    }
+                    row.setModifiedDate(now);
+                    if (actor != null) {
+                        row.setModifier(actor);
+                    }
+                    return shPostUnifiedRepository.save(row);
+                })
+                .toList();
+        if (!moved.isEmpty()) {
+            ShPostUnified first = moved.get(0);
+            shContentAuditService.record(ShContentAction.UPDATE, postId,
+                    siteIdOf(first), first.getTitle(), actor);
+        }
+        return moved;
     }
 
     /**

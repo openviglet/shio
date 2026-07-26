@@ -179,9 +179,35 @@ public class ShMcpServer {
             ObjectNode node = array.addObject();
             node.put("name", tool.name());
             node.put("description", tool.description());
-            node.set("inputSchema", objectMapper.valueToTree(tool.inputSchema()));
+            node.set("inputSchema", canonical(objectMapper.valueToTree(tool.inputSchema())));
         }
         return result;
+    }
+
+    /**
+     * Recursively sorts object keys (P5).
+     *
+     * <p>{@code inputSchema()} is built from {@code Map.of(…)}, whose iteration order is
+     * a function of the JVM's hash seed — so without this, {@code tools/list} serialized
+     * differently from one boot to the next. That is invisible in a unit test and
+     * expensive in production: the tool list is context re-sent on every turn, and a
+     * payload that changes bytes without changing meaning defeats client-side and
+     * prompt-cache reuse for the single largest fixed cost of the surface. Found by the
+     * SH130 conformance transcript.</p>
+     */
+    private JsonNode canonical(JsonNode node) {
+        if (node == null || !node.isObject()) {
+            if (node != null && node.isArray()) {
+                ArrayNode sorted = objectMapper.createArrayNode();
+                node.forEach(element -> sorted.add(canonical(element)));
+                return sorted;
+            }
+            return node;
+        }
+        ObjectNode sorted = objectMapper.createObjectNode();
+        node.propertyNames().stream().sorted()
+                .forEach(name -> sorted.set(name, canonical(node.get(name))));
+        return sorted;
     }
 
     private ObjectNode toolsCall(JsonNode params) {

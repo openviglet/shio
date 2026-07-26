@@ -335,28 +335,30 @@ Shipped: `POST /api/v2/agent/batch` · `/plan` · `/apply` →
   Same rule for the tri-state `publish`: absent means "leave it alone", because
   treating a trimmed field as `false` would unpublish live pages.
 
-**Still open, and the two gaps are more interesting than the debt.** The debt first:
-the CLI verbs (**SH129**) — law P1's order is MCP → files/CLI → REST, and this landed
-at REST and MCP but not the CLI, because `shio apply` over a JSON blob would be a worse
-command than `shio push --content` over a directory (SH87). Worth naming rather than
-pretending the order held.
+**The general lesson, now paid for twice.** A write vocabulary designed against "build
+a site" will be missing the verbs for "change a site", and the second is the harder half
+of the north star. Both gaps this engine shipped with — no way to move a post (SH134) and
+a prune that could not remove a folder (SH135) — were invisible while building and
+obvious the first time a section was renamed. They are shipped; what they left behind is
+the same shape one level up and one hazard they created:
 
-The gaps, both found by writing the tools on top of this engine and both invisible
-while *building* a site:
-
-- **`post.move` (SH134).** The vocabulary can create, update and delete an address, but
-  not *change* one. Re-addressing an upsert creates a second post, so renaming a page
-  orphans the original and loses its history — and an agent following the obvious path
-  will do exactly that. The design must decide what a move means to the published row
-  and to inbound references, which is why it is a task and not a patch.
-- **Folder prune (SH135).** `prune` removes undeclared posts but never an undeclared
-  folder, so a section that moves leaves its shell behind and the document quietly stops
-  describing the site — which erodes the one property (convergence) that justifies
-  declarative apply at all. Same declared-scope rule; the ordering question is whether a
-  folder is prunable while it still holds undeclared content.
-
-The general lesson: a write vocabulary designed against "build a site" will be missing
-the verbs for "change a site", and the second is the harder half of the north star.
+- **`folder.move` (SH137).** Posts can be re-addressed now; folders cannot. Renaming a
+  section still means `folder.upsert` at the new path plus `folder.delete` of the old,
+  and that delete cascades over everything beneath it — the same defect as SH134, one
+  level up, and strictly more destructive. SH134 is what makes its absence conspicuous:
+  an agent that has learned `post.move` will reasonably assume the folder verb exists.
+- **Never truncate a deletion plan (SH138).** Widening prune to whole subtrees made a
+  plan able to list thousands of deletions, which puts it in reach of the SH78 response
+  budget for the first time. A truncated deletion plan is the worst truncation available:
+  unlike a shortened sitemap, it does not read as incomplete — it reads as a complete
+  review of what is about to be destroyed. The choice is to exempt destructive rows from
+  the budget or to refuse the apply; silently shortening the list is not on the table.
+- **The console move rewrites URLs (SH139).** `ShObjectWriteService#moveTo` resets a
+  post's `furl` to a slug of its title on every move. SH134 spent its design budget on
+  exactly this question for the agent path — a move must not change what it was not asked
+  to change — while the console path, the one a human triggers by dragging something,
+  silently changes a live URL and discards any hand-set one. Found by SH134; worth fixing
+  on its own terms rather than as part of it, because it is a visible behaviour change.
 
 ### VIII.8 The agent tools (SH83) — ✅ shipped
 
@@ -385,53 +387,85 @@ records that bind what follows:
   with the same SH2 allow-list applied. Compose with the *rule*, not necessarily the
   code path.
 
-**Still open, and both are gaps the tools revealed rather than design debt:** the write
-vocabulary has no `post.move` (**SH134**) and prune does not cover folders (**SH135**).
-Neither shows up while *building* a site — only when changing one, which is exactly the
-half of the north star that is harder to test by demo.
+The two gaps these tools revealed — no `post.move`, and a prune that skipped folders —
+are shipped (SH134, SH135). Neither showed up while *building* a site, only when changing
+one, which is exactly the half of the north star that is harder to test by demo, and the
+reason §VIII.7 now treats "can this vocabulary change a site?" as a standing question
+rather than a finished one.
 
-### VIII.9 Tenant/scope-aware tools + ecosystem (SH84)
+### VIII.9 Turing ecosystem wiring (SH84)
 
-Scope every tool per SH22 tenant and wire into Turing (replaces old SH37). Deferred
-behind SH83 because tenant scoping is an enforcement pass over a finished tool set,
-not a design input to it — but the invariant is fixed from day one: the agent path
-is **never** a privilege escalation (§XII).
+The SH22 half is shipped: `ShAgentTenantIsolationIT` exercises every Block H surface
+from a second tenant and proves the standing invariant — the agent path is **never** a
+privilege escalation (§XII). It needed to be its own test rather than a corollary of the
+storage isolation one, because this surface resolves content by *address* rather than by
+id and its purpose is to describe a whole instance in one call: a context pack carrying
+another tenant's sitemap would look exactly like a working context pack.
 
-### VIII.10 Guarding the "wrong at runtime, valid at compile time" class (SH128)
+What remains is the Turing integration (replaces old SH37) — the ecosystem half, which
+is a wiring question rather than an enforcement one.
 
-Three of these have now been found: SH122's `@TenantId` JOINED-join hazard (three
-broken CDA paths), and SH81's discovery that `ShPostUnifiedWriteService#create` read
-`folder.getShSite()` on a folder tree where only the *root* carries the site — so
-every post created below the root was site-less, invisible to the console (which
-navigates by folder) and fatal to anything querying by site.
+### VIII.10 The recurring defect class, and the rule it produced
 
-The shape is always the same: code that compiles, passes review, and is wrong only
-when the data is queried along an axis the author was not thinking about. Reviews do
-not catch it; a test that states the invariant does. SH128 is that test for the
-site-resolution invariant — every write path resolves a folder's owning site by
-walking to the root — and the general lesson is that this class deserves a guard
-*per invariant*, added the first time the invariant is violated, not a general
-promise to be careful.
+Two guards now exist for the same shape of bug: **code that compiles, passes review, and
+is wrong only when the data is queried along an axis the author was not thinking about.**
+SH122 covered the `@TenantId` JOINED-join hazard; SH128 covers site resolution, where only
+a root folder carries `shSite` and everything else has to walk up to find it.
 
-### VIII.11 Two guards the hand-rolled surfaces earned (SH130, SH131)
+Both are shipped (→ [CHANGELOG.md](CHANGELOG.md) Block H), and what is worth keeping is
+not the implementations but the rule they establish:
 
-Both come from the same observation: the failure mode of these surfaces is **silence**,
-not an exception.
+> **When an invariant is violated for the first time, write the guard for that invariant
+> — not a resolution to be careful.**
 
-- **SH130 — wire conformance.** A hand-rolled protocol has no compiler checking it
-  against the spec. The tests assert behaviour ("an unknown tool is a protocol error"),
-  which is right, but nothing pins the exact bytes — so a refactor that renamed
-  `inputSchema` would pass every test and break every client. Golden transcripts are the
-  cheap fix, and the version string should be checked against what the envelopes
-  actually do rather than asserted equal to itself.
-- **SH131 — the bind-parameter contract.** `FULLTEXT_PREDICATE` lower()s its columns but
-  not its parameter and does no wildcarding; the requirement lives in a comment.
-  SH83 read the comment, wrote the caller, and still got it wrong — and the symptom was
-  *an empty result set*, which reads as "nothing matched". A contract that can only be
-  honoured by remembering, and whose breach looks like valid data, belongs inside the
-  method rather than beside it.
+The evidence is that both guards found more instances than the defect that motivated
+them, on the day they were written. SH122 found three broken CDA paths; SH128 found four,
+including a scoped CDA token that could not list the children of any folder below a site
+root. In both cases the paths were already covered by behavioural tests, which passed,
+because the tests exercised the root case and the defect only appears below it.
 
----
+Two corollaries that make the rule cheap to follow:
+
+- **Prefer a textual lint to a behavioural test** when the invariant is about how code is
+  written rather than what it returns. A behavioural test proves the paths it exercises;
+  the next instance lands in the path nobody thought to add. A lint covers the paths that
+  do not exist yet.
+- **Give the lint an escape hatch that costs a sentence.** Both guards accept an inline
+  exemption comment naming the reason (`ShFolderSite-exempt`, the `nativeQuery` carve-out).
+  A guard with no exemption gets deleted the first time it is wrong; a guard whose
+  exemption is a line of prose in a review gets an argument instead.
+
+### VIII.11 What the hand-rolled surfaces earned (SH130, SH131 — ✅ shipped)
+
+Both guards came from one observation: the failure mode of these surfaces is **silence**,
+not an exception. Shipped → [CHANGELOG.md](CHANGELOG.md) Block H. The findings that bind
+what follows:
+
+- **A version assertion that compares a constant with itself is not a test.** SH130
+  replaced `assertThat(version).isEqualTo(PROTOCOL_VERSION)` with a check against the
+  *observable obligations* of the revision claimed — batching refused, structured
+  capability objects, `content[]`+`isError`, plural `contents`. The tautology would have
+  kept passing after someone bumped the constant past a breaking change, which is the
+  only moment the assertion had a job to do.
+- **Pin shapes, not prose.** The goldens keep every key and the literal value of the
+  fields that are themselves contract, and collapse free text to a type token. A golden
+  that fails on a copy edit stops being read, and a golden nobody reads is worse than
+  none — the diff is the entire product.
+- **Determinism is not automatic just because the data is.** The transcript immediately
+  caught `tools/list` serializing differently on every boot, because `inputSchema()` is
+  built from `Map.of` and iteration order follows the JVM hash seed. Nothing about the
+  content changed; the bytes did, on the one payload re-sent every turn. This is the
+  first place P5 has been broken by the *language* rather than by a design choice, and it
+  will not be the last — which is **SH136**: the manifest is byte-stable by test and the
+  context pack by digest, but the MCP resources, the prompt list, and any future
+  map-backed payload are unchecked. One lint (no un-canonicalized `Map`/`Set` reaching a
+  JSON writer) plus a per-payload stability assertion covers the class.
+- **A contract that can only be honoured by remembering belongs inside the method.**
+  SH131's bind requirement lived in a comment; SH83 read the comment and still got it
+  wrong, and the breach looked like an empty result set — valid data, not an error. The
+  test for "is this comment load-bearing?" is: *if someone ignores it, does the system
+  fail loudly?* If not, it is not a comment, it is a missing parameter or a missing
+  wrapper.
 
 ## IX. Perception & verification loop (Block K)
 
@@ -659,6 +693,16 @@ threshold. The cheap, always-on guard between full benchmark runs; the same role
 regresses against is now emitted by the instance itself on both the agent and
 delivery surfaces (`X-Shio-Est-Tokens`, SH124 — ✅ shipped), so the guard reads a
 header instead of re-tokenizing bodies.
+
+**The mechanism already exists — SH132 built it** (✅ shipped) for the MCP tool list,
+which is the payload with no opt-out: it is re-sent on every turn of every session
+before any work happens. SH113 extends the same file,
+`shio-app/src/test/resources/token-budgets.properties`, with the response budgets rather
+than inventing a second place to keep a number. Two decisions from SH132 that carry over:
+**the ceiling lives next to a note on what it guards**, so raising it is a reviewable diff
+with a reason attached instead of an edited magic number three files away; and **a count
+is not a budget** — the 12-tool cap was a proxy, and eight tools with essay-length
+descriptions are worse than twelve terse ones.
 
 **The leanness policy (SH125 — ✅ shipped) and its binding limit.** Nulls are always
 waste and are omitted from every agent-owned DTO. Dropping zero-defaults is *not* a

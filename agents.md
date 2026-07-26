@@ -155,10 +155,19 @@ the CDA + console services (law P10) and holds no business logic of its own.
   The `digest` is how a later session skips re-reading.
 - `GET /agent/resolve?address=…` — an address → an object id, for id-keyed endpoints.
 - `POST /agent/batch` — **writes**: N addressed ops (`folder.upsert`, `post.upsert`,
-  `post.publish`, `post.unpublish`, `folder.delete`, `post.delete`) in one transaction;
-  `{"dryRun":true}` reports without writing.
+  `post.move`, `post.publish`, `post.unpublish`, `folder.delete`, `post.delete`) in one
+  transaction; `{"dryRun":true}` reports without writing. **`post.move` (SH134) is the
+  only way to rename or relocate a post** — re-addressing a `post.upsert` creates a
+  second post and orphans the first with its id, audit trail and history. It takes `to`
+  (new address) and/or `folder`, moves the DRAFT *and* PUBLISHED rows together (so a
+  published post's live URL changes immediately, and the change set says so), refuses an
+  occupied target and refuses to cross sites.
 - `POST /agent/plan` / `POST /agent/apply` — a declarative desired-state content
-  document; `plan` never writes, and `changed:0` is the content drift guard.
+  document; `plan` never writes, and `changed:0` is the content drift guard. `prune`
+  deletes undeclared **posts and folders** inside the declared folders' subtrees (SH135),
+  posts first and folders deepest-first; declared folders, their ancestors, and any folder
+  a declared post calls home are protected. Also `shio apply <file>` in the CLI
+  (`--dry-run` / `--check` / `-` for stdin).
 - `GET /agent/find` — posts by site/type/folder-subtree/text; **addresses, not bodies**.
 - `GET /agent/read?address=…&fields=…` — post content, DRAFT-preferred, projected.
 
@@ -210,7 +219,7 @@ uses a **separate** surface at **`/api/v2/post/type`** (note the slash, not a hy
   CLI (by name, lossless `Def`).
 
 ### `shio` CLI (`@viglet/shio`, in `cli/`)
-The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`), `dev`, `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
+The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`), `context`, `resolve`, `apply` (SH129 — a desired-state content document; `--check` is the CI drift guard, `-` reads stdin), `mcp`, `dev`, `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
 
 ## Security Configuration
 
@@ -726,11 +735,39 @@ After installing/removing packages (`pnpm add`/`pnpm remove`), clear Vite cache:
 - Check Maven dependency resolution (transitive deps may override explicit versions)
 - `store/file_source/` path must end with `/` in resource handler
 
+### Full-text search returns nothing (SH131)
+
+`ShPostUnifiedRepository.FULLTEXT_PREDICATE` needs a pre-lowercased, `%`-wrapped term.
+Call the `search*` **default** methods, which normalize for you — the raw `@Query`
+methods are suffixed `…Like` and take the pattern. Normalizing again before calling a
+`search*` method searches for `%%term%%`, which matches nothing and looks like an empty
+index rather than a bug.
+
 ### Unused Imports Fail TypeScript Build
 `tsc -b` with strict mode flags unused imports as errors (TS6133). When refactoring (e.g., replacing `Checkbox` with `Switch`), always remove unused imports.
 
 ### `Column "..._.TENANT_ID" not found` (or any column) at startup
 Schema drift. The schema is Liquibase-managed (`ddl-auto=none`) — a column referenced by an entity does not exist because no changeset created it. Fix by adding a Liquibase changeset (see **Database Schema** above), not by flipping `ddl-auto` back to `update`. Also confirm the datasource URL still has `DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true` — dropping those reintroduces quoted-vs-unquoted casing mismatches that surface as "column not found".
+
+### A post or address comes back with no site (SH128 invariant)
+
+**Only a site's root folder carries `shSite`.** `ShFolderWriteService` nulls it on every
+child, so reading `folder.getShSite()` on anything nested silently yields `null` — a
+site-less post, an address of `folder:null/...`, or a CDA allow-list check that denies
+everything (`allowsSite(null)` is `false` under a token allow-list). Always resolve with
+`ShFolderSite.of(folder)` / `.idOf(folder)`, which walks to the root:
+
+```java
+// ✗ null for every folder below the root — compiles, reviews clean, wrong at runtime
+row.setShSite(folder.getShSite());
+// ✓ walks the parent chain to the folder that actually carries the site
+row.setShSite(ShFolderSite.of(folder));
+```
+
+`ShFolderSiteInvariantTest` fails the build on the wrong form. If a direct read is
+genuinely what you mean (the exchange export records `shSite` root-only; the console XP
+endpoint touches it to force a LAZY proxy), add a `ShFolderSite-exempt: <reason>` comment
+on or directly above the line.
 
 ### `Column "spt1_1.tenant_id" not found` in a JPQL query (SH22 join hazard)
 **Never navigate past the `id` of an association whose target is an `ShObject`

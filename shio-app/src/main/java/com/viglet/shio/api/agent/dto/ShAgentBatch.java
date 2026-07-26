@@ -52,7 +52,7 @@ public record ShAgentBatch(boolean dryRun, List<Op> ops) {
      * Fields not relevant to an {@code op} are simply absent.</p>
      *
      * @param op      one of {@code folder.upsert}, {@code folder.delete},
-     *                {@code post.upsert}, {@code post.publish},
+     *                {@code post.upsert}, {@code post.move}, {@code post.publish},
      *                {@code post.unpublish}, {@code post.delete}
      * @param address what the op acts on — {@code folder:<site>/<path>} or
      *                {@code post:<site>/<url>}. The lenient {@code site:} form is
@@ -60,11 +60,22 @@ public record ShAgentBatch(boolean dryRun, List<Op> ops) {
      *                would silently create content in the wrong place (the SH79 rule)
      * @param type    post-type <em>name</em> — required when {@code post.upsert} has to
      *                create; ignored when it updates
-     * @param folder  where a new post goes: a folder address, or a bare path relative to
-     *                the addressed site. Required when {@code post.upsert} has to create,
-     *                because a post's friendly URL says nothing about its folder
+     * @param folder  where a post goes: a folder address, or a bare path relative to the
+     *                addressed site. Required when {@code post.upsert} has to create,
+     *                because a post's friendly URL says nothing about its folder; on
+     *                {@code post.move} it is the destination folder
+     * @param to      the post's new address, for {@code post.move} — the one op that
+     *                <em>changes</em> an address rather than acting on one. Kept separate
+     *                from {@code address} because a move needs both ends: re-addressing
+     *                an upsert instead would create a second post and orphan the first
      * @param data    the post's field values, keyed by post-type attribute name
      */
-    public record Op(String op, String address, String type, String folder, JsonNode data) {
+    public record Op(String op, String address, String type, String folder, String to,
+                     JsonNode data) {
+
+        /** The five-field form, for callers that never move. */
+        public Op(String op, String address, String type, String folder, JsonNode data) {
+            this(op, address, type, folder, null, data);
+        }
     }
 }

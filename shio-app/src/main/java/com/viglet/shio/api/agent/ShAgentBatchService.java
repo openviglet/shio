@@ -89,13 +89,15 @@ public class ShAgentBatchService {
     public static final String FOLDER_UPSERT = "folder.upsert";
     public static final String FOLDER_DELETE = "folder.delete";
     public static final String POST_UPSERT = "post.upsert";
+    public static final String POST_MOVE = "post.move";
     public static final String POST_PUBLISH = "post.publish";
     public static final String POST_UNPUBLISH = "post.unpublish";
     public static final String POST_DELETE = "post.delete";
 
     /** The closed op vocabulary, in the order a teaching error lists it. */
     public static final List<String> OPS = List.of(
-            FOLDER_UPSERT, FOLDER_DELETE, POST_UPSERT, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE);
+            FOLDER_UPSERT, FOLDER_DELETE, POST_UPSERT, POST_MOVE, POST_PUBLISH, POST_UNPUBLISH,
+            POST_DELETE);
 
     private static final List<ShPostState> BOTH_STATES =
             List.of(ShPostState.DRAFT, ShPostState.PUBLISHED);
@@ -178,6 +180,7 @@ public class ShAgentBatchService {
             case FOLDER_UPSERT -> folderUpsert(op, session);
             case FOLDER_DELETE -> folderDelete(op, session);
             case POST_UPSERT -> postUpsert(op, session);
+            case POST_MOVE -> postMove(op, session);
             case POST_PUBLISH -> postPublish(op, session);
             case POST_UNPUBLISH -> postUnpublish(op, session);
             case POST_DELETE -> postDelete(op, session);
@@ -292,6 +295,114 @@ public class ShAgentBatchService {
     }
 
     /**
+     * Re-addresses an existing post — a new friendly URL, a new folder, or both — while
+     * keeping its id (SH134).
+     *
+     * <h2>Why the vocabulary needed a seventh verb</h2>
+     *
+     * <p>Create, update and delete cover <em>building</em> a site. Changing one needs a
+     * way to say "this page is now at a different address", and the only thing an agent
+     * could do without it was upsert at the new address — which creates a second post,
+     * orphans the first at its old URL, and loses the original's history and audit
+     * trail. That is a data-loss path an agent reaches by following the obvious route,
+     * which makes it the batch's problem rather than the caller's.</p>
+     *
+     * <h2>The idempotence rule, which is what makes it re-runnable</h2>
+     *
+     * <p>Source absent but destination present is a {@code noop}, not a 404. A move is
+     * the one op whose precondition its own success destroys, so a document containing
+     * one would fail on the second apply if "I cannot find the source" were an error —
+     * and a plan that cannot be re-run is the thing SH82 exists to avoid.</p>
+     */
+    private Change postMove(ShAgentBatch.Op op, Session session) {
+        ShAddress from = writeAddress(op, ShAddress.Kind.POST);
+        ShSite site = requireSite(from.site());
+        ShAddress to = moveTarget(op, from);
+        if (!to.site().equalsIgnoreCase(from.site())) {
+            // Cross-site moves are refused rather than half-implemented: the destination
+            // has its own root folder, its own ACL and (under SH22) potentially its own
+            // tenant, and silently re-parenting across that boundary is the kind of
+            // surprise P7 forbids. Copy + delete is the honest two-step.
+            throw new CrossSiteMoveException(from, to);
+        }
+        ShFolder targetFolder = op.folder() == null || op.folder().isBlank()
+                ? null : requireExistingFolder(op, site);
+
+        Optional<ShPostUnified> source = findPost(site, from.path());
+        if (source.isEmpty()) {
+            Optional<ShPostUnified> already = findPost(site, to.path());
+            if (already.isPresent()) {
+                return session.change(op, to, Change.NOOP, "already at this address",
+                        already.get().getId());
+            }
+            throw new ShAddressResolver.UnresolvedAddressException(from, List.of());
+        }
+        ShPostUnified post = source.get();
+        // Asked before the move, not after: afterwards the published row is at the new
+        // address and this lookup finds nothing, so the warning would never be emitted.
+        boolean live = state(site, from, ShPostState.PUBLISHED).isPresent();
+
+        boolean sameUrl = ShAddress.normalizePath(nullSafe(post.getFurl()))
+                .equalsIgnoreCase(ShAddress.normalizePath(to.path()));
+        boolean sameFolder = targetFolder == null
+                || (post.getShFolder() != null && targetFolder.getId().equals(post.getShFolder().getId()));
+        if (sameUrl && sameFolder) {
+            return session.change(op, to, Change.NOOP, null, post.getId());
+        }
+        if (!sameUrl && findPost(site, to.path()).isPresent()) {
+            throw new MoveTargetOccupiedException(from, to);
+        }
+
+        if (!session.dryRun) {
+            shContentAclService.requireWrite(post.getId());
+            if (targetFolder != null) {
+                shContentAclService.requireWrite(targetFolder.getId());
+            }
+            shPostUnifiedWriteService.move(post.getId(), targetFolder,
+                    sameUrl ? null : to.path(), session.actor);
+        }
+        // Both state rows move together, so a published post changes its live URL here
+        // and now. Said out loud rather than discovered later (P7).
+        return session.change(op, to, Change.MOVE,
+                live ? "the live URL changes immediately" : null, post.getId());
+    }
+
+    /**
+     * Where a move is going. Accepts a full {@code post:} address or a bare URL, and
+     * defaults the site to the source's — a move that had to repeat the site would be a
+     * cross-site move waiting to be typed by accident.
+     */
+    private ShAddress moveTarget(ShAgentBatch.Op op, ShAddress from) {
+        boolean hasTo = op.to() != null && !op.to().isBlank();
+        if (!hasTo && (op.folder() == null || op.folder().isBlank())) {
+            throw new MissingOpFieldException("to", op.op(), from, "post:Blog/blog/new-url",
+                    "A move needs a destination: a new address in `to`, a new folder in "
+                            + "`folder`, or both.");
+        }
+        if (!hasTo) {
+            return from;
+        }
+        String raw = op.to().trim();
+        ShAddress target = raw.contains(":")
+                ? ShAddress.parse(raw)
+                : ShAddress.post(from.site(), raw);
+        if (target.kind() != ShAddress.Kind.POST) {
+            throw new WrongAddressKindException(op.op(), target, ShAddress.Kind.POST);
+        }
+        return target;
+    }
+
+    /** The destination folder of a move: it must already exist — a move never creates. */
+    private ShFolder requireExistingFolder(ShAgentBatch.Op op, ShSite site) {
+        String path = op.folder().startsWith("folder:")
+                ? ShAddress.parse(op.folder()).path()
+                : ShAddress.normalizePath(op.folder());
+        return findFolder(site, path).orElseThrow(() ->
+                new ShAddressResolver.UnresolvedAddressException(
+                        ShAddress.folder(site.getName(), path), List.of()));
+    }
+
+    /**
      * Publishing is reported as a change only when the live rendering would actually
      * differ — a re-run of the same document must not claim to have published again.
      */
@@ -403,6 +514,11 @@ public class ShAgentBatchService {
             }
         }
         return Optional.empty();
+    }
+
+    /** A folder's direct subfolders, in display order — the desired-state prune walks these. */
+    List<ShFolder> childrenOf(ShFolder folder) {
+        return shFolderRepository.findByParentFolderOrderByPositionAsc(folder);
     }
 
     /** A folder's posts, one row per id, DRAFT-preferred — the same rule every read uses. */
@@ -670,6 +786,38 @@ public class ShAgentBatchService {
                             : "Use one of the listed names, or create a new type with "
                                     + "PUT /api/v2/post-type/{name}.")
                     .withExample(allowed.isEmpty() ? "Article" : allowed.get(0)));
+        }
+    }
+
+    /** A 409: something already lives at the address a move is aiming for. */
+    public static class MoveTargetOccupiedException extends ShTeachingException {
+
+        public MoveTargetOccupiedException(ShAddress from, ShAddress to) {
+            super(ShProblem.of("move-target-occupied", HttpStatus.CONFLICT,
+                            "'" + to + "' is already taken")
+                    .withDetail("Moving '" + from + "' there would leave two posts claiming "
+                            + "one URL, and the delivery layer would serve whichever it found "
+                            + "first. A move never overwrites.")
+                    .withFix("Pick a free address, or delete the post at '" + to + "' first "
+                            + "with post.delete (it goes to the restorable trash).")
+                    .withExample(to.toString()));
+        }
+    }
+
+    /** A 400: a move that would cross a site boundary. */
+    public static class CrossSiteMoveException extends ShTeachingException {
+
+        public CrossSiteMoveException(ShAddress from, ShAddress to) {
+            super(ShProblem.badRequest("cross-site-move",
+                            "A move cannot change a post's site")
+                    .withDetail("'" + from + "' is in a different site from '" + to + "'. "
+                            + "Sites have separate folder trees, separate ACLs and — under "
+                            + "multi-tenancy — separate tenants, so re-parenting across one "
+                            + "silently is not something this op will do.")
+                    .withFix("post.upsert the content into the destination site, then "
+                            + "post.delete the original — two visible steps instead of one "
+                            + "invisible one.")
+                    .withExample("post:" + from.site() + "/blog/new-url"));
         }
     }
 

@@ -9,6 +9,8 @@
 package com.viglet.shio.api.agent;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -117,14 +119,39 @@ public class ShAgentDesiredStateService {
     }
 
     /**
-     * Deletions implied by {@code prune}: posts living in a declared folder that the
-     * document does not declare.
+     * Deletions implied by {@code prune}: everything inside the declared folders' subtrees
+     * that this document does not declare — posts (SH82) and, since SH135, folders.
      *
-     * <p><b>Scoped to the declared folders on purpose.</b> A prune that swept the whole
-     * site would let a document about one section delete another — the blast radius
-     * would depend on what the author forgot to mention, which is the definition of a
-     * surprise (P7). Declaring no folders and asking to prune is therefore an error,
-     * not a licence to delete everything.</p>
+     * <h2>The scope rule, which has not changed</h2>
+     *
+     * <p><b>Bounded by the declared folders.</b> A prune that swept the whole site would
+     * let a document about one section delete another — the blast radius would depend on
+     * what the author forgot to mention, which is the definition of a surprise (P7).
+     * Declaring no folders and asking to prune is therefore an error, not a licence to
+     * delete everything. Every deletion appears in the plan before {@code apply} runs.</p>
+     *
+     * <h2>Why folders too (SH135)</h2>
+     *
+     * <p>Without it a document stops describing its own scope the moment a section moves:
+     * the posts go, the empty folder stays, and the next plan reports {@code changed:0}
+     * over a site that no longer matches the document. Convergence is the only property
+     * that justifies declarative apply at all, so a prune that cannot converge is a prune
+     * with a hole in it.</p>
+     *
+     * <h2>The ordering question, answered</h2>
+     *
+     * <p><em>Is a folder prunable while it still holds undeclared content?</em> It never
+     * gets the chance to be: posts are pruned first and folders are pruned
+     * <b>deepest-first</b>, so by the time a {@code folder.delete} runs its subtree is
+     * already empty and the cascade in {@code ShFolderWriteService} has nothing left to
+     * take. That matters because the cascade is silent — relying on it would make the
+     * blast radius of one op depend on the order of the ops around it.</p>
+     *
+     * <p>Three kinds of folder are protected from the sweep: the declared folders
+     * themselves, every ancestor of one (deleting {@code /blog} to reach
+     * {@code /blog/2026} would be absurd), and any folder a declared <em>post</em> names
+     * as its home — a document may place a post in a folder it never listed, and that
+     * placement is a declaration too.</p>
      */
     private List<ShAgentBatch.Op> pruneOps(ShAgentDesiredState desired, String site) {
         if (!desired.prune()) {
@@ -134,27 +161,91 @@ public class ShAgentDesiredStateService {
         if (folders.isEmpty()) {
             throw new UnscopedPruneException();
         }
-        Set<String> declared = new LinkedHashSet<>();
-        for (ShAgentDesiredState.Post post : nullSafe(desired.posts())) {
-            declared.add(ShAddress.normalizePath(post.url()).toLowerCase(Locale.ROOT));
-        }
-        ShSite resolved = shAgentBatchService.requireSite(site);
-        List<ShAgentBatch.Op> ops = new ArrayList<>();
+        Set<String> declaredPosts = new LinkedHashSet<>();
+        Set<String> protectedFolders = new LinkedHashSet<>();
         for (ShAgentDesiredState.Folder folder : folders) {
-            Optional<ShFolder> target = shAgentBatchService
-                    .findFolder(resolved, ShAddress.normalizePath(folder.path()));
-            if (target.isEmpty()) {
-                continue;
+            protect(protectedFolders, folder.path());
+        }
+        for (ShAgentDesiredState.Post post : nullSafe(desired.posts())) {
+            declaredPosts.add(ShAddress.normalizePath(post.url()).toLowerCase(Locale.ROOT));
+            if (post.folder() != null && !post.folder().isBlank()) {
+                protect(protectedFolders, post.folder().startsWith("folder:")
+                        ? ShAddress.parse(post.folder()).path() : post.folder());
             }
-            for (ShPostUnified post : shAgentBatchService.postsIn(target.get())) {
-                String url = ShAddress.normalizePath(post.getFurl());
-                if (!declared.contains(url.toLowerCase(Locale.ROOT))) {
-                    ops.add(op(ShAgentBatchService.POST_DELETE,
-                            ShAddress.post(site, url).toString(), null, null, null));
-                }
-            }
+        }
+
+        ShSite resolved = shAgentBatchService.requireSite(site);
+        List<ShAgentBatch.Op> postDeletes = new ArrayList<>();
+        List<Doomed> folderDeletes = new ArrayList<>();
+        Set<String> visited = new HashSet<>();
+
+        for (ShAgentDesiredState.Folder folder : folders) {
+            String root = ShAddress.normalizePath(folder.path());
+            shAgentBatchService.findFolder(resolved, root).ifPresent(target ->
+                    sweep(target, root, site, declaredPosts, protectedFolders, visited,
+                            postDeletes, folderDeletes));
+        }
+
+        // Deepest first, then reverse-alphabetical, so siblings go in a fixed order and
+        // a parent never precedes its child (P5: the same document plans the same way).
+        folderDeletes.sort(Comparator.comparingInt(Doomed::depth).reversed()
+                .thenComparing(Comparator.comparing(Doomed::path).reversed()));
+
+        List<ShAgentBatch.Op> ops = new ArrayList<>(postDeletes);
+        for (Doomed doomed : folderDeletes) {
+            ops.add(op(ShAgentBatchService.FOLDER_DELETE,
+                    ShAddress.folder(site, doomed.path()).toString(), null, null, null));
         }
         return ops;
+    }
+
+    /** Depth-first walk of one declared folder's subtree, collecting what must go. */
+    private void sweep(ShFolder folder, String path, String site, Set<String> declaredPosts,
+                       Set<String> protectedFolders, Set<String> visited,
+                       List<ShAgentBatch.Op> postDeletes, List<Doomed> folderDeletes) {
+        // Declared folders may nest (/blog and /blog/2026), so the same folder can be
+        // reached twice; visiting it once keeps the plan free of duplicate deletes.
+        if (!visited.add(folder.getId())) {
+            return;
+        }
+        for (ShPostUnified post : shAgentBatchService.postsIn(folder)) {
+            String url = ShAddress.normalizePath(post.getFurl());
+            if (!declaredPosts.contains(url.toLowerCase(Locale.ROOT))) {
+                postDeletes.add(op(ShAgentBatchService.POST_DELETE,
+                        ShAddress.post(site, url).toString(), null, null, null));
+            }
+        }
+        for (ShFolder child : shAgentBatchService.childrenOf(folder)) {
+            String childPath = ("/".equals(path) ? "" : path) + "/" + nullSafe(child.getName());
+            sweep(child, childPath, site, declaredPosts, protectedFolders, visited,
+                    postDeletes, folderDeletes);
+            if (!protectedFolders.contains(childPath.toLowerCase(Locale.ROOT))) {
+                folderDeletes.add(new Doomed(childPath, depthOf(childPath)));
+            }
+        }
+    }
+
+    /** A folder path and every ancestor of it — all off-limits to the prune. */
+    private static void protect(Set<String> protectedFolders, String rawPath) {
+        String path = ShAddress.normalizePath(rawPath);
+        StringBuilder walked = new StringBuilder();
+        protectedFolders.add("/");
+        for (String segment : ShAgentBatchService.segments(path)) {
+            walked.append('/').append(segment);
+            protectedFolders.add(walked.toString().toLowerCase(Locale.ROOT));
+        }
+    }
+
+    private static int depthOf(String path) {
+        return ShAgentBatchService.segments(path).size();
+    }
+
+    /** A folder the prune will remove, with its depth so the order can be fixed. */
+    private record Doomed(String path, int depth) {
+    }
+
+    private static String nullSafe(String value) {
+        return value == null ? "" : value;
     }
 
     private static ShAgentBatch.Op op(String name, String address, String type, String folder,

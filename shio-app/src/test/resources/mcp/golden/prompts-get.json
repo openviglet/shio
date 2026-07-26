@@ -1,0 +1,14 @@
+{
+  "id" : 1,
+  "jsonrpc" : "2.0",
+  "result" : {
+    "description" : "#string",
+    "messages" : [ {
+      "content" : {
+        "text" : "#string",
+        "type" : "text"
+      },
+      "role" : "user"
+    } ]
+  }
+}

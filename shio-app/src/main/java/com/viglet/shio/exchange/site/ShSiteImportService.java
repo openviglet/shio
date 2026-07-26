@@ -30,6 +30,7 @@ import com.viglet.shio.exchange.model.ShExchangeFolder;
 import com.viglet.shio.exchange.model.ShExchangePackage;
 import com.viglet.shio.exchange.model.ShExchangePost;
 import com.viglet.shio.exchange.model.ShExchangeSite;
+import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -228,7 +229,7 @@ public class ShSiteImportService {
             row.setId(idRemap.get(exPost.id()));
             row.setState(exPost.state() != null ? ShPostState.valueOf(exPost.state()) : ShPostState.DRAFT);
             row.setShFolder(folder);
-            row.setShSite(siteOf(folder));
+            row.setShSite(ShFolderSite.of(folder));
             row.setShPostType(resolvePostType(exPost.postTypeName()));
             row.setTitle(exPost.title());
             row.setSummary(exPost.summary());
@@ -280,15 +281,6 @@ public class ShSiteImportService {
         ShFolder saved = shFolderRepository.save(folder);
         savedByOldId.put(oldId, saved);
         return saved;
-    }
-
-    /** Walk up to the root folder to find the owning site (child folders carry no site). */
-    private ShSite siteOf(ShFolder folder) {
-        ShFolder f = folder;
-        while (f.getParentFolder() != null) {
-            f = f.getParentFolder();
-        }
-        return f.getShSite();
     }
 
     private ShPostType resolvePostType(String name) {

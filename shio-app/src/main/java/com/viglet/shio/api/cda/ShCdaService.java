@@ -34,6 +34,7 @@ import com.viglet.shio.api.cda.dto.ShCdaPost;
 import com.viglet.shio.api.cda.dto.ShCdaPostSummary;
 import com.viglet.shio.api.cda.dto.ShCdaPostTypeSchema;
 import com.viglet.shio.api.cda.dto.ShCdaSite;
+import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -223,12 +224,13 @@ public class ShCdaService {
         if (q == null || q.isBlank()) {
             return new ShCdaListing(null, List.of(), List.of(), page, size, 0);
         }
-        String like = "%" + q.trim().toLowerCase() + "%";
-        Page<ShPostUnified> posts = searchPage(siteId, like, pageable);
+        // The repository normalizes the term (SH131) — lower-casing and %-wrapping it
+        // here as well would search for `%%term%%`, which matches nothing.
+        Page<ShPostUnified> posts = searchPage(siteId, q, pageable);
         return new ShCdaListing(null, List.of(), summaries(posts), page, size, posts.getTotalElements());
     }
 
-    private Page<ShPostUnified> searchPage(String siteId, String like, Pageable pageable) {
+    private Page<ShPostUnified> searchPage(String siteId, String term, Pageable pageable) {
         if (siteId != null && !siteId.isBlank()) {
             if (!siteAllowed(siteId)) {
                 return Page.empty(pageable);
@@ -237,25 +239,25 @@ public class ShCdaService {
             if (!types.isEmpty()) {
                 return preview()
                         ? draftPreferred(shPostUnifiedRepository
-                                .searchBySiteAndTypesAndStateIn(siteId, types, PREVIEW_STATES, like), pageable)
-                        : shPostUnifiedRepository.searchBySiteAndTypesAndState(siteId, types, STATE, like, pageable);
+                                .searchBySiteAndTypesAndStateIn(siteId, types, PREVIEW_STATES, term), pageable)
+                        : shPostUnifiedRepository.searchBySiteAndTypesAndState(siteId, types, STATE, term, pageable);
             }
-            return searchBySites(List.of(siteId), like, pageable);
+            return searchBySites(List.of(siteId), term, pageable);
         }
         // No explicit site: restrict to the token's allow-list when present, else all sites.
         Set<String> allowed = allowedSiteIds();
         if (allowed != null) {
-            return allowed.isEmpty() ? Page.empty(pageable) : searchBySites(allowed, like, pageable);
+            return allowed.isEmpty() ? Page.empty(pageable) : searchBySites(allowed, term, pageable);
         }
         return preview()
-                ? draftPreferred(shPostUnifiedRepository.searchByStateIn(PREVIEW_STATES, like), pageable)
-                : shPostUnifiedRepository.searchByState(STATE, like, pageable);
+                ? draftPreferred(shPostUnifiedRepository.searchByStateIn(PREVIEW_STATES, term), pageable)
+                : shPostUnifiedRepository.searchByState(STATE, term, pageable);
     }
 
-    private Page<ShPostUnified> searchBySites(Collection<String> siteIds, String like, Pageable pageable) {
+    private Page<ShPostUnified> searchBySites(Collection<String> siteIds, String term, Pageable pageable) {
         return preview()
-                ? draftPreferred(shPostUnifiedRepository.searchBySitesAndStateIn(siteIds, PREVIEW_STATES, like), pageable)
-                : shPostUnifiedRepository.searchBySitesAndState(siteIds, STATE, like, pageable);
+                ? draftPreferred(shPostUnifiedRepository.searchBySitesAndStateIn(siteIds, PREVIEW_STATES, term), pageable)
+                : shPostUnifiedRepository.searchBySitesAndState(siteIds, STATE, term, pageable);
     }
 
     /**
@@ -420,9 +422,15 @@ public class ShCdaService {
                 .orElse(true);
     }
 
+    /**
+     * SH128 — walked, not read. Reading {@code folder.getShSite()} here made
+     * {@link #siteAllowed} see {@code null} for every non-root folder, and
+     * {@code allowsSite(null)} is {@code false} whenever a token carries an
+     * allow-list: a scoped CDA token could not list the children of, or resolve the
+     * path to, any folder below a site root.
+     */
     private static String siteIdOf(ShFolder folder) {
-        ShSite site = folder != null ? folder.getShSite() : null;
-        return site != null ? site.getId() : null;
+        return ShFolderSite.idOf(folder);
     }
 
     private static String siteIdOf(ShPostUnified post) {
@@ -444,7 +452,7 @@ public class ShCdaService {
         }
         Collections.reverse(chain); // root → ... → current
         List<ShCdaFolder> breadcrumb = chain.stream().map(mapper::toFolder).toList();
-        ShSite site = currentFolder.getShSite();
+        ShSite site = ShFolderSite.of(currentFolder);
         return new ShCdaPath(
                 site != null ? mapper.toSite(site, rootFolderId(site)) : null,
                 breadcrumb,
