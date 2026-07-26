@@ -27,8 +27,8 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * {@code page}/{@code size}/{@code totalPosts}; this listing returns a folder's children
  * whole, so those fields would be three constants pretending to be a contract. The
  * unpaged-ness is a real limitation rather than a shape decision — a folder with ten
- * thousand posts is one response — and it is tracked as its own task rather than papered
- * over with fields that always say the same thing.</p>
+ * thousand posts is one response — and it is tracked as SH165 rather than papered over with
+ * fields that always say the same thing.</p>
  *
  * @param folderId the folder these children belong to; the site's id when listing a site
  * @param folders  child folders, in manual (position) order

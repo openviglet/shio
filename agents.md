@@ -84,12 +84,22 @@ export class ShSiteService {
 
 ## Key API Endpoints
 
-### Content Navigation
+### Content Navigation — the console reads use the CDA shapes (SH120)
 - `GET /api/v2/site` - List all sites
-- `GET /api/v2/object/{id}/list` - List children (folders + posts)
-- `GET /api/v2/object/{id}/path` - Get breadcrumb path
-  - Returns `{ breadcrumb: [...folders], shSite: {...}, currentFolder: {...} }`
-  - Each breadcrumb item has `rootFolder: 1` for the site's root folder
+- `GET /api/v2/object/{id}/list` — children as `ShConsoleListing`:
+  `{ folderId, folders, posts }` — `ShCdaListing`'s envelope. Rows are **strict supersets**
+  of `ShCdaFolder` / `ShCdaPostSummary`: the CDA's components first (same names, same types,
+  same order), then the console-only fields (`date`/`position` on a folder;
+  `postTypeTitle`/`published`/`publishStatus`/`state` on a post).
+  `ShConsoleShapeOverlapTest` fails the build if a shared component drifts.
+  **Unpaged** — it returns a folder's children whole (SH165).
+- `GET /api/v2/object/{id}/path` and `GET /api/v2/folder/{id}/path` — the CDA's own
+  **`ShCdaPath`**: `{ site, breadcrumb: [...folders], currentFolder }`. Note `site`, not
+  `shSite`; a breadcrumb folder carries `root: true|false`, not `rootFolder: 1`.
+- Owned by `ShConsoleNavigationMapper`, which composes `ShCdaMapper` rather than restating
+  it. **Do not serialize `ShFolder`/`ShPostUnified` out of a console read** — that was the
+  old shape, and it dragged each post's attributes, folder, site and post-type field tree
+  along to render one row.
 
 ### Posts (unified model only)
 Content posts live in `sh_post_unified` (NOT the legacy split `ShPost`/`ShPostDraft`,
@@ -260,31 +270,45 @@ a friendly URL are separate namespaces, and a write that guessed wrong would cre
 content in the wrong place silently. CSRF-exempt (stateless callers), authenticated
 like every other API; the SH54 ACL and SH22 quota apply on the agent path identically.
 
-### Post Types — lossless admin API (SH16, used by the `shio` CLI)
-- `GET /api/v2/post-type` - List all post-types as **lossless** `ShPostTypeDef`s (keeps `Tab`, verbatim `widgetSettings`, nested Relator fields — the authoring inverse of the lossy SH11 CDA schema)
-- `GET /api/v2/post-type/{name}` - One def (404 unknown)
-- `PUT /api/v2/post-type/{name}` - Upsert (idempotent by name); rejects system types (409), unknown widgets (400)
-- `DELETE /api/v2/post-type/{name}` - Delete a non-system type (204/404/409)
-- Console-authenticated (HTTP Basic) + **CSRF-exempt** (stateless CLI), like the CDA writes. **Cascade gotcha:** `ShPostTypeAttr` maps `shWidget`/`shPostType`/`shParentPostTypeAttr` as `@ManyToOne(cascade=ALL)`, so `ShPostTypeAdminService` detaches those before the orphan-removal replace — otherwise an update would cascade-delete the shared widget catalog.
+### Post Types — one name-keyed surface (SH16 + SH117)
+**There is one post-type API and it is keyed by name.** The CLI, the agent path and the
+React console all use it. (SH117 retired the id-keyed, entity-shaped twin that used to
+live at `/api/v2/post/type` — note the slash. If you find a reference to that path, it is
+stale; there is no console post-type controller.)
+- `GET /api/v2/post-type` — list as **lossless** `ShPostTypeDef`s (keeps `Tab`, verbatim
+  `widgetSettings`, nested Relator fields — the authoring inverse of the lossy SH11 CDA schema)
+- `GET /api/v2/post-type/{name}` — one def (404 unknown)
+- `POST /api/v2/post-type` — **create**, 409 on an existing name (name comes from the body).
+  This is what the console's "new post-type" form uses: a collision there is a mistake to
+  report, not a model to overwrite.
+- `PUT /api/v2/post-type/{name}` — **upsert**, idempotent by name (what `shio push` converges
+  with); rejects system types (409), unknown widgets (400)
+- `DELETE /api/v2/post-type/{name}` — delete a non-system type (204/404/409)
 
-### Post Types — console API (id-keyed, entity-shaped) — DIFFERENT from SH16
-The React console (`ShPostTypeService`, post-type editor, "New [PostType]" pickers)
-uses a **separate** surface at **`/api/v2/post/type`** (note the slash, not a hyphen):
-- `GET /api/v2/post/type` (list) and `/{id}` (one) — return the **`ShPostType` entity**
-  with its `shPostTypeAttrs` tree (NOT `ShPostTypeDef`). Reads run through
-  `ShPostTypeConsoleWriteService.list/get` which initializes the LAZY attr graph
-  inside a tx (open-in-view is off) — do **not** rely on `@JsonView` here: with
-  `DEFAULT_VIEW_INCLUSION` off, activating a view *hides* the unannotated scalar
-  fields. No `@JsonView` → all fields serialize, `@JsonIgnore` back-refs stay hidden.
-- `POST /api/v2/post/type`, `PUT /{id}`, `DELETE /{id}` (id-keyed; system types 409).
-- Backed by `ShPostTypeConsoleAPI` + `ShPostTypeConsoleWriteService` (`...api.post.type`),
-  which reuses the same detach-before-replace cascade safety as the SH16 service.
-- **This is session/CSRF-protected** (unlike SH16's `/api/v2/post-type`, which is
-  CSRF-exempt). Two post-type APIs coexist on purpose: console (by id, entity) vs
-  CLI (by name, lossless `Def`).
+**`managed` on a write is a claim about the writer, not a data field** — which is why it is a
+`Boolean` and why *absent* and `false` mean different things:
+- **absent** (or `true`) → a **code-owned** write. Marks the type managed, and is allowed
+  against an already-managed type because the writer is the owner. The CLI's canonical
+  serialization omits the key, so `shio push` and a hand-written `*.json` both land here.
+- **`false`** → a **hand edit** (the console always sends this). Marks the type unmanaged, and
+  is **refused with 409** (`ShManagedPostTypeException`) against a managed type rather than
+  racing the repository that owns the model.
+
+It is a UX guard, not an ACL — any caller may claim either. Console-authenticated (HTTP Basic
+or a session). **CSRF is required of session-bearing callers and waived for stateless ones**
+(`ShStatelessRequestMatcher`, keyed on the session cookie), which is what lets the CLI and the
+browser share the path safely — do not widen that back to a blanket exemption.
+
+**Renaming a post-type is not supported** (SH163): the name is the key, so a `PUT` to a new
+name creates a second type and orphans the first with its content. The console's API-name
+field is read-only for this reason.
+
+**Cascade gotcha:** `ShPostTypeAttr` maps `shWidget`/`shPostType`/`shParentPostTypeAttr` as
+`@ManyToOne(cascade=ALL)`, so `ShPostTypeAdminService` detaches those before the
+orphan-removal replace — otherwise an update would cascade-delete the shared widget catalog.
 
 ### `shio` CLI (`@viglet/shio`, in `cli/`)
-The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`; **`--content` switches both verbs to content**, see below), `context` (`--as agents-md` renders the pack as project agent instructions — SH115),
+The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`; **`--blueprint <name>` takes the starter from the instance instead, and with `--site` applies its content half in the same command** — SH119), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`; **`--content` switches both verbs to content**, see below), `context` (`--as agents-md` renders the pack as project agent instructions — SH115),
 `resolve`, `apply` (SH129 — a desired-state content document; `--check` is the CI drift guard, `-` reads stdin; **`--blueprint <name>` applies a package instead**, with `--param k=v` repeatable, `--params <file>`, `--site`, `--force`), `blueprints` (SH92 — the catalogue; `blueprints <name>` for one package's parameters), `verify` (SH99/SH100 — the content lint; **exits 1 on an error**, `--strict` also on warnings), `digest` (SH101 — one page's structure), `changes` (SH88 — the feed; `--since last` reads the last content pull's position, `--cursor` prints only the position), `remember` (SH114 — the instance memory; bare lists it, `<key> "<note>"` writes one, `--forget` drops one, `--site` scopes it), `mcp`, `dev` (`--content` runs the SH90 sync loop instead of the site's dev server), `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
 **CI gates, in the order they should run:** `shio push --check` (model drift) → `shio push --content --check` (content-tree drift) → `shio apply --check` (document drift) → `shio verify` (content defects). The CLI test suite needs `@viglet/shio-client` built first (`pnpm -C shio-client run build`), or every command test fails on a missing module rather than on its own logic; `shio-sections`' suite needs `@viglet/shio-model` built (`pnpm -C shio-model run build`) for the same reason.
 
@@ -361,8 +385,17 @@ from becoming a third contract (P10).
 - **Packages load from the classpath only.** Where a package may come from is a trust
   question — SH96.
 
-**The first-party set (SH94):** `blog` · `docs` · `product-catalog` · `marketing-site` ·
-`landing`. Each declares a `verify` promise, checked at load against its own content and
+**The first-party set (SH94, SH119):** `blog` · `docs` · `product-catalog` ·
+`marketing-site` · `landing` · **`nextjs-starter`**. The last one is the
+`create-shio-app` template as a package (SH119) and the only one that carries front-end
+`files` — its tree is **generated** from `create-shio-app/template/` by
+`pnpm -C create-shio-app run emit`, with `test/emit.test.mjs` failing the build on drift.
+**If you change `create-shio-app/template/`, run `emit`.** Substitution is split by who
+knows the answer: the server substitutes a package's *content*, the client its *carried
+files* (the project's own name is local identity, and the server never writes a project
+file) — and the JS regex is character-for-character `ShBlueprintParams`' so the two halves
+cannot disagree. A package's path refs are checked per *segment* for `..`, not per
+substring, or `app/[...slug]/page.tsx` would be rejected as traversal. Each declares a `verify` promise, checked at load against its own content and
 after an apply against the instance (alongside the SH99 lint); `shio apply --blueprint` exits
 non-zero when that fails.
 
@@ -504,7 +537,9 @@ When a list has no items, show a centered empty state:
 ## Widget System
 
 ### Dynamic Form Rendering
-Widgets are React components that render based on `shPostTypeAttr.shWidget.name`.
+Widgets are React components that render based on the field's `widget` name
+(`ShPostTypeSchemaField.widget`, projected from the post-type's `fields` by
+`buildSchemaFromPostType` — SH117; it used to read `shPostTypeAttr.shWidget.name`).
 Registry in `src/components/widgets/index.ts` maps widget names to components via `WIDGET_MAP`.
 `getWidget(name)` returns the component, defaulting to `TextWidget` for unknown names.
 
@@ -670,27 +705,36 @@ Full page with grid of post types:
 }
 ```
 
-### ShPostType
+### ShPostType (SH117 — the def shape, no ids, real booleans)
+The console model mirrors the backend `ShPostTypeDef`. There is no `id`: a post-type is
+addressed by `name`, which is why the editor routes on the name and `POST
+/api/v2/post-unified` takes `postType`. The pre-SH117 entity shape (`id`,
+`shPostTypeAttrs`, `shWidget: {id, name}`, `0`/`1` flags) is gone along with the endpoint
+that served it.
 ```typescript
 {
-  id, name, namePlural, title, description,
-  system: number, date, owner,
+  name, title?, namePlural?, description?,
   workflowPublishEntity?: string,
-  shPostTypeAttrs?: ShPostTypeAttr[]
+  system?: boolean,
+  managed?: boolean,   // delivered on read; on write it is a claim — see the API section
+  fields?: ShPostTypeField[]
 }
 ```
 
-### ShPostTypeAttr
+### ShPostTypeField
 ```typescript
 {
-  id, name, label, description,
-  ordinal: number, required: number,
-  isSummary: number, isTitle: number,
-  shWidget: { id, name },
-  widgetSettings: string,
-  shPostTypeAttrs?: ShPostTypeAttr[]  // nested for Relator
+  name, label?, description?,
+  widget?: string,          // the widget NAME, e.g. "HTML Editor" — the catalogue is closed
+  required?: boolean, isTitle?: boolean, isSummary?: boolean,
+  ordinal: number,
+  widgetSettings?: string,  // verbatim JSON, kept as a string so a round trip is lossless
+  fields?: ShPostTypeField[]  // nested for Relator / Tab
 }
 ```
+A field has **no id**, so the post-type editor mints an editor-local `key` per row for
+React/dnd identity and strips it before saving — `name` is what the user is typing and
+cannot double as an identity.
 
 ## Roadmap & docs maintenance
 
@@ -708,8 +752,11 @@ Tasks are numbered `SH<n>` (not contiguous across blocks — epics like SH25/SH6
 own sub-ranges; superseded ids are retired, never reused). The `→ §x.y` pointer on a task
 line is its IMPROVEMENTS.md design section. Per-task implementable specs live in
 `docs/specs/SH<n>-<slug>.md`; the product concept is `docs/specs/SH74-agent-native-cms.md`.
-The current focus is **Blocks H–N** (the agent-native reorientation); Blocks A–G are
-shipped except the SH44–SH47 tenant follow-ups.
+Blocks **H–K, M and N** have shipped; the live backlog is **Block L** (agent safety),
+the Block J/M follow-ups, and Blocks A–G's remaining SH44–SH47 tenant work. Block N's
+result is worth knowing before you quote a number: aligning the console reads on the CDA
+shapes made the *baseline* lean, so the SH112 token ratios fell from 3.8×–23.3× to
+2.6×–12.6× with the agent path unchanged (SH164).
 
 **The cross-file update rules — follow these every time:**
 

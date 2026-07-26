@@ -35,7 +35,7 @@ verify against `git ls-files` before acting.
   - [XI. Blueprints + Claude Code plugin (Block J)](#xi-blueprints--claude-code-plugin-block-j)
   - [XII. Agent safety & human-in-the-loop (Block L)](#xii-agent-safety--human-in-the-loop-block-l)
   - [XIII. Token economy, measured (Block M) — what the measurement opened](#xiii-token-economy-measured-block-m--what-the-measurement-opened)
-  - [XIV. Realignment of what already shipped (Block N)](#xiv-realignment-of-what-already-shipped-block-n)
+  - [XIV. Realignment of what already shipped (Block N) — what building it opened](#xiv-realignment-of-what-already-shipped-block-n--what-building-it-opened)
 - **Part 2 — pre-existing sections**
   - [I. Headless foundation — the CDA](#i-headless-foundation--the-cda) (shipped)
   - [II. JavaScript-for-pages DX](#ii-javascript-for-pages-dx) (shipped)
@@ -949,28 +949,30 @@ posts and must not become a desired-state document that `--prune` can act on —
 home is a single `shio/content/<site>/.memory.yaml`, read on push and written on pull, with
 the same three-way merge the content tree already uses.
 
-## XIV. Realignment of what already shipped (Block N)
+## XIV. Realignment of what already shipped (Block N) — what building it opened
 
-> The reorientation is mostly additive, but it does invalidate a few existing
-> choices. Concept spec §10 has the full table.
+> The reorientation was mostly additive, but it did invalidate some existing choices.
+> Block N spent them → [CHANGELOG.md](CHANGELOG.md) Block N. What is left here is the
+> one lesson worth carrying forward (§XIV.4) and the design for what building it
+> opened. Concept spec §10 has the original table.
 
-### XIV.1 Unify the two post-type APIs (SH117)
+### XIV.1 Renaming a post-type is a move, not an upsert (SH163)
 
-Today there are two: the SH16 **name-keyed, lossless** `/api/v2/post-type` (CLI,
-CSRF-exempt) and the console **id-keyed, entity-shaped** `/api/v2/post/type`
-(session/CSRF). Two APIs for one concept is a tax paid on every agent session
-("which one, and by id or by name?") and a violation of P5/P10. Converge on the
-name-keyed surface, migrate the console onto it, retire the id-keyed one.
+SH117 left the post-type surface keyed by name, which is right — it is how SH79
+addresses everything else — and it means the one operation the surface cannot express
+is a rename. A `PUT /api/v2/post-type/NewName` does not rename `OldName`; it creates a
+second post-type, and the first keeps its id, its attribute rows and every
+`sh_post_unified` row that points at it. The console's API-name field is read-only for
+exactly this reason, which is honest but not a feature.
 
-### XIV.2 `create-shio-app` templates → blueprints (SH119)
-
-Fold the template tree into the §XI.1 blueprint format; `shio init` stays a thin
-wrapper. One appliable format instead of two half-formats.
-
-### XIV.3 Align console read shapes with the CDA DTOs (SH120)
-
-Where the shapes overlap, the console should return the CDA DTO rather than a
-second shape of the same thing — one shape for the agent to learn (P5/P10).
+This is SH134's problem again, and SH134's shape is the answer: **one operation that
+moves rather than two that happen to leave the right rows behind.** A `post-type.move`
+(or `POST /api/v2/post-type/{name}/rename`) that updates the name in place, refuses an
+occupied target, and reports what it moved. The two questions worth settling first:
+whether a rename should rewrite the `type` in the SH82 content documents and
+`shio/content/**` files that name it (they address the post-type by name too, so a
+rename is drift the next `--check` reports), and whether a *managed* type may be
+renamed over the API at all or only in the repo that owns it.
 
 ### XIV.4 Build-time guard for the `@TenantId` JOINED-join hazard (SH122) — ✅ shipped
 
@@ -996,18 +998,72 @@ input (word boundaries fail on both sides of a derived query name). A lint that
 matches nothing passes silently forever, so its patterns are asserted against the
 exact strings that broke production.
 
-### XIV.5 `@viglet/shio-client` is behind the CDA it mirrors (SH162)
+### XIV.6 Re-establish the token claim on its actual sources (SH164)
 
-`ShCdaPost` delivers `locale` and `availableLocales` — SH52's whole point, the two fields a
-headless front end needs to render a language switcher — and the TypeScript mirror declares
-neither. A typed consumer therefore cannot see the feature at all without casting, which is
-the opposite of what a generated-adjacent type file is for.
+Block N's uncomfortable result: SH117 and SH120 fixed the baseline, and every token
+ratio in the SH112 benchmark fell against an unchanged agent path — **3.8×–23.3×
+became 2.6×–12.6×**. Nothing regressed. The measurement simply stopped being flattered
+by a console that shipped entity-shaped JSON.
 
-Found while editing the same file for SH127, which is the useful part: the drift was
-invisible because nothing compares the two shapes. Adding the two fields fixes today; the
-task is the **mirror-completeness test** — every component of every CDA read record has a
-property in `types.ts` — because this file will drift again the next time a DTO grows and
-nobody is looking at both windows.
+The problem this leaves is not the smaller number, it is that **the benchmark can no
+longer distinguish "the protocol is cheaper" from "the old console was fat."** A single
+ratio per task mixes four independent savings, so improving the baseline moved all of
+them at once and there is no way to see which of the protocol's ideas is actually
+carrying the claim. The fix is attribution: measure the four sources separately —
+addressing versus id round trips, one batch versus N writes, a context pack versus a
+crawl, a lint that names the defect versus a read-everything sweep — and give each its
+own floor. Then a future baseline improvement moves the number it should move and
+leaves the rest alone.
+
+The second half is a judgement call to make deliberately rather than by inertia: with
+the baseline lean, is ≈10× still the right target, or was it always a proxy for "an
+agent can do this in one session instead of three"? A target nobody can hit gets
+disabled; a target that measures the wrong thing gets hit and means nothing.
+
+### XIV.7 The console listing is unpaged (SH165)
+
+`GET /api/v2/object/{id}/list` returns every child of a folder. SH120 aligned its
+shape with `ShCdaListing` but deliberately did not copy the `page`/`size`/`totalPosts`
+fields, because three constants pretending to be a contract are worse than an honest
+absence — the CDA has been paged since SH1 and the console has never been.
+
+It is a scaling limit with two halves, and the server half is nearly free: the
+projection already exists, so the endpoint needs the parameters and the count. The
+browser half is the real work and the real decision — pages, infinite scroll, or a
+virtualized list — and it interacts with the browser's client-side sort and search,
+which currently operate on the whole set precisely because the whole set is there. A
+paged listing with a client-side sort would silently sort one page, which is the kind
+of half-migration that is worse than either end state.
+
+### XIV.8 A blueprint's carried files reach an MCP-only caller unsubstituted (SH166)
+
+SH119 split parameter substitution by who knows the answer: the server substitutes a
+package's content, and the client substitutes its carried files. That is right for the
+CLI — the project's npm name is local identity the server has no business being told,
+and the server never writes a project file anyway — and it leaves a caller with no CLI
+holding source that still says `{{projectName}}` with nothing to fill it in from.
+
+Three options, in increasing order of how much they concede: say so (the tool result
+names the files as templates and lists the parameters, which is P9 and costs nothing);
+substitute server-side when the caller supplied the parameter anyway, since an MCP
+apply *does* send `params`; or accept that a front-end half needs a filesystem and that
+an MCP-only client is not the audience for it. The first is almost certainly worth
+doing regardless of which of the others follows.
+
+### XIV.9 Review the remaining blanket CSRF exemptions (SH167)
+
+`/api/v2/post-type` was CSRF-exempt wholesale because only the stateless `shio` CLI
+reached it. SH117 pointed a browser at the same path, and the exemption became a hole
+that no console feature would have surfaced — so it was narrowed to callers holding no
+session cookie (`ShStatelessRequestMatcher`).
+
+`/api/v2/cda/**`, `/api/v2/agent/**` and `/mcp` rest on the same argument, and the
+argument is true of all three *today*. It was also true of the post-type API until it
+wasn't. The check now exists and costs one matcher, so the question is no longer
+whether it is possible but which of the three should adopt it before a feature decides
+for us. The agent namespace is the one to watch: SH109's review queue is a console
+surface over agent writes, and the moment the console reads or writes there from a
+session, that path is in the same position `/api/v2/post-type` was in.
 
 ---
 
