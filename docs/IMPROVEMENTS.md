@@ -824,26 +824,31 @@ not to make collisions less likely; it is to make the remaining ones loud.
 > distribution question (§XI.5) and the five mismatches that shipping the two halves
 > exposed (§XI.7–§XI.11).
 
-### XI.5 Blueprint registry + community convention (SH96)
+### XI.5 The community half of the registry (SH217)
 
-`shio-blueprint-*` npm naming, manifest validation, a curated index (absorbs old
-SH28/SH29/SH31).
+SH96 shipped the local half: the classpath, plus one directory an operator names. That is a
+real trust model — whoever can set `shio.blueprint.path` can already put a jar on the
+classpath, so it grants no new authority, and the person who set it is the person vouching
+for what is in it. Collisions refuse rather than shadow, an unreadable path fails rather
+than yielding fewer packages, and every package reports where it came from.
 
-This is now the **only** thing standing between the first-party set and a community one,
-and the reason it was deferred has sharpened rather than softened. A blueprint is code the
-instance runs against its own content: it provisions post-types and writes pages under the
-caller's credentials. So "where may a package come from" is a trust question, not a
-plumbing one, and the registry deliberately loads from the classpath alone until that
-question has an answer. Shipping a scanned directory or a fetch-by-URL first would be
-shipping the distribution channel without the trust model — which is the shape of every
-supply-chain incident anyone has had.
+What that answer does *not* cover is a package a stranger wrote. "An operator put it there"
+is a subject for a sentence about trust; "it resolved from npm" is not, and the difference
+is the whole remaining task. A blueprint provisions post-types and writes pages under the
+caller's credentials, so fetch-by-URL or registry resolution moves the decision from a
+person to a network — which is the shape of every supply-chain incident anyone has had.
 
-What the task actually owns: the naming convention, a validation pass a publisher can run
-before publishing (the load-time checks SH92 already implements, exposed as a command), a
-statement of what an applied package is *allowed* to do, and the index. The format itself
-needs nothing: a package is already a directory whose contents are validated on load, and
-`formatVersion` already refuses a package written for a newer instance rather than
-mis-reading it.
+What this task owns, then: the `shio-blueprint-*` naming convention (absorbs old
+SH28/SH29/SH31); a validation pass a publisher can run *before* publishing — the load-time
+checks SH92 already implements, exposed as a command, so an author's mistake is caught by
+the author; a written statement of what an applied package is allowed to do, which SH151/SH152
+made answerable by making the dangerous parts opt-in; a curated index; and some provenance
+signal stronger than a directory listing.
+
+The format itself still needs nothing. A package is a directory whose contents are validated
+on load, `formatVersion` refuses one written for a newer instance rather than mis-reading it,
+and SH96 proved the validation is source-independent: a local package is held to exactly the
+same checks, so "it loaded" already means the same thing wherever it came from.
 
 ### XI.11 The remaining packages carry an index page (SH216)
 

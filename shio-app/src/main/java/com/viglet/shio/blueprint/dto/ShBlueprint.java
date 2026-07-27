@@ -33,17 +33,37 @@ import tools.jackson.databind.JsonNode;
  * @param postTypes the {@code ShPostTypeDef} JSON trees, in declared order
  * @param content   the desired-state content documents, in declared order
  * @param files     the front-end files the package carries, with their bodies
+ * @param origin    where this package was loaded from (SH96) — {@link #CLASSPATH} for the
+ *                  first-party set, or the operator-configured directory. Not the author's
+ *                  to declare and therefore not a manifest key: it is a fact about *this
+ *                  instance's* configuration, and a package that could name its own origin
+ *                  could claim to be first-party
  *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
 public record ShBlueprint(ShBlueprintManifest manifest, List<JsonNode> postTypes,
-                          List<JsonNode> content, List<File> files) {
+                          List<JsonNode> content, List<File> files, String origin) {
+
+    /** The origin of a package that shipped with the instance. */
+    public static final String CLASSPATH = "classpath";
 
     public ShBlueprint {
         postTypes = postTypes == null ? List.of() : List.copyOf(postTypes);
         content = content == null ? List.of() : List.copyOf(content);
         files = files == null ? List.of() : List.copyOf(files);
+        origin = origin == null || origin.isBlank() ? CLASSPATH : origin;
+    }
+
+    /** The pre-SH96 form: everything shipped with the instance. */
+    public ShBlueprint(ShBlueprintManifest manifest, List<JsonNode> postTypes,
+                       List<JsonNode> content, List<File> files) {
+        this(manifest, postTypes, content, files, CLASSPATH);
+    }
+
+    /** True when this package did not ship with the instance — an operator added it. */
+    public boolean isLocal() {
+        return !CLASSPATH.equals(origin);
     }
 
     public String name() {
@@ -68,14 +88,22 @@ public record ShBlueprint(ShBlueprintManifest manifest, List<JsonNode> postTypes
      * pages, not what is in them.
      */
     public record Summary(String name, String title, String description, String version,
-                          int postTypes, int posts, int files, JsonNode params) {
+                          int postTypes, int posts, int files, JsonNode params, String origin) {
     }
 
-    /** Summarize for the listing. */
+    /**
+     * Summarize for the listing.
+     *
+     * <p>{@code origin} is reported only for a package the operator added (SH96). Stamping
+     * {@code "classpath"} on all six first-party rows would cost tokens on every listing to
+     * say "normal" (P3), while its <em>presence</em> is the signal that matters: this package
+     * did not ship with the instance, and whoever is about to run it should know that before
+     * it writes to their site (P7).</p>
+     */
     public Summary summary() {
         return new Summary(manifest.name(), manifest.title(), manifest.description(),
                 manifest.version(), postTypes.size(), declaredPosts(), files.size(),
-                manifest.params());
+                manifest.params(), isLocal() ? origin : null);
     }
 
     /** How many posts the content documents declare, across all of them. */

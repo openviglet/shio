@@ -727,8 +727,16 @@ from becoming a third contract (P10).
   the apply standing — the response just does not claim a record it does not have. This is not
   drift detection: it makes "is this site still what the blueprint says" *askable*, and the
   answer is still a `dryRun` away.
-- **Packages load from the classpath only.** Where a package may come from is a trust
-  question — SH96.
+- **Packages load from the classpath, plus one directory an operator names (SH96).**
+  `shio.blueprint.path`, off by default. That *is* the trust model: whoever can set it could
+  already put a jar on the classpath, so it grants no new authority, and the person who set it
+  is the one vouching for what is in it. Three rules — a **name collision refuses** at load
+  naming both origins (shadowing would change what every existing `blog` apply does; ignoring
+  would make the operator's package do nothing); a configured path that is not a readable
+  directory **fails** rather than loading fewer packages; and the **same validation runs**, so
+  "it loaded" means the same thing whichever source it came from. Every package carries its
+  `origin`, reported on the listing for local ones only. No URL fetching, no registry
+  resolution — that is the community half (SH217).
 
 **The first-party set (SH94, SH119, SH156):** `blog` · `docs` · `product-catalog` ·
 `marketing-site` · `landing` · **`nextjs-starter`**. The last one is the

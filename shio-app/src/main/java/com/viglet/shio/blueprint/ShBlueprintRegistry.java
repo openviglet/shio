@@ -11,6 +11,8 @@ package com.viglet.shio.blueprint;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -19,9 +21,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import com.viglet.shio.api.error.ShProblem;
@@ -36,15 +41,24 @@ import tools.jackson.databind.JsonNode;
 /**
  * The blueprint registry (SH92) — the packages this instance knows how to apply.
  *
- * <h2>Where blueprints come from, and where they will come from</h2>
+ * <h2>Where blueprints come from (SH96)</h2>
  *
- * <p>Today: the classpath, {@code /blueprints/<name>/blueprint.json}, which is how the
- * first-party set (SH94) ships. That is deliberately the whole story for now. A
- * blueprint is code the instance executes against its own content, so "where may a
- * package come from" is a trust question, and SH96 is the task that answers it (naming
- * convention, manifest validation, a curated index). Inventing an answer here — a
- * scanned directory, a URL to fetch — would be shipping the distribution channel without
- * the trust model.</p>
+ * <p>Two sources, and the second one is opt-in. The <b>classpath</b>,
+ * {@code /blueprints/<name>/blueprint.json}, is how the first-party set (SH94) ships. An
+ * operator may add <b>one directory</b>, {@code shio.blueprint.path}, laid out the same way
+ * — see {@link ShBlueprintProperties} for why that particular answer and not a URL or a
+ * package registry: whoever can set the property can already put a jar on the classpath, so
+ * it grants no new authority, and the person who set it is the person vouching for what is
+ * in it.</p>
+ *
+ * <p>Three rules make the second source safe to have. <b>A name collision is refused</b>,
+ * never resolved — a local package silently shadowing {@code blog} would change what every
+ * existing automation applies, and neither winner is defensible, so the registry fails
+ * naming both origins. <b>The same validation runs</b>, so a third-party package is held to
+ * the format exactly as a first-party one is. And <b>every package remembers where it came
+ * from</b>, which the listing reports for the local ones — an agent about to write to
+ * somebody's site should be able to tell that the package it picked did not ship with the
+ * CMS (P7).</p>
  *
  * <h2>Loaded eagerly, validated once</h2>
  *
@@ -78,12 +92,20 @@ public class ShBlueprintRegistry {
     private static final List<String> CONTENT_KEYS = List.of("folders", "posts");
 
     private final ShBlueprintCodec codec;
+    private final ShBlueprintProperties properties;
 
     /** Sorted by name so the listing is byte-stable across boots and instances (P5). */
     private volatile Map<String, ShBlueprint> cache;
 
-    public ShBlueprintRegistry(ShBlueprintCodec codec) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public ShBlueprintRegistry(ShBlueprintCodec codec, ShBlueprintProperties properties) {
         this.codec = codec;
+        this.properties = properties;
+    }
+
+    /** The classpath-only registry — the shape {@code ShBlueprintRegistryTest} constructs. */
+    public ShBlueprintRegistry(ShBlueprintCodec codec) {
+        this(codec, new ShBlueprintProperties());
     }
 
     /** Every blueprint this instance carries, by name, in name order. */
@@ -136,14 +158,72 @@ public class ShBlueprintRegistry {
             throw new UnreadableRegistryException(unreadable);
         }
         for (Resource manifest : manifests) {
-            ShBlueprint blueprint = read(manifest);
-            loaded.put(blueprint.name().toLowerCase(Locale.ROOT), blueprint);
+            put(loaded, read(manifest, ShBlueprint.CLASSPATH));
+        }
+        // The classpath first, always: a local package cannot be loaded before the
+        // first-party one it collides with, so the error can name which is which.
+        for (Resource manifest : localManifests()) {
+            put(loaded, read(manifest, properties.getPath().trim()));
         }
         return java.util.Collections.unmodifiableMap(loaded);
     }
 
+    /**
+     * Refuses a second package of the same name rather than picking a winner (SH96).
+     *
+     * <p>Overriding would let a directory silently change what {@code blog} means for every
+     * automation already applying it; ignoring would make an operator's package quietly do
+     * nothing. Neither is defensible, and both are discovered late — so the registry fails
+     * loudly, at load, naming both origins and the one action that resolves it.</p>
+     */
+    private static void put(Map<String, ShBlueprint> loaded, ShBlueprint blueprint) {
+        String key = blueprint.name().toLowerCase(Locale.ROOT);
+        ShBlueprint existing = loaded.get(key);
+        if (existing != null) {
+            throw new DuplicateBlueprintException(blueprint.name(), existing.origin(),
+                    blueprint.origin());
+        }
+        loaded.put(key, blueprint);
+    }
+
+    /**
+     * The manifests in the operator-configured directory, if there is one (SH96).
+     *
+     * <p>A configured path that is not a readable directory is a failure, not an empty
+     * result: an operator who named a path meant it, and a typo that degraded silently to
+     * "the first-party set" is how a site gets built from the wrong packages and nobody
+     * finds out until they read the content.</p>
+     */
+    private List<Resource> localManifests() {
+        if (!properties.hasPath()) {
+            return List.of();
+        }
+        Path root = Path.of(properties.getPath().trim());
+        if (!Files.isDirectory(root)) {
+            throw new UnreadablePathException(properties.getPath(),
+                    Files.exists(root) ? "is not a directory" : "does not exist");
+        }
+        List<Resource> manifests = new ArrayList<>();
+        try (Stream<Path> children = Files.list(root)) {
+            // Sorted, so two instances with the same directory load in the same order and a
+            // collision is reported against the same package on both (P5).
+            for (Path child : children.filter(Files::isDirectory).sorted().toList()) {
+                Path manifest = child.resolve(ShBlueprintManifest.FILE_NAME);
+                if (Files.isRegularFile(manifest)) {
+                    manifests.add(new FileSystemResource(manifest));
+                }
+                // A subdirectory without a manifest is skipped rather than refused: an
+                // operator's package folder is a working directory, and a stray `.git` or
+                // an editor's backup folder is not a malformed package.
+            }
+        } catch (IOException unreadable) {
+            throw new UnreadablePathException(properties.getPath(), unreadable.getMessage());
+        }
+        return manifests;
+    }
+
     /** Reads and validates one package, given its manifest resource. */
-    private ShBlueprint read(Resource manifestResource) {
+    private ShBlueprint read(Resource manifestResource, String origin) {
         String base = baseUri(manifestResource);
         JsonNode raw = parse(manifestResource, base + ShBlueprintManifest.FILE_NAME);
         validateManifestKeys(raw, base);
@@ -170,7 +250,10 @@ public class ShBlueprintRegistry {
                     text(sibling(manifestResource, file.source(), manifest.name()))));
         }
 
-        ShBlueprint blueprint = new ShBlueprint(manifest, postTypes, content, files);
+        // Same validation whichever source it came from (SH96): a package an operator added
+        // is held to the format exactly as a first-party one is, so "it loaded" means the
+        // same thing about both.
+        ShBlueprint blueprint = new ShBlueprint(manifest, postTypes, content, files, origin);
         validatePlaceholders(blueprint);
         validatePromise(blueprint);
         return blueprint;
@@ -471,6 +554,52 @@ public class ShBlueprintRegistry {
                     .withDetail(String.valueOf(cause.getMessage()))
                     .withFix("Check the deployment — an unreadable registry is reported rather "
                             + "than treated as an empty one."));
+        }
+    }
+
+    /**
+     * A 409: {@code shio.blueprint.path} names something this instance cannot scan (SH96).
+     *
+     * <p>Not an empty result. An operator who configured a path meant it, and a misspelling
+     * that quietly degraded to "the first-party set" is how somebody builds a site out of the
+     * wrong packages and only finds out by reading the content.</p>
+     */
+    public static class UnreadablePathException extends ShTeachingException {
+
+        public UnreadablePathException(String path, String why) {
+            super(ShProblem.conflict("blueprint-path-unreadable",
+                            "The configured blueprint directory " + why)
+                    .withDetail("`shio.blueprint.path` is set to '" + path + "', and a configured "
+                            + "path that cannot be scanned is reported rather than treated as "
+                            + "empty — degrading silently to the built-in packages would hide "
+                            + "which packages an apply actually used.")
+                    .withFix("Point `shio.blueprint.path` at a directory holding one subdirectory "
+                            + "per package, each with a " + ShBlueprintManifest.FILE_NAME
+                            + " — or unset it to load the built-in packages only."));
+        }
+    }
+
+    /**
+     * A 409: two packages claim the same name (SH96).
+     *
+     * <p>Neither winner is defensible. Letting the local one shadow a first-party package
+     * changes what {@code blog} means for every automation already applying it, without
+     * anything saying so; letting the first-party one win makes an operator's package do
+     * nothing at all. So the registry refuses, at load, naming both origins — the failure is
+     * loud, immediate, and fixed by renaming a directory.</p>
+     */
+    public static class DuplicateBlueprintException extends ShTeachingException {
+
+        public DuplicateBlueprintException(String name, String first, String second) {
+            super(ShProblem.of("duplicate-blueprint", HttpStatus.CONFLICT,
+                            "Two packages are both named '" + name + "'")
+                    .withDetail("One was loaded from " + first + " and another from " + second
+                            + ". A blueprint is addressed by name, so the registry will not pick "
+                            + "between them: shadowing a package would silently change what an "
+                            + "existing apply does, and ignoring one would make it do nothing.")
+                    .withFix("Rename the package directory in " + second + " — a third-party "
+                            + "package conventionally prefixes its own scope, e.g. 'acme-" + name
+                            + "'."));
         }
     }
 }
