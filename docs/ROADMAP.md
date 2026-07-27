@@ -65,8 +65,9 @@
 > half work at all, which is what made Block L's question askable; and Block L answered it —
 > how a human bounds and undoes an agent.
 >
-> **What is left is follow-ups, not blocks**: H's edges are **closed** (SH136–SH139 shipped;
-> SH84's Turing half and SH140 remain 💭 ideas), K's delivery-side
+> **What is left is follow-ups, not blocks**: H's original edges shipped (SH136–SH139) and
+> driving them turned up the next layer (SH196–SH203, spread across H, I, L and O — the
+> engine's own asymmetries rather than missing capabilities), K's delivery-side
 > route proof and durable incidents (SH141, SH144), I's assets and paging (SH145–SH150), J's
 > reconciliation and registry (SH96, SH153–SH156), M's attribution (SH157–SH161, SH174), N's
 > realignment (SH163–SH167), plus SH44–SH47's tenant work and SH110. The highest-value ones left
@@ -129,8 +130,11 @@
 > invisible to the behavioural tests that already covered those paths. The general
 > lesson is now a working rule — **when a defect class recurs, the fix is a guard per
 > invariant, written the first time the invariant is violated** — and everything it turned up
-> has now shipped, which leaves this block with **no designed work outstanding**: only the two
-> 💭 ideas below. ✅ **SH136** → [CHANGELOG.md](CHANGELOG.md) was the rule's clearest
+> has now shipped (SH136–SH139). What replaced it is a different *kind* of item: not a missing
+> capability but an **asymmetry** between two paths that do the same thing — folder writes that
+> are not audited the way post writes are (**SH196**), and the four cross-block findings that
+> came out of the same reading (SH198–SH203). ✅ **SH136** → [CHANGELOG.md](CHANGELOG.md) was
+> the rule's clearest
 > vindication: the byte-stability lint found **four** live instabilities, one of them inside
 > SH101's render digest, and none of them detectable by any test that runs in a single JVM.
 > ✅ **SH137** → [CHANGELOG.md](CHANGELOG.md) closed the move gap one level up,
@@ -145,6 +149,8 @@
 
 - 💭 **SH84** (deps: SH83 ✅, SH22 ✅) **Turing ecosystem wiring** — the SH22 tenant sweep and its test shipped; what remains is the Turing integration (replaces old SH37). → §VIII.9
 - 💭 **SH140** (deps: SH134 ✅, SH100) **Report inbound links when a post moves** — `ShReference` is id-keyed and survives a move, but a URL typed into another post's rich text does not, and nothing tells the agent which pages it just broke. The cheap version is a count in the change detail; the real one belongs with SH100's route verification. → §IX.2
+- 📋 **SH196** (deps: SH88 ✅, SH137 ✅) **No folder write is audited** — `ShFolderWriteService` records nothing on create, rename, move or delete, so `/agent/changes` reports posts appearing in folders it never saw created and the SH109 review queue cannot show a run's structural half. A resuming session's `since=` catch-up is therefore incomplete by construction. → §VIII.12
+- 💭 **SH197** (deps: SH136 ✅) **Finish the byte-stability class** — the SH136 lint bans `Map.copyOf`/`Set.copyOf`; a hash-ordered `Map.of(…)` reaching a serialized map component is the same defect and is still unguarded. No live instance today, which is exactly when the guard is cheap. → §VIII.11
 
 ## Block K — Perception & verification loop
 
@@ -211,6 +217,8 @@
 - 💭 **SH148** (deps: SH89 ✅) **Digest-only merge base** — `shio/.shio/content-base.json` holds a full copy of every projected field. A per-field hash decides all three merge cases; only a genuine conflict needs values, and those can be re-read. Turns the snapshot from O(content) into O(fields). → §X.8
 - 📋 **SH149** (deps: SH87 ✅) **Folders as files** — a folder exists in the projection only because a post names it, so an empty section cannot be authored locally and a pull silently drops one. Needs a folder marker file (`_folder.md` or similar) that `push --content` declares directly. → §X.9
 - 📋 **SH150** (deps: SH87 ✅, SH134 ✅) **A renamed file is a move, not a re-creation** — `push --content --prune` sends a rename as `post.delete` + `post.upsert`, which is exactly the workaround SH134 exists to prevent: the new post gets a new id and loses the audit trail and version history. The file already refuses to rename halfway (path vs `url:`), so the honest fix is to detect the pair and emit `post.move`. → §X.10
+- 📋 **SH198** (deps: SH99 ✅, SH119 ✅) **The CLI suite cannot be run green** — `pnpm -C cli test` **hangs** unless stdin is closed (a test reads it, and `apply -` is a real stdin consumer), and with stdin closed 7 of 162 fail across `verify-baseline`, `project-files`, `init --blueprint` and `dev --content`. The CI gate chain in agents.md is documented as the project's drift guard, so a suite nobody can run green is a gate nobody runs. Triage first: each failure is either a live defect or a stale expectation, and the two need opposite fixes. → §X.11
+- 📋 **SH199** (deps: SH138 ✅, SH87 ✅) **`push --content` cannot split a large tree** — SH138 gave a compiled document its own 2000-op ceiling, which is a bound, not a solution: a tree past it still dead-ends, because one document per site is the only shape push knows. Splitting by declared folder is the natural unit and interacts with `--prune`, whose scope is exactly those folders — so the split has to preserve prune's blast radius, not just the op count. → §X.12
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 
@@ -267,6 +275,8 @@
 > which is the same as having none.
 
 - 💭 **SH110** (deps: SH106 ✅, SH45) **Agent budget guards** — per-session call/write/storage ceilings, layered on SH45's per-tenant metering. Still blocked on SH45: building the ceiling first means a second metering mechanism to reconcile later. A runaway agent should hit a ceiling and report it, not a bill. → §XII.5
+- 📋 **SH200** (deps: SH55 ✅, SH108 ✅, SH109 ✅, SH38 ✅) **A folder delete is the one write that leaves no trace** — its cascade calls `shPostUnifiedRepository.deleteAll` directly instead of the post writer, so every post beneath it skips the SH55 trash (unrecoverable, where `post.delete` is undoable), the SH51 audit (invisible to `/agent/changes` and unrevertable by the SH109 queue) and the `DELETE` lifecycle event (no webhook, and SH38's cleanup listener never runs, so the file bytes stay on disk forever). The most destructive op on the surface — the one SH108's confirm token exists to gate — is a *harder* delete than deleting each post by hand. → §XII.6
+- 📋 **SH201** (deps: SH54 ✅, SH139 ✅) **The console's move and copy authorize only the destination** — `ShObjectAPI` checks `requireWrite(destId)` and never the objects being moved, so write on any one folder is enough to relocate content out of a subtree the caller cannot write. The agent path already checks both ends (SH134/SH137). Block L's invariant is that the agent path is never a privilege *superset*; this is the console being the looser of the two, which is the same bug wearing the other hat. → §XII.7
 
 ## Block M — Token economy (measured)
 
@@ -343,6 +353,14 @@
 > accepted-findings baseline — SH142's shape (now shipped for `shio verify`) applies to it
 > unchanged. The site provisioning it needed walked the console's CSRF path by hand, which was
 > **SH170** measured rather than argued, and has since shipped.
+>
+> **And what SH137/SH139 found on the way past.** Fixing the agent's move verbs meant reading the
+> console's, and the same lesson landed a third time: the console path is where the careless
+> version of a shared verb lives, because nothing on it is asserted at the level the agent
+> surface is. The two below are what that reading turned up.
+
+- 📋 **SH202** (deps: SH99 ✅) **The console's clone mints a duplicate friendly URL** — "clone" is copy-to-same-folder, and `copyPost` re-slugs `furl` from the title, so cloning yields two posts in one site claiming one URL. `shio verify` reports that as a `duplicate-url` **error**, address resolution picks whichever it reaches first, and the curator's most casual action is the thing that produces it. A copy needs a free URL (`-2`, or the SH134 occupied-target rule applied on create). → §XVI.1
+- 💭 **SH203** (deps: SH137 ✅) **The move dialog offers destinations the server refuses** — it navigates *down* from the site root, so the folders inside the one being moved are reachable and now answer `409` (SH137's cycle guard, correctly). A picker that lists choices which cannot work teaches the curator that moves fail at random; the subtree being moved should be disabled in the tree, with the refusal kept as the backstop it is. → §XVI.2
 
 ## Block P — The visible site (what the human actually looks at)
 

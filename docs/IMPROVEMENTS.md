@@ -494,6 +494,34 @@ what follows:
   fail loudly?* If not, it is not a comment, it is a missing parameter or a missing
   wrapper.
 
+### VIII.12 Folders are absent from the change feed (SH196)
+
+`ShFolderWriteService` records no audit row on create, rename, move or delete. Post writes
+all do, so `/agent/changes` describes a site's *contents* and never its *shape*.
+
+The consequence is specific and it falls on the one workflow the feed exists for. A session
+resuming with `since=<cursor>` is told a post now lives at `folder:Blog/archive/2025` and is
+never told that folder appeared, was renamed from `2024`, or moved. It cannot distinguish
+"someone filed this post into an existing section" from "someone restructured the site", and
+those call for different next actions. The SH109 review queue has the same hole from the
+other side: it groups audit rows by session, so a run whose whole purpose was structural
+shows up empty or half-present, and there is nothing for **revert** to act on.
+
+Two design points worth settling before the code:
+
+- **A folder change is not a post change, and flattening it into one would lie.** The
+  temptation is to emit an `UPDATE` per affected post when a folder moves, because that is
+  what the feed already knows how to carry. But no post changed — SH137 is explicit that a
+  folder move leaves every URL and every field alone — and a feed that reported a hundred
+  post updates for one rename would make a cheap operation look like a rewrite, which is
+  exactly the misreading that makes a consumer stop trusting the feed. The entry is about
+  the folder.
+- **`ShContentAction` has no vocabulary for it yet.** `CREATE`/`UPDATE`/`DELETE` are about
+  the right shape, but a consumer needs to know the subject is a folder to interpret the
+  address (`folder:` vs `post:` per SH79) — so the audit row needs a subject kind, not a new
+  action per subject. That is the same "one dimension per column" argument that kept
+  `agent_session_id` separate from `owner` (§XII).
+
 ## IX. Perception & verification loop (Block K)
 
 > The agent cannot see. Two of the three human round trips in a typical build exist
@@ -656,6 +684,49 @@ address change plus a body rewrite is still a move), and what to do when two fil
 each claim the same base post — which, like every other ambiguity in this block, should be
 a refusal rather than a guess.
 
+### X.11 The CLI suite cannot be run green (SH198)
+
+Two separate problems, and the first hides the second. `pnpm -C cli test` **hangs**: the
+runner inherits a live stdin and something in the suite reads it — plausibly the `apply -`
+path, which is a legitimate stdin consumer being exercised. Closing stdin lets it finish, and
+then 7 of 162 tests fail, spread across `verify-baseline`, `project-files`, `init --blueprint`
+and `dev --content`.
+
+Why this is a roadmap item and not a chore: **agents.md documents the gate chain**
+(`push --check` → `push --content --check` → `apply --check` → `verify`) as the project's
+drift guard, and a suite that hangs is a suite that gets `Ctrl-C`'d and skipped. The failures
+being spread across four unrelated areas is itself the signal — that is the profile of a
+suite that stopped being run, not of one regression.
+
+The triage matters more than the fixes, because the two possible causes need opposite work: a
+failure is either a **live defect** (fix the code, keep the test) or a **stale expectation**
+(fix the test, and ask what changed underneath it and whether anything else depended on the
+old behaviour). Sorting them is the task; the hang is what has to be fixed first, since
+nothing else can be measured until the suite terminates on its own.
+
+### X.12 `push --content` cannot split a large tree (SH199)
+
+**SH138** gave a compiled document its own op ceiling (2000, against the hand-written batch's
+200) because a document's op count is not a measure of what the caller asked for. That removed
+the dead end at 200; it did not remove the dead end. One document per site is still the only
+shape `push --content` knows, so a tree past the new ceiling fails the same way, and the fix
+cannot be "raise it again" — a single transaction is bounded for real reasons.
+
+The natural unit is the **declared folder**, which is also what makes this more than an
+op-count problem: `--prune`'s blast radius is exactly the set of declared folders, so a split
+that changes which folders are declared per call changes what prune deletes. Splitting a site
+into three documents that each declare one third of the tree and each prune is *not*
+equivalent to one document declaring all of it — it is three prunes with three narrower
+scopes, which happens to be safe, and one wrong split is a prune over a scope that swept up a
+sibling nobody declared in that batch.
+
+So the design question is not how to chunk ops; it is how to chunk *declarations* such that
+the union of the parts converges to the same state the whole would have. Two candidates worth
+weighing: split strictly by declared folder subtree (safe, but a site whose posts all live at
+the root cannot split at all), or send one non-pruning pass for content followed by a single
+pruning pass that declares every folder and no posts (converges, at the cost of a second
+round trip and a window where the tree is a superset of the document).
+
 ## XI. Blueprints + Claude Code plugin (Block J)
 
 > *"Skip steps with things that are already done"* only works if the ready-made
@@ -762,6 +833,62 @@ file**. It returns them, the CLI writes them, and it refuses to overwrite withou
 
 Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
 that lands. A runaway agent should hit a ceiling and report it, not a bill.
+
+### XII.6 A folder delete is the one write that leaves no trace (SH200)
+
+`ShFolderWriteService.delete` clears the posts beneath it with
+`shPostUnifiedRepository.deleteAll(...)` — the repository, not `ShPostUnifiedWriteService`.
+Everything this block built hangs off that writer, so the cascade skips all of it at once:
+
+| | `post.delete` on each post | the same posts via `folder.delete` |
+|---|---|---|
+| SH55 trash | soft-deleted, restorable | **rows gone** |
+| SH51 audit | recorded | **nothing** |
+| `/agent/changes` (SH88) | reported | **invisible** |
+| SH109 revert | can undo | **nothing to undo** |
+| `DELETE` lifecycle event | fired | **not fired** — no webhook |
+| SH38 byte cleanup | runs | **never runs; the files leak** |
+
+The framing that makes this urgent rather than tidy: **the most destructive operation on the
+surface is also the least recoverable and the least observable, and it is the one SH108's
+confirm token exists to gate.** The confirm flow makes a caller look at the list before it
+happens, which is worth doing — and then the thing it warned about happens in a way nothing
+can report or reverse afterwards. A curator who deletes a section of forty pages by hand can
+restore them; the same curator using the folder's delete button cannot. That inversion is the
+defect, more than any single missing row.
+
+The fix is almost certainly to route the cascade through the post writer rather than to
+re-implement the six behaviours in the folder writer (P10, applied inside the engine: compose,
+do not fork — which is also SH139's rule one layer down). Two things to decide while doing it:
+
+- **Trash or purge?** Routing through `delete` puts a whole subtree in the trash, which is the
+  recoverable answer and means the FK ordering that motivated the direct `deleteAll` still has
+  to be satisfied at *purge* time instead. Routing through the purge path keeps today's
+  finality but must then fire the events and write the audit itself.
+- **One audit entry or N?** A forty-page subtree should probably record the folder deletion
+  plus its members, because SH109's revert operates per entry and "restore the section" is the
+  action a human wants — which is an argument for the trash answer, since a purge cannot offer
+  it at all.
+
+### XII.7 The console's move and copy authorize only the destination (SH201)
+
+`ShObjectAPI` calls `shContentAclService.requireWrite(destId)` and never checks the objects in
+the request body. So a caller with write on any single folder can move content *out of* a
+subtree they cannot write — which is a removal from the owner's point of view — and can copy
+content they were never granted read on. The agent path checks both ends (`post.move` and
+`folder.move` both `requireWrite` the subject and the destination), so this is one surface
+enforcing SH54 and the other not.
+
+This block's standing invariant is that **the agent path is never a privilege escalation**, and
+it has been argued in that direction throughout — every guard narrower than what was reachable
+before. SH201 is the same invariant read from the other end: after SH106–SH109 the agent path
+is in places *stricter* than the console, and where that happens the console is the hole. The
+invariant to carry forward is symmetrical — **the two surfaces enforce the same ACL, and
+whichever is stricter is the correct one** — because a curator's session is not a lower bar
+than an agent's credential, it is a different one.
+
+Worth noting what this is *not*: a reason to loosen the agent path to match. The whole point of
+Block L is that the strict side is right.
 
 ---
 
@@ -1573,6 +1700,49 @@ stylesheet something to be built from instead of hardcoded values, and it gives 
 Editor something to offer besides text. Raw CSS stays as the escape hatch; the point is that it
 stops being the interface. The open question is whose vocabulary — inventing one is a design
 project, and adopting an existing convention is cheaper and more portable.
+
+## XVI. The human half (Block O) — what reading the console next found
+
+Block O shipped, and its lesson was that **console defects answer `200`**: seven of them, none
+visible to a Java test, a CLI test or the MCP golden. The two below were found the same way but
+from a different angle — not by driving the console, but by fixing the *agent's* move verbs
+(SH134/SH137/SH139) and having to read the console's implementation of the same operation each
+time. The pattern is consistent enough to state as an expectation: **when a verb exists on both
+surfaces, the console's copy is where the careless version lives**, because nothing on it is
+asserted at the level the agent surface is.
+
+### XVI.1 The console's clone mints a duplicate friendly URL (SH202)
+
+"Clone" is copy-to-same-folder, and `copyPost` derives the copy's `furl` from the source's
+title — which is the same title, so the same slug. Two posts in one site then claim one URL.
+
+What makes it worth its own task rather than a footnote is that every downstream mechanism
+already treats this as broken, and correctly: `shio verify` reports `duplicate-url` as an
+**error** (not a warning — it is broken from a visitor's point of view), and `findPost` resolves
+the URL to whichever row it reaches first, so the clone is unaddressable and so, now, is the
+original. SH134 spent real design effort refusing an occupied address on *move*; create simply
+does not ask.
+
+The fix has an obvious shape (suffix until free) and one decision inside it: whether a copy
+should also get a distinguishable **title**, since duplicate titles in a listing are the symptom
+the curator actually sees, and a `-2` URL under an identical title still leaves two rows that
+look the same. Worth doing together, because the URL is derived from the title and fixing only
+the derived value leaves the display ambiguous.
+
+### XVI.2 The move dialog offers destinations the server refuses (SH203)
+
+SH137 added the guard that a folder cannot move into its own subtree — a cycle detaches the
+subtree from the site root and sends the recursive delete round the loop. The guard is right and
+belongs on the server. But the console's move dialog starts at the site root and navigates
+*down*, so the folders inside the one being dragged are exactly the ones a curator scrolls into,
+and they now answer `409`.
+
+The design point generalizes past this dialog: **a picker that lists choices the server will
+refuse teaches the user that the operation fails at random.** The refusal is the backstop, not
+the interface — the tree should disable the moving folder's own subtree, and keep the `409` for
+the case the UI cannot know about (a concurrent move, a stale tree). That division — the client
+prevents what it can see, the server refuses what it must — is the same one SH108's confirm flow
+already uses, where the CLI prints the deletions *and* the server still demands the token.
 
 ---
 
