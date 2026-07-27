@@ -39,6 +39,34 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 public record ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change> results,
                                String confirm) {
 
+    /**
+     * <b>This type cannot represent a truncated change set (SH138).</b>
+     *
+     * <p>There is exactly one row per op, so {@code results.size()} must equal
+     * {@code ops} — and a mismatch is a programming error, not a caller error, so it
+     * fails loudly here rather than answering {@code 200} with a short list.</p>
+     *
+     * <p>Why the invariant is worth a runtime check on a DTO: a plan is the document a
+     * human reads before agreeing to a deletion, and SH135 made it able to list
+     * thousands of them. Every other unbounded section on this surface is capped and
+     * reports the cut ({@code found} vs {@code findings}, {@code truncated}), which is
+     * the correct pattern for a <em>report</em> and the wrong one for a <em>plan</em>:
+     * a shortened sitemap reads as incomplete, while a shortened list of deletions
+     * reads as a complete review of what is about to be destroyed. So the two options
+     * are to exempt the rows from any budget or to refuse the run outright, and the
+     * one thing that must be unavailable is quietly shortening the list. Making the
+     * type reject it is how that stays true against a future {@code limit} parameter
+     * nobody has thought of yet (§VIII.10: guard the invariant, do not resolve to be
+     * careful).</p>
+     */
+    public ShAgentChangeSet {
+        if (results == null || results.size() != ops) {
+            throw new IllegalStateException("A change set carries one row per op and is never "
+                    + "truncated (SH138): " + ops + " ops but "
+                    + (results == null ? "null" : results.size()) + " rows");
+        }
+    }
+
     /** The four-field form: no destructive rows, so no token to hand back (SH108). */
     public ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change> results) {
         this(dryRun, ops, changed, results, null);

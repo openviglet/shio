@@ -210,6 +210,19 @@ the CDA + console services (law P10) and holds no business logic of its own.
   posts first and folders deepest-first; declared folders, their ancestors, and any folder
   a declared post calls home are protected. Also `shio apply <file>` in the CLI
   (`--dry-run` / `--check` / `-` for stdin).
+  **A deletion plan is never shortened (SH138)** — `ShAgentChangeSet`'s constructor rejects
+  `results.size() != ops`, so the type cannot express a cut, and the reason it gets this
+  instead of the `truncated: true` every other unbounded section gets is that a shortened
+  sitemap reads as incomplete while a shortened list of deletions reads as a *complete
+  review of what is about to be destroyed*. Compiled ops therefore have their own ceiling,
+  `shio.agent.batch.max-document-ops` (2000, vs `max-ops` 200 for a caller-written batch):
+  a document's op count is not what the caller asked for, since a prune contributes one op
+  per undeclared object. Which ceiling applies is a `Source` argument only
+  `ShAgentDesiredStateService` passes — **never a field on `ShAgentBatch`**, or a caller
+  could claim the document ceiling for a typed batch. Past it the run is refused
+  (`document-too-large`) naming the deletion count and pointing at narrowing `folders`;
+  do not "fix" that by re-adding the old `batch-too-large` advice, which tells the caller
+  to split ops they never wrote.
 - `GET /agent/blueprints` · `GET /agent/blueprints/{name}` · `POST /agent/blueprints/{name}/apply`
   — **appliable starting points** (Block J, below). `dryRun` in the body returns the whole
   plan, post-types included, and writes nothing. Two opt-ins, both refused by default because

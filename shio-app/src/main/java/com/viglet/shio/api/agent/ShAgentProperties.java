@@ -173,6 +173,26 @@ public class ShAgentProperties {
          * endpoint is for, so hitting it means the caller should be using plan/apply.
          */
         private int maxOps = 200;
+
+        /**
+         * Ops allowed in one plan/apply run, where the ops were <b>compiled from a
+         * document</b> rather than typed by the caller (SH138).
+         *
+         * <p>It has to be a separate, larger number, and the reason is the deletion
+         * plan. SH135 made {@code prune} sweep whole subtrees, so the op count of a
+         * document is not a measure of how much the caller asked for — a three-post
+         * document can compile to four hundred ops because the site holds four hundred
+         * undeclared posts. Held to {@code maxOps}, that run failed with "split the work
+         * into batches of at most 200 ops", which the caller cannot do: they never wrote
+         * the ops, and there is no way to hand-split a converge. A legitimate large prune
+         * had no path forward at all.</p>
+         *
+         * <p>So this is the "exempt the destructive rows from the budget" half of SH138 —
+         * bounded rather than unbounded, because one transaction still holds locks, but
+         * sized for what a real content tree prunes. Past it the run is <b>refused</b>
+         * with a count and a way to narrow scope, never shortened.</p>
+         */
+        private int maxDocumentOps = 2000;
     }
 
     /** Context-pack defaults (SH77) and its token ceiling (SH78). */

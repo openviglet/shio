@@ -61,10 +61,17 @@ public class ShAgentDesiredStateService {
         this.shAgentBatchService = shAgentBatchService;
     }
 
-    /** What would change. Writes nothing, ever — the endpoint's only guarantee. */
+    /**
+     * What would change. Writes nothing, ever — the endpoint's only guarantee.
+     *
+     * <p>Runs as {@code DOCUMENT} (SH138): these ops were compiled here, not typed by the
+     * caller, so the run is bounded by the document ceiling and a run over it is refused
+     * with advice about scope rather than about splitting batches.</p>
+     */
     @Transactional(readOnly = true)
     public ShAgentChangeSet plan(ShAgentDesiredState desired, boolean ids, String actor) {
-        return shAgentBatchService.run(new ShAgentBatch(true, compile(desired)), ids, actor);
+        return shAgentBatchService.run(new ShAgentBatch(true, compile(desired)), ids, actor,
+                ShAgentBatchService.Source.DOCUMENT);
     }
 
     /** Makes it so, atomically. */
@@ -75,7 +82,7 @@ public class ShAgentDesiredStateService {
         // a second mechanism for the declarative path.
         return shAgentBatchService.run(
                 new ShAgentBatch(false, compile(desired), desired == null ? null : desired.confirm()),
-                ids, actor);
+                ids, actor, ShAgentBatchService.Source.DOCUMENT);
     }
 
     /**

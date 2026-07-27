@@ -128,14 +128,17 @@
 > invisible to the behavioural tests that already covered those paths. The general
 > lesson is now a working rule — **when a defect class recurs, the fix is a guard per
 > invariant, written the first time the invariant is violated** — and the open items
-> below are what it turned up next: the same move gap one level up (**SH137**), the same
-> byte-stability question across the rest of the surface (**SH136**), and a truncation
-> hazard that only exists because prune got more powerful (**SH138**).
+> below are what it turned up next: the same move gap one level up (**SH137**) and the same
+> byte-stability question across the rest of the surface (**SH136**). The third,
+> ✅ **SH138** → [CHANGELOG.md](CHANGELOG.md), found something the hazard framing missed:
+> the plan was never truncated, but a compiled document was held to the *hand-written*
+> batch's op ceiling, so a large prune failed with advice ("split into batches") that
+> nobody can follow for ops the server generated. A ceiling with no usable way past it is
+> the same dead end as a silent cut, reached from the other side.
 
 - 💭 **SH84** (deps: SH83 ✅, SH22 ✅) **Turing ecosystem wiring** — the SH22 tenant sweep and its test shipped; what remains is the Turing integration (replaces old SH37). → §VIII.9
 - 📋 **SH136** (deps: SH130 ✅) **Byte-stability guard for the whole agent surface** — SH130 pinned `tools/list` and immediately found it unstable across boots (`Map.of` iteration order). The manifest is byte-stable by test and the context pack by digest, but nothing checks the MCP resources, the prompt list, or any future map-backed payload. One lint (no un-canonicalized `Map`/`Set` reaching a JSON writer) plus a per-payload stability assertion. → §VIII.11
 - 📋 **SH137** (deps: SH134 ✅) **`folder.move`** — posts can now be re-addressed; folders cannot. Renaming a section still means `folder.upsert` at the new path plus `folder.delete` of the old, and that delete cascades over every post beneath it. It is the same defect as SH134 one level up and strictly more destructive, and SH134 makes its absence conspicuous. → §VIII.7
-- 📋 **SH138** (deps: SH135 ✅, SH78 ✅) **Never truncate a deletion plan** — SH135 widened prune to whole subtrees, so a plan can now list thousands of deletes and collide with the SH78 response budget. A truncated deletion plan is the most dangerous truncation in the system: it reads as a complete review of what will be destroyed. Either exempt destructive rows from the budget or refuse the apply, but never silently shorten the list. → §VIII.7
 - 💭 **SH140** (deps: SH134 ✅, SH100) **Report inbound links when a post moves** — `ShReference` is id-keyed and survives a move, but a URL typed into another post's rich text does not, and nothing tells the agent which pages it just broke. The cheap version is a count in the change detail; the real one belongs with SH100's route verification. → §IX.2
 
 ## Block K — Perception & verification loop

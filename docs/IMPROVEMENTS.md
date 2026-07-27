@@ -348,12 +348,19 @@ the same shape one level up and one hazard they created:
   and that delete cascades over everything beneath it — the same defect as SH134, one
   level up, and strictly more destructive. SH134 is what makes its absence conspicuous:
   an agent that has learned `post.move` will reasonably assume the folder verb exists.
-- **Never truncate a deletion plan (SH138).** Widening prune to whole subtrees made a
-  plan able to list thousands of deletions, which puts it in reach of the SH78 response
-  budget for the first time. A truncated deletion plan is the worst truncation available:
-  unlike a shortened sitemap, it does not read as incomplete — it reads as a complete
-  review of what is about to be destroyed. The choice is to exempt destructive rows from
-  the budget or to refuse the apply; silently shortening the list is not on the table.
+
+**What SH138 turned out to be, which is worth remembering when writing the next one.** It
+was filed as a truncation hazard, and the truncation was not there: no code cut a plan row.
+Going to look for it found the actual defect one step away — a compiled document was
+validated as if the caller had typed its ops, so a large prune was refused with advice
+("split into batches of at most 200") that is impossible to follow for ops the server
+generated. **A ceiling with no usable way past it is the same dead end as a silent cut**,
+and it is the harder one to spot, because the failure is loud and looks like a working
+guard. Both halves shipped → [CHANGELOG.md](CHANGELOG.md). Two records that bind what
+follows: a limit's *error* is part of the limit, so a ceiling whose `fix` names an action
+the caller cannot take is not finished; and where an invariant can be expressed in a type,
+express it there — `ShAgentChangeSet` now cannot represent a short list, which is what
+keeps the rule true against a `limit` parameter nobody has proposed yet.
 
 **And one rule SH139 paid for, which binds SH137.** The console had its own copy of "move
 a post", and it was the copy that re-slugged a live URL from the title — the same verb,

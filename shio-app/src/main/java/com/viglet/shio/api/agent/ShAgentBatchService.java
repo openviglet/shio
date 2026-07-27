@@ -155,6 +155,26 @@ public class ShAgentBatchService {
     }
 
     /**
+     * Where a run's ops came from — which is what its size ceiling is (SH138).
+     *
+     * <p>Not a field on {@link ShAgentBatch}: it would then be on the wire, and a caller
+     * could claim the document ceiling for a hand-written batch. Only
+     * {@code ShAgentDesiredStateService} may say {@code DOCUMENT}, because only the server
+     * compiles one.</p>
+     */
+    public enum Source {
+
+        /** The caller wrote these ops. Bounded by {@code shio.agent.batch.max-ops}. */
+        REQUEST,
+
+        /**
+         * The server compiled these from a desired-state document, so the count includes
+         * whatever {@code prune} swept up. Bounded by {@code max-document-ops}.
+         */
+        DOCUMENT
+    }
+
+    /**
      * Runs a batch. One transaction: any op that throws rolls back every op before it,
      * because a half-applied structure costs the caller more than a clean failure.
      *
@@ -164,7 +184,19 @@ public class ShAgentBatchService {
      */
     @Transactional
     public ShAgentChangeSet run(ShAgentBatch batch, boolean ids, String actor) {
-        List<ShAgentBatch.Op> ops = validate(batch);
+        return runOps(batch, ids, actor, Source.REQUEST);
+    }
+
+    /** As {@link #run(ShAgentBatch, boolean, String)}, for ops of a known {@link Source}. */
+    @Transactional
+    public ShAgentChangeSet run(ShAgentBatch batch, boolean ids, String actor, Source source) {
+        return runOps(batch, ids, actor, source);
+    }
+
+    // Both entry points are annotated and neither calls the other: a self-invocation would
+    // bypass the proxy, so the inner annotation would be decoration rather than a transaction.
+    private ShAgentChangeSet runOps(ShAgentBatch batch, boolean ids, String actor, Source source) {
+        List<ShAgentBatch.Op> ops = validate(batch, source);
         // SH107 — publishing is a capability, not a default. Checked before anything runs and
         // on a dryRun too: an agent that cannot publish should learn that while planning, not
         // after it has built twelve pages around the assumption.
@@ -241,16 +273,34 @@ public class ShAgentBatchService {
         }
     }
 
-    private List<ShAgentBatch.Op> validate(ShAgentBatch batch) {
+    private List<ShAgentBatch.Op> validate(ShAgentBatch batch, Source source) {
         List<ShAgentBatch.Op> ops = batch == null || batch.ops() == null ? List.of() : batch.ops();
         if (ops.isEmpty()) {
             throw new EmptyBatchException();
+        }
+        // SH138 — a compiled document is bounded by its own, larger ceiling, and refused with
+        // advice it can act on. Held to the hand-written batch's cap it failed with "split the
+        // work into batches", which nobody can do to a converge they did not write.
+        if (source == Source.DOCUMENT) {
+            int max = properties.getBatch().getMaxDocumentOps();
+            if (ops.size() > max) {
+                throw new DocumentTooLargeException(ops.size(), countDeletes(ops), max);
+            }
+            return ops;
         }
         int max = properties.getBatch().getMaxOps();
         if (ops.size() > max) {
             throw new BatchTooLargeException(ops.size(), max);
         }
         return ops;
+    }
+
+    /** How many of a compiled document's ops destroy something — the half that explains the size. */
+    private static int countDeletes(List<ShAgentBatch.Op> ops) {
+        return (int) ops.stream()
+                .filter(op -> op != null && op.op() != null)
+                .filter(op -> DESTRUCTIVE_OPS.contains(op.op().trim().toLowerCase(Locale.ROOT)))
+                .count();
     }
 
     private Change dispatch(ShAgentBatch.Op op, Session session) {
@@ -985,6 +1035,42 @@ public class ShAgentBatchService {
                     .withDetail("A single transaction is capped at " + max + " operations.")
                     .withFix("Split the work into batches of at most " + max
                             + " ops; each one is still atomic on its own.")
+                    .withExample(max));
+        }
+    }
+
+    /**
+     * A 400: a desired-state document compiled to more ops than one run may hold (SH138).
+     *
+     * <p>Separate from {@link BatchTooLargeException} because the advice is different and the
+     * old advice was unusable. A document's op count is not what the caller typed — a
+     * three-post document compiles to four hundred ops when {@code prune} finds four hundred
+     * undeclared posts — so "split the work into batches" names an action that does not
+     * exist for this surface. What the caller can actually do is narrow the scope the prune
+     * sweeps, and the count of deletions is what tells them that is the problem.</p>
+     *
+     * <p>It refuses rather than shortening the plan, which is the whole point: a plan that
+     * quietly listed the first 2000 of 5000 deletions would read as a complete review of
+     * what is about to be destroyed.</p>
+     */
+    public static class DocumentTooLargeException extends ShTeachingException {
+
+        public DocumentTooLargeException(int sent, int deletes, int max) {
+            super(ShProblem.badRequest("document-too-large",
+                            "This document compiles to " + sent + " ops, over the limit of " + max)
+                    .withDetail(deletes > 0
+                            ? deletes + " of them are deletions, so `prune` is sweeping up more "
+                                    + "than this run can hold. The plan is not shortened to fit: a "
+                                    + "partial list of deletions reads as the whole list."
+                            : "One run is one transaction, so it is bounded even when the caller "
+                                    + "did not write the ops itself.")
+                    .withFix(deletes > 0
+                            ? "Declare fewer folders per document so each run prunes a smaller "
+                                    + "subtree, and apply them one at a time — or raise "
+                                    + "`shio.agent.batch.max-document-ops` if a run this large is "
+                                    + "really intended."
+                            : "Split the document by folder and apply each part, or raise "
+                                    + "`shio.agent.batch.max-document-ops`.")
                     .withExample(max));
         }
     }
