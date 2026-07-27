@@ -45,7 +45,8 @@
 > what the SH112 benchmark measured while implementing Block M, and **SH168–SH175** from
 > the first end-to-end agent-driven build over the finished surface (§VIII.12–§VIII.16,
 > §IX.8, §X.11, §XIII.6), and **SH176–SH182** from driving the *console* over the site that
-> build produced (Block O, §XV) — new tasks are expected to accrete this way, and each one's
+> build produced (Block O — shipped, so its design section is gone; see CHANGELOG.md Block O)
+> — new tasks are expected to accrete this way, and each one's
 > line says what measurement or failure produced it. Superseded and therefore retired: **SH17/SH18** (GraalJS), **SH23 +
 > SH27–SH31** (marketplace → Block J), **SH24 + SH32–SH37** (CRUD-over-MCP → Block H).
 
@@ -58,23 +59,41 @@
 > **SH74** is the epic (this concept) — it is complete when the three roadmap docs
 > and `agents.md` carry the orientation; the code lands as SH75+.
 >
-> Suggested order: **H → K → I → J → L → M** (H, K, I, J and M are shipped). Block H is the
-> protocol everything else speaks; Block K (verification) removed the most expensive unit in
-> the system — the human round trip. **Blocks O and L are the remaining ones**, and both are
-> gates on adoption rather than on capability. **Block O first**: the agent can build a site
-> the console cannot then edit or open, so the human half of the north star is broken before
-> Block L's question — how a human bounds and undoes an agent — can even be asked.
+> Suggested order: **H → K → I → J → O → L → M** — **all of them are now shipped**, Block L
+> except SH110 (blocked on SH45). Block H is the protocol everything else speaks; Block K
+> removed the most expensive unit in the system, the human round trip; Block O made the human
+> half work at all, which is what made Block L's question askable; and Block L answered it —
+> how a human bounds and undoes an agent.
+>
+> **What is left is follow-ups, not blocks**: H's edges (SH136–SH140), K's delivery-side
+> route proof and durable incidents (SH141, SH144), I's assets and paging (SH145–SH150), J's
+> reconciliation and registry (SH96, SH153–SH156), M's attribution (SH157–SH161, SH174), N's
+> realignment (SH163–SH167), plus SH44–SH47's tenant work and SH110. The highest-value ones left
+> are **SH150** (a renamed content file still pushes as delete + create, which loses the post's
+> id, audit trail and history — the one place the file projection contradicts SH134) and
+> **SH153** (a blueprint plan writes and rolls back purely so its content half can resolve
+> post-types, so a plan cannot run on a read-only credential or a replica).
 >
 > **What driving it end to end found (SH168–SH175).** A whole site — model, folder tree,
 > thirteen pages, a file projection, a CI gate — was built over the agent surface alone, and
 > the protocol held: addressing, `dryRun`, the teaching errors, the change cursor, memory,
 > the `304`s and MCP's error routing all behaved as designed, and a blueprint apply landed 30
-> ops in one call. What it exposed is not the protocol but its **edges**: a write accepts a
-> field the model never declared and silently drops the one it meant (**SH168** — the only
-> defect found that destroys content without saying anything), the render digest reports
-> nothing at all for a page composed of sections (**SH169**), and creating a site is not on
-> the surface at all (**SH170**). The rest are round-trip costs and disagreements between two
-> surfaces that already know the answer separately (**SH171–SH175**).
+> ops in one call. What it exposed is not the protocol but its **edges**.
+>
+> ✅ **SH168–SH173 and SH175 have shipped** → [CHANGELOG.md](CHANGELOG.md): a write
+> refuses an undeclared field (and the lint reports the ones already stored), a multi-address read
+> fails per row, an address without a URL falls back to `id:`, `site.upsert` puts site creation on
+> the surface, the CI gate stops failing on content the tree does not manage, `folder` states
+> its own conditional requirement, and the render digest composes a page out of the sections it
+> names instead of reporting the hash of nothing. **Nothing is left from that build** — SH174 is
+> Block M's.
+>
+> **And what driving the console over it found (Block O, shipped).** Seven defects, every one
+> of them answering `200` and none visible to a Java test, a CLI test or the MCP golden: the
+> gap was one of *medium*. The block's most durable output is therefore the browser check that
+> found them, now a CI gate. Two of the seven were one lesson arriving late — a read faithful
+> to the *storage* shape is not a read a console can use. Its write-side twin, **SH168**, has
+> since shipped: the same class of defect, caught before it destroys anything.
 
 ## Block H — The Agent Gateway (MCP + agent-shaped protocol)
 
@@ -119,11 +138,6 @@
 - 📋 **SH138** (deps: SH135 ✅, SH78 ✅) **Never truncate a deletion plan** — SH135 widened prune to whole subtrees, so a plan can now list thousands of deletes and collide with the SH78 response budget. A truncated deletion plan is the most dangerous truncation in the system: it reads as a complete review of what will be destroyed. Either exempt destructive rows from the budget or refuse the apply, but never silently shorten the list. → §VIII.7
 - 📋 **SH139** (deps: SH134 ✅) **The console move must not rewrite a post's URL** — `ShObjectWriteService#moveTo` resets `furl` to a slug of the title on every move, so dragging a published page between folders silently changes its live URL and discards any hand-set one. SH134 made the agent path careful about exactly this; the console path is the one that a human uses by accident. → §VIII.7
 - 💭 **SH140** (deps: SH134 ✅, SH100) **Report inbound links when a post moves** — `ShReference` is id-keyed and survives a move, but a URL typed into another post's rich text does not, and nothing tells the agent which pages it just broke. The cheap version is a count in the change detail; the real one belongs with SH100's route verification. → §IX.2
-- 📋 **SH168** (deps: SH81 ✅, SH99 ✅) **A write must refuse a field the post-type does not declare** — `post.upsert` stores any key handed to it, so a mistyped field name is accepted, reported `changed:1`, silently replaces the value it meant to set, and passes `shio verify`. It is the failure that hides SH152 and the only defect found so far that destroys content without saying anything. → §VIII.12
-- 📋 **SH170** (deps: SH81 ✅, SH151) **Creating a site is not on the agent surface** — there is no `site.upsert` op and no site row in the manifest's endpoint index, so the first step of the headline job leaves the agent path for `POST /api/v2/site`: entity-shaped, id-keyed, and CSRF-gated, which answers a stateless caller with a bodiless 403. → §VIII.13
-- 📋 **SH171** (deps: SH123 ✅, SH80 ✅) **A multi-address read is all-or-nothing** — `GET /agent/read` with N addresses 404s the whole call when any one is unresolvable, so the agent re-reads one at a time to find the offender and a batch read costs more than the loop it replaced. Needs per-address results with the teaching error on the row. → §VIII.14
-- 📋 **SH172** (deps: SH79 ✅, SH100 ✅) **`find` can hand back one address for several posts** — a post with no friendly URL addresses as `post:<site>/`, so three of them return three identical rows and none of them is actionable. SH100's lint already solved this by falling back to `id:` and naming the defect; the read surface should not disagree with it. → §VIII.15
-- 💭 **SH175** (deps: SH83 ✅) **Conditional requirements belong in the tool schema** — `type` documents that it is needed only when creating a post; `folder`, which is needed on exactly the same op, does not, so the most common write costs a wasted round trip to learn it. Cheap to state, and the schema is the one place a model reads before calling. → §VIII.16
 
 ## Block K — Perception & verification loop
 
@@ -141,22 +155,20 @@
 > `link-unresolved` is a *warning*, and closing that gap properly is **SH141**.
 > Sitemap-coverage-vs-blueprint has its comparand now that Block J ships packages with a
 > `verify.posts` promise — but that promise is checked by the *blueprint* surface, and the
-> section vocabulary immediately exposed the lint's own blind spot (**SH154**). SH102's PNG
-> stays an idea and is reported `false` in the manifest.
+> section vocabulary immediately exposed the lint's own blind spot, since closed by
+> ✅ **SH154** → [CHANGELOG.md](CHANGELOG.md). SH102's PNG stays an idea and is reported
+> `false` in the manifest.
 >
-> **What building it opened.** The `image-no-alt` rule showed the report has no way to
-> say "known and accepted" (**SH142**); the verify pass reads every post in the instance
-> on every call, which is fine at a hundred posts and not at ten thousand (**SH143**);
-> and the SH103 window is honest about being in memory, which is exactly the shape SH88
-> already needs to fix (**SH144**).
+> **What building it opened, and what has since closed.** ✅ **SH142 and SH143 have shipped**
+> → [CHANGELOG.md](CHANGELOG.md): the report can say *known and accepted* (and fails when an
+> accepted finding no longer exists, which is what keeps the file from becoming a suppression),
+> and a run can be scoped to a folder, named addresses or an SH88 cursor while the cross-cutting
+> indexes stay whole. What is still open: the SH103 window is honest about being in memory,
+> which is exactly the shape SH88 already needs to fix (**SH144**).
 
 - 💭 **SH102** (deps: SH101 ✅) **Visual snapshot + diff** — optional Playwright PNG + diff vs previous, for the human handoff rather than for the agent. → §IX.4
 - 📋 **SH104** (deps: SH88 ✅, SH101 ✅) **Handoff report** — `shio report` renders the human-facing change summary (what changed, preview links, open questions) for a PR body or console banner. Unblocked by SH88: the cursor exists, so the summary can start where the last one ended instead of mid-story. → §IX.6
 - 📋 **SH141** (deps: SH100 ✅, SH101 ✅) **Prove a route from the delivery side** — SH100 resolves links against the content graph, so a page that exists in the CMS and 404s on the site is still only a *warning*. SH101 already fetches one URL safely (origin-checked, opt-in); this walks the published set through the same path and turns "the front end does not serve this" into an error, with the front-end-owns-routes case declared rather than guessed. → §IX.2
-- 📋 **SH142** (deps: SH99 ✅) **Baseline / accepted findings** — a verify report has two states, and real content has a third: known and accepted. Without it the first legitimate warning teaches everyone to ignore the exit code. A committed `shio/verify-baseline.json` (rule + address) that `shio verify` subtracts, and that fails when an accepted finding no longer exists — so the file cannot rot into a blanket suppression. → §IX.1
-- 📋 **SH143** (deps: SH99 ✅, SH88 ✅) **Scope a verify run to what changed** — the pass reads every post in every readable site, which is right for CI and wrong for the call an agent makes after writing three pages. Needs `?folder=`/`?address=` scoping and `?since=` over SH88's cursor — plus an honest header saying the report covers a subset, because a partial report that reads as a full one is the SH138 hazard again. → §IX.1
-- 📋 **SH154** (deps: SH99 ✅, SH95 ✅) **Verify a page's section references** — SH95 composes a page from a `Multi Select` of section URLs, and the lint's `dangling-reference` rule only knows `Content Select`/`File` fields, so a page can point at a section that does not exist and the report stays green. The rule the vocabulary needs is the one check that makes composition safe. → §IX.7
-- 📋 **SH169** (deps: SH101 ✅, SH95 ✅) **The render digest is blind to a section-composed page** — a page built the first-party way holds its structure in referenced section posts and in `Text` fields, and the digest reads only the page's own HTML, so home and pricing both come back `words:0` with no headings and the *same* digest as a blank page. The proof mechanism does not work on the pattern every section blueprint ships. → §IX.8
 - 💭 **SH144** (deps: SH103 ✅, SH88 ✅) **Durable incident feed** — the SH103 window is in memory and says so, which is the correct answer for now and the wrong one for "was anything failing while I was away". The durable form is the same cursor SH88 builds for content changes; folding incidents into it is cheaper than a second retention policy. → §IX.5
 
 ## Block I — Content as files (local-first authoring)
@@ -191,7 +203,6 @@
 - 📋 **SH147** (deps: SH88 ✅) **Commit-ordered change feed** — SH51 stamps the audit row inside the writer's transaction, so a slow commit can land an older timestamp behind a cursor that already passed it. The 1s lag narrows that window; only commit-ordered sequencing (an outbox, or a sequence assigned at commit) closes it, and a feed used for sync has to be exact. → §X.3
 - 💭 **SH148** (deps: SH89 ✅) **Digest-only merge base** — `shio/.shio/content-base.json` holds a full copy of every projected field. A per-field hash decides all three merge cases; only a genuine conflict needs values, and those can be re-read. Turns the snapshot from O(content) into O(fields). → §X.8
 - 📋 **SH149** (deps: SH87 ✅) **Folders as files** — a folder exists in the projection only because a post names it, so an empty section cannot be authored locally and a pull silently drops one. Needs a folder marker file (`_folder.md` or similar) that `push --content` declares directly. → §X.9
-- 📋 **SH173** (deps: SH87 ✅, SH171) **`push --content` must not fail on content it does not manage** — without `--site` the push reads every post on the instance, so one un-addressable post in an unrelated site aborts the CI gate with a raw 404 and a 700-character URL instead of a finding. Scope the read to the sites the tree actually holds, and make the remote failure a teaching error. → §X.11
 - 📋 **SH150** (deps: SH87 ✅, SH134 ✅) **A renamed file is a move, not a re-creation** — `push --content --prune` sends a rename as `post.delete` + `post.upsert`, which is exactly the workaround SH134 exists to prevent: the new post gets a new id and loses the audit trail and version history. The file already refuses to rename halfway (path vs `url:`), so the honest fix is to detect the pair and emit `post.move`. → §X.10
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
@@ -216,35 +227,39 @@
 > starter, and duplicating page files into packages would fork the starter before SH119 folds
 > it in (**SH156**).
 >
-> **What building it opened.** The two halves that had to meet each other did not quite fit,
-> and both mismatches are now tasks. A package cannot create the site it needs, because the
-> only site-creation path clones the bootstrap template — content nobody asked for
-> (**SH151**). A package's post-type that already exists is left alone and its missing fields
-> are *named*, which is honest and not yet useful (**SH152**). The plan's accuracy costs a
-> write transaction it then rolls back (**SH153**). A `Page` can name a section that does not
-> exist and `shio verify` stays green, because a Multi Select of addresses is not a reference
-> the lint knows about (**SH154**). And nothing on the instance records which package and
-> version a site received, so "is this site still what the blueprint says" is unanswerable
-> (**SH155**).
+> **What building it opened, and what has since closed.** The two halves that had to meet each
+> other did not quite fit. ✅ **SH151, SH152 and SH154 have shipped** →
+> [CHANGELOG.md](CHANGELOG.md): an apply can create its target site (blank, opt-in, named in the
+> plan), it can add the fields an existing post-type lacks — which SH168 turned from a nicety into
+> the difference between a refused write and a package that cannot land — and the lint now reads a
+> `Multi Select` that declares itself as holding post URLs, so a `Page` naming a section that is not
+> there is an error instead of a green run. What is still open: the plan's accuracy costs a write
+> transaction it then rolls back (**SH153**); and nothing records which package and version a site
+> received, so "is this site still what the blueprint says" is unanswerable (**SH155**).
 
 - 💭 **SH96** (deps: SH93 ✅) **Blueprint registry + community convention** — `shio-blueprint-*` naming, manifest validation, curated index (absorbs old SH28/SH29/SH31). Now the single blocker on third-party packages: the registry deliberately loads from the classpath alone until there is a trust model for where a package may come from. → §XI.5
-- 📋 **SH151** (deps: SH93 ✅, SH71 ✅) **A blueprint can create the site it needs** — apply refuses when the site is absent, and the only creation path clones the SH71 bootstrap template, so "one call builds a marketing site" is really two calls and a prune. Needs a blank-site create plus `shio init --blueprint`. → §XI.7
-- 📋 **SH152** (deps: SH93 ✅) **Additive post-type reconciliation** — a package's post-type that already exists is left untouched and its missing fields are reported; the caller then has to add them by hand, and until they do the content writes fields the console cannot render. An opt-in additive merge (add the missing fields, never change or remove one) makes the report actionable. → §XI.8
 - 📋 **SH153** (deps: SH93 ✅, SH81 ✅) **A blueprint plan that needs no write transaction** — the plan provisions the package's post-types and rolls back, purely so the content planner can resolve types that do not exist yet. It is correct and it means a plan cannot run on a read-only credential or a replica. Threading the declared types through the batch planner's pending set removes the write entirely. → §XI.9
 - 📋 **SH155** (deps: SH93 ✅, SH114 ✅) **Record which blueprint a site received** — `changed:0` proves a site matches a document, but nothing records that the document came from `marketing-site 1.0.0`, so a newer package version is undetectable and "is this still the blueprint" cannot be asked. Belongs in SH114's instance memory (now shipped — a keyed note per site is exactly the shape) rather than a table of its own. → §XI.10
 - 📋 **SH156** (deps: SH92 ✅, SH119 ✅) **The rest of the first-party set carries its front-end half** — SH119 made the starter a blueprint and proved the mechanism (a generated `files` tree with a drift test), but `blog`, `docs`, `product-catalog`, `marketing-site` and `landing` still ship content the site cannot render until someone wires the components. The four section-vocabulary packages need `@viglet/shio-sections`' components emitted the same way; the open question is how packages share a tree instead of each carrying a copy. → §XI.11
 
 ## Block L — Agent safety & human-in-the-loop
 
-> An agent-driven CMS is only adoptable if a human can bound it and undo it.
-> Invariant: **the agent path is never a privilege escalation** — tenant isolation
-> (SH22), content ACL (SH54) and token scopes apply identically. → §XII
+> ✅ **SH106–SH109 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block L: the `AGENT` token scope
+> and the agent session id as a column, draft-by-default with a per-credential publish gate,
+> confirm tokens on destructive writes, and the review queue.
+>
+> **The invariant held:** every guard is *narrower* than what an agent could reach before —
+> nothing on the surface gained a capability. Two of them are deliberate tightenings and the
+> changelog says so: a `WRITE` token that used to publish through the agent surface now needs
+> `mayPublish`, and a prune now needs the token from its own plan.
+>
+> **What building it taught.** The publish gate wanted to live at the publish site and belongs
+> before the first write instead — "you cannot publish" is a different answer from a half-built
+> site with a 403 at the end. And the review queue is only expressible because a *run* has an
+> identity: a session minted per request would have produced two hundred one-change sessions,
+> which is the same as having none.
 
-- 📋 **SH106** (deps: SH2, SH51) **`AGENT` token scope + session identity** — scoped, budgeted, expiring credential; every write tagged with the agent session id. SH75 already mints the id and stamps it into the audit *actor string*; this task owns the credential model, so it is where the id gets a column (one migration, not two). → §XII.1
-- 📋 **SH107** (deps: SH106) **Draft-by-default + publish gate** — MCP writes land in DRAFT; publish is a separate tool, off unless the token says `mayPublish`. → §XII.2
-- 📋 **SH108** (deps: SH82) **Destructive-op confirm tokens** — deletes/prunes/apply-with-prune take two steps, the second carrying the **plan hash**. → §XII.3
-- 📋 **SH109** (deps: SH106, SH14) **Review queue console surface** — "the agent proposed N changes": diff (reuse SH14), approve, revert (reuse SH55 trash). The human's new primary workflow. → §XII.4
-- 💭 **SH110** (deps: SH106, SH45) **Agent budget guards** — per-session call/write/storage ceilings. → §XII.5
+- 💭 **SH110** (deps: SH106 ✅, SH45) **Agent budget guards** — per-session call/write/storage ceilings, layered on SH45's per-tenant metering. Still blocked on SH45: building the ceiling first means a second metering mechanism to reconcile later. A runaway agent should hit a ceiling and report it, not a bill. → §XII.5
 
 ## Block M — Token economy (measured)
 
@@ -282,7 +297,8 @@
 >
 > **What it cost the claim, and why that is the right outcome.** SH117 and SH120 both fixed
 > the *baseline* the SH112 benchmark measures against, so every token ratio fell against an
-> unchanged agent path: **3.8×–23.3× became 2.6×–12.6×**, and tokens now clear the concept
+> unchanged agent path: **3.8×–23.3× became 2.6×–12.6×** (and 2.1×–12.1× after Block O's SH176
+> did the same to the post read), and tokens now clear the concept
 > spec's ≈10× on one canonical task of four rather than three. A large part of the measured
 > advantage was never the protocol — it was the console reads being entity-shaped, and it is
 > now lean on both sides. What is left is the part worth defending (addressing, batching, the
@@ -304,27 +320,22 @@
 
 ## Block O — The human half (the console the curator uses)
 
-> The product says the **agent builds and the human curates**. Block N made the console's
-> *reads* agent-shaped and cheap; driving the finished surface end to end then showed that
-> the curating half does not work. A site an agent builds correctly cannot be edited,
-> previewed or opened in the console — which makes law **P7** (never surprise the human)
-> unenforceable, because the human never gets as far as being surprised. → §XV
-
-> **How these were found, and why that matters.** Every task below was reproduced headlessly
-> against the SH94 `marketing-site` blueprint applied to a real site, by
-> [`shio-react/e2e/console-check.mjs`](../shio-react/e2e/console-check.mjs) — 6 of 15 route
-> probes failed on the first run. None of them was visible to any existing test: the API
-> returns `200`, the SPA returns `200`, and the page is empty. **SH182 is therefore the
-> first task in the block**, not the last — the others are what it found, and without it
-> they regress silently.
-
-- 📋 **SH182** (deps: SH120 ✅) **A console smoke check in CI** — the console is the one surface no API test can see: a form that renders zero fields, a dead route, a request that 404s behind a spinner all answer `200`. `e2e/console-check.mjs` walks the routes in a real browser, discovers its targets from the agent surface so it runs on any instance, and fails on a page error, a failed request or a missing field. It exists and is not yet wired to CI. → §XV.1
-- 📋 **SH176** (deps: SH120 ✅, SH117 ✅) **The post read must carry the post-type and parsed data** — `GET /post-unified/{id}` serializes the entity, so `shPostType` is an uninitialized LAZY proxy that arrives as `null` and `data` arrives as a JSON *string* while the console's model declares an object. Every post edit page therefore renders zero fields, for every post-type, and would render no values even if it had a schema. SH120's treatment, applied to the read it skipped. → §XV.2
-- 📋 **SH177** (deps: SH176) **Retire `schemaJson` or maintain it** — the column has exactly one writer, the one-shot `POST /api/v2/migration/unified/run`, so it is empty for every post-type a blueprint, `shio push` or the console's own editor has created since. The console's empty state tells the user to run that migration, which is neither the cause nor a fix a user should be handed. The model already carries `fields`; a second projection of it needs a reason to exist. → §XV.3
-- 📋 **SH178** (deps: SH176) **One schema entry point for the form** — the create page uses `buildSchemaFromPostType`, which falls back to projecting `fields`; the edit page uses `parseSchema`, which does not. That single difference is why creating a post works and editing the same post does not, and why the failure looks like a content problem rather than a missing fallback. → §XV.4
-- 📋 **SH179** (deps: SH120 ✅) **"View Site" navigates to a route that does not exist** — `ROUTES.PREVIEW` (`/console/preview/:siteId`) is declared in `routes.const.ts` and registered nowhere, and three call sites navigate to it, including both View Site buttons. This is the literal answer to "I cannot see the site". → §XV.5
-- 📋 **SH180** (deps: SH179) **An unknown console route must say so** — the SPA renders a normal-looking empty page for any unmatched path, which is what makes SH179 silent and what let a probe of a nonexistent route report success. A not-found route that names the path it could not match, and a test that asserts it. → §XV.6
-- 📋 **SH181** (deps: SH120 ✅) **The Universal Editor resolves a site by the wrong key** — it requests `/api/v2/site/{furl}` against an id-keyed endpoint, so opening it 404s twice before rendering. Either resolve the furl first or give the endpoint a by-name lookup — the same id-versus-name confusion SH117 settled for post-types. → §XV.7
+> ✅ **Block O shipped (SH176–SH182)** → see [CHANGELOG.md](CHANGELOG.md) Block O: the console
+> smoke check in CI, the post read that carries its post-type and parsed data, `schemaJson`
+> retired, one form-schema entry point, View Site pointed at something that exists, a
+> not-found route, and a site read that answers the key it is given.
+>
+> **What building it taught.** Every defect in the block answered `200`, and none was visible
+> to a Java test, a CLI test or the MCP golden — the gap was one of *medium*, so the block's
+> most durable output is the browser check that found them (SH182) rather than any one fix.
+> Two of the seven were the same lesson one endpoint late: a read faithful to the *storage*
+> shape is not a read the console can use (SH176, after SH120), and a second way of saying
+> one thing is a second thing to keep right (SH177/SH178).
+>
+> **What it opened.** The check asserts *a* field renders, not the *right* field, and it has no
+> accepted-findings baseline — SH142's shape (now shipped for `shio verify`) applies to it
+> unchanged. The site provisioning it needed walked the console's CSRF path by hand, which was
+> **SH170** measured rather than argued, and has since shipped.
 
 ---
 

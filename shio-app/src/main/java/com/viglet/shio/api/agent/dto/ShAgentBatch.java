@@ -37,11 +37,19 @@ import tools.jackson.databind.JsonNode;
  *               objects earlier ops in this same batch would have created
  * @param ops    the operations, applied in order. Order matters: a post may be
  *               upserted into a folder the previous op creates
+ * @param confirm the SH108 confirm token from this batch's own {@code dryRun}. Required only
+ *               when the batch deletes something, ignored otherwise — a token on a batch that
+ *               destroys nothing would be a habit rather than a decision
  *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
-public record ShAgentBatch(boolean dryRun, List<Op> ops) {
+public record ShAgentBatch(boolean dryRun, List<Op> ops, String confirm) {
+
+    /** The two-field form, for the batches that never delete (and every pre-SH108 caller). */
+    public ShAgentBatch(boolean dryRun, List<Op> ops) {
+        this(dryRun, ops, null);
+    }
 
     /**
      * One operation.

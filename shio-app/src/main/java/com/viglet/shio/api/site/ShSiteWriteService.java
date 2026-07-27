@@ -51,7 +51,25 @@ public class ShSiteWriteService {
         if (fromTemplate != null) {
             return fromTemplate;
         }
+        return createBlank(payload, owner);
+    }
 
+    /**
+     * A site and its root folder, and nothing else (SH151/SH170).
+     *
+     * <h2>Why blank is a first-class option</h2>
+     *
+     * <p>{@link #create} clones the SH71 bootstrap template because an empty site used to be
+     * useless. A blueprint is exactly the thing that makes it useful — and against a cloned
+     * template, "create a site for this package" means applying a package on top of a Welcome
+     * page and an About page nobody asked for, then pruning them. That is why a blueprint apply
+     * into a fresh site used to report {@code about} as an <em>update</em>.</p>
+     *
+     * <p>So the agent path creates blank sites and the console keeps its starter: the difference
+     * is not a preference, it is whether something else is about to fill the site in.</p>
+     */
+    @Transactional
+    public ShSite createBlank(ShSite payload, String owner) {
         ShSite site = new ShSite();
         site.setName(payload.getName());
         site.setDescription(payload.getDescription());

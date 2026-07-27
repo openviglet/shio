@@ -82,7 +82,11 @@ export function encodeContentSelect(s: FolderSettings): string | null {
 }
 
 export function encodeMultiSelect(s: MultiSelectSettings): string | null {
-  const inner = compact({ postType: s.postType, folderId: s.folderId });
+  const inner = compact({
+    postType: s.postType,
+    folderId: s.folderId,
+    references: s.references,
+  });
   return Object.keys(inner).length ? emit({ multiselect: inner }) : null;
 }
 
@@ -120,7 +124,14 @@ export function decodeContentSelect(raw: string | null): FolderSettings {
 
 export function decodeMultiSelect(raw: string | null): MultiSelectSettings {
   const o = inner(raw, "multiselect");
-  return { postType: str(o, "postType"), folderId: str(o, "folderId") };
+  const references = str(o, "references");
+  return {
+    postType: str(o, "postType"),
+    folderId: str(o, "folderId"),
+    // Narrowed rather than cast: an unknown value round-trips as absent, which is what an
+    // unrecognised declaration should mean to a reader that only knows "post".
+    references: references === "post" ? "post" : undefined,
+  };
 }
 
 export function decodeRelator(raw: string | null): { title?: string } {

@@ -39,6 +39,15 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * {@code found} counts everything the checks produced while {@code findings} carries
  * what fitted, and {@code truncated} says the difference out loud.</p>
  *
+ * <h2>A scoped run says so (SH143)</h2>
+ *
+ * <p>{@code folder}, {@code address} and {@code since} narrow the pass to what an agent
+ * just touched, which is a hundred times less work than the CI pass. The saving is only
+ * safe if the report cannot be mistaken for a full one, so a narrowed run sets
+ * {@code partial} and describes itself in {@code scope}: {@code ok} then means "nothing is
+ * wrong <em>in what I looked at</em>", and the difference is the whole reason both fields
+ * are on the payload rather than left to the caller's memory of its own query string.</p>
+ *
  * @param ok        no error-severity finding: the green light, and the CLI's exit code
  * @param checks    the check groups that actually ran, in wire form
  * @param checked   objects examined (posts + folders), so an empty report is
@@ -48,6 +57,12 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * @param found     total findings produced by the checks
  * @param truncated {@code findings} is shorter than {@code found}: raise {@code limit}
  *                  or narrow with {@code checks}/{@code site}
+ * @param partial   this run covered a <b>subset</b> of the content: {@code ok} is not a
+ *                  statement about the instance. Absent on a full pass
+ * @param scope     what the subset was, in one line — echoed so a stored report still
+ *                  says what it proved. Absent on a full pass
+ * @param notes     anything the caller must know to read the numbers, e.g. that the
+ *                  {@code since} feed itself had more entries than fitted
  * @param findings  the findings themselves, ordered deterministically (P5)
  *
  * @author Alexandre Oliveira
@@ -55,7 +70,8 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  */
 @JsonInclude(Include.NON_NULL)
 public record ShAgentReport(boolean ok, List<String> checks, int checked, int errors, int warnings,
-                            int found, boolean truncated, List<Finding> findings) {
+                            int found, boolean truncated, Boolean partial, String scope,
+                            List<String> notes, List<Finding> findings) {
 
     /** Error: broken now. A published page a visitor can reach is wrong or unreachable. */
     public static final String ERROR = "error";

@@ -6,7 +6,7 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-package com.viglet.shio.api.agent.mcp;
+package com.viglet.shio.api.agent;
 
 import java.util.Optional;
 
@@ -14,7 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
- * The agent session id for the current request (SH75).
+ * The agent session id for the current request (SH75, generalized by SH106).
  *
  * <h2>Why this exists in the host and not later</h2>
  *
@@ -25,23 +25,29 @@ import org.springframework.security.core.context.SecurityContextHolder;
  * transport, on the first {@code initialize}, and stamped into the SH51 audit actor
  * from then on.</p>
  *
- * <p><b>Deliberately a suffix on the actor string, not a column.</b> A column is the
- * right long-term answer and belongs to SH106 ({@code AGENT} token scope + session
- * identity), which owns the credential model and can migrate the schema once. Adding a
- * half-designed column here would mean two migrations and a period where two fields
- * disagree about who did what.</p>
+ * <p><b>SH106 gave it the column SH75 deferred.</b> {@code ShHistory.agent_session_id}
+ * now carries it, so the review queue can select one run's changes with a query instead of
+ * a {@code LIKE} over an actor string, and {@code owner} went back to naming only the human
+ * whose credential was used. One fact per field: an agent acts <em>as</em> someone, and both
+ * halves of that are worth recording separately.</p>
+ *
+ * <p><b>It is no longer MCP's.</b> The REST agent surface writes too — {@code /agent/batch},
+ * {@code /agent/apply}, {@code shio apply} — and a review queue that could only see MCP's
+ * changes would be a review queue with a hole in it exactly where the CLI is. Both transports
+ * set it: MCP mints one on {@code initialize}, and {@code ShAgentSessionFilter} accepts one on
+ * the header for every other agent request.</p>
  *
  * <p>A {@link ThreadLocal}, matching {@code ShTenantContext} — the request thread is
- * the unit of work, and the filter that sets it always clears it.</p>
+ * the unit of work, and whatever sets it always clears it.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
-public final class ShMcpSessionContext {
+public final class ShAgentSessionContext {
 
     private static final ThreadLocal<String> CURRENT = new ThreadLocal<>();
 
-    private ShMcpSessionContext() {
+    private ShAgentSessionContext() {
         // holder
     }
 
@@ -59,18 +65,19 @@ public final class ShMcpSessionContext {
     }
 
     /**
-     * The actor string to record in the SH51 audit trail.
+     * The actor string to record in the SH51 audit trail: the human whose credential was
+     * used, and nothing else.
      *
-     * <p>{@code alice (agent:7f3c…)} rather than either alone: the human whose
-     * credential was used stays visible — an agent acts <em>as</em> someone, and hiding
-     * that would make the audit trail worse, not better — while the session id lets a
-     * reviewer select exactly the changes one run made.</p>
+     * <p>It used to append {@code (agent:7f3c…)} because there was nowhere else to put the
+     * session id. There is now — {@code ShHistory.agent_session_id}, stamped by
+     * {@link com.viglet.shio.api.history.ShContentAuditService} from this same context — so
+     * the two facts are two fields. Rows written before SH106 keep the suffix; they predate
+     * the column and nothing can honestly backfill them.</p>
      *
      * @param principal the authenticated principal name, possibly {@code null}
      */
     public static String actor(String principal) {
-        String base = principal == null || principal.isBlank() ? "agent" : principal;
-        return current().map(session -> base + " (agent:" + session + ")").orElse(base);
+        return principal == null || principal.isBlank() ? "agent" : principal;
     }
 
     /** {@link #actor(String)} for the authenticated principal of the current request. */

@@ -108,6 +108,17 @@ deleted in the nuclear refactor). All post CRUD is the unified API:
 - `POST /api/v2/post-unified` (body `{ folderId, postTypeId, data, state }`)
 - `PUT /api/v2/post-unified/{id}`, `POST .../publish|unpublish|restore|schedule`
 - `DELETE /api/v2/post-unified/{id}`
+
+**Every post-shaped response on this controller is a `ShConsolePost`, never the entity (SH176)**
+— reads *and* writes, owned by `ShConsolePostMapper` + `ShConsolePostReadService`. It carries
+`data` **parsed** (the column is a JSON string) and the post-type as its SH16 `ShPostTypeDef`,
+so the form projects `fields` (there is no `schemaJson` — SH177 dropped the column and deleted
+`/api/v2/migration/unified/**`, its only writer). Mapping happens **inside a transaction**,
+because `shPostType`/`shFolder` are LAZY and a detached proxy is exactly how the post-type used
+to reach the browser as `null` and every post edit page rendered zero fields. A write therefore
+re-reads rather than mapping the entity its own (closed) transaction returned. `undeclaredFields`
+names data keys the post-type does not declare — the console shows them with a warning instead
+of hiding them, which is the read side of SH168.
 - `GET /api/v2/post/xp/{id}` - resolve a referenced post for display (returns
   `{ shPost, allowPublish }`, DRAFT-preferred); used by Content Select / File widgets
 - There is **no** `/api/v2/post` controller — do not add one.
@@ -122,6 +133,15 @@ deleted in the nuclear refactor). All post CRUD is the unified API:
 - `POST /api/v2/folder/{parentFolderId}` - Create folder
 - `PUT /api/v2/folder/{id}` - Update folder
 - `DELETE /api/v2/folder/{id}` - Delete folder
+
+### Sites
+- `GET /api/v2/site` - List all sites
+- `GET /api/v2/site/{id}` — one site **by id, furl or name** (SH181, in that order so the
+  declared key wins a collision). The reads resolve any of the three; `PUT`, `DELETE` and
+  `/{id}/export` stay strictly id-keyed — a read that resolved a near-miss shows the curator
+  the wrong site, a write that did would change it.
+- `POST /api/v2/site` — create. **Session + CSRF**, so a stateless caller gets a bodiless 403;
+  that is the friction SH170 is filed for, and `shio-react/e2e/provision.mjs` walks it by hand.
 
 ### Static files — upload/serve subsystem (SH38)
 Binary files are first-class `File`-post-type unified posts; the bytes live on
@@ -164,9 +184,15 @@ the CDA + console services (law P10) and holds no business logic of its own.
   `?include=`, `?budget=`, `?from=`, `?ids=true` (rows are **id-free by default**, SH121).
   The `digest` is how a later session skips re-reading.
 - `GET /agent/resolve?address=…` — an address → an object id, for id-keyed endpoints.
-- `POST /agent/batch` — **writes**: N addressed ops (`folder.upsert`, `post.upsert`,
-  `post.move`, `post.publish`, `post.unpublish`, `folder.delete`, `post.delete`) in one
-  transaction; `{"dryRun":true}` reports without writing. **`post.move` (SH134) is the
+- `POST /agent/batch` — **writes**: N addressed ops (`site.upsert`, `folder.upsert`,
+  `post.upsert`, `post.move`, `post.publish`, `post.unpublish`, `folder.delete`, `post.delete`) in one
+  transaction; `{"dryRun":true}` reports without writing, and a batch that deletes needs
+  SH108's `confirm` from its own dry run. **A `post.upsert` refuses a `data` key the post-type
+  does not declare** (SH168) — a 400 carrying the field list and the nearest name, because an
+  upsert declares whole state and a typo *replaced* the field it meant. Keys the post already
+  holds are grandfathered (so a post carrying one stays fixable) and the `unknown-field` lint
+  rule reports those; a **plan** warns on the row where a real run refuses, so a blueprint plan
+  can still report the whole SH152 mismatch. **`post.move` (SH134) is the
   only way to rename or relocate a post** — re-addressing a `post.upsert` creates a
   second post and orphans the first with its id, audit trail and history. It takes `to`
   (new address) and/or `folder`, moves the DRAFT *and* PUBLISHED rows together (so a
@@ -180,14 +206,37 @@ the CDA + console services (law P10) and holds no business logic of its own.
   (`--dry-run` / `--check` / `-` for stdin).
 - `GET /agent/blueprints` · `GET /agent/blueprints/{name}` · `POST /agent/blueprints/{name}/apply`
   — **appliable starting points** (Block J, below). `dryRun` in the body returns the whole
-  plan, post-types included, and writes nothing.
-- `GET /agent/find` — posts by site/type/folder-subtree/text; **addresses, not bodies**.
-- `GET /agent/read?address=…&fields=…` — post content, DRAFT-preferred, projected.
+  plan, post-types included, and writes nothing. Two opt-ins, both refused by default because
+  each changes something the package does not own: **`createSite`** (SH151) makes the target site
+  blank if it is absent — the plan names it before it happens, and "the site you named does not
+  exist" is never read as permission — and **`mergePostTypes`** (SH152) adds the fields an
+  existing post-type lacks, never changing, removing or reordering one and never touching a
+  system type. Neither is an MCP argument: either one puts `shio_apply` over the SH132 per-tool
+  ceiling, and `tools/list` is re-sent every turn (P3), so an MCP client creates the site with
+  `shio_write`'s `site.upsert` and the missing-site error says so.
+- `GET /agent/find` — posts by site/type/folder-subtree/text; **addresses, not bodies**. A post
+  with no friendly URL is addressed **`id:`** (SH172) — the fallback lives in
+  `ShAddressResolver.addressOf`, so `find`, `changes` and the review queue cannot disagree about
+  it, and the envelope's `notes` say the address is a fallback rather than a route.
+- `GET /agent/read?address=…&fields=…` — post content, DRAFT-preferred, projected. With **several**
+  addresses a row that cannot resolve carries its own SH80 `error` and the rest still come back
+  (SH171); the **single**-address form still 404s. The read path is
+  `noRollbackFor = ShTeachingException.class` for that reason — catching a teaching exception
+  inside a read transaction otherwise blows up at commit.
 - `GET /agent/verify` — the content-side `tsc` (SH99/SH100). `checks=content,routes,diagnostics`
   (all by default), `site=`, `limit=`. **`ok` is false only for an *error*** — a warning is
   something the CMS cannot prove from inside itself (an empty folder, a link that may be a
   front-end route), and a gate that failed on those is a gate people bypass. Every finding
   carries an SH79 address and a `fix`. `found` vs `findings` makes a cut visible (SH138's rule).
+  **`folder=` / `address=` / `since=` scope the run** (SH143) — a subtree, comma-separated
+  `post:` addresses, or an SH88 cursor; they union rather than intersect. A scoped run sets
+  `partial` and describes itself in `scope` (both **absent** on a full pass), because `ok` over a
+  subset is not a statement about the instance. What scoping narrows is the **subjects**; the
+  cross-cutting indexes — who else claims this URL, does this link land, does this folder hold
+  anything — stay whole, built from id/url projections. Narrowing them would invent a
+  `link-unresolved` for every link out of the scope and miss the duplicate whose twin is
+  outside. A `folder=` that is not a folder is a teaching **400**: a scope that covered nothing
+  while answering `ok` is the worst false green there is.
 - `GET /agent/render?address=…` — a page's **structural** digest (SH101): heading outline,
   landmark counts, links, images with alt, word count, plus a `digest` hash over the
   structure only (a typo fix does not move it; a lost heading does). `?url=` digests the
@@ -270,6 +319,42 @@ a friendly URL are separate namespaces, and a write that guessed wrong would cre
 content in the wrong place silently. CSRF-exempt (stateless callers), authenticated
 like every other API; the SH54 ACL and SH22 quota apply on the agent path identically.
 
+### What bounds an agent — Block L (SH106–SH109)
+
+**The invariant: the agent path is never a privilege escalation**, and after Block L it is
+not a privilege *superset* either. Three guards, all narrower than what was reachable before:
+
+- **`AGENT` token scope (SH106).** The credential an agent runs on: writes on
+  `/api/v2/agent/**` and `/mcp`, reads drafts like `PREVIEW`, carries `ROLE_AGENT` and
+  **not** `ROLE_CDA_WRITE` — on the CDA it stays read-only. That is the whole reason it is
+  not an alias for `WRITE`: a `WRITE` key patches published content outside the agent
+  protocol's guards. It extends the SH2/SH5/SH13 model (expiry, site allow-list, rate
+  limit), so an agent credential can be scoped and expiring instead of a console password.
+- **Session identity (SH106).** `ShHistory.agent_session_id` — the column SH75 deferred, and
+  what makes SH109 a `where` clause. `owner` names only the human whose credential was used.
+  Set by **`ShAgentSessionFilter`** from the `Mcp-Session-Id` header on the agent namespace,
+  and by MCP's own `initialize`; **never minted per request** — a session is a *run*, and one
+  session per call is the same as none. `ShAgentSessionContext` is the ThreadLocal (it used to
+  be `ShMcpSessionContext`, in the `mcp` package).
+- **The publish gate (SH107).** `api_token.may_publish`, **off unless granted**, enforced in
+  `ShAgentBatchService` — which is also the apply and blueprint path, since a document
+  compiles to `post.publish` ops. Checked **before the first write** and **on a dryRun too**,
+  so an agent learns it cannot publish while planning. A console caller has no token and is
+  unaffected. It is a tightening: a `WRITE` token that used to publish through the agent
+  surface now needs `mayPublish`.
+- **Confirm tokens (SH108).** `post.delete`/`folder.delete`/a deleting `prune` take two calls:
+  a `dryRun` returns `confirm`, the real run sends it back. The digest is over **what the plan
+  actually deletes** — not the requested ops, so a delete of something already gone is a noop
+  that needs nothing and a document stays re-runnable (SH82). Absent is a **428** carrying the
+  token and the list; wrong is a **409** naming what would go now. `ShAgentConfirm` owns it;
+  the CLI's `applyConfirmed` does the two-step and prints the deletions *before* applying.
+- **The review queue (SH109).** `GET /api/v2/review/sessions` · `/sessions/{id}` ·
+  `POST …/approve` · `POST …/revert`, plus the console page at `/console/admin/review`.
+  Console-authenticated and deliberately **not** on the agent namespace. It is a **view over
+  the SH51 audit grouped by session id, not a proposal table** — the DRAFT row *is* the
+  proposal — so approve = publish the run's drafts and revert reuses SH14 restore + the SH55
+  trash, per entry, reporting what it cannot honestly undo instead of guessing.
+
 ### Post Types — one name-keyed surface (SH16 + SH117)
 **There is one post-type API and it is keyed by name.** The CLI, the agent path and the
 React console all use it. (SH117 retired the id-keyed, entity-shaped twin that used to
@@ -284,6 +369,13 @@ stale; there is no console post-type controller.)
 - `PUT /api/v2/post-type/{name}` — **upsert**, idempotent by name (what `shio push` converges
   with); rejects system types (409), unknown widgets (400)
 - `DELETE /api/v2/post-type/{name}` — delete a non-system type (204/404/409)
+
+**Creating a site is `site.upsert` on the batch surface (SH170)** — addressed `site:<name>`,
+idempotent, and it creates a **blank** site (`ShSiteWriteService.createBlank`), not a clone of the
+SH71 bootstrap template. It **never updates**: a site's URL and description are console concerns
+with a human looking at them, so the op creates or reports `noop`. A token with an SH2 site
+allow-list is **refused** — inventing a site outside the list is the escalation §XII forbids.
+`POST /api/v2/site` still exists for the console (session + CSRF, and it keeps the starter clone).
 
 **`managed` on a write is a claim about the writer, not a data field** — which is why it is a
 `Boolean` and why *absent* and `false` mean different things:
@@ -309,8 +401,9 @@ orphan-removal replace — otherwise an update would cascade-delete the shared w
 
 ### `shio` CLI (`@viglet/shio`, in `cli/`)
 The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`; **`--blueprint <name>` takes the starter from the instance instead, and with `--site` applies its content half in the same command** — SH119), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`; **`--content` switches both verbs to content**, see below), `context` (`--as agents-md` renders the pack as project agent instructions — SH115),
-`resolve`, `apply` (SH129 — a desired-state content document; `--check` is the CI drift guard, `-` reads stdin; **`--blueprint <name>` applies a package instead**, with `--param k=v` repeatable, `--params <file>`, `--site`, `--force`), `blueprints` (SH92 — the catalogue; `blueprints <name>` for one package's parameters), `verify` (SH99/SH100 — the content lint; **exits 1 on an error**, `--strict` also on warnings), `digest` (SH101 — one page's structure), `changes` (SH88 — the feed; `--since last` reads the last content pull's position, `--cursor` prints only the position), `remember` (SH114 — the instance memory; bare lists it, `<key> "<note>"` writes one, `--forget` drops one, `--site` scopes it), `mcp`, `dev` (`--content` runs the SH90 sync loop instead of the site's dev server), `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
-**CI gates, in the order they should run:** `shio push --check` (model drift) → `shio push --content --check` (content-tree drift) → `shio apply --check` (document drift) → `shio verify` (content defects). The CLI test suite needs `@viglet/shio-client` built first (`pnpm -C shio-client run build`), or every command test fails on a missing module rather than on its own logic; `shio-sections`' suite needs `@viglet/shio-model` built (`pnpm -C shio-model run build`) for the same reason.
+`resolve`, `apply` (SH129 — a desired-state content document; `--check` is the CI drift guard, `-` reads stdin; **`--blueprint <name>` applies a package instead**, with `--param k=v` repeatable, `--params <file>`, `--site`, `--force`), `blueprints` (SH92 — the catalogue; `blueprints <name>` for one package's parameters), `verify` (SH99/SH100 — the content lint; **exits 1 on an error**, `--strict` also on warnings, `--folder`/`--address`/`--since` scope it per SH143, `--baseline`/`--accept` subtract accepted findings per SH142), `digest` (SH101 — one page's structure), `changes` (SH88 — the feed; `--since last` reads the last content pull's position, `--cursor` prints only the position), `remember` (SH114 — the instance memory; bare lists it, `<key> "<note>"` writes one, `--forget` drops one, `--site` scopes it), `mcp`, `dev` (`--content` runs the SH90 sync loop instead of the site's dev server), `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
+**CI gates, in the order they should run:** `shio push --check` (model drift) → `shio push --content --check` (content-tree drift) → `shio apply --check` (document drift) → `shio verify` (content defects).
+**Accepted findings (SH142) live in `shio/verify-baseline.json`** — `(rule, address, field)` triples that `shio verify` subtracts, written by `--accept` (`--reason` optional) and merged, never replaced. The half that matters: **an accepted finding the run no longer produces fails the run**, so the file cannot rot into a blanket suppression that hides the next defect at the same address; a *truncated* report reports the unmatched entries without failing, because a finding that did not fit is not a finding that is gone. It is deliberately a project file and **not** an instance setting — `GET /agent/verify` keeps reporting everything, and only the gate subtracts. The content gates read **only the sites the tree holds** (SH173, derived from `shio/content/<site>/**`), a post they cannot read by address is a named finding rather than a fatal 404, and a remote failure prints the SH80 body — the request URL is behind `SHIO_DEBUG`. The CLI test suite needs `@viglet/shio-client` built first (`pnpm -C shio-client run build`), or every command test fails on a missing module rather than on its own logic; `shio-sections`' suite needs `@viglet/shio-model` built (`pnpm -C shio-model run build`) for the same reason.
 
 ### Content as files — `shio/content/**` (Block I)
 Content projects to **one Markdown file per post**, `shio/content/<site>/<url>.md`: YAML
@@ -410,6 +503,10 @@ vocabulary for the agent, the console and the front end.
 - **A `Page` names its sections by friendly URL, in order**, in a `Multi Select` — not by id
   (SH79 exists so no UUID has to survive between calls) and not as a `Relator` (one fixed
   child shape, while sections are deliberately heterogeneous).
+- **The field declares that it holds addresses** — `widgetSettings` carries
+  `{"multiselect":{"references":"post"}}` (SH154/SH169), and that key is what makes the
+  composition *verifiable* rather than a convention. See **`ShPostReferenceFields`** below;
+  `@viglet/shio-model` encodes it as `references: "post"` on `multiSelect(...)`.
 - **The components are unstyled and semantic**: they ship structure (heading level, landmark,
   alt text) behind stable `shio-*` class names. SH101's digest reads structure, so a shared
   vocabulary is only verifiable if structure is the shared part. `<Sections>` takes
@@ -418,8 +515,20 @@ vocabulary for the agent, the console and the front end.
   (`pnpm -C shio-sections run emit`), because a running instance reads packages off the
   classpath and cannot run a JS build. `emit.test.mjs` fails the build the moment the two
   copies disagree. **If you change `src/post-types.ts`, run `emit`.**
-- Not yet checked by the lint: a `Page` can name a section that does not exist and
-  `shio verify` stays green (**SH154**).
+**`ShPostReferenceFields`** (`com.viglet.shio.api.agent.verify`) is the one place that answers
+"does this `Multi Select` hold post URLs or tags", and both readers key on it (SH154/SH169):
+- `shio verify`'s **`dangling-reference`** rule resolves each declared URL in the post's own site
+  and reports the ones that are not there — the same rule that already knew an id-shaped
+  `Content Select`/`File` reference. `multiselect.postType`, when present, narrows it.
+- `/agent/render`'s digest **composes** the page: each referenced section contributes its title as
+  an `<h2>` and its markup/text fields to the outline, in the order the page names them, so two
+  pages built from different sections no longer share `e3b0c442…` (the hash of nothing). A URL
+  that resolves to nothing becomes `<h2>[missing section /url]</h2>` rather than contributing
+  nothing — two different mistakes must not hash the same.
+- **A `Multi Select` without the key stays tags.** Reading every value as a URL would report a
+  defect for every tag on every post, which is why the field has to say what it holds. `references`
+  and not `postType` because sections are heterogeneous, and not a naming convention because
+  nothing can check prose.
 
 ### The Claude Code plugin (SH97)
 
@@ -539,7 +648,9 @@ When a list has no items, show a centered empty state:
 ### Dynamic Form Rendering
 Widgets are React components that render based on the field's `widget` name
 (`ShPostTypeSchemaField.widget`, projected from the post-type's `fields` by
-`buildSchemaFromPostType` — SH117; it used to read `shPostTypeAttr.shWidget.name`).
+**`postFormSchema()`** — the one exported entry point, SH178. It used to read
+`shPostTypeAttr.shWidget.name` (SH117), and there used to be a second export with no fallback,
+which is why creating a post worked and editing it did not.)
 Registry in `src/components/widgets/index.ts` maps widget names to components via `WIDGET_MAP`.
 `getWidget(name)` returns the component, defaulting to `TextWidget` for unknown names.
 
@@ -752,11 +863,12 @@ Tasks are numbered `SH<n>` (not contiguous across blocks — epics like SH25/SH6
 own sub-ranges; superseded ids are retired, never reused). The `→ §x.y` pointer on a task
 line is its IMPROVEMENTS.md design section. Per-task implementable specs live in
 `docs/specs/SH<n>-<slug>.md`; the product concept is `docs/specs/SH74-agent-native-cms.md`.
-Blocks **H–K, M and N** have shipped; the live backlog is **Block L** (agent safety),
-the Block J/M follow-ups, and Blocks A–G's remaining SH44–SH47 tenant work. Block N's
+Blocks **H–L, M, N and O** have shipped (Block L except **SH110**, still blocked on SH45);
+the live backlog is the per-block follow-ups and Blocks A–G's remaining SH44–SH47 tenant work. Block N's
 result is worth knowing before you quote a number: aligning the console reads on the CDA
 shapes made the *baseline* lean, so the SH112 token ratios fell from 3.8×–23.3× to
-2.6×–12.6× with the agent path unchanged (SH164).
+2.6×–12.6× with the agent path unchanged — and to **2.1×–12.1×** once Block O's SH176 did the
+same to the post read (SH164).
 
 **The cross-file update rules — follow these every time:**
 

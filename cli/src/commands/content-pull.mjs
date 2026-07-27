@@ -27,6 +27,7 @@ import {
   deleteDoc,
   readBase,
   readLocal,
+  sitesOf,
   readRemote,
   writeBase,
   writeDoc,
@@ -44,8 +45,13 @@ export async function run(flags, _positionals, ctx) {
   const agent = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
   const admin = new ShioAdminClient({ baseUrl, user, password, fetch: ctx.fetch });
 
-  const { docs: remote, truncated, count } = await readRemote(agent, {
+  const local = await readLocal(ctx, { dir, site });
+  const { docs: remote, truncated, count, skipped } = await readRemote(agent, {
     site,
+    // SH173 — scope the server read to the sites this tree holds. A first pull into an empty
+    // tree has no sites to name and reads the instance, which is right: there is nothing to
+    // scope to yet, and that is the one case where reading everything is the intent.
+    sites: sitesOf(local),
     limit: Number(flags.limit ?? 200),
   });
   if (truncated && !flags.allowPartial) {
@@ -59,9 +65,18 @@ export async function run(flags, _positionals, ctx) {
     );
   }
 
+  if (skipped.length) {
+    // SH173: what could not be read by address, named — the projection is short by exactly
+    // these and saying so beats letting a later diff look like a deletion.
+    ctx.stdout.write(
+      `shio pull --content: ${skipped.length} post(s) could not be read by address and are not ` +
+        "in this projection (run `shio verify` for the full report):\n" +
+        skipped.slice(0, 5).map((row) => `  ! ${row.address} — ${row.reason}\n`).join(""),
+    );
+  }
+
   const bodyField = bodyFields(await admin.getPostTypeDefs());
   const base = await readBase(ctx, flags.baseFile ?? BASE_FILE);
-  const local = await readLocal(ctx, { dir, site });
 
   const report = { written: [], deleted: [], unchanged: [], conflicts: [], kept: [] };
   const nextPosts = { ...base.posts };

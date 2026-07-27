@@ -10,6 +10,7 @@
     "compile": "npm run compile:deps && npm run compile:build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "console:provision": "node e2e/provision.mjs",
     "console:check": "node e2e/console-check.mjs"
   },
   "dependencies": {

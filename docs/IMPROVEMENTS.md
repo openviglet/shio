@@ -36,7 +36,6 @@ verify against `git ls-files` before acting.
   - [XII. Agent safety & human-in-the-loop (Block L)](#xii-agent-safety--human-in-the-loop-block-l)
   - [XIII. Token economy, measured (Block M) — what the measurement opened](#xiii-token-economy-measured-block-m--what-the-measurement-opened)
   - [XIV. Realignment of what already shipped (Block N) — what building it opened](#xiv-realignment-of-what-already-shipped-block-n--what-building-it-opened)
-  - [XV. The human half — the console the curator uses (Block O)](#xv-the-human-half--the-console-the-curator-uses-block-o)
 - **Part 2 — pre-existing sections**
   - [I. Headless foundation — the CDA](#i-headless-foundation--the-cda) (shipped)
   - [II. JavaScript-for-pages DX](#ii-javascript-for-pages-dx) (shipped)
@@ -468,123 +467,6 @@ what follows:
   fail loudly?* If not, it is not a comment, it is a missing parameter or a missing
   wrapper.
 
-### VIII.12 A write must refuse a field the post-type does not declare (SH168)
-
-`post.upsert` writes its `data` map into `sh_post_unified` without checking the keys
-against the post-type. Every consequence follows from that one omission, and they compound
-in the wrong direction:
-
-```
-{"op":"post.upsert","address":"post:Site/about","type":"Page",
- "data":{"title":"About","contentt":"<p>…</p>"}}     → 200, changed:1
-```
-
-The op reports success. `contentt` is stored. `content` — the field that was meant, and the
-only one the console renders and the SDK types — is now **absent**, because upsert declares
-whole state. `shio verify` reads the post, finds no rule about unknown keys, and returns
-`ok`. The page is blank on the site and green in every check the agent has.
-
-This is why SH152's honest report is not enough on its own. A package whose `Page` lacks
-`sections` writes `sections` anyway; the content lands, the console cannot show it, `shio
-types` cannot type it, and nothing anywhere says so. Fixing reconciliation makes that
-specific collision rarer; fixing the write makes the whole class visible.
-
-The refusal is the P6 shape already used for an unknown post-type — `allowed` is the
-post-type's field list, and `didYouMean` is nearly free at one edit distance, which is
-exactly the case a typo produces. Two decisions belong in the task. First, whether it is a
-400 or a warning: a 400 is right, because the alternative is a write that half-happened,
-and every other unknown-name mistake on this surface is already a 400. Second, the escape
-hatch — the current behaviour is load-bearing for nobody, but a post that *already* holds
-undeclared keys (SH152's collisions, and the `File` posts on any older instance) must stay
-readable and re-writable, so the check binds new keys rather than existing ones, and the
-`unknown-field` lint rule is what reports the ones already there.
-
-### VIII.13 Creating a site is not on the agent surface (SH170)
-
-The batch surface has seven ops and none of them makes a site. The manifest's endpoint
-index lists twenty-nine rows and none of them is `POST /api/v2/site`. So an agent asked for
-the thing the product is *for* — "build me a site" — discovers that step one is not here,
-and lands on the console entity API: id-keyed, entity-shaped, and outside the CSRF
-exemptions that `/agent/**` and `/mcp` enjoy. A stateless caller with valid credentials
-gets `403` with an empty body — no `fix`, no `allowed`, nothing to read.
-
-Three things want fixing together, and the third is the reason to do it as one task:
-
-1. A `site.upsert` op (or an explicit refusal that names the endpoint and the CSRF dance),
-   so the first step is addressed and idempotent like every other write.
-2. The site row in the manifest index, whichever way (1) goes — an agent should never have
-   to learn an endpoint exists by reading the Java.
-3. **A blank site.** `ShSiteWriteService.create` clones the SH71 bootstrap — a new site
-   arrives holding `welcome` and `about` Pages nobody asked for, which is why a blueprint
-   apply into a fresh site reports `about` as an *update* and why `--prune` is the only way
-   back to what was requested. This is SH151's blocker seen from the other side; whichever
-   task lands first should carry it.
-
-The CSRF half also feeds SH167: the argument for exempting `/agent/**` wholesale is that
-only stateless clients reach it, and the argument for *not* exempting `/api/v2/site` is
-that a browser does. Both are true, and the agent path needs a site-creation route that
-does not depend on which of them wins.
-
-### VIII.14 A multi-address read is all-or-nothing (SH171)
-
-`GET /agent/read?address=…&address=…` exists so N posts cost one round trip. One
-unresolvable address returns `404` for the whole call, which inverts the saving: the agent
-now re-reads the addresses one at a time to discover which was wrong, and the batch form is
-strictly worse than the loop it replaced. The failure is not hypothetical — it is what
-takes `shio push --content` down (§X.11), and there the bad address belongs to content the
-caller never asked about.
-
-The shape is settled by the rest of the surface: `/agent/batch` already returns a
-`results` array positional to `ops`, so `read` should return one row per requested address
-with the SH80 error object on the rows that failed, and a top-level count of how many
-resolved. The status code is the only real decision — `200` with per-row errors reads
-cleanly and risks a caller that checks only the status, so the task should follow whatever
-`batch` does with a partial failure and not invent a third convention.
-
-Keep the current behaviour for the **single**-address form. A one-address read that 404s is
-correct and callers depend on it.
-
-### VIII.15 `find` can hand back one address for several posts (SH172)
-
-SH79's premise is that an address names a post. A post with no friendly URL has no address
-under that scheme, and `find` renders it as `post:<site>/` anyway — so three URL-less File
-posts come back as three rows carrying the *same* address, differing only in `title`:
-
-```
-{"address":"post:teste/","type":"File","title":"notify-weekly.png"}
-{"address":"post:teste/","type":"File","title":"notify-bonus.png"}
-{"address":"post:teste/","type":"File","title":"index.html"}
-```
-
-Nothing an agent does with those rows can work. `read` on that address returns one
-arbitrary post or 404s; a write to it is a guess. And the rows do not say anything is
-wrong, so the agent has no reason to suspect the list rather than itself.
-
-The answer already exists one surface over: SH100's lint reports exactly these posts as
-`url-missing`, addresses them as `id:<uuid>` because that is the only thing that names
-them, and hands back a ready-to-paste `post.move` as the fix. `find` should agree with it —
-fall back to `id:` when there is no URL, and mark the row so the caller knows the address
-is a fallback rather than a route. That the two surfaces disagree today is the interesting
-part: the invariant "an address identifies one post" is asserted in SH79's design and
-enforced nowhere, which makes it a candidate for the §VIII.10 guard rule.
-
-### VIII.16 Conditional requirements belong in the tool schema (SH175)
-
-`shio_write`'s schema documents `type` as *"required only when creating a post"* and
-describes `folder` as *"where a new post goes"* — which is a hint, not a requirement, and
-the op that needs both fails with only one. The teaching error is good (it names `folder`,
-explains that a friendly URL says nothing about which folder a post lives in, and gives an
-example), so the recovery is one call. But it is one call on the single most common write
-there is, paid by every agent on its first create, and the schema is the one document a
-model reads *before* calling.
-
-JSON Schema can express this properly (`allOf`/`if`-`then`), and probably should not: the
-value is in the description a model actually reads, and a conditional keyword an MCP client
-may or may not surface is a worse deal than one clear sentence. The task is small — say it
-in the description, the same way `type` already does — and the general form is worth a
-sweep: any argument whose requirement depends on another argument's value should say so on
-itself, not only in the error that fires when it is missing.
-
 ## IX. Perception & verification loop (Block K)
 
 > The agent cannot see. Two of the three human round trips in a typical build exist
@@ -592,31 +474,11 @@ itself, not only in the error that fires when it is missing.
 > a human cycle is the most expensive unit in the system by orders of magnitude.
 >
 > **The loop itself shipped** — content lint (SH99), route checks (SH100), render digest
-> (SH101), diagnostics (SH103); see [CHANGELOG.md](CHANGELOG.md) Block K. What is left
-> below is the design for what the shipped version deliberately does not do, plus the
-> two tasks it was always going to depend on (SH102's pixels, SH104's handoff report).
-
-### IX.1 What the lint still owes (SH142, SH143)
-
-> The lint itself shipped (SH99). Two things it does not do yet are the difference
-> between a check that is run and a check that is switched off.
-
-**A report has two states; real content has three.** `ok` / `not ok` cannot express
-*known and accepted*, and every codebase has some: an image that is decorative in a way
-the markup cannot state, a folder deliberately staged empty, a link into a front-end
-route. The first legitimate warning that nobody intends to fix is the moment the exit
-code stops being read — and then the errors stop being read with it. A committed
-baseline of `(rule, address)` pairs that `shio verify` subtracts fixes that, on one
-condition: it must **fail when an accepted finding no longer exists**, or it decays into
-a blanket suppression that hides the next real defect at the same address.
-
-**A full pass is the wrong shape for the common call.** Verification is read twice for
-different reasons: once in CI, where "every post in every site" is exactly right, and
-once by an agent that has just written three pages, where it is a hundred times more
-work than the question needs. Scoping by folder or address — and by SH88's cursor, which
-now exists — makes the second call cheap. The constraint is the SH138 one: a report over
-a subset must say so in the payload, because a partial report that reads as a full one
-is worse than no report.
+> (SH101), diagnostics (SH103), and the follow-ups that made the report usable in anger
+> (SH142's accepted findings, SH143's scoping, SH154, SH169); see
+> [CHANGELOG.md](CHANGELOG.md) Block K. What is left below is the design for what the
+> shipped version deliberately does not do, plus the two tasks it was always going to
+> depend on (SH102's pixels, SH104's handoff report).
 
 ### IX.2 Proving a route from the delivery side (SH141)
 
@@ -665,62 +527,6 @@ developer"* half of the brief: the agent's output for a human is a reviewable
 summary with links, not a wall of prose.
 
 ---
-
-### IX.7 Verify a page's section references (SH154)
-
-The lint's `dangling-reference` rule knows two kinds of reference: a `Content Select` field
-holding a post id and a `File` field holding an asset id. SH95's section vocabulary
-introduced a third — a `Page`'s `sections`, a `Multi Select` of section **friendly URLs**,
-in render order — and the lint does not know about it. So a page can name a section that
-does not exist, or one that was renamed, and `shio verify` reports `ok: true` over a page
-that renders with a hole in it.
-
-This is the one check that makes composition safe, and it is worth stating why the gap
-exists rather than treating it as an oversight: `Multi Select` is a free-form list of
-strings by design, and most of them are tags. A rule that treated every Multi Select value
-as a URL would report a defect for every tag on every post. So the rule needs a way to know
-which field holds addresses — the honest options are a widget setting the vocabulary sets
-(`multiselect: {postType: …}` already exists and is nearly this), or a convention the
-context pack states. Picking one is most of the task.
-
-Two properties to keep. A reference to an **unpublished** section on a published page is
-the existing `unpublished-dependency` case, not a new one. And a reference the credential
-cannot read must not be reported as dangling — SH99 already re-checks by id for exactly
-this reason, so the allow-list never manufactures a defect.
-
-### IX.8 The render digest is blind to a section-composed page (SH169)
-
-SH101 digests a post's own HTML fields: it parses them, extracts the heading outline,
-landmarks, links and images, and hashes the structure. On a page that holds its own markup
-this works exactly as designed. On a page built the first-party way it reports nothing at
-all — because a section page holds no markup. Its structure lives in the posts it names,
-and each section's heading lives in a `Text` field rather than inside HTML:
-
-| Page | Built from | `words` | `headings` | `digest` |
-|---|---|---|---|---|
-| `/contato` | one `HTML Editor` field | 11 | `h2 "Fale com a gente"` | `d:6725b43675f4` |
-| `/` | five sections | 0 | — | `d:e3b0c44298fc` |
-| `/pricing` | three sections | 0 | — | `d:e3b0c44298fc` |
-
-`e3b0c442…` is the hash of nothing. The home page, the pricing page and a page that is
-genuinely blank are indistinguishable, so the digest cannot answer either question it exists
-to answer: *did the page come out right* and *did anything change*. And this is not an edge
-case — it is `marketing-site`, `landing`, and every package built on the SH95 vocabulary.
-
-The fix is that the digest must compose the way the page does: resolve the `Multi Select` of
-section URLs, digest each section, and fold the results into the page's own in declared
-order. Three decisions come with it. **What counts as structure in a field** — SH95's
-components render `heading` at a known level and `body` as HTML, so the mapping from
-section fields to outline exists in the vocabulary and has to be readable from the
-post-type rather than hardcoded per type, or the digest only ever understands the eight
-first-party sections. **What an unresolvable section does** — it must not silently
-contribute nothing, which is the present failure wearing a different hat; SH154 makes it a
-lint error, and the digest should mark the gap rather than hash around it. And **the cost**,
-since a page digest now reads N+1 posts, which is the same scoping pressure as SH143.
-
-Worth stating plainly: the digest was verified against pages that carry their own HTML, and
-the vocabulary that came later moved the structure somewhere it does not look. Two shipped
-features, each correct alone.
 
 ## X. Content as files (Block I)
 
@@ -823,34 +629,6 @@ address change plus a body rewrite is still a move), and what to do when two fil
 each claim the same base post — which, like every other ambiguity in this block, should be
 a refusal rather than a guess.
 
-### X.11 `push --content` must not fail on content it does not manage (SH173)
-
-`shio push --content` without `--site` reads the server side of the merge for every post on
-the instance, not for the sites the local tree holds. On an instance with a second site
-whose posts have no friendly URL, that read includes `post:<other>/` — un-addressable
-(§VIII.15) — and `/agent/read` is all-or-nothing (§VIII.14), so the whole command dies:
-
-```
-shio: Shio CDA 404 for http://localhost:2710/api/v2/agent/read?address=…&address=…
-```
-
-Seven hundred characters of URL, no `fix`, no name of the offending address, and an exit
-code that the CI gate order in `agents.md` puts *before* `shio verify` — the command that
-would have explained the problem in one line. `--site` works around it, which means the
-failure is a discoverability cost rather than a wall, but nothing in the message says so.
-
-Three fixes, and each is worth doing even if the others land:
-
-1. **Scope the read to the sites the tree holds.** `shio/content/<site>/**` already names
-   them, so reading anything else is work the command did not need to do — this is the real
-   bug, and it makes the CI gate independent of unrelated content.
-2. **Name the address that failed.** SH171 gives per-address rows, at which point the CLI
-   can report *"3 posts in site `teste` have no friendly URL and cannot be read by
-   address — run `shio verify` or pass `--site`"*, which is a finding rather than a stack
-   trace.
-3. **Never print a request URL as an error.** A remote failure should surface the SH80
-   body — Shio always sends one — and the URL belongs behind a debug flag.
-
 ## XI. Blueprints + Claude Code plugin (Block J)
 
 > *"Skip steps with things that are already done"* only works if the ready-made
@@ -883,46 +661,6 @@ statement of what an applied package is *allowed* to do, and the index. The form
 needs nothing: a package is already a directory whose contents are validated on load, and
 `formatVersion` already refuses a package written for a newer instance rather than
 mis-reading it.
-
-### XI.7 A blueprint can create the site it needs (SH151)
-
-Applying a blueprint refuses when the target site does not exist, which is correct and is
-also the seam in the §3.1 story: *"`shio_apply blueprint marketing-site` → plan → confirm
-→ applied"* is one call only if there is already a site to apply it into. Creating one is
-not currently a step a blueprint can take, because `ShSiteWriteService.create()` clones the
-SH71 bootstrap template — so "create a site for this package" would mean applying a package
-on top of a Welcome page and an About page nobody asked for, and then pruning them.
-
-The fix has two parts and the order matters. First a **blank** site-creation path (a site,
-a root folder, no template), which is worth having on its own: the bootstrap clone exists
-because an empty site used to be useless, and a blueprint is exactly the thing that makes
-it useful. Then `site: {create: true}` on the apply request, and `shio init --blueprint
-<name>` in the CLI so scaffolding a project and seeding its content are one command.
-
-The thing to be careful about is P7: creating a site is the most visible side effect in the
-system, so it must be explicit in the request, named in the plan before it happens, and
-never inferred from "the site you named does not exist".
-
-### XI.8 Additive post-type reconciliation (SH152)
-
-A blueprint provisions a post-type only when the instance does not already have one of that
-name, and reports the fields the existing type lacks. That is honest — the alternative,
-upserting, reverts a field a human added and flips SH66's `managed` flag from a package the
-user never wrote — but it stops one step short of useful: the caller reads
-`exists · Page · missing: description, sections`, and until they add those fields by hand
-the package's content is writing values the console cannot render and the front end cannot
-find.
-
-The middle position is an **additive** merge, opt-in per apply: add the fields the package
-declares and the type lacks, never change a field's widget or settings, never remove one,
-never touch a system type. That is a well-defined and reversible operation, and it is what
-the collision the first-party set actually hits (the bootstrap `Page` versus the section
-vocabulary's `Page`) needs.
-
-Two things to settle in the task. A field's **ordinal** has to go somewhere — appending
-after the highest existing ordinal is the only choice that cannot reorder somebody's form.
-And the report must distinguish "added" from "already there", because a merge that reads as
-a provision would hide the fact that the type is now a hybrid of two models.
 
 ### XI.9 A plan that needs no write transaction (SH153)
 
@@ -989,32 +727,9 @@ file**. It returns them, the CLI writes them, and it refuses to overwrite withou
 > **Invariant: the agent path is never a privilege escalation** — tenant isolation
 > (SH22), content ACL (SH54) and token scopes apply identically on every agent
 > surface. An agent-native CMS that quietly runs as root is not adoptable.
-
-### XII.1 `AGENT` token scope + session identity (SH106)
-
-A scoped, budgeted, expiring credential in the existing SH2/SH5 token model, plus
-an agent session id stamped on every write into the SH51 audit. Extends the token
-model rather than adding a parallel one (P10).
-
-### XII.2 Draft-by-default + publish gate (SH107)
-
-MCP writes land in `DRAFT`; publishing is a separate tool, disabled unless the token
-carries `mayPublish`. The unified model's two-row-per-state shape (SH-0d/SH14) makes
-this nearly free — draft-targeted writes are already how the Universal Editor
-works (SH10).
-
-### XII.3 Destructive-op confirm tokens (SH108)
-
-Deletes, prunes and apply-with-prune take two steps, the second carrying the
-**plan hash** from the first. An agent therefore cannot destroy anything it did not
-just render for the human — and cannot destroy something that changed underneath it
-between plan and apply.
-
-### XII.4 Review queue console surface (SH109)
-
-"The agent proposed N changes" → field-level diff (reuse SH14), approve, revert
-(reuse SH55 trash). This becomes the human's **primary** console workflow under the
-new orientation, which is why §VIII.1 puts the session id in the host from the start.
+>
+> SH106–SH109 have shipped; their design notes are gone with them (see CHANGELOG.md Block L).
+> What remains here is the one task still blocked.
 
 ### XII.5 Agent budget guards (SH110)
 
@@ -1277,171 +992,6 @@ whether it is possible but which of the three should adopt it before a feature d
 for us. The agent namespace is the one to watch: SH109's review queue is a console
 surface over agent writes, and the moment the console reads or writes there from a
 session, that path is in the same position `/api/v2/post-type` was in.
-
-## XV. The human half — the console the curator uses (Block O)
-
-> The north star has two halves: the agent builds, the human curates. Block N made the
-> console's reads agent-shaped, and the first end-to-end build over the finished surface
-> showed the curating half does not work — a site the agent gets right cannot be edited,
-> previewed or opened. Every defect here answers `200`.
-
-### XV.1 A console smoke check in CI (SH182)
-
-The console is the only surface in Shio where a correct API response and a broken product
-look identical. A form that renders zero fields, a button that navigates nowhere, a request
-that 404s behind a spinner: all `200`, all invisible to the Java tests, the CLI tests and
-the MCP conformance golden. That is not a gap in discipline — it is a gap in *medium*, and
-the only instrument that closes it is a browser.
-
-`shio-react/e2e/console-check.mjs` is that instrument, and it found six failing routes of
-fifteen on its first run. Two design choices are what make it worth keeping rather than
-rewriting later:
-
-- **Targets are discovered, not fixtured.** The route list is built from `/api/v2/site`,
-  `/agent/find` and `/api/v2/post-type`, so the check runs against any instance — a
-  developer's H2, a blueprint-applied site, a tenant — without editing the file. The agent
-  surface turns out to be the cheapest test fixture in the repository.
-- **It fails on evidence, not on appearance.** A page error, a same-origin request ≥400, a
-  known-broken string, or a form that rendered no field at all. Console *warnings* are
-  recorded and never fail the run, for the SH142 reason: a gate that trips on noise is a
-  gate people bypass.
-
-Two things it still owes. It asserts structure, not correctness — *a* field rendering is not
-*the right* field rendering, and the honest next step is a per-post-type expectation derived
-from the post-type's own `fields`, which is the same projection SH178 needs anyway. And it
-has no baseline, so the first accepted failure will be argued about rather than recorded;
-SH142's committed-baseline shape applies here unchanged.
-
-One caution learned while writing it: the first version asserted on `document.body.innerText`
-and reported the post-type editor as broken because the API name lives in a read-only
-`input`, whose value is not text. A check that cries wolf on a working page costs more
-credibility than the bug it was looking for, so assertions must read values as well as text.
-
-### XV.2 The post read must carry the post-type and parsed data (SH176)
-
-`GET /api/v2/post-unified/{id}` returns the JPA entity. Two consequences follow, and either
-one alone would empty the form:
-
-```java
-@ManyToOne(fetch = FetchType.LAZY)
-@JoinColumn(name = "post_type_id")
-private ShPostType shPostType;          // never fetched → serialized as null
-```
-
-```
-"data": "{\"title\":\"Café Aurora\",\"sections\":[…]}"     // a String column, verbatim
-```
-
-The console reads `post.shPostType.schemaJson` and gets `undefined`, so it has no schema and
-renders the "run the migration" empty state. And its model declares `data: Record<string,
-unknown>` while the wire carries a string, so every field would read `undefined` even with a
-schema. Both are invisible from the API side: the response is a valid `200` and the entity is
-faithfully serialized — it is faithful to the *storage* shape, which is the SH120 lesson
-arriving one endpoint late.
-
-The fix is the shape SH120 already established for navigation: a read DTO owned by the
-console API that composes the existing services rather than exposing the entity. It should
-carry `data` parsed, and the post-type as its SH16 `ShPostTypeDef` `fields` — the lossless
-authoring shape the form already knows how to project (SH178), and the same bytes
-`/api/v2/post-type/{name}` returns, so there is no third serialization of the model (P10).
-
-Two details belong in the task. The `versions` and `listByFolder` reads on the same
-controller have the same shape and the same defect, so they move together or the console
-gains a second inconsistency. And `data` as a projected object must not become a place to
-drop unknown keys silently — that is SH168 on the other side of the wire, and the two tasks
-should agree on what the console does when a post holds a field its post-type does not
-declare: showing it read-only with a warning is honest, hiding it is how content gets lost.
-
-### XV.3 Retire `schemaJson` or maintain it (SH177)
-
-`ShPostType.schemaJson` is a denormalized copy of the field list, and its only writer is
-`ShPostUnifiedMigrationService.migrateAll()` — a one-shot migration behind
-`POST /api/v2/migration/unified/run`. Nothing else in the codebase sets it. So the column is
-correct exactly once: for the post-types that existed when someone last ran that endpoint.
-Every type created afterwards by a blueprint, by `shio push`, or by the console's own
-post-type editor has it empty, and every type *edited* afterwards has it stale — a
-denormalization with no invalidation, which is the failure mode denormalizations have.
-
-The console's empty state then says: *"Schema JSON is empty for this post type. Run the
-unified migration (POST /api/v2/migration/unified/run) to populate it."* That message is
-wrong in three ways at once. It names an internal migration in a curator-facing UI; it
-prescribes a fix that will not work for a type created after the migration, since running it
-again only re-projects what is already there; and it blames the data when the actual cause is
-SH176 — the post-type never reached the browser at all.
-
-So the decision is not "how do we fill this column" but whether it should exist. The model
-already carries `fields`, the console already has `projectFieldDefs` to turn them into a form
-schema, and one shape is cheaper to keep right than two. Removing it means a migration to
-drop the column and deleting the endpoint that was its only writer; keeping it means writing
-it on every path that mutates a post-type and a test that fails when a path forgets. The
-first is smaller and strictly less able to drift, and nothing else reads the column.
-
-### XV.4 One schema entry point for the form (SH178)
-
-`post-unified.ts` exports two ways to get a form schema, and only one of them has a fallback:
-
-```ts
-parseSchema(schemaJson)              // [] when schemaJson is absent
-buildSchemaFromPostType(postType)    // parseSchema, else project from `fields`
-```
-
-`post.new.page.tsx` calls the second and works. `post.edit.page.tsx` calls the first and
-renders nothing. That is the whole difference between "creating a post is fine" and "editing
-the post I just created is impossible", and it is the reason the failure reads as a content
-problem rather than a missing line.
-
-The fix is to delete the choice: one exported entry point that takes whatever the page has
-and returns the best schema available, with `parseSchema` demoted to a private helper. This
-is worth doing even though SH176 makes both paths work — a fallback that exists in one call
-site and not the other is a bug waiting for the next page, and the module currently invites
-picking the wrong one by exporting both at equal prominence.
-
-### XV.5 "View Site" navigates to a route that does not exist (SH179)
-
-`routes.const.ts` declares `PREVIEW: scoped('${consolePath}/preview')`, and no route is
-registered for it — `content.routes.tsx`, `admin.routes.tsx`, `graphql.routes.tsx` and
-`universal-editor.routes.tsx` contain no `preview` path. Three call sites navigate there
-anyway: the site list's row action, the object-children page's green **View Site** button,
-and a per-item button in the listing. All three do nothing visible, because an unmatched
-console path renders an empty page rather than a not-found (SH180).
-
-This is the reported symptom — *"I cannot see the site"* — and it is worth separating the two
-questions inside it. Reaching a **published** site is the CDA's business and depends on a
-front end being deployed, which the CMS does not own. Reaching a **draft** is Shio's own, and
-already works: `handlePreview` mints an SH-preview token and opens the site's configured URL,
-with a real error when the site has none. So the task is not "build preview" — it is to point
-those three buttons at something that exists, and to decide what View Site means for a site
-with no front-end URL configured. Saying so is a legitimate answer; navigating to a blank
-page is not.
-
-### XV.6 An unknown console route must say so (SH180)
-
-The console renders a normal-looking, error-free empty page for any path that matches no
-route. `/console/content/definitely-not-a-route` returns a clean probe: no page error, no
-failed request, nothing missing but content. That is what makes SH179 invisible in the
-product, and — worse for the work ahead — it means a green check on any route proves less
-than it appears to, because a blank page and a working page are the same observation.
-
-A catch-all route that names the path it could not match, plus one assertion in the SH182
-check that a nonexistent path renders it. Small, and it is the thing that makes every other
-probe's "ok" mean something.
-
-### XV.7 The Universal Editor resolves a site by the wrong key (SH181)
-
-Opening `/console/universal-editor/{siteId}` issues `GET /api/v2/site/cafeteria` — the
-site's **furl** against an endpoint keyed by **id** — and 404s twice before rendering. The
-page is reached with a real id, so the wrong key is picked up somewhere between the route
-param and the request.
-
-The fix is one line wherever that swap happens, and the reason it is worth a task rather
-than a silent patch is that this is the third instance of one confusion: SH117 settled
-id-versus-name for post-types, SH181 is the same mistake for sites, and both were invisible
-until something drove the surface. Per §VIII.10's rule — when a defect class recurs, add a
-guard the first time the invariant is violated — the durable form is that a console service
-takes the key it declares, and the SH182 check catches the rest by watching for 404s on
-same-origin requests, which is how this one surfaced.
-
----
 
 # Part 2 — pre-existing sections
 

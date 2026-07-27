@@ -70,7 +70,12 @@ public class ShAgentDesiredStateService {
     /** Makes it so, atomically. */
     @Transactional
     public ShAgentChangeSet apply(ShAgentDesiredState desired, boolean ids, String actor) {
-        return shAgentBatchService.run(new ShAgentBatch(false, compile(desired)), ids, actor);
+        // The document's `confirm` is the batch's `confirm` (SH108): a prune is a batch of
+        // deletes by the time it reaches the writer, so there is one check and one token, not
+        // a second mechanism for the declarative path.
+        return shAgentBatchService.run(
+                new ShAgentBatch(false, compile(desired), desired == null ? null : desired.confirm()),
+                ids, actor);
     }
 
     /**

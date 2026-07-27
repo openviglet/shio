@@ -1,0 +1,53 @@
+databaseChangeLog:
+  # SH106/SH107 — the credential an agent runs on, and the run it belongs to.
+  #
+  # `api_token.may_publish` (SH107): publishing is the one agent write that changes what
+  # the public sees, so it is a capability the token either carries or does not. Added
+  # nullable with no backfill, and read as `false` when absent — the direction a default
+  # on this field has to fail in. An existing WRITE token therefore stops being able to
+  # publish *through the agent surface* until someone grants it; that is the tightening
+  # the task is for, and the SH10 CDA write path (a human in the Universal Editor) is
+  # untouched.
+  #
+  # `ShHistory.agent_session_id` (SH106): the column SH75 deliberately deferred. It makes
+  # "show me everything that run changed" a where-clause instead of a LIKE over the actor
+  # string, which is what SH109's review queue is built on. Nullable forever: a human's own
+  # edit has no agent run, and rows written before this changeset cannot honestly be
+  # backfilled with one.
+  #
+  # Neither column is a tenant discriminator, so there is no ShTenantBackfillRunner entry.
+  # Types kept DB-agnostic per ShLiquibaseChangelogAgnosticTest (lowercase boolean, VARCHAR);
+  # SH26: preserve identifier case on PostgreSQL (does not propagate through `include`).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh107-api-token-may-publish
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: api_token
+                columnName: may_publish
+      changes:
+        - addColumn:
+            tableName: api_token
+            columns:
+              - column:
+                  name: may_publish
+                  type: boolean
+  - changeSet:
+      id: sh106-history-agent-session-id
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShHistory
+                columnName: agent_session_id
+      changes:
+        - addColumn:
+            tableName: ShHistory
+            columns:
+              - column:
+                  name: agent_session_id
+                  type: VARCHAR(64)

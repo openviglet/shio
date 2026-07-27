@@ -40,5 +40,9 @@
     "updated": "Token de API atualizado.",
     "copied": "Token copiado para a área de transferência.",
     "copyFailed": "Falha ao copiar o token."
-  }
+  },
+  "apiToken.scopeAgent": "Agente",
+  "apiToken.scopeAgentDesc": "Escreve pela superfície de agente (/api/v2/agent, /mcp) e lê rascunhos. Não é uma chave de escrita do CDA: não altera conteúdo publicado diretamente.",
+  "apiToken.mayPublish": "Pode publicar",
+  "apiToken.mayPublishHint": "Desligado por padrão. Um token de agente sem isso escreve rascunhos que um humano aprova na Revisão do Agente."
 }

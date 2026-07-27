@@ -55,7 +55,14 @@ import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 public record ShBlueprintApplied(boolean dryRun, String blueprint, String version, String site,
                                  java.util.Map<String, String> params,
                                  List<PostType> postTypes, ShAgentChangeSet content,
-                                 List<String> files, Verified verify) {
+                                 List<String> files, Verified verify, String createdSite) {
+
+    /** The nine-field form: the site was already there, which is every pre-SH151 apply. */
+    public ShBlueprintApplied(boolean dryRun, String blueprint, String version, String site,
+                              java.util.Map<String, String> params, List<PostType> postTypes,
+                              ShAgentChangeSet content, List<String> files, Verified verify) {
+        this(dryRun, blueprint, version, site, params, postTypes, content, files, verify, null);
+    }
 
     /**
      * One post-type the package carries.
@@ -77,20 +84,37 @@ public record ShBlueprintApplied(boolean dryRun, String blueprint, String versio
      *                Only ever set alongside {@code exists}; {@code null} when they agree
      */
     @JsonInclude(Include.NON_NULL)
-    public record PostType(String name, String action, List<String> missing) {
+    public record PostType(String name, String action, List<String> missing, List<String> added) {
 
         public static final String CREATE = "create";
         public static final String EXISTS = "exists";
+        /** SH152 — the type was already there and the package's missing fields were added to it. */
+        public static final String MERGE = "merge";
 
         /** A post-type the package created — nothing to reconcile. */
         public static PostType created(String name) {
-            return new PostType(name, CREATE, null);
+            return new PostType(name, CREATE, null, null);
         }
 
         /** One the instance already had, with whatever the package expected and did not find. */
         public static PostType existing(String name, List<String> missing) {
             return new PostType(name, EXISTS,
-                    missing == null || missing.isEmpty() ? null : List.copyOf(missing));
+                    missing == null || missing.isEmpty() ? null : List.copyOf(missing), null);
+        }
+
+        /**
+         * One the instance already had, whose missing fields this apply added (SH152).
+         *
+         * <p>{@code merge} is its own action rather than {@code create} on purpose: a merge that
+         * read as a provision would hide that the type is now a hybrid of two models, which is
+         * exactly what somebody debugging the form six months later needs to know. {@code added}
+         * says which fields arrived; anything still in {@code missing} is a nested difference the
+         * merge does not touch.</p>
+         */
+        public static PostType merged(String name, List<String> added, List<String> missing) {
+            return new PostType(name, MERGE,
+                    missing == null || missing.isEmpty() ? null : List.copyOf(missing),
+                    added == null || added.isEmpty() ? null : List.copyOf(added));
         }
     }
 

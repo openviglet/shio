@@ -56,3 +56,47 @@ test("an unknown command exits non-zero and shows help", async () => {
     },
   );
 });
+
+/**
+ * SH173 — a remote failure prints the SH80 teaching body, not a request URL.
+ *
+ * The defect this replaces: `shio push --content` died with "Shio CDA 404 for <700 characters
+ * of URL>" while the body that named the problem and its fix went unprinted.
+ */
+test("formatError prints the teaching problem and hides the URL", async () => {
+  const { formatError } = await import("../src/format-error.mjs");
+  const err = Object.assign(new Error("Shio CDA 400 for http://shio.test/api/v2/agent/batch"), {
+    status: 400,
+    url: "http://shio.test/api/v2/agent/batch?address=" + "x".repeat(700),
+    body: JSON.stringify({
+      title: "'Page' does not declare a field named 'contentt'",
+      detail: "A post.upsert declares whole state.",
+      fix: "Use one of the declared fields below.",
+      allowed: ["title", "content"],
+      didYouMean: "content",
+      at: "ops[3]",
+    }),
+  });
+
+  const out = formatError(err);
+
+  assert.match(out, /does not declare a field named 'contentt'/);
+  assert.match(out, /fix: Use one of the declared fields/);
+  assert.match(out, /allowed: title, content/);
+  assert.match(out, /did you mean: content/);
+  assert.match(out, /at: ops\[3\]/);
+  assert.doesNotMatch(out, /xxxxx/, "the URL is diagnostic detail, not the message");
+  assert.match(formatError(err, { debug: true }), /url: http/);
+});
+
+test("formatError falls back to the status when there is no teaching body", async () => {
+  const { formatError } = await import("../src/format-error.mjs");
+  const out = formatError(Object.assign(new Error("boom"), { status: 502, url: "http://x", body: "" }));
+  assert.match(out, /the server answered 502/);
+});
+
+test("formatError leaves an ordinary error alone", async () => {
+  const { formatError } = await import("../src/format-error.mjs");
+  assert.equal(formatError(new Error("no content files under shio/content")),
+    "shio: no content files under shio/content\n");
+});

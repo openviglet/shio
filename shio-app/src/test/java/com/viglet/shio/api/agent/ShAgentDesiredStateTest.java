@@ -140,9 +140,20 @@ class ShAgentDesiredStateTest {
                 shAgentDesiredStateService.plan(desired, false, "tester"));
     }
 
+    /**
+     * Applies a document, confirming its deletions first when it prunes (SH108) — the two-step
+     * the CLI does for the human. A document that cannot delete is still one call.
+     */
     private ShAgentChangeSet apply(ShAgentDesiredState desired) {
-        return new TransactionTemplate(transactionManager).execute(status ->
-                shAgentDesiredStateService.apply(desired, false, "tester"));
+        return new TransactionTemplate(transactionManager).execute(status -> {
+            String confirm = desired.prune()
+                    ? shAgentDesiredStateService.plan(desired, false, "tester").confirm()
+                    : null;
+            ShAgentDesiredState confirmed = confirm == null ? desired
+                    : new ShAgentDesiredState(desired.site(), desired.folders(), desired.posts(),
+                            desired.prune(), confirm);
+            return shAgentDesiredStateService.apply(confirmed, false, "tester");
+        });
     }
 
     private static List<String> actions(ShAgentChangeSet result) {

@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.ShAgentReadTerse;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
-import com.viglet.shio.api.agent.mcp.ShMcpSessionContext;
+import com.viglet.shio.api.agent.ShAgentSessionContext;
 import com.viglet.shio.api.agent.mcp.ShMcpTool;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
@@ -76,14 +76,21 @@ public class ShWriteTool implements ShMcpTool {
                                                 "post:<site>/<friendly-url> or folder:<site>/<path>."),
                                         "type", ShMcpTool.string(
                                                 "Post-type name; required only when creating a post."),
+                                        // SH175: an argument whose requirement depends on
+                                        // another's value has to say so on itself. `type` did
+                                        // and `folder` did not, so the most common write on the
+                                        // surface — the first create — paid a round trip to
+                                        // learn it, and the schema is the one document a model
+                                        // reads before calling.
                                         "folder", ShMcpTool.string(
-                                                "Folder path — where a new post goes, or where "
-                                                        + "post.move sends it."),
+                                                "Folder path; required with type when creating a "
+                                                        + "post, or as post.move's destination."),
                                         "to", ShMcpTool.string(
                                                 "post.move only: the post's new address or URL."),
                                         "data", ShMcpTool.object(
                                                 "Field values keyed by post-type field name.")))),
-                "dryRun", ShMcpTool.bool("Report what would change and write nothing.")),
+                "dryRun", ShMcpTool.bool("Report what would change and write nothing."),
+                "confirm", ShMcpTool.string("dryRun's token; required to delete.")),
                 List.of("ops"));
     }
 
@@ -103,11 +110,12 @@ public class ShWriteTool implements ShMcpTool {
                 ShMcpArgs.node(op, "data"))));
 
         return ShAgentReadTerse.changes(shAgentBatchService.run(
-                new ShAgentBatch(ShMcpArgs.bool(arguments, "dryRun"), List.copyOf(parsed)),
+                new ShAgentBatch(ShMcpArgs.bool(arguments, "dryRun"), List.copyOf(parsed),
+                        ShMcpArgs.string(arguments, "confirm")),
                 false,
                 // The agent session id travels into the SH51 audit here, which is what
                 // makes "show me what this run changed" answerable later (SH109).
-                ShMcpSessionContext.actor()));
+                ShAgentSessionContext.actor()));
     }
 
     /** A 400 that shows the smallest working call rather than restating the schema. */

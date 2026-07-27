@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -272,4 +273,30 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     @Query("select p.shSite.id, count(distinct p.id) from ShPostUnified p "
             + "where p.shSite is not null group by p.shSite.id")
     List<Object[]> countDistinctBySiteId();
+
+    /**
+     * SH143 — the URL index a <em>scoped</em> verify run still needs whole.
+     *
+     * <p>Two lint rules are cross-cutting by nature: "is any other published post claiming
+     * this URL" and "does this link resolve anywhere in the site". Neither can be answered
+     * from the scoped subject set, and neither needs a post's data, its post-type or its
+     * attribute tree — which is the part a full read pass is expensive for. So the index
+     * is a three-column projection: one query per site, no entities, no lazy loading.</p>
+     *
+     * @return rows of {@code [id (String), furl (String), state (ShPostState)]}
+     */
+    @Query("select p.id, p.furl, p.state from ShPostUnified p "
+            + "where p.shSite.id = :siteId and p.state in :states")
+    List<Object[]> findUrlIndexBySiteId(@Param("siteId") String siteId,
+                                       @Param("states") Collection<ShPostState> states);
+
+    /**
+     * SH143 — the folder ids that hold at least one post.
+     *
+     * <p>Half of the {@code empty-folder} rule, and the half a scoped run cannot compute
+     * from its own subjects: a folder outside the scope may still be the reason a folder
+     * inside it is not empty. Ids only, for the reason on {@link #countDistinctByPostTypeId}.</p>
+     */
+    @Query("select distinct p.shFolder.id from ShPostUnified p where p.shFolder is not null")
+    Set<String> findFolderIdsWithPosts();
 }

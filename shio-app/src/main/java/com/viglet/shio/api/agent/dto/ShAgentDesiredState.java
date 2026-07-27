@@ -42,7 +42,12 @@ import tools.jackson.databind.JsonNode;
  * @since 2026.3
  */
 public record ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
-                                  boolean prune) {
+                                  boolean prune, String confirm) {
+
+    /** The four-field form: every document that does not prune, and every pre-SH108 caller. */
+    public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts, boolean prune) {
+        this(site, folders, posts, prune, null);
+    }
 
     /** @param path folder path from the site root, e.g. {@code /blog/2026} */
     public record Folder(String path) {

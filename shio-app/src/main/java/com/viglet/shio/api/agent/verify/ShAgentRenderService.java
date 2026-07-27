@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Locale;
 
 import org.springframework.stereotype.Service;
@@ -79,6 +80,10 @@ public class ShAgentRenderService {
     private static final String SOURCE_FETCH = "fetch";
 
     /** Widgets whose value is markup. A plain Text field is not a page fragment. */
+    /** Plain-text widgets whose value is visible prose — a section's heading and its copy. */
+    private static final List<String> TEXT_WIDGETS =
+            List.of(ShSystemWidget.TEXT, ShSystemWidget.TEXT_AREA);
+
     private static final List<String> MARKUP_WIDGETS =
             List.of(ShSystemWidget.HTML_EDITOR, ShSystemWidget.ACE_HTML);
 
@@ -122,8 +127,21 @@ public class ShAgentRenderService {
         ShPostUnified post = draftPreferred(resolved.id())
                 .orElseThrow(() -> new NotAPageException(rawAddress, resolved.kind()));
 
-        JsonNode data = data(post);
         List<String> fields = new ArrayList<>();
+        ShHtmlOutline.Outline outline = own(post, fields);
+        // SH169 — a page built the first-party way holds no markup of its own: its structure lives
+        // in the section posts it names, in the order it names them. So the digest composes the way
+        // the page does. Without this, home and pricing both digested as the hash of nothing and
+        // were indistinguishable from a blank page — the digest could answer neither of the two
+        // questions it exists for.
+        outline = outline.merge(composed(post, fields));
+        return render(SOURCE_CONTENT, shAddressResolver.addressOf(post).toString(), null, null,
+                fields, outline);
+    }
+
+    /** A post's own markup fields, in ordinal order — what the digest has always read. */
+    private ShHtmlOutline.Outline own(ShPostUnified post, List<String> fields) {
+        JsonNode data = data(post);
         ShHtmlOutline.Outline outline = ShHtmlOutline.of(null);
         for (ShPostTypeAttr attr : markupFields(post.getShPostType())) {
             JsonNode value = data.get(attr.getName());
@@ -133,8 +151,123 @@ public class ShAgentRenderService {
             fields.add(attr.getName());
             outline = outline.merge(ShHtmlOutline.of(value.asString()));
         }
-        return render(SOURCE_CONTENT, shAddressResolver.addressOf(post).toString(), null, null,
-                fields, outline);
+        return outline;
+    }
+
+    /**
+     * The structure of the posts this page references, folded in declared order (SH169).
+     *
+     * <p><b>An unresolvable section is marked, not skipped.</b> Contributing nothing is the
+     * present failure wearing a different hat — the page would digest as if the section were
+     * simply absent, and two different mistakes would hash the same. It contributes a heading
+     * naming the gap instead, so the digest changes when a reference breaks and a reader can see
+     * why. SH154 is what reports it as a defect; this only makes sure the proof does not lie.</p>
+     *
+     * <p><b>Cost:</b> a page digest now reads N+1 posts. That is inherent — the structure really
+     * is somewhere else — and it is the same scoping pressure as SH143.</p>
+     */
+    private ShHtmlOutline.Outline composed(ShPostUnified post, List<String> fields) {
+        JsonNode data = data(post);
+        ShHtmlOutline.Outline outline = ShHtmlOutline.of(null);
+        String siteId = post.getShSite() == null ? null : post.getShSite().getId();
+        for (ShPostTypeAttr attr : referenceFields(post.getShPostType())) {
+            List<String> urls = ShPostReferenceFields.urls(data.get(attr.getName()));
+            if (urls.isEmpty()) {
+                continue;
+            }
+            fields.add(attr.getName());
+            for (String url : urls) {
+                Optional<ShPostUnified> section = referenced(siteId, url);
+                outline = outline.merge(section.isPresent()
+                        ? sectionOutline(section.get())
+                        : ShHtmlOutline.of("<h2>[missing section " + url + "]</h2>"));
+            }
+        }
+        return outline;
+    }
+
+    /**
+     * One referenced post's structure.
+     *
+     * <h2>Why this is read from the post-type and not from a list of the eight first-party types</h2>
+     *
+     * <p>A section's structure is not in one HTML field: SH95's components render the section's
+     * title as a heading and its text fields as prose. So the mapping is stated once, in terms of
+     * what the model says about a field rather than what a type is called — a title field becomes a
+     * heading, a markup field contributes its own parsed structure, and any other text field
+     * contributes its words. A digest that knew the eight shipped section types by name would stop
+     * working the first time somebody wrote a ninth.</p>
+     *
+     * <p>The synthetic markup is deliberate: it runs the same parser everything else does, so
+     * there is one notion of "structure" rather than a second code path that would drift from it.
+     * The heading level is the vocabulary's convention (a section heading sits under the page's
+     * own h1), stated here once instead of guessed per type.</p>
+     */
+    private ShHtmlOutline.Outline sectionOutline(ShPostUnified section) {
+        JsonNode data = data(section);
+        ShHtmlOutline.Outline outline = ShHtmlOutline.of(null);
+        for (ShPostTypeAttr attr : textFields(section.getShPostType())) {
+            JsonNode value = data.get(attr.getName());
+            if (value == null || !value.isString() || value.asString().isBlank()) {
+                continue;
+            }
+            String text = value.asString();
+            if (MARKUP_WIDGETS.contains(widgetName(attr))) {
+                outline = outline.merge(ShHtmlOutline.of(text));
+            } else if (attr.getIsTitle() == 1) {
+                outline = outline.merge(ShHtmlOutline.of("<h2>" + escape(text) + "</h2>"));
+            } else {
+                outline = outline.merge(ShHtmlOutline.of("<p>" + escape(text) + "</p>"));
+            }
+        }
+        return outline;
+    }
+
+    /** Multi Select fields that declare they hold post URLs (SH154's setting). */
+    private List<ShPostTypeAttr> referenceFields(ShPostType postType) {
+        return topLevel(postType).stream()
+                .filter(attr -> ShPostReferenceFields.referencesPosts(attr, objectMapper))
+                .toList();
+    }
+
+    /** Every text-bearing field of a post-type, ordinal-ordered so the outline is stable (P5). */
+    private static List<ShPostTypeAttr> textFields(ShPostType postType) {
+        return topLevel(postType).stream()
+                .filter(attr -> TEXT_WIDGETS.contains(widgetName(attr))
+                        || MARKUP_WIDGETS.contains(widgetName(attr)))
+                .toList();
+    }
+
+    private static List<ShPostTypeAttr> topLevel(ShPostType postType) {
+        if (postType == null || postType.getShPostTypeAttrs() == null) {
+            return List.of();
+        }
+        return postType.getShPostTypeAttrs().stream()
+                .filter(attr -> attr.getShParentPostTypeAttr() == null)
+                .filter(attr -> attr.getName() != null && !attr.getName().isBlank())
+                .sorted(Comparator.comparingInt(ShPostTypeAttr::getOrdinal)
+                        .thenComparing(ShPostTypeAttr::getName))
+                .toList();
+    }
+
+    private static String widgetName(ShPostTypeAttr attr) {
+        return attr.getShWidget() == null ? "" : attr.getShWidget().getName();
+    }
+
+    /** The post a URL names in this site, either state — existence is what matters. */
+    private Optional<ShPostUnified> referenced(String siteId, String url) {
+        if (siteId == null) {
+            return Optional.empty();
+        }
+        return shPostUnifiedRepository.findByShSite_IdAndFurlAndState(siteId, url, ShPostState.DRAFT)
+                .or(() -> shPostUnifiedRepository.findByShSite_IdAndFurlAndState(siteId, url,
+                        ShPostState.PUBLISHED));
+    }
+
+    /** Escapes the four characters that would otherwise change the synthetic markup's shape. */
+    private static String escape(String text) {
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;");
     }
 
     /** Rich-text attributes of a post-type, ordinal-ordered (P5). */

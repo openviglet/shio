@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.acl.ShContentAclService;
+import com.viglet.shio.api.site.ShSiteWriteService;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
@@ -35,12 +37,14 @@ import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.UpdateRequest
 import com.viglet.shio.api.folder.ShFolderWriteService;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
+import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
+import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 import com.viglet.shio.tenant.ShTenantQuotaService;
 
 import tools.jackson.core.JacksonException;
@@ -94,10 +98,22 @@ public class ShAgentBatchService {
     public static final String POST_UNPUBLISH = "post.unpublish";
     public static final String POST_DELETE = "post.delete";
 
+    /**
+     * Creates a site (SH170) — the step the whole product is for, and the only op that took an
+     * agent off this surface entirely.
+     */
+    public static final String SITE_UPSERT = "site.upsert";
+
     /** The closed op vocabulary, in the order a teaching error lists it. */
     public static final List<String> OPS = List.of(
-            FOLDER_UPSERT, FOLDER_DELETE, POST_UPSERT, POST_MOVE, POST_PUBLISH, POST_UNPUBLISH,
-            POST_DELETE);
+            SITE_UPSERT, FOLDER_UPSERT, FOLDER_DELETE, POST_UPSERT, POST_MOVE, POST_PUBLISH,
+            POST_UNPUBLISH, POST_DELETE);
+
+    /**
+     * The ops that destroy something and therefore need confirming (SH108). Everything else
+     * on this surface is recoverable by another write; these two are not.
+     */
+    public static final List<String> DESTRUCTIVE_OPS = List.of(FOLDER_DELETE, POST_DELETE);
 
     private static final List<ShPostState> BOTH_STATES =
             List.of(ShPostState.DRAFT, ShPostState.PUBLISHED);
@@ -108,6 +124,7 @@ public class ShAgentBatchService {
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShFolderWriteService shFolderWriteService;
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
+    private final ShSiteWriteService shSiteWriteService;
     private final ShContentAclService shContentAclService;
     private final ShTenantQuotaService shTenantQuotaService;
     private final ObjectMapper objectMapper;
@@ -119,6 +136,7 @@ public class ShAgentBatchService {
                                ShPostTypeRepository shPostTypeRepository,
                                ShFolderWriteService shFolderWriteService,
                                ShPostUnifiedWriteService shPostUnifiedWriteService,
+                               ShSiteWriteService shSiteWriteService,
                                ShContentAclService shContentAclService,
                                ShTenantQuotaService shTenantQuotaService,
                                ObjectMapper objectMapper,
@@ -129,6 +147,7 @@ public class ShAgentBatchService {
         this.shPostTypeRepository = shPostTypeRepository;
         this.shFolderWriteService = shFolderWriteService;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
+        this.shSiteWriteService = shSiteWriteService;
         this.shContentAclService = shContentAclService;
         this.shTenantQuotaService = shTenantQuotaService;
         this.objectMapper = objectMapper;
@@ -146,7 +165,32 @@ public class ShAgentBatchService {
     @Transactional
     public ShAgentChangeSet run(ShAgentBatch batch, boolean ids, String actor) {
         List<ShAgentBatch.Op> ops = validate(batch);
-        Session session = new Session(batch.dryRun(), ids, actor);
+        // SH107 — publishing is a capability, not a default. Checked before anything runs and
+        // on a dryRun too: an agent that cannot publish should learn that while planning, not
+        // after it has built twelve pages around the assumption.
+        requireMayPublish(ops);
+        // SH108 — a destructive run takes two calls, and the second one carries the digest of
+        // the *plan*. So a batch that could delete is planned here first: what it would really
+        // destroy is what needs confirming, and a delete of something already gone is a noop
+        // that needs nothing (which is what keeps a document re-runnable).
+        if (!batch.dryRun() && ShAgentConfirm.mayDestroy(ops)) {
+            ShAgentChangeSet plan = execute(ops, new Session(true, ids, actor));
+            String expected = ShAgentConfirm.ofPlan(plan);
+            if (expected != null) {
+                ShAgentConfirm.require(batch.confirm(), expected, plan);
+            }
+        }
+        ShAgentChangeSet result = execute(ops, new Session(batch.dryRun(), ids, actor));
+        // The token rides back on a dryRun only: on a real run it has been spent, and echoing
+        // it would invite a caller to cache one and stop planning.
+        return batch.dryRun()
+                ? new ShAgentChangeSet(true, result.ops(), result.changed(), result.results(),
+                        ShAgentConfirm.ofPlan(result))
+                : result;
+    }
+
+    /** Runs the ops through one session — a plan or a real write, depending on the session. */
+    private ShAgentChangeSet execute(List<ShAgentBatch.Op> ops, Session session) {
         List<Change> results = new ArrayList<>(ops.size());
         for (int index = 0; index < ops.size(); index++) {
             try {
@@ -160,6 +204,41 @@ public class ShAgentBatchService {
         }
         int changed = (int) results.stream().filter(Change::isChange).count();
         return new ShAgentChangeSet(session.dryRun, ops.size(), changed, List.copyOf(results));
+    }
+
+    /**
+     * Refuses a publish this credential was not issued (SH107).
+     *
+     * <p>Only token-authenticated callers are gated: a console session is a human (or the CLI
+     * running as one), and the SH54 ACL is what bounds them. The check is here rather than at
+     * the publish site so that it fails before the first write, which is the difference between
+     * "you cannot publish" and a half-built site with a 403 at the end.</p>
+     */
+    private static void requireMayPublish(List<ShAgentBatch.Op> ops) {
+        if (ShApiTokenContext.currentMayPublish()) {
+            return;
+        }
+        boolean publishes = ops.stream()
+                .anyMatch(op -> op != null && op.op() != null
+                        && POST_PUBLISH.equals(op.op().trim().toLowerCase(Locale.ROOT)));
+        if (publishes) {
+            throw new PublishNotPermittedException();
+        }
+    }
+
+    /** A 403: this token writes drafts but may not make them live (SH107). */
+    public static class PublishNotPermittedException extends ShTeachingException {
+
+        public PublishNotPermittedException() {
+            super(ShProblem.of("publish-not-permitted", HttpStatus.FORBIDDEN,
+                            "this token may not publish")
+                    .withDetail("The credential this request authenticated with writes drafts "
+                            + "only. Publishing is what changes the live site, so it is granted "
+                            + "per token rather than implied by write access.")
+                    .withFix("Drop the publish op (the draft is written and a human can publish "
+                            + "it), or have an operator grant `mayPublish` on this token.")
+                    .withExample("{\"ops\":[{\"op\":\"post.upsert\", …}]}"));
+        }
     }
 
     private List<ShAgentBatch.Op> validate(ShAgentBatch batch) {
@@ -177,6 +256,7 @@ public class ShAgentBatchService {
     private Change dispatch(ShAgentBatch.Op op, Session session) {
         String name = op.op() == null ? "" : op.op().trim().toLowerCase(Locale.ROOT);
         return switch (name) {
+            case SITE_UPSERT -> siteUpsert(op, session);
             case FOLDER_UPSERT -> folderUpsert(op, session);
             case FOLDER_DELETE -> folderDelete(op, session);
             case POST_UPSERT -> postUpsert(op, session);
@@ -186,6 +266,86 @@ public class ShAgentBatchService {
             case POST_DELETE -> postDelete(op, session);
             default -> throw new UnknownOpException(op.op());
         };
+    }
+
+    // --- site ops ---
+
+    /**
+     * Creates the site if it is not there, and reports {@code noop} if it is (SH170).
+     *
+     * <h2>Why the batch surface needed an eighth op</h2>
+     *
+     * <p>Seven ops could build everything inside a site and none of them could make one, so an
+     * agent asked for "build me a site" found that step one was not here — and landed on
+     * {@code POST /api/v2/site}: id-keyed, entity-shaped, and CSRF-gated, which answers a
+     * stateless caller with a bodiless 403. Nothing to read, nothing to fix.</p>
+     *
+     * <h2>What it deliberately does not do</h2>
+     *
+     * <p><b>It never updates.</b> The name is the address, and everything else a site carries —
+     * its URL, its description, its layout — is a console concern with a human looking at it.
+     * An "upsert" that quietly repointed a live site's URL because a document mentioned it would
+     * be the surprise P7 forbids, so this op creates or does nothing, and says which.</p>
+     *
+     * <p><b>It creates a blank site</b> (SH151), not a clone of the SH71 bootstrap template:
+     * a package applied over somebody else's Welcome page is not what was asked for.</p>
+     *
+     * <p><b>It refuses a scoped credential.</b> A token with an SH2 site allow-list must not
+     * create a site outside it — that is the escalation §XII forbids, and the allow-list would
+     * otherwise be a list of sites this token may read plus any it invents.</p>
+     */
+    private Change siteUpsert(ShAgentBatch.Op op, Session session) {
+        ShAddress address = writeAddress(op, ShAddress.Kind.SITE);
+        String name = address.site();
+        Optional<ShSite> existing = siteAccess.find(name);
+        if (existing.isPresent()) {
+            return session.change(op, address, Change.NOOP, null, existing.get().getId());
+        }
+        requireUnscopedCredential(name);
+        if (session.dryRun) {
+            return session.change(op, address, Change.CREATE, "a blank site", null);
+        }
+        shTenantQuotaService.checkCanCreateSite();
+        ShSite payload = new ShSite();
+        payload.setName(name);
+        payload.setDescription(text(op.data(), "description"));
+        payload.setUrl(text(op.data(), "url"));
+        payload.setFurl(text(op.data(), "furl"));
+        ShSite created = shSiteWriteService.createBlank(payload, session.actor);
+        return session.change(op, address, Change.CREATE, "a blank site", created.getId());
+    }
+
+    /** A single string field of an op's {@code data}, or {@code null}. */
+    private static String text(JsonNode data, String field) {
+        if (data == null || !data.isObject()) {
+            return null;
+        }
+        JsonNode value = data.get(field);
+        return value == null || !value.isString() ? null : value.asString();
+    }
+
+    /** Refuses site creation on a credential that is restricted to particular sites (SH2/SH106). */
+    private static void requireUnscopedCredential(String name) {
+        boolean scoped = ShApiTokenContext.current()
+                .map(context -> context.siteIds() != null && !context.siteIds().isEmpty())
+                .orElse(false);
+        if (scoped) {
+            throw new SiteScopeException(name);
+        }
+    }
+
+    /** A 403: a token restricted to particular sites may not invent another one. */
+    public static class SiteScopeException extends ShTeachingException {
+
+        public SiteScopeException(String name) {
+            super(ShProblem.of("site-scope", HttpStatus.FORBIDDEN,
+                            "this credential may not create a site")
+                    .withDetail("The token this request authenticated with has a site allow-list, "
+                            + "so it can only act inside the sites it was granted — creating '"
+                            + name + "' would put it outside them.")
+                    .withFix("Apply into one of the sites this token allows, or have an operator "
+                            + "issue a credential without an allow-list."));
+        }
     }
 
     // --- folder ops ---
@@ -264,12 +424,14 @@ public class ShAgentBatchService {
             if (op.data() == null || sameData(post, op.data())) {
                 return session.change(op, address, Change.NOOP, null, post.getId());
             }
+            String undeclared = checkDeclaredFields(op, address, session,
+                    post.getShPostType(), readTree(post.getData()));
             if (!session.dryRun) {
                 shContentAclService.requireWrite(post.getId());
                 shPostUnifiedWriteService.update(post.getId(),
                         new UpdateRequest(op.data(), ShPostState.DRAFT, session.actor));
             }
-            return session.change(op, address, Change.UPDATE, null, post.getId());
+            return session.change(op, address, Change.UPDATE, undeclared, post.getId());
         }
         // Only reachable in a dry run — a real run would have found the row above.
         if (session.alreadyPlanned(address)) {
@@ -277,10 +439,11 @@ public class ShAgentBatchService {
         }
 
         ShPostType postType = requirePostType(op, address);
+        String undeclared = checkDeclaredFields(op, address, session, postType, null);
         ShFolder folder = requireTargetFolder(op, site, address, session);
         session.planPost(address);
         if (session.dryRun || folder == null) {
-            return session.change(op, address, Change.CREATE, null, null);
+            return session.change(op, address, Change.CREATE, undeclared, null);
         }
         shContentAclService.requireWrite(folder.getId());
         shTenantQuotaService.checkCanCreatePost();
@@ -292,6 +455,106 @@ public class ShAgentBatchService {
         // two addresses, and the next run must find this one again.
         shPostUnifiedWriteService.setFurl(created.getId(), address.path());
         return session.change(op, address, Change.CREATE, null, created.getId());
+    }
+
+    /**
+     * Refuses a data key the post-type does not declare (SH168).
+     *
+     * <h2>Why this is a 400 and not a stored value</h2>
+     *
+     * <p>{@code post.upsert} declares whole state, so a mistyped field name does not add a
+     * key — it <em>replaces</em> the one that was meant with one nothing reads. The write
+     * reported {@code changed:1}, the console could not render it, {@code shio types} could not
+     * type it, and {@code shio verify} was green: the only defect on record that destroyed
+     * content without saying anything. Every other unknown-name mistake on this surface is
+     * already a 400, and the alternative here is a write that half-happened.</p>
+     *
+     * <h2>Why it binds new keys only</h2>
+     *
+     * <p>A post that <em>already</em> holds undeclared keys must stay readable and re-writable:
+     * SH152's post-type collisions produced some, and so did older instances' {@code File}
+     * posts. Refusing them would mean an agent could no longer fix such a post at all. So the
+     * keys already stored are grandfathered, and the {@code unknown-field} lint rule is what
+     * reports them — a defect that is visible and fixable beats one that is unwritable.</p>
+     *
+     * @param declaredIn the post-type to check against
+     * @param stored     the post's current data, or {@code null} when it is being created
+     */
+    private String checkDeclaredFields(ShAgentBatch.Op op, ShAddress address, Session session,
+                                       ShPostType declaredIn, JsonNode stored) {
+        JsonNode data = op.data();
+        if (data == null || !data.isObject() || declaredIn == null) {
+            return null;
+        }
+        Set<String> allowed = declaredFieldNames(declaredIn);
+        if (allowed.isEmpty()) {
+            // A post-type with no fields declares nothing to check against, and refusing every
+            // key would make such a type unusable rather than making the model better.
+            return null;
+        }
+        List<String> unknown = new ArrayList<>();
+        for (String key : data.propertyNames()) {
+            boolean grandfathered = stored != null && stored.has(key);
+            if (!allowed.contains(key) && !grandfathered) {
+                unknown.add(key);
+            }
+        }
+        if (unknown.isEmpty()) {
+            return null;
+        }
+        if (!session.dryRun) {
+            throw new UndeclaredFieldException(address, declaredIn.getName(), unknown,
+                    List.copyOf(allowed));
+        }
+        // On a plan it is a *finding*, not a stop. A plan that died on the first bad field
+        // would hide the rest of the report — and the report is the reason to plan: a blueprint
+        // whose post-type already exists with fewer fields (SH152) needs to say both which
+        // fields are missing and which writes that will break, in one answer.
+        return "undeclared field(s) " + String.join(", ", unknown)
+                + " — a real run will refuse this write";
+    }
+
+    /** Every field name a post-type declares, nested ones included (Tab groups, Relator children). */
+    private Set<String> declaredFieldNames(ShPostType postType) {
+        Set<String> names = new LinkedHashSet<>();
+        collectFieldNames(postType.getShPostTypeAttrs(), names);
+        return names;
+    }
+
+    private void collectFieldNames(Set<ShPostTypeAttr> attrs, Set<String> into) {
+        if (attrs == null) {
+            return;
+        }
+        for (ShPostTypeAttr attr : attrs) {
+            if (attr.getName() != null && !attr.getName().isBlank()) {
+                into.add(attr.getName());
+            }
+            collectFieldNames(attr.getShPostTypeAttrs(), into);
+        }
+    }
+
+    /** A 400 naming the fields this post-type has, and the nearest one to what was sent. */
+    public static class UndeclaredFieldException extends ShTeachingException {
+
+        public UndeclaredFieldException(ShAddress address, String postType, List<String> unknown,
+                                        List<String> allowed) {
+            super(ShProblem.badRequest("undeclared-field",
+                            "'" + postType + "' does not declare " + join(unknown))
+                    .withDetail("A post.upsert declares whole state, so writing a field the "
+                            + "post-type has no place for would replace the value it was meant "
+                            + "for with one nothing can read. Address: " + address + ".")
+                    .withFix("Use one of the declared fields below, or add the field to the "
+                            + "post-type first (PUT /api/v2/post-type/" + postType + ").")
+                    .withAllowed(allowed)
+                    // The nearest declared name, which for a typo is the field that was meant.
+                    // Reuses the SH80 matcher rather than a second notion of "close".
+                    .withDidYouMeanFrom(unknown.get(0)));
+        }
+
+        private static String join(List<String> names) {
+            return names.size() == 1 ? "a field named '" + names.get(0) + "'"
+                    : "fields named " + String.join(", ", names);
+        }
     }
 
     /**

@@ -28,5 +28,11 @@ public record ShApiTokenRequest(
         ShApiTokenScope scope,
         Set<String> siteIds,
         ShApiTokenEnv env,
-        boolean enabled) {
+        boolean enabled,
+        /**
+         * Whether this credential may publish (SH107). Absent reads as {@code false},
+         * which is the safe default for a field whose whole purpose is that publishing
+         * is opt-in — a payload that forgot the key must not grant the capability.
+         */
+        boolean mayPublish) {
 }

@@ -20,7 +20,7 @@
  */
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
-import { BASE_FILE, CONTENT_DIR, readBase, readLocal, readRemote, writeBase } from "../content-store.mjs";
+import { BASE_FILE, CONTENT_DIR, readBase, readLocal, readRemote, sitesOf, writeBase } from "../content-store.mjs";
 import { documentsFor, planPushContent } from "../content-sync.mjs";
 
 export async function run(flags, _positionals, ctx) {
@@ -52,10 +52,22 @@ export async function run(flags, _positionals, ctx) {
     );
   }
 
-  const { docs: remote, truncated } = await readRemote(client, {
+  const { docs: remote, truncated, skipped } = await readRemote(client, {
     site,
+    // SH173: the tree names the sites this push is about, so the server read is scoped to
+    // them. Before this, one un-addressable post in an unrelated site aborted the CI gate.
+    sites: sitesOf(local),
     limit: Number(flags.limit ?? 200),
   });
+  if (skipped.length) {
+    // A finding, not a stack trace: it names what could not be read and what to do, and it
+    // does not stop a push over content that read fine.
+    ctx.stdout.write(
+      `shio push --content: ${skipped.length} post(s) on the server could not be read by ` +
+        "address and were left out of the merge (run `shio verify` for the full report):\n" +
+        skipped.slice(0, 5).map((row) => `  ! ${row.address} — ${row.reason}\n`).join(""),
+    );
+  }
   if (prune && truncated && !flags.force) {
     throw new Error(
       "shio push --content --prune: the server's post list came back truncated, so this run " +
@@ -83,7 +95,18 @@ export async function run(flags, _positionals, ctx) {
   const results = [];
   for (const document of documents) {
     results.push(
-      planOnly ? await client.plan(document) : await client.apply(document),
+      planOnly
+        ? await client.plan(document)
+        : await client.applyConfirmed(document, {}, (plan) => {
+            // SH108: a `--prune` push deletes, so the deletions are printed before they
+            // happen. This is the "rendered for the human" half of the confirm token, and
+            // in CI it is the record of what the gate removed.
+            const rows = (plan.results ?? []).filter((row) => row.action === "delete");
+            ctx.stdout.write(
+              `shio push --content: deleting ${rows.length} object(s) (confirm ${plan.confirm}):\n` +
+                rows.map((row) => `  - ${row.address}\n`).join(""),
+            );
+          }),
     );
   }
 

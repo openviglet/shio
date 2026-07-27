@@ -198,3 +198,78 @@ test("a teaching problem from the server survives intact", async () => {
     },
   );
 });
+
+/**
+ * SH108 — a document that prunes takes two calls: plan for the token, then apply with it.
+ * Scripted per-call rather than with one body, because the whole point is that the two
+ * responses differ.
+ */
+function twoStepFetch(planBody, applyBody) {
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url: String(url), init });
+    const body = String(url).endsWith("/plan") ? planBody : applyBody;
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      async text() {
+        return JSON.stringify(body);
+      },
+      async json() {
+        return body;
+      },
+    };
+  };
+  fetchImpl.calls = calls;
+  return fetchImpl;
+}
+
+test("a pruning apply plans first and sends back the confirm token (SH108)", async () => {
+  const plan = {
+    dryRun: true,
+    ops: 2,
+    changed: 1,
+    confirm: "9f2c1ab4d0e77a51",
+    results: [
+      { op: "folder.upsert", address: "folder:Blog/blog", action: "noop" },
+      { op: "post.delete", address: "post:Blog/blog/old", action: "delete" },
+    ],
+  };
+  const fetchImpl = twoStepFetch(plan, { dryRun: false, ops: 2, changed: 1, results: [] });
+  const ctx = ctxWith(fetchImpl, { file: JSON.stringify({ ...DOCUMENT, prune: true }) });
+
+  await apply.run({}, ["site.json"], ctx);
+
+  assert.equal(fetchImpl.calls.length, 2);
+  assert.match(fetchImpl.calls[0].url, /\/agent\/plan$/);
+  assert.match(fetchImpl.calls[1].url, /\/agent\/apply$/);
+  assert.equal(JSON.parse(fetchImpl.calls[1].init.body).confirm, plan.confirm);
+  // The deletions are printed *before* the apply: the token's promise is that a human saw them.
+  assert.match(ctx.stdout.text, /deleting 1 object\(s\)/);
+  assert.match(ctx.stdout.text, /post:Blog\/blog\/old/);
+});
+
+test("a document that cannot delete stays one call", async () => {
+  const fetchImpl = twoStepFetch({}, { dryRun: false, ops: 1, changed: 1, results: [] });
+  const ctx = ctxWith(fetchImpl);
+
+  await apply.run({}, ["site.json"], ctx);
+
+  assert.equal(fetchImpl.calls.length, 1);
+  assert.match(fetchImpl.calls[0].url, /\/agent\/apply$/);
+});
+
+test("a prune that would delete nothing needs no confirm and no second thought", async () => {
+  // The server hands back no token when there is nothing to destroy, so the apply goes
+  // ahead without one — the flag alone must not be the test.
+  const fetchImpl = twoStepFetch({ dryRun: true, ops: 1, changed: 0, results: [] },
+    { dryRun: false, ops: 1, changed: 0, results: [] });
+  const ctx = ctxWith(fetchImpl, { file: JSON.stringify({ ...DOCUMENT, prune: true }) });
+
+  await apply.run({}, ["site.json"], ctx);
+
+  assert.equal(fetchImpl.calls.length, 2);
+  assert.equal(JSON.parse(fetchImpl.calls[1].init.body).confirm, undefined);
+  assert.doesNotMatch(ctx.stdout.text, /deleting/);
+});

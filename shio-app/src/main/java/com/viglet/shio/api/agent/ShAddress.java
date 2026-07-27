@@ -163,6 +163,14 @@ public record ShAddress(Kind kind, String site, String path) {
     }
 
     /**
+     * Builds an {@code id:} address — the escape hatch, for an object that has no addressable
+     * name. SH172 made it a fallback the readers use rather than only something a caller may send.
+     */
+    public static ShAddress id(String id) {
+        return new ShAddress(Kind.ID, id, null);
+    }
+
+    /**
      * Collapses repeated slashes and guarantees exactly one leading slash, so
      * {@code blog//hello} and {@code /blog/hello} are the same address. Trailing
      * slashes are dropped (but the root stays {@code /}) — otherwise {@code /blog}

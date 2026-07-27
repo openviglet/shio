@@ -1,0 +1,93 @@
+# SH182 — the console smoke check, in CI.
+#
+# The console is the one surface no API test can see: a form that renders zero fields, a
+# button that navigates nowhere, a request that 404s behind a spinner all answer 200. That is
+# a gap in *medium*, not in discipline, and the only instrument that closes it is a browser.
+# `shio-react/e2e/console-check.mjs` found six failing routes of fifteen on its first run;
+# without this workflow they regress silently.
+#
+# The job boots the real jar (which serves the built console at /console, so no dev server is
+# involved), provisions a site from the SH94 `marketing-site` blueprint — the package every
+# Block O defect was reproduced against — and walks the routes. The report and the
+# screenshots are uploaded whether it passes or fails, because "which page was blank" is the
+# question a failure raises.
+name: Console check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  console-check:
+    name: Walk the console in a browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      SHIO_USER: admin
+      SHIO_PASSWORD: shio-console-check
+      SHIO_SITE: Console Check
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: 21
+          distribution: 'zulu'
+          cache: maven
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.8.0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install JS workspace
+        run: pnpm install --frozen-lockfile
+
+      # Builds the console into shio-app/src/main/resources/public and packages the jar, so
+      # the app under test serves exactly the assets a release would.
+      - name: Build the app
+        run: ./mvnw -B -DskipTests package
+
+      - name: Install Chromium for Playwright
+        run: pnpm -C shio-react exec playwright install --with-deps chromium
+
+      - name: Boot the app
+        run: |
+          nohup java -jar shio-app/target/viglet-shio.jar > "$RUNNER_TEMP/shio.log" 2>&1 &
+          for i in $(seq 1 90); do
+            if curl -sf -o /dev/null "http://localhost:2710/api/v2/setup"; then
+              echo "up after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "the app did not come up"; tail -100 "$RUNNER_TEMP/shio.log"; exit 1
+
+      # A clean instance has no admin password and no site; neither is a console defect.
+      - name: Provision a site to walk
+        run: node shio-react/e2e/provision.mjs --api http://localhost:2710 --site "$SHIO_SITE"
+
+      - name: Console check
+        run: >-
+          pnpm -C shio-react run console:check --
+          --base http://localhost:2710
+          --api http://localhost:2710
+          --site "$SHIO_SITE"
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: console-check-report
+          path: shio-react/e2e/report
+          if-no-files-found: warn
+
+      - name: App log
+        if: failure()
+        run: tail -200 "$RUNNER_TEMP/shio.log"

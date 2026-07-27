@@ -28,6 +28,11 @@ import tools.jackson.databind.JsonNode;
  * behind it, that objection is gone and the manifest's {@code contentLint} flips with
  * it.</p>
  *
+ * <p>The three scoping arguments (SH143) are what make it worth calling <em>after every
+ * write</em> rather than once at the end: this is the caller the full pass was the wrong
+ * shape for. A scoped report answers "is what I just did correct", and says so in
+ * {@code partial} so it is never mistaken for "is the site correct".</p>
+ *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
@@ -47,20 +52,22 @@ public class ShVerifyTool implements ShMcpTool {
 
     @Override
     public String description() {
-        return "Check the content you just wrote before asking a human to look: empty required "
-                + "fields, references to posts that do not exist, images with no bytes, two pages "
-                + "on one URL, empty folders, links that resolve to nothing, and anything that "
-                + "failed asynchronously. Returns ok plus a fix per finding. Run it after a write "
-                + "and before a handoff.";
+        // Trimmed against the SH132 budget: this text is re-sent every turn, so each defect
+        // class is named once and tersely rather than described.
+        return "Check content you just wrote before a human looks: empty required fields, "
+                + "dangling references, missing image bytes, duplicate URLs, empty folders, "
+                + "unresolved links, async failures. Returns ok plus a fix per finding.";
     }
 
     @Override
     public Map<String, Object> inputSchema() {
         return ShMcpTool.schema(Map.of(
                 "site", ShMcpTool.string("Site name; omit for every site you can read."),
-                "checks", ShMcpTool.string(
-                        "Comma-separated: content, routes, diagnostics. Omit for all three."),
-                "limit", ShMcpTool.integer("Findings to return (default 200).")),
+                "checks", ShMcpTool.string("content, routes, diagnostics. Omit for all."),
+                "limit", ShMcpTool.integer("Findings to return (default 200)."),
+                "folder", ShMcpTool.string("folder: address — this subtree only."),
+                "address", ShMcpTool.string("post: addresses, comma-separated."),
+                "since", ShMcpTool.string("A shio_changes cursor — only newer content.")),
                 List.of());
     }
 
@@ -69,6 +76,9 @@ public class ShVerifyTool implements ShMcpTool {
         return ShAgentVerifyTerse.report(shAgentVerifyService.verify(
                 ShMcpArgs.string(arguments, "site"),
                 ShMcpArgs.string(arguments, "checks"),
-                ShMcpArgs.integer(arguments, "limit")));
+                ShMcpArgs.integer(arguments, "limit"),
+                ShMcpArgs.string(arguments, "folder"),
+                ShMcpArgs.string(arguments, "address"),
+                ShMcpArgs.string(arguments, "since")));
     }
 }

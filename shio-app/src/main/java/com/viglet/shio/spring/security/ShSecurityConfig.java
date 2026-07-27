@@ -57,6 +57,15 @@ public class ShSecurityConfig {
     private static final String POST_TYPE_PATH = "/api/v2/post-type/**";
     /** The agent surface (Block H) — stateless callers: a CDA {@code Key} token or the {@code shio} CLI's Basic auth. */
     private static final String AGENT_PATH = "/api/v2/agent/**";
+
+    /**
+     * The SH109 review queue. Console-authenticated, and reached by both kinds of caller: the
+     * browser (session + XSRF cookie) and a script or CI job with HTTP Basic and no session.
+     * So it gets SH117's narrowed exemption rather than a blanket one — the same discriminator,
+     * for the same reason: a review queue only a browser can act on would make SH109 a
+     * console-only feature, which law P1 forbids.
+     */
+    private static final String REVIEW_PATH = "/api/v2/review/**";
     /** The MCP endpoint (SH75) — the same surface over JSON-RPC; equally stateless. */
     private static final String MCP_PATH = "/mcp";
     /** Tenant catalog (SH22) — writes are admin-only; {@code GET /current} stays open to any user. */
@@ -120,6 +129,8 @@ public class ShSecurityConfig {
                         // the exemption is narrowed to callers that hold no session, or unifying
                         // the APIs would have meant dropping CSRF on the content model.
                         new ShStatelessRequestMatcher(mvc.matcher(POST_TYPE_PATH), sessionCookieName),
+                        // SH109 — same narrowed exemption, same reason (see REVIEW_PATH).
+                        new ShStatelessRequestMatcher(mvc.matcher(REVIEW_PATH), sessionCookieName),
                         // Agent writes (SH81/SH82) — same rationale again: the callers
                         // are a token-authenticated agent and the stateless shio CLI,
                         // neither of which holds a session or an XSRF cookie. Reads on

@@ -103,6 +103,19 @@ public class ShApiToken implements Serializable {
     @Column(name = "ephemeral")
     private boolean ephemeral = false;
 
+    /**
+     * Whether this credential may publish (SH107). Publishing is the one agent write
+     * that changes what the public sees, so it is off unless the token says otherwise —
+     * an agent that writes drafts and cannot make them live is one a human can review
+     * before anyone else notices, which is what P7 asks for.
+     *
+     * <p>It gates the <b>agent surface</b> (batch/apply publish ops, {@code shio_publish}).
+     * A console-authenticated caller has no token and is unaffected; the SH10 CDA write
+     * path is the Universal Editor's, where a human is already the one clicking.</p>
+     */
+    @Column(name = "may_publish")
+    private boolean mayPublish = false;
+
     /** @return {@code true} when this token carries an expiry that has passed. */
     public boolean isExpired(Instant now) {
         return expiresAt != null && expiresAt.isBefore(now);

@@ -10,6 +10,10 @@
             "description" : "#string",
             "type" : "string"
           },
+          "confirm" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "dryRun" : {
             "description" : "#string",
             "type" : "boolean"
@@ -235,13 +239,25 @@
       "description" : "#string",
       "inputSchema" : {
         "properties" : {
+          "address" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "checks" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "folder" : {
             "description" : "#string",
             "type" : "string"
           },
           "limit" : {
             "description" : "#string",
             "type" : "integer"
+          },
+          "since" : {
+            "description" : "#string",
+            "type" : "string"
           },
           "site" : {
             "description" : "#string",
@@ -255,6 +271,10 @@
       "description" : "#string",
       "inputSchema" : {
         "properties" : {
+          "confirm" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "dryRun" : {
             "description" : "#string",
             "type" : "boolean"
@@ -277,7 +297,7 @@
                 },
                 "op" : {
                   "description" : "#string",
-                  "enum" : [ "folder.upsert", "folder.delete", "post.upsert", "post.move", "post.publish", "post.unpublish", "post.delete" ],
+                  "enum" : [ "site.upsert", "folder.upsert", "folder.delete", "post.upsert", "post.move", "post.publish", "post.unpublish", "post.delete" ],
                   "type" : "string"
                 },
                 "to" : {

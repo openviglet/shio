@@ -12,6 +12,7 @@ import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 
+import com.viglet.shio.api.agent.ShAgentSessionContext;
 import com.viglet.shio.persistence.model.history.ShHistory;
 import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 
@@ -56,6 +57,11 @@ public class ShContentAuditService {
         history.setOwner(actor != null && !actor.isBlank() ? actor : "system");
         history.setDate(Instant.now());
         history.setDescription(describe(action, title));
+        // SH106 — which agent run this was, read from the request thread. Safe precisely
+        // because recording is inline with the write: an AFTER_COMMIT listener would run
+        // on another thread and find nothing, which is the same reason the tenant
+        // discriminator needs this to stay inline.
+        history.setAgentSessionId(ShAgentSessionContext.current().orElse(null));
         shHistoryRepository.save(history);
     }
 

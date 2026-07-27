@@ -21,16 +21,21 @@
 import { argv, exit } from "node:process";
 
 import { parseArgs } from "./args.mjs";
+import { formatError } from "./format-error.mjs";
 import { defaultContext } from "./context.mjs";
 
 const BOOLEANS = [
   "help", "yes", "dry-run", "prune", "check", "skip-types", "id", "ids", "strict",
   // Content-as-files (Block I): `--content` picks the resource, the rest resolve a sync.
   "content", "ours", "theirs", "force", "allow-partial", "show-remote", "cursor", "json",
-  // Blueprints (Block J): `--files` asks for the carried front-end bodies.
-  "files",
+  // Blueprints (Block J): `--files` asks for the carried front-end bodies, and the two
+  // SH151/SH152 opt-ins let one command create the site and reconcile an existing model.
+  "files", "create-site", "merge-post-types",
   // Instance memory (SH114): read the store, or drop one note from it.
   "list", "forget",
+  // Accepted findings (SH142): `--accept` writes the baseline. `--baseline` is NOT here —
+  // it is bare (use the default path) or takes one (use that file), and both are useful.
+  "accept",
 ];
 
 // Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would
@@ -69,7 +74,8 @@ Commands:
   mcp            Bridge stdio to this instance's MCP endpoint (claude mcp add shio -- shio mcp)
   resolve <addr> Resolve a content address (post:/folder:/site:/id:) to its object
   apply [file]   Plan/apply a desired-state content document (--dry-run, --check, - for stdin)
-                 or a ready-made package (--blueprint <name> --site <site>)
+                 or a ready-made package (--blueprint <name> --site <site>;
+                  --create-site makes the site, --merge-post-types adds missing fields)
   blueprints     List the appliable starting points (blueprints <name> for its parameters)
   verify         Lint the content and its routes; exits non-zero on an error (CI gate)
   changes        What changed, with a cursor to resume from (--since, --cursor)
@@ -131,8 +137,11 @@ Blueprints (shio blueprints / shio apply --blueprint):
   --param k=v          apply: one parameter value; repeat for several
   --params <file.json> apply: parameter values from a file (--param wins over it)
   --force              apply: overwrite existing front-end files
+  --create-site        apply: create the site (blank) if it does not exist yet
+  --merge-post-types   apply: add fields an existing post-type lacks; never changes one
   --dry-run            apply: the whole plan, post-types included, written nowhere
   shio apply --blueprint marketing-site --site Acme --param brand=Acme --dry-run
+  shio apply --blueprint marketing-site --site Acme --param brand=Acme --create-site
 
 Verification (shio verify / shio digest):
   shio verify is the content-side type-check: empty required fields, references to posts
@@ -143,6 +152,14 @@ Verification (shio verify / shio digest):
   --checks <groups>    content,routes,diagnostics (default all)
   --limit <n>          Findings to print (the counts always cover the whole run)
   --strict             Fail on warnings too (off by default — see the severity rule)
+  --folder <address>   Scope to a folder subtree (folder:<site>/<chain>)
+  --address <a,b>      Scope to named posts (post:<site>/<url>, comma-separated)
+  --since <cursor>     Scope to what changed after an SH88 cursor (shio changes --cursor)
+  A scoped run says so: the report carries scope/partial, and the counts cover the subset.
+  --baseline <file>    Accepted findings to subtract   (default shio/verify-baseline.json)
+  --accept             Write this run's findings into the baseline (--reason "why")
+  A baseline entry whose finding no longer exists fails the run — remove it when you fix
+  the defect, or the file rots into a suppression that hides the next one.
   shio digest <page>   post:<site>/<url>, or a delivery URL when fetching is enabled
   --address / --url    Same, as explicit flags
 
@@ -226,6 +243,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  process.stderr.write(`shio: ${err?.message ?? err}\n`);
+  process.stderr.write(formatError(err, { debug: Boolean(process.env.SHIO_DEBUG) }));
   exit(1);
 });

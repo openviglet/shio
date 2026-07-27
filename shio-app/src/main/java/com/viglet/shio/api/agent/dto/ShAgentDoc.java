@@ -38,5 +38,29 @@ import tools.jackson.databind.JsonNode;
  */
 @JsonInclude(Include.NON_NULL)
 public record ShAgentDoc(String address, String type, String state, String folder,
-                         java.util.List<String> fields, JsonNode data, String id) {
+                         java.util.List<String> fields, JsonNode data, String id,
+                         Problem error) {
+
+    /** The seven-field form: a row that resolved, which is every row before SH171. */
+    public ShAgentDoc(String address, String type, String state, String folder,
+                      java.util.List<String> fields, JsonNode data, String id) {
+        this(address, type, state, folder, fields, data, id, null);
+    }
+
+    /**
+     * Why one row failed (SH171).
+     *
+     * <p>A multi-address read exists so N posts cost one round trip; answering the whole call
+     * with a 404 because one address was wrong inverted the saving, because the agent then
+     * re-read them one at a time to find out which. So a row that cannot resolve carries the
+     * SH80 teaching fields <em>in place of</em> its content, and the reader keeps every row it
+     * asked for. The <b>single</b>-address form still 404s — that is correct, and callers
+     * depend on it.</p>
+     *
+     * @param type the problem slug's URI, the same value the 4xx body carries
+     * @param title what is wrong, in one line
+     * @param fix   what to do instead
+     */
+    public record Problem(String type, String title, String fix) {
+    }
 }

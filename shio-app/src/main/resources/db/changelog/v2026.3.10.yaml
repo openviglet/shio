@@ -1,0 +1,33 @@
+databaseChangeLog:
+  # SH177 — drop ShPostType.schema_json.
+  #
+  # It was a denormalized copy of the field list with exactly one writer: the
+  # one-shot `POST /api/v2/migration/unified/run`. So it was correct only for the
+  # post-types that existed the last time somebody called that endpoint — empty for
+  # every type a blueprint, `shio push` or the console's own editor created
+  # afterwards, and stale for every type edited afterwards. A denormalization with
+  # no invalidation is the failure mode denormalizations have.
+  #
+  # The model already carries `fields`, the console already projects them
+  # (SH178), and the read that reaches the browser now carries the post-type's SH16
+  # def (SH176). One shape is cheaper to keep right than two, so the column goes and
+  # its only writer goes with it.
+  #
+  # `columnExists` guards the drop rather than MARK_RAN'ing on a table check: a
+  # fresh Liquibase database created after this changeset still has the column (the
+  # baseline creates it), while a database built from entity metadata does not.
+  # SH26: preserve identifier case on PostgreSQL (does not propagate through
+  # `include`, so it is re-declared per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh177-drop-post-type-schema-json
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: ShPostType
+            columnName: schema_json
+      changes:
+        - dropColumn:
+            tableName: ShPostType
+            columnName: schema_json

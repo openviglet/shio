@@ -38,7 +38,6 @@ export const ROUTES = {
   SEARCH: scoped(`${consolePath}/content/search`),
   TRASH: scoped(`${consolePath}/content/trash`),
   FILES: scoped(`${consolePath}/content/files`),
-  PREVIEW: scoped(`${consolePath}/preview`),
   ADMIN_ROOT: scoped(`${consolePath}/admin`),
   ADMIN_USERS: scoped(`${consolePath}/admin/users`),
   ADMIN_GROUPS: scoped(`${consolePath}/admin/groups`),
@@ -51,6 +50,7 @@ export const ROUTES = {
   ADMIN_EXCHANGE_PROVIDERS: scoped(`${consolePath}/admin/exchange-providers`),
   ADMIN_EMAIL_CONFIG: scoped(`${consolePath}/admin/email-config`),
   ADMIN_ACTIVITY: scoped(`${consolePath}/admin/activity`),
+  ADMIN_REVIEW: scoped(`${consolePath}/admin/review`),
   ADMIN_WEBHOOKS: scoped(`${consolePath}/admin/webhooks`),
   UNIVERSAL_EDITOR: scoped(`${consolePath}/universal-editor`),
 };

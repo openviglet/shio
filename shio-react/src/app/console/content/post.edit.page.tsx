@@ -17,7 +17,7 @@ import { PostVersionsDialog } from "@/components/post-versions.dialog"
 import { PostScheduleDialog } from "@/components/post-schedule.dialog"
 import { PostTranslationsMenu } from "@/components/post-translations.menu"
 import type { ShPostUnified, ShPostState } from "@/models/post-unified/post-unified"
-import { parseSchema } from "@/models/post-unified/post-unified"
+import { postFormSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, StickySaveBar, toast } from "@viglet/viglet-design-system"
 
 const unifiedService = new ShPostUnifiedService()
@@ -70,7 +70,7 @@ export default function PostUnifiedEditPage() {
     load()
   }, [postId, resetBreadcrumb, t])
 
-  const schema = useMemo(() => parseSchema(post?.shPostType?.schemaJson), [post])
+  const schema = useMemo(() => postFormSchema(post?.shPostType), [post])
   const postTypeName = post?.shPostType?.title || post?.shPostType?.name
 
   const visibleFieldCount = useMemo(
@@ -201,11 +201,33 @@ export default function PostUnifiedEditPage() {
         <Card>
           <CardHeader className="pb-2" />
           <CardContent>
-            {schema.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Schema JSON is empty for this post type. Run the unified migration (
-                <code>POST /api/v2/migration/unified/run</code>) to populate it.
+            {/*
+              A post whose data holds a field its post-type does not declare (SH176). The
+              form cannot render it, so it is named here rather than hidden: hiding a stored
+              value is how content gets lost, and until SH168 refuses such a write it will
+              keep arriving. Saving preserves it — `data` is edited whole.
+            */}
+            {post.undeclaredFields && post.undeclaredFields.length > 0 && (
+              <p className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                {t("content.undeclaredFields", { fields: post.undeclaredFields.join(", ") })}
               </p>
+            )}
+            {schema.length === 0 ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  {t("content.postTypeHasNoFields", { name: postTypeName ?? "" })}
+                </p>
+                {post.shPostType?.name && (
+                  <GradientButton
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigate(`${ROUTES.POST_TYPE_ROOT}/${post.shPostType?.name}`)}
+                  >
+                    {t("content.editPostType")}
+                  </GradientButton>
+                )}
+              </div>
             ) : (
               <PostFormFields
                 schema={schema}

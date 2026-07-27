@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.api.agent.ShAgentSessionContext;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import tools.jackson.core.JacksonException;
@@ -50,7 +52,7 @@ import tools.jackson.databind.node.ObjectNode;
  * {@code Mcp-Session-Id}; clients echo it on later requests. It carries no server-side
  * state — this server is stateless and any instance can answer any request — it exists
  * so every write can be attributed to the run that made it
- * ({@link ShMcpSessionContext}), which is what makes SH109's review queue possible.
+ * ({@link ShAgentSessionContext}), which is what makes SH109's review queue possible.
  * A client that never sends one still works; its writes are simply attributed to the
  * principal alone.</p>
  *
@@ -109,7 +111,7 @@ public class ShMcpAPI {
                 ? sessionId
                 : (initializing ? UUID.randomUUID().toString() : null);
 
-        ShMcpSessionContext.set(session);
+        ShAgentSessionContext.set(session);
         try {
             ObjectNode response = shMcpServer.handle(message);
             if (response == null) {
@@ -123,7 +125,7 @@ public class ShMcpAPI {
             }
             return ok.body(response);
         } finally {
-            ShMcpSessionContext.clear();
+            ShAgentSessionContext.clear();
         }
     }
 

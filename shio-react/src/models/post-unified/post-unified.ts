@@ -1,5 +1,34 @@
 export type ShPostState = "DRAFT" | "PUBLISHED"
 
+/**
+ * The post-type as a post read carries it (SH176): the SH16 authoring def, the same shape
+ * `/api/v2/post-type/{name}` serves. There is no `schemaJson` — SH177 dropped the column,
+ * because a denormalized copy of `fields` had one writer and no invalidation.
+ */
+export interface ShPostTypeRef {
+  name: string
+  title?: string
+  namePlural?: string
+  description?: string
+  system?: boolean
+  managed?: boolean
+  fields?: ShPostTypeFieldRef[]
+}
+
+/** A field of {@link ShPostTypeRef} — structurally the backend's `ShPostTypeAttrDef`. */
+export interface ShPostTypeFieldRef {
+  name: string
+  label?: string
+  description?: string
+  widget?: string
+  required?: boolean
+  isTitle?: boolean
+  isSummary?: boolean
+  ordinal: number
+  widgetSettings?: string
+  fields?: ShPostTypeFieldRef[]
+}
+
 export interface ShPostUnified {
   id: string
   state: ShPostState
@@ -16,12 +45,18 @@ export interface ShPostUnified {
   publicationDate?: string
   publishScheduledDate?: string
   unpublishScheduledDate?: string
+  deletedDate?: string
   locale?: string
   translationGroupId?: string
-  shPostType?: { id: string; name: string; title: string; schemaJson?: string }
+  shPostType?: ShPostTypeRef
   shFolder?: { id: string; name: string; shSite?: { id: string; name: string } }
   shSite?: { id: string; name: string }
   data: Record<string, unknown>
+  /**
+   * Keys `data` holds that the post-type does not declare (SH176). The form cannot render
+   * them, so it says they are there rather than letting them look like nothing.
+   */
+  undeclaredFields?: string[]
 }
 
 export interface ShPostTypeSchemaField {
@@ -37,52 +72,29 @@ export interface ShPostTypeSchemaField {
   children?: ShPostTypeSchemaField[]
 }
 
-export function parseSchema(schemaJson?: string | null): ShPostTypeSchemaField[] {
-  if (!schemaJson) return []
-  try {
-    const parsed = JSON.parse(schemaJson)
-    return Array.isArray(parsed) ? (parsed as ShPostTypeSchemaField[]) : []
-  } catch {
-    return []
-  }
-}
-
 /**
- * The field shape of the post-type authoring model (SH16's `ShPostTypeAttrDef`) —
- * structurally `ShPostTypeField`, declared locally so this module stays free of a
- * post-type import it would only use for a projection.
- */
-interface PostTypeFieldDef {
-  name: string
-  label?: string
-  description?: string
-  ordinal: number
-  required?: boolean
-  isTitle?: boolean
-  isSummary?: boolean
-  widget?: string
-  widgetSettings?: string
-  fields?: PostTypeFieldDef[]
-}
-
-/**
- * The form schema for a post-type: the post's own `schemaJson` when it carries one,
- * otherwise projected from the post-type's fields.
+ * **The** form schema for a post-type — one entry point, on purpose (SH178).
  *
- * The projection reads `fields`/`widget`/booleans — the one name-keyed post-type
- * shape SH117 left standing. It used to read `shPostTypeAttrs`/`shWidget.name`/
- * `0`|`1`, which was the id-keyed entity the retired `/api/v2/post/type` returned.
+ * There used to be two exports at equal prominence: `parseSchema(schemaJson)`, with no
+ * fallback, and `buildSchemaFromPostType(postType)`, with one. The create page called the
+ * second and worked; the edit page called the first and rendered nothing. That single
+ * difference was the whole distance between "creating a post is fine" and "editing the post I
+ * just created is impossible", and it read as a content problem rather than a missing line.
+ *
+ * It takes whatever a page has — the post-type off `/api/v2/post-type/{name}`, or the one a
+ * post read carries — and returns the best schema available.
  */
-export function buildSchemaFromPostType(postType: {
-  schemaJson?: string
-  fields?: PostTypeFieldDef[]
-}): ShPostTypeSchemaField[] {
-  const fromJson = parseSchema(postType.schemaJson)
-  if (fromJson.length > 0) return fromJson
-  return projectFieldDefs(postType.fields ?? [])
+export function postFormSchema(
+  postType?: { fields?: ShPostTypeFieldRef[] } | null
+): ShPostTypeSchemaField[] {
+  return projectFieldDefs(postType?.fields ?? [])
 }
 
-function projectFieldDefs(fields: PostTypeFieldDef[]): ShPostTypeSchemaField[] {
+/**
+ * Projects a post-type's `fields` onto the form's schema shape: ordered by `ordinal`,
+ * defaults filled, nested fields (Relator/Tab) projected recursively.
+ */
+function projectFieldDefs(fields: ShPostTypeFieldRef[]): ShPostTypeSchemaField[] {
   return fields
     .filter((f) => f.name)
     .slice()

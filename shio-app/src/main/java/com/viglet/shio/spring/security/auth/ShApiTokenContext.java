@@ -28,11 +28,13 @@ import com.viglet.shio.persistence.model.token.ShApiTokenScope;
  * @param scope   the token's access scope
  * @param siteIds the per-site allow-list (empty = every site)
  * @param env     the target content environment ({@code PROD}/{@code PREVIEW})
+ * @param mayPublish whether this credential may publish on the agent surface (SH107)
  *
  * @author Alexandre Oliveira
  * @since 2026.2
  */
-public record ShApiTokenContext(String tokenId, ShApiTokenScope scope, Set<String> siteIds, ShApiTokenEnv env) {
+public record ShApiTokenContext(String tokenId, ShApiTokenScope scope, Set<String> siteIds,
+                                ShApiTokenEnv env, boolean mayPublish) {
 
     /**
      * Back-compat constructor defaulting the environment to {@code PROD}, so
@@ -40,6 +42,14 @@ public record ShApiTokenContext(String tokenId, ShApiTokenScope scope, Set<Strin
      */
     public ShApiTokenContext(String tokenId, ShApiTokenScope scope, Set<String> siteIds) {
         this(tokenId, scope, siteIds, ShApiTokenEnv.PROD);
+    }
+
+    /**
+     * Back-compat constructor for the pre-SH107 four-field form. Publishing defaults to
+     * <b>not</b> permitted, which is the direction a default on this field has to fail in.
+     */
+    public ShApiTokenContext(String tokenId, ShApiTokenScope scope, Set<String> siteIds, ShApiTokenEnv env) {
+        this(tokenId, scope, siteIds, env, false);
     }
 
     /**
@@ -57,6 +67,17 @@ public record ShApiTokenContext(String tokenId, ShApiTokenScope scope, Set<Strin
      */
     public boolean preview() {
         return env == ShApiTokenEnv.PREVIEW;
+    }
+
+    /**
+     * Whether the current request may publish through the agent surface (SH107).
+     *
+     * <p>No token means a console-authenticated caller — a human or the CLI running as
+     * one — and they publish as they always have; the SH54 ACL is what bounds them. A
+     * token publishes only if it was issued the capability.</p>
+     */
+    public static boolean currentMayPublish() {
+        return current().map(ShApiTokenContext::mayPublish).orElse(true);
     }
 
     /** @return the token context bound to the current request, if any. */

@@ -69,6 +69,7 @@ public class ShApiTokenAPI {
         token.setScope(body.scope() != null ? body.scope() : ShApiTokenScope.READ);
         token.setSiteIds(body.siteIds() != null ? new HashSet<>(body.siteIds()) : new HashSet<>());
         token.setEnv(body.env() != null ? body.env() : ShApiTokenEnv.PROD);
+        token.setMayPublish(body.mayPublish());
 
         shApiTokenRepository.saveAndFlush(token);
         log.info("Created CDA API token '{}' by {}", token.getTitle(), token.getOwner());
@@ -85,6 +86,7 @@ public class ShApiTokenAPI {
                     existing.setScope(body.scope() != null ? body.scope() : ShApiTokenScope.READ);
                     existing.setSiteIds(body.siteIds() != null ? new HashSet<>(body.siteIds()) : new HashSet<>());
                     existing.setEnv(body.env() != null ? body.env() : ShApiTokenEnv.PROD);
+                    existing.setMayPublish(body.mayPublish());
                     // Token value is never updated
                     shApiTokenRepository.saveAndFlush(existing);
                     return ResponseEntity.ok(existing);

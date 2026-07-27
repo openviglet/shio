@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.ShAgentReadTerse;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
-import com.viglet.shio.api.agent.mcp.ShMcpSessionContext;
+import com.viglet.shio.api.agent.ShAgentSessionContext;
 import com.viglet.shio.api.agent.mcp.ShMcpTool;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
@@ -83,7 +83,7 @@ public class ShPublishTool implements ShMcpTool {
         return ShAgentReadTerse.changes(shAgentBatchService.run(
                 new ShAgentBatch(ShMcpArgs.bool(arguments, "dryRun"), ops),
                 false,
-                ShMcpSessionContext.actor()));
+                ShAgentSessionContext.actor()));
     }
 
     /** A 400 for a publish with no target. */

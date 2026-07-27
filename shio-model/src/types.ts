@@ -70,6 +70,16 @@ export interface FolderSettings {
 export interface MultiSelectSettings {
   postType?: string;
   folderId?: string;
+  /**
+   * `"post"` declares that the values are **friendly URLs of posts**, not tags (SH154/SH169).
+   *
+   * A Multi Select is a free-form list of strings by design, and most of them are tags — so the
+   * server cannot guess. Declaring it is what lets `shio verify` report a reference that resolves
+   * to nothing and lets SH101's digest compose a page out of the sections it names. `postType`
+   * may narrow which type is acceptable; the SH95 vocabulary leaves it open, because a page's
+   * sections are deliberately heterogeneous.
+   */
+  references?: "post";
 }
 
 /** Relator — a titled container of nested fields. */

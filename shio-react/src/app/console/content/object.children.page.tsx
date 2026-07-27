@@ -19,11 +19,15 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { formatDistanceToNow } from "date-fns"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
+import { ShSiteService } from "@/services/site/site.service"
+import { ShPreviewTokenService } from "@/services/preview-token/preview-token.service"
 import type { ShPostType } from "@/models/post-type/post-type"
 import axios from "axios"
 import { toast } from "@viglet/viglet-design-system"
 
 const postTypeService = new ShPostTypeService()
+const siteService = new ShSiteService()
+const previewService = new ShPreviewTokenService()
 
 /**
  * `GET /v2/object/{id}/list` (SH120) — the CDA listing envelope, with rows whose shared
@@ -259,6 +263,40 @@ export default function ObjectChildrenPage() {
     await refreshList()
   }
 
+  /**
+   * SH179 — "View Site" opens the site's front end.
+   *
+   * It used to navigate to `ROUTES.PREVIEW`, a path declared in `routes.const.ts` and
+   * registered by nothing, so the button rendered an empty page. Where the published site
+   * lives is the front end's business and the CMS may not have one configured — saying so is
+   * a legitimate answer; a blank page is not.
+   */
+  const handleViewSite = async () => {
+    if (!siteId) return
+    try {
+      const site = await siteService.get(siteId)
+      if (!site.url) {
+        toast.error(t("content.siteNoUrl"))
+        return
+      }
+      window.open(site.url, "_blank", "noopener")
+    } catch {
+      toast.error(t("content.previewError"))
+    }
+  }
+
+  /** SH179 — "View Page" opens the post's draft through an SH13 preview token. */
+  const handleViewPage = async (postId: string) => {
+    try {
+      const { previewUrl } = await previewService.mint(postId)
+      window.open(previewUrl, "_blank", "noopener")
+    } catch (error) {
+      // 400 = the site has no front-end url configured; anything else = preview unavailable.
+      const noUrl = axios.isAxiosError(error) && error.response?.status === 400
+      toast.error(t(noUrl ? "content.previewNoUrl" : "content.previewError"))
+    }
+  }
+
   const openFolderDialog = (mode: "copy" | "move", ids: string[]) => {
     setFolderDialogMode(mode)
     setFolderDialogIds(ids)
@@ -324,7 +362,7 @@ export default function ObjectChildrenPage() {
               variant="default"
               size="sm"
               className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => siteId && navigate(`${ROUTES.PREVIEW}/${siteId}`)}
+              onClick={handleViewSite}
             >
               <Eye className="mr-2 h-4 w-4" /> {t("content.viewSite")}
             </Button>
@@ -575,9 +613,11 @@ export default function ObjectChildrenPage() {
                     <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); openFolderDialog("move", [item.id]) }}>
                       <Move className="h-3 w-3" /> {t("content.move")}
                     </button>
-                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); navigate(`${ROUTES.PREVIEW}/${item.id}`) }}>
-                      <Eye className="h-3 w-3" /> {t("content.viewPage")}
-                    </button>
+                    {item.objectType === "POST" && (
+                      <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); handleViewPage(item.id) }}>
+                        <Eye className="h-3 w-3" /> {t("content.viewPage")}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

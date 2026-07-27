@@ -82,36 +82,62 @@ public class ShBlueprintService {
 
     /** What applying this blueprint would do. Writes nothing that survives. */
     public ShBlueprintApplied plan(String name, String site, JsonNode params, String actor) {
-        return run(name, site, params, actor, true);
+        return run(name, site, params, actor, true, ShBlueprintWriteService.Options.NONE);
     }
 
     /** Applies it. */
     public ShBlueprintApplied apply(String name, String site, JsonNode params, String actor) {
-        return run(name, site, params, actor, false);
+        return run(name, site, params, actor, false, ShBlueprintWriteService.Options.NONE);
+    }
+
+    /** What applying it would do, with the SH151/SH152 opt-ins the caller asked for. */
+    public ShBlueprintApplied plan(String name, String site, JsonNode params, String actor,
+                                   ShBlueprintWriteService.Options options) {
+        return run(name, site, params, actor, true, options);
+    }
+
+    /** Applies it, with the SH151/SH152 opt-ins the caller asked for. */
+    public ShBlueprintApplied apply(String name, String site, JsonNode params, String actor,
+                                    ShBlueprintWriteService.Options options) {
+        return run(name, site, params, actor, false, options);
     }
 
     private ShBlueprintApplied run(String name, String site, JsonNode params, String actor,
-                                   boolean dryRun) {
+                                   boolean dryRun, ShBlueprintWriteService.Options options) {
         ShBlueprint blueprint = shBlueprintRegistry.require(name);
         if (site == null || site.isBlank()) {
             throw new MissingSiteException(blueprint.name(), readableSites());
         }
         // Resolved up front so a model-only blueprint (no content, so nothing that would
         // resolve a site later) still refuses an unknown site instead of half-succeeding.
-        ShSite target = shAgentSiteAccess.require(site);
+        //
+        // SH151: unless the caller asked for it to be created, in which case the name it sent is
+        // the name to use — the writer makes the site before either half runs. The refusal stays
+        // the default, because "the site you named does not exist" must never be read as
+        // permission to make one (P7).
+        ShSite target = shAgentSiteAccess.find(site).orElse(null);
+        if (target == null && !options.createSite()) {
+            // The blueprint's own error rather than the site resolver's, because this one can name
+            // the two routes to a site — `createSite`, or a `site.upsert` op — and the resolver
+            // knows nothing about either. It still only lists sites this credential can read, so
+            // an existing-but-invisible site is a 400 that names what is visible, not a leak.
+            throw new MissingSiteException(blueprint.name(), readableSites());
+        }
+        String siteName = target != null ? target.getName() : site.trim();
 
         Map<String, String> values =
-                ShBlueprintParams.resolve(blueprint.manifest(), params, target.getName());
+                ShBlueprintParams.resolve(blueprint.manifest(), params, siteName);
         List<ShPostTypeDef> defs = defs(blueprint, values);
-        ShAgentDesiredState desired = desired(blueprint, values, target.getName());
+        ShAgentDesiredState desired = desired(blueprint, values, siteName);
 
         ShBlueprintWriteService.Written written = dryRun
-                ? shBlueprintWriteService.plan(defs, desired, actor)
-                : shBlueprintWriteService.apply(defs, desired, actor);
+                ? shBlueprintWriteService.plan(defs, desired, actor, options)
+                : shBlueprintWriteService.apply(defs, desired, actor, options);
 
         return new ShBlueprintApplied(dryRun, blueprint.name(), blueprint.manifest().version(),
-                target.getName(), values, written.postTypes(), written.content(),
-                filePaths(blueprint), dryRun ? null : verify(blueprint, values, target.getName()));
+                siteName, values, written.postTypes(), written.content(),
+                filePaths(blueprint), dryRun ? null : verify(blueprint, values, siteName),
+                written.site());
     }
 
     /** The post-type definitions, with parameters substituted. */
@@ -213,13 +239,21 @@ public class ShBlueprintService {
         public MissingSiteException(String blueprint, List<String> sites) {
             super(ShProblem.badRequest("missing-site",
                             "Applying '" + blueprint + "' needs a target site")
-                    .withDetail("A blueprint is applied into a site that already exists — the "
-                            + "package brings a model and content, not a site of its own.")
+                    .withDetail("A blueprint is applied into a site — the package brings a model "
+                            + "and content, not a site of its own. It will not create one it was "
+                            + "not asked to create: that is the most visible side effect in the "
+                            + "system, so it is requested, never inferred (SH151).")
                     .withAllowed(sites)
-                    .withFix(sites.isEmpty()
-                            ? "Create a site first: POST /api/v2/site."
-                            : "Set `site` to one of the listed names.")
-                    .withExample(sites.isEmpty() ? "Acme" : sites.get(0)));
+                    // Names both routes, because which one is available depends on the caller:
+                    // a REST or CLI caller sets the flag, and an MCP client uses shio_write —
+                    // `site.upsert` is on that tool for free, while a flag on shio_apply would be
+                    // schema every session pays for (SH170).
+                    .withFix("Set `createSite: true` on this request to create it blank, or make "
+                            + "it first with a `site.upsert` op (POST /api/v2/agent/batch, or "
+                            + "shio_write over MCP)"
+                            + (sites.isEmpty() ? "." : ", or set `site` to one of the listed names."))
+                    .withExample("{\"site\":\"" + (sites.isEmpty() ? "Acme" : sites.get(0))
+                            + "\", \"createSite\":true}"));
         }
     }
 }

@@ -18,7 +18,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
+import com.viglet.shio.api.agent.ShAddress;
+import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.ShAgentDesiredStateService;
+import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
 import com.viglet.shio.api.post.type.ShPostTypeAdminService;
@@ -63,15 +66,21 @@ public class ShBlueprintWriteService {
 
     private final ShPostTypeAdminService shPostTypeAdminService;
     private final ShAgentDesiredStateService shAgentDesiredStateService;
+    private final ShAgentBatchService shAgentBatchService;
 
     public ShBlueprintWriteService(ShPostTypeAdminService shPostTypeAdminService,
-                                   ShAgentDesiredStateService shAgentDesiredStateService) {
+                                   ShAgentDesiredStateService shAgentDesiredStateService,
+                                   ShAgentBatchService shAgentBatchService) {
         this.shPostTypeAdminService = shPostTypeAdminService;
         this.shAgentDesiredStateService = shAgentDesiredStateService;
+        this.shAgentBatchService = shAgentBatchService;
     }
 
-    /** What one run of the two halves produced. */
-    public record Written(List<ShBlueprintApplied.PostType> postTypes, ShAgentChangeSet content) {
+    /**
+     * @param site the site this apply created (SH151), or {@code null} when it was already there
+     */
+    public record Written(List<ShBlueprintApplied.PostType> postTypes, ShAgentChangeSet content,
+                          String site) {
     }
 
     /**
@@ -82,13 +91,19 @@ public class ShBlueprintWriteService {
      * exception it has to interpret as success.</p>
      */
     @Transactional
-    public Written plan(List<ShPostTypeDef> defs, ShAgentDesiredState desired, String actor) {
+    public Written plan(List<ShPostTypeDef> defs, ShAgentDesiredState desired, String actor,
+                        Options options) {
         try {
-            List<ShBlueprintApplied.PostType> postTypes = provision(defs);
+            // The site is created inside the transaction this method rolls back, for the same
+            // reason the post-types are (see the class note): without it the content planner
+            // cannot resolve a single address, so a plan for a site that does not exist yet
+            // could not be a plan at all. Nothing survives the return.
+            String site = createSiteIfAsked(desired, options, actor);
+            List<ShBlueprintApplied.PostType> postTypes = provision(defs, options);
             ShAgentChangeSet content = declaresNothing(desired)
                     ? empty(true)
                     : shAgentDesiredStateService.plan(desired, false, actor);
-            return new Written(postTypes, content);
+            return new Written(postTypes, content, site);
         } finally {
             // Local rollback-only: Spring rolls this transaction back on return without
             // raising UnexpectedRollbackException, which a global mark would.
@@ -98,12 +113,48 @@ public class ShBlueprintWriteService {
 
     /** Applies both halves, atomically. */
     @Transactional
-    public Written apply(List<ShPostTypeDef> defs, ShAgentDesiredState desired, String actor) {
-        List<ShBlueprintApplied.PostType> postTypes = provision(defs);
+    public Written apply(List<ShPostTypeDef> defs, ShAgentDesiredState desired, String actor,
+                         Options options) {
+        String site = createSiteIfAsked(desired, options, actor);
+        List<ShBlueprintApplied.PostType> postTypes = provision(defs, options);
         ShAgentChangeSet content = declaresNothing(desired)
                 ? empty(false)
                 : shAgentDesiredStateService.apply(desired, false, actor);
-        return new Written(postTypes, content);
+        return new Written(postTypes, content, site);
+    }
+
+    /**
+     * Creates the target site when the caller asked for it and it is not there (SH151).
+     *
+     * <p>Goes through the batch surface's own {@code site.upsert} rather than calling the write
+     * service directly, so one op decides what creating a site means: blank, never an update, and
+     * refused for a credential with an SH2 allow-list. A blueprint is not a second answer to that
+     * question (P10).</p>
+     *
+     * @return the site name when this call created it, or {@code null}
+     */
+    private String createSiteIfAsked(ShAgentDesiredState desired, Options options, String actor) {
+        if (!options.createSite() || desired == null || desired.site() == null) {
+            return null;
+        }
+        ShAgentChangeSet result = shAgentBatchService.run(new ShAgentBatch(false, List.of(
+                new ShAgentBatch.Op(ShAgentBatchService.SITE_UPSERT,
+                        ShAddress.site(desired.site()).toString(), null, null, null))),
+                false, actor);
+        boolean created = result.results().stream().anyMatch(row -> !"noop".equals(row.action()));
+        return created ? desired.site() : null;
+    }
+
+    /**
+     * What this apply is allowed to change beyond the package's own content (SH151, SH152).
+     *
+     * <p>Both are opt-in, and both are the kind of side effect that has to be asked for rather
+     * than inferred: one creates a site, the other adds fields to a post-type the instance
+     * already had.</p>
+     */
+    public record Options(boolean createSite, boolean mergePostTypes) {
+
+        public static final Options NONE = new Options(false, false);
     }
 
     /**
@@ -114,12 +165,23 @@ public class ShBlueprintWriteService {
      * upsert would revert a field a human added, and would flip SH66's {@code managed}
      * flag so the console refused to let them add it again.</p>
      */
-    private List<ShBlueprintApplied.PostType> provision(List<ShPostTypeDef> defs) {
+    private List<ShBlueprintApplied.PostType> provision(List<ShPostTypeDef> defs, Options options) {
         List<ShBlueprintApplied.PostType> rows = new ArrayList<>(defs.size());
         for (ShPostTypeDef def : defs) {
-            rows.add(shPostTypeAdminService.provisionFromDef(def)
-                    ? ShBlueprintApplied.PostType.created(def.name())
-                    : ShBlueprintApplied.PostType.existing(def.name(), missingFields(def)));
+            if (shPostTypeAdminService.provisionFromDef(def)) {
+                rows.add(ShBlueprintApplied.PostType.created(def.name()));
+                continue;
+            }
+            if (!options.mergePostTypes()) {
+                rows.add(ShBlueprintApplied.PostType.existing(def.name(), missingFields(def)));
+                continue;
+            }
+            // SH152 — add what the existing type lacks, and report it as a merge rather than as a
+            // provision: the type is now a hybrid of two models and the response has to say so.
+            List<String> added = shPostTypeAdminService.mergeMissingFields(def);
+            rows.add(added.isEmpty()
+                    ? ShBlueprintApplied.PostType.existing(def.name(), missingFields(def))
+                    : ShBlueprintApplied.PostType.merged(def.name(), added, missingFields(def)));
         }
         return List.copyOf(rows);
     }

@@ -44,7 +44,8 @@ export async function run(flags, positionals, ctx) {
   const planOnly = Boolean(flags.check || flags.dryRun);
   const result = planOnly
     ? await client.plan(document, { ids: Boolean(flags.ids) })
-    : await client.apply(document, { ids: Boolean(flags.ids) });
+    : await client.applyConfirmed(document, { ids: Boolean(flags.ids) },
+        (plan) => ctx.stdout.write(renderDeletions(plan)));
 
   ctx.stdout.write(render(result, planOnly));
 
@@ -58,6 +59,18 @@ export async function run(flags, positionals, ctx) {
     return { ...result, exitCode: 1 };
   }
   return result;
+}
+
+/**
+ * The deletions an apply is about to make (SH108).
+ *
+ * Printed before the apply, not after: the confirm token's whole promise is that a human saw
+ * this list, and a list printed afterwards would be a receipt rather than a review.
+ */
+function renderDeletions(plan) {
+  const rows = (plan.results ?? []).filter((row) => row.action === "delete");
+  const lines = rows.map((row) => `  - ${row.address}\n`).join("");
+  return `shio apply: deleting ${rows.length} object(s) (confirm ${plan.confirm}):\n${lines}`;
 }
 
 /**
@@ -154,7 +167,17 @@ async function applyBlueprint(flags, positionals, ctx) {
   const detail = await client.blueprint(name, { files: true });
   const params = coerceParams(await readParams(flags, ctx), detail?.manifest?.params);
   const planOnly = Boolean(flags.check || flags.dryRun);
-  const result = await client.applyBlueprint(name, { site, params, dryRun: planOnly });
+  const result = await client.applyBlueprint(name, {
+    site,
+    params,
+    dryRun: planOnly,
+    // SH151/SH152 — both opt-in, and both named in the plan before they happen. `--create-site`
+    // makes scaffolding and seeding one command; `--merge-post-types` adds the fields an
+    // existing post-type lacks, which is what the bootstrap `Page` versus a section
+    // vocabulary's `Page` collision needs.
+    createSite: Boolean(flags.createSite),
+    mergePostTypes: Boolean(flags.mergePostTypes),
+  });
 
   ctx.stdout.write(renderApplied(result));
 

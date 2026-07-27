@@ -25,14 +25,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.post.type.ShUnknownPostTypeException;
+import com.viglet.shio.api.post.unified.dto.ShConsolePost;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.UpdateRequest;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
-import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
-import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
-import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.tenant.ShTenantQuotaService;
 
@@ -40,63 +38,69 @@ import tools.jackson.databind.JsonNode;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+/**
+ * The console's post API.
+ *
+ * <p><b>Every post-shaped response is a {@link ShConsolePost}, never the entity</b> (SH176).
+ * Serializing {@code ShPostUnified} was faithful to the storage shape and useless to the
+ * form: the LAZY {@code shPostType} arrived as {@code null} and {@code data} arrived as a
+ * JSON string. That included the write responses — the edit page rebinds its form from what
+ * a save returns — so the reads and the writes had to move together.</p>
+ */
 @RestController
 @RequestMapping("/api/v2/post-unified")
 @Tag(name = "PostUnified", description = "Unified post model API")
 public class ShPostUnifiedAPI {
 
-    private final ShPostUnifiedRepository shPostUnifiedRepository;
-    private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
+    private final ShConsolePostReadService shConsolePostReadService;
     private final ShTenantQuotaService shTenantQuotaService;
     private final ShContentAclService shContentAclService;
     private final ShPostTypeRepository shPostTypeRepository;
 
-    public ShPostUnifiedAPI(ShPostUnifiedRepository shPostUnifiedRepository,
-                            ShFolderRepository shFolderRepository,
-                            ShPostUnifiedWriteService shPostUnifiedWriteService,
+    public ShPostUnifiedAPI(ShPostUnifiedWriteService shPostUnifiedWriteService,
+                            ShConsolePostReadService shConsolePostReadService,
                             ShTenantQuotaService shTenantQuotaService,
                             ShContentAclService shContentAclService,
                             ShPostTypeRepository shPostTypeRepository) {
-        this.shPostUnifiedRepository = shPostUnifiedRepository;
-        this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
+        this.shConsolePostReadService = shConsolePostReadService;
         this.shTenantQuotaService = shTenantQuotaService;
         this.shContentAclService = shContentAclService;
         this.shPostTypeRepository = shPostTypeRepository;
     }
 
     @PostMapping
-    public ShPostUnified create(@RequestBody CreatePayload payload, Principal principal) {
+    public ShConsolePost create(@RequestBody CreatePayload payload, Principal principal) {
         // SH54 — WRITE on the target folder; SH22/D — tenant plan post quota (402).
         shContentAclService.requireWrite(payload.folderId());
         shTenantQuotaService.checkCanCreatePost();
-        return shPostUnifiedWriteService.create(new CreateRequest(
+        return shConsolePostReadService.written(shPostUnifiedWriteService.create(new CreateRequest(
                 payload.folderId(),
                 resolvePostTypeId(payload),
                 payload.data(),
                 payload.state() != null ? payload.state() : ShPostState.DRAFT,
                 principal != null ? principal.getName() : null,
                 payload.locale(),
-                payload.translationGroupId()));
+                payload.translationGroupId())));
     }
 
     @PutMapping("/{id}")
-    public ShPostUnified update(@PathVariable String id,
+    public ShConsolePost update(@PathVariable String id,
                                 @RequestBody UpdatePayload payload,
                                 Principal principal) {
         shContentAclService.requireWrite(id);
-        return shPostUnifiedWriteService.update(id, new UpdateRequest(
+        return shConsolePostReadService.written(shPostUnifiedWriteService.update(id, new UpdateRequest(
                 payload.data(),
                 payload.state() != null ? payload.state() : ShPostState.DRAFT,
-                principal != null ? principal.getName() : null));
+                principal != null ? principal.getName() : null)));
     }
 
     @PostMapping("/{id}/publish")
-    public ShPostUnified publish(@PathVariable String id, Principal principal) {
+    public ShConsolePost publish(@PathVariable String id, Principal principal) {
         shContentAclService.requireWrite(id);
-        return shPostUnifiedWriteService.publish(id,
-                principal != null ? principal.getName() : null);
+        return shConsolePostReadService.written(shPostUnifiedWriteService.publish(id,
+                principal != null ? principal.getName() : null));
     }
 
     @PostMapping("/{id}/unpublish")
@@ -164,32 +168,30 @@ public class ShPostUnifiedAPI {
     }
 
     @GetMapping("/folder/{folderId}")
-    public List<ShPostUnified> listByFolder(@PathVariable String folderId,
+    public List<ShConsolePost> listByFolder(@PathVariable String folderId,
                                             @RequestParam(name = "state", defaultValue = "PUBLISHED") ShPostState state) {
         shContentAclService.requireRead(folderId);
-        return shFolderRepository.findById(folderId)
-                .map(folder -> shPostUnifiedRepository.findByShFolderAndState(folder, state))
-                .orElse(List.of());
+        return shConsolePostReadService.listByFolder(folderId, state);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ShPostUnified> get(@PathVariable String id,
+    public ResponseEntity<ShConsolePost> get(@PathVariable String id,
                                              @RequestParam(name = "state", defaultValue = "PUBLISHED") ShPostState state) {
         shContentAclService.requireRead(id);
-        return shPostUnifiedRepository.findByIdAndState(id, state)
+        return shConsolePostReadService.get(id, state)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/{id}/versions")
-    public List<ShPostUnified> versions(@PathVariable String id) {
-        return shPostUnifiedRepository.findById(id);
+    public List<ShConsolePost> versions(@PathVariable String id) {
+        return shConsolePostReadService.versions(id);
     }
 
     /** SH55 — posts currently in the trash for the active tenant. */
     @GetMapping("/trash")
-    public List<ShPostUnified> trash() {
-        return shPostUnifiedWriteService.listTrash();
+    public List<ShConsolePost> trash() {
+        return shConsolePostReadService.trash();
     }
 
     /** SH55 — restore a trashed post (clear its soft-delete marker). */
@@ -212,31 +214,32 @@ public class ShPostUnifiedAPI {
 
     /** SH53 — the sibling translations of this post's group (DRAFT-preferred, one per id). */
     @GetMapping("/{id}/translations")
-    public List<ShPostUnified> translations(@PathVariable String id) {
-        return shPostUnifiedWriteService.listTranslations(id);
+    public List<ShConsolePost> translations(@PathVariable String id) {
+        return shConsolePostReadService.translations(id);
     }
 
     /** SH53 — create a linked translation of this post in another locale. */
     @PostMapping("/{id}/translate")
-    public ResponseEntity<ShPostUnified> translate(@PathVariable String id,
+    public ResponseEntity<ShConsolePost> translate(@PathVariable String id,
                                                    @RequestBody TranslatePayload payload,
                                                    Principal principal) {
         shContentAclService.requireWrite(id);
         try {
-            return ResponseEntity.ok(shPostUnifiedWriteService.translate(
+            return ResponseEntity.ok(shConsolePostReadService.written(shPostUnifiedWriteService.translate(
                     id, payload.locale(), payload.data(),
-                    principal != null ? principal.getName() : null));
+                    principal != null ? principal.getName() : null)));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
     @PostMapping("/{id}/restore")
-    public ResponseEntity<ShPostUnified> restore(@PathVariable String id, Principal principal) {
+    public ResponseEntity<ShConsolePost> restore(@PathVariable String id, Principal principal) {
         shContentAclService.requireWrite(id);
         try {
-            return ResponseEntity.ok(shPostUnifiedWriteService.restoreDraftFromPublished(
-                    id, principal != null ? principal.getName() : null));
+            return ResponseEntity.ok(shConsolePostReadService.written(
+                    shPostUnifiedWriteService.restoreDraftFromPublished(
+                            id, principal != null ? principal.getName() : null)));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
@@ -248,14 +251,14 @@ public class ShPostUnifiedAPI {
      * transition once the instant passes.
      */
     @PostMapping("/{id}/schedule")
-    public ResponseEntity<ShPostUnified> schedule(@PathVariable String id,
+    public ResponseEntity<ShConsolePost> schedule(@PathVariable String id,
                                                   @RequestBody SchedulePayload payload,
                                                   Principal principal) {
         shContentAclService.requireWrite(id);
         try {
-            return ResponseEntity.ok(shPostUnifiedWriteService.schedule(
+            return ResponseEntity.ok(shConsolePostReadService.written(shPostUnifiedWriteService.schedule(
                     id, toInstant(payload.publishAt()), toInstant(payload.unpublishAt()),
-                    principal != null ? principal.getName() : null));
+                    principal != null ? principal.getName() : null)));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
