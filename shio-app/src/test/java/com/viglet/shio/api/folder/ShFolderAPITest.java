@@ -329,6 +329,30 @@ class ShFolderAPITest {
                         .isEqualTo(otherSiteRootId)));
     }
 
+    /**
+     * SH137: the console's move dialog navigates <b>down</b> from the site root, so a curator
+     * can reach a child of the folder they are dragging in three clicks. Before the shared
+     * writer, that succeeded and produced a cycle — the subtree detached from the root and
+     * the recursive delete walked the loop until the stack ran out.
+     */
+    @Test
+    void stage08eMoveFolderIntoItsOwnChildIsRefused() throws Exception {
+        String outerId = createFolderWithFurl("Outer", "outer");
+        String innerId = createChildFolder(outerId, "Inner");
+
+        mockMvc.perform(put("/api/v2/object/moveto/" + innerId)
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[\"" + outerId + "\"]"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.fix").exists());
+
+        // Still reachable from where it was, which is what a cycle destroys.
+        mockMvc.perform(get("/api/v2/folder/" + outerId).principal(mockPrincipal))
+                .andExpect(status().isOk());
+    }
+
     @Test
     void stage09ClearCacheIsOk() throws Exception {
         mockMvc.perform(get("/api/v2/object/" + childFolderId + "/clear-cache").principal(mockPrincipal))
@@ -364,6 +388,21 @@ class ShFolderAPITest {
             folder.setFurl(furl);
             folder.setRootFolder((byte) 0);
             folder.setParentFolder(parent);
+            folder.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            folder.setOwner("admin");
+            entityManager.persist(folder);
+            return folder.getId();
+        });
+    }
+
+    private String createChildFolder(String parentId, String name) {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        return tx.execute(status -> {
+            ShFolder folder = new ShFolder();
+            folder.setName(name);
+            folder.setFurl(name.toLowerCase(java.util.Locale.ROOT));
+            folder.setRootFolder((byte) 0);
+            folder.setParentFolder(entityManager.find(ShFolder.class, parentId));
             folder.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             folder.setOwner("admin");
             entityManager.persist(folder);

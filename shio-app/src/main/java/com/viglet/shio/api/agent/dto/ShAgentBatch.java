@@ -59,9 +59,10 @@ public record ShAgentBatch(boolean dryRun, List<Op> ops, String confirm) {
      * six shallow shapes are cheaper to state and to get right than six classes.
      * Fields not relevant to an {@code op} are simply absent.</p>
      *
-     * @param op      one of {@code folder.upsert}, {@code folder.delete},
-     *                {@code post.upsert}, {@code post.move}, {@code post.publish},
-     *                {@code post.unpublish}, {@code post.delete}
+     * @param op      one of {@code site.upsert}, {@code folder.upsert},
+     *                {@code folder.move}, {@code folder.delete}, {@code post.upsert},
+     *                {@code post.move}, {@code post.publish}, {@code post.unpublish},
+     *                {@code post.delete}
      * @param address what the op acts on — {@code folder:<site>/<path>} or
      *                {@code post:<site>/<url>}. The lenient {@code site:} form is
      *                <b>not</b> accepted for writes: guessing which namespace was meant
@@ -72,10 +73,13 @@ public record ShAgentBatch(boolean dryRun, List<Op> ops, String confirm) {
      *                addressed site. Required when {@code post.upsert} has to create,
      *                because a post's friendly URL says nothing about its folder; on
      *                {@code post.move} it is the destination folder
-     * @param to      the post's new address, for {@code post.move} — the one op that
-     *                <em>changes</em> an address rather than acting on one. Kept separate
-     *                from {@code address} because a move needs both ends: re-addressing
-     *                an upsert instead would create a second post and orphan the first
+     * @param to      the new address, for {@code post.move} and {@code folder.move} — the
+     *                two ops that <em>change</em> an address rather than acting on one. Kept
+     *                separate from {@code address} because a move needs both ends:
+     *                re-addressing an upsert instead would create a second post and orphan
+     *                the first, or — for a folder — leave the old subtree to be deleted.
+     *                A folder's {@code to} is its whole name chain, since that is what
+     *                addresses a folder (SH79); the last segment is its new name
      * @param data    the post's field values, keyed by post-type attribute name
      */
     public record Op(String op, String address, String type, String folder, String to,

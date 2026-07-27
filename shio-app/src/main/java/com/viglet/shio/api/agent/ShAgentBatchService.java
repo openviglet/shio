@@ -91,6 +91,7 @@ import tools.jackson.databind.ObjectMapper;
 public class ShAgentBatchService {
 
     public static final String FOLDER_UPSERT = "folder.upsert";
+    public static final String FOLDER_MOVE = "folder.move";
     public static final String FOLDER_DELETE = "folder.delete";
     public static final String POST_UPSERT = "post.upsert";
     public static final String POST_MOVE = "post.move";
@@ -106,8 +107,8 @@ public class ShAgentBatchService {
 
     /** The closed op vocabulary, in the order a teaching error lists it. */
     public static final List<String> OPS = List.of(
-            SITE_UPSERT, FOLDER_UPSERT, FOLDER_DELETE, POST_UPSERT, POST_MOVE, POST_PUBLISH,
-            POST_UNPUBLISH, POST_DELETE);
+            SITE_UPSERT, FOLDER_UPSERT, FOLDER_MOVE, FOLDER_DELETE, POST_UPSERT, POST_MOVE,
+            POST_PUBLISH, POST_UNPUBLISH, POST_DELETE);
 
     /**
      * The ops that destroy something and therefore need confirming (SH108). Everything else
@@ -308,6 +309,7 @@ public class ShAgentBatchService {
         return switch (name) {
             case SITE_UPSERT -> siteUpsert(op, session);
             case FOLDER_UPSERT -> folderUpsert(op, session);
+            case FOLDER_MOVE -> folderMove(op, session);
             case FOLDER_DELETE -> folderDelete(op, session);
             case POST_UPSERT -> postUpsert(op, session);
             case POST_MOVE -> postMove(op, session);
@@ -443,6 +445,111 @@ public class ShAgentBatchService {
         }
         String detail = created.size() > 1 ? "creates " + String.join(", ", created) : null;
         return session.change(op, address, Change.CREATE, detail, pending ? null : parent.getId());
+    }
+
+    /**
+     * Re-addresses an existing folder — a rename, a relocation, or both — keeping its id
+     * and everything beneath it (SH137).
+     *
+     * <h2>Why the vocabulary needed this, one level up from SH134</h2>
+     *
+     * <p>Without it, renaming a section meant {@code folder.upsert} at the new path plus
+     * {@code folder.delete} of the old — and that delete cascades over every post beneath
+     * it. It is exactly SH134's defect scaled up: there, the obvious route orphaned one
+     * post; here it destroys a subtree. SH134 is also what made the gap conspicuous, since
+     * an agent that has learned {@code post.move} will reasonably assume the folder verb
+     * exists.</p>
+     *
+     * <h2>No post's URL changes, which is why this needs no confirm token</h2>
+     *
+     * <p>A friendly URL is unique per site and independent of the folder chain (SH79), so
+     * the pages inside a moved section keep the addresses they had. Nothing is destroyed and
+     * nothing goes dark, so unlike {@code folder.delete} this is not in
+     * {@link #DESTRUCTIVE_OPS} — the whole point is to be the safe verb that replaces the
+     * destructive workaround.</p>
+     *
+     * <h2>The refusals, all four of them</h2>
+     *
+     * <p>Cross-site (as {@code post.move}: separate trees, ACLs and tenants), an occupied
+     * target, a site root, and a destination inside the folder's own subtree. The last two
+     * live on the shared writer because the console can reach them too — and its move
+     * dialog, which navigates <em>down</em> from the site root, can reach the cycle in
+     * three clicks.</p>
+     *
+     * <p>Idempotence follows {@code post.move}'s rule: source absent but destination
+     * present is a {@code noop}, so a document holding a move survives a second apply.</p>
+     */
+    private Change folderMove(ShAgentBatch.Op op, Session session) {
+        ShAddress from = writeAddress(op, ShAddress.Kind.FOLDER);
+        ShSite site = requireSite(from.site());
+        ShAddress to = folderMoveTarget(op, from);
+        if (!to.site().equalsIgnoreCase(from.site())) {
+            throw new CrossSiteMoveException(from, to);
+        }
+
+        Optional<ShFolder> source = findFolder(site, from.path());
+        if (source.isEmpty()) {
+            Optional<ShFolder> already = findFolder(site, to.path());
+            if (already.isPresent()) {
+                return session.change(op, to, Change.NOOP, "already at this address",
+                        already.get().getId());
+            }
+            throw new ShAddressResolver.UnresolvedAddressException(from, List.of());
+        }
+        ShFolder folder = source.get();
+
+        List<String> target = segments(to.path());
+        if (target.isEmpty()) {
+            // `folder:<site>/` is the root, and the root is where every address resolves
+            // from — a move onto it is the one destination that cannot mean anything.
+            throw new MoveTargetOccupiedException(from, to);
+        }
+        String newName = target.get(target.size() - 1);
+        String parentPath = "/" + String.join("/", target.subList(0, target.size() - 1));
+
+        if (ShAddress.normalizePath(from.path()).equalsIgnoreCase(ShAddress.normalizePath(to.path()))) {
+            return session.change(op, to, Change.NOOP, null, folder.getId());
+        }
+        if (findFolder(site, to.path()).isPresent()) {
+            throw new MoveTargetOccupiedException(from, to);
+        }
+        // The destination's parent must exist: a move never creates, so that a typo in the
+        // path is reported instead of quietly building a new branch of the tree.
+        ShFolder destParent = findFolder(site, parentPath).orElseThrow(() ->
+                new ShAddressResolver.UnresolvedAddressException(
+                        ShAddress.folder(site.getName(), parentPath), List.of()));
+
+        if (!session.dryRun) {
+            shContentAclService.requireWrite(folder.getId());
+            shContentAclService.requireWrite(destParent.getId());
+            shFolderWriteService.move(folder.getId(), destParent, newName, session.actor);
+        } else {
+            // A plan must report the refusals a real run would make, or the plan lied. The
+            // writer owns them, so they are asked here rather than duplicated.
+            shFolderWriteService.checkMovable(folder.getId(), destParent);
+        }
+        return session.change(op, to, Change.MOVE,
+                "the pages inside keep their URLs", folder.getId());
+    }
+
+    /**
+     * Where a folder move is going. Accepts a full {@code folder:} address or a bare path,
+     * defaulting the site to the source's — repeating the site is how a cross-site move
+     * gets typed by accident.
+     */
+    private ShAddress folderMoveTarget(ShAgentBatch.Op op, ShAddress from) {
+        String raw = op.to() == null ? null : op.to().trim();
+        if (raw == null || raw.isBlank()) {
+            throw new MissingOpFieldException("to", op.op(), from, "folder:Blog/archive/2025",
+                    "A folder move needs its new address in `to` — the full name chain, "
+                            + "since that is what addresses a folder (SH79).");
+        }
+        ShAddress target = raw.contains(":") ? ShAddress.parse(raw)
+                : ShAddress.folder(from.site(), raw);
+        if (target.kind() != ShAddress.Kind.FOLDER) {
+            throw new WrongAddressKindException(op.op(), target, ShAddress.Kind.FOLDER);
+        }
+        return target;
     }
 
     private Change folderDelete(ShAgentBatch.Op op, Session session) {
@@ -1138,18 +1245,35 @@ public class ShAgentBatchService {
         }
     }
 
-    /** A 409: something already lives at the address a move is aiming for. */
+    /**
+     * A 409: something already lives at the address a move is aiming for.
+     *
+     * <p>Worded per kind (SH137). Both moves share the refusal, and they do not share a
+     * consequence: two posts on one URL is a delivery ambiguity, while two folders of one
+     * name is an address that resolves to whichever the walk reaches first. An error that
+     * described the wrong one would be teaching the caller something false (P6).</p>
+     */
     public static class MoveTargetOccupiedException extends ShTeachingException {
 
         public MoveTargetOccupiedException(ShAddress from, ShAddress to) {
-            super(ShProblem.of("move-target-occupied", HttpStatus.CONFLICT,
-                            "'" + to + "' is already taken")
-                    .withDetail("Moving '" + from + "' there would leave two posts claiming "
-                            + "one URL, and the delivery layer would serve whichever it found "
-                            + "first. A move never overwrites.")
-                    .withFix("Pick a free address, or delete the post at '" + to + "' first "
-                            + "with post.delete (it goes to the restorable trash).")
-                    .withExample(to.toString()));
+            super(to.kind() == ShAddress.Kind.FOLDER
+                    ? ShProblem.of("move-target-occupied", HttpStatus.CONFLICT,
+                                    "'" + to + "' is already taken")
+                            .withDetail("Moving '" + from + "' there would leave two folders "
+                                    + "answering to one name chain, and an address resolves to "
+                                    + "whichever the walk reaches first. A move never overwrites.")
+                            .withFix("Pick a free name chain, or move the folder at '" + to
+                                    + "' out of the way first — folder.delete would take "
+                                    + "everything inside it.")
+                            .withExample(to.toString())
+                    : ShProblem.of("move-target-occupied", HttpStatus.CONFLICT,
+                                    "'" + to + "' is already taken")
+                            .withDetail("Moving '" + from + "' there would leave two posts claiming "
+                                    + "one URL, and the delivery layer would serve whichever it found "
+                                    + "first. A move never overwrites.")
+                            .withFix("Pick a free address, or delete the post at '" + to + "' first "
+                                    + "with post.delete (it goes to the restorable trash).")
+                            .withExample(to.toString()));
         }
     }
 
@@ -1158,15 +1282,24 @@ public class ShAgentBatchService {
 
         public CrossSiteMoveException(ShAddress from, ShAddress to) {
             super(ShProblem.badRequest("cross-site-move",
-                            "A move cannot change a post's site")
+                            to.kind() == ShAddress.Kind.FOLDER
+                                    ? "A move cannot change a folder's site"
+                                    : "A move cannot change a post's site")
                     .withDetail("'" + from + "' is in a different site from '" + to + "'. "
                             + "Sites have separate folder trees, separate ACLs and — under "
                             + "multi-tenancy — separate tenants, so re-parenting across one "
                             + "silently is not something this op will do.")
-                    .withFix("post.upsert the content into the destination site, then "
-                            + "post.delete the original — two visible steps instead of one "
-                            + "invisible one.")
-                    .withExample("post:" + from.site() + "/blog/new-url"));
+                    .withFix(to.kind() == ShAddress.Kind.FOLDER
+                            ? "Recreate the structure in the destination site with "
+                                    + "folder.upsert and move the posts across one at a time, "
+                                    + "then delete the original — visible steps instead of one "
+                                    + "invisible one."
+                            : "post.upsert the content into the destination site, then "
+                                    + "post.delete the original — two visible steps instead of one "
+                                    + "invisible one.")
+                    .withExample(to.kind() == ShAddress.Kind.FOLDER
+                            ? "folder:" + from.site() + "/archive/2025"
+                            : "post:" + from.site() + "/blog/new-url"));
         }
     }
 

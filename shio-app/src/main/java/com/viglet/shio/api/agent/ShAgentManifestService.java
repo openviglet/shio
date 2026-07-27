@@ -123,6 +123,10 @@ public class ShAgentManifestService {
         // exists will reach for the destructive workaround.
         features.put("postMove", true);
         features.put("folderPrune", true);
+        // SH137: the same verb one level up, and the reason it is advertised separately is
+        // that its absence was the more dangerous one — an agent renaming a section without
+        // it reaches for folder.upsert + folder.delete, and that delete takes the subtree.
+        features.put("folderMove", true);
         // SH170: an agent can make the site it was asked to build. Advertised because its
         // absence used to send the agent to the console entity API, which answers a stateless
         // caller with a bodiless 403 — the one dead end on the whole surface.
@@ -214,8 +218,9 @@ public class ShAgentManifestService {
                                 + "post.move, post.publish, …) in one atomic call. Send dryRun to "
                                 + "see the plan first. site.upsert makes a blank site — that is "
                                 + "step one and it is here, not on the console API. Rename or "
-                                + "relocate with post.move — re-addressing an upsert creates a "
-                                + "second post.",
+                                + "relocate with post.move, a section with folder.move — "
+                                + "re-addressing an upsert creates a second post, and deleting the "
+                                + "old folder takes everything inside it.",
                         "console", "POST /api/v2/agent/batch"),
                 new ShAgentEndpoint("POST", "/agent/plan",
                         "Diff a desired-state content document against this instance. "

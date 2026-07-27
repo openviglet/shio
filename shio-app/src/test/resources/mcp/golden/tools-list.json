@@ -297,7 +297,7 @@
                 },
                 "op" : {
                   "description" : "#string",
-                  "enum" : [ "site.upsert", "folder.upsert", "folder.delete", "post.upsert", "post.move", "post.publish", "post.unpublish", "post.delete" ],
+                  "enum" : [ "site.upsert", "folder.upsert", "folder.move", "folder.delete", "post.upsert", "post.move", "post.publish", "post.unpublish", "post.delete" ],
                   "type" : "string"
                 },
                 "to" : {

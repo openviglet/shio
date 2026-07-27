@@ -16,6 +16,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.folder.ShFolderWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -50,14 +51,17 @@ public class ShObjectWriteService {
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
+    private final ShFolderWriteService shFolderWriteService;
 
     public ShObjectWriteService(ShObjectRepository shObjectRepository, ShFolderRepository shFolderRepository,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
-                                ShPostUnifiedWriteService shPostUnifiedWriteService) {
+                                ShPostUnifiedWriteService shPostUnifiedWriteService,
+                                ShFolderWriteService shFolderWriteService) {
         this.shObjectRepository = shObjectRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
+        this.shFolderWriteService = shFolderWriteService;
     }
 
     /**
@@ -91,9 +95,12 @@ public class ShObjectWriteService {
         }
         for (String id : ids) {
             ShObject object = shObjectRepository.findById(id).orElse(null);
-            if (object instanceof ShFolder folder) {
-                reparent(folder, dest);
-                moved.add(shFolderRepository.save(folder));
+            if (object instanceof ShFolder) {
+                // SH137 — the shared writer, not a local re-parent. It carries the two
+                // guards this path never had: a folder cannot move into its own subtree
+                // (the dialog navigates down from the site root, so a curator can reach
+                // that destination in three clicks) and a site root cannot move at all.
+                shFolderWriteService.move(id, dest, null, actor).ifPresent(moved::add);
             } else if (dest instanceof ShFolder destFolder) {
                 movePost(id, destFolder, actor);
             }
@@ -157,10 +164,12 @@ public class ShObjectWriteService {
     }
 
     /**
-     * Re-parents a folder. Shared by move and copy — and it does <em>not</em> set
-     * {@code furl}, because on a move that would discard a hand-set one for a slug
-     * of the name (SH139). A copy is a new folder and assigns its own; here the URL
-     * is only filled in when there is nothing to keep.
+     * Parents a <b>freshly built copy</b> under its destination.
+     *
+     * <p>Copy-only since SH137 — a move goes through {@code ShFolderWriteService#move},
+     * the writer the agent path shares, so the cycle and root-folder guards apply to both
+     * surfaces. A copy needs no cycle guard: the new folder is not yet in the tree, so it
+     * cannot be its own ancestor.</p>
      */
     private void reparent(ShFolder folder, ShObject dest) {
         if (dest instanceof ShFolder destFolder) {

@@ -52,11 +52,15 @@ public class ShWriteTool implements ShMcpTool {
 
     @Override
     public String description() {
-        return "Create, move, update or delete content: N operations applied as one "
-                + "transaction, all or nothing. Ops are addressed, so you never need an id. To "
-                + "rename or relocate a page use post.move — re-addressing a post.upsert makes a "
-                + "second post and orphans the first. Everything lands in DRAFT; nothing is "
-                + "visible until you publish. Set dryRun=true first to see what would change.";
+        // SH137 added folder.move to the enum and a second verb to explain, which took the
+        // list 3 tokens over its ceiling. Trimmed rather than raised (P3: lean the payload
+        // first) — every sentence here now carries a decision the model has to make, and the
+        // two move verbs are stated together because they are one rule.
+        return "Create, move, update or delete content: N addressed ops in one all-or-nothing "
+                + "transaction — you never need an id. Rename or relocate with post.move / "
+                + "folder.move, never upsert-then-delete: that orphans the page, or takes "
+                + "everything inside the folder. Everything lands in DRAFT until you publish. "
+                + "Send dryRun=true first.";
     }
 
     @Override
@@ -86,7 +90,8 @@ public class ShWriteTool implements ShMcpTool {
                                                 "Folder path; required with type when creating a "
                                                         + "post, or as post.move's destination."),
                                         "to", ShMcpTool.string(
-                                                "post.move only: the post's new address or URL."),
+                                                "post.move / folder.move: the new address. A "
+                                                        + "folder's is its whole name chain."),
                                         "data", ShMcpTool.object(
                                                 "Field values keyed by post-type field name.")))),
                 "dryRun", ShMcpTool.bool("Report what would change and write nothing."),

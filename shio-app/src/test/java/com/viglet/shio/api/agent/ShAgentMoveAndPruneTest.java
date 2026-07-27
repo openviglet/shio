@@ -170,6 +170,41 @@ class ShAgentMoveAndPruneTest {
                 null, folder, to == null ? null : "post:" + siteName + to, null);
     }
 
+    private Op folderMove(String from, String to) {
+        return new Op(ShAgentBatchService.FOLDER_MOVE, "folder:" + siteName + from,
+                null, null, to == null ? null : "folder:" + siteName + to, null);
+    }
+
+    /** A folder's id by its name chain, or {@code null} — the SH79 walk, from a test. */
+    private String folderId(String path) {
+        return new TransactionTemplate(transactionManager).execute(status -> {
+            ShSite site = entityManager.createQuery(
+                            "select s from ShSite s where s.name = :n", ShSite.class)
+                    .setParameter("n", siteName).getSingleResult();
+            return shAgentBatchService.findFolder(site, path).map(ShFolder::getId).orElse(null);
+        });
+    }
+
+    /**
+     * Post titles in the folder at {@code path} — proof the content came along.
+     *
+     * <p>Keyed on the folder <b>id</b>, resolved first. Filtering on {@code p.shFolder.name}
+     * is the SH22 join hazard: {@code ShFolder} is an {@code ShObject} subclass, so an
+     * implicit association join makes Hibernate emit the {@code tenant_id} predicate against
+     * the subclass table's alias, which has no such column, and the query dies at prepare
+     * time. Written the wrong way first, exactly as documented.</p>
+     */
+    private List<String> postsInFolderAt(String path) {
+        String id = folderId(path);
+        return new TransactionTemplate(transactionManager).execute(status ->
+                entityManager.createQuery(
+                                "select p.title from ShPostUnified p where p.shFolder.id = :id "
+                                        + "and p.state = :s order by p.title", String.class)
+                        .setParameter("id", id)
+                        .setParameter("s", ShPostState.DRAFT)
+                        .getResultList());
+    }
+
     private ShPostUnified reload(String id, ShPostState state) {
         return new TransactionTemplate(transactionManager).execute(status ->
                 shPostUnifiedRepository.findByIdAndState(id, state).orElse(null));
@@ -305,6 +340,137 @@ class ShAgentMoveAndPruneTest {
         assertThat(parsed.op()).isEqualTo("post.move");
         assertThat(parsed.to()).isEqualTo("post:S/b");
         assertThat(parsed.data()).isNull();
+    }
+
+    // --- SH137: folder.move ---
+
+    /**
+     * The verb's whole reason for existing: renaming a section used to mean
+     * {@code folder.upsert} at the new path plus {@code folder.delete} of the old, and that
+     * delete cascades. Here the folder keeps its id and its content.
+     */
+    @Test
+    @DisplayName("folder.move renames a section in place, keeping its id and its posts")
+    void folderMoveRenamesInPlace() {
+        String base = "/fm-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), folder(base + "/old"),
+                post(base + "/page-a", base + "/old", "Page A"));
+        String idBefore = folderId(base + "/old");
+
+        ShAgentChangeSet result = run(false, folderMove(base + "/old", base + "/new"));
+
+        assertThat(result.results().get(0).action()).isEqualTo(Change.MOVE);
+        assertThat(folderId(base + "/new")).isEqualTo(idBefore);
+        assertThat(folderId(base + "/old")).isNull();
+        // The post is still there — the destructive workaround is what this op replaces.
+        assertThat(postsInFolderAt(base + "/new")).containsExactly("Page A");
+    }
+
+    /**
+     * SH79 keeps folder paths and friendly URLs in separate namespaces, so moving a section
+     * does not change a single page's URL. That is the opposite of a path-shaped CMS, and it
+     * is why this op needs no SH108 confirm token — nothing goes dark.
+     */
+    @Test
+    @DisplayName("folder.move leaves every URL beneath it untouched")
+    void folderMoveKeepsPostUrls() {
+        String base = "/fu-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), folder(base + "/sec"),
+                post(base + "/keeps-its-url", base + "/sec", "Kept"));
+
+        ShAgentChangeSet result = run(false, folderMove(base + "/sec", base + "/moved"));
+
+        assertThat(result.results().get(0).detail()).contains("keep their URLs");
+        // Addressed by the URL it always had, not by one derived from the new folder chain.
+        assertThat(run(true, post(base + "/keeps-its-url", base + "/moved", "Kept"))
+                .results().get(0).action()).isEqualTo(Change.NOOP);
+    }
+
+    /** A move is not destructive: it must not demand a confirm token the way a delete does. */
+    @Test
+    @DisplayName("folder.move needs no confirm token")
+    void folderMoveIsNotDestructive() {
+        String base = "/fn-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), folder(base + "/plain"));
+
+        ShAgentChangeSet plan = new TransactionTemplate(transactionManager).execute(status ->
+                shAgentBatchService.run(new ShAgentBatch(true,
+                        List.of(folderMove(base + "/plain", base + "/renamed"))), true, "tester"));
+
+        assertThat(plan.confirm()).isNull();
+    }
+
+    /**
+     * The guard that had to exist before the op could ship. Re-parenting a folder into its
+     * own subtree does not fail — it succeeds and produces a cycle, detaching the subtree
+     * from the site root and sending the recursive delete round the loop until the stack
+     * runs out.
+     */
+    @Test
+    @DisplayName("folder.move refuses a destination inside the folder's own subtree")
+    void folderMoveRefusesACycle() {
+        String base = "/fc-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), folder(base + "/outer"), folder(base + "/outer/inner"));
+
+        assertThatThrownBy(() -> run(false,
+                folderMove(base + "/outer", base + "/outer/inner/outer")))
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class)
+                .hasMessageContaining("would detach the subtree");
+
+        // Still reachable from the root, which is the property a cycle destroys.
+        assertThat(folderId(base + "/outer")).isNotNull();
+    }
+
+    /** And a plan reports it too, or the plan lied (SH82's rule). */
+    @Test
+    @DisplayName("a dry run reports the refusals the real run would make")
+    void folderMovePlanReportsRefusals() {
+        String base = "/fp-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), folder(base + "/a"), folder(base + "/a/b"));
+
+        assertThatThrownBy(() -> run(true, folderMove(base + "/a", base + "/a/b/a")))
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class)
+                .hasMessageContaining("would detach the subtree");
+    }
+
+    @Test
+    @DisplayName("folder.move refuses an occupied name chain, and says why for a folder")
+    void folderMoveRefusesAnOccupiedTarget() {
+        String base = "/fo-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), folder(base + "/one"), folder(base + "/two"));
+
+        assertThatThrownBy(() -> run(false, folderMove(base + "/one", base + "/two")))
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class)
+                // Kind-aware wording: a folder collision is not a delivery ambiguity, and an
+                // error describing the wrong consequence teaches the caller something false.
+                .hasMessageContaining("two folders")
+                .hasMessageNotContaining("delivery layer");
+    }
+
+    /** Idempotence, as {@code post.move}: a document holding a move survives a second apply. */
+    @Test
+    @DisplayName("re-running a folder.move is a noop, not a 404")
+    void folderMoveIsIdempotent() {
+        String base = "/fi-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), folder(base + "/before"));
+        run(false, folderMove(base + "/before", base + "/after"));
+
+        ShAgentChangeSet again = run(false, folderMove(base + "/before", base + "/after"));
+
+        assertThat(again.results().get(0).action()).isEqualTo(Change.NOOP);
+        assertThat(again.changed()).isZero();
+    }
+
+    /** A site root carries the site and is what every address resolves from (SH128). */
+    @Test
+    @DisplayName("folder.move refuses to move a site root")
+    void folderMoveRefusesARoot() {
+        String base = "/fr-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base));
+
+        // The root is addressed `folder:<site>/`, and its own name is the destination's parent.
+        assertThatThrownBy(() -> run(false, folderMove("", base + "/root-copy")))
+                .isInstanceOf(RuntimeException.class);
     }
 
     // --- SH135: folder prune ---

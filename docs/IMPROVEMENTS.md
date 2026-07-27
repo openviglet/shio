@@ -336,18 +336,15 @@ Shipped: `POST /api/v2/agent/batch` · `/plan` · `/apply` →
   Same rule for the tri-state `publish`: absent means "leave it alone", because
   treating a trimmed field as `false` would unpublish live pages.
 
-**The general lesson, now paid for twice.** A write vocabulary designed against "build
-a site" will be missing the verbs for "change a site", and the second is the harder half
-of the north star. Both gaps this engine shipped with — no way to move a post (SH134) and
-a prune that could not remove a folder (SH135) — were invisible while building and
-obvious the first time a section was renamed. They are shipped; what they left behind is
-the same shape one level up and one hazard they created:
-
-- **`folder.move` (SH137).** Posts can be re-addressed now; folders cannot. Renaming a
-  section still means `folder.upsert` at the new path plus `folder.delete` of the old,
-  and that delete cascades over everything beneath it — the same defect as SH134, one
-  level up, and strictly more destructive. SH134 is what makes its absence conspicuous:
-  an agent that has learned `post.move` will reasonably assume the folder verb exists.
+**The general lesson, now paid for three times.** A write vocabulary designed against
+"build a site" will be missing the verbs for "change a site", and the second is the harder
+half of the north star. All three gaps this engine shipped with — no way to move a post
+(SH134), a prune that could not remove a folder (SH135), and no way to move a folder
+(SH137) — were invisible while building and obvious the first time a section was renamed.
+The third is the one that shows the pattern is not coincidence: the *reason* it stayed
+missing is that building a site never needs it, and the reason it mattered is that its
+absence pushed callers to `folder.upsert` + `folder.delete`, which takes the subtree. When
+a vocabulary lacks a verb, callers do not stop — they compose the nearest destructive pair.
 
 **What SH138 turned out to be, which is worth remembering when writing the next one.** It
 was filed as a truncation hazard, and the truncation was not there: no code cut a plan row.
@@ -362,13 +359,22 @@ the caller cannot take is not finished; and where an invariant can be expressed 
 express it there — `ShAgentChangeSet` now cannot represent a short list, which is what
 keeps the rule true against a `limit` parameter nobody has proposed yet.
 
-**And one rule SH139 paid for, which binds SH137.** The console had its own copy of "move
-a post", and it was the copy that re-slugged a live URL from the title — the same verb,
-two implementations, and only the one an agent drives got the careful semantics. Fixing it
-meant deleting the fork, not the offending line. So a second mover is a design error
-regardless of which surface asks for it: **when the console and the agent perform the same
-content verb, one of them delegates.** `folder.move` should land as a single writer both
-call, or it will grow the same divergence a level up.
+**And one rule SH139 paid for, which SH137 then collected on — twice over.** The console had
+its own copy of "move a post", and it was the copy that re-slugged a live URL from the title:
+the same verb, two implementations, and only the one an agent drives got the careful
+semantics. Fixing it meant deleting the fork, not the offending line. So the rule is
+**when the console and the agent perform the same content verb, one of them delegates**, and
+SH137 was the first verb built that way from the start — one `ShFolderWriteService#move` both
+surfaces call.
+
+Writing it that way is what found a defect nobody had filed. Putting the guards on the shared
+writer forced the question *what does the console path do about this?* — and the answer was
+nothing: it had no cycle check, and its move dialog navigates **down** from the site root, so
+a curator could pick a child of the folder being dragged. That does not fail; it succeeds and
+detaches the subtree from the root. The generalisation is worth keeping, because it is the
+economic argument for the rule rather than the aesthetic one: **merging two implementations of
+a verb audits the surviving one against every case the other one handled** — including the
+cases neither handled, which is where the unfiled bugs live.
 
 ### VIII.8 The agent tools (SH83) — ✅ shipped
 

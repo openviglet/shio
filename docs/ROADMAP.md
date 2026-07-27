@@ -127,10 +127,13 @@
 > SH130's transcript found `tools/list` serializing differently on every boot. Both were
 > invisible to the behavioural tests that already covered those paths. The general
 > lesson is now a working rule — **when a defect class recurs, the fix is a guard per
-> invariant, written the first time the invariant is violated** — and the open items
-> below are what it turned up next: the same move gap one level up (**SH137**) and the same
-> byte-stability question across the rest of the surface (**SH136**). The third,
-> ✅ **SH138** → [CHANGELOG.md](CHANGELOG.md), found something the hazard framing missed:
+> invariant, written the first time the invariant is violated** — and what it turned up next
+> has since shipped, leaving only the byte-stability question across the rest of the surface
+> (**SH136**). ✅ **SH137** → [CHANGELOG.md](CHANGELOG.md) closed the move gap one level up,
+> and the guard rule paid out a fourth time: writing the one folder-move writer both surfaces
+> call turned up a live console defect nobody had filed — the move dialog could re-parent a
+> folder into its own subtree, which succeeds and produces a cycle.
+> ✅ **SH138** → [CHANGELOG.md](CHANGELOG.md) found something the hazard framing missed:
 > the plan was never truncated, but a compiled document was held to the *hand-written*
 > batch's op ceiling, so a large prune failed with advice ("split into batches") that
 > nobody can follow for ops the server generated. A ceiling with no usable way past it is
@@ -138,7 +141,6 @@
 
 - 💭 **SH84** (deps: SH83 ✅, SH22 ✅) **Turing ecosystem wiring** — the SH22 tenant sweep and its test shipped; what remains is the Turing integration (replaces old SH37). → §VIII.9
 - 📋 **SH136** (deps: SH130 ✅) **Byte-stability guard for the whole agent surface** — SH130 pinned `tools/list` and immediately found it unstable across boots (`Map.of` iteration order). The manifest is byte-stable by test and the context pack by digest, but nothing checks the MCP resources, the prompt list, or any future map-backed payload. One lint (no un-canonicalized `Map`/`Set` reaching a JSON writer) plus a per-payload stability assertion. → §VIII.11
-- 📋 **SH137** (deps: SH134 ✅) **`folder.move`** — posts can now be re-addressed; folders cannot. Renaming a section still means `folder.upsert` at the new path plus `folder.delete` of the old, and that delete cascades over every post beneath it. It is the same defect as SH134 one level up and strictly more destructive, and SH134 makes its absence conspicuous. → §VIII.7
 - 💭 **SH140** (deps: SH134 ✅, SH100) **Report inbound links when a post moves** — `ShReference` is id-keyed and survives a move, but a URL typed into another post's rich text does not, and nothing tells the agent which pages it just broke. The cheap version is a count in the change detail; the real one belongs with SH100's route verification. → §IX.2
 
 ## Block K — Perception & verification loop

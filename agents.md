@@ -132,6 +132,11 @@ of hiding them, which is the read side of SH168.
   `ShPostUnifiedWriteService#move` — the same writer `post.move` uses, so the console
   and the agent cannot diverge on what a move means. A cross-site move onto an
   occupied URL is a teaching **409**, never quietly uniquified.
+  **The folder branch delegates to `ShFolderWriteService#move` (SH137)**, which is where
+  the cycle and site-root guards live: this path had neither, and a folder re-parented
+  into its own subtree does not fail — it detaches the subtree from the site root and
+  sends the recursive delete round the loop. Both are **409**s, so the console dialog
+  needs its error path (it has one now).
 - Clone = copy to same folder
 
 ### Folders
@@ -191,8 +196,8 @@ the CDA + console services (law P10) and holds no business logic of its own.
   The `digest` is how a later session skips re-reading.
 - `GET /agent/resolve?address=…` — an address → an object id, for id-keyed endpoints.
 - `POST /agent/batch` — **writes**: N addressed ops (`site.upsert`, `folder.upsert`,
-  `post.upsert`, `post.move`, `post.publish`, `post.unpublish`, `folder.delete`, `post.delete`) in one
-  transaction; `{"dryRun":true}` reports without writing, and a batch that deletes needs
+  `folder.move`, `post.upsert`, `post.move`, `post.publish`, `post.unpublish`, `folder.delete`,
+  `post.delete`) in one transaction; `{"dryRun":true}` reports without writing, and a batch that deletes needs
   SH108's `confirm` from its own dry run. **A `post.upsert` refuses a `data` key the post-type
   does not declare** (SH168) — a 400 carrying the field list and the nearest name, because an
   upsert declares whole state and a typo *replaced* the field it meant. Keys the post already
@@ -204,6 +209,20 @@ the CDA + console services (law P10) and holds no business logic of its own.
   (new address) and/or `folder`, moves the DRAFT *and* PUBLISHED rows together (so a
   published post's live URL changes immediately, and the change set says so), refuses an
   occupied target and refuses to cross sites.
+  **`folder.move` (SH137) is the same rule one level up, and the more important one** — the
+  workaround it replaces is `folder.upsert` + `folder.delete`, and that delete takes every post
+  beneath it. `to` is the folder's **whole name chain** (that is what addresses a folder), so
+  its last segment is the new name and rename/relocate are one op. **No post's URL changes**: a
+  friendly URL is site-unique and independent of the folder chain, so the pages inside a moved
+  section keep their addresses — which is why the op is deliberately **not** destructive and
+  needs no `confirm`. Making it demand one would push callers back to the pair it replaces.
+  Its four refusals (cross-site, occupied chain, a site root, and a destination inside the
+  folder's own subtree) live on **`ShFolderWriteService#move` — the one folder-move writer,
+  which the console's `/moveto` also calls** (SH139's rule). Do not reintroduce a local
+  re-parent on either side: the console's had no cycle check, and since its move dialog
+  navigates *down* from the site root, a curator could pick a child of the folder being
+  dragged, which succeeds and detaches the subtree from the root. `checkMovable` is how a
+  `dryRun` reports those refusals without writing.
 - `POST /agent/plan` / `POST /agent/apply` — a declarative desired-state content
   document; `plan` never writes, and `changed:0` is the content drift guard. `prune`
   deletes undeclared **posts and folders** inside the declared folders' subtrees (SH135),
