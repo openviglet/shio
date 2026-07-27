@@ -337,6 +337,30 @@
 > unchanged. The site provisioning it needed walked the console's CSRF path by hand, which was
 > **SH170** measured rather than argued, and has since shipped.
 
+## Block P — The visible site (what the human actually looks at)
+
+> The differentiator is **making something a person can see**. Today an agent can build a
+> site's content and structure over the agent surface and there is no way to look at it: the
+> preview mints a URL against `site.url` and 400s without one, the Universal Editor is an
+> `<iframe src={site.url}>`, and nothing in this repository renders a page. Both human-facing
+> visual surfaces are windows onto a front end that only `shio init` can scaffold and only a
+> developer's machine can run. → §XV
+
+> **The non-goal this respects, and how.** "No GraalJS server-side JS template engine"
+> (the former Block D, SH17/SH18 — the Nashorn lineage) is binding, and the reason is
+> **sandboxing liability**: executing user-supplied script inside the JVM. A **declarative
+> HTML renderer over the closed SH95 section vocabulary is not that** — there is no user
+> template and no script, because the vocabulary *is* the template. Production delivery stays
+> Next.js over the CDA (P10). What lands here is explicitly **preview-grade** and must say so
+> at the surface, or it quietly becomes the delivery path and we have rebuilt the thing §0.4
+> rejected.
+
+- 📋 **SH183** (deps: SH95 ✅, SH101 ✅) **A built-in HTML renderer for the section vocabulary** — render a `Page` and its sections to semantic HTML server-side, from the eight first-party post-types and nothing else: no user templates, no scripting, no plugin surface. It is what gives preview a URL, the Universal Editor an iframe target, and `/agent/render` something real to read. Must be visibly preview-grade and must not become the delivery path. → §XV.1
+- 📋 **SH184** (deps: SH170 ✅, SH183) **A site's front-end URL is unreachable from the agent path** — `site.url` gates both visual surfaces (`400 site has no url`; `universalEditor.siteNoUrl`), and `site.upsert` deliberately never updates a site, so an agent that builds a site and deploys a front end still cannot connect the two. With SH183 the sensible default is Shio's own preview route. → §XV.2
+- 📋 **SH185** (deps: SH183) **Nothing implements the Universal Editor's iframe protocol** — `visual-editor.page.tsx` posts `{type, data}` into the iframe and listens for replies, and there is not one `postMessage` in `create-shio-app`, `shio-react-sdk`, `shio-sections` or `shio-client`. The editor is a shell with no counterpart, and the manifest's `universalEditor: true` overstates what exists. Needs the protocol written down, an implementation to target it, and the flag telling the truth until then. → §XV.3
+- 📋 **SH187** (deps: SH183, SH169 ✅, SH102) **The agent sees a page's structure, never its appearance** — SH169 made the digest compose a page's sections, so an agent can prove the outline is right; nothing lets it see that the page *looks* right, since `visualSnapshot` and `signedImageUrls` are `false` and `renderFetch` is off by default. SH102 is the correct instrument scoped for the wrong reader — "for the human handoff rather than for the agent" — and SH183 makes it nearly free, because the renderer's own HTML is the artifact to snapshot. → §XV.4
+- 💭 **SH186** (deps: SH183, SH166) **An MCP-only agent cannot produce a visible site** — the server never writes a project file (correct — P7), and only the CLI scaffolds one, so a client with no filesystem ends with content nobody can look at. SH183 is the answer if it lands: the site is visible without a project at all, and SH166's unsubstituted-files problem stops being on the critical path. → §XV.5
+
 ---
 
 # Part 2 — Pre-existing backlog (unchanged, still valid)

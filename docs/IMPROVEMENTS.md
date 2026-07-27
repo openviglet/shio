@@ -36,6 +36,7 @@ verify against `git ls-files` before acting.
   - [XII. Agent safety & human-in-the-loop (Block L)](#xii-agent-safety--human-in-the-loop-block-l)
   - [XIII. Token economy, measured (Block M) — what the measurement opened](#xiii-token-economy-measured-block-m--what-the-measurement-opened)
   - [XIV. Realignment of what already shipped (Block N) — what building it opened](#xiv-realignment-of-what-already-shipped-block-n--what-building-it-opened)
+  - [XV. The visible site (Block P)](#xv-the-visible-site-block-p)
 - **Part 2 — pre-existing sections**
   - [I. Headless foundation — the CDA](#i-headless-foundation--the-cda) (shipped)
   - [II. JavaScript-for-pages DX](#ii-javascript-for-pages-dx) (shipped)
@@ -992,6 +993,154 @@ whether it is possible but which of the three should adopt it before a feature d
 for us. The agent namespace is the one to watch: SH109's review queue is a console
 surface over agent writes, and the moment the console reads or writes there from a
 session, that path is in the same position `/api/v2/post-type` was in.
+## XV. The visible site (Block P)
+
+> An agent can build a site's model, folders and pages over the agent surface, and nobody
+> can look at the result. This section is the gap between *correct content* and *a page a
+> person sees* — the product's differentiator, and the one part of the loop with no path
+> through it.
+
+### XV.1 A built-in HTML renderer for the section vocabulary (SH183)
+
+**What is missing.** Nothing in this repository renders a page. No template engine is on the
+classpath — no Velocity, Thymeleaf, Handlebars or Freemarker — and `ShSitePostTypeLayout`
+(`format`/`layout`/`mimeType`/`cacheTTL`) survives only because the exchange format and the
+site write service carry it; no code reads it to produce output. `nashorn-core` 15.7 is still
+declared in `shio-app/pom.xml` and nothing uses it: the only reference left anywhere is a
+`ShWebsiteProperties.nashorn` string array. It is an orphan, and a script engine on the
+classpath that nobody calls is build weight and attack surface for free — worth removing
+whichever way this section goes.
+
+Both human-facing visual surfaces therefore point outward at something Shio cannot make:
+
+| Surface | Needs | Without it |
+|---|---|---|
+| Preview (`ShPreviewTokenAPI`) | `site.getUrl()` as a real base | `400 {"error":"site has no url"}` |
+| Universal Editor (`visual-editor.page.tsx`) | `<iframe src={site.url}>` | `universalEditor.siteNoUrl` |
+
+Applying `marketing-site` produces thirteen correct pages and no way to see one.
+
+**Why this is not the dropped Block D.** The binding non-goal is *"No GraalJS server-side JS
+template engine"*, inherited from the Nashorn engine the original product shipped (still alive
+on the `FSP` branch). §0.4's argument is specific and still correct: an in-JVM script engine is
+**sandboxing liability with no agent-side benefit**, because what it executes is user-supplied
+code. Choosing Groovy instead changes the syntax and not one word of that argument — Groovy is
+named in the non-goal for exactly this reason, and it is *more* powerful than Nashorn inside
+the JVM, not less.
+
+A renderer over the SH95 vocabulary executes nothing. The eight section post-types are a
+closed, first-party set with known fields, so turning `SectionHero{heading, subheading, body,
+ctaLabel, ctaHref, align}` into semantic markup is a **projection** — the same kind the CDA
+already performs into JSON, and the same kind `ShAgentRenderService` already performs into a
+structural digest now that SH169 composes a page's sections. There is no user template, so
+there is nothing to sandbox. That is why this is buildable today and the script engine was
+not: the vocabulary *is* the template.
+
+**Who renders — the three options that respect the non-goal.** They differ by where the
+markup is produced, and they are complementary rather than exclusive:
+
+| Renders | Mechanism | What it costs | What it buys |
+|---|---|---|---|
+| **Shio (Java)** | declarative HTML from the vocabulary | a new renderer, preview-grade | a site is visible with **no client setup at all** — the only option that works for an MCP-only agent |
+| **Browser** | a statically exported React/Next bundle served by Shio, fetching from the CDA | almost nothing new — Shio already serves `/console/**` and `/file_source/**` | full design freedom, no Node process in production |
+| **Node** | Next.js, as today | a project and a running process the agent cannot create over MCP | SSR, ISR, the real delivery path |
+
+Note what the middle column rules out. "Deploy React inside Shio and let it render" splits in
+two: server-side-rendering React *in the JVM* requires a JS runtime and is the non-goal again
+under a new name; serving a **static export** requires no engine and is genuinely cheap. Only
+the second is available, and it is worth having — but it renders in the browser, so a page's
+content arrives by client-side fetch and the first paint has no content in it, which is the
+wrong trade for preview and for anything SEO touches.
+
+The recommendation is therefore the first row **as the default visible path**, with the second
+as the upgrade a designer reaches for and Next.js unchanged as production delivery (P10).
+
+**What it must not become.** A preview URL that renders production content *is* a delivery
+path the moment somebody points DNS at it — and then Shio owns HTML rendering, caching and
+SEO, the position §0.3 and §0.4 declined. So the boundary has to be visible in the product,
+not merely asserted here: a distinct route, an unmistakable banner, no freshness headers that
+invite a CDN, and drafts reachable only behind the SH5 preview token.
+
+**Three decisions the task owns.** *Where the markup lives* — `@viglet/shio-sections` already
+ships React components with stable `shio-*` class names, and two renderers for one vocabulary
+will drift, so the Java side must emit the same structure and classes with a test comparing
+them, the way `emit.test.mjs` already guards the two copies of the post-type definitions.
+*What a non-vocabulary post-type does* — a `Page` with an `HTML Editor` field is trivially
+renderable and an arbitrary custom type is not; the honest answer is a labelled field dump,
+not a blank page. And *styling* — the components are deliberately unstyled, so this needs a
+minimal default stylesheet that makes a page legible without pretending to be a design.
+
+### XV.2 A site's front-end URL is unreachable from the agent path (SH184)
+
+`site.url` is the one field that turns content into something a human can open, and nothing an
+agent can call sets it. SH170's `site.upsert` creates a blank site and deliberately *never
+updates* one, on the reasoning that a site's URL and description are console concerns with a
+human looking at them. That holds for a decision about a domain; it does not hold for the field
+that gates both visual surfaces. An agent can build a site, scaffold a front end and run it,
+and still not connect the two without a human opening the console.
+
+With SH183 the default stops being a judgement call: a new site's URL can point at Shio's own
+preview route, so a site is visible as soon as it has content, and pointing it at a real
+deployment later is the human's edit. Two properties to keep — setting it stays idempotent and
+reported like every other op, and it refuses to *replace* a URL a human set. The P7 line runs
+between "fill in what was empty" and "redirect what somebody chose"; only the second is a
+surprise.
+
+### XV.3 Nothing implements the Universal Editor's iframe protocol (SH185)
+
+`visual-editor.page.tsx` loads the site in an iframe, pushes messages into it
+(`contentWindow.postMessage({type, data}, "*")`) and listens for replies
+(`window.addEventListener("message", onMessage)`). There is not one `postMessage` in
+`create-shio-app`, `shio-react-sdk`, `shio-sections` or `shio-client`. The editor has no
+counterpart anywhere in the repository, so it cannot work even against the first-party starter
+correctly deployed.
+
+Two consequences. `universalEditor: true` in the agent manifest is not true in the sense the
+manifest promises — an unshipped capability reports `false` and never overstates, and this is
+the first flag to break its own rule, so it should be downgraded until an implementation
+exists. And the protocol is unwritten: the message types, the direction each travels, how a
+field maps to a DOM node, and what the editor does when the page was rendered by something
+that never heard of it. SH183 gives it a first implementation to target, which is the right
+order — specifying a wire format with nothing on the other end is how the current shell got
+here.
+
+Worth fixing in the same file: the `"*"` target origin. Posting content into an arbitrary
+iframe origin is a data-leak shape, and the site's own origin is known.
+
+### XV.4 The agent sees a page's structure, never its appearance (SH187)
+
+SH169 closed the structural half: `/agent/render` composes a page's referenced sections, so an
+agent can prove the outline, the landmarks, the links and the alt text are right, and a
+missing section changes the digest instead of hashing to the same empty value as everything
+else. What no instrument reports is whether the page *looks* right — `visualSnapshot` and
+`signedImageUrls` are `false`, and `renderFetch` is off by default and origin-checked when
+enabled.
+
+So an agent asked to change how a page looks still has to hand the question to a human, which
+is the expensive unit Block K exists to remove. SH102 already proposes the right instrument —
+a snapshot and a diff — but scoped *"for the human handoff rather than for the agent"*, and
+that framing is what to revisit: visual autonomy needs the agent to be the reader. SH183 makes
+it cheap instead of a new subsystem, because the renderer's own HTML is the artifact, produced
+in-process with no browser and no outbound fetch. Whether a raster image follows is then a
+smaller, separate question about what a hash of structure cannot catch — which is most of what
+"looks wrong" means.
+
+### XV.5 An MCP-only agent cannot produce a visible site (SH186)
+
+The server never writes a project file, deliberately: a project's name is local identity, and
+writing to a developer's filesystem from a content API is the surprise P7 exists to prevent.
+Only `shio init` scaffolds a front end, and only a machine with a shell can run one. An MCP
+client with no filesystem — the Claude Desktop shape — can therefore build a complete,
+verified site that nobody can look at, and nothing in the protocol says so.
+
+SH166 covers the narrower symptom (carried files arrive with `{{projectName}}` unsubstituted).
+The broader gap disappears if SH183 lands: the site is visible with no project at all, and the
+front-end half becomes an upgrade rather than a prerequisite. If SH183 does not land, the
+minimum honest behaviour is for a blueprint apply to say plainly that the content is in place
+and the site has no renderer, and for the manifest to carry a flag a client can read before
+promising a user a website.
+
+---
 
 # Part 2 — pre-existing sections
 
