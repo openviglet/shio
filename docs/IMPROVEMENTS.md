@@ -869,6 +869,75 @@ The mechanism is already there and should not be reinvented: an entry in `PACKAG
 its own overlay directory. The open question is only where a per-package overlay lives,
 since unlike the section one it belongs to no shared vocabulary.
 
+### XI.12 A release leaves the generated packages stale (SH218)
+
+`publish-js-sdk.yml` bumps every publishable package, rewrites the dependency ranges in
+`create-shio-app/template/package.json`, and commits. It does not re-run `emit`. The
+template is the *source* of three generated trees — `nextjs-starter`, and since SH156
+`marketing-site` and `landing` — each of which carries its own copy of that `package.json`
+with the old range baked in.
+
+Nothing fails during the release. The drift test fails on the **next** push, which means a
+release's side effect is reported against whoever pushed after it, and the obvious reading
+of a red build ("what did I break?") is wrong. That misattribution is the actual cost; the
+stale range is trivially fixed by the command the failure already names.
+
+The fix is one step in the workflow: run `emit` after the bump and add the three package
+directories to the commit. Worth doing carefully rather than quickly, because it makes the
+release job write into `shio-app/src/main/resources/`, and a job that regenerates content
+should fail loudly if the regeneration changes something it did not expect.
+
+### XI.13 Reloading the local package directory (SH219)
+
+`ShBlueprintRegistry` caches on first access and never invalidates. That was free when the
+classpath was the only source: packages cannot change inside a running JVM, so a cache with
+no invalidation was not a cache with a bug, it was a constant.
+
+SH96 changed the premise. An operator can now drop a package into `shio.blueprint.path`, and
+nothing will see it until the process restarts — for a directory whose whole point is local
+iteration on a package, that is the wrong default and the one thing everybody will hit first.
+
+What it should *not* be is a watcher. A registry that re-scanned itself would re-run
+validation at a moment nobody chose, and a half-saved manifest would take the whole registry
+down between two applies — turning an author's editing state into an outage for every caller.
+An explicit `ROLE_ADMIN` reload puts the moment in a person's hands, which is the same
+argument SH96 makes about the directory itself: the trust model is that somebody decided.
+
+### XI.14 A re-apply defaults to what the site was built with (SH220)
+
+SH155 records the package, its version and its parameters as an instance-memory note, so
+"which blueprint is this site" is answerable. What it does not yet do is make the *next*
+apply cheaper: re-applying still means re-supplying every `--param`, from memory or from a
+transcript.
+
+That is not merely tedious, it is a correctness problem. A parameter the operator
+misremembers does not fail — it rebuilds the site with a different brand, headline or CTA,
+and `changed: n` reports it as ordinary work. The safe default is the value that produced
+the site.
+
+The record is already there and already parseable (sorted `name=value`, `site` excluded). The
+work is `shio apply --blueprint` reading it, and — this is the load-bearing half — **saying
+which values it defaulted**, because a parameter that was silently supplied is one nobody
+reviews. An explicit `--param` always wins over the record.
+
+### XI.15 Make write-free planning structural, not remembered (SH221)
+
+SH153 removed the last write from a blueprint plan, and the reasoning generalises further
+than the fix did. `POST /agent/plan` and a `dryRun` batch write nothing today, but nothing
+*enforces* that: the property is maintained by every author remembering it, and the last time
+it was not, the reason was good — the planner needed to resolve a post-type the run would
+create, and a rollback-only transaction was the obvious way to get one.
+
+That reason will recur. The next resource a plan needs to resolve before it exists will make
+the same argument, and it will be just as locally defensible.
+
+Wrapping the dry-run paths in a `readOnly` transaction makes the guarantee structural: the
+database refuses the write instead of a reviewer catching it. This is the same argument
+`ShByteStabilityLintTest` makes about `Map.copyOf` — a contract that can only be honoured by
+remembering belongs inside a mechanism (§VIII.11). The open question is scope, since the
+batch service's entry points are shared between plan and apply and the flag cannot simply be
+moved onto the class.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

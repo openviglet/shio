@@ -227,6 +227,9 @@
 > `shio_apply`) · **SH94** (`blog` · `docs` · `product-catalog` · `marketing-site` ·
 > `landing`) · **SH95** (`@viglet/shio-sections`) · **SH97** (the Claude Code plugin).
 >
+> **Block J is otherwise closed.** SH153, SH155, SH156 and SH96's local half have all shipped;
+> what remains below is what driving them turned up (SH216–SH221), not what they left undone.
+>
 > ✅ **Where a package may come from now has an answer (SH96, local half)**: the classpath, plus
 > one directory an operator names with `shio.blueprint.path`. Whoever can set that could already
 > put a jar on the classpath, so it grants no new authority — and the person who set it is the
@@ -254,6 +257,10 @@
 
 - 💭 **SH217** (deps: SH96 ✅) **The community half of the registry** — SH96 shipped the local trust model (an operator names a directory; collisions refuse, origins are reported). What is still missing is how a package a *stranger* wrote earns that place: a `shio-blueprint-*` naming convention, a curated index, and provenance stronger than "somebody put it there" (absorbs old SH28/SH29/SH31). → §XI.5
 - 📋 **SH216** (deps: SH156 ✅) **`blog`, `docs` and `product-catalog` carry an index page** — SH156 gave the two section packages a front end and deliberately left these three out: they do not compose sections, so the section overlay would ship them a dependency they never import. What they actually lack is a *listing* page over their own content (`/blog`, the docs nav, the catalogue grid), which is per-package and needs the SDK's `query` rather than the section dispatcher. → §XI.11
+- 📋 **SH218** (deps: SH119 ✅, SH156 ✅) **A release leaves the generated packages stale, and the next CI run finds out** — `publish-js-sdk.yml` rewrites `create-shio-app/template/package.json`'s dependency ranges and commits, but never re-runs `emit`. The three generated `blueprints/*/files/package.json` keep the previous range, so the drift test fails on the *next* push, attributing a release's side effect to whoever pushed after it. Run `emit` in the bump step and commit the packages with it. → §XI.12
+- 📋 **SH219** (deps: SH96 ✅) **The local package directory needs a reload that is not a restart** — `ShBlueprintRegistry` caches on first access, which was free when the classpath was the only source and packages could not change while running. Now an operator can drop a package into `shio.blueprint.path` and nothing sees it until the process restarts, which for a directory whose whole purpose is local iteration is the wrong default. Wants an explicit, `ROLE_ADMIN` reload rather than a watcher — a re-scan that ran itself would re-run validation at an unpredictable moment and could take the registry down between two applies. → §XI.13
+- 📋 **SH220** (deps: SH155 ✅) **A re-apply defaults to the parameters the site was built with** — SH155 records name, version and parameters as an SH114 note, which makes "which blueprint is this site" answerable; it does not yet make the next apply cheaper. Re-applying still means re-supplying every `--param`, and a value the operator misremembers silently rebuilds the site differently. The record is already there and already parseable; what is missing is `shio apply --blueprint <name> --site <site>` reading it and saying which values it defaulted. → §XI.14
+- 💭 **SH221** (deps: SH153 ✅) **The rest of the write surface should be plannable read-only too** — SH153 removed the last write from a blueprint plan, and the property is worth generalising: `POST /agent/plan` and a `dryRun` batch are already write-free, but nothing *enforces* it, so the next feature that needs to resolve something it would create can reintroduce a rollback-only transaction without a test noticing. A `readOnly` transaction around the dry-run paths would make it structural rather than remembered — the same argument `ShByteStabilityLintTest` makes for `Map.copyOf`. → §XI.15
 
 ## Block L — Agent safety & human-in-the-loop
 

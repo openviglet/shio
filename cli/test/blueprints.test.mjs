@@ -165,6 +165,30 @@ test("the catalogue lists every package with its counts and parameters", async (
   assert.match(ctx.stdout.text, /params: brand \(required\), columns, featured/);
 });
 
+test("a package the instance did not ship with says so, and the built-in ones stay quiet", async () => {
+  // SH96 — the origin is printed only when present. Somebody about to apply a package to
+  // their own site should not have to ask where it came from; six first-party rows saying
+  // "classpath" would be noise that trains the reader to skip the line that matters.
+  const local = { ...CATALOGUE[0], name: "acme-intranet", origin: "/opt/shio/blueprints" };
+  const body = [CATALOGUE[0], local];
+  const ctx = ctxWith(async () => ({
+    ok: true,
+    status: 200,
+    headers: { get: () => null },
+    async text() {
+      return JSON.stringify(body);
+    },
+    async json() {
+      return body;
+    },
+  }));
+
+  await blueprints.run({}, [], ctx);
+
+  assert.match(ctx.stdout.text, /from:\s+\/opt\/shio\/blueprints \(not a built-in package\)/);
+  assert.equal(ctx.stdout.text.match(/from:/g).length, 1, "only the local package says where");
+});
+
 test("one package in detail prints its parameters, its files and how to apply it", async () => {
   const ctx = ctxWith(routedFetch());
 

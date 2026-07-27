@@ -54,6 +54,11 @@ function renderList(catalogue) {
       `${head}  ${counts}`,
       `      ${wrap(entry.description ?? "", 74, "      ")}`,
       params ? `      params: ${params}` : null,
+      // SH96 — printed only when present, which is only for a package the instance did
+      // not ship with. Somebody about to apply a package to their own site should not have
+      // to ask where it came from, and the first-party ones saying "classpath" would be
+      // six lines of noise that trains the reader to skip the line that matters.
+      entry.origin ? `      from:   ${entry.origin} (not a built-in package)` : null,
     ]
       .filter(Boolean)
       .join("\n");
