@@ -184,8 +184,8 @@ the CDA + console services (law P10) and holds no business logic of its own.
   `?include=`, `?budget=`, `?from=`, `?ids=true` (rows are **id-free by default**, SH121).
   The `digest` is how a later session skips re-reading.
 - `GET /agent/resolve?address=…` — an address → an object id, for id-keyed endpoints.
-- `POST /agent/batch` — **writes**: N addressed ops (`folder.upsert`, `post.upsert`,
-  `post.move`, `post.publish`, `post.unpublish`, `folder.delete`, `post.delete`) in one
+- `POST /agent/batch` — **writes**: N addressed ops (`site.upsert`, `folder.upsert`,
+  `post.upsert`, `post.move`, `post.publish`, `post.unpublish`, `folder.delete`, `post.delete`) in one
   transaction; `{"dryRun":true}` reports without writing, and a batch that deletes needs
   SH108's `confirm` from its own dry run. **A `post.upsert` refuses a `data` key the post-type
   does not declare** (SH168) — a 400 carrying the field list and the nearest name, because an
@@ -206,7 +206,14 @@ the CDA + console services (law P10) and holds no business logic of its own.
   (`--dry-run` / `--check` / `-` for stdin).
 - `GET /agent/blueprints` · `GET /agent/blueprints/{name}` · `POST /agent/blueprints/{name}/apply`
   — **appliable starting points** (Block J, below). `dryRun` in the body returns the whole
-  plan, post-types included, and writes nothing.
+  plan, post-types included, and writes nothing. Two opt-ins, both refused by default because
+  each changes something the package does not own: **`createSite`** (SH151) makes the target site
+  blank if it is absent — the plan names it before it happens, and "the site you named does not
+  exist" is never read as permission — and **`mergePostTypes`** (SH152) adds the fields an
+  existing post-type lacks, never changing, removing or reordering one and never touching a
+  system type. Neither is an MCP argument: either one puts `shio_apply` over the SH132 per-tool
+  ceiling, and `tools/list` is re-sent every turn (P3), so an MCP client creates the site with
+  `shio_write`'s `site.upsert` and the missing-site error says so.
 - `GET /agent/find` — posts by site/type/folder-subtree/text; **addresses, not bodies**. A post
   with no friendly URL is addressed **`id:`** (SH172) — the fallback lives in
   `ShAddressResolver.addressOf`, so `find`, `changes` and the review queue cannot disagree about
@@ -353,6 +360,13 @@ stale; there is no console post-type controller.)
 - `PUT /api/v2/post-type/{name}` — **upsert**, idempotent by name (what `shio push` converges
   with); rejects system types (409), unknown widgets (400)
 - `DELETE /api/v2/post-type/{name}` — delete a non-system type (204/404/409)
+
+**Creating a site is `site.upsert` on the batch surface (SH170)** — addressed `site:<name>`,
+idempotent, and it creates a **blank** site (`ShSiteWriteService.createBlank`), not a clone of the
+SH71 bootstrap template. It **never updates**: a site's URL and description are console concerns
+with a human looking at them, so the op creates or reports `noop`. A token with an SH2 site
+allow-list is **refused** — inventing a site outside the list is the escalation §XII forbids.
+`POST /api/v2/site` still exists for the console (session + CSRF, and it keeps the starter clone).
 
 **`managed` on a write is a claim about the writer, not a data field** — which is why it is a
 `Boolean` and why *absent* and `false` mean different things:

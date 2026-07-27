@@ -123,6 +123,12 @@ public class ShAgentManifestService {
         // exists will reach for the destructive workaround.
         features.put("postMove", true);
         features.put("folderPrune", true);
+        // SH170: an agent can make the site it was asked to build. Advertised because its
+        // absence used to send the agent to the console entity API, which answers a stateless
+        // caller with a bodiless 403 — the one dead end on the whole surface.
+        features.put("siteUpsert", true);
+        // SH152: an apply can add the fields an existing post-type lacks (opt-in per call).
+        features.put("postTypeMerge", true);
         // Block K: the agent can check its own work. contentLint was reported false
         // through the whole of Block H precisely so that this flag flipping would mean
         // something — it is now backed by real rules, not a stub that always passes.
@@ -204,10 +210,12 @@ public class ShAgentManifestService {
                                 + "address from a context row; you never need to remember a UUID.",
                         "console", "GET /api/v2/agent/resolve?address=post:Blog/blog/hello-world"),
                 new ShAgentEndpoint("POST", "/agent/batch",
-                        "Write: N addressed ops (folder.upsert, post.upsert, post.move, "
-                                + "post.publish, …) in one atomic call. Send dryRun to see the "
-                                + "plan first. Rename or relocate with post.move — re-addressing "
-                                + "an upsert creates a second post.",
+                        "Write: N addressed ops (site.upsert, folder.upsert, post.upsert, "
+                                + "post.move, post.publish, …) in one atomic call. Send dryRun to "
+                                + "see the plan first. site.upsert makes a blank site — that is "
+                                + "step one and it is here, not on the console API. Rename or "
+                                + "relocate with post.move — re-addressing an upsert creates a "
+                                + "second post.",
                         "console", "POST /api/v2/agent/batch"),
                 new ShAgentEndpoint("POST", "/agent/plan",
                         "Diff a desired-state content document against this instance. "

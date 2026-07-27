@@ -167,7 +167,17 @@ async function applyBlueprint(flags, positionals, ctx) {
   const detail = await client.blueprint(name, { files: true });
   const params = coerceParams(await readParams(flags, ctx), detail?.manifest?.params);
   const planOnly = Boolean(flags.check || flags.dryRun);
-  const result = await client.applyBlueprint(name, { site, params, dryRun: planOnly });
+  const result = await client.applyBlueprint(name, {
+    site,
+    params,
+    dryRun: planOnly,
+    // SH151/SH152 — both opt-in, and both named in the plan before they happen. `--create-site`
+    // makes scaffolding and seeding one command; `--merge-post-types` adds the fields an
+    // existing post-type lacks, which is what the bootstrap `Page` versus a section
+    // vocabulary's `Page` collision needs.
+    createSite: Boolean(flags.createSite),
+    mergePostTypes: Boolean(flags.mergePostTypes),
+  });
 
   ctx.stdout.write(renderApplied(result));
 

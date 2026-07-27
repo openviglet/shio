@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.acl.ShContentAclService;
+import com.viglet.shio.api.site.ShSiteWriteService;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
@@ -97,10 +98,16 @@ public class ShAgentBatchService {
     public static final String POST_UNPUBLISH = "post.unpublish";
     public static final String POST_DELETE = "post.delete";
 
+    /**
+     * Creates a site (SH170) — the step the whole product is for, and the only op that took an
+     * agent off this surface entirely.
+     */
+    public static final String SITE_UPSERT = "site.upsert";
+
     /** The closed op vocabulary, in the order a teaching error lists it. */
     public static final List<String> OPS = List.of(
-            FOLDER_UPSERT, FOLDER_DELETE, POST_UPSERT, POST_MOVE, POST_PUBLISH, POST_UNPUBLISH,
-            POST_DELETE);
+            SITE_UPSERT, FOLDER_UPSERT, FOLDER_DELETE, POST_UPSERT, POST_MOVE, POST_PUBLISH,
+            POST_UNPUBLISH, POST_DELETE);
 
     /**
      * The ops that destroy something and therefore need confirming (SH108). Everything else
@@ -117,6 +124,7 @@ public class ShAgentBatchService {
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShFolderWriteService shFolderWriteService;
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
+    private final ShSiteWriteService shSiteWriteService;
     private final ShContentAclService shContentAclService;
     private final ShTenantQuotaService shTenantQuotaService;
     private final ObjectMapper objectMapper;
@@ -128,6 +136,7 @@ public class ShAgentBatchService {
                                ShPostTypeRepository shPostTypeRepository,
                                ShFolderWriteService shFolderWriteService,
                                ShPostUnifiedWriteService shPostUnifiedWriteService,
+                               ShSiteWriteService shSiteWriteService,
                                ShContentAclService shContentAclService,
                                ShTenantQuotaService shTenantQuotaService,
                                ObjectMapper objectMapper,
@@ -138,6 +147,7 @@ public class ShAgentBatchService {
         this.shPostTypeRepository = shPostTypeRepository;
         this.shFolderWriteService = shFolderWriteService;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
+        this.shSiteWriteService = shSiteWriteService;
         this.shContentAclService = shContentAclService;
         this.shTenantQuotaService = shTenantQuotaService;
         this.objectMapper = objectMapper;
@@ -246,6 +256,7 @@ public class ShAgentBatchService {
     private Change dispatch(ShAgentBatch.Op op, Session session) {
         String name = op.op() == null ? "" : op.op().trim().toLowerCase(Locale.ROOT);
         return switch (name) {
+            case SITE_UPSERT -> siteUpsert(op, session);
             case FOLDER_UPSERT -> folderUpsert(op, session);
             case FOLDER_DELETE -> folderDelete(op, session);
             case POST_UPSERT -> postUpsert(op, session);
@@ -255,6 +266,86 @@ public class ShAgentBatchService {
             case POST_DELETE -> postDelete(op, session);
             default -> throw new UnknownOpException(op.op());
         };
+    }
+
+    // --- site ops ---
+
+    /**
+     * Creates the site if it is not there, and reports {@code noop} if it is (SH170).
+     *
+     * <h2>Why the batch surface needed an eighth op</h2>
+     *
+     * <p>Seven ops could build everything inside a site and none of them could make one, so an
+     * agent asked for "build me a site" found that step one was not here — and landed on
+     * {@code POST /api/v2/site}: id-keyed, entity-shaped, and CSRF-gated, which answers a
+     * stateless caller with a bodiless 403. Nothing to read, nothing to fix.</p>
+     *
+     * <h2>What it deliberately does not do</h2>
+     *
+     * <p><b>It never updates.</b> The name is the address, and everything else a site carries —
+     * its URL, its description, its layout — is a console concern with a human looking at it.
+     * An "upsert" that quietly repointed a live site's URL because a document mentioned it would
+     * be the surprise P7 forbids, so this op creates or does nothing, and says which.</p>
+     *
+     * <p><b>It creates a blank site</b> (SH151), not a clone of the SH71 bootstrap template:
+     * a package applied over somebody else's Welcome page is not what was asked for.</p>
+     *
+     * <p><b>It refuses a scoped credential.</b> A token with an SH2 site allow-list must not
+     * create a site outside it — that is the escalation §XII forbids, and the allow-list would
+     * otherwise be a list of sites this token may read plus any it invents.</p>
+     */
+    private Change siteUpsert(ShAgentBatch.Op op, Session session) {
+        ShAddress address = writeAddress(op, ShAddress.Kind.SITE);
+        String name = address.site();
+        Optional<ShSite> existing = siteAccess.find(name);
+        if (existing.isPresent()) {
+            return session.change(op, address, Change.NOOP, null, existing.get().getId());
+        }
+        requireUnscopedCredential(name);
+        if (session.dryRun) {
+            return session.change(op, address, Change.CREATE, "a blank site", null);
+        }
+        shTenantQuotaService.checkCanCreateSite();
+        ShSite payload = new ShSite();
+        payload.setName(name);
+        payload.setDescription(text(op.data(), "description"));
+        payload.setUrl(text(op.data(), "url"));
+        payload.setFurl(text(op.data(), "furl"));
+        ShSite created = shSiteWriteService.createBlank(payload, session.actor);
+        return session.change(op, address, Change.CREATE, "a blank site", created.getId());
+    }
+
+    /** A single string field of an op's {@code data}, or {@code null}. */
+    private static String text(JsonNode data, String field) {
+        if (data == null || !data.isObject()) {
+            return null;
+        }
+        JsonNode value = data.get(field);
+        return value == null || !value.isString() ? null : value.asString();
+    }
+
+    /** Refuses site creation on a credential that is restricted to particular sites (SH2/SH106). */
+    private static void requireUnscopedCredential(String name) {
+        boolean scoped = ShApiTokenContext.current()
+                .map(context -> context.siteIds() != null && !context.siteIds().isEmpty())
+                .orElse(false);
+        if (scoped) {
+            throw new SiteScopeException(name);
+        }
+    }
+
+    /** A 403: a token restricted to particular sites may not invent another one. */
+    public static class SiteScopeException extends ShTeachingException {
+
+        public SiteScopeException(String name) {
+            super(ShProblem.of("site-scope", HttpStatus.FORBIDDEN,
+                            "this credential may not create a site")
+                    .withDetail("The token this request authenticated with has a site allow-list, "
+                            + "so it can only act inside the sites it was granted — creating '"
+                            + name + "' would put it outside them.")
+                    .withFix("Apply into one of the sites this token allows, or have an operator "
+                            + "issue a credential without an allow-list."));
+        }
     }
 
     // --- folder ops ---

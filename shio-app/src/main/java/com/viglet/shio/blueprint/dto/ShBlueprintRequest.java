@@ -26,8 +26,20 @@ import tools.jackson.databind.JsonNode;
  *               including the post-types the package would create — so a human can
  *               approve it before anything moves (P7)
  *
+ * <p>{@code createSite} (SH151) and {@code mergePostTypes} (SH152) are both <b>opt-in</b>, and
+ * for the same reason: each one lets an apply change something it otherwise only reports.
+ * Creating a site is the most visible side effect in the system, and merging fields into a
+ * post-type somebody else owns is the second — so neither may be inferred from "the thing you
+ * named is not there". A plan names both before they happen.</p>
+ *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
-public record ShBlueprintRequest(String site, JsonNode params, boolean dryRun) {
+public record ShBlueprintRequest(String site, JsonNode params, boolean dryRun,
+                                 boolean createSite, boolean mergePostTypes) {
+
+    /** The three-field form: every caller from before SH151/SH152, and every default. */
+    public ShBlueprintRequest(String site, JsonNode params, boolean dryRun) {
+        this(site, params, dryRun, false, false);
+    }
 }

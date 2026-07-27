@@ -65,13 +65,13 @@
 > half work at all, which is what made Block L's question askable; and Block L answered it —
 > how a human bounds and undoes an agent.
 >
-> **What is left is follow-ups, not blocks**: H's edges (SH136–SH140, SH170), K's scoping
+> **What is left is follow-ups, not blocks**: H's edges (SH136–SH140), K's scoping
 > and baseline (SH141–SH144, SH154, SH169), I's assets and paging (SH145–SH150), J's
-> reconciliation and registry (SH96, SH151–SH156), M's attribution (SH157–SH161, SH174), N's
-> realignment (SH163–SH167), plus SH44–SH47's tenant work and SH110. The highest-value ones
-> left are **SH170** (an agent cannot create the site it is asked to build) and **SH152**
-> (a package's post-type that already exists is reported, not reconciled — which SH168 now
-> turns into a refused write rather than silently mangled content).
+> reconciliation and registry (SH96, SH153–SH156), M's attribution (SH157–SH161, SH174), N's
+> realignment (SH163–SH167), plus SH44–SH47's tenant work and SH110. The highest-value ones left
+> are **SH169** (the render digest cannot see a section-composed page, so the proof mechanism does
+> not work on the pattern every section blueprint ships) and **SH154** (the lint cannot see a
+> `Page` naming a section that does not exist).
 >
 > **What driving it end to end found (SH168–SH175).** A whole site — model, folder tree,
 > thirteen pages, a file projection, a CI gate — was built over the agent surface alone, and
@@ -79,14 +79,12 @@
 > the `304`s and MCP's error routing all behaved as designed, and a blueprint apply landed 30
 > ops in one call. What it exposed is not the protocol but its **edges**.
 >
-> ✅ **SH168, SH171, SH172 and SH175 have shipped** → [CHANGELOG.md](CHANGELOG.md) Block H
-> follow-ups: a write refuses an undeclared field (and the lint reports the ones already
-> stored), a multi-address read fails per row, an address without a URL falls back to `id:`,
-> and `folder` states its own conditional requirement. **What remains from that build:** the
-> render digest reports nothing for a page composed of sections (**SH169**), creating a site is
-> not on the surface at all (**SH170**). **SH173** shipped with them — the CI gate no longer fails
-> on content the tree does not manage, and a remote failure prints its teaching body instead of a
-> request URL. SH174 is Block M's.
+> ✅ **SH168, SH170–SH173 and SH175 have shipped** → [CHANGELOG.md](CHANGELOG.md): a write
+> refuses an undeclared field (and the lint reports the ones already stored), a multi-address read
+> fails per row, an address without a URL falls back to `id:`, `site.upsert` puts site creation on
+> the surface, the CI gate stops failing on content the tree does not manage, and `folder` states
+> its own conditional requirement. **The only one left from that build is SH169** — the render
+> digest reports nothing for a page composed of sections. SH174 is Block M's.
 >
 > **And what driving the console over it found (Block O, shipped).** Seven defects, every one
 > of them answering `200` and none visible to a Java test, a CLI test or the MCP golden: the
@@ -138,7 +136,6 @@
 - 📋 **SH138** (deps: SH135 ✅, SH78 ✅) **Never truncate a deletion plan** — SH135 widened prune to whole subtrees, so a plan can now list thousands of deletes and collide with the SH78 response budget. A truncated deletion plan is the most dangerous truncation in the system: it reads as a complete review of what will be destroyed. Either exempt destructive rows from the budget or refuse the apply, but never silently shorten the list. → §VIII.7
 - 📋 **SH139** (deps: SH134 ✅) **The console move must not rewrite a post's URL** — `ShObjectWriteService#moveTo` resets `furl` to a slug of the title on every move, so dragging a published page between folders silently changes its live URL and discards any hand-set one. SH134 made the agent path careful about exactly this; the console path is the one that a human uses by accident. → §VIII.7
 - 💭 **SH140** (deps: SH134 ✅, SH100) **Report inbound links when a post moves** — `ShReference` is id-keyed and survives a move, but a URL typed into another post's rich text does not, and nothing tells the agent which pages it just broke. The cheap version is a count in the change detail; the real one belongs with SH100's route verification. → §IX.2
-- 📋 **SH170** (deps: SH81 ✅, SH151) **Creating a site is not on the agent surface** — there is no `site.upsert` op and no site row in the manifest's endpoint index, so the first step of the headline job leaves the agent path for `POST /api/v2/site`: entity-shaped, id-keyed, and CSRF-gated, which answers a stateless caller with a bodiless 403. → §VIII.13
 
 ## Block K — Perception & verification loop
 
@@ -230,20 +227,17 @@
 > starter, and duplicating page files into packages would fork the starter before SH119 folds
 > it in (**SH156**).
 >
-> **What building it opened.** The two halves that had to meet each other did not quite fit,
-> and both mismatches are now tasks. A package cannot create the site it needs, because the
-> only site-creation path clones the bootstrap template — content nobody asked for
-> (**SH151**). A package's post-type that already exists is left alone and its missing fields
-> are *named*, which is honest and not yet useful (**SH152**). The plan's accuracy costs a
-> write transaction it then rolls back (**SH153**). A `Page` can name a section that does not
-> exist and `shio verify` stays green, because a Multi Select of addresses is not a reference
-> the lint knows about (**SH154**). And nothing on the instance records which package and
-> version a site received, so "is this site still what the blueprint says" is unanswerable
-> (**SH155**).
+> **What building it opened, and what has since closed.** The two halves that had to meet each
+> other did not quite fit. ✅ **SH151 and SH152 have shipped** → [CHANGELOG.md](CHANGELOG.md):
+> an apply can create its target site (blank, opt-in, named in the plan) and can add the fields an
+> existing post-type lacks — which SH168 turned from a nicety into the difference between a
+> refused write and a package that cannot land. What is still open: the plan's accuracy costs a
+> write transaction it then rolls back (**SH153**); a `Page` can name a section that does not exist
+> and `shio verify` stays green, because a Multi Select of addresses is not a reference the lint
+> knows about (**SH154**); and nothing records which package and version a site received, so "is
+> this site still what the blueprint says" is unanswerable (**SH155**).
 
 - 💭 **SH96** (deps: SH93 ✅) **Blueprint registry + community convention** — `shio-blueprint-*` naming, manifest validation, curated index (absorbs old SH28/SH29/SH31). Now the single blocker on third-party packages: the registry deliberately loads from the classpath alone until there is a trust model for where a package may come from. → §XI.5
-- 📋 **SH151** (deps: SH93 ✅, SH71 ✅) **A blueprint can create the site it needs** — apply refuses when the site is absent, and the only creation path clones the SH71 bootstrap template, so "one call builds a marketing site" is really two calls and a prune. Needs a blank-site create plus `shio init --blueprint`. → §XI.7
-- 📋 **SH152** (deps: SH93 ✅) **Additive post-type reconciliation** — a package's post-type that already exists is left untouched and its missing fields are reported; the caller then has to add them by hand, and until they do the content writes fields the console cannot render. An opt-in additive merge (add the missing fields, never change or remove one) makes the report actionable. → §XI.8
 - 📋 **SH153** (deps: SH93 ✅, SH81 ✅) **A blueprint plan that needs no write transaction** — the plan provisions the package's post-types and rolls back, purely so the content planner can resolve types that do not exist yet. It is correct and it means a plan cannot run on a read-only credential or a replica. Threading the declared types through the batch planner's pending set removes the write entirely. → §XI.9
 - 📋 **SH155** (deps: SH93 ✅, SH114 ✅) **Record which blueprint a site received** — `changed:0` proves a site matches a document, but nothing records that the document came from `marketing-site 1.0.0`, so a newer package version is undetectable and "is this still the blueprint" cannot be asked. Belongs in SH114's instance memory (now shipped — a keyed note per site is exactly the shape) rather than a table of its own. → §XI.10
 - 📋 **SH156** (deps: SH92 ✅, SH119 ✅) **The rest of the first-party set carries its front-end half** — SH119 made the starter a blueprint and proved the mechanism (a generated `files` tree with a drift test), but `blog`, `docs`, `product-catalog`, `marketing-site` and `landing` still ship content the site cannot render until someone wires the components. The four section-vocabulary packages need `@viglet/shio-sections`' components emitted the same way; the open question is how packages share a tree instead of each carrying a copy. → §XI.11

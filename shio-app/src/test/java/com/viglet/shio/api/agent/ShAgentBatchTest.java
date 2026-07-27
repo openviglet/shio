@@ -468,4 +468,55 @@ class ShAgentBatchTest {
                 .as("refusing this would mean the agent could not fix the post at all")
                 .isEqualTo(Change.UPDATE);
     }
+
+    // --- SH170: the batch surface can make a site ---
+
+    @Test
+    @DisplayName("site.upsert creates a blank site — step one is on the surface now")
+    void siteUpsertCreatesABlankSite() {
+        String name = "sh170-" + UUID.randomUUID().toString().substring(0, 8);
+        Op create = new Op(ShAgentBatchService.SITE_UPSERT, "site:" + name, null, null, null);
+
+        Change change = only(run(false, create));
+
+        assertThat(change.action()).isEqualTo(Change.CREATE);
+        assertThat(change.id()).as("the id comes back so a caller that wants one has it").isNotNull();
+        // Blank, not a clone of the SH71 bootstrap: a package applied over somebody else's
+        // Welcome page is not what was asked for (SH151).
+        assertThat(run(true, new Op(ShAgentBatchService.FOLDER_UPSERT, "folder:" + name + "/anything",
+                null, null, null)).results().get(0).action())
+                .isEqualTo(Change.CREATE);
+    }
+
+    @Test
+    @DisplayName("a second site.upsert is a noop, so a document stays re-runnable")
+    void siteUpsertIsIdempotent() {
+        String name = "sh170-" + UUID.randomUUID().toString().substring(0, 8);
+        Op create = new Op(ShAgentBatchService.SITE_UPSERT, "site:" + name, null, null, null);
+        run(false, create);
+
+        assertThat(only(run(false, create)).action()).isEqualTo(Change.NOOP);
+    }
+
+    @Test
+    @DisplayName("a plan names the site before it exists — creating one is never a surprise")
+    void siteUpsertPlansBeforeItCreates() {
+        String name = "sh170-" + UUID.randomUUID().toString().substring(0, 8);
+        Change planned = only(run(true, new Op(ShAgentBatchService.SITE_UPSERT, "site:" + name,
+                null, null, null)));
+
+        assertThat(planned.action()).isEqualTo(Change.CREATE);
+        assertThat(planned.detail()).contains("blank");
+        // And it wrote nothing: the same plan, run again, still reports a create.
+        assertThat(only(run(true, new Op(ShAgentBatchService.SITE_UPSERT, "site:" + name,
+                null, null, null))).action()).isEqualTo(Change.CREATE);
+    }
+
+    @Test
+    @DisplayName("site.upsert takes a site: address, and refuses a post: one")
+    void siteUpsertNeedsASiteAddress() {
+        assertThatThrownBy(() -> run(false, new Op(ShAgentBatchService.SITE_UPSERT,
+                "post:" + siteName + "/not-a-site", null, null, null)))
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class);
+    }
 }

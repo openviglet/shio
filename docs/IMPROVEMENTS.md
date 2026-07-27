@@ -467,32 +467,6 @@ what follows:
   fail loudly?* If not, it is not a comment, it is a missing parameter or a missing
   wrapper.
 
-### VIII.13 Creating a site is not on the agent surface (SH170)
-
-The batch surface has seven ops and none of them makes a site. The manifest's endpoint
-index lists twenty-nine rows and none of them is `POST /api/v2/site`. So an agent asked for
-the thing the product is *for* — "build me a site" — discovers that step one is not here,
-and lands on the console entity API: id-keyed, entity-shaped, and outside the CSRF
-exemptions that `/agent/**` and `/mcp` enjoy. A stateless caller with valid credentials
-gets `403` with an empty body — no `fix`, no `allowed`, nothing to read.
-
-Three things want fixing together, and the third is the reason to do it as one task:
-
-1. A `site.upsert` op (or an explicit refusal that names the endpoint and the CSRF dance),
-   so the first step is addressed and idempotent like every other write.
-2. The site row in the manifest index, whichever way (1) goes — an agent should never have
-   to learn an endpoint exists by reading the Java.
-3. **A blank site.** `ShSiteWriteService.create` clones the SH71 bootstrap — a new site
-   arrives holding `welcome` and `about` Pages nobody asked for, which is why a blueprint
-   apply into a fresh site reports `about` as an *update* and why `--prune` is the only way
-   back to what was requested. This is SH151's blocker seen from the other side; whichever
-   task lands first should carry it.
-
-The CSRF half also feeds SH167: the argument for exempting `/agent/**` wholesale is that
-only stateless clients reach it, and the argument for *not* exempting `/api/v2/site` is
-that a browser does. Both are true, and the agent path needs a site-creation route that
-does not depend on which of them wins.
-
 ## IX. Perception & verification loop (Block K)
 
 > The agent cannot see. Two of the three human round trips in a typical build exist
@@ -763,46 +737,6 @@ statement of what an applied package is *allowed* to do, and the index. The form
 needs nothing: a package is already a directory whose contents are validated on load, and
 `formatVersion` already refuses a package written for a newer instance rather than
 mis-reading it.
-
-### XI.7 A blueprint can create the site it needs (SH151)
-
-Applying a blueprint refuses when the target site does not exist, which is correct and is
-also the seam in the §3.1 story: *"`shio_apply blueprint marketing-site` → plan → confirm
-→ applied"* is one call only if there is already a site to apply it into. Creating one is
-not currently a step a blueprint can take, because `ShSiteWriteService.create()` clones the
-SH71 bootstrap template — so "create a site for this package" would mean applying a package
-on top of a Welcome page and an About page nobody asked for, and then pruning them.
-
-The fix has two parts and the order matters. First a **blank** site-creation path (a site,
-a root folder, no template), which is worth having on its own: the bootstrap clone exists
-because an empty site used to be useless, and a blueprint is exactly the thing that makes
-it useful. Then `site: {create: true}` on the apply request, and `shio init --blueprint
-<name>` in the CLI so scaffolding a project and seeding its content are one command.
-
-The thing to be careful about is P7: creating a site is the most visible side effect in the
-system, so it must be explicit in the request, named in the plan before it happens, and
-never inferred from "the site you named does not exist".
-
-### XI.8 Additive post-type reconciliation (SH152)
-
-A blueprint provisions a post-type only when the instance does not already have one of that
-name, and reports the fields the existing type lacks. That is honest — the alternative,
-upserting, reverts a field a human added and flips SH66's `managed` flag from a package the
-user never wrote — but it stops one step short of useful: the caller reads
-`exists · Page · missing: description, sections`, and until they add those fields by hand
-the package's content is writing values the console cannot render and the front end cannot
-find.
-
-The middle position is an **additive** merge, opt-in per apply: add the fields the package
-declares and the type lacks, never change a field's widget or settings, never remove one,
-never touch a system type. That is a well-defined and reversible operation, and it is what
-the collision the first-party set actually hits (the bootstrap `Page` versus the section
-vocabulary's `Page`) needs.
-
-Two things to settle in the task. A field's **ordinal** has to go somewhere — appending
-after the highest existing ordinal is the only choice that cannot reorder somebody's form.
-And the report must distinguish "added" from "already there", because a merge that reads as
-a provision would hide the fact that the type is now a hybrid of two models.
 
 ### XI.9 A plan that needs no write transaction (SH153)
 

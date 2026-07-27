@@ -34,7 +34,9 @@ import com.viglet.shio.blueprint.dto.ShBlueprintApplied;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.model.widget.ShWidget;
+import com.viglet.shio.api.post.type.ShPostTypeAdminService;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
+import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -78,6 +80,10 @@ class ShBlueprintApplyTest {
     private ShAddressResolver shAddressResolver;
     @Autowired
     private ShPostTypeRepository shPostTypeRepository;
+    @Autowired
+    private ShSiteRepository shSiteRepository;
+    @Autowired
+    private ShPostTypeAdminService shPostTypeAdminService;
     @Autowired
     private PlatformTransactionManager transactionManager;
     @Autowired
@@ -290,5 +296,145 @@ class ShBlueprintApplyTest {
 
         assertThatThrownBy(() -> shBlueprintService.apply("no-such-package", siteName, null, "admin"))
                 .isInstanceOf(ShBlueprintRegistry.UnknownBlueprintException.class);
+    }
+
+    // --- SH151: an apply can create the site it needs ---
+
+    @Test
+    @Order(10)
+    @DisplayName("an apply refuses a site that does not exist, and the refusal names both routes")
+    void anUnknownSiteIsStillRefusedByDefault() {
+        // The default has to stay a refusal: "the site you named does not exist" must never read
+        // as permission to make one (P7). What changed is that the error now says how.
+        assertThatThrownBy(() -> shBlueprintService.plan("landing", "sh151-no-such-site-"
+                + UUID.randomUUID(), params("{\"brand\":\"Acme\"}"), "admin"))
+                .isInstanceOf(ShBlueprintService.MissingSiteException.class)
+                .satisfies(failure -> {
+                    var problem = ((ShBlueprintService.MissingSiteException) failure).problem()
+                            .toProblemDetail();
+                    assertThat(problem.getProperties().get("fix").toString())
+                            .contains("createSite").contains("site.upsert");
+                });
+    }
+
+    @Test
+    @Order(20)
+    @DisplayName("createSite makes it, blank — and the plan says so without making it")
+    void createSiteMakesTheSiteItNeeds() {
+        String name = "sh151-" + UUID.randomUUID().toString().substring(0, 8);
+        // Both flags, because this is the realistic pair: "build me a site with this package" has
+        // to survive an instance that already has a `Page` of its own, and since SH168 the content
+        // half is *refused* rather than silently mangled when it does not. SH151 and SH152 are two
+        // halves of the same call.
+        var options = new ShBlueprintWriteService.Options(true, true);
+
+        ShBlueprintApplied plan = shBlueprintService.plan("landing", name,
+                params("{\"brand\":\"Acme\"}"), "admin", options);
+        assertThat(plan.site()).isEqualTo(name);
+        assertThat(plan.content().results()).as("the content plan is real, so the site existed "
+                + "inside the transaction the plan rolls back").isNotEmpty();
+        assertThat(shSiteRepository.findByName(name))
+                .as("and nothing survived it — a plan writes nothing")
+                .isNull();
+
+        ShBlueprintApplied applied = shBlueprintService.apply("landing", name,
+                params("{\"brand\":\"Acme\"}"), "admin", options);
+
+        assertThat(applied.createdSite()).isEqualTo(name);
+        assertThat(shSiteRepository.findByName(name)).isNotNull();
+        // Blank: the package's own pages are creates, not updates over a bootstrap template.
+        assertThat(applied.content().results())
+                .allSatisfy(change -> assertThat(change.action()).isNotEqualTo("update"));
+    }
+
+    @Test
+    @Order(21)
+    @DisplayName("createSite is idempotent — the second apply reports no site created")
+    void createSiteIsIdempotent() {
+        String name = "sh151-" + UUID.randomUUID().toString().substring(0, 8);
+        var options = new ShBlueprintWriteService.Options(true, true);
+        shBlueprintService.apply("landing", name, params("{\"brand\":\"Acme\"}"), "admin", options);
+
+        ShBlueprintApplied second = shBlueprintService.apply("landing", name,
+                params("{\"brand\":\"Acme\"}"), "admin", options);
+
+        assertThat(second.createdSite()).isNull();
+        assertThat(second.content().changed()).isZero();
+    }
+
+    // --- SH152: additive post-type reconciliation ---
+
+    @Test
+    @Order(11)
+    @DisplayName("mergePostTypes adds the fields an existing type lacks, and says it merged")
+    void mergeAddsTheMissingFields() {
+        createSite();
+        // The collision that actually happens: a `Page` with only `title`, and a package whose
+        // `Page` also declares `description` and `sections`.
+        withTransaction(() -> {
+            if (shPostTypeRepository.findByName("Page") != null) {
+                return;
+            }
+            com.viglet.shio.persistence.model.post.type.ShPostType page =
+                    new com.viglet.shio.persistence.model.post.type.ShPostType();
+            page.setName("Page");
+            page.setTitle("Page");
+            page.setSystem((byte) 0);
+            page.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            page.setOwner("admin");
+            entityManager.persist(page);
+
+            com.viglet.shio.persistence.model.post.type.ShPostTypeAttr title =
+                    new com.viglet.shio.persistence.model.post.type.ShPostTypeAttr();
+            title.setName("title");
+            title.setLabel("Title");
+            title.setOrdinal(1);
+            title.setIsTitle((byte) 1);
+            title.setShPostType(page);
+            title.setShWidget(entityManager
+                    .createQuery("select w from ShWidget w where w.name = 'Text'", ShWidget.class)
+                    .getResultStream().findFirst().orElseThrow());
+            entityManager.persist(title);
+        });
+
+        ShBlueprintApplied applied = shBlueprintService.apply("landing", siteName,
+                params("{\"brand\":\"Acme\"}"), "admin",
+                new ShBlueprintWriteService.Options(false, true));
+
+        assertThat(applied.postTypes())
+                .filteredOn(postType -> "Page".equals(postType.name()))
+                .singleElement()
+                .satisfies(postType -> {
+                    assertThat(postType.action())
+                            .as("a merge that read as a provision would hide that the type is now "
+                                    + "a hybrid of two models")
+                            .isEqualTo("merge");
+                    assertThat(postType.added()).contains("sections");
+                });
+
+        // The human's field survived untouched, and the added ones are appended after it —
+        // a form that rearranged itself because a blueprint was applied is a surprise with no upside.
+        var fields = shPostTypeAdminService.get("Page").orElseThrow().fields();
+        assertThat(fields).extracting("name").startsWith("title");
+        assertThat(fields).extracting("name").contains("sections");
+
+        // And the content it writes now lands: SH168 refuses an undeclared field, so before the
+        // merge these very pages would have been refused rather than silently mangled.
+        assertThat(applied.content().results())
+                .noneSatisfy(change -> assertThat(change.detail()).contains("undeclared field"));
+    }
+
+    @Test
+    @Order(9)
+    @DisplayName("without the flag the mismatch is still only reported")
+    void withoutTheFlagNothingIsMerged() {
+        createSite();
+        ShBlueprintApplied plan = shBlueprintService.plan("landing", siteName,
+                params("{\"brand\":\"Acme\"}"), "admin");
+
+        assertThat(plan.postTypes())
+                .filteredOn(postType -> "Page".equals(postType.name()))
+                .singleElement()
+                .satisfies(postType -> assertThat(postType.action()).isEqualTo("exists"));
     }
 }

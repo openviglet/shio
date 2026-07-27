@@ -28,8 +28,9 @@ const BOOLEANS = [
   "help", "yes", "dry-run", "prune", "check", "skip-types", "id", "ids", "strict",
   // Content-as-files (Block I): `--content` picks the resource, the rest resolve a sync.
   "content", "ours", "theirs", "force", "allow-partial", "show-remote", "cursor", "json",
-  // Blueprints (Block J): `--files` asks for the carried front-end bodies.
-  "files",
+  // Blueprints (Block J): `--files` asks for the carried front-end bodies, and the two
+  // SH151/SH152 opt-ins let one command create the site and reconcile an existing model.
+  "files", "create-site", "merge-post-types",
   // Instance memory (SH114): read the store, or drop one note from it.
   "list", "forget",
 ];
@@ -70,7 +71,8 @@ Commands:
   mcp            Bridge stdio to this instance's MCP endpoint (claude mcp add shio -- shio mcp)
   resolve <addr> Resolve a content address (post:/folder:/site:/id:) to its object
   apply [file]   Plan/apply a desired-state content document (--dry-run, --check, - for stdin)
-                 or a ready-made package (--blueprint <name> --site <site>)
+                 or a ready-made package (--blueprint <name> --site <site>;
+                  --create-site makes the site, --merge-post-types adds missing fields)
   blueprints     List the appliable starting points (blueprints <name> for its parameters)
   verify         Lint the content and its routes; exits non-zero on an error (CI gate)
   changes        What changed, with a cursor to resume from (--since, --cursor)
@@ -132,8 +134,11 @@ Blueprints (shio blueprints / shio apply --blueprint):
   --param k=v          apply: one parameter value; repeat for several
   --params <file.json> apply: parameter values from a file (--param wins over it)
   --force              apply: overwrite existing front-end files
+  --create-site        apply: create the site (blank) if it does not exist yet
+  --merge-post-types   apply: add fields an existing post-type lacks; never changes one
   --dry-run            apply: the whole plan, post-types included, written nowhere
   shio apply --blueprint marketing-site --site Acme --param brand=Acme --dry-run
+  shio apply --blueprint marketing-site --site Acme --param brand=Acme --create-site
 
 Verification (shio verify / shio digest):
   shio verify is the content-side type-check: empty required fields, references to posts

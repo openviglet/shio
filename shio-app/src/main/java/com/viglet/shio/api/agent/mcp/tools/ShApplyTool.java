@@ -20,6 +20,7 @@ import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
 import com.viglet.shio.api.agent.ShAgentSessionContext;
 import com.viglet.shio.api.agent.mcp.ShMcpTool;
 import com.viglet.shio.blueprint.ShBlueprintService;
+import com.viglet.shio.blueprint.ShBlueprintWriteService;
 import com.viglet.shio.blueprint.ShBlueprintTerse;
 
 import tools.jackson.databind.JsonNode;
@@ -115,9 +116,17 @@ public class ShApplyTool implements ShMcpTool {
 
         if (blueprint != null && !blueprint.isBlank()) {
             JsonNode params = ShMcpArgs.node(arguments, "params");
+            // SH151's `createSite` and SH152's `mergePostTypes` are deliberately not arguments
+            // here. Either one puts this tool over the per-tool ceiling, and `tools/list` is
+            // re-sent on every turn of every session (P3) — so the cost would be paid by every
+            // session including the ones that never create a site. Neither capability is out of
+            // reach: `shio_write` takes `site.upsert` for free (it is one more value in an enum
+            // that already existed), and the missing-site error names it. The reconciliation flag
+            // is a decision a person makes once, over REST or the CLI.
+            var options = ShBlueprintWriteService.Options.NONE;
             return ShBlueprintTerse.applied(dryRun
-                    ? shBlueprintService.plan(blueprint, site, params, actor)
-                    : shBlueprintService.apply(blueprint, site, params, actor));
+                    ? shBlueprintService.plan(blueprint, site, params, actor, options)
+                    : shBlueprintService.apply(blueprint, site, params, actor, options));
         }
         ShAgentDesiredState desired = new ShAgentDesiredState(site, folders(arguments),
                 posts(arguments), ShMcpArgs.bool(arguments, "prune"),

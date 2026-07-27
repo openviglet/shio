@@ -10,10 +10,12 @@ package com.viglet.shio.api.post.type;
 
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -163,6 +165,72 @@ public class ShPostTypeAdminService {
         postType.setShPostTypeAttrs(buildAttrs(def.fields(), postType, null));
         shPostTypeRepository.save(postType);
         return true;
+    }
+
+    /**
+     * Adds the fields {@code def} declares and the existing post-type lacks (SH152).
+     *
+     * <h2>Why additive, and only additive</h2>
+     *
+     * <p>A blueprint provisions a model it does not own, so it may not {@code upsert}: that would
+     * revert a field a human added and flip SH66's {@code managed} flag from a package the user
+     * never wrote. Reporting the difference instead is honest but stops one step short of useful —
+     * the caller reads {@code exists · Page · missing: description, sections} and, until they add
+     * those by hand, the package's content is writing fields the console cannot render. Since
+     * SH168 it is worse than that: those writes are now <em>refused</em>, so the report names a
+     * wall rather than a wart.</p>
+     *
+     * <p>So this adds what is missing and nothing else. It never changes a field's widget or its
+     * settings, never removes one, never reorders — and never touches a system type. Every one of
+     * those exclusions is a thing somebody else may own.</p>
+     *
+     * <h2>The two decisions worth stating</h2>
+     *
+     * <p><b>Ordinal:</b> appended after the highest existing one. Honouring the package's own
+     * ordinals would reorder somebody's form, and a form that rearranged itself because a
+     * blueprint was applied is a surprise with no upside.</p>
+     *
+     * <p><b>Top-level only:</b> a nested Relator child that differs stays in {@code missing}.
+     * Merging inside a container means deciding whose child order wins, which is a change to an
+     * existing field rather than an addition — the thing this method promises not to do.</p>
+     *
+     * @return the names of the fields it added, in the order it added them; empty when there was
+     *         nothing to do, the type is a system type, or it does not exist
+     */
+    @Transactional
+    public List<String> mergeMissingFields(ShPostTypeDef def) {
+        if (def == null || def.name() == null || def.fields() == null) {
+            return List.of();
+        }
+        ShPostType existing = shPostTypeRepository.findByName(def.name());
+        if (existing == null || existing.getSystem() == 1) {
+            return List.of();
+        }
+        Set<ShPostTypeAttr> attrs = existing.getShPostTypeAttrs();
+        Set<String> present = attrs == null ? Set.of() : attrs.stream()
+                .map(ShPostTypeAttr::getName)
+                .filter(name -> name != null)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        int nextOrdinal = 1 + (attrs == null ? 0 : attrs.stream()
+                .mapToInt(ShPostTypeAttr::getOrdinal).max().orElse(0));
+
+        List<String> added = new ArrayList<>();
+        for (ShPostTypeAttrDef field : def.fields()) {
+            if (field.name() == null || present.contains(field.name())) {
+                continue;
+            }
+            ShPostTypeAttrDef appended = new ShPostTypeAttrDef(field.name(), field.label(),
+                    field.description(), field.widget(), field.required(), field.isTitle(),
+                    field.isSummary(), nextOrdinal++, field.widgetSettings(), field.fields());
+            // One at a time, through the same builder every other path uses, so an unknown
+            // widget is still the SH80 teaching 400 rather than a half-merged type.
+            attrs.addAll(buildAttrs(List.of(appended), existing, null));
+            added.add(field.name());
+        }
+        if (!added.isEmpty()) {
+            shPostTypeRepository.save(existing);
+        }
+        return List.copyOf(added);
     }
 
     /** Delete a non-system post-type. Returns {@code false} if it does not exist. */
