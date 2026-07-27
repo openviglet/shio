@@ -60,15 +60,17 @@
 > and `agents.md` carry the orientation; the code lands as SH75+.
 >
 > Suggested order: **H → K → I → J → O → L → M** — **all of them are now shipped**, Block L
-> except SH110 (blocked on SH45). Block H is the protocol everything else speaks; Block K
-> removed the most expensive unit in the system, the human round trip; Block O made the human
-> half work at all, which is what made Block L's question askable; and Block L answered it —
-> how a human bounds and undoes an agent.
+> except SH110 (blocked on SH45), and **Block K is shipped to the last task**. Block H is the
+> protocol everything else speaks; Block K removed the most expensive unit in the system, the
+> human round trip, and then closed its own follow-ups — a route is provable from the delivery
+> side, the incident record survives a restart, and the loop finally produces the artifact a
+> human reads (`shio report`); Block O made the human half work at all, which is what made
+> Block L's question askable; and Block L answered it — how a human bounds and undoes an agent.
 >
 > **What is left is follow-ups, not blocks**: H's original edges shipped (SH136–SH139) and
 > driving them turned up the next layer (SH196–SH203, spread across H, I, L and O — the
-> engine's own asymmetries rather than missing capabilities), K's durable incidents and
-> handoff report (SH144, SH104), I's assets and paging (SH145–SH150), J's
+> engine's own asymmetries rather than missing capabilities), **Block K is now complete**
+> (SH102/SH104/SH141/SH144 closed its last four), I's assets and paging (SH145–SH150), J's
 > reconciliation and registry (SH96, SH153–SH156), M's attribution (SH157–SH161, SH174), N's
 > realignment (SH163–SH167), plus SH44–SH47's tenant work and SH110. The highest-value ones left
 > are **SH150** (a renamed content file still pushes as delete + create, which loses the post's
@@ -148,7 +150,7 @@
 > the same dead end as a silent cut, reached from the other side.
 
 - 💭 **SH84** (deps: SH83 ✅, SH22 ✅) **Turing ecosystem wiring** — the SH22 tenant sweep and its test shipped; what remains is the Turing integration (replaces old SH37). → §VIII.9
-- 💭 **SH140** (deps: SH134 ✅, SH100) **Report inbound links when a post moves** — `ShReference` is id-keyed and survives a move, but a URL typed into another post's rich text does not, and nothing tells the agent which pages it just broke. The cheap version is a count in the change detail; the real one belongs with SH100's route verification. → §IX.2
+- 💭 **SH140** (deps: SH134 ✅, SH100) **Report inbound links when a post moves** — `ShReference` is id-keyed and survives a move, but a URL typed into another post's rich text does not, and nothing tells the agent which pages it just broke. The cheap version is a count in the change detail; the real one belongs with SH100's route verification, which SH141 has since extended to a delivery-side proof — so a broken inbound link is now checkable rather than only reportable.
 - 📋 **SH196** (deps: SH88 ✅, SH137 ✅) **No folder write is audited** — `ShFolderWriteService` records nothing on create, rename, move or delete, so `/agent/changes` reports posts appearing in folders it never saw created and the SH109 review queue cannot show a run's structural half. A resuming session's `since=` catch-up is therefore incomplete by construction. → §VIII.12
 - 💭 **SH197** (deps: SH136 ✅) **Finish the byte-stability class** — the SH136 lint bans `Map.copyOf`/`Set.copyOf`; a hash-ordered `Map.of(…)` reaching a serialized map component is the same defect and is still unguarded. No live instance today, which is exactly when the guard is cheap. → §VIII.11
 
@@ -157,29 +159,16 @@
 > Two of the three human round trips in a typical build exist only because the
 > agent cannot check its own work. This block is the cheapest large win after H. → §IX
 
-> ✅ **The loop is shipped** → [CHANGELOG.md](CHANGELOG.md) Block K: **SH99** (content
-> lint + the ninth tool `shio_verify`, and `contentLint` finally true) · **SH100**
-> (route/link verification) · **SH101** (render digest + `shio_digest`) · **SH103**
-> (agent diagnostics).
+> ✅ **The block is complete (SH99–SH104, SH141–SH144, SH154)** → see
+> [CHANGELOG.md](CHANGELOG.md) Block K. The loop, its follow-ups and the human-facing
+> handoff have all shipped; the last piece was SH102's optional PNG.
 >
-> **What is deliberately not in it, and why:** Sitemap-coverage-vs-blueprint has its
-> comparand now that Block J ships packages with a `verify.posts` promise — but that promise
-> is checked by the *blueprint* surface, and the section vocabulary immediately exposed the
-> lint's own blind spot, since closed by ✅ **SH154** → [CHANGELOG.md](CHANGELOG.md).
-> SH102's PNG stays an idea and is reported `false` in the manifest.
->
-> **What building it opened has now closed.** ✅ **SH104, SH141, SH142, SH143 and SH144 have
-> shipped** → [CHANGELOG.md](CHANGELOG.md): the human half of the loop has its artifact
-> (`shio report` — what changed, preview links, open questions, and a cursor a read never moves
-> on its own), a route is provable from the delivery side (so `link-unresolved` can be an error,
-> and the front end's own routes are *declared* in the SH114 memory rather than guessed), the
-> report can say *known and accepted* (and fails when an accepted finding no longer exists,
-> which is what keeps the file from becoming a suppression), a run can be scoped to a folder,
-> named addresses or an SH88 cursor while the cross-cutting indexes stay whole, and the incident
-> record is durable and rides that same cursor — so one `since=` answers what changed and what
-> broke. **Only SH102's optional PNG is left in this block**, and it is still an idea.
+> One thing worth carrying forward, because it is a rule and not a task: **`ok` is false only
+> for an error**. A warning is what the CMS cannot prove from inside itself, and the three
+> mechanisms that grew out of respecting that line — SH141's delivery-side proof, SH142's
+> accepted findings, and SH114-declared front-end routes — are all ways of turning a warning
+> into either a fact or an explicit decision, rather than ways of making the gate stricter.
 
-- 💭 **SH102** (deps: SH101 ✅) **Visual snapshot + diff** — optional Playwright PNG + diff vs previous, for the human handoff rather than for the agent. → §IX.4
 
 ## Block I — Content as files (local-first authoring)
 
@@ -392,14 +381,14 @@
 - 📋 **SH183** (deps: SH68 ✅, SH95 ✅) **Render page → layout → region, server-side, without a script engine** — restore the three-level model as system post-types (`PAGE_LAYOUT`, `REGION`, `THEME`), compose them with a Java Handlebars implementation, and register the seven `shObject.js` capabilities (navigation, query, search, form, relation, links) as explicit helpers instead of bindings on an unfiltered engine. The sample's per-region JavaScript is 767–1098 characters of loop-and-remap that a domain-aware block helper replaces with one line. Layouts and regions being content is what makes them agent-authorable via `post.upsert`, exportable, projectable to files and lintable — a closed Java projection of the SH95 types would be none of those. → §XV.1
 - 📋 **SH184** (deps: SH170 ✅, SH183) **A site's front-end URL is unreachable from the agent path** — `site.url` gates both visual surfaces (`400 site has no url`; `universalEditor.siteNoUrl`), and `site.upsert` deliberately never updates a site, so an agent that builds a site and deploys a front end still cannot connect the two. With SH183 the sensible default is Shio's own preview route. → §XV.2
 - 📋 **SH185** (deps: SH183) **The Universal Editor has no counterpart, and `sh-region` is already the contract** — `visual-editor.page.tsx` posts `{type, data}` into the iframe and listens for replies, and there is not one `postMessage` in `create-shio-app`, `shio-react-sdk`, `shio-sections` or `shio-client`, so the editor cannot work against anything. The 2018 templates already annotate composition with `sh-region="NAME"`; a renderer that preserves those attributes tells the editor which DOM node is which region and which post to save. Needs the protocol written down, SH183 as its first implementation, `"*"` replaced by the site's origin, and `universalEditor: true` demoted until it is true. → §XV.3
-- 📋 **SH187** (deps: SH183, SH169 ✅, SH102) **The agent sees a page's structure, never its appearance** — SH169 made the digest compose a page's sections, so an agent can prove the outline is right; nothing lets it see that the page *looks* right, since `visualSnapshot` and `signedImageUrls` are `false` and `renderFetch` is off by default. SH102 is the correct instrument scoped for the wrong reader — "for the human handoff rather than for the agent" — and SH183 makes it nearly free, because the renderer's own HTML is the artifact to snapshot. → §XV.4
+- 📋 **SH187** (deps: SH183, SH169 ✅, SH102 ✅) **The agent sees a page's structure, never its appearance** — SH169 made the digest compose a page's sections, so an agent can prove the outline is right; nothing lets it see that the page *looks* right, since `visualSnapshot` and `signedImageUrls` are `false` and `renderFetch` is off by default. SH102 has shipped as `shio snapshot` and is the correct instrument scoped for the wrong reader — "for the human handoff rather than for the agent", i.e. a CLI command and an image file rather than a call and a payload — and SH183 makes it nearly free, because the renderer's own HTML is the artifact to snapshot. → §XV.4
 - 📋 **SH188** (deps: SH107 ✅) **`api_token.may_publish` is NULL on existing rows and the field is a primitive** — `v2026.3.11.yaml` adds the column nullable with no backfill and no `defaultValueBoolean`, stating the intent that it "read as `false` when absent"; `ShApiToken` maps it as `private boolean`, which Hibernate cannot populate from NULL. So any install that had a token before that changeset throws `IllegalArgumentException` on `GET /api/v2/api-token` **and `POST /api/v2/preview-token`** — preview is dead for a second reason, independent of SH184. Either the wrapper type with an explicit null read, or a default plus a backfill; the changeset's own comment says which behaviour was meant. Found by SH103's feed surfacing it through `shio verify`. → §XV.6
 - 📋 **SH189** (deps: SH68 ✅, SH80 ✅) **Importing an exchange package teaches nothing and is not on the agent surface** — `POST /api/v2/import` answers `ResponseEntity.badRequest().build()`, so a `ShExchangeException` that knows exactly which field or entry was wrong arrives as a bodiless `400`. Bringing the 2018 `bootstrap-site` package forward meant inferring seven schema renames from the Java records instead of reading them off a response. It is also console-only — multipart plus CSRF, no `batch` op, no MCP tool — so an agent can build a site from scratch but cannot import one. → §XV.7
 - 💭 **SH190** (deps: SH103 ✅) **Diagnostics name a failure but never carry the evidence** — an `api-error` finding reports the exception message and then advises "the instance log has the stack trace (the body never will)", which is an accurate description of a protocol that stops one step short: the agent is told to go somewhere it has no access to. The window already exists per SH103; what it needs is the frame that failed, captured where the incident is recorded. Cheaper and more honest than a log-tailing tool, which would hand out everything for a question that is always about one request. → §XV.8
 - 📋 **SH191** (deps: SH183, SH86 ✅) **A template is code and must project as files** — `bodyFieldFor` treats only an `HTML Editor` field as a document body, so a layout's `Ace Editor - HTML` and a region's `Ace Editor - Javascript` collapse into `fields:` as escaped JSON one-liners inside YAML frontmatter: no line numbers, no highlighting, nothing `Grep` can reach, and every tweak is a re-escape. Law P4 fails on the one artifact an iterative loop edits constantly. Needs sidecar files (`<post>.html`, `<post>.js`) beside the `.md`, round-tripping losslessly. → §XV.9
 - 📋 **SH192** (deps: SH183, SH99 ✅) **A template must fail at write time, not at view time** — nothing validates a layout or region, so an unclosed block, an unknown helper or a reference to a field the post-type does not declare is accepted by `post.upsert` and discovered as a blank page. The iteration cost is a guess per save. Needs a `template-invalid` lint rule and a refusal on write, reported the way FSP's `regionError` already did in 2019: file, line, column and a caret under the offending character. → §XV.10
 - 📋 **SH193** (deps: SH183, SH154 ✅) **The blast radius of a region change is uncomputable** — `sh-region="NAME"` lives inside an HTML string, so nothing can answer "which layouts slot this region, and which pages use those layouts". Editing a shared region is therefore unbounded and unverifiable, which is the difference between a CMS region and a component in one app. Extract slot references into the reference graph the way SH154 did for `Multi Select` post URLs, so `find`, `verify` and `changes` all agree on who is affected. → §XV.11
-- 📋 **SH194** (deps: SH187, SH102) **Appearance needs a before/after and a one-call loop** — a snapshot answers "what does this look like"; iteration asks "what did my change do", which is a diff. SH102 is the instrument and is still an idea scoped for the human handoff. The other half is round trips: today a layout edit is upsert, then render, then look. A write that can return the rendered result of what it just changed turns three calls into one. → §XV.12
+- 📋 **SH194** (deps: SH187, SH102 ✅) **Appearance needs a before/after and a one-call loop** — a snapshot answers "what does this look like"; iteration asks "what did my change do", which is a diff. SH102 shipped that diff, still scoped for the human handoff. The other half is round trips: today a layout edit is upsert, then render, then look. A write that can return the rendered result of what it just changed turns three calls into one. → §XV.12
 - 💭 **SH195** (deps: SH183) **Most layout changes are tokens, not structure** — `PT-THEME` carries `CSS` and `JAVASCRIPT` as opaque blobs, so "tighten the headings" or "change the accent colour" is a stylesheet rewrite with nothing to verify and nothing to diff. A declared token vocabulary (spacing, type scale, colour roles) makes the common change a field edit an agent can make safely and a human can review, and leaves raw CSS as the escape hatch rather than the interface. → §XV.13
 - 💭 **SH186** (deps: SH183, SH166) **An MCP-only agent cannot produce a visible site** — the server never writes a project file (correct — P7), and only the CLI scaffolds one, so a client with no filesystem ends with content nobody can look at. SH183 is the answer if it lands: the site is visible without a project at all, and SH166's unsubstituted-files problem stops being on the critical path. → §XV.5
 

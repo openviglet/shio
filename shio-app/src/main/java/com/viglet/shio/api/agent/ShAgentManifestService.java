@@ -188,9 +188,12 @@ public class ShAgentManifestService {
         features.put("publishGate", true);
         features.put("confirmTokens", true);
         features.put("reviewQueue", true);
-        // SH102's visual snapshot. Deliberately last in the block: a PNG is for the
-        // human handoff, and reporting it here as available would invite an agent to
-        // spend three orders of magnitude more tokens than the digest costs.
+        // SH102's visual snapshot. It ships — as `shio snapshot`, with no endpoint and no MCP
+        // tool — and it is still reported `false` here, which is the only honest answer: this
+        // flag advertises what *this surface* can do, and an agent that read `true` would go
+        // looking for the call that produces a PNG and find none. Saying `true` to mean "a
+        // human has a command for it" would cost three orders of magnitude more tokens than
+        // the digest the agent should be using, for a capability the protocol does not offer.
         features.put("visualSnapshot", false);
         return features;
     }

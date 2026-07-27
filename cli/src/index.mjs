@@ -42,6 +42,9 @@ const BOOLEANS = [
   // SH104: `--mark` records the position a handoff covered; `--no-verify` drops the open
   // questions when the caller only wants the change list.
   "mark", "no-verify",
+  // SH102: a visual change is not a failure, so the gate is opt-in — and `--accept` moves the
+  // baseline deliberately rather than as a side effect of looking.
+  "fail-on-change", "viewport-only",
 ];
 
 // Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would
@@ -61,6 +64,7 @@ const COMMANDS = {
   report: () => import("./commands/report.mjs"),
   remember: () => import("./commands/remember.mjs"),
   digest: () => import("./commands/digest.mjs"),
+  snapshot: () => import("./commands/snapshot.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),
   build: () => import("./commands/build.mjs"),
@@ -89,6 +93,7 @@ Commands:
   report         The human handoff: what changed, preview links, open questions
   remember       Write down a decision the next session should not re-derive
   digest <page>  Structural digest of one page: outline, landmarks, links, images
+  snapshot <page> PNG of a page + whether it looks different (needs playwright)
   pull           Pull post-types into ./shio/post-types/*.json (--content for pages)
   push           Apply local post-types back to Shio (--dry-run, --prune, --content)
   build          Compile local DSL/JSON post-types to canonical JSON (--out)
@@ -184,6 +189,15 @@ The handoff (shio report):
                        "content" = where the last content pull reached. Omit for a window
   --mark               Record this range as reviewed, so the next --since last resumes.
                        Refused when the report could not cover its whole range
+  shio snapshot <page> A PNG for a human to look at, and whether it changed (SH102).
+                       Baselines live in shio/snapshots/; the displaced one is kept as
+                       <slug>.prev.png. A change exits 0 — a page looking different is
+                       usually the change you just made — use --fail-on-change for a gate.
+                       Optional deps: playwright (required), pixelmatch + pngjs for a
+                       per-pixel diff; without them it answers changed/unchanged by bytes.
+  --accept             Replace the baseline without reporting a change
+  --fail-on-change     Exit 1 when the page looks different
+  --width / --height   Viewport (default 1280x800)  --viewport-only  Skip the full page
   --site <name>        One site only
   --out <file>         Write the Markdown instead of printing it
   --title <text>       Heading for the document

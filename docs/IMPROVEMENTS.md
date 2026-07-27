@@ -522,24 +522,24 @@ Two design points worth settling before the code:
   action per subject. That is the same "one dimension per column" argument that kept
   `agent_session_id` separate from `owner` (§XII).
 
-## IX. Perception & verification loop (Block K)
+## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
-> The agent cannot see. Two of the three human round trips in a typical build exist
-> only for that reason, which makes this the cheapest large win after Block H —
-> a human cycle is the most expensive unit in the system by orders of magnitude.
+> The agent cannot see. Two of the three human round trips in a typical build existed only
+> for that reason, which made this the cheapest large win after Block H — a human cycle is
+> the most expensive unit in the system by orders of magnitude.
 >
-> **The loop itself shipped** — content lint (SH99), route checks (SH100), render digest
-> (SH101), diagnostics (SH103), and the follow-ups that made the report usable in anger
-> (SH141's delivery-side proof, SH142's accepted findings, SH143's scoping, SH144's durable
-> record, SH154, SH169), and so has the human-facing artifact the loop hands over (SH104); see
-> [CHANGELOG.md](CHANGELOG.md) Block K. **Only SH102 is left below** — the optional pixels,
-> which were always the last thing this block would want.
-
-### IX.4 Visual snapshot + diff (SH102, optional)
-
-Playwright PNG + diff against the previous snapshot — deliberately framed as an
-artifact **for the human handoff** (§IX.6) rather than an agent input, so nobody
-mistakes it for the primary verification path.
+> ✅ **Shipped whole**: SH99–SH104, SH141–SH144, SH154, SH169. The implementation reports
+> live in [CHANGELOG.md](CHANGELOG.md) Block K; per the maintenance rules the design
+> subsections are gone rather than left behind as history `git log` already holds.
+>
+> **What the block established, and what later work should not relitigate:** `ok` is false
+> only for an *error*, because a gate that fails on what the CMS cannot prove is a gate
+> people bypass — and every mechanism the block added afterwards (SH141's delivery proof,
+> SH142's accepted findings, SH114-declared front-end routes) turns a warning into a fact or
+> an explicit decision instead of tightening the gate. Everything the agent reads is cheap and
+> textual; the one expensive artifact, SH102's PNG, is scoped for a human and stays off the
+> agent surface (`visualSnapshot` is still `false`, correctly — there is no call for it).
+> **§XV.4 (SH187)** is where that scoping is revisited for the other reader.
 
 ---
 
@@ -1456,9 +1456,12 @@ else. What no instrument reports is whether the page *looks* right — `visualSn
 enabled.
 
 So an agent asked to change how a page looks still has to hand the question to a human, which
-is the expensive unit Block K exists to remove. SH102 already proposes the right instrument —
-a snapshot and a diff — but scoped *"for the human handoff rather than for the agent"*, and
-that framing is what to revisit: visual autonomy needs the agent to be the reader. SH183 makes
+is the expensive unit Block K exists to remove. ✅ **SH102 has shipped and it is the right
+instrument** — `shio snapshot`: a PNG, a baseline and a diff — but it shipped scoped *"for the
+human handoff rather than for the agent"*, deliberately, and that framing is what this task
+revisits: visual autonomy needs the agent to be the reader, which means a call on the agent
+surface rather than a CLI command, and a payload a model can act on rather than an image file.
+SH183 makes
 it cheap instead of a new subsystem, because the renderer's own HTML is the artifact, produced
 in-process with no browser and no outbound fetch. Whether a raster image follows is then a
 smaller, separate question about what a hash of structure cannot catch — which is most of what
@@ -1634,9 +1637,10 @@ inbound-links idea gets its second use.
 #### XV.12 Appearance needs a before/after and a one-call loop (SH194)
 
 Two costs, both per iteration. **Feedback**: SH187 produces a snapshot, which answers "what does
-this look like"; a loop asks "what did my change do", and that is a diff. SH102 is the right
-instrument, still an idea, and still scoped *"for the human handoff rather than for the agent"* —
-the same misframing SH187 corrects. **Round trips**: a layout change today is `post.upsert`, then
+this look like"; a loop asks "what did my change do", and that is a diff. ✅ SH102 shipped that
+diff (`shio snapshot`, with a baseline and a `.prev.png`), and it is still scoped *"for the human
+handoff rather than for the agent"* — the framing SH187 corrects, not a missing capability.
+**Round trips**: a layout change today is `post.upsert`, then
 `/agent/render`, then a look. Three calls per tweak, and a tweak is the unit of this work. A write
 that can return the rendered digest of what it just changed collapses that, and it is the same
 idea SH157 identified for closing the tool-call gap — a write that returns its own verification.
