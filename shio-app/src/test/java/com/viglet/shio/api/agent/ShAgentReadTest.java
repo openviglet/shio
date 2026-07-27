@@ -201,6 +201,60 @@ class ShAgentReadTest {
 
         assertThat(found.count()).isEqualTo(1);
         assertThat(found.truncated()).isTrue();
+        // SH146 — a cut now says how to continue past it, which is what turns it from a dead
+        // end into a page. The projection depends on this being present, not on the cap.
+        assertThat(found.cursor()).isEqualTo(address("/alpha"));
+    }
+
+    @Test
+    void aCursorWalksThePagesToTheEndAndThenStops() {
+        ShAgentFound first = shAgentReadService.find(siteName, null, base, null, 1, false, null);
+        ShAgentFound second = shAgentReadService.find(siteName, null, base, null, 1, false,
+                first.cursor());
+
+        assertThat(second.results()).extracting(ShAgentFound.Row::address)
+                .containsExactly(address("/beta"));
+        // The last page is not truncated and offers no cursor: that absence is how the caller
+        // knows the walk finished, rather than having to ask for an empty page to find out.
+        assertThat(second.truncated()).isFalse();
+        assertThat(second.cursor()).isNull();
+    }
+
+    @Test
+    void aCompleteResultOffersNoCursorToFollow() {
+        ShAgentFound found = shAgentReadService.find(siteName, null, base, null, null, false, null);
+
+        assertThat(found.truncated()).isFalse();
+        assertThat(found.cursor()).isNull();
+    }
+
+    @Test
+    void aCursorThatIsNotAnAddressIsRefusedRatherThanCompared() {
+        // Lexicographic comparison against a row number or a timestamp *succeeds* and returns a
+        // plausible page, so interpreting one would skip content silently. SH88's rule.
+        assertThatThrownBy(() ->
+                shAgentReadService.find(siteName, null, base, null, null, false, "200"))
+                .isInstanceOf(ShAgentReadService.BadCursorException.class)
+                .hasMessageContaining("not a row number and not a timestamp");
+        assertThatThrownBy(() ->
+                shAgentReadService.find(siteName, null, base, null, null, false,
+                        "2026-07-27T10:00:00Z"))
+                .isInstanceOf(ShAgentReadService.BadCursorException.class);
+        // Blank is "start at the beginning", not a mistake — an empty query param is common.
+        assertThat(shAgentReadService.find(siteName, null, base, null, null, false, "  ").count())
+                .isEqualTo(2);
+    }
+
+    @Test
+    void pagingAndFiltersCompose() {
+        // The cursor narrows the same result set the filters produced, so a paged walk under a
+        // type or folder filter cannot wander outside it.
+        ShAgentFound page = shAgentReadService.find(siteName, postTypeName, base, null, 1, false,
+                address("/alpha"));
+
+        assertThat(page.results()).extracting(ShAgentFound.Row::address)
+                .containsExactly(address("/beta"));
+        assertThat(page.truncated()).isFalse();
     }
 
     @Test

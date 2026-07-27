@@ -257,7 +257,9 @@ public class ShAgentManifestService {
                         "console", "POST /api/v2/agent/blueprints/blog/apply"),
                 new ShAgentEndpoint("GET", "/agent/find",
                         "Find posts by site / type / folder subtree / text. Returns addresses "
-                                + "and titles, never bodies — read only what you pick.",
+                                + "and titles, never bodies — read only what you pick. A "
+                                + "truncated result carries a cursor: pass it as ?after= to "
+                                + "continue.",
                         "console", "GET /api/v2/agent/find?site=Blog&type=Article"),
                 new ShAgentEndpoint("GET", "/agent/read",
                         "Read posts by address (drafts preferred). Repeat ?address= for several, "

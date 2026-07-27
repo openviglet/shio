@@ -695,18 +695,6 @@ does not exist, and it must be idempotent by path so a second push does not uplo
 second copy. That is the same idempotency argument SH81's `post.upsert` settled for posts,
 applied to bytes.
 
-### X.7 Page `find` (SH146)
-
-The projection reads the post list through `find`, which caps at
-`shio.agent.read.max-limit` and has **no cursor**. A site past the cap therefore cannot be
-projected at all: pull refuses rather than writing a tree that omits posts, because the
-very next `push --prune` would read those omissions as deletions (the SH138 hazard, on the
-file side).
-
-Refusing is the right behaviour for a cap that exists; removing the cap is the fix. The
-cursor SH88 built for the change feed is the shape to reuse — keyset over a stable sort,
-never an offset, since content is being written while the walk runs.
-
 ### X.8 Digest-only merge base (SH148)
 
 The three-way merge needs a base, and the base currently keeps a full copy of every

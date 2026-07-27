@@ -54,7 +54,10 @@ public class ShFindTool implements ShMcpTool {
                 "folder", ShMcpTool.string(
                         "Folder path like /blog, or folder:<site>/<path>. Includes everything beneath it."),
                 "q", ShMcpTool.string("Full-text over title, summary and content."),
-                "limit", ShMcpTool.integer("Maximum rows (default 25).")),
+                "limit", ShMcpTool.integer("Maximum rows (default 25)."),
+                // Worth its schema (P3): without it an MCP-only client is back to the dead end
+                // SH146 removed — a result past the cap it can see is truncated and cannot finish.
+                "after", ShMcpTool.string("Cursor from a truncated result, to get the next page.")),
                 List.of());
     }
 
@@ -66,6 +69,7 @@ public class ShFindTool implements ShMcpTool {
                 ShMcpArgs.string(arguments, "folder"),
                 ShMcpArgs.string(arguments, "q"),
                 ShMcpArgs.integer(arguments, "limit"),
-                false));
+                false,
+                ShMcpArgs.string(arguments, "after")));
     }
 }

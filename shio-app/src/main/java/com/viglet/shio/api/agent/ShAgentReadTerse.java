@@ -39,9 +39,13 @@ public final class ShAgentReadTerse {
 
     /** A {@code find} result: one {@code row} line per match. */
     public static String found(ShAgentFound found) {
+        // The cursor goes on the *header*, the same call SH88's feed made: it is the one value
+        // the caller has to carry forward, and after a hundred rows it would end the cheapest
+        // read on the surface with a search for it.
         StringBuilder out = new StringBuilder(ShTerse.line("found")
                 .word(found.count())
                 .flag("truncated", found.truncated())
+                .attr("cursor", found.cursor())
                 .build());
         for (ShAgentFound.Row row : found.results()) {
             out.append(ShTerse.line("row")

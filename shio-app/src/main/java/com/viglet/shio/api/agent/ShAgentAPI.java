@@ -223,6 +223,8 @@ public class ShAgentAPI {
      * @param q      full-text over title, summary and content
      * @param limit  row cap
      * @param ids    include object ids (SH121 default: off)
+     * @param after  the previous page's {@code cursor} — how a result past the cap is walked
+     *               to the end instead of refused (SH146)
      * @param format {@code json} (default) or {@code terse}
      */
     @GetMapping("/find")
@@ -234,9 +236,10 @@ public class ShAgentAPI {
             @RequestParam(name = "q", required = false) String q,
             @RequestParam(name = "limit", required = false) Integer limit,
             @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids,
+            @RequestParam(name = "after", required = false) String after,
             @RequestParam(name = "format", required = false) String format) {
 
-        ShAgentFound found = shAgentReadService.find(site, type, folder, q, limit, ids);
+        ShAgentFound found = shAgentReadService.find(site, type, folder, q, limit, ids, after);
         return isTerse(format)
                 ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
                         .body(ShAgentReadTerse.found(found))

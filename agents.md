@@ -256,6 +256,18 @@ the CDA + console services (law P10) and holds no business logic of its own.
   with no friendly URL is addressed **`id:`** (SH172) — the fallback lives in
   `ShAddressResolver.addressOf`, so `find`, `changes` and the review queue cannot disagree about
   it, and the envelope's `notes` say the address is a fallback rather than a route.
+  **A cut is a page, not a dead end (SH146):** a `truncated` response carries a `cursor` — the
+  last address it returned — and `?after=<cursor>` continues the walk. **Keyset, never an
+  offset**, because content is written while the walk runs and a post created ahead of an offset
+  shifts every later page by one, dropping a row from a projection silently. The cursor is the
+  address because the result is *already* sorted by address and an address is unique, so paging
+  costs no second sort key. Three rules: the cursor is **absent on the last page** (that absence
+  is how a caller knows the walk finished, instead of asking for an empty page); an `after` that
+  is not a `post:`/`id:` address is a teaching **400**, since lexicographic comparison against a
+  row number or a timestamp *succeeds* and returns a plausible page; and `truncated` **with no
+  cursor** stays meaningful — it is the pre-SH146 dead end, which is why `shio pull --content`
+  refuses on that and pages on the other. The client side is `agent-client.mjs`'
+  **`findAll`**, which also stops on a cursor that did not advance rather than paging forever.
 - `GET /agent/read?address=…&fields=…` — post content, DRAFT-preferred, projected. With **several**
   addresses a row that cannot resolve carries its own SH80 `error` and the rest still come back
   (SH171); the **single**-address form still 404s. The read path is
@@ -550,7 +562,11 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   the post would expose it to `--prune`. `--check` is the drift guard.
 - **Two refusals to keep:** a truncated `find` result makes the projection partial, so pull
   refuses (`--allow-partial` marks the snapshot, and `push --prune` then refuses too), and
-  `push --content` over an empty directory is an error, not an empty document.
+  `push --content` over an empty directory is an error, not an empty document. Since **SH146**
+  the first one fires far less often — the projection *pages* `find` to the end, so `limit` is
+  the page size rather than a ceiling on how large a site can be — but it is unchanged and
+  still strict: an instance that reports a short result and offers no cursor cannot be walked,
+  and writing that tree is what a later `--prune` would read as deletions.
 - Not projected yet: **assets** (SH145) and **empty folders** (SH149); a rename still
   pushes as delete + create rather than `post.move` (SH150).
 

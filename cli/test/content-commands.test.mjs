@@ -93,16 +93,25 @@ function sink() {
  * A scripted instance: `find`, `read`, `post-type`, `plan`/`apply` and `changes`.
  * `remote` is a map of address → agent doc.
  */
-function server({ remote = {}, truncated = false, changed = 2 } = {}) {
+function server({ remote = {}, truncated = false, changed = 2, pageSize = 0 } = {}) {
   const calls = [];
   const fetchImpl = async (url, init = {}) => {
     const target = String(url);
     calls.push({ url: target, init, body: init.body ? JSON.parse(init.body) : null });
     if (target.includes("/agent/find")) {
+      // SH146 — the real endpoint sorts by address and pages on `after`, so the fake does
+      // too: `pageSize` makes it hand out cursors, `truncated` (with no cursor) is the
+      // pre-SH146 dead end the projection must still refuse.
+      const after = new URL(target).searchParams.get("after");
+      const all = Object.keys(remote).sort();
+      const rest = after ? all.filter((address) => address > after) : all;
+      const page = pageSize ? rest.slice(0, pageSize) : rest;
+      const more = page.length < rest.length;
       return json({
-        count: Object.keys(remote).length,
-        truncated,
-        results: Object.keys(remote).map((address) => ({ address, type: remote[address].type })),
+        count: page.length,
+        truncated: truncated || more,
+        cursor: more ? page[page.length - 1] : undefined,
+        results: page.map((address) => ({ address, type: remote[address].type })),
       });
     }
     if (target.includes("/agent/read")) {
@@ -274,7 +283,9 @@ test("a post deleted on the server deletes its file when nobody touched it", asy
 
 test("a truncated post list refuses to write a partial projection", async () => {
   // The dangerous case: a partial projection that a later `push --prune` reads as complete
-  // would delete every post it never saw (SH138's rule).
+  // would delete every post it never saw (SH138's rule). Since SH146 this is specifically an
+  // instance that says "short" and offers no cursor — the projection cannot finish the walk,
+  // so it refuses rather than writing holes.
   const ctx = ctxWith(server({ remote: { "post:Blog/blog/hello": REMOTE_DOC }, truncated: true }));
 
   await assert.rejects(() => contentPull.run({}, [], ctx), /truncated post list/);
@@ -282,6 +293,57 @@ test("a truncated post list refuses to write a partial projection", async () => 
   const allowed = ctxWith(server({ remote: { "post:Blog/blog/hello": REMOTE_DOC }, truncated: true }));
   await contentPull.run({ allowPartial: true }, [], allowed);
   assert.match(allowed.fs.files.get(BASE_PATH), /"partial": true/);
+});
+
+test("a post list past the page size is walked to the end, not refused (SH146)", async () => {
+  // Three posts, one per page: the projection is complete and the snapshot is *not* partial,
+  // which is the whole point — before SH146 this site could not be projected at all.
+  const remote = {};
+  for (const slug of ["alpha", "beta", "gamma"]) {
+    remote[`post:Blog/blog/${slug}`] = { ...REMOTE_DOC, address: `post:Blog/blog/${slug}` };
+  }
+  const fetchImpl = server({ remote, pageSize: 1 });
+  const ctx = ctxWith(fetchImpl);
+
+  await contentPull.run({}, [], ctx);
+
+  for (const slug of ["alpha", "beta", "gamma"]) {
+    assert.ok(ctx.fs.files.has(`/repo/shio/content/Blog/blog/${slug}.md`), `${slug} projected`);
+  }
+  assert.doesNotMatch(ctx.fs.files.get(BASE_PATH), /"partial": true/);
+  // Three find calls for three pages — the last one reports itself complete, so there is no
+  // extra empty read to discover that. Each after the first carries the previous page's
+  // cursor: a keyset, never an offset.
+  const finds = fetchImpl.calls.filter((call) => call.url.includes("/agent/find"));
+  assert.equal(finds.length, 3);
+  assert.match(finds[1].url, /after=post%3ABlog%2Fblog%2Falpha/);
+  assert.match(finds[2].url, /after=post%3ABlog%2Fblog%2Fbeta/);
+});
+
+test("a cursor that does not advance is a stall, not an endless walk (SH146)", async () => {
+  // A server that repeats a cursor would page forever over the same rows. The client stops and
+  // reports the result short, which routes into the same refusal a real cut gets.
+  let calls = 0;
+  const fetchImpl = async (url) => {
+    const target = String(url);
+    if (target.includes("/agent/find")) {
+      calls += 1;
+      return json({
+        count: 1,
+        truncated: true,
+        cursor: "post:Blog/blog/stuck",
+        results: [{ address: "post:Blog/blog/stuck", type: "Article" }],
+      });
+    }
+    if (target.includes("/agent/read")) return json([]);
+    if (target.includes("/api/v2/post-type")) return json(DEFS);
+    return json({});
+  };
+  fetchImpl.calls = [];
+  const ctx = ctxWith(fetchImpl);
+
+  await assert.rejects(() => contentPull.run({}, [], ctx), /truncated post list/);
+  assert.equal(calls, 2, "one page, then the repeat that ends the walk");
 });
 
 // --- push ---

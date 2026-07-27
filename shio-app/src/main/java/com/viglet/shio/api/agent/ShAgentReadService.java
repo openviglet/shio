@@ -111,10 +111,29 @@ public class ShAgentReadService {
      */
     public ShAgentFound find(String site, String type, String folder, String q,
                              Integer limit, boolean ids) {
+        return find(site, type, folder, q, limit, ids, null);
+    }
+
+    /**
+     * Finds posts, returning addresses and titles — one page of them (SH146).
+     *
+     * <p><b>Keyset, never an offset.</b> The walk resumes from the last address returned
+     * rather than from a row number, because content is being written while it runs: a post
+     * created ahead of an offset shifts every later page by one, which drops a row from a
+     * projection quietly — the exact failure the cap was refusing to risk. An address is
+     * unique (a friendly URL is site-unique, an {@code id:} fallback is a UUID) and it is
+     * already the sort key, so it is the keyset for free.</p>
+     *
+     * @param after the previous page's {@code cursor}; rows sorting at or before it are
+     *              skipped. {@code null} starts the walk
+     */
+    public ShAgentFound find(String site, String type, String folder, String q,
+                             Integer limit, boolean ids, String after) {
         List<ShSite> sites = siteAccess.readable(site);
         int cap = limit == null || limit <= 0
                 ? properties.getRead().getDefaultLimit()
                 : Math.min(limit, properties.getRead().getMaxLimit());
+        String from = cursorFrom(after);
 
         List<ShPostUnified> matches = q != null && !q.isBlank()
                 ? searchText(sites, q)
@@ -125,12 +144,40 @@ public class ShAgentReadService {
                 .filter(post -> folderIds.isEmpty() || inScope(post, folderIds))
                 .filter(post -> type == null || type.isBlank() || matchesType(post, type))
                 .map(post -> row(post, ids))
+                .filter(row -> from == null || row.address().compareTo(from) > 0)
                 .sorted(Comparator.comparing(ShAgentFound.Row::address))
                 .toList();
 
         boolean truncated = rows.size() > cap;
         List<ShAgentFound.Row> capped = truncated ? rows.subList(0, cap) : rows;
-        return new ShAgentFound(capped.size(), truncated, List.copyOf(capped), notesFor(capped));
+        // The cursor is offered only when there is something past this page. On the last one
+        // it is absent, which is how a caller knows the walk finished rather than having to
+        // ask for an empty page to find out.
+        String cursor = truncated && !capped.isEmpty()
+                ? capped.get(capped.size() - 1).address()
+                : null;
+        return new ShAgentFound(capped.size(), truncated, List.copyOf(capped),
+                notesFor(capped), cursor);
+    }
+
+    /**
+     * Validates an {@code after} cursor, or {@code null} for "start at the beginning".
+     *
+     * <p>A cursor is an address, and the only two an unpaged row can carry are {@code post:}
+     * and {@code id:} (SH172). Anything else is rejected rather than compared: lexicographic
+     * comparison against a garbage string succeeds and returns a plausible page, so an
+     * interpretation here would silently skip content — SH88's rule about a bare timestamp
+     * cursor, one endpoint over.</p>
+     */
+    private static String cursorFrom(String after) {
+        if (after == null || after.isBlank()) {
+            return null;
+        }
+        String trimmed = after.trim();
+        if (!trimmed.startsWith("post:") && !trimmed.startsWith("id:")) {
+            throw new BadCursorException(trimmed);
+        }
+        return trimmed;
     }
 
     /**
@@ -413,6 +460,20 @@ public class ShAgentReadService {
                     .withFix("Find an address with GET /api/v2/agent/find, or build one from a "
                             + "context row: post:<site>/<friendly-url>.")
                     .withExample("?address=post:Blog/blog/hello-world"));
+        }
+    }
+
+    /** A 400: {@code after} is not a cursor this endpoint ever issued (SH146). */
+    public static class BadCursorException extends ShTeachingException {
+
+        public BadCursorException(String sent) {
+            super(ShProblem.badRequest("bad-cursor", "'" + sent + "' is not a find cursor")
+                    .withDetail("`after` continues a walk from the previous page's `cursor`, which "
+                            + "is the last address that page returned. It is not a row number and "
+                            + "not a timestamp — find is ordered by address, so the cursor is one.")
+                    .withFix("Pass the `cursor` from the previous response verbatim, or omit "
+                            + "`after` to start from the beginning.")
+                    .withExample("?after=post:Blog/blog/hello-world"));
         }
     }
 

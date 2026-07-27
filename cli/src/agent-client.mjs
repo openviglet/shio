@@ -219,11 +219,47 @@ export class ShioAgentClient {
   /**
    * GET /api/v2/agent/find (SH83) — post addresses, never bodies.
    *
-   * @param {{ site?: string, type?: string, folder?: string, q?: string, limit?: number }} [query]
-   * @returns {Promise<{count: number, truncated: boolean, results: object[]}>}
+   * `after` is SH146's page cursor: a truncated response carries `cursor`, and passing it
+   * back continues the walk from the last address it returned.
+   *
+   * @param {{ site?: string, type?: string, folder?: string, q?: string, limit?: number,
+   *           after?: string }} [query]
+   * @returns {Promise<{count: number, truncated: boolean, results: object[], cursor?: string}>}
    */
   async find(query = {}) {
     return this.#get("find", query);
+  }
+
+  /**
+   * Every match, walked to the end (SH146).
+   *
+   * The projection needs *all* of them or none: a short list is not a smaller projection, it
+   * is one with holes, and `push --content --prune` reads a hole as "delete this". So this
+   * pages while the server offers a cursor, and reports `truncated` only when it was told the
+   * result is short and given no way to continue — an instance older than SH146. Bounded by
+   * `maxPages` so a server that returned the same cursor forever is a stall this notices
+   * rather than an infinite loop.
+   *
+   * @returns {Promise<{results: object[], truncated: boolean, pages: number}>}
+   */
+  async findAll(query = {}, { maxPages = 200 } = {}) {
+    const results = [];
+    let after = query.after;
+    let pages = 0;
+
+    for (;;) {
+      const page = await this.find(after ? { ...query, after } : query);
+      pages += 1;
+      results.push(...(page.results ?? []));
+      // Not truncated: this was the last page, whatever the cursor says.
+      if (!page.truncated) return { results, truncated: false, pages };
+      // Truncated with no cursor is the pre-SH146 dead end, and the caller must hear about it.
+      if (!page.cursor) return { results, truncated: true, pages };
+      // A cursor that did not advance would page forever over the same rows.
+      if (page.cursor === after) return { results, truncated: true, pages };
+      after = page.cursor;
+      if (pages >= maxPages) return { results, truncated: true, pages };
+    }
   }
 
   /**

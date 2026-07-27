@@ -177,12 +177,17 @@ export async function writeRemoteSidecar(ctx, doc, bodyField, { dir = CONTENT_DI
  *
  * <h3>Why a truncated read is an error, not a warning</h3>
  *
- * `find` caps its result set (`shio.agent.read.max-limit`) and has no cursor yet, so a
- * large site can come back short. A short read is not a smaller projection — it is a
- * projection that omits posts, and the very next `push --content --prune` would read
- * those omissions as "delete these". A partial read therefore refuses to proceed unless
- * the caller says `--allow-partial`, and the snapshot it produces stays marked partial so
- * a later prune refuses too. Same rule as SH138: never let a cut read as complete.
+ * A short read is not a smaller projection — it is a projection that omits posts, and the
+ * very next `push --content --prune` would read those omissions as "delete these". A partial
+ * read therefore refuses to proceed unless the caller says `--allow-partial`, and the
+ * snapshot it produces stays marked partial so a later prune refuses too. Same rule as
+ * SH138: never let a cut read as complete.
+ *
+ * Since SH146 the cap is no longer a dead end: `find` issues a cursor and `findAll` walks it
+ * to the end, so `truncated` here now means the *server* could not offer one — an instance
+ * older than SH146, where a large site genuinely cannot be projected. The refusal stays
+ * exactly as strict, because the property it protects has not changed; what changed is how
+ * rarely it fires.
  *
  * <h3>Scope, and why it is not the whole instance</h3>
  *
@@ -206,7 +211,9 @@ export async function readRemote(client, { site = null, sites = [], limit = 200,
   let count = 0;
 
   for (const scope of scopes) {
-    const found = await client.find({ site: scope, limit });
+    // SH146 — every page, not the first one. `limit` is now the page size rather than a
+    // ceiling on the projection: a site with 900 posts is five reads, not a refusal.
+    const found = await client.findAll({ site: scope, limit });
     truncated = truncated || Boolean(found.truncated);
     const addresses = (found.results ?? []).map((row) => row.address).filter(Boolean);
     count += addresses.length;

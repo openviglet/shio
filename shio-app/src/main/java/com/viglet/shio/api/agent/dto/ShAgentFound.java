@@ -22,19 +22,36 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * want. Find narrows, read fetches — and read projects (SH123). A row here is a
  * decision aid, which is why it carries the title and nothing else quotable.</p>
  *
+ * <p><b>A page is not a cut (SH146).</b> {@code truncated} says this response does not hold
+ * everything that matched; {@code cursor} says what to pass as {@code after} to get the rest.
+ * Present together they describe a <em>page</em> of a walk that can finish. {@code truncated}
+ * without a {@code cursor} is the older, honest dead end — a result the caller cannot continue
+ * past — and a caller that projects content to disk must treat the two differently, because
+ * "there is more" and "you will never see the rest" have opposite safe responses: keep walking,
+ * versus refuse to write a tree whose gaps the next {@code --prune} would read as deletions.</p>
+ *
  * @param count     rows returned (not rows that exist — see {@code truncated})
- * @param truncated the limit cut the result set; narrow the query or raise {@code limit}
+ * @param truncated the limit cut the result set; page with {@code after=<cursor>}, or raise
+ *                  {@code limit} / narrow the query
  * @param results   the matches, ordered by address so two identical queries agree (P5)
+ * @param cursor    the last row's address, to pass back as {@code after}; absent when this
+ *                  response is the whole result, because there is then nothing to continue
  *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
 @JsonInclude(Include.NON_NULL)
-public record ShAgentFound(int count, boolean truncated, List<Row> results, List<String> notes) {
+public record ShAgentFound(int count, boolean truncated, List<Row> results, List<String> notes,
+                           String cursor) {
 
-    /** The three-field form: nothing to note, which is the common case. */
+    /** The three-field form: nothing to note, nothing to continue. */
     public ShAgentFound(int count, boolean truncated, List<Row> results) {
-        this(count, truncated, results, null);
+        this(count, truncated, results, null, null);
+    }
+
+    /** The four-field form: notes, but a complete result. */
+    public ShAgentFound(int count, boolean truncated, List<Row> results, List<String> notes) {
+        this(count, truncated, results, notes, null);
     }
 
     /**

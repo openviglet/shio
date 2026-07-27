@@ -201,7 +201,9 @@
 > *reported*, never written as `<<<<<<<` markers: a marker in a field value is content,
 > and the next push would send it to the server and the next publish would put it on the
 > site. And a pull refuses to write a projection built from a truncated post list rather
-> than let a later `--prune` read the gaps as deletions (**SH146** removes the cap).
+> than let a later `--prune` read the gaps as deletions — ✅ **SH146** made that a *page*
+> instead of a dead end, so the refusal now only fires against an instance that cannot
+> offer a cursor at all.
 >
 > **What building it opened.** The projection made three gaps conspicuous: a file rename
 > pushes as delete-plus-create instead of SH134's `post.move`, which loses the post's id
@@ -212,7 +214,6 @@
 > window, it does not close it (**SH147**).
 
 - 📋 **SH145** (deps: SH86 ✅, SH38 ✅) **Project assets too** — `shio/assets/` with the bytes, and a `File` field that reads as a path rather than a UUID. Today a content tree cannot be moved to another instance or reviewed in a diff without the ids resolving to nothing, which is most of what "content as files" promises. → §X.6
-- 📋 **SH146** (deps: SH83 ✅, SH88 ✅) **Page `find`** — the projection reads the post list through `find`, which caps at `shio.agent.read.max-limit` and has no cursor, so a site past the cap cannot be projected at all (pull refuses rather than silently omitting). The cursor SH88 built for changes is the shape to reuse. → §X.7
 - 📋 **SH147** (deps: SH88 ✅) **Commit-ordered change feed** — SH51 stamps the audit row inside the writer's transaction, so a slow commit can land an older timestamp behind a cursor that already passed it. The 1s lag narrows that window; only commit-ordered sequencing (an outbox, or a sequence assigned at commit) closes it, and a feed used for sync has to be exact. → §X.3
 - 💭 **SH148** (deps: SH89 ✅) **Digest-only merge base** — `shio/.shio/content-base.json` holds a full copy of every projected field. A per-field hash decides all three merge cases; only a genuine conflict needs values, and those can be re-read. Turns the snapshot from O(content) into O(fields). → §X.8
 - 📋 **SH149** (deps: SH87 ✅) **Folders as files** — a folder exists in the projection only because a post names it, so an empty section cannot be authored locally and a pull silently drops one. Needs a folder marker file (`_folder.md` or similar) that `push --content` declares directly. → §X.9
