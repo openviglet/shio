@@ -156,6 +156,7 @@
   "content.clonedSuccess": "Clonado com sucesso",
   "content.copiedSuccess": "Copiado com sucesso",
   "content.movedSuccess": "Movido com sucesso",
+  "content.moveError": "Não foi possível mover os itens selecionados",
   "content.cacheCleared": "Cache limpo",
   "content.deletedShort": "Excluído",
   "content.itemsDeleted_one": "{{count}} item excluído",

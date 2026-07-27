@@ -125,7 +125,13 @@ of hiding them, which is the read side of SH168.
 
 ### Object Operations
 - `PUT /api/v2/object/copyto/{destFolderId}` - Copy objects (body: `[id1, id2]`)
-- `PUT /api/v2/object/moveto/{destFolderId}` - Move objects (body: `[id1, id2]`)
+- `PUT /api/v2/object/moveto/{destFolderId}` — Move objects (body: `[id1, id2]`).
+  **A move relocates and changes nothing else (SH139):** it keeps the post's `furl`
+  (it used to re-slug it from the title, silently changing a published page's live
+  URL), assigns one only when there is none, and delegates the post branch to
+  `ShPostUnifiedWriteService#move` — the same writer `post.move` uses, so the console
+  and the agent cannot diverge on what a move means. A cross-site move onto an
+  occupied URL is a teaching **409**, never quietly uniquified.
 - Clone = copy to same folder
 
 ### Folders

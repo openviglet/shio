@@ -16,6 +16,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.ShObject;
@@ -48,16 +49,41 @@ public class ShObjectWriteService {
     private final ShObjectRepository shObjectRepository;
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
+    private final ShPostUnifiedWriteService shPostUnifiedWriteService;
 
     public ShObjectWriteService(ShObjectRepository shObjectRepository, ShFolderRepository shFolderRepository,
-                                ShPostUnifiedRepository shPostUnifiedRepository) {
+                                ShPostUnifiedRepository shPostUnifiedRepository,
+                                ShPostUnifiedWriteService shPostUnifiedWriteService) {
         this.shObjectRepository = shObjectRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
+        this.shPostUnifiedWriteService = shPostUnifiedWriteService;
     }
 
+    /**
+     * Relocates objects into {@code destId}.
+     *
+     * <h2>A move changes where something lives, and nothing else (SH139)</h2>
+     *
+     * <p>This used to re-slug every moved post's {@code furl} from its title, so
+     * dragging a published page between folders silently changed its live URL and
+     * threw away any hand-set one. SH134 spent its whole design budget on that
+     * question for the agent path; this is the path a human triggers by accident,
+     * and it was the one getting it wrong.</p>
+     *
+     * <p>The fix is not a deleted line but a delegation: the post branch now calls
+     * {@link ShPostUnifiedWriteService#move} — the code SH134 already got right —
+     * so the console and the agent move a post the same way. That also buys the
+     * things the fork was missing: both state rows move together (a published
+     * post's live URL keeps working), {@code modifiedDate}/{@code modifier} are
+     * stamped, and the move appears in the SH51 audit, which is what makes it
+     * visible to the SH88 change feed and the SH109 review queue.</p>
+     *
+     * <p>A URL is assigned only when the object has none — the one case where a
+     * move is not discarding a decision somebody made.</p>
+     */
     @Transactional
-    public List<ShObject> moveTo(String destId, List<String> ids) {
+    public List<ShObject> moveTo(String destId, List<String> ids, String actor) {
         ShObject dest = shObjectRepository.findById(destId).orElse(null);
         List<ShObject> moved = new ArrayList<>();
         if (dest == null) {
@@ -69,15 +95,47 @@ public class ShObjectWriteService {
                 reparent(folder, dest);
                 moved.add(shFolderRepository.save(folder));
             } else if (dest instanceof ShFolder destFolder) {
-                for (ShPostUnified row : shPostUnifiedRepository.findById(id)) {
-                    row.setShFolder(destFolder);
-                    row.setShSite(ShFolderSite.of(destFolder));
-                    row.setFurl(ShURLFormatter.format(safe(row.getTitle())));
-                    shPostUnifiedRepository.save(row);
-                }
+                movePost(id, destFolder, actor);
             }
         }
         return moved;
+    }
+
+    /**
+     * Moves one post's rows into {@code destFolder}, keeping its friendly URL.
+     *
+     * <p>Within a site the URL cannot collide — it is the one the post already
+     * held, and it was already unique there. Crossing a site boundary can, so it
+     * is checked and refused (SH139) rather than silently uniquified, which would
+     * be the old behaviour in a narrower case.</p>
+     */
+    private void movePost(String postId, ShFolder destFolder, String actor) {
+        List<ShPostUnified> rows = shPostUnifiedRepository.findById(postId);
+        if (rows.isEmpty()) {
+            return;
+        }
+        ShPostUnified any = rows.get(0);
+        String furl = any.getFurl();
+        boolean needsUrl = furl == null || furl.isBlank();
+        if (!needsUrl) {
+            requireUrlFree(postId, ShFolderSite.idOf(destFolder), furl);
+        }
+        shPostUnifiedWriteService.move(postId, destFolder,
+                needsUrl ? ShURLFormatter.format(safe(any.getTitle())) : null, actor);
+    }
+
+    /** Refuses a move whose destination site already has a different post at {@code furl}. */
+    private void requireUrlFree(String postId, String destSiteId, String furl) {
+        if (destSiteId == null) {
+            return;
+        }
+        for (ShPostState state : ALL_STATES) {
+            shPostUnifiedRepository.findByShSite_IdAndFurlAndState(destSiteId, furl, state)
+                    .filter(other -> !postId.equals(other.getId()))
+                    .ifPresent(other -> {
+                        throw new ShMoveUrlConflictException(furl, other.getTitle());
+                    });
+        }
     }
 
     @Transactional
@@ -98,6 +156,12 @@ public class ShObjectWriteService {
         return copies;
     }
 
+    /**
+     * Re-parents a folder. Shared by move and copy — and it does <em>not</em> set
+     * {@code furl}, because on a move that would discard a hand-set one for a slug
+     * of the name (SH139). A copy is a new folder and assigns its own; here the URL
+     * is only filled in when there is nothing to keep.
+     */
     private void reparent(ShFolder folder, ShObject dest) {
         if (dest instanceof ShFolder destFolder) {
             folder.setParentFolder(destFolder);
@@ -108,7 +172,9 @@ public class ShObjectWriteService {
             folder.setRootFolder((byte) 1);
             folder.setShSite(destSite);
         }
-        folder.setFurl(ShURLFormatter.format(safe(folder.getName())));
+        if (folder.getFurl() == null || folder.getFurl().isBlank()) {
+            folder.setFurl(ShURLFormatter.format(safe(folder.getName())));
+        }
     }
 
     private ShFolder copyFolder(ShFolder source, ShObject dest) {

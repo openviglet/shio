@@ -156,6 +156,7 @@
   "content.clonedSuccess": "Cloned successfully",
   "content.copiedSuccess": "Copied successfully",
   "content.movedSuccess": "Moved successfully",
+  "content.moveError": "Could not move the selected items",
   "content.cacheCleared": "Cache cleared",
   "content.deletedShort": "Deleted",
   "content.itemsDeleted_one": "{{count}} item deleted",

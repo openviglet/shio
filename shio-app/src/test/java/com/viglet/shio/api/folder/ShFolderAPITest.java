@@ -8,6 +8,7 @@
  */
 package com.viglet.shio.api.folder;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -252,6 +253,82 @@ class ShFolderAPITest {
                 .andExpect(jsonPath("$.posts[?(@.id == '" + postId + "')]").exists());
     }
 
+    /**
+     * SH139: a move relocates, and changes nothing else. The console path used to
+     * re-slug {@code furl} from the title on every move, so dragging a page between
+     * folders silently changed its live URL and discarded a hand-set one.
+     */
+    @Test
+    void stage08bMovePostKeepsHandSetUrl() throws Exception {
+        String postId = createPost(childFolderId, "Renamed Later");
+        setFurl(postId, "the-url-a-human-chose");
+
+        mockMvc.perform(put("/api/v2/object/moveto/" + rootFolderId)
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[\"" + postId + "\"]"))
+                .andExpect(status().isOk());
+
+        // Every state row moved together and every one kept the URL (SH134's rule,
+        // now shared by the console because it delegates to the same writer).
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> shPostUnifiedRepository.findById(postId)
+                .forEach(row -> {
+                    assertThat(row.getFurl())
+                            .isEqualTo("the-url-a-human-chose");
+                    assertThat(row.getShFolder().getId())
+                            .isEqualTo(rootFolderId);
+                }));
+    }
+
+    /** SH139: a folder move keeps its own {@code furl} for the same reason. */
+    @Test
+    void stage08cMoveFolderKeepsHandSetUrl() throws Exception {
+        String folderId = createFolderWithFurl("Guides", "hand-set-guides");
+
+        mockMvc.perform(put("/api/v2/object/moveto/" + rootFolderId)
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[\"" + folderId + "\"]"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v2/folder/" + folderId).principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.furl").value("hand-set-guides"));
+    }
+
+    /**
+     * SH139: keeping the URL makes a collision possible on the one move that crosses
+     * a site boundary. It is refused, not quietly uniquified — mirroring the agent
+     * path's {@code MoveTargetOccupiedException}.
+     */
+    @Test
+    void stage08dMoveIntoOccupiedUrlIsRefused() throws Exception {
+        String occupied = "contested-url";
+        String sitting = createPost(rootFolderId, "Sitting Post");
+        setFurl(sitting, occupied);
+
+        String otherSiteRootId = createSiteWithRoot("ut-folder-site-b-");
+        String incoming = createPost(otherSiteRootId, "Incoming Post");
+        setFurl(incoming, occupied);
+
+        mockMvc.perform(put("/api/v2/object/moveto/" + rootFolderId)
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[\"" + incoming + "\"]"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.fix").exists());
+
+        // Refused means nothing moved — the post is still in its own site.
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> shPostUnifiedRepository.findById(incoming)
+                .forEach(row -> assertThat(row.getShFolder().getId())
+                        .isEqualTo(otherSiteRootId)));
+    }
+
     @Test
     void stage09ClearCacheIsOk() throws Exception {
         mockMvc.perform(get("/api/v2/object/" + childFolderId + "/clear-cache").principal(mockPrincipal))
@@ -266,6 +343,55 @@ class ShFolderAPITest {
 
         mockMvc.perform(get("/api/v2/folder/" + childFolderId).principal(mockPrincipal))
                 .andExpect(status().isNotFound());
+    }
+
+    /** Stands in for a hand-set URL: what a curator typed, or an import brought in. */
+    private void setFurl(String postId, String furl) {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> shPostUnifiedRepository.findById(postId)
+                .forEach(row -> {
+                    row.setFurl(furl);
+                    shPostUnifiedRepository.save(row);
+                }));
+    }
+
+    private String createFolderWithFurl(String name, String furl) {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        return tx.execute(status -> {
+            ShFolder parent = entityManager.find(ShFolder.class, rootFolderId);
+            ShFolder folder = new ShFolder();
+            folder.setName(name);
+            folder.setFurl(furl);
+            folder.setRootFolder((byte) 0);
+            folder.setParentFolder(parent);
+            folder.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            folder.setOwner("admin");
+            entityManager.persist(folder);
+            return folder.getId();
+        });
+    }
+
+    /** A second site, so the one move that can genuinely collide is reachable. */
+    private String createSiteWithRoot(String namePrefix) {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        return tx.execute(status -> {
+            ShSite site = new ShSite();
+            site.setName(namePrefix + UUID.randomUUID());
+            site.setDescription("Second site");
+            site.setUrl("http://other.test");
+            site.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            site.setOwner("admin");
+            entityManager.persist(site);
+
+            ShFolder root = new ShFolder();
+            root.setName("root");
+            root.setRootFolder((byte) 1);
+            root.setShSite(site);
+            root.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            root.setOwner("admin");
+            entityManager.persist(root);
+            return root.getId();
+        });
     }
 
     private String createPost(String folderId, String title) {

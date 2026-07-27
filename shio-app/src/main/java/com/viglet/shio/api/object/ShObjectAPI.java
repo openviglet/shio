@@ -8,6 +8,7 @@
  */
 package com.viglet.shio.api.object;
 
+import java.security.Principal;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -74,10 +75,16 @@ public class ShObjectAPI {
         return shObjectWriteService.copyTo(destId, ids);
     }
 
+    /**
+     * Relocates objects. The mover is threaded through because a move is now an
+     * audited content change rather than a silent re-parent (SH139).
+     */
     @PutMapping("/moveto/{destId}")
-    public List<ShObject> moveTo(@PathVariable String destId, @RequestBody List<String> ids) {
+    public List<ShObject> moveTo(@PathVariable String destId, @RequestBody List<String> ids,
+                                 Principal principal) {
         shContentAclService.requireWrite(destId);
-        return shObjectWriteService.moveTo(destId, ids);
+        return shObjectWriteService.moveTo(destId, ids,
+                principal != null ? principal.getName() : null);
     }
 
     /** The explicit ACL grants set directly on an object (SH54); inherited grants are not expanded. */

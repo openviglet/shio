@@ -335,7 +335,16 @@ export default function ObjectChildrenPage() {
       return
     }
     const endpoint = folderDialogMode === "copy" ? "copyto" : "moveto"
-    await axios.put(`/v2/object/${endpoint}/${folderDialogCurrentId}`, folderDialogIds)
+    try {
+      await axios.put(`/v2/object/${endpoint}/${folderDialogCurrentId}`, folderDialogIds)
+    } catch (error) {
+      // SH139: a move now refuses rather than re-slugging a colliding URL, so this
+      // dialog has a failure to show. It used to have none, and an unhandled
+      // rejection left the dialog open with no explanation.
+      const problem = axios.isAxiosError(error) ? error.response?.data : null
+      toast.error(problem?.detail || problem?.title || t("content.moveError"))
+      return
+    }
     toast.success(folderDialogMode === "copy" ? t("content.copiedSuccess") : t("content.movedSuccess"))
     setFolderDialogOpen(false)
     setSelectedItems(new Set())

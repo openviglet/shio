@@ -354,12 +354,14 @@ the same shape one level up and one hazard they created:
   unlike a shortened sitemap, it does not read as incomplete — it reads as a complete
   review of what is about to be destroyed. The choice is to exempt destructive rows from
   the budget or to refuse the apply; silently shortening the list is not on the table.
-- **The console move rewrites URLs (SH139).** `ShObjectWriteService#moveTo` resets a
-  post's `furl` to a slug of its title on every move. SH134 spent its design budget on
-  exactly this question for the agent path — a move must not change what it was not asked
-  to change — while the console path, the one a human triggers by dragging something,
-  silently changes a live URL and discards any hand-set one. Found by SH134; worth fixing
-  on its own terms rather than as part of it, because it is a visible behaviour change.
+
+**And one rule SH139 paid for, which binds SH137.** The console had its own copy of "move
+a post", and it was the copy that re-slugged a live URL from the title — the same verb,
+two implementations, and only the one an agent drives got the careful semantics. Fixing it
+meant deleting the fork, not the offending line. So a second mover is a design error
+regardless of which surface asks for it: **when the console and the agent perform the same
+content verb, one of them delegates.** `folder.move` should land as a single writer both
+call, or it will grow the same divergence a level up.
 
 ### VIII.8 The agent tools (SH83) — ✅ shipped
 
