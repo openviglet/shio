@@ -171,6 +171,38 @@ test("everything that makes the report incomplete is stated in the report", () =
   assert.equal(built.caveats.length, 4);
 });
 
+test("incidents on the feed become a 'what broke' section (SH144)", () => {
+  // The payoff of folding incidents into the change feed: the report already makes this call,
+  // so a stale front end shows up in the handoff without a second read.
+  const built = buildReport({
+    changes: {
+      ...CHANGES,
+      incidents: [
+        {
+          kind: "webhook",
+          subject: "https://front.example.com/revalidate",
+          message: "gave up after 3 attempt(s)",
+          fix: "Check the target is up.",
+          count: 4,
+          at: "2026-07-01T12:00:00Z",
+          first: "2026-07-01T10:00:00Z",
+        },
+      ],
+    },
+    context: CONTEXT,
+  });
+
+  assert.match(built.markdown, /## What broke/);
+  assert.match(built.markdown, /\*\*webhook\*\* `https:\/\/front\.example\.com\/revalidate`/);
+  assert.match(built.markdown, /×4/);
+  assert.match(built.markdown, /Check the target is up\./);
+});
+
+test("no incidents means no 'what broke' section at all", () => {
+  const built = buildReport({ changes: CHANGES, context: CONTEXT });
+  assert.doesNotMatch(built.markdown, /## What broke/);
+});
+
 test("a window says it is not a delta", () => {
   const built = buildReport({ changes: { ...CHANGES, window: true }, context: CONTEXT });
   assert.match(built.markdown, /most recent activity, not a delta/);

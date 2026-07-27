@@ -30,20 +30,25 @@ import org.springframework.stereotype.Component;
  * of those is a line in {@code store/logs}, which an agent cannot read and a human
  * reads only after being told something is wrong.</p>
  *
- * <h2>Why in memory, and why that is enough</h2>
+ * <h2>Durable now, and still in memory too (SH144)</h2>
  *
- * <p>A table would mean a migration, a retention policy and a write on the failure
- * path — where the code is, by definition, already having a bad time. What the agent
- * needs is "what has gone wrong since I started working", and the working session and
- * the process share a lifetime closely enough for a ring buffer to answer it. The cost
- * of the choice is stated in the payload rather than hidden: the diagnostics response
- * reports {@code since} (when this buffer started collecting) and {@code dropped}, so a
- * caller can tell "nothing failed" from "nothing is remembered". A durable feed, if it
- * is ever wanted, belongs with SH88's cursor, not here.</p>
+ * <p>SH103 shipped this as a ring buffer and stated the cost in the payload rather than
+ * hiding it: {@code since} (when the buffer started collecting) and {@code dropped}, so a
+ * caller could tell "nothing failed" from "nothing is remembered". SH144 makes the record
+ * durable — {@link ShAgentIncidentStore} — because "was anything failing while I was away"
+ * is a question about a period a buffer may no longer cover, and a restart answered it with
+ * silence.</p>
  *
- * <p>Repeats are folded rather than listed: one broken webhook target retried on every
- * publish would otherwise evict every other incident from the buffer, which is the one
- * way a diagnostics log can actively mislead. Identical incidents (same kind, same
+ * <p><b>The buffer did not go away, and that is deliberate.</b> The store writes in its own
+ * transaction and swallows anything the persistence layer raises (a diagnostics log that
+ * turned a webhook timeout into a 500 would be worse than none), so a write can fail. When it
+ * does, the in-memory copy is what is left, and the payload says which rows are only there.
+ * Keeping both also means the failure path never depends on a healthy database to leave a
+ * trace — the one condition under which incidents are most worth having.</p>
+ *
+ * <p>Repeats are folded rather than listed, in both halves: one broken webhook target retried
+ * on every publish would otherwise evict every other incident from the buffer, which is the
+ * one way a diagnostics log can actively mislead. Identical incidents (same kind, same
  * subject, same message) collapse to a single row with a {@code count} and a
  * {@code lastSeen}.</p>
  *
@@ -83,6 +88,27 @@ public class ShAgentIncidentLog {
     private final Deque<Incident> incidents = new ArrayDeque<>();
     private final Instant since = Instant.now();
     private long dropped;
+    private long unpersisted;
+
+    private final ShAgentIncidentStore store;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ShAgentIncidentLog(ShAgentIncidentStore store) {
+        this.store = store;
+    }
+
+    /**
+     * The buffer alone, with no durable half.
+     *
+     * <p>For a caller with no database in reach — a unit test of one of the four recorders,
+     * where standing up a repository would test the store rather than the recorder. It exists
+     * because the alternative was a nullable store field injected by Spring, and "the log
+     * works without persistence" is a property worth stating in a constructor rather than
+     * discovering from a null check.</p>
+     */
+    public ShAgentIncidentLog() {
+        this(null);
+    }
 
     /**
      * Records one failure. Never throws and never blocks on anything but this monitor —
@@ -94,12 +120,24 @@ public class ShAgentIncidentLog {
      * @param fix     what to do about it, or {@code null} when there is nothing generic
      *                to say
      */
-    public synchronized void record(Kind kind, String subject, String message, String fix) {
+    public void record(Kind kind, String subject, String message, String fix) {
         if (kind == null) {
             return;
         }
         String subjectText = trim(subject);
         String messageText = trim(message);
+        // Durable first, and outside this object's monitor: the store opens its own
+        // transaction (SH144), and holding a lock across a database round trip on the failure
+        // path is how a diagnostics log becomes the thing that makes an outage worse.
+        // `lost` and "there was nowhere to write it" are different facts: only the first one
+        // means the durable record is incomplete, and only it should be reported as such.
+        boolean lost = store != null && messageText != null
+                && !store.record(kind, subjectText, messageText, trim(fix), Instant.now());
+        remember(kind, subjectText, messageText, trim(fix), lost);
+    }
+
+    private synchronized void remember(Kind kind, String subjectText, String messageText,
+                                       String fixText, boolean lost) {
         for (Incident existing : incidents) {
             if (existing.matches(kind, subjectText, messageText)) {
                 existing.seenAgain();
@@ -110,7 +148,21 @@ public class ShAgentIncidentLog {
             incidents.removeFirst();
             dropped++;
         }
-        incidents.addLast(new Incident(kind, subjectText, messageText, trim(fix)));
+        if (lost) {
+            unpersisted++;
+        }
+        incidents.addLast(new Incident(kind, subjectText, messageText, fixText));
+    }
+
+    /**
+     * Incidents this process holds that could not be written down.
+     *
+     * <p>Reported so an empty durable feed on a healthy-looking instance cannot be mistaken
+     * for a quiet one: if the database was the thing that was failing, the record of the
+     * failure is exactly what could not be stored.</p>
+     */
+    public synchronized long unpersisted() {
+        return unpersisted;
     }
 
     /**
@@ -141,6 +193,10 @@ public class ShAgentIncidentLog {
     public synchronized void clear() {
         incidents.clear();
         dropped = 0;
+        unpersisted = 0;
+        if (store != null) {
+            store.clear();
+        }
     }
 
     private static String trim(String value) {

@@ -49,6 +49,9 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  *                when nothing changed, so a caller can hold a position on a quiet instance
  * @param more    entries remain after {@code cursor} right now; call again immediately
  * @param changes the entries themselves, oldest first
+ * @param incidents asynchronous failures in the same range (SH144) — omitted when there
+ *                are none, so a healthy instance pays nothing for the field. See the
+ *                section below on why they share this response and this cursor
  * @param notes   what this view holds back and why — the lag rule, the scope, and
  *                whether any row's object is gone. Stated rather than implied, for the
  *                same reason SH103's window states its bound
@@ -58,7 +61,53 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  */
 @JsonInclude(Include.NON_NULL)
 public record ShAgentChanges(int found, boolean window, String since, String cursor,
-                             boolean more, List<Change> changes, List<String> notes) {
+                             boolean more, List<Change> changes, List<Incident> incidents,
+                             List<String> notes) {
+
+    /** Before SH144 folded incidents in — kept so existing callers read unchanged. */
+    public ShAgentChanges(int found, boolean window, String since, String cursor, boolean more,
+                          List<Change> changes, List<String> notes) {
+        this(found, window, since, cursor, more, changes, null, notes);
+    }
+
+    /**
+     * One asynchronous failure, positioned in the same stream as the changes (SH144).
+     *
+     * <h2>Why this rides the change feed instead of having its own cursor</h2>
+     *
+     * <p>"Was anything failing while I was away" and "what changed while I was away" are one
+     * question asked twice, and the answer to both is a position in time. A second feed would
+     * mean a second cursor for a caller to hold, a second retention story and two chances to
+     * resume from the wrong place — so the incident stream is merged into this one, ordered by
+     * the same {@code (instant, id)} rule, and one {@code since=} advances past both.</p>
+     *
+     * <h2>Why it is not spelled as a {@code Change}</h2>
+     *
+     * <p>It would have been cheaper to emit incidents as changes with an invented
+     * {@code action}, and it would have been wrong: every existing caller branches on
+     * {@code action} and would silently treat a failure as a content transition — pulling it
+     * into a file tree, or counting it as work done. A separate array is a field a caller can
+     * ignore; a fake action is a field a caller can misread.</p>
+     *
+     * <p><b>A recurring incident is re-delivered.</b> Its position is its last occurrence, so a
+     * failure that is still happening moves ahead of any cursor that passed it and appears
+     * again with a higher {@code count}. That is the honest answer to "is this still broken",
+     * and the alternative — a stable position at first occurrence — would report an ongoing
+     * outage exactly once, ever.</p>
+     *
+     * @param kind    {@code api-error}, {@code webhook}, {@code transform}, {@code schedule}
+     * @param subject what it happened to — a URL, a post id, a request path
+     * @param message the cause, in its shortest identifying form
+     * @param fix     what to do about it, when there is anything generic to say (P6)
+     * @param count   occurrences folded into this row
+     * @param at      ISO-8601 most recent occurrence — also this row's feed position
+     * @param first   ISO-8601 first occurrence, so an old failure is distinguishable from a
+     *                new one that happens to have been seen just now
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Incident(String kind, String subject, String message, String fix, int count,
+                           String at, String first) {
+    }
 
     /**
      * One content transition.

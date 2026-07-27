@@ -80,6 +80,7 @@ export function buildReport({ changes, verify, context, title } = {}) {
     lines.push(...changeSection(entries));
   }
 
+  lines.push(...broke(changes));
   lines.push(...openQuestions(verify));
 
   if (caveats.length > 0) {
@@ -192,6 +193,29 @@ function changeSection(entries) {
       .join(" · ");
     if (detail) lines.push(`  ${detail}`);
     if (entry.why) lines.push(`  _no preview: ${entry.why}_`);
+  }
+  lines.push("");
+  return lines;
+}
+
+/**
+ * The asynchronous failures in the same range (SH144).
+ *
+ * <p>They arrive on the feed this report already reads, which is the payoff of folding them
+ * into it: a webhook the front end never received is precisely a handoff concern — the content
+ * is right and the site is stale — and before SH144 a reviewer would have had to know to make a
+ * second call. It gets its own section rather than joining the change list, because "what the
+ * agent did" and "what broke while it did" are different questions with different owners.
+ */
+function broke(changes) {
+  const incidents = changes?.incidents ?? [];
+  if (incidents.length === 0) return [];
+  const lines = ["## What broke", ""];
+  for (const incident of incidents) {
+    const repeats = incident.count > 1 ? ` (×${incident.count})` : "";
+    const subject = incident.subject ? ` \`${incident.subject}\`` : "";
+    lines.push(`- **${incident.kind}**${subject} — ${incident.message ?? ""}${repeats}`);
+    if (incident.fix) lines.push(`  ${incident.fix}`);
   }
   lines.push("");
   return lines;

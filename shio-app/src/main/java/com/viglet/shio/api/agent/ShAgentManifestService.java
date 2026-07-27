@@ -140,6 +140,11 @@ public class ShAgentManifestService {
         features.put("routeCheck", true);
         features.put("renderDigest", true);
         features.put("diagnostics", true);
+        // SH144: the incident record survives a restart, and rides the SH88 cursor. Worth its
+        // own flag because it changes what a *question* means, not just what an endpoint
+        // returns: with it false, "was anything failing while I was away" is unanswerable and
+        // an empty diagnostics report proves nothing.
+        features.put("durableIncidents", true);
         // SH88: "everything since I last looked" is expressible now. Reported false
         // through Block H and Block K on purpose, so the flag flipping means the cursor
         // exists rather than that someone remembered to advertise it.

@@ -312,9 +312,29 @@ the CDA + console services (law P10) and holds no business logic of its own.
   that already passed it — the `notes` say so, and SH147 is the real fix. Site-scoped by
   the SH2 allow-list.
 - `GET /agent/diagnostics` — asynchronous failures (SH103): webhook deliveries, image
-  transforms, scheduled publishes, 5xx. A **bounded in-memory** window that reports its own
-  bound (`since`/`dropped`/`notes`), because "no incidents" must not read as "nothing ever
-  failed". Recorded by `ShAgentIncidentLog`; repeats fold into one row with a count.
+  transforms, scheduled publishes, 5xx. Recorded by `ShAgentIncidentLog`; repeats fold into one
+  row with a count. **Durable since SH144** (`sh_agent_incident`, written by
+  `ShAgentIncidentStore`), so "was anything failing while I was away" is answerable and an empty
+  report now means *nothing has failed* rather than *nothing is remembered* — `since` is where
+  the record starts (**absent** when empty) and `dropped` changed meaning to *could not be
+  written down*, the only way one is lost now. Three rules to keep: the store writes in
+  **`REQUIRES_NEW`** (several callers are inside a transaction that is about to roll back, and an
+  enlisted row would be destroyed by the very failure it records) and **never throws** (a
+  diagnostics log that turned a webhook timeout into a 500 would be worse than none — a failed
+  write is counted and reported instead); a row is keyed by **what went wrong**, not by each
+  occurrence, which is what makes the table grow with the number of *problems*; and the feed
+  position is **`lastSeen`**, so an incident that is still happening is re-delivered with a
+  higher count rather than being reported once, ever.
+  **Incidents also ride `/agent/changes` (SH144)** in their own `incidents` array, so one
+  `since=` answers what changed *and* what broke. Not a `Change` with an invented `action` —
+  every existing caller branches on `action` and would file a failure as content. The
+  load-bearing rule: **an incident may repeat, a change may never be lost.** Two streams paged
+  under one scalar cursor cannot both be exactly-once, and taking the *later* of the two
+  positions — the obvious move — silently advances past unread audit rows whenever an incident is
+  ahead of the page being walked. So the cursor advances past an incident only when the change
+  stream reports no `more`; until then it stays the audit's and those incidents are read again,
+  which costs nothing because rows are folded. Incidents carry **no site**, so `site=` does not
+  narrow them and the `notes` say so.
 - `GET/PUT/DELETE /agent/memory` — **the instance memory (SH114)**: keyed notes that come
   back in the context pack's `conventions`, attributed to whoever wrote them. Upsert by
   `(tenant, scope, key)`, so re-stating a convention rewrites one row; `scope` is a site name

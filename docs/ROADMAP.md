@@ -168,19 +168,18 @@
 > lint's own blind spot, since closed by ✅ **SH154** → [CHANGELOG.md](CHANGELOG.md).
 > SH102's PNG stays an idea and is reported `false` in the manifest.
 >
-> **What building it opened, and what has since closed.** ✅ **SH104, SH141, SH142 and SH143
-> have shipped** → [CHANGELOG.md](CHANGELOG.md): the human half of the loop has its artifact
+> **What building it opened has now closed.** ✅ **SH104, SH141, SH142, SH143 and SH144 have
+> shipped** → [CHANGELOG.md](CHANGELOG.md): the human half of the loop has its artifact
 > (`shio report` — what changed, preview links, open questions, and a cursor a read never moves
-> on its own), a route is provable from the delivery side (so
-> `link-unresolved` can be an error, and the front end's own routes are *declared* in the SH114
-> memory rather than guessed), the report can say *known and accepted* (and fails when an
-> accepted finding no longer exists, which is what keeps the file from becoming a suppression),
-> and a run can be scoped to a folder, named addresses or an SH88 cursor while the cross-cutting
-> indexes stay whole. What is still open: the SH103 window is honest about being in memory,
-> which is exactly the shape SH88 already needs to fix (**SH144**).
+> on its own), a route is provable from the delivery side (so `link-unresolved` can be an error,
+> and the front end's own routes are *declared* in the SH114 memory rather than guessed), the
+> report can say *known and accepted* (and fails when an accepted finding no longer exists,
+> which is what keeps the file from becoming a suppression), a run can be scoped to a folder,
+> named addresses or an SH88 cursor while the cross-cutting indexes stay whole, and the incident
+> record is durable and rides that same cursor — so one `since=` answers what changed and what
+> broke. **Only SH102's optional PNG is left in this block**, and it is still an idea.
 
 - 💭 **SH102** (deps: SH101 ✅) **Visual snapshot + diff** — optional Playwright PNG + diff vs previous, for the human handoff rather than for the agent. → §IX.4
-- 💭 **SH144** (deps: SH103 ✅, SH88 ✅) **Durable incident feed** — the SH103 window is in memory and says so, which is the correct answer for now and the wrong one for "was anything failing while I was away". The durable form is the same cursor SH88 builds for content changes; folding incidents into it is cheaper than a second retention policy. → §IX.5
 
 ## Block I — Content as files (local-first authoring)
 

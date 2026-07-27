@@ -45,11 +45,30 @@ public final class ShAgentChangesTerse {
                     .attr("what", change.what())
                     .build());
         }
+        // SH144 — a distinct verb, not another `event`: a caller scanning for content
+        // transitions must not have to inspect an attribute to find out that a line is a
+        // failure. Same reason the JSON keeps them in their own array.
+        for (ShAgentChanges.Incident incident : incidents(changes)) {
+            out.append(ShTerse.line("incident")
+                    .word(incident.kind())
+                    .word(incident.subject())
+                    .attr("at", incident.at())
+                    .attr("count", incident.count())
+                    .attr("msg", incident.message())
+                    .build());
+            if (incident.fix() != null && !incident.fix().isBlank()) {
+                out.append("fix ").append(incident.fix()).append('\n');
+            }
+        }
         if (changes.notes() != null) {
             for (String note : changes.notes()) {
                 out.append("note ").append(note).append('\n');
             }
         }
         return out.toString();
+    }
+
+    private static java.util.List<ShAgentChanges.Incident> incidents(ShAgentChanges changes) {
+        return changes.incidents() == null ? java.util.List.of() : changes.incidents();
     }
 }

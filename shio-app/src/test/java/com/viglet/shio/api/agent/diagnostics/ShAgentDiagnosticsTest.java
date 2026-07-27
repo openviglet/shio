@@ -80,9 +80,18 @@ class ShAgentDiagnosticsTest {
         assertThat(diagnostics.counts()).containsEntry("webhook", 200).containsEntry("schedule", 1);
     }
 
+    /**
+     * SH144 changed what this test is about, and the change is the point.
+     *
+     * <p>It used to assert that the in-memory buffer <em>admitted</em> evicting rows, because
+     * eviction lost them. The record is durable now, so overflowing the buffer loses nothing —
+     * every one of these incidents is in the table. What still has to be admitted is the
+     * report's own <b>cap</b>: showing 25 of 60 must say so, or a reader concludes there were
+     * 25.</p>
+     */
     @Test
-    @DisplayName("eviction is admitted, not hidden")
-    void evictionIsAdmitted() {
+    @DisplayName("overflowing the buffer no longer loses anything; the report's cap is admitted")
+    void theReportsCapIsAdmitted() {
         for (int index = 0; index < ShAgentIncidentLog.CAPACITY + 10; index++) {
             incidentLog.record(ShAgentIncidentLog.Kind.API_ERROR, "GET /api/v2/thing/" + index,
                     "HTTP 500", null);
@@ -90,18 +99,22 @@ class ShAgentDiagnosticsTest {
 
         ShAgentDiagnostics diagnostics = shAgentDiagnosticsService.diagnostics(0);
 
-        assertThat(diagnostics.dropped()).isEqualTo(10);
-        assertThat(diagnostics.incidents()).hasSize(ShAgentDiagnosticsService.DEFAULT_LIMIT);
-        assertThat(diagnostics.notes()).anySatisfy(note -> assertThat(note).contains("retained"));
+        // `dropped` now means "could not be written down" — nothing here failed to persist.
+        assertThat(diagnostics.dropped()).isZero();
+        assertThat(diagnostics.incidents()).hasSize(25);
+        assertThat(diagnostics.notes()).anySatisfy(note ->
+                assertThat(note).contains("Showing 25 of 60"));
     }
 
     @Test
-    @DisplayName("an empty window says it is a window, not a clean bill of health")
-    void anEmptyWindowSaysWhatItCannotSee() {
+    @DisplayName("an empty report says nothing has failed, and can now mean it")
+    void anEmptyReportSaysWhatItCannotSee() {
         ShAgentDiagnostics diagnostics = shAgentDiagnosticsService.diagnostics(null);
 
         assertThat(diagnostics.incidents()).isEmpty();
-        assertThat(diagnostics.since()).isNotBlank();
+        // Absent, not a process-start timestamp: there is no record, rather than a record that
+        // began when this JVM did (SH144).
+        assertThat(diagnostics.since()).isNull();
         assertThat(diagnostics.notes())
                 .anySatisfy(note -> assertThat(note).contains("nothing has failed"))
                 .anySatisfy(note -> assertThat(note).contains("agent/verify"));

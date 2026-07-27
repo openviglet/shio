@@ -21,7 +21,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentStore;
 import com.viglet.shio.api.agent.dto.ShAgentChanges;
+import com.viglet.shio.persistence.model.agent.ShAgentIncident;
 import com.viglet.shio.persistence.model.history.ShHistory;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
@@ -77,17 +79,20 @@ public class ShAgentChangesService {
     private final ShAgentSiteAccess siteAccess;
     private final ShAddressResolver shAddressResolver;
     private final ShAgentProperties properties;
+    private final ShAgentIncidentStore incidentStore;
 
     public ShAgentChangesService(ShHistoryRepository shHistoryRepository,
                                  ShPostUnifiedRepository shPostUnifiedRepository,
                                  ShAgentSiteAccess siteAccess,
                                  ShAddressResolver shAddressResolver,
-                                 ShAgentProperties properties) {
+                                 ShAgentProperties properties,
+                                 ShAgentIncidentStore incidentStore) {
         this.shHistoryRepository = shHistoryRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.siteAccess = siteAccess;
         this.shAddressResolver = shAddressResolver;
         this.properties = properties;
+        this.incidentStore = incidentStore;
     }
 
     /**
@@ -133,8 +138,81 @@ public class ShAgentChangesService {
                 ? (from == null ? new ShAgentChangeCursor(ceiling, "").toString() : from.toString())
                 : new ShAgentChangeCursor(last(entries).getDate(), last(entries).getId()).toString();
 
-        return new ShAgentChanges(changes.size(), from == null, since, cursor, more, changes,
-                notes(from == null, scope, ceiling, config, changes, cap));
+        // SH144 — the incident stream, read over the same range and under the same cursor.
+        Incidents failures = incidents(from, ceiling, cap, cursor, more);
+        return new ShAgentChanges(changes.size(), from == null, since, failures.cursor(),
+                more || failures.more(), changes,
+                failures.rows().isEmpty() ? null : failures.rows(),
+                notes(from == null, scope, ceiling, config, changes, cap, failures));
+    }
+
+    /**
+     * The incidents in this range, and what they do to the cursor.
+     *
+     * <h2>The invariant: an incident may repeat, a change may never be lost</h2>
+     *
+     * <p>Two streams paged independently under one scalar position cannot both be exactly-once.
+     * The obvious move — return the further of the two positions — is <b>wrong</b>, and wrong in
+     * the unacceptable direction: an instance whose newest incident is minutes ahead of the
+     * audit page being walked would advance the cursor past audit rows the caller had never
+     * seen, silently. (This is not hypothetical; it is what the SH88 tie-break test caught.)</p>
+     *
+     * <p>So the cursor advances past an incident only when the audit stream reports <b>no
+     * more</b> — meaning it has been drained to the ceiling, and there is no unread row for a
+     * later position to skip. While the audit page is still catching up, the cursor stays the
+     * audit's and the incidents in that range are simply read again next time. Re-delivering an
+     * incident costs nothing: rows are folded, so a repeat is idempotent, and an incident that
+     * is still happening is re-delivered <em>by design</em> anyway.</p>
+     *
+     * <p><b>Incidents are not site-scoped, and the response says so.</b> They carry no site —
+     * a 5xx on a request path or a failed image transform is an instance-level fact — so a
+     * site-scoped read cannot narrow them and does not pretend to. That is not a new
+     * visibility: the same caller can read {@code /agent/diagnostics}, which has been
+     * instance-wide since SH103. Attributing an incident to a site where one can be known is
+     * a follow-up, and until then the note is the honest form.</p>
+     */
+    private Incidents incidents(ShAgentChangeCursor from, Instant ceiling, int cap,
+                                String changeCursor, boolean changesHaveMore) {
+        List<ShAgentIncident> rows = from == null
+                ? reversed(incidentStore.recent(cap, ceiling))
+                : incidentStore.since(ceiling, from.at(), from.id(), cap + 1);
+        boolean more = from != null && rows.size() > cap;
+        if (more) {
+            rows = rows.subList(0, cap);
+        }
+        List<ShAgentChanges.Incident> shaped = rows.stream()
+                .map(ShAgentChangesService::incident)
+                .toList();
+        String cursor = changeCursor;
+        if (!rows.isEmpty() && !changesHaveMore) {
+            ShAgentIncident tail = rows.get(rows.size() - 1);
+            String candidate =
+                    new ShAgentChangeCursor(tail.getLastSeen(), tail.getId()).toString();
+            cursor = ShAgentChangeCursor.later(changeCursor, candidate);
+        }
+        return new Incidents(shaped, cursor, more);
+    }
+
+    private static List<ShAgentIncident> reversed(List<ShAgentIncident> newestFirst) {
+        List<ShAgentIncident> oldestFirst = new ArrayList<>(newestFirst);
+        Collections.reverse(oldestFirst);
+        return oldestFirst;
+    }
+
+    private static ShAgentChanges.Incident incident(ShAgentIncident row) {
+        return new ShAgentChanges.Incident(
+                row.getKind() == null
+                        ? null
+                        : row.getKind().toLowerCase(java.util.Locale.ROOT).replace('_', '-'),
+                row.getSubject(),
+                row.getMessage(),
+                row.getFix(),
+                row.getOccurrences(),
+                row.getLastSeen() == null ? null : row.getLastSeen().toString(),
+                row.getFirstSeen() == null ? null : row.getFirstSeen().toString());
+    }
+
+    private record Incidents(List<ShAgentChanges.Incident> rows, String cursor, boolean more) {
     }
 
     // --- querying ---
@@ -231,8 +309,17 @@ public class ShAgentChangesService {
      */
     private List<String> notes(boolean window, Scope scope, Instant ceiling,
                               ShAgentProperties.Changes config,
-                              List<ShAgentChanges.Change> changes, int cap) {
+                              List<ShAgentChanges.Change> changes, int cap,
+                              Incidents failures) {
         List<String> notes = new ArrayList<>();
+        if (!failures.rows().isEmpty()) {
+            // Two facts a caller has to know before acting on the array: it is not narrowed by
+            // `site=`, and a row it has seen before can come back because it happened again.
+            notes.add(failures.rows().size() + " incident(s) are included: asynchronous failures "
+                    + "in this range. They carry no site, so `site=` does not narrow them, and a "
+                    + "recurring one reappears with a higher count because its position is its "
+                    + "last occurrence");
+        }
         if (window) {
             notes.add("window: the most recent " + cap + " entries at most, not a delta — pass "
                     + "since=<cursor> to get everything after this position");

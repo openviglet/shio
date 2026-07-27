@@ -23,13 +23,21 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * publish that threw overnight, a 500 whose response is long gone. Until now the only
  * record was a line in {@code store/logs}, which is not a surface an agent has.</p>
  *
- * <p>{@code since} and {@code dropped} are not decoration. The log is a bounded
- * in-memory window (see {@code ShAgentIncidentLog}), so "no incidents" can mean either
- * "nothing failed" or "nothing is remembered" — and a diagnostics endpoint that cannot
- * tell those apart is the kind of clean bill of health that costs a human a day.</p>
+ * <p>{@code since} and {@code dropped} are not decoration: "no incidents" must never be
+ * readable as a clean bill of health when it actually means "nothing is remembered" — that is
+ * the kind of false green that costs a human a day.</p>
  *
- * @param since     when this window started collecting (process start), ISO-8601
- * @param dropped   incidents evicted because the window was full
+ * <p><b>Both fields changed meaning with SH144, and in the same direction.</b> The record is
+ * durable now, so {@code since} is when the record <em>starts</em> (absent when nothing has
+ * ever been recorded — which is now genuinely "nothing has failed") rather than when this
+ * process booted. And {@code dropped} counts incidents that could <b>not be written down</b>,
+ * which is the only way one is lost now: the in-memory buffer evicting a row no longer loses
+ * anything, because the row is in the table. That case matters more than the old one, because
+ * the likeliest reason a write failed is that the database was itself the thing failing — so
+ * the record of the outage is exactly what the outage destroyed.</p>
+ *
+ * @param since     when the record starts, ISO-8601; absent when nothing was ever recorded
+ * @param dropped   incidents that could not be persisted, so the record is incomplete
  * @param counts    kind → occurrences, name-sorted, folded over repeats
  * @param incidents the incidents themselves, most recent occurrence first
  * @param notes     what this view cannot see, stated rather than implied

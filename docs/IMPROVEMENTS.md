@@ -530,31 +530,16 @@ Two design points worth settling before the code:
 >
 > **The loop itself shipped** — content lint (SH99), route checks (SH100), render digest
 > (SH101), diagnostics (SH103), and the follow-ups that made the report usable in anger
-> (SH141's delivery-side proof, SH142's accepted findings, SH143's scoping, SH154, SH169),
-> and so has the human-facing artifact the loop hands over (SH104); see
-> [CHANGELOG.md](CHANGELOG.md) Block K. What is left below is the design for what the
-> shipped version deliberately does not do, plus the one task it was always going to
-> depend on (SH102's pixels).
+> (SH141's delivery-side proof, SH142's accepted findings, SH143's scoping, SH144's durable
+> record, SH154, SH169), and so has the human-facing artifact the loop hands over (SH104); see
+> [CHANGELOG.md](CHANGELOG.md) Block K. **Only SH102 is left below** — the optional pixels,
+> which were always the last thing this block would want.
 
 ### IX.4 Visual snapshot + diff (SH102, optional)
 
 Playwright PNG + diff against the previous snapshot — deliberately framed as an
 artifact **for the human handoff** (§IX.6) rather than an agent input, so nobody
 mistakes it for the primary verification path.
-
-### IX.5 A durable incident feed (SH144)
-
-Diagnostics shipped (SH103) as a bounded in-memory window, and the payload says so:
-`since`, `dropped`, and a note that an empty report means "nothing since process start",
-not "nothing ever". That honesty is load-bearing — a diagnostics endpoint that cannot
-tell those apart is the kind of clean bill of health that costs a human a day — but it is
-also an admission. "Was anything failing while I was away" is a question about a period
-the window may no longer cover.
-
-The durable form is not a second table with its own retention policy. It is the same
-cursor SH88 built for content changes: an incident is a thing that happened at a
-position, which is exactly what a change feed already models. Folding the two is cheaper
-to build and cheaper to read — one `since=` for "what changed and what broke".
 
 ---
 

@@ -40,6 +40,39 @@ public class ShAgentProperties {
 
     private Memory memory = new Memory();
 
+    private Diagnostics diagnostics = new Diagnostics();
+
+    /**
+     * Durable incident limits (SH103, SH144).
+     *
+     * <p>Both numbers exist because an incident feed's failure mode is the opposite of a
+     * listing's: too few rows and it answers "nothing failed" when something did, too many and
+     * it is the log file an agent already could not read.</p>
+     */
+    @Setter
+    @Getter
+    public static class Diagnostics {
+
+        /**
+         * Distinct incidents kept. Rows are folded by what went wrong, so this is a count of
+         * <em>problems</em>, not of occurrences — 500 distinct failures on one instance is
+         * already a story worth reading rather than paging through.
+         *
+         * <p>Set to {@code 0} to keep everything, which is reasonable where an operator
+         * prunes the table themselves and wants no policy in the application at all.</p>
+         */
+        private int maxRows = 500;
+
+        /**
+         * Incidents a {@code /agent/diagnostics} read returns by default. Far smaller than
+         * what is retained: the question the endpoint answers is "what is broken now".
+         */
+        private int defaultLimit = 25;
+
+        /** Ceiling on a caller-supplied limit. */
+        private int maxLimit = 200;
+    }
+
     /**
      * Instance-memory limits (SH114).
      *

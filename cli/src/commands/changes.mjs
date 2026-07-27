@@ -56,6 +56,18 @@ function render(changes) {
     const address = change.address ?? "(gone)";
     lines.push(`  ${change.action} ${address} — ${change.what ?? ""} [${change.by} at ${change.at}]`);
   }
+  // SH144 — asynchronous failures in the same range, under the same cursor. Marked `!` rather
+  // than folded into the list above: a webhook that never arrived is not a content change, and
+  // a reader scanning this output for what an agent did must not have to tell them apart by
+  // squinting at the verb.
+  for (const incident of changes.incidents ?? []) {
+    const repeats = incident.count > 1 ? ` (x${incident.count})` : "";
+    lines.push(
+      `  ! ${incident.kind} ${incident.subject ?? ""} — ${incident.message ?? ""}${repeats}` +
+        ` [at ${incident.at}]`,
+    );
+    if (incident.fix) lines.push(`      → ${incident.fix}`);
+  }
   for (const note of changes.notes ?? []) lines.push(`  note: ${note}`);
   lines.push(`cursor: ${changes.cursor}`);
   return `${lines.join("\n")}\n`;

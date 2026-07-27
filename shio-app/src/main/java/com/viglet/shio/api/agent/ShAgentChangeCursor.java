@@ -51,6 +51,35 @@ public record ShAgentChangeCursor(Instant at, String id) {
     }
 
     /**
+     * The further of two positions, in the feed's own {@code (at, id)} order (SH144).
+     *
+     * <p>The merged feed carries two streams — the audit trail and the incident log — under
+     * one cursor, so the position returned has to be the furthest either reached. Comparing
+     * the parsed pair rather than the strings matters: an ISO-8601 instant is not
+     * lexicographically ordered across offsets, and comparing the wire form would silently
+     * pick the wrong one for any instant that did not serialize in the same shape.</p>
+     */
+    public static String later(String first, String second) {
+        if (first == null || first.isBlank()) {
+            return second;
+        }
+        if (second == null || second.isBlank()) {
+            return first;
+        }
+        ShAgentChangeCursor left = parse(first);
+        ShAgentChangeCursor right = parse(second);
+        int byInstant = left.at().compareTo(right.at());
+        if (byInstant != 0) {
+            return byInstant > 0 ? first : second;
+        }
+        return nullSafe(left.id()).compareTo(nullSafe(right.id())) >= 0 ? first : second;
+    }
+
+    private static String nullSafe(String id) {
+        return id == null ? "" : id;
+    }
+
+    /**
      * Parses a cursor a caller sent back.
      *
      * @throws MalformedCursorException a 400 that shows the shape instead of a stack trace

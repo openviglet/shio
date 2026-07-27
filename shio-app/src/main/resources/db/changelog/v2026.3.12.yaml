@@ -1,0 +1,118 @@
+databaseChangeLog:
+  # SH144 — durable incidents. SH103 shipped the diagnostics window in memory and said so
+  # in the payload (`since`, `dropped`, and a note that empty means "nothing since process
+  # start"). That was honest and it was also the admission this changeset closes: "was
+  # anything failing while I was away" is a question about a period a ring buffer may no
+  # longer cover, and a restart answers it with silence.
+  #
+  # A row is keyed by WHAT WENT WRONG (kind, subject, message), not by each occurrence, so
+  # one broken webhook retried for a month is one row with a count. That is what makes the
+  # table affordable — it grows with the number of distinct problems, not with traffic.
+  #
+  # `last_seen` is indexed because it is the SH88 feed position: the incident stream is
+  # merged with the audit stream under one cursor, and a folded row's position moves forward
+  # when it recurs (which is why the order is last_seen and not first_seen — see the entity).
+  #
+  # SH22: the tenant discriminator column MUST be lowercase `tenant_id` (Hibernate emits the
+  # @TenantId predicate unquoted). New table, so it is created NOT NULL and needs no
+  # ShTenantBackfillRunner entry — there are no rows to backfill. Types kept DB-agnostic
+  # (VARCHAR/TIMESTAMP/INT) per ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier
+  # case on PostgreSQL (does not propagate through `include`, so it is re-declared per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh144-create-agent-incident
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_agent_incident
+      changes:
+        - createTable:
+            tableName: sh_agent_incident
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(255)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: kind
+                  type: VARCHAR(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subject
+                  type: VARCHAR(300)
+              - column:
+                  name: message
+                  type: VARCHAR(300)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: fix
+                  type: VARCHAR(1000)
+              - column:
+                  name: first_seen
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_seen
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occurrences
+                  type: INT
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: sh144-agent-incident-position-index
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: ix_sh_agent_incident_position
+      changes:
+        # The feed's keyset order, (last_seen, id). Not unique — two distinct failures can
+        # and do share a timestamp, which is exactly why the cursor carries the id too.
+        - createIndex:
+            indexName: ix_sh_agent_incident_position
+            tableName: sh_agent_incident
+            columns:
+              - column:
+                  name: last_seen
+              - column:
+                  name: id
+  - changeSet:
+      id: sh144-agent-incident-fold-index
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: ix_sh_agent_incident_fold
+      changes:
+        # The fold lookup, on the failure path — where the code is by definition already
+        # having a bad time, so the read that decides insert-or-increment must be cheap.
+        # Deliberately NOT unique: `subject` is nullable and SQL indexes do not treat NULLs
+        # as equal, so a unique constraint here would be enforced for some rows and not
+        # others — the kind of half-guarantee that reads as a guarantee.
+        - createIndex:
+            indexName: ix_sh_agent_incident_fold
+            tableName: sh_agent_incident
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: kind
+              - column:
+                  name: message
