@@ -20,7 +20,7 @@ const postTypeService = new ShPostTypeService()
 const unifiedService = new ShPostUnifiedService()
 
 export default function PostUnifiedNewPage() {
-  const { folderId, postTypeId } = useParams() as { folderId: string; postTypeId: string }
+  const { folderId, postTypeName } = useParams() as { folderId: string; postTypeName: string }
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { resetBreadcrumb } = useBreadcrumb()
@@ -33,8 +33,8 @@ export default function PostUnifiedNewPage() {
       { label: t("content.sites"), href: ROUTES.CONTENT_ROOT },
       { label: t("content.newPost") },
     ])
-    postTypeService.get(postTypeId).then(setPostType)
-  }, [postTypeId, resetBreadcrumb, t])
+    postTypeService.get(postTypeName).then(setPostType)
+  }, [postTypeName, resetBreadcrumb, t])
 
   const schema = useMemo(
     () => (postType ? buildSchemaFromPostType(postType) : []),
@@ -54,7 +54,7 @@ export default function PostUnifiedNewPage() {
     try {
       await unifiedService.create({
         folderId,
-        postTypeId: postType.id,
+        postType: postType.name,
         data,
         state: "DRAFT",
       })
@@ -79,7 +79,7 @@ export default function PostUnifiedNewPage() {
     )
   }
 
-  const postTypeName = postType.title || postType.name
+  const postTypeLabel = postType.title || postType.name
 
   return (
     <>
@@ -89,7 +89,7 @@ export default function PostUnifiedNewPage() {
           title={t("content.newPost")}
           badges={
             <>
-              <BadgeColorful text={postTypeName || ""} className="text-xs" />
+              <BadgeColorful text={postTypeLabel || ""} className="text-xs" />
               <BadgeColorful
                 text="unified"
                 className="text-xs"
@@ -125,7 +125,7 @@ export default function PostUnifiedNewPage() {
                 schema={schema}
                 data={data}
                 onDataChange={setData}
-                postTypeName={postTypeName}
+                postTypeName={postTypeLabel}
               />
             )}
           </CardContent>

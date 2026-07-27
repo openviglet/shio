@@ -212,7 +212,7 @@
 - 📋 **SH152** (deps: SH93 ✅) **Additive post-type reconciliation** — a package's post-type that already exists is left untouched and its missing fields are reported; the caller then has to add them by hand, and until they do the content writes fields the console cannot render. An opt-in additive merge (add the missing fields, never change or remove one) makes the report actionable. → §XI.8
 - 📋 **SH153** (deps: SH93 ✅, SH81 ✅) **A blueprint plan that needs no write transaction** — the plan provisions the package's post-types and rolls back, purely so the content planner can resolve types that do not exist yet. It is correct and it means a plan cannot run on a read-only credential or a replica. Threading the declared types through the batch planner's pending set removes the write entirely. → §XI.9
 - 📋 **SH155** (deps: SH93 ✅, SH114 ✅) **Record which blueprint a site received** — `changed:0` proves a site matches a document, but nothing records that the document came from `marketing-site 1.0.0`, so a newer package version is undetectable and "is this still the blueprint" cannot be asked. Belongs in SH114's instance memory (now shipped — a keyed note per site is exactly the shape) rather than a table of its own. → §XI.10
-- 💭 **SH156** (deps: SH92 ✅, SH119) **Blueprints carry their front-end half** — the format supports front-end files and the first-party set ships none, so a blueprint delivers content the site cannot render until someone wires the components. Fold with SH119 (`create-shio-app` templates → blueprints) so there is one starter, not two. → §XI.11
+- 📋 **SH156** (deps: SH92 ✅, SH119 ✅) **The rest of the first-party set carries its front-end half** — SH119 made the starter a blueprint and proved the mechanism (a generated `files` tree with a drift test), but `blog`, `docs`, `product-catalog`, `marketing-site` and `landing` still ship content the site cannot render until someone wires the components. The four section-vocabulary packages need `@viglet/shio-sections`' components emitted the same way; the open question is how packages share a tree instead of each carrying a copy. → §XI.11
 
 ## Block L — Agent safety & human-in-the-loop
 
@@ -255,13 +255,31 @@
 
 ## Block N — Realignment of what already shipped
 
-> The reorientation is mostly additive, but it does invalidate some existing
-> choices. See the concept spec §10. → §XIV
+> ✅ **Block N shipped (SH117, SH119, SH120, SH162)** → see [CHANGELOG.md](CHANGELOG.md) Block N:
+> one name-keyed post-type surface, the starter as a blueprint, console navigation reads on
+> the CDA shapes, and the SDK type mirror with a test behind it.
+>
+> **What it cost the claim, and why that is the right outcome.** SH117 and SH120 both fixed
+> the *baseline* the SH112 benchmark measures against, so every token ratio fell against an
+> unchanged agent path: **3.8×–23.3× became 2.6×–12.6×**, and tokens now clear the concept
+> spec's ≈10× on one canonical task of four rather than three. A large part of the measured
+> advantage was never the protocol — it was the console reads being entity-shaped, and it is
+> now lean on both sides. What is left is the part worth defending (addressing, batching, the
+> context pack, a lint that names the defect), and **SH164** is the task for re-establishing
+> the claim on those sources.
+>
+> **What building it opened.** A name-keyed surface has no rename, so the console's API-name
+> field is read-only and moving a post-type is unavailable (**SH163**). The console listing
+> returns a folder's children whole, which is a real limit once a folder is large
+> (**SH165**). A blueprint's carried files are substituted by the CLI, so an MCP-only caller
+> receives source with the placeholders still in it (**SH166**). And SH117's narrowing of one
+> blanket CSRF exemption leaves the others un-reviewed (**SH167**).
 
-- 📋 **SH162** (deps: SH127 ✅, SH52) **`@viglet/shio-client` is behind the CDA it mirrors** — `ShCdaPost` delivers `locale` and `availableLocales` (SH52's language switcher) and the TypeScript mirror declares neither, so the one feature the types exist to make usable is invisible to a typed consumer. Found while leaning the same file in SH127; the fix is a mirror-completeness test, not one more field. → §XIV.5
-- 📋 **SH117** (deps: —) **Unify the two post-type APIs** — one name-keyed surface (`/api/v2/post-type`); migrate the console off the id-keyed `/api/v2/post/type` and retire it. Two APIs for one concept is a tax paid on every agent session. → §XIV.1
-- 📋 **SH119** (deps: SH92) **`create-shio-app` templates → blueprints** — one appliable format; `shio init` stays a thin wrapper. → §XIV.2
-- 💭 **SH120** (deps: SH78) **Align console read shapes with the CDA DTOs** where they overlap — one shape to learn. → §XIV.3
+- 📋 **SH163** (deps: SH117 ✅, SH134 ✅) **Renaming a post-type is a move, not an upsert** — the surface is keyed by name, so a `PUT` to a new name creates a second post-type and orphans the first with its content, its history and its `sh_post_unified` rows. The console's API-name field is read-only because of it. Needs the `post.move` treatment for the model: one operation that carries the posts, refuses an occupied name, and says what it moved. → §XIV.1
+- 📋 **SH164** (deps: SH112 ✅, SH117 ✅, SH120 ✅) **Re-establish the token claim on its actual sources** — the ratios fell because the baseline stopped being wasteful, which means the benchmark can no longer distinguish "the protocol is cheaper" from "the old console was fat". Attribute the remaining gap per source (addressing vs id round trips, batch vs N writes, context pack vs crawl, lint vs sweep) so each is defended by its own number, and decide honestly whether ≈10× is still the right target. → §XIV.6
+- 📋 **SH165** (deps: SH120 ✅) **The console listing is unpaged** — `GET /object/{id}/list` returns every child of a folder, so a folder with ten thousand posts is one response and one render. The CDA listing has been paged since SH1; the console's has the shape to accept `page`/`size` and deliberately did not copy the fields rather than pretend. Needs paging on the endpoint and infinite-scroll or pages in the browser. → §XIV.7
+- 💭 **SH166** (deps: SH119 ✅, SH75 ✅) **A blueprint's carried files reach an MCP-only caller unsubstituted** — the CLI substitutes them because the project's name is local identity the server has no business being told, but a caller with no CLI gets source with `{{projectName}}` still in it and no way to fill it in. Either the apply response carries substituted bodies, or the tool result says plainly that the files are templates and names the parameters. → §XIV.8
+- 💭 **SH167** (deps: SH117 ✅) **Review the remaining blanket CSRF exemptions** — SH117 narrowed `/api/v2/post-type` to session-less callers because a browser started reaching it. `/api/v2/cda/**`, `/api/v2/agent/**` and `/mcp` are still exempt wholesale on the argument that only stateless clients reach them, which is true today and is the same argument that was true of the post-type API until it wasn't. The check now exists; the question is which of the three should adopt it before a console feature makes the decision for us. → §XIV.9
 
 ---
 

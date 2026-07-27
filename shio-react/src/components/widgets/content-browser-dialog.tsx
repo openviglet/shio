@@ -16,9 +16,10 @@ import type { ShFolder } from "@/models/folder/folder"
 import type { ShPostUnified as ShPost } from "@/models/post-unified/post-unified"
 import type { ShSite } from "@/models/site/site"
 
+/** SH120: the CDA listing envelope — `folders`/`posts`, rows carrying the CDA's names. */
 interface ObjectListResponse {
-  shFolders: ShFolder[]
-  shPosts: ShPost[]
+  folders: ShFolder[]
+  posts: ShPost[]
 }
 
 interface BreadcrumbItem {
@@ -114,8 +115,8 @@ export function ContentBrowserDialog({
     setSelectedItem(null)
     try {
       const res = await axios.get<ObjectListResponse>(`/v2/object/${objectId}/list`)
-      setFolders(res.data.shFolders ?? [])
-      setPosts(res.data.shPosts ?? [])
+      setFolders(res.data.folders ?? [])
+      setPosts(res.data.posts ?? [])
       setSites([])
       setBreadcrumb(crumbs)
     } finally {
@@ -175,8 +176,8 @@ export function ContentBrowserDialog({
         const crumbs: BreadcrumbItem[] = [
           { id: "__sites__", name: t("content.sites"), type: "SITE_LIST" },
         ]
-        if (data.shSite) {
-          crumbs.push({ id: data.shSite.id, name: data.shSite.name, type: "SITE" })
+        if (data.site) {
+          crumbs.push({ id: data.site.id, name: data.site.name, type: "SITE" })
         }
         if (Array.isArray(data.breadcrumb)) {
           for (const c of data.breadcrumb) {

@@ -156,3 +156,58 @@ test("required args are validated", async () => {
     assert.rejects(() => scaffold({ targetDir: join(base, "p") }), /projectName/)
   );
 });
+
+/* --- SH119: the pieces `shio init --blueprint` reuses --- */
+
+test("substituteParams applies the same rule the server does", async () => {
+  const { substituteParams } = await import("../src/scaffold.mjs");
+  assert.equal(substituteParams('{"name":"{{projectName}}"}', { projectName: "x" }), '{"name":"x"}');
+  assert.equal(substituteParams("{{ projectName }}", { projectName: "x" }), "x");
+  // Character-for-character the server's `[A-Za-z0-9_.\-]+`, so a package cannot have a
+  // parameter one half fills in and the other leaves standing.
+  assert.equal(substituteParams("{{brand-name}}", { "brand-name": "Acme" }), "Acme");
+  // JSX is not a placeholder — which is what lets a starter tree carry both.
+  assert.equal(substituteParams('style={{ color: "#666" }}', { color: "red" }),
+    'style={{ color: "#666" }}');
+  // An unknown placeholder stays visible rather than being silently blanked.
+  assert.equal(substituteParams("{{nope}}", { projectName: "x" }), "{{nope}}");
+});
+
+test("readTemplateFiles returns the tree in the shape a blueprint's files arrive in", async () => {
+  const { readTemplateFiles } = await import("../src/scaffold.mjs");
+  const files = await readTemplateFiles();
+  assert.ok(files.length > 10, "the starter is more than a handful of files");
+  for (const file of files) {
+    assert.equal(typeof file.path, "string");
+    assert.equal(typeof file.text, "string");
+    assert.ok(file.path.length > 0);
+  }
+  // The npm dotfile dodge is undone once, here, so both consumers agree about it.
+  assert.ok(files.some((f) => f.path === ".gitignore"));
+  assert.ok(!files.some((f) => f.path === "gitignore"));
+});
+
+test("writeProject skips an existing file unless forced", async () => {
+  const { writeProject } = await import("../src/scaffold.mjs");
+  await withTmp(async (base) => {
+    const targetDir = join(base, "proj");
+    await mkdir(targetDir, { recursive: true });
+    await writeFile(join(targetDir, "keep.txt"), "mine", "utf8");
+
+    const first = await writeProject({
+      targetDir,
+      files: [{ path: "keep.txt", text: "theirs" }, { path: "new.txt", text: "hi" }],
+    });
+    assert.deepEqual(first.skipped, ["keep.txt"]);
+    assert.deepEqual(first.files, ["new.txt"]);
+    assert.equal(await readFile(join(targetDir, "keep.txt"), "utf8"), "mine");
+
+    const forced = await writeProject({
+      targetDir,
+      files: [{ path: "keep.txt", text: "theirs" }],
+      force: true,
+    });
+    assert.deepEqual(forced.files, ["keep.txt"]);
+    assert.equal(await readFile(join(targetDir, "keep.txt"), "utf8"), "theirs");
+  });
+});

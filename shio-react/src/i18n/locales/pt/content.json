@@ -69,6 +69,7 @@
   "content.subFields": "Sub Campos",
   "content.pickOne": "-- Escolha Um --",
   "content.apiName": "Nome da API",
+  "content.apiNameReadOnly": "Um tipo de post é endereçado pelo nome da API, portanto não pode ser alterado aqui — renomear é uma operação separada, que precisa mover o conteúdo junto.",
   "content.apiPluralName": "Nome Plural da API",
   "content.workflow": "Workflow",
   "content.responsiblePublishing": "Responsável pela Publicação",

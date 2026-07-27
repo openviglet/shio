@@ -156,13 +156,13 @@ export default function SiteEditPage() {
                     ) : (
                       postTypes
                         .slice()
-                        .sort((a, b) => a.title.localeCompare(b.title))
+                        .sort((a, b) => (a.title ?? a.name).localeCompare(b.title ?? b.name))
                         .map((pt) => (
-                          <div key={pt.id} className="flex items-center gap-2">
-                            <Checkbox id={`st-${pt.id}`}
+                          <div key={pt.name} className="flex items-center gap-2">
+                            <Checkbox id={`st-${pt.name}`}
                               checked={searchableTypes.includes(pt.name)}
                               onCheckedChange={(checked) => toggleSearchableType(pt.name, checked === true)} />
-                            <Label htmlFor={`st-${pt.id}`} className="font-normal cursor-pointer">
+                            <Label htmlFor={`st-${pt.name}`} className="font-normal cursor-pointer">
                               {pt.title} <span className="text-muted-foreground font-mono text-xs">({pt.name})</span>
                             </Label>
                           </div>

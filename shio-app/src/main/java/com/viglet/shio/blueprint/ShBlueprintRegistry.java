@@ -342,11 +342,31 @@ public class ShBlueprintRegistry {
         }
     }
 
+    /**
+     * Whether a package-relative path walks out of the package.
+     *
+     * <p>Per <em>segment</em>, not per substring. {@code contains("..")} reads as the
+     * obvious version of this check and is wrong: it also rejects
+     * {@code files/app/[...slug]/page.tsx}, and a Next.js catch-all route is exactly the
+     * kind of file the {@code nextjs-starter} package exists to carry (SH119). A dot run
+     * inside a segment is a filename; only a segment that <em>is</em> {@code ..} traverses.
+     * Both separators are treated as one because a package authored on Windows must not
+     * mean something different from the same package on Linux.</p>
+     */
+    static boolean traverses(String path) {
+        for (String segment : path.split("[/\\\\]")) {
+            if ("..".equals(segment)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private Resource sibling(Resource manifest, String path, String blueprint) {
         if (path == null || path.isBlank()) {
             throw new BlueprintFormatException(blueprint, "a referenced path is empty");
         }
-        if (path.startsWith("/") || path.contains("..")) {
+        if (path.startsWith("/") || traverses(path)) {
             // A package addresses its own contents and nothing else. Absolute or
             // parent-relative paths are how a package would read the rest of the classpath.
             throw new BlueprintFormatException(blueprint, "'" + path + "' escapes the package "

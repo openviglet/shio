@@ -20,18 +20,46 @@ import { useNavigate, useParams } from "react-router-dom"
 import { formatDistanceToNow } from "date-fns"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import type { ShPostType } from "@/models/post-type/post-type"
-import type { ShFolder } from "@/models/folder/folder"
-import type { ShPostUnified as ShPost } from "@/models/post-unified/post-unified"
 import axios from "axios"
 import { toast } from "@viglet/viglet-design-system"
 
 const postTypeService = new ShPostTypeService()
 
+/**
+ * `GET /v2/object/{id}/list` (SH120) — the CDA listing envelope, with rows whose shared
+ * fields carry the CDA's names. It used to be `{ shFolders, shPosts, shSite, breadcrumb }`
+ * of raw JPA entities; the site and the breadcrumb now come from `/path`, which is the one
+ * endpoint that answers "where am I".
+ */
 interface ObjectListResponse {
-  shFolders: ShFolder[]
-  shPosts: ShPost[]
-  shSite?: { id: string; name: string }
-  breadcrumb?: Array<{ id: string; name: string; shSite?: { id: string; name: string } }>
+  folderId?: string
+  folders: ConsoleFolderRow[]
+  posts: ConsolePostRow[]
+}
+
+/** A folder row: the CDA's `{id, name, root}` plus the console's ordering axis. */
+interface ConsoleFolderRow {
+  id: string
+  name: string
+  root?: boolean
+  date?: string
+  position?: number
+}
+
+/** A post row: the CDA post summary plus the draft axis a delivery API cannot express. */
+interface ConsolePostRow {
+  id: string
+  title?: string
+  summary?: string
+  furl?: string
+  postType?: string
+  locale?: string
+  date?: string
+  modifiedDate?: string
+  postTypeTitle?: string
+  published?: boolean
+  publishStatus?: string
+  state?: string
 }
 
 interface BreadcrumbPathItem {
@@ -55,7 +83,7 @@ export default function ObjectChildrenPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { resetBreadcrumb } = useBreadcrumb()
-  const [listData, setListData] = useState<ObjectListResponse>({ shFolders: [], shPosts: [] })
+  const [listData, setListData] = useState<ObjectListResponse>({ folders: [], posts: [] })
   const [breadcrumbPath, setBreadcrumbPath] = useState<BreadcrumbPathItem[]>([])
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [lastPostType, setLastPostType] = useState<ShPostType | null>(null)
@@ -83,19 +111,12 @@ export default function ObjectChildrenPage() {
     const fetchPath = axios.get(`/v2/object/${objectId}/path`).then((res) => {
       const data = res.data
       const items: BreadcrumbPathItem[] = []
-      // API returns { breadcrumb: [...folders], shSite: {...}, currentFolder: {...} }
-      if (data.shSite) {
-        items.push({ id: data.shSite.id, name: data.shSite.name, type: "SITE" })
+      // SH120: `ShCdaPath` — { site, breadcrumb: [...folders], currentFolder }.
+      if (data.site) {
+        items.push({ id: data.site.id, name: data.site.name, type: "SITE" })
       }
-      if (Array.isArray(data.breadcrumb)) {
-        for (const crumb of data.breadcrumb) {
-          items.push({ id: crumb.id, name: crumb.name, type: crumb.objectType || "FOLDER" })
-        }
-      } else if (Array.isArray(data)) {
-        // Fallback: API returns plain array
-        for (const crumb of data) {
-          items.push({ id: crumb.id, name: crumb.name, type: crumb.objectType || crumb.type || "FOLDER" })
-        }
+      for (const crumb of data.breadcrumb ?? []) {
+        items.push({ id: crumb.id, name: crumb.name, type: "FOLDER" })
       }
       setBreadcrumbPath(items)
     }).catch(() => {
@@ -104,15 +125,15 @@ export default function ObjectChildrenPage() {
 
     const fetchChildren = axios.get<ObjectListResponse>(`/v2/object/${objectId}/list`).then((res) => {
       setListData({
-        shFolders: res.data.shFolders ?? [],
-        shPosts: res.data.shPosts ?? [],
+        folders: res.data.folders ?? [],
+        posts: res.data.posts ?? [],
       })
     })
 
     Promise.all([fetchPath, fetchChildren]).finally(() => setLoading(false))
     postTypeService.query().then((pts) => {
-      const savedId = localStorage.getItem("sh-last-post-type")
-      const saved = pts.find(p => p.id === savedId)
+      const savedName = localStorage.getItem("sh-last-post-type")
+      const saved = pts.find(p => p.name === savedName)
       setLastPostType(saved || pts.find(p => !p.system) || pts[0] || null)
     })
   }, [objectId])
@@ -134,19 +155,19 @@ export default function ObjectChildrenPage() {
   }, [breadcrumbPath, resetBreadcrumb, t])
 
   const combinedItems: ObjectChild[] = [
-    ...listData.shFolders.map((folder) => ({
+    ...listData.folders.map((folder) => ({
       id: folder.id,
       name: folder.name,
-      date: folder.date,
+      date: folder.date ?? "",
       objectType: "FOLDER" as const,
       position: folder.position,
     })),
-    ...listData.shPosts.map((post) => ({
+    ...listData.posts.map((post) => ({
       id: post.id,
       name: post.title ?? "",
       date: post.date ?? "",
       objectType: "POST" as const,
-      postTypeName: post.shPostType?.title || post.shPostType?.name,
+      postTypeName: post.postTypeTitle || post.postType,
       publishStatus: post.publishStatus,
     })),
   ]
@@ -229,7 +250,7 @@ export default function ObjectChildrenPage() {
 
   const refreshList = async () => {
     const res = await axios.get<ObjectListResponse>(`/v2/object/${objectId}/list`)
-    setListData({ shFolders: res.data.shFolders ?? [], shPosts: res.data.shPosts ?? [] })
+    setListData({ folders: res.data.folders ?? [], posts: res.data.posts ?? [] })
   }
 
   const handleClone = async (itemId: string) => {
@@ -246,7 +267,7 @@ export default function ObjectChildrenPage() {
     setFolderDialogCurrentId(startId)
     setFolderDialogPath([])
     axios.get<ObjectListResponse>(`/v2/object/${startId}/list`).then((res) => {
-      setFolderDialogFolders((res.data.shFolders ?? []).map(f => ({ id: f.id, name: f.name })))
+      setFolderDialogFolders((res.data.folders ?? []).map(f => ({ id: f.id, name: f.name })))
     })
     setFolderDialogOpen(true)
   }
@@ -255,7 +276,7 @@ export default function ObjectChildrenPage() {
     setFolderDialogCurrentId(folderId)
     setFolderDialogPath(prev => [...prev, { id: folderId, name: folderName }])
     axios.get<ObjectListResponse>(`/v2/object/${folderId}/list`).then((res) => {
-      setFolderDialogFolders((res.data.shFolders ?? []).map(f => ({ id: f.id, name: f.name })))
+      setFolderDialogFolders((res.data.folders ?? []).map(f => ({ id: f.id, name: f.name })))
     })
   }
 
@@ -265,7 +286,7 @@ export default function ObjectChildrenPage() {
     setFolderDialogCurrentId(targetId)
     setFolderDialogPath(targetPath)
     axios.get<ObjectListResponse>(`/v2/object/${targetId}/list`).then((res) => {
-      setFolderDialogFolders((res.data.shFolders ?? []).map(f => ({ id: f.id, name: f.name })))
+      setFolderDialogFolders((res.data.folders ?? []).map(f => ({ id: f.id, name: f.name })))
     })
   }
 
@@ -283,11 +304,14 @@ export default function ObjectChildrenPage() {
     await refreshList()
   }
 
-  const siteInfo = listData.shSite
-  const siteId = siteInfo?.id || (breadcrumbPath.length > 0 ? breadcrumbPath[0]?.id : null)
-  const siteName = siteInfo?.name || (breadcrumbPath.length > 0 ? breadcrumbPath[0]?.name : null)
-  const folderCount = listData.shFolders.length
-  const postCount = listData.shPosts.length
+  // SH120: the site comes from /path, whose breadcrumb opens with it. The listing used to
+  // repeat it, which meant two endpoints answering "which site is this" — and the listing's
+  // copy was the one that went stale first, because it is the response people add fields to.
+  const site = breadcrumbPath.find((crumb) => crumb.type === "SITE")
+  const siteId = site?.id ?? null
+  const siteName = site?.name ?? null
+  const folderCount = listData.folders.length
+  const postCount = listData.posts.length
 
   return (
     <>
@@ -340,8 +364,8 @@ export default function ObjectChildrenPage() {
                 disabled={!lastPostType}
                 onClick={() => {
                   if (lastPostType) {
-                    localStorage.setItem("sh-last-post-type", lastPostType.id)
-                    navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/post-type/${lastPostType.id}/new`)
+                    localStorage.setItem("sh-last-post-type", lastPostType.name)
+                    navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/post-type/${encodeURIComponent(lastPostType.name)}/new`)
                   }
                 }}
               >

@@ -47,42 +47,56 @@ export function parseSchema(schemaJson?: string | null): ShPostTypeSchemaField[]
   }
 }
 
-interface LegacyPostTypeAttr {
+/**
+ * The field shape of the post-type authoring model (SH16's `ShPostTypeAttrDef`) —
+ * structurally `ShPostTypeField`, declared locally so this module stays free of a
+ * post-type import it would only use for a projection.
+ */
+interface PostTypeFieldDef {
   name: string
-  label: string
+  label?: string
   description?: string
   ordinal: number
-  required: number
-  isTitle: number
-  isSummary: number
-  shWidget: { name: string }
+  required?: boolean
+  isTitle?: boolean
+  isSummary?: boolean
+  widget?: string
   widgetSettings?: string
-  shPostTypeAttrs?: LegacyPostTypeAttr[]
+  fields?: PostTypeFieldDef[]
 }
 
+/**
+ * The form schema for a post-type: the post's own `schemaJson` when it carries one,
+ * otherwise projected from the post-type's fields.
+ *
+ * The projection reads `fields`/`widget`/booleans — the one name-keyed post-type
+ * shape SH117 left standing. It used to read `shPostTypeAttrs`/`shWidget.name`/
+ * `0`|`1`, which was the id-keyed entity the retired `/api/v2/post/type` returned.
+ */
 export function buildSchemaFromPostType(postType: {
   schemaJson?: string
-  shPostTypeAttrs?: LegacyPostTypeAttr[]
+  fields?: PostTypeFieldDef[]
 }): ShPostTypeSchemaField[] {
   const fromJson = parseSchema(postType.schemaJson)
   if (fromJson.length > 0) return fromJson
-  return projectLegacyAttrs(postType.shPostTypeAttrs ?? [])
+  return projectFieldDefs(postType.fields ?? [])
 }
 
-function projectLegacyAttrs(attrs: LegacyPostTypeAttr[]): ShPostTypeSchemaField[] {
-  return attrs
-    .filter((a) => a.name)
+function projectFieldDefs(fields: PostTypeFieldDef[]): ShPostTypeSchemaField[] {
+  return fields
+    .filter((f) => f.name)
+    .slice()
     .sort((a, b) => a.ordinal - b.ordinal)
-    .map((a) => ({
-      name: a.name,
-      label: a.label,
-      description: a.description,
-      ordinal: a.ordinal,
-      required: a.required === 1,
-      isTitle: a.isTitle === 1,
-      isSummary: a.isSummary === 1,
-      widget: a.shWidget?.name ?? "Text",
-      widgetSettings: a.widgetSettings,
-      children: a.shPostTypeAttrs ? projectLegacyAttrs(a.shPostTypeAttrs) : undefined,
+    .map((f) => ({
+      name: f.name,
+      label: f.label ?? f.name,
+      description: f.description,
+      ordinal: f.ordinal,
+      required: Boolean(f.required),
+      isTitle: Boolean(f.isTitle),
+      isSummary: Boolean(f.isSummary),
+      widget: f.widget ?? "Text",
+      widgetSettings: f.widgetSettings,
+      children: f.fields ? projectFieldDefs(f.fields) : undefined,
     }))
 }

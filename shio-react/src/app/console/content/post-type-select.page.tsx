@@ -28,13 +28,19 @@ export default function PostTypeSelectPage() {
       const items: { label: string; href?: string }[] = [
         { label: t("content.sites"), href: `${ROUTES.CONSOLE}/content` },
       ]
-      if (Array.isArray(res.data)) {
-        for (const crumb of res.data) {
-          items.push({
-            label: crumb.name,
-            href: `${ROUTES.CONTENT_ROOT}/object/${crumb.id}`,
-          })
-        }
+      // SH120: `ShCdaPath` — { site, breadcrumb, currentFolder }. This used to read
+      // `res.data` as an array, which the endpoint never returned, so the breadcrumb was
+      // silently just "Sites". One shape, spelled the same way everywhere, is what stops
+      // that from being an easy mistake to make.
+      const data = res.data
+      if (data?.site) {
+        items.push({ label: data.site.name, href: `${ROUTES.CONTENT_ROOT}/object/${data.site.id}` })
+      }
+      for (const crumb of data?.breadcrumb ?? []) {
+        items.push({
+          label: crumb.name,
+          href: `${ROUTES.CONTENT_ROOT}/object/${crumb.id}`,
+        })
       }
       resetBreadcrumb(items)
     }).catch(() => {
@@ -51,8 +57,8 @@ export default function PostTypeSelectPage() {
   const customTypes = postTypes.filter(pt => !pt.system)
 
   const handleSelect = (pt: ShPostType) => {
-    localStorage.setItem("sh-last-post-type", pt.id)
-    navigate(`${ROUTES.CONTENT_ROOT}/folder/${folderId}/post-type/${pt.id}/new`)
+    localStorage.setItem("sh-last-post-type", pt.name)
+    navigate(`${ROUTES.CONTENT_ROOT}/folder/${folderId}/post-type/${encodeURIComponent(pt.name)}/new`)
   }
 
   return (
@@ -89,7 +95,7 @@ export default function PostTypeSelectPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {systemTypes.map(pt => (
                   <Card
-                    key={pt.id}
+                    key={pt.name}
                     className="cursor-pointer hover:bg-muted/50 hover:shadow-md transition-all"
                     onClick={() => handleSelect(pt)}
                   >
@@ -106,7 +112,7 @@ export default function PostTypeSelectPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {customTypes.map(pt => (
                   <Card
-                    key={pt.id}
+                    key={pt.name}
                     className="cursor-pointer hover:bg-muted/50 hover:shadow-md transition-all"
                     onClick={() => handleSelect(pt)}
                   >

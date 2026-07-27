@@ -21,12 +21,27 @@ import java.util.List;
  * service refuses to create or overwrite a system post-type regardless of the
  * value sent.</p>
  *
- * <p>The {@code managed} flag (SH66) is likewise <em>delivered</em> (so operators
- * and the console can see which types are owned by code) but not <em>authored</em>:
- * {@code upsert} always sets it true (every admin-API write originates from the
- * CLI {@code push}), regardless of the value sent. It is deliberately excluded
- * from the CLI's canonical serialization, so a hand-written {@code *.json} that
- * omits it never shows as drift.</p>
+ * <p>The {@code managed} flag (SH66) is <em>delivered</em> on every read, so
+ * operators and the console can see which types are owned by code. On a
+ * <em>write</em> it is not a data field but a claim about the writer, which is why
+ * it is a {@link Boolean} rather than a {@code boolean} — <em>absent</em> and
+ * {@code false} have to mean different things (SH117, when the console moved onto
+ * this one surface):</p>
+ *
+ * <ul>
+ *   <li><b>absent</b> (or {@code true}) — a code-owned write. This is the CLI
+ *       {@code push} and the agent path: the type is marked managed, and a write
+ *       to an already-managed type is allowed because the writer <em>is</em> the
+ *       owner. The CLI's canonical serialization omits the key, so a hand-written
+ *       {@code *.json} never shows as drift and never changes meaning.</li>
+ *   <li><b>{@code false}</b> — a hand edit (the console). The type is marked
+ *       unmanaged, and a write to a <em>managed</em> type is refused with
+ *       {@link com.viglet.shio.api.post.type.ShManagedPostTypeException} rather
+ *       than silently winning a race against the repository.</li>
+ * </ul>
+ *
+ * <p>It is a UX guard, not an ACL: any caller may claim either. What it must never
+ * do is let one writer's convention overwrite the other's without saying so.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.2
@@ -38,6 +53,14 @@ public record ShPostTypeDef(
         String description,
         String workflowPublishEntity,
         boolean system,
-        boolean managed,
+        Boolean managed,
         List<ShPostTypeAttrDef> fields) {
+
+    /**
+     * Whether this write claims code ownership — absent means yes, preserving the
+     * SH16 CLI contract that predates the console sharing this surface.
+     */
+    public boolean claimsCodeOwnership() {
+        return managed == null || managed;
+    }
 }

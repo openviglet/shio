@@ -113,9 +113,13 @@ public class ShSecurityConfig {
                         // CDA writes (SH10) are token-authenticated (Key header) and stateless,
                         // so there is no session/XSRF cookie to validate; reads were never CSRF-checked.
                         mvc.matcher(CDA_PATH),
-                        // Post-types-as-code admin API (SH16) — the shio CLI calls it statelessly
-                        // with HTTP Basic, so there is no session/XSRF cookie; same rationale as CDA.
-                        mvc.matcher(POST_TYPE_PATH),
+                        // Post-types-as-code (SH16) — the shio CLI calls it statelessly with HTTP
+                        // Basic, so there is no session/XSRF cookie; same rationale as CDA. But
+                        // SH117 retired the id-keyed console twin and pointed the React editor
+                        // here too, so this one path now serves a cookie-bearing browser as well:
+                        // the exemption is narrowed to callers that hold no session, or unifying
+                        // the APIs would have meant dropping CSRF on the content model.
+                        new ShStatelessRequestMatcher(mvc.matcher(POST_TYPE_PATH), sessionCookieName),
                         // Agent writes (SH81/SH82) — same rationale again: the callers
                         // are a token-authenticated agent and the stateless shio CLI,
                         // neither of which holds a session or an XSRF cookie. Reads on

@@ -1,0 +1,84 @@
+{
+  "formatVersion": 1,
+  "name": "nextjs-starter",
+  "title": "Next.js starter",
+  "version": "1.0.0",
+  "description": "The first-party starter, whole: a Page model, two published pages, and the Next.js App Router project that renders them — catch-all routing, ISR, draft preview, signed revalidation. Same tree as `npm create shio-app`, with the content.",
+  "params": {
+    "type": "object",
+    "properties": {
+      "projectName": {
+        "type": "string",
+        "description": "The npm package name of the generated project, also used in the README and the welcome page.",
+        "default": "my-shio-site"
+      }
+    }
+  },
+  "postTypes": [
+    "post-types/Page.json"
+  ],
+  "content": [
+    "content/pages.json"
+  ],
+  "verify": {
+    "posts": [
+      "/welcome",
+      "/about"
+    ],
+    "checks": "content"
+  },
+  "files": [
+    {
+      "path": ".env.example",
+      "from": "files/env.example"
+    },
+    {
+      "path": ".gitignore",
+      "from": "files/gitignore"
+    },
+    {
+      "path": "app/[...slug]/page.tsx",
+      "from": "files/app/[...slug]/page.tsx"
+    },
+    {
+      "path": "app/api/preview/route.ts",
+      "from": "files/app/api/preview/route.ts"
+    },
+    {
+      "path": "app/api/revalidate/route.ts",
+      "from": "files/app/api/revalidate/route.ts"
+    },
+    {
+      "path": "app/layout.tsx",
+      "from": "files/app/layout.tsx"
+    },
+    {
+      "path": "app/page.tsx",
+      "from": "files/app/page.tsx"
+    },
+    {
+      "path": "lib/shio.ts",
+      "from": "files/lib/shio.ts"
+    },
+    {
+      "path": "next-env.d.ts",
+      "from": "files/next-env.d.ts"
+    },
+    {
+      "path": "next.config.mjs",
+      "from": "files/next.config.mjs"
+    },
+    {
+      "path": "package.json",
+      "from": "files/package.json"
+    },
+    {
+      "path": "README.md",
+      "from": "files/README.md"
+    },
+    {
+      "path": "tsconfig.json",
+      "from": "files/tsconfig.json"
+    }
+  ]
+}

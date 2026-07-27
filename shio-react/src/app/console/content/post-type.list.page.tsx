@@ -30,10 +30,10 @@ export default function PostTypeListPage() {
     service.query().then(setItems)
   }, [resetBreadcrumb, t])
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (name: string) => {
     if (confirm(t("dialog.deleteMessage"))) {
-      await service.delete(id)
-      setItems((prev) => prev.filter((i) => i.id !== id))
+      await service.delete(name)
+      setItems((prev) => prev.filter((i) => i.name !== name))
       toast.success(t("common.delete"))
     }
   }
@@ -62,20 +62,20 @@ export default function PostTypeListPage() {
               </TableHeader>
               <TableBody>
                 {items.map((item) => (
-                  <TableRow key={item.id}>
+                  <TableRow key={item.name}>
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell>{item.title}</TableCell>
                     <TableCell>
-                      {item.system === 1 ? (
+                      {item.system ? (
                         <Badge variant="secondary">{t("content.system")}</Badge>
                       ) : null}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => navigate(`${ROUTES.POST_TYPE_ROOT}/${item.id}`)}>
+                        <Button variant="ghost" size="icon" onClick={() => navigate(`${ROUTES.POST_TYPE_ROOT}/${encodeURIComponent(item.name)}`)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.name)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>

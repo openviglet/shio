@@ -32,7 +32,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShWidgetService } from "@/services/widget/widget.service"
-import type { ShPostType, ShPostTypeAttr } from "@/models/post-type/post-type"
+import type { ShPostType, ShPostTypeField } from "@/models/post-type/post-type"
 import type { ShWidget } from "@/models/widget/widget"
 import { GradientButton, StickySaveBar, toast } from "@viglet/viglet-design-system"
 import {
@@ -60,6 +60,41 @@ const widgetService = new ShWidgetService()
 const SEARCH_ASSOCIATIONS = [
   "", "title", "text", "abstract", "type", "image", "publication_date", "url"
 ]
+
+/**
+ * A field plus an editor-local `key`.
+ *
+ * The name-keyed post-type model (SH117) carries no field ids — a field is
+ * identified by its `name`, which is exactly what the user is editing, so it
+ * cannot double as a React/dnd-kit identity. A synthetic key minted on load and on
+ * add is stable across renames and reorders, and is stripped before saving.
+ */
+type FieldRow = Omit<ShPostTypeField, "fields"> & { key: string; fields?: FieldRow[] }
+
+function newKey(): string {
+  return crypto.randomUUID()
+}
+
+/** Attach editor keys to a field tree loaded from the server. */
+function withKeys(fields: ShPostTypeField[] | undefined): FieldRow[] {
+  return (fields ?? [])
+    .slice()
+    .sort((a, b) => a.ordinal - b.ordinal)
+    .map((f) => ({ ...f, key: newKey(), fields: f.fields ? withKeys(f.fields) : undefined }))
+}
+
+/** Strip editor keys and renumber ordinals — what goes back over the wire. */
+function toFieldDefs(rows: FieldRow[]): ShPostTypeField[] {
+  return rows.map((row, index) => {
+    const { key: _key, fields, ...field } = row
+    void _key
+    return {
+      ...field,
+      ordinal: index + 1,
+      fields: fields ? toFieldDefs(fields) : undefined,
+    }
+  })
+}
 
 function parseSettings(raw: string | undefined | null): Record<string, unknown> {
   if (!raw) return {}
@@ -148,9 +183,9 @@ function MultiSelectSettings({ settings, onChange, postTypes }: {
           </SelectTrigger>
           <SelectContent>
             {postTypes
-              .slice().sort((a, b) => a.title.localeCompare(b.title))
+              .slice().sort((a, b) => label(a).localeCompare(label(b)))
               .map((pt) => (
-                <SelectItem key={pt.name} value={pt.name}>{pt.title}</SelectItem>
+                <SelectItem key={pt.name} value={pt.name}>{label(pt)}</SelectItem>
               ))}
           </SelectContent>
         </Select>
@@ -167,13 +202,18 @@ function MultiSelectSettings({ settings, onChange, postTypes }: {
   )
 }
 
-function RelatorSettings({ attr, settings, onChange, widgets, postTypes, onAttrChange }: {
-  attr: ShPostTypeAttr
+/** A post-type's display label — `title` when it has one, else its API name. */
+function label(postType: ShPostType): string {
+  return postType.title ?? postType.name
+}
+
+function RelatorSettings({ field, settings, onChange, widgets, postTypes, onFieldChange }: {
+  field: FieldRow
   settings: Record<string, unknown>
   onChange: (s: Record<string, unknown>) => void
   widgets: ShWidget[]
   postTypes: ShPostType[]
-  onAttrChange: (attr: ShPostTypeAttr) => void
+  onFieldChange: (field: FieldRow) => void
 }) {
   const { t } = useTranslation()
   const relator = (settings.relator as Record<string, string>) ?? {}
@@ -188,31 +228,31 @@ function RelatorSettings({ attr, settings, onChange, widgets, postTypes, onAttrC
       </div>
       <div className="space-y-2">
         <p className="font-medium text-sm">{t("content.subFields")}</p>
-        <AttrFieldList
-          attrs={attr.shPostTypeAttrs ?? []}
+        <FieldList
+          fields={field.fields ?? []}
           widgets={widgets}
           postTypes={postTypes}
-          onChange={(subAttrs) => onAttrChange({ ...attr, shPostTypeAttrs: subAttrs })}
+          onChange={(subFields) => onFieldChange({ ...field, fields: subFields })}
         />
       </div>
     </div>
   )
 }
 
-function WidgetSpecificSettings({ attr, widgets, postTypes, onAttrChange }: {
-  attr: ShPostTypeAttr
+function WidgetSpecificSettings({ field, widgets, postTypes, onFieldChange }: {
+  field: FieldRow
   widgets: ShWidget[]
   postTypes: ShPostType[]
-  onAttrChange: (attr: ShPostTypeAttr) => void
+  onFieldChange: (field: FieldRow) => void
 }) {
   const { t } = useTranslation()
-  const widgetName = attr.shWidget?.name
+  const widgetName = field.widget
   if (!widgetName) return null
 
-  const settings = parseSettings(attr.widgetSettings)
+  const settings = parseSettings(field.widgetSettings)
 
   const updateSettings = (s: Record<string, unknown>) => {
-    onAttrChange({ ...attr, widgetSettings: JSON.stringify(s) })
+    onFieldChange({ ...field, widgetSettings: JSON.stringify(s) })
   }
 
   let content: React.ReactNode = null
@@ -233,12 +273,12 @@ function WidgetSpecificSettings({ attr, widgets, postTypes, onAttrChange }: {
     case "Relator":
       content = (
         <RelatorSettings
-          attr={attr}
+          field={field}
           settings={settings}
           onChange={updateSettings}
           widgets={widgets}
           postTypes={postTypes}
-          onAttrChange={onAttrChange}
+          onFieldChange={onFieldChange}
         />
       )
       break
@@ -261,16 +301,16 @@ function WidgetSpecificSettings({ attr, widgets, postTypes, onAttrChange }: {
 
 // --- Semantic Navigation settings ---
 
-function SemanticNavigationSettings({ attr, onAttrChange }: {
-  attr: ShPostTypeAttr
-  onAttrChange: (attr: ShPostTypeAttr) => void
+function SemanticNavigationSettings({ field, onFieldChange }: {
+  field: FieldRow
+  onFieldChange: (field: FieldRow) => void
 }) {
   const { t } = useTranslation()
-  const settings = parseSettings(attr.widgetSettings)
+  const settings = parseSettings(field.widgetSettings)
   const search = (settings.search as Record<string, unknown>) ?? {}
 
   const updateSearch = (s: Record<string, unknown>) => {
-    onAttrChange({ ...attr, widgetSettings: JSON.stringify({ ...settings, search: s }) })
+    onFieldChange({ ...field, widgetSettings: JSON.stringify({ ...settings, search: s }) })
   }
 
   return (
@@ -313,7 +353,7 @@ function SemanticNavigationSettings({ attr, onAttrChange }: {
               <span className="text-sm">{t("content.samePostTypeFieldName")}</span>
             </div>
             {(search.isSamePostTypeField as number) === 1 ? (
-              <Input disabled value={attr.name ?? ""} className="bg-muted" />
+              <Input disabled value={field.name ?? ""} className="bg-muted" />
             ) : (
               <Input
                 value={(search.customFieldName as string) ?? ""}
@@ -329,11 +369,11 @@ function SemanticNavigationSettings({ attr, onAttrChange }: {
 
 // --- Details tab (expanded field settings) ---
 
-function AttrDetailsSettings({ attr, widgets, postTypes, onAttrChange }: {
-  attr: ShPostTypeAttr
+function FieldDetailsSettings({ field, widgets, postTypes, onFieldChange }: {
+  field: FieldRow
   widgets: ShWidget[]
   postTypes: ShPostType[]
-  onAttrChange: (attr: ShPostTypeAttr) => void
+  onFieldChange: (field: FieldRow) => void
 }) {
   const { t } = useTranslation()
 
@@ -352,8 +392,8 @@ function AttrDetailsSettings({ attr, widgets, postTypes, onAttrChange }: {
             </Tooltip>
           </div>
           <Input
-            value={attr.label ?? ""}
-            onChange={(e) => onAttrChange({ ...attr, label: e.target.value })}
+            value={field.label ?? ""}
+            onChange={(e) => onFieldChange({ ...field, label: e.target.value })}
           />
         </div>
         <div className="space-y-1.5">
@@ -368,23 +408,18 @@ function AttrDetailsSettings({ attr, widgets, postTypes, onAttrChange }: {
           </div>
           <Input
             className="font-mono"
-            value={attr.name ?? ""}
-            onChange={(e) => onAttrChange({ ...attr, name: e.target.value })}
+            value={field.name ?? ""}
+            onChange={(e) => onFieldChange({ ...field, name: e.target.value })}
           />
         </div>
       </div>
 
-      {/* Field Type */}
+      {/* Field Type — the widget catalogue is a closed set, keyed by name (SH117) */}
       <div className="space-y-1.5">
         <label className="font-medium text-sm">{t("content.fieldType")}</label>
         <Select
-          value={attr.shWidget?.id ?? ""}
-          onValueChange={(widgetId) => {
-            const widget = widgets.find((w) => w.id === widgetId)
-            if (widget) {
-              onAttrChange({ ...attr, shWidget: { id: widget.id, name: widget.name } })
-            }
-          }}
+          value={field.widget ?? ""}
+          onValueChange={(widgetName) => onFieldChange({ ...field, widget: widgetName })}
         >
           <SelectTrigger className="w-full md:w-80">
             <SelectValue placeholder={t("content.pickOne")} />
@@ -393,7 +428,7 @@ function AttrDetailsSettings({ attr, widgets, postTypes, onAttrChange }: {
             {widgets
               .slice().sort((a, b) => a.name.localeCompare(b.name))
               .map((w) => (
-                <SelectItem key={w.id} value={w.id}>
+                <SelectItem key={w.name} value={w.name}>
                   <div className="flex items-center gap-2">
                     <span
                       className={`inline-block h-2 w-2 rounded-full ${
@@ -416,22 +451,22 @@ function AttrDetailsSettings({ attr, widgets, postTypes, onAttrChange }: {
       <div className="flex flex-wrap gap-6">
         <div className="flex items-center gap-2.5">
           <Switch
-            checked={attr.required === 1}
-            onCheckedChange={(v) => onAttrChange({ ...attr, required: v ? 1 : 0 })}
+            checked={Boolean(field.required)}
+            onCheckedChange={(v) => onFieldChange({ ...field, required: v })}
           />
           <span className="text-sm">{t("content.isRequired")}</span>
         </div>
         <div className="flex items-center gap-2.5">
           <Switch
-            checked={attr.isTitle === 1}
-            onCheckedChange={(v) => onAttrChange({ ...attr, isTitle: v ? 1 : 0 })}
+            checked={Boolean(field.isTitle)}
+            onCheckedChange={(v) => onFieldChange({ ...field, isTitle: v })}
           />
           <span className="text-sm">{t("content.isTitle")}</span>
         </div>
         <div className="flex items-center gap-2.5">
           <Switch
-            checked={attr.isSummary === 1}
-            onCheckedChange={(v) => onAttrChange({ ...attr, isSummary: v ? 1 : 0 })}
+            checked={Boolean(field.isSummary)}
+            onCheckedChange={(v) => onFieldChange({ ...field, isSummary: v })}
           />
           <span className="text-sm">{t("content.isDescription")}</span>
         </div>
@@ -439,23 +474,23 @@ function AttrDetailsSettings({ attr, widgets, postTypes, onAttrChange }: {
 
       {/* Widget-specific settings */}
       <WidgetSpecificSettings
-        attr={attr}
+        field={field}
         widgets={widgets}
         postTypes={postTypes}
-        onAttrChange={onAttrChange}
+        onFieldChange={onFieldChange}
       />
     </div>
   )
 }
 
-// --- Sortable attr row ---
+// --- Sortable field row ---
 
-function SortableAttrRow({ attr, index, widgets, postTypes, onAttrChange, onDelete }: {
-  attr: ShPostTypeAttr
+function SortableFieldRow({ field, index, widgets, postTypes, onFieldChange, onDelete }: {
+  field: FieldRow
   index: number
   widgets: ShWidget[]
   postTypes: ShPostType[]
-  onAttrChange: (attr: ShPostTypeAttr) => void
+  onFieldChange: (field: FieldRow) => void
   onDelete: () => void
 }) {
   const { t } = useTranslation()
@@ -467,9 +502,9 @@ function SortableAttrRow({ attr, index, widgets, postTypes, onAttrChange, onDele
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: attr.id || `attr-${index}` })
+  } = useSortable({ id: field.key })
 
-  const widgetName = attr.shWidget?.name ?? ""
+  const widgetName = field.widget ?? ""
   const accentClass = WIDGET_ACCENT_COLORS[widgetName] ?? "border-l-gray-300 dark:border-l-gray-600"
 
   const style = {
@@ -517,21 +552,21 @@ function SortableAttrRow({ attr, index, widgets, postTypes, onAttrChange, onDele
 
         {/* Field label + name */}
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="font-semibold text-sm truncate">{attr.label || "Untitled"}</span>
+          <span className="font-semibold text-sm truncate">{field.label || "Untitled"}</span>
           <span className="text-xs text-muted-foreground font-mono truncate hidden sm:inline">
-            {attr.name}
+            {field.name}
           </span>
         </div>
 
         {/* Badges */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {attr.required === 1 && (
+          {field.required && (
             <BadgeColorful text={t("content.required")} className="text-[10px] px-1.5 py-0 h-5" />
           )}
-          {attr.isTitle === 1 && (
+          {field.isTitle && (
             <BadgeColorful text="T" className="text-[10px] px-1.5 py-0 h-5" />
           )}
-          {attr.isSummary === 1 && (
+          {field.isSummary && (
             <BadgeColorful text="S" className="text-[10px] px-1.5 py-0 h-5" />
           )}
           <BadgeColorful text={widgetName || "—"} className="text-[10px] px-2 py-0 h-5 font-medium" />
@@ -574,15 +609,15 @@ function SortableAttrRow({ attr, index, widgets, postTypes, onAttrChange, onDele
               </TabsList>
             </div>
             <TabsContent value="details">
-              <AttrDetailsSettings
-                attr={attr}
+              <FieldDetailsSettings
+                field={field}
                 widgets={widgets}
                 postTypes={postTypes}
-                onAttrChange={onAttrChange}
+                onFieldChange={onFieldChange}
               />
             </TabsContent>
             <TabsContent value="semantic">
-              <SemanticNavigationSettings attr={attr} onAttrChange={onAttrChange} />
+              <SemanticNavigationSettings field={field} onFieldChange={onFieldChange} />
             </TabsContent>
           </Tabs>
         </div>
@@ -593,11 +628,11 @@ function SortableAttrRow({ attr, index, widgets, postTypes, onAttrChange, onDele
 
 // --- Field list with drag-and-drop ---
 
-function AttrFieldList({ attrs, widgets, postTypes, onChange }: {
-  attrs: ShPostTypeAttr[]
+function FieldList({ fields, widgets, postTypes, onChange }: {
+  fields: FieldRow[]
   widgets: ShWidget[]
   postTypes: ShPostType[]
-  onChange: (attrs: ShPostTypeAttr[]) => void
+  onChange: (fields: FieldRow[]) => void
 }) {
   const { t } = useTranslation()
   const sensors = useSensors(
@@ -608,43 +643,41 @@ function AttrFieldList({ attrs, widgets, postTypes, onChange }: {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     if (over && active.id !== over.id) {
-      const oldIndex = attrs.findIndex((a) => (a.id || `attr-${attrs.indexOf(a)}`) === active.id)
-      const newIndex = attrs.findIndex((a) => (a.id || `attr-${attrs.indexOf(a)}`) === over.id)
-      const reordered = arrayMove(attrs, oldIndex, newIndex).map((a, i) => ({ ...a, ordinal: i + 1 }))
+      const oldIndex = fields.findIndex((f) => f.key === active.id)
+      const newIndex = fields.findIndex((f) => f.key === over.id)
+      const reordered = arrayMove(fields, oldIndex, newIndex).map((f, i) => ({ ...f, ordinal: i + 1 }))
       onChange(reordered)
     }
   }
 
-  const addAttr = () => {
-    const textWidget = widgets.find((w) => w.name === "Text")
-    const newAttr: ShPostTypeAttr = {
-      id: "",
-      name: `FIELD_${attrs.length + 1}`,
-      label: `Field ${attrs.length + 1}`,
+  const addField = () => {
+    const newField: FieldRow = {
+      key: newKey(),
+      name: `FIELD_${fields.length + 1}`,
+      label: `Field ${fields.length + 1}`,
       description: "",
-      ordinal: attrs.length + 1,
-      required: 0,
-      isSummary: 0,
-      isTitle: 0,
-      shWidget: textWidget ? { id: textWidget.id, name: textWidget.name } : { id: "", name: "Text" },
+      ordinal: fields.length + 1,
+      required: false,
+      isSummary: false,
+      isTitle: false,
+      widget: "Text",
       widgetSettings: "",
     }
-    onChange([...attrs, newAttr])
+    onChange([...fields, newField])
   }
 
-  const updateAttr = (index: number, updated: ShPostTypeAttr) => {
-    const newAttrs = [...attrs]
-    newAttrs[index] = updated
-    onChange(newAttrs)
+  const updateField = (index: number, updated: FieldRow) => {
+    const next = [...fields]
+    next[index] = updated
+    onChange(next)
   }
 
-  const deleteAttr = (index: number) => {
-    const newAttrs = attrs.filter((_, i) => i !== index).map((a, i) => ({ ...a, ordinal: i + 1 }))
-    onChange(newAttrs)
+  const deleteField = (index: number) => {
+    onChange(fields.filter((_, i) => i !== index).map((f, i) => ({ ...f, ordinal: i + 1 })))
   }
 
   // Empty state
-  if (attrs.length === 0) {
+  if (fields.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <div className="rounded-full bg-muted p-4 mb-4">
@@ -654,7 +687,7 @@ function AttrFieldList({ attrs, widgets, postTypes, onChange }: {
         <p className="text-sm text-muted-foreground max-w-sm mb-6">
           {t("content.noFieldsDescription")}
         </p>
-        <Button type="button" onClick={addAttr} className="gap-2">
+        <Button type="button" onClick={addField} className="gap-2">
           <Plus className="h-4 w-4" />
           {t("content.addField")}
         </Button>
@@ -668,11 +701,11 @@ function AttrFieldList({ attrs, widgets, postTypes, onChange }: {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-xs">
-            {attrs.length}
+            {fields.length}
           </Badge>
           <span className="text-sm text-muted-foreground">{t("content.dragToReorder")}</span>
         </div>
-        <Button type="button" size="sm" onClick={addAttr} className="gap-1.5">
+        <Button type="button" size="sm" onClick={addField} className="gap-1.5">
           <Plus className="h-4 w-4" />
           {t("content.addField")}
         </Button>
@@ -680,19 +713,16 @@ function AttrFieldList({ attrs, widgets, postTypes, onChange }: {
 
       {/* Sortable list */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext
-          items={attrs.map((a, i) => a.id || `attr-${i}`)}
-          strategy={verticalListSortingStrategy}
-        >
-          {attrs.map((attr, index) => (
-            <SortableAttrRow
-              key={attr.id || `attr-${index}`}
-              attr={attr}
+        <SortableContext items={fields.map((f) => f.key)} strategy={verticalListSortingStrategy}>
+          {fields.map((field, index) => (
+            <SortableFieldRow
+              key={field.key}
+              field={field}
               index={index}
               widgets={widgets}
               postTypes={postTypes}
-              onAttrChange={(updated) => updateAttr(index, updated)}
-              onDelete={() => deleteAttr(index)}
+              onFieldChange={(updated) => updateField(index, updated)}
+              onDelete={() => deleteField(index)}
             />
           ))}
         </SortableContext>
@@ -704,13 +734,13 @@ function AttrFieldList({ attrs, widgets, postTypes, onChange }: {
 // --- Main page ---
 
 export default function PostTypeEditPage() {
-  const { postTypeId } = useParams() as { postTypeId: string }
+  const { postTypeName } = useParams() as { postTypeName: string }
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { resetBreadcrumb } = useBreadcrumb()
   const form = useForm<ShPostType>()
   const [isLoading, setIsLoading] = useState(false)
-  const [attrs, setAttrs] = useState<ShPostTypeAttr[]>([])
+  const [fields, setFields] = useState<FieldRow[]>([])
   const [widgets, setWidgets] = useState<ShWidget[]>([])
   const [postTypes, setPostTypes] = useState<ShPostType[]>([])
 
@@ -722,55 +752,30 @@ export default function PostTypeEditPage() {
     ])
 
     Promise.all([
-      postTypeService.get(postTypeId),
+      postTypeService.get(postTypeName),
       widgetService.query(),
       postTypeService.query(),
     ]).then(([data, widgetList, ptList]) => {
       form.reset(data)
-      const sorted = [...(data.shPostTypeAttrs ?? [])].sort((a, b) => a.ordinal - b.ordinal)
-      setAttrs(sorted)
+      setFields(withKeys(data.fields))
       setWidgets(widgetList)
       setPostTypes(ptList)
     })
-  }, [postTypeId, resetBreadcrumb, t, form])
+  }, [postTypeName, resetBreadcrumb, t, form])
 
-  const serializeWidgetSettings = useCallback((attrList: ShPostTypeAttr[]): ShPostTypeAttr[] => {
-    return attrList.map((a, i) => ({
-      ...a,
-      ordinal: i + 1,
-      id: a.id || undefined as unknown as string,
-      shPostTypeAttrs: a.shPostTypeAttrs ? serializeWidgetSettings(a.shPostTypeAttrs) : undefined,
-    }))
-  }, [])
-
-  async function onSubmit(data: ShPostType) {
+  const save = useCallback(async (data: ShPostType, close: boolean) => {
     setIsLoading(true)
     try {
-      const payload: ShPostType = {
-        ...data,
-        shPostTypeAttrs: serializeWidgetSettings(attrs),
-      }
-      await postTypeService.update(payload)
+      // The path key is the name the type was loaded under — the API-name input is
+      // read-only, so these cannot diverge, and a PUT to a *new* name would create a
+      // second post-type rather than rename this one (SH134's lesson for posts).
+      await postTypeService.update({ ...data, name: postTypeName, fields: toFieldDefs(fields) })
       toast.success(t("common.save"))
+      if (close) navigate(ROUTES.POST_TYPE_ROOT)
     } finally {
       setIsLoading(false)
     }
-  }
-
-  async function onSubmitAndClose(data: ShPostType) {
-    setIsLoading(true)
-    try {
-      const payload: ShPostType = {
-        ...data,
-        shPostTypeAttrs: serializeWidgetSettings(attrs),
-      }
-      await postTypeService.update(payload)
-      toast.success(t("common.save"))
-      navigate(ROUTES.POST_TYPE_ROOT)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  }, [fields, navigate, postTypeName, t])
 
   const title = form.watch("title")
   const managed = Boolean(form.watch("managed"))
@@ -802,7 +807,7 @@ export default function PostTypeEditPage() {
                 size="sm"
                 loading={isLoading}
                 disabled={managed}
-                onClick={form.handleSubmit(onSubmit)}
+                onClick={form.handleSubmit((data) => save(data, false))}
               >
                 <Save className="size-4" />
                 {t("common.save")}
@@ -812,7 +817,7 @@ export default function PostTypeEditPage() {
                 size="sm"
                 variant="outline"
                 disabled={isLoading || managed}
-                onClick={form.handleSubmit(onSubmitAndClose)}
+                onClick={form.handleSubmit((data) => save(data, true))}
               >
                 {t("content.saveAndClose")}
               </GradientButton>
@@ -876,20 +881,24 @@ export default function PostTypeEditPage() {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      rules={{ required: t("common.required") }}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("content.apiName")}</FormLabel>
-                          <FormControl>
-                            <Input {...field} value={field.value ?? ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {/* The API name is the post-type's identity on the name-keyed
+                        surface (SH117), so it is shown and not edited: changing it here
+                        would write a second post-type and leave this one's content
+                        behind. Renaming is its own operation — see SH163. */}
+                    <FormItem>
+                      <div className="flex items-center gap-1.5">
+                        <FormLabel>{t("content.apiName")}</FormLabel>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top">{t("content.apiNameReadOnly")}</TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <FormControl>
+                        <Input readOnly disabled className="bg-muted font-mono" value={postTypeName} />
+                      </FormControl>
+                    </FormItem>
                     <FormField
                       control={form.control}
                       name="namePlural"
@@ -936,11 +945,11 @@ export default function PostTypeEditPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <AttrFieldList
-              attrs={attrs}
+            <FieldList
+              fields={fields}
               widgets={widgets}
               postTypes={postTypes}
-              onChange={setAttrs}
+              onChange={setFields}
             />
           </CardContent>
         </Card>

@@ -15,6 +15,7 @@
     "template"
   ],
   "scripts": {
+    "emit": "node src/emit.mjs",
     "test": "node --test \"test/*.test.mjs\""
   },
   "keywords": [

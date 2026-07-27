@@ -28,6 +28,7 @@ import { dirname, join } from "node:path";
 
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
+import { writeProjectFiles } from "../project-files.mjs";
 
 export async function run(flags, positionals, ctx) {
   if (flags.blueprint) {
@@ -157,7 +158,7 @@ async function applyBlueprint(flags, positionals, ctx) {
 
   ctx.stdout.write(renderApplied(result));
 
-  const files = planOnly ? [] : await writeFiles(detail, flags, ctx);
+  const files = planOnly ? [] : await writeFiles(detail, flags, ctx, result?.params ?? params);
   if (planOnly && detail?.files?.length) {
     ctx.stdout.write(
       `  ${detail.files.length} front-end file(s) would be written into this project\n`,
@@ -250,29 +251,19 @@ function coerceParams(values, schema) {
 }
 
 /**
- * Writes the package's front-end files into the project.
+ * Writes the package's front-end files into the project — see
+ * {@link module:project-files}, shared with `shio init --blueprint` (SH119).
  *
- * Never over an existing file unless `--force`: a blueprint applied twice must not
- * silently revert a page somebody has since edited (P7). Each outcome is reported, so
- * "skipped" is a line the caller reads rather than a silence they interpret.
+ * The resolved parameters go in too: a carried file with `{{projectName}}` in it must not
+ * land on disk still saying `{{projectName}}` when the same run substituted it throughout
+ * the content.
  */
-async function writeFiles(detail, flags, ctx) {
-  const files = detail?.files ?? [];
-  const lines = [];
-  for (const file of files) {
-    const target = join(ctx.cwd, file.path);
-    const exists = await ctx.fs
-      .readFile(target, "utf8")
-      .then(() => true)
-      .catch(() => false);
-    if (exists && !flags.force) {
-      lines.push(`skipped ${file.path} (exists — pass --force to overwrite)`);
-      continue;
-    }
-    await ctx.fs.mkdir(dirname(target), { recursive: true });
-    await ctx.fs.writeFile(target, file.text, "utf8");
-    lines.push(`${exists ? "overwrote" : "wrote"} ${file.path}`);
-  }
+async function writeFiles(detail, flags, ctx, params) {
+  const { lines } = await writeProjectFiles(
+    detail?.files ?? [],
+    { force: Boolean(flags.force), params },
+    ctx,
+  );
   return lines;
 }
 

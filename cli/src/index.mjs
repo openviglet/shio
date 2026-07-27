@@ -63,6 +63,8 @@ Usage:
 
 Commands:
   init [name]    Scaffold a Next.js site wired to the Shio CDA
+                 (--blueprint <name> takes the starter from the instance instead;
+                  add --site <site> to apply its content in the same command)
   context        Print the agent context pack: model + sitemap + conventions (one call)
   mcp            Bridge stdio to this instance's MCP endpoint (claude mcp add shio -- shio mcp)
   resolve <addr> Resolve a content address (post:/folder:/site:/id:) to its object

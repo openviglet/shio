@@ -145,8 +145,9 @@ class ShFolderAPITest {
     void stage01ListSiteShowsRootFolder() throws Exception {
         mockMvc.perform(get("/api/v2/object/" + siteId + "/list").principal(mockPrincipal))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.shSite.id").value(siteId))
-                .andExpect(jsonPath("$.shFolders[?(@.id == '" + rootFolderId + "')]").exists());
+                // SH120: the listing is the CDA envelope — folderId/folders/posts, no entity names.
+                .andExpect(jsonPath("$.folderId").value(siteId))
+                .andExpect(jsonPath("$.folders[?(@.id == '" + rootFolderId + "')]").exists());
     }
 
     @Test
@@ -191,7 +192,8 @@ class ShFolderAPITest {
     void stage05FolderPathHasBreadcrumbAndSite() throws Exception {
         mockMvc.perform(get("/api/v2/folder/" + childFolderId + "/path").principal(mockPrincipal))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.shSite.id").value(siteId))
+                // SH120: /path returns the CDA's own ShCdaPath, so the site is `site`, not `shSite`.
+                .andExpect(jsonPath("$.site.id").value(siteId))
                 .andExpect(jsonPath("$.currentFolder.id").value(childFolderId))
                 // breadcrumb is root-first and includes the current folder.
                 .andExpect(jsonPath("$.breadcrumb[0].id").value(rootFolderId))
@@ -219,7 +221,7 @@ class ShFolderAPITest {
         // List shows the post.
         mockMvc.perform(get("/api/v2/object/" + childFolderId + "/list").principal(mockPrincipal))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.shPosts[?(@.id == '" + postId + "')]").exists());
+                .andExpect(jsonPath("$.posts[?(@.id == '" + postId + "')]").exists());
 
         // Clone (copy to same folder) yields a second post in the folder.
         mockMvc.perform(put("/api/v2/object/copyto/" + childFolderId)
@@ -231,7 +233,7 @@ class ShFolderAPITest {
 
         mockMvc.perform(get("/api/v2/object/" + childFolderId + "/list").principal(mockPrincipal))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.shPosts.length()").value(2));
+                .andExpect(jsonPath("$.posts.length()").value(2));
     }
 
     @Test
@@ -247,7 +249,7 @@ class ShFolderAPITest {
 
         mockMvc.perform(get("/api/v2/object/" + rootFolderId + "/list").principal(mockPrincipal))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.shPosts[?(@.id == '" + postId + "')]").exists());
+                .andExpect(jsonPath("$.posts[?(@.id == '" + postId + "')]").exists());
     }
 
     @Test

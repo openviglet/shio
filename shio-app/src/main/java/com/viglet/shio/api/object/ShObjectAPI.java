@@ -19,9 +19,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.api.acl.ShContentAclService;
+import com.viglet.shio.api.cda.dto.ShCdaPath;
+import com.viglet.shio.api.object.dto.ShConsoleListing;
 import com.viglet.shio.api.acl.ShContentAclService.AclEntry;
-import com.viglet.shio.api.object.ShObjectNavigationService.ShObjectList;
-import com.viglet.shio.api.object.ShObjectNavigationService.ShObjectPath;
 import com.viglet.shio.persistence.model.acl.ShContentAcl;
 import com.viglet.shio.persistence.model.object.ShObject;
 
@@ -53,7 +53,7 @@ public class ShObjectAPI {
     }
 
     @GetMapping("/{id}/list")
-    public ResponseEntity<ShObjectList> list(@PathVariable String id) {
+    public ResponseEntity<ShConsoleListing> list(@PathVariable String id) {
         shContentAclService.requireRead(id);
         return shObjectNavigationService.list(id)
                 .map(ResponseEntity::ok)
@@ -61,7 +61,7 @@ public class ShObjectAPI {
     }
 
     @GetMapping("/{id}/path")
-    public ResponseEntity<ShObjectPath> path(@PathVariable String id) {
+    public ResponseEntity<ShCdaPath> path(@PathVariable String id) {
         shContentAclService.requireRead(id);
         return shObjectNavigationService.path(id)
                 .map(ResponseEntity::ok)
