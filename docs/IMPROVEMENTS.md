@@ -1443,6 +1443,111 @@ per-deployment path an agent should not have to know; and it cannot be scoped by
 allow-list or the SH54 ACL that bounds everything else on this surface. Bounded, attributed
 evidence attached to the incident is smaller and safer than a file.
 
+### The iteration loop — what SH183–SH190 does *not* buy (SH191–SH195)
+
+The target is a loop: change the layout, see the result, correct it, repeat — the Lovable
+experience, with the CMS as the accelerator rather than a code generator. SH183–SH190 get a site
+to *exist and be seen once*. They do nothing for the second iteration, and the gap is not one
+feature but five, each of which makes a cycle cost a round trip or a guess.
+
+This matters more here than in a code-generation tool, for a reason worth stating: a region is
+**shared**. Lovable edits one component in one app and the blast radius is the file. A CMS region
+appears on every page that slots it, so an iterative loop over shared presentation needs bounds
+and proof that a single-app loop can simply do without.
+
+#### XV.9 A template is code and must project as files (SH191)
+
+`content-files.mjs` is deliberately narrow: `bodyFieldFor` returns a field only when its widget
+is `HTML Editor`, and the comment says why — a value that would not survive the round trip stays
+in `fields:` as JSON rather than becoming prettier. That rule is right for content and wrong for
+presentation, because a layout's fields are `Ace Editor - HTML` and `Ace Editor - Javascript`,
+which do not qualify. The imported region projects like this:
+
+```yaml
+fields:
+  HTML: "<div class=\"card-columns\">\n {{#each this.posts}}    \n  <div class=\"card\">\n…"
+  JAVASCRIPT: "load('https://cdnjs.cloudflare.com/…');\nvar template = Handlebars.compile(html);\n…"
+```
+
+An HTML document and a JavaScript program, as escaped one-liners inside YAML. No line numbers, no
+highlighting, no `Grep`, no diff a human can review, and every edit means re-escaping by hand.
+Law P4 says files beat APIs for authoring, and this is the artifact an iterative loop touches more
+than any other.
+
+The fix is a multi-file projection: `bootstrap_content_list_region.md` for the metadata beside
+`bootstrap_content_list_region.html` and `.js`, with frontmatter naming which field each sidecar
+carries — the same trick `body:` already plays, generalized past one field and one widget. Two
+things to settle: which widgets earn a sidecar (`Ace Editor - *` is the obvious set, and it should
+be the *widget* that decides, not the post-type, or the rule stops working the moment someone
+models their own layout type), and what a pull does when a sidecar and the frontmatter disagree —
+the same refusal `url:`-versus-path already gets.
+
+#### XV.10 A template must fail at write time, not at view time (SH192)
+
+Nothing validates a template. `post.upsert` refuses a field the post-type does not declare (SH168)
+and has no opinion about the 1330 characters of markup inside one, so an unclosed `{{#each}}`, a
+call to a helper that does not exist, or a reference to a field that was renamed is accepted,
+stored, published — and discovered as a blank page. Every iteration then costs a guess, which is
+precisely the loop this block exists to make cheap.
+
+The reporting standard already exists in this product's own history: FSP's `regionError` printed
+the file, the line, the column, a five-line window and a caret under the offending character. That
+is what law P6 asks for and it was there in 2019. The task needs a `template-invalid` verify rule
+plus a refusal on write, and one decision — whether an unknown *field reference* is an error or a
+warning. It should be an error when the post-type is known (a renamed field silently rendering
+empty is the SH168 failure wearing a template), and a warning when the data comes from a helper
+whose shape the CMS cannot know.
+
+#### XV.11 The blast radius of a region change is uncomputable (SH193)
+
+Composition is expressed as an attribute inside an HTML string:
+
+```html
+<div sh-region="BOOTSTRAP_NAV_REGION"> </div>
+```
+
+so the content graph cannot answer the question every shared-presentation edit begins with: which
+layouts slot this region, which pages use those layouts, how many are published. Changing a
+navigation region is an unbounded edit, and `verify` cannot prove afterwards that nothing broke
+because it does not know what depended on it.
+
+SH154 solved the identical problem one level up: a `Multi Select` holding post URLs became a real
+reference because `widgetSettings` declared what the field held, and then the lint, the digest and
+the change feed could all agree about it. Slot references want the same treatment — extracted at
+write time into `ShReference`, which already exists and already survives a move. Once they are
+edges, "what does this change affect" is a query, `changes` can report it, and SH140's
+inbound-links idea gets its second use.
+
+#### XV.12 Appearance needs a before/after and a one-call loop (SH194)
+
+Two costs, both per iteration. **Feedback**: SH187 produces a snapshot, which answers "what does
+this look like"; a loop asks "what did my change do", and that is a diff. SH102 is the right
+instrument, still an idea, and still scoped *"for the human handoff rather than for the agent"* —
+the same misframing SH187 corrects. **Round trips**: a layout change today is `post.upsert`, then
+`/agent/render`, then a look. Three calls per tweak, and a tweak is the unit of this work. A write
+that can return the rendered digest of what it just changed collapses that, and it is the same
+idea SH157 identified for closing the tool-call gap — a write that returns its own verification.
+
+The honest limit: a structural digest cannot see most of what "looks wrong" means. Spacing,
+weight, contrast and alignment do not move a hash. That is the argument for the raster half of
+SH102 rather than against the digest, and it is also why XV.13 matters more than it looks.
+
+#### XV.13 Most layout changes are tokens, not structure (SH195)
+
+If the loop is going to be *constant* layout change, it is worth noticing what those changes
+actually are. Very few are "add a region". Most are spacing, type scale, colour role, radius,
+density — and `PT-THEME` holds `CSS` and `JAVASCRIPT` as opaque blobs, so every one of them is a
+stylesheet rewrite: nothing declares what may be changed, nothing verifies the result, nothing
+diffs meaningfully, and an agent editing raw CSS by string replacement is the least reliable thing
+in this whole picture.
+
+A declared token vocabulary turns the common change into a field edit — verifiable, diffable,
+reviewable by a human in the console, and safe for an agent to make. It also gives SH183's default
+stylesheet something to be built from instead of hardcoded values, and it gives the Universal
+Editor something to offer besides text. Raw CSS stays as the escape hatch; the point is that it
+stops being the interface. The open question is whose vocabulary — inventing one is a design
+project, and adopting an existing convention is cheaper and more portable.
+
 ---
 
 # Part 2 — pre-existing sections
