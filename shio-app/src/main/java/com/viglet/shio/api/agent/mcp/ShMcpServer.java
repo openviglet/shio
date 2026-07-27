@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import com.viglet.shio.api.agent.ShAgentManifestService;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.utils.ShStableMap;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -354,7 +355,10 @@ public class ShMcpServer {
         error.put("code", code);
         error.put("message", message);
         if (data != null) {
-            error.set("data", objectMapper.valueToTree(data));
+            // Canonicalized like every other payload built from a Map (SH136): the two
+            // `valueToTree` calls on this class are the only points where an in-memory
+            // container becomes bytes, and ShByteStabilityLintTest holds that count at two.
+            error.set("data", canonical(objectMapper.valueToTree(data)));
         }
         return response;
     }
@@ -401,9 +405,18 @@ public class ShMcpServer {
         }
     }
 
+    /**
+     * The SH80 teaching payload of an exception, as the error's {@code data}.
+     *
+     * <p>SH136: this used {@code Map.copyOf}, which replaced {@code ProblemDetail}'s
+     * insertion order with a per-JVM hash order — so the payload whose <em>job</em> is to
+     * teach (`fix`, `allowed`, `didYouMean`, `example`, `at`) came out in a different order
+     * on every boot. The writer canonicalizes on top, so the order here only has to be
+     * deterministic, not meaningful.</p>
+     */
     private Map<String, Object> problem(ShTeachingException e) {
         var detail = e.toProblemDetail();
-        return detail.getProperties() == null ? Map.of() : Map.copyOf(detail.getProperties());
+        return ShStableMap.copyOf(detail.getProperties());
     }
 
     private static String text(JsonNode node, String field) {

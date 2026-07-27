@@ -303,6 +303,17 @@ the CDA + console services (law P10) and holds no business logic of its own.
   agent has a shell, so the write path is `shio remember`; SH160 is the open question for a
   client without one, and SH161 is that notes do not yet travel with an exported site.
 
+**Byte stability (SH136).** `Map.copyOf`/`Set.copyOf` iterate in an order derived from a salt
+set **once per JVM**, so they are a silent re-ordering wearing a defensive copy's clothes: the
+same data serializes to different bytes after a restart, and any hash over that iteration moves
+with it. Use **`ShStableMap.copyOf`** wherever the order is observable — serialized, hashed or
+rendered — and `ShByteStabilityLintTest` fails the build otherwise (`byte-stable-exempt:
+<reason>` is the hatch, for a keyed lookup that is never iterated). Two rules that came out of
+it: **a hash sorts its own inputs** rather than trusting the caller (SH101's digest does now),
+and **you cannot catch this class with a behavioural test** — twice-in-one-process comparison
+passes over broken code, which is why the guard is a lint and why the digest was restructured
+until order-independence became assertable.
+
 **Conditional reads (SH116).** `manifest`, `context` and `blueprints` carry strong ETags;
 `If-None-Match` on an unchanged instance answers `304`, which measures as **0** on
 `X-Shio-Est-Tokens`. A tag names a **representation**, not a state — the SH77 digest covers

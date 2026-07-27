@@ -406,8 +406,15 @@ public class ShAgentRenderService {
         StringBuilder canonical = new StringBuilder();
         headings.forEach(heading -> canonical.append('h').append(heading.level()).append(' ')
                 .append(heading.text()).append('\n'));
-        landmarks.forEach((name, count) -> canonical.append('l').append(' ').append(name)
-                .append(' ').append(count).append('\n'));
+        // Sorted here, not trusted from the caller (SH136). The landmark map arrived sorted
+        // by construction and then lost that order to a `Map.copyOf` for as long as SH101 has
+        // existed, so the same page hashed differently after a restart — silently defeating
+        // the one promise a digest makes. A hash must not depend on a container's iteration
+        // order: it is the one place where "the caller sorts it" is not a good enough contract,
+        // because the failure is a wrong answer rather than an exception.
+        new java.util.TreeMap<>(landmarks).forEach((name, count) ->
+                canonical.append('l').append(' ').append(name)
+                        .append(' ').append(count).append('\n'));
         links.forEach(link -> canonical.append('a').append(' ').append(link.href()).append('\n'));
         images.forEach(image -> canonical.append('i').append(' ').append(image.src())
                 .append(' ').append(image.alt() == null ? "-" : "alt").append('\n'));

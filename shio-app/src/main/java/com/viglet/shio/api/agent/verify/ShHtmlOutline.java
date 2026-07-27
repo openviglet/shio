@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import com.viglet.shio.utils.ShStableMap;
 
 /**
  * The structural scan behind SH101's render digest and SH100's link check.
@@ -144,7 +145,11 @@ public final class ShHtmlOutline {
                 counts.put(element, found);
             }
         }
-        return Map.copyOf(counts);
+        // SH136: the sort above is load-bearing — digestOf() hashes this map in iteration
+        // order, so Map.copyOf here made the same page hash differently after a restart.
+        // Only for a *single*-field post, since merge() re-sorts, which is the kind of
+        // half-broken determinism no same-JVM test can see.
+        return ShStableMap.copyOf(counts);
     }
 
     private static int words(String html) {

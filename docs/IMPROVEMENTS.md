@@ -471,11 +471,22 @@ what follows:
   caught `tools/list` serializing differently on every boot, because `inputSchema()` is
   built from `Map.of` and iteration order follows the JVM hash seed. Nothing about the
   content changed; the bytes did, on the one payload re-sent every turn. This is the
-  first place P5 has been broken by the *language* rather than by a design choice, and it
-  will not be the last — which is **SH136**: the manifest is byte-stable by test and the
-  context pack by digest, but the MCP resources, the prompt list, and any future
-  map-backed payload are unchecked. One lint (no un-canonicalized `Map`/`Set` reaching a
-  JSON writer) plus a per-payload stability assertion covers the class.
+  first place P5 has been broken by the *language* rather than by a design choice, and
+  ✅ **SH136** → [CHANGELOG.md](CHANGELOG.md) shows it was not the last: four more live
+  instabilities, all the same shape. Two records that bind what follows.
+  - **Some invariants cannot be tested behaviourally, and knowing which is the skill.**
+    `Map.copyOf`'s order comes from a salt fixed once per *process*, so "build it twice
+    and compare" passes over broken code in every test run there will ever be. Before
+    writing a guard, ask what a broken implementation would do differently *inside one
+    JVM* — if the answer is nothing, the guard has to be textual or the code has to be
+    restructured until the defect becomes observable. SH136 did both: a lint, plus moving
+    the sort to the hash site so order-independence could be asserted with a deliberately
+    reversed input.
+  - **Prove a guard by breaking the code.** SH136's digest assertion was written, passed,
+    and was then *verified by reverting the fix* to confirm it failed. That step is cheap
+    and it is the only evidence that separates a guard from a decoration — the same
+    lesson as SH130's tautological version check, arrived at from the other direction.
+    A guard nobody has watched fail is a guard nobody should trust.
 - **A contract that can only be honoured by remembering belongs inside the method.**
   SH131's bind requirement lived in a comment; SH83 read the comment and still got it
   wrong, and the breach looked like an empty result set — valid data, not an error. The

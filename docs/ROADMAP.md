@@ -65,7 +65,8 @@
 > half work at all, which is what made Block L's question askable; and Block L answered it —
 > how a human bounds and undoes an agent.
 >
-> **What is left is follow-ups, not blocks**: H's edges (SH136–SH140), K's delivery-side
+> **What is left is follow-ups, not blocks**: H's edges are **closed** (SH136–SH139 shipped;
+> SH84's Turing half and SH140 remain 💭 ideas), K's delivery-side
 > route proof and durable incidents (SH141, SH144), I's assets and paging (SH145–SH150), J's
 > reconciliation and registry (SH96, SH153–SH156), M's attribution (SH157–SH161, SH174), N's
 > realignment (SH163–SH167), plus SH44–SH47's tenant work and SH110. The highest-value ones left
@@ -127,9 +128,12 @@
 > SH130's transcript found `tools/list` serializing differently on every boot. Both were
 > invisible to the behavioural tests that already covered those paths. The general
 > lesson is now a working rule — **when a defect class recurs, the fix is a guard per
-> invariant, written the first time the invariant is violated** — and what it turned up next
-> has since shipped, leaving only the byte-stability question across the rest of the surface
-> (**SH136**). ✅ **SH137** → [CHANGELOG.md](CHANGELOG.md) closed the move gap one level up,
+> invariant, written the first time the invariant is violated** — and everything it turned up
+> has now shipped, which leaves this block with **no designed work outstanding**: only the two
+> 💭 ideas below. ✅ **SH136** → [CHANGELOG.md](CHANGELOG.md) was the rule's clearest
+> vindication: the byte-stability lint found **four** live instabilities, one of them inside
+> SH101's render digest, and none of them detectable by any test that runs in a single JVM.
+> ✅ **SH137** → [CHANGELOG.md](CHANGELOG.md) closed the move gap one level up,
 > and the guard rule paid out a fourth time: writing the one folder-move writer both surfaces
 > call turned up a live console defect nobody had filed — the move dialog could re-parent a
 > folder into its own subtree, which succeeds and produces a cycle.
@@ -140,7 +144,6 @@
 > the same dead end as a silent cut, reached from the other side.
 
 - 💭 **SH84** (deps: SH83 ✅, SH22 ✅) **Turing ecosystem wiring** — the SH22 tenant sweep and its test shipped; what remains is the Turing integration (replaces old SH37). → §VIII.9
-- 📋 **SH136** (deps: SH130 ✅) **Byte-stability guard for the whole agent surface** — SH130 pinned `tools/list` and immediately found it unstable across boots (`Map.of` iteration order). The manifest is byte-stable by test and the context pack by digest, but nothing checks the MCP resources, the prompt list, or any future map-backed payload. One lint (no un-canonicalized `Map`/`Set` reaching a JSON writer) plus a per-payload stability assertion. → §VIII.11
 - 💭 **SH140** (deps: SH134 ✅, SH100) **Report inbound links when a post moves** — `ShReference` is id-keyed and survives a move, but a URL typed into another post's rich text does not, and nothing tells the agent which pages it just broke. The cheap version is a count in the change detail; the real one belongs with SH100's route verification. → §IX.2
 
 ## Block K — Perception & verification loop

@@ -283,4 +283,54 @@ class ShAgentRenderTest {
         assertThatThrownBy(() -> shAgentRenderService.digest("folder:" + siteName + base, null))
                 .isInstanceOf(ShAgentRenderService.NotAPageException.class);
     }
+
+    /**
+     * SH136 — the digest does not depend on a map's iteration order.
+     *
+     * <p>This is the per-payload assertion the block needed, and the interesting part is how
+     * it is written. You <em>cannot</em> catch the real defect by hashing twice and comparing:
+     * {@code Map.copyOf}'s order comes from a salt fixed once per JVM, so both calls agree and
+     * the test passes over broken code. What can be asserted deterministically is
+     * <b>order-independence</b> — hand the same landmark counts in deliberately reversed order
+     * and require the same digest. That fails on the old code (which appended in whatever
+     * order the map iterated) and passes on the new (which sorts at the hash site).</p>
+     *
+     * <p>The bug this pins was live for the whole of SH101, and only for a single-field post:
+     * the multi-field path re-sorted on merge. A digest that is stable for some pages and not
+     * others is worse than one that is never stable, because the first counter-example looks
+     * like a real change.</p>
+     */
+    @Test
+    @DisplayName("the digest is the same whatever order the landmark map iterates in")
+    void theDigestDoesNotDependOnMapOrder() {
+        List<ShAgentDigest.Heading> headings = List.of(new ShAgentDigest.Heading(1, "Title"));
+        List<ShAgentDigest.Link> links = List.of();
+        List<ShAgentDigest.Image> images = List.of();
+
+        java.util.Map<String, Integer> ascending = new java.util.LinkedHashMap<>();
+        ascending.put("footer", 1);
+        ascending.put("header", 1);
+        ascending.put("main", 1);
+        ascending.put("nav", 2);
+
+        java.util.Map<String, Integer> reversed = new java.util.LinkedHashMap<>();
+        ascending.entrySet().stream()
+                .sorted(java.util.Map.Entry.comparingByKey(java.util.Comparator.reverseOrder()))
+                .forEach(entry -> reversed.put(entry.getKey(), entry.getValue()));
+
+        assertThat(ShAgentRenderService.digestOf(headings, reversed, links, images))
+                .isEqualTo(ShAgentRenderService.digestOf(headings, ascending, links, images));
+    }
+
+    /** And the scanner still hands them over name-sorted, which is what its Javadoc promises. */
+    @Test
+    @DisplayName("a scanned outline's landmarks iterate in name order")
+    void landmarksComeOutSorted() {
+        // Written last-to-first in the markup so document order cannot be mistaken for sorting.
+        var outline = ShHtmlOutline.of(
+                "<footer>f</footer><nav>n</nav><main>m</main><header>h</header>");
+
+        assertThat(outline.landmarks().keySet())
+                .containsExactly("footer", "header", "main", "nav");
+    }
 }

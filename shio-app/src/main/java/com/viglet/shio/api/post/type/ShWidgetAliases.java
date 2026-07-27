@@ -100,6 +100,8 @@ public final class ShWidgetAliases {
         // Not user-facing.
         put(aliases, "Hidden", "hidden", "internal", "system", "meta");
 
+        // byte-stable-exempt: a keyed lookup, never iterated and never serialized —
+        // resolve() only ever asks it for one alias, so its order is not observable.
         return Map.copyOf(aliases);
     }
 

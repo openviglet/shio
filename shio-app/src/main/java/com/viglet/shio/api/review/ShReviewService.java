@@ -34,6 +34,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.tenant.ShTenantContext;
+import com.viglet.shio.utils.ShStableMap;
 
 /**
  * The review queue (SH109): what an agent run changed, and the two things a human can do
@@ -243,7 +244,9 @@ public class ShReviewService {
             }
         }
         return new ShReviewSession(session, entries.get(0).getOwner(), entries.size(),
-                Map.copyOf(byAction), first, last, List.copyOf(sites), pending);
+                // SH136: byAction is a LinkedHashMap on purpose; Map.copyOf discarded
+                // that insertion order on the way out.
+                ShStableMap.copyOf(byAction), first, last, List.copyOf(sites), pending);
     }
 
     private ShReviewDetail.Entry entry(ShHistory history) {

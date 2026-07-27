@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import com.viglet.shio.api.agent.diagnostics.dto.ShAgentDiagnostics;
 import com.viglet.shio.webhook.ShWebhookProperties;
+import com.viglet.shio.utils.ShStableMap;
 
 /**
  * Shapes the incident log into {@code GET /api/v2/agent/diagnostics} (SH103).
@@ -65,7 +66,10 @@ public class ShAgentDiagnosticsService {
                 .map(ShAgentDiagnosticsService::row)
                 .toList();
         return new ShAgentDiagnostics(incidentLog.since().toString(), incidentLog.dropped(),
-                Map.copyOf(counts), rows, notes(all.size(), rows.size()));
+                // SH136: keeps the TreeMap's order — Map.copyOf would replace the sort
+                // with a per-JVM hash order, so the same incident window serialized
+                // differently after a restart and the SH116 ETag stopped matching.
+                ShStableMap.copyOf(counts), rows, notes(all.size(), rows.size()));
     }
 
     private static ShAgentDiagnostics.Incident row(ShAgentIncidentLog.Incident incident) {
