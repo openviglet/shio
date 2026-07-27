@@ -152,6 +152,19 @@ public class ShAgentManifestService {
         features.put("instanceMemory", true);
         features.put("conditionalReads", true);
         features.put("agentsMd", true);
+        // Block L: what bounds this caller. Reported here because all three change what a
+        // write does, and a caller that has to discover them by being refused pays for the
+        // discovery twice — once in the failed call and once in the confusion.
+        //
+        // `publishGate` says publishing is a per-credential capability (SH107); it is true
+        // as a *protocol* fact, and whether this particular caller has it is answered by
+        // trying, because the manifest is cached and a credential is not. `confirmTokens`
+        // says a delete needs the SH108 token from its own dryRun — an agent that does not
+        // know this reads its first 428 as a bug.
+        features.put("agentTokenScope", true);
+        features.put("publishGate", true);
+        features.put("confirmTokens", true);
+        features.put("reviewQueue", true);
         // SH102's visual snapshot. Deliberately last in the block: a PNG is for the
         // human handoff, and reporting it here as available would invite an agent to
         // spend three orders of magnitude more tokens than the digest costs.

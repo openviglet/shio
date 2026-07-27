@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 import com.viglet.shio.api.agent.ShAgentDesiredStateService;
 import com.viglet.shio.api.agent.ShAgentReadTerse;
 import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
-import com.viglet.shio.api.agent.mcp.ShMcpSessionContext;
+import com.viglet.shio.api.agent.ShAgentSessionContext;
 import com.viglet.shio.api.agent.mcp.ShMcpTool;
 import com.viglet.shio.blueprint.ShBlueprintService;
 import com.viglet.shio.blueprint.ShBlueprintTerse;
@@ -101,13 +101,14 @@ public class ShApplyTool implements ShMcpTool {
                 "prune", ShMcpTool.bool(
                         "Delete posts inside the declared folders that this document does not "
                                 + "declare. Requires `folders`."),
-                "dryRun", ShMcpTool.bool("Report the diff and write nothing.")),
+                "dryRun", ShMcpTool.bool("Report the diff and write nothing."),
+                "confirm", ShMcpTool.string("dryRun's token; required to delete.")),
                 List.of("site"));
     }
 
     @Override
     public String call(JsonNode arguments) {
-        String actor = ShMcpSessionContext.actor();
+        String actor = ShAgentSessionContext.actor();
         boolean dryRun = ShMcpArgs.bool(arguments, "dryRun");
         String site = ShMcpArgs.string(arguments, "site");
         String blueprint = ShMcpArgs.string(arguments, "blueprint");
@@ -119,7 +120,8 @@ public class ShApplyTool implements ShMcpTool {
                     : shBlueprintService.apply(blueprint, site, params, actor));
         }
         ShAgentDesiredState desired = new ShAgentDesiredState(site, folders(arguments),
-                posts(arguments), ShMcpArgs.bool(arguments, "prune"));
+                posts(arguments), ShMcpArgs.bool(arguments, "prune"),
+                ShMcpArgs.string(arguments, "confirm"));
         return ShAgentReadTerse.changes(dryRun
                 ? shAgentDesiredStateService.plan(desired, false, actor)
                 : shAgentDesiredStateService.apply(desired, false, actor));

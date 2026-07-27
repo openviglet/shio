@@ -40,5 +40,9 @@
     "updated": "API token updated.",
     "copied": "Token copied to clipboard.",
     "copyFailed": "Failed to copy token."
-  }
+  },
+  "apiToken.scopeAgent": "Agent",
+  "apiToken.scopeAgentDesc": "Writes through the agent surface (/api/v2/agent, /mcp) and reads drafts. Not a CDA write key: it cannot patch published content directly.",
+  "apiToken.mayPublish": "May publish",
+  "apiToken.mayPublishHint": "Off by default. An agent token without this writes drafts a human then approves in Agent Review."
 }

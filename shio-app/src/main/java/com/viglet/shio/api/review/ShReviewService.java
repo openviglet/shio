@@ -1,0 +1,326 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.api.review;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.viglet.shio.api.acl.ShContentAclService;
+import com.viglet.shio.api.agent.ShAddressResolver;
+import com.viglet.shio.api.history.ShContentAction;
+import com.viglet.shio.api.review.dto.ShReviewDetail;
+import com.viglet.shio.api.review.dto.ShReviewOutcome;
+import com.viglet.shio.api.review.dto.ShReviewSession;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
+import com.viglet.shio.persistence.model.history.ShHistory;
+import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
+import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.tenant.ShTenantContext;
+
+/**
+ * The review queue (SH109): what an agent run changed, and the two things a human can do
+ * about it.
+ *
+ * <h2>Why this is a view over the audit and not a table</h2>
+ *
+ * <p>A "proposed change" table would be a second copy of the content — the agent's version
+ * waiting to be accepted — and that is the design the unified model already rejected: a post
+ * has a DRAFT row and a PUBLISHED row, and the draft <em>is</em> the proposal. So the queue is
+ * the SH51 audit grouped by the SH106 session id, and the actions it offers are the ones the
+ * platform already has: publish a draft (approve), and SH14 restore / SH55 trash (revert).
+ * Nothing here is a third mechanism for saying what changed (P10).</p>
+ *
+ * <h2>What "approve" and "revert" mean, precisely</h2>
+ *
+ * <p><b>Approve</b> publishes every draft the run wrote. That is the whole gesture under SH107:
+ * an agent's writes land in DRAFT, so approving is exactly the step the agent could not take.</p>
+ *
+ * <p><b>Revert</b> is per entry, because one run's changes are not one kind of change:
+ * a {@code CREATE} is undone by trashing the post (SH55 — recoverable, not purged), an
+ * {@code UPDATE} by restoring the draft from the published snapshot (SH14), a {@code DELETE} by
+ * untrashing, and a {@code PUBLISH} by unpublishing. An entry with no honest undo — an update to
+ * a post that was never published, so there is nothing to restore <em>to</em> — is reported as
+ * skipped with the reason rather than approximated. A revert that guessed would be a second
+ * surprise on top of the one the human came here to fix.</p>
+ *
+ * <p>Both are ACL-checked per post (SH54): reviewing is not a privilege, and a reviewer who
+ * cannot write a post cannot approve or revert its changes either.</p>
+ *
+ * @author Alexandre Oliveira
+ * @since 2026.3
+ */
+@Service
+public class ShReviewService {
+
+    /** How many audit rows the session listing scans. Bounded, and it says so (SH103's rule). */
+    private static final int SCAN_LIMIT = 2000;
+
+    private final ShHistoryRepository shHistoryRepository;
+    private final ShPostUnifiedRepository shPostUnifiedRepository;
+    private final ShPostUnifiedWriteService shPostUnifiedWriteService;
+    private final ShContentAclService shContentAclService;
+    private final ShAddressResolver shAddressResolver;
+
+    public ShReviewService(ShHistoryRepository shHistoryRepository,
+                          ShPostUnifiedRepository shPostUnifiedRepository,
+                          ShPostUnifiedWriteService shPostUnifiedWriteService,
+                          ShContentAclService shContentAclService,
+                          ShAddressResolver shAddressResolver) {
+        this.shHistoryRepository = shHistoryRepository;
+        this.shPostUnifiedRepository = shPostUnifiedRepository;
+        this.shPostUnifiedWriteService = shPostUnifiedWriteService;
+        this.shContentAclService = shContentAclService;
+        this.shAddressResolver = shAddressResolver;
+    }
+
+    /** The runs, newest first. */
+    @Transactional(readOnly = true)
+    public List<ShReviewSession> sessions(int limit) {
+        List<ShHistory> entries = shHistoryRepository.findAgentEntries(PageRequest.of(0, SCAN_LIMIT));
+        Map<String, List<ShHistory>> bySession = new LinkedHashMap<>();
+        for (ShHistory entry : entries) {
+            bySession.computeIfAbsent(entry.getAgentSessionId(), key -> new ArrayList<>()).add(entry);
+        }
+        return bySession.entrySet().stream()
+                .map(group -> summarize(group.getKey(), group.getValue()))
+                .limit(Math.max(1, limit))
+                .toList();
+    }
+
+    /** One run's changes, oldest first. */
+    @Transactional(readOnly = true)
+    public ShReviewDetail detail(String session) {
+        List<ShHistory> entries = shHistoryRepository.findByAgentSession(session);
+        List<ShReviewDetail.Entry> rows = entries.stream().map(this::entry).toList();
+        String actor = entries.isEmpty() ? null : entries.get(0).getOwner();
+        return new ShReviewDetail(session, actor, rows);
+    }
+
+    /**
+     * Publish every draft this run wrote.
+     *
+     * <p>Deduplicated by post: a run that wrote a page four times gets published once, and a
+     * count of four "approvals" would misdescribe what happened.</p>
+     */
+    @Transactional
+    public ShReviewOutcome approve(String session, String actor) {
+        List<String> done = new ArrayList<>();
+        List<ShReviewOutcome.Skipped> skipped = new ArrayList<>();
+        for (String postId : touchedPosts(session)) {
+            Optional<ShPostUnified> draft = state(postId, ShPostState.DRAFT);
+            if (draft.isEmpty()) {
+                skipped.add(new ShReviewOutcome.Skipped(postId, "no draft to publish"));
+                continue;
+            }
+            try {
+                shContentAclService.requireWrite(postId);
+                shPostUnifiedWriteService.publish(postId, actor);
+                done.add(postId);
+            } catch (RuntimeException e) {
+                skipped.add(new ShReviewOutcome.Skipped(postId, reason(e)));
+            }
+        }
+        return new ShReviewOutcome(session, "approve", done.size(), List.copyOf(done),
+                List.copyOf(skipped));
+    }
+
+    /**
+     * Undo what this run did, newest change first.
+     *
+     * <p>Order matters: the run's own last word about a post is the one to undo, and walking
+     * backwards means a create-then-publish pair ends as "not published, then trashed" rather
+     * than as a publish applied to a post that no longer exists.</p>
+     */
+    @Transactional
+    public ShReviewOutcome revert(String session, String actor) {
+        List<ShHistory> entries = new ArrayList<>(shHistoryRepository.findByAgentSession(session));
+        entries.sort((left, right) -> right.getDate().compareTo(left.getDate()));
+        List<String> done = new ArrayList<>();
+        List<ShReviewOutcome.Skipped> skipped = new ArrayList<>();
+        Set<String> handled = new LinkedHashSet<>();
+        for (ShHistory entry : entries) {
+            String postId = entry.getShObject();
+            if (postId == null || !handled.add(postId)) {
+                continue;
+            }
+            try {
+                revertOne(entry, postId, actor)
+                        .ifPresentOrElse(reason -> skipped.add(
+                                        new ShReviewOutcome.Skipped(postId, reason)),
+                                () -> done.add(postId));
+            } catch (RuntimeException e) {
+                skipped.add(new ShReviewOutcome.Skipped(postId, reason(e)));
+            }
+        }
+        return new ShReviewOutcome(session, "revert", done.size(), List.copyOf(done),
+                List.copyOf(skipped));
+    }
+
+    /**
+     * Reverts one entry.
+     *
+     * @return empty when it was reverted, or the reason it was not
+     */
+    private Optional<String> revertOne(ShHistory entry, String postId, String actor) {
+        ShContentAction action = actionOf(entry);
+        if (action == null) {
+            return Optional.of("unknown action '" + entry.getAction() + "'");
+        }
+        boolean hasDraft = state(postId, ShPostState.DRAFT).isPresent();
+        boolean hasPublished = state(postId, ShPostState.PUBLISHED).isPresent();
+        if (!hasDraft && !hasPublished && action != ShContentAction.DELETE) {
+            return Optional.of("the post no longer exists");
+        }
+        shContentAclService.requireWrite(postId);
+        switch (action) {
+            case CREATE -> shPostUnifiedWriteService.delete(postId, actor);
+            case UPDATE -> {
+                if (!hasPublished) {
+                    // Nothing to restore *to*: the run created the content this update
+                    // refined, and "revert" would mean deleting a post the human may want.
+                    // Reverting the CREATE entry is the honest gesture, and it is in this
+                    // same list.
+                    return Optional.of("never published — revert its creation instead");
+                }
+                shPostUnifiedWriteService.restoreDraftFromPublished(postId, actor);
+            }
+            case PUBLISH -> shPostUnifiedWriteService.unpublish(postId, actor);
+            case UNPUBLISH -> {
+                if (!hasDraft) {
+                    return Optional.of("no draft to publish back");
+                }
+                shPostUnifiedWriteService.publish(postId, actor);
+            }
+            case DELETE -> {
+                if (!shPostUnifiedWriteService.restoreFromTrash(postId, actor)) {
+                    return Optional.of("not in the trash — it was purged, not deleted");
+                }
+            }
+            case RESTORE -> {
+                return Optional.of("a restore is already an undo");
+            }
+        }
+        return Optional.empty();
+    }
+
+    private ShReviewSession summarize(String session, List<ShHistory> entries) {
+        Map<String, Integer> byAction = new LinkedHashMap<>();
+        Set<String> sites = new LinkedHashSet<>();
+        Instant first = null;
+        Instant last = null;
+        int pending = 0;
+        for (ShHistory entry : entries) {
+            byAction.merge(entry.getAction() == null ? "?" : entry.getAction(), 1, Integer::sum);
+            if (entry.getShSite() != null) {
+                sites.add(entry.getShSite());
+            }
+            Instant date = entry.getDate();
+            if (date != null) {
+                first = first == null || date.isBefore(first) ? date : first;
+                last = last == null || date.isAfter(last) ? date : last;
+            }
+            if (entry.getShObject() != null
+                    && state(entry.getShObject(), ShPostState.DRAFT).isPresent()) {
+                pending++;
+            }
+        }
+        return new ShReviewSession(session, entries.get(0).getOwner(), entries.size(),
+                Map.copyOf(byAction), first, last, List.copyOf(sites), pending);
+    }
+
+    private ShReviewDetail.Entry entry(ShHistory history) {
+        String postId = history.getShObject();
+        Optional<ShPostUnified> draft = postId == null ? Optional.empty()
+                : state(postId, ShPostState.DRAFT);
+        Optional<ShPostUnified> published = postId == null ? Optional.empty()
+                : state(postId, ShPostState.PUBLISHED);
+        ShPostUnified live = draft.or(() -> published).orElse(null);
+        ShContentAction action = actionOf(history);
+        boolean trashed = postId != null && live == null && trashed(postId);
+        return new ShReviewDetail.Entry(
+                history.getAction(),
+                postId,
+                live == null ? null : shAddressResolver.addressOf(live).toString(),
+                live != null ? live.getTitle() : history.getDescription(),
+                history.getShSite(),
+                history.getDate(),
+                draft.isPresent(),
+                published.isPresent(),
+                trashed,
+                revertable(action, draft.isPresent(), published.isPresent(), trashed));
+    }
+
+    /**
+     * Whether the queue can honestly undo this entry — the same rules
+     * {@link #revertOne} applies, so a button is offered only where it works.
+     */
+    private static boolean revertable(ShContentAction action, boolean draft, boolean published,
+                                      boolean trashed) {
+        if (action == null) {
+            return false;
+        }
+        return switch (action) {
+            case CREATE -> draft || published;
+            case UPDATE -> published;
+            case PUBLISH -> published;
+            case UNPUBLISH -> draft;
+            case DELETE -> trashed;
+            case RESTORE -> false;
+        };
+    }
+
+    /** The distinct posts this run touched, in the order it first touched them. */
+    private List<String> touchedPosts(String session) {
+        Set<String> ids = new LinkedHashSet<>();
+        for (ShHistory entry : shHistoryRepository.findByAgentSession(session)) {
+            if (entry.getShObject() != null) {
+                ids.add(entry.getShObject());
+            }
+        }
+        return List.copyOf(ids);
+    }
+
+    private Optional<ShPostUnified> state(String postId, ShPostState state) {
+        return shPostUnifiedRepository.findByIdAndState(postId, state);
+    }
+
+    /**
+     * Whether this id is in the SH55 trash. The trash finder is native (it has to be —
+     * {@code @SQLRestriction} hides trashed rows from every Hibernate read), so this is the
+     * only way to tell "deleted" from "never existed".
+     */
+    private boolean trashed(String postId) {
+        return !shPostUnifiedRepository.findTrashedById(postId, ShTenantContext.getTenantId()).isEmpty();
+    }
+
+    private static ShContentAction actionOf(ShHistory history) {
+        try {
+            return history.getAction() == null ? null : ShContentAction.valueOf(history.getAction());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private static String reason(RuntimeException e) {
+        String message = e.getMessage();
+        return message == null || message.isBlank() ? e.getClass().getSimpleName() : message;
+    }
+}

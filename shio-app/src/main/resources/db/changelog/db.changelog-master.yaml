@@ -33,3 +33,5 @@ databaseChangeLog:
       file: db/changelog/v2026.3.9.yaml
   - include:
       file: db/changelog/v2026.3.10.yaml
+  - include:
+      file: db/changelog/v2026.3.11.yaml

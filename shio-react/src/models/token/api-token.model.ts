@@ -1,4 +1,5 @@
-export type ShApiTokenScope = "READ" | "PREVIEW" | "WRITE"
+/** SH106 added `AGENT`: writes on the agent surface, never on the CDA write path. */
+export type ShApiTokenScope = "READ" | "PREVIEW" | "WRITE" | "AGENT"
 export type ShApiTokenEnv = "PROD" | "PREVIEW"
 
 export type ShApiToken = {
@@ -12,4 +13,6 @@ export type ShApiToken = {
   scope: ShApiTokenScope
   siteIds: string[]
   env: ShApiTokenEnv
+  /** SH107 — whether this credential may publish on the agent surface. Off unless granted. */
+  mayPublish?: boolean
 }

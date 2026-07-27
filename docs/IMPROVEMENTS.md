@@ -988,32 +988,9 @@ file**. It returns them, the CLI writes them, and it refuses to overwrite withou
 > **Invariant: the agent path is never a privilege escalation** — tenant isolation
 > (SH22), content ACL (SH54) and token scopes apply identically on every agent
 > surface. An agent-native CMS that quietly runs as root is not adoptable.
-
-### XII.1 `AGENT` token scope + session identity (SH106)
-
-A scoped, budgeted, expiring credential in the existing SH2/SH5 token model, plus
-an agent session id stamped on every write into the SH51 audit. Extends the token
-model rather than adding a parallel one (P10).
-
-### XII.2 Draft-by-default + publish gate (SH107)
-
-MCP writes land in `DRAFT`; publishing is a separate tool, disabled unless the token
-carries `mayPublish`. The unified model's two-row-per-state shape (SH-0d/SH14) makes
-this nearly free — draft-targeted writes are already how the Universal Editor
-works (SH10).
-
-### XII.3 Destructive-op confirm tokens (SH108)
-
-Deletes, prunes and apply-with-prune take two steps, the second carrying the
-**plan hash** from the first. An agent therefore cannot destroy anything it did not
-just render for the human — and cannot destroy something that changed underneath it
-between plan and apply.
-
-### XII.4 Review queue console surface (SH109)
-
-"The agent proposed N changes" → field-level diff (reuse SH14), approve, revert
-(reuse SH55 trash). This becomes the human's **primary** console workflow under the
-new orientation, which is why §VIII.1 puts the session id in the host from the start.
+>
+> SH106–SH109 have shipped; their design notes are gone with them (see CHANGELOG.md Block L).
+> What remains here is the one task still blocked.
 
 ### XII.5 Agent budget guards (SH110)
 

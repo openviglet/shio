@@ -142,10 +142,17 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         // READ/PREVIEW tokens are read-only: only allow GET requests. WRITE tokens
         // may use any method (the CDA write surface itself lands in SH10). GraphQL
         // (SH4) is exempt — it reads via POST and the schema exposes no mutation.
-        if (scope != ShApiTokenScope.WRITE && !graphQl && !"GET".equalsIgnoreCase(request.getMethod())) {
+        //
+        // An AGENT token (SH106) writes with POST, but only where its protocol lives:
+        // /api/v2/agent/** and /mcp. On the CDA it stays read-only, which is the whole
+        // reason the scope exists — an agent's credential must not also be a key to the
+        // path that patches published content outside the agent surface's guards.
+        if (!mayUseAnyMethod(scope, request, graphQl) && !"GET".equalsIgnoreCase(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"CDA tokens only allow read (GET) requests\"}");
+            response.getWriter().write(scope == ShApiTokenScope.AGENT
+                    ? "{\"error\":\"An AGENT token may only write on /api/v2/agent/** and /mcp\"}"
+                    : "{\"error\":\"CDA tokens only allow read (GET) requests\"}");
             return;
         }
 
@@ -163,9 +170,12 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
 
         var authentication = new UsernamePasswordAuthenticationToken(
                 apiToken.getOwner(), null, authoritiesFor(scope, env));
-        // Carry scope + per-site allow-list (SH2) + environment (SH5) to the service.
+        // Carry scope + per-site allow-list (SH2) + environment (SH5) + the publish
+        // capability (SH107) to the service. `mayPublish` travels on the context rather
+        // than being re-read from the database at the publish site: the decision must be
+        // the one this request authenticated with, not whatever the row says a second later.
         authentication.setDetails(new ShApiTokenContext(
-                apiToken.getId(), scope, apiToken.getSiteIds(), env));
+                apiToken.getId(), scope, apiToken.getSiteIds(), env, apiToken.isMayPublish()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -195,7 +205,26 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         if (scope == ShApiTokenScope.WRITE) {
             authorities.add(new SimpleGrantedAuthority("ROLE_CDA_WRITE"));
         }
+        // SH106: an agent reads drafts by definition (every /agent/read is DRAFT-preferred),
+        // so AGENT is preview-capable — and it carries ROLE_AGENT instead of ROLE_CDA_WRITE.
+        if (scope == ShApiTokenScope.AGENT) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_CDA_PREVIEW"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_AGENT"));
+        }
         return authorities;
+    }
+
+    /**
+     * Whether this token may use a method other than GET on this request.
+     *
+     * <p>{@code WRITE} may anywhere it is accepted; {@code AGENT} only on the agent
+     * surface; GraphQL and MCP read via POST and are exempt by transport.</p>
+     */
+    private static boolean mayUseAnyMethod(ShApiTokenScope scope, HttpServletRequest request, boolean graphQl) {
+        if (scope == ShApiTokenScope.WRITE || graphQl) {
+            return true;
+        }
+        return scope == ShApiTokenScope.AGENT && (isAgentPath(request) || isMcpPath(request));
     }
 
     private static boolean isCdaPath(HttpServletRequest request) {

@@ -83,7 +83,18 @@ export async function run(flags, _positionals, ctx) {
   const results = [];
   for (const document of documents) {
     results.push(
-      planOnly ? await client.plan(document) : await client.apply(document),
+      planOnly
+        ? await client.plan(document)
+        : await client.applyConfirmed(document, {}, (plan) => {
+            // SH108: a `--prune` push deletes, so the deletions are printed before they
+            // happen. This is the "rendered for the human" half of the confirm token, and
+            // in CI it is the record of what the gate removed.
+            const rows = (plan.results ?? []).filter((row) => row.action === "delete");
+            ctx.stdout.write(
+              `shio push --content: deleting ${rows.length} object(s) (confirm ${plan.confirm}):\n` +
+                rows.map((row) => `  - ${row.address}\n`).join(""),
+            );
+          }),
     );
   }
 

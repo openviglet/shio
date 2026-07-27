@@ -10,6 +10,10 @@
             "description" : "#string",
             "type" : "string"
           },
+          "confirm" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "dryRun" : {
             "description" : "#string",
             "type" : "boolean"
@@ -255,6 +259,10 @@
       "description" : "#string",
       "inputSchema" : {
         "properties" : {
+          "confirm" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "dryRun" : {
             "description" : "#string",
             "type" : "boolean"

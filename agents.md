@@ -186,7 +186,8 @@ the CDA + console services (law P10) and holds no business logic of its own.
 - `GET /agent/resolve?address=…` — an address → an object id, for id-keyed endpoints.
 - `POST /agent/batch` — **writes**: N addressed ops (`folder.upsert`, `post.upsert`,
   `post.move`, `post.publish`, `post.unpublish`, `folder.delete`, `post.delete`) in one
-  transaction; `{"dryRun":true}` reports without writing. **`post.move` (SH134) is the
+  transaction; `{"dryRun":true}` reports without writing, and a batch that deletes needs
+  SH108's `confirm` from its own dry run. **`post.move` (SH134) is the
   only way to rename or relocate a post** — re-addressing a `post.upsert` creates a
   second post and orphans the first with its id, audit trail and history. It takes `to`
   (new address) and/or `folder`, moves the DRAFT *and* PUBLISHED rows together (so a
@@ -289,6 +290,42 @@ Addresses (SH79): `post:<site>/<friendly-url>` · `folder:<site>/<name-chain>` �
 a friendly URL are separate namespaces, and a write that guessed wrong would create
 content in the wrong place silently. CSRF-exempt (stateless callers), authenticated
 like every other API; the SH54 ACL and SH22 quota apply on the agent path identically.
+
+### What bounds an agent — Block L (SH106–SH109)
+
+**The invariant: the agent path is never a privilege escalation**, and after Block L it is
+not a privilege *superset* either. Three guards, all narrower than what was reachable before:
+
+- **`AGENT` token scope (SH106).** The credential an agent runs on: writes on
+  `/api/v2/agent/**` and `/mcp`, reads drafts like `PREVIEW`, carries `ROLE_AGENT` and
+  **not** `ROLE_CDA_WRITE` — on the CDA it stays read-only. That is the whole reason it is
+  not an alias for `WRITE`: a `WRITE` key patches published content outside the agent
+  protocol's guards. It extends the SH2/SH5/SH13 model (expiry, site allow-list, rate
+  limit), so an agent credential can be scoped and expiring instead of a console password.
+- **Session identity (SH106).** `ShHistory.agent_session_id` — the column SH75 deferred, and
+  what makes SH109 a `where` clause. `owner` names only the human whose credential was used.
+  Set by **`ShAgentSessionFilter`** from the `Mcp-Session-Id` header on the agent namespace,
+  and by MCP's own `initialize`; **never minted per request** — a session is a *run*, and one
+  session per call is the same as none. `ShAgentSessionContext` is the ThreadLocal (it used to
+  be `ShMcpSessionContext`, in the `mcp` package).
+- **The publish gate (SH107).** `api_token.may_publish`, **off unless granted**, enforced in
+  `ShAgentBatchService` — which is also the apply and blueprint path, since a document
+  compiles to `post.publish` ops. Checked **before the first write** and **on a dryRun too**,
+  so an agent learns it cannot publish while planning. A console caller has no token and is
+  unaffected. It is a tightening: a `WRITE` token that used to publish through the agent
+  surface now needs `mayPublish`.
+- **Confirm tokens (SH108).** `post.delete`/`folder.delete`/a deleting `prune` take two calls:
+  a `dryRun` returns `confirm`, the real run sends it back. The digest is over **what the plan
+  actually deletes** — not the requested ops, so a delete of something already gone is a noop
+  that needs nothing and a document stays re-runnable (SH82). Absent is a **428** carrying the
+  token and the list; wrong is a **409** naming what would go now. `ShAgentConfirm` owns it;
+  the CLI's `applyConfirmed` does the two-step and prints the deletions *before* applying.
+- **The review queue (SH109).** `GET /api/v2/review/sessions` · `/sessions/{id}` ·
+  `POST …/approve` · `POST …/revert`, plus the console page at `/console/admin/review`.
+  Console-authenticated and deliberately **not** on the agent namespace. It is a **view over
+  the SH51 audit grouped by session id, not a proposal table** — the DRAFT row *is* the
+  proposal — so approve = publish the run's drafts and revert reuses SH14 restore + the SH55
+  trash, per entry, reporting what it cannot honestly undo instead of guessing.
 
 ### Post Types — one name-keyed surface (SH16 + SH117)
 **There is one post-type API and it is keyed by name.** The CLI, the agent path and the
@@ -774,8 +811,8 @@ Tasks are numbered `SH<n>` (not contiguous across blocks — epics like SH25/SH6
 own sub-ranges; superseded ids are retired, never reused). The `→ §x.y` pointer on a task
 line is its IMPROVEMENTS.md design section. Per-task implementable specs live in
 `docs/specs/SH<n>-<slug>.md`; the product concept is `docs/specs/SH74-agent-native-cms.md`.
-Blocks **H–K, M, N and O** have shipped; the live backlog is **Block L** (agent safety),
-the per-block follow-ups, and Blocks A–G's remaining SH44–SH47 tenant work. Block N's
+Blocks **H–L, M, N and O** have shipped (Block L except **SH110**, still blocked on SH45);
+the live backlog is the per-block follow-ups and Blocks A–G's remaining SH44–SH47 tenant work. Block N's
 result is worth knowing before you quote a number: aligning the console reads on the CDA
 shapes made the *baseline* lean, so the SH112 token ratios fell from 3.8×–23.3× to
 2.6×–12.6× with the agent path unchanged — and to **2.1×–12.1×** once Block O's SH176 did the

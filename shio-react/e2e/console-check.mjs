@@ -95,6 +95,10 @@ async function discoverRoutes(siteName) {
     { name: "files", path: "/console/content/files", mustSee: [] },
     { name: "post-type-select", path: `/console/content/folder/${rootFolderId}/post-type-select`, mustSee: [] },
     { name: "universal-editor", path: `/console/universal-editor/${site.id}`, mustSee: [] },
+    // The review queue (SH109) is the curator's primary workflow under the product's
+    // orientation, so it is worth a probe even on an instance where no agent has run: an
+    // empty queue must render its empty state, not a blank page.
+    { name: "review", path: "/console/admin/review", mustSee: [] },
     // A route that does not exist must say so. If the SPA renders a blank shell for
     // an unknown path, every other probe's "ok" is worth less — a blank page and a
     // working page are the same observation.

@@ -129,6 +129,34 @@ export class ShioAgentClient {
     return this.#post("apply", document, options);
   }
 
+  /**
+   * Apply, doing SH108's two-step when the document could delete something.
+   *
+   * A destructive apply needs a `confirm` token from its own plan, and the promise behind
+   * that token is that the deletions were *shown* to someone. The CLI is the human's tool,
+   * so the terminal is where they are shown: this plans, hands the delete rows to
+   * `onDeletions` to print, and only then applies with the token.
+   *
+   * The extra round trip is paid only by a document that declares `prune` — everything else
+   * cannot delete, so it stays one call. And a `prune` that turns out to delete nothing gets
+   * no token from the server and needs none, which is why the flag alone is not the test.
+   *
+   * @param {object} document a desired-state document
+   * @param {{ ids?: boolean }} [options]
+   * @param {(plan: object) => void} [onDeletions] called with the plan when it would delete
+   */
+  async applyConfirmed(document, options = {}, onDeletions) {
+    if (!document?.prune) {
+      return this.apply(document, options);
+    }
+    const plan = await this.plan(document, options);
+    if (!plan?.confirm) {
+      return this.apply(document, options);
+    }
+    onDeletions?.(plan);
+    return this.apply({ ...document, confirm: plan.confirm }, options);
+  }
+
   async #post(verb, document, { ids = false } = {}) {
     const url = `${this.baseUrl}/api/v2/agent/${verb}${ids ? "?ids=true" : ""}`;
     const res = await this.fetch(url, {

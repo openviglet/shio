@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.ShAgentReadTerse;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
-import com.viglet.shio.api.agent.mcp.ShMcpSessionContext;
+import com.viglet.shio.api.agent.ShAgentSessionContext;
 import com.viglet.shio.api.agent.mcp.ShMcpTool;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
@@ -83,7 +83,8 @@ public class ShWriteTool implements ShMcpTool {
                                                 "post.move only: the post's new address or URL."),
                                         "data", ShMcpTool.object(
                                                 "Field values keyed by post-type field name.")))),
-                "dryRun", ShMcpTool.bool("Report what would change and write nothing.")),
+                "dryRun", ShMcpTool.bool("Report what would change and write nothing."),
+                "confirm", ShMcpTool.string("dryRun's token; required to delete.")),
                 List.of("ops"));
     }
 
@@ -103,11 +104,12 @@ public class ShWriteTool implements ShMcpTool {
                 ShMcpArgs.node(op, "data"))));
 
         return ShAgentReadTerse.changes(shAgentBatchService.run(
-                new ShAgentBatch(ShMcpArgs.bool(arguments, "dryRun"), List.copyOf(parsed)),
+                new ShAgentBatch(ShMcpArgs.bool(arguments, "dryRun"), List.copyOf(parsed),
+                        ShMcpArgs.string(arguments, "confirm")),
                 false,
                 // The agent session id travels into the SH51 audit here, which is what
                 // makes "show me what this run changed" answerable later (SH109).
-                ShMcpSessionContext.actor()));
+                ShAgentSessionContext.actor()));
     }
 
     /** A 400 that shows the smallest working call rather than restating the schema. */

@@ -1,0 +1,17 @@
+{
+  "review.title": "Agent Review",
+  "review.description": "What each agent run changed. Approve publishes the drafts it wrote; revert puts things back.",
+  "review.blankTitle": "No agent runs yet",
+  "review.blankDescription": "When an agent writes through the MCP or agent surface, each run appears here with what it changed.",
+  "review.changesBy": "{{count}} change(s) by {{actor}}",
+  "review.unknownActor": "an agent",
+  "review.pending": "{{count}} to review",
+  "review.approve": "Approve",
+  "review.revert": "Revert",
+  "review.approved": "Published {{count}} post(s)",
+  "review.reverted": "Reverted {{count}} post(s)",
+  "review.diff": "Diff",
+  "review.draft": "draft",
+  "review.published": "published",
+  "review.trashed": "in trash"
+}

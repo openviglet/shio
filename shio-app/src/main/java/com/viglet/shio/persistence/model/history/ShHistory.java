@@ -64,6 +64,23 @@ public class ShHistory implements Serializable {
 
 	private String shSite;
 
+	/**
+	 * The agent run that made this change (SH106), or {@code null} for a human's own edit.
+	 *
+	 * <p>It is what makes SH109's review queue a query rather than a guess: "show me
+	 * everything that run touched" is a {@code where} clause, where before SH106 it was a
+	 * {@code LIKE} over a suffix in {@link #owner}. {@code owner} therefore names only the
+	 * human whose credential was used — an agent acts <em>as</em> someone, and both halves
+	 * of that are recorded, separately.</p>
+	 */
+	@Column(name = "agent_session_id", length = 64)
+	private String agentSessionId;
+
+    /** The agent run that made this change (SH106); {@code null} for a human's own edit. */
+    public void setAgentSessionId(String agentSessionId) {
+		this.agentSessionId = agentSessionId;
+	}
+
     public void setId(String id) {
 		this.id = id;
 	}

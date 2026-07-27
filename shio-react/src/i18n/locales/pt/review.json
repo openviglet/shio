@@ -1,0 +1,17 @@
+{
+  "review.title": "Revisão do Agente",
+  "review.description": "O que cada execução do agente alterou. Aprovar publica os rascunhos que ela escreveu; reverter desfaz.",
+  "review.blankTitle": "Nenhuma execução de agente ainda",
+  "review.blankDescription": "Quando um agente escreve pelo MCP ou pela superfície de agente, cada execução aparece aqui com o que alterou.",
+  "review.changesBy": "{{count}} alteração(ões) por {{actor}}",
+  "review.unknownActor": "um agente",
+  "review.pending": "{{count}} para revisar",
+  "review.approve": "Aprovar",
+  "review.revert": "Reverter",
+  "review.approved": "{{count}} post(s) publicado(s)",
+  "review.reverted": "{{count}} post(s) revertido(s)",
+  "review.diff": "Comparar",
+  "review.draft": "rascunho",
+  "review.published": "publicado",
+  "review.trashed": "na lixeira"
+}

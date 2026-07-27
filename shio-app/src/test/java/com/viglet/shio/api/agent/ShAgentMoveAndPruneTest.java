@@ -127,9 +127,28 @@ class ShAgentMoveAndPruneTest {
 
     // --- helpers ---
 
+    /** Runs a batch, doing SH108's two-step when it could delete (as the CLI does). */
     private ShAgentChangeSet run(boolean dryRun, Op... ops) {
-        return new TransactionTemplate(transactionManager).execute(status ->
-                shAgentBatchService.run(new ShAgentBatch(dryRun, List.of(ops)), true, "tester"));
+        List<Op> list = List.of(ops);
+        return new TransactionTemplate(transactionManager).execute(status -> {
+            String confirm = !dryRun && ShAgentConfirm.mayDestroy(list)
+                    ? shAgentBatchService.run(new ShAgentBatch(true, list), true, "tester").confirm()
+                    : null;
+            return shAgentBatchService.run(new ShAgentBatch(dryRun, list, confirm), true, "tester");
+        });
+    }
+
+    /** Applies a document, confirming its deletions first when it prunes (SH108). */
+    private ShAgentChangeSet applyDocument(ShAgentDesiredState desired) {
+        return new TransactionTemplate(transactionManager).execute(status -> {
+            String confirm = desired.prune()
+                    ? shAgentDesiredStateService.plan(desired, false, "tester").confirm()
+                    : null;
+            ShAgentDesiredState confirmed = confirm == null ? desired
+                    : new ShAgentDesiredState(desired.site(), desired.folders(), desired.posts(),
+                            desired.prune(), confirm);
+            return shAgentDesiredStateService.apply(confirmed, false, "tester");
+        });
     }
 
     private JsonNode data(String headline) {
@@ -360,9 +379,7 @@ class ShAgentMoveAndPruneTest {
         String base = "/pr-" + UUID.randomUUID().toString().substring(0, 8);
         run(false, folder(base), folder(base + "/shell"));
 
-        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
-                shAgentDesiredStateService.apply(document(base, List.of(base), List.of(), true),
-                        false, "tester"));
+        applyDocument(document(base, List.of(base), List.of(), true));
         ShAgentChangeSet second = plan(base, List.of(base), List.of(), true);
 
         // The whole justification for declarative apply: the document keeps describing

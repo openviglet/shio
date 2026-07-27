@@ -59,13 +59,18 @@
 > **SH74** is the epic (this concept) — it is complete when the three roadmap docs
 > and `agents.md` carry the orientation; the code lands as SH75+.
 >
-> Suggested order: **H → K → I → J → O → L → M** (H, K, I, J, M and O are shipped). Block H is
-> the protocol everything else speaks; Block K (verification) removed the most expensive unit
-> in the system — the human round trip; Block O made the human half work at all, which is what
-> made Block L's question askable. **Block L is the last unshipped block**: how a human bounds
-> and undoes an agent. It is a gate on adoption rather than on capability, and the rest of the
-> live backlog is per-block follow-ups (H's edges, K's scoping, I's assets, J's reconciliation,
-> M's attribution, N's realignment) plus SH44–SH47's tenant work.
+> Suggested order: **H → K → I → J → O → L → M** — **all of them are now shipped**, Block L
+> except SH110 (blocked on SH45). Block H is the protocol everything else speaks; Block K
+> removed the most expensive unit in the system, the human round trip; Block O made the human
+> half work at all, which is what made Block L's question askable; and Block L answered it —
+> how a human bounds and undoes an agent.
+>
+> **What is left is follow-ups, not blocks**: H's edges (SH136–SH140, SH168–SH175), K's scoping
+> and baseline (SH141–SH144, SH154, SH169), I's assets and paging (SH145–SH150, SH173), J's
+> reconciliation and registry (SH96, SH151–SH156), M's attribution (SH157–SH161, SH174), N's
+> realignment (SH163–SH167), plus SH44–SH47's tenant work and SH110. **SH168 is the
+> highest-value one**: a write that accepts a field the post-type does not declare, which is
+> the only defect on record that destroys content without saying anything.
 >
 > **What driving it end to end found (SH168–SH175).** A whole site — model, folder tree,
 > thirteen pages, a file projection, a CI gate — was built over the agent surface alone, and
@@ -246,15 +251,22 @@
 
 ## Block L — Agent safety & human-in-the-loop
 
-> An agent-driven CMS is only adoptable if a human can bound it and undo it.
-> Invariant: **the agent path is never a privilege escalation** — tenant isolation
-> (SH22), content ACL (SH54) and token scopes apply identically. → §XII
+> ✅ **SH106–SH109 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block L: the `AGENT` token scope
+> and the agent session id as a column, draft-by-default with a per-credential publish gate,
+> confirm tokens on destructive writes, and the review queue.
+>
+> **The invariant held:** every guard is *narrower* than what an agent could reach before —
+> nothing on the surface gained a capability. Two of them are deliberate tightenings and the
+> changelog says so: a `WRITE` token that used to publish through the agent surface now needs
+> `mayPublish`, and a prune now needs the token from its own plan.
+>
+> **What building it taught.** The publish gate wanted to live at the publish site and belongs
+> before the first write instead — "you cannot publish" is a different answer from a half-built
+> site with a 403 at the end. And the review queue is only expressible because a *run* has an
+> identity: a session minted per request would have produced two hundred one-change sessions,
+> which is the same as having none.
 
-- 📋 **SH106** (deps: SH2, SH51) **`AGENT` token scope + session identity** — scoped, budgeted, expiring credential; every write tagged with the agent session id. SH75 already mints the id and stamps it into the audit *actor string*; this task owns the credential model, so it is where the id gets a column (one migration, not two). → §XII.1
-- 📋 **SH107** (deps: SH106) **Draft-by-default + publish gate** — MCP writes land in DRAFT; publish is a separate tool, off unless the token says `mayPublish`. → §XII.2
-- 📋 **SH108** (deps: SH82) **Destructive-op confirm tokens** — deletes/prunes/apply-with-prune take two steps, the second carrying the **plan hash**. → §XII.3
-- 📋 **SH109** (deps: SH106, SH14) **Review queue console surface** — "the agent proposed N changes": diff (reuse SH14), approve, revert (reuse SH55 trash). The human's new primary workflow. → §XII.4
-- 💭 **SH110** (deps: SH106, SH45) **Agent budget guards** — per-session call/write/storage ceilings. → §XII.5
+- 💭 **SH110** (deps: SH106 ✅, SH45) **Agent budget guards** — per-session call/write/storage ceilings, layered on SH45's per-tenant metering. Still blocked on SH45: building the ceiling first means a second metering mechanism to reconcile later. A runaway agent should hit a ceiling and report it, not a bill. → §XII.5
 
 ## Block M — Token economy (measured)
 

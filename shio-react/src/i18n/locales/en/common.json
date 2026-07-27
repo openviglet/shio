@@ -32,5 +32,6 @@
   "common.new": "New",
   "common.notFoundTitle": "This page does not exist",
   "common.notFoundDescription": "No console route matches the path below. Check the link, or go back to the console home.",
-  "common.backToHome": "Back to Home"
+  "common.backToHome": "Back to Home",
+  "common.refresh": "Refresh"
 }

@@ -76,6 +76,20 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 	 * not be recorded), a site-scoped one reads only the sites it can see, and expressing
 	 * that as a parameter would put an access rule inside a query string.</p>
 	 */
+	/**
+	 * The agent-made entries, newest first (SH109). {@code agent_session_id} is exactly the
+	 * column SH106 added for this: before it, "which changes did that run make" was a
+	 * {@code LIKE} over an actor string.
+	 */
+	@Query("select h from ShHistory h where h.agentSessionId is not null "
+			+ "order by h.date desc, h.id desc")
+	List<ShHistory> findAgentEntries(Pageable pageable);
+
+	/** One run's entries, oldest first — the order it made them, which is the order to review. */
+	@Query("select h from ShHistory h where h.agentSessionId = :session "
+			+ "order by h.date asc, h.id asc")
+	List<ShHistory> findByAgentSession(String session);
+
 	@Query("select h from ShHistory h where h.date <= :ceiling order by h.date desc, h.id desc")
 	List<ShHistory> findWindow(Instant ceiling, Pageable pageable);
 

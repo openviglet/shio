@@ -137,6 +137,64 @@ class ShApiTokenFilterTest {
     }
 
     @Test
+    void agentTokenWritesOnTheAgentSurface() throws Exception {
+        // SH106: the whole point of the scope — an agent writes with POST, on its own surface.
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.AGENT, Set.of())));
+
+        filter().doFilter(request("POST", "/api/v2/agent/batch"),
+                new MockHttpServletResponse(), new MockFilterChain());
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(auth).isNotNull();
+        assertThat(auth.getAuthorities()).extracting("authority")
+                .as("an agent reads drafts by definition, and is not a CDA write key")
+                .contains("ROLE_AGENT", "ROLE_CDA_PREVIEW")
+                .doesNotContain("ROLE_CDA_WRITE");
+    }
+
+    @Test
+    void agentTokenIsStillReadOnlyOnTheCda() throws Exception {
+        // The reason AGENT is not just WRITE: the CDA write path patches published content
+        // outside the agent protocol's guards, so an agent's credential must not reach it.
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.AGENT, Set.of())));
+        MockHttpServletResponse res = new MockHttpServletResponse();
+
+        filter().doFilter(request("PATCH", "/api/v2/cda/post/abc"), res, new MockFilterChain());
+
+        assertThat(res.getStatus()).isEqualTo(403);
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void agentTokenCarriesItsPublishCapability() throws Exception {
+        // SH107: the decision travels on the request's own context, not a later DB read.
+        ShApiToken granted = token(ShApiTokenScope.AGENT, Set.of());
+        granted.setMayPublish(true);
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key")).thenReturn(Optional.of(granted));
+
+        filter().doFilter(request("POST", "/api/v2/agent/batch"),
+                new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(ShApiTokenContext.current()).get()
+                .extracting(ShApiTokenContext::mayPublish).isEqualTo(true);
+    }
+
+    @Test
+    void anAgentTokenMayNotPublishByDefault() throws Exception {
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.AGENT, Set.of())));
+
+        filter().doFilter(request("POST", "/api/v2/agent/batch"),
+                new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(ShApiTokenContext.currentMayPublish())
+                .as("publishing is granted per token, never implied by write access")
+                .isFalse();
+    }
+
+    @Test
     void readTokenOnCdaGetAuthenticatesWithContext() throws Exception {
         when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
                 .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of("siteA"))));

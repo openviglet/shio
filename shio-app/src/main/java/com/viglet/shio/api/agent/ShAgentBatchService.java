@@ -41,6 +41,7 @@ import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
+import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 import com.viglet.shio.tenant.ShTenantQuotaService;
 
 import tools.jackson.core.JacksonException;
@@ -99,6 +100,12 @@ public class ShAgentBatchService {
             FOLDER_UPSERT, FOLDER_DELETE, POST_UPSERT, POST_MOVE, POST_PUBLISH, POST_UNPUBLISH,
             POST_DELETE);
 
+    /**
+     * The ops that destroy something and therefore need confirming (SH108). Everything else
+     * on this surface is recoverable by another write; these two are not.
+     */
+    public static final List<String> DESTRUCTIVE_OPS = List.of(FOLDER_DELETE, POST_DELETE);
+
     private static final List<ShPostState> BOTH_STATES =
             List.of(ShPostState.DRAFT, ShPostState.PUBLISHED);
 
@@ -146,7 +153,32 @@ public class ShAgentBatchService {
     @Transactional
     public ShAgentChangeSet run(ShAgentBatch batch, boolean ids, String actor) {
         List<ShAgentBatch.Op> ops = validate(batch);
-        Session session = new Session(batch.dryRun(), ids, actor);
+        // SH107 — publishing is a capability, not a default. Checked before anything runs and
+        // on a dryRun too: an agent that cannot publish should learn that while planning, not
+        // after it has built twelve pages around the assumption.
+        requireMayPublish(ops);
+        // SH108 — a destructive run takes two calls, and the second one carries the digest of
+        // the *plan*. So a batch that could delete is planned here first: what it would really
+        // destroy is what needs confirming, and a delete of something already gone is a noop
+        // that needs nothing (which is what keeps a document re-runnable).
+        if (!batch.dryRun() && ShAgentConfirm.mayDestroy(ops)) {
+            ShAgentChangeSet plan = execute(ops, new Session(true, ids, actor));
+            String expected = ShAgentConfirm.ofPlan(plan);
+            if (expected != null) {
+                ShAgentConfirm.require(batch.confirm(), expected, plan);
+            }
+        }
+        ShAgentChangeSet result = execute(ops, new Session(batch.dryRun(), ids, actor));
+        // The token rides back on a dryRun only: on a real run it has been spent, and echoing
+        // it would invite a caller to cache one and stop planning.
+        return batch.dryRun()
+                ? new ShAgentChangeSet(true, result.ops(), result.changed(), result.results(),
+                        ShAgentConfirm.ofPlan(result))
+                : result;
+    }
+
+    /** Runs the ops through one session — a plan or a real write, depending on the session. */
+    private ShAgentChangeSet execute(List<ShAgentBatch.Op> ops, Session session) {
         List<Change> results = new ArrayList<>(ops.size());
         for (int index = 0; index < ops.size(); index++) {
             try {
@@ -160,6 +192,41 @@ public class ShAgentBatchService {
         }
         int changed = (int) results.stream().filter(Change::isChange).count();
         return new ShAgentChangeSet(session.dryRun, ops.size(), changed, List.copyOf(results));
+    }
+
+    /**
+     * Refuses a publish this credential was not issued (SH107).
+     *
+     * <p>Only token-authenticated callers are gated: a console session is a human (or the CLI
+     * running as one), and the SH54 ACL is what bounds them. The check is here rather than at
+     * the publish site so that it fails before the first write, which is the difference between
+     * "you cannot publish" and a half-built site with a 403 at the end.</p>
+     */
+    private static void requireMayPublish(List<ShAgentBatch.Op> ops) {
+        if (ShApiTokenContext.currentMayPublish()) {
+            return;
+        }
+        boolean publishes = ops.stream()
+                .anyMatch(op -> op != null && op.op() != null
+                        && POST_PUBLISH.equals(op.op().trim().toLowerCase(Locale.ROOT)));
+        if (publishes) {
+            throw new PublishNotPermittedException();
+        }
+    }
+
+    /** A 403: this token writes drafts but may not make them live (SH107). */
+    public static class PublishNotPermittedException extends ShTeachingException {
+
+        public PublishNotPermittedException() {
+            super(ShProblem.of("publish-not-permitted", HttpStatus.FORBIDDEN,
+                            "this token may not publish")
+                    .withDetail("The credential this request authenticated with writes drafts "
+                            + "only. Publishing is what changes the live site, so it is granted "
+                            + "per token rather than implied by write access.")
+                    .withFix("Drop the publish op (the draft is written and a human can publish "
+                            + "it), or have an operator grant `mayPublish` on this token.")
+                    .withExample("{\"ops\":[{\"op\":\"post.upsert\", …}]}"));
+        }
     }
 
     private List<ShAgentBatch.Op> validate(ShAgentBatch batch) {

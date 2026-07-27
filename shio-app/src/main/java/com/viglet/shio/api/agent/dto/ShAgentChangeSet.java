@@ -29,12 +29,20 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  *                A {@code changed} of zero on a plan is the drift-guard's green light,
  *                the same signal {@code shio push --check} gives for post-types (SH65)
  * @param results one row per op
+ * @param confirm the SH108 confirm token, on a {@code dryRun} that would delete something —
+ *                pass it back on the real call. Absent means this run destroys nothing
  *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
 @JsonInclude(Include.NON_NULL)
-public record ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change> results) {
+public record ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change> results,
+                               String confirm) {
+
+    /** The four-field form: no destructive rows, so no token to hand back (SH108). */
+    public ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change> results) {
+        this(dryRun, ops, changed, results, null);
+    }
 
     /**
      * What one op did, or would do.

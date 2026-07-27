@@ -24,7 +24,7 @@ import type { ShSite } from "@/models/site/site"
 const service = new ShApiTokenService()
 const siteService = new ShSiteService()
 
-const SCOPES: ShApiTokenScope[] = ["READ", "PREVIEW", "WRITE"]
+const SCOPES: ShApiTokenScope[] = ["READ", "PREVIEW", "WRITE", "AGENT"]
 const ENVS: ShApiTokenEnv[] = ["PROD", "PREVIEW"]
 
 export default function ApiTokenPage() {
@@ -36,7 +36,7 @@ export default function ApiTokenPage() {
 
   const [item, setItem] = useState<ShApiToken>({
     id: "", title: "", description: "", token: "", owner: "", createdDate: "", enabled: true,
-    scope: "READ", siteIds: [], env: "PROD",
+    scope: "READ", siteIds: [], env: "PROD", mayPublish: false,
   })
   const [sites, setSites] = useState<ShSite[]>([])
   const [copied, setCopied] = useState(false)
@@ -50,7 +50,7 @@ export default function ApiTokenPage() {
     ])
     if (!isNew) {
       service.get(tokenId).then((token) =>
-        setItem({ ...token, scope: token.scope ?? "READ", siteIds: token.siteIds ?? [], env: token.env ?? "PROD" }))
+        setItem({ ...token, scope: token.scope ?? "READ", siteIds: token.siteIds ?? [], env: token.env ?? "PROD", mayPublish: token.mayPublish ?? false }))
     }
   }, [resetBreadcrumb, t, tokenId, isNew, item.title])
 
@@ -198,6 +198,23 @@ export default function ApiTokenPage() {
               <p className="text-xs text-muted-foreground">
                 {t(`apiToken.scope${item.scope.charAt(0)}${item.scope.slice(1).toLowerCase()}Desc`)}
               </p>
+            </div>
+
+            {/*
+              SH107 — publishing is a capability, not a default. It gates the agent surface:
+              an agent's writes land in DRAFT and a human publishes them, unless this says
+              otherwise. A console user has no token and is unaffected.
+            */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="mayPublish">{t("apiToken.mayPublish")}</Label>
+                <Tooltip>
+                  <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
+                  <TooltipContent>{t("apiToken.mayPublishHint")}</TooltipContent>
+                </Tooltip>
+              </div>
+              <Switch id="mayPublish" checked={Boolean(item.mayPublish)}
+                onCheckedChange={(checked) => setItem({ ...item, mayPublish: checked })} />
             </div>
 
             {/* Environment (SH5 — prod / preview) */}

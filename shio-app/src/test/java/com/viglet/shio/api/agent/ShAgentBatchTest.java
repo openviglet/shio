@@ -122,9 +122,18 @@ class ShAgentBatchTest {
 
     // --- helpers ---
 
+    /**
+     * Runs a batch, doing SH108's two-step when it could delete — the same thing the CLI does,
+     * so each test below still reads as one gesture. A batch that destroys nothing is one call.
+     */
     private ShAgentChangeSet run(boolean dryRun, Op... ops) {
-        return new TransactionTemplate(transactionManager).execute(status ->
-                shAgentBatchService.run(new ShAgentBatch(dryRun, List.of(ops)), true, "tester"));
+        List<Op> list = List.of(ops);
+        return new TransactionTemplate(transactionManager).execute(status -> {
+            String confirm = !dryRun && ShAgentConfirm.mayDestroy(list)
+                    ? shAgentBatchService.run(new ShAgentBatch(true, list), true, "tester").confirm()
+                    : null;
+            return shAgentBatchService.run(new ShAgentBatch(dryRun, list, confirm), true, "tester");
+        });
     }
 
     private JsonNode data(String headline) {
