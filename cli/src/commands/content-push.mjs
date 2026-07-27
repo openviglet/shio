@@ -90,10 +90,31 @@ export async function run(flags, _positionals, ctx) {
     );
   }
 
-  const { posts, conflicts, behind, removed } = planPushContent(
-    { base: base.posts, remote, local },
-    { force: Boolean(flags.force) },
-  );
+  const { posts, conflicts, behind, removed, moves, ambiguousMoves, probableMoves } =
+    planPushContent({ base: base.posts, remote, local }, { force: Boolean(flags.force) });
+  if (ambiguousMoves.length) {
+    // A refusal, not a guess (SH150). Either candidate could be the rename and the other the
+    // copy, and moving the wrong one takes the wrong post's id and history with it.
+    throw new Error(
+      `shio push --content: ${ambiguousMoves.length} post(s) could be a rename of more than one ` +
+        "post, and moving the wrong one would take the wrong post's history:\n" +
+        ambiguousMoves
+          .map((row) => `  ! ${row.to} — ${row.reason}\n      candidates: ${row.candidates.join(", ")}\n`)
+          .join("") +
+        "Say which is which with `movedFrom: <the old url>` in the frontmatter of the file that " +
+        "is the rename.",
+    );
+  }
+  for (const row of probableMoves) {
+    // Not provable, and that is exactly why it is said out loud: what happens otherwise is a
+    // delete plus a create, which destroys the post's history without mentioning it.
+    ctx.stdout.write(
+      `shio push --content: ${row.to} looks like it could be ${row.from} renamed, but its ` +
+        "content differs so this push cannot prove it. As written, this deletes one post and " +
+        `creates another — the id, audit trail and version history do not survive.\n` +
+        `  If it is a rename, add \`movedFrom: ${row.from.slice(row.from.indexOf("/"))}\` to the file.\n`,
+    );
+  }
   if (conflicts.length) {
     for (const conflict of conflicts) {
       ctx.stdout.write(`  ! ${conflict.address} (${conflict.fields.join(", ")})\n`);
@@ -105,7 +126,12 @@ export async function run(flags, _positionals, ctx) {
     );
   }
 
-  const documents = documentsFor(posts, { prune, markers, sites: sitesOf(local, markers) });
+  const documents = documentsFor(posts, {
+    prune,
+    markers,
+    moves,
+    sites: sitesOf(local, markers),
+  });
   const results = [];
   for (const document of documents) {
     results.push(
@@ -126,7 +152,9 @@ export async function run(flags, _positionals, ctx) {
 
   const changed = results.reduce((total, result) => total + (result.changed ?? 0), 0);
   const ops = results.reduce((total, result) => total + (result.ops ?? 0), 0);
-  ctx.stdout.write(render({ documents, results, changed, ops, behind, removed, planOnly, prune }));
+  ctx.stdout.write(
+    render({ documents, results, changed, ops, behind, removed, moves, planOnly, prune }),
+  );
 
   if (flags.check) {
     if (changed === 0) {
@@ -152,24 +180,43 @@ export async function run(flags, _positionals, ctx) {
         data: doc.data ?? {},
       };
     }
+    // A moved post's *old* address must not come back here (SH150). Without this exclusion the
+    // loop below re-adds it from the server read — which was taken before the move — and the
+    // next run sees a post the tree does not declare and offers to prune the very post that
+    // was just preserved.
+    const vacated = new Set(moves.map((move) => `post:${move.site}${move.from}`));
     for (const [address, doc] of Object.entries(remote)) {
-      if (!nextPosts[address] && !prune) nextPosts[address] = doc;
+      if (!nextPosts[address] && !prune && !vacated.has(address)) nextPosts[address] = doc;
     }
     await writeBase(
       ctx,
-      { cursor: base.cursor, partial: base.partial || truncated, posts: nextPosts },
+      {
+        cursor: base.cursor,
+        partial: base.partial || truncated,
+        posts: nextPosts,
+        folders: base.folders,
+      },
       flags.baseFile ?? BASE_FILE,
     );
   }
-  return { changed, ops, documents, behind, removed };
+  return { changed, ops, documents, behind, removed, moves };
 }
 
-function render({ documents, results, changed, ops, behind, removed, planOnly, prune }) {
+function render({ documents, results, changed, ops, behind, removed, moves = [], planOnly, prune }) {
   const verb = planOnly ? "plan" : "apply";
   const lines = [
     `shio push --content: ${verb} over ${documents.length} site(s) — ${changed} change(s) of ` +
       `${ops} op(s)${planOnly ? " — nothing written" : ""}`,
   ];
+  for (const move of moves) {
+    // Said before the server's own rows, because "this was a move" is the fact that explains
+    // why there is no delete in the list below — and a reader who does not see it will look
+    // for one (SH150).
+    const what = move.to
+      ? `post:${move.site}${move.from} → ${move.to}${move.folder ? ` in ${move.folder}` : ""}`
+      : `post:${move.site}${move.from} → folder ${move.folder}`;
+    lines.push(`  move ${what}${move.explicit ? "" : " (matched by content)"}`);
+  }
   for (const result of results) {
     for (const change of result.results ?? []) {
       if (change.action === "noop") continue;

@@ -213,6 +213,9 @@ Content as files (shio pull/push --content, shio dev --content):
   An empty folder is a file too: shio/folders/<site>/<chain>/_folder.md declares a
   folder nothing else does, so you can scaffold the structure before filling it. It is
   a separate root because a folder chain and a friendly URL are separate namespaces.
+  Renaming a file is a move, so the post keeps its id, history and references: push
+  pairs it up by content, or by movedFrom: <old url> when you rewrote it as well.
+  It refuses to guess between two candidates, and warns when it cannot prove a pair.
   --site <name>        Only this site
   --content-dir <dir>  Content root            (default shio/content)
   --folders-dir <dir>  Folder-marker root      (default shio/folders)

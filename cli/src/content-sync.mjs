@@ -182,7 +182,191 @@ export function planPushContent({ base = {}, remote = {}, local = {} }, { force 
   for (const address of Object.keys(base).sort()) {
     if (!local[address] && remote[address]) removed.push(address);
   }
-  return { posts, conflicts, behind, removed };
+  const { moves, ambiguous, probable } = detectMoves({ base, remote, local }, { posts, removed });
+  // A post that moved is no longer "removed": the whole point is that it is the same post at a
+  // new address, so leaving it in this list would have `--prune` delete it.
+  const moved = new Set(moves.map((move) => addressOf({ site: move.site, url: move.from })));
+  return {
+    posts,
+    conflicts,
+    behind,
+    removed: removed.filter((address) => !moved.has(address)),
+    moves,
+    ambiguousMoves: ambiguous,
+    probableMoves: probable,
+  };
+}
+
+/**
+ * Which pushes are moves rather than delete-plus-create (SH150).
+ *
+ * <h3>The defect</h3>
+ *
+ * A rename is two file edits — the path and the `url:` frontmatter, which the format already
+ * refuses to let disagree — and to a state document that reads as one undeclared post at the
+ * old URL and one new post at the new. `--prune` deletes the first and creates the second, so
+ * the post that comes out the other side has a new id and none of the old one's audit trail,
+ * version history or inbound references. That is the workaround SH134 exists to prevent,
+ * reached from the file side.
+ *
+ * <h3>Three signals, in order of how much they prove</h3>
+ *
+ * 1. **`movedFrom:` in the file** — an explicit declaration, and the only signal that survives
+ *    a rename *and* a rewrite in the same push, because after a rewrite there is no content
+ *    left to match on.
+ * 2. **Identical content** at a disappeared address and an appeared one: same type, same
+ *    folder, same field values. This is the common case (`git mv`, edit `url:`, push) and it
+ *    needs nothing from the author.
+ * 3. **A folder that differs from the server's** for a post declared at an address the server
+ *    already has. Not a rename at all — a relocation, and it is here because `post.upsert`
+ *    deliberately does not relocate an existing post, so this was a write that reported
+ *    success and moved nothing.
+ *
+ * <h3>What it refuses, and what it only warns about</h3>
+ *
+ * Two appeared posts with content identical to the same disappeared one are an **ambiguity**,
+ * not a coin flip: either could be the rename and the other the copy, and picking wrong moves
+ * the wrong post's history. Reported, and the push stops.
+ *
+ * A disappeared post and an appeared one that are *plausibly* the same (same type, nothing
+ * else matching) are **probable**, and probable is not enough to move something — but it is
+ * more than enough to say so, because the alternative is a delete-plus-create that destroys
+ * history silently. The caller is told what to add to make it a move.
+ */
+export function detectMoves({ base = {}, remote = {}, local = {} }, { posts = [], removed = [] } = {}) {
+  const moves = [];
+  const ambiguous = [];
+  const probable = [];
+  const claimed = new Set();
+
+  // Only a post the server actually has can be moved; one that is merely missing locally and
+  // absent upstream has nothing to move.
+  const gone = removed.filter((address) => remote[address]);
+  const appeared = posts.filter((doc) => {
+    const address = addressOf(doc);
+    return !remote[address] && !base[address];
+  });
+
+  // 1. `movedFrom:` — explicit and exact.
+  for (const doc of appeared) {
+    if (!doc.movedFrom) continue;
+    const from = addressOf({ site: doc.site, url: doc.movedFrom });
+    if (local[from]) {
+      // Two files, one claiming to be the new home of a post the other still declares. One of
+      // them is wrong and no reading of the pair is safe.
+      ambiguous.push({
+        to: addressOf(doc),
+        reason: `its \`movedFrom: ${doc.movedFrom}\` names a post the tree still declares`,
+        candidates: [from],
+      });
+      continue;
+    }
+    // A `movedFrom` whose source is not on the server is the *state after* a successful move:
+    // harmless, and silently ignoring it is what keeps a document re-runnable (SH82).
+    if (!remote[from]) continue;
+    claimed.add(from);
+    moves.push(moveFor(doc, remote[from], doc.movedFrom, true));
+  }
+
+  // 2. Identical content — the rename nobody had to declare.
+  for (const doc of appeared) {
+    if (doc.movedFrom) continue;
+    const matches = gone.filter((address) => !claimed.has(address) && sameContent(remote[address], doc));
+    if (matches.length > 1) {
+      ambiguous.push({
+        to: addressOf(doc),
+        reason: "more than one post on the server has exactly this content, so which one moved "
+          + "here cannot be told from the files",
+        candidates: matches,
+      });
+      continue;
+    }
+    if (!matches.length) continue;
+    const from = matches[0];
+    // Two local files identical to the same server post: the same ambiguity from the other side.
+    const rivals = appeared.filter((other) => other !== doc && !other.movedFrom
+      && sameContent(remote[from], other));
+    if (rivals.length) {
+      ambiguous.push({
+        to: addressOf(doc),
+        reason: "another file in this tree has exactly the same content, so which of them is "
+          + `the rename of ${from} cannot be told apart`,
+        candidates: [from, ...rivals.map(addressOf)],
+      });
+      continue;
+    }
+    claimed.add(from);
+    moves.push(moveFor(doc, remote[from], urlOf(from), false));
+  }
+
+  // 3. A relocation of a post that is not going anywhere else.
+  for (const doc of posts) {
+    const address = addressOf(doc);
+    const server = remote[address];
+    if (!server) continue;
+    const to = doc.folder ?? null;
+    if (to === null || normalizeFolder(to) === normalizeFolder(server.folder)) continue;
+    moves.push({ site: doc.site, from: doc.url, to: null, folder: to, explicit: false });
+  }
+
+  // What is left over on each side and might be a pair: worth saying, not enough to act on.
+  const unclaimed = gone.filter((address) => !claimed.has(address));
+  const unresolved = appeared.filter((doc) => !doc.movedFrom && !claimed.has(sourceOf(moves, doc)));
+  for (const doc of unresolved) {
+    const likely = unclaimed.filter((address) => remote[address]?.type === doc.type);
+    // Exactly one candidate of the same type, or nothing to say. Two candidates is a guess
+    // dressed as a warning, and a warning naming the wrong post is worse than none.
+    if (likely.length === 1) probable.push({ from: likely[0], to: addressOf(doc) });
+  }
+
+  return { moves, ambiguous, probable };
+}
+
+/** The address a decided move brought this doc from, or `null` if none did. */
+function sourceOf(moves, doc) {
+  const move = moves.find((candidate) => candidate.site === doc.site && candidate.to === doc.url);
+  return move ? addressOf({ site: move.site, url: move.from }) : null;
+}
+
+/** One move: the rename, plus the relocation when the destination folder differs too. */
+function moveFor(doc, server, fromUrl, explicit) {
+  const folder = doc.folder ?? null;
+  const relocates = folder !== null && normalizeFolder(folder) !== normalizeFolder(server.folder);
+  return {
+    site: doc.site,
+    from: fromUrl,
+    to: doc.url,
+    folder: relocates ? folder : null,
+    explicit,
+  };
+}
+
+/** Same post-type, same folder, same field values — identity by content. */
+function sameContent(a, b) {
+  if (!a || !b) return false;
+  if ((a.type ?? null) !== (b.type ?? null)) return false;
+  if (normalizeFolder(a.folder) !== normalizeFolder(b.folder)) return false;
+  return stable(dataOf(a)) === stable(dataOf(b));
+}
+
+function dataOf(doc) {
+  const data = {};
+  for (const [name, value] of Object.entries(doc?.data ?? {})) {
+    if (value !== undefined) data[name] = value;
+  }
+  return data;
+}
+
+function normalizeFolder(folder) {
+  if (folder == null) return null;
+  const segments = String(folder).split("/").filter(Boolean);
+  return segments.length ? `/${segments.join("/")}` : "/";
+}
+
+/** `post:Blog/blog/hello` → `/blog/hello`. */
+function urlOf(address) {
+  const cut = String(address).indexOf("/");
+  return cut < 0 ? "/" : String(address).slice(cut);
 }
 
 /**
@@ -204,11 +388,20 @@ export function planPushContent({ base = {}, remote = {}, local = {} }, { force 
  *   without it a site holding only folders produces nothing, which is the "scaffold the
  *   structure before any content exists" case SH149 is for
  */
-export function documentsFor(posts, { prune = false, markers = [], sites = [] } = {}) {
+export function documentsFor(posts, { prune = false, markers = [], sites = [], moves = [] } = {}) {
   const bySite = new Map();
   for (const post of posts) {
     if (!bySite.has(post.site)) bySite.set(post.site, []);
     bySite.get(post.site).push(post);
+  }
+  const movesBySite = new Map();
+  for (const move of moves) {
+    if (!move?.site) continue;
+    if (!movesBySite.has(move.site)) movesBySite.set(move.site, []);
+    movesBySite.get(move.site).push(move);
+  }
+  for (const site of movesBySite.keys()) {
+    if (!bySite.has(site)) bySite.set(site, []);
   }
   const markersBySite = new Map();
   for (const marker of markers) {
@@ -231,6 +424,16 @@ export function documentsFor(posts, { prune = false, markers = [], sites = [] } 
     return {
       site,
       folders: [...folders].sort().map((path) => ({ path })),
+      // SH150 — sorted, and omitted entirely when there are none, so a document without
+      // renames serializes exactly as it did before this existed.
+      moves: (movesBySite.get(site) ?? [])
+        .slice()
+        .sort((a, b) => a.from.localeCompare(b.from))
+        .map((move) => ({
+          from: move.from,
+          to: move.to ?? undefined,
+          folder: move.folder ?? undefined,
+        })),
       posts: sitePosts.map((post) => ({
         url: post.url,
         type: post.type ?? undefined,
@@ -242,6 +445,9 @@ export function documentsFor(posts, { prune = false, markers = [], sites = [] } 
       })),
       prune,
     };
+  }).map((document) => {
+    if (!document.moves.length) delete document.moves;
+    return document;
   });
 }
 

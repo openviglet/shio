@@ -710,24 +710,6 @@ the server has been read anyway. The snapshot goes from O(content) to O(fields).
 Left as an idea rather than designed: it trades a clear data structure for a smaller one,
 and the merge is new. It is worth doing after the merge has been used enough to trust.
 
-### X.10 A renamed file is a move, not a re-creation (SH150)
-
-`push --content --prune` sends a rename as `post.delete` plus `post.upsert`, which is
-precisely the workaround **SH134** exists to prevent: the replacement gets a new id and
-loses the post's audit trail and version history, and any inbound `ShReference` to it
-breaks.
-
-The file format already refuses to rename *halfway* — a path that disagrees with its
-`url:` frontmatter is an error, because one is a move and the other is a create and
-guessing between them either duplicates or deletes a post. So the information needed is
-already there: a post present in the base under one address and in the tree under another,
-with the same fields, is a **move**, and push should emit `post.move` (SH134) for it.
-
-Two details to settle in the task: how much divergence still counts as the same post (an
-address change plus a body rewrite is still a move), and what to do when two files could
-each claim the same base post — which, like every other ambiguity in this block, should be
-a refusal rather than a guess.
-
 ### X.12 `push --content` cannot split a large tree (SH199)
 
 **SH138** gave a compiled document its own op ceiling (2000, against the hand-written batch's

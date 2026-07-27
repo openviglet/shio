@@ -88,10 +88,13 @@ public class ShAgentDesiredStateService {
     /**
      * Compiles a document into ops.
      *
-     * <p>Order is load-bearing and therefore fixed: folders, then posts, then publishes,
-     * then prunes. Folders first because a post needs somewhere to go; publishes after
-     * all upserts so a page never goes live referencing a sibling that does not exist
-     * yet; prunes last so a deletion can never race the creation of its replacement.</p>
+     * <p>Order is load-bearing and therefore fixed: folders, then moves, then posts, then
+     * publishes, then prunes. Folders first because a post needs somewhere to go — and a
+     * move's destination folder is one of those places, which is why moves come after them
+     * and not first. Moves before upserts so the upsert that follows writes fields at the
+     * post's new address instead of creating a second post there (SH150). Publishes after
+     * all upserts so a page never goes live referencing a sibling that does not exist yet;
+     * prunes last so a deletion can never race the creation of its replacement.</p>
      */
     List<ShAgentBatch.Op> compile(ShAgentDesiredState desired) {
         if (desired == null || desired.site() == null || desired.site().isBlank()) {
@@ -99,12 +102,16 @@ public class ShAgentDesiredStateService {
         }
         String site = desired.site().trim();
         List<ShAgentBatch.Op> folders = new ArrayList<>();
+        List<ShAgentBatch.Op> moves = new ArrayList<>();
         List<ShAgentBatch.Op> upserts = new ArrayList<>();
         List<ShAgentBatch.Op> publishes = new ArrayList<>();
 
         for (ShAgentDesiredState.Folder folder : nullSafe(desired.folders())) {
             folders.add(op(ShAgentBatchService.FOLDER_UPSERT,
                     ShAddress.folder(site, folder.path()).toString(), null, null, null));
+        }
+        for (ShAgentDesiredState.Move move : nullSafe(desired.moves())) {
+            moves.add(moveOp(site, move));
         }
         for (ShAgentDesiredState.Post post : nullSafe(desired.posts())) {
             if (post.url() == null || post.url().isBlank()) {
@@ -124,10 +131,39 @@ public class ShAgentDesiredStateService {
         }
 
         List<ShAgentBatch.Op> ops = new ArrayList<>(folders);
+        ops.addAll(moves);
         ops.addAll(upserts);
         ops.addAll(publishes);
         ops.addAll(pruneOps(desired, site));
         return List.copyOf(ops);
+    }
+
+    /**
+     * One declared move as a {@code post.move} op (SH150).
+     *
+     * <p>A move naming neither a new URL nor a new folder is refused rather than compiled to
+     * a noop: it is always a mistake — half a rename, or a key spelled wrong — and a silent
+     * noop is how a caller comes to believe a rename happened when the post never moved.
+     * Everything else the op needs is already enforced on {@code ShFolderWriteService} /
+     * {@code ShPostUnifiedWriteService}, which is the point of compiling to an existing op
+     * rather than restating its rules here (P10): an occupied target, a cross-site move and a
+     * missing source all fail the same way they do for a hand-written batch.</p>
+     */
+    private static ShAgentBatch.Op moveOp(String site, ShAgentDesiredState.Move move) {
+        if (move == null || move.from() == null || move.from().isBlank()) {
+            throw new MissingMoveFromException();
+        }
+        boolean renames = move.to() != null && !move.to().isBlank();
+        boolean relocates = move.folder() != null && !move.folder().isBlank();
+        if (!renames && !relocates) {
+            throw new EmptyMoveException(move.from());
+        }
+        return new ShAgentBatch.Op(ShAgentBatchService.POST_MOVE,
+                ShAddress.post(site, move.from()).toString(),
+                null,
+                relocates ? move.folder() : null,
+                renames ? ShAddress.post(site, move.to()).toString() : null,
+                null);
     }
 
     /**
@@ -183,6 +219,25 @@ public class ShAgentDesiredStateService {
             if (post.folder() != null && !post.folder().isBlank()) {
                 protect(protectedFolders, post.folder().startsWith("folder:")
                         ? ShAddress.parse(post.folder()).path() : post.folder());
+            }
+        }
+        // A move's *source* is declared too (SH150), and this is the line that makes the whole
+        // feature safe rather than dangerous. The sweep reads the database as it is now, before
+        // any op has run, so a renamed post is still sitting at its old URL and nothing in
+        // `posts` mentions that URL — it would be swept. At apply time the move runs first and
+        // the delete would find nothing, so the content would survive; but the *plan* would say
+        // "deleting post:Blog/blog/old", and SH108's confirm digest is taken over exactly that
+        // list. A rename would ask the operator to confirm the deletion of the post it is
+        // preserving, which is worse than the bug it fixes.
+        for (ShAgentDesiredState.Move move : nullSafe(desired.moves())) {
+            if (move != null && move.from() != null && !move.from().isBlank()) {
+                declaredPosts.add(ShAddress.normalizePath(move.from()).toLowerCase(Locale.ROOT));
+            }
+            if (move != null && move.folder() != null && !move.folder().isBlank()) {
+                // A relocation's destination is a placement, exactly like a declared post's
+                // `folder` above: the folder a post is being moved into is not undeclared.
+                protect(protectedFolders, move.folder().startsWith("folder:")
+                        ? ShAddress.parse(move.folder()).path() : move.folder());
             }
         }
 
@@ -289,6 +344,36 @@ public class ShAgentDesiredStateService {
                             + "what makes a second apply a no-op instead of a duplicate.")
                     .withFix("Give every post in `posts` a `url`.")
                     .withExample("{\"url\":\"/blog/hello\",\"type\":\"Article\",\"folder\":\"/blog\"}"));
+        }
+    }
+
+    /** A 400: a declared move does not say what it is moving (SH150). */
+    public static class MissingMoveFromException extends ShTeachingException {
+
+        public MissingMoveFromException() {
+            super(ShProblem.badRequest("missing-move-from", "A declared move has no `from`")
+                    .withDetail("`from` is the URL the post is at now — it is what identifies the "
+                            + "post being moved. Without it the move has no subject.")
+                    .withFix("Give every entry in `moves` a `from`, and a `to` and/or `folder`.")
+                    .withExample("{\"from\":\"/blog/old\",\"to\":\"/blog/new\"}"));
+        }
+    }
+
+    /** A 400: a declared move that would move nothing (SH150). */
+    public static class EmptyMoveException extends ShTeachingException {
+
+        public EmptyMoveException(String from) {
+            super(ShProblem.badRequest("empty-move",
+                            "The move of '" + from + "' says where it is, not where it goes")
+                    // Compiling this to a noop is the failure it is worth a 400 to avoid: the
+                    // caller reads `changed:0` as "already in the right place" and believes a
+                    // rename happened. It is always a mistake — half a rename, or a misspelt key.
+                    .withDetail("A move needs a destination: `to` for a new URL, `folder` for a "
+                            + "new folder, or both. Neither one means nothing would happen, and a "
+                            + "silent no-op reads exactly like a move that already succeeded.")
+                    .withAllowed(List.of("to", "folder"))
+                    .withFix("Add `to` (rename), `folder` (relocate), or both — or drop the entry.")
+                    .withExample("{\"from\":\"" + from + "\",\"to\":\"/blog/new-name\"}"));
         }
     }
 

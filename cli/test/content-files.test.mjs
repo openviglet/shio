@@ -187,6 +187,29 @@ test("a site name that has no safe directory name is refused", () => {
   assert.throws(() => filePathFor({ site: "a/b", url: "/x" }), /no safe directory name/);
 });
 
+// --- movedFrom, the rename instruction (SH150) ---
+
+test("movedFrom round-trips and is an instruction, not a compared field", () => {
+  const text = serializePost({ ...DOC, movedFrom: "blog/previous" }, "content");
+
+  // Normalized like every other path in the format, so `blog/previous` and `/blog/previous`
+  // cannot produce two different documents (P5).
+  assert.match(text, /^movedFrom: \/blog\/previous$/m);
+  assert.equal(parsePost(filePathFor(DOC), text).movedFrom, "/blog/previous");
+  // Absent unless set: a pull has nothing to report here, so it never writes the key.
+  assert.doesNotMatch(serializePost(DOC, "content"), /movedFrom/);
+});
+
+test("a movedFrom that is the post's own URL is refused", () => {
+  // The likely mistake: the URL was edited and `movedFrom` was set to the *new* value. Left
+  // alone it compiles to a move onto itself, which the server refuses for a reason that says
+  // nothing about the actual error.
+  assert.throws(
+    () => parsePost("Blog/blog/hello.md", "---\nsite: Blog\nurl: /blog/hello\nmovedFrom: /blog/hello\n---\n"),
+    /is its own URL/,
+  );
+});
+
 // --- folder markers (SH149) ---
 
 /** A marker file's contents, written the way the format writes them. */

@@ -208,6 +208,156 @@ test("a document omits publish unless the file said so", () => {
   assert.equal(explicit.posts[0].publish, true);
 });
 
+// --- a rename is a move, not a re-creation (SH150) ---
+
+/** The three sides for one renamed post: it was at `from`, the file is now at `to`. */
+function renameSides(from, to, { data = { headline: "Hello" }, local: localExtra = {} } = {}) {
+  const was = post(data, { url: from });
+  return {
+    base: { [addressOf(was)]: was },
+    remote: { [addressOf(was)]: was },
+    local: { [`post:Blog${to}`]: post(data, { url: to, ...localExtra }) },
+  };
+}
+
+test("a renamed file with unchanged content is a move, and stops being a deletion", () => {
+  const plan = planPushContent(renameSides("/blog/old", "/blog/new"));
+
+  assert.deepEqual(plan.moves, [
+    { site: "Blog", from: "/blog/old", to: "/blog/new", folder: null, explicit: false },
+  ]);
+  // The half that matters as much as emitting the move: the old address must leave `removed`,
+  // or `--prune` deletes the very post the move preserved.
+  assert.deepEqual(plan.removed, []);
+  assert.deepEqual(plan.ambiguousMoves, []);
+});
+
+test("movedFrom declares a rename that a rewrite would otherwise hide", () => {
+  // The case content-matching cannot reach: after a rewrite there is nothing left to match on,
+  // so the only thing that can still connect the two is the author saying so.
+  const sides = renameSides("/blog/old", "/blog/new");
+  sides.local["post:Blog/blog/new"] = post(
+    { headline: "Rewritten from scratch" },
+    { url: "/blog/new", movedFrom: "/blog/old" },
+  );
+
+  const plan = planPushContent(sides);
+
+  assert.deepEqual(plan.moves, [
+    { site: "Blog", from: "/blog/old", to: "/blog/new", folder: null, explicit: true },
+  ]);
+  assert.deepEqual(plan.removed, []);
+});
+
+test("a rename that also changes folder carries both axes in one move", () => {
+  const sides = renameSides("/blog/old", "/blog/new", {
+    local: { folder: "/archive", movedFrom: "/blog/old" },
+  });
+
+  assert.deepEqual(planPushContent(sides).moves, [
+    { site: "Blog", from: "/blog/old", to: "/blog/new", folder: "/archive", explicit: true },
+  ]);
+});
+
+test("two files that could each be the same rename are refused, not guessed", () => {
+  // Either could be the rename and the other the copy. Picking wrong moves the wrong post's
+  // id and history, and nothing in the files says which is which.
+  const was = post({ headline: "Hello" }, { url: "/blog/old" });
+  const plan = planPushContent({
+    base: { [addressOf(was)]: was },
+    remote: { [addressOf(was)]: was },
+    local: {
+      "post:Blog/blog/a": post({ headline: "Hello" }, { url: "/blog/a" }),
+      "post:Blog/blog/b": post({ headline: "Hello" }, { url: "/blog/b" }),
+    },
+  });
+
+  assert.equal(plan.moves.length, 0);
+  assert.equal(plan.ambiguousMoves.length, 2);
+  assert.ok(plan.ambiguousMoves.every((row) => row.candidates.includes("post:Blog/blog/old")));
+});
+
+test("a movedFrom naming a post the tree still declares is refused", () => {
+  const was = post({ headline: "Hello" }, { url: "/blog/old" });
+  const plan = planPushContent({
+    base: { [addressOf(was)]: was },
+    remote: { [addressOf(was)]: was },
+    local: {
+      "post:Blog/blog/old": was,
+      "post:Blog/blog/new": post({ headline: "Other" }, { url: "/blog/new", movedFrom: "/blog/old" }),
+    },
+  });
+
+  assert.equal(plan.moves.length, 0);
+  assert.match(plan.ambiguousMoves[0].reason, /still declares/);
+});
+
+test("a stale movedFrom is a no-op, so a pushed rename can be pushed again", () => {
+  // The state right after a successful move: the file still says where it came from, and
+  // nothing is there any more. Erroring here would make the second push of the same tree fail.
+  const plan = planPushContent({
+    base: {},
+    remote: {},
+    local: {
+      "post:Blog/blog/new": post({ headline: "Hello" }, { url: "/blog/new", movedFrom: "/blog/old" }),
+    },
+  });
+
+  assert.deepEqual(plan.moves, []);
+  assert.deepEqual(plan.ambiguousMoves, []);
+});
+
+test("a folder change on a post that stays put is a move, because upsert does not relocate", () => {
+  // Not a rename at all. It is here because `post.upsert` deliberately leaves an existing
+  // post's folder alone, so before SH150 editing `folder:` was a push that reported success
+  // and moved nothing.
+  const server = post({ headline: "Hello" }, { folder: "/blog" });
+  const plan = planPushContent({
+    base: { [addressOf(server)]: server },
+    remote: { [addressOf(server)]: server },
+    local: { [addressOf(server)]: post({ headline: "Hello" }, { folder: "/archive" }) },
+  });
+
+  assert.deepEqual(plan.moves, [
+    { site: "Blog", from: "/blog/hello", to: null, folder: "/archive", explicit: false },
+  ]);
+});
+
+test("a probable rename it cannot prove is reported, never performed", () => {
+  // Same type, different content: plausible, unprovable. Saying nothing would let a
+  // delete-plus-create destroy the post's history in silence.
+  const was = post({ headline: "Old headline" }, { url: "/blog/old" });
+  const plan = planPushContent({
+    base: { [addressOf(was)]: was },
+    remote: { [addressOf(was)]: was },
+    local: { "post:Blog/blog/new": post({ headline: "New headline" }, { url: "/blog/new" }) },
+  });
+
+  assert.deepEqual(plan.moves, []);
+  assert.deepEqual(plan.probableMoves, [
+    { from: "post:Blog/blog/old", to: "post:Blog/blog/new" },
+  ]);
+  // Still a deletion as far as the push is concerned — it was not proven to be a move.
+  assert.deepEqual(plan.removed, ["post:Blog/blog/old"]);
+});
+
+test("a document carries its moves, sorted, and omits the key when there are none", () => {
+  const [withMove] = documentsFor([post({ headline: "a" }, { url: "/b" })], {
+    moves: [
+      { site: "Blog", from: "/z", to: "/b", folder: null },
+      { site: "Blog", from: "/a", to: null, folder: "/news" },
+    ],
+  });
+
+  assert.deepEqual(withMove.moves, [
+    { from: "/a", to: undefined, folder: "/news" },
+    { from: "/z", to: "/b", folder: undefined },
+  ]);
+  // A document without renames serializes exactly as it did before `moves` existed.
+  const [plain] = documentsFor([post({ headline: "a" })]);
+  assert.equal("moves" in plain, false);
+});
+
 // --- folder markers (SH149) ---
 
 test("a folder marker declares a folder no post names, with its ancestors", () => {

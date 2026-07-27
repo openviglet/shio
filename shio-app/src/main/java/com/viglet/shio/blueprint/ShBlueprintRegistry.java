@@ -64,7 +64,17 @@ public class ShBlueprintRegistry {
     /** Where packages live on the classpath. */
     static final String LOCATION = "classpath*:/blueprints/*/" + ShBlueprintManifest.FILE_NAME;
 
-    /** Keys a content document may carry — the SH82 document minus {@code site}/{@code prune}. */
+    /**
+     * Keys a content document may carry — the SH82 document minus {@code site}, {@code prune}
+     * and {@code moves}.
+     *
+     * <p>{@code moves} (SH150) is excluded for the same reason as the other two, and the
+     * omission is deliberate rather than pending: a package is an appliable <em>starting
+     * point</em>, so everything it declares is content it brings. A move's subject is content
+     * that already exists and belongs to the caller — renaming somebody's live page, with the
+     * URL change that implies, is not something a package the user did not write gets to do.
+     * The unknown-key check below already refuses it as a 409; do not "complete" this list.</p>
+     */
     private static final List<String> CONTENT_KEYS = List.of("folders", "posts");
 
     private final ShBlueprintCodec codec;

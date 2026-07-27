@@ -71,13 +71,12 @@
 > **What is left is follow-ups, not blocks**: H's original edges shipped (SH136–SH139) and
 > driving them turned up the next layer (SH196–SH203, spread across H, I, L and O — the
 > engine's own asymmetries rather than missing capabilities), **Block K is now complete**
-> (SH102/SH104/SH141/SH144 closed its last four), I's assets and paging (SH145–SH150), J's
-> reconciliation and registry (SH96, SH153–SH156), M's attribution (SH157–SH161, SH174), N's
-> realignment (SH163–SH167), plus SH44–SH47's tenant work and SH110. The highest-value ones left
-> are **SH150** (a renamed content file still pushes as delete + create, which loses the post's
-> id, audit trail and history — the one place the file projection contradicts SH134) and
-> **SH153** (a blueprint plan writes and rolls back purely so its content half can resolve
-> post-types, so a plan cannot run on a read-only credential or a replica).
+> (SH102/SH104/SH141/SH144 closed its last four), **Block I is down to SH145/SH147/SH148/SH199**
+> (SH146, SH149, SH150 and SH198 have shipped), J's reconciliation and registry (SH96,
+> SH153–SH156), M's attribution (SH157–SH161, SH174), N's realignment (SH163–SH167), plus
+> SH44–SH47's tenant work and SH110. The highest-value one left is **SH153** (a blueprint plan
+> writes and rolls back purely so its content half can resolve post-types, so a plan cannot run
+> on a read-only credential or a replica).
 >
 > **What driving it end to end found (SH168–SH175).** A whole site — model, folder tree,
 > thirteen pages, a file projection, a CI gate — was built over the agent surface alone, and
@@ -206,8 +205,9 @@
 > offer a cursor at all.
 >
 > **What building it opened.** The projection made three gaps conspicuous: a file rename
-> pushes as delete-plus-create instead of SH134's `post.move`, which loses the post's id
-> and history (**SH150**); an empty folder could not be authored at all, because folders were
+> pushed as delete-plus-create instead of SH134's `post.move`, losing the post's id
+> and history — ✅ **SH150** gave the document a `moves` section and taught push to detect
+> the pair; an empty folder could not be authored at all, because folders were
 > only implied by the posts inside them — ✅ **SH149** gave them a marker file of their own;
 > and the merge base keeps a second copy
 > of every field value when per-field digests would decide the same cases (**SH148**). The
@@ -217,7 +217,6 @@
 - 📋 **SH145** (deps: SH86 ✅, SH38 ✅) **Project assets too** — `shio/assets/` with the bytes, and a `File` field that reads as a path rather than a UUID. Today a content tree cannot be moved to another instance or reviewed in a diff without the ids resolving to nothing, which is most of what "content as files" promises. → §X.6
 - 📋 **SH147** (deps: SH88 ✅) **Commit-ordered change feed** — SH51 stamps the audit row inside the writer's transaction, so a slow commit can land an older timestamp behind a cursor that already passed it. The 1s lag narrows that window; only commit-ordered sequencing (an outbox, or a sequence assigned at commit) closes it, and a feed used for sync has to be exact. → §X.3
 - 💭 **SH148** (deps: SH89 ✅) **Digest-only merge base** — `shio/.shio/content-base.json` holds a full copy of every projected field. A per-field hash decides all three merge cases; only a genuine conflict needs values, and those can be re-read. Turns the snapshot from O(content) into O(fields). → §X.8
-- 📋 **SH150** (deps: SH87 ✅, SH134 ✅) **A renamed file is a move, not a re-creation** — `push --content --prune` sends a rename as `post.delete` + `post.upsert`, which is exactly the workaround SH134 exists to prevent: the new post gets a new id and loses the audit trail and version history. The file already refuses to rename halfway (path vs `url:`), so the honest fix is to detect the pair and emit `post.move`. → §X.10
 - 📋 **SH199** (deps: SH138 ✅, SH87 ✅) **`push --content` cannot split a large tree** — SH138 gave a compiled document its own 2000-op ceiling, which is a bound, not a solution: a tree past it still dead-ends, because one document per site is the only shape push knows. Splitting by declared folder is the natural unit and interacts with `--prune`, whose scope is exactly those folders — so the split has to preserve prune's blast radius, not just the op count. → §X.12
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin

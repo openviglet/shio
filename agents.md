@@ -226,9 +226,15 @@ the CDA + console services (law P10) and holds no business logic of its own.
 - `POST /agent/plan` / `POST /agent/apply` — a declarative desired-state content
   document; `plan` never writes, and `changed:0` is the content drift guard. `prune`
   deletes undeclared **posts and folders** inside the declared folders' subtrees (SH135),
-  posts first and folders deepest-first; declared folders, their ancestors, and any folder
-  a declared post calls home are protected. Also `shio apply <file>` in the CLI
-  (`--dry-run` / `--check` / `-` for stdin).
+  posts first and folders deepest-first; declared folders, their ancestors, any folder
+  a declared post calls home, **and the source of every declared move (SH150)** are protected.
+  Also `shio apply <file>` in the CLI (`--dry-run` / `--check` / `-` for stdin).
+  **`moves` is the document's one intent channel (SH150)** — `{from, to?, folder?}`, compiled to
+  `post.move` after folders and before upserts. Everything else here is state, which is what
+  makes an apply re-runnable; a rename is *not* state, so declaring one as state alone is a
+  delete plus a create that loses the post's id and history. A move naming neither `to` nor
+  `folder` is a teaching **400**, not a noop — `changed:0` reads as "already in the right
+  place", so a silent noop is how a caller comes to believe a rename happened.
   **A deletion plan is never shortened (SH138)** — `ShAgentChangeSet`'s constructor rejects
   `results.size() != ops`, so the type cannot express a cut, and the reason it gets this
   instead of the `truncated: true` every other unbounded section gets is that a shortened
@@ -583,8 +589,37 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   naming `/archive` already did exactly the same thing. `--folders-dir` moves the root.
   `reconcileFolders` is the pure half; the folder list comes from the context pack's sitemap
   (no new endpoint — P10), walked to the end for SH146's reason.
-- Not projected yet: **assets** (SH145); a rename still pushes as delete + create rather than
-  `post.move` (SH150).
+- **A renamed file is a move (SH150), and the document has a `moves` section for it.** A rename
+  is two file edits (the path and `url:`, which the format refuses to let disagree), and to a
+  pure state document that reads as one undeclared post at the old URL plus a new one at the new
+  — so `--prune` deleted the first and created the second, and the post came out with a new id
+  and none of its audit trail, version history or inbound references. `moves` is the document's
+  one **intent** channel for that reason: state cannot express "this is the same post". It
+  compiles to `post.move` (`ShAgentDesiredStateService.moveOp`) **after folders, before upserts**,
+  so the upsert writes fields at the post's new address instead of creating a second post there.
+  It stays re-runnable because a move whose `from` is gone is a **noop**, not an error.
+  - **Detection is three signals** (`detectMoves`): `movedFrom: <old url>` in frontmatter — an
+    instruction like `publish:`, never written by a pull, and the *only* signal that survives a
+    rename plus a rewrite, since after a rewrite there is no content left to match on; identical
+    content at a vanished address and a new one (the common `git mv` case, needing nothing from
+    the author); and a `folder:` that differs from the server's.
+  - **That last one is a defect this fixed, not a rename**: `post.upsert` deliberately does not
+    relocate an existing post, so editing a file's `folder:` was a push that reported success
+    and moved nothing at all.
+  - **Ambiguity is refused, probability is reported.** Two files that could each be the same
+    rename are a 1-in-2 chance of moving the wrong post's history, so the push stops and names
+    the candidates. A pair that is *plausible* but unprovable (same type, different content) is
+    printed with the `movedFrom:` line to add — silence there means a delete-plus-create destroys
+    history without mentioning it.
+  - **Two invariants that are easy to break.** A moved post's old address leaves `removed`, or
+    `--prune` deletes the post the move just preserved; and it must not come back into the base
+    snapshot from the server read (which was taken *before* the move), or the next run offers to
+    prune it. On the server, a move's `from` counts as **declared** so the prune sweep skips it —
+    without that, SH108's confirm digest would ask the operator to confirm destroying the post
+    being preserved. **Not available to a blueprint** (`CONTENT_KEYS`) or to `shio_apply`: a
+    package renaming the caller's live pages is not its business, and MCP renames with
+    `shio_write`'s `post.move`, which costs no extra schema.
+- Not projected yet: **assets** (SH145).
 
 ### Blueprints — appliable starting points (Block J)
 

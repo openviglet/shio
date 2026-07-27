@@ -99,6 +99,11 @@ public class ShApplyTool implements ShMcpTool {
                                         "publish", ShMcpTool.bool(
                                                 "true publishes, false unpublishes; omit to leave "
                                                         + "the live state alone.")))),
+                // SH150's `moves` is not here either, and for once the budget argument and the
+                // design argument agree completely: a `moves` array of from/to/folder objects is
+                // the largest thing that could be added to the largest tool on the surface, and
+                // `shio_write` already carries `post.move` at zero marginal cost — it is one
+                // value in an op enum that exists. A rename over MCP is a `shio_write` call.
                 "prune", ShMcpTool.bool(
                         "Delete posts inside the declared folders that this document does not "
                                 + "declare. Requires `folders`."),

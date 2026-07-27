@@ -146,7 +146,7 @@ class ShAgentMoveAndPruneTest {
                     : null;
             ShAgentDesiredState confirmed = confirm == null ? desired
                     : new ShAgentDesiredState(desired.site(), desired.folders(), desired.posts(),
-                            desired.prune(), confirm);
+                            desired.moves(), desired.prune(), confirm);
             return shAgentDesiredStateService.apply(confirmed, false, "tester");
         });
     }
@@ -560,6 +560,112 @@ class ShAgentMoveAndPruneTest {
                 .isInstanceOf(ShAgentDesiredStateService.UnscopedPruneException.class);
     }
 
+    // --- SH150: a document declares moves ---
+
+    @Test
+    @DisplayName("a document's move keeps the post's id, and its upsert lands at the new url")
+    void aDocumentMoveKeepsThePostId() {
+        String base = "/doc-mv-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), post(base + "/old", base, "Old"));
+        String before = only(run(true, post(base + "/old", base, "Old"))).id();
+
+        applyDocument(withMoves(
+                document(base, List.of(base), List.of(declared(base + "/new", base, "Renamed")), false),
+                new ShAgentDesiredState.Move(base + "/old", base + "/new", null)));
+
+        // The move runs before the upsert, so the upsert writes the new title onto the post
+        // that was already there instead of creating a second one beside it.
+        ShPostUnified moved = reload(before, ShPostState.DRAFT);
+        assertThat(moved).as("the post kept its id across the rename").isNotNull();
+        assertThat(moved.getFurl()).isEqualTo(base + "/new");
+        assertThat(moved.getTitle()).isEqualTo("Renamed");
+        assertThat(postsInFolderAt(base)).containsExactly("Renamed");
+    }
+
+    @Test
+    @DisplayName("a pruning document does not offer to delete the post it is moving")
+    void aPruningDocumentProtectsAMovesSource() {
+        String base = "/doc-mvp-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), post(base + "/old", base, "Old"));
+
+        ShAgentChangeSet planned = new TransactionTemplate(transactionManager).execute(status ->
+                shAgentDesiredStateService.plan(withMoves(
+                        document(base, List.of(base),
+                                List.of(declared(base + "/new", base, "Old")), true),
+                        new ShAgentDesiredState.Move(base + "/old", base + "/new", null)),
+                        true, "tester"));
+
+        // The sweep reads the database before any op has run, so the post is still at its old
+        // URL and nothing in `posts` names that URL. Unprotected it would be swept — and the
+        // real damage is not the delete (the move runs first, so it would find nothing) but the
+        // *plan*: SH108's confirm digest is taken over this list, so a rename would ask the
+        // operator to confirm destroying the post it is preserving.
+        assertThat(planned.results())
+                .noneMatch(change -> Change.DELETE.equals(change.action()));
+    }
+
+    @Test
+    @DisplayName("re-applying a document whose move already happened changes nothing")
+    void aDocumentMoveIsIdempotent() {
+        String base = "/doc-mvi-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), post(base + "/old", base, "Old"));
+        ShAgentDesiredState desired = withMoves(
+                document(base, List.of(base), List.of(declared(base + "/new", base, "Old")), false),
+                new ShAgentDesiredState.Move(base + "/old", base + "/new", null));
+
+        applyDocument(desired);
+        ShAgentChangeSet second = new TransactionTemplate(transactionManager).execute(status ->
+                shAgentDesiredStateService.plan(desired, true, "tester"));
+
+        // A move whose source is gone is a noop, not an error — which is what lets a document
+        // carrying an intent stay re-runnable (SH82). Without this the second apply of a pushed
+        // rename would fail on "no post at /old".
+        assertThat(second.changed()).isZero();
+    }
+
+    @Test
+    @DisplayName("a document's move relocates without renaming")
+    void aDocumentMoveRelocatesOnly() {
+        String base = "/doc-mvr-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base + "/from"), folder(base + "/to"),
+                post(base + "/page", base + "/from", "Page"));
+
+        applyDocument(withMoves(
+                document(base, List.of(base), List.of(), false),
+                new ShAgentDesiredState.Move(base + "/page", null, base + "/to")));
+
+        // The axis that exists because `post.upsert` deliberately does not relocate an existing
+        // post: without it, changing a file's `folder:` was a write that reported success and
+        // moved nothing at all.
+        assertThat(postsInFolderAt(base + "/to")).containsExactly("Page");
+        assertThat(postsInFolderAt(base + "/from")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("a move with no destination is refused, not compiled to a no-op")
+    void aDocumentMoveNeedsSomewhereToGo() {
+        String base = "/doc-mvn-" + UUID.randomUUID().toString().substring(0, 8);
+
+        assertThatThrownBy(() -> plan(base, List.of(base), List.of(), false,
+                new ShAgentDesiredState.Move(base + "/page", null, null)))
+                .isInstanceOf(ShAgentDesiredStateService.EmptyMoveException.class)
+                // A no-op would report `changed:0`, which reads as "already in the right place".
+                .hasMessageContaining("silent no-op");
+        assertThatThrownBy(() -> plan(base, List.of(base), List.of(), false,
+                new ShAgentDesiredState.Move(null, base + "/page", null)))
+                .isInstanceOf(ShAgentDesiredStateService.MissingMoveFromException.class);
+    }
+
+    private ShAgentDesiredState.Post declared(String url, String folder, String headline) {
+        return new ShAgentDesiredState.Post(url, postTypeName, folder, data(headline), null);
+    }
+
+    private static ShAgentDesiredState withMoves(ShAgentDesiredState desired,
+                                                 ShAgentDesiredState.Move... moves) {
+        return new ShAgentDesiredState(desired.site(), desired.folders(), desired.posts(),
+                List.of(moves), desired.prune(), desired.confirm());
+    }
+
     private ShAgentDesiredState document(String base, List<String> folders,
                                          List<ShAgentDesiredState.Post> posts, boolean prune) {
         return new ShAgentDesiredState(siteName,
@@ -568,9 +674,11 @@ class ShAgentMoveAndPruneTest {
     }
 
     private ShAgentChangeSet plan(String base, List<String> folders,
-                                  List<ShAgentDesiredState.Post> posts, boolean prune) {
+                                  List<ShAgentDesiredState.Post> posts, boolean prune,
+                                  ShAgentDesiredState.Move... moves) {
         return new TransactionTemplate(transactionManager).execute(status ->
-                shAgentDesiredStateService.plan(document(base, folders, posts, prune),
+                shAgentDesiredStateService.plan(
+                        withMoves(document(base, folders, posts, prune), moves),
                         true, "tester"));
     }
 }

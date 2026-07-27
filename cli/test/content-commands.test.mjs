@@ -457,6 +457,73 @@ test("push --content says so instead of pushing an empty tree", async () => {
   await assert.rejects(() => contentPush.run({}, [], ctx), /no content files under/);
 });
 
+// --- a rename is a move (SH150) ---
+
+test("push --content sends a renamed post as a move, not a delete plus a create", async () => {
+  // The defect: a rename is two file edits, and to a state document that reads as one
+  // undeclared post at the old URL plus a new one at the new. The post that came out the
+  // other side had a new id and none of the old one's history.
+  const fetchImpl = server({ remote: { "post:Blog/blog/hello": REMOTE_DOC } });
+  const ctx = ctxWith(fetchImpl, {
+    "/repo/shio/content/Blog/blog/greeting.md":
+      `---\nsite: Blog\nurl: /blog/greeting\ntype: Article\nfolder: /blog\nbody: body\nfields:\n  headline: Hello\n---\n<p>First</p>\n`,
+    [BASE_PATH]: baseSnapshot({ headline: "Hello", body: "<p>First</p>" }),
+  });
+
+  const result = await contentPush.run({ prune: true }, [], ctx);
+
+  const applied = fetchImpl.calls.find((call) => call.url.includes("/agent/apply"));
+  assert.deepEqual(applied.body.moves, [{ from: "/blog/hello", to: "/blog/greeting" }]);
+  assert.deepEqual(result.moves.map((move) => move.from), ["/blog/hello"]);
+  // And it is no longer a deletion, which is what stops --prune destroying the post that the
+  // move just preserved.
+  assert.deepEqual(result.removed, []);
+  assert.match(ctx.stdout.text, /move post:Blog\/blog\/hello → \/blog\/greeting \(matched by content\)/);
+});
+
+test("push --content refuses when a rename is ambiguous", async () => {
+  const fetchImpl = server({ remote: { "post:Blog/blog/hello": REMOTE_DOC } });
+  const body = `type: Article\nfolder: /blog\nbody: body\nfields:\n  headline: Hello\n---\n<p>First</p>\n`;
+  const ctx = ctxWith(fetchImpl, {
+    "/repo/shio/content/Blog/blog/a.md": `---\nsite: Blog\nurl: /blog/a\n${body}`,
+    "/repo/shio/content/Blog/blog/b.md": `---\nsite: Blog\nurl: /blog/b\n${body}`,
+    [BASE_PATH]: baseSnapshot({ headline: "Hello", body: "<p>First</p>" }),
+  });
+
+  await assert.rejects(() => contentPush.run({}, [], ctx), /could be a rename of more than one/);
+  assert.ok(fetchImpl.calls.every((call) => !call.url.includes("/agent/apply")));
+});
+
+test("push --content warns about a rename it cannot prove", async () => {
+  const fetchImpl = server({ remote: { "post:Blog/blog/hello": REMOTE_DOC } });
+  const ctx = ctxWith(fetchImpl, {
+    "/repo/shio/content/Blog/blog/greeting.md":
+      `---\nsite: Blog\nurl: /blog/greeting\ntype: Article\nfolder: /blog\nbody: body\nfields:\n  headline: Rewritten\n---\n<p>All new</p>\n`,
+    [BASE_PATH]: baseSnapshot({ headline: "Hello", body: "<p>First</p>" }),
+  });
+
+  const result = await contentPush.run({}, [], ctx);
+
+  assert.deepEqual(result.moves, []);
+  // Unprovable, so it is not performed — but it *is* said, because the alternative is a
+  // delete plus a create that destroys the post's history without mentioning it.
+  assert.match(ctx.stdout.text, /looks like it could be post:Blog\/blog\/hello renamed/);
+  assert.match(ctx.stdout.text, /movedFrom: \/blog\/hello/);
+});
+
+test("push --content moves a post whose folder changed, which used to do nothing", async () => {
+  const fetchImpl = server({ remote: { "post:Blog/blog/hello": REMOTE_DOC } });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /archive\nbody: body\nfields:\n  headline: Hello\n---\n<p>First</p>\n`,
+    [BASE_PATH]: baseSnapshot({ headline: "Hello", body: "<p>First</p>" }),
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  const applied = fetchImpl.calls.find((call) => call.url.includes("/agent/apply"));
+  assert.deepEqual(applied.body.moves, [{ from: "/blog/hello", folder: "/archive" }]);
+});
+
 // --- folders as files (SH149) ---
 
 test("push --content declares an empty folder from its marker alone", async () => {

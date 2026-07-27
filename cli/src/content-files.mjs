@@ -41,7 +41,7 @@
 const FENCE = "---";
 
 /** Metadata key order — fixed, so a diff never shows a reordering. */
-const META_ORDER = ["site", "url", "type", "folder", "publish", "body"];
+const META_ORDER = ["site", "url", "type", "folder", "publish", "movedFrom", "body"];
 
 /**
  * Scalars that must be quoted because YAML would read them as something else, or
@@ -144,6 +144,11 @@ export function serializePost(doc, bodyField = null) {
     type: doc.type ?? null,
     folder: doc.folder == null ? null : normalizeUrl(doc.folder),
     publish: typeof doc.publish === "boolean" ? doc.publish : undefined,
+    // SH150 — an instruction, like `publish`: it says where this post came from, so a push
+    // can move it instead of re-creating it. A pull never writes one (the server has no such
+    // thing to report), but it is preserved when a merge rewrites the file, because losing
+    // the author's instruction mid-sync is how a rename turns back into a delete plus create.
+    movedFrom: doc.movedFrom ? normalizeUrl(doc.movedFrom) : undefined,
     // Recorded only when the body is actually in the document, so a file never claims a
     // body field whose value stayed in `fields`.
     body: body === null ? undefined : bodyField,
@@ -308,6 +313,18 @@ export function parsePost(relPath, text) {
     );
   }
 
+  if (meta.movedFrom && normalizeUrl(meta.movedFrom) === url) {
+    // A post cannot have moved from where it already is, and the mistake this catches is the
+    // likely one: the URL was edited and `movedFrom` was set to the *new* value rather than
+    // the old. Left alone it compiles to a move onto itself, which the server then refuses
+    // for a reason that says nothing about the actual error.
+    throw fault(
+      relPath,
+      `its \`movedFrom: ${normalizeUrl(meta.movedFrom)}\` is its own URL. ` +
+        "`movedFrom` is the URL this post used to have — the one that is no longer here",
+    );
+  }
+
   const data = { ...fields };
   const bodyField = meta.body ?? null;
   if (body !== null && body !== "") {
@@ -326,6 +343,7 @@ export function parsePost(relPath, text) {
     type: meta.type ?? null,
     folder: meta.folder == null ? null : normalizeUrl(meta.folder),
     publish: typeof meta.publish === "boolean" ? meta.publish : undefined,
+    movedFrom: meta.movedFrom ? normalizeUrl(meta.movedFrom) : undefined,
     bodyField,
     data,
   };
