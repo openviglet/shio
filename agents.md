@@ -701,12 +701,19 @@ from becoming a third contract (P10).
   left exactly as it is (including a field a human added) and the response *names the fields
   it lacks* — the bootstrap `Page` (SH71: `title` + `content`) versus the section
   vocabulary's `Page` is the collision this actually happens to. SH152 reconciles.
-- **The plan provisions post-types inside its transaction and rolls back** — otherwise the
-  content planner fails on "no post-type named Article" for exactly the packages blueprints
-  exist for. This is the technique `ShAgentBatchService` refuses for *content*, and the
-  difference is real: post-type provisioning emits no audit rows, webhooks, events or quota
-  movement. The content half of the plan still writes nothing at all. SH153 removes the
-  write entirely.
+- **A plan writes nothing and needs no write transaction (SH153).** It used to provision the
+  package's post-types inside its own transaction and roll back — accurate, and it meant a plan
+  could not run on a read-only credential, a replica, or inside a `readOnly` transaction, which
+  is the wrong constraint on a surface whose safety story is "look before you write". Instead the
+  plan **declares** what it would create — the site, and each post-type with the fields it would
+  carry — and the batch planner resolves against that: `ShAgentBatchService.Declared`, the
+  pending-folder idea one resource wider. Two rules keep it honest. It is **additive, never a
+  substitute**: a live post-type is still resolved live and the declared names are *unioned* with
+  its own, so a plan can never come back greener than the run it predicts — with `mergePostTypes`
+  off, nothing is declared for an existing type and SH168's "a real run will refuse this write"
+  survives. And it is **honoured on a dry run only**, so a declaration cannot stand in for an
+  apply that did not happen. `ShBlueprintWriteService.plan` is `@Transactional(readOnly = true)`,
+  which makes that a claim the database enforces rather than one a test has to remember.
 - **The server never writes a project file.** `files` are returned and the CLI writes them
   (never over an existing one without `--force`); an MCP-only caller is told what it has
   *not* got.

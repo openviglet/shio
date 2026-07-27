@@ -199,6 +199,45 @@ public class ShPostTypeAdminService {
      */
     @Transactional
     public List<String> mergeMissingFields(ShPostTypeDef def) {
+        List<ShPostTypeAttrDef> missing = mergeableFields(def);
+        if (missing.isEmpty()) {
+            return List.of();
+        }
+        ShPostType existing = shPostTypeRepository.findByName(def.name());
+        Set<ShPostTypeAttr> attrs = existing.getShPostTypeAttrs();
+        int nextOrdinal = 1 + (attrs == null ? 0 : attrs.stream()
+                .mapToInt(ShPostTypeAttr::getOrdinal).max().orElse(0));
+
+        List<String> added = new ArrayList<>();
+        for (ShPostTypeAttrDef field : missing) {
+            ShPostTypeAttrDef appended = new ShPostTypeAttrDef(field.name(), field.label(),
+                    field.description(), field.widget(), field.required(), field.isTitle(),
+                    field.isSummary(), nextOrdinal++, field.widgetSettings(), field.fields());
+            // One at a time, through the same builder every other path uses, so an unknown
+            // widget is still the SH80 teaching 400 rather than a half-merged type.
+            attrs.addAll(buildAttrs(List.of(appended), existing, null));
+            added.add(field.name());
+        }
+        shPostTypeRepository.save(existing);
+        return List.copyOf(added);
+    }
+
+    /**
+     * What {@link #mergeMissingFields} <em>would</em> add, without adding it (SH153).
+     *
+     * <p>A blueprint plan has to report a merge before it happens, and it may not write to
+     * find out: the plan is the read-only half of the surface. Both callers share this method
+     * rather than each deciding what "missing" means, so a plan cannot promise a field the
+     * apply then skips.</p>
+     *
+     * @return the names, in the order a merge would append them
+     */
+    @Transactional(readOnly = true)
+    public List<String> mergeableFieldNames(ShPostTypeDef def) {
+        return mergeableFields(def).stream().map(ShPostTypeAttrDef::name).toList();
+    }
+
+    private List<ShPostTypeAttrDef> mergeableFields(ShPostTypeDef def) {
         if (def == null || def.name() == null || def.fields() == null) {
             return List.of();
         }
@@ -211,26 +250,9 @@ public class ShPostTypeAdminService {
                 .map(ShPostTypeAttr::getName)
                 .filter(name -> name != null)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        int nextOrdinal = 1 + (attrs == null ? 0 : attrs.stream()
-                .mapToInt(ShPostTypeAttr::getOrdinal).max().orElse(0));
-
-        List<String> added = new ArrayList<>();
-        for (ShPostTypeAttrDef field : def.fields()) {
-            if (field.name() == null || present.contains(field.name())) {
-                continue;
-            }
-            ShPostTypeAttrDef appended = new ShPostTypeAttrDef(field.name(), field.label(),
-                    field.description(), field.widget(), field.required(), field.isTitle(),
-                    field.isSummary(), nextOrdinal++, field.widgetSettings(), field.fields());
-            // One at a time, through the same builder every other path uses, so an unknown
-            // widget is still the SH80 teaching 400 rather than a half-merged type.
-            attrs.addAll(buildAttrs(List.of(appended), existing, null));
-            added.add(field.name());
-        }
-        if (!added.isEmpty()) {
-            shPostTypeRepository.save(existing);
-        }
-        return List.copyOf(added);
+        return def.fields().stream()
+                .filter(field -> field.name() != null && !present.contains(field.name()))
+                .toList();
     }
 
     /** Delete a non-system post-type. Returns {@code false} if it does not exist. */

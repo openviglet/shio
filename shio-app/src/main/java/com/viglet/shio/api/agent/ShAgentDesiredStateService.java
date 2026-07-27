@@ -70,8 +70,23 @@ public class ShAgentDesiredStateService {
      */
     @Transactional(readOnly = true)
     public ShAgentChangeSet plan(ShAgentDesiredState desired, boolean ids, String actor) {
+        return plan(desired, ids, actor, ShAgentBatchService.Declared.NOTHING);
+    }
+
+    /**
+     * As {@link #plan(ShAgentDesiredState, boolean, String)}, resolving against the site and
+     * post-types the caller's own run would create first (SH153).
+     *
+     * <p>{@code readOnly} is the point of the parameter, not an implementation detail: a
+     * blueprint plan used to provision its model inside this transaction and roll it back,
+     * which made a plan a write — unavailable on a read-only credential or a replica. Nothing
+     * on this path writes now, so the annotation is a claim the database enforces.</p>
+     */
+    @Transactional(readOnly = true)
+    public ShAgentChangeSet plan(ShAgentDesiredState desired, boolean ids, String actor,
+                                 ShAgentBatchService.Declared declared) {
         return shAgentBatchService.run(new ShAgentBatch(true, compile(desired)), ids, actor,
-                ShAgentBatchService.Source.DOCUMENT);
+                ShAgentBatchService.Source.DOCUMENT, declared);
     }
 
     /** Makes it so, atomically. */

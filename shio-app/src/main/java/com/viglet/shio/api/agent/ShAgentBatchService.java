@@ -46,6 +46,7 @@ import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 import com.viglet.shio.tenant.ShTenantQuotaService;
+import com.viglet.shio.utils.ShStableMap;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -176,6 +177,75 @@ public class ShAgentBatchService {
     }
 
     /**
+     * What a plan may take as already there although the database does not have it yet (SH153).
+     *
+     * <h2>Why a plan needs to be told this at all</h2>
+     *
+     * <p>A blueprint brings its own post-types and, since SH151, possibly its own site — so
+     * planning its content against the live model fails on the first post with <em>"no
+     * post-type named Article"</em>, which is useless for exactly the case blueprints exist
+     * for. The original fix was to provision inside the plan's transaction and roll back. It
+     * was accurate and it cost a property nobody asked to give up: a plan could no longer run
+     * on a read-only credential, a read replica, or a session whose transaction is
+     * {@code readOnly}. For a surface whose safety story is "look before you write", that is
+     * the wrong constraint.</p>
+     *
+     * <p>So the caller <em>declares</em> what its own run would create, and the dry run
+     * resolves against it. This is the pending-folder idea one resource wider: the session
+     * already keeps the folders earlier ops would have made, precisely so "create /blog, then
+     * put a post in /blog" does not report a spurious 404.</p>
+     *
+     * <h2>The two rules that keep it honest</h2>
+     *
+     * <p><b>It is additive, never a substitute.</b> A post-type that really exists is resolved
+     * live, and the declared field names are <em>unioned</em> with the live ones — so a caller
+     * that declares a field the instance does not have gets SH168's "a real run will refuse
+     * this write" finding unless it also intends to add that field. Declaring cannot make a
+     * plan greener than the run it predicts.</p>
+     *
+     * <p><b>It is honoured on a dry run only.</b> {@code apply} resolves everything live, so a
+     * declaration can never stand in for a write that did not happen.</p>
+     *
+     * @param site      the site this run would create, or {@code null}
+     * @param postTypes post-type name → the field names it would declare
+     */
+    public record Declared(String site, Map<String, Set<String>> postTypes) {
+
+        /** The ordinary case: everything an op names must already be there. */
+        public static final Declared NOTHING = new Declared(null, Map.of());
+
+        public Declared {
+            postTypes = postTypes == null ? Map.of() : ShStableMap.copyOf(postTypes);
+        }
+
+        private boolean declaresSite(String nameOrId) {
+            return site != null && nameOrId != null && site.equalsIgnoreCase(nameOrId.trim());
+        }
+
+        /** The fields this run would give {@code name}, empty when it declares no such type. */
+        private Set<String> fieldsOf(String name) {
+            if (name == null) {
+                return Set.of();
+            }
+            String wanted = name.trim();
+            for (Map.Entry<String, Set<String>> entry : postTypes.entrySet()) {
+                if (wanted.equalsIgnoreCase(entry.getKey())) {
+                    return entry.getValue() == null ? Set.of() : entry.getValue();
+                }
+            }
+            return Set.of();
+        }
+
+        private boolean declaresPostType(String name) {
+            if (name == null) {
+                return false;
+            }
+            String wanted = name.trim();
+            return postTypes.keySet().stream().anyMatch(wanted::equalsIgnoreCase);
+        }
+    }
+
+    /**
      * Runs a batch. One transaction: any op that throws rolls back every op before it,
      * because a half-applied structure costs the caller more than a clean failure.
      *
@@ -185,18 +255,29 @@ public class ShAgentBatchService {
      */
     @Transactional
     public ShAgentChangeSet run(ShAgentBatch batch, boolean ids, String actor) {
-        return runOps(batch, ids, actor, Source.REQUEST);
+        return runOps(batch, ids, actor, Source.REQUEST, Declared.NOTHING);
     }
 
     /** As {@link #run(ShAgentBatch, boolean, String)}, for ops of a known {@link Source}. */
     @Transactional
     public ShAgentChangeSet run(ShAgentBatch batch, boolean ids, String actor, Source source) {
-        return runOps(batch, ids, actor, source);
+        return runOps(batch, ids, actor, source, Declared.NOTHING);
     }
 
-    // Both entry points are annotated and neither calls the other: a self-invocation would
+    /**
+     * As {@link #run(ShAgentBatch, boolean, String, Source)}, resolving a dry run against
+     * what the caller says its own run would create (SH153).
+     */
+    @Transactional
+    public ShAgentChangeSet run(ShAgentBatch batch, boolean ids, String actor, Source source,
+                                Declared declared) {
+        return runOps(batch, ids, actor, source, declared);
+    }
+
+    // The entry points are annotated and none calls another: a self-invocation would
     // bypass the proxy, so the inner annotation would be decoration rather than a transaction.
-    private ShAgentChangeSet runOps(ShAgentBatch batch, boolean ids, String actor, Source source) {
+    private ShAgentChangeSet runOps(ShAgentBatch batch, boolean ids, String actor, Source source,
+                                    Declared declared) {
         List<ShAgentBatch.Op> ops = validate(batch, source);
         // SH107 — publishing is a capability, not a default. Checked before anything runs and
         // on a dryRun too: an agent that cannot publish should learn that while planning, not
@@ -207,13 +288,13 @@ public class ShAgentBatchService {
         // destroy is what needs confirming, and a delete of something already gone is a noop
         // that needs nothing (which is what keeps a document re-runnable).
         if (!batch.dryRun() && ShAgentConfirm.mayDestroy(ops)) {
-            ShAgentChangeSet plan = execute(ops, new Session(true, ids, actor));
+            ShAgentChangeSet plan = execute(ops, new Session(true, ids, actor, declared));
             String expected = ShAgentConfirm.ofPlan(plan);
             if (expected != null) {
                 ShAgentConfirm.require(batch.confirm(), expected, plan);
             }
         }
-        ShAgentChangeSet result = execute(ops, new Session(batch.dryRun(), ids, actor));
+        ShAgentChangeSet result = execute(ops, new Session(batch.dryRun(), ids, actor, declared));
         // The token rides back on a dryRun only: on a real run it has been spent, and echoing
         // it would invite a caller to cache one and stop planning.
         return batch.dryRun()
@@ -408,11 +489,14 @@ public class ShAgentBatchService {
      */
     private Change folderUpsert(ShAgentBatch.Op op, Session session) {
         ShAddress address = writeAddress(op, ShAddress.Kind.FOLDER);
-        ShSite site = requireSite(address.site());
-        ShFolder parent = requireRootFolder(site);
+        ShSite site = requireSite(address.site(), session);
+        // A site this run would create has no root folder to hang anything off, so every
+        // level below it is necessarily missing — the same state the loop already models
+        // for a folder an earlier op in this run would have created (SH153).
+        ShFolder parent = isPending(site) ? null : requireRootFolder(site);
         List<String> created = new ArrayList<>();
         StringBuilder path = new StringBuilder();
-        boolean pending = false;
+        boolean pending = parent == null;
 
         for (String segment : segments(address.path())) {
             path.append('/').append(segment);
@@ -441,7 +525,11 @@ public class ShAgentBatchService {
         }
 
         if (created.isEmpty()) {
-            return session.change(op, address, Change.NOOP, null, parent.getId());
+            // Nothing to create: either every level was already there, or the address names
+            // the root of a site this run would create — which arrives with the site itself.
+            return session.change(op, address, Change.NOOP,
+                    parent == null ? "the root of the site this run creates" : null,
+                    parent == null ? null : parent.getId());
         }
         String detail = created.size() > 1 ? "creates " + String.join(", ", created) : null;
         return session.change(op, address, Change.CREATE, detail, pending ? null : parent.getId());
@@ -481,7 +569,7 @@ public class ShAgentBatchService {
      */
     private Change folderMove(ShAgentBatch.Op op, Session session) {
         ShAddress from = writeAddress(op, ShAddress.Kind.FOLDER);
-        ShSite site = requireSite(from.site());
+        ShSite site = requireSite(from.site(), session);
         ShAddress to = folderMoveTarget(op, from);
         if (!to.site().equalsIgnoreCase(from.site())) {
             throw new CrossSiteMoveException(from, to);
@@ -554,7 +642,7 @@ public class ShAgentBatchService {
 
     private Change folderDelete(ShAgentBatch.Op op, Session session) {
         ShAddress address = writeAddress(op, ShAddress.Kind.FOLDER);
-        ShSite site = requireSite(address.site());
+        ShSite site = requireSite(address.site(), session);
         Optional<ShFolder> folder = findFolder(site, address.path());
         if (folder.isEmpty()) {
             return session.change(op, address, Change.NOOP, "already absent", null);
@@ -573,7 +661,7 @@ public class ShAgentBatchService {
 
     private Change postUpsert(ShAgentBatch.Op op, Session session) {
         ShAddress address = writeAddress(op, ShAddress.Kind.POST);
-        ShSite site = requireSite(address.site());
+        ShSite site = requireSite(address.site(), session);
         Optional<ShPostUnified> existing = findPost(site, address.path());
 
         if (existing.isPresent()) {
@@ -582,7 +670,9 @@ public class ShAgentBatchService {
                 return session.change(op, address, Change.NOOP, null, post.getId());
             }
             String undeclared = checkDeclaredFields(op, address, session,
-                    post.getShPostType(), readTree(post.getData()));
+                    TypeRef.of(post.getShPostType(), session.declaredFieldsOf(
+                            post.getShPostType().getName())),
+                    readTree(post.getData()));
             if (!session.dryRun) {
                 shContentAclService.requireWrite(post.getId());
                 shPostUnifiedWriteService.update(post.getId(),
@@ -595,7 +685,7 @@ public class ShAgentBatchService {
             return session.change(op, address, Change.NOOP, "created earlier in this batch", null);
         }
 
-        ShPostType postType = requirePostType(op, address);
+        TypeRef postType = requirePostType(op, address, session);
         String undeclared = checkDeclaredFields(op, address, session, postType, null);
         ShFolder folder = requireTargetFolder(op, site, address, session);
         session.planPost(address);
@@ -605,7 +695,7 @@ public class ShAgentBatchService {
         shContentAclService.requireWrite(folder.getId());
         shTenantQuotaService.checkCanCreatePost();
         ShPostUnified created = shPostUnifiedWriteService.create(new CreateRequest(
-                folder.getId(), postType.getId(), op.data(), ShPostState.DRAFT,
+                folder.getId(), postType.id(), op.data(), ShPostState.DRAFT,
                 session.actor, null, null));
         // The address *is* the identity here, so the furl is written from it rather
         // than derived from a title — two posts with the same headline must still be
@@ -638,12 +728,12 @@ public class ShAgentBatchService {
      * @param stored     the post's current data, or {@code null} when it is being created
      */
     private String checkDeclaredFields(ShAgentBatch.Op op, ShAddress address, Session session,
-                                       ShPostType declaredIn, JsonNode stored) {
+                                       TypeRef declaredIn, JsonNode stored) {
         JsonNode data = op.data();
         if (data == null || !data.isObject() || declaredIn == null) {
             return null;
         }
-        Set<String> allowed = declaredFieldNames(declaredIn);
+        Set<String> allowed = declaredIn.fields();
         if (allowed.isEmpty()) {
             // A post-type with no fields declares nothing to check against, and refusing every
             // key would make such a type unusable rather than making the model better.
@@ -660,7 +750,7 @@ public class ShAgentBatchService {
             return null;
         }
         if (!session.dryRun) {
-            throw new UndeclaredFieldException(address, declaredIn.getName(), unknown,
+            throw new UndeclaredFieldException(address, declaredIn.name(), unknown,
                     List.copyOf(allowed));
         }
         // On a plan it is a *finding*, not a stop. A plan that died on the first bad field
@@ -672,13 +762,13 @@ public class ShAgentBatchService {
     }
 
     /** Every field name a post-type declares, nested ones included (Tab groups, Relator children). */
-    private Set<String> declaredFieldNames(ShPostType postType) {
+    private static Set<String> declaredFieldNamesOf(ShPostType postType) {
         Set<String> names = new LinkedHashSet<>();
         collectFieldNames(postType.getShPostTypeAttrs(), names);
         return names;
     }
 
-    private void collectFieldNames(Set<ShPostTypeAttr> attrs, Set<String> into) {
+    private static void collectFieldNames(Set<ShPostTypeAttr> attrs, Set<String> into) {
         if (attrs == null) {
             return;
         }
@@ -736,7 +826,7 @@ public class ShAgentBatchService {
      */
     private Change postMove(ShAgentBatch.Op op, Session session) {
         ShAddress from = writeAddress(op, ShAddress.Kind.POST);
-        ShSite site = requireSite(from.site());
+        ShSite site = requireSite(from.site(), session);
         ShAddress to = moveTarget(op, from);
         if (!to.site().equalsIgnoreCase(from.site())) {
             // Cross-site moves are refused rather than half-implemented: the destination
@@ -828,7 +918,7 @@ public class ShAgentBatchService {
      */
     private Change postPublish(ShAgentBatch.Op op, Session session) {
         ShAddress address = writeAddress(op, ShAddress.Kind.POST);
-        ShSite site = requireSite(address.site());
+        ShSite site = requireSite(address.site(), session);
         // Dry run only: in a real run the draft genuinely exists by now and must really
         // be published — short-circuiting here would silently skip the publish and make
         // apply disagree with its own plan.
@@ -856,7 +946,7 @@ public class ShAgentBatchService {
 
     private Change postUnpublish(ShAgentBatch.Op op, Session session) {
         ShAddress address = writeAddress(op, ShAddress.Kind.POST);
-        ShSite site = requireSite(address.site());
+        ShSite site = requireSite(address.site(), session);
         Optional<ShPostUnified> published = state(site, address, ShPostState.PUBLISHED);
         if (published.isEmpty()) {
             return session.change(op, address, Change.NOOP, "not published", null);
@@ -871,7 +961,7 @@ public class ShAgentBatchService {
 
     private Change postDelete(ShAgentBatch.Op op, Session session) {
         ShAddress address = writeAddress(op, ShAddress.Kind.POST);
-        ShSite site = requireSite(address.site());
+        ShSite site = requireSite(address.site(), session);
         Optional<ShPostUnified> post = findPost(site, address.path());
         if (post.isEmpty()) {
             return session.change(op, address, Change.NOOP, "already absent", null);
@@ -897,6 +987,37 @@ public class ShAgentBatchService {
         return siteAccess.require(nameOrId);
     }
 
+    /**
+     * The site an op names — or, on a dry run that declared it, a stand-in for the one this
+     * run would create (SH153).
+     *
+     * <p>The stand-in carries the name and no id, which is what {@link #isPending} keys on:
+     * a site with no id has no root folder, no folders and no posts, so every lookup beneath
+     * it is empty and every op against it plans as a create. That is exactly true of a site
+     * that does not exist yet, and it is reached without writing one.</p>
+     */
+    private ShSite requireSite(String nameOrId, Session session) {
+        Optional<ShSite> live = siteAccess.find(nameOrId);
+        if (live.isPresent()) {
+            return live.get();
+        }
+        if (session.declaresSite(nameOrId)) {
+            ShSite pending = new ShSite();
+            pending.setName(nameOrId.trim());
+            // A site arrives with its root folder, so `/` is planned the moment the site is —
+            // otherwise a package whose posts sit at the root and which declares no folders of
+            // its own would plan as an unresolvable folder address.
+            session.planFolder(pending, "/");
+            return pending;
+        }
+        return siteAccess.require(nameOrId);
+    }
+
+    /** True for the SH153 stand-in: a site this run would create, which nothing lives in yet. */
+    private static boolean isPending(ShSite site) {
+        return site != null && site.getId() == null;
+    }
+
     ShFolder requireRootFolder(ShSite site) {
         return siteAccess.rootFolder(site)
                 .orElseThrow(() -> new UnresolvableParentException(ShAddress.site(site.getName())));
@@ -904,6 +1025,9 @@ public class ShAgentBatchService {
 
     /** A folder by its path of names under a site's root. */
     Optional<ShFolder> findFolder(ShSite site, String path) {
+        if (isPending(site)) {
+            return Optional.empty();
+        }
         Optional<ShFolder> current = siteAccess.rootFolder(site);
         for (String segment : segments(path)) {
             if (current.isEmpty()) {
@@ -924,6 +1048,9 @@ public class ShAgentBatchService {
     }
 
     private Optional<ShPostUnified> state(ShSite site, ShAddress address, ShPostState state) {
+        if (isPending(site)) {
+            return Optional.empty();
+        }
         // Both leading-slash spellings, mirroring ShAddressResolver so an address means
         // the same post here as it does on the read side.
         for (String candidate : furlCandidates(address.path())) {
@@ -954,20 +1081,45 @@ public class ShAgentBatchService {
                 .toList();
     }
 
-    private ShPostType requirePostType(ShAgentBatch.Op op, ShAddress address) {
+    /**
+     * A post-type as this op needs to see it: its name, the fields a write may use, and its
+     * id — {@code null} for one the run has only <em>declared</em> (SH153).
+     *
+     * <p>A null id is unreachable on a real write: {@code postUpsert} only reads it after the
+     * dry-run branch has returned, and {@link Session} discards the declarations outside a
+     * dry run. So the type that stands in for a plan cannot become the type a create is
+     * written against.</p>
+     */
+    private record TypeRef(String name, Set<String> fields, String id) {
+
+        private static TypeRef of(ShPostType live, Set<String> alsoDeclared) {
+            Set<String> names = new LinkedHashSet<>(declaredFieldNamesOf(live));
+            names.addAll(alsoDeclared);
+            return new TypeRef(live.getName(), names, live.getId());
+        }
+    }
+
+    private TypeRef requirePostType(ShAgentBatch.Op op, ShAddress address, Session session) {
         if (op.type() == null || op.type().isBlank()) {
             throw new MissingOpFieldException("type", op.op(), address,
                     "Article", "A new post needs a post-type; an existing one keeps its own.");
         }
-        ShPostType postType = shPostTypeRepository.findByName(op.type().trim());
-        if (postType == null) {
-            throw new UnknownPostTypeException(op.type(), shPostTypeRepository.findAll().stream()
-                    .map(ShPostType::getName)
-                    .filter(name -> name != null && !name.isBlank())
-                    .sorted()
-                    .toList());
+        String name = op.type().trim();
+        ShPostType postType = shPostTypeRepository.findByName(name);
+        if (postType != null) {
+            // Additive, never a substitute: a live type is resolved live, and a declaration
+            // only widens what a write may say (SH152's merge is exactly that widening).
+            return TypeRef.of(postType, session.declaredFieldsOf(name));
         }
-        return postType;
+        if (session.declaresPostType(name)) {
+            return new TypeRef(name, session.declaredFieldsOf(name), null);
+        }
+        List<String> allowed = new ArrayList<>(shPostTypeRepository.findAll().stream()
+                .map(ShPostType::getName)
+                .filter(existing -> existing != null && !existing.isBlank())
+                .sorted()
+                .toList());
+        throw new UnknownPostTypeException(op.type(), allowed);
     }
 
     /**
@@ -1080,13 +1232,31 @@ public class ShAgentBatchService {
         private final boolean dryRun;
         private final boolean ids;
         private final String actor;
+        private final Declared declared;
         private final Set<String> plannedFolders = new HashSet<>();
         private final Set<String> plannedPosts = new HashSet<>();
 
-        private Session(boolean dryRun, boolean ids, String actor) {
+        private Session(boolean dryRun, boolean ids, String actor, Declared declared) {
             this.dryRun = dryRun;
             this.ids = ids;
             this.actor = actor;
+            // Honoured on a dry run only (SH153): on a real run every op resolves live, so a
+            // declaration can never stand in for a write that did not happen.
+            this.declared = dryRun && declared != null ? declared : Declared.NOTHING;
+        }
+
+        /** True when this run would create the named site and the database does not have it. */
+        private boolean declaresSite(String nameOrId) {
+            return declared.declaresSite(nameOrId);
+        }
+
+        private boolean declaresPostType(String name) {
+            return declared.declaresPostType(name);
+        }
+
+        /** The field names this run would add to {@code postType} — unioned with the live ones. */
+        private Set<String> declaredFieldsOf(String postType) {
+            return declared.fieldsOf(postType);
         }
 
         private void planFolder(ShSite site, String path) {

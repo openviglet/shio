@@ -241,14 +241,14 @@
 > other did not quite fit. ✅ **SH151, SH152 and SH154 have shipped** →
 > [CHANGELOG.md](CHANGELOG.md): an apply can create its target site (blank, opt-in, named in the
 > plan), it can add the fields an existing post-type lacks — which SH168 turned from a nicety into
-> the difference between a refused write and a package that cannot land — and the lint now reads a
+> the difference between a refused write and a package that cannot land — the lint now reads a
 > `Multi Select` that declares itself as holding post URLs, so a `Page` naming a section that is not
-> there is an error instead of a green run. What is still open: the plan's accuracy costs a write
-> transaction it then rolls back (**SH153**); and nothing records which package and version a site
+> there is an error instead of a green run, and ✅ **SH153** has closed the last of them: a plan
+> declares what it would create instead of writing it and rolling back, so planning a package no
+> longer needs write access. What is still open: nothing records which package and version a site
 > received, so "is this site still what the blueprint says" is unanswerable (**SH155**).
 
 - 💭 **SH96** (deps: SH93 ✅) **Blueprint registry + community convention** — `shio-blueprint-*` naming, manifest validation, curated index (absorbs old SH28/SH29/SH31). Now the single blocker on third-party packages: the registry deliberately loads from the classpath alone until there is a trust model for where a package may come from. → §XI.5
-- 📋 **SH153** (deps: SH93 ✅, SH81 ✅) **A blueprint plan that needs no write transaction** — the plan provisions the package's post-types and rolls back, purely so the content planner can resolve types that do not exist yet. It is correct and it means a plan cannot run on a read-only credential or a replica. Threading the declared types through the batch planner's pending set removes the write entirely. → §XI.9
 - 📋 **SH155** (deps: SH93 ✅, SH114 ✅) **Record which blueprint a site received** — `changed:0` proves a site matches a document, but nothing records that the document came from `marketing-site 1.0.0`, so a newer package version is undetectable and "is this still the blueprint" cannot be asked. Belongs in SH114's instance memory (now shipped — a keyed note per site is exactly the shape) rather than a table of its own. → §XI.10
 - 📋 **SH156** (deps: SH92 ✅, SH119 ✅) **The rest of the first-party set carries its front-end half** — SH119 made the starter a blueprint and proved the mechanism (a generated `files` tree with a drift test), but `blog`, `docs`, `product-catalog`, `marketing-site` and `landing` still ship content the site cannot render until someone wires the components. The four section-vocabulary packages need `@viglet/shio-sections`' components emitted the same way; the open question is how packages share a tree instead of each carrying a copy. → §XI.11
 

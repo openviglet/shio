@@ -437,4 +437,134 @@ class ShBlueprintApplyTest {
                 .singleElement()
                 .satisfies(postType -> assertThat(postType.action()).isEqualTo("exists"));
     }
+
+    // --- SH153: the plan needs no write transaction ---
+
+    // Ordered before the applies below: this class shares one instance and one database, so a
+    // test that wants to see a post-type being *planned* has to run before the one that creates it.
+    @Test
+    @Order(0)
+    @DisplayName("a plan runs inside a read-only transaction — it no longer writes and rolls back")
+    void planRunsReadOnly() {
+        createSite();
+
+        // The regression guard, and the only way to see the property from outside: the previous
+        // implementation provisioned the package's post-types inside the plan's own transaction
+        // and marked it rollback-only, so a read-only transaction — a read-only credential, a
+        // replica — could not plan a blueprint at all. Asserting the post-type is absent
+        // afterwards (below) proves nothing survived; this proves nothing was attempted.
+        TransactionTemplate readOnly = new TransactionTemplate(transactionManager);
+        readOnly.setReadOnly(true);
+
+        ShBlueprintApplied plan = readOnly.execute(status ->
+                shBlueprintService.plan("blog", siteName,
+                        params("{\"blogTitle\":\"Read Only\"}"), "admin"));
+
+        assertThat(plan).isNotNull();
+        assertThat(plan.dryRun()).isTrue();
+        assertThat(plan.postTypes())
+                .extracting(ShBlueprintApplied.PostType::name,
+                        ShBlueprintApplied.PostType::action)
+                .contains(org.assertj.core.api.Assertions.tuple("Article", "create"));
+        // The content half is the part that used to need the write: every post resolves its
+        // type against a model that does not exist yet, and now does so from the declaration.
+        assertThat(plan.content().results())
+                .extracting(change -> change.address())
+                .contains("post:" + siteName + "/blog/hello-world");
+        assertThat(plan.content().changed()).isEqualTo(7);
+    }
+
+    @Test
+    @Order(31)
+    @DisplayName("createSite plans read-only too, and still makes nothing")
+    void createSitePlansReadOnly() {
+        String name = "sh153-" + UUID.randomUUID().toString().substring(0, 8);
+        var options = new ShBlueprintWriteService.Options(true, true);
+        TransactionTemplate readOnly = new TransactionTemplate(transactionManager);
+        readOnly.setReadOnly(true);
+
+        ShBlueprintApplied plan = readOnly.execute(status ->
+                shBlueprintService.plan("landing", name, params("{\"brand\":\"Acme\"}"), "admin",
+                        options));
+
+        assertThat(plan).isNotNull();
+        assertThat(plan.site()).isEqualTo(name);
+        // A site that does not exist has no root folder, so every folder and post below it is a
+        // create — which is exactly what a plan for it should say.
+        assertThat(plan.content().results()).isNotEmpty();
+        assertThat(plan.content().results())
+                .allSatisfy(change -> assertThat(change.action()).isNotEqualTo("update"));
+        assertThat(shSiteRepository.findByName(name))
+                .as("planning a site into existence is not planning")
+                .isNull();
+    }
+
+    // Between test 5 (which creates a `Page` carrying only `title`) and test 11 (which merges
+    // the package's fields into it): the whole assertion is about a type that is still missing them.
+    @Test
+    @Order(6)
+    @DisplayName("a declaration cannot make a plan greener than the run it predicts")
+    void declaringDoesNotSilenceTheUndeclaredFieldWarning() {
+        // The failure mode SH153 is one wrong line away from: declare the package's fields for a
+        // post-type that already exists, and the plan stops reporting the writes a real run will
+        // refuse (SH168). Without `mergePostTypes` nothing is declared for an existing type, so
+        // the warning has to survive — this is test 5's assertion made against the new path.
+        createSite();
+        withTransaction(() -> {
+            if (shPostTypeRepository.findByName("Page") != null) {
+                return;
+            }
+            com.viglet.shio.persistence.model.post.type.ShPostType page =
+                    new com.viglet.shio.persistence.model.post.type.ShPostType();
+            page.setName("Page");
+            page.setTitle("Page");
+            page.setSystem((byte) 0);
+            page.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            page.setOwner("admin");
+            entityManager.persist(page);
+
+            com.viglet.shio.persistence.model.post.type.ShPostTypeAttr title =
+                    new com.viglet.shio.persistence.model.post.type.ShPostTypeAttr();
+            title.setName("title");
+            title.setLabel("Title");
+            title.setOrdinal(1);
+            title.setIsTitle((byte) 1);
+            title.setShPostType(page);
+            title.setShWidget(entityManager
+                    .createQuery("select w from ShWidget w where w.name = 'Text'", ShWidget.class)
+                    .getResultStream().findFirst().orElseThrow());
+            entityManager.persist(title);
+        });
+
+        ShBlueprintApplied plan = shBlueprintService.plan("landing", siteName,
+                params("{\"brand\":\"Acme\"}"), "admin");
+
+        assertThat(plan.content().results())
+                .anySatisfy(change -> assertThat(change.detail())
+                        .as("a plan may never be more optimistic than the apply it predicts")
+                        .contains("undeclared field(s)"));
+
+        // …and with the merge asked for, the same plan is clean, because then the run really
+        // would add the fields. The declaration follows what the apply would do, nothing more.
+        ShBlueprintApplied merging = shBlueprintService.plan("landing", siteName,
+                params("{\"brand\":\"Acme\"}"), "admin",
+                new ShBlueprintWriteService.Options(false, true));
+
+        assertThat(merging.content().results())
+                .noneSatisfy(change -> assertThat(change.detail()).contains("undeclared field"));
+        assertThat(merging.postTypes())
+                .filteredOn(postType -> "Page".equals(postType.name()))
+                .singleElement()
+                .satisfies(postType -> {
+                    assertThat(postType.action()).isEqualTo("merge");
+                    assertThat(postType.added()).contains("sections");
+                    assertThat(postType.missing())
+                            .as("what a merge would leave missing is nothing, not what it adds")
+                            .isNull();
+                });
+        withTransaction(() -> assertThat(shPostTypeAdminService.get("Page").orElseThrow().fields())
+                .as("and the plan added no field to the live type")
+                .extracting("name")
+                .doesNotContain("sections"));
+    }
 }

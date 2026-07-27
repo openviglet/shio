@@ -845,28 +845,6 @@ needs nothing: a package is already a directory whose contents are validated on 
 `formatVersion` already refuses a package written for a newer instance rather than
 mis-reading it.
 
-### XI.9 A plan that needs no write transaction (SH153)
-
-The blueprint plan provisions the package's post-types inside its transaction, plans the
-content against them, and marks the transaction rollback-only. It is accurate — without it,
-a plan for a package that brings its own types fails on its first post with *"no post-type
-named Article"*, which is useless for exactly the case blueprints exist for — and the
-reasoning for why this is acceptable where `ShAgentBatchService` refuses it is sound:
-provisioning a post-type emits no audit rows, no webhooks, no lifecycle events and no quota
-movement, so nothing outside the transaction observes it.
-
-What it costs is a property nobody asked to give up: **a plan can no longer run read-only**.
-A read-only credential, a read replica, or a future `AGENT` token scope (SH106) with no
-write permission cannot plan a blueprint, even though planning writes nothing that survives.
-For a surface whose whole safety story is "look before you write", that is the wrong
-constraint to leave in place.
-
-The fix is to thread the *declared* post-types through the batch planner the way it already
-threads pending folders: `ShAgentBatchService`'s dry-run session keeps a set of objects
-earlier ops would have created, precisely so "create /blog, then put a post in /blog" does
-not report a spurious 404. A pending **post-type** set is the same idea one resource wider,
-and it removes the transaction rather than justifying it.
-
 ### XI.10 Record which blueprint a site received (SH155)
 
 `changed: 0` on a re-apply proves a site matches the document the package compiles to. It
