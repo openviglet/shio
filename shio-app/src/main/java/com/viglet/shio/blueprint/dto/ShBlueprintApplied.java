@@ -47,6 +47,10 @@ import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
  * @param content   the SH82 change set for the folders, posts and publishes
  * @param files     the front-end files the package carries and the server did not write
  * @param verify    the post-apply proof; {@code null} on a plan, which has nothing to prove
+ * @param recordedAs the SH114 memory key this apply wrote the package and version to (SH155),
+ *                  or {@code null} on a plan and when the note could not be filed. Reported
+ *                  rather than assumed: the record is what makes "which blueprint is this
+ *                  site" answerable later, so a caller has to be able to see it was kept
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -55,13 +59,24 @@ import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 public record ShBlueprintApplied(boolean dryRun, String blueprint, String version, String site,
                                  java.util.Map<String, String> params,
                                  List<PostType> postTypes, ShAgentChangeSet content,
-                                 List<String> files, Verified verify, String createdSite) {
+                                 List<String> files, Verified verify, String createdSite,
+                                 String recordedAs) {
 
     /** The nine-field form: the site was already there, which is every pre-SH151 apply. */
     public ShBlueprintApplied(boolean dryRun, String blueprint, String version, String site,
                               java.util.Map<String, String> params, List<PostType> postTypes,
                               ShAgentChangeSet content, List<String> files, Verified verify) {
-        this(dryRun, blueprint, version, site, params, postTypes, content, files, verify, null);
+        this(dryRun, blueprint, version, site, params, postTypes, content, files, verify, null,
+                null);
+    }
+
+    /** The ten-field form: pre-SH155, when an apply left no record of itself. */
+    public ShBlueprintApplied(boolean dryRun, String blueprint, String version, String site,
+                              java.util.Map<String, String> params, List<PostType> postTypes,
+                              ShAgentChangeSet content, List<String> files, Verified verify,
+                              String createdSite) {
+        this(dryRun, blueprint, version, site, params, postTypes, content, files, verify,
+                createdSite, null);
     }
 
     /**

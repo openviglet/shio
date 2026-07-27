@@ -717,6 +717,16 @@ from becoming a third contract (P10).
 - **The server never writes a project file.** `files` are returned and the CLI writes them
   (never over an existing one without `--force`); an MCP-only caller is told what it has
   *not* got.
+- **An apply records itself (SH155).** It writes an SH114 note scoped to the site, keyed
+  `blueprint.<name>`, saying which package and version built it and with which parameters —
+  and the response names the key in `recordedAs`. One note **per package**, because a site can
+  receive a `landing` and then a `blog` and a single key would erase the first; parameters are
+  sorted and `site` dropped so the same apply writes the same bytes (P5). A memory note rather
+  than a table because it then reaches the next session through the context pack it already
+  reads (P2). Written *after* the writer's transaction, so a note that cannot be filed leaves
+  the apply standing — the response just does not claim a record it does not have. This is not
+  drift detection: it makes "is this site still what the blueprint says" *askable*, and the
+  answer is still a `dryRun` away.
 - **Packages load from the classpath only.** Where a package may come from is a trust
   question — SH96.
 

@@ -323,5 +323,10 @@ function renderApplied(result) {
       lines.push(`    missing ${missing}`);
     }
   }
+  // SH155 — printed because the record is the point: the next session finds it in the
+  // context pack, and the operator who ran this should know it is there to be found.
+  if (result.recordedAs) {
+    lines.push(`  recorded: ${result.recordedAs} (shio remember --site ${result.site})`);
+  }
   return `${lines.join("\n")}\n`;
 }

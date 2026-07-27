@@ -243,13 +243,12 @@
 > plan), it can add the fields an existing post-type lacks — which SH168 turned from a nicety into
 > the difference between a refused write and a package that cannot land — the lint now reads a
 > `Multi Select` that declares itself as holding post URLs, so a `Page` naming a section that is not
-> there is an error instead of a green run, and ✅ **SH153** has closed the last of them: a plan
+> there is an error instead of a green run. ✅ **SH153** and **SH155** have closed the rest: a plan
 > declares what it would create instead of writing it and rolling back, so planning a package no
-> longer needs write access. What is still open: nothing records which package and version a site
-> received, so "is this site still what the blueprint says" is unanswerable (**SH155**).
+> longer needs write access — and a site now records which package and version built it, as an
+> SH114 note that reaches the next session through the context pack it already reads.
 
 - 💭 **SH96** (deps: SH93 ✅) **Blueprint registry + community convention** — `shio-blueprint-*` naming, manifest validation, curated index (absorbs old SH28/SH29/SH31). Now the single blocker on third-party packages: the registry deliberately loads from the classpath alone until there is a trust model for where a package may come from. → §XI.5
-- 📋 **SH155** (deps: SH93 ✅, SH114 ✅) **Record which blueprint a site received** — `changed:0` proves a site matches a document, but nothing records that the document came from `marketing-site 1.0.0`, so a newer package version is undetectable and "is this still the blueprint" cannot be asked. Belongs in SH114's instance memory (now shipped — a keyed note per site is exactly the shape) rather than a table of its own. → §XI.10
 - 📋 **SH156** (deps: SH92 ✅, SH119 ✅) **The rest of the first-party set carries its front-end half** — SH119 made the starter a blueprint and proved the mechanism (a generated `files` tree with a drift test), but `blog`, `docs`, `product-catalog`, `marketing-site` and `landing` still ship content the site cannot render until someone wires the components. The four section-vocabulary packages need `@viglet/shio-sections`' components emitted the same way; the open question is how packages share a tree instead of each carrying a copy. → §XI.11
 
 ## Block L — Agent safety & human-in-the-loop

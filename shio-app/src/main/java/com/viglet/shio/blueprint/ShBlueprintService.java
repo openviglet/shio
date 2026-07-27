@@ -18,6 +18,8 @@ import com.viglet.shio.api.agent.ShAddress;
 import com.viglet.shio.api.agent.ShAddressResolver;
 import com.viglet.shio.api.agent.ShAgentSiteAccess;
 import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
+import com.viglet.shio.api.agent.memory.ShAgentMemoryService;
+import com.viglet.shio.api.agent.memory.dto.ShAgentNoteRequest;
 import com.viglet.shio.api.agent.verify.ShAgentVerifyService;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
 import com.viglet.shio.api.error.ShProblem;
@@ -64,6 +66,7 @@ public class ShBlueprintService {
     private final ShAgentSiteAccess shAgentSiteAccess;
     private final ShAddressResolver shAddressResolver;
     private final ShAgentVerifyService shAgentVerifyService;
+    private final ShAgentMemoryService shAgentMemoryService;
     private final ShBlueprintCodec codec;
 
     public ShBlueprintService(ShBlueprintRegistry shBlueprintRegistry,
@@ -71,12 +74,14 @@ public class ShBlueprintService {
                               ShAgentSiteAccess shAgentSiteAccess,
                               ShAddressResolver shAddressResolver,
                               ShAgentVerifyService shAgentVerifyService,
+                              ShAgentMemoryService shAgentMemoryService,
                               ShBlueprintCodec codec) {
         this.shBlueprintRegistry = shBlueprintRegistry;
         this.shBlueprintWriteService = shBlueprintWriteService;
         this.shAgentSiteAccess = shAgentSiteAccess;
         this.shAddressResolver = shAddressResolver;
         this.shAgentVerifyService = shAgentVerifyService;
+        this.shAgentMemoryService = shAgentMemoryService;
         this.codec = codec;
     }
 
@@ -137,7 +142,49 @@ public class ShBlueprintService {
         return new ShBlueprintApplied(dryRun, blueprint.name(), blueprint.manifest().version(),
                 siteName, values, written.postTypes(), written.content(),
                 filePaths(blueprint), dryRun ? null : verify(blueprint, values, siteName),
-                written.site());
+                written.site(),
+                dryRun ? null : record(blueprint, values, siteName, actor));
+    }
+
+    /**
+     * Records which package and version this site received (SH155).
+     *
+     * <h2>Why it runs here, after the writer returned</h2>
+     *
+     * <p>Outside the apply's transaction, next to {@link #verify}, for the same reason: the
+     * content is committed and this is a note *about* it. Which also settles what happens when
+     * the note cannot be written — <b>the apply stands</b>. Destroying a site's worth of
+     * successful content because a 200-character annotation failed to save is a trade nobody
+     * would make on purpose, so the failure is swallowed and the response simply does not
+     * claim a record was kept (P9: say what was done, not what was attempted).</p>
+     *
+     * <h2>Why a re-apply that changed nothing still writes it</h2>
+     *
+     * <p>Because the row is upsert-by-key, so it cannot accumulate, and because the fact being
+     * recorded is <em>"this package at this version was applied here"</em> — a converging
+     * re-apply is exactly that, and its date is the answer to "when was this site last
+     * confirmed against the package". A record that only moved when content moved would go
+     * stale precisely on the sites that are behaving.</p>
+     *
+     * @return the memory key it wrote, or {@code null} when nothing was recorded
+     */
+    private String record(ShBlueprint blueprint, Map<String, String> values, String site,
+                          String actor) {
+        String key = ShBlueprintRecord.keyFor(blueprint.name());
+        if (key == null) {
+            return null;
+        }
+        try {
+            shAgentMemoryService.remember(new ShAgentNoteRequest(site, key,
+                    ShBlueprintRecord.noteFor(blueprint.name(),
+                            blueprint.manifest().version(), values)), actor);
+            return key;
+        } catch (RuntimeException failure) {
+            // Includes the case that matters in practice: a credential whose SH2 allow-list
+            // does not cover the site by name, which makes the note unfilable but says nothing
+            // about whether the content landed.
+            return null;
+        }
     }
 
     /** The post-type definitions, with parameters substituted. */

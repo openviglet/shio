@@ -85,6 +85,8 @@ class ShBlueprintApplyTest {
     @Autowired
     private ShPostTypeAdminService shPostTypeAdminService;
     @Autowired
+    private com.viglet.shio.api.agent.memory.ShAgentMemoryService shAgentMemoryService;
+    @Autowired
     private PlatformTransactionManager transactionManager;
     @Autowired
     private ObjectMapper objectMapper;
@@ -436,6 +438,74 @@ class ShBlueprintApplyTest {
                 .filteredOn(postType -> "Page".equals(postType.name()))
                 .singleElement()
                 .satisfies(postType -> assertThat(postType.action()).isEqualTo("exists"));
+    }
+
+    // --- SH155: the site records which package it received ---
+
+    @Test
+    @Order(40)
+    @DisplayName("an apply leaves a note saying which package and version built the site")
+    void applyRecordsTheBlueprint() {
+        String name = "sh155-" + UUID.randomUUID().toString().substring(0, 8);
+        var options = new ShBlueprintWriteService.Options(true, true);
+
+        ShBlueprintApplied applied = shBlueprintService.apply("landing", name,
+                params("{\"brand\":\"Acme\"}"), "admin", options);
+
+        assertThat(applied.recordedAs()).isEqualTo("blueprint.landing");
+        // Scoped to the site, so it reaches the next session through the context pack's
+        // `conventions` — the whole reason this is a memory note and not a table.
+        assertThat(shAgentMemoryService.notes(name))
+                .filteredOn(note -> "blueprint.landing".equals(note.key()))
+                .singleElement()
+                .satisfies(note -> {
+                    assertThat(note.scope()).isEqualTo(name);
+                    assertThat(note.note()).contains("Built from blueprint 'landing'")
+                            .contains("brand=Acme");
+                    assertThat(note.author()).isEqualTo("admin");
+                });
+    }
+
+    @Test
+    @Order(41)
+    @DisplayName("a plan records nothing, and a re-apply rewrites one row rather than adding one")
+    void planRecordsNothingAndReapplyConverges() {
+        String name = "sh155-" + UUID.randomUUID().toString().substring(0, 8);
+        var options = new ShBlueprintWriteService.Options(true, true);
+
+        ShBlueprintApplied plan = shBlueprintService.plan("landing", name,
+                params("{\"brand\":\"Plans\"}"), "admin", options);
+        assertThat(plan.recordedAs()).as("a plan writes nothing, including about itself").isNull();
+
+        shBlueprintService.apply("landing", name, params("{\"brand\":\"First\"}"), "admin", options);
+        shBlueprintService.apply("landing", name, params("{\"brand\":\"Second\"}"), "admin", options);
+
+        // Upsert by (scope, key): the record cannot grow with the number of applies, and the
+        // latest one is what the site is made of. A converging re-apply still writes, because
+        // the fact recorded is "this version was applied here" and its date is the answer to
+        // "when was this last confirmed against the package".
+        assertThat(shAgentMemoryService.notes(name))
+                .filteredOn(note -> note.key().startsWith("blueprint."))
+                .singleElement()
+                .satisfies(note -> assertThat(note.note()).contains("brand=Second"));
+    }
+
+    @Test
+    @Order(42)
+    @DisplayName("two packages leave two records — 'what is this site made of' is the set of them")
+    void twoPackagesLeaveTwoRecords() {
+        String name = "sh155-" + UUID.randomUUID().toString().substring(0, 8);
+        var options = new ShBlueprintWriteService.Options(true, true);
+
+        shBlueprintService.apply("landing", name, params("{\"brand\":\"Acme\"}"), "admin", options);
+        shBlueprintService.apply("blog", name, params("{\"blogTitle\":\"Acme Blog\"}"), "admin",
+                options);
+
+        assertThat(shAgentMemoryService.notes(name))
+                .filteredOn(note -> note.key().startsWith("blueprint."))
+                .extracting(note -> note.key())
+                .as("a single `blueprint` key would make the second apply erase the first")
+                .containsExactlyInAnyOrder("blueprint.landing", "blueprint.blog");
     }
 
     // --- SH153: the plan needs no write transaction ---

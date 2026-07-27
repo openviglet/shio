@@ -845,25 +845,6 @@ needs nothing: a package is already a directory whose contents are validated on 
 `formatVersion` already refuses a package written for a newer instance rather than
 mis-reading it.
 
-### XI.10 Record which blueprint a site received (SH155)
-
-`changed: 0` on a re-apply proves a site matches the document the package compiles to. It
-does not record that the document came from `marketing-site 1.0.0` — so a newer version of a
-package is undetectable, "which blueprint is this site" is unanswerable, and the version in
-the apply response is a fact that exists only in whatever transcript captured it.
-
-The cheap version is a row per applied package (name, version, parameters, when, by whom).
-The right version is SH114's instance memory: this is exactly a *decision about the site*
-that a later session should not have to re-derive, and it belongs in the store that already
-exists to serve those in the context pack. That also answers the question the cheap version
-cannot — the parameters are part of the record, so a re-apply can default to what was used
-last time instead of asking again.
-
-Not to be confused with drift detection: knowing a site received `marketing-site 1.0.0`
-does not mean it still matches it. That answer is already available (`dryRun` and read
-`changed`), and this is the fact that makes it possible to *ask* without a human
-remembering.
-
 ### XI.11 Blueprints carry their front-end half (SH156)
 
 The format supports front-end files, the CLI writes them, and the first-party set ships
