@@ -120,6 +120,26 @@ public class ShAgentProperties {
 
         /** Ceiling on a caller-supplied limit. */
         private int maxLimit = 2000;
+
+        /**
+         * Pages the SH141 delivery check fetches in one run.
+         *
+         * <p>A ceiling exists because this is the only check that leaves the process: a
+         * thousand-page site would otherwise turn one call into a thousand requests against
+         * a front end that did not ask for them. What was skipped is reported in the
+         * report's {@code notes} — a cut that is not visible reads as a clean pass (SH138).</p>
+         */
+        private int maxFetches = 50;
+
+        /**
+         * Wall-clock the whole delivery pass may spend fetching, in milliseconds.
+         *
+         * <p>The cap above bounds the <em>count</em>; this bounds the <em>time</em>, and the
+         * two are not the same bound. Fifty pages behind a front end that answers in five
+         * seconds each is four minutes, which is not a verification call — it is a hang. Past
+         * this the pass stops and says how many pages it did not reach.</p>
+         */
+        private long fetchBudgetMillis = 15000;
     }
 
     /** Render-digest configuration (SH101). */

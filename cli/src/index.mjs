@@ -36,6 +36,9 @@ const BOOLEANS = [
   // Accepted findings (SH142): `--accept` writes the baseline. `--baseline` is NOT here —
   // it is bare (use the default path) or takes one (use that file), and both are useful.
   "accept",
+  // SH141: prove each published route by fetching it, rather than resolving it against the
+  // content graph. A flag rather than a value because it is a decision, not a parameter.
+  "delivery",
 ];
 
 // Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would
@@ -149,7 +152,12 @@ Verification (shio verify / shio digest):
   that resolve to nothing, and anything that failed asynchronously. Errors exit 1;
   warnings are printed. Run it before handing work over.
   --site <idOrName>    Scope to one site
-  --checks <groups>    content,routes,diagnostics (default all)
+  --checks <groups>    content,routes,diagnostics,delivery (default all that can run)
+  --delivery           Also prove each published route by fetching it from the site's
+                       own origin — turns "the front end does not serve this" from a
+                       warning into an error. Needs the instance's allow-fetch and each
+                       site's URL; declare front-end-owned routes with
+                       shio remember frontend-routes "/tags/* /search" --site <site>
   --limit <n>          Findings to print (the counts always cover the whole run)
   --strict             Fail on warnings too (off by default — see the severity rule)
   --folder <address>   Scope to a folder subtree (folder:<site>/<chain>)

@@ -530,28 +530,10 @@ Two design points worth settling before the code:
 >
 > **The loop itself shipped** — content lint (SH99), route checks (SH100), render digest
 > (SH101), diagnostics (SH103), and the follow-ups that made the report usable in anger
-> (SH142's accepted findings, SH143's scoping, SH154, SH169); see
-> [CHANGELOG.md](CHANGELOG.md) Block K. What is left below is the design for what the
+> (SH141's delivery-side proof, SH142's accepted findings, SH143's scoping, SH154, SH169);
+> see [CHANGELOG.md](CHANGELOG.md) Block K. What is left below is the design for what the
 > shipped version deliberately does not do, plus the two tasks it was always going to
 > depend on (SH102's pixels, SH104's handoff report).
-
-### IX.2 Proving a route from the delivery side (SH141)
-
-SH100 answers "every furl resolves" and "internal links land" against the **content
-graph**: the set of published friendly URLs, compared through the instance's one
-canonical path form. That was the right first move — it needs no front end, no network
-and no deployment, so it runs everywhere including a cold CI checkout — but it cannot
-see the failure §IX names as the most common one, a page that exists in the CMS and
-404s on the site. So `link-unresolved` is a warning, and a warning is what you emit
-when you are not sure.
-
-What closes it is not a crawler. SH101 already fetches one URL safely — origin-checked
-against the readable sites, opt-in by property — and walking the published set through
-that same path turns "the front end does not serve this" into an error that deserves the
-name. The part that needs design is the legitimate exception: a front end owns generated
-routes the CMS has never heard of, and the answer has to be *declared* (in the site's
-own conventions, alongside SH114's memory store) rather than guessed at per-request.
-Sitemap-coverage-vs-expectation waits for Block J, since the expectation is a blueprint's.
 
 ### IX.4 Visual snapshot + diff (SH102, optional)
 

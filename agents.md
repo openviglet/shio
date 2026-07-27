@@ -275,6 +275,27 @@ the CDA + console services (law P10) and holds no business logic of its own.
   `link-unresolved` for every link out of the scope and miss the duplicate whose twin is
   outside. A `folder=` that is not a folder is a teaching **400**: a scope that covered nothing
   while answering `ok` is the worst false green there is.
+  **`checks=delivery` proves a route instead of resolving it (SH141)** — the one group that
+  leaves the process. It fetches each published page and each unresolved link from the site's own
+  URL through `ShAgentDeliveryProbe`, the single guarded fetch path SH101 built, and turns "the
+  front end does not serve this" into `route-not-served` / `link-broken` **errors**. It is in the
+  default set **only when `shio.agent.render.allow-fetch` is on** — naming it otherwise is a
+  teaching 400, because a check that silently covered nothing while answering `ok` is the same
+  false green an unresolvable `folder=` would be. Three rules worth keeping: an unreachable front
+  end is **one** `delivery-unreachable` per site and ends that site's pass (fifty copies of "it is
+  down" is a report nobody reads, and its other pages are *unknowable*, not broken); a site with
+  no URL is a **warning** when the group arrived by default and a **400** when the caller named it
+  (a group that joined on its own must not fail a call that never asked); and the pass is bounded
+  by `shio.agent.verify.max-fetches` + `fetch-budget-millis`, with every cut in `notes`.
+  When delivery runs, `routes` **hands it the unresolved links instead of warning** — the same
+  defect reported once as a maybe and once as a fact is a report the reader has to de-duplicate.
+  The legitimate exception is **declared, never guessed**: `ShFrontEndRoutes` reads glob patterns
+  from the SH114 memory key **`frontend-routes`** (`*` within a segment, `**` across; scoped to a
+  site or instance-wide), and a declaration **silences a guess but never a proof** — with fetching
+  off the link is not reported and the count goes in `notes`; with fetching on it is still
+  requested, and a declared route the site 404s is an error, because the declaration made a claim.
+  A pattern that is not a path is dropped rather than compiled, since the dangerous failure mode
+  here is one that matches everything.
 - `GET /agent/render?address=…` — a page's **structural** digest (SH101): heading outline,
   landmark counts, links, images with alt, word count, plus a `digest` hash over the
   structure only (a typo fix does not move it; a lost heading does). `?url=` digests the
@@ -450,7 +471,7 @@ orphan-removal replace — otherwise an update would cascade-delete the shared w
 
 ### `shio` CLI (`@viglet/shio`, in `cli/`)
 The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`; **`--blueprint <name>` takes the starter from the instance instead, and with `--site` applies its content half in the same command** — SH119), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`; **`--content` switches both verbs to content**, see below), `context` (`--as agents-md` renders the pack as project agent instructions — SH115),
-`resolve`, `apply` (SH129 — a desired-state content document; `--check` is the CI drift guard, `-` reads stdin; **`--blueprint <name>` applies a package instead**, with `--param k=v` repeatable, `--params <file>`, `--site`, `--force`), `blueprints` (SH92 — the catalogue; `blueprints <name>` for one package's parameters), `verify` (SH99/SH100 — the content lint; **exits 1 on an error**, `--strict` also on warnings, `--folder`/`--address`/`--since` scope it per SH143, `--baseline`/`--accept` subtract accepted findings per SH142), `digest` (SH101 — one page's structure), `changes` (SH88 — the feed; `--since last` reads the last content pull's position, `--cursor` prints only the position), `remember` (SH114 — the instance memory; bare lists it, `<key> "<note>"` writes one, `--forget` drops one, `--site` scopes it), `mcp`, `dev` (`--content` runs the SH90 sync loop instead of the site's dev server), `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
+`resolve`, `apply` (SH129 — a desired-state content document; `--check` is the CI drift guard, `-` reads stdin; **`--blueprint <name>` applies a package instead**, with `--param k=v` repeatable, `--params <file>`, `--site`, `--force`), `blueprints` (SH92 — the catalogue; `blueprints <name>` for one package's parameters), `verify` (SH99/SH100 — the content lint; **exits 1 on an error**, `--strict` also on warnings, `--folder`/`--address`/`--since` scope it per SH143, `--baseline`/`--accept` subtract accepted findings per SH142, **`--delivery` adds SH141's route proof** — it appends the group rather than replacing `--checks`, since a caller wanting the stronger proof still wants the lint — and the report's `notes` are printed, because an unreported cut reads as a clean pass), `digest` (SH101 — one page's structure), `changes` (SH88 — the feed; `--since last` reads the last content pull's position, `--cursor` prints only the position), `remember` (SH114 — the instance memory; bare lists it, `<key> "<note>"` writes one, `--forget` drops one, `--site` scopes it), `mcp`, `dev` (`--content` runs the SH90 sync loop instead of the site's dev server), `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
 **CI gates, in the order they should run:** `shio push --check` (model drift) → `shio push --content --check` (content-tree drift) → `shio apply --check` (document drift) → `shio verify` (content defects).
 **Accepted findings (SH142) live in `shio/verify-baseline.json`** — `(rule, address, field)` triples that `shio verify` subtracts, written by `--accept` (`--reason` optional) and merged, never replaced. The half that matters: **an accepted finding the run no longer produces fails the run**, so the file cannot rot into a blanket suppression that hides the next defect at the same address; a *truncated* report reports the unmatched entries without failing, because a finding that did not fit is not a finding that is gone. It is deliberately a project file and **not** an instance setting — `GET /agent/verify` keeps reporting everything, and only the gate subtracts. The content gates read **only the sites the tree holds** (SH173, derived from `shio/content/<site>/**`), a post they cannot read by address is a named finding rather than a fatal 404, and a remote failure prints the SH80 body — the request URL is behind `SHIO_DEBUG`. The CLI test suite needs `@viglet/shio-client` built first (`pnpm -C shio-client run build`), or every command test fails on a missing module rather than on its own logic; `shio-sections`' suite needs `@viglet/shio-model` built (`pnpm -C shio-model run build`) for the same reason.
 

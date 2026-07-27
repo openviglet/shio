@@ -40,7 +40,7 @@ export async function run(flags, positionals, ctx) {
 
   const raw = await client.verify({
     site: flags.site ?? positionals[0],
-    checks: flags.checks,
+    checks: withDelivery(flags.checks, flags.delivery),
     limit: flags.limit,
     folder: flags.folder,
     address: flags.address,
@@ -133,6 +133,28 @@ function dirOf(path) {
  * The fix gets its own line rather than being appended: it is the part a reader acts on,
  * and burying it at the end of a long message is how it stops being read (law P6).
  */
+/**
+ * `--delivery` (SH141) — ask the server to prove each published route by fetching it.
+ *
+ * A convenience over `--checks …,delivery`, and it names the groups explicitly rather than
+ * sending `delivery` alone: a caller reaching for the stronger check wants it *in addition
+ * to* the content lint, and `--checks delivery` on its own would quietly drop the rules that
+ * do not need a network. Combining it with `--checks` keeps whatever the caller named.
+ *
+ * If the instance has fetching off, the server answers a teaching 400 that names the property
+ * — deliberately, because a flag that asked for a proof and silently got none is worse than
+ * an error.
+ */
+function withDelivery(checks, delivery) {
+  if (!delivery) return checks;
+  const named = String(checks ?? "content,routes,diagnostics")
+    .split(",")
+    .map((each) => each.trim())
+    .filter(Boolean);
+  if (named.length === 0 || named.includes("all")) return "content,routes,diagnostics,delivery";
+  return named.includes("delivery") ? named.join(",") : [...named, "delivery"].join(",");
+}
+
 function render(report, path) {
   const lines = [];
   for (const finding of report.findings ?? []) {
@@ -157,6 +179,13 @@ function render(report, path) {
   // says so in the payload — repeat it here, because this is the line a human reads.
   if (report.partial) {
     tail.push(`… this run covered a subset of the content — the counts describe that subset`);
+  }
+  // The server's `notes` are the things a caller must know to read the numbers: a change feed
+  // that had more entries than fitted, findings a declaration silenced, routes the delivery
+  // check did not reach. They were invisible in this output until SH141 needed them, and an
+  // unreported cut reads exactly like a clean pass (SH138).
+  for (const note of report.notes ?? []) {
+    tail.push(`… ${note}`);
   }
   for (const entry of report.stale ?? []) {
     tail.push(`✗ accepted-not-found ${describeEntry(entry)}`);

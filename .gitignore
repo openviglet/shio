@@ -77,3 +77,7 @@ src/main/resources/js/client-side/build
 /shio-sections/node_modules
 /shio-sections/dist
 /claude-plugin/node_modules
+# The legacy Angular module has no tracked sources left — what is on disk is the Node
+# runtime frontend-maven-plugin downloads plus an Angular build cache, ~2500 files that
+# `run-commit.cmd`'s `git add *` would otherwise sweep into a commit.
+/shio-ui/

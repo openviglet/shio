@@ -27,6 +27,19 @@ import com.viglet.shio.api.error.ShTeachingException;
  * skipped a class of defect would be worse than no verification at all, so opting out
  * is explicit.</p>
  *
+ * <h2>The one group whose default is an operator's decision (SH141)</h2>
+ *
+ * <p>{@link #DELIVERY} leaves the process. It is in the default set when — and only when —
+ * {@code shio.agent.render.allow-fetch} is on, which is the same property that lets SH101
+ * fetch one page. That is not an exception to the rule above so much as an application of
+ * it: an operator who has told the instance its front end is fetchable has asked for the
+ * proof, and on every other instance the group cannot run at all, so including it would
+ * mean a report that fails on the absence of a deployment rather than on a defect.</p>
+ *
+ * <p>Naming it explicitly while fetching is off is a teaching 400, not an empty pass —
+ * a check that silently covered nothing while answering {@code ok} is the same false green
+ * SH143 refuses for an unresolvable {@code folder=}.</p>
+ *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
@@ -34,6 +47,15 @@ public enum ShAgentCheck {
 
     /** SH99 — the content is internally consistent: fields, references, assets, furls. */
     CONTENT,
+
+    /**
+     * SH141 — the published pages are actually served, proved by fetching them.
+     *
+     * <p>The strictly larger question {@link #ROUTES} cannot ask: routes resolve links
+     * against the content graph, which cannot see a page that exists in the CMS and 404s
+     * on the site. Opt-in via {@code shio.agent.render.allow-fetch} — see the class note.</p>
+     */
+    DELIVERY,
 
     /** SH100 — the content is reachable: every published furl resolves, links land. */
     ROUTES,
@@ -57,12 +79,15 @@ public enum ShAgentCheck {
     /**
      * Parses a comma-separated {@code checks=} value.
      *
-     * @param raw blank or {@code all} means every group
+     * @param raw             blank or {@code all} means every group that can run
+     * @param deliveryEnabled whether server-side fetching is configured, which decides
+     *                        both whether {@link #DELIVERY} is in the default set and
+     *                        whether naming it is a request or a mistake
      * @throws ShTeachingException 400 naming the groups and the nearest match
      */
-    public static Set<ShAgentCheck> parse(String raw) {
+    public static Set<ShAgentCheck> parse(String raw, boolean deliveryEnabled) {
         if (raw == null || raw.isBlank() || "all".equalsIgnoreCase(raw.trim())) {
-            return EnumSet.allOf(ShAgentCheck.class);
+            return defaults(deliveryEnabled);
         }
         EnumSet<ShAgentCheck> checks = EnumSet.noneOf(ShAgentCheck.class);
         for (String token : raw.split(",")) {
@@ -71,7 +96,22 @@ public enum ShAgentCheck {
                 checks.add(resolve(name));
             }
         }
-        return checks.isEmpty() ? EnumSet.allOf(ShAgentCheck.class) : checks;
+        if (checks.isEmpty()) {
+            return defaults(deliveryEnabled);
+        }
+        if (checks.contains(DELIVERY) && !deliveryEnabled) {
+            throw new DeliveryDisabledException();
+        }
+        return checks;
+    }
+
+    /** Every group that can run here: all of them, less {@link #DELIVERY} when it cannot. */
+    public static Set<ShAgentCheck> defaults(boolean deliveryEnabled) {
+        EnumSet<ShAgentCheck> all = EnumSet.allOf(ShAgentCheck.class);
+        if (!deliveryEnabled) {
+            all.remove(DELIVERY);
+        }
+        return all;
     }
 
     private static ShAgentCheck resolve(String name) {
@@ -81,6 +121,31 @@ public enum ShAgentCheck {
             }
         }
         throw new UnknownCheckException(name, names());
+    }
+
+    /**
+     * A 400 for {@code checks=delivery} on an instance that cannot fetch (SH141).
+     *
+     * <p>Refusing rather than skipping, for the reason the class note gives: the caller
+     * asked to have its routes proved, and an {@code ok} that quietly proved nothing is
+     * the most expensive answer this endpoint can give. Names the property, because the
+     * fix belongs to an operator and the caller needs to know who to ask.</p>
+     */
+    public static class DeliveryDisabledException extends ShTeachingException {
+
+        public DeliveryDisabledException() {
+            super(ShProblem.badRequest("delivery-disabled",
+                            "This instance cannot prove a route from the delivery side")
+                    .withDetail("The `delivery` check fetches every published page from the "
+                            + "site's own origin, and fetching on the server's behalf is a "
+                            + "request-forgery surface, so it is off unless an operator turns "
+                            + "it on and gives each site its URL.")
+                    .withFix("Set shio.agent.render.allow-fetch=true and configure each site's "
+                            + "URL, or run checks=content,routes — which answers the same "
+                            + "question against the content graph, as a warning rather than "
+                            + "an error.")
+                    .withExample("?checks=content,routes"));
+        }
     }
 
     /** A 400 that teaches the check vocabulary (SH80). */

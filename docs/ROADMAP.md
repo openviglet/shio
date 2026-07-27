@@ -67,8 +67,8 @@
 >
 > **What is left is follow-ups, not blocks**: H's original edges shipped (SH136–SH139) and
 > driving them turned up the next layer (SH196–SH203, spread across H, I, L and O — the
-> engine's own asymmetries rather than missing capabilities), K's delivery-side
-> route proof and durable incidents (SH141, SH144), I's assets and paging (SH145–SH150), J's
+> engine's own asymmetries rather than missing capabilities), K's durable incidents and
+> handoff report (SH144, SH104), I's assets and paging (SH145–SH150), J's
 > reconciliation and registry (SH96, SH153–SH156), M's attribution (SH157–SH161, SH174), N's
 > realignment (SH163–SH167), plus SH44–SH47's tenant work and SH110. The highest-value ones left
 > are **SH150** (a renamed content file still pushes as delete + create, which loses the post's
@@ -162,18 +162,16 @@
 > (route/link verification) · **SH101** (render digest + `shio_digest`) · **SH103**
 > (agent diagnostics).
 >
-> **What is deliberately not in it, and why:** SH100 answers "internal links resolve"
-> against the content graph rather than by crawling — a front end may not be running,
-> may be a different deployment, and legitimately owns routes the CMS never sees. So
-> `link-unresolved` is a *warning*, and closing that gap properly is **SH141**.
-> Sitemap-coverage-vs-blueprint has its comparand now that Block J ships packages with a
-> `verify.posts` promise — but that promise is checked by the *blueprint* surface, and the
-> section vocabulary immediately exposed the lint's own blind spot, since closed by
-> ✅ **SH154** → [CHANGELOG.md](CHANGELOG.md). SH102's PNG stays an idea and is reported
-> `false` in the manifest.
+> **What is deliberately not in it, and why:** Sitemap-coverage-vs-blueprint has its
+> comparand now that Block J ships packages with a `verify.posts` promise — but that promise
+> is checked by the *blueprint* surface, and the section vocabulary immediately exposed the
+> lint's own blind spot, since closed by ✅ **SH154** → [CHANGELOG.md](CHANGELOG.md).
+> SH102's PNG stays an idea and is reported `false` in the manifest.
 >
-> **What building it opened, and what has since closed.** ✅ **SH142 and SH143 have shipped**
-> → [CHANGELOG.md](CHANGELOG.md): the report can say *known and accepted* (and fails when an
+> **What building it opened, and what has since closed.** ✅ **SH141, SH142 and SH143 have
+> shipped** → [CHANGELOG.md](CHANGELOG.md): a route is provable from the delivery side (so
+> `link-unresolved` can be an error, and the front end's own routes are *declared* in the SH114
+> memory rather than guessed), the report can say *known and accepted* (and fails when an
 > accepted finding no longer exists, which is what keeps the file from becoming a suppression),
 > and a run can be scoped to a folder, named addresses or an SH88 cursor while the cross-cutting
 > indexes stay whole. What is still open: the SH103 window is honest about being in memory,
@@ -181,7 +179,6 @@
 
 - 💭 **SH102** (deps: SH101 ✅) **Visual snapshot + diff** — optional Playwright PNG + diff vs previous, for the human handoff rather than for the agent. → §IX.4
 - 📋 **SH104** (deps: SH88 ✅, SH101 ✅) **Handoff report** — `shio report` renders the human-facing change summary (what changed, preview links, open questions) for a PR body or console banner. Unblocked by SH88: the cursor exists, so the summary can start where the last one ended instead of mid-story. → §IX.6
-- 📋 **SH141** (deps: SH100 ✅, SH101 ✅) **Prove a route from the delivery side** — SH100 resolves links against the content graph, so a page that exists in the CMS and 404s on the site is still only a *warning*. SH101 already fetches one URL safely (origin-checked, opt-in); this walks the published set through the same path and turns "the front end does not serve this" into an error, with the front-end-owns-routes case declared rather than guessed. → §IX.2
 - 💭 **SH144** (deps: SH103 ✅, SH88 ✅) **Durable incident feed** — the SH103 window is in memory and says so, which is the correct answer for now and the wrong one for "was anything failing while I was away". The durable form is the same cursor SH88 builds for content changes; folding incidents into it is cheaper than a second retention policy. → §IX.5
 
 ## Block I — Content as files (local-first authoring)

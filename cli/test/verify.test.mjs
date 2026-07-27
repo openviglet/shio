@@ -154,6 +154,44 @@ test("site, checks and limit reach the query string; a bare positional is the si
   assert.equal(url.searchParams.get("limit"), "5");
 });
 
+test("--delivery adds the group without dropping the ones that need no network", async () => {
+  const fetchImpl = scriptedFetch(CLEAN);
+  await verify.run({ delivery: true }, ["Blog"], ctxWith(fetchImpl));
+
+  // Not `checks=delivery`: a caller asking for the stronger proof still wants the lint, and
+  // sending the group alone would silently switch the content rules off (SH141).
+  assert.equal(
+    new URL(fetchImpl.calls[0].url).searchParams.get("checks"),
+    "content,routes,diagnostics,delivery",
+  );
+});
+
+test("--delivery keeps an explicit --checks and does not duplicate the group", async () => {
+  const fetchImpl = scriptedFetch(CLEAN);
+  await verify.run({ delivery: true, checks: "routes,delivery" }, [], ctxWith(fetchImpl));
+
+  assert.equal(new URL(fetchImpl.calls[0].url).searchParams.get("checks"), "routes,delivery");
+});
+
+test("the report's notes are printed — a cut nobody is told about reads as a clean pass", async () => {
+  const ctx = ctxWith(
+    scriptedFetch({
+      ...CLEAN,
+      notes: [
+        "The delivery check stopped after 50 request(s) and left 12 unproved.",
+        "2 unresolved link(s) matched routes declared as the front end's (frontend-routes).",
+      ],
+    }),
+  );
+
+  const result = await verify.run({}, [], ctx);
+
+  assert.match(ctx.stdout.text, /left 12 unproved/);
+  assert.match(ctx.stdout.text, /frontend-routes/);
+  // Notes explain the numbers; they are not defects, so they must not change the exit code.
+  assert.equal(result.exitCode ?? 0, 0);
+});
+
 test("a truncated report says how much it is not showing", async () => {
   const ctx = ctxWith(scriptedFetch({ ...BROKEN, truncated: true, found: 40 }));
 

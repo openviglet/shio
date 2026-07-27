@@ -8,28 +8,19 @@
  */
 package com.viglet.shio.api.agent.verify;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Locale;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.ShAddressResolver;
-import com.viglet.shio.api.agent.ShAgentProperties;
-import com.viglet.shio.api.agent.ShAgentSiteAccess;
 import com.viglet.shio.api.agent.verify.dto.ShAgentDigest;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
@@ -37,7 +28,6 @@ import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
-import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.widget.ShSystemWidget;
 
@@ -79,7 +69,6 @@ public class ShAgentRenderService {
     private static final String SOURCE_CONTENT = "content";
     private static final String SOURCE_FETCH = "fetch";
 
-    /** Widgets whose value is markup. A plain Text field is not a page fragment. */
     /** Plain-text widgets whose value is visible prose — a section's heading and its copy. */
     private static final List<String> TEXT_WIDGETS =
             List.of(ShSystemWidget.TEXT, ShSystemWidget.TEXT_AREA);
@@ -88,21 +77,18 @@ public class ShAgentRenderService {
             List.of(ShSystemWidget.HTML_EDITOR, ShSystemWidget.ACE_HTML);
 
     private final ShAddressResolver shAddressResolver;
-    private final ShAgentSiteAccess siteAccess;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ObjectMapper objectMapper;
-    private final ShAgentProperties properties;
+    private final ShAgentDeliveryProbe deliveryProbe;
 
     public ShAgentRenderService(ShAddressResolver shAddressResolver,
-                                ShAgentSiteAccess siteAccess,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
                                 ObjectMapper objectMapper,
-                                ShAgentProperties properties) {
+                                ShAgentDeliveryProbe deliveryProbe) {
         this.shAddressResolver = shAddressResolver;
-        this.siteAccess = siteAccess;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.objectMapper = objectMapper;
-        this.properties = properties;
+        this.deliveryProbe = deliveryProbe;
     }
 
     /**
@@ -288,90 +274,25 @@ public class ShAgentRenderService {
     // --- fetch --------------------------------------------------------------
 
     private ShAgentDigest fromUrl(String url) {
-        ShAgentProperties.Render config = properties.getRender();
-        if (!config.isAllowFetch()) {
+        if (!deliveryProbe.enabled()) {
             throw new FetchDisabledException();
         }
-        URI target = uri(url);
-        requireHostedSite(target);
-
-        HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(config.getTimeoutMillis()))
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .build();
-        HttpRequest request = HttpRequest.newBuilder(target)
-                .timeout(Duration.ofMillis(config.getTimeoutMillis()))
-                .header("Accept", "text/html")
-                .GET()
-                .build();
-        try {
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            String body = response.body() == null ? "" : response.body();
-            if (body.length() > config.getMaxBytes()) {
-                body = body.substring(0, config.getMaxBytes());
-            }
-            // The status travels even on a 404: "the page 404s" is the single most useful
-            // thing this call can say, and throwing it away as an error would hide it.
-            return render(SOURCE_FETCH, null, target.toString(), response.statusCode(),
-                    List.of(), ShHtmlOutline.of(body));
-        } catch (IOException e) {
-            throw new FetchFailedException(target.toString(), e.getMessage());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new FetchFailedException(target.toString(), "interrupted");
+        URI target = ShAgentDeliveryProbe.absolute(url);
+        if (target == null) {
+            throw new BadFetchUrlException(url, "Only absolute http(s) URLs can be fetched.");
         }
-    }
-
-    private static URI uri(String url) {
-        try {
-            URI parsed = new URI(url);
-            String scheme = parsed.getScheme() == null ? "" : parsed.getScheme().toLowerCase(Locale.ROOT);
-            if (!("http".equals(scheme) || "https".equals(scheme)) || parsed.getHost() == null) {
-                throw new BadFetchUrlException(url, "Only absolute http(s) URLs can be fetched.");
-            }
-            return parsed;
-        } catch (URISyntaxException e) {
-            throw new BadFetchUrlException(url, "That is not a URL.");
+        List<String> origins = deliveryProbe.readableOrigins();
+        if (!deliveryProbe.hosted(target, origins)) {
+            throw new UnhostedUrlException(target.toString(), origins);
         }
-    }
-
-    /**
-     * The URL must belong to a site this instance hosts and this credential can read.
-     *
-     * <p>Both halves matter. The first stops the endpoint being a proxy for the server's
-     * network position; the second keeps it inside the SH2 allow-list, so the agent path
-     * is not a privilege escalation (the Block L invariant) — a scoped token cannot use
-     * a digest to prove what another tenant's site looks like.</p>
-     */
-    private void requireHostedSite(URI target) {
-        List<ShSite> readable = siteAccess.readable();
-        List<String> configured = readable.stream()
-                .map(ShSite::getUrl)
-                .filter(url -> url != null && !url.isBlank())
-                .toList();
-        boolean hosted = configured.stream().anyMatch(candidate -> sameOrigin(candidate, target));
-        if (!hosted) {
-            throw new UnhostedUrlException(target.toString(), configured);
+        ShAgentDeliveryProbe.Outcome outcome = deliveryProbe.get(target);
+        if (outcome.failure() != null) {
+            throw new FetchFailedException(target.toString(), outcome.failure());
         }
-    }
-
-    private static boolean sameOrigin(String configured, URI target) {
-        try {
-            URI site = new URI(configured.trim());
-            if (site.getHost() == null) {
-                return false;
-            }
-            return site.getHost().equalsIgnoreCase(target.getHost()) && port(site) == port(target);
-        } catch (URISyntaxException e) {
-            return false;
-        }
-    }
-
-    private static int port(URI uri) {
-        if (uri.getPort() > 0) {
-            return uri.getPort();
-        }
-        return "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
+        // The status travels even on a 404: "the page 404s" is the single most useful
+        // thing this call can say, and throwing it away as an error would hide it.
+        return render(SOURCE_FETCH, null, target.toString(), outcome.status(),
+                List.of(), ShHtmlOutline.of(outcome.body()));
     }
 
     // --- shaping ------------------------------------------------------------

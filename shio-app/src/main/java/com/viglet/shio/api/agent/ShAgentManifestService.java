@@ -147,6 +147,14 @@ public class ShAgentManifestService {
         // Whether ?url= may fetch a delivery URL. Configured, not compiled: this one
         // depends on an operator's decision, and probing it costs a refusal.
         features.put("renderFetch", shAgentProperties.getRender().isAllowFetch());
+        // SH141: whether verify can prove a route from the delivery side rather than against
+        // the content graph. Reported separately from renderFetch even though one property
+        // governs both, because they answer different questions and an agent that reads only
+        // `renderFetch` would never learn that `link-unresolved` can be an error here. The
+        // manifest is where this belongs rather than the MCP tool schema: a tool description is
+        // re-sent every turn (P3), and on the instances where this is false it would be a tax
+        // for a capability that cannot run.
+        features.put("deliveryProof", shAgentProperties.getRender().isAllowFetch());
 
         // Block J: appliable starting points. Reported false through Blocks H, K and I so
         // that this flag flipping means a real package format with a real registry behind
@@ -250,7 +258,9 @@ public class ShAgentManifestService {
                 new ShAgentEndpoint("GET", "/agent/verify",
                         "Check your own work: required fields, dangling references, missing "
                                 + "assets, duplicate URLs, empty folders, unresolved links. "
-                                + "`ok:false` means at least one error; every finding carries a fix.",
+                                + "`ok:false` means at least one error; every finding carries a fix. "
+                                + "Add checks=delivery to prove each published route by fetching it "
+                                + "(needs deliveryProof).",
                         "console", "GET /api/v2/agent/verify?format=terse"),
                 new ShAgentEndpoint("GET", "/agent/render",
                         "Structural digest of one page — heading outline, landmarks, links and "

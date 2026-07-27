@@ -8,6 +8,7 @@
  */
 package com.viglet.shio.api.agent.verify;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -30,6 +31,7 @@ import com.viglet.shio.api.agent.ShAgentSiteAccess;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.api.agent.dto.ShAgentChanges;
 import com.viglet.shio.api.agent.dto.ShAgentResolved;
+import com.viglet.shio.api.agent.memory.ShAgentMemoryService;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport.Finding;
 import com.viglet.shio.api.error.ShProblem;
@@ -73,14 +75,24 @@ import tools.jackson.databind.ObjectMapper;
  * line is what makes {@code ok} worth branching on: if warnings failed builds, callers
  * would learn to ignore the exit code, and then the errors would go unread too.</p>
  *
- * <h2>What it deliberately does not do</h2>
+ * <h2>What the content graph can and cannot answer (SH100, then SH141)</h2>
  *
- * <p>It does not fetch anything. "Internal links return 200" in §IX.2 is answered
- * against the content graph — the set of published friendly URLs, using the same
- * leading-slash tolerance the CDA's by-url lookup applies — rather than by crawling a
- * front end that may not be running, may be a different deployment, and may legitimately
- * own routes the CMS has never heard of. Fetching a page is SH101's job, where it is
- * explicit, opt-in and about one URL at a time.</p>
+ * <p>The {@code content} and {@code routes} groups fetch nothing. "Internal links return
+ * 200" is answered against the content graph — the set of published friendly URLs, using
+ * the same leading-slash tolerance the CDA's by-url lookup applies — rather than by
+ * crawling a front end that may not be running, may be a different deployment, and may
+ * legitimately own routes the CMS has never heard of. That is why {@code link-unresolved}
+ * is a warning: it is what you emit when you are not sure.</p>
+ *
+ * <p><b>SH141 makes it sure.</b> The {@code delivery} group requests each published page
+ * and each unresolved link from the site's own origin, through the one guarded fetch path
+ * SH101 built ({@link ShAgentDeliveryProbe}), and turns "the front end does not serve this"
+ * into an error that deserves the name. The legitimate exception — a front end that owns
+ * generated routes — is <em>declared</em> in the SH114 memory rather than guessed at per
+ * request; see {@link ShFrontEndRoutes}. And because the two rules answer the same
+ * question, the unresolved links are handed to {@code delivery} instead of being reported
+ * twice: a defect reported once as a maybe and once as a fact is a report that has to be
+ * de-duplicated by whoever reads it.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -116,6 +128,8 @@ public class ShAgentVerifyService {
     private final ShAgentProperties properties;
     private final ShAddressResolver addressResolver;
     private final ShAgentChangesService shAgentChangesService;
+    private final ShAgentDeliveryProbe deliveryProbe;
+    private final ShAgentMemoryService shAgentMemoryService;
 
     public ShAgentVerifyService(ShAgentSiteAccess siteAccess,
                                 ShFolderRepository shFolderRepository,
@@ -125,7 +139,9 @@ public class ShAgentVerifyService {
                                 ObjectMapper objectMapper,
                                 ShAgentProperties properties,
                                 ShAddressResolver addressResolver,
-                                ShAgentChangesService shAgentChangesService) {
+                                ShAgentChangesService shAgentChangesService,
+                                ShAgentDeliveryProbe deliveryProbe,
+                                ShAgentMemoryService shAgentMemoryService) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -135,6 +151,8 @@ public class ShAgentVerifyService {
         this.properties = properties;
         this.addressResolver = addressResolver;
         this.shAgentChangesService = shAgentChangesService;
+        this.deliveryProbe = deliveryProbe;
+        this.shAgentMemoryService = shAgentMemoryService;
     }
 
     /** The whole instance — what CI asks for, and the shape every rule was written against. */
@@ -156,7 +174,7 @@ public class ShAgentVerifyService {
      */
     public ShAgentReport verify(String site, String checks, Integer limit, String folder,
                                 String address, String since) {
-        Set<ShAgentCheck> requested = ShAgentCheck.parse(checks);
+        Set<ShAgentCheck> requested = ShAgentCheck.parse(checks, deliveryProbe.enabled());
         int cap = limit == null || limit <= 0
                 ? properties.getVerify().getDefaultLimit()
                 : Math.min(limit, properties.getVerify().getMaxLimit());
@@ -165,12 +183,22 @@ public class ShAgentVerifyService {
         ShAgentVerifyScope scope = scope(sites, site, folder, address, since);
         Scan scan = scan(sites, scope);
         List<Finding> findings = new ArrayList<>();
+        List<String> notes = new ArrayList<>(scope.notes());
+        boolean proving = requested.contains(ShAgentCheck.DELIVERY);
 
         if (requested.contains(ShAgentCheck.CONTENT)) {
             content(scan, findings);
         }
+        // Routes runs before delivery because it decides what delivery has to adjudicate:
+        // a link that resolves against the content graph needs no request at all, and the
+        // ones that do not are exactly the population SH141 exists to settle.
+        List<Unresolved> unproven = new ArrayList<>();
+        ShFrontEndRoutes declared = declaredRoutes(site);
         if (requested.contains(ShAgentCheck.ROUTES)) {
-            routes(scan, findings);
+            routes(scan, findings, declared, proving ? unproven : null, notes);
+        }
+        if (proving) {
+            delivery(scan, findings, notes, unproven, explicitlyAsked(checks));
         }
         if (requested.contains(ShAgentCheck.DIAGNOSTICS)) {
             diagnostics(findings);
@@ -191,8 +219,37 @@ public class ShAgentVerifyService {
                 // is a flag nobody reads, and this one has to be read.
                 scope.partial() ? Boolean.TRUE : null,
                 scope.describe(),
-                scope.notes().isEmpty() ? null : List.copyOf(scope.notes()),
+                notes.isEmpty() ? null : List.copyOf(notes),
                 List.copyOf(capped));
+    }
+
+    /**
+     * Whether the caller named {@code delivery} rather than receiving it in the default set.
+     *
+     * <p>The difference decides one thing only, and it matters: an <b>explicit</b> request
+     * with no origin to fetch is a teaching 400, because the caller asked for a proof and
+     * would otherwise get an {@code ok} that proved nothing. The same situation reached
+     * <em>implicitly</em> — an operator enabled fetching, so the group joined the defaults —
+     * must never break a call that did not ask for it, so it degrades to a warning.</p>
+     */
+    private static boolean explicitlyAsked(String checks) {
+        return checks != null && !checks.isBlank() && !"all".equalsIgnoreCase(checks.trim())
+                && java.util.Arrays.stream(checks.split(","))
+                        .anyMatch(token -> ShAgentCheck.DELIVERY.wireName()
+                                .equalsIgnoreCase(token.trim()));
+    }
+
+    /** The front-end routes this site declares in the SH114 memory, or nothing. */
+    private ShFrontEndRoutes declaredRoutes(String site) {
+        try {
+            return ShFrontEndRoutes.of(shAgentMemoryService.notes(site));
+        } catch (ShTeachingException e) {
+            // A `site=` the memory scope cannot resolve is not a lint failure: the site
+            // allow-list has already been applied by `siteAccess.readable(site)` above, so
+            // getting here means the selector shape differs, and the honest answer is
+            // "nothing declared" rather than a 4xx from a rule that only silences findings.
+            return ShFrontEndRoutes.none();
+        }
     }
 
     /**
@@ -578,7 +635,17 @@ public class ShAgentVerifyService {
 
     // --- SH100: routes ------------------------------------------------------
 
-    private void routes(Scan scan, List<Finding> findings) {
+    /**
+     * @param declared the front-end routes the site claims (SH141) — a link matching one is
+     *                 not a guess this rule is entitled to make
+     * @param unproven when non-{@code null}, the delivery check will settle unresolved links
+     *                 by fetching them, so they are collected here instead of reported as
+     *                 warnings. Reporting both would double every broken link
+     * @param notes    where suppression is made visible: a silenced finding nobody is told
+     *                 about is how a declaration turns into a blind spot
+     */
+    private void routes(Scan scan, List<Finding> findings, ShFrontEndRoutes declared,
+                        List<Unresolved> unproven, List<String> notes) {
         String check = ShAgentCheck.ROUTES.wireName();
         // From the site index, not from the loaded rows: "does this link resolve" is a
         // question about the whole site, and a scoped run that answered it from its own
@@ -586,6 +653,7 @@ public class ShAgentVerifyService {
         Map<String, Set<String>> publishedUrls = new HashMap<>();
         scan.publishedByUrl().forEach((siteId, byUrl) ->
                 publishedUrls.put(siteId, new HashSet<>(byUrl.keySet())));
+        int silenced = 0;
         for (ShPostUnified post : scan.published()) {
             String address = address(post);
             if (isBlank(post.getFurl())) {
@@ -595,7 +663,12 @@ public class ShAgentVerifyService {
                                 + "{\"op\":\"post.move\",\"address\":\"id:" + post.getId()
                                 + "\",\"to\":\"post:<site>/<url>\"}."));
             }
-            markup(check, post, address, publishedUrls, findings);
+            silenced += markup(check, post, address, publishedUrls, declared, unproven, findings);
+        }
+        if (silenced > 0) {
+            notes.add(silenced + " unresolved link(s) matched routes declared as the front end's "
+                    + "(memory key '" + ShFrontEndRoutes.MEMORY_KEY + "') and were not reported"
+                    + (unproven == null ? "." : " as warnings — they are proved below instead."));
         }
     }
 
@@ -606,12 +679,14 @@ public class ShAgentVerifyService {
      * work in progress, and a plain-text field containing something that looks like a
      * path is not a link.</p>
      */
-    private void markup(String check, ShPostUnified post, String address,
-                        Map<String, Set<String>> publishedUrls, List<Finding> findings) {
+    private int markup(String check, ShPostUnified post, String address,
+                       Map<String, Set<String>> publishedUrls, ShFrontEndRoutes declaredRoutes,
+                       List<Unresolved> unproven, List<Finding> findings) {
         JsonNode data = data(post);
         Set<String> siteUrls = post.getShSite() == null
                 ? Set.of()
                 : publishedUrls.getOrDefault(post.getShSite().getId(), Set.of());
+        int silenced = 0;
         for (ShPostTypeAttr attr : declared(post.getShPostType())) {
             if (!MARKUP_WIDGETS.contains(widgetName(attr))) {
                 continue;
@@ -622,30 +697,60 @@ public class ShAgentVerifyService {
             }
             ShHtmlOutline.Outline outline = ShHtmlOutline.of(value.asString());
             for (ShHtmlOutline.Link link : outline.links()) {
-                linkFinding(check, address, attr.getName(), link.href(), siteUrls, findings);
+                silenced += linkFinding(check, post, address, attr.getName(), link.href(),
+                        siteUrls, declaredRoutes, unproven, findings);
             }
             for (ShHtmlOutline.Image image : outline.images()) {
                 imageFindings(check, address, attr.getName(), image, findings);
             }
         }
+        return silenced;
     }
 
-    private void linkFinding(String check, String address, String field, String href,
-                             Set<String> siteUrls, List<Finding> findings) {
+    /**
+     * One link, and the three answers this rule can now give (SH141).
+     *
+     * <p>It resolves against the content graph — nothing to say. It is <b>declared</b> as the
+     * front end's — nothing to say either, because the caller has asserted a fact the CMS
+     * cannot derive and taking the assertion at face value is what the declaration is for; the
+     * report still counts it so the suppression is visible. Otherwise it is unresolved, and
+     * whether that is a warning or a fetch away from an error depends on {@code unproven}.</p>
+     *
+     * @return 1 when a declaration silenced this link, so the caller can count it
+     */
+    private int linkFinding(String check, ShPostUnified post, String address, String field,
+                            String href, Set<String> siteUrls, ShFrontEndRoutes declaredRoutes,
+                            List<Unresolved> unproven, List<Finding> findings) {
         if (!isInternal(href)) {
-            return;
+            return 0;
         }
         String path = ShAddress.normalizePath(stripQuery(href)).toLowerCase(java.util.Locale.ROOT);
         if (path.startsWith(FILE_SOURCE_PREFIX) || siteUrls.contains(path) || "/".equals(path)) {
-            return;
+            return 0;
+        }
+        String siteId = post.getShSite() == null ? null : post.getShSite().getId();
+        String siteName = post.getShSite() == null ? null : post.getShSite().getName();
+        boolean claimed = declaredRoutes.declares(siteName, path);
+        if (unproven != null && siteId != null) {
+            // A declaration silences a guess but not a proof: the link is still fetched, and a
+            // route the front end was declared to own and does not serve is an error worth
+            // having — the declaration made a claim, and the claim is checkable now.
+            unproven.add(new Unresolved(siteId, path, href, address, field, claimed));
+            return 0;
+        }
+        if (claimed) {
+            return 1;
         }
         // A warning, not an error: the front end owns routes the CMS never sees (a
         // listing page, a generated tag index). Reporting those as errors would make the
         // exit code useless on any real site, which costs more than the missed defect.
+        // SH141's delivery check is what turns this into a provable answer.
         findings.add(Finding.warning(check, "link-unresolved", address, field,
                 "Link '" + href + "' matches no published URL in this site.",
-                "Publish the target, fix the link, or ignore this if the path is a "
-                        + "front-end route rather than a Shio page."));
+                "Publish the target, fix the link, declare it as a front-end route "
+                        + "(shio remember " + ShFrontEndRoutes.MEMORY_KEY + " \"" + path
+                        + "\" --site <site>), or turn on checks=delivery to have it proved."));
+        return 0;
     }
 
     private void imageFindings(String check, String address, String field,
@@ -667,6 +772,239 @@ public class ShAgentVerifyService {
                     "Re-upload it with POST /api/v2/staticfile/upload and point the "
                             + "markup at the returned post's URL."));
         }
+    }
+
+    // --- SH141: proof from the delivery side ---------------------------------
+
+    /**
+     * Fetches what the content claims and reports what the site actually serves.
+     *
+     * <h2>Why this is not a crawler</h2>
+     *
+     * <p>It follows no links it did not already know about, discovers nothing, and visits
+     * each URL once. The subject list comes from the content graph — the published pages in
+     * scope, plus the links SH100 could not resolve — so the pass is bounded by the content
+     * rather than by the site's shape, and it terminates. A crawler would be a different
+     * thing with a different failure mode: unbounded, and capable of hammering a front end
+     * that never asked to be verified.</p>
+     *
+     * <h2>Bounded three ways, and every cut is reported</h2>
+     *
+     * <p>A page count ({@code max-fetches}), a wall-clock budget ({@code fetch-budget-millis}),
+     * and fail-fast per origin: the <em>first</em> request to a site that does not answer ends
+     * that site's pass with one finding, because "the front end is down" is one fact and fifty
+     * copies of it is a report nobody reads. All three write a {@code note}, because a
+     * shortened list of defects reads exactly like a shorter list of defects (SH138).</p>
+     *
+     * <h2>The cost this accepts</h2>
+     *
+     * <p>The fetches happen inside the report's read transaction, which holds a connection for
+     * as long as the network pass takes. That is why the budget is a hard 15 seconds by default
+     * and why the group is not in the default set unless an operator has enabled fetching:
+     * the alternative — two round trips and a report that cannot answer {@code ok} — costs the
+     * caller more than it costs the pool.</p>
+     */
+    private void delivery(Scan scan, List<Finding> findings, List<String> notes,
+                          List<Unresolved> unproven, boolean explicit) {
+        String check = ShAgentCheck.DELIVERY.wireName();
+        List<ShPostUnified> pages = scan.published().stream()
+                .filter(post -> post.getShSite() != null && !isBlank(post.getFurl()))
+                .toList();
+        Set<String> withSubjects = new LinkedHashSet<>();
+        pages.forEach(post -> withSubjects.add(post.getShSite().getId()));
+        unproven.forEach(link -> withSubjects.add(link.siteId()));
+
+        Map<String, String> origins = new LinkedHashMap<>();
+        for (String siteId : withSubjects) {
+            ShSite owner = scan.siteById().get(siteId);
+            if (owner == null) {
+                continue;
+            }
+            if (ShAgentDeliveryProbe.join(owner.getUrl(), "/") == null) {
+                findings.add(Finding.warning(check, "site-url-missing",
+                        ShAddress.site(owner.getName()).toString(), null,
+                        "Site '" + owner.getName() + "' has no front-end URL, so nothing it "
+                                + "publishes can be proved from the delivery side.",
+                        "Set the site's URL in the console (Sites → " + owner.getName()
+                                + "), or run checks=content,routes for this site."));
+            } else {
+                origins.put(siteId, owner.getUrl());
+            }
+        }
+        if (origins.isEmpty()) {
+            if (explicit && !withSubjects.isEmpty()) {
+                throw new NoDeliveryOriginException();
+            }
+            return;
+        }
+
+        List<Target> targets = targets(pages, unproven, origins);
+        Fetches fetches = fetch(targets, origins.keySet());
+        report(check, targets, fetches, findings, notes);
+    }
+
+    /**
+     * The URLs to prove, in a deterministic order.
+     *
+     * <p>Sorted before the cap applies, so which pages a truncated pass covered is the same
+     * on every run (P5) — an unsorted list capped at fifty would prove a different fifty each
+     * time and make a red build look intermittent.</p>
+     */
+    private static List<Target> targets(List<ShPostUnified> pages, List<Unresolved> unproven,
+                                        Map<String, String> origins) {
+        List<Target> targets = new ArrayList<>();
+        for (ShPostUnified post : pages) {
+            String siteId = post.getShSite().getId();
+            URI url = ShAgentDeliveryProbe.join(origins.get(siteId),
+                    ShAddress.normalizePath(post.getFurl()));
+            if (url != null) {
+                targets.add(new Target(url.toString(), siteId, address(post), null, null, false));
+            }
+        }
+        for (Unresolved link : unproven) {
+            URI url = ShAgentDeliveryProbe.join(origins.get(link.siteId()), link.path());
+            if (url != null) {
+                targets.add(new Target(url.toString(), link.siteId(), link.address(), link.field(),
+                        link.href(), link.declared()));
+            }
+        }
+        return targets.stream()
+                .sorted(Comparator.comparing(Target::url)
+                        .thenComparing(target -> target.address() == null ? "" : target.address())
+                        .thenComparing(target -> target.field() == null ? "" : target.field()))
+                .toList();
+    }
+
+    /**
+     * One request per distinct URL, until a bound is reached.
+     *
+     * <p>Distinct, because the same link on twelve pages is twelve findings but one fact about
+     * the site, and asking twelve times would spend the budget proving what the first answer
+     * already said.</p>
+     */
+    private Fetches fetch(List<Target> targets, Set<String> siteIds) {
+        Map<String, ShAgentDeliveryProbe.Outcome> byUrl = new LinkedHashMap<>();
+        Map<String, String> unreachable = new LinkedHashMap<>();
+        int max = properties.getVerify().getMaxFetches();
+        long deadline = System.nanoTime()
+                + java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
+                        properties.getVerify().getFetchBudgetMillis());
+        boolean exhausted = false;
+        for (Target target : targets) {
+            if (byUrl.containsKey(target.url()) || unreachable.containsKey(target.siteId())) {
+                continue;
+            }
+            if (byUrl.size() >= max || System.nanoTime() > deadline) {
+                exhausted = true;
+                break;
+            }
+            URI uri = ShAgentDeliveryProbe.absolute(target.url());
+            if (uri == null) {
+                continue;
+            }
+            ShAgentDeliveryProbe.Outcome outcome = deliveryProbe.status(uri);
+            if (outcome.failure() != null) {
+                // Fail fast per origin: one unreachable front end is one finding, and the
+                // remaining pages of that site are unknowable rather than broken.
+                unreachable.put(target.siteId(), outcome.failure());
+            } else {
+                byUrl.put(target.url(), outcome);
+            }
+        }
+        int skipped = 0;
+        for (Target target : targets) {
+            if (!byUrl.containsKey(target.url()) && !unreachable.containsKey(target.siteId())) {
+                skipped++;
+            }
+        }
+        return new Fetches(byUrl, unreachable, exhausted, skipped, siteIds);
+    }
+
+    /** The findings the fetches imply — one per target, plus one per unreachable origin. */
+    private void report(String check, List<Target> targets, Fetches fetches,
+                        List<Finding> findings, List<String> notes) {
+        fetches.unreachable().forEach((siteId, failure) -> {
+            ShSite owner = siteById(siteId);
+            findings.add(Finding.error(check, "delivery-unreachable",
+                    owner == null ? null : ShAddress.site(owner.getName()).toString(), null,
+                    "The front end for this site did not answer (" + failure + "), so none of "
+                            + "its routes could be proved.",
+                    "Start the front end, or correct the site's URL. Until it answers, run "
+                            + "checks=content,routes — those need no network."));
+        });
+        for (Target target : targets) {
+            ShAgentDeliveryProbe.Outcome outcome = fetches.byUrl().get(target.url());
+            if (outcome == null || outcome.served()) {
+                continue;
+            }
+            findings.add(target.href() == null
+                    ? Finding.error(check, "route-not-served", target.address(), null,
+                            "This page is published but " + target.url() + " answers "
+                                    + outcome.status() + " — a visitor cannot reach it.",
+                            "Deploy the front end's route for this page, or unpublish it until "
+                                    + "the route exists. A published page nobody can open is the "
+                                    + "failure the content graph cannot see.")
+                    : Finding.error(check, "link-broken", target.address(), target.field(),
+                            "Link '" + target.href() + "' matches no published URL and "
+                                    + target.url() + " answers " + outcome.status()
+                                    + (target.declared()
+                                            ? " — it is declared as a front-end route, and the "
+                                                    + "front end does not serve it."
+                                            : "."),
+                            target.declared()
+                                    ? "Fix the link, serve the declared route, or drop the "
+                                            + "pattern from the '" + ShFrontEndRoutes.MEMORY_KEY
+                                            + "' note if the front end no longer owns it."
+                                    : "Fix the link, publish the page it means, or add the route "
+                                            + "to the front end."));
+        }
+        if (fetches.exhausted() && fetches.skipped() > 0) {
+            notes.add("The delivery check stopped after " + fetches.byUrl().size()
+                    + " request(s) and left " + fetches.skipped()
+                    + " unproved — raise shio.agent.verify.max-fetches or "
+                    + "shio.agent.verify.fetch-budget-millis, or narrow the run with folder=.");
+        }
+    }
+
+    /** The site behind an id, for a finding that names a site rather than a post. */
+    private ShSite siteById(String siteId) {
+        return siteAccess.readable().stream()
+                .filter(site -> siteId.equals(site.getId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * A link SH100 could not resolve, held for the delivery check to settle.
+     *
+     * @param path     the normalized, query-stripped path — what gets fetched
+     * @param href     the link exactly as it was written, which is what a fix must edit
+     * @param declared the site declares this path as the front end's (SH141)
+     */
+    private record Unresolved(String siteId, String path, String href, String address,
+                              String field, boolean declared) {
+    }
+
+    /**
+     * One URL to prove.
+     *
+     * @param href {@code null} for a published page's own URL; the written link otherwise —
+     *             which is also what decides whether a non-2xx is {@code route-not-served}
+     *             or {@code link-broken}
+     */
+    private record Target(String url, String siteId, String address, String field, String href,
+                          boolean declared) {
+    }
+
+    /**
+     * What the network pass learned.
+     *
+     * @param exhausted a bound stopped the pass rather than the target list running out
+     * @param skipped   targets left unproved, so the note can say how many
+     */
+    private record Fetches(Map<String, ShAgentDeliveryProbe.Outcome> byUrl,
+                           Map<String, String> unreachable, boolean exhausted, int skipped,
+                           Set<String> siteIds) {
     }
 
     // --- SH103: recent asynchronous failures --------------------------------
@@ -881,7 +1219,7 @@ public class ShAgentVerifyService {
         return isBlank(file.getTitle()) ? null : file.getTitle().trim();
     }
 
-    private String address(ShPostUnified post) {
+    private static String address(ShPostUnified post) {
         if (post.getShSite() == null || isBlank(post.getFurl())) {
             return "id:" + post.getId();
         }
@@ -969,6 +1307,29 @@ public class ShAgentVerifyService {
 
     /** A folder with the site that owns it, resolved once via {@link ShFolderSite}. */
     private record Scanned(ShFolder folder, ShSite site) {
+    }
+
+    /**
+     * {@code checks=delivery} over sites that have no front-end URL (SH141).
+     *
+     * <p>The same rule as the folder scope below, one check group along: the caller asked to
+     * have its routes proved, there is nothing to fetch, and answering {@code ok} would be a
+     * yes to a question nobody asked. Raised only when {@code delivery} was <b>named</b> —
+     * reached through the default set it is a per-site warning, because a group that joined
+     * the run on its own must not fail a call that did not request it.</p>
+     */
+    public static class NoDeliveryOriginException extends ShTeachingException {
+
+        public NoDeliveryOriginException() {
+            super(ShProblem.badRequest("no-delivery-origin",
+                            "No site in this run has a front-end URL to fetch")
+                    .withDetail("The `delivery` check proves a route by requesting it from the "
+                            + "site's own origin, and the sites this run covers have no URL "
+                            + "configured — so it would have answered ok having proved nothing.")
+                    .withFix("Set each site's URL in the console (Sites → the site → URL), or "
+                            + "drop `delivery` from checks and rely on the content-graph answer.")
+                    .withExample("?checks=content,routes"));
+        }
     }
 
     /**
