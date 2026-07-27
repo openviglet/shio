@@ -23,11 +23,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.ShAddress;
+import com.viglet.shio.api.agent.ShAddressResolver;
+import com.viglet.shio.api.agent.ShAgentChangesService;
 import com.viglet.shio.api.agent.ShAgentProperties;
 import com.viglet.shio.api.agent.ShAgentSiteAccess;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
+import com.viglet.shio.api.agent.dto.ShAgentChanges;
+import com.viglet.shio.api.agent.dto.ShAgentResolved;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport.Finding;
+import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.staticfile.ShFileStorageService;
 import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -108,6 +114,8 @@ public class ShAgentVerifyService {
     private final ShAgentIncidentLog incidentLog;
     private final ObjectMapper objectMapper;
     private final ShAgentProperties properties;
+    private final ShAddressResolver addressResolver;
+    private final ShAgentChangesService shAgentChangesService;
 
     public ShAgentVerifyService(ShAgentSiteAccess siteAccess,
                                 ShFolderRepository shFolderRepository,
@@ -115,7 +123,9 @@ public class ShAgentVerifyService {
                                 ShFileStorageService fileStorage,
                                 ShAgentIncidentLog incidentLog,
                                 ObjectMapper objectMapper,
-                                ShAgentProperties properties) {
+                                ShAgentProperties properties,
+                                ShAddressResolver addressResolver,
+                                ShAgentChangesService shAgentChangesService) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -123,25 +133,37 @@ public class ShAgentVerifyService {
         this.incidentLog = incidentLog;
         this.objectMapper = objectMapper;
         this.properties = properties;
+        this.addressResolver = addressResolver;
+        this.shAgentChangesService = shAgentChangesService;
+    }
+
+    /** The whole instance — what CI asks for, and the shape every rule was written against. */
+    public ShAgentReport verify(String site, String checks, Integer limit) {
+        return verify(site, checks, limit, null, null, null);
     }
 
     /**
-     * Runs the requested checks.
+     * Runs the requested checks, over everything readable or over a subset (SH143).
      *
-     * @param site   site id, name or {@code site:} address; {@code null} = every
-     *               readable site
-     * @param checks comma-separated {@link ShAgentCheck} groups; {@code null} = all
-     * @param limit  findings to return; {@code null} = configured default. The report
-     *               always counts what it produced, so a cut is visible
+     * @param site    site id, name or {@code site:} address; {@code null} = every
+     *                readable site
+     * @param checks  comma-separated {@link ShAgentCheck} groups; {@code null} = all
+     * @param limit   findings to return; {@code null} = configured default. The report
+     *                always counts what it produced, so a cut is visible
+     * @param folder  a {@code folder:} address or id: this folder and its descendants
+     * @param address one or more comma-separated {@code post:} addresses
+     * @param since   an SH88 cursor: only what changed after it
      */
-    public ShAgentReport verify(String site, String checks, Integer limit) {
+    public ShAgentReport verify(String site, String checks, Integer limit, String folder,
+                                String address, String since) {
         Set<ShAgentCheck> requested = ShAgentCheck.parse(checks);
         int cap = limit == null || limit <= 0
                 ? properties.getVerify().getDefaultLimit()
                 : Math.min(limit, properties.getVerify().getMaxLimit());
 
         List<ShSite> sites = siteAccess.readable(site);
-        Scan scan = scan(sites);
+        ShAgentVerifyScope scope = scope(sites, site, folder, address, since);
+        Scan scan = scan(sites, scope);
         List<Finding> findings = new ArrayList<>();
 
         if (requested.contains(ShAgentCheck.CONTENT)) {
@@ -165,6 +187,11 @@ public class ShAgentVerifyService {
                 ordered.size() - errors,
                 ordered.size(),
                 ordered.size() > cap,
+                // Absent rather than `false` on a full pass: a flag that is always present
+                // is a flag nobody reads, and this one has to be read.
+                scope.partial() ? Boolean.TRUE : null,
+                scope.describe(),
+                scope.notes().isEmpty() ? null : List.copyOf(scope.notes()),
                 List.copyOf(capped));
     }
 
@@ -180,6 +207,131 @@ public class ShAgentVerifyService {
             .thenComparing(Finding::address, Comparator.nullsLast(Comparator.naturalOrder()))
             .thenComparing(Finding::field, Comparator.nullsLast(Comparator.naturalOrder()));
 
+    // --- SH143: what this run covers ----------------------------------------
+
+    /**
+     * Resolves the scope params into the subject rows.
+     *
+     * <p>The three params <b>union</b> rather than intersect: each names something the caller
+     * wants looked at, and an intersection would answer a question nobody asked ("posts in
+     * this folder that also changed since that cursor"). A scope that resolves to nothing is
+     * still a scope — it reports zero findings over zero objects and says so, which is the
+     * honest answer to "check this folder" for an empty folder.</p>
+     */
+    private ShAgentVerifyScope scope(List<ShSite> sites, String site, String folder,
+                                     String address, String since) {
+        if (isBlank(folder) && isBlank(address) && isBlank(since)) {
+            return ShAgentVerifyScope.full(readable(sites));
+        }
+        Map<String, ShPostUnified> rows = new LinkedHashMap<>();
+        Set<String> folderIds = new LinkedHashSet<>();
+        List<String> parts = new ArrayList<>();
+        List<String> notes = new ArrayList<>();
+
+        if (!isBlank(folder)) {
+            ShFolder root = folderOf(folder);
+            List<ShFolder> subtree = subtree(root);
+            subtree.forEach(each -> folderIds.add(each.getId()));
+            for (ShFolder each : subtree) {
+                keep(rows, shPostUnifiedRepository.findByShFolderAndStateIn(each, BOTH_STATES));
+            }
+            parts.add("folder " + addressResolver.addressOf(root)
+                    + (subtree.size() > 1 ? " +" + (subtree.size() - 1) + " subfolder(s)" : ""));
+        }
+        if (!isBlank(address)) {
+            List<String> addresses = split(address);
+            for (String each : addresses) {
+                keep(rows, shPostUnifiedRepository.findById(addressResolver.resolve(each).id()));
+            }
+            parts.add(addresses.size() + " address(es)");
+        }
+        if (!isBlank(since)) {
+            parts.add(sinceRows(site, since, rows, notes));
+        }
+
+        rows.values().forEach(row -> folderIds.add(folderIdOf(row)));
+        folderIds.remove(null);
+        return new ShAgentVerifyScope(List.copyOf(rows.values()), folderIds,
+                String.join(" + ", parts), notes);
+    }
+
+    /**
+     * The rows behind an SH88 cursor.
+     *
+     * <p>Reuses the change feed rather than reading the audit directly, so "what changed" has
+     * one definition: the same cursor semantics, the same site allow-list, and the same
+     * held-back-entry rule the feed already documents. A feed that had more entries than
+     * fitted is a note, not a silent cut — the report is already {@code partial}, and this is
+     * the second reason it is.</p>
+     */
+    private String sinceRows(String site, String since, Map<String, ShPostUnified> rows,
+                             List<String> notes) {
+        ShAgentChanges changes = shAgentChangesService.changes(site, since,
+                properties.getVerify().getMaxLimit(), true);
+        int resolved = 0;
+        for (ShAgentChanges.Change change : changes.changes()) {
+            if (change.id() == null) {
+                continue;
+            }
+            List<ShPostUnified> found = shPostUnifiedRepository.findById(change.id());
+            // A DELETE entry names an object that is gone; nothing to lint, and reporting it
+            // as missing would turn a completed deletion into a defect.
+            if (!found.isEmpty()) {
+                keep(rows, found);
+                resolved++;
+            }
+        }
+        if (changes.more()) {
+            notes.add("The change feed had more entries than this run read — re-run from "
+                    + changes.cursor() + " to cover the rest.");
+        }
+        return "changed since " + since + " (" + resolved + " post(s))";
+    }
+
+    private void keep(Map<String, ShPostUnified> rows, List<ShPostUnified> found) {
+        for (ShPostUnified row : found) {
+            rows.put(row.getId() + "|" + row.getState(), row);
+        }
+    }
+
+    private static List<String> split(String raw) {
+        return java.util.Arrays.stream(raw.split(",")).map(String::trim)
+                .filter(part -> !part.isEmpty()).toList();
+    }
+
+    /** A {@code folder:} address or a bare id, as the folder itself. */
+    private ShFolder folderOf(String raw) {
+        ShAgentResolved resolved = addressResolver.resolve(raw);
+        return shFolderRepository.findById(resolved.id())
+                .orElseThrow(() -> new UnknownFolderScopeException(raw));
+    }
+
+    private List<ShFolder> subtree(ShFolder root) {
+        List<ShFolder> all = new ArrayList<>();
+        java.util.Deque<ShFolder> pending = new java.util.ArrayDeque<>(List.of(root));
+        while (!pending.isEmpty()) {
+            ShFolder current = pending.pop();
+            all.add(current);
+            pending.addAll(shFolderRepository.findByParentFolder(current));
+        }
+        return all;
+    }
+
+    private static String folderIdOf(ShPostUnified row) {
+        return row.getShFolder() == null ? null : row.getShFolder().getId();
+    }
+
+    /** Every readable row, both states, plus the site-less ones nobody else asks for. */
+    private List<ShPostUnified> readable(List<ShSite> sites) {
+        List<ShPostUnified> rows = new ArrayList<>();
+        for (ShSite each : sites) {
+            rows.addAll(shPostUnifiedRepository.findByShSite_IdAndStateIn(each.getId(), BOTH_STATES));
+        }
+        // Site-less posts are nobody's rows, which is exactly why they need asking for.
+        rows.addAll(shPostUnifiedRepository.findWithoutSite(BOTH_STATES));
+        return rows;
+    }
+
     // --- the read pass -------------------------------------------------------
 
     /**
@@ -189,21 +341,37 @@ public class ShAgentVerifyService {
      * on the difference: a duplicate URL is only a live defect between {@code PUBLISHED}
      * rows, and "published depends on unpublished" cannot be asked at all without
      * knowing which ids have a published row.</p>
+     *
+     * <p>The <b>subjects</b> come from the scope; the {@code allIds} / {@code publishedIds} /
+     * {@code publishedByUrl} indexes are always built for every readable site, because the
+     * rules that use them ask cross-cutting questions a subset cannot answer (SH143). They are
+     * projections — id, url, state — so they stay cheap at the size where scoping starts to
+     * matter.</p>
      */
-    private Scan scan(List<ShSite> sites) {
+    private Scan scan(List<ShSite> sites, ShAgentVerifyScope scope) {
         Map<String, ShSite> siteById = new LinkedHashMap<>();
-        List<ShPostUnified> rows = new ArrayList<>();
-        for (ShSite each : sites) {
-            siteById.put(each.getId(), each);
-            rows.addAll(shPostUnifiedRepository.findByShSite_IdAndStateIn(each.getId(), BOTH_STATES));
-        }
-        // Site-less posts are nobody's rows, which is exactly why they need asking for.
-        rows.addAll(shPostUnifiedRepository.findWithoutSite(BOTH_STATES));
-
         Set<String> allIds = new HashSet<>();
         Set<String> publishedIds = new HashSet<>();
+        Map<String, Map<String, List<String>>> publishedByUrl = new HashMap<>();
+        for (ShSite each : sites) {
+            siteById.put(each.getId(), each);
+            Map<String, List<String>> byUrl = new HashMap<>();
+            for (Object[] row : shPostUnifiedRepository.findUrlIndexBySiteId(each.getId(), BOTH_STATES)) {
+                String id = (String) row[0];
+                String furl = (String) row[1];
+                allIds.add(id);
+                if (row[2] == ShPostState.PUBLISHED) {
+                    publishedIds.add(id);
+                    if (!isBlank(furl)) {
+                        byUrl.computeIfAbsent(normalized(furl), ignored -> new ArrayList<>()).add(id);
+                    }
+                }
+            }
+            publishedByUrl.put(each.getId(), byUrl);
+        }
+
         Map<String, ShPostUnified> draftPreferred = new LinkedHashMap<>();
-        for (ShPostUnified row : rows) {
+        for (ShPostUnified row : scope.rows()) {
             allIds.add(row.getId());
             if (row.getState() == ShPostState.PUBLISHED) {
                 publishedIds.add(row.getId());
@@ -213,34 +381,51 @@ public class ShAgentVerifyService {
                 draftPreferred.put(row.getId(), row);
             }
         }
-        List<ShPostUnified> published = rows.stream()
+        List<ShPostUnified> published = scope.rows().stream()
                 .filter(row -> row.getState() == ShPostState.PUBLISHED)
                 .sorted(Comparator.comparing(ShPostUnified::getId))
                 .toList();
         List<ShPostUnified> posts = draftPreferred.values().stream()
                 .sorted(Comparator.comparing(ShPostUnified::getId))
                 .toList();
-        return new Scan(siteById, posts, published, allIds, publishedIds, folders(siteById.keySet()));
+        return new Scan(siteById, posts, published, allIds, publishedIds, publishedByUrl,
+                folders(siteById.keySet(), scope.folderIds()),
+                shFolderRepository.findParentFolderIds(),
+                shPostUnifiedRepository.findFolderIdsWithPosts());
     }
 
     /**
-     * Every folder whose owning site is readable, plus the true orphans.
+     * The folders this run reports on: every one under a readable site, or the scope's.
      *
      * <p>The site is resolved with {@link ShFolderSite} — only a root folder carries
      * {@code shSite} (SH128), so a direct read would classify every nested folder as an
      * orphan and bury the report in false errors.</p>
+     *
+     * <p>An <b>orphan</b> folder is reported on a full pass only. It belongs to no site, so no
+     * scope can name it, and a scoped run that swept them all in would report content the
+     * caller did not ask about — while a full pass would still catch it.</p>
      */
-    private List<Scanned> folders(Set<String> readableSiteIds) {
+    private List<Scanned> folders(Set<String> readableSiteIds, Set<String> only) {
         List<Scanned> scanned = new ArrayList<>();
         for (ShFolder folder : shFolderRepository.findAll()) {
+            if (only != null && !only.contains(folder.getId())) {
+                continue;
+            }
             ShSite owner = ShFolderSite.of(folder);
             if (owner == null) {
-                scanned.add(new Scanned(folder, null));
+                if (only == null) {
+                    scanned.add(new Scanned(folder, null));
+                }
             } else if (readableSiteIds.contains(owner.getId())) {
                 scanned.add(new Scanned(folder, owner));
             }
         }
         return scanned.stream().sorted(Comparator.comparing(entry -> entry.folder().getId())).toList();
+    }
+
+    /** The one canonical form both the duplicate-URL rule and link resolution compare on. */
+    private static String normalized(String furl) {
+        return ShAddress.normalizePath(furl).toLowerCase(java.util.Locale.ROOT);
     }
 
     // --- SH99: content ------------------------------------------------------
@@ -331,44 +516,45 @@ public class ShAgentVerifyService {
      * Two published posts claiming one URL. Only published rows count: a draft sharing a
      * URL with the live page it will replace is the normal editing state, and flagging it
      * would fire on every single edit.
+     *
+     * <p>Asked <b>per subject against the site's index</b> rather than by grouping the loaded
+     * rows, so a scoped run still finds the duplicate whose twin is outside its scope — the
+     * case a self-grouping version would quietly call clean. On a full pass every member of a
+     * group is a subject, so the output is the same one-finding-per-post it always was.</p>
      */
     private void duplicateUrls(String check, Scan scan, List<Finding> findings) {
-        Map<String, List<ShPostUnified>> byUrl = new LinkedHashMap<>();
         for (ShPostUnified post : scan.published()) {
             if (post.getShSite() == null || isBlank(post.getFurl())) {
                 continue;
             }
-            String key = post.getShSite().getId() + " "
-                    + ShAddress.normalizePath(post.getFurl()).toLowerCase(java.util.Locale.ROOT);
-            byUrl.computeIfAbsent(key, ignored -> new ArrayList<>()).add(post);
-        }
-        byUrl.values().stream().filter(group -> group.size() > 1).forEach(group -> {
-            String others = group.stream().map(ShPostUnified::getId).sorted()
-                    .reduce((first, second) -> first + ", " + second).orElse("");
-            for (ShPostUnified post : group) {
-                findings.add(Finding.error(check, "duplicate-url", address(post), null,
-                        "Published URL '" + post.getFurl() + "' is claimed by "
-                                + group.size() + " posts (" + others + ") — which one a "
-                                + "visitor gets is undefined.",
-                        "Give one of them a different URL with a post.move op "
-                                + "(POST /api/v2/agent/batch), or unpublish the duplicate."));
+            List<String> claiming = scan.publishedByUrl()
+                    .getOrDefault(post.getShSite().getId(), Map.of())
+                    .getOrDefault(normalized(post.getFurl()), List.of());
+            if (claiming.size() <= 1) {
+                continue;
             }
-        });
+            String others = claiming.stream().sorted()
+                    .reduce((first, second) -> first + ", " + second).orElse("");
+            findings.add(Finding.error(check, "duplicate-url", address(post), null,
+                    "Published URL '" + post.getFurl() + "' is claimed by "
+                            + claiming.size() + " posts (" + others + ") — which one a "
+                            + "visitor gets is undefined.",
+                    "Give one of them a different URL with a post.move op "
+                            + "(POST /api/v2/agent/batch), or unpublish the duplicate."));
+        }
     }
 
+    /**
+     * Folder-level findings.
+     *
+     * <p>"Holds no posts and no subfolders" is a question about content that may sit outside a
+     * scope, so both halves come from instance-wide id projections rather than from the loaded
+     * rows: a scoped run must never call a folder empty because it did not look inside it
+     * (SH143).</p>
+     */
     private void folderFindings(String check, Scan scan, List<Finding> findings) {
-        Set<String> foldersWithPosts = new HashSet<>();
-        for (ShPostUnified post : scan.posts()) {
-            if (post.getShFolder() != null) {
-                foldersWithPosts.add(post.getShFolder().getId());
-            }
-        }
-        Set<String> parents = new HashSet<>();
-        for (Scanned entry : scan.folders()) {
-            if (entry.folder().getParentFolder() != null) {
-                parents.add(entry.folder().getParentFolder().getId());
-            }
-        }
+        Set<String> foldersWithPosts = scan.foldersWithPosts();
+        Set<String> parents = scan.folderParents();
         for (Scanned entry : scan.folders()) {
             ShFolder folder = entry.folder();
             if (entry.site() == null) {
@@ -394,13 +580,12 @@ public class ShAgentVerifyService {
 
     private void routes(Scan scan, List<Finding> findings) {
         String check = ShAgentCheck.ROUTES.wireName();
+        // From the site index, not from the loaded rows: "does this link resolve" is a
+        // question about the whole site, and a scoped run that answered it from its own
+        // subjects would report every link out of the scope as broken (SH143).
         Map<String, Set<String>> publishedUrls = new HashMap<>();
-        for (ShPostUnified post : scan.published()) {
-            if (post.getShSite() != null && !isBlank(post.getFurl())) {
-                publishedUrls.computeIfAbsent(post.getShSite().getId(), ignored -> new HashSet<>())
-                        .add(ShAddress.normalizePath(post.getFurl()).toLowerCase(java.util.Locale.ROOT));
-            }
-        }
+        scan.publishedByUrl().forEach((siteId, byUrl) ->
+                publishedUrls.put(siteId, new HashSet<>(byUrl.keySet())));
         for (ShPostUnified post : scan.published()) {
             String address = address(post);
             if (isBlank(post.getFurl())) {
@@ -755,10 +940,27 @@ public class ShAgentVerifyService {
         return value == null || value.isBlank();
     }
 
-    /** Everything the checks read, gathered once. */
+    /**
+     * Everything the checks read, gathered once.
+     *
+     * <p>Two tiers, and the distinction is SH143's whole design. {@code posts} / {@code published}
+     * / {@code folders} are the <b>subjects</b> — what a scope narrows, and the expensive part
+     * (data, post-type, attribute tree). The rest are <b>indexes</b>, always built over every
+     * readable site because the rules that read them ask questions a subset cannot answer:
+     * whether another post claims a URL, whether a link lands anywhere, whether a folder has
+     * content the run did not look at. They are id/url projections, so a full index costs
+     * almost nothing next to a full read pass.</p>
+     *
+     * @param publishedByUrl siteId → normalized url → the published post ids claiming it
+     * @param folderParents  every folder id that is some folder's parent
+     * @param foldersWithPosts every folder id holding at least one post
+     */
     private record Scan(Map<String, ShSite> siteById, List<ShPostUnified> posts,
                         List<ShPostUnified> published, Set<String> allIds,
-                        Set<String> publishedIds, List<Scanned> folders) {
+                        Set<String> publishedIds,
+                        Map<String, Map<String, List<String>>> publishedByUrl,
+                        List<Scanned> folders, Set<String> folderParents,
+                        Set<String> foldersWithPosts) {
 
         int checked() {
             return posts.size() + folders.size();
@@ -767,5 +969,25 @@ public class ShAgentVerifyService {
 
     /** A folder with the site that owns it, resolved once via {@link ShFolderSite}. */
     private record Scanned(ShFolder folder, ShSite site) {
+    }
+
+    /**
+     * A {@code folder=} scope that resolved to something that is not a folder.
+     *
+     * <p>A teaching 400 rather than an empty run: a scope that silently covered nothing would
+     * report {@code ok} over zero objects, which is the most dangerous false green there is —
+     * the caller asked a question and got a yes to a different one.</p>
+     */
+    public static class UnknownFolderScopeException extends ShTeachingException {
+
+        public UnknownFolderScopeException(String raw) {
+            super(ShProblem.badRequest("folder-scope-unknown",
+                            "'" + raw + "' is not a folder, so there is nothing to scope to")
+                    .withDetail("verify's `folder` parameter narrows the run to a folder and its "
+                            + "descendants. This address resolved, but not to a folder.")
+                    .withFix("Pass a folder: address (GET /api/v2/agent/resolve will confirm one), "
+                            + "or use `address` to name posts directly.")
+                    .withExample("GET /api/v2/agent/verify?folder=folder:Acme/blog"));
+        }
     }
 }

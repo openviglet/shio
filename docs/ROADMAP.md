@@ -65,14 +65,14 @@
 > half work at all, which is what made Block L's question askable; and Block L answered it —
 > how a human bounds and undoes an agent.
 >
-> **What is left is follow-ups, not blocks**: H's edges (SH136–SH140), K's scoping
-> and baseline (SH141–SH144), I's assets and paging (SH145–SH150), J's
+> **What is left is follow-ups, not blocks**: H's edges (SH136–SH140), K's delivery-side
+> route proof and durable incidents (SH141, SH144), I's assets and paging (SH145–SH150), J's
 > reconciliation and registry (SH96, SH153–SH156), M's attribution (SH157–SH161, SH174), N's
 > realignment (SH163–SH167), plus SH44–SH47's tenant work and SH110. The highest-value ones left
-> are **SH142** (a verify report has no way to say "known and accepted", so the first legitimate
-> warning teaches everyone to ignore the exit code) and **SH143** (a verify run reads every post in
-> the instance — right for CI, wrong for the call an agent makes after writing three pages, and
-> SH169 just made a page digest read N+1 posts on the same axis).
+> are **SH150** (a renamed content file still pushes as delete + create, which loses the post's
+> id, audit trail and history — the one place the file projection contradicts SH134) and
+> **SH153** (a blueprint plan writes and rolls back purely so its content half can resolve
+> post-types, so a plan cannot run on a read-only credential or a replica).
 >
 > **What driving it end to end found (SH168–SH175).** A whole site — model, folder tree,
 > thirteen pages, a file projection, a CI gate — was built over the agent surface alone, and
@@ -159,17 +159,16 @@
 > ✅ **SH154** → [CHANGELOG.md](CHANGELOG.md). SH102's PNG stays an idea and is reported
 > `false` in the manifest.
 >
-> **What building it opened.** The `image-no-alt` rule showed the report has no way to
-> say "known and accepted" (**SH142**); the verify pass reads every post in the instance
-> on every call, which is fine at a hundred posts and not at ten thousand (**SH143**);
-> and the SH103 window is honest about being in memory, which is exactly the shape SH88
-> already needs to fix (**SH144**).
+> **What building it opened, and what has since closed.** ✅ **SH142 and SH143 have shipped**
+> → [CHANGELOG.md](CHANGELOG.md): the report can say *known and accepted* (and fails when an
+> accepted finding no longer exists, which is what keeps the file from becoming a suppression),
+> and a run can be scoped to a folder, named addresses or an SH88 cursor while the cross-cutting
+> indexes stay whole. What is still open: the SH103 window is honest about being in memory,
+> which is exactly the shape SH88 already needs to fix (**SH144**).
 
 - 💭 **SH102** (deps: SH101 ✅) **Visual snapshot + diff** — optional Playwright PNG + diff vs previous, for the human handoff rather than for the agent. → §IX.4
 - 📋 **SH104** (deps: SH88 ✅, SH101 ✅) **Handoff report** — `shio report` renders the human-facing change summary (what changed, preview links, open questions) for a PR body or console banner. Unblocked by SH88: the cursor exists, so the summary can start where the last one ended instead of mid-story. → §IX.6
 - 📋 **SH141** (deps: SH100 ✅, SH101 ✅) **Prove a route from the delivery side** — SH100 resolves links against the content graph, so a page that exists in the CMS and 404s on the site is still only a *warning*. SH101 already fetches one URL safely (origin-checked, opt-in); this walks the published set through the same path and turns "the front end does not serve this" into an error, with the front-end-owns-routes case declared rather than guessed. → §IX.2
-- 📋 **SH142** (deps: SH99 ✅) **Baseline / accepted findings** — a verify report has two states, and real content has a third: known and accepted. Without it the first legitimate warning teaches everyone to ignore the exit code. A committed `shio/verify-baseline.json` (rule + address) that `shio verify` subtracts, and that fails when an accepted finding no longer exists — so the file cannot rot into a blanket suppression. → §IX.1
-- 📋 **SH143** (deps: SH99 ✅, SH88 ✅) **Scope a verify run to what changed** — the pass reads every post in every readable site, which is right for CI and wrong for the call an agent makes after writing three pages. Needs `?folder=`/`?address=` scoping and `?since=` over SH88's cursor — plus an honest header saying the report covers a subset, because a partial report that reads as a full one is the SH138 hazard again. → §IX.1
 - 💭 **SH144** (deps: SH103 ✅, SH88 ✅) **Durable incident feed** — the SH103 window is in memory and says so, which is the correct answer for now and the wrong one for "was anything failing while I was away". The durable form is the same cursor SH88 builds for content changes; folding incidents into it is cheaper than a second retention policy. → §IX.5
 
 ## Block I — Content as files (local-first authoring)
@@ -334,9 +333,9 @@
 > one thing is a second thing to keep right (SH177/SH178).
 >
 > **What it opened.** The check asserts *a* field renders, not the *right* field, and it has no
-> accepted-findings baseline — **SH142**'s shape applies to it unchanged. And the site
-> provisioning it needs walks the console's CSRF path by hand, which is **SH170** measured
-> rather than argued.
+> accepted-findings baseline — SH142's shape (now shipped for `shio verify`) applies to it
+> unchanged. The site provisioning it needed walked the console's CSRF path by hand, which was
+> **SH170** measured rather than argued, and has since shipped.
 
 ---
 

@@ -45,6 +45,17 @@ function scriptedFetch(body, { status = 200 } = {}) {
   return fetchImpl;
 }
 
+/** No baseline on disk — the default state, and what these cases are about (SH142). */
+function noFiles() {
+  return {
+    async readFile(path) {
+      const error = new Error(`ENOENT: ${path}`);
+      error.code = "ENOENT";
+      throw error;
+    },
+  };
+}
+
 function ctxWith(fetchImpl) {
   return {
     env: { SHIO_URL: "http://shio.test", SHIO_USER: "admin", SHIO_PASSWORD: "secret" },
@@ -52,6 +63,7 @@ function ctxWith(fetchImpl) {
     stdout: sink(),
     stderr: sink(),
     fetch: fetchImpl,
+    fs: noFiles(),
   };
 }
 

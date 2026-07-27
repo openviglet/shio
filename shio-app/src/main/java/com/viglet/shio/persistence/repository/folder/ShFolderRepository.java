@@ -62,6 +62,17 @@ public interface ShFolderRepository extends JpaRepository<ShFolder, String> {
 	
 	Optional<ShFolder> findById(String id);
 
+	/**
+	 * SH143 — every folder id that is some folder's parent.
+	 *
+	 * <p>The other half of the {@code empty-folder} rule: a folder with a subfolder is not
+	 * empty even when the subfolder is outside a scoped verify run. {@code parentFolder.id}
+	 * uses the FK column already on ShFolder, so this forces no join onto the JOINED
+	 * ShObject root and no SH22 tenant predicate against a subclass alias.</p>
+	 */
+	@Query("select distinct f.parentFolder.id from ShFolder f where f.parentFolder is not null")
+	Set<String> findParentFolderIds();
+
 	@SuppressWarnings("unchecked")
 	ShFolder save(ShFolder shFolder);
 

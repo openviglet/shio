@@ -190,7 +190,13 @@ export class ShioAgentClient {
    * to pick an exit code, and a text body would mean parsing prose to decide whether
    * the build fails. The terse rendering is for the model; the exit code is for CI.
    *
-   * @param {{ site?: string, checks?: string, limit?: number|string }} [query]
+   * `folder`, `address` and `since` are SH143's scoping: they narrow the run to a
+   * subtree, to named posts, or to what changed after an SH88 cursor. A scoped report
+   * says so in `partial`/`scope`, which the command surfaces — a subset that reads as a
+   * full pass is worse than no report.
+   *
+   * @param {{ site?: string, checks?: string, limit?: number|string,
+   *           folder?: string, address?: string, since?: string }} [query]
    */
   async verify(query = {}) {
     return this.#get("verify", query);

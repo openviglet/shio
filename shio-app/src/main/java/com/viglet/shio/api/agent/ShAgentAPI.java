@@ -386,9 +386,18 @@ public class ShAgentAPI {
      * because a check that fails on "this folder is empty" would train callers to ignore
      * the answer.</p>
      *
-     * @param site   scope to one site; omit for every readable site
-     * @param checks comma-separated groups ({@code content,routes,diagnostics}); omit for all
-     * @param limit  findings to return — the counts always describe the full run
+     * <p>{@code folder}, {@code address} and {@code since} narrow the run to what was just
+     * touched (SH143) — the full pass is right for CI and a hundred times more work than the
+     * call an agent makes after writing three pages. A narrowed run sets {@code partial} and
+     * describes itself in {@code scope}, because a subset that reads as a full pass is worse
+     * than no report at all.</p>
+     *
+     * @param site    scope to one site; omit for every readable site
+     * @param checks  comma-separated groups ({@code content,routes,diagnostics}); omit for all
+     * @param limit   findings to return — the counts always describe the full run
+     * @param folder  a {@code folder:} address: this folder and its descendants
+     * @param address comma-separated {@code post:} addresses
+     * @param since   an SH88 cursor: only what changed after it
      */
     @GetMapping("/verify")
     @Operation(summary = "Lint the content and its routes: a machine-readable report with a fix per finding")
@@ -396,9 +405,13 @@ public class ShAgentAPI {
             @RequestParam(name = "site", required = false) String site,
             @RequestParam(name = "checks", required = false) String checks,
             @RequestParam(name = "limit", required = false) Integer limit,
+            @RequestParam(name = "folder", required = false) String folder,
+            @RequestParam(name = "address", required = false) String address,
+            @RequestParam(name = "since", required = false) String since,
             @RequestParam(name = "format", required = false) String format) {
 
-        ShAgentReport report = shAgentVerifyService.verify(site, checks, limit);
+        ShAgentReport report = shAgentVerifyService.verify(site, checks, limit, folder, address,
+                since);
         return isTerse(format)
                 ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
                         .body(ShAgentVerifyTerse.report(report))

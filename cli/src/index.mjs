@@ -33,6 +33,9 @@ const BOOLEANS = [
   "files", "create-site", "merge-post-types",
   // Instance memory (SH114): read the store, or drop one note from it.
   "list", "forget",
+  // Accepted findings (SH142): `--accept` writes the baseline. `--baseline` is NOT here —
+  // it is bare (use the default path) or takes one (use that file), and both are useful.
+  "accept",
 ];
 
 // Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would
@@ -149,6 +152,14 @@ Verification (shio verify / shio digest):
   --checks <groups>    content,routes,diagnostics (default all)
   --limit <n>          Findings to print (the counts always cover the whole run)
   --strict             Fail on warnings too (off by default — see the severity rule)
+  --folder <address>   Scope to a folder subtree (folder:<site>/<chain>)
+  --address <a,b>      Scope to named posts (post:<site>/<url>, comma-separated)
+  --since <cursor>     Scope to what changed after an SH88 cursor (shio changes --cursor)
+  A scoped run says so: the report carries scope/partial, and the counts cover the subset.
+  --baseline <file>    Accepted findings to subtract   (default shio/verify-baseline.json)
+  --accept             Write this run's findings into the baseline (--reason "why")
+  A baseline entry whose finding no longer exists fails the run — remove it when you fix
+  the defect, or the file rots into a suppression that hides the next one.
   shio digest <page>   post:<site>/<url>, or a delivery URL when fetching is enabled
   --address / --url    Same, as explicit flags
 

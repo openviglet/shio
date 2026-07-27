@@ -474,31 +474,11 @@ what follows:
 > a human cycle is the most expensive unit in the system by orders of magnitude.
 >
 > **The loop itself shipped** — content lint (SH99), route checks (SH100), render digest
-> (SH101), diagnostics (SH103); see [CHANGELOG.md](CHANGELOG.md) Block K. What is left
-> below is the design for what the shipped version deliberately does not do, plus the
-> two tasks it was always going to depend on (SH102's pixels, SH104's handoff report).
-
-### IX.1 What the lint still owes (SH142, SH143)
-
-> The lint itself shipped (SH99). Two things it does not do yet are the difference
-> between a check that is run and a check that is switched off.
-
-**A report has two states; real content has three.** `ok` / `not ok` cannot express
-*known and accepted*, and every codebase has some: an image that is decorative in a way
-the markup cannot state, a folder deliberately staged empty, a link into a front-end
-route. The first legitimate warning that nobody intends to fix is the moment the exit
-code stops being read — and then the errors stop being read with it. A committed
-baseline of `(rule, address)` pairs that `shio verify` subtracts fixes that, on one
-condition: it must **fail when an accepted finding no longer exists**, or it decays into
-a blanket suppression that hides the next real defect at the same address.
-
-**A full pass is the wrong shape for the common call.** Verification is read twice for
-different reasons: once in CI, where "every post in every site" is exactly right, and
-once by an agent that has just written three pages, where it is a hundred times more
-work than the question needs. Scoping by folder or address — and by SH88's cursor, which
-now exists — makes the second call cheap. The constraint is the SH138 one: a report over
-a subset must say so in the payload, because a partial report that reads as a full one
-is worse than no report.
+> (SH101), diagnostics (SH103), and the follow-ups that made the report usable in anger
+> (SH142's accepted findings, SH143's scoping, SH154, SH169); see
+> [CHANGELOG.md](CHANGELOG.md) Block K. What is left below is the design for what the
+> shipped version deliberately does not do, plus the two tasks it was always going to
+> depend on (SH102's pixels, SH104's handoff report).
 
 ### IX.2 Proving a route from the delivery side (SH141)
 

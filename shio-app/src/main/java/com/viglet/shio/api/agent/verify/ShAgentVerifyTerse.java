@@ -46,6 +46,10 @@ public final class ShAgentVerifyTerse {
                 .count("errors", report.errors())
                 .count("warnings", report.warnings())
                 .flag("truncated", report.truncated())
+                // A scoped run's `ok` is not a statement about the instance, so the marker
+                // travels on the header line an agent cannot skip (SH143).
+                .flag("partial", Boolean.TRUE.equals(report.partial()))
+                .attr("scope", report.scope())
                 .build());
         for (ShAgentReport.Finding finding : report.findings()) {
             out.append(ShTerse.line("finding")
@@ -65,6 +69,9 @@ public final class ShAgentVerifyTerse {
                     .attr("of", report.found())
                     .attr("note", "raise limit or narrow with checks=/site=")
                     .build());
+        }
+        for (String note : report.notes() == null ? List.<String>of() : report.notes()) {
+            out.append("note ").append(note).append('\n');
         }
         return out.toString();
     }
