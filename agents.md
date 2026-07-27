@@ -493,6 +493,10 @@ vocabulary for the agent, the console and the front end.
 - **A `Page` names its sections by friendly URL, in order**, in a `Multi Select` — not by id
   (SH79 exists so no UUID has to survive between calls) and not as a `Relator` (one fixed
   child shape, while sections are deliberately heterogeneous).
+- **The field declares that it holds addresses** — `widgetSettings` carries
+  `{"multiselect":{"references":"post"}}` (SH154/SH169), and that key is what makes the
+  composition *verifiable* rather than a convention. See **`ShPostReferenceFields`** below;
+  `@viglet/shio-model` encodes it as `references: "post"` on `multiSelect(...)`.
 - **The components are unstyled and semantic**: they ship structure (heading level, landmark,
   alt text) behind stable `shio-*` class names. SH101's digest reads structure, so a shared
   vocabulary is only verifiable if structure is the shared part. `<Sections>` takes
@@ -501,8 +505,20 @@ vocabulary for the agent, the console and the front end.
   (`pnpm -C shio-sections run emit`), because a running instance reads packages off the
   classpath and cannot run a JS build. `emit.test.mjs` fails the build the moment the two
   copies disagree. **If you change `src/post-types.ts`, run `emit`.**
-- Not yet checked by the lint: a `Page` can name a section that does not exist and
-  `shio verify` stays green (**SH154**).
+**`ShPostReferenceFields`** (`com.viglet.shio.api.agent.verify`) is the one place that answers
+"does this `Multi Select` hold post URLs or tags", and both readers key on it (SH154/SH169):
+- `shio verify`'s **`dangling-reference`** rule resolves each declared URL in the post's own site
+  and reports the ones that are not there — the same rule that already knew an id-shaped
+  `Content Select`/`File` reference. `multiselect.postType`, when present, narrows it.
+- `/agent/render`'s digest **composes** the page: each referenced section contributes its title as
+  an `<h2>` and its markup/text fields to the outline, in the order the page names them, so two
+  pages built from different sections no longer share `e3b0c442…` (the hash of nothing). A URL
+  that resolves to nothing becomes `<h2>[missing section /url]</h2>` rather than contributing
+  nothing — two different mistakes must not hash the same.
+- **A `Multi Select` without the key stays tags.** Reading every value as a URL would report a
+  defect for every tag on every post, which is why the field has to say what it holds. `references`
+  and not `postType` because sections are heterogeneous, and not a naming convention because
+  nothing can check prose.
 
 ### The Claude Code plugin (SH97)
 

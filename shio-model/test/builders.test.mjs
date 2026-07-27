@@ -87,9 +87,29 @@ test("contentSelect codec round-trips", () => {
 });
 
 test("multiSelect codec round-trips", () => {
-  const s = { postType: "Tag", folderId: "f-3" };
+  const s = { postType: "Tag", folderId: "f-3", references: undefined };
   assert.equal(encodeMultiSelect(s), '{"multiselect":{"postType":"Tag","folderId":"f-3"}}');
   assert.deepEqual(decodeMultiSelect(encodeMultiSelect(s)), s);
+});
+
+/**
+ * SH154/SH169 — `references: "post"` is what tells the server a Multi Select holds friendly URLs
+ * and not tags. Without it the lint cannot see a page naming a section that does not exist, and
+ * SH101's digest reads a section-composed page as the hash of nothing.
+ */
+test("multiSelect can declare that its values are post references", () => {
+  const s = { postType: undefined, folderId: undefined, references: "post" };
+  assert.equal(encodeMultiSelect(s), '{"multiselect":{"references":"post"}}');
+  assert.deepEqual(decodeMultiSelect(encodeMultiSelect(s)), s);
+});
+
+test("an unrecognised references value decodes as absent", () => {
+  // Narrowed rather than cast: a reader that only knows "post" must not be handed something else
+  // and act on it.
+  assert.equal(
+    decodeMultiSelect('{"multiselect":{"references":"folder"}}').references,
+    undefined,
+  );
 });
 
 test("relator title codec round-trips", () => {
@@ -108,7 +128,8 @@ test("empty settings encode to null (never the string \"null\")", () => {
 
 test("decoders tolerate null / garbage settings", () => {
   assert.deepEqual(decodeFile(null), { folderId: undefined });
-  assert.deepEqual(decodeMultiSelect("null"), { postType: undefined, folderId: undefined });
+  assert.deepEqual(decodeMultiSelect("null"),
+    { postType: undefined, folderId: undefined, references: undefined });
   assert.deepEqual(decodeRelator("{bad json"), { title: undefined });
 });
 

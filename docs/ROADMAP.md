@@ -66,12 +66,13 @@
 > how a human bounds and undoes an agent.
 >
 > **What is left is follow-ups, not blocks**: H's edges (SH136–SH140), K's scoping
-> and baseline (SH141–SH144, SH154, SH169), I's assets and paging (SH145–SH150), J's
+> and baseline (SH141–SH144), I's assets and paging (SH145–SH150), J's
 > reconciliation and registry (SH96, SH153–SH156), M's attribution (SH157–SH161, SH174), N's
 > realignment (SH163–SH167), plus SH44–SH47's tenant work and SH110. The highest-value ones left
-> are **SH169** (the render digest cannot see a section-composed page, so the proof mechanism does
-> not work on the pattern every section blueprint ships) and **SH154** (the lint cannot see a
-> `Page` naming a section that does not exist).
+> are **SH142** (a verify report has no way to say "known and accepted", so the first legitimate
+> warning teaches everyone to ignore the exit code) and **SH143** (a verify run reads every post in
+> the instance — right for CI, wrong for the call an agent makes after writing three pages, and
+> SH169 just made a page digest read N+1 posts on the same axis).
 >
 > **What driving it end to end found (SH168–SH175).** A whole site — model, folder tree,
 > thirteen pages, a file projection, a CI gate — was built over the agent surface alone, and
@@ -79,12 +80,13 @@
 > the `304`s and MCP's error routing all behaved as designed, and a blueprint apply landed 30
 > ops in one call. What it exposed is not the protocol but its **edges**.
 >
-> ✅ **SH168, SH170–SH173 and SH175 have shipped** → [CHANGELOG.md](CHANGELOG.md): a write
+> ✅ **SH168–SH173 and SH175 have shipped** → [CHANGELOG.md](CHANGELOG.md): a write
 > refuses an undeclared field (and the lint reports the ones already stored), a multi-address read
 > fails per row, an address without a URL falls back to `id:`, `site.upsert` puts site creation on
-> the surface, the CI gate stops failing on content the tree does not manage, and `folder` states
-> its own conditional requirement. **The only one left from that build is SH169** — the render
-> digest reports nothing for a page composed of sections. SH174 is Block M's.
+> the surface, the CI gate stops failing on content the tree does not manage, `folder` states
+> its own conditional requirement, and the render digest composes a page out of the sections it
+> names instead of reporting the hash of nothing. **Nothing is left from that build** — SH174 is
+> Block M's.
 >
 > **And what driving the console over it found (Block O, shipped).** Seven defects, every one
 > of them answering `200` and none visible to a Java test, a CLI test or the MCP golden: the
@@ -153,8 +155,9 @@
 > `link-unresolved` is a *warning*, and closing that gap properly is **SH141**.
 > Sitemap-coverage-vs-blueprint has its comparand now that Block J ships packages with a
 > `verify.posts` promise — but that promise is checked by the *blueprint* surface, and the
-> section vocabulary immediately exposed the lint's own blind spot (**SH154**). SH102's PNG
-> stays an idea and is reported `false` in the manifest.
+> section vocabulary immediately exposed the lint's own blind spot, since closed by
+> ✅ **SH154** → [CHANGELOG.md](CHANGELOG.md). SH102's PNG stays an idea and is reported
+> `false` in the manifest.
 >
 > **What building it opened.** The `image-no-alt` rule showed the report has no way to
 > say "known and accepted" (**SH142**); the verify pass reads every post in the instance
@@ -167,8 +170,6 @@
 - 📋 **SH141** (deps: SH100 ✅, SH101 ✅) **Prove a route from the delivery side** — SH100 resolves links against the content graph, so a page that exists in the CMS and 404s on the site is still only a *warning*. SH101 already fetches one URL safely (origin-checked, opt-in); this walks the published set through the same path and turns "the front end does not serve this" into an error, with the front-end-owns-routes case declared rather than guessed. → §IX.2
 - 📋 **SH142** (deps: SH99 ✅) **Baseline / accepted findings** — a verify report has two states, and real content has a third: known and accepted. Without it the first legitimate warning teaches everyone to ignore the exit code. A committed `shio/verify-baseline.json` (rule + address) that `shio verify` subtracts, and that fails when an accepted finding no longer exists — so the file cannot rot into a blanket suppression. → §IX.1
 - 📋 **SH143** (deps: SH99 ✅, SH88 ✅) **Scope a verify run to what changed** — the pass reads every post in every readable site, which is right for CI and wrong for the call an agent makes after writing three pages. Needs `?folder=`/`?address=` scoping and `?since=` over SH88's cursor — plus an honest header saying the report covers a subset, because a partial report that reads as a full one is the SH138 hazard again. → §IX.1
-- 📋 **SH154** (deps: SH99 ✅, SH95 ✅) **Verify a page's section references** — SH95 composes a page from a `Multi Select` of section URLs, and the lint's `dangling-reference` rule only knows `Content Select`/`File` fields, so a page can point at a section that does not exist and the report stays green. The rule the vocabulary needs is the one check that makes composition safe. → §IX.7
-- 📋 **SH169** (deps: SH101 ✅, SH95 ✅) **The render digest is blind to a section-composed page** — a page built the first-party way holds its structure in referenced section posts and in `Text` fields, and the digest reads only the page's own HTML, so home and pricing both come back `words:0` with no headings and the *same* digest as a blank page. The proof mechanism does not work on the pattern every section blueprint ships. → §IX.8
 - 💭 **SH144** (deps: SH103 ✅, SH88 ✅) **Durable incident feed** — the SH103 window is in memory and says so, which is the correct answer for now and the wrong one for "was anything failing while I was away". The durable form is the same cursor SH88 builds for content changes; folding incidents into it is cheaper than a second retention policy. → §IX.5
 
 ## Block I — Content as files (local-first authoring)
@@ -228,14 +229,14 @@
 > it in (**SH156**).
 >
 > **What building it opened, and what has since closed.** The two halves that had to meet each
-> other did not quite fit. ✅ **SH151 and SH152 have shipped** → [CHANGELOG.md](CHANGELOG.md):
-> an apply can create its target site (blank, opt-in, named in the plan) and can add the fields an
-> existing post-type lacks — which SH168 turned from a nicety into the difference between a
-> refused write and a package that cannot land. What is still open: the plan's accuracy costs a
-> write transaction it then rolls back (**SH153**); a `Page` can name a section that does not exist
-> and `shio verify` stays green, because a Multi Select of addresses is not a reference the lint
-> knows about (**SH154**); and nothing records which package and version a site received, so "is
-> this site still what the blueprint says" is unanswerable (**SH155**).
+> other did not quite fit. ✅ **SH151, SH152 and SH154 have shipped** →
+> [CHANGELOG.md](CHANGELOG.md): an apply can create its target site (blank, opt-in, named in the
+> plan), it can add the fields an existing post-type lacks — which SH168 turned from a nicety into
+> the difference between a refused write and a package that cannot land — and the lint now reads a
+> `Multi Select` that declares itself as holding post URLs, so a `Page` naming a section that is not
+> there is an error instead of a green run. What is still open: the plan's accuracy costs a write
+> transaction it then rolls back (**SH153**); and nothing records which package and version a site
+> received, so "is this site still what the blueprint says" is unanswerable (**SH155**).
 
 - 💭 **SH96** (deps: SH93 ✅) **Blueprint registry + community convention** — `shio-blueprint-*` naming, manifest validation, curated index (absorbs old SH28/SH29/SH31). Now the single blocker on third-party packages: the registry deliberately loads from the classpath alone until there is a trust model for where a package may come from. → §XI.5
 - 📋 **SH153** (deps: SH93 ✅, SH81 ✅) **A blueprint plan that needs no write transaction** — the plan provisions the package's post-types and rolls back, purely so the content planner can resolve types that do not exist yet. It is correct and it means a plan cannot run on a read-only credential or a replica. Threading the declared types through the batch planner's pending set removes the write entirely. → §XI.9

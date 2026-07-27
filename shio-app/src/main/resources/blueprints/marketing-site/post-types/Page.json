@@ -39,7 +39,7 @@
       "isTitle": false,
       "isSummary": false,
       "ordinal": 3,
-      "widgetSettings": null,
+      "widgetSettings": "{\"multiselect\":{\"references\":\"post\"}}",
       "fields": []
     }
   ]

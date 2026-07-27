@@ -73,6 +73,12 @@ export const page = (): ShPostTypeDef =>
         label: "Sections",
         description:
           "Friendly URLs of the section posts, in render order — e.g. /sections/home/hero.",
+        // SH154/SH169 — this is what tells the server the values are addresses and not tags.
+        // Without it `shio verify` cannot see a page naming a section that does not exist, and
+        // SH101's digest reads a section-composed page as the hash of nothing. `postType` stays
+        // open on purpose: the values resolve to posts that carry their own type, and the front
+        // end dispatches on it.
+        references: "post",
       }),
     ],
   });

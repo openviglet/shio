@@ -282,6 +282,13 @@ public class ShAgentVerifyService {
                     "Set it with a post.upsert op on POST /api/v2/agent/batch, or drop the "
                             + "required flag on the post-type if it is genuinely optional."));
         }
+        // SH154 — a Multi Select that declares it holds post URLs (the SH95 vocabulary's
+        // `sections`). Checked before the id-shaped reference widgets because it is a different
+        // kind of reference: a list of friendly URLs, not one id.
+        if (ShPostReferenceFields.referencesPosts(attr, objectMapper)) {
+            sectionFindings(check, post, address, field, value, attr, scan, findings);
+            return;
+        }
         if (!REFERENCE_WIDGETS.contains(widget) || isEmpty(value) || !value.isString()) {
             return;
         }
@@ -500,6 +507,81 @@ public class ShAgentVerifyService {
                     incident.fix() != null ? incident.fix()
                             : "See GET /api/v2/agent/diagnostics for when it started and how often."));
         }
+    }
+
+    /**
+     * The posts a reference field names by friendly URL (SH154).
+     *
+     * <h2>Why this is the check that makes composition safe</h2>
+     *
+     * <p>A page built the SH95 way <em>is</em> its list of sections. A URL in that list that
+     * resolves to nothing renders as a hole, and until this rule existed {@code verify} answered
+     * {@code ok} over it — the one defect the vocabulary can produce that nothing else could see.</p>
+     *
+     * <h2>Two properties kept from the id-shaped rule</h2>
+     *
+     * <p>An <b>unpublished</b> target on a published page is the existing
+     * {@code unpublished-dependency} case, not a new one: the editor sees both drafts and the
+     * visitor sees the hole, which is the same failure whichever way the reference is spelled.</p>
+     *
+     * <p>And a target this credential <b>cannot read</b> is not dangling. The scan only holds the
+     * readable sites, so a miss is re-checked against the repository — otherwise the SH2
+     * allow-list would manufacture defects, and a lint that reports content the caller is not
+     * allowed to see is worse than one that stays quiet about it.</p>
+     */
+    private void sectionFindings(String check, ShPostUnified post, String address, String field,
+                                 JsonNode value, ShPostTypeAttr attr, Scan scan,
+                                 List<Finding> findings) {
+        List<String> urls = ShPostReferenceFields.urls(value);
+        if (urls.isEmpty()) {
+            return;
+        }
+        String siteId = post.getShSite() == null ? null : post.getShSite().getId();
+        String wantedType = ShPostReferenceFields.referencedPostType(attr, objectMapper);
+        for (String url : urls) {
+            Optional<ShPostUnified> target = referenced(siteId, url);
+            if (target.isEmpty()) {
+                findings.add(Finding.error(check, "dangling-reference", address, field,
+                        "Field '" + field + "' names '" + url + "', and no post in this site has "
+                                + "that URL — the page renders a hole where that section should be.",
+                        "Point it at a post from GET /api/v2/agent/find, create the missing one, "
+                                + "or drop the entry. A renamed post keeps its URL only if it was "
+                                + "moved with a post.move op."));
+                continue;
+            }
+            ShPostUnified section = target.get();
+            if (wantedType != null && section.getShPostType() != null
+                    && !wantedType.equalsIgnoreCase(section.getShPostType().getName())) {
+                findings.add(Finding.error(check, "wrong-reference-type", address, field,
+                        "Field '" + field + "' names '" + url + "', which is a "
+                                + section.getShPostType().getName() + " and not a " + wantedType + ".",
+                        "Point it at a " + wantedType + ", or widen the field's postType setting."));
+                continue;
+            }
+            if (scan.publishedIds().contains(post.getId())
+                    && !scan.publishedIds().contains(section.getId())) {
+                findings.add(Finding.error(check, "unpublished-dependency", address, field,
+                        "This page is published and names '" + url + "', which is not — a visitor "
+                                + "gets the hole the editor cannot see.",
+                        "Publish it with a post.publish op, or take this page down until it is."));
+            }
+        }
+    }
+
+    /**
+     * The post a URL names in this site, in either state.
+     *
+     * <p>Draft-preferred is not what matters here — existence is — so both states are asked for,
+     * and the repository is asked directly rather than the scan, because the scan holds only what
+     * this credential may read (see the class note on the allow-list).</p>
+     */
+    private Optional<ShPostUnified> referenced(String siteId, String url) {
+        if (siteId == null) {
+            return Optional.empty();
+        }
+        return shPostUnifiedRepository.findByShSite_IdAndFurlAndState(siteId, url, ShPostState.DRAFT)
+                .or(() -> shPostUnifiedRepository.findByShSite_IdAndFurlAndState(siteId, url,
+                        ShPostState.PUBLISHED));
     }
 
     /**
