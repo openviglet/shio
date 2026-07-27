@@ -191,18 +191,42 @@ export function planPushContent({ base = {}, remote = {}, local = {} }, { force 
  * Folders are declared from the posts' own `folder` values plus every ancestor: prune is
  * bounded by the declared folders, and a document that declared `/blog/2026` without
  * `/blog` would put a whole level outside its own scope.
+ *
+ * `markers` (SH149) adds the folders that no post names — an empty section, which is what
+ * a `_folder.md` exists to declare. It is a union with the derived set, and their ancestors
+ * are added for the same reason. **It widens prune's scope**, and that is the correct
+ * semantics rather than a hazard to special-case: declaring `/archive` means the tree owns
+ * `/archive`, and the identical widening already happened when a *post* named it. A marker
+ * only reaches the same rule through a different file.
+ *
+ * @param {{site: string, folder: string}[]} [options.markers] declared empty folders
+ * @param {string[]} [options.sites] sites to emit a document for even with no posts —
+ *   without it a site holding only folders produces nothing, which is the "scaffold the
+ *   structure before any content exists" case SH149 is for
  */
-export function documentsFor(posts, { prune = false } = {}) {
+export function documentsFor(posts, { prune = false, markers = [], sites = [] } = {}) {
   const bySite = new Map();
   for (const post of posts) {
     if (!bySite.has(post.site)) bySite.set(post.site, []);
     bySite.get(post.site).push(post);
+  }
+  const markersBySite = new Map();
+  for (const marker of markers) {
+    if (!marker?.site) continue;
+    if (!markersBySite.has(marker.site)) markersBySite.set(marker.site, []);
+    markersBySite.get(marker.site).push(marker.folder ?? "/");
+  }
+  for (const site of [...markersBySite.keys(), ...sites]) {
+    if (!bySite.has(site)) bySite.set(site, []);
   }
   return [...bySite.keys()].sort().map((site) => {
     const sitePosts = bySite.get(site).slice().sort((a, b) => a.url.localeCompare(b.url));
     const folders = new Set();
     for (const post of sitePosts) {
       for (const ancestor of ancestorsOf(post.folder ?? "/")) folders.add(ancestor);
+    }
+    for (const chain of markersBySite.get(site) ?? []) {
+      for (const ancestor of ancestorsOf(chain)) folders.add(ancestor);
     }
     return {
       site,
@@ -219,6 +243,73 @@ export function documentsFor(posts, { prune = false } = {}) {
       prune,
     };
   });
+}
+
+/**
+ * Reconciles folder markers three ways (SH149).
+ *
+ * <h3>Why a folder needs a base at all</h3>
+ *
+ * A marker holds no values, so there is nothing to merge — existence is the whole state.
+ * But existence alone is ambiguous in exactly one case, and it is the destructive one: a
+ * marker on disk that the server does not have is *either* a folder scaffolded locally and
+ * not yet pushed, *or* a folder that was deleted on the server. Without a base the two are
+ * indistinguishable, and guessing wrong either deletes the author's new declaration or
+ * silently resurrects a folder somebody removed. So the base snapshot records the folders
+ * both sides last agreed on, and the third value decides.
+ *
+ * <h3>Why a folder a post already implies gets no marker</h3>
+ *
+ * A marker declares a folder *nothing else does*. Writing one for every folder would double
+ * the file count of a projection to restate what each post's `folder:` already says, and
+ * every one of those files would then be a thing to keep in sync. `implied` is that set.
+ *
+ * @param {object} sides
+ * @param {{site: string, folder: string}[]} sides.base   last agreed
+ * @param {{site: string, folder: string}[]} sides.remote what the server holds
+ * @param {{site: string, folder: string}[]} sides.local  markers on disk
+ * @param {Set<string>} [sides.implied] `site|folder` keys a projected post already declares
+ * @returns {{ write: object[], delete: object[], keep: object[], unchanged: object[],
+ *             agreed: object[] }}
+ */
+export function reconcileFolders({ base = [], remote = [], local = [], implied = new Set() }) {
+  const key = (marker) => `${marker.site}|${marker.folder}`;
+  const index = (list) => new Map((list ?? []).map((marker) => [key(marker), marker]));
+  const baseIndex = index(base);
+  const remoteIndex = index(remote);
+  const localIndex = index(local);
+
+  const out = { write: [], delete: [], keep: [], unchanged: [], agreed: [] };
+  for (const id of [...new Set([...baseIndex.keys(), ...remoteIndex.keys(), ...localIndex.keys()])].sort()) {
+    const onServer = remoteIndex.has(id);
+    const onDisk = localIndex.has(id);
+    const marker = remoteIndex.get(id) ?? localIndex.get(id) ?? baseIndex.get(id);
+
+    if (onServer && onDisk) {
+      // Both sides have it and there is nothing to compare — leave the file byte-identical
+      // rather than rewriting it, so a pull cannot report a change nobody made.
+      out.unchanged.push(marker);
+      out.agreed.push(marker);
+      continue;
+    }
+    if (onServer) {
+      // The server has a folder the tree does not declare. A post that already names it has
+      // declared it, so only the rest need a file.
+      out.agreed.push(marker);
+      if (!implied.has(id)) out.write.push(marker);
+      continue;
+    }
+    if (baseIndex.has(id)) {
+      // Agreed on before, gone from the server now: a deletion, so the marker goes with it.
+      out.delete.push(marker);
+      continue;
+    }
+    // On disk, never agreed, not on the server: authored locally and not pushed yet. Keeping
+    // it is the whole point of the feature — `push --content` is what makes it real.
+    out.keep.push(marker);
+    out.agreed.push(marker);
+  }
+  return out;
 }
 
 /** `/a/b` → `["/", "/a", "/a/b"]`. */

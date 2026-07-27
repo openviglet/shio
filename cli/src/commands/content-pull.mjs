@@ -23,17 +23,22 @@ import { resolveAdmin } from "../context.mjs";
 import {
   BASE_FILE,
   CONTENT_DIR,
+  FOLDERS_DIR,
   bodyFields,
   deleteDoc,
+  deleteFolderMarker,
   readBase,
   readLocal,
+  readLocalFolders,
   sitesOf,
   readRemote,
+  readRemoteFolders,
   writeBase,
   writeDoc,
+  writeFolderMarker,
   writeRemoteSidecar,
 } from "../content-store.mjs";
-import { reconcile, resolveConflict } from "../content-sync.mjs";
+import { ancestorsOf, reconcile, reconcileFolders, resolveConflict } from "../content-sync.mjs";
 
 export async function run(flags, _positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
@@ -46,12 +51,14 @@ export async function run(flags, _positionals, ctx) {
   const admin = new ShioAdminClient({ baseUrl, user, password, fetch: ctx.fetch });
 
   const local = await readLocal(ctx, { dir, site });
+  const foldersDir = flags.foldersDir ?? FOLDERS_DIR;
+  const localFolders = await readLocalFolders(ctx, { dir: foldersDir, site });
   const { docs: remote, truncated, count, skipped } = await readRemote(agent, {
     site,
     // SH173 — scope the server read to the sites this tree holds. A first pull into an empty
     // tree has no sites to name and reads the instance, which is right: there is nothing to
     // scope to yet, and that is the one case where reading everything is the intent.
-    sites: sitesOf(local),
+    sites: sitesOf(local, localFolders),
     limit: Number(flags.limit ?? 200),
   });
   if (truncated && !flags.allowPartial) {
@@ -78,7 +85,14 @@ export async function run(flags, _positionals, ctx) {
   const bodyField = bodyFields(await admin.getPostTypeDefs());
   const base = await readBase(ctx, flags.baseFile ?? BASE_FILE);
 
-  const report = { written: [], deleted: [], unchanged: [], conflicts: [], kept: [] };
+  const report = {
+    written: [],
+    deleted: [],
+    unchanged: [],
+    conflicts: [],
+    kept: [],
+    folders: { written: [], deleted: [], kept: [] },
+  };
   const nextPosts = { ...base.posts };
 
   for (const address of addresses(base.posts, remote, local)) {
@@ -130,18 +144,48 @@ export async function run(flags, _positionals, ctx) {
     }
   }
 
+  // SH149 — the folder half. It runs after the posts because "which folders does a post
+  // already declare" is the input that keeps the marker set minimal.
+  const { folders: remoteFolders, truncated: foldersTruncated } = await readRemoteFolders(agent, {
+    sites: sitesOf(local, localFolders).length
+      ? sitesOf(local, localFolders)
+      : [...new Set(Object.values(remote).map((doc) => doc.site).filter(Boolean))],
+  });
+  const folderPlan = reconcileFolders({
+    base: base.folders,
+    remote: remoteFolders,
+    local: localFolders,
+    implied: impliedFolders(nextPosts),
+  });
+  for (const marker of folderPlan.write) {
+    if (!dryRun) await writeFolderMarker(ctx, marker, { dir: foldersDir });
+    report.folders.written.push(`folder:${marker.site}${marker.folder}`);
+  }
+  for (const marker of folderPlan.delete) {
+    if (!dryRun) await deleteFolderMarker(ctx, marker, { dir: foldersDir });
+    report.folders.deleted.push(`folder:${marker.site}${marker.folder}`);
+  }
+  for (const marker of folderPlan.keep) {
+    report.folders.kept.push(`folder:${marker.site}${marker.folder}`);
+  }
+
   // The cursor is taken *after* the read, so anything that landed during it is reported
   // by the next pull rather than assumed to be included in this one.
   const cursor = await currentCursor(agent, site, base.cursor);
   if (!dryRun) {
     await writeBase(
       ctx,
-      { cursor, partial: base.partial || truncated, posts: nextPosts },
+      {
+        cursor,
+        partial: base.partial || truncated || foldersTruncated,
+        posts: nextPosts,
+        folders: folderPlan.agreed,
+      },
       flags.baseFile ?? BASE_FILE,
     );
   }
 
-  ctx.stdout.write(render(report, { dir, dryRun, truncated }));
+  ctx.stdout.write(render(report, { dir, dryRun, truncated: truncated || foldersTruncated }));
   if (report.conflicts.length) {
     ctx.stderr.write(
       `shio pull --content: ${report.conflicts.length} post(s) in conflict — nothing was written ` +
@@ -152,6 +196,21 @@ export async function run(flags, _positionals, ctx) {
     return { ...report, cursor, exitCode: 1 };
   }
   return { ...report, cursor };
+}
+
+/**
+ * The `site|folder` keys the projected posts already declare, plus every ancestor (SH149).
+ *
+ * Ancestors count: a post in `/blog/2026` declares `/blog` as surely as `/blog/2026`, and a
+ * marker for a folder that is already on a declared path would be a file restating the tree.
+ */
+function impliedFolders(posts) {
+  const keys = new Set();
+  for (const doc of Object.values(posts ?? {})) {
+    if (!doc?.site) continue;
+    for (const ancestor of ancestorsOf(doc.folder ?? "/")) keys.add(`${doc.site}|${ancestor}`);
+  }
+  return keys;
 }
 
 /** Every address any of the three versions knows about, in a stable order. */
@@ -188,9 +247,19 @@ function render(report, { dir, dryRun, truncated }) {
       `${report.unchanged.length} unchanged, ${report.kept.length} local-only, ` +
       `${report.conflicts.length} conflicted → ${dir}${dryRun ? " (dry run — nothing written)" : ""}`,
   ];
+  const folders = report.folders ?? { written: [], deleted: [], kept: [] };
+  if (folders.written.length || folders.deleted.length || folders.kept.length) {
+    // Counted separately because a folder is not a post: a reader scanning for "how much
+    // content moved" must not have structure padding the number (SH149).
+    lines[0] += ` · folders: ${folders.written.length} written, ${folders.deleted.length} ` +
+      `deleted, ${folders.kept.length} local-only`;
+  }
   for (const address of report.written) lines.push(`  + ${address}`);
+  for (const address of folders.written) lines.push(`  + ${address}`);
   for (const address of report.deleted) lines.push(`  - ${address}`);
+  for (const address of folders.deleted) lines.push(`  - ${address}`);
   for (const address of report.kept) lines.push(`  = ${address}`);
+  for (const address of folders.kept) lines.push(`  = ${address}`);
   for (const conflict of report.conflicts) {
     lines.push(`  ! ${conflict.address} (${conflict.fields.join(", ")})`);
   }

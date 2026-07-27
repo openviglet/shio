@@ -710,19 +710,6 @@ the server has been read anyway. The snapshot goes from O(content) to O(fields).
 Left as an idea rather than designed: it trades a clear data structure for a smaller one,
 and the merge is new. It is worth doing after the merge has been used enough to trust.
 
-### X.9 Folders as files (SH149)
-
-A folder exists in the projection only because a post names it — `push --content` derives
-the declared folder set from the posts' `folder` values plus their ancestors. So an empty
-section cannot be authored locally (there is no file to write), and a pull drops one that
-exists on the server (there is nothing to write it to).
-
-That is a real gap for the agent-first workflow: "scaffold the structure, then fill it" is
-exactly how a site gets built, and the structure step currently has to go through the API
-while the content step goes through files. The fix is a folder marker file — `_folder.md`
-or similar, carrying nothing but its own existence and any folder-level metadata — that
-push declares directly as a `folder.upsert`.
-
 ### X.10 A renamed file is a move, not a re-creation (SH150)
 
 `push --content --prune` sends a rename as `post.delete` plus `post.upsert`, which is

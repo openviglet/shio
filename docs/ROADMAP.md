@@ -207,8 +207,9 @@
 >
 > **What building it opened.** The projection made three gaps conspicuous: a file rename
 > pushes as delete-plus-create instead of SH134's `post.move`, which loses the post's id
-> and history (**SH150**); an empty folder cannot be authored at all, because folders are
-> only implied by the posts inside them (**SH149**); and the merge base keeps a second copy
+> and history (**SH150**); an empty folder could not be authored at all, because folders were
+> only implied by the posts inside them — ✅ **SH149** gave them a marker file of their own;
+> and the merge base keeps a second copy
 > of every field value when per-field digests would decide the same cases (**SH148**). The
 > change feed's own honesty note is the fourth: the lag narrows the stamp-before-commit
 > window, it does not close it (**SH147**).
@@ -216,7 +217,6 @@
 - 📋 **SH145** (deps: SH86 ✅, SH38 ✅) **Project assets too** — `shio/assets/` with the bytes, and a `File` field that reads as a path rather than a UUID. Today a content tree cannot be moved to another instance or reviewed in a diff without the ids resolving to nothing, which is most of what "content as files" promises. → §X.6
 - 📋 **SH147** (deps: SH88 ✅) **Commit-ordered change feed** — SH51 stamps the audit row inside the writer's transaction, so a slow commit can land an older timestamp behind a cursor that already passed it. The 1s lag narrows that window; only commit-ordered sequencing (an outbox, or a sequence assigned at commit) closes it, and a feed used for sync has to be exact. → §X.3
 - 💭 **SH148** (deps: SH89 ✅) **Digest-only merge base** — `shio/.shio/content-base.json` holds a full copy of every projected field. A per-field hash decides all three merge cases; only a genuine conflict needs values, and those can be re-read. Turns the snapshot from O(content) into O(fields). → §X.8
-- 📋 **SH149** (deps: SH87 ✅) **Folders as files** — a folder exists in the projection only because a post names it, so an empty section cannot be authored locally and a pull silently drops one. Needs a folder marker file (`_folder.md` or similar) that `push --content` declares directly. → §X.9
 - 📋 **SH150** (deps: SH87 ✅, SH134 ✅) **A renamed file is a move, not a re-creation** — `push --content --prune` sends a rename as `post.delete` + `post.upsert`, which is exactly the workaround SH134 exists to prevent: the new post gets a new id and loses the audit trail and version history. The file already refuses to rename halfway (path vs `url:`), so the honest fix is to detect the pair and emit `post.move`. → §X.10
 - 📋 **SH199** (deps: SH138 ✅, SH87 ✅) **`push --content` cannot split a large tree** — SH138 gave a compiled document its own 2000-op ceiling, which is a bound, not a solution: a tree past it still dead-ends, because one document per site is the only shape push knows. Splitting by declared folder is the natural unit and interacts with `--prune`, whose scope is exactly those folders — so the split has to preserve prune's blast radius, not just the op count. → §X.12
 

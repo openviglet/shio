@@ -18,9 +18,13 @@ import {
   bodyFieldFor,
   canonicalize,
   filePathFor,
+  folderLocationOf,
+  folderMarkerPathFor,
   locationOf,
+  parseFolderMarker,
   parsePost,
   pathToUrl,
+  serializeFolder,
   serializePost,
   urlToPath,
 } from "../src/content-files.mjs";
@@ -182,3 +186,60 @@ test("the body field is the first HTML Editor field by ordinal, or nothing", () 
 test("a site name that has no safe directory name is refused", () => {
   assert.throws(() => filePathFor({ site: "a/b", url: "/x" }), /no safe directory name/);
 });
+
+// --- folder markers (SH149) ---
+
+/** A marker file's contents, written the way the format writes them. */
+const marker = (site, folder) => `---\nsite: ${site}\nfolder: ${folder}\n---\n`;
+
+test("a folder marker's path is its name chain, in a root of its own", () => {
+  // Not under `shio/content`: there the directories are URL segments, so a marker inside it
+  // would be claiming a URL prefix is a folder chain. They agree often enough to look right,
+  // which is exactly why the one time they do not would create the wrong folder silently.
+  assert.equal(folderMarkerPathFor({ site: "Blog", folder: "/news" }), "Blog/news/_folder.md");
+  assert.equal(folderMarkerPathFor({ site: "Blog", folder: "/a/b" }), "Blog/a/b/_folder.md");
+  // A site root is a folder too, and it is the one every other chain hangs off.
+  assert.equal(folderMarkerPathFor({ site: "Blog", folder: "/" }), "Blog/_folder.md");
+  assert.deepEqual(folderLocationOf("Blog/a/b/_folder.md"), { site: "Blog", folder: "/a/b" });
+  assert.deepEqual(folderLocationOf("Blog/_folder.md"), { site: "Blog", folder: "/" });
+});
+
+test("a folder marker round-trips through frontmatter alone", () => {
+  const doc = { site: "Blog", folder: "/news" };
+  const text = serializeFolder(doc);
+
+  assert.equal(text, marker("Blog", "/news"));
+  assert.deepEqual(parseFolderMarker(folderMarkerPathFor(doc), text), doc);
+  // Byte-identical for the same folder, whatever produced it (P5).
+  assert.equal(serializeFolder({ site: "Blog", folder: "news" }), text);
+});
+
+test("a folder marker takes its identity from its path when the frontmatter omits it", () => {
+  assert.deepEqual(parseFolderMarker("Docs/guide/_folder.md", "---\n---\n"), {
+    site: "Docs",
+    folder: "/guide",
+  });
+});
+
+test("a folder marker whose path disagrees with its frontmatter is refused", () => {
+  // Half a rename: a move on one side and a create on the other. SH134's lesson, and the
+  // reason the marker writes the two keys its path already implies.
+  assert.throws(
+    () => parseFolderMarker("Blog/news/_folder.md", marker("Blog", "/archive")),
+    /disagrees with its path/,
+  );
+  assert.throws(
+    () => parseFolderMarker("Blog/news/_folder.md", marker("Other", "/news")),
+    /disagrees with its directory/,
+  );
+});
+
+test("text in a folder marker is refused rather than dropped", () => {
+  // A folder holds posts, not prose. Silently discarding it loses something somebody wrote
+  // expecting it to appear on the site.
+  assert.throws(
+    () => parseFolderMarker("Blog/news/_folder.md", `${marker("Blog", "/news")}Hello\n`),
+    /has no body/,
+  );
+});
+

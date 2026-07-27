@@ -167,6 +167,110 @@ export function serializePost(doc, bodyField = null) {
   return `${lines.join("\n")}\n${body === null ? "" : `${body}\n`}`;
 }
 
+/* --- folder markers (SH149) --- */
+
+/**
+ * The file that gives a folder a presence on disk.
+ *
+ * A folder existed in the projection only because a post named it, so an empty section
+ * could not be authored locally (there was no file to write) and a pull dropped one that
+ * existed on the server (there was nothing to write it to). "Scaffold the structure, then
+ * fill it" is how a site actually gets built, and that first step was the one step that
+ * had to leave the file tree and go through the API.
+ */
+export const FOLDER_MARKER = "_folder.md";
+
+/**
+ * Where folder markers live — a root of their own, **beside** `shio/content`, never inside it.
+ *
+ * This is the load-bearing decision in SH149 and it follows straight from SH79: a folder
+ * chain and a friendly URL are separate namespaces. Under `shio/content` the directories
+ * are *URL* segments — `shio/content/Blog/blog/hello.md` is the post at `/blog/hello`,
+ * whatever folder it lives in — so a marker at `shio/content/Blog/blog/_folder.md` would
+ * be claiming that a URL prefix is a folder chain. It usually looks right, which is what
+ * makes it dangerous: the one time the two disagree, the marker creates a folder nobody
+ * asked for and the real one goes unmanaged. Two roots cannot make that mistake.
+ */
+export const FOLDERS_SUBDIR = "folders";
+
+/**
+ * The file path a folder marker projects to, relative to the folders root.
+ *
+ * @param {{ site: string, folder: string }} marker
+ * @returns {string} e.g. `Blog/news/_folder.md`; a site root → `Blog/_folder.md`
+ */
+export function folderMarkerPathFor({ site, folder }) {
+  const chain = normalizeUrl(folder);
+  const dir = chain === "/" ? siteDir(site) : `${siteDir(site)}${chain}`;
+  return `${dir}/${FOLDER_MARKER}`;
+}
+
+/** `Blog/news/_folder.md` → `{ site: "Blog", folder: "/news" }`. The inverse. */
+export function folderLocationOf(relPath) {
+  const parts = String(relPath).replace(/\\/g, "/").split("/").filter(Boolean);
+  if (!parts.length) return {};
+  if (parts[parts.length - 1].toLowerCase() === FOLDER_MARKER) parts.pop();
+  if (!parts.length) return {};
+  return { site: parts[0], folder: normalizeUrl(parts.slice(1).join("/")) };
+}
+
+/**
+ * Serializes a folder marker.
+ *
+ * Frontmatter and nothing else: a folder has no content, so a body would be a place for
+ * text that the CMS has nowhere to put. The two keys are the folder's whole identity, and
+ * they are written even though the path implies them — a marker read on its own has to be
+ * able to say what it is, and the path/frontmatter pair is what lets a half-done rename be
+ * *caught* rather than guessed at (the same trade `parsePost` makes).
+ *
+ * @param {{ site: string, folder: string }} marker
+ * @returns {string}
+ */
+export function serializeFolder({ site, folder }) {
+  return `${FENCE}\nsite: ${encodeScalar(site)}\nfolder: ${encodeScalar(normalizeUrl(folder))}\n${FENCE}\n`;
+}
+
+/**
+ * Parses a folder marker.
+ *
+ * @param {string} relPath path relative to the folders root, e.g. `Blog/news/_folder.md`
+ * @param {string} text    file contents
+ * @returns {{ site: string, folder: string }}
+ */
+export function parseFolderMarker(relPath, text) {
+  const { meta, body } = splitDocument(relPath, text);
+  const fromPath = relPath ? folderLocationOf(relPath) : {};
+
+  const site = meta.site ?? fromPath.site;
+  const folder = meta.folder == null ? fromPath.folder : normalizeUrl(meta.folder);
+  if (!site) throw fault(relPath, "it has no `site:` and its path does not name one");
+  if (folder == null) throw fault(relPath, "it has no `folder:` and its path does not imply one");
+  if (meta.folder != null && fromPath.folder != null && normalizeUrl(meta.folder) !== fromPath.folder) {
+    throw fault(
+      relPath,
+      `its \`folder: ${normalizeUrl(meta.folder)}\` disagrees with its path ` +
+        `(${fromPath.folder}). One of them was renamed and the other was not — fix ` +
+        "whichever is wrong. To move a folder, change both",
+    );
+  }
+  if (meta.site && fromPath.site && meta.site !== fromPath.site) {
+    throw fault(
+      relPath,
+      `its \`site: ${meta.site}\` disagrees with its directory (${fromPath.site})`,
+    );
+  }
+  if (body) {
+    // Not a warning: text in a marker is content somebody wrote expecting it to land
+    // somewhere, and there is nowhere for it to go. Dropping it silently is worse.
+    throw fault(
+      relPath,
+      "a folder marker has no body — a folder holds posts, not text. Move the text into " +
+        "a post in this folder",
+    );
+  }
+  return { site, folder };
+}
+
 /**
  * Parses one post file.
  *

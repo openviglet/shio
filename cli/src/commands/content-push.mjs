@@ -20,7 +20,17 @@
  */
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
-import { BASE_FILE, CONTENT_DIR, readBase, readLocal, readRemote, sitesOf, writeBase } from "../content-store.mjs";
+import {
+  BASE_FILE,
+  CONTENT_DIR,
+  FOLDERS_DIR,
+  readBase,
+  readLocal,
+  readLocalFolders,
+  readRemote,
+  sitesOf,
+  writeBase,
+} from "../content-store.mjs";
 import { documentsFor, planPushContent } from "../content-sync.mjs";
 
 export async function run(flags, _positionals, ctx) {
@@ -32,7 +42,11 @@ export async function run(flags, _positionals, ctx) {
 
   const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
   const local = await readLocal(ctx, { dir, site });
-  if (!Object.keys(local).length) {
+  // SH149 — a folder marker is a declaration in its own right, so a tree that holds only
+  // markers is a legitimate push: it is the "scaffold the structure, then fill it" step,
+  // which was the one step that had to leave the file tree and go through the API.
+  const markers = await readLocalFolders(ctx, { dir: flags.foldersDir ?? FOLDERS_DIR, site });
+  if (!Object.keys(local).length && !markers.length) {
     // Silence here would be dangerous with --prune: an empty document plus a prune is a
     // request to delete a section, and an empty *directory* is far more often a wrong
     // --content-dir than a deliberate wipe.
@@ -56,7 +70,7 @@ export async function run(flags, _positionals, ctx) {
     site,
     // SH173: the tree names the sites this push is about, so the server read is scoped to
     // them. Before this, one un-addressable post in an unrelated site aborted the CI gate.
-    sites: sitesOf(local),
+    sites: sitesOf(local, markers),
     limit: Number(flags.limit ?? 200),
   });
   if (skipped.length) {
@@ -91,7 +105,7 @@ export async function run(flags, _positionals, ctx) {
     );
   }
 
-  const documents = documentsFor(posts, { prune });
+  const documents = documentsFor(posts, { prune, markers, sites: sitesOf(local, markers) });
   const results = [];
   for (const document of documents) {
     results.push(

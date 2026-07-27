@@ -14,16 +14,22 @@
 import { join } from "node:path";
 
 import {
+  FOLDER_MARKER,
   bodyFieldFor,
   filePathFor,
+  folderMarkerPathFor,
   normalizeUrl,
+  parseFolderMarker,
   parsePost,
+  serializeFolder,
   serializePost,
 } from "./content-files.mjs";
 import { addressOf } from "./content-sync.mjs";
 
 /** Where the projection lives, and where the snapshot that tracks it lives. */
 export const CONTENT_DIR = "shio/content";
+/** Folder markers (SH149) — a root of their own; see `FOLDERS_SUBDIR` for why. */
+export const FOLDERS_DIR = "shio/folders";
 export const BASE_FILE = "shio/.shio/content-base.json";
 export const BASE_VERSION = 1;
 
@@ -44,10 +50,15 @@ export async function readBase(ctx, path = BASE_FILE) {
       cursor: parsed.cursor ?? null,
       partial: Boolean(parsed.partial),
       posts: parsed.posts ?? {},
+      // SH149. Absent in a snapshot written before folders projected, which reads as "we
+      // have never agreed about any folder" — so every server folder looks newly added and
+      // every local marker looks locally added. Both are the safe reading: one writes a
+      // marker, the other keeps one, and neither deletes anything.
+      folders: Array.isArray(parsed.folders) ? parsed.folders : [],
     };
   } catch (error) {
     if (error?.code === "ENOENT") {
-      return { version: BASE_VERSION, cursor: null, partial: false, posts: {} };
+      return { version: BASE_VERSION, cursor: null, partial: false, posts: {}, folders: [] };
     }
     throw error;
   }
@@ -66,6 +77,9 @@ export async function writeBase(ctx, base, path = BASE_FILE) {
     // because `push --prune` reads this flag to refuse deleting what was never projected.
     partial: Boolean(base.partial),
     posts,
+    folders: [...(base.folders ?? [])]
+      .map((marker) => ({ site: marker.site, folder: marker.folder }))
+      .sort((a, b) => a.site.localeCompare(b.site) || a.folder.localeCompare(b.folder)),
   };
   const target = join(ctx.cwd, path);
   await ctx.fs.mkdir(dirOf(target), { recursive: true });
@@ -106,18 +120,125 @@ export async function readLocal(ctx, { dir = CONTENT_DIR, site = null } = {}) {
 }
 
 /**
+ * Reads the folder markers (SH149).
+ *
+ * @returns {Promise<{site: string, folder: string}[]>} sorted, so a document built from
+ *   this is byte-stable whatever order the filesystem hands the entries back (P5)
+ */
+export async function readLocalFolders(ctx, { dir = FOLDERS_DIR, site = null } = {}) {
+  const root = join(ctx.cwd, dir);
+  const files = await walk(ctx, root, "");
+  const markers = [];
+  for (const relPath of files.sort()) {
+    const name = relPath.split("/").pop() ?? "";
+    // Only the marker name counts. A stray file here is the author's, not ours to
+    // interpret — reading it as a folder would invent one from a typo.
+    if (name.toLowerCase() !== FOLDER_MARKER) continue;
+    if (site && !relPath.startsWith(`${site}/`)) continue;
+    markers.push(parseFolderMarker(relPath, await ctx.fs.readFile(join(root, relPath), "utf8")));
+  }
+  return markers.sort((a, b) => a.site.localeCompare(b.site) || a.folder.localeCompare(b.folder));
+}
+
+/** Writes one folder marker, creating the directories on the way. */
+export async function writeFolderMarker(ctx, marker, { dir = FOLDERS_DIR } = {}) {
+  const relPath = folderMarkerPathFor(marker);
+  const target = join(ctx.cwd, dir, relPath);
+  await ctx.fs.mkdir(dirOf(target), { recursive: true });
+  await ctx.fs.writeFile(target, serializeFolder(marker), "utf8");
+  return relPath;
+}
+
+/** Removes one folder marker; a marker that is already gone is not an error. */
+export async function deleteFolderMarker(ctx, marker, { dir = FOLDERS_DIR } = {}) {
+  const relPath = folderMarkerPathFor(marker);
+  try {
+    await ctx.fs.unlink(join(ctx.cwd, dir, relPath));
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+  return relPath;
+}
+
+/**
+ * Every folder each site holds, read from the context pack's sitemap (SH149).
+ *
+ * <h3>Why the sitemap and not a new endpoint</h3>
+ *
+ * The sitemap already emits a row per folder with its structural path, which is exactly
+ * and only what a marker needs. A `GET /agent/folders` would be a fourth contract
+ * restating it (law P10), and the folder list is not the expensive part of a projection —
+ * the post bodies are.
+ *
+ * <h3>Why it walks, and what it does when it cannot finish</h3>
+ *
+ * The sitemap is budget-bounded and reports `truncatedAfter` to resume from. A short
+ * folder list has the same consequence a short post list has (SH146): `push --prune`
+ * would read the folders it never saw as "delete these", and deleting a folder takes
+ * every post beneath it. So this walks to the end and reports `truncated` when it could
+ * not — the caller routes that into the same refusal.
+ *
+ * @returns {Promise<{ folders: {site: string, folder: string}[], truncated: boolean }>}
+ */
+export async function readRemoteFolders(client, { sites = [], maxPages = 200 } = {}) {
+  const folders = [];
+  let truncated = false;
+
+  for (const site of sites) {
+    let from;
+    let pages = 0;
+    for (;;) {
+      // `include=sitemap` and no `ids`: a marker needs the structural path and nothing
+      // else, and the UUID was measured as the largest per-row cost in this payload (SH121).
+      const { body } = await client.getContext({ site, include: "sitemap", from });
+      const pack = JSON.parse(body);
+      for (const node of pack?.sitemap ?? []) {
+        if (node?.kind === "folder" && node.path != null) {
+          folders.push({ site, folder: normalizeUrl(node.path) });
+        }
+      }
+      pages += 1;
+      const budget = pack?.budget ?? {};
+      if (!budget.truncated) break;
+      // `truncated` with no `truncatedAfter` means nothing fit at all, so there is no row
+      // to resume after — the walk cannot continue and must say so rather than loop.
+      if (!budget.truncatedAfter || budget.truncatedAfter === from || pages >= maxPages) {
+        truncated = true;
+        break;
+      }
+      from = budget.truncatedAfter;
+    }
+  }
+  return { folders: dedupeFolders(folders), truncated };
+}
+
+function dedupeFolders(folders) {
+  const seen = new Map();
+  for (const marker of folders) seen.set(`${marker.site}|${marker.folder}`, marker);
+  return [...seen.values()].sort(
+    (a, b) => a.site.localeCompare(b.site) || a.folder.localeCompare(b.folder),
+  );
+}
+
+/**
  * The sites a local projection holds — `shio/content/<site>/**` (SH173).
  *
  * This is the scope both commands should read the server with. It is derived rather than
  * configured on purpose: `--site` existing is not a reason for the tool to need telling what
  * its own directory already says.
+ *
+ * `markers` (SH149) counts too: a site scaffolded as folders and not yet filled holds no
+ * posts, and leaving it out of the scope would make its own push read the whole instance.
  */
-export function sitesOf(docs) {
+export function sitesOf(docs, markers = []) {
   const sites = new Set();
   for (const doc of Object.values(docs ?? {})) {
     if (doc?.site) sites.add(doc.site);
   }
-  return [...sites].sort();
+  for (const marker of markers ?? []) {
+    if (marker?.site) sites.add(marker.site);
+  }
+  return [...sites].sort((a, b) => a.localeCompare(b));
 }
 
 async function walk(ctx, root, prefix) {

@@ -20,6 +20,7 @@ import {
   documentsFor,
   planPushContent,
   reconcile,
+  reconcileFolders,
   resolveConflict,
   same,
 } from "../src/content-sync.mjs";
@@ -205,4 +206,84 @@ test("a document omits publish unless the file said so", () => {
 
   const [explicit] = documentsFor([post({ headline: "a" }, { publish: true })]);
   assert.equal(explicit.posts[0].publish, true);
+});
+
+// --- folder markers (SH149) ---
+
+test("a folder marker declares a folder no post names, with its ancestors", () => {
+  const [document] = documentsFor([post({ headline: "a" })], {
+    markers: [{ site: "Blog", folder: "/archive/2019" }],
+  });
+
+  // /blog comes from the post, /archive and /archive/2019 from the marker, and the ancestor
+  // rule is the same one for both: a document that declared the leaf alone would put the
+  // level above outside its own prune scope.
+  assert.deepEqual(
+    document.folders.map((folder) => folder.path),
+    ["/", "/archive", "/archive/2019", "/blog"],
+  );
+});
+
+test("a tree of only folders still produces a document", () => {
+  // "Scaffold the structure, then fill it" — the case that had no file to write at all
+  // before SH149, so the whole first step had to go through the API.
+  const documents = documentsFor([], { markers: [{ site: "Docs", folder: "/guide" }] });
+
+  assert.equal(documents.length, 1);
+  assert.equal(documents[0].site, "Docs");
+  assert.deepEqual(documents[0].posts, []);
+  assert.deepEqual(
+    documents[0].folders.map((folder) => folder.path),
+    ["/", "/guide"],
+  );
+});
+
+test("a folder on both sides is left alone; one only the server has gets a marker", () => {
+  const plan = reconcileFolders({
+    base: [{ site: "Blog", folder: "/news" }],
+    remote: [
+      { site: "Blog", folder: "/news" },
+      { site: "Blog", folder: "/archive" },
+    ],
+    local: [{ site: "Blog", folder: "/news" }],
+  });
+
+  assert.deepEqual(plan.unchanged.map((m) => m.folder), ["/news"]);
+  assert.deepEqual(plan.write.map((m) => m.folder), ["/archive"]);
+  assert.deepEqual(plan.delete, []);
+});
+
+test("a folder a post already declares gets no marker of its own", () => {
+  // Otherwise the projection doubles in file count to restate every post's own `folder:`,
+  // and each of those files becomes another thing to keep in sync.
+  const plan = reconcileFolders({
+    remote: [
+      { site: "Blog", folder: "/blog" },
+      { site: "Blog", folder: "/empty" },
+    ],
+    implied: new Set(["Blog|/blog"]),
+  });
+
+  assert.deepEqual(plan.write.map((m) => m.folder), ["/empty"]);
+  // Still *agreed*: the folder is on both sides, it just needs no file to say so.
+  assert.deepEqual(plan.agreed.map((m) => m.folder).sort(), ["/blog", "/empty"]);
+});
+
+test("a marker gone from the server is a deletion; one never agreed is a local creation", () => {
+  // The one ambiguity a folder has, and it is the destructive one: a marker the server does
+  // not have is either a scaffold not yet pushed or a folder somebody deleted. The base is
+  // the third value that tells them apart — guessing either way loses work.
+  const plan = reconcileFolders({
+    base: [{ site: "Blog", folder: "/gone" }],
+    remote: [],
+    local: [
+      { site: "Blog", folder: "/gone" },
+      { site: "Blog", folder: "/brand-new" },
+    ],
+  });
+
+  assert.deepEqual(plan.delete.map((m) => m.folder), ["/gone"]);
+  assert.deepEqual(plan.keep.map((m) => m.folder), ["/brand-new"]);
+  // The kept one stays agreed, so the next pull does not read it as a server deletion.
+  assert.deepEqual(plan.agreed.map((m) => m.folder), ["/brand-new"]);
 });

@@ -93,11 +93,26 @@ function sink() {
  * A scripted instance: `find`, `read`, `post-type`, `plan`/`apply` and `changes`.
  * `remote` is a map of address → agent doc.
  */
-function server({ remote = {}, truncated = false, changed = 2, pageSize = 0 } = {}) {
+function server({
+  remote = {},
+  truncated = false,
+  changed = 2,
+  pageSize = 0,
+  // SH149 — the folders each site holds, as the sitemap reports them: `{ Blog: ["/", "/news"] }`.
+  serverFolders = null,
+} = {}) {
   const calls = [];
   const fetchImpl = async (url, init = {}) => {
     const target = String(url);
     calls.push({ url: target, init, body: init.body ? JSON.parse(init.body) : null });
+    if (target.includes("/agent/context")) {
+      const site = new URL(target).searchParams.get("site");
+      const paths = serverFolders?.[site] ?? [];
+      return json({
+        sitemap: paths.map((path) => ({ kind: "folder", path })),
+        budget: { estTokens: 10, limitTokens: 0, truncated: false },
+      });
+    }
     if (target.includes("/agent/find")) {
       // SH146 — the real endpoint sorts by address and pages on `after`, so the fake does
       // too: `pageSize` makes it hand out cursors, `truncated` (with no cursor) is the
@@ -166,6 +181,10 @@ const REMOTE_DOC = {
 
 const FILE = "/repo/shio/content/Blog/blog/hello.md";
 const BASE_PATH = "/repo/shio/.shio/content-base.json";
+/** A folder marker's path and contents (SH149) — a root of its own, beside the content tree. */
+const markerPath = (site, chain) =>
+  `/repo/shio/folders/${site}${chain === "/" ? "" : chain}/_folder.md`;
+const markerFile = (site, folder) => `---\nsite: ${site}\nfolder: ${folder}\n---\n`;
 
 function baseSnapshot(data, { partial = false } = {}) {
   return `${JSON.stringify({
@@ -436,6 +455,107 @@ test("push --content says so instead of pushing an empty tree", async () => {
   const ctx = ctxWith(server({ remote: {} }));
 
   await assert.rejects(() => contentPush.run({}, [], ctx), /no content files under/);
+});
+
+// --- folders as files (SH149) ---
+
+test("push --content declares an empty folder from its marker alone", async () => {
+  // The gap SH149 closes: before this a folder existed in the projection only because a post
+  // named it, so "scaffold the structure, then fill it" had to leave the file tree entirely.
+  const fetchImpl = server({ remote: {} });
+  const ctx = ctxWith(fetchImpl, {
+    [markerPath("Blog", "/archive")]: markerFile("Blog", "/archive"),
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  const applied = fetchImpl.calls.find((call) => call.url.includes("/agent/apply"));
+  assert.ok(applied, "a markers-only tree is a real push, not an empty one");
+  assert.equal(applied.body.site, "Blog");
+  assert.deepEqual(
+    applied.body.folders.map((folder) => folder.path),
+    ["/", "/archive"],
+  );
+  assert.deepEqual(applied.body.posts, []);
+});
+
+test("push --content refuses a tree with neither posts nor markers", async () => {
+  // The refusal is unchanged; what changed is what counts as content. An empty directory is
+  // far more often the wrong --content-dir than a deliberate wipe, and with --prune it would
+  // be a request to delete a section.
+  const ctx = ctxWith(server({ remote: {} }), {});
+
+  await assert.rejects(() => contentPush.run({}, [], ctx), /no content files under/);
+});
+
+test("pull --content writes a marker for a folder no post declares", async () => {
+  const ctx = ctxWith(
+    server({
+      remote: { "post:Blog/blog/hello": REMOTE_DOC },
+      serverFolders: { Blog: ["/", "/blog", "/empty"] },
+    }),
+    { [BASE_PATH]: baseSnapshot({ headline: "Hello", body: "<p>First</p>" }) },
+  );
+
+  const result = await contentPull.run({}, [], ctx);
+
+  // /empty gets a file; / and /blog do not, because the post's own `folder:` already says so.
+  assert.deepEqual(result.folders.written, ["folder:Blog/empty"]);
+  assert.equal(ctx.fs.files.get(markerPath("Blog", "/empty")), markerFile("Blog", "/empty"));
+  assert.equal(ctx.fs.files.has(markerPath("Blog", "/blog")), false);
+  assert.equal(ctx.fs.files.has(markerPath("Blog", "/")), false);
+  // Both are still *agreed*, so the next pull cannot read the unwritten ones as deletions.
+  const base = JSON.parse(ctx.fs.files.get(BASE_PATH));
+  assert.deepEqual(base.folders.map((row) => row.folder), ["/", "/blog", "/empty"]);
+});
+
+test("pull --content deletes a marker whose folder is gone, and keeps one never pushed", async () => {
+  const ctx = ctxWith(
+    server({ remote: {}, serverFolders: { Blog: [] } }),
+    {
+      [markerPath("Blog", "/gone")]: markerFile("Blog", "/gone"),
+      [markerPath("Blog", "/brand-new")]: markerFile("Blog", "/brand-new"),
+      [BASE_PATH]: `${JSON.stringify({
+        version: 1,
+        cursor: "2026-07-26T09:00:00Z|aaa",
+        partial: false,
+        posts: {},
+        folders: [{ site: "Blog", folder: "/gone" }],
+      }, null, 2)}\n`,
+    },
+  );
+
+  const result = await contentPull.run({}, [], ctx);
+
+  // The only thing that tells these two apart is the base: /gone was agreed on and is now
+  // absent (a deletion), /brand-new never was (a local scaffold the push has yet to make real).
+  assert.deepEqual(result.folders.deleted, ["folder:Blog/gone"]);
+  assert.deepEqual(result.folders.kept, ["folder:Blog/brand-new"]);
+  assert.equal(ctx.fs.files.has(markerPath("Blog", "/gone")), false);
+  assert.equal(ctx.fs.files.has(markerPath("Blog", "/brand-new")), true);
+});
+
+test("pull --content leaves an agreed marker byte-identical", async () => {
+  // Nothing to compare means nothing to write. Rewriting it would make every pull report a
+  // change nobody made, which is the property the whole format is built around (P5).
+  const ctx = ctxWith(
+    server({ remote: {}, serverFolders: { Blog: ["/news"] } }),
+    {
+      [markerPath("Blog", "/news")]: markerFile("Blog", "/news"),
+      [BASE_PATH]: `${JSON.stringify({
+        version: 1,
+        cursor: "2026-07-26T09:00:00Z|aaa",
+        partial: false,
+        posts: {},
+        folders: [{ site: "Blog", folder: "/news" }],
+      }, null, 2)}\n`,
+    },
+  );
+
+  const result = await contentPull.run({}, [], ctx);
+
+  assert.deepEqual(result.folders, { written: [], deleted: [], kept: [] });
+  assert.equal(ctx.fs.files.get(markerPath("Blog", "/news")), markerFile("Blog", "/news"));
 });
 
 // --- the dev loop (SH90) ---

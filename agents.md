@@ -567,8 +567,24 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   the page size rather than a ceiling on how large a site can be — but it is unchanged and
   still strict: an instance that reports a short result and offers no cursor cannot be walked,
   and writing that tree is what a later `--prune` would read as deletions.
-- Not projected yet: **assets** (SH145) and **empty folders** (SH149); a rename still
-  pushes as delete + create rather than `post.move` (SH150).
+- **An empty folder is a file too (SH149)** — `shio/folders/<site>/<name-chain>/_folder.md`,
+  frontmatter only (`site:` + `folder:`), which `push --content` declares as a `folder.upsert`.
+  A tree of *only* markers is a legitimate push: that is the "scaffold the structure, then
+  fill it" step, and it was the one step that had to leave the file tree and go through the API.
+  Four rules: **a separate root, never inside `shio/content`** — there the directories are
+  *URL* segments, so a marker under it would be claiming a URL prefix is a folder chain, which
+  looks right until the one time the two disagree and it creates the wrong folder silently;
+  **a marker only for a folder no post names**, or the projection would double its file count
+  to restate every post's own `folder:`; **the base snapshot records folders** (`folders` in
+  `content-base.json`), because a marker the server lacks is *either* a local scaffold not yet
+  pushed *or* a folder somebody deleted, and existence alone cannot tell those apart — guessing
+  either way loses work; and **a marker widens `--prune`'s scope**, which is the correct
+  semantics rather than a hazard: declaring `/archive` means the tree owns it, and a *post*
+  naming `/archive` already did exactly the same thing. `--folders-dir` moves the root.
+  `reconcileFolders` is the pure half; the folder list comes from the context pack's sitemap
+  (no new endpoint — P10), walked to the end for SH146's reason.
+- Not projected yet: **assets** (SH145); a rename still pushes as delete + create rather than
+  `post.move` (SH150).
 
 ### Blueprints — appliable starting points (Block J)
 
