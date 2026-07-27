@@ -1000,7 +1000,161 @@ session, that path is in the same position `/api/v2/post-type` was in.
 > person sees* — the product's differentiator, and the one part of the loop with no path
 > through it.
 
-### XV.1 A built-in HTML renderer for the section vocabulary (SH183)
+### XV.0 What the original engine actually was (the `FSP` analysis)
+
+Before designing a renderer it is worth knowing precisely what was removed, because the
+reputation of the old engine ("Nashorn, therefore unsafe, therefore never again") turns out to
+describe its *host* and not its *design*. `origin/FSP` is not a divergent branch — it is an
+ancestor of `HEAD`, last touched **2019-09-09** — so this is Shio's own history, readable with
+`git show origin/FSP:<path>`.
+
+The pipeline:
+
+```
+URL → ShSitesContextURL                        parse object id + `format`
+    → site.postTypeLayout                      {PostType: [{format, layout, mimeType, cacheTTL}]}
+    → PT-PAGE-LAYOUT post                      attrs: HTML, JAVASCRIPT, THEME
+    → Nashorn eval(JAVASCRIPT)                 bindings: shContent, html, request
+         ├── shObject.js                        a 174-line façade over 7 Java components
+         └── handlebars.min.js                  ← the actual template language
+    → ShCachePage / ShCachePageLayout           keyed page cache, honouring cacheTTL
+```
+
+Four things follow, and they reverse the conclusion I would otherwise have reached.
+
+**The template language was Handlebars, not JavaScript.** `ShCacheJavascript.shObjectJSFactory()`
+concatenates `classpath:/js/server-side/shObject.js` and `handlebars.min.js` and evaluates them
+once per thread. Authors wrote Handlebars — logic-less, declarative, no code execution. Nashorn
+was the *host* that ran Handlebars and bridged to Java; it was never the authoring surface.
+
+**The capability set was already meant to be closed.** `shObject.js` exposes seven functions and
+nothing else — `formComponent`, `searchComponent`, `navigation`, `navigationFolder`, `query`,
+`queryByPostType`, `getRelation` — each a one-line wrapper over a Spring bean bound in
+`ShNashornEngineConfiguration` (`shNavigationComponent`, `shQueryComponent`, `shSearchComponent`,
+`shFormComponent`, `shGetRelationComponent`, plus three `*Utils`). That is an allow-list
+expressed as a convention.
+
+**The liability was the host, and it was real.** `ShNashornEngineConfiguration` calls
+`getScriptEngine(String[])` — Nashorn's `getScriptEngine(ClassFilter)` overload exists precisely
+to bound what a script may reach, and it is not used. So a layout's JavaScript had `Java.type()`
+over the entire classpath: `Runtime.exec`, file I/O, the `DataSource`. The raw
+`HttpServletRequest` was bound into script scope as `request`, and `shObject.js` uses it
+directly. Layouts are *content*, so this made a content author a JVM operator. §0.4's objection
+is correct and this is the concrete form of it — but it indicts `eval`, not Handlebars and not
+the layout model.
+
+**Two smaller design notes worth keeping.** `regionError` reports a script failure with file,
+line, column, a five-line window and a caret under the offending character — better authoring
+feedback than most template engines ship, and exactly the shape law P6 asks for. And the
+`ThreadLocal<Map<String, ScriptContext>>` that caches script contexts per thread reuses bindings
+across requests, which is a state-leak between visitors; a template evaluator with no mutable
+global scope does not have that problem to solve.
+
+**What the model handled that a fixed section vocabulary does not.** This is the question that
+matters for SH183, and the answer is unambiguous. Navigation, queries and listings, search
+results and forms are all *dynamic* — none is expressible as a static section post, and all four
+were first-class in the old engine. A closed vocabulary of eight section types cannot render a
+menu, a paginated article list, a search results page or a contact form. It also had two axes
+this repository has no equivalent for: **format** (the same post rendered as `default`, or as
+another format with its own layout, mime type and TTL — the mechanism behind alternate
+representations) and **theme** (`PT-THEME`, resolved per layout).
+
+**The lineage.** The model is OpenText WEM / Vignette V7's — page → template → component, with
+presentation held as managed content rather than as files in a build. That is why the levels line
+up the way they do, and it is worth knowing when weighing the design: this is a shape with
+twenty years of enterprise use behind it, not an invention.
+
+**"But V7 rendered with a script engine too, and it worked."** It did, and that precedent is
+real — the objection deserves an answer rather than a restatement of the non-goal. Two things
+changed, and neither is about capability.
+
+*The threat model.* In V7's era a template author was a trusted employee, templates shipped
+through a controlled release process, and the server sat on a corporate network. In Shio a
+layout is content; content is written by an **agent**, and packages are meant to arrive from a
+registry whose trust story is still an open question (SH96 exists precisely because "where may a
+package come from" is unanswered). Add the multi-tenant direction (SH22, SH44–SH47) and
+"content can execute arbitrary JVM code" stops being a convenience and becomes a tenant escape.
+The same design is safe under one set of assumptions and not under the other.
+
+*The runtime.* Nashorn was deprecated in JDK 11 and **removed from the JDK in 15**. What is left
+is the standalone `org.openjdk.nashorn` artifact — the one still sitting unused in
+`shio-app/pom.xml`, pinned at 15.7, on a project running Java 21. Building the product's
+differentiator on it would mean betting the render path on a library that exists to ease
+migration *away* from itself.
+
+So the conclusion is not "V7 was wrong". It is that the part of V7 worth keeping is the
+**model** — page → template → component, presentation as managed content — and the part that
+has to be replaced is the host that ran it.
+
+**What a real template looked like.** `openviglet/bootstrap-site` is not a project — it is an
+`export.json`, an SH68 exchange package, and its ten posts are `PT-FOLDER-INDEX` ×1,
+`PT-ARTICLE` ×3, `PT-PAGE-LAYOUT` ×2, `PT-REGION` ×2, `PT-THEME` ×1, `PT-FILE` ×1. The
+presentation *is* content, and it travels the same way content does. Four things in it settle
+the design:
+
+**1. Regions are slotted by an HTML attribute.** A layout's `HTML` field is a whole document
+with named holes:
+
+```html
+<body>
+  <div sh-region="BOOTSTRAP_NAV_REGION"> </div>
+  <div sh-region="BOOTSTRAP_CONTENT_LIST_REGION" style="margin:20px"></div>
+```
+
+`sh-region` is the composition mechanism, and it is also — already, in 2018 — exactly the
+annotation contract the Universal Editor needs (§XV.3). A rendered page that keeps these
+attributes tells the editor what each part of the DOM is and which post to save it to.
+
+**2. The layout's JavaScript is ceremony, not capability.** Both layouts carry the same four
+lines:
+
+```js
+load('https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.11/handlebars.min.js');
+var template = Handlebars.compile(html);
+var html = template(shContent);
+html;
+```
+
+Compile the HTML as a Handlebars template against the data, return it. That is what
+Handlebars.java does natively with no script at all. (The article layout adds one small data
+remap — `{title, description, text, theme}` picked out of `shContent` — which is a projection,
+not logic.) Note also `load('https://cdnjs.cloudflare.com/...')`: the engine fetched its
+template library **from a CDN at render time**, so the render path depended on remote code
+being both reachable and unmodified.
+
+**3. A region's JavaScript is a view-model builder — and every part of it is a helper.** The
+navigation region registers a helper, calls a component, and reshapes the result:
+
+```js
+Handlebars.registerHelper('file_url', ...);              // → a value helper
+var navigation = shObject.navigation(siteName, true);    // → a block helper
+forEach.call(navigation, function (shFolder) { ... });   // → the helper yields this
+```
+
+and the content-list region is the same shape: `shObject.query(folderId, "PT-ARTICLE")`, then a
+loop mapping `TITLE`/`DESCRIPTION`/`TEXT` and building links with
+`shObject.generateObjectLink`. Between 767 and 1098 characters of hand-written JavaScript per
+region, to produce what a domain-aware block helper produces in one line:
+
+```hbs
+{{#query folder=this postType="PT-ARTICLE"}}
+  <div class="card"><h5>{{title}}</h5><a href="{{link}}">Read More</a></div>
+{{/query}}
+```
+
+So migrating to registered helpers is not a loss of expressiveness — it is the removal of
+boilerplate that exists only because the loop had nowhere else to live. The templates themselves
+(`{{#each}}`, `{{#if}}`, `{{{text}}}`, custom helpers) are ordinary Handlebars and port as-is.
+
+**4. A theme carries site-wide assets.** `PT-THEME` has `CSS` and `JAVASCRIPT` fields — both
+`null` in this sample, so the intent is clearer than the usage: one place for the stylesheet and
+script a whole site shares, referenced by each layout's `THEME` field.
+
+So the honest conclusion is that the old engine's *architecture* was better than what replaced
+it for the specific job of "make something a human can see" — and the only part that has to go
+is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
+
+### XV.1 A built-in HTML renderer for page layouts (SH183)
 
 **What is missing.** Nothing in this repository renders a page. No template engine is on the
 classpath — no Velocity, Thymeleaf, Handlebars or Freemarker — and `ShSitePostTypeLayout`
@@ -1020,55 +1174,97 @@ Both human-facing visual surfaces therefore point outward at something Shio cann
 
 Applying `marketing-site` produces thirteen correct pages and no way to see one.
 
-**Why this is not the dropped Block D.** The binding non-goal is *"No GraalJS server-side JS
-template engine"*, inherited from the Nashorn engine the original product shipped (still alive
-on the `FSP` branch). §0.4's argument is specific and still correct: an in-JVM script engine is
-**sandboxing liability with no agent-side benefit**, because what it executes is user-supplied
-code. Choosing Groovy instead changes the syntax and not one word of that argument — Groovy is
-named in the non-goal for exactly this reason, and it is *more* powerful than Nashorn inside
-the JVM, not less.
+**The model: page → layout → region.** This is the granularity the original engine intended
+(`PT-PAGE-LAYOUT` and `PT-REGION` are both declared in FSP's `ShSystemPostType`, and the region
+level was never finished — nothing in Java ever read it), and it is the right one for enterprise
+work, because each level is owned by a different person and changes on a different clock:
 
-A renderer over the SH95 vocabulary executes nothing. The eight section post-types are a
-closed, first-party set with known fields, so turning `SectionHero{heading, subheading, body,
-ctaLabel, ctaHref, align}` into semantic markup is a **projection** — the same kind the CDA
-already performs into JSON, and the same kind `ShAgentRenderService` already performs into a
-structural digest now that SH169 composes a page's sections. There is no user template, so
-there is nothing to sandbox. That is why this is buildable today and the script engine was
-not: the vocabulary *is* the template.
-
-**Who renders — the three options that respect the non-goal.** They differ by where the
-markup is produced, and they are complementary rather than exclusive:
-
-| Renders | Mechanism | What it costs | What it buys |
+| Level | Is | Owned by | Changes |
 |---|---|---|---|
-| **Shio (Java)** | declarative HTML from the vocabulary | a new renderer, preview-grade | a site is visible with **no client setup at all** — the only option that works for an MCP-only agent |
-| **Browser** | a statically exported React/Next bundle served by Shio, fetching from the CDA | almost nothing new — Shio already serves `/console/**` and `/file_source/**` | full design freedom, no Node process in production |
-| **Node** | Next.js, as today | a project and a running process the agent cannot create over MCP | SSR, ISR, the real delivery path |
+| **Page** | content + a layout binding | author / agent | constantly |
+| **Layout** | an HTML skeleton with named region slots | front-end dev | per template |
+| **Region** | HTML + client JS that renders one kind of content | front-end dev | per component |
 
-Note what the middle column rules out. "Deploy React inside Shio and let it render" splits in
-two: server-side-rendering React *in the JVM* requires a JS runtime and is the non-goal again
-under a new name; serving a **static export** requires no engine and is genuinely cheap. Only
-the second is available, and it is worth having — but it renders in the browser, so a page's
-content arrives by client-side fetch and the first paint has no content in it, which is the
-wrong trade for preview and for anything SEO touches.
+Three properties come out of it that a flat renderer cannot give. A region is the **reuse**
+unit, so a header or a product card is authored once and appears on every layout that slots it.
+A region is the **edit** unit, which is what makes the Universal Editor mean something — a
+curator clicks a region and edits that region, rather than being handed a whole page. And a
+region is the **cache** unit, so the FSP `cacheTTL` that already exists per post-type × format
+gets a level where it is actually useful: a navigation region cached for an hour inside a page
+that is not.
 
-The recommendation is therefore the first row **as the default visible path**, with the second
-as the upgrade a designer reaches for and Next.js unchanged as production delivery (P10).
+**Why this is not the dropped Block D — and where the JavaScript goes.** The binding non-goal
+is *"No GraalJS server-side JS template engine"*. §0.4's argument is specific and still correct:
+an in-JVM script engine is **sandboxing liability**, because what it evaluates is user-supplied
+code. Choosing Groovy changes the syntax and not one word of that argument — which is why
+Groovy is named in the non-goal too, and it is *more* capable inside the JVM than Nashorn, not
+less.
 
-**What it must not become.** A preview URL that renders production content *is* a delivery
-path the moment somebody points DNS at it — and then Shio owns HTML rendering, caching and
-SEO, the position §0.3 and §0.4 declined. So the boundary has to be visible in the product,
-not merely asserted here: a distinct route, an unmistakable banner, no freshness headers that
-invite a CDN, and drafts reachable only behind the SH5 preview token.
+The resolution is to split the two things FSP fused. **HTML composition happens on the server,
+declaratively**; **JavaScript happens in the browser, as it does in every other front end
+written this decade**:
 
-**Three decisions the task owns.** *Where the markup lives* — `@viglet/shio-sections` already
-ships React components with stable `shio-*` class names, and two renderers for one vocabulary
-will drift, so the Java side must emit the same structure and classes with a test comparing
-them, the way `emit.test.mjs` already guards the two copies of the post-type definitions.
-*What a non-vocabulary post-type does* — a `Page` with an `HTML Editor` field is trivially
-renderable and an arbitrary custom type is not; the honest answer is a labelled field dump,
-not a blank page. And *styling* — the components are deliberately unstyled, so this needs a
-minimal default stylesheet that makes a page legible without pretending to be a design.
+```
+server   layout.hbs + region.hbs  ──Handlebars.java──▶  HTML  (+ data-shio-* annotations)
+browser  region.js as a static asset  ─────────────────▶  interactivity, progressive enhancement
+```
+
+Nothing is evaluated in the JVM. A region author still writes "HTML + JavaScript" — the exact
+material asked for — but the JS is shipped to the client instead of `eval`'d on the server, so
+`Java.type()`, `Runtime.exec` and the raw `HttpServletRequest` are not reachable, by
+construction rather than by a filter someone has to remember to configure.
+
+**Handlebars, in Java, is the same language authors already wrote.** The engine loaded
+`handlebars.min.js`, so the templates in existing sites are Handlebars templates; a pure-Java
+implementation evaluates them without a script engine. It is logic-less by design and its
+expression grammar is not Turing-complete, so the seven `shObject.js` functions become
+**explicitly registered helpers** — `{{#navigation}}`, `{{#query}}`, `{{#search}}`, `{{#form}}`,
+`{{#getRelation}}` — which is what the façade was already trying to express as a convention.
+Two hazards to pin down in the task, because they would smuggle the problem back in: any
+JavaScript-helper integration must stay off, and the value resolver must be restricted to maps
+and declared field data rather than resolving arbitrary bean properties by reflection.
+
+**Who renders — the options, and the recommendation.** They differ by where markup is produced:
+
+| Renders | Mechanism | Costs | Buys |
+|---|---|---|---|
+| **Shio (Java)** | layout + regions composed by Handlebars.java | a renderer, plus the region vocabulary | a site visible with **no client setup at all** — the only option an MCP-only agent can reach, and the only one the Universal Editor can annotate |
+| **Browser** | a static React/Next export served by Shio, fetching from the CDA | almost nothing — Shio already serves `/console/**` and `/file_source/**` | design freedom, no Node in production |
+| **Node** | Next.js, as today | a project and a process the agent cannot create over MCP | SSR, ISR, the production path |
+
+"Deploy React inside Shio and let it render" splits in two, and only one half is available:
+server-rendering React *in the JVM* needs a JS runtime and is the non-goal under a new name;
+serving a **static export** needs no engine and is cheap — but it renders in the browser, so the
+first paint carries no content, which is the wrong trade for preview, for SEO, and for a visual
+editor that has to map a DOM node back to a field.
+
+Recommendation: row one as the default visible path, row two as the upgrade a designer reaches
+for, Next.js unchanged as production delivery (P10).
+
+**Why this fits the agent surface better than a fixed vocabulary.** Layouts and regions are
+**content** — posts of a system post-type. So an agent creates and edits them with
+`post.upsert`, they travel in the SH68 exchange package, they project to files under
+`shio/content/**` (P4), `shio verify` can lint them, and `shio push --content` can converge
+them. A renderer built instead as a closed Java projection of the eight SH95 section types would
+be none of those things: unextendable without a Java release, and invisible to every tool the
+agent already has. The SH95 vocabulary then becomes what it should be — a set of **default
+regions** shipped as content, not the only thing renderable.
+
+It also covers what a fixed section set cannot: navigation, queries and listings, search results
+and forms are dynamic, and all four were first-class in FSP. And it keeps the two axes already
+present in the entity, the exchange format and `ShSiteRequest`: **format** (same post, alternate
+representation, own layout/mime/TTL) and **theme** (`PT-THEME`).
+
+**What it must not become.** A preview URL that renders production content *is* a delivery path
+the moment somebody points DNS at it — and then Shio owns HTML rendering, caching and SEO, the
+position §0.3 and §0.4 declined. If this grows into the delivery path that has to be a decision
+taken deliberately, with the CDA/Next split revisited in the open, not a consequence of a
+preview route getting popular. Until then: a distinct route, an unmistakable banner, no
+freshness headers that invite a CDN, drafts only behind the SH5 preview token.
+
+**And delete the orphan.** `nashorn-core` 15.7 stays in `shio-app/pom.xml` with nothing calling
+it — a script engine on the classpath that no code reaches is build weight and attack surface
+for free. It goes whichever way this section is decided.
 
 ### XV.2 A site's front-end URL is unreachable from the agent path (SH184)
 

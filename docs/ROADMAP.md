@@ -346,18 +346,30 @@
 > visual surfaces are windows onto a front end that only `shio init` can scaffold and only a
 > developer's machine can run. → §XV
 
-> **The non-goal this respects, and how.** "No GraalJS server-side JS template engine"
-> (the former Block D, SH17/SH18 — the Nashorn lineage) is binding, and the reason is
-> **sandboxing liability**: executing user-supplied script inside the JVM. A **declarative
-> HTML renderer over the closed SH95 section vocabulary is not that** — there is no user
-> template and no script, because the vocabulary *is* the template. Production delivery stays
-> Next.js over the CDA (P10). What lands here is explicitly **preview-grade** and must say so
-> at the surface, or it quietly becomes the delivery path and we have rebuilt the thing §0.4
-> rejected.
+> **The model is the one this product already had: page → layout → region.** Recovered from
+> `origin/FSP` (an ancestor of HEAD, last touched 2019-09-09) and from the real template in
+> `openviglet/bootstrap-site`, which is an SH68 exchange package — the presentation *is*
+> content. The lineage is OpenText WEM / Vignette V7 (page → template → component), which is
+> what corporate clients built institutional sites on, and the granularity is the point: each
+> level has a different owner and a different clock, a region is the unit of reuse, of
+> **editing** (which is what makes the Universal Editor mean anything) and of caching.
 
-- 📋 **SH183** (deps: SH95 ✅, SH101 ✅) **A built-in HTML renderer for the section vocabulary** — render a `Page` and its sections to semantic HTML server-side, from the eight first-party post-types and nothing else: no user templates, no scripting, no plugin surface. It is what gives preview a URL, the Universal Editor an iframe target, and `/agent/render` something real to read. Must be visibly preview-grade and must not become the delivery path. → §XV.1
+> **The non-goal this respects, and how.** "No GraalJS server-side JS template engine" (the
+> former Block D, SH17/SH18 — the Nashorn lineage) is binding, and the reason is
+> **sandboxing liability**: `ShNashornEngineConfiguration` called `getScriptEngine(String[])`
+> and never the `ClassFilter` overload, so a layout — which is *content* — had `Java.type()`
+> over the whole classpath and the raw `HttpServletRequest` in scope. Groovy changes the syntax
+> and none of that argument. The resolution splits what FSP fused: **HTML composes on the
+> server, declaratively** (the template language already *was* Handlebars, loaded into Nashorn
+> from a CDN at render time — a Java implementation runs the same templates with no script
+> engine), and **JavaScript runs in the browser** as a region's static asset. An author still
+> writes HTML + JavaScript; nothing is evaluated in the JVM. Production delivery stays Next.js
+> over the CDA (P10), and what lands here is **preview-grade** until that is deliberately
+> revisited.
+
+- 📋 **SH183** (deps: SH68 ✅, SH95 ✅) **Render page → layout → region, server-side, without a script engine** — restore the three-level model as system post-types (`PAGE_LAYOUT`, `REGION`, `THEME`), compose them with a Java Handlebars implementation, and register the seven `shObject.js` capabilities (navigation, query, search, form, relation, links) as explicit helpers instead of bindings on an unfiltered engine. The sample's per-region JavaScript is 767–1098 characters of loop-and-remap that a domain-aware block helper replaces with one line. Layouts and regions being content is what makes them agent-authorable via `post.upsert`, exportable, projectable to files and lintable — a closed Java projection of the SH95 types would be none of those. → §XV.1
 - 📋 **SH184** (deps: SH170 ✅, SH183) **A site's front-end URL is unreachable from the agent path** — `site.url` gates both visual surfaces (`400 site has no url`; `universalEditor.siteNoUrl`), and `site.upsert` deliberately never updates a site, so an agent that builds a site and deploys a front end still cannot connect the two. With SH183 the sensible default is Shio's own preview route. → §XV.2
-- 📋 **SH185** (deps: SH183) **Nothing implements the Universal Editor's iframe protocol** — `visual-editor.page.tsx` posts `{type, data}` into the iframe and listens for replies, and there is not one `postMessage` in `create-shio-app`, `shio-react-sdk`, `shio-sections` or `shio-client`. The editor is a shell with no counterpart, and the manifest's `universalEditor: true` overstates what exists. Needs the protocol written down, an implementation to target it, and the flag telling the truth until then. → §XV.3
+- 📋 **SH185** (deps: SH183) **The Universal Editor has no counterpart, and `sh-region` is already the contract** — `visual-editor.page.tsx` posts `{type, data}` into the iframe and listens for replies, and there is not one `postMessage` in `create-shio-app`, `shio-react-sdk`, `shio-sections` or `shio-client`, so the editor cannot work against anything. The 2018 templates already annotate composition with `sh-region="NAME"`; a renderer that preserves those attributes tells the editor which DOM node is which region and which post to save. Needs the protocol written down, SH183 as its first implementation, `"*"` replaced by the site's origin, and `universalEditor: true` demoted until it is true. → §XV.3
 - 📋 **SH187** (deps: SH183, SH169 ✅, SH102) **The agent sees a page's structure, never its appearance** — SH169 made the digest compose a page's sections, so an agent can prove the outline is right; nothing lets it see that the page *looks* right, since `visualSnapshot` and `signedImageUrls` are `false` and `renderFetch` is off by default. SH102 is the correct instrument scoped for the wrong reader — "for the human handoff rather than for the agent" — and SH183 makes it nearly free, because the renderer's own HTML is the artifact to snapshot. → §XV.4
 - 💭 **SH186** (deps: SH183, SH166) **An MCP-only agent cannot produce a visible site** — the server never writes a project file (correct — P7), and only the CLI scaffolds one, so a client with no filesystem ends with content nobody can look at. SH183 is the answer if it lands: the site is visible without a project at all, and SH166's unsubstituted-files problem stops being on the critical path. → §XV.5
 
