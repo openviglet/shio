@@ -467,37 +467,6 @@ what follows:
   fail loudly?* If not, it is not a comment, it is a missing parameter or a missing
   wrapper.
 
-### VIII.12 A write must refuse a field the post-type does not declare (SH168)
-
-`post.upsert` writes its `data` map into `sh_post_unified` without checking the keys
-against the post-type. Every consequence follows from that one omission, and they compound
-in the wrong direction:
-
-```
-{"op":"post.upsert","address":"post:Site/about","type":"Page",
- "data":{"title":"About","contentt":"<p>…</p>"}}     → 200, changed:1
-```
-
-The op reports success. `contentt` is stored. `content` — the field that was meant, and the
-only one the console renders and the SDK types — is now **absent**, because upsert declares
-whole state. `shio verify` reads the post, finds no rule about unknown keys, and returns
-`ok`. The page is blank on the site and green in every check the agent has.
-
-This is why SH152's honest report is not enough on its own. A package whose `Page` lacks
-`sections` writes `sections` anyway; the content lands, the console cannot show it, `shio
-types` cannot type it, and nothing anywhere says so. Fixing reconciliation makes that
-specific collision rarer; fixing the write makes the whole class visible.
-
-The refusal is the P6 shape already used for an unknown post-type — `allowed` is the
-post-type's field list, and `didYouMean` is nearly free at one edit distance, which is
-exactly the case a typo produces. Two decisions belong in the task. First, whether it is a
-400 or a warning: a 400 is right, because the alternative is a write that half-happened,
-and every other unknown-name mistake on this surface is already a 400. Second, the escape
-hatch — the current behaviour is load-bearing for nobody, but a post that *already* holds
-undeclared keys (SH152's collisions, and the `File` posts on any older instance) must stay
-readable and re-writable, so the check binds new keys rather than existing ones, and the
-`unknown-field` lint rule is what reports the ones already there.
-
 ### VIII.13 Creating a site is not on the agent surface (SH170)
 
 The batch surface has seven ops and none of them makes a site. The manifest's endpoint
@@ -523,66 +492,6 @@ The CSRF half also feeds SH167: the argument for exempting `/agent/**` wholesale
 only stateless clients reach it, and the argument for *not* exempting `/api/v2/site` is
 that a browser does. Both are true, and the agent path needs a site-creation route that
 does not depend on which of them wins.
-
-### VIII.14 A multi-address read is all-or-nothing (SH171)
-
-`GET /agent/read?address=…&address=…` exists so N posts cost one round trip. One
-unresolvable address returns `404` for the whole call, which inverts the saving: the agent
-now re-reads the addresses one at a time to discover which was wrong, and the batch form is
-strictly worse than the loop it replaced. The failure is not hypothetical — it is what
-takes `shio push --content` down (§X.11), and there the bad address belongs to content the
-caller never asked about.
-
-The shape is settled by the rest of the surface: `/agent/batch` already returns a
-`results` array positional to `ops`, so `read` should return one row per requested address
-with the SH80 error object on the rows that failed, and a top-level count of how many
-resolved. The status code is the only real decision — `200` with per-row errors reads
-cleanly and risks a caller that checks only the status, so the task should follow whatever
-`batch` does with a partial failure and not invent a third convention.
-
-Keep the current behaviour for the **single**-address form. A one-address read that 404s is
-correct and callers depend on it.
-
-### VIII.15 `find` can hand back one address for several posts (SH172)
-
-SH79's premise is that an address names a post. A post with no friendly URL has no address
-under that scheme, and `find` renders it as `post:<site>/` anyway — so three URL-less File
-posts come back as three rows carrying the *same* address, differing only in `title`:
-
-```
-{"address":"post:teste/","type":"File","title":"notify-weekly.png"}
-{"address":"post:teste/","type":"File","title":"notify-bonus.png"}
-{"address":"post:teste/","type":"File","title":"index.html"}
-```
-
-Nothing an agent does with those rows can work. `read` on that address returns one
-arbitrary post or 404s; a write to it is a guess. And the rows do not say anything is
-wrong, so the agent has no reason to suspect the list rather than itself.
-
-The answer already exists one surface over: SH100's lint reports exactly these posts as
-`url-missing`, addresses them as `id:<uuid>` because that is the only thing that names
-them, and hands back a ready-to-paste `post.move` as the fix. `find` should agree with it —
-fall back to `id:` when there is no URL, and mark the row so the caller knows the address
-is a fallback rather than a route. That the two surfaces disagree today is the interesting
-part: the invariant "an address identifies one post" is asserted in SH79's design and
-enforced nowhere, which makes it a candidate for the §VIII.10 guard rule.
-
-### VIII.16 Conditional requirements belong in the tool schema (SH175)
-
-`shio_write`'s schema documents `type` as *"required only when creating a post"* and
-describes `folder` as *"where a new post goes"* — which is a hint, not a requirement, and
-the op that needs both fails with only one. The teaching error is good (it names `folder`,
-explains that a friendly URL says nothing about which folder a post lives in, and gives an
-example), so the recovery is one call. But it is one call on the single most common write
-there is, paid by every agent on its first create, and the schema is the one document a
-model reads *before* calling.
-
-JSON Schema can express this properly (`allOf`/`if`-`then`), and probably should not: the
-value is in the description a model actually reads, and a conditional keyword an MCP client
-may or may not surface is a worse deal than one clear sentence. The task is small — say it
-in the description, the same way `type` already does — and the general form is worth a
-sweep: any argument whose requirement depends on another argument's value should say so on
-itself, not only in the error that fires when it is missing.
 
 ## IX. Perception & verification loop (Block K)
 
@@ -821,34 +730,6 @@ Two details to settle in the task: how much divergence still counts as the same 
 address change plus a body rewrite is still a move), and what to do when two files could
 each claim the same base post — which, like every other ambiguity in this block, should be
 a refusal rather than a guess.
-
-### X.11 `push --content` must not fail on content it does not manage (SH173)
-
-`shio push --content` without `--site` reads the server side of the merge for every post on
-the instance, not for the sites the local tree holds. On an instance with a second site
-whose posts have no friendly URL, that read includes `post:<other>/` — un-addressable
-(§VIII.15) — and `/agent/read` is all-or-nothing (§VIII.14), so the whole command dies:
-
-```
-shio: Shio CDA 404 for http://localhost:2710/api/v2/agent/read?address=…&address=…
-```
-
-Seven hundred characters of URL, no `fix`, no name of the offending address, and an exit
-code that the CI gate order in `agents.md` puts *before* `shio verify` — the command that
-would have explained the problem in one line. `--site` works around it, which means the
-failure is a discoverability cost rather than a wall, but nothing in the message says so.
-
-Three fixes, and each is worth doing even if the others land:
-
-1. **Scope the read to the sites the tree holds.** `shio/content/<site>/**` already names
-   them, so reading anything else is work the command did not need to do — this is the real
-   bug, and it makes the CI gate independent of unrelated content.
-2. **Name the address that failed.** SH171 gives per-address rows, at which point the CLI
-   can report *"3 posts in site `teste` have no friendly URL and cannot be read by
-   address — run `shio verify` or pass `--site`"*, which is a finding rather than a stack
-   trace.
-3. **Never print a request URL as an error.** A remote failure should surface the SH80
-   body — Shio always sends one — and the URL belongs behind a debug flag.
 
 ## XI. Blueprints + Claude Code plugin (Block J)
 

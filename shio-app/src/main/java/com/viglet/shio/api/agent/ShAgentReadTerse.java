@@ -52,6 +52,11 @@ public final class ShAgentReadTerse {
                     .attr("title", row.title())
                     .build());
         }
+        // SH172's note travels in terse too: an `id:` address is a fallback, and the reason it
+        // is one belongs with the rows rather than only in the JSON form.
+        for (String note : found.notes() == null ? List.<String>of() : found.notes()) {
+            out.append("note ").append(note).append('\n');
+        }
         return out.toString();
     }
 
@@ -67,6 +72,16 @@ public final class ShAgentReadTerse {
                     .attr("id", doc.id())
                     .attr("fields", doc.fields() == null ? null : String.join(",", doc.fields()))
                     .build());
+            if (doc.error() != null) {
+                // SH171: the failed row says why, in the same shape the JSON form uses. Without
+                // this the terse reader would see a doc with no data and no reason.
+                out.append(ShTerse.line("error")
+                        .word(doc.error().type())
+                        .attr("title", doc.error().title())
+                        .attr("fix", doc.error().fix())
+                        .build());
+                continue;
+            }
             out.append("data ").append(doc.data() == null ? "{}" : doc.data().toString()).append('\n');
         }
         return out.toString();

@@ -13,6 +13,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -260,6 +261,7 @@ public class ShAgentVerifyService {
             for (ShPostTypeAttr attr : declared(post.getShPostType())) {
                 fieldFindings(check, post, address, data, attr, scan, findings);
             }
+            undeclaredFields(check, post, address, data, findings);
         }
         duplicateUrls(check, scan, findings);
         folderFindings(check, scan, findings);
@@ -498,6 +500,66 @@ public class ShAgentVerifyService {
                     incident.fix() != null ? incident.fix()
                             : "See GET /api/v2/agent/diagnostics for when it started and how often."));
         }
+    }
+
+    /**
+     * Values stored under keys the post-type does not declare (SH168).
+     *
+     * <p>The write path refuses to create one now, so what this reports is what is already
+     * there: content the console cannot render, {@code shio types} cannot type and the CDA does
+     * not deliver — invisible until something looked. It is the other half of SH168, and the
+     * reason the write grandfathers existing keys instead of making such a post unwritable.</p>
+     *
+     * <p><b>An error, not a warning.</b> The CMS can prove this one from the inside: the model
+     * is right there. It is the SH99 rule applied honestly, even though it means an instance
+     * carrying a pre-SH168 mistake goes red — which is the point, since nothing said so before.
+     * "Known and accepted" is SH142's job, not a softer severity here.</p>
+     */
+    private void undeclaredFields(String check, ShPostUnified post, String address,
+                                  JsonNode data, List<Finding> findings) {
+        if (data == null || !data.isObject() || data.isEmpty()) {
+            return;
+        }
+        Set<String> allowed = declaredNames(post.getShPostType());
+        if (allowed.isEmpty()) {
+            // A post-type declaring no fields cannot say anything about these keys, and
+            // reporting every one of them would blame the content for a modelling gap.
+            return;
+        }
+        for (String key : data.propertyNames()) {
+            if (!allowed.contains(key)) {
+                findings.add(Finding.error(check, "unknown-field", address, key,
+                        "This post stores '" + key + "', which post-type '"
+                                + name(post.getShPostType()) + "' does not declare, so nothing "
+                                + "renders or delivers it.",
+                        "Add '" + key + "' to the post-type (PUT /api/v2/post-type/"
+                                + name(post.getShPostType()) + "), or drop the key with a "
+                                + "post.upsert that omits it."));
+            }
+        }
+    }
+
+    /** Every field name a post-type declares, nested ones included. */
+    private static Set<String> declaredNames(ShPostType postType) {
+        Set<String> names = new LinkedHashSet<>();
+        collectNames(postType == null ? null : postType.getShPostTypeAttrs(), names);
+        return names;
+    }
+
+    private static void collectNames(Set<ShPostTypeAttr> attrs, Set<String> into) {
+        if (attrs == null) {
+            return;
+        }
+        for (ShPostTypeAttr attr : attrs) {
+            if (attr.getName() != null && !attr.getName().isBlank()) {
+                into.add(attr.getName());
+            }
+            collectNames(attr.getShPostTypeAttrs(), into);
+        }
+    }
+
+    private static String name(ShPostType postType) {
+        return postType == null || postType.getName() == null ? "?" : postType.getName();
     }
 
     // --- helpers ------------------------------------------------------------

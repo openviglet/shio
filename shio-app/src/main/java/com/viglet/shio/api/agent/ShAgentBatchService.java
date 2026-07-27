@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -35,6 +36,7 @@ import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.UpdateRequest
 import com.viglet.shio.api.folder.ShFolderWriteService;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
+import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
@@ -331,12 +333,14 @@ public class ShAgentBatchService {
             if (op.data() == null || sameData(post, op.data())) {
                 return session.change(op, address, Change.NOOP, null, post.getId());
             }
+            String undeclared = checkDeclaredFields(op, address, session,
+                    post.getShPostType(), readTree(post.getData()));
             if (!session.dryRun) {
                 shContentAclService.requireWrite(post.getId());
                 shPostUnifiedWriteService.update(post.getId(),
                         new UpdateRequest(op.data(), ShPostState.DRAFT, session.actor));
             }
-            return session.change(op, address, Change.UPDATE, null, post.getId());
+            return session.change(op, address, Change.UPDATE, undeclared, post.getId());
         }
         // Only reachable in a dry run — a real run would have found the row above.
         if (session.alreadyPlanned(address)) {
@@ -344,10 +348,11 @@ public class ShAgentBatchService {
         }
 
         ShPostType postType = requirePostType(op, address);
+        String undeclared = checkDeclaredFields(op, address, session, postType, null);
         ShFolder folder = requireTargetFolder(op, site, address, session);
         session.planPost(address);
         if (session.dryRun || folder == null) {
-            return session.change(op, address, Change.CREATE, null, null);
+            return session.change(op, address, Change.CREATE, undeclared, null);
         }
         shContentAclService.requireWrite(folder.getId());
         shTenantQuotaService.checkCanCreatePost();
@@ -359,6 +364,106 @@ public class ShAgentBatchService {
         // two addresses, and the next run must find this one again.
         shPostUnifiedWriteService.setFurl(created.getId(), address.path());
         return session.change(op, address, Change.CREATE, null, created.getId());
+    }
+
+    /**
+     * Refuses a data key the post-type does not declare (SH168).
+     *
+     * <h2>Why this is a 400 and not a stored value</h2>
+     *
+     * <p>{@code post.upsert} declares whole state, so a mistyped field name does not add a
+     * key — it <em>replaces</em> the one that was meant with one nothing reads. The write
+     * reported {@code changed:1}, the console could not render it, {@code shio types} could not
+     * type it, and {@code shio verify} was green: the only defect on record that destroyed
+     * content without saying anything. Every other unknown-name mistake on this surface is
+     * already a 400, and the alternative here is a write that half-happened.</p>
+     *
+     * <h2>Why it binds new keys only</h2>
+     *
+     * <p>A post that <em>already</em> holds undeclared keys must stay readable and re-writable:
+     * SH152's post-type collisions produced some, and so did older instances' {@code File}
+     * posts. Refusing them would mean an agent could no longer fix such a post at all. So the
+     * keys already stored are grandfathered, and the {@code unknown-field} lint rule is what
+     * reports them — a defect that is visible and fixable beats one that is unwritable.</p>
+     *
+     * @param declaredIn the post-type to check against
+     * @param stored     the post's current data, or {@code null} when it is being created
+     */
+    private String checkDeclaredFields(ShAgentBatch.Op op, ShAddress address, Session session,
+                                       ShPostType declaredIn, JsonNode stored) {
+        JsonNode data = op.data();
+        if (data == null || !data.isObject() || declaredIn == null) {
+            return null;
+        }
+        Set<String> allowed = declaredFieldNames(declaredIn);
+        if (allowed.isEmpty()) {
+            // A post-type with no fields declares nothing to check against, and refusing every
+            // key would make such a type unusable rather than making the model better.
+            return null;
+        }
+        List<String> unknown = new ArrayList<>();
+        for (String key : data.propertyNames()) {
+            boolean grandfathered = stored != null && stored.has(key);
+            if (!allowed.contains(key) && !grandfathered) {
+                unknown.add(key);
+            }
+        }
+        if (unknown.isEmpty()) {
+            return null;
+        }
+        if (!session.dryRun) {
+            throw new UndeclaredFieldException(address, declaredIn.getName(), unknown,
+                    List.copyOf(allowed));
+        }
+        // On a plan it is a *finding*, not a stop. A plan that died on the first bad field
+        // would hide the rest of the report — and the report is the reason to plan: a blueprint
+        // whose post-type already exists with fewer fields (SH152) needs to say both which
+        // fields are missing and which writes that will break, in one answer.
+        return "undeclared field(s) " + String.join(", ", unknown)
+                + " — a real run will refuse this write";
+    }
+
+    /** Every field name a post-type declares, nested ones included (Tab groups, Relator children). */
+    private Set<String> declaredFieldNames(ShPostType postType) {
+        Set<String> names = new LinkedHashSet<>();
+        collectFieldNames(postType.getShPostTypeAttrs(), names);
+        return names;
+    }
+
+    private void collectFieldNames(Set<ShPostTypeAttr> attrs, Set<String> into) {
+        if (attrs == null) {
+            return;
+        }
+        for (ShPostTypeAttr attr : attrs) {
+            if (attr.getName() != null && !attr.getName().isBlank()) {
+                into.add(attr.getName());
+            }
+            collectFieldNames(attr.getShPostTypeAttrs(), into);
+        }
+    }
+
+    /** A 400 naming the fields this post-type has, and the nearest one to what was sent. */
+    public static class UndeclaredFieldException extends ShTeachingException {
+
+        public UndeclaredFieldException(ShAddress address, String postType, List<String> unknown,
+                                        List<String> allowed) {
+            super(ShProblem.badRequest("undeclared-field",
+                            "'" + postType + "' does not declare " + join(unknown))
+                    .withDetail("A post.upsert declares whole state, so writing a field the "
+                            + "post-type has no place for would replace the value it was meant "
+                            + "for with one nothing can read. Address: " + address + ".")
+                    .withFix("Use one of the declared fields below, or add the field to the "
+                            + "post-type first (PUT /api/v2/post-type/" + postType + ").")
+                    .withAllowed(allowed)
+                    // The nearest declared name, which for a typo is the field that was meant.
+                    // Reuses the SH80 matcher rather than a second notion of "close".
+                    .withDidYouMeanFrom(unknown.get(0)));
+        }
+
+        private static String join(List<String> names) {
+            return names.size() == 1 ? "a field named '" + names.get(0) + "'"
+                    : "fields named " + String.join(", ", names);
+        }
     }
 
     /**

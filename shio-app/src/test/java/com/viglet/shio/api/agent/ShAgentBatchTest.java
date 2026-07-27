@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -32,8 +33,11 @@ import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
+import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.model.widget.ShWidget;
+import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -64,6 +68,8 @@ class ShAgentBatchTest {
     private PlatformTransactionManager transactionManager;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private ShPostUnifiedRepository shPostUnifiedRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -134,6 +140,11 @@ class ShAgentBatchTest {
                     : null;
             return shAgentBatchService.run(new ShAgentBatch(dryRun, list, confirm), true, "tester");
         });
+    }
+
+    /** The last result row — the one the assertion under test is about. */
+    private static Change only(ShAgentChangeSet result) {
+        return result.results().get(result.results().size() - 1);
     }
 
     private JsonNode data(String headline) {
@@ -374,5 +385,87 @@ class ShAgentBatchTest {
 
         assertThat(lean.results()).allSatisfy(change -> assertThat(change.id()).isNull());
         assertThat(objectMapper.writeValueAsString(lean)).doesNotContain("null");
+    }
+
+    // --- SH168: a write must refuse a field the post-type does not declare ---
+
+    @Test
+    @DisplayName("a mistyped field name is refused, and the refusal names the field that was meant")
+    void anUndeclaredFieldIsRefused() {
+        String base = "/uf-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base));
+
+        Op typo = new Op(ShAgentBatchService.POST_UPSERT, "post:" + siteName + base + "/typo",
+                postTypeName, base, objectMapper.valueToTree(Map.of("headlien", "Oops")));
+
+        assertThatThrownBy(() -> run(false, typo))
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class)
+                .satisfies(failure -> {
+                    var detail = ((ShAgentBatchService.BatchOpException) failure).problem()
+                            .toProblemDetail();
+                    assertThat(detail.getStatus()).isEqualTo(400);
+                    assertThat(detail.getProperties().get("allowed").toString()).contains("headline");
+                    assertThat(detail.getProperties().get("didYouMean"))
+                            .as("the nearest declared name is the field a typo meant")
+                            .isEqualTo("headline");
+                    assertThat(detail.getProperties().get("at"))
+                            .as("which op failed, so the fix is local")
+                            .isEqualTo("ops[0]");
+                });
+    }
+
+    @Test
+    @DisplayName("nothing is written when a field is refused — the post does not half-exist")
+    void anUndeclaredFieldWritesNothing() {
+        String base = "/uf-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base));
+        Op typo = new Op(ShAgentBatchService.POST_UPSERT, "post:" + siteName + base + "/ghost",
+                postTypeName, base, objectMapper.valueToTree(Map.of("nosuch", "value")));
+
+        assertThatThrownBy(() -> run(false, typo)).isInstanceOf(ShAgentBatchService.BatchOpException.class);
+
+        // The upsert that *is* correct reports create, which means the refused one left nothing.
+        assertThat(only(run(true, post(base + "/ghost", base, "Ghost"))).action())
+                .isEqualTo(Change.CREATE);
+    }
+
+    @Test
+    @DisplayName("the refusal also applies to an update, before the value is replaced")
+    void anUndeclaredFieldIsRefusedOnUpdateToo() {
+        String base = "/uf-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), post(base + "/page", base, "Before"));
+
+        Op typo = new Op(ShAgentBatchService.POST_UPSERT, "post:" + siteName + base + "/page",
+                postTypeName, base, objectMapper.valueToTree(Map.of("headlien", "After")));
+
+        assertThatThrownBy(() -> run(false, typo)).isInstanceOf(ShAgentBatchService.BatchOpException.class);
+        // An upsert declares whole state, so accepting the typo would have *replaced* the
+        // headline with a key nothing reads. The stored value is untouched.
+        assertThat(only(run(true, post(base + "/page", base, "Before"))).action())
+                .isEqualTo(Change.NOOP);
+    }
+
+    @Test
+    @DisplayName("a key the post already holds stays writable — an unwritable post is worse")
+    void alreadyStoredKeysAreGrandfathered() {
+        // How a post gets one in the first place: a post-type that declared the field when the
+        // content was written, and no longer does (SH152's collisions, older File posts).
+        String base = "/uf-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), post(base + "/legacy", base, "Legacy"));
+        String id = only(run(true, post(base + "/legacy", base, "Legacy"))).id();
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            ShPostUnified draft = shPostUnifiedRepository.findByIdAndState(id, ShPostState.DRAFT)
+                    .orElseThrow();
+            draft.setData("{\"headline\":\"Legacy\",\"legacyField\":\"kept\"}");
+            shPostUnifiedRepository.save(draft);
+        });
+
+        Op keepIt = new Op(ShAgentBatchService.POST_UPSERT, "post:" + siteName + base + "/legacy",
+                postTypeName, base,
+                objectMapper.valueToTree(Map.of("headline", "Edited", "legacyField", "kept")));
+
+        assertThat(only(run(false, keepIt)).action())
+                .as("refusing this would mean the agent could not fix the post at all")
+                .isEqualTo(Change.UPDATE);
     }
 }

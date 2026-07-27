@@ -105,6 +105,21 @@ export async function readLocal(ctx, { dir = CONTENT_DIR, site = null } = {}) {
   return docs;
 }
 
+/**
+ * The sites a local projection holds — `shio/content/<site>/**` (SH173).
+ *
+ * This is the scope both commands should read the server with. It is derived rather than
+ * configured on purpose: `--site` existing is not a reason for the tool to need telling what
+ * its own directory already says.
+ */
+export function sitesOf(docs) {
+  const sites = new Set();
+  for (const doc of Object.values(docs ?? {})) {
+    if (doc?.site) sites.add(doc.site);
+  }
+  return [...sites].sort();
+}
+
 async function walk(ctx, root, prefix) {
   let entries;
   try {
@@ -169,21 +184,49 @@ export async function writeRemoteSidecar(ctx, doc, bodyField, { dir = CONTENT_DI
  * the caller says `--allow-partial`, and the snapshot it produces stays marked partial so
  * a later prune refuses too. Same rule as SH138: never let a cut read as complete.
  *
- * @returns {Promise<{ docs: Record<string, object>, truncated: boolean, count: number }>}
+ * <h3>Scope, and why it is not the whole instance</h3>
+ *
+ * `sites` is the set the local tree holds (`shio/content/<site>/**`). Reading beyond it was the
+ * SH173 defect: an un-addressable post in an unrelated site aborted the whole command, and
+ * `--site` "worked around" a scope the command could have derived itself.
+ *
+ * @returns {Promise<{ docs: Record<string, object>, truncated: boolean, count: number,
+ *                     skipped: {address: string, reason: string}[] }>}
  */
-export async function readRemote(client, { site = null, limit = 200, batch = 25 } = {}) {
-  const found = await client.find({ site, limit });
-  const addresses = (found.results ?? []).map((row) => row.address).filter(Boolean);
-
+export async function readRemote(client, { site = null, sites = [], limit = 200, batch = 25 } = {}) {
+  // SH173 — read the sites this tree holds, not the whole instance. Without it a second site
+  // whose posts have no friendly URL took the command down, and that site was content the
+  // caller never asked about: the CI gate failed on somebody else's data. `shio/content/<site>`
+  // already names the ones that matter, so reading anything else was work with a downside and
+  // no upside.
+  const scopes = site ? [site] : (sites.length ? sites : [null]);
   const docs = {};
-  for (let index = 0; index < addresses.length; index += batch) {
-    const slice = addresses.slice(index, index + batch);
-    for (const doc of await client.read(slice)) {
-      const parsed = fromAgentDoc(doc);
-      if (parsed) docs[addressOf(parsed)] = parsed;
+  const skipped = [];
+  let truncated = false;
+  let count = 0;
+
+  for (const scope of scopes) {
+    const found = await client.find({ site: scope, limit });
+    truncated = truncated || Boolean(found.truncated);
+    const addresses = (found.results ?? []).map((row) => row.address).filter(Boolean);
+    count += addresses.length;
+
+    for (let index = 0; index < addresses.length; index += batch) {
+      const slice = addresses.slice(index, index + batch);
+      for (const doc of await client.read(slice)) {
+        // SH171 gives a per-row error instead of a 404 for the whole call, so an
+        // un-addressable post is now a *finding* the caller can be told about rather than
+        // the end of the command.
+        if (doc?.error) {
+          skipped.push({ address: doc.address, reason: doc.error.title ?? doc.error.type ?? "unreadable" });
+          continue;
+        }
+        const parsed = fromAgentDoc(doc);
+        if (parsed) docs[addressOf(parsed)] = parsed;
+      }
     }
   }
-  return { docs, truncated: Boolean(found.truncated), count: addresses.length };
+  return { docs, truncated, count, skipped };
 }
 
 /**

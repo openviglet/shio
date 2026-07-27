@@ -56,8 +56,20 @@ import com.viglet.shio.spring.security.auth.ShApiTokenContext;
  * @author Alexandre Oliveira
  * @since 2026.3
  */
+/*
+ * `noRollbackFor` is load-bearing for SH171. Every method here is a read-only lookup, and a
+ * teaching exception from one means "not found" — never a partial write. Without it, a caller
+ * that legitimately *handles* an unresolvable address (a multi-address read reports it per row
+ * rather than failing the call) would still see its own commit blow up with
+ * UnexpectedRollbackException, because this method's interceptor had already marked the shared
+ * transaction rollback-only on the way out.
+ *
+ * An enclosing *write* transaction is unaffected: the batch service's own boundary has no such
+ * exemption, so an op that fails to resolve still rolls the whole batch back — which
+ * ShAgentBatchTest asserts directly.
+ */
 @Service
-@Transactional(readOnly = true)
+@Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
 public class ShAddressResolver {
 
     private static final byte ROOT_FOLDER = 1;
@@ -205,10 +217,34 @@ public class ShAddressResolver {
                 "/" + String.join("/", names));
     }
 
-    /** The canonical address of a post — its site plus its friendly URL. */
+    /**
+     * The canonical address of a post — its site plus its friendly URL, or {@code id:} when it
+     * has no URL to be addressed by (SH172).
+     *
+     * <h2>Why the fallback is here and not in each reader</h2>
+     *
+     * <p>SH79's premise is that an address names <em>one</em> post. A post with no friendly URL
+     * has no address under that scheme, and rendering it as {@code post:<site>/} anyway broke the
+     * premise silently: three URL-less {@code File} posts came back from {@code find} as three
+     * rows carrying the same address, differing only in title. Nothing an agent does with those
+     * rows can work — a read returns one arbitrary post, a write is a guess — and the rows did
+     * not say anything was wrong.</p>
+     *
+     * <p>SH100's lint already answered this correctly: it reports such posts as
+     * {@code url-missing} and addresses them as {@code id:<uuid>}, because that is the only thing
+     * that names them. The two surfaces disagreeing was the actual defect, so the fallback lives
+     * in the one place both of them ask — the invariant is enforced rather than restated.</p>
+     *
+     * <p>A site-less post (the SH128 class) falls back for the same reason: {@code post:null/x}
+     * resolves to nothing and teaches nothing.</p>
+     */
     public ShAddress addressOf(ShPostUnified post) {
         String site = post.getShSite() == null ? null : post.getShSite().getName();
-        return ShAddress.post(site, post.getFurl());
+        String url = post.getFurl();
+        if (site == null || site.isBlank() || url == null || url.isBlank()) {
+            return ShAddress.id(post.getId());
+        }
+        return ShAddress.post(site, url);
     }
 
     // --- helpers ---

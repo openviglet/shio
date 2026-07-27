@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -29,9 +30,12 @@ import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentBatch.Op;
 import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.api.agent.dto.ShAgentFound;
+import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
+import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.model.widget.ShWidget;
 
@@ -56,6 +60,12 @@ class ShAgentReadTest {
 
     @Autowired
     private ShAgentReadService shAgentReadService;
+    @Autowired
+    private com.viglet.shio.persistence.repository.site.ShSiteRepository shSiteRepository;
+    @Autowired
+    private com.viglet.shio.persistence.repository.folder.ShFolderRepository shFolderRepository;
+    @Autowired
+    private com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository shPostTypeRepository;
     @Autowired
     private ShAgentBatchService shAgentBatchService;
     @Autowired
@@ -223,6 +233,82 @@ class ShAgentReadTest {
 
         assertThat(docs).extracting(ShAgentDoc::address)
                 .containsExactly(address("/alpha"), address("/beta"));
+    }
+
+    // --- SH172: an address names one post, or it is an id ---
+
+    @Test
+    @DisplayName("a post with no friendly URL is addressed by id, not as post:<site>/")
+    void aUrllessPostFallsBackToItsId() {
+        // How they get there: a File post, or any post created outside the address vocabulary.
+        // Three of them used to come back from find as three rows carrying the *same* address.
+        List<String> ids = new java.util.ArrayList<>();
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            for (int i = 0; i < 2; i++) {
+                ShPostUnified post = new ShPostUnified();
+                post.setId(UUID.randomUUID().toString());
+                post.setState(ShPostState.DRAFT);
+                post.setTitle("no-url-" + i);
+                post.setData("{\"headline\":\"no-url-" + i + "\"}");
+                // Repositories, not JPQL: `f.shSite.name` would navigate past the id of an
+                // ShObject subclass and Hibernate would emit the @TenantId predicate against
+                // the subclass table (the SH122 hazard agents.md documents).
+                ShSite site = shSiteRepository.findByName(siteName);
+                post.setShSite(site);
+                post.setShFolder(shFolderRepository.findByShSiteAndRootFolder(site, (byte) 1)
+                        .stream().findFirst().orElseThrow());
+                post.setShPostType(shPostTypeRepository.findByName(postTypeName));
+                post.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+                post.setOwner("tester");
+                entityManager.persist(post);
+                ids.add(post.getId());
+            }
+        });
+
+        ShAgentFound found = shAgentReadService.find(siteName, postTypeName, null, null, 50, false);
+        List<String> urlless = found.results().stream()
+                .map(ShAgentFound.Row::address)
+                .filter(address -> address.startsWith("id:"))
+                .toList();
+
+        assertThat(urlless)
+                .as("each URL-less post must name itself — the id is the only thing that does")
+                .hasSize(2)
+                .doesNotHaveDuplicates()
+                .allSatisfy(address -> assertThat(ids).contains(address.substring("id:".length())));
+        assertThat(found.notes())
+                .as("and the response says the address is a fallback rather than a route")
+                .isNotNull()
+                .anySatisfy(note -> assertThat(note).contains("no friendly URL"));
+    }
+
+    // --- SH171: a multi-address read is not all-or-nothing ---
+
+    @Test
+    @DisplayName("one unresolvable address does not take the whole batch read down")
+    void abadAddressFailsItsOwnRowOnly() {
+        List<ShAgentDoc> docs = shAgentReadService.read(
+                List.of(address("/alpha"), address("/no-such-post"), address("/beta")), null, false);
+
+        // Every row the caller asked for comes back, positionally, like /agent/batch's results.
+        assertThat(docs).hasSize(3);
+        assertThat(docs.get(0).data()).isNotNull();
+        assertThat(docs.get(2).data()).isNotNull();
+
+        ShAgentDoc failed = docs.get(1);
+        assertThat(failed.address()).isEqualTo(address("/no-such-post"));
+        assertThat(failed.data()).isNull();
+        assertThat(failed.error()).isNotNull();
+        assertThat(failed.error().fix())
+                .as("the row teaches its own failure, so the agent does not re-read one by one")
+                .isNotBlank();
+    }
+
+    @Test
+    @DisplayName("a single-address read still 404s — callers depend on that")
+    void aSingleBadAddressStillThrows() {
+        assertThatThrownBy(() -> shAgentReadService.read(List.of(address("/no-such-post")), null, false))
+                .isInstanceOf(ShTeachingException.class);
     }
 
     // --- SH123: projection ---

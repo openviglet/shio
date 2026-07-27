@@ -268,6 +268,14 @@ class ShBlueprintApplyTest {
                     assertThat(postType.action()).isEqualTo("exists");
                     assertThat(postType.missing()).containsExactly("description", "sections");
                 });
+        // SH168: and the content half of the same answer — the plan says which writes the
+        // missing fields will break, rather than reporting `update` and failing on apply.
+        // The plan must still be a *whole* report: dying on the first bad field would have
+        // hidden the post-type list above, which is the more actionable half.
+        assertThat(plan.content().results())
+                .anySatisfy(change -> assertThat(change.detail())
+                        .as("a plan warns where a real run refuses")
+                        .contains("undeclared field(s)", "sections"));
     }
 
     @Test

@@ -30,7 +30,12 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * @since 2026.3
  */
 @JsonInclude(Include.NON_NULL)
-public record ShAgentFound(int count, boolean truncated, List<Row> results) {
+public record ShAgentFound(int count, boolean truncated, List<Row> results, List<String> notes) {
+
+    /** The three-field form: nothing to note, which is the common case. */
+    public ShAgentFound(int count, boolean truncated, List<Row> results) {
+        this(count, truncated, results, null);
+    }
 
     /**
      * @param address the canonical {@code post:} address — how you read or write it

@@ -187,7 +187,12 @@ the CDA + console services (law P10) and holds no business logic of its own.
 - `POST /agent/batch` — **writes**: N addressed ops (`folder.upsert`, `post.upsert`,
   `post.move`, `post.publish`, `post.unpublish`, `folder.delete`, `post.delete`) in one
   transaction; `{"dryRun":true}` reports without writing, and a batch that deletes needs
-  SH108's `confirm` from its own dry run. **`post.move` (SH134) is the
+  SH108's `confirm` from its own dry run. **A `post.upsert` refuses a `data` key the post-type
+  does not declare** (SH168) — a 400 carrying the field list and the nearest name, because an
+  upsert declares whole state and a typo *replaced* the field it meant. Keys the post already
+  holds are grandfathered (so a post carrying one stays fixable) and the `unknown-field` lint
+  rule reports those; a **plan** warns on the row where a real run refuses, so a blueprint plan
+  can still report the whole SH152 mismatch. **`post.move` (SH134) is the
   only way to rename or relocate a post** — re-addressing a `post.upsert` creates a
   second post and orphans the first with its id, audit trail and history. It takes `to`
   (new address) and/or `folder`, moves the DRAFT *and* PUBLISHED rows together (so a
@@ -202,8 +207,15 @@ the CDA + console services (law P10) and holds no business logic of its own.
 - `GET /agent/blueprints` · `GET /agent/blueprints/{name}` · `POST /agent/blueprints/{name}/apply`
   — **appliable starting points** (Block J, below). `dryRun` in the body returns the whole
   plan, post-types included, and writes nothing.
-- `GET /agent/find` — posts by site/type/folder-subtree/text; **addresses, not bodies**.
-- `GET /agent/read?address=…&fields=…` — post content, DRAFT-preferred, projected.
+- `GET /agent/find` — posts by site/type/folder-subtree/text; **addresses, not bodies**. A post
+  with no friendly URL is addressed **`id:`** (SH172) — the fallback lives in
+  `ShAddressResolver.addressOf`, so `find`, `changes` and the review queue cannot disagree about
+  it, and the envelope's `notes` say the address is a fallback rather than a route.
+- `GET /agent/read?address=…&fields=…` — post content, DRAFT-preferred, projected. With **several**
+  addresses a row that cannot resolve carries its own SH80 `error` and the rest still come back
+  (SH171); the **single**-address form still 404s. The read path is
+  `noRollbackFor = ShTeachingException.class` for that reason — catching a teaching exception
+  inside a read transaction otherwise blows up at commit.
 - `GET /agent/verify` — the content-side `tsc` (SH99/SH100). `checks=content,routes,diagnostics`
   (all by default), `site=`, `limit=`. **`ok` is false only for an *error*** — a warning is
   something the CMS cannot prove from inside itself (an empty folder, a link that may be a
@@ -367,7 +379,7 @@ orphan-removal replace — otherwise an update would cascade-delete the shared w
 ### `shio` CLI (`@viglet/shio`, in `cli/`)
 The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`; **`--blueprint <name>` takes the starter from the instance instead, and with `--site` applies its content half in the same command** — SH119), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`; **`--content` switches both verbs to content**, see below), `context` (`--as agents-md` renders the pack as project agent instructions — SH115),
 `resolve`, `apply` (SH129 — a desired-state content document; `--check` is the CI drift guard, `-` reads stdin; **`--blueprint <name>` applies a package instead**, with `--param k=v` repeatable, `--params <file>`, `--site`, `--force`), `blueprints` (SH92 — the catalogue; `blueprints <name>` for one package's parameters), `verify` (SH99/SH100 — the content lint; **exits 1 on an error**, `--strict` also on warnings), `digest` (SH101 — one page's structure), `changes` (SH88 — the feed; `--since last` reads the last content pull's position, `--cursor` prints only the position), `remember` (SH114 — the instance memory; bare lists it, `<key> "<note>"` writes one, `--forget` drops one, `--site` scopes it), `mcp`, `dev` (`--content` runs the SH90 sync loop instead of the site's dev server), `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
-**CI gates, in the order they should run:** `shio push --check` (model drift) → `shio push --content --check` (content-tree drift) → `shio apply --check` (document drift) → `shio verify` (content defects). The CLI test suite needs `@viglet/shio-client` built first (`pnpm -C shio-client run build`), or every command test fails on a missing module rather than on its own logic; `shio-sections`' suite needs `@viglet/shio-model` built (`pnpm -C shio-model run build`) for the same reason.
+**CI gates, in the order they should run:** `shio push --check` (model drift) → `shio push --content --check` (content-tree drift) → `shio apply --check` (document drift) → `shio verify` (content defects). The content gates read **only the sites the tree holds** (SH173, derived from `shio/content/<site>/**`), a post they cannot read by address is a named finding rather than a fatal 404, and a remote failure prints the SH80 body — the request URL is behind `SHIO_DEBUG`. The CLI test suite needs `@viglet/shio-client` built first (`pnpm -C shio-client run build`), or every command test fails on a missing module rather than on its own logic; `shio-sections`' suite needs `@viglet/shio-model` built (`pnpm -C shio-model run build`) for the same reason.
 
 ### Content as files — `shio/content/**` (Block I)
 Content projects to **one Markdown file per post**, `shio/content/<site>/<url>.md`: YAML

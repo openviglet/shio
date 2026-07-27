@@ -76,9 +76,15 @@ public class ShWriteTool implements ShMcpTool {
                                                 "post:<site>/<friendly-url> or folder:<site>/<path>."),
                                         "type", ShMcpTool.string(
                                                 "Post-type name; required only when creating a post."),
+                                        // SH175: an argument whose requirement depends on
+                                        // another's value has to say so on itself. `type` did
+                                        // and `folder` did not, so the most common write on the
+                                        // surface — the first create — paid a round trip to
+                                        // learn it, and the schema is the one document a model
+                                        // reads before calling.
                                         "folder", ShMcpTool.string(
-                                                "Folder path — where a new post goes, or where "
-                                                        + "post.move sends it."),
+                                                "Folder path; required with type when creating a "
+                                                        + "post, or as post.move's destination."),
                                         "to", ShMcpTool.string(
                                                 "post.move only: the post's new address or URL."),
                                         "data", ShMcpTool.object(

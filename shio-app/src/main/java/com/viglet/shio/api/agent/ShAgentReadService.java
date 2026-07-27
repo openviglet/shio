@@ -66,7 +66,9 @@ import tools.jackson.databind.node.ObjectNode;
  * @since 2026.3
  */
 @Service
-@Transactional(readOnly = true)
+// SH171: same reason as ShAddressResolver — a row this service reports as failed must not
+// poison the transaction the successful rows are being read in.
+@Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
 public class ShAgentReadService {
 
     private static final List<ShPostState> BOTH_STATES =
@@ -128,7 +130,25 @@ public class ShAgentReadService {
 
         boolean truncated = rows.size() > cap;
         List<ShAgentFound.Row> capped = truncated ? rows.subList(0, cap) : rows;
-        return new ShAgentFound(capped.size(), truncated, List.copyOf(capped));
+        return new ShAgentFound(capped.size(), truncated, List.copyOf(capped), notesFor(capped));
+    }
+
+    /**
+     * What the caller should know about this result set, or {@code null}.
+     *
+     * <p>One sentence for the whole response rather than a marker per row (SH172): a File-heavy
+     * site would otherwise pay for the same prose on every row, and the {@code id:} prefix is
+     * already visible on the rows it applies to. Same shape as SH88's and SH103's notes — a
+     * response that states its own limits.</p>
+     */
+    private static List<String> notesFor(List<ShAgentFound.Row> rows) {
+        boolean anyById = rows.stream()
+                .anyMatch(row -> row.address() != null && row.address().startsWith("id:"));
+        return anyById
+                ? List.of("some rows are addressed `id:` because the post has no friendly URL — "
+                        + "give it one with a post.move op to make it addressable by path (SH100 "
+                        + "reports these as url-missing)")
+                : null;
     }
 
     /**
@@ -150,9 +170,39 @@ public class ShAgentReadService {
                 .toList();
         List<ShAgentDoc> docs = new ArrayList<>(addresses.size());
         for (String address : addresses) {
-            docs.add(doc(address, wanted, ids));
+            // SH171 — one bad address must not take the whole call down when several were
+            // asked for: the caller batched *to save round trips*, and a 404 here sends it
+            // back to reading them one at a time to find out which one was wrong. A single
+            // address still throws, because a one-address read that 404s is correct.
+            if (addresses.size() == 1) {
+                docs.add(doc(address, wanted, ids));
+                continue;
+            }
+            try {
+                docs.add(doc(address, wanted, ids));
+            } catch (ShTeachingException failure) {
+                docs.add(failed(address, failure));
+            }
         }
         return List.copyOf(docs);
+    }
+
+    /**
+     * The row for an address that could not be read: its own teaching error, in place of its
+     * content.
+     *
+     * <p>Only the three fields a caller acts on travel — the slug (so it can branch), the
+     * title and the fix. The full problem is what the single-address form returns, and
+     * repeating all of it per row would make the failure cheaper to read than the success.</p>
+     */
+    private static ShAgentDoc failed(String address, ShTeachingException failure) {
+        var detail = failure.problem().toProblemDetail();
+        Object fix = detail.getProperties() == null ? null : detail.getProperties().get("fix");
+        return new ShAgentDoc(address, null, null, null, null, null, null,
+                new ShAgentDoc.Problem(
+                        detail.getType() == null ? null : detail.getType().toString(),
+                        detail.getTitle(),
+                        fix == null ? null : fix.toString()));
     }
 
     private ShAgentDoc doc(String rawAddress, List<String> fields, boolean ids) {

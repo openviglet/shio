@@ -21,6 +21,7 @@
 import { argv, exit } from "node:process";
 
 import { parseArgs } from "./args.mjs";
+import { formatError } from "./format-error.mjs";
 import { defaultContext } from "./context.mjs";
 
 const BOOLEANS = [
@@ -226,6 +227,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  process.stderr.write(`shio: ${err?.message ?? err}\n`);
+  process.stderr.write(formatError(err, { debug: Boolean(process.env.SHIO_DEBUG) }));
   exit(1);
 });
