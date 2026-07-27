@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom"
 import ConsoleRootPage from "./app/console/console.root.page"
+import NotFoundPage from "./app/console/not-found.page"
 import HomePage from "./app/console/home/home.page"
 import LoginPage from "./app/login/login.page"
 import SetupPage from "./app/setup/setup.page"
@@ -28,7 +29,15 @@ function App() {
                 {AdminRoutes}
                 {GraphQLRoutes}
                 {UniversalEditorRoutes}
+                {/*
+                  SH180 — an unmatched console path says so. Inside the shell, so the sidebar
+                  and breadcrumb stay put and the user can navigate out of it; last, so it
+                  only catches what every real route declined.
+                */}
+                <Route path="*" element={<NotFoundPage />} />
               </Route>
+              {/* And outside it, for a path that is not under the console at all. */}
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </ShioServiceProvider>
         </BreadcrumbProvider>

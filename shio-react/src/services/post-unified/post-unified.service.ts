@@ -99,15 +99,3 @@ export class ShPostUnifiedService {
     await axios.delete(`/v2/post-unified/${id}/purge`)
   }
 }
-
-export class ShPostUnifiedMigrationService {
-  async run(): Promise<{ postTypesMigrated: number; publishedMigrated: number; draftMigrated: number }> {
-    const response = await axios.post("/v2/migration/unified/run")
-    return response.data
-  }
-
-  async status(): Promise<{ unifiedRowCount: number }> {
-    const response = await axios.get("/v2/migration/unified/status")
-    return response.data
-  }
-}

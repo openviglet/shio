@@ -41,6 +41,21 @@ export default function SiteListPage() {
     s.name.toLowerCase().includes(filter.toLowerCase())
   )
 
+  /**
+   * SH179 — "View Site" opens the site's front end, or says it has none.
+   *
+   * It used to navigate to `ROUTES.PREVIEW`, which `routes.const.ts` declared and no router
+   * registered, so the button rendered a blank page. The published site lives wherever the
+   * front end is deployed, which the CMS does not own and may not know.
+   */
+  const handleViewSite = (site: ShSite) => {
+    if (!site.url) {
+      toast.error(t("content.siteNoUrl"))
+      return
+    }
+    window.open(site.url, "_blank", "noopener")
+  }
+
   const handleExport = async (e: React.MouseEvent, site: ShSite) => {
     e.stopPropagation()
     const blob = await siteService.export(site.id)
@@ -149,7 +164,7 @@ export default function SiteListPage() {
                             <Pencil className="h-3.5 w-3.5" /> {t("common.edit")}
                           </button>
                           <button
-                            onClick={e => { e.stopPropagation(); navigate(`${ROUTES.PREVIEW}/${site.id}`) }}
+                            onClick={e => { e.stopPropagation(); handleViewSite(site) }}
                             className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
                           >
                             <Eye className="h-3.5 w-3.5" /> {t("content.viewSite")}

@@ -45,7 +45,8 @@
 > what the SH112 benchmark measured while implementing Block M, and **SH168–SH175** from
 > the first end-to-end agent-driven build over the finished surface (§VIII.12–§VIII.16,
 > §IX.8, §X.11, §XIII.6), and **SH176–SH182** from driving the *console* over the site that
-> build produced (Block O, §XV) — new tasks are expected to accrete this way, and each one's
+> build produced (Block O — shipped, so its design section is gone; see CHANGELOG.md Block O)
+> — new tasks are expected to accrete this way, and each one's
 > line says what measurement or failure produced it. Superseded and therefore retired: **SH17/SH18** (GraalJS), **SH23 +
 > SH27–SH31** (marketplace → Block J), **SH24 + SH32–SH37** (CRUD-over-MCP → Block H).
 
@@ -58,12 +59,13 @@
 > **SH74** is the epic (this concept) — it is complete when the three roadmap docs
 > and `agents.md` carry the orientation; the code lands as SH75+.
 >
-> Suggested order: **H → K → I → J → L → M** (H, K, I, J and M are shipped). Block H is the
-> protocol everything else speaks; Block K (verification) removed the most expensive unit in
-> the system — the human round trip. **Blocks O and L are the remaining ones**, and both are
-> gates on adoption rather than on capability. **Block O first**: the agent can build a site
-> the console cannot then edit or open, so the human half of the north star is broken before
-> Block L's question — how a human bounds and undoes an agent — can even be asked.
+> Suggested order: **H → K → I → J → O → L → M** (H, K, I, J, M and O are shipped). Block H is
+> the protocol everything else speaks; Block K (verification) removed the most expensive unit
+> in the system — the human round trip; Block O made the human half work at all, which is what
+> made Block L's question askable. **Block L is the last unshipped block**: how a human bounds
+> and undoes an agent. It is a gate on adoption rather than on capability, and the rest of the
+> live backlog is per-block follow-ups (H's edges, K's scoping, I's assets, J's reconciliation,
+> M's attribution, N's realignment) plus SH44–SH47's tenant work.
 >
 > **What driving it end to end found (SH168–SH175).** A whole site — model, folder tree,
 > thirteen pages, a file projection, a CI gate — was built over the agent surface alone, and
@@ -75,6 +77,14 @@
 > nothing at all for a page composed of sections (**SH169**), and creating a site is not on
 > the surface at all (**SH170**). The rest are round-trip costs and disagreements between two
 > surfaces that already know the answer separately (**SH171–SH175**).
+>
+> **And what driving the console over it found (Block O, shipped).** Seven defects, every one
+> of them answering `200` and none visible to a Java test, a CLI test or the MCP golden: the
+> gap was one of *medium*. The block's most durable output is therefore the browser check that
+> found them, now a CI gate. Two of the seven were one lesson arriving late — a read faithful
+> to the *storage* shape is not a read a console can use — which is why **SH168** (a write that
+> accepts an undeclared field) is the highest-value item left on this list: it is the same
+> class, on the write side, and it destroys content instead of merely failing to render it.
 
 ## Block H — The Agent Gateway (MCP + agent-shaped protocol)
 
@@ -282,7 +292,8 @@
 >
 > **What it cost the claim, and why that is the right outcome.** SH117 and SH120 both fixed
 > the *baseline* the SH112 benchmark measures against, so every token ratio fell against an
-> unchanged agent path: **3.8×–23.3× became 2.6×–12.6×**, and tokens now clear the concept
+> unchanged agent path: **3.8×–23.3× became 2.6×–12.6×** (and 2.1×–12.1× after Block O's SH176
+> did the same to the post read), and tokens now clear the concept
 > spec's ≈10× on one canonical task of four rather than three. A large part of the measured
 > advantage was never the protocol — it was the console reads being entity-shaped, and it is
 > now lean on both sides. What is left is the part worth defending (addressing, batching, the
@@ -304,27 +315,22 @@
 
 ## Block O — The human half (the console the curator uses)
 
-> The product says the **agent builds and the human curates**. Block N made the console's
-> *reads* agent-shaped and cheap; driving the finished surface end to end then showed that
-> the curating half does not work. A site an agent builds correctly cannot be edited,
-> previewed or opened in the console — which makes law **P7** (never surprise the human)
-> unenforceable, because the human never gets as far as being surprised. → §XV
-
-> **How these were found, and why that matters.** Every task below was reproduced headlessly
-> against the SH94 `marketing-site` blueprint applied to a real site, by
-> [`shio-react/e2e/console-check.mjs`](../shio-react/e2e/console-check.mjs) — 6 of 15 route
-> probes failed on the first run. None of them was visible to any existing test: the API
-> returns `200`, the SPA returns `200`, and the page is empty. **SH182 is therefore the
-> first task in the block**, not the last — the others are what it found, and without it
-> they regress silently.
-
-- 📋 **SH182** (deps: SH120 ✅) **A console smoke check in CI** — the console is the one surface no API test can see: a form that renders zero fields, a dead route, a request that 404s behind a spinner all answer `200`. `e2e/console-check.mjs` walks the routes in a real browser, discovers its targets from the agent surface so it runs on any instance, and fails on a page error, a failed request or a missing field. It exists and is not yet wired to CI. → §XV.1
-- 📋 **SH176** (deps: SH120 ✅, SH117 ✅) **The post read must carry the post-type and parsed data** — `GET /post-unified/{id}` serializes the entity, so `shPostType` is an uninitialized LAZY proxy that arrives as `null` and `data` arrives as a JSON *string* while the console's model declares an object. Every post edit page therefore renders zero fields, for every post-type, and would render no values even if it had a schema. SH120's treatment, applied to the read it skipped. → §XV.2
-- 📋 **SH177** (deps: SH176) **Retire `schemaJson` or maintain it** — the column has exactly one writer, the one-shot `POST /api/v2/migration/unified/run`, so it is empty for every post-type a blueprint, `shio push` or the console's own editor has created since. The console's empty state tells the user to run that migration, which is neither the cause nor a fix a user should be handed. The model already carries `fields`; a second projection of it needs a reason to exist. → §XV.3
-- 📋 **SH178** (deps: SH176) **One schema entry point for the form** — the create page uses `buildSchemaFromPostType`, which falls back to projecting `fields`; the edit page uses `parseSchema`, which does not. That single difference is why creating a post works and editing the same post does not, and why the failure looks like a content problem rather than a missing fallback. → §XV.4
-- 📋 **SH179** (deps: SH120 ✅) **"View Site" navigates to a route that does not exist** — `ROUTES.PREVIEW` (`/console/preview/:siteId`) is declared in `routes.const.ts` and registered nowhere, and three call sites navigate to it, including both View Site buttons. This is the literal answer to "I cannot see the site". → §XV.5
-- 📋 **SH180** (deps: SH179) **An unknown console route must say so** — the SPA renders a normal-looking empty page for any unmatched path, which is what makes SH179 silent and what let a probe of a nonexistent route report success. A not-found route that names the path it could not match, and a test that asserts it. → §XV.6
-- 📋 **SH181** (deps: SH120 ✅) **The Universal Editor resolves a site by the wrong key** — it requests `/api/v2/site/{furl}` against an id-keyed endpoint, so opening it 404s twice before rendering. Either resolve the furl first or give the endpoint a by-name lookup — the same id-versus-name confusion SH117 settled for post-types. → §XV.7
+> ✅ **Block O shipped (SH176–SH182)** → see [CHANGELOG.md](CHANGELOG.md) Block O: the console
+> smoke check in CI, the post read that carries its post-type and parsed data, `schemaJson`
+> retired, one form-schema entry point, View Site pointed at something that exists, a
+> not-found route, and a site read that answers the key it is given.
+>
+> **What building it taught.** Every defect in the block answered `200`, and none was visible
+> to a Java test, a CLI test or the MCP golden — the gap was one of *medium*, so the block's
+> most durable output is the browser check that found them (SH182) rather than any one fix.
+> Two of the seven were the same lesson one endpoint late: a read faithful to the *storage*
+> shape is not a read the console can use (SH176, after SH120), and a second way of saying
+> one thing is a second thing to keep right (SH177/SH178).
+>
+> **What it opened.** The check asserts *a* field renders, not the *right* field, and it has no
+> accepted-findings baseline — **SH142**'s shape applies to it unchanged. And the site
+> provisioning it needs walks the console's CSRF path by hand, which is **SH170** measured
+> rather than argued.
 
 ---
 

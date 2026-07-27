@@ -37,22 +37,35 @@ export default function VisualEditorPage() {
   const [mobile, setMobile] = useState(false)
   const [saving, setSaving] = useState(false)
   const [selected, setSelected] = useState<SelectedElement | null>(null)
+  // Why the site failed to resolve, if it did (SH181): a page that spins forever instead of
+  // saying so is what let `GET /api/v2/site/{furl}` 404 twice and look like slow loading.
+  const [siteError, setSiteError] = useState<string | null>(null)
   // Pending edits keyed by `${postId}:${prop}` so re-edits of the same field collapse.
   const [changes, setChanges] = useState<Map<string, ContentChange>>(new Map())
 
   const token = useMemo(() => localStorage.getItem(UE_TOKEN_KEY) ?? "", [])
 
   // Resolve the iframe URL: an explicit ?url= (external mode) or the site's url.
+  //
+  // Both failures are reported (SH181). The endpoint now answers an id, a furl or a name,
+  // so a wrong key is no longer a 404 — but a site that resolves and has no front-end url
+  // configured still has nothing to render, and that is a sentence, not a spinner.
   useEffect(() => {
     const external = searchParams.get("url")
     if (siteId === "external" && external) {
       setSrc(external)
+      setSiteError(null)
       return
     }
-    if (siteId) {
-      siteService.get(siteId).then((site) => setSrc(site.url ?? ""))
-    }
-  }, [siteId, searchParams])
+    if (!siteId) return
+    siteService
+      .get(siteId)
+      .then((site) => {
+        setSrc(site.url ?? "")
+        setSiteError(site.url ? null : t("universalEditor.siteNoUrl", { name: site.name }))
+      })
+      .catch(() => setSiteError(t("universalEditor.siteNotFound", { key: siteId })))
+  }, [siteId, searchParams, t])
 
   const postToIframe = useCallback((type: string, data: Record<string, unknown>) => {
     iframeRef.current?.contentWindow?.postMessage({ type, data }, "*")
@@ -177,14 +190,23 @@ export default function VisualEditorPage() {
       {/* Editor body: iframe + properties panel */}
       <div className="flex flex-1 min-h-0">
         <div className="flex-1 flex items-stretch justify-center bg-muted/30 overflow-auto p-4">
-          {src ? (
+          {siteError && (
+            <div className="flex flex-col items-center justify-center gap-3 text-center">
+              <p className="max-w-md text-sm text-muted-foreground">{siteError}</p>
+              <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.UNIVERSAL_EDITOR)}>
+                {t("universalEditor.selectSite")}
+              </Button>
+            </div>
+          )}
+          {!siteError && src && (
             <iframe
               ref={iframeRef}
               src={src}
               title={t("universalEditor.title")}
               className={`bg-white shadow-sm border ${mobile ? "w-[390px]" : "w-full"} h-full`}
             />
-          ) : (
+          )}
+          {!siteError && !src && (
             <div className="flex items-center justify-center text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin mr-2" /> {t("universalEditor.connecting")}
             </div>

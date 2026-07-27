@@ -13,7 +13,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import type { ShPostType } from "@/models/post-type/post-type"
-import { buildSchemaFromPostType } from "@/models/post-unified/post-unified"
+import { postFormSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, StickySaveBar, toast } from "@viglet/viglet-design-system"
 
 const postTypeService = new ShPostTypeService()
@@ -36,10 +36,7 @@ export default function PostUnifiedNewPage() {
     postTypeService.get(postTypeName).then(setPostType)
   }, [postTypeName, resetBreadcrumb, t])
 
-  const schema = useMemo(
-    () => (postType ? buildSchemaFromPostType(postType) : []),
-    [postType]
-  )
+  const schema = useMemo(() => postFormSchema(postType), [postType])
 
   const visibleFieldCount = useMemo(
     () => schema.filter((f) => f.widget !== "Hidden" && f.widget !== "Tab").length,

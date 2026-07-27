@@ -29,5 +29,8 @@
   "common.enabled": "Habilitado",
   "common.disabled": "Desabilitado",
   "common.status": "Status",
-  "common.new": "Novo"
+  "common.new": "Novo",
+  "common.notFoundTitle": "Esta página não existe",
+  "common.notFoundDescription": "Nenhuma rota do console corresponde ao caminho abaixo. Verifique o link ou volte para a página inicial.",
+  "common.backToHome": "Voltar para o Início"
 }

@@ -10,6 +10,7 @@ package com.viglet.shio.api.site;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -64,11 +65,35 @@ public class ShSiteAPI {
         return shSiteRepository.findAll();
     }
 
+    /**
+     * One site, by id — <b>or by its furl or name</b> (SH181).
+     *
+     * <p>The fallback exists because the console asked this id-keyed endpoint for
+     * {@code /api/v2/site/cafeteria} — a site's <em>furl</em> — and got a pair of 404s
+     * behind a spinner, which is the third instance of one confusion: SH117 settled
+     * id-versus-name for post-types, this is the same mistake for sites. A read that can
+     * answer either key cannot be asked the wrong one, and the alternative — hunting the
+     * swap in the caller — fixes one call site and leaves the class open.</p>
+     *
+     * <p><b>The reads get this, the writes do not.</b> {@code PUT}, {@code DELETE} and
+     * {@code /export} stay strictly id-keyed: a read that resolved a near-miss shows the
+     * curator the wrong site, while a write that did would change it.</p>
+     */
     @GetMapping("/{id}")
     public ResponseEntity<ShSite> get(@PathVariable String id) {
-        return shSiteRepository.findById(id)
+        return resolve(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /** id → furl → name, in that order: the id is the declared key and must win a collision. */
+    private Optional<ShSite> resolve(String key) {
+        if (key == null || key.isBlank()) {
+            return Optional.empty();
+        }
+        return shSiteRepository.findById(key)
+                .or(() -> Optional.ofNullable(shSiteRepository.findByFurl(key)))
+                .or(() -> Optional.ofNullable(shSiteRepository.findByName(key)));
     }
 
     @PostMapping

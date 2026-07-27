@@ -90,6 +90,7 @@ class ShPostUnifiedAPITest {
 
     private String folderId;
     private String postTypeId;
+    private String postTypeName;
     private String newPostId;
 
     @BeforeAll
@@ -145,6 +146,7 @@ class ShPostUnifiedAPITest {
 
             entityManager.persist(postType);
             postTypeId = postType.getId();
+            postTypeName = postType.getName();
         });
     }
 
@@ -202,6 +204,62 @@ class ShPostUnifiedAPITest {
                 .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.id").value(newPostId))
                 .andExpect(jsonPath("$.state").value("DRAFT"));
+    }
+
+    /**
+     * SH176 — the read the console builds its form from. Both halves of the defect are
+     * pinned here because either one alone empties every post edit page: the LAZY
+     * {@code shPostType} arriving as {@code null}, and {@code data} arriving as the stored
+     * JSON <em>string</em> instead of an object.
+     */
+    @Test
+    void stage03bPostUnifiedGetCarriesPostTypeAndParsedData() throws Exception {
+        mockMvc.perform(get("/api/v2/post-unified/" + newPostId)
+                        .param("state", "DRAFT")
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                // The post-type travels as its SH16 def — name, title and the fields the form projects.
+                .andExpect(jsonPath("$.shPostType.name").value(postTypeName))
+                .andExpect(jsonPath("$.shPostType.fields.length()").value(1))
+                .andExpect(jsonPath("$.shPostType.fields[0].name").value(ShSystemPostTypeAttr.TITLE))
+                .andExpect(jsonPath("$.shPostType.fields[0].widget").value(ShSystemWidget.TEXT))
+                // `data` is an object: a string here reads as `undefined` in every widget.
+                .andExpect(jsonPath("$.data").isMap())
+                .andExpect(jsonPath("$.data." + ShSystemPostTypeAttr.TITLE).value("Hello"))
+                // The breadcrumb's folder and site, the latter resolved through ShFolderSite (SH128).
+                .andExpect(jsonPath("$.shFolder.id").value(folderId))
+                .andExpect(jsonPath("$.shFolder.shSite.id").isNotEmpty())
+                .andExpect(jsonPath("$.shSite.id").isNotEmpty())
+                .andExpect(jsonPath("$.undeclaredFields.length()").value(0));
+    }
+
+    /**
+     * A field the post-type does not declare is <em>named</em>, not dropped. Until SH168
+     * refuses such a write, a post that already carries one must not look empty — hiding a
+     * stored value is how content gets lost.
+     */
+    @Test
+    void stage99PostUnifiedGetNamesUndeclaredFields() throws Exception {
+        ObjectNode payload = createPayload("Undeclared", "DRAFT");
+        ((ObjectNode) payload.get("data")).put("nosuchfield", "kept");
+
+        String created = mockMvc.perform(post("/api/v2/post-unified")
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.nosuchfield").value("kept"))
+                .andExpect(jsonPath("$.undeclaredFields.length()").value(1))
+                .andExpect(jsonPath("$.undeclaredFields[0]").value("nosuchfield"))
+                .andReturn().getResponse().getContentAsString();
+
+        // Purged, not just trashed: a soft-deleted row still answers `listByFolder`.
+        String id = objectMapper.readTree(created).get("id").asString();
+        mockMvc.perform(delete("/api/v2/post-unified/" + id).principal(mockPrincipal))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/v2/post-unified/" + id + "/purge").principal(mockPrincipal))
+                .andExpect(status().isNoContent());
     }
 
     @Test

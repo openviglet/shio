@@ -29,7 +29,6 @@ import java.util.Set;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.Lob;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrimaryKeyJoinColumn;
@@ -65,10 +64,6 @@ public class ShPostType extends ShObject {
     private Set<ShPostTypeAttr> shPostTypeAttrs = new HashSet<>();
 
     private String workflowPublishEntity;
-
-    @Lob
-    @Column(name = "schema_json")
-    private String schemaJson;
 
     public ShPostType() {
         this.setObjectType(ShObjectType.POST_TYPE);

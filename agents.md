@@ -108,6 +108,17 @@ deleted in the nuclear refactor). All post CRUD is the unified API:
 - `POST /api/v2/post-unified` (body `{ folderId, postTypeId, data, state }`)
 - `PUT /api/v2/post-unified/{id}`, `POST .../publish|unpublish|restore|schedule`
 - `DELETE /api/v2/post-unified/{id}`
+
+**Every post-shaped response on this controller is a `ShConsolePost`, never the entity (SH176)**
+— reads *and* writes, owned by `ShConsolePostMapper` + `ShConsolePostReadService`. It carries
+`data` **parsed** (the column is a JSON string) and the post-type as its SH16 `ShPostTypeDef`,
+so the form projects `fields` (there is no `schemaJson` — SH177 dropped the column and deleted
+`/api/v2/migration/unified/**`, its only writer). Mapping happens **inside a transaction**,
+because `shPostType`/`shFolder` are LAZY and a detached proxy is exactly how the post-type used
+to reach the browser as `null` and every post edit page rendered zero fields. A write therefore
+re-reads rather than mapping the entity its own (closed) transaction returned. `undeclaredFields`
+names data keys the post-type does not declare — the console shows them with a warning instead
+of hiding them, which is the read side of SH168.
 - `GET /api/v2/post/xp/{id}` - resolve a referenced post for display (returns
   `{ shPost, allowPublish }`, DRAFT-preferred); used by Content Select / File widgets
 - There is **no** `/api/v2/post` controller — do not add one.
@@ -122,6 +133,15 @@ deleted in the nuclear refactor). All post CRUD is the unified API:
 - `POST /api/v2/folder/{parentFolderId}` - Create folder
 - `PUT /api/v2/folder/{id}` - Update folder
 - `DELETE /api/v2/folder/{id}` - Delete folder
+
+### Sites
+- `GET /api/v2/site` - List all sites
+- `GET /api/v2/site/{id}` — one site **by id, furl or name** (SH181, in that order so the
+  declared key wins a collision). The reads resolve any of the three; `PUT`, `DELETE` and
+  `/{id}/export` stay strictly id-keyed — a read that resolved a near-miss shows the curator
+  the wrong site, a write that did would change it.
+- `POST /api/v2/site` — create. **Session + CSRF**, so a stateless caller gets a bodiless 403;
+  that is the friction SH170 is filed for, and `shio-react/e2e/provision.mjs` walks it by hand.
 
 ### Static files — upload/serve subsystem (SH38)
 Binary files are first-class `File`-post-type unified posts; the bytes live on
@@ -539,7 +559,9 @@ When a list has no items, show a centered empty state:
 ### Dynamic Form Rendering
 Widgets are React components that render based on the field's `widget` name
 (`ShPostTypeSchemaField.widget`, projected from the post-type's `fields` by
-`buildSchemaFromPostType` — SH117; it used to read `shPostTypeAttr.shWidget.name`).
+**`postFormSchema()`** — the one exported entry point, SH178. It used to read
+`shPostTypeAttr.shWidget.name` (SH117), and there used to be a second export with no fallback,
+which is why creating a post worked and editing it did not.)
 Registry in `src/components/widgets/index.ts` maps widget names to components via `WIDGET_MAP`.
 `getWidget(name)` returns the component, defaulting to `TextWidget` for unknown names.
 
@@ -752,11 +774,12 @@ Tasks are numbered `SH<n>` (not contiguous across blocks — epics like SH25/SH6
 own sub-ranges; superseded ids are retired, never reused). The `→ §x.y` pointer on a task
 line is its IMPROVEMENTS.md design section. Per-task implementable specs live in
 `docs/specs/SH<n>-<slug>.md`; the product concept is `docs/specs/SH74-agent-native-cms.md`.
-Blocks **H–K, M and N** have shipped; the live backlog is **Block L** (agent safety),
-the Block J/M follow-ups, and Blocks A–G's remaining SH44–SH47 tenant work. Block N's
+Blocks **H–K, M, N and O** have shipped; the live backlog is **Block L** (agent safety),
+the per-block follow-ups, and Blocks A–G's remaining SH44–SH47 tenant work. Block N's
 result is worth knowing before you quote a number: aligning the console reads on the CDA
 shapes made the *baseline* lean, so the SH112 token ratios fell from 3.8×–23.3× to
-2.6×–12.6× with the agent path unchanged (SH164).
+2.6×–12.6× with the agent path unchanged — and to **2.1×–12.1×** once Block O's SH176 did the
+same to the post read (SH164).
 
 **The cross-file update rules — follow these every time:**
 
