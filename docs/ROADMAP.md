@@ -42,6 +42,7 @@
 > slots). **SH121–SH127** and **SH128–SH135** were added from findings while
 > implementing Block H, **SH141–SH144** from findings while implementing Block K, and
 > **SH204–SH209** from closing Block K's last four (SH102/SH104/SH141/SH144), and
+> **SH210–SH215** from finishing Block I, and
 > **SH145–SH150** from findings while implementing Block I, and **SH157–SH162** from
 > what the SH112 benchmark measured while implementing Block M, and **SH168–SH175** from
 > the first end-to-end agent-driven build over the finished surface (§VIII.12–§VIII.16,
@@ -179,7 +180,7 @@
 - 💭 **SH205** (deps: SH144 ✅) **The incident fold key is the human message, so one problem becomes many rows** — folding is what makes the durable table affordable (it grows with the number of *problems*, not with traffic), and the key is `(kind, subject, message)` where the message carries varying detail: "gave up after 3 attempt(s), last status 500" and the same failure with 503 are two rows for one broken webhook. It defeats folding exactly where volume is highest, and then pushes the cap. The fix is a stable `signature` beside the human message — the same split SH142 needed between a finding's identity and its prose. → §IX.6
 - 💭 **SH206** (deps: SH141 ✅) **The delivery proof fetches inside the report's read transaction** — SH141 accepted this deliberately and bounded it (a 50-request cap, a 15s wall-clock budget, fail-fast per origin), which makes it safe rather than right: a verification call still holds a pooled connection for as long as a front end takes to answer. Gathering the targets inside the transaction and running the network pass outside it is the real shape; the reason it was not done first is that `verify()` is one transactional entry point and splitting it is a refactor, not a fix. → §IX.7
 - 📋 **SH207** (deps: SH104 ✅) **The handoff has no console banner** — SH104 shipped the artifact for a PR body, which is where a handoff usually lands; §IX.6 also described a *console banner*, and a curator who never opens a terminal has no way to see what an agent did since they last looked. The data is already composed (changes + sites + verify) and the review queue page (SH109) is where it belongs, so this is a console feature over shipped reads rather than new protocol. → §IX.8
-- 💭 **SH208** (deps: —) **A backtick in the CLI's help text breaks the whole binary** — `cli/src/index.mjs`'s `HELP` is a template literal, so prose containing a backtick is a *syntax error* and `shio` fails to load at all. It happened twice in one session (adding `verify --delivery`, then `shio report`), and only the three tests that spawn the CLI catch it — every other CLI test imports command modules directly and passes. Help text is the most-edited prose in the package and the least likely place anyone expects a parse error. `String.raw`, or a `help.txt` read at startup, removes the class. → §IX.9
+- 📋 **SH208** (deps: —) **A backtick in the CLI's help text breaks the whole binary** — `cli/src/index.mjs`'s `HELP` is a template literal, so prose containing a backtick is a *syntax error* and `shio` fails to load at all. Only the three tests that spawn the CLI catch it; every other CLI test imports command modules directly and passes. **It has now happened three times** — `verify --delivery`, `shio report`, and again while documenting SH150's `movedFrom:` — which is enough to stop treating it as carelessness and fix the class. Help text is the most-edited prose in the package and the least likely place anyone expects a parse error. `String.raw`, or a `help.txt` read at startup, removes it. → §IX.9
 - 💭 **SH209** (deps: SH102 ✅) **`shio snapshot` photographs one page per run** — the useful artifact for a handoff or a CI job is the *set*: every published page of a site, one baseline each, and a list of which ones moved. The pieces exist (`/agent/find` gives the addresses, the command gives the capture), and the reason it is not a loop is that a sweep needs a per-page budget, one browser reused across pages, and a summary that survives one page failing to load. → §IX.10
 
 
@@ -189,32 +190,30 @@
 > tree than with read-modify-write over HTTP. Project content to disk, reconcile
 > with the server. Largest cycle reducer in the proposal. → §X
 
-> ✅ **The projection and its sync are shipped** → [CHANGELOG.md](CHANGELOG.md) Block I:
-> **SH86** (projection format) · **SH88** (change feed + cursor, and `changeCursor`
-> finally true) · **SH87** (`pull --content` / `push --content`) · **SH89** (three-way
-> merge) · **SH90** (`shio dev --content` + the JSONL event log).
+> ✅ **The block is shipped bar one task** → [CHANGELOG.md](CHANGELOG.md) Block I:
+> **SH86** (projection format) · **SH88** (change feed + cursor) · **SH87** (`pull --content` /
+> `push --content`) · **SH89** (three-way merge) · **SH90** (`shio dev --content`) · **SH145**
+> (assets) · **SH146** (paged `find`) · **SH148** (fingerprint merge base) · **SH149** (folders
+> as files) · **SH150** (a rename is a move) · **SH173** · **SH198** (the suite runs green) ·
+> **SH199** (a large tree splits).
 >
-> **What is deliberately not in it, and why:** ✅ **SH145** has since projected `shio/assets/`,
-> so a `File` field reads as a path and the tree is self-contained. Conflicts are
-> *reported*, never written as `<<<<<<<` markers: a marker in a field value is content,
-> and the next push would send it to the server and the next publish would put it on the
-> site. And a pull refuses to write a projection built from a truncated post list rather
-> than let a later `--prune` read the gaps as deletions — ✅ **SH146** made that a *page*
-> instead of a dead end, so the refusal now only fires against an instance that cannot
-> offer a cursor at all.
+> **What is deliberately not in it:** conflicts are *reported*, never written as `<<<<<<<`
+> markers — a marker in a field value is content the next push would publish; and asset
+> *deletion* does not project, because bytes go when their post goes and a `File` post can be
+> referenced by content this tree does not own.
 >
-> **What building it opened.** The projection made three gaps conspicuous: a file rename
-> pushed as delete-plus-create instead of SH134's `post.move`, losing the post's id
-> and history — ✅ **SH150** gave the document a `moves` section and taught push to detect
-> the pair; an empty folder could not be authored at all, because folders were
-> only implied by the posts inside them — ✅ **SH149** gave them a marker file of their own;
-> and the merge base kept a second copy
-> of every field value when per-field digests decide the same cases — ✅ **SH148** made it
-> fingerprints. The
-> change feed's own honesty note is the fourth: the lag narrows the stamp-before-commit
-> window, it does not close it (**SH147**).
+> **What remains is one task and its follow-ups.** **SH147** is the change feed's own honesty
+> note: the lag narrows the stamp-before-commit window, it does not close it. **SH210–SH215**
+> came out of shipping the rest of the block — the projection's own edges, now that both
+> directions of it exist.
 
 - 📋 **SH147** (deps: SH88 ✅) **Commit-ordered change feed** — SH51 stamps the audit row inside the writer's transaction, so a slow commit can land an older timestamp behind a cursor that already passed it, and for a *sync* feed that is a lost edit rather than a late one. The 1s lag narrows the window; only commit-ordered sequencing closes it. **Scoped in July 2026 and deliberately not started:** "assigned at commit" does not exist in JPA (`beforeCommit` still interleaves), the working shape is a `seq` assigned inside the transaction plus a reader that **stops at a gap**, and the blocker is that a portable monotonic non-PK column across H2/MariaDB/PostgreSQL can only be *proved* by the SH26 Testcontainers ITs — which need Docker. Landing the changeset without them would repeat the SH2/SH5 drift. → §X.3
+- 📋 **SH210** (deps: SH145 ✅) **Editing an asset's bytes in place does nothing** — `push --content` resolves a `File` path against the server's inventory and reuses the id when the path is already there, so replacing `shio/assets/Blog/media/logo.png` with different bytes uploads nothing and reports success. It is the one silent no-op left in the projection, and it is the *common* edit for an image. The fix needs both halves: a bytes fingerprint in the base snapshot to notice the change, and a way to land it — an upload always creates a new id-keyed post, so either the reference is repointed (cheap, leaves the old bytes) or SH38 grows a replace-bytes path. → §X.13
+- 📋 **SH211** (deps: SH149 ✅, SH137 ✅) **Renaming a folder marker's directory is a delete plus a create, and the delete takes the posts** — the exact hazard SH150 fixed for posts, one level up and worse: `reconcileFolders` sees a marker gone and a marker arrived, the push declares the new folder, and `--prune` deletes the old one — which cascades to every post beneath it. `folder.move` (SH137) already exists and the document has a `moves` section (SH150); this is pairing them for the folder side. Until it lands, renaming a marker directory with `--prune` is destructive. → §X.14
+- 📋 **SH212** (deps: SH145 ✅, SH99 ✅) **`shio verify` cannot see a broken asset path** — a `File` field naming an asset that is not in the tree is caught by `push`, which is the last gate rather than the first: the documented CI chain runs the content gates *then* `verify`, so the cheapest check reports it last. The tree's asset paths are checkable without a server at all, which makes this a lint rule over the projection — and the first one that would need `verify` to read local files. → §X.15
+- 💭 **SH213** (deps: SH145 ✅) **Every push reads the whole media inventory** — `readRemoteAssets` lists every file in each site and joins the sitemap to it, on every push that declares any `File` field, even when no asset changed. A media-heavy site pays for its whole library to resolve one reference. The listing has filters (`q`, `folderId`) that a per-path lookup could use instead, and a missing folder currently re-reads the entire inventory a second time. → §X.16
+- 💭 **SH214** (deps: SH150 ✅) **A probable-move warning cannot be accepted** — `push --content` prints "this looks like a rename it cannot prove" every run for a legitimate delete-plus-create, and there is no way to say "yes, these really are two different posts". SH142 solved exactly this shape for `verify` findings with a baseline file of accepted triples; the same mechanism fits, and without it the warning is one people learn to scroll past. → §X.17
+- 💭 **SH215** (deps: SH148 ✅) **A fingerprint collision is undetectable and unreported** — the merge base compares 64-bit hashes, so two different values that collide read as "this field did not change" and the edit is dropped silently. The risk is remote and the trade was deliberate, but the *asymmetry* is not: a sync that loses an edit should be able to say so. Storing a length or a second short hash alongside would make a collision a reported conflict rather than a silent skip. → §X.18
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 

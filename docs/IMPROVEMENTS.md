@@ -631,6 +631,12 @@ This is filed because of *how it was found*: it happened twice in one session, w
 three that spawn the CLI as a subprocess. Every other CLI test imports the command modules
 directly, so 155 tests passed against a package whose entry point could not be parsed.
 
+**It then happened a third time**, in a different session, documenting SH150's `movedFrom:` in
+the content section — one backtick pair around a frontmatter key. Three occurrences across
+three sessions, each one caught only by the same three tests, is no longer a run of bad luck: it
+is a file whose failure mode is disproportionate to the edit, and the reason this moved from 💭
+to 📋.
+
 The class is removable rather than manageable: `String.raw`, or a `help.txt` read at startup.
 The second is slightly better than it looks — it also stops help text from being reindented by
 whatever formats the JavaScript, and makes the one file a contributor is most likely to edit a
@@ -706,6 +712,105 @@ So the task is: pick the portable mechanism, add `ShHistory.seq` with a changese
 cursor a `seq` (accepting the old `<instant>|<id>` form and translating, since it is a
 published contract), teach the reader to stop at a gap, and **run the cross-DB ITs**. It is
 schema work that must not be done blind, and that is the whole reason it is still open.
+
+### X.13 Editing an asset's bytes in place does nothing (SH210)
+
+SH145 made a `File` field hold an asset path and made `push --content` resolve that path back
+to an id — idempotently, by looking the path up in the server's inventory and reusing the id
+when it is already there. That is the right rule for the case it was designed for (a second
+push must not upload a second copy) and it is the wrong rule for the case nobody separated
+from it: **replacing the bytes at a path that already exists uploads nothing and reports
+success.** Editing an image is the most ordinary thing anyone does to an asset, and it is now
+the one silent no-op left in the projection.
+
+Noticing it is cheap and already half-built: the base snapshot fingerprints every projected
+field (SH148), and the same treatment applied to an asset's bytes would make "this file
+changed" a fact rather than an inference from its path.
+
+Landing it is the harder half, because the server has no replace-the-bytes operation — an
+upload always creates a new id-keyed `File` post (which is exactly why SH145 could treat a
+path as immutable). Two candidates, and they are not equivalent: **repoint the reference** —
+upload the new bytes as a new post and rewrite the field — which is cheap, keeps history, and
+leaves the old bytes and post behind as garbage; or **give SH38 a replace path**, which keeps
+one post per asset and its usage list (SH62) intact, at the cost of a mutation the storage
+layer currently does not have. The first is a CLI change, the second is a protocol change.
+
+### X.14 Renaming a folder marker is a delete plus a create (SH211)
+
+This is SH150's defect, one level up, and the level matters: a post re-created under a new
+URL loses its history, while a **folder** deleted by `--prune` takes every post beneath it
+(`ShFolderWriteService` cascades). SH149 gave folders a marker file; it did not give them a
+move. So renaming `shio/folders/Blog/news/_folder.md` to `.../updates/_folder.md` reads as one
+marker gone and one arrived — the push declares `/updates`, and the prune deletes `/news` with
+its contents.
+
+Everything needed already exists on both sides: `folder.move` (SH137) is the op, with its four
+refusals living on the one folder-move writer, and the desired-state document grew a `moves`
+section for SH150. What is missing is the pairing rule, and the folder side is *easier* than
+the post side because a folder has no field values to compare: a marker gone and a marker
+arrived in the same site, with no other candidate, is a rename. The ambiguity that forced
+SH150 to refuse — two files that could each be the same rename — is the same here and should
+be refused the same way.
+
+Note the interaction with the friendly-URL rule: a folder move changes **no post's URL**
+(SH137's whole point), so this is a structural rename with no delivery consequence, which is
+what makes it safe to detect automatically rather than requiring a `movedFrom:`.
+
+### X.15 `shio verify` cannot see a broken asset path (SH212)
+
+The documented CI chain is `push --check` → `push --content --check` → `apply --check` →
+`verify`, in that order because each gate is cheaper than the next. A `File` field naming an
+asset that is not in the tree currently fails at `push --content`, which inverts it: the
+defect is local, checkable with no server at all, and reported by the most expensive gate.
+
+The rule itself is trivial (`assetLocationOf` the value, look for the file). What makes it a
+task is that it would be the **first `verify` rule that reads the project's own files** — every
+existing rule is a server-side lint whose findings the CLI merely prints. That is either a new
+kind of finding on the client (a projection lint, with its own reporting and its own place in
+the SH142 baseline) or a reason to keep the two apart deliberately. Worth deciding rather than
+drifting into.
+
+### X.16 Every push reads the whole media inventory (SH213)
+
+`readRemoteAssets` lists every `File` post in each site and joins the sitemap's folder chains
+to it, on any push that declares a single `File` field. A site with a large media library pays
+for the whole library to resolve one reference — and when an upload's folder is missing, the
+inventory is read a **second** time to pick up the new folder id.
+
+The listing already takes `folderId` and `q` filters (SH62), so a per-path lookup is
+available; the reason SH145 did not use it is that resolving N paths individually is N requests
+against one, and the inventory read was the cheaper shape for the small case. The fix is
+therefore a threshold rather than a replacement, and the second read is a straightforward
+fix on its own.
+
+### X.17 A probable-move warning cannot be accepted (SH214)
+
+SH150 prints a warning when a vanished post and a new one *might* be the same rename but the
+content differs, because the alternative — a delete plus a create that destroys history in
+silence — is worse than a false positive. That is right, and it has the failure mode every
+un-silenceable warning has: for a legitimate delete-plus-create it prints on every run
+forever, and a warning that is always there is a warning nobody reads.
+
+SH142 solved exactly this shape for `verify`: a project file of accepted `(rule, address,
+field)` triples, merged rather than replaced, where **an accepted finding the run no longer
+produces fails the run** so the file cannot rot into a blanket suppression. The same mechanism
+fits a `(from, to)` pair. The one thing to get right is that the accepted entry must be keyed
+on both addresses — accepting "this deletion is fine" alone would silence the warning for a
+*different* new post arriving later, which is the case the warning exists for.
+
+### X.18 A fingerprint collision is undetectable (SH215)
+
+SH148 replaced the merge base's field values with 64-bit fingerprints, and the trade was
+deliberate: every question the merge asks is an equality test, so a hash answers it, and the
+collision risk over one post's field list is far below what every hash-based sync (git
+included) already accepts at much wider scope.
+
+What was *not* deliberate is the asymmetry in how a collision fails. Two different values that
+hash the same read as "this field did not change", so the edit is dropped — silently, with the
+sync reporting success. A sync that loses an edit should at minimum be able to say so. Storing
+the value's **length** beside the hash, or a second short hash with a different seed, makes a
+collision a reported conflict instead of a silent skip, at a few bytes per field. The point is
+not to make collisions less likely; it is to make the remaining ones loud.
 
 ## XI. Blueprints + Claude Code plugin (Block J)
 
