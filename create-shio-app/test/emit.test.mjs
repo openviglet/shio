@@ -21,7 +21,19 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 import { readTemplateFiles } from "../src/scaffold.mjs";
-import { PACKAGE_DIR, expectedManifest, expectedSources, fileRefs } from "../src/emit.mjs";
+import {
+  PACKAGE_DIR,
+  PACKAGES,
+  compose,
+  expectedManifest,
+  expectedSources,
+  fileRefs,
+  filesFor,
+  resolveNeeds,
+} from "../src/emit.mjs";
+
+/** Every generated package's directory, from the one list `emit` iterates. */
+const dirOf = (name) => join(PACKAGE_DIR, "..", name);
 
 test("the nextjs-starter package exists and is a valid manifest", async () => {
   assert.ok(existsSync(PACKAGE_DIR), `missing blueprint package at ${PACKAGE_DIR}`);
@@ -74,4 +86,87 @@ test("the catch-all route is carried, dots and all", async () => {
   assert.ok(catchAll, "the template must carry the catch-all route");
   const source = `files/${catchAll.path}`;
   assert.equal(await readFile(join(PACKAGE_DIR, source), "utf8"), catchAll.text);
+});
+
+// --- SH156: the section packages carry the same starter plus an overlay ---
+
+test("every generated package is byte-identical to its composed tree", async () => {
+  // The whole point of generating them: `landing` and `marketing-site` each carry a full
+  // starter, and a hand-maintained copy of a starter drifts within one release.
+  const base = await readTemplateFiles();
+  for (const pkg of PACKAGES) {
+    const dir = dirOf(pkg.name);
+    const files = await filesFor(pkg, base);
+    for (const [source, text] of expectedSources(files)) {
+      const onDisk = await readFile(join(dir, source), "utf8").catch(() => null);
+      assert.notEqual(onDisk, null, `${pkg.name}/${source} is missing — run emit`);
+      assert.equal(onDisk, text, `${pkg.name}/${source} has drifted — run emit`);
+    }
+    const manifest = JSON.parse(await readFile(join(dir, "blueprint.json"), "utf8"));
+    assert.deepEqual(
+      manifest.files,
+      fileRefs(files),
+      `${pkg.name}'s \`files\` is stale — run \`pnpm -C create-shio-app run emit\``
+    );
+  }
+});
+
+test("a section package's tree is the starter's, differing only by the overlay", async () => {
+  const base = await readTemplateFiles();
+  const landing = PACKAGES.find((p) => p.name === "landing");
+  const files = await filesFor(landing, base);
+
+  const changed = files
+    .filter((file) => base.find((b) => b.path === file.path)?.text !== file.text)
+    .map((file) => file.path)
+    .sort();
+
+  // Exactly three: the route that grew a branch, the resolver it calls, and the manifest
+  // that gained the dependency. If this list grows, the "overlay" has become a fork.
+  assert.deepEqual(changed, ["app/[...slug]/page.tsx", "lib/sections.ts", "package.json"]);
+  assert.equal(
+    files.length,
+    base.length + 1,
+    "the overlay adds one file and replaces the rest"
+  );
+});
+
+test("the overlay's dependency is a real published range, read from the workspace", async () => {
+  // Written down nowhere: a release bumps @viglet/shio-sections, and a hardcoded range
+  // here would point the generated projects at a version nobody published.
+  const needs = await resolveNeeds(["@viglet/shio-sections"]);
+  assert.match(needs["@viglet/shio-sections"], /^\^\d+\.\d+\.\d+/);
+
+  const base = await readTemplateFiles();
+  const files = await filesFor(
+    PACKAGES.find((p) => p.name === "marketing-site"),
+    base
+  );
+  const manifest = JSON.parse(files.find((f) => f.path === "package.json").text);
+  assert.equal(manifest.dependencies["@viglet/shio-sections"], needs["@viglet/shio-sections"]);
+  // The starter's own dependencies survive the merge — an overlay adds, it does not replace.
+  assert.ok(manifest.dependencies["@viglet/shio-client"], "the core dependency must survive");
+  assert.ok(manifest.dependencies.next, "next must survive");
+});
+
+test("compose replaces by path and leaves the rest alone", () => {
+  const base = [
+    { path: "a.txt", text: "base a" },
+    { path: "b.txt", text: "base b" },
+  ];
+  const composed = compose(base, [{ path: "b.txt", text: "overlay b" }, { path: "c.txt", text: "c" }]);
+  assert.deepEqual(composed, [
+    { path: "a.txt", text: "base a" },
+    { path: "b.txt", text: "overlay b" },
+    { path: "c.txt", text: "c" },
+  ]);
+});
+
+test("blog, docs and product-catalog are left out on purpose", () => {
+  // They do not compose sections, so the overlay would ship them a dependency they never
+  // import. Named here so that including one later looks like the decision it is.
+  assert.deepEqual(
+    PACKAGES.map((p) => p.name),
+    ["nextjs-starter", "marketing-site", "landing"]
+  );
 });
