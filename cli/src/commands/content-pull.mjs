@@ -38,7 +38,13 @@ import {
   writeFolderMarker,
   writeRemoteSidecar,
 } from "../content-store.mjs";
-import { ancestorsOf, reconcile, reconcileFolders, resolveConflict } from "../content-sync.mjs";
+import {
+  ancestorsOf,
+  baseEntryFor,
+  reconcile,
+  reconcileFolders,
+  resolveConflict,
+} from "../content-sync.mjs";
 
 export async function run(flags, _positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
@@ -94,6 +100,11 @@ export async function run(flags, _positionals, ctx) {
     folders: { written: [], deleted: [], kept: [] },
   };
   const nextPosts = { ...base.posts };
+  // Collected from the documents rather than read back off `nextPosts` (SH148): a base entry is
+  // fingerprints now, so it has no `folder` to read, and a post the file tree alone changed
+  // never gets a fresh entry. Reading the folder there would miss it and pull would write a
+  // redundant `_folder.md` for a folder a post already declares.
+  const declaredFolders = new Set();
 
   for (const address of addresses(base.posts, remote, local)) {
     const versions = {
@@ -103,6 +114,10 @@ export async function run(flags, _positionals, ctx) {
     };
     let result = reconcile(versions);
     if (result.kind === "conflict" && side) result = resolveConflict(versions, side);
+    for (const doc of [result.doc, versions.local, versions.remote]) {
+      if (!doc?.site) continue;
+      for (const ancestor of ancestorsOf(doc.folder ?? "/")) declaredFolders.add(`${doc.site}|${ancestor}`);
+    }
 
     switch (result.kind) {
       case "remote-added":
@@ -110,7 +125,7 @@ export async function run(flags, _positionals, ctx) {
       case "merged":
         if (!dryRun) await writeDoc(ctx, result.doc, fieldFor(bodyField, result.doc), { dir });
         report.written.push(`${address}${result.kind === "merged" ? " (merged)" : ""}`);
-        nextPosts[address] = snapshot(result.doc);
+        nextPosts[address] = baseEntryFor(result.doc);
         break;
       case "remote-deleted":
         if (!dryRun) await deleteDoc(ctx, versions.base ?? versions.local, { dir });
@@ -131,7 +146,7 @@ export async function run(flags, _positionals, ctx) {
         break;
       case "unchanged":
         report.unchanged.push(address);
-        nextPosts[address] = snapshot(result.doc);
+        nextPosts[address] = baseEntryFor(result.doc);
         break;
       case "conflict":
         report.conflicts.push({ address, fields: result.conflicts });
@@ -155,7 +170,7 @@ export async function run(flags, _positionals, ctx) {
     base: base.folders,
     remote: remoteFolders,
     local: localFolders,
-    implied: impliedFolders(nextPosts),
+    implied: declaredFolders,
   });
   for (const marker of folderPlan.write) {
     if (!dryRun) await writeFolderMarker(ctx, marker, { dir: foldersDir });
@@ -198,21 +213,6 @@ export async function run(flags, _positionals, ctx) {
   return { ...report, cursor };
 }
 
-/**
- * The `site|folder` keys the projected posts already declare, plus every ancestor (SH149).
- *
- * Ancestors count: a post in `/blog/2026` declares `/blog` as surely as `/blog/2026`, and a
- * marker for a folder that is already on a declared path would be a file restating the tree.
- */
-function impliedFolders(posts) {
-  const keys = new Set();
-  for (const doc of Object.values(posts ?? {})) {
-    if (!doc?.site) continue;
-    for (const ancestor of ancestorsOf(doc.folder ?? "/")) keys.add(`${doc.site}|${ancestor}`);
-  }
-  return keys;
-}
-
 /** Every address any of the three versions knows about, in a stable order. */
 function addresses(base, remote, local) {
   return [...new Set([...Object.keys(base), ...Object.keys(remote), ...Object.keys(local)])].sort();
@@ -220,10 +220,6 @@ function addresses(base, remote, local) {
 
 function fieldFor(bodyField, doc) {
   return doc?.bodyField ?? bodyField.get(doc?.type) ?? null;
-}
-
-function snapshot(doc) {
-  return { site: doc.site, url: doc.url, type: doc.type ?? null, folder: doc.folder ?? null, data: doc.data ?? {} };
 }
 
 /**

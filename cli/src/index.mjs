@@ -225,7 +225,8 @@ Content as files (shio pull/push --content, shio dev --content):
   --show-remote        pull: write the server's copy as <file>.remote next to a conflict
   --allow-partial      pull: accept a truncated post list (marks the snapshot partial)
   --force              push: proceed despite conflicts or a partial snapshot
-  The last-synced base and the change cursor live in shio/.shio/content-base.json.
+  The last-synced base and the change cursor live in shio/.shio/content-base.json. The
+  base holds a hash per field, not a copy of your content, so it is safe to commit.
 
 Instance memory (shio remember):
   What one session works out, the next is told: notes come back in the context pack's

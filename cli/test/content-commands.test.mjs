@@ -457,6 +457,54 @@ test("push --content says so instead of pushing an empty tree", async () => {
   await assert.rejects(() => contentPush.run({}, [], ctx), /no content files under/);
 });
 
+// --- the merge base is fingerprints (SH148) ---
+
+test("the base snapshot keeps no copy of any field value", async () => {
+  // The whole point: the base was a second copy of the site on disk — and in every clone,
+  // once committed to share it — stored so that it could be compared and then discarded.
+  const ctx = ctxWith(server({ remote: { "post:Blog/blog/hello": REMOTE_DOC } }));
+
+  await contentPull.run({}, [], ctx);
+
+  const raw = ctx.fs.files.get(BASE_PATH);
+  assert.doesNotMatch(raw, /First/, "the body must not be in the snapshot");
+  assert.doesNotMatch(raw, /Hello/, "nor any other field value");
+  const base = JSON.parse(raw);
+  assert.equal(base.version, 2);
+  const entry = base.posts["post:Blog/blog/hello"];
+  // The identity stays verbatim, because it is *used* rather than compared: a pull deletes a
+  // file by the address the base remembers, and a digest would leave nothing to delete.
+  assert.deepEqual(Object.keys(entry).sort(), ["digest", "site", "url"]);
+  // `.field` for a data key, `@name` for metadata — the same flattening the merge compares on.
+  assert.deepEqual(Object.keys(entry.digest).sort(), [".body", ".headline", "@folder", "@type"]);
+  assert.ok(Object.values(entry.digest).every((hash) => /^[0-9a-f]{16}$/.test(hash)));
+});
+
+test("a v1 snapshot full of values is read forward, and still merges", async () => {
+  // Every other test in this file seeds a v1 fixture, so the whole suite exercises the read
+  // path; this one states the property. An existing project needs no re-pull and loses nothing.
+  const ctx = ctxWith(
+    server({
+      remote: {
+        "post:Blog/blog/hello": { ...REMOTE_DOC, data: { headline: "Hello", body: "<p>Server</p>" } },
+      },
+    }),
+    {
+      [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nbody: body\nfields:\n  headline: Mine\n---\n<p>First</p>\n`,
+      [BASE_PATH]: baseSnapshot({ headline: "Hello", body: "<p>First</p>" }),
+    },
+  );
+
+  const result = await contentPull.run({}, [], ctx);
+
+  // Different fields on each side: the merge needed the v1 base to tell which side moved, and
+  // got there through the digests derived from it.
+  assert.deepEqual(result.written, ["post:Blog/blog/hello (merged)"]);
+  assert.match(ctx.fs.files.get(FILE), /headline: Mine/);
+  assert.match(ctx.fs.files.get(FILE), /<p>Server<\/p>/);
+  assert.equal(JSON.parse(ctx.fs.files.get(BASE_PATH)).version, 2);
+});
+
 // --- a rename is a move (SH150) ---
 
 test("push --content sends a renamed post as a move, not a delete plus a create", async () => {

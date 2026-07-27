@@ -31,7 +31,7 @@ import {
   sitesOf,
   writeBase,
 } from "../content-store.mjs";
-import { documentsFor, planPushContent } from "../content-sync.mjs";
+import { baseEntryFor, documentsFor, planPushContent } from "../content-sync.mjs";
 
 export async function run(flags, _positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
@@ -172,13 +172,7 @@ export async function run(flags, _positionals, ctx) {
     // and it is what the next pull merges against.
     const nextPosts = {};
     for (const [address, doc] of Object.entries(local)) {
-      nextPosts[address] = {
-        site: doc.site,
-        url: doc.url,
-        type: doc.type ?? null,
-        folder: doc.folder ?? null,
-        data: doc.data ?? {},
-      };
+      nextPosts[address] = baseEntryFor(doc);
     }
     // A moved post's *old* address must not come back here (SH150). Without this exclusion the
     // loop below re-adds it from the server read — which was taken before the move — and the

@@ -562,6 +562,16 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   merged, same field → **conflict**, which writes nothing, exits 1, and offers
   `--ours`/`--theirs`/`--show-remote`. **There are no conflict markers on purpose** —
   `<<<<<<<` in a field value is content the next push would publish.
+- **The base is per-field fingerprints, not values (SH148, snapshot `version: 2`).** It is only
+  ever *compared*: `equal(a, b)` is `stable(a) === stable(b)`, the merged output always takes the
+  remote or local value, and a conflict names fields and writes nothing — so the values were
+  being stored in order to be compared and then discarded, one extra copy of the site on disk
+  and in every clone once the file is committed to share the base. `digestsOf`/`baseEntryFor`
+  own the shape; `site` and `url` stay verbatim because they are *used* (a pull deletes a file
+  by the address the base remembers). Two things to keep: **absence has its own fingerprint**
+  (`ABSENT`) — without it a field the server added that neither the base nor the file had came
+  back a *conflict*, because a fingerprint map has no key where `undefined === undefined` used to
+  be true — and a **v1 snapshot is digested on read**, so an existing project needs no re-pull.
 - **`shio push --content`** compiles the tree into one desired-state document per site and
   applies it through `/agent/plan|apply` (law P10). It declares a post the server changed
   with the **server's** values — declaring the base would revert a console edit, omitting

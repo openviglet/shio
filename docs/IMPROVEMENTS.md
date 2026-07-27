@@ -695,21 +695,6 @@ does not exist, and it must be idempotent by path so a second push does not uplo
 second copy. That is the same idempotency argument SH81's `post.upsert` settled for posts,
 applied to bytes.
 
-### X.8 Digest-only merge base (SH148)
-
-The three-way merge needs a base, and the base currently keeps a full copy of every
-projected field value in `shio/.shio/content-base.json`. That is one extra copy of the
-whole site on disk, and if the file is committed (which is the reasonable choice for a
-team, since it makes the merge base shared) it is one extra copy in every clone.
-
-A per-field **hash** decides all three cases the merge asks about — did this side change,
-did that side change, did both — because every one of them is an equality test against the
-base rather than a read of it. Only a genuine conflict needs the base *value*, and by then
-the server has been read anyway. The snapshot goes from O(content) to O(fields).
-
-Left as an idea rather than designed: it trades a clear data structure for a smaller one,
-and the merge is new. It is worth doing after the merge has been used enough to trust.
-
 ### X.12 `push --content` cannot split a large tree (SH199)
 
 **SH138** gave a compiled document its own op ceiling (2000, against the hand-written batch's

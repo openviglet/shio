@@ -24,14 +24,15 @@ import {
   serializeFolder,
   serializePost,
 } from "./content-files.mjs";
-import { addressOf } from "./content-sync.mjs";
+import { addressOf, baseEntryFor } from "./content-sync.mjs";
 
 /** Where the projection lives, and where the snapshot that tracks it lives. */
 export const CONTENT_DIR = "shio/content";
 /** Folder markers (SH149) — a root of their own; see `FOLDERS_SUBDIR` for why. */
 export const FOLDERS_DIR = "shio/folders";
 export const BASE_FILE = "shio/.shio/content-base.json";
-export const BASE_VERSION = 1;
+/** 2 since SH148: entries hold per-field fingerprints instead of a copy of every value. */
+export const BASE_VERSION = 2;
 
 /**
  * The base snapshot: what the file tree and the server last agreed on, plus the change
@@ -49,7 +50,11 @@ export async function readBase(ctx, path = BASE_FILE) {
       version: parsed.version ?? BASE_VERSION,
       cursor: parsed.cursor ?? null,
       partial: Boolean(parsed.partial),
-      posts: parsed.posts ?? {},
+      // SH148 — a v1 snapshot held full values; they are digested on the way in, so an
+      // existing project keeps a usable merge base with no re-pull and nothing to migrate.
+      // The next write emits v2, and the values are gone for good the moment they are used
+      // for the only thing they were ever used for.
+      posts: digestPosts(parsed.posts ?? {}),
       // SH149. Absent in a snapshot written before folders projected, which reads as "we
       // have never agreed about any folder" — so every server folder looks newly added and
       // every local marker looks locally added. Both are the safe reading: one writes a
@@ -86,16 +91,29 @@ export async function writeBase(ctx, base, path = BASE_FILE) {
   await ctx.fs.writeFile(target, `${JSON.stringify(body, null, 2)}\n`, "utf8");
 }
 
+/** Every entry as fingerprints, whichever shape it was stored in (SH148). */
+function digestPosts(posts) {
+  const out = {};
+  for (const [address, entry] of Object.entries(posts)) out[address] = baseEntryFor(entry);
+  return out;
+}
+
+/**
+ * One base entry, as fingerprints (SH148).
+ *
+ * Callers keep handing whole documents — a pull's merge result, a push's declared post — and
+ * the conversion happens here, in the one place that writes the file. `baseEntryFor` also
+ * accepts an entry that is already digested, so re-writing a snapshot that was read from disk
+ * is a no-op rather than a hash of a hash.
+ */
 function normalizeSnapshot(doc) {
-  const data = {};
-  for (const key of Object.keys(doc.data ?? {}).sort()) data[key] = doc.data[key];
-  return {
-    site: doc.site,
-    url: doc.url,
-    type: doc.type ?? null,
-    folder: doc.folder ?? null,
-    data,
-  };
+  const entry = baseEntryFor(doc);
+  const digest = {};
+  // Sorted, so the committed file's diff shows a changed field and not a reshuffle (P5).
+  for (const key of Object.keys(entry.digest).sort((a, b) => a.localeCompare(b))) {
+    digest[key] = entry.digest[key];
+  }
+  return { site: entry.site, url: entry.url, digest };
 }
 
 /**

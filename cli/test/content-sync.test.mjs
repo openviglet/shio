@@ -17,7 +17,9 @@ import { test } from "node:test";
 import {
   addressOf,
   ancestorsOf,
+  baseEntryFor,
   documentsFor,
+  fingerprint,
   planPushContent,
   reconcile,
   reconcileFolders,
@@ -206,6 +208,59 @@ test("a document omits publish unless the file said so", () => {
 
   const [explicit] = documentsFor([post({ headline: "a" }, { publish: true })]);
   assert.equal(explicit.posts[0].publish, true);
+});
+
+// --- the base is fingerprints, not values (SH148) ---
+
+test("a digest base decides the same three cases a full base did", () => {
+  const digested = baseEntryFor(BASE);
+
+  // No values survive in it at all.
+  assert.deepEqual(Object.keys(digested).sort(), ["digest", "site", "url"]);
+  assert.equal(JSON.stringify(digested).includes("Hello"), false);
+
+  // …and every branch of the merge still resolves as before.
+  assert.equal(reconcile({ base: digested, remote: BASE, local: BASE }).kind, "unchanged");
+  assert.equal(
+    reconcile({ base: digested, remote: post({ headline: "Theirs", body: "First" }), local: BASE }).kind,
+    "remote-changed",
+  );
+  assert.equal(
+    reconcile({ base: digested, remote: BASE, local: post({ headline: "Ours", body: "First" }) }).kind,
+    "local-changed",
+  );
+  const both = reconcile({
+    base: digested,
+    remote: post({ headline: "Theirs", body: "First" }),
+    local: post({ headline: "Ours", body: "First" }),
+  });
+  assert.equal(both.kind, "conflict");
+  assert.deepEqual(both.conflicts, ["fields.headline"]);
+});
+
+test("a field only the server has takes the server's value, not a conflict", () => {
+  // The trap in going digest-only: absence used to compare equal to absence, and a fingerprint
+  // map simply has no key for a field nobody had. Without treating "not here" as its own
+  // fingerprint, a field the server added came back a *conflict* — and this needs both sides to
+  // have moved, or `reconcile` short-circuits on "only the server changed" and never merges.
+  const result = reconcile({
+    base: baseEntryFor(post({ headline: "Hello" })),
+    remote: post({ headline: "Hello", subtitle: "New on the server" }),
+    local: post({ headline: "Retitled locally" }),
+  });
+
+  assert.equal(result.kind, "merged");
+  assert.equal(result.doc.data.subtitle, "New on the server");
+  assert.equal(result.doc.data.headline, "Retitled locally");
+});
+
+test("a fingerprint is stable and order-independent, like the values it replaces", () => {
+  assert.equal(fingerprint({ a: 1, b: 2 }), fingerprint({ b: 2, a: 1 }));
+  assert.notEqual(fingerprint("a"), fingerprint("b"));
+  // A digested entry re-digested is itself, so re-writing a snapshot read from disk is not a
+  // hash of a hash.
+  const once = baseEntryFor(BASE);
+  assert.deepEqual(baseEntryFor(once), once);
 });
 
 // --- a rename is a move, not a re-creation (SH150) ---

@@ -26,7 +26,15 @@
  * the next publish would put it on the site. So a conflict leaves the file untouched and
  * is reported instead; `pull --content` can write the server's copy beside it as
  * `<file>.remote` (`--show-remote`) so a diff is still one command away.
+ *
+ * WHY THE BASE IS FINGERPRINTS AND NOT VALUES (SH148)
+ * The base is only ever *compared*, never read: the merged output takes the remote or the
+ * local value, and a conflict names fields and writes nothing. Storing the values meant
+ * carrying a second copy of the whole site — in every clone, once the file is committed to
+ * share the base — so that it could be compared and discarded. Per-field hashes answer the
+ * same three questions. See `digestsOf`.
  */
+import { createHash } from "node:crypto";
 
 /**
  * Metadata that participates in the merge, alongside the fields.
@@ -102,22 +110,29 @@ export function reconcile({ base = null, remote = null, local = null }) {
  * either.
  */
 function mergeFields(base, remote, local) {
-  const flat = { base: flatten(base), remote: flatten(remote), local: flatten(local) };
+  // The base contributes fingerprints, the other two contribute values (SH148). That split is
+  // the whole change: the two branches that consult the base are equality tests, and the value
+  // written out always comes from remote or local.
+  const baseDigest = base ? digestsOf(base) : {};
+  const flat = { remote: flatten(remote), local: flatten(local) };
   const keys = [
-    ...new Set([...Object.keys(flat.base), ...Object.keys(flat.remote), ...Object.keys(flat.local)]),
+    ...new Set([...Object.keys(baseDigest), ...Object.keys(flat.remote), ...Object.keys(flat.local)]),
   ].sort();
 
   const merged = {};
   const conflicts = [];
   for (const key of keys) {
-    const b = flat.base[key];
+    // A key absent from the base fingerprints has to compare equal to a key absent from the
+    // side being tested — `equal(undefined, undefined)` was true, and without this a field the
+    // server added that neither the base nor the file has would come back a *conflict*.
+    const b = baseDigest[key] ?? ABSENT;
     const r = flat.remote[key];
     const l = flat.local[key];
     if (equal(r, l)) {
       merged[key] = r;
-    } else if (equal(b, l)) {
+    } else if (b === fingerprint(l)) {
       merged[key] = r;
-    } else if (equal(b, r)) {
+    } else if (b === fingerprint(r)) {
       merged[key] = l;
     } else {
       conflicts.push(label(key));
@@ -532,11 +547,70 @@ export function ancestorsOf(path) {
   return out;
 }
 
-/** Comparison of two posts: identical metadata and identical field values. */
+/**
+ * Comparison of two posts: identical metadata and identical field values.
+ *
+ * Either side may be a **digest base** (SH148) rather than a document, because that is all
+ * the merge base keeps now — and it is enough, since every question the merge asks is an
+ * equality test.
+ */
 export function same(a, b) {
   if (!a || !b) return false;
-  return stable(flatten(a)) === stable(flatten(b));
+  return stable(digestsOf(a)) === stable(digestsOf(b));
 }
+
+/**
+ * The per-field fingerprints of a post — the whole merge base (SH148).
+ *
+ * <h3>Why a hash is not a compromise here</h3>
+ *
+ * The base used to hold a full copy of every projected field, which is one extra copy of the
+ * site on disk and — since committing it is the reasonable choice for a team, so the merge
+ * base is shared — one extra copy in every clone. It bought nothing, because the base value
+ * is **never read**: `equal(a, b)` is `stable(a) === stable(b)`, so all three questions the
+ * merge asks ("did this side change", "did that side", "did both") are string comparisons
+ * against the base, and the merged output always takes the *remote* or *local* value. Even a
+ * conflict never shows the base — it names the fields and writes nothing. So the values were
+ * stored so that they could be compared and then discarded.
+ *
+ * <h3>What it costs</h3>
+ *
+ * 64 bits per field. Two different values hashing the same would read as "this field did not
+ * change", which is the failure mode every hash-based sync accepts (git included) at far
+ * wider scope than one post's field list. The snapshot goes from O(content) to O(fields).
+ *
+ * Accepts a document *or* an already-digested base entry, so one function serves both the
+ * writer and a v1 snapshot being read forward.
+ */
+export function digestsOf(docOrBase) {
+  if (docOrBase && typeof docOrBase.digest === "object" && docOrBase.digest !== null) {
+    return docOrBase.digest;
+  }
+  const digest = {};
+  for (const [key, value] of Object.entries(flatten(docOrBase))) {
+    digest[key] = fingerprint(value);
+  }
+  return digest;
+}
+
+/** A base entry: the identity, verbatim, plus the fingerprints (SH148). */
+export function baseEntryFor(doc) {
+  return {
+    // Kept as values because they are not compared, they are *used*: a pull deletes a file by
+    // the address the base remembers, so a digest here would leave nothing to delete.
+    site: doc.site,
+    url: doc.url,
+    digest: digestsOf(doc),
+  };
+}
+
+/** One field's fingerprint — a hash of the canonical form `equal` already compares. */
+export function fingerprint(value) {
+  return createHash("sha256").update(stable(value)).digest("hex").slice(0, 16);
+}
+
+/** The fingerprint of "this field is not here", so absence compares like a value. */
+const ABSENT = fingerprint(undefined);
 
 // --- internals ---
 
