@@ -467,6 +467,85 @@ export function documentsFor(posts, { prune = false, markers = [], sites = [], m
 }
 
 /**
+ * Splits a site's document into several that each fit the server's op ceiling (SH199).
+ *
+ * <h3>Why raising the ceiling is not the fix</h3>
+ *
+ * SH138 gave a compiled document its own ceiling (2000, against a hand-written batch's 200)
+ * because a document's op count is not a measure of what the caller asked for. That moved the
+ * dead end; it did not remove it. One document per site was the only shape push knew, so a
+ * tree past the new ceiling failed exactly as before — and "raise it again" is not available,
+ * because the bound exists so that one transaction stays a transaction.
+ *
+ * <h3>Why a pruning push cannot be split, which is the whole finding</h3>
+ *
+ * Prune deletes what a document does *not* declare, inside the folders it *does* — so a split
+ * changes what prune means, and the two designs that suggest themselves are both unsafe:
+ *
+ * <ul>
+ *   <li><b>Split by declared folder subtree.</b> Every document `documentsFor` builds declares
+ *       the site root, because folders come from `ancestorsOf`, which always yields `/`. So each
+ *       part's prune is scoped to the *whole site*, and part one would delete everything part
+ *       two declares.</li>
+ *   <li><b>A content pass, then one pruning pass declaring every folder and no posts.</b> A
+ *       prune with no declared posts deletes every post under those folders. It converges, on
+ *       an empty site.</li>
+ * </ul>
+ *
+ * So a pruning push stays one document, and a tree too large for one is a **teaching refusal**
+ * rather than a split that quietly means something else. Everything else — a plain push, a
+ * `--check` drift guard, the common case — splits freely: upserts are independent and
+ * idempotent, so the union of the parts converges exactly where the whole would have.
+ *
+ * @param {object[]} documents one per site, from `documentsFor`
+ * @param {{maxOps?: number}} [options] declaration ops per document
+ * @returns {object[]} documents in a stable order, each within the ceiling
+ */
+export function splitDocuments(documents, { maxOps = 1500 } = {}) {
+  const out = [];
+  for (const document of documents) {
+    if (document.prune || opsOf(document) <= maxOps) {
+      out.push(document);
+      continue;
+    }
+    const folders = document.folders ?? [];
+    const moves = document.moves ?? [];
+    // Every part carries the folders and the moves. Folders are cheap, idempotent and needed
+    // by whichever posts land in the part; a move is also idempotent (a move whose source is
+    // gone is a noop, SH150), and repeating it is cheaper than working out which part its post
+    // ended up in.
+    const overhead = folders.length + moves.length;
+    const room = Math.max(1, maxOps - overhead);
+    const posts = document.posts ?? [];
+    for (let index = 0; index < posts.length; index += room) {
+      const slice = posts.slice(index, index + room);
+      out.push({
+        ...document,
+        folders,
+        ...(moves.length ? { moves } : {}),
+        posts: slice,
+        prune: false,
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * The ops a document compiles to, counted the way the server counts them.
+ *
+ * A declared `publish` is a second op on top of the upsert, which is easy to forget and is
+ * what makes a document of 1000 posts 2000 ops. Prune deletes are *not* counted: how many
+ * there are depends on what is on the server, which the client does not know — which is
+ * another reason a pruning document is left whole rather than split to a client-side estimate.
+ */
+export function opsOf(document) {
+  const posts = document?.posts ?? [];
+  const publishes = posts.filter((post) => typeof post.publish === "boolean").length;
+  return (document?.folders?.length ?? 0) + (document?.moves?.length ?? 0) + posts.length + publishes;
+}
+
+/**
  * Reconciles folder markers three ways (SH149).
  *
  * <h3>Why a folder needs a base at all</h3>

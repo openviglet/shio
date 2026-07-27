@@ -676,32 +676,36 @@ that long to commit — and the response states the rule rather than implying ex
 narrows the window; it does not close it, and a bulk apply of hundreds of posts can still
 outrun it.
 
-Closing it properly means changing how the row is *written*, not how it is read: a
-sequence assigned at commit, or an outbox the reader drains in commit order. That is why
+Closing it properly means changing how the row is *written*, not how it is read. That is why
 it is a separate task — SH88 is the read shape, and the read shape is right.
 
-### X.12 `push --content` cannot split a large tree (SH199)
+**What a pass at it in July 2026 established, before stopping.** The two phrasings this
+section used to offer — "a sequence assigned at commit, or an outbox the reader drains in
+commit order" — are not two designs of equal weight, and neither is as cheap as it sounds:
 
-**SH138** gave a compiled document its own op ceiling (2000, against the hand-written batch's
-200) because a document's op count is not a measure of what the caller asked for. That removed
-the dead end at 200; it did not remove the dead end. One document per site is still the only
-shape `push --content` knows, so a tree past the new ceiling fails the same way, and the fix
-cannot be "raise it again" — a single transaction is bounded for real reasons.
+* **"Assigned at commit" is not available.** There is no JPA hook that runs *at* commit; the
+  latest one is `TransactionSynchronization.beforeCommit`, and two transactions can still
+  interleave between their `beforeCommit` and their actual commit. It narrows the window
+  exactly the way the lag already does, so it buys nothing and costs a column.
+* **A sequence assigned *inside* the transaction does work, but only with gap detection.** Rows
+  get a monotonic `seq`, the cursor becomes a `seq`, and the reader **stops at the first hole**
+  rather than reading past it — a hole is either a transaction still in flight (wait) or one
+  that rolled back (skip after a timeout). This is the real shape, and it turns the existing
+  `lag-millis` from "hope the commit is fast" into "how long to wait for a gap", which is a far
+  better justification for the same knob.
+* **The blocker is portability, not design.** A monotonic non-PK column has to work on H2,
+  MariaDB *and* PostgreSQL: identity/auto-increment on a non-PK column differs across all
+  three, Hibernate will not drive a sequence generator for a non-id field, and `nextval` vs
+  `NEXT VALUE FOR` is engine-specific SQL. Whatever is chosen, the **only** proof it applies is
+  the SH26 Testcontainers ITs (`ShMariaDbSchemaIT` / `ShPostgresSchemaIT`), which need Docker
+  and auto-skip without it. Landing a changeset for a portable-sequence column without running
+  them would repeat the SH2/SH5 drift exactly: a column that works on the dev H2 and leaves a
+  clean Liquibase database broken.
 
-The natural unit is the **declared folder**, which is also what makes this more than an
-op-count problem: `--prune`'s blast radius is exactly the set of declared folders, so a split
-that changes which folders are declared per call changes what prune deletes. Splitting a site
-into three documents that each declare one third of the tree and each prune is *not*
-equivalent to one document declaring all of it — it is three prunes with three narrower
-scopes, which happens to be safe, and one wrong split is a prune over a scope that swept up a
-sibling nobody declared in that batch.
-
-So the design question is not how to chunk ops; it is how to chunk *declarations* such that
-the union of the parts converges to the same state the whole would have. Two candidates worth
-weighing: split strictly by declared folder subtree (safe, but a site whose posts all live at
-the root cannot split at all), or send one non-pruning pass for content followed by a single
-pruning pass that declares every folder and no posts (converges, at the cost of a second
-round trip and a window where the tree is a superset of the document).
+So the task is: pick the portable mechanism, add `ShHistory.seq` with a changeset, make the
+cursor a `seq` (accepting the old `<instant>|<id>` form and translating, since it is a
+published contract), teach the reader to stop at a gap, and **run the cross-DB ITs**. It is
+schema work that must not be done blind, and that is the whole reason it is still open.
 
 ## XI. Blueprints + Claude Code plugin (Block J)
 

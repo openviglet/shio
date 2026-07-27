@@ -496,6 +496,48 @@ test("push --content says so instead of pushing an empty tree", async () => {
   await assert.rejects(() => contentPush.run({}, [], ctx), /no content files under/);
 });
 
+// --- a large tree splits (SH199) ---
+
+/** `n` content files in one site, enough to push a document past a small ceiling. */
+function manyFiles(n) {
+  const seed = {};
+  for (let index = 0; index < n; index += 1) {
+    seed[`/repo/shio/content/Blog/blog/p${index}.md`] =
+      `---\nsite: Blog\nurl: /blog/p${index}\ntype: Article\nfolder: /blog\nfields:\n  headline: p${index}\n---\n`;
+  }
+  return seed;
+}
+
+test("push --content splits a tree past the op ceiling into several applies", async () => {
+  const fetchImpl = server({ remote: {} });
+  const ctx = ctxWith(fetchImpl, manyFiles(9));
+
+  const result = await contentPush.run({ maxOps: 5 }, [], ctx);
+
+  const applies = fetchImpl.calls.filter((call) => call.url.includes("/agent/apply"));
+  assert.ok(applies.length > 1, `expected several applies, got ${applies.length}`);
+  // Every part fits, and between them they declare every post exactly once — the union is what
+  // one document would have declared, because an upsert is independent and idempotent.
+  const urls = applies.flatMap((call) => call.body.posts.map((post) => post.url)).sort();
+  assert.equal(urls.length, 9);
+  assert.equal(new Set(urls).size, 9);
+  assert.ok(applies.every((call) => call.body.posts.length + call.body.folders.length <= 5));
+  assert.ok(applies.every((call) => call.body.prune === false));
+  assert.equal(result.documents.length, applies.length);
+});
+
+test("push --content --prune refuses a tree too large to push whole", async () => {
+  // Prune deletes what a document does not declare, so each part of a split would delete what
+  // the other parts declare — and every document declares the site root, so no subtree split
+  // narrows it either. A refusal that says why beats a split that means something else.
+  const ctx = ctxWith(server({ remote: {} }), manyFiles(9));
+
+  await assert.rejects(
+    () => contentPush.run({ prune: true, maxOps: 5 }, [], ctx),
+    /a pruning push cannot be split/,
+  );
+});
+
 // --- assets project too (SH145) ---
 
 /** A post-type with a File field, and a doc that references one. */

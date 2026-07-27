@@ -71,8 +71,8 @@
 > **What is left is follow-ups, not blocks**: H's original edges shipped (SH136–SH139) and
 > driving them turned up the next layer (SH196–SH203, spread across H, I, L and O — the
 > engine's own asymmetries rather than missing capabilities), **Block K is now complete**
-> (SH102/SH104/SH141/SH144 closed its last four), **Block I is down to SH147/SH199**
-> (SH145, SH146, SH148, SH149, SH150 and SH198 have shipped), J's reconciliation and registry (SH96,
+> (SH102/SH104/SH141/SH144 closed its last four), **Block I is down to SH147**
+> (SH145, SH146, SH148, SH149, SH150, SH198 and SH199 have shipped), J's reconciliation and registry (SH96,
 > SH153–SH156), M's attribution (SH157–SH161, SH174), N's realignment (SH163–SH167), plus
 > SH44–SH47's tenant work and SH110. The highest-value one left is **SH153** (a blueprint plan
 > writes and rolls back purely so its content half can resolve post-types, so a plan cannot run
@@ -214,8 +214,7 @@
 > change feed's own honesty note is the fourth: the lag narrows the stamp-before-commit
 > window, it does not close it (**SH147**).
 
-- 📋 **SH147** (deps: SH88 ✅) **Commit-ordered change feed** — SH51 stamps the audit row inside the writer's transaction, so a slow commit can land an older timestamp behind a cursor that already passed it. The 1s lag narrows that window; only commit-ordered sequencing (an outbox, or a sequence assigned at commit) closes it, and a feed used for sync has to be exact. → §X.3
-- 📋 **SH199** (deps: SH138 ✅, SH87 ✅) **`push --content` cannot split a large tree** — SH138 gave a compiled document its own 2000-op ceiling, which is a bound, not a solution: a tree past it still dead-ends, because one document per site is the only shape push knows. Splitting by declared folder is the natural unit and interacts with `--prune`, whose scope is exactly those folders — so the split has to preserve prune's blast radius, not just the op count. → §X.12
+- 📋 **SH147** (deps: SH88 ✅) **Commit-ordered change feed** — SH51 stamps the audit row inside the writer's transaction, so a slow commit can land an older timestamp behind a cursor that already passed it, and for a *sync* feed that is a lost edit rather than a late one. The 1s lag narrows the window; only commit-ordered sequencing closes it. **Scoped in July 2026 and deliberately not started:** "assigned at commit" does not exist in JPA (`beforeCommit` still interleaves), the working shape is a `seq` assigned inside the transaction plus a reader that **stops at a gap**, and the blocker is that a portable monotonic non-PK column across H2/MariaDB/PostgreSQL can only be *proved* by the SH26 Testcontainers ITs — which need Docker. Landing the changeset without them would repeat the SH2/SH5 drift. → §X.3
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 

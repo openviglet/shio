@@ -20,11 +20,13 @@ import {
   baseEntryFor,
   documentsFor,
   fingerprint,
+  opsOf,
   planPushContent,
   reconcile,
   reconcileFolders,
   resolveConflict,
   same,
+  splitDocuments,
 } from "../src/content-sync.mjs";
 
 const post = (data, extra = {}) => ({
@@ -208,6 +210,77 @@ test("a document omits publish unless the file said so", () => {
 
   const [explicit] = documentsFor([post({ headline: "a" }, { publish: true })]);
   assert.equal(explicit.posts[0].publish, true);
+});
+
+// --- a large tree splits, except when it prunes (SH199) ---
+
+/** A document of `n` posts, as `documentsFor` would build it. */
+function bigDocument(n, { prune = false, publish = false } = {}) {
+  const posts = [];
+  for (let index = 0; index < n; index += 1) {
+    posts.push({ url: `/p${index}`, type: "Article", folder: "/blog", data: { headline: `p${index}` },
+      ...(publish ? { publish: true } : {}) });
+  }
+  return { site: "Blog", folders: [{ path: "/" }, { path: "/blog" }], posts, prune };
+}
+
+test("ops are counted the way the server counts them, publishes included", () => {
+  // Easy to forget and the reason a document of 1000 posts is 2000 ops: a declared `publish`
+  // compiles to a second op on top of the upsert.
+  assert.equal(opsOf(bigDocument(10)), 12);
+  assert.equal(opsOf(bigDocument(10, { publish: true })), 22);
+  assert.equal(opsOf({ folders: [{ path: "/" }], moves: [{ from: "/a", to: "/b" }], posts: [] }), 2);
+});
+
+test("a document past the ceiling becomes several that each fit", () => {
+  const parts = splitDocuments([bigDocument(10)], { maxOps: 6 });
+
+  assert.equal(parts.length, 3);
+  assert.ok(parts.every((part) => opsOf(part) <= 6), "every part fits the ceiling");
+  // The union is exactly the whole: upserts are independent and idempotent, so the parts
+  // converge where one document would have.
+  assert.deepEqual(
+    parts.flatMap((part) => part.posts.map((post) => post.url)),
+    bigDocument(10).posts.map((post) => post.url),
+  );
+  // Each part carries the folders, because whichever posts landed in it need them.
+  assert.ok(parts.every((part) => part.folders.length === 2));
+});
+
+test("a document that already fits is passed through untouched", () => {
+  const whole = bigDocument(3);
+  const parts = splitDocuments([whole], { maxOps: 1500 });
+
+  assert.equal(parts.length, 1);
+  assert.equal(parts[0], whole, "the same object — a no-op costs nothing");
+});
+
+test("a pruning document is never split, however large", () => {
+  // The finding: every document `documentsFor` builds declares the site root (folders come from
+  // `ancestorsOf`, which always yields `/`), so each part of a split would prune the *whole
+  // site* and delete everything the other parts declare. The command turns this into a refusal.
+  const parts = splitDocuments([bigDocument(10, { prune: true })], { maxOps: 6 });
+
+  assert.equal(parts.length, 1);
+  assert.equal(parts[0].prune, true);
+  assert.equal(parts[0].posts.length, 10);
+});
+
+test("a split part never prunes, even inside a pruning run", () => {
+  // Belt and braces: if a caller ever splits a document that carried `prune`, the parts must
+  // not inherit it — one prune per part is the failure mode this whole rule exists to prevent.
+  const parts = splitDocuments([{ ...bigDocument(10), prune: false }], { maxOps: 6 });
+  assert.ok(parts.every((part) => part.prune === false));
+});
+
+test("moves ride every part, because a move that already happened is a no-op", () => {
+  const whole = { ...bigDocument(6), moves: [{ from: "/old", to: "/p0" }] };
+  const parts = splitDocuments([whole], { maxOps: 5 });
+
+  assert.ok(parts.length > 1);
+  // Repeating it is cheaper than working out which part its post landed in, and SH150 made a
+  // move whose source is gone a noop precisely so that repeating is safe.
+  assert.ok(parts.every((part) => part.moves.length === 1));
 });
 
 // --- the base is fingerprints, not values (SH148) ---

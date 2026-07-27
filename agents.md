@@ -629,6 +629,20 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
     being preserved. **Not available to a blueprint** (`CONTENT_KEYS`) or to `shio_apply`: a
     package renaming the caller's live pages is not its business, and MCP renames with
     `shio_write`'s `post.move`, which costs no extra schema.
+- **A large tree splits, except when it prunes (SH199).** `push --content` compiles one document
+  per site and a tree past the SH138 document ceiling used to dead-end there; `splitDocuments`
+  now cuts it into parts that each fit (`--max-ops`, default 1500), and the union converges
+  exactly where the whole would have, because an upsert is independent and idempotent. Each part
+  carries the folders and the moves (a move whose source is gone is a noop, so repeating one is
+  free) and **never** prunes.
+  **A pruning push stays whole and refuses instead**, and this is the finding rather than a
+  limitation: prune deletes what a document does *not* declare, so both obvious splits are
+  unsafe. Splitting by folder subtree does not narrow anything, because `documentsFor` builds
+  folders from `ancestorsOf`, which always yields `/` — every part would prune the **whole site**
+  and delete what the other parts declare. And "a content pass, then one pruning pass declaring
+  every folder and no posts" deletes every post in those folders. So `--prune` past the ceiling
+  is a teaching error naming `--site`, `--content-dir` or dropping `--prune`. `opsOf` counts the
+  way the server does, publishes included — which is why 1000 posts is 2000 ops.
 - **Assets project too (SH145)** — bytes under `shio/assets/<site>/<folder-chain>/<name>`, and a
   `File` field reads as that path instead of a UUID, which is what makes the tree movable to
   another instance, reviewable in a diff and a complete description of a site. Owner:

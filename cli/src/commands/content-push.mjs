@@ -40,7 +40,13 @@ import {
   sitesOf,
   writeBase,
 } from "../content-store.mjs";
-import { baseEntryFor, documentsFor, planPushContent } from "../content-sync.mjs";
+import {
+  baseEntryFor,
+  documentsFor,
+  opsOf,
+  planPushContent,
+  splitDocuments,
+} from "../content-sync.mjs";
 
 export async function run(flags, _positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
@@ -149,12 +155,27 @@ export async function run(flags, _positionals, ctx) {
     stdout: ctx.stdout,
   });
 
-  const documents = documentsFor(declared.posts, {
+  const maxOps = Number(flags.maxOps ?? 1500);
+  const whole = documentsFor(declared.posts, {
     prune,
     markers,
     moves,
     sites: sitesOf(local, markers),
   });
+  // SH199 — a tree past the server's document ceiling is several documents, not a dead end.
+  // A *pruning* push is the exception and stays whole: see `splitDocuments` for why every
+  // candidate split changes what prune deletes.
+  const oversized = whole.filter((document) => prune && opsOf(document) > maxOps);
+  if (oversized.length) {
+    throw new Error(
+      `shio push --content --prune: ${oversized[0].site} compiles to ${opsOf(oversized[0])} ops, ` +
+        `past the ${maxOps}-op ceiling, and a pruning push cannot be split — prune deletes what ` +
+        "a document does not declare, so each part of a split would delete what the other parts " +
+        "declare. Narrow the run with --site, push the sections separately with --content-dir, " +
+        "or drop --prune (a plain push splits automatically).",
+    );
+  }
+  const documents = splitDocuments(whole, { maxOps });
   const results = [];
   for (const document of documents) {
     results.push(

@@ -223,6 +223,7 @@ Content as files (shio pull/push --content, shio dev --content):
   --content-dir <dir>  Content root            (default shio/content)
   --folders-dir <dir>  Folder-marker root      (default shio/folders)
   --assets-dir <dir>   Asset root              (default shio/assets)
+  --max-ops <n>        push: ops per document; a bigger tree splits (default 1500)
   --prune              push: delete server posts the file tree does not declare
   --check / --dry-run  push: drift guard / plan only, same meanings as for post-types
   --ours / --theirs    pull: resolve conflicts in one direction
