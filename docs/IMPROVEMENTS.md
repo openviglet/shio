@@ -1266,6 +1266,36 @@ freshness headers that invite a CDN, drafts only behind the SH5 preview token.
 it — a script engine on the classpath that no code reaches is build weight and attack surface
 for free. It goes whichever way this section is decided.
 
+**Proof that the model still fits: the 2018 package imports.** `openviglet/bootstrap-site` was
+converted and imported into a current instance. It worked — `201`, and the content arrived
+intact:
+
+| Checked afterwards | Result |
+|---|---|
+| Post-types | all six recreated; every widget the 2018 fields named (`Ace Editor - Javascript`, `Ace Editor - HTML`, `Text Area`, `Content Select`, `Relator`) **still exists** |
+| Layout `HTML` | 1330 chars, byte-identical, both `sh-region="…"` slots present |
+| Region `HTML` | the Handlebars template intact (`{{#each this.posts}}`, `{{this.link}}`) |
+| Region `JAVASCRIPT` | 767 chars preserved |
+| `site.postTypeLayout` | preserved verbatim, in its original simple form |
+
+The conversion was **mechanical — seven renames**, all recorded in the throwaway script: `label`
+→ `title`; the post-type `fields` map → an array carrying `name`, with `title`/`summary` becoming
+`isTitle`/`isSummary`; `site.rootFolders` → `rootFolderIds`; a folder gaining explicit `siteId`
+and `rootFolder` where 2018 implied both; `post.folder`/`postType`/`fields` →
+`folderId`/`postTypeName`/`data`; `title`/`summary` promoted from fields to columns; and files
+needing a manifest entry plus a `files/<id>` zip entry.
+
+Two things this settles. The page → layout → region model is **expressible in today's content
+model with no schema work at all** — SH183 needs a renderer and the three system post-types, not
+a migration. And the real-world `postTypeLayout` was the simple map `{"FOLDER": "…LAYOUT",
+"PT-ARTICLE": "…LAYOUT"}`, not the `ShSitePostTypeLayouts` array of `{format, layout, mimeType,
+cacheTTL}` — so the format axis was built and, in the one shipped example, never used. SH183
+should treat multi-format as the extension it evidently was, and not pay for it up front.
+
+One thing it does not settle: whether the *templates* run. They are Handlebars and they import,
+but nothing has evaluated them, and the region JavaScript still assumes a `shObject` façade that
+would not exist. That is the experiment SH183 has to run.
+
 ### XV.2 A site's front-end URL is unreachable from the agent path (SH184)
 
 `site.url` is the one field that turns content into something a human can open, and nothing an
@@ -1335,6 +1365,83 @@ front-end half becomes an upgrade rather than a prerequisite. If SH183 does not 
 minimum honest behaviour is for a blueprint apply to say plainly that the content is in place
 and the site has no renderer, and for the manifest to carry a flag a client can read before
 promising a user a website.
+
+### XV.6 `may_publish` is NULL on existing rows and the field is a primitive (SH188)
+
+`v2026.3.11.yaml` adds `api_token.may_publish` nullable, with no backfill and no
+`defaultValueBoolean`, and its comment states the intent plainly: *"read as `false` when absent —
+the direction a default on this field has to fail in."* The entity does not implement that intent:
+
+```java
+@Column(name = "may_publish")
+private boolean mayPublish = false;      // Hibernate cannot set a primitive from SQL NULL
+```
+
+So on any instance holding an `api_token` row from before the changeset ran, reading a token
+throws `IllegalArgumentException: Can not set boolean field … to null value`. It takes out
+`GET /api/v2/api-token` and — the part that matters for this block — `POST /api/v2/preview-token`,
+which is the console's *Preview draft* button. Preview is broken for two independent reasons, and
+SH184 alone would not fix it.
+
+Three candidate fixes, not equivalent. A `Boolean` wrapper with an explicit null-to-false read
+implements the comment exactly and keeps "absent means no" true permanently. A
+`defaultValueBoolean: false` plus a backfill changeset puts the default in the database, which is
+easier to reason about but leaves the primitive one NULL away from throwing again. Both together
+cost one more line.
+
+Worth recording *how* this surfaced, because it argues for the instrument: no test caught it, the
+failure needs a database with pre-existing rows, and it appeared as an `api-error` finding in
+`shio verify` because SH103's incident window had recorded the 500. Block K doing its job on a
+defect nobody was looking for.
+
+### XV.7 Importing an exchange package teaches nothing and is not on the agent surface (SH189)
+
+`ShExchangeImportAPI` ends every failure the same way:
+
+```java
+} catch (IOException | ShExchangeException e) {
+    return ResponseEntity.badRequest().build();
+}
+```
+
+`ShExchangeException` knows what went wrong; the caller gets a `400` with no body. Bringing
+`bootstrap-site` forward therefore meant reading the `ShExchange*` records in Java to infer seven
+field renames, because the endpoint would not say whether the failure was the manifest schema,
+the zip layout, a missing post-type or a bad reference. Every other write surface here answers a
+bad request with `fix`/`allowed`/`didYouMean` — in the same session a mistyped address came back
+with `didYouMean: "bootstrap_nav_region"` unprompted. Import is the outlier, and it is the one
+endpoint whose input a human assembled by hand and cannot inspect.
+
+The second half is a law P1 problem. Import is console-only: multipart plus a CSRF token, no
+`batch` op, no MCP tool. An agent can create a site, a model and a hundred posts from nothing and
+cannot accept a package a human hands it — which is the cheapest possible starting point, and the
+form every first-party template ships in.
+
+Two decisions for the task. Whether the manifest gets a version field and a stated migration
+path, now that there is proof a real package can be seven renames behind. And whether the
+agent-side verb is a `batch` op, its own endpoint, or `shio import` in the CLI — the last is
+enough if a package always comes from a filesystem, and is not if an MCP client is meant to
+accept one.
+
+### XV.8 Diagnostics name a failure but never carry the evidence (SH190)
+
+An `api-error` finding reports the exception message and then says: *"This call failed
+server-side, so its response is gone. Retry it; if it fails again the instance log has the stack
+trace (the body never will)."* Honest, and a dead end — it directs the agent to a file it has no
+access to, and in this session the running instance was not writing to the log the repository
+contains.
+
+The message alone was enough to identify SH188 only because that exception named its own field.
+That is luck. A `NullPointerException` inside a service method would produce a finding that says
+a call failed and nothing about where, which is exactly as useful as the bare 500.
+
+The fix belongs in SH103's existing window, not in a new capability: capture the throwing frame —
+class, method, line, and the few frames of Shio's own code beneath it — where the incident is
+already recorded, and serve it on the finding. Deliberately **not** a log-tailing tool. A log tail
+hands over every request's data to answer a question that is always about one request; it is a
+per-deployment path an agent should not have to know; and it cannot be scoped by the SH2 site
+allow-list or the SH54 ACL that bounds everything else on this surface. Bounded, attributed
+evidence attached to the incident is smaller and safer than a file.
 
 ---
 
