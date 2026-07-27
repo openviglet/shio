@@ -753,26 +753,6 @@ address change plus a body rewrite is still a move), and what to do when two fil
 each claim the same base post — which, like every other ambiguity in this block, should be
 a refusal rather than a guess.
 
-### X.11 The CLI suite cannot be run green (SH198)
-
-Two separate problems, and the first hides the second. `pnpm -C cli test` **hangs**: the
-runner inherits a live stdin and something in the suite reads it — plausibly the `apply -`
-path, which is a legitimate stdin consumer being exercised. Closing stdin lets it finish, and
-then 7 of 162 tests fail, spread across `verify-baseline`, `project-files`, `init --blueprint`
-and `dev --content`.
-
-Why this is a roadmap item and not a chore: **agents.md documents the gate chain**
-(`push --check` → `push --content --check` → `apply --check` → `verify`) as the project's
-drift guard, and a suite that hangs is a suite that gets `Ctrl-C`'d and skipped. The failures
-being spread across four unrelated areas is itself the signal — that is the profile of a
-suite that stopped being run, not of one regression.
-
-The triage matters more than the fixes, because the two possible causes need opposite work: a
-failure is either a **live defect** (fix the code, keep the test) or a **stale expectation**
-(fix the test, and ask what changed underneath it and whether anything else depended on the
-old behaviour). Sorting them is the task; the hang is what has to be fixed first, since
-nothing else can be measured until the suite terminates on its own.
-
 ### X.12 `push --content` cannot split a large tree (SH199)
 
 **SH138** gave a compiled document its own op ceiling (2000, against the hand-written batch's

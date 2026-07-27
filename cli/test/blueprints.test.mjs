@@ -19,6 +19,7 @@ import { test } from "node:test";
 import * as apply from "../src/commands/apply.mjs";
 import * as blueprints from "../src/commands/blueprints.mjs";
 import { parseArgs } from "../src/args.mjs";
+import { endsWithPath, norm } from "./support/paths.mjs";
 
 const CATALOGUE = [
   {
@@ -141,14 +142,14 @@ function ctxWith(fetchImpl, { existing = [] } = {}) {
     written,
     fs: {
       async readFile(path) {
-        if (existing.some((name) => String(path).endsWith(name))) return "old contents";
+        if (existing.some((name) => endsWithPath(path, name))) return "old contents";
         const error = new Error("not found");
         error.code = "ENOENT";
         throw error;
       },
       async mkdir() {},
       async writeFile(path, text) {
-        written.push({ path: String(path), text });
+        written.push({ path: norm(path), text });
       },
     },
   };

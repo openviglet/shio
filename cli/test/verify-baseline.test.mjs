@@ -24,6 +24,7 @@ import {
   parseBaseline,
   serializeBaseline,
 } from "../src/verify-baseline.mjs";
+import { norm } from "./support/paths.mjs";
 
 function sink() {
   const out = { text: "" };
@@ -53,21 +54,22 @@ function scriptedFetch(body) {
   return fetchImpl;
 }
 
-/** An in-memory fs with only the calls the command makes. */
+/** An in-memory fs with only the calls the command makes. Keys are `norm`ed — see SH198. */
 function memFs(files = {}) {
-  const store = new Map(Object.entries(files));
+  const store = new Map(Object.entries(files).map(([path, body]) => [norm(path), body]));
   return {
     store,
     async readFile(path) {
-      if (!store.has(path)) {
-        const error = new Error(`ENOENT: ${path}`);
+      const key = norm(path);
+      if (!store.has(key)) {
+        const error = new Error(`ENOENT: ${key}`);
         error.code = "ENOENT";
         throw error;
       }
-      return store.get(path);
+      return store.get(key);
     },
     async writeFile(path, contents) {
-      store.set(path, contents);
+      store.set(norm(path), contents);
     },
     async mkdir() {},
   };

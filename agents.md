@@ -511,6 +511,19 @@ as approval.
 **CI gates, in the order they should run:** `shio push --check` (model drift) → `shio push --content --check` (content-tree drift) → `shio apply --check` (document drift) → `shio verify` (content defects).
 **Accepted findings (SH142) live in `shio/verify-baseline.json`** — `(rule, address, field)` triples that `shio verify` subtracts, written by `--accept` (`--reason` optional) and merged, never replaced. The half that matters: **an accepted finding the run no longer produces fails the run**, so the file cannot rot into a blanket suppression that hides the next defect at the same address; a *truncated* report reports the unmatched entries without failing, because a finding that did not fit is not a finding that is gone. It is deliberately a project file and **not** an instance setting — `GET /agent/verify` keeps reporting everything, and only the gate subtracts. The content gates read **only the sites the tree holds** (SH173, derived from `shio/content/<site>/**`), a post they cannot read by address is a named finding rather than a fatal 404, and a remote failure prints the SH80 body — the request URL is behind `SHIO_DEBUG`. The CLI test suite needs `@viglet/shio-client` built first (`pnpm -C shio-client run build`), or every command test fails on a missing module rather than on its own logic; `shio-sections`' suite needs `@viglet/shio-model` built (`pnpm -C shio-model run build`) for the same reason.
 
+**Two rules the CLI suite earned the hard way (SH198).** A fake filesystem **normalizes its
+keys** — `test/support/paths.mjs`' `norm`/`endsWithPath`, one copy for all three of them. The
+commands join with `node:path` because they write to a real disk, so on Windows a fake fs keyed
+on the POSIX literal the author typed never matches, `readFile` throws `ENOENT`, and the command
+takes its "no such file" branch: the test then fails on a *message*, several assertions away
+from the cause. That is why one mistake read as seven unrelated defects across four areas. Do
+**not** "fix" it by making a command emit forward slashes. And a test that arms a live handle
+releases it in **`t.after`**, never only on the happy path — the watch-loop test's `stop()` sat
+after its assertions, so one wrong expectation left a `setInterval` holding the event loop and
+`node --test` printed all 199 results and then never exited. That is what "the suite hangs" was;
+stdin had nothing to do with it. `--test-force-exit` is in the `test` script so the next leak
+reports and exits instead of burning a CI timeout with no diagnostic.
+
 ### Content as files — `shio/content/**` (Block I)
 Content projects to **one Markdown file per post**, `shio/content/<site>/<url>.md`: YAML
 frontmatter for the metadata + `fields:`, and the post's first `HTML Editor` field as the

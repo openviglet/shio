@@ -45,7 +45,7 @@
 > **SH145–SH150** from findings while implementing Block I, and **SH157–SH162** from
 > what the SH112 benchmark measured while implementing Block M, and **SH168–SH175** from
 > the first end-to-end agent-driven build over the finished surface (§VIII.12–§VIII.16,
-> §IX.8, §X.11, §XIII.6), and **SH176–SH182** from driving the *console* over the site that
+> §IX.8, §XIII.6), and **SH176–SH182** from driving the *console* over the site that
 > build produced (Block O — shipped, so its design section is gone; see CHANGELOG.md Block O)
 > — new tasks are expected to accrete this way, and each one's
 > line says what measurement or failure produced it. Superseded and therefore retired: **SH17/SH18** (GraalJS), **SH23 +
@@ -217,7 +217,6 @@
 - 💭 **SH148** (deps: SH89 ✅) **Digest-only merge base** — `shio/.shio/content-base.json` holds a full copy of every projected field. A per-field hash decides all three merge cases; only a genuine conflict needs values, and those can be re-read. Turns the snapshot from O(content) into O(fields). → §X.8
 - 📋 **SH149** (deps: SH87 ✅) **Folders as files** — a folder exists in the projection only because a post names it, so an empty section cannot be authored locally and a pull silently drops one. Needs a folder marker file (`_folder.md` or similar) that `push --content` declares directly. → §X.9
 - 📋 **SH150** (deps: SH87 ✅, SH134 ✅) **A renamed file is a move, not a re-creation** — `push --content --prune` sends a rename as `post.delete` + `post.upsert`, which is exactly the workaround SH134 exists to prevent: the new post gets a new id and loses the audit trail and version history. The file already refuses to rename halfway (path vs `url:`), so the honest fix is to detect the pair and emit `post.move`. → §X.10
-- 📋 **SH198** (deps: SH99 ✅, SH119 ✅) **The CLI suite cannot be run green** — `pnpm -C cli test` **hangs** unless stdin is closed (a test reads it, and `apply -` is a real stdin consumer), and with stdin closed 7 fail across `verify-baseline`, `project-files`, `init --blueprint` and `dev --content`. The CI gate chain in agents.md is documented as the project's drift guard, so a suite nobody can run green is a gate nobody runs. Triage first: each failure is either a live defect or a stale expectation, and the two need opposite fixes. **Re-measured while closing Block K** (which added 35 tests, so the count is now 7 of 199): the same 7, the same 4 areas, and the hang reproduces — it consumed a 600s timeout before stdin was closed. Two sessions apart with identical failures is the profile of a suite that stopped being run, not of a regression, and the 4 verify-baseline failures sit in the file a CI gate depends on. → §X.11
 - 📋 **SH199** (deps: SH138 ✅, SH87 ✅) **`push --content` cannot split a large tree** — SH138 gave a compiled document its own 2000-op ceiling, which is a bound, not a solution: a tree past it still dead-ends, because one document per site is the only shape push knows. Splitting by declared folder is the natural unit and interacts with `--prune`, whose scope is exactly those folders — so the split has to preserve prune's blast radius, not just the op count. → §X.12
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin

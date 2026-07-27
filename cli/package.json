@@ -10,7 +10,7 @@
     "src"
   ],
   "scripts": {
-    "test": "node --test \"test/*.test.mjs\""
+    "test": "node --test --test-force-exit \"test/*.test.mjs\""
   },
   "dependencies": {
     "@viglet/shio-client": "workspace:*",

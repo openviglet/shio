@@ -9,12 +9,14 @@
  * write endpoint), and those should not depend on a live instance to observe.
  */
 import assert from "node:assert/strict";
+import { join } from "node:path";
 import { test } from "node:test";
 
 import * as changes from "../src/commands/changes.mjs";
 import * as contentPull from "../src/commands/content-pull.mjs";
 import * as contentPush from "../src/commands/content-push.mjs";
 import * as watch from "../src/commands/content-watch.mjs";
+import { norm } from "./support/paths.mjs";
 
 const DEFS = [
   {
@@ -77,10 +79,6 @@ function fakeFs(seed = {}) {
       }));
     },
   };
-}
-
-function norm(path) {
-  return String(path).replace(/\\/g, "/").replace(/\/+/g, "/");
 }
 
 function sink() {
@@ -424,7 +422,7 @@ test("a conflict blocks the push half of the loop and says why", async () => {
   assert.ok(fetchImpl.calls.every((call) => !call.url.includes("/agent/apply")));
 });
 
-test("the watch loop is stoppable and triggers a sync on demand", async () => {
+test("the watch loop is stoppable and triggers a sync on demand", async (t) => {
   const fetchImpl = server({ remote: {} });
   const ctx = ctxWith(fetchImpl, {
     [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Hello\n---\n`,
@@ -436,9 +434,13 @@ test("the watch loop is stoppable and triggers a sync on demand", async () => {
   };
 
   const handle = await watch.run({}, [], ctx);
+  // `stop()` unconditionally, *before* the first assertion: the loop arms a real timer, so
+  // a failing assertion that skipped the cleanup left it holding the event loop open and
+  // `node --test` never exited — one wrong expectation read as "the suite hangs" (SH198).
+  t.after(() => handle.stop());
 
   assert.equal(watchers.length, 1);
-  assert.match(watchers[0].path, /shio\/content$/);
+  assert.equal(norm(watchers[0].path), norm(join(ctx.cwd, "shio", "content")));
   handle.stop();
   assert.equal(watchers.length, 0);
 });

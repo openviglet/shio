@@ -16,8 +16,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { resolve } from "node:path";
+
 import * as init from "../src/commands/init.mjs";
 import { parseArgs } from "../src/args.mjs";
+import { endsWithPath, norm } from "./support/paths.mjs";
 
 const DETAIL = {
   manifest: {
@@ -91,14 +94,14 @@ function ctxWith(fetchImpl, { existing = [] } = {}) {
     written,
     fs: {
       async readFile(path) {
-        if (existing.some((name) => String(path).endsWith(name))) return "old contents";
+        if (existing.some((name) => endsWithPath(path, name))) return "old contents";
         const error = new Error("not found");
         error.code = "ENOENT";
         throw error;
       },
       async mkdir() {},
       async writeFile(path, text) {
-        written.push({ path: String(path), text });
+        written.push({ path: norm(path), text });
       },
     },
   };
@@ -115,14 +118,16 @@ test("scaffolds from a blueprint, substituting the project name into carried sou
 
   const result = await init.run(flags, positionals, ctx);
 
-  assert.equal(result.targetDir, "/repo/cool-site");
+  // `resolve`, not a literal: the command resolves against cwd, so on Windows this is
+  // a real absolute path with the drive letter, which is what it should be (SH198).
+  assert.equal(result.targetDir, resolve("/repo", "cool-site"));
   const pkg = ctx.written.find((f) => f.path.endsWith("package.json"));
   assert.ok(pkg, "package.json should be written");
   assert.match(pkg.text, /"name": "cool-site"/);
   assert.doesNotMatch(pkg.text, /\{\{projectName\}\}/, "the placeholder must not reach disk");
 
   // The catch-all route's dots are a path, not a traversal, all the way to the file system.
-  assert.ok(ctx.written.some((f) => f.path.endsWith("app/[...slug]/page.tsx")));
+  assert.ok(ctx.written.some((f) => endsWithPath(f.path, "app/[...slug]/page.tsx")));
   // Local config is written here, never carried by the package (it holds a token).
   assert.ok(ctx.written.some((f) => f.path.endsWith(".env.local")));
 });
@@ -165,7 +170,7 @@ test("an existing file is skipped unless --force", async () => {
   await init.run(flags, positionals, ctx);
 
   assert.match(ctx.stdout.text, /skipped package\.json \(exists — pass --force to overwrite\)/);
-  assert.ok(!ctx.written.some((f) => f.path.endsWith("cool-site/package.json")));
+  assert.ok(!ctx.written.some((f) => endsWithPath(f.path, "cool-site/package.json")));
 
   const forcedCtx = ctxWith(routedFetch(), { existing: ["package.json"] });
   const forced = flagsFor([
