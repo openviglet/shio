@@ -530,10 +530,11 @@ Two design points worth settling before the code:
 >
 > **The loop itself shipped** — content lint (SH99), route checks (SH100), render digest
 > (SH101), diagnostics (SH103), and the follow-ups that made the report usable in anger
-> (SH141's delivery-side proof, SH142's accepted findings, SH143's scoping, SH154, SH169);
-> see [CHANGELOG.md](CHANGELOG.md) Block K. What is left below is the design for what the
-> shipped version deliberately does not do, plus the two tasks it was always going to
-> depend on (SH102's pixels, SH104's handoff report).
+> (SH141's delivery-side proof, SH142's accepted findings, SH143's scoping, SH154, SH169),
+> and so has the human-facing artifact the loop hands over (SH104); see
+> [CHANGELOG.md](CHANGELOG.md) Block K. What is left below is the design for what the
+> shipped version deliberately does not do, plus the one task it was always going to
+> depend on (SH102's pixels).
 
 ### IX.4 Visual snapshot + diff (SH102, optional)
 
@@ -554,14 +555,6 @@ The durable form is not a second table with its own retention policy. It is the 
 cursor SH88 built for content changes: an incident is a thing that happened at a
 position, which is exactly what a change feed already models. Folding the two is cheaper
 to build and cheaper to read — one `since=` for "what changed and what broke".
-
-### IX.6 Handoff report (SH104)
-
-`shio report` renders the human-facing change summary — what changed (over §X.3's
-feed), preview links per changed page, and explicit open questions — ready to drop
-into a PR body or a console banner. This is the *"help the interaction with the
-developer"* half of the brief: the agent's output for a human is a reviewable
-summary with links, not a wall of prose.
 
 ---
 

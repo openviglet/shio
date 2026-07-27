@@ -39,6 +39,9 @@ const BOOLEANS = [
   // SH141: prove each published route by fetching it, rather than resolving it against the
   // content graph. A flag rather than a value because it is a decision, not a parameter.
   "delivery",
+  // SH104: `--mark` records the position a handoff covered; `--no-verify` drops the open
+  // questions when the caller only wants the change list.
+  "mark", "no-verify",
 ];
 
 // Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would
@@ -55,6 +58,7 @@ const COMMANDS = {
   blueprints: () => import("./commands/blueprints.mjs"),
   verify: () => import("./commands/verify.mjs"),
   changes: () => import("./commands/changes.mjs"),
+  report: () => import("./commands/report.mjs"),
   remember: () => import("./commands/remember.mjs"),
   digest: () => import("./commands/digest.mjs"),
   pull: () => import("./commands/pull.mjs"),
@@ -82,6 +86,7 @@ Commands:
   blueprints     List the appliable starting points (blueprints <name> for its parameters)
   verify         Lint the content and its routes; exits non-zero on an error (CI gate)
   changes        What changed, with a cursor to resume from (--since, --cursor)
+  report         The human handoff: what changed, preview links, open questions
   remember       Write down a decision the next session should not re-derive
   digest <page>  Structural digest of one page: outline, landmarks, links, images
   pull           Pull post-types into ./shio/post-types/*.json (--content for pages)
@@ -170,6 +175,21 @@ Verification (shio verify / shio digest):
   the defect, or the file rots into a suppression that hides the next one.
   shio digest <page>   post:<site>/<url>, or a delivery URL when fetching is enabled
   --address / --url    Same, as explicit flags
+
+The handoff (shio report):
+  shio report renders the summary a *human* reads: what changed, a preview link per page,
+  and the questions the CMS cannot answer itself. Markdown on stdout — paste it into a PR
+  body, or --out FILE. It composes changes + context + verify; there is no new endpoint.
+  --since <cursor>     Range start; "last" = where the last --mark left off,
+                       "content" = where the last content pull reached. Omit for a window
+  --mark               Record this range as reviewed, so the next --since last resumes.
+                       Refused when the report could not cover its whole range
+  --site <name>        One site only
+  --out <file>         Write the Markdown instead of printing it
+  --title <text>       Heading for the document
+  --no-verify          Skip the open-questions section (change list only)
+  --json               The report as data (markdown, cursor, changed, caveats)
+  shio report --since last --mark --out HANDOFF.md
 
 Content as files (shio pull/push --content, shio dev --content):
   Content projects to shio/content/<site>/<url>.md — YAML frontmatter is the fields,
