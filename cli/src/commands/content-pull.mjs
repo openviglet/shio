@@ -17,9 +17,12 @@
  * per field, and a field both sides changed is a **conflict** — reported, with nothing
  * written for that post, until a human picks `--ours` or `--theirs`.
  */
+import { join } from "node:path";
+
 import { ShioAdminClient } from "../admin-client.mjs";
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
+import { ASSETS_DIR, fileFields, idsToPaths } from "../content-assets.mjs";
 import {
   BASE_FILE,
   CONTENT_DIR,
@@ -32,7 +35,9 @@ import {
   readLocalFolders,
   sitesOf,
   readRemote,
+  readRemoteAssets,
   readRemoteFolders,
+  writeAssetBytes,
   writeBase,
   writeDoc,
   writeFolderMarker,
@@ -88,7 +93,31 @@ export async function run(flags, _positionals, ctx) {
     );
   }
 
-  const bodyField = bodyFields(await admin.getPostTypeDefs());
+  const defs = await admin.getPostTypeDefs();
+  const bodyField = bodyFields(defs);
+
+  // SH145 — the assets, before the posts. Every `File` field on the way in is rewritten from
+  // an id to an asset path, so the base, the server side and the file side all speak paths and
+  // a File field does not read as changed on every sync.
+  const assetsDir = flags.assetsDir ?? ASSETS_DIR;
+  const fileFieldMap = fileFields(defs);
+  const assets = await pullAssets(ctx, { agent, admin, local, localFolders, assetsDir, dryRun });
+  const unresolvedAssets = new Set();
+  for (const [address, doc] of Object.entries(remote)) {
+    const { doc: mapped, unresolved } = idsToPaths(doc, fileFieldMap, assets.byId);
+    remote[address] = mapped;
+    for (const id of unresolved) unresolvedAssets.add(id);
+  }
+  if (unresolvedAssets.size) {
+    // Left as ids on purpose: the File post is in a site this run did not read, or it is gone.
+    // Inventing a path would put a broken one in the tree, which pushes back as a failed
+    // upload instead of the dangling reference `shio verify` already reports.
+    ctx.stdout.write(
+      `shio pull --content: ${unresolvedAssets.size} File reference(s) name no asset this run ` +
+        "could see and stay as ids (run `shio verify` for the dangling-reference report).\n",
+    );
+  }
+
   const base = await readBase(ctx, flags.baseFile ?? BASE_FILE);
 
   const report = {
@@ -98,6 +127,7 @@ export async function run(flags, _positionals, ctx) {
     conflicts: [],
     kept: [],
     folders: { written: [], deleted: [], kept: [] },
+    assets: assets.written,
   };
   const nextPosts = { ...base.posts };
   // Collected from the documents rather than read back off `nextPosts` (SH148): a base entry is
@@ -213,6 +243,38 @@ export async function run(flags, _positionals, ctx) {
   return { ...report, cursor };
 }
 
+/**
+ * Downloads the assets this tree does not have yet, and returns the id → path index (SH145).
+ *
+ * **A path that already exists on disk is not re-downloaded.** A `File` post's bytes are
+ * immutable — there is no replace-the-bytes operation, an upload always creates a new
+ * id-keyed post — so the same path is the same asset, and re-fetching it would spend a
+ * request per image on every pull to rewrite identical bytes.
+ */
+async function pullAssets(ctx, { agent, admin, local, localFolders, assetsDir, dryRun }) {
+  const sites = sitesOf(local, localFolders);
+  const assets = await readRemoteAssets(agent, admin, {
+    sites: sites.length ? sites : [],
+  });
+  const written = [];
+  for (const [path, item] of assets.byPath) {
+    if (await hasAsset(ctx, path, assetsDir)) continue;
+    if (!dryRun) await writeAssetBytes(ctx, path, await admin.downloadStaticFile(item.id), { dir: assetsDir });
+    written.push(path);
+  }
+  return { ...assets, written };
+}
+
+async function hasAsset(ctx, path, dir) {
+  try {
+    await ctx.fs.readFile(join(ctx.cwd, dir, path));
+    return true;
+  } catch (error) {
+    if (error?.code === "ENOENT") return false;
+    throw error;
+  }
+}
+
 /** Every address any of the three versions knows about, in a stable order. */
 function addresses(base, remote, local) {
   return [...new Set([...Object.keys(base), ...Object.keys(remote), ...Object.keys(local)])].sort();
@@ -243,6 +305,9 @@ function render(report, { dir, dryRun, truncated }) {
       `${report.unchanged.length} unchanged, ${report.kept.length} local-only, ` +
       `${report.conflicts.length} conflicted → ${dir}${dryRun ? " (dry run — nothing written)" : ""}`,
   ];
+  if (report.assets?.length) {
+    lines[0] += ` · ${report.assets.length} asset(s) downloaded`;
+  }
   const folders = report.folders ?? { written: [], deleted: [], kept: [] };
   if (folders.written.length || folders.deleted.length || folders.kept.length) {
     // Counted separately because a folder is not a post: a reader scanning for "how much

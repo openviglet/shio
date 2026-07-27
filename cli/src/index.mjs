@@ -210,6 +210,9 @@ Content as files (shio pull/push --content, shio dev --content):
   the body is the post's rich-text field. Edit with Edit/Write/Grep, then push.
   A pull merges three ways (last-synced base, server, files): only a field both sides
   changed is a conflict, and a conflict writes nothing and exits non-zero.
+  Binaries project to shio/assets/<site>/<folder>/<name>, and a File field reads as
+  that path instead of a UUID — so the tree is a complete, movable, reviewable
+  description of the site. A push uploads what the server lacks, once per path.
   An empty folder is a file too: shio/folders/<site>/<chain>/_folder.md declares a
   folder nothing else does, so you can scaffold the structure before filling it. It is
   a separate root because a folder chain and a friendly URL are separate namespaces.
@@ -219,6 +222,7 @@ Content as files (shio pull/push --content, shio dev --content):
   --site <name>        Only this site
   --content-dir <dir>  Content root            (default shio/content)
   --folders-dir <dir>  Folder-marker root      (default shio/folders)
+  --assets-dir <dir>   Asset root              (default shio/assets)
   --prune              push: delete server posts the file tree does not declare
   --check / --dry-run  push: drift guard / plan only, same meanings as for post-types
   --ours / --theirs    pull: resolve conflicts in one direction

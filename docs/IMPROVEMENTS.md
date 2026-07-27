@@ -680,21 +680,6 @@ Closing it properly means changing how the row is *written*, not how it is read:
 sequence assigned at commit, or an outbox the reader drains in commit order. That is why
 it is a separate task — SH88 is the read shape, and the read shape is right.
 
-### X.6 Project assets too (SH145)
-
-`shio/content/**` holds the posts; the binaries stay on the server, id-keyed under
-`store/file_source/<postId>/` (SH38). So a projected `File` field still reads as a UUID,
-which means a content tree cannot be moved to another instance, reviewed usefully in a
-diff, or committed as a complete description of a site — three of the four things "content
-as files" is supposed to buy.
-
-The shape follows the SH86 rules: bytes under `shio/assets/`, addressed by a path, and a
-`File` field that projects as that path instead of an id. The interesting question is the
-inverse direction — a push has to resolve a path back to a File post, creating one when it
-does not exist, and it must be idempotent by path so a second push does not upload a
-second copy. That is the same idempotency argument SH81's `post.upsert` settled for posts,
-applied to bytes.
-
 ### X.12 `push --content` cannot split a large tree (SH199)
 
 **SH138** gave a compiled document its own op ceiling (2000, against the hand-written batch's

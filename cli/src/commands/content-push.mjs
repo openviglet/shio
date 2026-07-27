@@ -18,16 +18,25 @@
  * changed only on the server is declared **as the server has it**, so a push can never
  * silently revert a console edit it did not know about.
  */
+import { ShioAdminClient } from "../admin-client.mjs";
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
+import {
+  ASSETS_DIR,
+  assetLocationOf,
+  fileFields,
+  pathsToIds,
+} from "../content-assets.mjs";
 import {
   BASE_FILE,
   CONTENT_DIR,
   FOLDERS_DIR,
+  readAssetBytes,
   readBase,
   readLocal,
   readLocalFolders,
   readRemote,
+  readRemoteAssets,
   sitesOf,
   writeBase,
 } from "../content-store.mjs";
@@ -41,6 +50,7 @@ export async function run(flags, _positionals, ctx) {
   const planOnly = Boolean(flags.check || flags.dryRun);
 
   const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
+  const admin = new ShioAdminClient({ baseUrl, user, password, fetch: ctx.fetch });
   const local = await readLocal(ctx, { dir, site });
   // SH149 — a folder marker is a declaration in its own right, so a tree that holds only
   // markers is a legitimate push: it is the "scaffold the structure, then fill it" step,
@@ -126,7 +136,20 @@ export async function run(flags, _positionals, ctx) {
     );
   }
 
-  const documents = documentsFor(posts, {
+  // SH145 — assets become ids only here, at the last moment before the wire. Everything
+  // upstream of this line speaks paths, which is what keeps a File field from looking changed
+  // on every sync.
+  const declared = await resolveAssets(ctx, {
+    client,
+    admin,
+    posts,
+    sites: sitesOf(local, markers),
+    assetsDir: flags.assetsDir ?? ASSETS_DIR,
+    planOnly,
+    stdout: ctx.stdout,
+  });
+
+  const documents = documentsFor(declared.posts, {
     prune,
     markers,
     moves,
@@ -194,6 +217,127 @@ export async function run(flags, _positionals, ctx) {
     );
   }
   return { changed, ops, documents, behind, removed, moves };
+}
+
+/**
+ * Turns every declared `File` path back into an id, uploading the ones the server lacks (SH145).
+ *
+ * <h3>Idempotent by path, resolved against the server and not a memory</h3>
+ *
+ * A second push must not upload a second copy, and the resolution is against the instance's own
+ * media inventory keyed by (site, folder, file name) — not against a locally remembered id — so
+ * a fresh clone with no base snapshot resolves exactly as a long-lived one does. That is SH81's
+ * `post.upsert` argument applied to bytes.
+ *
+ * <h3>Only referenced assets are uploaded</h3>
+ *
+ * An asset sitting in the tree that no `File` field names is never sent. It keeps the rule
+ * simple in both directions: a push carries what the content refers to, so there is no question
+ * about what an unreferenced file means and no way for a stale one to resurrect itself.
+ *
+ * <h3>Two refusals</h3>
+ *
+ * A declared path whose **bytes are not on disk** stops the push: the alternative is a post
+ * published with a File field pointing at nothing. And an upload needs its folder, so a missing
+ * one is created with the same `folder.upsert` the document would have used — not guessed at,
+ * and never silently redirected to the site root, which is how an asset ends up somewhere
+ * nobody looks.
+ */
+async function resolveAssets(ctx, { client, admin, posts, sites, assetsDir, planOnly, stdout }) {
+  const fileFieldMap = fileFields(await admin.getPostTypeDefs());
+  const needed = new Set();
+  for (const post of posts) {
+    for (const name of fileFieldMap.get(post.type) ?? []) {
+      const value = post.data?.[name];
+      // A value that is not a path is an id already — a reference this tree never projected,
+      // which stays exactly as it is (SH145's read side leaves those alone too).
+      if (typeof value === "string" && value && assetLocationOf(value)) needed.add(value);
+    }
+  }
+  if (!needed.size) return { posts, uploaded: [] };
+
+  const { byPath, folderIds } = await readRemoteAssets(client, admin, { sites });
+  const uploaded = [];
+  const missing = [];
+
+  for (const path of [...needed].sort((a, b) => a.localeCompare(b))) {
+    if (byPath.has(path)) continue;
+    const at = assetLocationOf(path);
+    let bytes;
+    try {
+      bytes = await readAssetBytes(ctx, path, { dir: assetsDir });
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+      missing.push(path);
+      continue;
+    }
+    if (planOnly) {
+      uploaded.push(`${path} (would upload)`);
+      // Planned, not performed — but the path still has to resolve to *something* or the
+      // document below would carry a path where the server expects an id. A plan writes
+      // nothing, so leaving it unresolved is honest and the row says so.
+      continue;
+    }
+    let folderId = folderIds.get(`${at.site}|${at.folder}`);
+    if (!folderId) {
+      await client.apply({
+        site: at.site,
+        folders: [{ path: at.folder }],
+        posts: [],
+      });
+      const refreshed = await readRemoteAssets(client, admin, { sites });
+      folderId = refreshed.folderIds.get(`${at.site}|${at.folder}`);
+    }
+    if (!folderId) {
+      missing.push(`${path} (its folder ${at.folder} could not be created)`);
+      continue;
+    }
+    const created = await admin.uploadStaticFile({
+      folderId,
+      fileName: at.fileName,
+      bytes,
+      contentType: contentTypeFor(at.fileName),
+    });
+    byPath.set(path, { id: created.id, fileName: at.fileName });
+    uploaded.push(path);
+  }
+
+  if (missing.length) {
+    throw new Error(
+      `shio push --content: ${missing.length} File reference(s) name an asset that is not in ` +
+        `${assetsDir}:\n${missing.map((path) => `  ! ${path}\n`).join("")}` +
+        "Pushing would publish a post whose File field points at nothing. Run `shio pull " +
+        "--content` to fetch the assets, or fix the reference in the file.",
+    );
+  }
+
+  const mapped = [];
+  for (const post of posts) {
+    mapped.push(pathsToIds(post, fileFieldMap, byPath).doc);
+  }
+  if (uploaded.length) {
+    stdout.write(
+      `shio push --content: ${uploaded.length} asset(s)${planOnly ? " to upload" : " uploaded"}:\n` +
+        uploaded.map((path) => `  + ${path}\n`).join(""),
+    );
+  }
+  return { posts: mapped, uploaded };
+}
+
+/** Enough of a content type for the server to record; it re-sniffs images itself. */
+function contentTypeFor(fileName) {
+  const ext = String(fileName).toLowerCase().split(".").pop();
+  return {
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    gif: "image/gif",
+    webp: "image/webp",
+    svg: "image/svg+xml",
+    pdf: "application/pdf",
+    json: "application/json",
+    txt: "text/plain",
+  }[ext] ?? "application/octet-stream";
 }
 
 function render({ documents, results, changed, ops, behind, removed, moves = [], planOnly, prune }) {

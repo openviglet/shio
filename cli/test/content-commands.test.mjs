@@ -100,18 +100,41 @@ function server({
   pageSize = 0,
   // SH149 — the folders each site holds, as the sitemap reports them: `{ Blog: ["/", "/news"] }`.
   serverFolders = null,
+  // SH145 — the media inventory: `[{ id, fileName, folderId, siteName }]`, plus the bytes.
+  serverAssets = [],
 } = {}) {
   const calls = [];
+  const uploads = [];
   const fetchImpl = async (url, init = {}) => {
     const target = String(url);
-    calls.push({ url: target, init, body: init.body ? JSON.parse(init.body) : null });
+    const jsonBody = init.body && typeof init.body === "string" ? JSON.parse(init.body) : null;
+    calls.push({ url: target, init, body: jsonBody });
     if (target.includes("/agent/context")) {
       const site = new URL(target).searchParams.get("site");
       const paths = serverFolders?.[site] ?? [];
+      const wantIds = new URL(target).searchParams.get("ids") === "true";
       return json({
-        sitemap: paths.map((path) => ({ kind: "folder", path })),
+        // A folder's id is `<site>:<chain>` here — enough to be joined against an asset's
+        // `folderId`, and readable in a failure message.
+        sitemap: paths.map((path) => ({
+          kind: "folder",
+          path,
+          ...(wantIds ? { id: `${site}:${path}` } : {}),
+        })),
         budget: { estTokens: 10, limitTokens: 0, truncated: false },
       });
+    }
+    if (target.includes("/api/v2/staticfile/upload")) {
+      const created = { id: `uploaded-${uploads.length + 1}` };
+      uploads.push({ body: init.body, created });
+      return json(created);
+    }
+    if (/\/api\/v2\/staticfile\/[^/?]+$/.test(target)) {
+      const id = target.split("/").pop();
+      return bytesResponse(new TextEncoder().encode(`bytes-of-${id}`));
+    }
+    if (target.includes("/api/v2/staticfile")) {
+      return json(serverAssets);
     }
     if (target.includes("/agent/find")) {
       // SH146 — the real endpoint sorts by address and pages on `after`, so the fake does
@@ -143,7 +166,23 @@ function server({
     return json({});
   };
   fetchImpl.calls = calls;
+  fetchImpl.uploads = uploads;
   return fetchImpl;
+}
+
+/** A bytes response, for the asset download path (SH145). */
+function bytesResponse(bytes) {
+  return {
+    ok: true,
+    status: 200,
+    headers: { get: () => null },
+    async arrayBuffer() {
+      return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    },
+    async text() {
+      return new TextDecoder().decode(bytes);
+    },
+  };
 }
 
 function json(body, status = 200) {
@@ -455,6 +494,170 @@ test("push --content says so instead of pushing an empty tree", async () => {
   const ctx = ctxWith(server({ remote: {} }));
 
   await assert.rejects(() => contentPush.run({}, [], ctx), /no content files under/);
+});
+
+// --- assets project too (SH145) ---
+
+/** A post-type with a File field, and a doc that references one. */
+const ASSET_DEFS = [
+  {
+    name: "Article",
+    fields: [
+      { name: "headline", widget: "Text", ordinal: 1 },
+      { name: "body", widget: "HTML Editor", ordinal: 2 },
+      { name: "hero", widget: "File", ordinal: 3 },
+    ],
+  },
+];
+
+function assetServer({ remote = {}, serverAssets = [], serverFolders = {} } = {}) {
+  const base = server({ remote, serverAssets, serverFolders });
+  const wrapped = async (url, init) => {
+    // The post-type list has to carry the File field for this group, and `server()`'s DEFS
+    // deliberately does not — every other test would then pay for a field it never uses.
+    if (String(url).includes("/api/v2/post-type")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        async text() {
+          return JSON.stringify(ASSET_DEFS);
+        },
+        async json() {
+          return ASSET_DEFS;
+        },
+      };
+    }
+    return base(url, init);
+  };
+  wrapped.calls = base.calls;
+  wrapped.uploads = base.uploads;
+  return wrapped;
+}
+
+test("pull --content downloads the bytes and projects a File field as a path", async () => {
+  // The gap SH145 closes: a projected `File` field read as a bare UUID, so the tree could not be
+  // moved to another instance, reviewed in a diff, or read as a complete description of a site.
+  const fetchImpl = assetServer({
+    remote: {
+      "post:Blog/blog/hello": { ...REMOTE_DOC, data: { headline: "Hello", hero: "file-1" } },
+    },
+    serverFolders: { Blog: ["/", "/blog", "/media"] },
+    serverAssets: [
+      { id: "file-1", fileName: "logo.png", folderId: "Blog:/media", siteName: "Blog" },
+    ],
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Hello\n  hero: seed\n---\n`,
+  });
+
+  const result = await contentPull.run({ theirs: true }, [], ctx);
+
+  assert.deepEqual(result.assets, ["Blog/media/logo.png"]);
+  assert.equal(
+    new TextDecoder().decode(ctx.fs.files.get("/repo/shio/assets/Blog/media/logo.png")),
+    "bytes-of-file-1",
+  );
+  // The path, not the id — the whole point.
+  assert.match(ctx.fs.files.get(FILE), /hero: Blog\/media\/logo\.png/);
+  assert.doesNotMatch(ctx.fs.files.get(FILE), /file-1/);
+});
+
+test("an asset already on disk is not downloaded again", async () => {
+  // A `File` post's bytes are immutable — an upload always creates a new id-keyed post — so the
+  // same path is the same asset, and re-fetching would spend a request per image on every pull.
+  const fetchImpl = assetServer({
+    remote: { "post:Blog/blog/hello": { ...REMOTE_DOC, data: { headline: "Hello", hero: "file-1" } } },
+    serverFolders: { Blog: ["/", "/media"] },
+    serverAssets: [{ id: "file-1", fileName: "logo.png", folderId: "Blog:/media", siteName: "Blog" }],
+  });
+  const ctx = ctxWith(fetchImpl, {
+    "/repo/shio/assets/Blog/media/logo.png": "already here",
+  });
+
+  const result = await contentPull.run({}, [], ctx);
+
+  assert.deepEqual(result.assets, []);
+  assert.equal(ctx.fs.files.get("/repo/shio/assets/Blog/media/logo.png"), "already here");
+  assert.ok(fetchImpl.calls.every((call) => !/staticfile\/file-1$/.test(call.url)));
+});
+
+test("push --content uploads an asset the server does not have, and sends its id", async () => {
+  const fetchImpl = assetServer({
+    remote: {},
+    serverFolders: { Blog: ["/", "/blog", "/media"] },
+    serverAssets: [],
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Hello\n  hero: Blog/media/logo.png\n---\n`,
+    "/repo/shio/assets/Blog/media/logo.png": "the bytes",
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  assert.equal(fetchImpl.uploads.length, 1);
+  const applied = fetchImpl.calls.find((call) => call.url.includes("/agent/apply"));
+  // The path became an id at the last moment before the wire, and nothing upstream saw one.
+  assert.equal(applied.body.posts[0].data.hero, "uploaded-1");
+  assert.match(ctx.stdout.text, /1 asset\(s\) uploaded/);
+});
+
+test("push --content reuses an asset the server already has, so a second push uploads nothing", async () => {
+  // Idempotent by (site, folder, file name) against the instance's own inventory — not against
+  // a remembered id — so a fresh clone with no base snapshot resolves exactly as an old one.
+  const fetchImpl = assetServer({
+    remote: {},
+    serverFolders: { Blog: ["/", "/blog", "/media"] },
+    serverAssets: [{ id: "file-1", fileName: "logo.png", folderId: "Blog:/media", siteName: "Blog" }],
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Hello\n  hero: Blog/media/logo.png\n---\n`,
+    "/repo/shio/assets/Blog/media/logo.png": "the bytes",
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  assert.equal(fetchImpl.uploads.length, 0);
+  const applied = fetchImpl.calls.find((call) => call.url.includes("/agent/apply"));
+  assert.equal(applied.body.posts[0].data.hero, "file-1");
+});
+
+test("push --content refuses a File reference whose bytes are not in the tree", async () => {
+  // The alternative is a post published with a File field pointing at nothing.
+  const fetchImpl = assetServer({
+    remote: {},
+    serverFolders: { Blog: ["/", "/blog", "/media"] },
+    serverAssets: [],
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Hello\n  hero: Blog/media/missing.png\n---\n`,
+  });
+
+  await assert.rejects(
+    () => contentPush.run({}, [], ctx),
+    /name an asset that is not in shio\/assets/,
+  );
+  assert.equal(fetchImpl.uploads.length, 0);
+  assert.ok(fetchImpl.calls.every((call) => !call.url.includes("/agent/apply")));
+});
+
+test("a File value that is not a path is an id already, and is left alone", async () => {
+  // A reference this tree never projected — the File post lives in a site the run did not read.
+  // Rewriting it would be inventing, and it is already the value the server wants.
+  const fetchImpl = assetServer({
+    remote: {},
+    serverFolders: { Blog: ["/", "/blog"] },
+    serverAssets: [],
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Hello\n  hero: 11111111-2222-3333-4444-555555555555\n---\n`,
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  const applied = fetchImpl.calls.find((call) => call.url.includes("/agent/apply"));
+  assert.equal(applied.body.posts[0].data.hero, "11111111-2222-3333-4444-555555555555");
+  assert.equal(fetchImpl.uploads.length, 0);
 });
 
 // --- the merge base is fingerprints (SH148) ---

@@ -71,8 +71,8 @@
 > **What is left is follow-ups, not blocks**: H's original edges shipped (SH136–SH139) and
 > driving them turned up the next layer (SH196–SH203, spread across H, I, L and O — the
 > engine's own asymmetries rather than missing capabilities), **Block K is now complete**
-> (SH102/SH104/SH141/SH144 closed its last four), **Block I is down to SH145/SH147/SH199**
-> (SH146, SH148, SH149, SH150 and SH198 have shipped), J's reconciliation and registry (SH96,
+> (SH102/SH104/SH141/SH144 closed its last four), **Block I is down to SH147/SH199**
+> (SH145, SH146, SH148, SH149, SH150 and SH198 have shipped), J's reconciliation and registry (SH96,
 > SH153–SH156), M's attribution (SH157–SH161, SH174), N's realignment (SH163–SH167), plus
 > SH44–SH47's tenant work and SH110. The highest-value one left is **SH153** (a blueprint plan
 > writes and rolls back purely so its content half can resolve post-types, so a plan cannot run
@@ -194,9 +194,8 @@
 > finally true) · **SH87** (`pull --content` / `push --content`) · **SH89** (three-way
 > merge) · **SH90** (`shio dev --content` + the JSONL event log).
 >
-> **What is deliberately not in it, and why:** `shio/assets/` does not project — a
-> binary's bytes are id-keyed on the server (SH38) and a projected `File` field still
-> holds a UUID, so the tree is not yet self-contained (**SH145**). Conflicts are
+> **What is deliberately not in it, and why:** ✅ **SH145** has since projected `shio/assets/`,
+> so a `File` field reads as a path and the tree is self-contained. Conflicts are
 > *reported*, never written as `<<<<<<<` markers: a marker in a field value is content,
 > and the next push would send it to the server and the next publish would put it on the
 > site. And a pull refuses to write a projection built from a truncated post list rather
@@ -215,7 +214,6 @@
 > change feed's own honesty note is the fourth: the lag narrows the stamp-before-commit
 > window, it does not close it (**SH147**).
 
-- 📋 **SH145** (deps: SH86 ✅, SH38 ✅) **Project assets too** — `shio/assets/` with the bytes, and a `File` field that reads as a path rather than a UUID. Today a content tree cannot be moved to another instance or reviewed in a diff without the ids resolving to nothing, which is most of what "content as files" promises. → §X.6
 - 📋 **SH147** (deps: SH88 ✅) **Commit-ordered change feed** — SH51 stamps the audit row inside the writer's transaction, so a slow commit can land an older timestamp behind a cursor that already passed it. The 1s lag narrows that window; only commit-ordered sequencing (an outbox, or a sequence assigned at commit) closes it, and a feed used for sync has to be exact. → §X.3
 - 📋 **SH199** (deps: SH138 ✅, SH87 ✅) **`push --content` cannot split a large tree** — SH138 gave a compiled document its own 2000-op ceiling, which is a bound, not a solution: a tree past it still dead-ends, because one document per site is the only shape push knows. Splitting by declared folder is the natural unit and interacts with `--prune`, whose scope is exactly those folders — so the split has to preserve prune's blast radius, not just the op count. → §X.12
 

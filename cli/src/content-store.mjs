@@ -24,6 +24,7 @@ import {
   serializeFolder,
   serializePost,
 } from "./content-files.mjs";
+import { ASSETS_DIR, assetPathFor } from "./content-assets.mjs";
 import { addressOf, baseEntryFor } from "./content-sync.mjs";
 
 /** Where the projection lives, and where the snapshot that tracks it lives. */
@@ -196,23 +197,29 @@ export async function deleteFolderMarker(ctx, marker, { dir = FOLDERS_DIR } = {}
  * every post beneath it. So this walks to the end and reports `truncated` when it could
  * not — the caller routes that into the same refusal.
  *
- * @returns {Promise<{ folders: {site: string, folder: string}[], truncated: boolean }>}
+ * @param {boolean} [options.ids] also return `folderIds`: `<site>|<chain>` → folder id, which
+ *   SH145 needs because an asset upload targets a folder by id while its path names a chain
+ * @returns {Promise<{ folders: {site: string, folder: string}[], folderIds: Map<string,string>,
+ *                     truncated: boolean }>}
  */
-export async function readRemoteFolders(client, { sites = [], maxPages = 200 } = {}) {
+export async function readRemoteFolders(client, { sites = [], maxPages = 200, ids = false } = {}) {
   const folders = [];
+  const folderIds = new Map();
   let truncated = false;
 
   for (const site of sites) {
     let from;
     let pages = 0;
     for (;;) {
-      // `include=sitemap` and no `ids`: a marker needs the structural path and nothing
-      // else, and the UUID was measured as the largest per-row cost in this payload (SH121).
-      const { body } = await client.getContext({ site, include: "sitemap", from });
+      // `include=sitemap`, and `ids` only when a caller needs them: the UUID was measured as
+      // the largest per-row cost in this payload (SH121), so a marker sync does not pay for it.
+      const { body } = await client.getContext({ site, include: "sitemap", from, ids: ids || undefined });
       const pack = JSON.parse(body);
       for (const node of pack?.sitemap ?? []) {
         if (node?.kind === "folder" && node.path != null) {
-          folders.push({ site, folder: normalizeUrl(node.path) });
+          const chain = normalizeUrl(node.path);
+          folders.push({ site, folder: chain });
+          if (node.id) folderIds.set(`${site}|${chain}`, node.id);
         }
       }
       pages += 1;
@@ -227,7 +234,64 @@ export async function readRemoteFolders(client, { sites = [], maxPages = 200 } =
       from = budget.truncatedAfter;
     }
   }
-  return { folders: dedupeFolders(folders), truncated };
+  return { folders: dedupeFolders(folders), folderIds, truncated };
+}
+
+/**
+ * The asset inventory, as paths (SH145).
+ *
+ * Composed from two reads the instance already has: the media listing (id, file name,
+ * containing folder id) and the sitemap's folder chains, joined on the folder id. There is no
+ * new endpoint, because the two halves of an asset path already exist separately — the server
+ * simply never had a reason to put them together.
+ *
+ * @returns {Promise<{ byId: Map<string,string>, byPath: Map<string,object>,
+ *                     folderIds: Map<string,string>, truncated: boolean }>}
+ */
+export async function readRemoteAssets(agent, admin, { sites = [] } = {}) {
+  const { folderIds, truncated } = await readRemoteFolders(agent, { sites, ids: true });
+  const chains = new Map();
+  for (const [key, id] of folderIds) chains.set(id, key.slice(key.indexOf("|") + 1));
+
+  const byId = new Map();
+  const byPath = new Map();
+  for (const site of sites) {
+    // Site-scoped by name: the listing takes an id, and the sitemap read above already proved
+    // the site is readable, so resolving it is one call and not a guess.
+    const listed = await admin.listStaticFiles({ siteId: site });
+    // An instance without the media listing answers something that is not a list; that is a
+    // site with no projectable assets, not a crash halfway through a pull.
+    for (const item of Array.isArray(listed) ? listed : []) {
+      if (!item?.id || !item.fileName) continue;
+      const chain = chains.get(item.folderId) ?? "/";
+      const path = assetPathFor({ ...item, siteName: item.siteName ?? site }, chain);
+      byId.set(item.id, path);
+      byPath.set(path, item);
+    }
+  }
+  return { byId, byPath, folderIds, truncated };
+}
+
+/** Every asset file on disk, as tree-relative paths (SH145). */
+export async function readLocalAssets(ctx, { dir = ASSETS_DIR, site = null } = {}) {
+  const root = join(ctx.cwd, dir);
+  const files = await walk(ctx, root, "");
+  return files
+    .filter((relPath) => !site || relPath.startsWith(`${site}/`))
+    .sort((a, b) => a.localeCompare(b));
+}
+
+/** Reads one asset's bytes. */
+export async function readAssetBytes(ctx, path, { dir = ASSETS_DIR } = {}) {
+  return ctx.fs.readFile(join(ctx.cwd, dir, path));
+}
+
+/** Writes one asset's bytes, creating the directories on the way. */
+export async function writeAssetBytes(ctx, path, bytes, { dir = ASSETS_DIR } = {}) {
+  const target = join(ctx.cwd, dir, path);
+  await ctx.fs.mkdir(dirOf(target), { recursive: true });
+  await ctx.fs.writeFile(target, bytes);
+  return path;
 }
 
 function dedupeFolders(folders) {

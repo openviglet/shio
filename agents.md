@@ -629,7 +629,32 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
     being preserved. **Not available to a blueprint** (`CONTENT_KEYS`) or to `shio_apply`: a
     package renaming the caller's live pages is not its business, and MCP renames with
     `shio_write`'s `post.move`, which costs no extra schema.
-- Not projected yet: **assets** (SH145).
+- **Assets project too (SH145)** — bytes under `shio/assets/<site>/<folder-chain>/<name>`, and a
+  `File` field reads as that path instead of a UUID, which is what makes the tree movable to
+  another instance, reviewable in a diff and a complete description of a site. Owner:
+  `cli/src/content-assets.mjs` (pure: `fileFields`, `assetPathFor`, `idsToPaths`, `pathsToIds`).
+  - **An asset is not addressed by a friendly URL**, unlike every other path in Block I, because
+    a `File` post *has* none — `ShStaticFileService.upload` never assigns one, which is exactly
+    why SH172 needed the `id:` fallback. It is addressed the way the server already thinks about
+    files: **folder chain + file name**, the pair `fileExists` checks. No furl change, no new
+    endpoint — the inventory is the SH62 media listing joined to the sitemap's folder chains on
+    `folderId` (P10: both halves existed, nothing had put them together).
+  - **Paths are the projection's currency; ids exist only on the wire.** An incoming `File` field
+    is rewritten id → path *as it is read*, so the base, the server side and the file side all
+    speak paths — otherwise a File field would read as changed on every single sync. The inverse
+    happens only when a document is compiled.
+  - **Idempotent by path against the server's own inventory**, not a remembered id, so a fresh
+    clone with no base snapshot resolves exactly as a long-lived one does (SH81's `post.upsert`
+    argument applied to bytes). **Only referenced assets upload** — a file in the tree that no
+    `File` field names is never sent, which removes the question of what an unreferenced one means.
+  - **Two refusals and one assumption.** A declared path with no bytes on disk stops the push (the
+    alternative is publishing a post whose File field points at nothing); an upload's missing
+    folder is created with the same `folder.upsert` the document would have used, never redirected
+    to the site root. And **a path already on disk is not re-downloaded**, because a File post's
+    bytes are immutable — an upload always creates a new id-keyed post, so the same path is the
+    same asset. An id that resolves to no known asset stays an id and is reported.
+  - Deleting an asset is **not** projected: bytes go when their post goes (SH38's cleanup
+    listener), and a File post can be referenced by content this tree does not own.
 
 ### Blueprints — appliable starting points (Block J)
 
