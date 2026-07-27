@@ -30,7 +30,7 @@ verify against `git ls-files` before acting.
 - [0. Strategy — the agent-native reorientation](#0-strategy--the-agent-native-reorientation)
 - **Part 1 — the reorientation (active)**
   - [VIII. The Agent Gateway (Block H)](#viii-the-agent-gateway-block-h)
-  - [IX. Perception & verification loop (Block K)](#ix-perception--verification-loop-block-k)
+  - [IX. Perception & verification loop (Block K) — ✅ shipped whole](#ix-perception--verification-loop-block-k--✅-shipped-whole)
   - [X. Content as files (Block I)](#x-content-as-files-block-i)
   - [XI. Blueprints + Claude Code plugin (Block J)](#xi-blueprints--claude-code-plugin-block-j)
   - [XII. Agent safety & human-in-the-loop (Block L)](#xii-agent-safety--human-in-the-loop-block-l)
@@ -540,6 +540,115 @@ Two design points worth settling before the code:
 > textual; the one expensive artifact, SH102's PNG, is scoped for a human and stays off the
 > agent surface (`visualSnapshot` is still `false`, correctly — there is no call for it).
 > **§XV.4 (SH187)** is where that scoping is revisited for the other reader.
+>
+> The subsections below are the **open follow-ups closing the block produced**. They are here
+> and not in the changelog because none of them has shipped.
+
+### IX.5 An incident should name its site where one is knowable (SH204)
+
+SH144 folded incidents into the SH88 feed, and it had to add a note saying `site=` does not
+narrow them: an incident carries no site, so a site-scoped read gets the instance's failures or
+none. That note is honest and it is not a fix — it describes a hole rather than closing one.
+
+The reason it shipped that way is worth keeping in view, because it is the argument *against*
+doing this carelessly. Two of the four recorders know a site: the webhook dispatcher holds the
+`ShSiteWebhook` it was delivering for, and the scheduled publish holds the post. Two often
+cannot: a 5xx on `/api/v2/agent/batch` belongs to a request, not a site, and a failed image
+transform belongs to a file that may be referenced from several. So this is not "add a column
+and populate it" — it is "populate it where it is known, and keep the unattributed rows visible
+to the callers who may see them", which is exactly the rule the change feed already applies to
+audit rows whose site was not recorded (`unrestricted` sees them, a token-scoped read does not).
+
+The payoff is not only narrower reads: `shio report --site` currently shows one site's changes
+next to the whole instance's failures, which is the kind of mismatch a reviewer notices once and
+then distrusts.
+
+### IX.6 The incident fold key is the human message (SH205)
+
+Folding is the load-bearing decision in SH144 — it is what makes a durable table affordable,
+because the row count tracks the number of distinct *problems* rather than the traffic. The key
+is `(kind, subject, message)`, and the message is prose written for a human: *"gave up after 3
+attempt(s), last status 500"*. The same broken webhook answering 503 on the next publish is a
+different message, therefore a different row.
+
+So folding fails precisely where it matters most — a flapping target, which is the highest-volume
+case — and the rows it fails to fold then push against the cap and evict unrelated incidents.
+The failure is invisible: the report looks like several distinct problems, which is what it
+would look like if there really were several.
+
+The fix is the split SH142 already needed for a different reason: an identity separate from its
+prose. A `signature` — kind plus subject plus a normalized cause, with the varying detail
+stripped — folds correctly, while `message` keeps the detail of the most recent occurrence for
+whoever reads it. The normalization is the whole design question, and the safe default is a
+short allow-list of things known to vary (an attempt count, a status code, a duration) rather
+than a clever generic scrubber, because a scrubber that over-normalizes folds two genuinely
+different failures into one and there is nothing in the payload that would show it.
+
+### IX.7 The delivery proof fetches inside a read transaction (SH206)
+
+SH141 runs its network pass inside `verify()`'s read-only transaction, holding a pooled
+connection for the duration. That was accepted with the cost written down and bounded three ways
+— a 50-request cap, a 15-second wall-clock budget, fail-fast per unreachable origin — which
+makes it *safe*, not right: on a slow front end a verification call still occupies a connection
+for fifteen seconds doing no database work at all.
+
+The shape that removes it is not subtle: gather the targets inside the transaction (they are
+plain strings — origins, paths, addresses), close it, fetch, then assemble the findings. The
+reason it was not done first is structural rather than intellectual. `verify()` is a single
+transactional entry point that the checks all read entities through, and Spring's proxying means
+a self-call cannot change propagation — so this needs the read pass and the report assembly
+separated into two beans, which is a refactor of the block's largest class and wants to be its
+own change rather than a rider on the feature that exposed it.
+
+Worth stating for whoever does it: the fetches must stay *bounded* afterwards. The transaction
+was never the only reason for the cap and the budget — a verification call that takes four
+minutes is a hang whether or not it holds a connection.
+
+### IX.8 The handoff has no console banner (SH207)
+
+SH104 shipped the handoff as `shio report`, which is right for where a handoff usually lands: a
+PR body, written by whatever ran the agent. §IX.6 described a second destination — a console
+banner — and that half is unshipped, which leaves the curator who never opens a terminal with no
+answer to "what did the agent do since I last looked".
+
+It is a small feature over already-composed data (the same three reads), and its natural home is
+the SH109 review queue page, which is already the console's answer to "what did an agent do, and
+do I accept it". The one design question is the position: a banner that shows on every page is
+noise, and a banner only on the review page is a page nobody visits unless they already suspect
+something. The honest version is probably a count in the navigation that opens the report — the
+same shape as an unread indicator, which is a pattern a curator already knows how to ignore
+safely when it is zero.
+
+### IX.9 A backtick in the CLI's help text breaks the whole binary (SH208)
+
+`cli/src/index.mjs` holds `HELP` as a template literal. Help text is prose, prose about a CLI
+contains command names, and command names in Markdown-ish prose attract backticks — at which
+point the file is a syntax error and `shio` does not load. Not the command that was edited: the
+whole binary.
+
+This is filed because of *how it was found*: it happened twice in one session, while adding
+`verify --delivery` and then `shio report`, and both times the only tests that noticed were the
+three that spawn the CLI as a subprocess. Every other CLI test imports the command modules
+directly, so 155 tests passed against a package whose entry point could not be parsed.
+
+The class is removable rather than manageable: `String.raw`, or a `help.txt` read at startup.
+The second is slightly better than it looks — it also stops help text from being reindented by
+whatever formats the JavaScript, and makes the one file a contributor is most likely to edit a
+file with no syntax at all.
+
+### IX.10 `shio snapshot` photographs one page per run (SH209)
+
+SH102 captures a page. The artifact anyone actually wants for a handoff or a nightly job is the
+*set*: every published page of a site, one baseline each, and a list of which ones moved — which
+is also the form in which a visual diff is worth reading, because "these three pages changed" is
+a sentence and "this page changed" is a fact you already knew.
+
+The parts exist (`/agent/find` gives the addresses; the command gives the capture), so the work
+is the loop's own properties rather than the photography: one browser reused across pages instead
+of one launch each, a per-page timeout so a single hanging page cannot consume the run, and a
+summary that reports the pages it *could not* reach as distinct from the pages that did not
+change. That last one is the SH141 lesson arriving in a second place — an unreachable page and an
+unchanged page must never be the same row.
 
 ---
 
