@@ -36,6 +36,7 @@ verify against `git ls-files` before acting.
   - [XII. Agent safety & human-in-the-loop (Block L)](#xii-agent-safety--human-in-the-loop-block-l)
   - [XIII. Token economy, measured (Block M) — what the measurement opened](#xiii-token-economy-measured-block-m--what-the-measurement-opened)
   - [XIV. Realignment of what already shipped (Block N) — what building it opened](#xiv-realignment-of-what-already-shipped-block-n--what-building-it-opened)
+  - [XV. The human half — the console the curator uses (Block O)](#xv-the-human-half--the-console-the-curator-uses-block-o)
 - **Part 2 — pre-existing sections**
   - [I. Headless foundation — the CDA](#i-headless-foundation--the-cda) (shipped)
   - [II. JavaScript-for-pages DX](#ii-javascript-for-pages-dx) (shipped)
@@ -1276,6 +1277,169 @@ whether it is possible but which of the three should adopt it before a feature d
 for us. The agent namespace is the one to watch: SH109's review queue is a console
 surface over agent writes, and the moment the console reads or writes there from a
 session, that path is in the same position `/api/v2/post-type` was in.
+
+## XV. The human half — the console the curator uses (Block O)
+
+> The north star has two halves: the agent builds, the human curates. Block N made the
+> console's reads agent-shaped, and the first end-to-end build over the finished surface
+> showed the curating half does not work — a site the agent gets right cannot be edited,
+> previewed or opened. Every defect here answers `200`.
+
+### XV.1 A console smoke check in CI (SH182)
+
+The console is the only surface in Shio where a correct API response and a broken product
+look identical. A form that renders zero fields, a button that navigates nowhere, a request
+that 404s behind a spinner: all `200`, all invisible to the Java tests, the CLI tests and
+the MCP conformance golden. That is not a gap in discipline — it is a gap in *medium*, and
+the only instrument that closes it is a browser.
+
+`shio-react/e2e/console-check.mjs` is that instrument, and it found six failing routes of
+fifteen on its first run. Two design choices are what make it worth keeping rather than
+rewriting later:
+
+- **Targets are discovered, not fixtured.** The route list is built from `/api/v2/site`,
+  `/agent/find` and `/api/v2/post-type`, so the check runs against any instance — a
+  developer's H2, a blueprint-applied site, a tenant — without editing the file. The agent
+  surface turns out to be the cheapest test fixture in the repository.
+- **It fails on evidence, not on appearance.** A page error, a same-origin request ≥400, a
+  known-broken string, or a form that rendered no field at all. Console *warnings* are
+  recorded and never fail the run, for the SH142 reason: a gate that trips on noise is a
+  gate people bypass.
+
+Two things it still owes. It asserts structure, not correctness — *a* field rendering is not
+*the right* field rendering, and the honest next step is a per-post-type expectation derived
+from the post-type's own `fields`, which is the same projection SH178 needs anyway. And it
+has no baseline, so the first accepted failure will be argued about rather than recorded;
+SH142's committed-baseline shape applies here unchanged.
+
+One caution learned while writing it: the first version asserted on `document.body.innerText`
+and reported the post-type editor as broken because the API name lives in a read-only
+`input`, whose value is not text. A check that cries wolf on a working page costs more
+credibility than the bug it was looking for, so assertions must read values as well as text.
+
+### XV.2 The post read must carry the post-type and parsed data (SH176)
+
+`GET /api/v2/post-unified/{id}` returns the JPA entity. Two consequences follow, and either
+one alone would empty the form:
+
+```java
+@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "post_type_id")
+private ShPostType shPostType;          // never fetched → serialized as null
+```
+
+```
+"data": "{\"title\":\"Café Aurora\",\"sections\":[…]}"     // a String column, verbatim
+```
+
+The console reads `post.shPostType.schemaJson` and gets `undefined`, so it has no schema and
+renders the "run the migration" empty state. And its model declares `data: Record<string,
+unknown>` while the wire carries a string, so every field would read `undefined` even with a
+schema. Both are invisible from the API side: the response is a valid `200` and the entity is
+faithfully serialized — it is faithful to the *storage* shape, which is the SH120 lesson
+arriving one endpoint late.
+
+The fix is the shape SH120 already established for navigation: a read DTO owned by the
+console API that composes the existing services rather than exposing the entity. It should
+carry `data` parsed, and the post-type as its SH16 `ShPostTypeDef` `fields` — the lossless
+authoring shape the form already knows how to project (SH178), and the same bytes
+`/api/v2/post-type/{name}` returns, so there is no third serialization of the model (P10).
+
+Two details belong in the task. The `versions` and `listByFolder` reads on the same
+controller have the same shape and the same defect, so they move together or the console
+gains a second inconsistency. And `data` as a projected object must not become a place to
+drop unknown keys silently — that is SH168 on the other side of the wire, and the two tasks
+should agree on what the console does when a post holds a field its post-type does not
+declare: showing it read-only with a warning is honest, hiding it is how content gets lost.
+
+### XV.3 Retire `schemaJson` or maintain it (SH177)
+
+`ShPostType.schemaJson` is a denormalized copy of the field list, and its only writer is
+`ShPostUnifiedMigrationService.migrateAll()` — a one-shot migration behind
+`POST /api/v2/migration/unified/run`. Nothing else in the codebase sets it. So the column is
+correct exactly once: for the post-types that existed when someone last ran that endpoint.
+Every type created afterwards by a blueprint, by `shio push`, or by the console's own
+post-type editor has it empty, and every type *edited* afterwards has it stale — a
+denormalization with no invalidation, which is the failure mode denormalizations have.
+
+The console's empty state then says: *"Schema JSON is empty for this post type. Run the
+unified migration (POST /api/v2/migration/unified/run) to populate it."* That message is
+wrong in three ways at once. It names an internal migration in a curator-facing UI; it
+prescribes a fix that will not work for a type created after the migration, since running it
+again only re-projects what is already there; and it blames the data when the actual cause is
+SH176 — the post-type never reached the browser at all.
+
+So the decision is not "how do we fill this column" but whether it should exist. The model
+already carries `fields`, the console already has `projectFieldDefs` to turn them into a form
+schema, and one shape is cheaper to keep right than two. Removing it means a migration to
+drop the column and deleting the endpoint that was its only writer; keeping it means writing
+it on every path that mutates a post-type and a test that fails when a path forgets. The
+first is smaller and strictly less able to drift, and nothing else reads the column.
+
+### XV.4 One schema entry point for the form (SH178)
+
+`post-unified.ts` exports two ways to get a form schema, and only one of them has a fallback:
+
+```ts
+parseSchema(schemaJson)              // [] when schemaJson is absent
+buildSchemaFromPostType(postType)    // parseSchema, else project from `fields`
+```
+
+`post.new.page.tsx` calls the second and works. `post.edit.page.tsx` calls the first and
+renders nothing. That is the whole difference between "creating a post is fine" and "editing
+the post I just created is impossible", and it is the reason the failure reads as a content
+problem rather than a missing line.
+
+The fix is to delete the choice: one exported entry point that takes whatever the page has
+and returns the best schema available, with `parseSchema` demoted to a private helper. This
+is worth doing even though SH176 makes both paths work — a fallback that exists in one call
+site and not the other is a bug waiting for the next page, and the module currently invites
+picking the wrong one by exporting both at equal prominence.
+
+### XV.5 "View Site" navigates to a route that does not exist (SH179)
+
+`routes.const.ts` declares `PREVIEW: scoped('${consolePath}/preview')`, and no route is
+registered for it — `content.routes.tsx`, `admin.routes.tsx`, `graphql.routes.tsx` and
+`universal-editor.routes.tsx` contain no `preview` path. Three call sites navigate there
+anyway: the site list's row action, the object-children page's green **View Site** button,
+and a per-item button in the listing. All three do nothing visible, because an unmatched
+console path renders an empty page rather than a not-found (SH180).
+
+This is the reported symptom — *"I cannot see the site"* — and it is worth separating the two
+questions inside it. Reaching a **published** site is the CDA's business and depends on a
+front end being deployed, which the CMS does not own. Reaching a **draft** is Shio's own, and
+already works: `handlePreview` mints an SH-preview token and opens the site's configured URL,
+with a real error when the site has none. So the task is not "build preview" — it is to point
+those three buttons at something that exists, and to decide what View Site means for a site
+with no front-end URL configured. Saying so is a legitimate answer; navigating to a blank
+page is not.
+
+### XV.6 An unknown console route must say so (SH180)
+
+The console renders a normal-looking, error-free empty page for any path that matches no
+route. `/console/content/definitely-not-a-route` returns a clean probe: no page error, no
+failed request, nothing missing but content. That is what makes SH179 invisible in the
+product, and — worse for the work ahead — it means a green check on any route proves less
+than it appears to, because a blank page and a working page are the same observation.
+
+A catch-all route that names the path it could not match, plus one assertion in the SH182
+check that a nonexistent path renders it. Small, and it is the thing that makes every other
+probe's "ok" mean something.
+
+### XV.7 The Universal Editor resolves a site by the wrong key (SH181)
+
+Opening `/console/universal-editor/{siteId}` issues `GET /api/v2/site/cafeteria` — the
+site's **furl** against an endpoint keyed by **id** — and 404s twice before rendering. The
+page is reached with a real id, so the wrong key is picked up somewhere between the route
+param and the request.
+
+The fix is one line wherever that swap happens, and the reason it is worth a task rather
+than a silent patch is that this is the third instance of one confusion: SH117 settled
+id-versus-name for post-types, SH181 is the same mistake for sites, and both were invisible
+until something drove the surface. Per §VIII.10's rule — when a defect class recurs, add a
+guard the first time the invariant is violated — the durable form is that a console service
+takes the key it declares, and the SH182 check catches the rest by watching for 404s on
+same-origin requests, which is how this one surfaced.
 
 ---
 

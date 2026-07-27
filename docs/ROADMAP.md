@@ -44,7 +44,8 @@
 > **SH145–SH150** from findings while implementing Block I, and **SH157–SH162** from
 > what the SH112 benchmark measured while implementing Block M, and **SH168–SH175** from
 > the first end-to-end agent-driven build over the finished surface (§VIII.12–§VIII.16,
-> §IX.8, §X.11, §XIII.6) — new tasks are expected to accrete this way, and each one's
+> §IX.8, §X.11, §XIII.6), and **SH176–SH182** from driving the *console* over the site that
+> build produced (Block O, §XV) — new tasks are expected to accrete this way, and each one's
 > line says what measurement or failure produced it. Superseded and therefore retired: **SH17/SH18** (GraalJS), **SH23 +
 > SH27–SH31** (marketplace → Block J), **SH24 + SH32–SH37** (CRUD-over-MCP → Block H).
 
@@ -59,10 +60,10 @@
 >
 > Suggested order: **H → K → I → J → L → M** (H, K, I, J and M are shipped). Block H is the
 > protocol everything else speaks; Block K (verification) removed the most expensive unit in
-> the system — the human round trip. **Block L (agent safety) is the remaining one**, and it
-> is now the gate on adoption rather than on capability: the surface can build, change and
-> check a site, and what it cannot yet do is let a human bound and undo an agent that got it
-> wrong.
+> the system — the human round trip. **Blocks O and L are the remaining ones**, and both are
+> gates on adoption rather than on capability. **Block O first**: the agent can build a site
+> the console cannot then edit or open, so the human half of the north star is broken before
+> Block L's question — how a human bounds and undoes an agent — can even be asked.
 >
 > **What driving it end to end found (SH168–SH175).** A whole site — model, folder tree,
 > thirteen pages, a file projection, a CI gate — was built over the agent surface alone, and
@@ -300,6 +301,30 @@
 - 📋 **SH165** (deps: SH120 ✅) **The console listing is unpaged** — `GET /object/{id}/list` returns every child of a folder, so a folder with ten thousand posts is one response and one render. The CDA listing has been paged since SH1; the console's has the shape to accept `page`/`size` and deliberately did not copy the fields rather than pretend. Needs paging on the endpoint and infinite-scroll or pages in the browser. → §XIV.7
 - 💭 **SH166** (deps: SH119 ✅, SH75 ✅) **A blueprint's carried files reach an MCP-only caller unsubstituted** — the CLI substitutes them because the project's name is local identity the server has no business being told, but a caller with no CLI gets source with `{{projectName}}` still in it and no way to fill it in. Either the apply response carries substituted bodies, or the tool result says plainly that the files are templates and names the parameters. → §XIV.8
 - 💭 **SH167** (deps: SH117 ✅) **Review the remaining blanket CSRF exemptions** — SH117 narrowed `/api/v2/post-type` to session-less callers because a browser started reaching it. `/api/v2/cda/**`, `/api/v2/agent/**` and `/mcp` are still exempt wholesale on the argument that only stateless clients reach them, which is true today and is the same argument that was true of the post-type API until it wasn't. The check now exists; the question is which of the three should adopt it before a console feature makes the decision for us. → §XIV.9
+
+## Block O — The human half (the console the curator uses)
+
+> The product says the **agent builds and the human curates**. Block N made the console's
+> *reads* agent-shaped and cheap; driving the finished surface end to end then showed that
+> the curating half does not work. A site an agent builds correctly cannot be edited,
+> previewed or opened in the console — which makes law **P7** (never surprise the human)
+> unenforceable, because the human never gets as far as being surprised. → §XV
+
+> **How these were found, and why that matters.** Every task below was reproduced headlessly
+> against the SH94 `marketing-site` blueprint applied to a real site, by
+> [`shio-react/e2e/console-check.mjs`](../shio-react/e2e/console-check.mjs) — 6 of 15 route
+> probes failed on the first run. None of them was visible to any existing test: the API
+> returns `200`, the SPA returns `200`, and the page is empty. **SH182 is therefore the
+> first task in the block**, not the last — the others are what it found, and without it
+> they regress silently.
+
+- 📋 **SH182** (deps: SH120 ✅) **A console smoke check in CI** — the console is the one surface no API test can see: a form that renders zero fields, a dead route, a request that 404s behind a spinner all answer `200`. `e2e/console-check.mjs` walks the routes in a real browser, discovers its targets from the agent surface so it runs on any instance, and fails on a page error, a failed request or a missing field. It exists and is not yet wired to CI. → §XV.1
+- 📋 **SH176** (deps: SH120 ✅, SH117 ✅) **The post read must carry the post-type and parsed data** — `GET /post-unified/{id}` serializes the entity, so `shPostType` is an uninitialized LAZY proxy that arrives as `null` and `data` arrives as a JSON *string* while the console's model declares an object. Every post edit page therefore renders zero fields, for every post-type, and would render no values even if it had a schema. SH120's treatment, applied to the read it skipped. → §XV.2
+- 📋 **SH177** (deps: SH176) **Retire `schemaJson` or maintain it** — the column has exactly one writer, the one-shot `POST /api/v2/migration/unified/run`, so it is empty for every post-type a blueprint, `shio push` or the console's own editor has created since. The console's empty state tells the user to run that migration, which is neither the cause nor a fix a user should be handed. The model already carries `fields`; a second projection of it needs a reason to exist. → §XV.3
+- 📋 **SH178** (deps: SH176) **One schema entry point for the form** — the create page uses `buildSchemaFromPostType`, which falls back to projecting `fields`; the edit page uses `parseSchema`, which does not. That single difference is why creating a post works and editing the same post does not, and why the failure looks like a content problem rather than a missing fallback. → §XV.4
+- 📋 **SH179** (deps: SH120 ✅) **"View Site" navigates to a route that does not exist** — `ROUTES.PREVIEW` (`/console/preview/:siteId`) is declared in `routes.const.ts` and registered nowhere, and three call sites navigate to it, including both View Site buttons. This is the literal answer to "I cannot see the site". → §XV.5
+- 📋 **SH180** (deps: SH179) **An unknown console route must say so** — the SPA renders a normal-looking empty page for any unmatched path, which is what makes SH179 silent and what let a probe of a nonexistent route report success. A not-found route that names the path it could not match, and a test that asserts it. → §XV.6
+- 📋 **SH181** (deps: SH120 ✅) **The Universal Editor resolves a site by the wrong key** — it requests `/api/v2/site/{furl}` against an id-keyed endpoint, so opening it 404s twice before rendering. Either resolve the furl first or give the endpoint a by-name lookup — the same id-versus-name confusion SH117 settled for post-types. → §XV.7
 
 ---
 
