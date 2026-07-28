@@ -130,6 +130,7 @@ public class ShAgentVerifyService {
     private final ShAgentChangesService shAgentChangesService;
     private final ShAgentDeliveryProbe deliveryProbe;
     private final ShAgentMemoryService shAgentMemoryService;
+    private final ShTemplateFieldLint templateFieldLint;
 
     public ShAgentVerifyService(ShAgentSiteAccess siteAccess,
                                 ShFolderRepository shFolderRepository,
@@ -141,7 +142,8 @@ public class ShAgentVerifyService {
                                 ShAddressResolver addressResolver,
                                 ShAgentChangesService shAgentChangesService,
                                 ShAgentDeliveryProbe deliveryProbe,
-                                ShAgentMemoryService shAgentMemoryService) {
+                                ShAgentMemoryService shAgentMemoryService,
+                                ShTemplateFieldLint templateFieldLint) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -153,6 +155,7 @@ public class ShAgentVerifyService {
         this.shAgentChangesService = shAgentChangesService;
         this.deliveryProbe = deliveryProbe;
         this.shAgentMemoryService = shAgentMemoryService;
+        this.templateFieldLint = templateFieldLint;
     }
 
     /** The whole instance — what CI asks for, and the shape every rule was written against. */
@@ -507,6 +510,37 @@ public class ShAgentVerifyService {
         }
         duplicateUrls(check, scan, findings);
         folderFindings(check, scan, findings);
+        templateFields(check, scan, findings);
+    }
+
+    /**
+     * SH251 — a template interpolating a field its bound post-type does not declare.
+     *
+     * <p>In {@code content} rather than a group of its own, which was the other candidate. It is a
+     * content-consistency rule (a template <em>is</em> content, which is the decision SH183 turns
+     * on), it costs nothing on a site with no {@code postTypeLayout} because there are no bindings
+     * to walk, and a new group would mean every existing {@code checks=content} caller silently
+     * not getting it. The group list is also part of the manifest and the MCP golden, so growing
+     * it should buy something semantic rather than tidiness.</p>
+     *
+     * <p>Scoping (SH143) is honoured by passing the scanned ids: a finding is emitted only when
+     * the layout or region post holding the template is one of this run's subjects. That is the
+     * same rule the rest of {@code content} follows — what a scope narrows is the subjects.</p>
+     */
+    private void templateFields(String check, Scan scan, List<Finding> findings) {
+        Set<String> inScope = scan.posts().stream()
+                .map(ShPostUnified::getId)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        for (ShTemplateFieldLint.ShTemplateFinding found
+                : templateFieldLint.scan(scan.siteById().values(), inScope)) {
+            String address = address(found.subject());
+            findings.add(found.error()
+                    ? Finding.error(check, found.rule(), address, found.field(),
+                            found.message(), found.fix())
+                    : Finding.warning(check, found.rule(), address, found.field(),
+                            found.message(), found.fix()));
+        }
     }
 
     private void fieldFindings(String check, ShPostUnified post, String address, JsonNode data,

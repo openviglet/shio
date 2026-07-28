@@ -8,6 +8,7 @@
  */
 package com.viglet.shio.render;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -150,6 +151,78 @@ public class ShPageRenderService {
                 slots,
                 state,
                 page.getId());
+    }
+
+    /**
+     * The templates a post-type's pages are rendered through, without rendering one (SH251).
+     *
+     * <h3>Why the post-type and not a page</h3>
+     *
+     * <p>§XV.17 described SH251 as "a lint over resolved pages", and building it found that the
+     * resolution does not depend on the page at all: a page reaches its layout through
+     * {@code site.postTypeLayout}, which is keyed by <b>post-type</b>, and the layout's slots are
+     * static attributes in its HTML. So every page of a type resolves to exactly the same layout
+     * and the same regions. Iterating the bindings instead of the pages checks the identical
+     * ground at a fraction of the cost — a thousand articles resolve once — and reports the
+     * finding against the artefact somebody edits.</p>
+     *
+     * <p>Returns empty when the type has no binding, which is the normal case rather than an
+     * error: {@code postTypeLayout} names the types that are <em>pages</em>, and a type that only
+     * ever appears as a row in someone else's listing has none. The renderer throws for that
+     * (a request named a page), a lint must not.</p>
+     *
+     * @param site     the site whose bindings resolve the layout
+     * @param typeName the post-type the page has
+     */
+    public Optional<ShPageTemplates> templatesFor(ShSite site, String typeName) {
+        String layoutName = layoutBindings(site).get(typeName);
+        if (layoutName == null) {
+            return Optional.empty();
+        }
+        Optional<ShPostUnified> layout = postOfSystemType(site, ShSystemPostType.PAGE_LAYOUT, layoutName);
+        if (layout.isEmpty()) {
+            return Optional.empty();
+        }
+        String layoutHtml = fieldOf(layout.get(), ShSystemPostTypeAttr.HTML);
+        List<ShNamedTemplate> regions = new ArrayList<>();
+        // Read off the *unrendered* HTML, which is sound because `sh-region="NAME"` is a static
+        // attribute — the one shape it cannot see is a name that is itself interpolated, and a
+        // region slot whose name is content would be unresolvable to a reader too.
+        for (String slot : composer.slotsOf(layoutHtml)) {
+            postOfSystemType(site, ShSystemPostType.REGION, slot).ifPresent(region ->
+                    regions.add(new ShNamedTemplate(slot, region,
+                            fieldOf(region, ShSystemPostTypeAttr.HTML))));
+        }
+        return Optional.of(new ShPageTemplates(
+                new ShNamedTemplate(layout.get().getTitle(), layout.get(), layoutHtml),
+                List.copyOf(regions)));
+    }
+
+    /**
+     * {@code site.postTypeLayout} as the flat post-type → layout-title map, for a caller that
+     * needs to know <em>which</em> types are pages (SH251) rather than to render one.
+     */
+    public Map<String, String> layoutBindings(ShSite site) {
+        return bindingsOf(site);
+    }
+
+    /** A template with the post that holds it and the name it is reached by. */
+    public record ShNamedTemplate(String name, ShPostUnified post, String html) {
+    }
+
+    /**
+     * A post-type's resolved presentation: the layout, plus the Regions its slots resolve to, in
+     * document order. Carries the HTML so a caller that is not rendering needs no second read.
+     */
+    public record ShPageTemplates(ShNamedTemplate layout, List<ShNamedTemplate> regions) {
+
+        /** The layout and its regions, in the order a reader meets them. */
+        public List<ShNamedTemplate> all() {
+            List<ShNamedTemplate> out = new ArrayList<>();
+            out.add(layout);
+            out.addAll(regions);
+            return List.copyOf(out);
+        }
     }
 
     // --- resolution -------------------------------------------------------------

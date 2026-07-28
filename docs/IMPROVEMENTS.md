@@ -1642,28 +1642,30 @@ and proof that a single-app loop can simply do without.
 
 #### XV.17 A template referencing a field nothing declares renders empty (SH251)
 
-SH192 catches a template that will not *compile*. §XV.10 asked for more: an unknown **field**
-reference should be an error "when the post-type is known", because a renamed field silently
-rendering empty is the SH168 failure wearing a template. Building SH192 established that this
-cannot be a write-time check, and the reason is worth recording rather than rediscovering.
-
-At write time the post-type of the thing being written is a `Region` or a `PageLayout`, whose
-declared fields are `HTML` and `JAVASCRIPT`. The fields the template *interpolates* —
-`{{headline}}`, `{{TEXT}}` — belong to whatever **page** is later bound, through
-`site.postTypeLayout`, to the layout that slots this region. A region is the unit of reuse
-precisely because it does not know which pages use it, so at the moment it is saved there is
-no post-type to check against.
-
-So the check belongs to a lint over **resolved** pages: for each page, the layout and regions
-it actually uses, the post-type it actually has, and the interpolations that resolve to
-nothing. Two severities, and the split matters — an **error** where the owner is known (the
-page's own post-type declares the field or it does not), a **warning** where the value comes
-from a helper whose row shape the CMS cannot know (`{{#query}}` yields whatever the listed
-post-type has, which varies per row).
-
-It also wants the SH185 annotations, which is a happy accident: `sh-field="TEXT"` already
-declares that an element renders a named field, so the interpolations worth checking are
-partly self-identifying rather than needing an AST walk.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three conclusions, one of which
+> contradicts how the task was framed.
+>
+> **"A lint over resolved pages" was the wrong unit, and finding that out was the design work.**
+> The resolution does not depend on the page: `postTypeLayout` is keyed by post-type and a
+> layout's slots are static attributes, so every page of a type resolves to the same layout and
+> regions. Walking the *bindings* checks identical ground at a fraction of the cost and — the part
+> that matters more — addresses the finding at the layout or region post, which is the artefact
+> somebody edits. The general lesson: when a rule seems to need a per-instance sweep, check
+> whether what it actually varies over is the *type*.
+>
+> **The two severities fall out of who owns the interpolation.** Top-level is the page's
+> post-type, which is known, so an undeclared name is an error. Inside a helper block the rows are
+> whatever posts the helper found, so the strongest honest claim is "no post-type in this instance
+> declares this name" — a warning. That is SH99's line held: `ok` is false only for what the CMS
+> can prove from inside itself, and the alternative (an error on something unknowable) is what
+> makes a gate people bypass.
+>
+> **The negative cases were most of the work**, and they are what to protect in any change here:
+> frames, `this`/`./`/`../`, data variables, subexpressions, literals, partials, comments, a
+> block's own name, an inline helper's name, and every row value. `{{file_url HERO}}` reporting
+> `file_url` would have been a false positive on the one helper the shipped 2018 region used. And
+> the scanner's own test caught it dropping `{{~TEXT~}}` — Handlebars' whitespace-control form —
+> which is the failure direction that stays quiet: a reference not reported, not a wrong one.
 
 #### XV.11 The blast radius of a region change is uncomputable (SH193)
 
@@ -2137,6 +2139,58 @@ to a test's own notion of an acceptable failure.
 Worth stating the boundary, because it is easy to over-build: this is not a demand that every
 error message be asserted verbatim. The entry only has to pin the part that identifies *which* rule
 fired, which is the part a reader would use to tell a good refusal from a confusing one.
+
+### XVI.14 The helper catalogue is five hardcoded lists (SH260)
+
+`ShRenderHelpers.register()` is where a helper becomes real. Five other places restate what it
+holds, and each restatement exists for a defensible local reason:
+
+| Place | Restates | Because |
+|---|---|---|
+| `ShTemplateValidator.REGISTERED` | the registered names | the refusal lists the choices |
+| `ShTemplateValidator.KNOWN_MISSING_HELPERS` | their complement within the seven | the paramless form the compiler cannot catch |
+| `ShTemplateFieldScanner.BLOCK_HELPERS` | the block helper names | so a helper's name is not read as a field |
+| `ShTemplateFieldScanner.PATH_ARG_INLINE` | which inline helpers take a field | so `{{file_url HERO}}` reports `HERO` |
+| `ShTemplateFieldLint.ROW_KEYS` | `ShRenderHelpers#row`'s keys | so a listing body is not a finding |
+
+SH247 had to edit three of them in step to add two helpers; SH251 added the last two. So the cost
+is already visible, and **every failure mode is silent**: a registered helper missing from the
+scanner's list is reported as an unknown *field*, a row key missing from the lint's list is a
+warning on a correct template, and a name left in `KNOWN_MISSING_HELPERS` after the helper ships
+tells an author a capability is absent while the renderer runs it. None of those announces itself
+as a stale list; each looks like a content defect.
+
+This is SH245's "one writer per verb" one level down, and it wants the same answer: the engine
+should be able to say what it has registered, and each helper what shape its arguments take — then
+the validator's message, the scanner's exclusions and the lint's row keys are all *reads*. The one
+piece that does not follow automatically is `KNOWN_MISSING_HELPERS`, which is a statement about
+what a template author might reasonably expect and not about what exists; it stays a list, and
+becomes empty when `form` lands.
+
+Worth noting what SH247 already did right, since it is the pattern to keep: `ShTemplateValidatorTest`
+asserts *both* directions — `{{#form}}` still refused, `{{#getRelation}}` now accepted — so at
+least the validator's two lists cannot drift from the engine unnoticed. The other three have no
+such test, which is why this is filed rather than left to care.
+
+### XVI.15 A hash argument that is a field is not checked (SH261)
+
+Verified: `{{#search q=TOPIC}}` and `{{#query folder=SECTION}}` produce no reference at all for
+`TOPIC` or `SECTION`. The scanner reports a block's first **positional** argument and treats a
+`name=value` pair as not-positional, which is right for `folder="/blog"` — a quoted literal is not
+a field — and wrong for the model-driven form.
+
+It matters because the model-driven form is the useful one. SH247 shipped `search` explicitly as
+"a term the template supplies, literal **or read from the model**", and a page whose `TOPIC` field
+drives its own related-content listing is the case that makes the helper worth having. A typo there
+renders an empty listing — which is precisely the failure SH251 exists to catch, so the rule is
+blind exactly where its subject is most likely to be wrong.
+
+The work is to tell a quoted literal from a path in a hash value and report the latter in the
+enclosing scope. It is filed as an idea rather than designed for one reason: a subexpression
+(`q=(concat A B)`) has to be excluded, and parsing far enough to know that is a parse this scanner
+deliberately does not do. The likely shape is to accept only the unambiguous case — an unquoted
+value made entirely of path characters — and leave everything else alone, which is the same
+"weak claim, always true" bar the in-block warning already uses.
 
 ---
 

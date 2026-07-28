@@ -284,8 +284,34 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   is not flagged in general** — `{{#items}}` is a valid iteration and only the three
   known-missing helpers (`search`/`form`/`getRelation`) are named, because a rule with false
   positives is one authors learn to ignore. Handlebars catches a *parameterised* unknown helper
-  itself; the scan covers the paramless form it cannot. Unknown **field** references are
-  **SH251**, and cannot be a write-time check at all — see the roadmap for why.
+  itself; the scan covers the paramless form it cannot. Unknown **field** references cannot be a
+  write-time check at all — a Region's post-type declares `HTML`/`JAVASCRIPT` while the fields its
+  template interpolates belong to whatever page is bound to the layout that slots it — so they are
+  a **lint**: `template-unknown-field` in `checks=content` (**SH251**).
+- **`template-unknown-field` walks the bindings, not the pages (SH251)** — `ShTemplateFieldScanner`
+  (pure: text → references with their *scope*) plus `ShTemplateFieldLint`. The resolution does not
+  depend on the page: `postTypeLayout` is keyed by post-type and a layout's slots are static
+  `sh-region` attributes, so every page of a type resolves to the same layout and regions. A
+  thousand articles resolve once, the finding is addressed at the **layout or region post** (the
+  artefact you edit), and SH143's scoping works for free because a finding is emitted only when
+  that post is one of the run's subjects. **Two severities**: a top-level `{{TEXT}}` belongs to the
+  page's post-type, which is known, so an undeclared name is an **error**; inside `{{#query}}` the
+  rows are whatever the helper found, so the strongest honest claim is "no post-type in this
+  instance declares this name" — a **warning**, which is SH99's line that `ok` is false only for
+  what the CMS can prove from inside itself. Row values (`title`/`link`/`summary`/…) are never
+  reported.
+  **The scope is the whole point**, which is why this is not `Template#collect(TagType.VAR)` —
+  Handlebars.java's own collector returns every variable flat and cannot tell the page's `{{TEXT}}`
+  from a listed post's. **Do not "simplify" the false-positive exclusions**: frames
+  (`post.`/`site.`/`theme.`/`render.`), `this`/`./`/`../`, data variables, subexpressions,
+  literals, partials, comments, a block's own name, and an inline helper's name —
+  `{{file_url HERO}}` reports `HERO`, and reporting `file_url` would fire on the one helper the
+  shipped 2018 region used. A block's first positional argument is reported in the **enclosing**
+  scope, since `{{#if TEXT}}` and `{{#getRelation SECTIONS}}` ask about the current one. Two known
+  limits: Handlebars' `{{~TEXT~}}` form had to be stripped explicitly (left alone it silently
+  *drops* the reference), and a **hash** argument that is a field (`{{#search q=TOPIC}}`) is still
+  unchecked — **SH261**. The helper names are restated in five places and nothing checks that they
+  agree — **SH260**.
 - **Helpers are the closed capability set** `shObject.js` expressed as a convention:
   `{{#query folder= type= limit=}}`, `{{#navigation folder=}}`, `{{file_url}}`, and since SH247
   `{{#getRelation FIELD}}` and `{{#search q= type= limit=}}`. Every listing is sorted by a

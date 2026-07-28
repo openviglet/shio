@@ -1,0 +1,250 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.render;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * SH251 — which field names a template interpolates, and <b>whose</b> they are.
+ *
+ * <h2>Why the scope matters more than the names</h2>
+ *
+ * <p>SH192 refuses a template that will not compile and could not answer the question §XV.10
+ * cared about most: {@code {{headline}}} against a post-type that renamed the field to
+ * {@code title} compiles, renders empty, and looks exactly like missing content. Catching that
+ * needs to know which post-type a given interpolation belongs to — and a template has two
+ * kinds of interpolation, with different owners:</p>
+ *
+ * <pre>{@code
+ * {{TEXT}}                              <- the page's own field
+ * {{#query type="Article"}}{{TEXT}}{{/query}}   <- the listed post's field
+ * }</pre>
+ *
+ * <p>The first is checkable: the page's post-type is known, so an undeclared name is a defect.
+ * The second is not, because the rows come from whatever posts the helper found. That is the
+ * whole reason this returns a <em>scope</em> beside each name rather than a flat list — and the
+ * reason {@code Template#collect(TagType.VAR)}, which Handlebars.java does offer, is not enough:
+ * it returns every variable in the template with no indication of which block it sits in.</p>
+ *
+ * <h2>Why it is textual</h2>
+ *
+ * <p>The same reason {@code ShTemplateValidator}'s missing-helper scan is: Handlebars.java's AST
+ * is internal, and its public surface does not distinguish a helper call from a section over a
+ * context value. A brace scanner that tracks block depth is small, has no dependency on an
+ * internal API, and is exact about the one thing it reports — the name and the nesting.</p>
+ *
+ * <h2>What it deliberately does not report</h2>
+ *
+ * <p>Anything that is not a plain path: a subexpression, a literal, a data variable
+ * ({@code @index}, {@code @first}), {@code this}, a partial, or a comment. Each is either not a
+ * field reference at all or is a construct whose resolution this cannot model — and a rule with
+ * false positives is one authors learn to ignore (SH192's finding, applied again).</p>
+ *
+ * @author Alexandre Oliveira
+ * @since 2026.3
+ */
+public final class ShTemplateFieldScanner {
+
+    /**
+     * Handlebars' own block helpers. Their first positional argument is a path resolved in the
+     * <em>enclosing</em> scope, which is why it is reported there and not inside the block.
+     */
+    private static final Set<String> BUILTIN_BLOCKS = Set.of("if", "unless", "each", "with");
+
+    /** Registered helpers whose first positional argument is likewise an enclosing-scope path. */
+    private static final Set<String> PATH_ARG_HELPERS = Set.of("getRelation");
+
+    /**
+     * Inline helpers that take a field as their argument — {@code {{file_url HERO}}}.
+     *
+     * <p>Both halves matter: the helper's own name is not a field (reporting {@code file_url} as
+     * an unknown field would be a false positive on the one helper the 2018 navigation region
+     * used), and its argument <em>is</em> one, so it is exactly the reference worth checking. Kept
+     * here beside the block set rather than read from {@link ShRenderHelpers}, the way
+     * {@code ShTemplateValidator} keeps its own list — and it is the same maintenance hazard,
+     * which is why {@code ShTemplateFieldScannerTest} asserts a call to every registered helper
+     * yields no reference to the helper itself.</p>
+     */
+    private static final Set<String> PATH_ARG_INLINE = Set.of("file_url");
+
+    /** Registered block helpers whose rows come from elsewhere — never a field themselves. */
+    private static final Set<String> BLOCK_HELPERS =
+            Set.of("query", "navigation", "search", "getRelation");
+
+    /** Names that are never a field: Handlebars' own, plus the reserved model frames. */
+    private static final Set<String> NOT_A_FIELD =
+            Set.of("this", "else", "log", "lookup", "if", "unless", "each", "with");
+
+    private ShTemplateFieldScanner() {
+        throw new IllegalStateException("Utility class");
+    }
+
+    /**
+     * One interpolation.
+     *
+     * @param name  the path as written, e.g. {@code TEXT} or {@code post.title}
+     * @param scope the block it sits inside, or {@code null} at the top level — which is the
+     *              only scope whose owner is known
+     */
+    public record ShTemplateReference(String name, String scope) {
+
+        /** Whether this reference belongs to the page's own post-type. */
+        public boolean isPageScoped() {
+            return scope == null;
+        }
+
+        /** The first path segment, which is what a reserved frame is recognised by. */
+        public String root() {
+            int dot = name.indexOf('.');
+            return dot < 0 ? name : name.substring(0, dot);
+        }
+    }
+
+    /**
+     * Every field reference in {@code template}, in document order.
+     *
+     * @param template a {@code PageLayout}'s or {@code Region}'s HTML
+     */
+    public static List<ShTemplateReference> referencesIn(String template) {
+        List<ShTemplateReference> found = new ArrayList<>();
+        if (template == null || template.isBlank()) {
+            return found;
+        }
+        Deque<String> blocks = new ArrayDeque<>();
+        int at = 0;
+        while (true) {
+            int open = template.indexOf("{{", at);
+            if (open < 0) {
+                break;
+            }
+            int close = template.indexOf("}}", open + 2);
+            if (close < 0) {
+                // An unterminated mustache is SH192's business — it will not compile — and
+                // guessing at its contents here would report a name nobody wrote.
+                break;
+            }
+            String body = template.substring(open + 2, close).trim();
+            at = close + 2;
+            // A triple stash leaves a leading `{` on the body and a trailing `}` before the
+            // closer; both are stripped rather than parsed, since they change escaping only.
+            body = strip(body);
+            if (body.isEmpty()) {
+                continue;
+            }
+            char kind = body.charAt(0);
+            if (kind == '!' || kind == '>' || kind == '&' || kind == '=') {
+                continue;
+            }
+            if (kind == '/') {
+                blocks.pollFirst();
+                continue;
+            }
+            if (kind == '#' || kind == '^') {
+                String name = firstToken(body.substring(1));
+                // The block's own argument is resolved where the block is written, not inside
+                // it: `{{#if TEXT}}` asks about the current scope's TEXT.
+                if (BUILTIN_BLOCKS.contains(name) || PATH_ARG_HELPERS.contains(name)) {
+                    addIfPath(found, argumentOf(body.substring(1), name), blocks.peekFirst());
+                }
+                blocks.addFirst(name);
+                continue;
+            }
+            String token = firstToken(body);
+            if (PATH_ARG_INLINE.contains(token) || BLOCK_HELPERS.contains(token)) {
+                // The helper's name is not a field; its argument is. `{{file_url HERO}}` asks
+                // about HERO, and reporting `file_url` would be a false positive on the very
+                // helper the 2018 navigation region used.
+                addIfPath(found, argumentOf(body, token), blocks.peekFirst());
+                continue;
+            }
+            addIfPath(found, token, blocks.peekFirst());
+        }
+        return List.copyOf(found);
+    }
+
+    private static void addIfPath(List<ShTemplateReference> found, String token, String scope) {
+        if (isPath(token)) {
+            found.add(new ShTemplateReference(token, scope));
+        }
+    }
+
+    /**
+     * Whether a token is a plain path this can reason about.
+     *
+     * <p>Excluded: the empty token, a data variable, {@code this} and its {@code ./} forms, a
+     * parent reference ({@code ../}), a subexpression, a quoted literal, a number, and anything
+     * with a character a path cannot contain. Every one of those is either not a field or is
+     * resolved somewhere this cannot see.</p>
+     */
+    private static boolean isPath(String token) {
+        if (token == null || token.isEmpty() || NOT_A_FIELD.contains(token)) {
+            return false;
+        }
+        char first = token.charAt(0);
+        if (first == '@' || first == '.' || first == '"' || first == '\'' || first == '('
+                || Character.isDigit(first)) {
+            return false;
+        }
+        // A path segment may hold letters, digits, `_`, `-` and `.`; a `=` means this was a hash
+        // pair and not a positional argument.
+        return token.chars().allMatch(c -> Character.isLetterOrDigit(c)
+                || c == '_' || c == '-' || c == '.');
+    }
+
+    /** The first whitespace-delimited token. */
+    private static String firstToken(String body) {
+        String trimmed = body.trim();
+        int space = indexOfWhitespace(trimmed);
+        return space < 0 ? trimmed : trimmed.substring(0, space);
+    }
+
+    /**
+     * The first positional argument after a block's name, or {@code ""} when it has none.
+     *
+     * <p>A hash pair ({@code folder="/blog"}) is not positional, so a block whose first token
+     * contains {@code =} is reported as having no path argument — which is correct for
+     * {@code {{#query folder="/blog"}}} and is why the hash form is left alone entirely.</p>
+     */
+    private static String argumentOf(String body, String name) {
+        String rest = body.trim().substring(name.length()).trim();
+        return rest.isEmpty() ? "" : firstToken(rest);
+    }
+
+    private static int indexOfWhitespace(String text) {
+        for (int i = 0; i < text.length(); i++) {
+            if (Character.isWhitespace(text.charAt(i))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Removes the punctuation that changes escaping or whitespace but never resolution: a triple
+     * stash's inner braces, and Handlebars' {@code ~} whitespace-control markers.
+     *
+     * <p>The {@code ~} pair is easy to miss and the failure is silent in the wrong direction —
+     * {@code {{~TEXT~}}} left as the token {@code ~TEXT~} is not a valid path, so the reference is
+     * dropped and a real defect goes unreported. Found by the scanner's own test.</p>
+     */
+    private static String strip(String body) {
+        String out = body;
+        while (out.startsWith("{") || out.startsWith("~")) {
+            out = out.substring(1).trim();
+        }
+        while (out.endsWith("}") || out.endsWith("~")) {
+            out = out.substring(0, out.length() - 1).trim();
+        }
+        return out.trim();
+    }
+}
