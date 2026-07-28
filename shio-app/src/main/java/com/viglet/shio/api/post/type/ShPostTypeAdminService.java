@@ -33,6 +33,7 @@ import com.viglet.shio.persistence.model.widget.ShWidget;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.widget.ShWidgetRepository;
+import com.viglet.shio.tenant.ShTenantContext;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -405,6 +406,12 @@ public class ShPostTypeAdminService {
         }
     }
 
+    /** The request's tenant, for the native counts that bypass {@code @TenantId} (SH22). */
+    private static String tenantId() {
+        String tenant = ShTenantContext.getTenantId();
+        return tenant != null ? tenant : ShTenantContext.DEFAULT_TENANT;
+    }
+
     /** The installed post-type names, sorted — the {@code allowed} set of a teaching 400. */
     private List<String> postTypeNames() {
         return shPostTypeRepository.findAll().stream()
@@ -414,7 +421,20 @@ public class ShPostTypeAdminService {
                 .toList();
     }
 
-    /** Delete a non-system post-type. Returns {@code false} if it does not exist. */
+    /**
+     * Delete a non-system post-type that no content points at. Returns {@code false} if it does
+     * not exist.
+     *
+     * <p><b>A type still in use is a teaching 409, not a 500 (SH236).</b> This used to check the
+     * {@code system} flag and nothing else, and the post FK is {@code onDelete NO ACTION} — so
+     * deleting a type with content raised a constraint violation that reached the caller as a
+     * server fault. The count in the refusal is what makes it actionable: it distinguishes a
+     * rename (SH163, which keeps the content) from a genuine retirement.</p>
+     *
+     * <p>The count includes the trash, because a trashed post still holds its
+     * {@code post_type_id} and would still block the delete — a refusal saying "0 posts" followed
+     * by a 500 is the worst of both.</p>
+     */
     @Transactional
     public boolean delete(String name) {
         ShPostType existing = shPostTypeRepository.findByName(name);
@@ -423,6 +443,12 @@ public class ShPostTypeAdminService {
         }
         if (existing.getSystem() == 1) {
             throw new ShSystemPostTypeException(name);
+        }
+        long live = shPostUnifiedRepository.countByShPostType_Id(existing.getId());
+        long total = shPostUnifiedRepository.countAllByPostTypeIncludingTrash(existing.getId(),
+                tenantId());
+        if (total > 0) {
+            throw new ShPostTypeInUseException(name, live, Math.max(total - live, 0));
         }
         flatten(existing.getShPostTypeAttrs()).forEach(this::detach);
         existing.getShPostTypeAttrs().clear();

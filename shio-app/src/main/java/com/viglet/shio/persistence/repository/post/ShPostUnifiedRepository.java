@@ -74,6 +74,20 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     long countByShPostType_Id(String postTypeId);
 
     /**
+     * Every row pointing at this post-type, <b>trash included</b> (SH236).
+     *
+     * <p>Native because {@code ShPostUnified} carries {@code @SQLRestriction("deleted_date is
+     * null")}, so the derived counter above cannot see a trashed post — and a trashed post still
+     * holds its {@code post_type_id}, so it still blocks the delete. A refusal that answered
+     * "used by 0 posts" and then let the delete fail on a constraint would be worse than no
+     * refusal at all. Native SQL bypasses {@code @TenantId} too, hence the explicit tenant.</p>
+     */
+    @Query(value = "select count(*) from sh_post_unified where post_type_id = :postTypeId "
+            + "and tenant_id = :tenant", nativeQuery = true)
+    long countAllByPostTypeIncludingTrash(@Param("postTypeId") String postTypeId,
+                                          @Param("tenant") String tenant);
+
+    /**
      * All posts of a given post type (by id) in a given state (tenant-scoped) — used by
      * the SH61 static-file manager. Keyed by id (the {@code post_type_id} FK column on
      * {@code sh_post_unified}), NOT by name: navigating {@code shPostType.name} forces a

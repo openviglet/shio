@@ -110,6 +110,54 @@ test("push --dry-run reports the plan and writes nothing remotely", async () => 
   assert.equal(fetchFn.calls.filter((c) => c.method === "PUT").length, 0);
 });
 
+test("push renames a moved post-type instead of creating and deleting it (SH235)", async () => {
+  // `git mv shio/post-types/Article.json Note.json`: same body, new file name.
+  const body = { title: "Story", namePlural: "Stories", system: false,
+    fields: [{ name: "headline", label: "Headline", widget: "Text", ordinal: 1 }] };
+  const fs = memFs({ "/proj/shio/post-types/Note.json": JSON.stringify({ name: "Note", ...body }) });
+  const fetchFn = fetchScript((url, method) => {
+    if (method === "GET") return { body: [{ name: "Article", ...body }] };
+    return { body: { from: "Article", to: "Note", posts: 3, referencesUpdated: [], notes: [] } };
+  });
+  const stdout = sink();
+  const ctx = { env: {}, cwd: "/proj", stdout, stderr: sink(), fetch: fetchFn, fs };
+
+  const result = await push.run({ prune: true, user: "u", password: "p" }, [], ctx);
+
+  assert.deepEqual(result.renames, [{ from: "Article", to: "Note", explicit: false }]);
+  const posts = fetchFn.calls.filter((c) => c.method === "POST");
+  assert.equal(posts.length, 1);
+  assert.match(posts[0].url, /\/post-type\/Article\/rename$/);
+  assert.deepEqual(JSON.parse(posts[0].body), { to: "Note" });
+  // The two calls this replaces: a PUT that would have created a second type, and a DELETE
+  // aimed at the one that still holds every post written against it.
+  assert.equal(fetchFn.calls.filter((c) => c.method === "PUT").length, 0);
+  assert.equal(fetchFn.calls.filter((c) => c.method === "DELETE").length, 0);
+  assert.match(stdout.text, /Article renamed to Note/);
+  // ...and the half the server cannot do is said out loud.
+  assert.match(stdout.text, /shio\/content/);
+});
+
+test("push refuses an ambiguous rename before writing anything (SH235)", async () => {
+  const body = { title: "Story", system: false,
+    fields: [{ name: "headline", label: "Headline", widget: "Text", ordinal: 1 }] };
+  const fs = memFs({ "/proj/shio/post-types/Note.json": JSON.stringify({ name: "Note", ...body }) });
+  const fetchFn = fetchScript((url, method) => {
+    if (method === "GET") return { body: [{ name: "Article", ...body }, { name: "Story", ...body }] };
+    return { body: {} };
+  });
+  const stderr = sink();
+  const ctx = { env: {}, cwd: "/proj", stdout: sink(), stderr, fetch: fetchFn, fs };
+
+  const result = await push.run({ prune: true, user: "u", password: "p" }, [], ctx);
+
+  assert.equal(result.exitCode, 1);
+  assert.match(stderr.text, /cannot tell what "Note" is/);
+  assert.match(stderr.text, /movedFrom/);
+  // Nothing written: a coin flip here moves a content model's posts to the wrong type.
+  assert.equal(fetchFn.calls.filter((c) => c.method !== "GET").length, 0);
+});
+
 test("push --check exits non-zero on drift and writes nothing", async () => {
   const local = JSON.stringify({ name: "News", title: "News", fields: [] });
   const fs = memFs({ "/proj/shio/post-types/News.json": local });

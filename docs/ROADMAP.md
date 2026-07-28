@@ -354,6 +354,11 @@
 > session on the CDA path (which is why the Universal Editor could not save), and `/graphql`'s
 > "no Mutation" premise is now a build failure carrying the decision made in advance.
 
+> ✅ **SH235 and SH236 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: `shio push` renames a
+> post-type instead of creating and deleting one (two signals, ambiguity refused, the source kept
+> out of `--prune`'s way), and deleting a type content still points at is a teaching 409 naming
+> the count instead of a constraint violation dressed as a server fault.
+>
 > **What finishing the block opened (SH235–SH240).** Four of the six come from following one
 > thread each to its client: SH163's rename has no CLI verb and no guard on the delete it
 > replaces (SH235, SH236), SH165's paging quietly narrowed two things the browser used to do over
@@ -361,8 +366,6 @@
 > to scale (SH239). SH238 is the one SH233 could not close: the defect lived behind a comment
 > because nothing in this repository drives that editor at all.
 
-- 📋 **SH235** (deps: SH163 ✅, SH150 ✅) **A renamed post-type file still pushes as a create, and `--prune` aims a delete at the type it replaced** — the rename op exists on the server now, and `shio push` cannot reach it: the tree is keyed by file name, so renaming `shio/post-types/Article.json` to `Note.json` converges as "create `Note`" plus, with `--prune`, "delete `Article`" — the exact create-and-orphan pair SH163 was filed to remove, with a delete on the end. SH150's three-signal move detection is the shape (a `movedFrom:` key, identical content at a vanished name, ambiguity refused rather than guessed), and the same run must rewrite the `type:` in `shio/content/**` and in any document naming the old type, which SH163's response only *reports*. → §XIV.12
-- 📋 **SH236** (deps: SH163 ✅) **Deleting a post-type that still has content is a 500, not a refusal** — `DELETE /api/v2/post-type/{name}` checks only the `system` flag, and `sh_post_unified.post_type_id → ShPostType` is `onDelete NO ACTION`, so the delete raises a constraint violation the caller reads as a server fault. It should be a teaching **409** naming how many posts use the type and pointing at the two real options (rename it, or delete the content first) — which is also what makes SH235's `--prune` path safe to build on. → §XIV.13
 - 📋 **SH237** (deps: SH165 ✅) **"Select everything" now means "everything loaded"** — the batch selection is built from the rows in the browser, and since the listing pages those are one page. A curator who picks *Select → Everything* and then *Delete* on a folder of five hundred posts deletes fifty, silently, which is the P7 surprise paging introduces if nothing follows it. Either the selection becomes a server-side predicate with a count ("all 500 matching"), or the labels say what they select — and the *count* the confirmation dialog shows has to be the one that will actually be acted on. → §XIV.14
 - 📋 **SH238** (deps: SH233 ✅, SH182 ✅) **The Universal Editor is driven by nothing** — SH233's defect survived because every test in this repository builds the request in Java or mocks the client, and the one comment that described the mechanism described it wrongly. The editor needs a front end to embed, so full coverage waits on Block P; the cheap half does not — SH182's harness can assert that the editor's PATCH reaches the CDA authenticated as the token rather than the curator, which is the single fact the whole feature rests on. → §XIV.15
 - 💭 **SH239** (deps: SH164 ✅) **The attribution floors claim to scale and measure one size** — addressing and the lint are the two sources SH164 says grow with the site, and both are measured on a fixture of five posts, so the claim that matters most is the one argued rather than asserted. Two fixture sizes and an assertion that the ratio *rises* with the second would make "it grows with the content" a measurement; it also decides whether the floors belong at the small size or the large one. → §XIV.16

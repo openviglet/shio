@@ -621,7 +621,13 @@ stale; there is no console post-type controller.)
   report, not a model to overwrite.
 - `PUT /api/v2/post-type/{name}` — **upsert**, idempotent by name (what `shio push` converges
   with); rejects system types (409), unknown widgets (400)
-- `DELETE /api/v2/post-type/{name}` — delete a non-system type (204/404/409)
+- `DELETE /api/v2/post-type/{name}` — delete a non-system type (204/404/409). **A type content
+  still points at is a teaching 409 naming the count (SH236)** — it used to be a *500*, because
+  the check was the `system` flag alone and `sh_post_unified.post_type_id` is `onDelete NO ACTION`,
+  so the database refused with a constraint violation the caller reads as a server fault. The
+  count is what makes it actionable (rename vs retire), and **trashed posts are counted too and
+  named separately**: a trashed row still holds the reference, so a refusal saying "0 posts"
+  followed by a 500 would be the worst of both.
 
 **Creating a site is `site.upsert` on the batch surface (SH170)** — addressed `site:<name>`,
 idempotent, and it creates a **blank** site (`ShSiteWriteService.createBlank`), not a clone of the
@@ -659,6 +665,22 @@ does not do is touch project files: `shio/content/**` frontmatter `type:` and a 
 document's `type` name the post-type too, and the response's `notes` say so rather than the
 server writing a file it does not own. The console's API-name field stays read-only and grows a
 **Rename** button beside it.
+
+**`shio push` reaches it (SH235).** A renamed `shio/post-types/*.json` used to converge as a
+create plus — with `--prune` — a delete aimed at the type it replaced; now `detectTypeRenames`
+finds it from **two signals**, SH150's shape applied to the model: an explicit `"movedFrom":
+"<old name>"` (an instruction `pull` never writes, ignored once the source is gone, and the only
+signal that survives a rename *plus* an edit) and an **identical body** under a new name (the
+plain `git mv`). Three rules carry over: **ambiguity is refused** before anything is written and
+names the candidates; a **plausible but unprovable** pair (same field names, different bodies) is
+*printed* with the `movedFrom` line to add, because silence is how a delete-plus-create destroys
+content quietly; and a rename's source leaves `removed`, or `--prune` deletes the type the rename
+just preserved. Renames are applied **before** upserts (an upsert on the new name first would
+create the second type this exists to prevent), a rename-only change needs **no** upsert at all
+(so `--check` is quiet on the next run), and `movedFrom` is stripped from the body — it is an
+instruction to the CLI, not a field of the model. The content-tree half is *reported*, not
+rewritten: a post-type rename leaves `shio/content/**` declaring the old `type:`, and the command
+says which name to look for.
 
 **Cascade gotcha:** `ShPostTypeAttr` maps `shWidget`/`shPostType`/`shParentPostTypeAttr` as
 `@ManyToOne(cascade=ALL)`, so `ShPostTypeAdminService` detaches those before the

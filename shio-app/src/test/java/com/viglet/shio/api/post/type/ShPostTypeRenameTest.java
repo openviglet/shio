@@ -235,6 +235,40 @@ class ShPostTypeRenameTest {
         assertThat(shPostTypeRepository.findByName(from)).isNotNull();
     }
 
+    // ── SH236: the delete this rename is the alternative to ────────────────────────────
+
+    @Test
+    @DisplayName("deleting a post-type that content points at teaches with the count")
+    void deleteRefusesATypeInUse() throws Exception {
+        String name = type("StillUsed", false, false);
+        createPost(name, "A page");
+        createPost(name, "Another page");
+
+        // It used to be a 500: the delete checked the `system` flag and nothing else, and the
+        // post FK is onDelete NO ACTION — so the database refused with a constraint violation the
+        // caller reads as a server fault. The count is what separates "rename it" from "retire
+        // it", which is why it is in the body rather than just the status.
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete(PATH + "/" + name).principal(principal))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("2 post(s)")))
+                .andExpect(jsonPath("$.fix").value(org.hamcrest.Matchers.containsString("rename")));
+
+        assertThat(shPostTypeRepository.findByName(name)).isNotNull();
+    }
+
+    @Test
+    @DisplayName("an unused post-type still deletes")
+    void deleteStillWorksWithoutContent() throws Exception {
+        String name = type("Unused", false, false);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete(PATH + "/" + name).principal(principal))
+                .andExpect(status().isNoContent());
+
+        assertThat(shPostTypeRepository.findByName(name)).isNull();
+    }
+
     // --- fixtures ---
 
     private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder rename(

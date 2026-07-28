@@ -1238,9 +1238,10 @@ leaving to whoever next notices the poll is not free.
 > The reorientation was mostly additive, but it did invalidate some existing choices.
 > Block N spent them → [CHANGELOG.md](CHANGELOG.md) Block N, and so are the tasks that
 > building it opened (SH163–SH167, SH233, SH234). What is left here is the one lesson worth
-> carrying forward (§XIV.4) and the six tasks that **finishing** it opened (§XIV.12–§XIV.17):
-> four from following one shipped thread each to the client it does not reach yet, one the SH233
-> fix could not close, and one where the new floors claim to scale from a single fixture size.
+> carrying forward (§XIV.4) and the tasks that **finishing** it opened (§XIV.14–§XIV.17). Two of
+> the six have already shipped (SH235, SH236 — the CLI's rename and the delete it exposed); what
+> is left is SH165's two quiet narrowings, the editor nothing drives, and the new floors that
+> claim to scale from a single fixture size.
 > Concept spec §10 has the original table.
 
 ### XIV.4 Build-time guard for the `@TenantId` JOINED-join hazard (SH122) — ✅ shipped
@@ -1266,45 +1267,6 @@ the next such class rather than waiting for it to bite.
 input (word boundaries fail on both sides of a derived query name). A lint that
 matches nothing passes silently forever, so its patterns are asserted against the
 exact strings that broke production.
-
-### XIV.12 A renamed post-type file still pushes as a create (SH235)
-
-SH163 put the rename on the server: one operation that keeps the type's id, carries its posts
-and refuses an occupied name. The repo half is untouched, and the repo is where a code-owned
-model is renamed — so the capability exists and the client that most needs it cannot reach it.
-
-The failure is the one SH163 was filed to remove, with an extra step on the end. `shio push`
-keys the tree by file name, so `git mv shio/post-types/Article.json Note.json` converges as
-"create `Note`", and `--prune` then adds "delete `Article`" — a type that still holds every post
-that was ever written against it. Whether that delete succeeds at all is SH236's question; that
-it is *attempted* is this one's.
-
-**SH150 already solved the general shape** and the three signals transfer directly: an explicit
-`movedFrom:` key (the only signal that survives a rename plus a rewrite), identical content at a
-vanished name and a new one (the plain `git mv` case, needing nothing from the author), and
-**ambiguity refused rather than guessed** — two candidate renames are a coin flip with somebody's
-content history on the table. What is new here is the second half: a post-type's name appears in
-`shio/content/**` frontmatter as `type:` and in every desired-state document that declares one,
-so a rename that fixed the model and left those alone converts a working tree into a tree the
-next `push --content` reports as drift. SH163's response *names* those files because the server
-may not write them; the CLI may, and should, in the same run — which is also the answer to the
-question §XIV.1 left open about whether a rename rewrites the documents that reference it.
-
-### XIV.13 Deleting a post-type with content is a 500 (SH236)
-
-Found by following SH235's `--prune` path to the endpoint it would call.
-`ShPostTypeAdminService#delete` guards the `system` flag and nothing else, while
-`sh_post_unified.post_type_id → ShPostType` is `onDelete NO ACTION` — so deleting a type that
-still has posts raises a constraint violation, which reaches the caller as a server fault. Every
-other refusal on this surface is a teaching 4xx (SH80); this one is the single most consequential
-thing a caller can ask of a post-type and it answers with a stack trace.
-
-It should be a **409 naming the count**: "`Article` is used by 42 posts". The count is what makes
-the error actionable, because it distinguishes the two things the caller might have meant — a
-rename (SH163, which keeps the content) or a genuine retirement (delete the content first, and
-the number says how much work that is). Worth deciding at the same time whether a *force* exists;
-the argument against is SH55's, that a reversible trash has no side effects and a post-type
-delete is not reversible, so the safe form is "empty it, then delete it" rather than a flag.
 
 ### XIV.14 "Select everything" now means "everything loaded" (SH237)
 
