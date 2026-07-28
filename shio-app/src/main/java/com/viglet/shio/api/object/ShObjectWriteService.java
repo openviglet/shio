@@ -88,13 +88,13 @@ public class ShObjectWriteService {
      */
     @Transactional
     public List<ShObject> moveTo(String destId, List<String> ids, String actor) {
-        ShObject dest = shObjectRepository.findById(destId).orElse(null);
+        ShObject dest = live(destId);
         List<ShObject> moved = new ArrayList<>();
         if (dest == null) {
             return moved;
         }
         for (String id : ids) {
-            ShObject object = shObjectRepository.findById(id).orElse(null);
+            ShObject object = live(id);
             if (object instanceof ShFolder) {
                 // SH137 — the shared writer, not a local re-parent. It carries the two
                 // guards this path never had: a folder cannot move into its own subtree
@@ -131,6 +131,20 @@ public class ShObjectWriteService {
                 needsUrl ? ShURLFormatter.format(safe(any.getTitle())) : null, actor);
     }
 
+    /**
+     * Resolves an id, treating a trashed folder as absent (SH200).
+     *
+     * <p>{@link ShObjectRepository} resolves polymorphically and knows nothing about the
+     * folder trash, so without this a caller could move live content <em>into</em> a deleted
+     * section — where no listing would ever show it again — or copy a section out of the
+     * trash and resurrect it sideways.</p>
+     */
+    private ShObject live(String id) {
+        return shObjectRepository.findById(id)
+                .filter(object -> !(object instanceof ShFolder folder) || !folder.isTrashed())
+                .orElse(null);
+    }
+
     /** Refuses a move whose destination site already has a different post at {@code furl}. */
     private void requireUrlFree(String postId, String destSiteId, String furl) {
         if (destSiteId == null) {
@@ -147,13 +161,13 @@ public class ShObjectWriteService {
 
     @Transactional
     public List<ShObject> copyTo(String destId, List<String> ids) {
-        ShObject dest = shObjectRepository.findById(destId).orElse(null);
+        ShObject dest = live(destId);
         List<ShObject> copies = new ArrayList<>();
         if (dest == null) {
             return copies;
         }
         for (String id : ids) {
-            ShObject object = shObjectRepository.findById(id).orElse(null);
+            ShObject object = live(id);
             if (object instanceof ShFolder folder) {
                 copies.add(copyFolder(folder, dest));
             } else if (dest instanceof ShFolder destFolder) {

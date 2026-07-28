@@ -69,22 +69,55 @@ public class ShObjectAPI {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    /**
+     * Duplicates objects into {@code destId}.
+     *
+     * <h2>Both ends are authorized (SH201)</h2>
+     *
+     * <p>The destination needs WRITE — that is where the new content lands. The sources
+     * need <b>READ</b>, because a copy is a read of them: without that check, write on any
+     * single folder was enough to lift content out of a subtree the caller was never
+     * granted read on, and the copy is then theirs to keep.</p>
+     */
     @PutMapping("/copyto/{destId}")
     public List<ShObject> copyTo(@PathVariable String destId, @RequestBody List<String> ids) {
         shContentAclService.requireWrite(destId);
+        requireEach(ids, shContentAclService::requireRead);
         return shObjectWriteService.copyTo(destId, ids);
     }
 
     /**
      * Relocates objects. The mover is threaded through because a move is now an
      * audited content change rather than a silent re-parent (SH139).
+     *
+     * <h2>Both ends are authorized (SH201)</h2>
+     *
+     * <p>A move needs WRITE on the <b>sources</b> as well as the destination: from the
+     * owner's point of view a move out of their subtree is a removal, and this endpoint
+     * used to check only where the content was going. The agent path has checked both ends
+     * since SH134/SH137, so this was the console being the looser of the two surfaces —
+     * Block L's invariant read from the other end. The rule to keep is symmetrical: the two
+     * surfaces enforce the same ACL, and whichever is stricter is the correct one.</p>
      */
     @PutMapping("/moveto/{destId}")
     public List<ShObject> moveTo(@PathVariable String destId, @RequestBody List<String> ids,
                                  Principal principal) {
         shContentAclService.requireWrite(destId);
+        requireEach(ids, shContentAclService::requireWrite);
         return shObjectWriteService.moveTo(destId, ids,
                 principal != null ? principal.getName() : null);
+    }
+
+    /**
+     * Applies a permission check to every id in the request body <em>before</em> the write
+     * service runs, so a partially-authorized batch moves nothing at all rather than
+     * relocating the ids that happened to be listed first.
+     */
+    private static void requireEach(List<String> ids, java.util.function.Consumer<String> check) {
+        if (ids == null) {
+            return;
+        }
+        ids.stream().filter(java.util.Objects::nonNull).forEach(check);
     }
 
     /** The explicit ACL grants set directly on an object (SH54); inherited grants are not expanded. */

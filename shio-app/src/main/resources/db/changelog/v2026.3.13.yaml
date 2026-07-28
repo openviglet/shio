@@ -1,0 +1,38 @@
+databaseChangeLog:
+  # SH200 — a folder delete leaves a trace, and can be undone. SH55 gave posts a trash;
+  # a folder delete bypassed it entirely by clearing its subtree through the repository
+  # (`deleteAll`) instead of the post writer, so the most destructive op on the surface
+  # was also the least recoverable and the least observable one.
+  #
+  # This is the folder half of the same soft-delete: a non-null `deleted_date` means the
+  # folder is in the trash. It has to exist because the posts beneath it are trashed
+  # rather than removed, and `sh_post_unified.folder_id → ShObject` is FK onDelete NO
+  # ACTION — the folder row must outlive the delete for its posts to have somewhere to be
+  # restored to. The rows go at purge time, which is where the FK ordering that motivated
+  # the old direct `deleteAll` is satisfied instead.
+  #
+  # Deliberately NOT paired with a Hibernate @SQLRestriction (unlike sh_post_unified):
+  # a restriction on ShFolder would also fire when a @ManyToOne to it is initialized, and
+  # a trashed post's getShFolder() is exactly what the trash listing reads. The exclusion
+  # lives in ShFolderRepository instead.
+  #
+  # Nullable, no backfill (existing folders stay live = null). Type DB-agnostic (TIMESTAMP)
+  # per ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on PostgreSQL
+  # (QUOTE_ALL_OBJECTS does not propagate through `include`, so it is re-declared per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh200-folder-deleted-date
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShFolder
+                columnName: deleted_date
+      changes:
+        - addColumn:
+            tableName: ShFolder
+            columns:
+              - column:
+                  name: deleted_date
+                  type: TIMESTAMP

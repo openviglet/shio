@@ -71,7 +71,7 @@ public class ShObjectNavigationService {
 
     @Transactional(readOnly = true)
     public Optional<ShConsoleListing> list(String objectId) {
-        return shObjectRepository.findById(objectId).map(object -> switch (object) {
+        return live(objectId).map(object -> switch (object) {
             case ShFolder folder -> mapper.listing(folder.getId(),
                     new ArrayList<>(shFolderRepository.findByParentFolderOrderByPositionAsc(folder)),
                     postsInFolder(folder));
@@ -86,11 +86,24 @@ public class ShObjectNavigationService {
 
     @Transactional(readOnly = true)
     public Optional<ShCdaPath> path(String objectId) {
-        return shObjectRepository.findById(objectId).map(object -> switch (object) {
+        return live(objectId).map(object -> switch (object) {
             case ShFolder folder -> mapper.path(siteOf(folder), breadcrumb(folder), folder);
             case ShSite site -> mapper.path(site, List.of(), null);
             default -> mapper.path(null, List.of(), null);
         });
+    }
+
+    /**
+     * Resolves an object id, refusing a folder that is in the trash (SH200).
+     *
+     * <p>Ids resolve polymorphically through {@link ShObjectRepository}, which knows nothing
+     * about the folder trash — {@code ShFolderRepository} is where that exclusion lives. So a
+     * trashed section is unreachable from any listing yet still openable by its own id, which
+     * is how a curator ends up browsing content that is supposed to be deleted.</p>
+     */
+    private Optional<ShObject> live(String objectId) {
+        return shObjectRepository.findById(objectId)
+                .filter(object -> !(object instanceof ShFolder folder) || !folder.isTrashed());
     }
 
     /** All posts in the folder, one row per logical id, DRAFT preferred over PUBLISHED. */

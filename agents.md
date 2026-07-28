@@ -124,6 +124,15 @@ of hiding them, which is the read side of SH168.
 - There is **no** `/api/v2/post` controller — do not add one.
 
 ### Object Operations
+**Both ends are authorized (SH201).** These two used to check `requireWrite(destId)` and nothing
+else, so write on any single folder was enough to relocate content *out of* a subtree the caller
+could not write — a removal, from the owner's point of view — or to copy content they had never
+been granted read on. A move now requires WRITE on every source, a copy requires READ, and the
+checks run over the whole body **before** the write service starts, so a partly-authorized batch
+is refused whole. The rule to keep is symmetrical: **the two surfaces enforce the same ACL, and
+whichever is stricter is the correct one** — the agent path has checked both ends since
+SH134/SH137, and where the console is looser the console is the hole, not the bar.
+
 - `PUT /api/v2/object/copyto/{destFolderId}` - Copy objects (body: `[id1, id2]`)
 - `PUT /api/v2/object/moveto/{destFolderId}` — Move objects (body: `[id1, id2]`).
   **A move relocates and changes nothing else (SH139):** it keeps the post's `furl`
@@ -174,9 +183,36 @@ disk, **keyed by the file post's id** (not the folder tree), under
 
 ### There is NO generic `DELETE /api/v2/object/{id}` endpoint
 Delete must be done by type: `/v2/post-unified/{id}` or `/v2/folder/{id}`.
-(Deleting a folder cascades: `ShFolderWriteService` first removes the unified posts
-in the folder + all descendant folders — the `sh_post_unified.folder_id → ShObject`
-FK is `onDelete NO ACTION`, so they must go before the folder rows.)
+
+**A folder delete is reversible, and it is a delegation (SH200).** It used to clear the subtree
+with `shPostUnifiedRepository.deleteAll` — the repository, not the post writer — which skipped
+the SH55 trash, the SH51 audit and the `DELETE` lifecycle event (so no webhook, and SH38's byte
+cleanup never ran) in one line. That made the *most* destructive op on the surface the *least*
+recoverable and the least observable, which is the inversion the task was filed for. Now every
+post beneath it goes through `ShPostUnifiedWriteService#delete`, so a folder delete means exactly
+what N post deletes mean, and `ShFolder.deleted_date` is stamped down the subtree instead of rows
+being removed — the folder rows have to outlive the gesture, because a trashed post keeps its
+`folder_id` and the `sh_post_unified.folder_id → ShObject` FK is `onDelete NO ACTION`. **The FK
+ordering that motivated the old direct `deleteAll` is satisfied at purge time** (`ShFolderWriteService#purge`),
+which is also where the lifecycle event fires — SH55's rule that a reversible trash has no side
+effects. Beside it: `GET /v2/folder/trash` (one row per deleted *section*, not per folder in it),
+`POST /v2/folder/{id}/untrash`, `DELETE /v2/folder/{id}/purge`, and the console's trash page lists
+sections and posts together.
+- **Every folder read excludes a trashed folder**, in `ShFolderRepository` — its derived finders
+  are spelled out as JPQL with `deletedDate is null`, keeping their names so no call site changed.
+  There is deliberately **no `@SQLRestriction` on `ShFolder`**: it would also fire when a
+  `@ManyToOne` to a folder is initialized, and a trashed post's `getShFolder()` is precisely what
+  the trash listing reads. Ids still resolve polymorphically through `ShObjectRepository`, which
+  knows nothing about this — the three paths that matter guard it by hand, and **SH226** is the
+  open task to make that an invariant rather than a convention.
+- **A restore returns what *that* deletion trashed** — the delete stamps one instant down the
+  subtree and anything marked earlier stays in the trash. Compared on loaded `Instant`s, never in
+  SQL: timestamp equality is a fractional-second promise H2, MariaDB and PostgreSQL do not make
+  the same way.
+- **The audit records the folder *and* each post**, which is what lets the SH109 queue undo a
+  section in one entry — "restore the section" is the gesture a human means. `/agent/changes`
+  resolves a folder address for such an entry (through the trash, since the folder is deleted by
+  then): an entry nobody can address is a change nobody can act on.
 
 **Backend ownership (rebuilt 2026.2 after the nuclear refactor wiped them):**
 - `ShFolderAPI` + `ShFolderWriteService` (`com.viglet.shio.api.folder`)
@@ -427,10 +463,16 @@ a friendly URL are separate namespaces, and a write that guessed wrong would cre
 content in the wrong place silently. CSRF-exempt (stateless callers), authenticated
 like every other API; the SH54 ACL and SH22 quota apply on the agent path identically.
 
-### What bounds an agent — Block L (SH106–SH109)
+### What bounds an agent — Block L (SH106–SH109, SH200, SH201)
 
 **The invariant: the agent path is never a privilege escalation**, and after Block L it is
-not a privilege *superset* either. Three guards, all narrower than what was reachable before:
+not a privilege *superset* either. Three guards, all narrower than what was reachable before.
+
+**And it cuts both ways (SH201).** After the block landed, the agent path was in places
+*stricter* than the console — and where that happens the console is the hole, not the bar. The
+form to carry forward is symmetrical: **the two surfaces enforce the same ACL, and whichever is
+stricter is the correct one.** A curator's session is not a lower bar than an agent's credential,
+it is a different one. That is never a reason to loosen the agent path to match.
 
 - **`AGENT` token scope (SH106).** The credential an agent runs on: writes on
   `/api/v2/agent/**` and `/mcp`, reads drafts like `PREVIEW`, carries `ROLE_AGENT` and
@@ -461,7 +503,16 @@ not a privilege *superset* either. Three guards, all narrower than what was reac
   Console-authenticated and deliberately **not** on the agent namespace. It is a **view over
   the SH51 audit grouped by session id, not a proposal table** — the DRAFT row *is* the
   proposal — so approve = publish the run's drafts and revert reuses SH14 restore + the SH55
-  trash, per entry, reporting what it cannot honestly undo instead of guessing.
+  trash, per entry, reporting what it cannot honestly undo instead of guessing. Since SH200 an
+  entry may name a **folder**: reverting that one restores the whole deleted section, which is
+  the gesture a human means by "undo that", and `approve` skips folder entries because a section
+  has no draft to publish.
+- **A deletion is recoverable at every level (SH200).** `folder.delete` and the console's folder
+  delete put the subtree in the trash rather than erasing it, so the op SH108's confirm token
+  exists to gate is no longer a *harder* delete than deleting each post by hand. What is still
+  open, and worth knowing before relying on the undo: **the trash is console-only** — an agent
+  can fill it and cannot list or restore it (**SH222**) — and **deleting a whole site** still
+  behaves the way a folder delete used to (**SH223**).
 
 ### Post Types — one name-keyed surface (SH16 + SH117)
 **There is one post-type API and it is keyed by name.** The CLI, the agent path and the

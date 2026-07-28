@@ -9,6 +9,7 @@
 package com.viglet.shio.api.folder;
 
 import java.security.Principal;
+import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -97,10 +98,46 @@ public class ShFolderAPI {
         return folder;
     }
 
+    /**
+     * Puts the folder and everything beneath it in the trash (SH200) — reversible via
+     * {@link #untrash}. It used to remove the subtree's posts outright, skipping the trash,
+     * the audit trail and the byte cleanup all at once.
+     */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
+    public ResponseEntity<Void> delete(@PathVariable String id, Principal principal) {
         shContentAclService.requireWrite(id);
-        return shFolderWriteService.delete(id)
+        return shFolderWriteService.delete(id, principal != null ? principal.getName() : null)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
+    }
+
+    /** SH200 — deleted folder sections currently in the trash, newest first. */
+    @GetMapping("/trash")
+    public List<ShFolder> trash() {
+        return shFolderWriteService.listTrash();
+    }
+
+    /**
+     * SH200 — restore a trashed folder section: the folder, its sub-folders and the posts
+     * that went into the trash with it. Mirrors {@code /post-unified/{id}/untrash}.
+     */
+    @PostMapping("/{id}/untrash")
+    public ResponseEntity<Void> untrash(@PathVariable String id, Principal principal) {
+        shContentAclService.requireWrite(id);
+        return shFolderWriteService.restore(id, principal != null ? principal.getName() : null)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
+    }
+
+    /**
+     * SH200 — permanently delete a trashed folder section (irreversible; this is what fires
+     * each post's {@code DELETE} lifecycle event, so the SH12 webhook and the SH38 byte
+     * cleanup run here and not on the reversible delete above).
+     */
+    @DeleteMapping("/{id}/purge")
+    public ResponseEntity<Void> purge(@PathVariable String id) {
+        shContentAclService.requireWrite(id);
+        return shFolderWriteService.purge(id)
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
     }

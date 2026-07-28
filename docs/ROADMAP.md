@@ -74,10 +74,11 @@
 > engine's own asymmetries rather than missing capabilities), **Block K is now complete**
 > (SH102/SH104/SH141/SH144 closed its last four), **Block I is down to SH147**
 > (SH145, SH146, SH148, SH149, SH150, SH198 and SH199 have shipped), J's reconciliation and registry (SH96,
-> SH153–SH156), M's attribution (SH157–SH161, SH174), N's realignment (SH163–SH167), plus
-> SH44–SH47's tenant work and SH110. The highest-value one left is **SH153** (a blueprint plan
-> writes and rolls back purely so its content half can resolve post-types, so a plan cannot run
-> on a read-only credential or a replica).
+> SH153–SH156), **Block L is down to SH110** (SH200 and SH201 have shipped, and closing them
+> opened SH222–SH226), M's attribution (SH157–SH161, SH174), N's realignment (SH163–SH167), plus
+> SH44–SH47's tenant work. The highest-value one left is **SH223** (deleting a *site* is SH200
+> one level up: it takes every post past the trash, the audit and the byte cleanup, with the
+> largest blast radius on the surface and no record of what it destroyed).
 >
 > **What driving it end to end found (SH168–SH175).** A whole site — model, folder tree,
 > thirteen pages, a file projection, a CI gate — was built over the agent surface alone, and
@@ -279,9 +280,22 @@
 > identity: a session minted per request would have produced two hundred one-change sessions,
 > which is the same as having none.
 
+> ✅ **SH200 and SH201 have shipped** → [CHANGELOG.md](CHANGELOG.md) Block L: a folder delete
+> trashes its subtree through the post writer instead of erasing it past the trash, the audit and
+> the byte cleanup; and the console's move/copy authorizes its sources, not only its destination.
+>
+> **What driving those two found (SH222–SH226).** The block's invariant now cuts both ways —
+> *whichever surface is stricter is the correct one* — and applying it turned up the same
+> asymmetry in three more places: the trash an agent can fill but not read, the site delete that
+> is SH200 one level up, and a permanent deletion nobody records. Everything below is a
+> follow-up; nothing in Block L is unbuilt except SH110.
+
 - 💭 **SH110** (deps: SH106 ✅, SH45) **Agent budget guards** — per-session call/write/storage ceilings, layered on SH45's per-tenant metering. Still blocked on SH45: building the ceiling first means a second metering mechanism to reconcile later. A runaway agent should hit a ceiling and report it, not a bill. → §XII.5
-- 📋 **SH200** (deps: SH55 ✅, SH108 ✅, SH109 ✅, SH38 ✅) **A folder delete is the one write that leaves no trace** — its cascade calls `shPostUnifiedRepository.deleteAll` directly instead of the post writer, so every post beneath it skips the SH55 trash (unrecoverable, where `post.delete` is undoable), the SH51 audit (invisible to `/agent/changes` and unrevertable by the SH109 queue) and the `DELETE` lifecycle event (no webhook, and SH38's cleanup listener never runs, so the file bytes stay on disk forever). The most destructive op on the surface — the one SH108's confirm token exists to gate — is a *harder* delete than deleting each post by hand. → §XII.6
-- 📋 **SH201** (deps: SH54 ✅, SH139 ✅) **The console's move and copy authorize only the destination** — `ShObjectAPI` checks `requireWrite(destId)` and never the objects being moved, so write on any one folder is enough to relocate content out of a subtree the caller cannot write. The agent path already checks both ends (SH134/SH137). Block L's invariant is that the agent path is never a privilege *superset*; this is the console being the looser of the two, which is the same bug wearing the other hat. → §XII.7
+- 📋 **SH222** (deps: SH200 ✅, SH55 ✅) **An agent can fill the trash and cannot read it** — `post.delete` and `folder.delete` both answer "to trash (restorable)", and that is the only place the trash appears on the agent surface: there is no `/agent` read, no MCP tool and no `shio` command that lists or restores it. So the undo the protocol *advertises* is reachable only by a human in the console, which inverts P1 on the one capability an agent most needs after a mistake — and makes the reassurance in the change set something the caller cannot act on. → §XII.6
+- 📋 **SH223** (deps: SH200 ✅, SH38 ✅, SH51 ✅) **Deleting a site is SH200 one level up, and worse** — `ShSiteWriteService.delete` removes the site entity and lets the JPA cascade take its folders, so every post in the site skips the trash, the audit, the change feed and the `DELETE` lifecycle event exactly as a folder delete used to. It is the largest blast radius on the surface and the only one with no record of what it destroyed. The fix is the same delegation SH200 made, applied through the folder writer rather than a third cascade. → §XII.7
+- 📋 **SH224** (deps: SH55 ✅, SH200 ✅) **A permanent deletion is the one write nobody records** — `purge` fires the `DELETE` lifecycle event so the webhook and SH38's byte cleanup run, and writes no SH51 audit row at all. "Who destroyed this, and when" is therefore unanswerable for the *irreversible* half of the trash, while the reversible half is fully recorded. A folder purge can now take forty posts in one call, which is what makes the gap worth closing. → §XII.8
+- 📋 **SH225** (deps: SH54 ✅, SH201 ✅) **The ACL check depends on `open-in-view` and does not say so** — `requireRead`/`requireWrite` are unannotated and reach `canRead`/`canWrite` by self-invocation, so the `@Transactional` proxy is bypassed and the folder-chain walk runs with whatever session the request happens to have. In the app that is `spring.jpa.open-in-view`; anywhere else — a scheduled job, an internal call, a test — it is a `LazyInitializationException` *instead of* a permission decision. A guard that fails open-or-explodes depending on a setting whose purpose is to be turned off is not a guard. → §XII.9
+- 💭 **SH226** (deps: SH200 ✅) **A trashed folder is excluded by convention, not by invariant** — the exclusion lives in `ShFolderRepository`'s finders, and ids also resolve polymorphically through `ShObjectRepository`, which knows nothing about it. SH200 guarded the three paths that matter by hand; the next read that resolves a folder id there will silently show deleted content. This is the SH128 `ShFolderSite` shape exactly, and that one earned a lint test for the same reason. → §XII.10
 
 ## Block M — Token economy (measured)
 

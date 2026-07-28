@@ -9,21 +9,31 @@
 package com.viglet.shio.api.folder;
 
 import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.history.ShContentAction;
+import com.viglet.shio.api.history.ShContentAuditService;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.ShObject;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.object.ShObjectRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.tenant.ShTenantContext;
 import com.viglet.shio.url.ShURLFormatter;
 
 /**
@@ -35,20 +45,37 @@ import com.viglet.shio.url.ShURLFormatter;
  * created under another {@link ShFolder} it becomes a child. Group/user ACLs are
  * inherited from the parent object so navigation security stays consistent.</p>
  *
+ * <p><b>It is also the one place that knows what deleting a subtree means</b> (SH200):
+ * {@link #delete} trashes it, {@link #restore} brings it back and {@link #purge} makes it final.
+ * Both console and agent paths call these, for the same reason both call {@link #move} — a second
+ * copy of "delete a section" is how the console came to have one that skipped the trash, the
+ * audit trail and the byte cleanup.</p>
+ *
  * @author Alexandre Oliveira
  */
 @Service
 public class ShFolderWriteService {
 
+    private static final List<ShPostState> ALL_STATES = List.of(ShPostState.DRAFT, ShPostState.PUBLISHED);
+
     private final ShFolderRepository shFolderRepository;
     private final ShObjectRepository shObjectRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
+    private final ShPostUnifiedWriteService shPostUnifiedWriteService;
+    private final ShContentAuditService shContentAuditService;
+
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
 
     public ShFolderWriteService(ShFolderRepository shFolderRepository, ShObjectRepository shObjectRepository,
-                                ShPostUnifiedRepository shPostUnifiedRepository) {
+                                ShPostUnifiedRepository shPostUnifiedRepository,
+                                ShPostUnifiedWriteService shPostUnifiedWriteService,
+                                ShContentAuditService shContentAuditService) {
         this.shFolderRepository = shFolderRepository;
         this.shObjectRepository = shObjectRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
+        this.shPostUnifiedWriteService = shPostUnifiedWriteService;
+        this.shContentAuditService = shContentAuditService;
     }
 
     /**
@@ -192,24 +219,236 @@ public class ShFolderWriteService {
         }
     }
 
+    /**
+     * Puts a folder and everything beneath it in the trash — <b>reversible</b> (SH200).
+     *
+     * <h2>What this used to be</h2>
+     *
+     * <p>The cascade called {@code shPostUnifiedRepository.deleteAll(...)} — the repository,
+     * not the post writer. Everything Block L built hangs off that writer, so one line
+     * skipped all of it at once: the SH55 trash (the rows were simply gone), the SH51 audit
+     * (nothing recorded, so the deletion was invisible to the SH88 change feed and there was
+     * nothing for the SH109 queue to revert) and the {@code DELETE} lifecycle event (no SH12
+     * webhook, and SH38's cleanup listener never ran, so the file bytes leaked forever).</p>
+     *
+     * <p>The inversion that made it urgent rather than untidy: the <em>most</em> destructive
+     * operation on the surface — the one SH108's confirm token exists to gate — was the
+     * <em>least</em> recoverable and the least observable. A curator who deleted forty pages
+     * one at a time could restore them; the same curator using the folder's delete button
+     * could not.</p>
+     *
+     * <h2>Why the subtree is trashed rather than purged</h2>
+     *
+     * <p>Composing instead of forking (P10 inside the engine, and SH139's rule one level
+     * down): each post goes through {@link ShPostUnifiedWriteService#delete}, so a folder
+     * delete means exactly what forty post deletes mean. That is the recoverable answer, and
+     * it is why {@link ShFolder#getDeletedDate()} had to exist: a trashed post keeps its
+     * {@code folder_id}, so the folder rows must outlive the gesture. The FK ordering that
+     * motivated the old direct {@code deleteAll} is satisfied at {@link #purge} time
+     * instead.</p>
+     *
+     * <p>No lifecycle event fires here, which is SH55's rule, not an omission: a reversible
+     * trash has no side effects, and the webhook plus the byte cleanup run on the
+     * irreversible purge. One audit entry is written for the folder <em>and</em> one per post
+     * (by the post writer), because SH109's revert operates per entry and "restore the
+     * section" is the gesture a human wants — reverting the folder's entry restores the whole
+     * subtree in one move.</p>
+     *
+     * @param actor who deleted it, recorded in the audit trail
+     * @return {@code false} when no live folder has that id
+     */
     @Transactional
-    public boolean delete(String id) {
+    public boolean delete(String id, String actor) {
         return shFolderRepository.findById(id).map(folder -> {
-            // sh_post_unified.folder_id → ShObject is FK onDelete NO ACTION, so every
-            // unified post under this folder (and its descendants) must be removed
-            // before the folder rows go. The ShFolder#shFolders cascade then drops the
-            // now post-free sub-folder ShObject rows.
-            deletePostsRecursively(folder);
-            shFolderRepository.delete(folder);
+            Instant trashedAt = Instant.now();
+            for (ShFolder node : subtree(folder, false)) {
+                trashPostsIn(node, actor);
+                node.setDeletedDate(trashedAt);
+                shFolderRepository.save(node);
+            }
+            shContentAuditService.record(ShContentAction.DELETE, folder.getId(),
+                    siteIdOf(folder), folder.getName(), actor);
             return true;
         }).orElse(false);
     }
 
-    private void deletePostsRecursively(ShFolder folder) {
-        for (ShFolder child : shFolderRepository.findByParentFolder(folder)) {
-            deletePostsRecursively(child);
+    /**
+     * Restores a trashed folder and the content that went into the trash with it (SH200).
+     *
+     * <h2>What comes back, and what does not</h2>
+     *
+     * <p>Only what this deletion trashed. A post or sub-folder that was <em>already</em> in
+     * the trash when the section was deleted stays there: the deletion stamped one instant
+     * down the subtree, so anything marked earlier than the folder's own
+     * {@code deletedDate} was somebody else's decision and is not this restore's business.
+     * Comparison is on the loaded instants rather than in SQL — an equality test against a
+     * timestamp column is a promise about fractional-second precision that three database
+     * engines do not make the same way.</p>
+     *
+     * <p>A folder whose parent is itself trashed is refused: restoring it would attach a
+     * live folder to a deleted one, which is invisible in navigation and reads to the
+     * curator as a restore that did nothing. Restore the parent — it brings this one with
+     * it.</p>
+     *
+     * @return {@code false} when the id is not a trashed folder, or its parent is trashed
+     */
+    @Transactional
+    public boolean restore(String id, String actor) {
+        Optional<ShFolder> found = shFolderRepository.findAnyById(id).filter(ShFolder::isTrashed);
+        if (found.isEmpty()) {
+            return false;
         }
-        List<ShPostState> states = List.of(ShPostState.DRAFT, ShPostState.PUBLISHED);
-        shPostUnifiedRepository.deleteAll(shPostUnifiedRepository.findByShFolderAndStateIn(folder, states));
+        ShFolder folder = found.get();
+        if (folder.getParentFolder() != null && folder.getParentFolder().isTrashed()) {
+            return false;
+        }
+        Instant trashedAt = folder.getDeletedDate();
+        List<ShFolder> restored = new ArrayList<>();
+        for (ShFolder node : subtree(folder, true)) {
+            if (node.isTrashed() && !node.getDeletedDate().isBefore(trashedAt)) {
+                node.setDeletedDate(null);
+                shFolderRepository.save(node);
+                restored.add(node);
+            }
+        }
+        for (ShPostUnified post : trashedPostsIn(restored)) {
+            if (!post.getDeletedDate().isBefore(trashedAt)) {
+                shPostUnifiedWriteService.restoreFromTrash(post.getId(), actor);
+            }
+        }
+        shContentAuditService.record(ShContentAction.RESTORE, folder.getId(),
+                siteIdOf(folder), folder.getName(), actor);
+        return true;
+    }
+
+    /**
+     * Permanently removes a trashed folder subtree (SH200) — irreversible.
+     *
+     * <p>Posts go through {@link ShPostUnifiedWriteService#purge}, which is what fires the
+     * {@code DELETE} lifecycle event: the SH12 webhook is delivered and SH38's listener
+     * removes the stored bytes, neither of which the old cascade did at all. Only then do the
+     * folder rows go — this is where the {@code folder_id} FK ordering has to be satisfied,
+     * and it is satisfied by having reached it after the posts.</p>
+     *
+     * @return {@code false} when the id is not a trashed folder
+     */
+    @Transactional
+    public boolean purge(String id) {
+        Optional<ShFolder> found = shFolderRepository.findAnyById(id).filter(ShFolder::isTrashed);
+        if (found.isEmpty()) {
+            return false;
+        }
+        List<ShFolder> nodes = subtree(found.get(), true);
+        // Anything still live under a trashed folder is trashed first so it leaves the same
+        // way: purge only sees trashed rows, and a post left behind here would still hold the
+        // folder_id FK and block the folder rows.
+        for (ShFolder node : nodes) {
+            for (ShPostUnified post : livePostsIn(node)) {
+                shPostUnifiedWriteService.delete(post.getId(), null);
+            }
+        }
+        for (ShPostUnified post : trashedPostsIn(nodes)) {
+            shPostUnifiedWriteService.purge(post.getId());
+        }
+        // A purge is native DML (it has to be — @SQLRestriction hides the rows it deletes), so
+        // the post entities it removed are still managed here. Flushing and clearing before the
+        // folder goes is what keeps Hibernate from ordering a folder delete ahead of a post it
+        // believes still references it — which surfaces as a TransientPropertyValueException
+        // naming the folder, several frames away from the native delete that caused it.
+        entityManager.flush();
+        entityManager.clear();
+        // The ShFolder#shFolders cascade drops the now post-free sub-folder rows.
+        shFolderRepository.findAnyById(id).ifPresent(shFolderRepository::delete);
+        return true;
+    }
+
+    /**
+     * The trash's top level (SH200): one row per deleted <em>section</em>.
+     *
+     * <p>A trashed folder whose parent is not also trashed. Listing every folder in a
+     * deleted subtree would imply the curator made eleven separate decisions and would bury
+     * the one entry they are looking for.</p>
+     */
+    @Transactional(readOnly = true)
+    public List<ShFolder> listTrash() {
+        List<ShFolder> roots = new ArrayList<>();
+        for (ShFolder folder : shFolderRepository.findTrashedFolders()) {
+            ShFolder parent = folder.getParentFolder();
+            if (parent == null || !parent.isTrashed()) {
+                roots.add(folder);
+            }
+        }
+        return List.copyOf(roots);
+    }
+
+    /**
+     * The folder and its descendants, deepest last.
+     *
+     * @param includeTrashed whether to walk into folders already in the trash — {@code true}
+     *                       for restore and purge, which operate <em>on</em> the trash, and
+     *                       {@code false} for a delete, which must not re-stamp a subtree
+     *                       somebody trashed earlier and thereby fold it into this deletion
+     */
+    private List<ShFolder> subtree(ShFolder root, boolean includeTrashed) {
+        List<ShFolder> nodes = new ArrayList<>();
+        Deque<ShFolder> pending = new ArrayDeque<>();
+        Set<String> seen = new LinkedHashSet<>();
+        pending.add(root);
+        while (!pending.isEmpty()) {
+            ShFolder current = pending.removeFirst();
+            if (!seen.add(current.getId())) {
+                continue;
+            }
+            nodes.add(current);
+            List<ShFolder> children = includeTrashed
+                    ? shFolderRepository.findByParentFolderIncludingTrashed(current)
+                    : new ArrayList<>(shFolderRepository.findByParentFolder(current));
+            pending.addAll(children);
+        }
+        return nodes;
+    }
+
+    private void trashPostsIn(ShFolder folder, String actor) {
+        for (ShPostUnified post : livePostsIn(folder)) {
+            shPostUnifiedWriteService.delete(post.getId(), actor);
+        }
+    }
+
+    /** One row per logical post id — the writer moves both states, so DRAFT+PUBLISHED is one call. */
+    private List<ShPostUnified> livePostsIn(ShFolder folder) {
+        List<ShPostUnified> posts = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        for (ShPostUnified row : shPostUnifiedRepository.findByShFolderAndStateIn(folder, ALL_STATES)) {
+            if (seen.add(row.getId())) {
+                posts.add(row);
+            }
+        }
+        return posts;
+    }
+
+    /** Trashed posts across a set of folders, one row per logical id. */
+    private List<ShPostUnified> trashedPostsIn(List<ShFolder> folders) {
+        if (folders.isEmpty()) {
+            return List.of();
+        }
+        List<String> folderIds = folders.stream().map(ShFolder::getId).toList();
+        List<ShPostUnified> posts = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        for (ShPostUnified row : shPostUnifiedRepository.findTrashedByFolderIds(folderIds, tenantId())) {
+            if (row.getDeletedDate() != null && seen.add(row.getId())) {
+                posts.add(row);
+            }
+        }
+        return posts;
+    }
+
+    private static String siteIdOf(ShFolder folder) {
+        ShSite site = ShFolderSite.of(folder);
+        return site == null ? null : site.getId();
+    }
+
+    private static String tenantId() {
+        String tenant = ShTenantContext.getTenantId();
+        return tenant != null ? tenant : ShTenantContext.DEFAULT_TENANT;
     }
 }

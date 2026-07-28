@@ -28,6 +28,7 @@ import com.viglet.shio.persistence.model.history.ShHistory;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.spring.security.auth.ShApiTokenContext;
@@ -76,6 +77,7 @@ public class ShAgentChangesService {
 
     private final ShHistoryRepository shHistoryRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
+    private final ShFolderRepository shFolderRepository;
     private final ShAgentSiteAccess siteAccess;
     private final ShAddressResolver shAddressResolver;
     private final ShAgentProperties properties;
@@ -83,12 +85,14 @@ public class ShAgentChangesService {
 
     public ShAgentChangesService(ShHistoryRepository shHistoryRepository,
                                  ShPostUnifiedRepository shPostUnifiedRepository,
+                                 ShFolderRepository shFolderRepository,
                                  ShAgentSiteAccess siteAccess,
                                  ShAddressResolver shAddressResolver,
                                  ShAgentProperties properties,
                                  ShAgentIncidentStore incidentStore) {
         this.shHistoryRepository = shHistoryRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
+        this.shFolderRepository = shFolderRepository;
         this.siteAccess = siteAccess;
         this.shAddressResolver = shAddressResolver;
         this.properties = properties;
@@ -293,14 +297,24 @@ public class ShAgentChangesService {
         return List.copyOf(changes);
     }
 
-    /** DRAFT-preferred, like every other agent read, so the address matches what a read returns. */
-    private Optional<String> addressOf(String postId) {
-        List<ShPostUnified> rows = shPostUnifiedRepository.findById(postId);
+    /**
+     * DRAFT-preferred, like every other agent read, so the address matches what a read
+     * returns — and a {@code folder:} address when the audited object is a folder (SH200).
+     *
+     * <p>A folder delete is now recorded, so the feed carries entries whose object is a
+     * folder rather than a post. The folder lookup is the one that may see a trashed row on
+     * purpose: the entry the caller most needs to address is the deletion, and a deletion
+     * that arrived without an address would be a change nobody can act on.</p>
+     */
+    private Optional<String> addressOf(String objectId) {
+        List<ShPostUnified> rows = shPostUnifiedRepository.findById(objectId);
         return rows.stream()
                 .filter(row -> row.getState() == ShPostState.DRAFT)
                 .findFirst()
                 .or(() -> rows.stream().findFirst())
-                .map(row -> shAddressResolver.addressOf(row).toString());
+                .map(row -> shAddressResolver.addressOf(row).toString())
+                .or(() -> shFolderRepository.findAnyById(objectId)
+                        .map(folder -> shAddressResolver.addressOf(folder).toString()));
     }
 
     /**

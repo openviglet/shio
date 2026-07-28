@@ -5,25 +5,60 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
-import { Trash2, RotateCcw, X } from "lucide-react"
+import { Trash2, RotateCcw, X, Folder, FileText } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
-import type { ShPostUnified } from "@/models/post-unified/post-unified"
+import { ShFolderService } from "@/services/folder/folder.service"
 
-const service = new ShPostUnifiedService()
+const postService = new ShPostUnifiedService()
+const folderService = new ShFolderService()
+
+/**
+ * One row of the trash. Posts and deleted folder sections share it (SH200): the curator threw
+ * away one thing and wants it back, and which table the row came from is not what they are
+ * looking for. `kind` is what routes restore and purge to the right endpoint.
+ */
+type TrashRow = {
+  kind: "post" | "folder"
+  id: string
+  title: string
+  label?: string
+}
 
 export default function TrashPage() {
   const { t } = useTranslation()
   const { resetBreadcrumb } = useBreadcrumb()
-  const [items, setItems] = useState<ShPostUnified[]>([])
+  const [items, setItems] = useState<TrashRow[]>([])
   const [loading, setLoading] = useState(false)
 
   const load = useCallback(() => {
     setLoading(true)
-    service.trash().then(setItems).catch(() => setItems([])).finally(() => setLoading(false))
-  }, [])
+    // Both halves in one list. A read that fails must not hide the other's rows, so each
+    // falls back to empty instead of rejecting the pair.
+    Promise.all([
+      postService.trash().catch(() => []),
+      folderService.trash().catch(() => []),
+    ])
+      .then(([posts, folders]) =>
+        setItems([
+          ...folders.map<TrashRow>((f) => ({
+            kind: "folder",
+            id: f.id,
+            title: f.name || "(untitled)",
+            label: t("content.trashSection"),
+          })),
+          ...posts.map<TrashRow>((p) => ({
+            kind: "post",
+            id: p.id,
+            title: p.title || "(untitled)",
+            label: p.shPostType?.title || p.shPostType?.name,
+          })),
+        ]),
+      )
+      .finally(() => setLoading(false))
+  }, [t])
 
   useEffect(() => {
     resetBreadcrumb([
@@ -33,15 +68,28 @@ export default function TrashPage() {
     load()
   }, [resetBreadcrumb, t, load])
 
-  const restore = async (id: string) => {
-    await service.untrash(id).then(() => toast.success(t("content.trashRestored"))).catch(() => toast.error(t("common.error")))
-    setItems((prev) => prev.filter((p) => p.id !== id))
+  const drop = (row: TrashRow) =>
+    setItems((prev) => prev.filter((r) => !(r.kind === row.kind && r.id === row.id)))
+
+  const restore = async (row: TrashRow) => {
+    const call = row.kind === "folder" ? folderService.untrash(row.id) : postService.untrash(row.id)
+    await call
+      .then(() => toast.success(t("content.trashRestored")))
+      .catch(() => toast.error(t("common.error")))
+    drop(row)
   }
 
-  const purge = async (id: string, name?: string) => {
-    if (!confirm(t("content.trashPurgeConfirm", { name: name || "" }))) return
-    await service.purge(id).then(() => toast.success(t("content.trashPurged"))).catch(() => toast.error(t("common.error")))
-    setItems((prev) => prev.filter((p) => p.id !== id))
+  const purge = async (row: TrashRow) => {
+    const message =
+      row.kind === "folder"
+        ? t("content.trashPurgeSectionConfirm", { name: row.title })
+        : t("content.trashPurgeConfirm", { name: row.title })
+    if (!confirm(message)) return
+    const call = row.kind === "folder" ? folderService.purge(row.id) : postService.purge(row.id)
+    await call
+      .then(() => toast.success(t("content.trashPurged")))
+      .catch(() => toast.error(t("common.error")))
+    drop(row)
   }
 
   return (
@@ -73,19 +121,28 @@ export default function TrashPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.title || "(untitled)"}</TableCell>
+                  {items.map((row) => (
+                    <TableRow key={`${row.kind}-${row.id}`}>
+                      <TableCell className="font-medium">
+                        <span className="flex items-center gap-2">
+                          {row.kind === "folder" ? (
+                            <Folder className="h-4 w-4 text-orange-500" />
+                          ) : (
+                            <FileText className="h-4 w-4 text-blue-500" />
+                          )}
+                          {row.title}
+                        </span>
+                      </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{item.shPostType?.title || item.shPostType?.name}</Badge>
+                        <Badge variant="outline">{row.label}</Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => restore(item.id)}>
+                          <Button variant="outline" size="sm" onClick={() => restore(row)}>
                             <RotateCcw className="mr-2 h-4 w-4" /> {t("content.trashRestore")}
                           </Button>
                           <Button variant="ghost" size="sm" className="text-destructive"
-                            onClick={() => purge(item.id, item.title)}>
+                            onClick={() => purge(row)}>
                             <X className="mr-2 h-4 w-4" /> {t("content.trashPurge")}
                           </Button>
                         </div>

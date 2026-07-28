@@ -82,6 +82,7 @@ class ShAgentChangesTest {
     private String postTypeName;
     private String base;
     private String livePostId;
+    private String liveFolderId;
 
     @BeforeAll
     void setup() {
@@ -130,6 +131,7 @@ class ShAgentChangesTest {
                     new Op(ShAgentBatchService.POST_UPSERT, "post:" + siteName + base + "/live",
                             postTypeName, base, headline("Live page")))),
                     true, "tester");
+            liveFolderId = result.results().get(0).id();
             livePostId = result.results().get(1).id();
         });
 
@@ -152,6 +154,10 @@ class ShAgentChangesTest {
                     "Deleted \"Ghost page\"");
             record(ShContentAction.CREATE, "other-" + UUID.randomUUID(), otherSiteId, T2, "eeee",
                     "Created \"Elsewhere\"");
+            // SH200: a folder delete is audited now, so the feed carries entries whose object
+            // is a folder. Written by hand for the same reason as the rest.
+            record(ShContentAction.DELETE, liveFolderId, siteId, T2, "ddee",
+                    "Deleted \"changes-folder\"");
             // Inside the lag window, and stamped ahead of it so the assertion cannot age
             // out mid-run: the feed must not report it yet.
             record(ShContentAction.UPDATE, livePostId, siteId, Instant.now().plusSeconds(3600),
@@ -220,6 +226,25 @@ class ShAgentChangesTest {
 
         assertThat(descriptions(changes)).noneMatch(what -> what.contains("just now"));
         assertThat(changes.notes()).anyMatch(note -> note.contains("held back"));
+    }
+
+    /**
+     * SH200 — a deleted folder is addressed as a folder, not dropped.
+     *
+     * <p>The feed's address lookup was post-only, so a folder entry would have arrived with
+     * {@code address: null}: a change nobody can act on, in the one place where knowing
+     * <em>what</em> was destroyed matters most. It resolves through the trash on purpose —
+     * the folder the entry names is, by then, deleted.</p>
+     */
+    @Test
+    void aDeletedFolderTravelsWithAFolderAddress() {
+        ShAgentChanges changes = shAgentChangesService.changes(siteName, null, 50, false);
+
+        assertThat(changes.changes())
+                .filteredOn(change -> "Deleted \"changes-folder\"".equals(change.what()))
+                .singleElement()
+                .extracting(ShAgentChanges.Change::address)
+                .isEqualTo("folder:" + siteName + base);
     }
 
     // --- the cursor ---
@@ -295,13 +320,13 @@ class ShAgentChangesTest {
                 .singleElement()
                 .satisfies(change -> assertThat(change.address())
                         .isEqualTo("post:" + siteName + base + "/live"));
+        // Narrowed to the ghost row on purpose: since SH200 a folder deletion is audited too,
+        // and that one *does* carry an address (it is the trashed folder's).
         assertThat(changes.changes())
-                .filteredOn(change -> "DELETE".equals(change.action()))
+                .filteredOn(change -> "DELETE".equals(change.action())
+                        && change.what().contains("Ghost page"))
                 .singleElement()
-                .satisfies(change -> {
-                    assertThat(change.address()).isNull();
-                    assertThat(change.what()).contains("Ghost page");
-                });
+                .satisfies(change -> assertThat(change.address()).isNull());
         assertThat(changes.notes()).anyMatch(note -> note.contains("no longer exists"));
     }
 

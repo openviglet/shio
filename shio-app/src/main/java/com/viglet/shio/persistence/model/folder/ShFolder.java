@@ -47,6 +47,25 @@ public class ShFolder extends ShObject {
 	@Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
 	private Set<ShFolder> shFolders = new HashSet<>();
 
+	/**
+	 * When this folder was put in the trash (SH200); {@code null} = live.
+	 *
+	 * <p>The folder half of SH55's soft-delete, and the reason a folder delete can be
+	 * undone at all: the posts beneath it are trashed rather than removed, and their
+	 * {@code folder_id → ShObject} FK means the folder row has to outlive the gesture that
+	 * deleted it. So a folder delete removes nothing; it stamps this column down the
+	 * subtree, and the rows go at <b>purge</b> time instead.</p>
+	 *
+	 * <p>Unlike {@link com.viglet.shio.persistence.model.post.unified.ShPostUnified} there
+	 * is deliberately <b>no {@code @SQLRestriction}</b> here. A restriction on this entity
+	 * would also apply when Hibernate initializes a {@code @ManyToOne} pointing at it — so
+	 * a trashed post's {@code getShFolder()} would throw, and the trash listing needs
+	 * exactly that association to say where the post came from. Trashed folders are
+	 * excluded in {@code ShFolderRepository} instead, where every read already goes.</p>
+	 */
+	@Column(name = "deleted_date")
+	private java.time.Instant deletedDate;
+
 	public ShFolder() {
 		this.setObjectType(ShObjectType.FOLDER);
 	}
@@ -60,6 +79,11 @@ public class ShFolder extends ShObject {
 	}
 
     public void setRootFolder(byte rootFolder) { this.rootFolder = rootFolder; }
+
+	public void setDeletedDate(java.time.Instant deletedDate) { this.deletedDate = deletedDate; }
+
+	/** Whether this folder is in the trash (SH200) — the readable form of a null check. */
+	public boolean isTrashed() { return deletedDate != null; }
 
 	@Override
 	public String getObjectType() { return ShObjectType.FOLDER; }

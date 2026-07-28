@@ -30,37 +30,96 @@ import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.site.ShSite;
 
 /**
+ * Folder reads and writes.
+ *
+ * <h2>Every read here hides a trashed folder (SH200)</h2>
+ *
+ * <p>A folder delete is a soft-delete: it stamps {@code deleted_date} down the subtree and
+ * removes nothing, so the posts beneath it can sit in SH55's trash and still have a folder
+ * to be restored to. That only works if a trashed folder disappears from navigation, the
+ * CDA, the sitemap, the content lint and the exchange export — every one of which reaches a
+ * folder through this interface.</p>
+ *
+ * <p>So the derived finders below are spelled out as JPQL with {@code deletedDate is null}
+ * rather than left to method-name derivation. The alternative was a Hibernate
+ * {@code @SQLRestriction} on {@link ShFolder} — rejected because it would also apply when a
+ * {@code @ManyToOne} to a folder is initialized, and a trashed post's {@code getShFolder()}
+ * is precisely what the trash listing reads. Filtering here keeps the association honest
+ * and costs one predicate per query; the trash's own reads are the {@code …Trashed…}
+ * methods, which are the only ones that may see them.</p>
+ *
+ * <p>Naming note: the filtered methods keep their original names on purpose. Renaming them
+ * to {@code …AndDeletedDateIsNull} would have touched sixty call sites and left the plain
+ * name available for the next reader to use by accident — the failure mode being a trashed
+ * section quietly reappearing in one listing.</p>
+ *
  * @author Alexandre Oliveira
  */
 @Repository
 public interface ShFolderRepository extends JpaRepository<ShFolder, String> {
 
+	@Query("select f from ShFolder f where f.deletedDate is null")
 	List<ShFolder> findAll();
 
-	@Query("select new com.viglet.shio.bean.ShFolderTinyBean(f.id, f.name, f.position, f.date) from ShFolder f where f.shSite = ?1 and f.rootFolder = ?2")
+	@Query("select new com.viglet.shio.bean.ShFolderTinyBean(f.id, f.name, f.position, f.date) from ShFolder f where f.shSite = ?1 and f.rootFolder = ?2 and f.deletedDate is null")
 	Set<ShFolderTinyBean> findByShSiteAndRootFolderTiny(ShSite shSite, byte rootFolder);
-	
-	
+
+
+	@Query("select f from ShFolder f where f.shSite = ?1 and f.rootFolder = ?2 and f.deletedDate is null")
 	Set<ShFolder> findByShSiteAndRootFolder(ShSite shSite, byte rootFolder);
 
+	@Query("select f from ShFolder f where f.shSite = ?1 and f.name = ?2 and f.deletedDate is null")
 	ShFolder findByShSiteAndName(ShSite shSite, String name);
 
+	@Query("select f from ShFolder f where f.shSite = ?1 and f.furl = ?2 and f.deletedDate is null")
 	ShFolder findByShSiteAndFurl(ShSite shSite, String furl);
 
+	@Query("select f from ShFolder f where f.parentFolder = ?1 and f.name = ?2 and f.deletedDate is null")
 	ShFolder findByParentFolderAndName(ShFolder parentFolder, String name);
 
+	@Query("select f from ShFolder f where f.parentFolder = ?1 and f.furl = ?2 and f.deletedDate is null")
 	ShFolder findByParentFolderAndFurl(ShFolder parentFolder, String furl);
 
-	@Query("select new com.viglet.shio.bean.ShFolderTinyBean(f.id, f.name, f.position, f.date) from ShFolder f where f.parentFolder = ?1")
+	@Query("select new com.viglet.shio.bean.ShFolderTinyBean(f.id, f.name, f.position, f.date) from ShFolder f where f.parentFolder = ?1 and f.deletedDate is null")
 	Set<ShFolderTinyBean> findByParentFolderTiny(ShFolder parentFolder);
 
+	@Query("select f from ShFolder f where f.parentFolder = ?1 and f.deletedDate is null")
 	Set<ShFolder> findByParentFolder(ShFolder parentFolder);
 
+	@Query("select f from ShFolder f where f.parentFolder = ?1 and f.deletedDate is null order by f.position asc")
 	List<ShFolder> findByParentFolderOrderByPositionAsc(ShFolder parentFolder);
 
+	@Query("select count(f) from ShFolder f where f.shSite = ?1 and f.deletedDate is null")
 	int countByShSite(ShSite shSite);
-	
+
+	@Query("select f from ShFolder f where f.id = ?1 and f.deletedDate is null")
 	Optional<ShFolder> findById(String id);
+
+	// --- the trash (SH200): the only reads allowed to see a trashed folder ---
+
+	/**
+	 * A folder by id whether or not it is trashed — restore, purge, and the SH88 change
+	 * feed, which has to be able to address the folder it just reported deleted.
+	 */
+	@Query("select f from ShFolder f where f.id = ?1")
+	Optional<ShFolder> findAnyById(String id);
+
+	/** Children whether or not they are trashed — the subtree walk restore and purge need. */
+	@Query("select f from ShFolder f where f.parentFolder = ?1")
+	List<ShFolder> findByParentFolderIncludingTrashed(ShFolder parentFolder);
+
+	/**
+	 * Every trashed folder, newest first.
+	 *
+	 * <p>Flat on purpose: the trash listing wants one row per deleted <em>section</em>, not
+	 * one per folder in it, and "is this folder's parent also trashed" is answered in the
+	 * service off the association rather than in JPQL. Reaching through
+	 * {@code f.parentFolder.deletedDate} here would be the SH22 join hazard — an implicit
+	 * join onto the {@code ShObject} subclass table, where the {@code @TenantId} predicate
+	 * has no column to land on.</p>
+	 */
+	@Query("select f from ShFolder f where f.deletedDate is not null order by f.deletedDate desc")
+	List<ShFolder> findTrashedFolders();
 
 	/**
 	 * SH143 — every folder id that is some folder's parent.

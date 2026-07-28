@@ -122,6 +122,15 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
             nativeQuery = true)
     List<ShPostUnified> findTrashedById(@Param("id") String id, @Param("tenant") String tenant);
 
+    /**
+     * Trashed posts sitting in any of these folders (SH200) — what restoring or purging a
+     * deleted folder subtree operates on. Callers must not pass an empty collection.
+     */
+    @Query(value = "select * from sh_post_unified where deleted_date is not null "
+            + "and folder_id in :folderIds and tenant_id = :tenant", nativeQuery = true)
+    List<ShPostUnified> findTrashedByFolderIds(@Param("folderIds") Collection<String> folderIds,
+                                              @Param("tenant") String tenant);
+
     @Modifying
     @Query(value = "update sh_post_unified set deleted_date = null where id = :id and tenant_id = :tenant",
             nativeQuery = true)

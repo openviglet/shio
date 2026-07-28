@@ -27,10 +27,13 @@ import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.review.dto.ShReviewDetail;
 import com.viglet.shio.api.review.dto.ShReviewOutcome;
 import com.viglet.shio.api.review.dto.ShReviewSession;
+import com.viglet.shio.api.folder.ShFolderWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
+import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.history.ShHistory;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.tenant.ShTenantContext;
@@ -77,17 +80,23 @@ public class ShReviewService {
     private final ShHistoryRepository shHistoryRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
+    private final ShFolderRepository shFolderRepository;
+    private final ShFolderWriteService shFolderWriteService;
     private final ShContentAclService shContentAclService;
     private final ShAddressResolver shAddressResolver;
 
     public ShReviewService(ShHistoryRepository shHistoryRepository,
                           ShPostUnifiedRepository shPostUnifiedRepository,
                           ShPostUnifiedWriteService shPostUnifiedWriteService,
+                          ShFolderRepository shFolderRepository,
+                          ShFolderWriteService shFolderWriteService,
                           ShContentAclService shContentAclService,
                           ShAddressResolver shAddressResolver) {
         this.shHistoryRepository = shHistoryRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
+        this.shFolderRepository = shFolderRepository;
+        this.shFolderWriteService = shFolderWriteService;
         this.shContentAclService = shContentAclService;
         this.shAddressResolver = shAddressResolver;
     }
@@ -185,6 +194,10 @@ public class ShReviewService {
         if (action == null) {
             return Optional.of("unknown action '" + entry.getAction() + "'");
         }
+        Optional<ShFolder> folder = shFolderRepository.findAnyById(postId);
+        if (folder.isPresent()) {
+            return revertFolder(folder.get(), action, actor);
+        }
         boolean hasDraft = state(postId, ShPostState.DRAFT).isPresent();
         boolean hasPublished = state(postId, ShPostState.PUBLISHED).isPresent();
         if (!hasDraft && !hasPublished && action != ShContentAction.DELETE) {
@@ -249,8 +262,37 @@ public class ShReviewService {
                 ShStableMap.copyOf(byAction), first, last, List.copyOf(sites), pending);
     }
 
+    /**
+     * Undoes a folder entry (SH200). A folder delete is now audited, so the queue sees
+     * entries whose object is a section rather than a post — and restoring that one entry
+     * brings the whole subtree back, which is the gesture a human means by "undo that".
+     *
+     * <p>Only {@code DELETE} has an undo here. A folder create/rename is not recorded (the
+     * audit trail is content-shaped), and a {@code RESTORE} is already one.</p>
+     */
+    private Optional<String> revertFolder(ShFolder folder, ShContentAction action, String actor) {
+        shContentAclService.requireWrite(folder.getId());
+        return switch (action) {
+            case DELETE -> {
+                if (shFolderWriteService.restore(folder.getId(), actor)) {
+                    yield Optional.empty();
+                }
+                yield Optional.of(folder.isTrashed()
+                        ? "its parent folder is in the trash — restore that instead"
+                        : "not in the trash — it was purged, not deleted");
+            }
+            case RESTORE -> Optional.of("a restore is already an undo");
+            default -> Optional.of("no undo for a folder " + action.name().toLowerCase());
+        };
+    }
+
     private ShReviewDetail.Entry entry(ShHistory history) {
         String postId = history.getShObject();
+        Optional<ShFolder> folder = postId == null ? Optional.empty()
+                : shFolderRepository.findAnyById(postId);
+        if (folder.isPresent()) {
+            return folderEntry(history, folder.get());
+        }
         Optional<ShPostUnified> draft = postId == null ? Optional.empty()
                 : state(postId, ShPostState.DRAFT);
         Optional<ShPostUnified> published = postId == null ? Optional.empty()
@@ -272,6 +314,29 @@ public class ShReviewService {
     }
 
     /**
+     * A folder entry's row (SH200). {@code draft}/{@code published} are meaningless for a
+     * section, so they are reported {@code false} rather than guessed — the fields a reviewer
+     * reads are the address, whether it is in the trash, and whether the undo works.
+     */
+    private ShReviewDetail.Entry folderEntry(ShHistory history, ShFolder folder) {
+        ShContentAction action = actionOf(history);
+        boolean trashed = folder.isTrashed();
+        boolean canRestore = trashed
+                && (folder.getParentFolder() == null || !folder.getParentFolder().isTrashed());
+        return new ShReviewDetail.Entry(
+                history.getAction(),
+                folder.getId(),
+                shAddressResolver.addressOf(folder).toString(),
+                folder.getName(),
+                history.getShSite(),
+                history.getDate(),
+                false,
+                false,
+                trashed,
+                action == ShContentAction.DELETE && canRestore);
+    }
+
+    /**
      * Whether the queue can honestly undo this entry — the same rules
      * {@link #revertOne} applies, so a button is offered only where it works.
      */
@@ -290,11 +355,18 @@ public class ShReviewService {
         };
     }
 
-    /** The distinct posts this run touched, in the order it first touched them. */
+    /**
+     * The distinct posts this run touched, in the order it first touched them.
+     *
+     * <p>Folder entries are excluded (SH200): approve means "publish this run's drafts", and
+     * a section has no draft. Leaving them in would list every deleted folder as skipped for
+     * a reason that is true of folders in general, which reads as a failure.</p>
+     */
     private List<String> touchedPosts(String session) {
         Set<String> ids = new LinkedHashSet<>();
         for (ShHistory entry : shHistoryRepository.findByAgentSession(session)) {
-            if (entry.getShObject() != null) {
+            if (entry.getShObject() != null
+                    && shFolderRepository.findAnyById(entry.getShObject()).isEmpty()) {
                 ids.add(entry.getShObject());
             }
         }

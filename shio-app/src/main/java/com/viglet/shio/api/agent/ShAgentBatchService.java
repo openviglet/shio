@@ -650,11 +650,15 @@ public class ShAgentBatchService {
         String id = folder.get().getId();
         if (!session.dryRun) {
             shContentAclService.requireWrite(id);
-            shFolderWriteService.delete(id);
+            shFolderWriteService.delete(id, session.actor);
         }
         // Folder deletion cascades to every post beneath it (ShFolderWriteService), so
         // the plan says so rather than letting the caller discover it afterwards (P7).
-        return session.change(op, address, Change.DELETE, "with all content beneath it", id);
+        // Since SH200 the cascade goes through the post writer, so the whole subtree lands
+        // in SH55's trash — said out loud for the same reason post.delete says it: an agent
+        // that believes it destroyed a section will not offer the human the undo.
+        return session.change(op, address, Change.DELETE,
+                "with all content beneath it, to trash (restorable)", id);
     }
 
     // --- post ops ---

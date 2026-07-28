@@ -945,71 +945,138 @@ moved onto the class.
 > (SH22), content ACL (SH54) and token scopes apply identically on every agent
 > surface. An agent-native CMS that quietly runs as root is not adoptable.
 >
-> SH106–SH109 have shipped; their design notes are gone with them (see CHANGELOG.md Block L).
-> What remains here is the one task still blocked.
+> SH106–SH109, SH200 and SH201 have shipped; their design notes are gone with them (see
+> CHANGELOG.md Block L). What remains here is the one task still blocked, plus the follow-ups
+> SH200/SH201 turned up.
+>
+> **The invariant grew a second edge while they landed.** SH106–SH109 were all argued as
+> tightenings, and SH201 is the same rule read from the other end: after Block L the agent path
+> was in places *stricter than the console*, and where that happens the console is the hole. The
+> form to carry forward is symmetrical — **the two surfaces enforce the same ACL, and whichever
+> is stricter is the correct one.** SH222–SH226 are the places that edge points at next.
 
 ### XII.5 Agent budget guards (SH110)
 
 Per-session call/write/storage ceilings, layered on SH45's per-tenant metering when
 that lands. A runaway agent should hit a ceiling and report it, not a bill.
 
-### XII.6 A folder delete is the one write that leaves no trace (SH200)
+### XII.6 An agent can fill the trash and cannot read it (SH222)
 
-`ShFolderWriteService.delete` clears the posts beneath it with
-`shPostUnifiedRepository.deleteAll(...)` — the repository, not `ShPostUnifiedWriteService`.
-Everything this block built hangs off that writer, so the cascade skips all of it at once:
+`post.delete` and `folder.delete` both answer `"to trash (restorable)"`, deliberately — an
+agent that believes it destroyed something will not offer the human the undo. But that string
+is the *only* place the trash appears on the agent surface. There is no `/agent` read that
+lists it, no MCP tool, and no `shio` command; `GET /api/v2/post-unified/trash`,
+`POST .../untrash`, `GET /api/v2/folder/trash` and `POST .../untrash` are console endpoints.
 
-| | `post.delete` on each post | the same posts via `folder.delete` |
-|---|---|---|
-| SH55 trash | soft-deleted, restorable | **rows gone** |
-| SH51 audit | recorded | **nothing** |
-| `/agent/changes` (SH88) | reported | **invisible** |
-| SH109 revert | can undo | **nothing to undo** |
-| `DELETE` lifecycle event | fired | **not fired** — no webhook |
-| SH38 byte cleanup | runs | **never runs; the files leak** |
+So the protocol tells the caller an undo exists and gives it no way to reach it. That inverts
+P1 on the capability an agent needs *most* immediately after a mistake, and it is the one
+inversion where "the console can do it" is least comforting: the mistake is usually noticed by
+the agent, in the same run, seconds later.
 
-The framing that makes this urgent rather than tidy: **the most destructive operation on the
-surface is also the least recoverable and the least observable, and it is the one SH108's
-confirm token exists to gate.** The confirm flow makes a caller look at the list before it
-happens, which is worth doing — and then the thing it warned about happens in a way nothing
-can report or reverse afterwards. A curator who deletes a section of forty pages by hand can
-restore them; the same curator using the folder's delete button cannot. That inversion is the
-defect, more than any single missing row.
+Two design questions, neither settled:
 
-The fix is almost certainly to route the cascade through the post writer rather than to
-re-implement the six behaviours in the folder writer (P10, applied inside the engine: compose,
-do not fork — which is also SH139's rule one layer down). Two things to decide while doing it:
+- **How much surface does it cost?** A read plus a restore is two more operations, and the MCP
+  tool budget is measured per turn (SH132). The cheap shape is not a new tool but a verb on an
+  existing one — `shio_write` already carries the addressed write vocabulary, and `post.restore`
+  / `folder.restore` are ops in exactly that shape. The listing is the harder half: it is a read
+  of things that have no address any more, which is what SH172's `id:` fallback exists for.
+- **Does a restore need a confirm token?** SH108's rule is that a *destructive* op needs the
+  plan it was shown. A restore is not destructive, but it is not free either — restoring a
+  section can bring back content a human deliberately removed. The honest answer is probably no
+  token and a change-set entry naming what came back, since SH200's restore is already audited.
 
-- **Trash or purge?** Routing through `delete` puts a whole subtree in the trash, which is the
-  recoverable answer and means the FK ordering that motivated the direct `deleteAll` still has
-  to be satisfied at *purge* time instead. Routing through the purge path keeps today's
-  finality but must then fire the events and write the audit itself.
-- **One audit entry or N?** A forty-page subtree should probably record the folder deletion
-  plus its members, because SH109's revert operates per entry and "restore the section" is the
-  action a human wants — which is an argument for the trash answer, since a purge cannot offer
-  it at all.
+### XII.7 Deleting a site is SH200 one level up, and worse (SH223)
 
-### XII.7 The console's move and copy authorize only the destination (SH201)
+`ShSiteWriteService.delete` removes the `ShSite` entity and lets the JPA cascade
+(`ShSite#shFolders`, `CascadeType.ALL`) take its folders. Every post in the site therefore
+leaves the same way a folder's posts used to before SH200: past the SH55 trash, with no SH51
+audit row, invisible to the SH88 feed, unrevertable by the SH109 queue, and with no `DELETE`
+lifecycle event — so no webhook and no SH38 byte cleanup.
 
-`ShObjectAPI` calls `shContentAclService.requireWrite(destId)` and never checks the objects in
-the request body. So a caller with write on any single folder can move content *out of* a
-subtree they cannot write — which is a removal from the owner's point of view — and can copy
-content they were never granted read on. The agent path checks both ends (`post.move` and
-`folder.move` both `requireWrite` the subject and the destination), so this is one surface
-enforcing SH54 and the other not.
+It is the same defect with the largest blast radius on the surface, and the argument for fixing
+it is the one SH200 made: **the most destructive operation must not be the least recoverable and
+the least observable.** A site is the whole thing.
 
-This block's standing invariant is that **the agent path is never a privilege escalation**, and
-it has been argued in that direction throughout — every guard narrower than what was reachable
-before. SH201 is the same invariant read from the other end: after SH106–SH109 the agent path
-is in places *stricter* than the console, and where that happens the console is the hole. The
-invariant to carry forward is symmetrical — **the two surfaces enforce the same ACL, and
-whichever is stricter is the correct one** — because a curator's session is not a lower bar
-than an agent's credential, it is a different one.
+The fix is a delegation, not a third cascade — the site's root folders go through
+`ShFolderWriteService`, which is now the one place that knows what deleting a subtree means. Two
+things to decide while doing it:
 
-Worth noting what this is *not*: a reason to loosen the agent path to match. The whole point of
-Block L is that the strict side is right.
+- **Is a deleted site trashed too, or only its content?** Trashing the content and removing the
+  site row cannot work, for the same reason it could not work for a folder: the posts keep their
+  `folder_id` and the root folders keep their `site_id`. So either the site gets a
+  `deleted_date` of its own — consistent, and it means a site can be restored whole — or the
+  delete stays a purge and must fire the events and write the audit itself. SH200 chose the
+  first shape one level down, which is an argument for symmetry.
+- **What does the site listing owe the curator?** A trashed site still occupies its name and
+  friendly URL, so re-creating it will collide, and "that name is taken by something you
+  deleted" is a teaching error somebody has to write.
 
----
+### XII.8 A permanent deletion is the one write nobody records (SH224)
+
+`ShPostUnifiedWriteService.purge` fires the `DELETE` lifecycle event — so the SH12 webhook is
+delivered and SH38's listener removes the stored bytes — and writes **no audit row at all**. The
+reversible half of the trash is fully recorded (SH55's `delete` writes one, and since SH200 a
+deleted section writes one per post); the irreversible half records nothing.
+
+That is backwards. "Who destroyed this, and when" is a question about the deletion that cannot
+be undone, and it is the only content transition the SH51 trail does not carry. It also means a
+purge is invisible to `/agent/changes`, so a caller walking the feed sees a post enter the trash
+and never learns it is now gone for good — the two states a reader most needs to tell apart.
+
+The obvious objection is that the post no longer exists, so the entry has no address. SH88
+already answers that: an entry whose object is gone travels with its title and a `null` address,
+and the feed says so in `notes`. The row is worth having on exactly those terms.
+
+Scope note: a folder purge can now take forty posts in one call, which is what moves this from
+tidy to worth doing. Whether that writes forty rows or one plus forty is the same question
+SH200 answered on the delete side, and it should be answered the same way.
+
+### XII.9 The ACL check depends on `open-in-view` and does not say so (SH225)
+
+`ShContentAclService.requireRead`/`requireWrite` carry no `@Transactional`, and they reach
+`canRead`/`canWrite` by **self-invocation** — which does not pass through the Spring proxy, so
+the annotation on those methods never applies. The permission decision then walks a folder's
+lazy `parentFolder` chain with whatever persistence session the caller happens to have.
+
+Inside the app there is one, because `spring.jpa.open-in-view` defaults to true. Anywhere else
+there is not: a scheduled job, an internal service call, or a test that calls a controller bean
+directly gets a `LazyInitializationException` **instead of a permission decision**. SH201's test
+found it by being the first thing to ask the ACL a question outside a request, and had to open a
+transaction of its own to get an answer at all.
+
+Two reasons this deserves a task rather than a one-line annotation:
+
+- A guard whose failure mode is "explodes" beats one that fails open, but it is still not a
+  guard: the code that has to work is the code that *denies*, and it currently depends on a
+  setting whose entire purpose is to be turnable off. Somebody will turn it off for the reasons
+  people always do, and the symptom will be 500s on authorization, in production, under load.
+- The fix is not only the annotation. `aclChain` walking lazy associations is why a session is
+  needed at all; resolving the chain with an id-keyed query would make the check
+  session-independent, which is what a security decision should be. That also takes the SH22
+  join hazard out of the walk.
+
+### XII.10 A trashed folder is excluded by convention, not by invariant (SH226)
+
+SH200 made every read in `ShFolderRepository` exclude a trashed folder, which covers navigation,
+the CDA, the sitemap, the content lint and the exchange export in one place. But ids also
+resolve **polymorphically** through `ShObjectRepository`, which knows nothing about
+`deleted_date`, and three call sites had to be guarded by hand
+(`ShObjectNavigationService.list`/`path`, `ShObjectWriteService.moveTo`/`copyTo`) so a curator
+could not browse into a deleted section by its own id or move live content into one.
+
+Hand-guarded is not enforced. The next read that resolves a folder id through the polymorphic
+repository will show deleted content, answer `200`, and be invisible to every test — which is
+character-for-character the SH128 `ShFolderSite` shape, and that one earned
+`ShFolderSiteInvariantTest` for exactly this reason.
+
+Two candidate answers, not exclusive:
+
+- **A lint**, in the SH128 mould: fail the build on a `ShObjectRepository.findById` result used
+  as a `ShFolder` without a trash check, with a named escape hatch for the trash's own reads.
+  Cheap, and it catches the case at the moment somebody writes it.
+- **A resolver**, in the `ShFolderSite.of` mould: one method that resolves an object id and drops
+  a trashed folder, so the correct form is also the shortest one. The lint then has something to
+  point at, which is what made SH128's guard teachable rather than annoying.
 
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
