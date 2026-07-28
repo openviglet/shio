@@ -11,14 +11,14 @@
   "dependencies": {
     "@viglet/shio-editor-cors": "workspace:*",
     "@viglet/shio-react-sdk": "workspace:*",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.3",
+    "@vitejs/plugin-react": "^6.0.4",
     "typescript": "~5.8.3",
     "vite": "^8.1.5"
   }
