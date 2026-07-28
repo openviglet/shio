@@ -148,6 +148,118 @@ class ShPageRenderTest {
         });
     }
 
+    // ── SH278: which row of a template renders, and in what order ───────────────────
+
+    @Test
+    @DisplayName("SH278: a draft preview renders the draft layout, not the published one")
+    void aPreviewRendersTheDraftTemplate() {
+        // The defect: `postOfSystemType` read both states and took whichever row the database
+        // returned, with no DRAFT preference — so editing a layout and previewing the page could
+        // show the *published* layout. Exactly the failure SH247 extracted `preferDraft` to prevent
+        // for listings, in the one place nobody applied it. A curator's whole reason for opening a
+        // preview is to see the change they have not published yet.
+        String site = "sh278-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh278Page" + UUID.randomUUID().toString().substring(0, 8);
+        String layoutTitle = "SH278_LAYOUT";
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"" + layoutTitle + "\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+
+            // One layout, two rows: published says LIVE, the unpublished draft says DRAFTED.
+            String layoutId = UUID.randomUUID().toString();
+            for (ShPostState state : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT)) {
+                ShPostUnified row = new ShPostUnified();
+                row.setId(layoutId);
+                row.setState(state);
+                row.setShSite(owner);
+                row.setShFolder(root);
+                row.setShPostType(layoutType);
+                row.setTitle(layoutTitle);
+                row.setFurl("/l");
+                row.setData(json("HTML", "<html><body><h1>"
+                        + (state == ShPostState.PUBLISHED ? "LIVE" : "DRAFTED")
+                        + "</h1>{{{TEXT}}}</body></html>"));
+                row.setDate(when);
+                row.setOwner("admin");
+                entityManager.persist(row);
+            }
+            post(owner, root, pageType, "Home", "/", json("TEXT", "<p>body</p>"), when);
+        });
+
+        assertThat(shPageRenderService.render(site, "/", ShPostState.DRAFT).html())
+                .as("a preview shows the layout the curator is editing")
+                .contains("DRAFTED")
+                .doesNotContain("LIVE");
+    }
+
+    @Test
+    @DisplayName("SH278: a published render never picks up an unpublished template edit")
+    void aPublishedRenderIgnoresTheDraftTemplate() {
+        // The other direction, and the one that would be a live incident: what a visitor gets must
+        // not depend on a layout edit nobody has published.
+        String site = "sh278-pub-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh278Pub" + UUID.randomUUID().toString().substring(0, 8);
+        String layoutTitle = "SH278_PUB_LAYOUT";
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"" + layoutTitle + "\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+
+            String layoutId = UUID.randomUUID().toString();
+            for (ShPostState state : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT)) {
+                ShPostUnified row = new ShPostUnified();
+                row.setId(layoutId);
+                row.setState(state);
+                row.setShSite(owner);
+                row.setShFolder(root);
+                row.setShPostType(layoutType);
+                row.setTitle(layoutTitle);
+                row.setFurl("/l");
+                row.setData(json("HTML", "<html><body><h1>"
+                        + (state == ShPostState.PUBLISHED ? "LIVE" : "DRAFTED")
+                        + "</h1>{{{TEXT}}}</body></html>"));
+                row.setDate(when);
+                row.setOwner("admin");
+                entityManager.persist(row);
+            }
+            for (ShPostState state : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT)) {
+                ShPostUnified page = new ShPostUnified();
+                page.setId(UUID.randomUUID().toString());
+                page.setState(state);
+                page.setShSite(owner);
+                page.setShFolder(root);
+                page.setShPostType(pageType);
+                page.setTitle("Home");
+                page.setFurl("/");
+                page.setData(json("TEXT", "<p>body</p>"));
+                page.setDate(when);
+                page.setOwner("admin");
+                entityManager.persist(page);
+            }
+        });
+
+        assertThat(shPageRenderService.render(site, "/", ShPostState.PUBLISHED).html())
+                .contains("LIVE")
+                .doesNotContain("DRAFTED");
+    }
+
     // ── the claim ────────────────────────────────────────────────────────────────────
 
     @Test

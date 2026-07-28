@@ -469,9 +469,11 @@ public class ShRenderHelpers {
      * predicate the database can apply itself.</p>
      */
     private List<ShPostState> statesFor(ShPostState state) {
-        return state == ShPostState.PUBLISHED
-                ? List.of(ShPostState.PUBLISHED)
-                : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT);
+        // SH278 — delegated, not duplicated. This method and `preferDraft` were extracted here by
+        // SH247 and then not applied to the thing that resolves the *layout*, which is how a preview
+        // could render the published template while the curator edited the draft. One writer now
+        // (SH245's rule), in `ShRenderState`.
+        return ShRenderState.statesFor(state);
     }
 
     /**
@@ -485,17 +487,10 @@ public class ShRenderHelpers {
      * looking for their unpublished change.</p>
      */
     private List<ShPostUnified> preferDraft(List<ShPostUnified> posts, ShPostState state) {
-        Map<String, ShPostUnified> byId = new LinkedHashMap<>();
-        for (ShPostUnified post : posts) {
-            if (state == ShPostState.PUBLISHED && post.getState() != ShPostState.PUBLISHED) {
-                continue;
-            }
-            ShPostUnified held = byId.get(post.getId());
-            if (held == null || post.getState() == ShPostState.DRAFT) {
-                byId.put(post.getId(), post);
-            }
-        }
-        return List.copyOf(byId.values());
+        // SH278 — and it gained a total order in the move: the fold used to depend on whatever order
+        // the database returned, which was invisible here because a listing is sorted afterwards
+        // anyway, and very visible in `ShPageRenderService`, where `findFirst` was the answer.
+        return ShRenderState.preferDraft(posts, state);
     }
 
     /**

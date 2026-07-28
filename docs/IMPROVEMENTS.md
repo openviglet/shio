@@ -2604,22 +2604,54 @@ half-exists for this.
 
 ### XVI.30 The renderer resolves by title in an unspecified order (SH278)
 
-SH263 makes a duplicate title reportable and leaves the underlying behaviour untouched:
-`postOfSystemType` takes the first row a derived finder returns, with no `order by`. So which of two
-templates renders is whatever the database chose — and that is a latent P5 violation independent of the
-lint. The same site can render differently on H2 and on PostgreSQL, and SH101's digest moves with it,
-which is precisely the class of instability SH136 and SH247 both went out of their way to remove
-elsewhere.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. It was filed as one `order by` and was two
+> defects; three things worth keeping.
+>
+> **The undocumented half was the serious one.** The ticket was about duplicate titles. Reading the
+> method showed it also read *both states with no DRAFT preference*, so a preview could render the
+> published layout while the curator edited the draft. Worth noticing as a habit: a task that names one
+> symptom of an unspecified behaviour is a reason to read the behaviour, not just to fix the symptom.
+>
+> **"None" is a worse failure than "a second copy".** SH247 extracted `preferDraft` out of the listing
+> helpers explicitly because a duplicate would be a chance to get it backwards. The extraction landed
+> and nobody asked whether the *other* resolver needed it — it had no copy at all. So the rule to carry
+> is stronger than "one writer per verb": when a rule is extracted, the question is which callers
+> should now be using it, not only which copies should be deleted.
+>
+> **The verification made the argument better than the fix did.** Reverting the change failed the
+> published-render assertion and left the draft-preview one passing, because on H2 `findFirst` happened
+> to return the draft. The more serious half of the defect was *unobservable on the engine the suite
+> runs against*. That is the case for deciding an order rather than discovering one, and it is why
+> SH279 sweeps for the same shape elsewhere.
 
-The fix is one clause: order by id, or by date then id the way SH247's listings do. The value is not
-that a duplicate starts rendering *correctly* — it cannot — but that "undefined" stops being literally
-true. With a total order a duplicate renders **consistently wrongly**, and a consistent wrong answer is
-far easier to recognise than one that alternates between runs. It also makes the SH102 snapshot and the
-SH101 digest trustworthy on a site that has the defect, which is when somebody is most likely to be
-staring at them.
+### XVI.31 A derived finder with no order is a latent P5 violation (SH279)
 
-Worth pairing with SH277 rather than SH263: together they make a title behave like the identity it
-already is — refused when taken, deterministic when duplicated.
+SH278's finding generalises further than its fix. `postOfSystemType` took `findFirst()` over an
+unordered derived finder, so the row it returned was the database's choice — and the serious half of
+the resulting defect was **invisible on H2** and would have surfaced on somebody's PostgreSQL. Nothing
+in the suite could have caught it, because the suite runs on the engine that happened to be kind.
+
+The same shape appears wherever a derived Spring Data finder feeds a `findFirst`, a `get(0)` or an
+in-memory fold. From a first read:
+
+- `ShRenderHelpers.resolveReference` scans `findByShSite_IdAndStateIn` for a matching friendly URL;
+- `ShTemplateGraph.pageCount` walks the same finder;
+- `ShStaticFileService`'s post-type bootstrap uses `findFirstByName`.
+
+Most are harmless **because the result is unique in practice** — which is precisely the reasoning that
+was true of `postOfSystemType` until SH263 demonstrated that a title can be duplicated and nothing
+prevents it. "Unique in practice" is a premise about data, and SH275 is the argument for why premises
+of that kind should be enforced rather than believed.
+
+So the work is a sweep with a bar, and the bar is two questions: **does anything guarantee uniqueness,
+and is that guarantee enforced?**
+
+- Not guaranteed → order the query. It is one clause and it costs nothing.
+- Guaranteed → name the rule that enforces it, the way SH128's site invariant is both stated and
+  linted (`ShFolderSiteInvariantTest`). A guarantee nobody can point at is the same as none.
+
+Worth doing as a sweep rather than opportunistically, because the failure mode is environmental: it
+does not show up where it is written, it shows up on somebody else's database.
 
 ---
 

@@ -136,10 +136,13 @@ public class ShPageRenderService {
     public ShRenderedPage render(String siteKey, String url, ShPostState state) {
         ShSite site = siteByKey(siteKey);
         ShPostUnified page = pageAt(site, url, state);
-        ShPostUnified layout = layoutFor(site, page);
+        // SH278 — the render's own state reaches every level: a preview shows the draft layout,
+        // the draft region and the draft theme, which is what makes it a preview of the page the
+        // curator is editing rather than a mix of what is live and what is not.
+        ShPostUnified layout = layoutFor(site, page, state);
 
         Map<String, Object> model = new LinkedHashMap<>(
-                renderModel.of(page, themeOf(site, layout)));
+                renderModel.of(page, themeOf(site, layout, state)));
         // Reserved, like `post`/`site`/`theme`: it lets the helpers pick DRAFT vs PUBLISHED
         // and lets a layout render its own "you are looking at a draft" marker.
         model.put("render", ShStableMap.copyOf(Map.of("state", state.name())));
@@ -147,7 +150,7 @@ public class ShPageRenderService {
 
         String layoutHtml = engine.render(fieldOf(layout, ShSystemPostTypeAttr.HTML), stable);
         List<String> slots = composer.slotsOf(layoutHtml);
-        Map<String, ShRenderedRegion> regions = renderRegions(site, slots, stable);
+        Map<String, ShRenderedRegion> regions = renderRegions(site, slots, stable, state);
 
         return new ShRenderedPage(
                 // SH185: the page's own identity goes onto <body>, so a `sh-field` in a layout
@@ -188,7 +191,10 @@ public class ShPageRenderService {
         if (layoutName == null) {
             return Optional.empty();
         }
-        Optional<ShPostUnified> layout = postOfSystemType(site, ShSystemPostType.PAGE_LAYOUT, layoutName);
+        // DRAFT-preferred: the SH251 lint and SH193's graph are about the template as it now stands,
+        // which is the row an author is editing rather than the one a visitor currently gets.
+        Optional<ShPostUnified> layout =
+                postOfSystemType(site, ShSystemPostType.PAGE_LAYOUT, layoutName, ShPostState.DRAFT);
         if (layout.isEmpty()) {
             return Optional.empty();
         }
@@ -198,8 +204,8 @@ public class ShPageRenderService {
         // attribute — the one shape it cannot see is a name that is itself interpolated, and a
         // region slot whose name is content would be unresolvable to a reader too.
         for (String slot : composer.slotsOf(layoutHtml)) {
-            postOfSystemType(site, ShSystemPostType.REGION, slot).ifPresent(region ->
-                    regions.add(new ShNamedTemplate(slot, region,
+            postOfSystemType(site, ShSystemPostType.REGION, slot, ShPostState.DRAFT)
+                    .ifPresent(region -> regions.add(new ShNamedTemplate(slot, region,
                             fieldOf(region, ShSystemPostTypeAttr.HTML))));
         }
         return Optional.of(new ShPageTemplates(
@@ -274,7 +280,7 @@ public class ShPageRenderService {
      * post-type and what to add, because the alternative — a blank page — is the failure
      * mode that made the original engine expensive to author against.
      */
-    private ShPostUnified layoutFor(ShSite site, ShPostUnified page) {
+    private ShPostUnified layoutFor(ShSite site, ShPostUnified page, ShPostState state) {
         String typeName = page.getShPostType() == null ? null : page.getShPostType().getName();
         Map<String, String> bindings = bindingsOf(site);
         String layoutName = bindings.get(typeName);
@@ -282,7 +288,7 @@ public class ShPageRenderService {
             throw new NoLayoutBindingException(site.getName(), typeName,
                     bindings.keySet().stream().sorted().toList());
         }
-        return postOfSystemType(site, ShSystemPostType.PAGE_LAYOUT, layoutName)
+        return postOfSystemType(site, ShSystemPostType.PAGE_LAYOUT, layoutName, state)
                 .orElseThrow(() -> new MissingLayoutException(site.getName(), typeName, layoutName,
                         titlesOfSystemType(site, ShSystemPostType.PAGE_LAYOUT)));
     }
@@ -315,10 +321,11 @@ public class ShPageRenderService {
     }
 
     private Map<String, ShRenderedRegion> renderRegions(ShSite site, List<String> slots,
-                                                        Map<String, Object> model) {
+                                                        Map<String, Object> model,
+                                                        ShPostState state) {
         Map<String, ShRenderedRegion> rendered = new LinkedHashMap<>();
         for (String name : slots) {
-            postOfSystemType(site, ShSystemPostType.REGION, name).ifPresent(region ->
+            postOfSystemType(site, ShSystemPostType.REGION, name, state).ifPresent(region ->
                     rendered.put(name, new ShRenderedRegion(name, region.getId(),
                             engine.render(fieldOf(region, ShSystemPostTypeAttr.HTML), model),
                             // SH248 — passed through, never evaluated. The composer emits it
@@ -329,12 +336,12 @@ public class ShPageRenderService {
         return rendered;
     }
 
-    private ShThemeAssets themeOf(ShSite site, ShPostUnified layout) {
+    private ShThemeAssets themeOf(ShSite site, ShPostUnified layout, ShPostState state) {
         String themeName = fieldOf(layout, ShSystemPostTypeAttr.THEME);
         if (themeName == null || themeName.isBlank()) {
             return null;
         }
-        return postOfSystemType(site, ShSystemPostType.THEME, themeName)
+        return postOfSystemType(site, ShSystemPostType.THEME, themeName, state)
                 .map(theme -> new ShThemeAssets(
                         fieldOf(theme, ShSystemPostTypeAttr.CSS),
                         fieldOf(theme, ShSystemPostTypeAttr.JAVASCRIPT)))
@@ -346,14 +353,27 @@ public class ShPageRenderService {
      * what {@code sh-region="NAME"} and a {@code postTypeLayout} binding both name — the
      * 2018 package addresses them that way and its content imports byte-identically.
      */
-    private Optional<ShPostUnified> postOfSystemType(ShSite site, String typeName, String title) {
-        return postsOfSystemType(site, typeName).stream()
+    /**
+     * One template by title, DRAFT-preferred on a draft render and deterministic always (SH278).
+     *
+     * <p>This used to read both states and take whichever row the database returned first, which was
+     * undefined in two ways: between a template's own DRAFT and PUBLISHED rows — so a preview could
+     * render the <em>published</em> layout while the curator was editing the draft, which is exactly
+     * the failure SH247 extracted `preferDraft` to prevent for listings and nobody applied here — and
+     * between two templates sharing a title (SH263), where the choice cannot be right but can at
+     * least be the same on every engine and every run.</p>
+     */
+    private Optional<ShPostUnified> postOfSystemType(ShSite site, String typeName, String title,
+                                                     ShPostState state) {
+        return ShRenderState.preferDraft(postsOfSystemType(site, typeName, state), state).stream()
                 .filter(post -> title.equals(post.getTitle()))
                 .findFirst();
     }
 
     private List<String> titlesOfSystemType(ShSite site, String typeName) {
-        return postsOfSystemType(site, typeName).stream()
+        // Every title, whatever the render state: this feeds a refusal that lists the choices, and a
+        // layout that exists only as a draft is still a choice the author meant to have.
+        return postsOfSystemType(site, typeName, ShPostState.DRAFT).stream()
                 .map(ShPostUnified::getTitle)
                 .filter(java.util.Objects::nonNull)
                 .distinct()
@@ -361,7 +381,7 @@ public class ShPageRenderService {
                 .toList();
     }
 
-    private List<ShPostUnified> postsOfSystemType(ShSite site, String typeName) {
+    private List<ShPostUnified> postsOfSystemType(ShSite site, String typeName, ShPostState state) {
         ShPostType type = shPostTypeRepository.findByName(typeName);
         if (type == null) {
             return List.of();
@@ -371,7 +391,7 @@ public class ShPageRenderService {
         // Hibernate emit `tenant_id = ?` against the subclass table alias, which has no
         // such column, and the query dies at prepare time.
         return shPostUnifiedRepository.findByShSite_IdAndShPostType_IdAndStateIn(
-                site.getId(), type.getId(), List.of(ShPostState.PUBLISHED, ShPostState.DRAFT));
+                site.getId(), type.getId(), ShRenderState.statesFor(state));
     }
 
     private String fieldOf(ShPostUnified post, String field) {
