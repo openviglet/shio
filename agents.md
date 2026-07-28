@@ -383,9 +383,20 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   Keyed by post **id**, because a template's own PUBLISHED row shares its id and title with its DRAFT
   row and counting rows would flag every published template as its own duplicate. Two gaps remain: the
   write side still permits a collision (**SH277** — and the shape has to be "refuse an interactive
-  write, report a bulk one", or an SH68 import of a package that already contains one would fail), and
-  the resolution order is still unspecified (**SH278** — one `order by` away from a duplicate at least
-  rendering *consistently* wrongly).
+  write, report a bulk one", or an SH68 import of a package that already contains one would fail); the
+  resolution order is settled (**SH278**, next).
+- **The render state reaches every level, and the row order is total (SH278)** — `ShRenderState` is the
+  one writer for `statesFor` / `preferDraft`, used by both `ShPageRenderService` and
+  `ShRenderHelpers`. A **DRAFT** render resolves the draft layout, the draft region *and* the draft
+  theme; a **PUBLISHED** render never picks up an unpublished template edit. Before this,
+  `postOfSystemType` read both states with **no** preference and took whichever row the database
+  returned — so a preview could show the published layout while the curator edited the draft, which is
+  the exact failure SH247 extracted `preferDraft` to prevent for listings and nobody applied here. Note
+  the shape: not a second copy of the rule, **no copy at all** — when a rule is extracted, ask which
+  callers should now use it, not only which copies to delete. The fold is ordered by **title then id**,
+  so a duplicate title renders *consistently* wrongly rather than alternating; and reverting the fix
+  left the draft-preview test **passing on H2**, which is why an unordered finder is a P5 violation you
+  cannot see where you wrote it (**SH279** sweeps for the same shape elsewhere).
 - **Helpers are the closed capability set** `shObject.js` expressed as a convention:
   `{{#query folder= type= limit=}}`, `{{#navigation folder=}}`, `{{file_url}}`, and since SH247
   `{{#getRelation FIELD}}` and `{{#search q= type= limit=}}`. Every listing is sorted by a
