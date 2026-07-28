@@ -7,6 +7,7 @@ package com.viglet.shio.api.token;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -15,6 +16,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -122,14 +124,35 @@ class ShPreviewTokenAPITest {
     }
 
     @Test
-    void blankSiteUrlIsBadRequest() {
+    @DisplayName("SH184: no front end means Shio renders it — not a 400, and no token")
+    void blankSiteUrlFallsBackToShiosOwnPreview() {
         when(shPostUnifiedRepository.findById("post-1"))
                 .thenReturn(List.of(post("post-1", ShPostState.DRAFT, "/x", "siteA", "")));
 
         ResponseEntity<?> response = api(properties())
                 .mint(new ShPreviewTokenAPI.MintRequest("post-1", null), () -> "alice");
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getStatusCode())
+                .as("""
+                        this answered `400 site has no url` until SH184, and an empty url is the \
+                        normal state of a site an agent just built (SH170's site.upsert creates a \
+                        blank one) — so Preview Draft was unavailable at exactly the moment there \
+                        was something new to look at. SH183 removed the reason.""")
+                .isEqualTo(HttpStatus.OK);
+
+        ShPreviewTokenResponse body = (ShPreviewTokenResponse) response.getBody();
+        assertThat(body).isNotNull();
+        assertThat(body.previewUrl()).isEqualTo("/preview/siteA/x");
+        assertThat(body.token())
+                .as("""
+                        /preview/** is console-authenticated and already draft-preferred, so a \
+                        token would be a credential that unlocks nothing. The two destinations \
+                        differ by exactly this: an external front end needs one to turn its own \
+                        draft mode on at /api/preview.""")
+                .isNull();
+        assertThat(body.expiresAt()).isNull();
+        // ...and nothing was written, because there was nothing to write.
+        verify(shApiTokenRepository, never()).saveAndFlush(any(ShApiToken.class));
     }
 
     @Test

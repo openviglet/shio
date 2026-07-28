@@ -24,6 +24,7 @@ import { ShPreviewTokenService } from "@/services/preview-token/preview-token.se
 import type { ShPostType } from "@/models/post-type/post-type"
 import axios from "axios"
 import { toast } from "@viglet/viglet-design-system"
+import { siteDestination } from "@/lib/site-front-end"
 
 const postTypeService = new ShPostTypeService()
 const siteService = new ShSiteService()
@@ -405,11 +406,10 @@ export default function ObjectChildrenPage() {
     if (!siteId) return
     try {
       const site = await siteService.get(siteId)
-      if (!site.url) {
-        toast.error(t("content.siteNoUrl"))
-        return
-      }
-      window.open(site.url, "_blank", "noopener")
+      // SH184: a site with no deployed front end falls back to Shio's own renderer, which
+      // is the same rule the site list and the Universal Editor follow — one function, so
+      // the three cannot drift.
+      window.open(siteDestination(site).url, "_blank", "noopener")
     } catch {
       toast.error(t("content.previewError"))
     }

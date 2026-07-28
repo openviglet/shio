@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "@viglet/viglet-design-system"
+import { siteDestination } from "@/lib/site-front-end"
 
 const siteService = new ShSiteService()
 
@@ -42,18 +43,16 @@ export default function SiteListPage() {
   )
 
   /**
-   * SH179 — "View Site" opens the site's front end, or says it has none.
+   * SH179 — "View Site" opens the site's front end. SH184 — and when it has none, Shio's
+   * own renderer, rather than a toast.
    *
    * It used to navigate to `ROUTES.PREVIEW`, which `routes.const.ts` declared and no router
-   * registered, so the button rendered a blank page. The published site lives wherever the
-   * front end is deployed, which the CMS does not own and may not know.
+   * registered, so the button rendered a blank page. Then it opened the deployed front end
+   * and reported honestly when there was none — which was right until SH183 made "none" stop
+   * meaning "nothing to see".
    */
   const handleViewSite = (site: ShSite) => {
-    if (!site.url) {
-      toast.error(t("content.siteNoUrl"))
-      return
-    }
-    window.open(site.url, "_blank", "noopener")
+    window.open(siteDestination(site).url, "_blank", "noopener")
   }
 
   const handleExport = async (e: React.MouseEvent, site: ShSite) => {

@@ -32,6 +32,5 @@
   "universalEditor.saveError": "Could not save changes",
   "universalEditor.selectToken": "Save token (WRITE scope)",
   "universalEditor.noWriteToken": "No WRITE-scope API token found. Create one in Admin → API Tokens to enable saving.",
-  "universalEditor.siteNoUrl": "{{name}} has no front-end URL configured, so there is no page to edit. Set one in the site's properties.",
   "universalEditor.siteNotFound": "No site resolved for '{{key}}'. Pick one from the list."
 }

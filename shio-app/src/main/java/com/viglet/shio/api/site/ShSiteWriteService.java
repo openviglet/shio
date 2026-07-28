@@ -10,6 +10,9 @@ package com.viglet.shio.api.site;
 
 import java.text.Normalizer;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -93,6 +96,118 @@ public class ShSiteWriteService {
         shFolderRepository.save(rootFolder);
 
         return saved;
+    }
+
+    /**
+     * SH184 — fills a site's empty descriptive fields and <b>never replaces a value that is
+     * already there</b>.
+     *
+     * <h2>Why this is a verb of its own</h2>
+     *
+     * <p>{@link #update} is the console's full replace: it writes every field from the
+     * payload, including the ones a partial caller never mentioned, so using it to set a URL
+     * would null out {@code postTypeLayout} and {@code searchablePostTypes} on the way past.
+     * That is correct for a form with every field on screen and wrong for anything else.</p>
+     *
+     * <p>It lives here rather than in {@code ShAgentBatchService} because the rule it encodes
+     * is write semantics, not protocol shaping — and because SH245 is the standing lesson that
+     * a second copy of a verb is where the careless version grows. If the console ever wants
+     * "fill in what is blank", it calls this.
+     *
+     * <h2>The rule</h2>
+     *
+     * <p><b>Empty is filled; non-empty is kept.</b> {@code site.url} gates both visual
+     * surfaces, and an agent that just deployed a front end is the thing that knows the URL —
+     * so refusing to write it at all (SH170's original position) left a gap only a human
+     * opening the console could close. But repointing a live site because a document mentioned
+     * a URL is precisely the surprise P7 forbids. The line runs between filling in a blank and
+     * redirecting a choice.</p>
+     *
+     * <p>The result names both halves so the caller can report the difference between "done"
+     * and "left alone on purpose"; a silent no-op reads as the request having been ignored.</p>
+     *
+     * @param site     the site to fill, already resolved
+     * @param values   requested values by field name ({@code url}, {@code description},
+     *                 {@code furl}); blank and unknown entries are skipped
+     * @param modifier who is asking, for the audit stamp
+     * @return which fields were filled and which were kept
+     */
+    @Transactional
+    public ShSiteFill fillEmpty(ShSite site, Map<String, String> values, String modifier) {
+        ShSiteFill fill = planFill(site, values);
+        if (!fill.changed()) {
+            return fill;
+        }
+        for (String field : fill.filled()) {
+            write(site, field, values.get(field));
+        }
+        site.setModifier(modifier);
+        site.setModifiedDate(Instant.now());
+        shSiteRepository.save(site);
+        return fill;
+    }
+
+    /**
+     * What {@link #fillEmpty} <em>would</em> do, writing nothing.
+     *
+     * <p>Split out so a {@code dryRun} answers from the same code that performs the write —
+     * a plan derived from a second reading of the rule is a plan that can disagree with the
+     * run it predicts, which is the whole failure SH153 argued about for blueprints. It also
+     * means the honest and useful case is reported in advance: "your URL will not be applied,
+     * because that site already has one."</p>
+     */
+    @Transactional(readOnly = true)
+    public ShSiteFill planFill(ShSite site, Map<String, String> values) {
+        List<String> filled = new ArrayList<>();
+        List<String> kept = new ArrayList<>();
+        for (String field : FILLABLE) {
+            String requested = values.get(field);
+            if (requested == null || requested.isBlank()) {
+                continue;
+            }
+            String current = read(site, field);
+            if (current == null || current.isBlank()) {
+                filled.add(field);
+            } else if (!current.equals(requested)) {
+                kept.add(field);
+            }
+        }
+        return new ShSiteFill(List.copyOf(filled), List.copyOf(kept));
+    }
+
+    /**
+     * Which fields {@link #fillEmpty} may write, in the order a report lists them — URL
+     * first because it is the one that makes a site visible.
+     */
+    public static final List<String> FILLABLE = List.of("url", "description", "furl");
+
+    /**
+     * @param filled fields that were empty and now hold the requested value
+     * @param kept   fields whose existing value differs from the request and was left alone
+     */
+    public record ShSiteFill(List<String> filled, List<String> kept) {
+
+        public boolean changed() {
+            return !filled.isEmpty();
+        }
+    }
+
+    private static String read(ShSite site, String field) {
+        return switch (field) {
+            case "url" -> site.getUrl();
+            case "description" -> site.getDescription();
+            case "furl" -> site.getFurl();
+            default -> null;
+        };
+    }
+
+    private static void write(ShSite site, String field, String value) {
+        switch (field) {
+            case "url" -> site.setUrl(value);
+            case "description" -> site.setDescription(value);
+            case "furl" -> site.setFurl(value);
+            default -> throw new IllegalStateException("Unfillable site field " + field);
+        }
     }
 
     @Transactional

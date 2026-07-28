@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.api.cda.ShCdaProperties;
 import com.viglet.shio.object.ShFolderSite;
+import com.viglet.shio.render.ShSiteFrontEnd;
+import com.viglet.shio.render.ShSiteFrontEnd.Destination;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
@@ -99,10 +101,21 @@ public class ShPreviewTokenAPI {
         if (site == null) {
             return ResponseEntity.notFound().build();
         }
-        String base = site.getUrl();
-        if (base == null || base.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "site has no url"));
+        // SH184 — a site with no front end is no longer a dead end. This used to answer
+        // `400 site has no url`, which is the normal state of a site an agent just built
+        // (SH170's site.upsert creates a blank one), so Preview Draft was unavailable at
+        // exactly the moment there was something new to look at. SH183 removed the reason:
+        // Shio renders the page itself. The two destinations are genuinely different, and
+        // the difference is a *token* — an external front end needs one to turn its own
+        // draft mode on at /api/preview, while /preview/** is already console-authenticated
+        // and already draft-preferred. Minting a credential for the second would be issuing
+        // a key nobody unlocks anything with.
+        Destination destination = ShSiteFrontEnd.of(site);
+        if (!destination.isExternal()) {
+            return ResponseEntity.ok((Object) new ShPreviewTokenResponse(null,
+                    ShSiteFrontEnd.pageUrl(destination, post.getFurl()), null, 0L));
         }
+        String base = destination.baseUrl();
 
         Instant now = Instant.now(clock);
         long ttl = clampTtl(body.ttlSeconds(), cfg);

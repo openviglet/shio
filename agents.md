@@ -267,6 +267,18 @@ stylesheet cannot hide because it is inline-styled rather than classed.
 - **A region's `JAVASCRIPT` is never evaluated in the JVM** — that split is the whole
   resolution of the Block D non-goal. It is also **not yet served to the browser** (SH248), so
   the field currently accepts code that has no effect.
+- **`ShSiteFrontEnd` is the one place that answers "where can a person look at this site" (SH184)**
+  — the configured `site.url`, or Shio's own `/preview/**` when there is none. It returns a
+  **record, not a string**, because the two differ by a *token*: an external front end needs
+  one to turn its own draft mode on at `/api/preview`, while `/preview/**` is already
+  console-authenticated and already draft-preferred, so minting for it would issue a credential
+  that unlocks nothing. `ShPreviewTokenAPI` therefore returns a **null `token`** in that case
+  and `previewUrl` is the field always present. The fallback is **resolved, never stored**:
+  writing `/preview/<site>` into the column would make every later reader unable to tell a
+  placeholder from a real deployment, and would leave no empty value for `site.upsert` to fill.
+  The console mirrors it in `shio-react/src/lib/site-front-end.ts` — both **View Site** buttons
+  and the editor's iframe share it, since three inline copies of one rule is a rule that will be
+  right in two of them.
 
 ### Static files — upload/serve subsystem (SH38)
 Binary files are first-class `File`-post-type unified posts; the bytes live on
@@ -736,10 +748,22 @@ stale; there is no console post-type controller.)
 
 **Creating a site is `site.upsert` on the batch surface (SH170)** — addressed `site:<name>`,
 idempotent, and it creates a **blank** site (`ShSiteWriteService.createBlank`), not a clone of the
-SH71 bootstrap template. It **never updates**: a site's URL and description are console concerns
-with a human looking at them, so the op creates or reports `noop`. A token with an SH2 site
-allow-list is **refused** — inventing a site outside the list is the escalation §XII forbids.
-`POST /api/v2/site` still exists for the console (session + CSRF, and it keeps the starter clone).
+SH71 bootstrap template. A token with an SH2 site allow-list is **refused** — inventing a site
+outside the list is the escalation §XII forbids. `POST /api/v2/site` still exists for the console
+(session + CSRF, and it keeps the starter clone).
+**It fills what is empty and never replaces what somebody chose (SH184).** SH170 refused to update
+at all, reasoning that a site's URL and description are console concerns with a human looking at
+them — right about a *decision*, wrong about a *blank*, and it left an agent able to build a site,
+deploy a front end and not connect the two without a human opening the console. An empty `url`,
+`description` or `furl` is now filled and reported as an `update` naming the fields; a non-empty
+one is **kept**, and the note says which and points at the console, because a bare `noop` reads as
+the request having been ignored rather than as a value having been protected. Three rules: the op
+stays **idempotent** (a second run is `noop`, so a document is re-runnable); a **`dryRun` answers
+from the same code that writes** (`ShSiteWriteService.planFill`), so a plan cannot come back
+greener than the run it predicts; and the rule lives on **`ShSiteWriteService`**, not in the batch
+service — what an upsert may overwrite is write semantics, and SH245 is the standing lesson about
+second copies of a verb. Do **not** reach for `update` instead: that is the console's full replace
+and it nulls `postTypeLayout` and `searchablePostTypes` on the way past.
 
 **`managed` on a write is a claim about the writer, not a data field** — which is why it is a
 `Boolean` and why *absent* and `false` mean different things:

@@ -1476,19 +1476,20 @@ is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that exis
 
 ### XV.2 A site's front-end URL is unreachable from the agent path (SH184)
 
-`site.url` is the one field that turns content into something a human can open, and nothing an
-agent can call sets it. SH170's `site.upsert` creates a blank site and deliberately *never
-updates* one, on the reasoning that a site's URL and description are console concerns with a
-human looking at them. That holds for a decision about a domain; it does not hold for the field
-that gates both visual surfaces. An agent can build a site, scaffold a front end and run it,
-and still not connect the two without a human opening the console.
-
-With SH183 the default stops being a judgement call: a new site's URL can point at Shio's own
-preview route, so a site is visible as soon as it has content, and pointing it at a real
-deployment later is the human's edit. Two properties to keep — setting it stays idempotent and
-reported like every other op, and it refuses to *replace* a URL a human set. The P7 line runs
-between "fill in what was empty" and "redirect what somebody chose"; only the second is a
-surprise.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two rules worth keeping, because
+> both were arrived at by rejecting a simpler version:
+>
+> **Fill what is empty, never replace what somebody chose.** SH170 refused to update a site
+> at all and was right about a *decision* and wrong about a *blank* — the agent is the thing
+> that just deployed the front end and knows the address. The P7 line is not "may an upsert
+> write this field" but "was there anything there".
+>
+> **The preview fallback is resolved, not stored.** Writing `/preview/<site>` into
+> `site.url` at creation is one line and destroys both other properties: the column stops
+> meaning "the customer's front end", and there is no longer an empty value to fill or a way
+> to tell a placeholder from a choice. `ShSiteFrontEnd` answers the question at the point of
+> use instead, and returns a *record* rather than a URL, because the two destinations differ
+> by whether a token is needed at all.
 
 ### XV.3 Nothing implements the Universal Editor's iframe protocol (SH185)
 

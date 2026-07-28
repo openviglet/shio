@@ -404,7 +404,8 @@ public class ShAgentBatchService {
     // --- site ops ---
 
     /**
-     * Creates the site if it is not there, and reports {@code noop} if it is (SH170).
+     * Creates the site if it is not there, and <b>fills in what is empty</b> if it is
+     * (SH170, SH184).
      *
      * <h2>Why the batch surface needed an eighth op</h2>
      *
@@ -413,26 +414,37 @@ public class ShAgentBatchService {
      * {@code POST /api/v2/site}: id-keyed, entity-shaped, and CSRF-gated, which answers a
      * stateless caller with a bodiless 403. Nothing to read, nothing to fix.</p>
      *
-     * <h2>What it deliberately does not do</h2>
+     * <h2>Fill what is empty, never replace what somebody chose (SH184)</h2>
      *
-     * <p><b>It never updates.</b> The name is the address, and everything else a site carries —
-     * its URL, its description, its layout — is a console concern with a human looking at it.
-     * An "upsert" that quietly repointed a live site's URL because a document mentioned it would
-     * be the surprise P7 forbids, so this op creates or does nothing, and says which.</p>
+     * <p>SH170 made this op refuse to update at all, reasoning that a site's URL and
+     * description are console concerns with a human looking at them. That is right about a
+     * decision and wrong about a blank: {@code site.url} is the field that gates both visual
+     * surfaces, so an agent could build a site, scaffold a front end, deploy it, and still not
+     * connect the two without a human opening the console. Nothing about that is a judgement
+     * only a person can make — the agent is the one that knows the URL.</p>
      *
-     * <p><b>It creates a blank site</b> (SH151), not a clone of the SH71 bootstrap template:
-     * a package applied over somebody else's Welcome page is not what was asked for.</p>
+     * <p><b>The P7 line runs between filling in what was empty and redirecting what somebody
+     * chose</b>, and only the second is a surprise. So an empty {@code url}, {@code description}
+     * or {@code furl} is filled and reported as an {@code update} naming which fields moved; a
+     * non-empty one is <b>left exactly as it is</b>, and the change note says so rather than
+     * reporting a success that did not happen. A caller that means to repoint a live site is
+     * asking for a console edit, and being told that is more useful than a silent no-op.</p>
      *
-     * <p><b>It refuses a scoped credential.</b> A token with an SH2 site allow-list must not
-     * create a site outside it — that is the escalation §XII forbids, and the allow-list would
-     * otherwise be a list of sites this token may read plus any it invents.</p>
+     * <p>Everything stays idempotent: a second run finds the fields filled and reports
+     * {@code noop}, which is what makes an SH82 document re-runnable.</p>
+     *
+     * <p>It creates a <b>blank</b> site (SH151), not a clone of the SH71 bootstrap template:
+     * a package applied over somebody else's Welcome page is not what was asked for. And it
+     * <b>refuses a scoped credential</b> — a token with an SH2 site allow-list must not create
+     * a site outside it, or the allow-list is a list of sites this token may read plus any it
+     * invents (§XII).</p>
      */
     private Change siteUpsert(ShAgentBatch.Op op, Session session) {
         ShAddress address = writeAddress(op, ShAddress.Kind.SITE);
         String name = address.site();
         Optional<ShSite> existing = siteAccess.find(name);
         if (existing.isPresent()) {
-            return session.change(op, address, Change.NOOP, null, existing.get().getId());
+            return siteFill(op, session, address, existing.get());
         }
         requireUnscopedCredential(name);
         if (session.dryRun) {
@@ -446,6 +458,42 @@ public class ShAgentBatchService {
         payload.setFurl(text(op.data(), "furl"));
         ShSite created = shSiteWriteService.createBlank(payload, session.actor);
         return session.change(op, address, Change.CREATE, "a blank site", created.getId());
+    }
+
+    /**
+     * The SH184 half, delegated to {@link ShSiteWriteService#fillEmpty} — the rule about what
+     * an upsert may overwrite is write semantics, and SH245 is the standing lesson about
+     * second copies of a verb. All that happens here is reporting.
+     *
+     * <p>A dry run asks the same question without writing: it reads the site's current values
+     * and reports the same {@code filled}/{@code kept} split, which is what lets a plan tell
+     * the caller in advance that their URL will not be applied.</p>
+     */
+    private Change siteFill(ShAgentBatch.Op op, Session session, ShAddress address, ShSite site) {
+        Map<String, String> requested = new LinkedHashMap<>();
+        for (String field : ShSiteWriteService.FILLABLE) {
+            String value = text(op.data(), field);
+            if (value != null && !value.isBlank()) {
+                requested.put(field, value);
+            }
+        }
+        ShSiteWriteService.ShSiteFill fill = session.dryRun
+                ? shSiteWriteService.planFill(site, requested)
+                : shSiteWriteService.fillEmpty(site, requested, session.actor);
+        if (!fill.changed()) {
+            // Naming what was kept matters: without it, "I asked for a new url and got noop"
+            // reads as the op having ignored the request rather than having protected a value
+            // somebody chose.
+            String detail = fill.kept().isEmpty() ? null
+                    : "kept the existing " + String.join(", ", fill.kept())
+                            + " — an upsert fills what is empty and never replaces a value a "
+                            + "human set; change it in the console";
+            return session.change(op, address, Change.NOOP, detail, site.getId());
+        }
+        String detail = "filled " + String.join(", ", fill.filled())
+                + (fill.kept().isEmpty() ? ""
+                        : "; kept the existing " + String.join(", ", fill.kept()));
+        return session.change(op, address, Change.UPDATE, detail, site.getId());
     }
 
     /** A single string field of an op's {@code data}, or {@code null}. */

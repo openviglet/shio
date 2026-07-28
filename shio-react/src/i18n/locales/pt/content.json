@@ -223,6 +223,5 @@
   "preview.editSite": "Editar Site",
   "preview.cacheCleared": "Cache limpo com sucesso",
   "content.postTypeHasNoFields": "O post type {{name}} ainda não declara campos, então não há nada para editar. Adicione campos e este formulário passará a renderizá-los.",
-  "content.undeclaredFields": "Este post contém valores que seu post type não declara: {{fields}}. Eles são preservados ao salvar, mas nenhum campo os renderiza.",
-  "content.siteNoUrl": "Este site não tem uma URL de front-end configurada, então não há o que abrir. Defina uma nas propriedades do site."
+  "content.undeclaredFields": "Este post contém valores que seu post type não declara: {{fields}}. Eles são preservados ao salvar, mas nenhum campo os renderiza."
 }

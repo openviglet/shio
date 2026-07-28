@@ -20,6 +20,7 @@ import { ShSiteService } from "@/services/site/site.service"
 import { ShUniversalEditorService } from "@/services/universal-editor/universal-editor.service"
 import { UE_TOKEN_KEY } from "./editor-sites.page"
 import type { ContentChange, SelectedElement } from "@/models/universal-editor/universal-editor.model"
+import { siteDestination } from "@/lib/site-front-end"
 
 const siteService = new ShSiteService()
 const editorService = new ShUniversalEditorService()
@@ -45,11 +46,15 @@ export default function VisualEditorPage() {
 
   const token = useMemo(() => localStorage.getItem(UE_TOKEN_KEY) ?? "", [])
 
-  // Resolve the iframe URL: an explicit ?url= (external mode) or the site's url.
+  // Resolve the iframe URL: an explicit ?url= (external mode), the site's own front end,
+  // or — since SH184 — Shio's own renderer.
   //
-  // Both failures are reported (SH181). The endpoint now answers an id, a furl or a name,
-  // so a wrong key is no longer a 404 — but a site that resolves and has no front-end url
-  // configured still has nothing to render, and that is a sentence, not a spinner.
+  // A wrong key is no longer a 404 (SH181: the endpoint answers an id, a furl or a name),
+  // and a site with no front-end url is no longer a dead end either. An empty `url` is the
+  // *normal* state of a site an agent just built, so refusing to open the editor at that
+  // moment made it unavailable for exactly the sites that most needed looking at. SH183
+  // renders the page here, and the fallback mirrors ShSiteFrontEnd on the server so the two
+  // cannot come to disagree about where a site is visible.
   useEffect(() => {
     const external = searchParams.get("url")
     if (siteId === "external" && external) {
@@ -61,8 +66,8 @@ export default function VisualEditorPage() {
     siteService
       .get(siteId)
       .then((site) => {
-        setSrc(site.url ?? "")
-        setSiteError(site.url ? null : t("universalEditor.siteNoUrl", { name: site.name }))
+        setSrc(siteDestination(site).url)
+        setSiteError(null)
       })
       .catch(() => setSiteError(t("universalEditor.siteNotFound", { key: siteId })))
   }, [siteId, searchParams, t])

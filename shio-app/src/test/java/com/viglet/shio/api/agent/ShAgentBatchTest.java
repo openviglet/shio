@@ -519,4 +519,98 @@ class ShAgentBatchTest {
                 "post:" + siteName + "/not-a-site", null, null, null)))
                 .isInstanceOf(ShAgentBatchService.BatchOpException.class);
     }
+
+    // --- SH184: fill what is empty, never replace what somebody chose ---
+
+    @Test
+    @DisplayName("SH184: an empty url is filled — the agent is what knows the URL")
+    void siteUpsertFillsAnEmptyUrl() {
+        String name = "sh184-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, siteOp(name, null));
+
+        // SH170 refused to update at all, so an agent could build a site, deploy a front end
+        // and still not connect the two without a human opening the console. Nothing about
+        // that is a judgement only a person can make.
+        Change change = only(run(false, siteOp(name, siteData("https://built.example.com", null))));
+
+        assertThat(change.action()).isEqualTo(Change.UPDATE);
+        assertThat(change.detail()).contains("filled url");
+    }
+
+    @Test
+    @DisplayName("SH184: a url somebody set is kept, and the report says so")
+    void siteUpsertNeverReplacesAChosenUrl() {
+        String name = "sh184-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, siteOp(name, siteData("https://chosen.example.com", null)));
+
+        Change change = only(run(false, siteOp(name, siteData("https://hijack.example.com", null))));
+
+        assertThat(change.action())
+                .as("""
+                        the P7 line runs between filling in what was empty and redirecting what \
+                        somebody chose, and only the second is a surprise""")
+                .isEqualTo(Change.NOOP);
+        assertThat(change.detail())
+                .as("""
+                        naming what was kept is what stops this reading as the op having ignored \
+                        the request; a bare noop tells the caller nothing about why""")
+                .contains("kept the existing url")
+                .contains("console");
+    }
+
+    @Test
+    @DisplayName("SH184: filling is idempotent, so a document stays re-runnable")
+    void fillingIsIdempotent() {
+        String name = "sh184-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, siteOp(name, null));
+        Op withUrl = siteOp(name, siteData("https://built.example.com", "A site"));
+
+        assertThat(only(run(false, withUrl)).action()).isEqualTo(Change.UPDATE);
+        assertThat(only(run(false, withUrl)).action())
+                .as("the same document applied twice reports no change the second time (P5)")
+                .isEqualTo(Change.NOOP);
+    }
+
+    @Test
+    @DisplayName("SH184: a plan says in advance that a url will not be applied")
+    void aPlanReportsWhatWillBeKept() {
+        String name = "sh184-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, siteOp(name, siteData("https://chosen.example.com", null)));
+
+        Change planned = only(run(true, siteOp(name, siteData("https://hijack.example.com", null))));
+
+        assertThat(planned.action()).isEqualTo(Change.NOOP);
+        assertThat(planned.detail()).contains("kept the existing url");
+        // And the plan wrote nothing, so the real run still reports the same thing.
+        assertThat(only(run(false, siteOp(name, siteData("https://hijack.example.com", null))))
+                .action()).isEqualTo(Change.NOOP);
+    }
+
+    @Test
+    @DisplayName("SH184: a plan reports the fill it would do, and does not do it")
+    void aPlanReportsAFillWithoutWriting() {
+        String name = "sh184-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, siteOp(name, null));
+        Op withUrl = siteOp(name, siteData("https://built.example.com", null));
+
+        assertThat(only(run(true, withUrl)).action()).isEqualTo(Change.UPDATE);
+        assertThat(only(run(true, withUrl)).action())
+                .as("a dry run that had written would report noop the second time")
+                .isEqualTo(Change.UPDATE);
+    }
+
+    private Op siteOp(String name, JsonNode data) {
+        return new Op(ShAgentBatchService.SITE_UPSERT, "site:" + name, null, null, data);
+    }
+
+    private JsonNode siteData(String url, String description) {
+        Map<String, String> fields = new java.util.LinkedHashMap<>();
+        if (url != null) {
+            fields.put("url", url);
+        }
+        if (description != null) {
+            fields.put("description", description);
+        }
+        return objectMapper.valueToTree(fields);
+    }
 }

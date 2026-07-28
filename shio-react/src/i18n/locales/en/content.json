@@ -223,6 +223,5 @@
   "preview.editSite": "Edit Site",
   "preview.cacheCleared": "Cache cleared successfully",
   "content.postTypeHasNoFields": "The post type {{name}} declares no fields yet, so there is nothing to edit. Add fields to it and this form will render them.",
-  "content.undeclaredFields": "This post holds values its post type does not declare: {{fields}}. They are kept when you save, but no field renders them.",
-  "content.siteNoUrl": "This site has no front-end URL configured, so there is nothing to open. Set one in the site's properties."
+  "content.undeclaredFields": "This post holds values its post type does not declare: {{fields}}. They are kept when you save, but no field renders them."
 }

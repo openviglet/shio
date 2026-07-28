@@ -247,7 +247,9 @@ public class ShAgentManifestService {
                 new ShAgentEndpoint("POST", "/agent/batch",
                         "Write: N addressed ops (site.upsert, folder.upsert, post.upsert, "
                                 + "post.move, post.publish, …) in one atomic call. Send dryRun to "
-                                + "see the plan first. site.upsert makes a blank site — that is "
+                                + "see the plan first. site.upsert makes a blank site and fills "
+                                + "in an empty url/description/furl on one that exists (it never "
+                                + "replaces a value somebody set) — that is "
                                 + "step one and it is here, not on the console API. Rename or "
                                 + "relocate with post.move, a section with folder.move — "
                                 + "re-addressing an upsert creates a second post, and deleting the "
