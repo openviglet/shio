@@ -264,9 +264,14 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `search`, `form` and `getRelation` are **deliberately unregistered** (SH247): a helper that
   silently renders nothing is worse than Handlebars' unknown-helper error, which carries a line
   and a column.
-- **A region's `JAVASCRIPT` is never evaluated in the JVM** — that split is the whole
-  resolution of the Block D non-goal. It is also **not yet served to the browser** (SH248), so
-  the field currently accepts code that has no effect.
+- **A region's `JAVASCRIPT` is never evaluated in the JVM, and is shipped to the browser
+  (SH248)** — that split is the whole resolution of the Block D non-goal, and SH183 landed
+  only the server half, so the field briefly accepted code with no effect. The composer now
+  emits it **inline** (the page is `no-store`, so a cacheable route buys nothing and adds
+  something that can 404) and **once per region name** (a layout may slot a nav in the header
+  and the footer; the markup is wanted twice, the initialisation is not). The body is a jsoup
+  `DataNode`, not text — as text, `if (a && b)` escapes to `&amp;&amp;` and the script is a
+  syntax error.
 - **`ShSiteFrontEnd` is the one place that answers "where can a person look at this site" (SH184)**
   — the configured `site.url`, or Shio's own `/preview/**` when there is none. It returns a
   **record, not a string**, because the two differ by a *token*: an external front end needs

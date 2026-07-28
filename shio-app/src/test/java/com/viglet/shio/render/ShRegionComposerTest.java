@@ -108,6 +108,79 @@ class ShRegionComposerTest {
                 .isEqualTo(composer.compose(LAYOUT, regions()));
     }
 
+    // --- SH248: the browser half of the Block D split ---
+
+    @Test
+    @DisplayName("a region's JavaScript reaches the browser, annotated like its markup")
+    void regionScriptsAreEmitted() {
+        Map<String, ShRenderedRegion> regions = new LinkedHashMap<>(regions());
+        regions.put("BOOTSTRAP_NAV_REGION", new ShRenderedRegion("BOOTSTRAP_NAV_REGION",
+                "nav-post-id", "<a>Home</a>", "console.log('nav')"));
+
+        String page = composer.compose(LAYOUT, regions);
+
+        assertThat(page)
+                .as("""
+                        SH183 gave Region.JAVASCRIPT a code editor and served it nowhere, so the \
+                        field accepted working code and discarded its effect — worse than not \
+                        having the field, because it teaches the author they wrote it wrong.""")
+                .contains("<script data-shio-region=\"BOOTSTRAP_NAV_REGION\"")
+                .contains("console.log('nav')")
+                .contains("data-shio-region-post=\"nav-post-id\"");
+    }
+
+    @Test
+    @DisplayName("a script body is not escaped — `&&` must survive as `&&`")
+    void scriptBodiesAreNotHtmlEscaped() {
+        String page = composer.compose("<body><div sh-region=\"NAV\"></div></body>",
+                Map.of("NAV", new ShRenderedRegion("NAV", "p1", "<a>x</a>",
+                        "if (a && b) { document.write('<b>hi</b>') }")));
+
+        assertThat(page)
+                .as("a script is a DataNode, not text — jsoup would turn && into &amp;&amp; "
+                        + "and the script into a syntax error")
+                .contains("if (a && b)")
+                .doesNotContain("&amp;&amp;");
+    }
+
+    @Test
+    @DisplayName("a region slotted twice runs its script once")
+    void aRepeatedRegionScriptIsEmittedOnce() {
+        String twice = "<body><nav sh-region=\"NAV\"></nav><footer sh-region=\"NAV\"></footer></body>";
+
+        String page = composer.compose(twice, Map.of("NAV",
+                new ShRenderedRegion("NAV", "p1", "<a>Home</a>", "init()")));
+
+        assertThat(page.split("init\\(\\)", -1))
+                .as("""
+                        a nav in the header and the footer is why a layout does this, and running \
+                        its initialisation twice is a bug that only shows up on the layouts that \
+                        do — so the emit is keyed by region name, not by slot.""")
+                .hasSize(2);
+        assertThat(page.split("<a>Home</a>", -1))
+                .as("the markup, by contrast, is genuinely wanted in both places")
+                .hasSize(3);
+    }
+
+    @Test
+    @DisplayName("a region with no script adds no empty tag")
+    void noScriptMeansNoTag() {
+        assertThat(composer.compose(LAYOUT, regions())).doesNotContain("<script");
+    }
+
+    @Test
+    @DisplayName("a missing region contributes no script, because there is no post to run")
+    void aMissingRegionHasNoScript() {
+        String page = composer.compose(LAYOUT,
+                Map.of("BOOTSTRAP_NAV_REGION",
+                        new ShRenderedRegion("BOOTSTRAP_NAV_REGION", "nav-post-id", "<a>Home</a>",
+                                "console.log('nav')")));
+
+        assertThat(page.split("<script", -1))
+                .as("only the slot that was actually filled contributes one")
+                .hasSize(2);
+    }
+
     @Test
     @DisplayName("a region name cannot inject markup — it is only ever an attribute value")
     void aMissingRegionNameCannotEscapeIntoTheDocument() {

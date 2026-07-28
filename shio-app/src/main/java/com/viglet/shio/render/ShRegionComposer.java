@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.DataNode;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Component;
@@ -120,6 +121,9 @@ public class ShRegionComposer {
             return "";
         }
         Document document = parse(layoutHtml);
+        // Filled in slot order, so the scripts below come out in the order the page uses
+        // the regions rather than in whatever order the map happens to hold them (P5).
+        LinkedHashSet<String> filled = new LinkedHashSet<>();
         for (Element slot : document.select("[" + SLOT_ATTR + "]")) {
             String name = slot.attr(SLOT_ATTR).trim();
             ShRenderedRegion region = regions.get(name);
@@ -133,8 +137,59 @@ public class ShRegionComposer {
                 slot.attr(ANNOTATION_POST, region.postId());
             }
             slot.html(region.html() == null ? "" : region.html());
+            filled.add(name);
         }
+        appendRegionScripts(document, regions, filled);
         return document.html();
+    }
+
+    /**
+     * SH248 — a region's browser JavaScript, shipped to the browser.
+     *
+     * <h3>Why the renderer has to do this</h3>
+     *
+     * <p>The whole resolution of the Block D non-goal is a split: HTML composes on the server,
+     * declaratively; <b>JavaScript runs in the browser as a region's static asset</b>. SH183
+     * shipped the first half and gave {@code Region.JAVASCRIPT} a code editor, and nothing
+     * served it — so the field accepted working code and silently discarded its effect, which
+     * is worse than not having the field, because it teaches the author that they wrote the
+     * code wrong. Same shape as SH178's two schema entry points.</p>
+     *
+     * <h3>Inline, and once per region</h3>
+     *
+     * <p><b>Inline</b> rather than a cacheable route, because the page it is part of is served
+     * {@code no-store} (SH183's guard against a preview becoming infrastructure) — caching a
+     * fragment of an uncacheable page buys nothing, and a route is a second thing that can
+     * 404. It also keeps the render self-contained, which is what SH102's snapshot and SH187
+     * need. If preview ever becomes delivery, this is one of the decisions that gets revisited
+     * along with the headers.</p>
+     *
+     * <p><b>Once</b>, keyed by region name, because a layout may slot the same region twice —
+     * a nav in the header and the footer — and running its initialisation twice is a bug that
+     * only appears on the layouts that do it. {@code filled} is a {@code LinkedHashSet} for
+     * exactly that.</p>
+     *
+     * <p>Each tag carries {@code data-shio-region}, so a script is traceable to the post it
+     * came from in the same way its markup is.</p>
+     */
+    private void appendRegionScripts(Document document, Map<String, ShRenderedRegion> regions,
+                                     LinkedHashSet<String> filled) {
+        for (String name : filled) {
+            ShRenderedRegion region = regions.get(name);
+            if (region == null || region.javascript() == null || region.javascript().isBlank()) {
+                continue;
+            }
+            Element script = document.createElement("script");
+            script.attr(ANNOTATION_NAME, name);
+            if (region.postId() != null) {
+                script.attr(ANNOTATION_POST, region.postId());
+            }
+            // appendChild(DataNode) rather than .text(): a script body is not text content,
+            // and jsoup would escape `<` and `&` in it — which turns `a && b` into `a &amp;&amp; b`
+            // and the script into a syntax error.
+            script.appendChild(new DataNode(region.javascript()));
+            document.body().appendChild(script);
+        }
     }
 
     private Document parse(String html) {
@@ -148,11 +203,18 @@ public class ShRegionComposer {
     /**
      * One region's contribution to a page.
      *
-     * @param name   the {@code sh-region} name it answers to
-     * @param postId the Region post's id, so the rendered DOM can be mapped back to the
-     *               thing to save — SH185's contract
-     * @param html   the rendered markup
+     * @param name       the {@code sh-region} name it answers to
+     * @param postId     the Region post's id, so the rendered DOM can be mapped back to the
+     *                   thing to save — SH185's contract
+     * @param html       the rendered markup
+     * @param javascript the region's browser script (SH248), emitted once per page even when
+     *                   the layout slots the region twice. Never evaluated on the server.
      */
-    public record ShRenderedRegion(String name, String postId, String html) {
+    public record ShRenderedRegion(String name, String postId, String html, String javascript) {
+
+        /** For the many callers and tests that have no script to attach. */
+        public ShRenderedRegion(String name, String postId, String html) {
+            this(name, postId, html, null);
+        }
     }
 }

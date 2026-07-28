@@ -131,7 +131,7 @@ class ShPageRenderTest {
             post(site, root, layoutType, LAYOUT_TITLE, "/layout",
                     json("HTML", LAYOUT_HTML, "THEME", "SITE_THEME"), when);
             post(site, root, regionType, NAV_REGION, "/region-nav",
-                    json("HTML", NAV_HTML), when);
+                    json("HTML", NAV_HTML, "JAVASCRIPT", "document.title += ' (nav)'"), when);
             post(site, root, regionType, LIST_REGION, "/region-list",
                     json("HTML", LIST_HTML.formatted(articleType)), when);
 
@@ -187,6 +187,20 @@ class ShPageRenderTest {
                 .contains("sh-region=\"" + NAV_REGION + "\"")
                 .contains("data-shio-region=\"" + NAV_REGION + "\"")
                 .contains("data-shio-region-post=");
+    }
+
+    @Test
+    @DisplayName("SH248: a region's JavaScript reaches the page, and the JVM never runs it")
+    void regionJavaScriptIsServedToTheBrowser() {
+        String html = shPageRenderService.render(siteName, "/", ShPostState.DRAFT).html();
+
+        assertThat(html)
+                .as("""
+                        the Block D split is HTML on the server, JavaScript in the browser. SH183 \
+                        shipped the first half and served the second nowhere, so the field \
+                        accepted code and discarded its effect.""")
+                .contains("<script data-shio-region=\"" + NAV_REGION + "\"")
+                .contains("document.title += ' (nav)'");
     }
 
     @Test

@@ -234,7 +234,11 @@ public class ShPageRenderService {
         for (String name : slots) {
             postOfSystemType(site, ShSystemPostType.REGION, name).ifPresent(region ->
                     rendered.put(name, new ShRenderedRegion(name, region.getId(),
-                            engine.render(fieldOf(region, ShSystemPostTypeAttr.HTML), model))));
+                            engine.render(fieldOf(region, ShSystemPostTypeAttr.HTML), model),
+                            // SH248 — passed through, never evaluated. The composer emits it
+                            // as a <script> in the page; the JVM never sees it as code, which
+                            // is the half of the Block D split that makes the other half safe.
+                            fieldOf(region, ShSystemPostTypeAttr.JAVASCRIPT))));
         }
         return rendered;
     }

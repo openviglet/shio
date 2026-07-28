@@ -1734,24 +1734,12 @@ that is answered, writing the helper is writing half a feature.
 
 #### XV.15 A region's browser JavaScript is authored and never served (SH248)
 
-This is the sharpest of the three, because it is the one place the renderer's own argument is
-not yet true. The resolution of the Block D non-goal is a split: *HTML composes on the server,
-declaratively; JavaScript runs in the browser as a region's static asset.* The first half
-shipped. The second half is a field with a code editor in front of it and nothing on the other
-end — a composed page carries no `<script>` for any region, so `Region.JAVASCRIPT` is currently
-a place an author can put working code and watch it do nothing.
-
-That is worse than not having the field. A missing capability is discoverable; a field that
-accepts input and silently discards its effect teaches the author that they wrote the code
-wrong. It is the same failure shape as SH178's two schema entry points, where one worked and one
-did not and the difference read as a content problem.
-
-Two things to settle. **Where the bytes come from**: inline in the page is simpler, needs no new
-route and cannot 404, but it is uncacheable and repeats on every request; a route (SH38's
-`/file_source/**` is the precedent) is cacheable and is a second thing that can be wrong.
-**Deduplication**: a layout may slot the same region twice — the composer already collapses that
-for `slotsOf` — and emitting a region's script twice would run its initialisation twice, which
-is a class of bug that only appears on the layouts that do it.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The two open questions were
+> answered as: **inline**, because the page is `no-store` so a cacheable route buys nothing
+> and adds a thing that can 404; and **once per region name**, because a layout may slot the
+> same region twice and the markup is wanted in both places while the initialisation is not.
+> One thing the implementation found: the script body has to be a jsoup `DataNode`, not text
+> — as text, `if (a && b)` is escaped to `&amp;&amp;` and the script becomes a syntax error.
 
 #### XV.16 The renderer and the digest compose the same page differently (SH249)
 
