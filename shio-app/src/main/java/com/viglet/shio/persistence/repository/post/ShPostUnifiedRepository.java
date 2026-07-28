@@ -148,17 +148,24 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
      * subquery is on {@code ShPostUnified} itself, which carries its own {@code tenant_id}.</p>
      *
      * @param folder the parent folder
-     * @param term   a lower-cased, {@code %}-wrapped title filter, or {@code null} for all —
-     *               prefer {@link #pageConsoleRows(ShFolder, String, Pageable)}, which
-     *               normalizes for you (see the SH131 note on {@code FULLTEXT_PREDICATE})
+     * <p><b>The filter is the CDA's own predicate (SH240)</b> — {@link #FULLTEXT_PREDICATE},
+     * matching title, summary and the stored field data. It started as a title substring, which
+     * was faithful to what the browser's local filter did and made the console's search box
+     * quietly weaker than the delivery API: a curator who remembered a phrase from a page's body
+     * was told there was nothing there. One predicate, two callers, so the two surfaces cannot
+     * come to disagree about what "matches" means.</p>
+     *
+     * @param like   a lower-cased, {@code %}-wrapped pattern, or {@code null} for all — prefer
+     *               {@link #pageConsoleRows(ShFolder, String, Pageable)}, which normalizes for
+     *               you (see the SH131 note on {@code FULLTEXT_PREDICATE})
      */
     @Query("select p from ShPostUnified p where p.shFolder = :folder "
             + "and (p.state = com.viglet.shio.persistence.model.post.unified.ShPostState.DRAFT "
             + "  or not exists (select 1 from ShPostUnified d where d.id = p.id "
             + "    and d.state = com.viglet.shio.persistence.model.post.unified.ShPostState.DRAFT)) "
-            + "and (:term is null or lower(p.title) like :term)")
+            + "and (:like is null or " + FULLTEXT_PREDICATE + ")")
     Page<ShPostUnified> pageConsoleRowsLike(@Param("folder") ShFolder folder,
-                                            @Param("term") String term, Pageable pageable);
+                                            @Param("like") String like, Pageable pageable);
 
     /**
      * {@link #pageConsoleRowsLike} with the title filter normalized: {@code null}/blank means
@@ -167,10 +174,8 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
      * and matches nothing (SH131).
      */
     default Page<ShPostUnified> pageConsoleRows(ShFolder folder, String query, Pageable pageable) {
-        String term = query == null || query.isBlank()
-                ? null
-                : "%" + query.trim().toLowerCase() + "%";
-        return pageConsoleRowsLike(folder, term, pageable);
+        return pageConsoleRowsLike(folder,
+                query == null || query.isBlank() ? null : fullTextPattern(query), pageable);
     }
 
     List<ShPostUnified> findByShSite_IdAndStateIn(String siteId, Collection<ShPostState> states);

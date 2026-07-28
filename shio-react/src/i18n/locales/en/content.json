@@ -178,6 +178,7 @@
   "content.postCount_other": "{{count}} posts",
   "content.showingPosts": "Showing {{loaded}} of {{total}} posts",
   "content.loadMore": "Load more",
+  "content.selectAllCapped": "Selected the first {{loaded}} of {{total}} posts — narrow the search to reach the rest.",
   "content.selectPostTypeTooltip": "Select post type",
   "content.batchContent": "Content",
   "content.actionInBatch": "Action in Batch",

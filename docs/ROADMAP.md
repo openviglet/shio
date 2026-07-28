@@ -354,22 +354,25 @@
 > session on the CDA path (which is why the Universal Editor could not save), and `/graphql`'s
 > "no Mutation" premise is now a build failure carrying the decision made in advance.
 
+> ✅ **SH237 and SH240 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: "select everything"
+> pages the rest in before selecting (so the dialog's count is the count that will be acted on),
+> and the listing filter is the CDA's own full-text predicate rather than a title substring.
+>
 > ✅ **SH235 and SH236 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: `shio push` renames a
 > post-type instead of creating and deleting one (two signals, ambiguity refused, the source kept
 > out of `--prune`'s way), and deleting a type content still points at is a teaching 409 naming
 > the count instead of a constraint violation dressed as a server fault.
 >
-> **What finishing the block opened (SH235–SH240).** Four of the six come from following one
-> thread each to its client: SH163's rename has no CLI verb and no guard on the delete it
-> replaces (SH235, SH236), SH165's paging quietly narrowed two things the browser used to do over
-> the whole folder (SH237, SH240), and SH164's new floors measure one fixture size while claiming
-> to scale (SH239). SH238 is the one SH233 could not close: the defect lived behind a comment
-> because nothing in this repository drives that editor at all.
+> **What finishing the block opened (SH235–SH240), and what is left.** Four came from following
+> one thread each to its client — SH163's rename had no CLI verb and no guard on the delete it
+> replaces (SH235, SH236), and SH165's paging quietly narrowed two things the browser used to do
+> over the whole folder (SH237, SH240) — and all four have since shipped. **The two still open are
+> the two that need something this repository does not have yet**: SH238 needs a front end to
+> embed before the Universal Editor can be driven end to end, and SH239 needs a decision about
+> which fixture size a floor belongs at.
 
-- 📋 **SH237** (deps: SH165 ✅) **"Select everything" now means "everything loaded"** — the batch selection is built from the rows in the browser, and since the listing pages those are one page. A curator who picks *Select → Everything* and then *Delete* on a folder of five hundred posts deletes fifty, silently, which is the P7 surprise paging introduces if nothing follows it. Either the selection becomes a server-side predicate with a count ("all 500 matching"), or the labels say what they select — and the *count* the confirmation dialog shows has to be the one that will actually be acted on. → §XIV.14
 - 📋 **SH238** (deps: SH233 ✅, SH182 ✅) **The Universal Editor is driven by nothing** — SH233's defect survived because every test in this repository builds the request in Java or mocks the client, and the one comment that described the mechanism described it wrongly. The editor needs a front end to embed, so full coverage waits on Block P; the cheap half does not — SH182's harness can assert that the editor's PATCH reaches the CDA authenticated as the token rather than the curator, which is the single fact the whole feature rests on. → §XIV.15
 - 💭 **SH239** (deps: SH164 ✅) **The attribution floors claim to scale and measure one size** — addressing and the lint are the two sources SH164 says grow with the site, and both are measured on a fixture of five posts, so the claim that matters most is the one argued rather than asserted. Two fixture sizes and an assertion that the ratio *rises* with the second would make "it grows with the content" a measurement; it also decides whether the floors belong at the small size or the large one. → §XIV.16
-- 💭 **SH240** (deps: SH165 ✅, SH131 ✅) **The console's search box asks for titles and the instance can search content** — SH165 moved the filter to the server as a title/name substring, which is what the browser's own filter did over the loaded rows. The CDA has had full-text search since SH131, so a curator who remembers a phrase from a page's body gets nothing while the delivery API would have found it. Either the listing filter reaches the same predicate, or the box says it matches names — the current behaviour reads as "the content is not there". → §XIV.17
 
 
 ## Block O — The human half (the console the curator uses)

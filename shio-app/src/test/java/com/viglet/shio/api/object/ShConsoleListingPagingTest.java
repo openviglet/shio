@@ -174,6 +174,18 @@ class ShConsoleListingPagingTest {
     }
 
     @Test
+    @DisplayName("SH240: the filter reaches content, not just titles")
+    void filtersOnContentToo() {
+        // The box used to match titles only, which was faithful to the browser's local filter and
+        // made the console quietly weaker than the delivery API: a curator who remembered a phrase
+        // from a page's body was told there was nothing there. It is the CDA's own predicate now.
+        ShConsoleListing listing = list(0, 50, ShConsoleListingSort.TITLE, "quokka");
+
+        assertThat(titles(listing)).containsExactly("Delta");
+        assertThat(listing.totalPosts()).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("the filter reaches folders too")
     void filtersFoldersAsWell() {
         assertThat(list(0, 50, ShConsoleListingSort.TITLE, "subsec").folders())
@@ -243,7 +255,9 @@ class ShConsoleListingPagingTest {
         post.setTitle(title);
         post.setOwner("admin");
         post.setDate(date);
-        post.setData("{}");
+        // A body nothing else matches, so SH240's content filter is provable: "quokka" appears
+        // only in Delta's data, never in a title.
+        post.setData("Delta".equals(title) ? "{\"body\":\"a quokka appears\"}" : "{}");
         return post;
     }
 }

@@ -91,6 +91,15 @@ interface ObjectChild {
 const PAGE_SIZE = 50
 
 /**
+ * How many post ids "select everything" will pull in before it stops and says so (SH237).
+ *
+ * A selection is a list of ids, so selecting everything means holding every id — and an unbounded
+ * folder is exactly the response SH165 removed. The cap is high enough that no realistic curator
+ * gesture hits it and low enough that hitting it costs a warning rather than the tab.
+ */
+const SELECT_ALL_CAP = 1000
+
+/**
  * The browser's sort selector → the endpoint's `sort` (SH165).
  *
  * The order used to be applied here, over the whole folder, which was right while the whole
@@ -261,18 +270,58 @@ export default function ObjectChildrenPage() {
     })
   }, [])
 
-  const handleSelectAction = (action: string) => {
+  /**
+   * SH237 — every id of every post that matches, not just the ones on screen.
+   *
+   * The selection is a list of ids and stays one, so "everything" has to *be* everything: it
+   * pages the rest in before selecting. Before this, `Select → Everything` on a folder of five
+   * hundred posts selected fifty, the delete dialog said "50 item(s)", and the curator was left
+   * believing the folder was empty — the P7 surprise paging introduces if nothing follows it.
+   *
+   * Past `SELECT_ALL_CAP` it stops and says so rather than pulling an unbounded folder into the
+   * browser, which is the response SH165 removed. The number in the dialog is then still the
+   * number that will be acted on, which is the one property this has to keep.
+   */
+  const allMatchingPostIds = useCallback(async (): Promise<string[]> => {
+    const ids = listData.posts.map((post) => post.id)
+    if (ids.length >= listData.totalPosts) return ids
+    setLoadingMore(true)
+    try {
+      let page = listData.page
+      while (ids.length < Math.min(listData.totalPosts, SELECT_ALL_CAP)) {
+        page += 1
+        const res = await fetchPage(page)
+        const rows = res.data.posts ?? []
+        if (rows.length === 0) break
+        ids.push(...rows.map((post) => post.id))
+      }
+      if (ids.length < listData.totalPosts) {
+        toast.warning(t("content.selectAllCapped", { loaded: ids.length, total: listData.totalPosts }))
+      }
+      return ids
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [fetchPage, listData.page, listData.posts, listData.totalPosts, t])
+
+  const handleSelectAction = async (action: string) => {
     switch (action) {
       case "content":
-        setSelectedItems(new Set(combinedItems.filter(i => i.objectType === "POST").map(i => i.id)))
+        setSelectedItems(new Set(await allMatchingPostIds()))
         break
       case "folder":
+        // Folders are never paged (SH165), so this one really is all of them.
         setSelectedItems(new Set(combinedItems.filter(i => i.objectType === "FOLDER").map(i => i.id)))
         break
       case "everything":
-        setSelectedItems(new Set(combinedItems.map(i => i.id)))
+        setSelectedItems(new Set([
+          ...combinedItems.filter(i => i.objectType === "FOLDER").map(i => i.id),
+          ...await allMatchingPostIds(),
+        ]))
         break
       case "invert":
+        // Deliberately the loaded rows: "invert" is a statement about what is on screen, and
+        // inverting a set that includes ids nobody has seen is not a gesture anyone means.
         setSelectedItems(prev => {
           const all = new Set(combinedItems.map(i => i.id))
           prev.forEach(id => all.delete(id))
@@ -802,6 +851,8 @@ export default function ObjectChildrenPage() {
             toast.success(t("content.deletedShort"))
           } else {
             for (const id of selectedItems) {
+              // An id with no loaded row came from SH237's select-everything, which only ever
+              // collects posts — so the POST default is the right one rather than a guess.
               const item = combinedItems.find(i => i.id === id)
               await deleteObject(id, item?.objectType || "POST").catch(() => {})
             }

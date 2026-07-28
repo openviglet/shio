@@ -97,11 +97,23 @@ export class ShSiteService {
   **Only the posts page** — child folders come back whole on every page, because subfolders are
   structure (the move/copy picker walks them) and `size=1` is how a caller that wants only the
   structure asks. Three rules worth keeping: the **order and the filter are the server's**, since
-  a client-side sort over a paged listing sorts one page and reads exactly like a correct answer;
+  a client-side sort over a paged listing sorts one page and reads exactly like a correct answer —
+  and **`q` is the CDA's own `FULLTEXT_PREDICATE` (SH240)**: title, summary and stored field data,
+  the same predicate the delivery search uses, so the console cannot come to disagree with it about
+  what "matches" is (it started as a title substring, faithful to the browser's old local filter,
+  which left the console quietly weaker than the API it fronts; folder names stay a substring,
+  since a folder has no content);
   an unknown `sort` is a teaching **400**, never a fallback to the default, because a listing
   answered in another order returns other *rows*; and the DRAFT-preference is a **predicate**
   (`ShPostUnifiedRepository#pageConsoleRows`), not an in-memory dedup like the CDA's, so `LIMIT`
   and the count are the database's and a post with both rows takes one slot and is counted once.
+  **The browser's `Select → Everything` pages the rest in before selecting (SH237)** — a selection
+  is a list of ids, so "everything" has to be everything, or the delete dialog says "50 item(s)" on
+  a folder of five hundred and the curator is left believing it is empty. Past `SELECT_ALL_CAP`
+  (1000) it selects what it loaded and *says* so rather than pulling an unbounded folder into the
+  browser, which is the response paging removed; `invert` stays deliberately page-scoped, since
+  inverting a set that includes rows nobody has seen is not a gesture anyone means. The rule to
+  keep: **the number in the confirmation dialog is the number that will be acted on.**
 - `GET /api/v2/object/{id}/path` and `GET /api/v2/folder/{id}/path` — the CDA's own
   **`ShCdaPath`**: `{ site, breadcrumb: [...folders], currentFolder }`. Note `site`, not
   `shSite`; a breadcrumb folder carries `root: true|false`, not `rootFolder: 1`.

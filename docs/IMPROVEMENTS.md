@@ -1238,10 +1238,9 @@ leaving to whoever next notices the poll is not free.
 > The reorientation was mostly additive, but it did invalidate some existing choices.
 > Block N spent them → [CHANGELOG.md](CHANGELOG.md) Block N, and so are the tasks that
 > building it opened (SH163–SH167, SH233, SH234). What is left here is the one lesson worth
-> carrying forward (§XIV.4) and the tasks that **finishing** it opened (§XIV.14–§XIV.17). Two of
-> the six have already shipped (SH235, SH236 — the CLI's rename and the delete it exposed); what
-> is left is SH165's two quiet narrowings, the editor nothing drives, and the new floors that
-> claim to scale from a single fixture size.
+> carrying forward (§XIV.4) and the two tasks that **finishing** it opened and are still open
+> (§XIV.15–§XIV.16): the editor nothing drives, and the new floors that claim to scale from a
+> single fixture size. The other four (SH235–SH237, SH240) have shipped.
 > Concept spec §10 has the original table.
 
 ### XIV.4 Build-time guard for the `@TenantId` JOINED-join hazard (SH122) — ✅ shipped
@@ -1267,27 +1266,6 @@ the next such class rather than waiting for it to bite.
 input (word boundaries fail on both sides of a derived query name). A lint that
 matches nothing passes silently forever, so its patterns are asserted against the
 exact strings that broke production.
-
-### XIV.14 "Select everything" now means "everything loaded" (SH237)
-
-SH165 paged the listing and moved the sort and the filter to the server, and deliberately left
-the *selection* alone — it is built from the rows the browser holds. That was exactly right while
-the browser held the folder and is a P7 surprise now that it holds a page: **Select → Everything**
-followed by **Delete** on a folder of five hundred posts deletes fifty, reports "50 items
-deleted", and leaves the curator believing the folder is empty.
-
-The honest fix is not "load everything before selecting" — that reintroduces the response this
-task removed. Two designs are worth comparing, and the choice is really about what a batch *is*:
-
-* **A selection is a predicate.** "Everything" means the current `q`/folder, sent as a scope
-  rather than a list of ids, with the server reporting how many it matched. This is the shape that
-  scales and the shape that matches what the words say; it needs a batch endpoint that accepts a
-  scope, which the console does not have (`/copyto`, `/moveto` and the deletes all take ids).
-* **A selection stays a list and the labels stop lying.** "Everything on this page", with the
-  count in the confirmation dialog, and no promise about rows nobody has loaded.
-
-Whichever wins, the load-bearing rule is that **the number in the confirmation dialog is the
-number that will be acted on**. That is the one property the current code cannot state.
 
 ### XIV.15 The Universal Editor is driven by nothing (SH238)
 
@@ -1321,23 +1299,6 @@ large one (a floor that says what the protocol is for, and fails on a fixture no
 keep large). The first is the safer gate; the second is the honest claim. Stating both, with the
 gate on the small one and the number quoted from the large one, is probably the answer — and it is
 the same shape as the existing split between the loose token ceilings and the robust ratio floors.
-
-### XIV.17 The console searches names while the instance searches content (SH240)
-
-SH165 moved the listing filter to the server as a case-insensitive substring over folder names and
-post titles, because that is precisely what the browser's own filter did over the rows it held —
-the migration preserved the behaviour, which was the right call for a change about paging.
-
-What it also did is make the limitation *look* like an answer from the system rather than a
-property of a local array. The instance has had full-text search over post content since SH131
-(`ShPostUnifiedRepository`'s `search*` methods, which the CDA's `/search` uses), so a curator who
-remembers a phrase from a page's body types it into the box and is told there is nothing there.
-The two candidate designs differ in what they promise: reach the same full-text predicate from the
-listing (one behaviour, and the search box means "find my content"), or keep the substring and say
-so in the placeholder (two behaviours, and the console keeps a fast filter for "which of these
-rows"). The first is what a curator expects; the second is what the current code is. Deciding is
-cheap, and leaving it undecided means the console quietly under-answers a question the delivery
-API can answer.
 
 ## XV. The visible site (Block P)
 
