@@ -1018,6 +1018,85 @@ test("a sidecar the post no longer needs is removed, not left orphaned", async (
   assert.doesNotMatch(next.fs.files.get(REGION_MD), /JAVASCRIPT: content-list/);
 });
 
+// --- a value the projection normalizes is not a change (SH253) ---
+
+/**
+ * A server body holding CRLF — the fixture the whole suite was missing.
+ *
+ * `serializePost` rewrites it to LF, so the projection cannot represent it. What the format did
+ * with that was record the *server's* form in the base and the *file's* form on disk, which made
+ * the two disagree forever: every later pull reported a local change nobody made, and the CI
+ * drift gate went red on content nobody had touched. The normalization existed to prevent
+ * exactly that.
+ */
+const CRLF_REMOTE = {
+  address: "post:Blog/blog/hello",
+  type: "Article",
+  state: "DRAFT",
+  folder: "/blog",
+  data: { headline: "Hello", body: "<p>First</p>\r\n<p>Second</p>" },
+};
+
+test("a body the projection rewrites is agreed, not reported changed on every pull", async () => {
+  const ctx = ctxWith(server({ remote: { "post:Blog/blog/hello": CRLF_REMOTE } }));
+
+  const first = await contentPull.run({}, [], ctx);
+  assert.deepEqual(first.written, ["post:Blog/blog/hello"]);
+  assert.match(ctx.fs.files.get(FILE), /<p>First<\/p>\n<p>Second<\/p>/);
+
+  // The whole defect, as one assertion: same tree, same server, second pull. Before SH253 this
+  // was `kept: ["post:Blog/blog/hello"]` — a local change nobody made — and it never converged.
+  const again = await contentPull.run({}, [], { ...ctx, stdout: sink(), stderr: sink() });
+  assert.deepEqual(again.unchanged, ["post:Blog/blog/hello"]);
+  assert.deepEqual(again.kept, []);
+  assert.deepEqual(again.written, []);
+
+  // And a third, because the failure mode this replaced was *permanent*: a fix that merely
+  // swapped which side looked changed would pass the second pull and fail here.
+  const third = await contentPull.run({}, [], { ...ctx, stdout: sink(), stderr: sink() });
+  assert.deepEqual(third.unchanged, ["post:Blog/blog/hello"]);
+});
+
+test("the base records what the file holds, not what the server sent", async () => {
+  const ctx = ctxWith(server({ remote: { "post:Blog/blog/hello": CRLF_REMOTE } }));
+
+  await contentPull.run({}, [], ctx);
+
+  // Fingerprints, so the assertion is that the base agrees with the *file* — which is the only
+  // document the next pull will read. Digesting the server's copy is what broke.
+  const base = JSON.parse(ctx.fs.files.get(BASE_PATH));
+  const { baseEntryFor } = await import("../src/content-sync.mjs");
+  const { parsePost } = await import("../src/content-files.mjs");
+  const onDisk = parsePost("Blog/blog/hello.md", ctx.fs.files.get(FILE));
+  assert.deepEqual(
+    base.posts["post:Blog/blog/hello"].digest,
+    baseEntryFor(onDisk).digest,
+  );
+});
+
+test("a CRLF body is not a conflict, and push --content --check is clean", async () => {
+  const fetchImpl = server({ remote: { "post:Blog/blog/hello": CRLF_REMOTE }, changed: 0 });
+  const ctx = ctxWith(fetchImpl);
+  await contentPull.run({}, [], ctx);
+
+  // The push side asks the same question of the server's copy and got the same wrong answer:
+  // a body differing only in line endings read as "changed on the server", so the gate that is
+  // supposed to prove the tree and the instance agree reported drift on its own normalization.
+  const stdout = sink();
+  const result = await contentPush.run({ check: true }, [], {
+    ...ctx,
+    fetch: server({ remote: { "post:Blog/blog/hello": CRLF_REMOTE }, changed: 0 }),
+    stdout,
+    stderr: sink(),
+  });
+
+  // A conflict throws, so getting here at all proves the CRLF difference is not read as one.
+  assert.equal(result.drift, false);
+  assert.equal(result.exitCode, 0);
+  assert.doesNotMatch(stdout.text, /server is ahead/);
+  assert.match(stdout.text, /in sync/);
+});
+
 // --- the dev loop (SH90) ---
 
 test("one sync pulls, pushes, and records both as JSONL events", async () => {

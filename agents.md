@@ -898,7 +898,19 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   state pull writes back — the merge deliberately ignores it.
 - **Losslessness beats prettiness:** a value that would not survive the round trip stays in
   `fields:` (as JSON) instead of becoming the body. The one normalization is CRLF → LF in
-  the body, so a pull cannot report a change nobody made.
+  the body — and **the merge happens in the projection's domain (SH253)**, which is what makes
+  that normalization safe rather than the cause of the drift it was written to prevent. A remote
+  document is passed through `projectedPost` on the way in (`projectRemote`, called by *both*
+  `pull --content` and `push --content`), so the base, the server side and the file side are
+  compared as the file tree holds them. Before it, the base was fingerprinted from the *server's*
+  document while the file held the normalized form, so a CRLF body read as a local change on
+  every pull, forever, and `push --content --check` failed on content nobody edited. Two rules:
+  fingerprinting the projected document is only **half** — measured, that alone turns a permanent
+  `local-changed` into a permanent `remote-changed`, because the server's value is still outside
+  the domain — and `projectedPost` **round-trips through the format** rather than restating its
+  rules, so a normalization added later cannot escape it. This is SH145's `idsToPaths` argument
+  ("the base, the server side and the file side all speak paths") generalized from one field type
+  to every normalization the format has.
 - **Code gets a file of its own (SH191).** A `PageLayout`'s `HTML`, a `Region`'s
   `HTML`/`JAVASCRIPT` and a `Theme`'s `CSS` are programs, and before this they projected as
   escaped one-liners inside YAML frontmatter — no line numbers, no highlighting, nothing
@@ -915,7 +927,7 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   normalizes nothing, deliberately unlike the body's CRLF → LF, because a sidecar is read
   back as the whole file with no framing to strip, and normalizing means the value differs
   from the fingerprint the base took from the *server's* copy and every later pull reports a
-  local change nobody made (that is live on the body — **SH253**); a **missing** file named by
+  local change nobody made (that was live on the body, and is **SH253**, above); a **missing** file named by
   `files:` is a refusal, since "empty" publishes a blank layout and "absent" makes
   `post.upsert` clear the server's copy; and a sidecar the post **no longer needs is removed**,
   read off the file on disk rather than inferred. A `.remote` conflict copy stays **whole**

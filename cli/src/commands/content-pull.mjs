@@ -36,6 +36,7 @@ import {
   readLocalFolders,
   readLocalNotes,
   readRemoteNotes,
+  projectRemote,
   sidecarFields,
   sitesOf,
   readRemote,
@@ -118,6 +119,12 @@ export async function run(flags, _positionals, ctx) {
     remote[address] = mapped;
     for (const id of unresolved) unresolvedAssets.add(id);
   }
+  // SH253 — and then through the projection itself, for the same reason SH145 rewrites the ids
+  // above: the merge has to compare documents that all speak the file tree's language. Without
+  // it a value the format normalizes (a body's CRLF) is fingerprinted in the server's form and
+  // read back in the file's, so every later pull reports a change nobody made. After the asset
+  // rewrite, because a path is what the file will hold.
+  Object.assign(remote, projectRemote(remote, defs));
   if (unresolvedAssets.size) {
     // Left as ids on purpose: the File post is in a site this run did not read, or it is gone.
     // Inventing a path would put a broken one in the tree, which pushes back as a failed

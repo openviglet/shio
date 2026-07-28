@@ -21,6 +21,7 @@ import {
   normalizeUrl,
   parseFolderMarker,
   parsePost,
+  projectedPost,
   serializeFolder,
   serializePost,
   sidecarFieldsFor,
@@ -637,6 +638,36 @@ export function sidecarFields(defs) {
     if (def?.name) map.set(def.name, sidecarFieldsFor(def));
   }
   return map;
+}
+
+/**
+ * Every server document, as the file tree will hold it (SH253).
+ *
+ * <p>Both commands call this on the way in, so the base, the server side and the file side are
+ * compared in one domain and a value the projection cannot represent reads as *unchanged*
+ * rather than as an edit that never lands. See `projectedPost` for why fingerprinting the
+ * projected document is only half the fix, and `idsToPaths` (SH145) for the precedent.</p>
+ *
+ * <p>A document this cannot project is passed through untouched. It is the wrong reading — that
+ * post keeps the old defect — but the alternative is taking down a whole pull over one row, and
+ * a projection that refuses is a projection nobody can run.</p>
+ */
+export function projectRemote(docs, defs) {
+  const bodyField = bodyFields(defs);
+  const sidecarField = sidecarFields(defs);
+  const out = {};
+  for (const [address, doc] of Object.entries(docs ?? {})) {
+    try {
+      out[address] = projectedPost(
+        doc,
+        doc?.bodyField ?? bodyField.get(doc?.type) ?? null,
+        sidecarField.get(doc?.type) ?? [],
+      );
+    } catch {
+      out[address] = doc;
+    }
+  }
+  return out;
 }
 
 function dirOf(path) {

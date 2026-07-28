@@ -528,6 +528,60 @@ export function locationOf(relPath) {
 }
 
 /**
+ * The document as the file tree will hold it — the projection's own domain (SH253).
+ *
+ * <h3>The defect this exists to close</h3>
+ *
+ * `serializePost` normalizes a body's CRLF to LF, and its comment says why: "without it a
+ * server value holding CRLF would serialize one way and parse back another, and every pull
+ * would report a change nobody made". Sound about the file, wrong about the *comparison*,
+ * because the base snapshot is not taken from the file — `content-pull.mjs` fingerprinted the
+ * merge result, which for a post the server changed **is the server's document**, CRLF intact.
+ * So a pull wrote LF to disk, recorded CRLF in the base, and every later pull found the two
+ * different and reported a local change nobody made. Forever, until somebody pushed. The
+ * normalization caused precisely the drift it was added to prevent.
+ *
+ * <h3>Why the fix is here and not in the snapshot</h3>
+ *
+ * Fingerprinting the projected document instead of the remote one is the obvious repair and it
+ * is only half: measured, it turns a permanent `local-changed` into a permanent
+ * `remote-changed` — the file converges and the pull still reports a write on every run,
+ * because the *server's* value is still outside the domain everything else is compared in.
+ * So the rule is one step earlier and one step wider: **a remote document is projected on the
+ * way in, and the merge only ever compares documents that have been.** Then the base, the
+ * server side and the file side all speak the same language and an unrepresentable value is
+ * unchanged rather than eternally in flight.
+ *
+ * That is not a new idea in this codebase — SH145 does exactly this for `File` fields
+ * (`idsToPaths` rewrites an id to a path as it is read, "so the base, the server side and the
+ * file side all speak paths and a File field does not read as changed on every sync"). SH253
+ * is that argument applied to every normalization the format has, instead of one at a time.
+ *
+ * <h3>Why it round-trips rather than reimplementing the rules</h3>
+ *
+ * It serializes and parses, so it is exact **by construction**: a normalization added to the
+ * format cannot escape it, and there is no second list of "things the projection changes" to
+ * keep in step with the first. That is the property the CRLF bug came from lacking.
+ *
+ * @param {object} doc
+ * @param {string|null} [bodyField]
+ * @param {{name: string, ext: string}[]} [sidecarFields]
+ * @returns {object} the same document, as it reads back off disk
+ */
+export function projectedPost(doc, bodyField = null, sidecarFields = []) {
+  const projected = parsePost(filePathFor(doc), serializePost(doc, bodyField, sidecarFields));
+  // A sidecar's bytes are verbatim (SH191), so they come back exactly as they went out — but
+  // they are not in the document `parsePost` returns, because reading them is the store's job.
+  for (const sidecar of sidecarsOf(doc, sidecarFields)) projected.data[sidecar.field] = sidecar.text;
+  // Carried rather than round-tripped: neither is state the merge compares (`publish` is an
+  // instruction, `movedFrom` is one too), and both would be dropped by a projection that only
+  // ever writes what the server reported.
+  if (doc.publish !== undefined) projected.publish = doc.publish;
+  if (doc.movedFrom !== undefined) projected.movedFrom = doc.movedFrom;
+  return projected;
+}
+
+/**
  * Canonical form of a post: the exact bytes the file *would* hold.
  *
  * Useful for a whole-document comparison (has this file's content changed at all?) and for

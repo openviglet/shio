@@ -31,6 +31,7 @@ import {
   BASE_FILE,
   CONTENT_DIR,
   FOLDERS_DIR,
+  projectRemote,
   readAssetBytes,
   readBase,
   readLocal,
@@ -85,13 +86,20 @@ export async function run(flags, _positionals, ctx) {
     );
   }
 
-  const { docs: remote, truncated, skipped } = await readRemote(client, {
+  const { docs: rawRemote, truncated, skipped } = await readRemote(client, {
     site,
     // SH173: the tree names the sites this push is about, so the server read is scoped to
     // them. Before this, one un-addressable post in an unrelated site aborted the CI gate.
     sites: sitesOf(local, markers),
     limit: Number(flags.limit ?? 200),
   });
+  // SH253 — the same projection the pull applies, because this command answers two questions
+  // against the server's copy and both are wrong in the server's domain: whether a post changed
+  // on both sides (a body whose only difference is CRLF is not a conflict), and what to record
+  // as agreed for a post this tree does not declare. Recording the unprojected form there is how
+  // a clean `push` left the *next* pull reporting a change nobody made.
+  const defs = await admin.getPostTypeDefs();
+  const remote = projectRemote(rawRemote, defs);
   if (skipped.length) {
     // A finding, not a stack trace: it names what could not be read and what to do, and it
     // does not stop a push over content that read fine.
@@ -151,6 +159,8 @@ export async function run(flags, _positionals, ctx) {
   const declared = await resolveAssets(ctx, {
     client,
     admin,
+    // The defs the SH253 projection already fetched — this used to read them a second time.
+    defs,
     posts,
     sites: sitesOf(local, markers),
     assetsDir: flags.assetsDir ?? ASSETS_DIR,
@@ -349,8 +359,8 @@ async function pushNotes(client, ctx, { base, sites, dir, planOnly }) {
   return { written, forgotten, agreed };
 }
 
-async function resolveAssets(ctx, { client, admin, posts, sites, assetsDir, planOnly, stdout }) {
-  const fileFieldMap = fileFields(await admin.getPostTypeDefs());
+async function resolveAssets(ctx, { client, admin, defs, posts, sites, assetsDir, planOnly, stdout }) {
+  const fileFieldMap = fileFields(defs);
   const needed = new Set();
   for (const post of posts) {
     for (const name of fileFieldMap.get(post.type) ?? []) {

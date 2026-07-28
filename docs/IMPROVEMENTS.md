@@ -1617,10 +1617,11 @@ and proof that a single-app loop can simply do without.
 > the widget exists (**SH252**).
 >
 > **A projection that normalizes cannot be exact.** The body field's CRLF → LF exists so a
-> pull "cannot report a change nobody made", and it achieves the opposite: the base
-> fingerprint is taken from the *server's* document, so the normalized file reads back
-> different from the base and every later pull reports a local change until somebody pushes.
-> Sidecars are verbatim for that reason; the body is **SH253**.
+> pull "cannot report a change nobody made", and it achieved the opposite: the base
+> fingerprint was taken from the *server's* document, so the normalized file read back
+> different from the base and every later pull reported a local change until somebody pushed.
+> Sidecars are verbatim so the question never arises for them; the body needed the comparison
+> moved into the projection's domain, which shipped as **SH253** (§XVI.8).
 
 #### XV.10 A template must fail at write time, not at view time (SH192)
 
@@ -1986,43 +1987,97 @@ checked against what Spring Boot's parent POM already sets on `argLine` (and aga
 argLine, if that is ever added), and getting two agents onto one `argLine` is the part that
 actually takes care.
 
-### XVI.8 The body's CRLF normalization causes the drift it was written to prevent (SH253)
+### XVI.8 A normalization has to hold for the comparison, not just the file (SH253)
 
-`serializePost` carries this comment, and it is the only normalization in the whole projection
-format:
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth keeping, because
+> the design got one of them wrong.
+>
+> **The rule.** *Any* transformation a projection applies on the way out has to be applied to
+> the remote document on the way **in**, or the two sides are compared in different domains and
+> a value the projection cannot represent reads as an edit that never lands. The format now has
+> one boundary (`projectedPost`, called through `projectRemote` by both commands) instead of one
+> per normalization. SH145 had already reached this conclusion for `File` fields and stated it
+> in a comment; nothing generalized it, so the next normalization repeated the mistake.
+>
+> **What the design got wrong.** It named "fingerprint the projected document rather than the
+> remote one" as the real answer and the alternative as what a hurry would pick. Measured, that
+> is half a fix: it turns a permanent `local-changed` into a permanent `remote-changed`. Worth
+> remembering as a *shape* — a repair that moves which side looks wrong, while leaving the
+> asymmetry that made either side look wrong, reads as a fix and passes the obvious test. The
+> regression test pulls a third time for exactly this reason.
+>
+> **Why nothing caught it for four blocks.** No fixture in the suite had a CRLF in it, so every
+> round-trip assertion ran where the normalization is the identity function. A rule stated in a
+> comment, contradicted by a caller two files away, satisfied by every fixture: that combination
+> is invisible to a suite of any size, and it is the same class as SH136's byte-stability lint
+> (a defect twice-in-one-process comparison cannot see) and SH188's NULL column (a defect no
+> test that constructs the entity in Java can see).
+
+### XVI.9 A memory note with a trailing space is a permanent conflict (SH254)
+
+`content-notes.mjs` decides when a note needs quoting:
 
 ```js
-// The one normalization in the format: a body's line endings become LF. Without it a
-// server value holding CRLF would serialize one way and parse back another, and every
-// pull would report a change nobody made.
+/** Quoted whenever a bare scalar would be ambiguous — the same rule `content-files` uses. */
+function scalar(value) {
+  const text = String(value ?? "");
+  if (/^[A-Za-z0-9][\w .,/@-]*$/.test(text) && !/^(true|false|null|yes|no|on|off)$/i.test(text)) {
+    return text;
+  }
+  return JSON.stringify(text);
+}
 ```
 
-The reasoning is sound about the *file* and wrong about the *comparison*, because the base
-snapshot is not taken from the file. `content-pull.mjs` records
-`nextPosts[address] = baseEntryFor(result.doc)` — the merge result, which for a
-`remote-changed`/`remote-added` post **is the server's document**, CRLF intact. So the pull
-writes LF to disk, fingerprints CRLF into the base, and the next pull reads the file, compares
-it to the base, and finds them different. `reconcile` answers `local-changed`, so the pull keeps
-the file and reports it as a local-only change, every time, forever, until somebody pushes —
-and `push --content --check`, the CI drift gate, fails on content nobody edited.
+It is **not** the same rule. `encodeScalar` in `content-files.mjs` quotes on seven conditions,
+one of which is `value !== value.trim()`; this charset allows a trailing space, and `parseNotes`
+then strips trailing whitespace off every line. So `"keep it terse "` is emitted bare and read
+back as `"keep it terse"`, and the format cannot represent the value.
 
-Verified rather than argued: serialize a body of `"a\r\nb"`, parse it back, digest the remote
-document as the pull does, and `reconcile` returns `local-changed`.
+Measured, one shape is lost and only one — leading spaces, `: `, ` #`, tabs, newlines,
+YAML keywords and numeric-looking strings all round-trip exactly, because the charset's
+first-character rule and its exclusions cover the rest of `encodeScalar`'s list by accident.
 
-Nothing catches it because **no test in the suite uses a CRLF value** — the round-trip tests
-assert `parse(serialize(doc)) === doc.data` on LF content, where the normalization is the
-identity function. That is the shape worth remembering: a rule stated in a comment, contradicted
-by a caller two files away, and invisible to every assertion because the fixtures all happen to
-satisfy it. SH191's sidecars avoid it by normalizing nothing, which is available to them and not
-to the body, whose framing genuinely has to be stripped on read.
+**The consequence is worse than SH253's**, which is the part worth knowing before deciding
+priority. With an empty base — a fresh clone, which is the case a projection exists to serve —
+`reconcileNotes` sees `before = null`, `there = "keep it terse "`, `here = "keep it terse"`, so
+both sides look moved and the values differ: a **conflict**. Nothing is written, the pull exits
+1, and the message advises editing the file or running `shio remember` — neither of which can
+settle a value the file drops on the way in. SH253 produced a phantom *write*; this produces a
+phantom *stalemate*, on every run.
 
-**Two candidate fixes, and they are not equivalent.** Fingerprint the *projected* document
-rather than the remote one — that is, take the base from what was actually written, which is the
-only thing the next pull will read. It is correct for every future normalization and it changes
-what "agreed" means, so the `--ours`/`--theirs` paths and the v1-snapshot upgrade both want
-re-reading before it lands. Or normalize the remote value before digesting it: one line, fixes
-this case, and silently wrong the next time somebody adds a normalization — which is exactly how
-this defect was introduced. The first is the real answer; the second is what a hurry would pick.
+The fix is one predicate, and the second half is what stops it recurring: assert that the two
+`scalar` implementations agree, rather than asserting it in a comment. A comment claiming parity
+is exactly what made this invisible to review — it is the same failure mode as SH245's "one
+writer per verb", an invariant stated in prose and enforced nowhere. Whether the two should be
+*one* function is the open question: the formats are deliberately separate readers (SH161 argues
+for a small dedicated one over a YAML dependency), so sharing the scalar rule is a smaller change
+than sharing the parser and probably the right size.
+
+### XVI.10 The round trip is a property, and nothing asserts it as one (SH255)
+
+SH253 and SH254 are one defect found twice. Both are a value a format silently changes; both
+survived because **every fixture in the suite is a value its format represents exactly**, so
+`parse(serialize(x)) === x` was asserted only where it is trivially true. The post round-trip
+test uses LF bodies, where the CRLF normalization is the identity function. The notes tests use
+notes without trailing spaces.
+
+That is not a gap in coverage so much as a gap in *kind*: the property is universally quantified
+and every test is an example. The missing piece is one adversarial value list — trailing and
+leading whitespace, CRLF and a lone `\r`, YAML keywords, numeric-looking strings, `: `, ` #`,
+the empty string, a lone `-`, a leading BOM — run as a table against all three round trips
+(`parsePost`/`serializePost`, `parseFolderMarker`/`serializeFolder`, `parseNotes`/
+`serializeNotes`).
+
+**The exemption list is as important as the assertion**, because a format is allowed not to
+represent something: a body with trailing whitespace stays in `fields:` on purpose (`bodySafe`),
+which is the format handling the case correctly rather than losing it. So the guard is "exact, or
+named with a reason" — the shape `ShByteStabilityLintTest` and `ShFolderSiteInvariantTest`
+already use on the Java side, and the reason those two catch defects no behavioural test can.
+
+It is the complement of SH253 rather than a replacement: `projectedPost` makes a value the format
+cannot hold read as *unchanged* instead of eternally in flight, which is the right runtime
+behaviour; this makes the set of such values *known* instead of discovered one blocked pull at a
+time.
 
 ---
 
