@@ -164,6 +164,60 @@ class ShTemplateFieldScannerTest {
                 .containsExactly("ITEMS");
     }
 
+    // ── SH261: hash arguments ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("a hash value that is a path is a field of the enclosing scope")
+    void hashPathsAreReported() {
+        // The blind spot SH251 shipped with: `q=TOPIC` produced no reference at all, so a typo in
+        // the one form SH247 shipped `search` for — a term read from the page's own field — rendered
+        // an empty listing with nothing reported.
+        assertThat(pageScoped("{{#search q=TOPIC limit=5}}{{title}}{{/search}}"))
+                .containsExactly("TOPIC");
+        assertThat(pageScoped("{{#query folder=SECTION type=\"Article\"}}{{title}}{{/query}}"))
+                .as("`folder=SECTION` is the model-driven form; `type=\"Article\"` is a literal")
+                .containsExactly("SECTION");
+    }
+
+    @Test
+    @DisplayName("a literal, a number and a subexpression are not paths")
+    void hashLiteralsAreNotReported() {
+        assertThat(pageScoped("""
+                {{#query folder="/blog" type='Article' limit=10}}{{title}}{{/query}}
+                {{#search q=(concat A B)}}{{title}}{{/search}}"""))
+                .as("""
+                        Each is excluded for its own reason and none needs cleverness: a quoted                         value is a literal, a numeric one is a number, and a subexpression is a                         parse this deliberately does not do — so it is skipped whole rather than                         descended into.""")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("a quoted value with spaces stays one token")
+    void quotedValuesWithSpacesStayWhole() {
+        // Splitting on whitespace alone would cut this into `q="two` and `words"`, and the first
+        // half is not a path — the right answer for the wrong reason, which stops being right the
+        // day somebody writes a subexpression.
+        assertThat(pageScoped("{{#search q=\"two words\" folder=SECTION}}{{title}}{{/search}}"))
+                .containsExactly("SECTION");
+    }
+
+    @Test
+    @DisplayName("an inline helper's hash arguments resolve where the call is written")
+    void inlineHashPathsAreEnclosingScope() {
+        assertThat(pageScoped("<img src=\"{{file_url HERO alt=CAPTION}}\">"))
+                .as("both the positional field and the hash one belong to the page, and the "
+                        + "helper's own name is still not a field")
+                .containsExactlyInAnyOrder("HERO", "CAPTION");
+    }
+
+    @Test
+    @DisplayName("a hash argument inside a block belongs to that block's rows")
+    void hashPathsNestLikeEverythingElse() {
+        assertThat(inBlocks("{{#query folder=OUTER}}{{#search q=INNER}}x{{/search}}{{/query}}"))
+                .as("the nested helper's hash is resolved where *it* is written, which is inside "
+                        + "the outer block — the same rule as a positional argument")
+                .containsExactly("query:INNER");
+    }
+
     @Test
     @DisplayName("an unterminated mustache stops the scan instead of guessing")
     void anUnterminatedMustacheStops() {

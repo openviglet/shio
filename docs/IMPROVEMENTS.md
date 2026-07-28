@@ -2219,23 +2219,22 @@ fired, which is the part a reader would use to tell a good refusal from a confus
 
 ### XVI.15 A hash argument that is a field is not checked (SH261)
 
-Verified: `{{#search q=TOPIC}}` and `{{#query folder=SECTION}}` produce no reference at all for
-`TOPIC` or `SECTION`. The scanner reports a block's first **positional** argument and treats a
-`name=value` pair as not-positional, which is right for `folder="/blog"` — a quoted literal is not
-a field — and wrong for the model-driven form.
-
-It matters because the model-driven form is the useful one. SH247 shipped `search` explicitly as
-"a term the template supplies, literal **or read from the model**", and a page whose `TOPIC` field
-drives its own related-content listing is the case that makes the helper worth having. A typo there
-renders an empty listing — which is precisely the failure SH251 exists to catch, so the rule is
-blind exactly where its subject is most likely to be wrong.
-
-The work is to tell a quoted literal from a path in a hash value and report the latter in the
-enclosing scope. It is filed as an idea rather than designed for one reason: a subexpression
-(`q=(concat A B)`) has to be excluded, and parsing far enough to know that is a parse this scanner
-deliberately does not do. The likely shape is to accept only the unambiguous case — an unquoted
-value made entirely of path characters — and leave everything else alone, which is the same
-"weak claim, always true" bar the in-block warning already uses.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two things worth keeping.
+>
+> **The exclusion that mattered was the subexpression, and it is skipped whole.** This section
+> worried that `q=(concat A B)` would need parsing far enough to be excluded. It does not: tracking
+> paren depth in the tokenizer keeps the subexpression as one token, and one look at its first
+> character rejects it. The general shape — *make the thing you refuse to understand indivisible,
+> then refuse it* — is cheaper than understanding it and cannot be wrong about the inside.
+>
+> **Whitespace-only splitting would have passed the tests for the wrong reason.** `q="two words"`
+> cut in half yields `q="two`, which is not a path and is therefore dropped — the correct outcome,
+> reached by accident, and it stops being correct the first time a subexpression appears. Six lines
+> of quote and paren tracking removes the class instead of the instance. Worth noticing as a review
+> habit: a test that passes because a broken input happens to fail a later check is not evidence.
+>
+> What this leaves is that the scanner is now a hand-written reader of three constructs of somebody
+> else's grammar, with no statement of what it does *not* handle — **SH273**.
 
 ### XVI.16 A duplicate template title is silently the first one (SH263)
 
@@ -2451,6 +2450,33 @@ Where it belongs is the open question. The manifest's `startHere` is for orienta
 SH114's memory notes already sit beside, it is read once per session, and SH116's ETag makes it free
 on repeat. The thing to check before choosing is P3 — the pack is budgeted, and five signatures is a
 small but non-zero cost paid by every session including the ones that never write a template.
+
+### XVI.25 The scanner is a hand-written parser of somebody else's grammar (SH273)
+
+`ShTemplateFieldScanner` now reads mustaches, block nesting, triple stashes, whitespace-control
+markers, positional arguments and — since SH261 — hash pairs, with quote and paren tracking. Every
+addition was justified on its own and defensible in isolation. The total is a small parser of
+Handlebars' syntax, maintained against no specification.
+
+**The risk is specific, not aesthetic: the failure mode is silent under-reporting.** A construct the
+scanner does not recognise yields no reference, so the SH251 lint quietly stops covering it and
+nothing goes red. That is exactly what `{{~TEXT~}}` did — a real reference dropped — and it was
+caught by the scanner's own test noticing an asymmetry, not by anything systematic. There is no way to
+know what else is missing without enumerating the grammar.
+
+Two ways out, and they should be weighed rather than assumed:
+
+- **Use Handlebars.java's AST.** Rejected twice, for a stated reason — it is internal API and its
+  public surface (`Template#collect`) gives no scope information. Worth re-checking against the
+  current version rather than inherited: if the AST is reachable and carries nesting, most of this
+  class disappears.
+- **Make the coverage explicit.** A table of every construct the grammar has and what this does with
+  each — reported, skipped-with-reason, or known-unhandled — asserted by a test. That is SH255's
+  "exact, or declared" applied to a parser instead of a format, and it converts an unbounded risk
+  into a written one for very little work.
+
+The second is cheap and probably first: it is also how the first option gets evaluated honestly,
+since a coverage table makes "does the AST give us more" a question with an answer.
 
 ---
 

@@ -327,11 +327,16 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   literals, partials, comments, a block's own name, and an inline helper's name —
   `{{file_url HERO}}` reports `HERO`, and reporting `file_url` would fire on the one helper the
   shipped 2018 region used. A block's first positional argument is reported in the **enclosing**
-  scope, since `{{#if TEXT}}` and `{{#getRelation SECTIONS}}` ask about the current one. Two known
-  limits: Handlebars' `{{~TEXT~}}` form had to be stripped explicitly (left alone it silently
-  *drops* the reference), and a **hash** argument that is a field (`{{#search q=TOPIC}}`) is still
-  unchecked — **SH261**. The helper names are restated in five places and nothing checks that they
-  agree — **SH260**.
+  scope, since `{{#if TEXT}}` and `{{#getRelation SECTIONS}}` ask about the current one. A block's **hash**
+  arguments are read too (SH261) and resolve in the scope the *call* is written in, so
+  `{{#search q=TOPIC}}` reports `TOPIC` while `type="Article"`, `limit=10` and `q=(concat A B)` are
+  excluded — a literal, a number, and a subexpression skipped **whole** rather than parsed. The
+  tokenizer tracks quotes and parens for that reason; splitting on whitespace would cut
+  `q="two words"` and get the right answer by accident. Handlebars' `{{~TEXT~}}` form had to be
+  stripped explicitly (left alone it silently *drops* the reference), which is the failure direction
+  to watch here: an unrecognised construct yields no reference and the lint quietly stops covering it.
+  The scanner is now a hand-written reader of several constructs of Handlebars' grammar with no
+  statement of what it does *not* handle — **SH273**.
 - **A layout's and a region's blast radius is computed, never stored (SH193)** — `ShTemplateGraph`
   inverts the presentation edges (layout → the post-types bound to it, region → the layouts that
   slot it → their types → page and published counts). **Computed on demand and not extracted into

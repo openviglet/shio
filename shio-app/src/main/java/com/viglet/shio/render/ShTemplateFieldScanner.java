@@ -188,10 +188,15 @@ public final class ShTemplateFieldScanner {
                 if (BUILTIN_BLOCKS.contains(name) || helpers.pathArguments().contains(name)) {
                     addIfPath(found, argumentOf(body.substring(1), name), blocks.peekFirst());
                 }
+                // SH261 — and its hash arguments, in the same enclosing scope for the same reason.
+                addHashPaths(found, body.substring(1), blocks.peekFirst());
                 blocks.addFirst(name);
                 continue;
             }
             String token = firstToken(body);
+            // SH261 — an inline helper may take hash arguments too (`{{file_url HERO alt=TITLE}}`),
+            // and they resolve in the scope the call is written in, which is the current one.
+            addHashPaths(found, body, blocks.peekFirst());
             if (helpers.pathArguments().contains(token) || helpers.blocks().contains(token)) {
                 // The helper's name is not a field; its argument is. `{{file_url HERO}}` asks
                 // about HERO, and reporting `file_url` would be a false positive on the very
@@ -202,6 +207,85 @@ public final class ShTemplateFieldScanner {
             addIfPath(found, token, blocks.peekFirst());
         }
         return List.copyOf(found);
+    }
+
+    /**
+     * The hash values that are field paths rather than literals (SH261).
+     *
+     * <h3>The blind spot this closes</h3>
+     *
+     * <p>{@code {{#search q=TOPIC}}} and {@code {{#query folder=SECTION}}} produced no reference at
+     * all, because a {@code name=value} pair is not a positional argument and only the positional
+     * one was read. That was right for {@code folder="/blog"} — a quoted literal is not a field —
+     * and wrong for the <em>model-driven</em> form, which is the one SH247 shipped {@code search}
+     * for: "a term the template supplies, literal <b>or read from the model</b>". A page whose
+     * {@code TOPIC} field drives its own related-content listing is the case that makes the helper
+     * worth having, and a typo there renders an empty listing — precisely the failure SH251 exists
+     * to catch, so the rule was blind exactly where its subject is most likely to be wrong.</p>
+     *
+     * <h3>Only the unambiguous case</h3>
+     *
+     * <p>A quoted value is a literal; a value starting with {@code (} is a subexpression whose
+     * resolution this deliberately does not parse; a numeric value is a number. What is left — an
+     * unquoted token made entirely of path characters — is a path, and nothing else looks like one.
+     * That is the same "weak claim, always true" bar the in-block warning uses, and it is why this
+     * needs no cleverness about nesting: a subexpression is skipped whole rather than descended
+     * into.</p>
+     */
+    private static void addHashPaths(List<ShTemplateReference> found, String body, String scope) {
+        for (String token : tokens(body)) {
+            int equals = token.indexOf('=');
+            if (equals <= 0 || equals == token.length() - 1) {
+                continue;
+            }
+            addIfPath(found, token.substring(equals + 1), scope);
+        }
+    }
+
+    /**
+     * Whitespace-separated tokens, with quotes and parentheses kept whole.
+     *
+     * <p>Splitting on whitespace alone would cut {@code q="two words"} in half and produce
+     * {@code q="two} — whose value is not a path, so it would be dropped, which is the *right*
+     * answer reached for the wrong reason and stops being right the day somebody writes
+     * {@code q=(concat A B)}. Tracking the two nestings costs six lines and removes the class.</p>
+     */
+    private static List<String> tokens(String body) {
+        List<String> out = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        char quote = 0;
+        int depth = 0;
+        for (char character : body.trim().toCharArray()) {
+            if (quote != 0) {
+                current.append(character);
+                if (character == quote) {
+                    quote = 0;
+                }
+                continue;
+            }
+            if (character == '"' || character == '\'') {
+                quote = character;
+                current.append(character);
+                continue;
+            }
+            if (character == '(') {
+                depth++;
+            } else if (character == ')' && depth > 0) {
+                depth--;
+            }
+            if (Character.isWhitespace(character) && depth == 0) {
+                if (current.length() > 0) {
+                    out.add(current.toString());
+                    current.setLength(0);
+                }
+                continue;
+            }
+            current.append(character);
+        }
+        if (current.length() > 0) {
+            out.add(current.toString());
+        }
+        return out;
     }
 
     private static void addIfPath(List<ShTemplateReference> found, String token, String scope) {
