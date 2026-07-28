@@ -1,0 +1,144 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.render;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.viglet.shio.post.type.ShSystemPostType;
+import com.viglet.shio.post.type.ShSystemPostTypeAttr;
+import com.viglet.shio.render.ShTemplateValidator.ShTemplateProblem;
+
+/**
+ * SH192 — a template fails when it is written, and the refusal says where.
+ *
+ * <p>A Spring test on purpose, against the <b>real</b> engine. A bare {@code new
+ * ShTemplateEngine()} has no helpers registered — {@code ShRenderHelpers} does that at startup
+ * — so every legitimate {@code {{#query}}} would be reported as an unknown helper and the
+ * validator would look stricter than the renderer. The property that matters here is exactly
+ * that the two agree about which helpers exist, and only the wired engine can prove it.</p>
+ *
+ * @author Alexandre Oliveira
+ */
+@SpringBootTest
+class ShTemplateValidatorTest {
+
+    @Autowired
+    private ShTemplateValidator validator;
+
+    @Test
+    @DisplayName("a sound template produces nothing")
+    void aSoundTemplateIsSilent() {
+        assertThat(validator.validate("""
+                <div>{{#each items}}<p>{{title}}</p>{{/each}}</div>
+                {{#query type="Article"}}<a href="{{link}}">{{title}}</a>{{/query}}"""))
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("an unclosed block is reported with a caret under the offending character")
+    void anUnclosedBlockPointsAtItself() {
+        List<ShTemplateProblem> problems = validator.validate("<div>\n  {{#each items}}\n</div>");
+
+        assertThat(problems).hasSize(1);
+        ShTemplateProblem problem = problems.get(0);
+        assertThat(problem.rule()).isEqualTo("template-syntax");
+        assertThat(problem.line()).isEqualTo(3);
+        assertThat(problem.window())
+                .as("""
+                        FSP's regionError printed the line and a caret under the column in 2019, \
+                        and that is what P6 asks for — a position alone still means counting.""")
+                .contains("</div>")
+                .contains("^");
+        assertThat(problem.describe()).startsWith("line 3, column ");
+    }
+
+    @Test
+    @DisplayName("a broken template reports one problem, not a cascade from a broken parse")
+    void aBrokenParseStopsThere() {
+        // A second finding derived from a parse that already failed is noise on top of the
+        // real one, and it buries the position the author needs.
+        assertThat(validator.validate("{{#each items}} {{#search q=\"x\"}}")).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("a call to one of the three missing helpers is named as such")
+    void missingHelpersAreNamed() {
+        List<ShTemplateProblem> problems =
+                validator.validate("<div>\n{{#search q=\"shoes\"}}<p>{{title}}</p>{{/search}}\n</div>");
+
+        assertThat(problems).hasSize(1);
+        assertThat(problems.get(0).rule()).isEqualTo("template-unknown-helper");
+        assertThat(problems.get(0).message())
+                .as("""
+                        Handlebars treats {{#search}} as a section over a context value named \
+                        `search` and renders nothing at all — so without this the failure mode \
+                        is a silently missing block, which is the worst kind.""")
+                .contains("no `search` helper")
+                .contains("SH247");
+        assertThat(problems.get(0).line()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("all three of the missing seven are known")
+    void allThreeAreKnown() {
+        assertThat(validator.validate("{{#form}}{{/form}}")).hasSize(1);
+        assertThat(validator.validate("{{getRelation}}")).hasSize(1);
+        assertThat(validator.validate("{{#search}}{{/search}}")).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("a field whose name merely starts with a helper's is not a call")
+    void prefixesAreNotCalls() {
+        assertThat(validator.validate("{{searchable}} {{formatted}} {{getRelationship}}"))
+                .as("the match is on a call, not on a substring — a rule with false positives "
+                        + "is a rule authors learn to ignore")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("a legitimate section over a context value is left alone")
+    void contextSectionsAreNotFlagged() {
+        assertThat(validator.validate("{{#items}}<li>{{name}}</li>{{/items}}"))
+                .as("""
+                        {{#items}} is an iteration, and there is no way to tell it from a \
+                        mistyped helper without the parameter list, which the AST does not \
+                        expose. Only the three names that are certainly missing are checked.""")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("only the fields that actually hold a template are validated")
+    void onlyTemplateFieldsAreChecked() {
+        assertThat(validator.isTemplateField(ShSystemPostType.REGION, ShSystemPostTypeAttr.HTML))
+                .isTrue();
+        assertThat(validator.isTemplateField(ShSystemPostType.PAGE_LAYOUT, ShSystemPostTypeAttr.HTML))
+                .isTrue();
+        assertThat(validator.isTemplateField(ShSystemPostType.REGION, ShSystemPostTypeAttr.JAVASCRIPT))
+                .as("a region's JavaScript is the browser's (SH248) and is not Handlebars — "
+                        + "compiling it would reject perfectly good JS containing braces")
+                .isFalse();
+        assertThat(validator.isTemplateField("Article", ShSystemPostTypeAttr.HTML))
+                .as("an ordinary post's markup is content, not a template")
+                .isFalse();
+    }
+
+    @Test
+    @DisplayName("an empty template is not a broken one")
+    void blankIsFine() {
+        assertThat(validator.validate(null)).isEmpty();
+        assertThat(validator.validate("   ")).isEmpty();
+    }
+}

@@ -275,6 +275,17 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `JavaBeanValueResolver`, under which a template handed an entity walks the persistence model.
   (3) **A refusing `TemplateLoader`**: the default reads the classpath, so `{{> application}}`
   in a layout — which is content — is a file read.
+- **A template is refused when it is written (SH192)** — `ShTemplateValidator` compiles a
+  `PageLayout`'s or `Region`'s `HTML` on `post.upsert`: a real run **400s** with the line, the
+  column and a caret (FSP's `regionError` output, which this product had in 2019), a `dryRun`
+  **reports** the same thing as a plan note, following SH168's rule that a plan must not die on
+  the first defect. Two boundaries, both deliberate: **an ordinary post's markup is not
+  compiled** (an `Article`'s `TEXT` may legitimately contain braces), and **an unknown section
+  is not flagged in general** — `{{#items}}` is a valid iteration and only the three
+  known-missing helpers (`search`/`form`/`getRelation`) are named, because a rule with false
+  positives is one authors learn to ignore. Handlebars catches a *parameterised* unknown helper
+  itself; the scan covers the paramless form it cannot. Unknown **field** references are
+  **SH251**, and cannot be a write-time check at all — see the roadmap for why.
 - **Helpers are the closed capability set** `shObject.js` expressed as a convention:
   `{{#query folder= type= limit=}}`, `{{#navigation folder=}}`, `{{file_url}}`. Every listing is
   sorted by a **total** order (date *plus* an id tiebreak) and the model is built with

@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -26,6 +27,9 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.api.agent.ShAgentBatchService;
+import com.viglet.shio.api.agent.dto.ShAgentBatch;
+import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -92,6 +96,10 @@ class ShPageRenderTest {
 
     @Autowired
     private ShPageRenderService shPageRenderService;
+    @Autowired
+    private ShAgentBatchService shAgentBatchService;
+    @Autowired
+    private tools.jackson.databind.ObjectMapper objectMapper;
     @Autowired
     private PlatformTransactionManager transactionManager;
 
@@ -253,6 +261,75 @@ class ShPageRenderTest {
         assertThatThrownBy(() -> shPageRenderService.render(siteName, "/nope", ShPostState.DRAFT))
                 .isInstanceOf(ShPageRenderService.UnknownPageException.class)
                 .hasMessageContaining("/nope");
+    }
+
+    // ── SH192: a template fails when it is written ───────────────────────────────────
+
+    @Test
+    @DisplayName("SH192: an unclosed block is refused on write, with its position")
+    void aBrokenTemplateIsRefusedOnWrite() {
+        ShTeachingException thrown = catchTeaching(() ->
+                shAgentBatchService.run(new ShAgentBatch(false, List.of(new ShAgentBatch.Op(
+                        ShAgentBatchService.POST_UPSERT,
+                        "post:" + siteName + "/broken-region", ShSystemPostType.REGION, "/",
+                        objectMapper.valueToTree(Map.of("HTML", "<div>\n{{#each items}}\n</div>"))))),
+                        true, "tester"));
+
+        ProblemDetail problem = thrown.toProblemDetail();
+        assertThat(problem.getTitle()).contains("will not compile");
+        assertThat(problem.getDetail())
+                .as("""
+                        the alternative is a blank page discovered later, which costs a guess \
+                        per save — and FSP printed the line, the column and a caret in 2019""")
+                .contains("line 3, column ")
+                .contains("^");
+        assertThat(problem.getDetail()).contains("HTML:");
+    }
+
+    @Test
+    @DisplayName("SH192: nothing is written when the template is refused")
+    void aRefusedTemplateWritesNothing() {
+        catchTeaching(() -> write(false, region("/never-written", "{{#each items}}")));
+
+        assertThatThrownBy(() -> shPageRenderService.render(siteName, "/never-written",
+                ShPostState.DRAFT))
+                .as("the refusal is a refusal, not a warning attached to a saved post")
+                .isInstanceOf(ShPageRenderService.UnknownPageException.class);
+    }
+
+    @Test
+    @DisplayName("SH192: a plan reports the broken template instead of stopping on it")
+    void aPlanReportsRatherThanStops() {
+        // Same rule SH168's undeclared-field check follows: a plan that died on the first
+        // bad field would hide the rest of the report, and the report is the reason to plan.
+        ShAgentChangeSet planned = write(true, region("/planned-region", "{{#each items}}"));
+
+        assertThat(planned.results().get(0).detail())
+                .contains("invalid template")
+                .contains("a real run will refuse this write");
+    }
+
+    @Test
+    @DisplayName("SH192: an ordinary post's markup is content, not a template")
+    void ordinaryPostsAreNotCompiled() {
+        // An Article's TEXT can legitimately contain braces — a code sample, a price in a
+        // currency nobody expected — and compiling it would reject perfectly good content.
+        ShAgentChangeSet written = write(false, new ShAgentBatch.Op(
+                ShAgentBatchService.POST_UPSERT, "post:" + siteName + "/braces", articleType, "/",
+                objectMapper.valueToTree(Map.of("TEXT", "<p>Use {{#each}} like this</p>"))));
+
+        assertThat(written.results().get(0).action()).isEqualTo("create");
+    }
+
+    /** One batch, in its own transaction — the batch service expects to be inside one. */
+    private ShAgentChangeSet write(boolean dryRun, ShAgentBatch.Op op) {
+        return new TransactionTemplate(transactionManager).execute(status ->
+                shAgentBatchService.run(new ShAgentBatch(dryRun, List.of(op)), true, "tester"));
+    }
+
+    private ShAgentBatch.Op region(String url, String html) {
+        return new ShAgentBatch.Op(ShAgentBatchService.POST_UPSERT, "post:" + siteName + url,
+                ShSystemPostType.REGION, "/", objectMapper.valueToTree(Map.of("HTML", html)));
     }
 
     // ── fixture helpers ──────────────────────────────────────────────────────────────

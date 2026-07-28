@@ -30,6 +30,8 @@ import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
 import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.render.ShTemplateValidator;
+import com.viglet.shio.render.ShTemplateValidator.ShTemplateProblem;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
@@ -131,6 +133,7 @@ public class ShAgentBatchService {
     private final ShTenantQuotaService shTenantQuotaService;
     private final ObjectMapper objectMapper;
     private final ShAgentProperties properties;
+    private final ShTemplateValidator shTemplateValidator;
 
     public ShAgentBatchService(ShAgentSiteAccess siteAccess,
                                ShFolderRepository shFolderRepository,
@@ -142,7 +145,8 @@ public class ShAgentBatchService {
                                ShContentAclService shContentAclService,
                                ShTenantQuotaService shTenantQuotaService,
                                ObjectMapper objectMapper,
-                               ShAgentProperties properties) {
+                               ShAgentProperties properties,
+                               ShTemplateValidator shTemplateValidator) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -154,6 +158,7 @@ public class ShAgentBatchService {
         this.shTenantQuotaService = shTenantQuotaService;
         this.objectMapper = objectMapper;
         this.properties = properties;
+        this.shTemplateValidator = shTemplateValidator;
     }
 
     /**
@@ -721,10 +726,12 @@ public class ShAgentBatchService {
             if (op.data() == null || sameData(post, op.data())) {
                 return session.change(op, address, Change.NOOP, null, post.getId());
             }
-            String undeclared = checkDeclaredFields(op, address, session,
-                    TypeRef.of(post.getShPostType(), session.declaredFieldsOf(
-                            post.getShPostType().getName())),
-                    readTree(post.getData()));
+            String undeclared = note(
+                    checkDeclaredFields(op, address, session,
+                            TypeRef.of(post.getShPostType(), session.declaredFieldsOf(
+                                    post.getShPostType().getName())),
+                            readTree(post.getData())),
+                    checkTemplates(op, address, session, post.getShPostType().getName()));
             if (!session.dryRun) {
                 shContentAclService.requireWrite(post.getId());
                 shPostUnifiedWriteService.update(post.getId(),
@@ -738,7 +745,9 @@ public class ShAgentBatchService {
         }
 
         TypeRef postType = requirePostType(op, address, session);
-        String undeclared = checkDeclaredFields(op, address, session, postType, null);
+        String undeclared = note(
+                checkDeclaredFields(op, address, session, postType, null),
+                checkTemplates(op, address, session, postType.name()));
         ShFolder folder = requireTargetFolder(op, site, address, session);
         session.planPost(address);
         if (session.dryRun || folder == null) {
@@ -813,6 +822,61 @@ public class ShAgentBatchService {
                 + " — a real run will refuse this write";
     }
 
+    /**
+     * SH192 — refuses a template that will not compile, at the moment it is written.
+     *
+     * <h2>Why here and not at view time</h2>
+     *
+     * <p>Nothing validated a layout or a region, so an unclosed {@code {{#each}}} or a call to
+     * a helper that does not exist was accepted, stored, published — and discovered as a blank
+     * page. Every iteration then cost a guess, which is the loop this block exists to make
+     * cheap. A renderer that only reports failure when somebody looks has moved the error to
+     * the least useful moment.</p>
+     *
+     * <p>It follows {@link #checkDeclaredFields} exactly, and for the same reason: a real run
+     * <b>refuses</b>, and a plan <b>reports</b>. A plan that stopped on the first broken
+     * template would hide the rest of the report, and the report is the reason to plan.</p>
+     *
+     * @param typeName the post-type being written; only the render types hold templates, so
+     *                 everything else short-circuits and pays nothing
+     */
+    private String checkTemplates(ShAgentBatch.Op op, ShAddress address, Session session,
+                                  String typeName) {
+        JsonNode data = op.data();
+        if (data == null || !data.isObject() || typeName == null) {
+            return null;
+        }
+        List<String> problems = new ArrayList<>();
+        for (String field : data.propertyNames()) {
+            if (!shTemplateValidator.isTemplateField(typeName, field)) {
+                continue;
+            }
+            JsonNode value = data.get(field);
+            if (value == null || !value.isString()) {
+                continue;
+            }
+            for (ShTemplateProblem problem : shTemplateValidator.validate(value.asString())) {
+                problems.add(field + ": " + problem.describe());
+            }
+        }
+        if (problems.isEmpty()) {
+            return null;
+        }
+        if (!session.dryRun) {
+            throw new InvalidTemplateException(address, typeName, problems);
+        }
+        return "invalid template — a real run will refuse this write: "
+                + String.join("; ", problems);
+    }
+
+    /** Joins two optional change notes without producing a stray separator. */
+    private static String note(String first, String second) {
+        if (first == null) {
+            return second;
+        }
+        return second == null ? first : first + "; " + second;
+    }
+
     /** Every field name a post-type declares, nested ones included (Tab groups, Relator children). */
     private static Set<String> declaredFieldNamesOf(ShPostType postType) {
         Set<String> names = new LinkedHashSet<>();
@@ -853,6 +917,27 @@ public class ShAgentBatchService {
         private static String join(List<String> names) {
             return names.size() == 1 ? "a field named '" + names.get(0) + "'"
                     : "fields named " + String.join(", ", names);
+        }
+    }
+
+    /**
+     * SH192 — a 400 carrying the line, the column and a caret under the offending character.
+     *
+     * <p>That is FSP's {@code regionError} output, which this product had in 2019 and lost.
+     * The position is the whole point: "unclosed block" without it means reading the template
+     * again, and the alternative to refusing at all is a blank page discovered later, which
+     * costs a guess per save.</p>
+     */
+    public static class InvalidTemplateException extends ShTeachingException {
+
+        public InvalidTemplateException(ShAddress address, String postType, List<String> problems) {
+            super(ShProblem.badRequest("template-invalid",
+                            "The template in this '" + postType + "' will not compile")
+                    .withDetail("A layout or region is compiled at render time, so a template "
+                            + "that does not parse is a blank page nobody sees until they look. "
+                            + "Address: " + address + ".\n" + String.join("\n", problems))
+                    .withFix("Fix the template at the position above and write it again. "
+                            + "Nothing was saved."));
         }
     }
 

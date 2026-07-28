@@ -1635,19 +1635,45 @@ the same refusal `url:`-versus-path already gets.
 
 #### XV.10 A template must fail at write time, not at view time (SH192)
 
-Nothing validates a template. `post.upsert` refuses a field the post-type does not declare (SH168)
-and has no opinion about the 1330 characters of markup inside one, so an unclosed `{{#each}}`, a
-call to a helper that does not exist, or a reference to a field that was renamed is accepted,
-stored, published — and discovered as a blank page. Every iteration then costs a guess, which is
-precisely the loop this block exists to make cheap.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P.
+>
+> Building it settled the "unknown helper" question in a way the design did not anticipate:
+> **Handlebars already raises it, but only for a call with parameters**, because
+> `{{#search q="x"}}` cannot be a context iteration and `{{#search}}` can. So the compiler
+> covers the unambiguous half and a targeted scan covers the three helpers that are known
+> missing — and unknown sections *in general* are deliberately not flagged, since a rule with
+> false positives is one authors learn to ignore.
+>
+> The half this could not deliver is the one §XV.10 wanted most: an unknown **field**
+> reference as an error "when the post-type is known". At write time it is not known — a
+> Region's post-type declares `HTML` and `JAVASCRIPT`, while the fields its template
+> interpolates belong to whatever page is later bound to the layout that slots it. That needs
+> a resolved page, so it is a lint over rendered pages: **SH251**.
 
-The reporting standard already exists in this product's own history: FSP's `regionError` printed
-the file, the line, the column, a five-line window and a caret under the offending character. That
-is what law P6 asks for and it was there in 2019. The task needs a `template-invalid` verify rule
-plus a refusal on write, and one decision — whether an unknown *field reference* is an error or a
-warning. It should be an error when the post-type is known (a renamed field silently rendering
-empty is the SH168 failure wearing a template), and a warning when the data comes from a helper
-whose shape the CMS cannot know.
+#### XV.17 A template referencing a field nothing declares renders empty (SH251)
+
+SH192 catches a template that will not *compile*. §XV.10 asked for more: an unknown **field**
+reference should be an error "when the post-type is known", because a renamed field silently
+rendering empty is the SH168 failure wearing a template. Building SH192 established that this
+cannot be a write-time check, and the reason is worth recording rather than rediscovering.
+
+At write time the post-type of the thing being written is a `Region` or a `PageLayout`, whose
+declared fields are `HTML` and `JAVASCRIPT`. The fields the template *interpolates* —
+`{{headline}}`, `{{TEXT}}` — belong to whatever **page** is later bound, through
+`site.postTypeLayout`, to the layout that slots this region. A region is the unit of reuse
+precisely because it does not know which pages use it, so at the moment it is saved there is
+no post-type to check against.
+
+So the check belongs to a lint over **resolved** pages: for each page, the layout and regions
+it actually uses, the post-type it actually has, and the interpolations that resolve to
+nothing. Two severities, and the split matters — an **error** where the owner is known (the
+page's own post-type declares the field or it does not), a **warning** where the value comes
+from a helper whose row shape the CMS cannot know (`{{#query}}` yields whatever the listed
+post-type has, which varies per row).
+
+It also wants the SH185 annotations, which is a happy accident: `sh-field="TEXT"` already
+declares that an element renders a named field, so the interpolations worth checking are
+partly self-identifying rather than needing an AST walk.
 
 #### XV.11 The blast radius of a region change is uncomputable (SH193)
 

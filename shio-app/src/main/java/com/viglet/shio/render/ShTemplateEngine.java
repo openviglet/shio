@@ -95,6 +95,30 @@ public class ShTemplateEngine {
     }
 
     /**
+     * Compiles without applying — SH192's write-time check.
+     *
+     * <p>Separated from {@link #render} so a template can be proved parseable with no model
+     * and no data, which is the state a write is in: {@code post.upsert} has the markup and
+     * nothing to render it against. It is also the cheap half, since the compiled result is
+     * cached and the later render reuses it.</p>
+     *
+     * @throws ShTemplateException with the line and column of the offending character
+     */
+    public void compile(String template) {
+        if (template == null || template.isBlank()) {
+            return;
+        }
+        try {
+            handlebars.compileInline(template);
+        } catch (HandlebarsException e) {
+            throw ShTemplateException.of(e);
+        } catch (IOException e) {
+            throw new ShTemplateException("Template could not be compiled: " + e.getMessage(),
+                    null, 0, 0, e);
+        }
+    }
+
+    /**
      * Compiles and applies {@code template} against {@code model}.
      *
      * @param template the Handlebars source, as authored in a layout's or region's field
