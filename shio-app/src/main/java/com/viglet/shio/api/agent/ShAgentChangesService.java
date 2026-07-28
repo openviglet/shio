@@ -217,7 +217,8 @@ public class ShAgentChangesService {
                 row.getFix(),
                 row.getOccurrences(),
                 row.getLastSeen() == null ? null : row.getLastSeen().toString(),
-                row.getFirstSeen() == null ? null : row.getFirstSeen().toString());
+                row.getFirstSeen() == null ? null : row.getFirstSeen().toString(),
+                row.getFrames());
     }
 
     private record Incidents(List<ShAgentChanges.Incident> rows, String cursor, boolean more) {

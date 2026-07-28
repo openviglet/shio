@@ -100,7 +100,8 @@ public class ShAgentDiagnosticsService {
                 incident.getFix(),
                 incident.getOccurrences(),
                 incident.getFirstSeen().toString(),
-                incident.getLastSeen().toString());
+                incident.getLastSeen().toString(),
+                incident.getFrames());
     }
 
     /** Stored by enum name; served in the wire form a caller branches on. */

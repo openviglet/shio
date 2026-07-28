@@ -92,6 +92,17 @@ public class ShAgentIncident implements Serializable {
     @Column(name = "fix", length = 1000)
     private String fix;
 
+    /**
+     * SH190 — the throwing location, {@code Class.method:line} innermost first.
+     *
+     * <p>Nullable because most incident kinds have no exception behind them (a webhook that
+     * answered 500, a scheduled publish that missed its window) and because a failure entirely
+     * inside the framework has no frame of Shio's own to name. Short by construction — at most
+     * three frames — so it is a column and not a CLOB.</p>
+     */
+    @Column(name = "frames", length = 500)
+    private String frames;
+
     @Column(name = "first_seen", nullable = false)
     private Instant firstSeen;
 

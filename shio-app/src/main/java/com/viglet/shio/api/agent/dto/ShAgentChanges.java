@@ -103,10 +103,12 @@ public record ShAgentChanges(int found, boolean window, String since, String cur
      * @param at      ISO-8601 most recent occurrence — also this row's feed position
      * @param first   ISO-8601 first occurrence, so an old failure is distinguishable from a
      *                new one that happens to have been seen just now
+     * @param frames  SH190 — where in Shio it threw, innermost first; absent when there is no
+     *                exception behind the incident
      */
     @JsonInclude(Include.NON_NULL)
     public record Incident(String kind, String subject, String message, String fix, int count,
-                           String at, String first) {
+                           String at, String first, String frames) {
     }
 
     /**

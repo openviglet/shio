@@ -76,6 +76,12 @@ public class ShAgentIncidentStore {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean record(ShAgentIncidentLog.Kind kind, String subject, String message,
                           String fix, Instant now) {
+        return record(kind, subject, message, fix, null, now);
+    }
+
+    /** @param frames SH190 — the throwing location, or {@code null} when there is none */
+    public boolean record(ShAgentIncidentLog.Kind kind, String subject, String message,
+                          String fix, String frames, Instant now) {
         try {
             Optional<ShAgentIncident> existing = subject == null
                     ? repository.findByKindAndSubjectIsNullAndMessage(kind.name(), message)
@@ -91,6 +97,11 @@ public class ShAgentIncidentStore {
                 if (row.getFix() == null && fix != null) {
                     row.setFix(fix);
                 }
+                // SH190, same rule as `fix`: evidence learned later is worth keeping, and a
+                // repeat that arrived without a frame must not erase the frame the first one had.
+                if (row.getFrames() == null && frames != null) {
+                    row.setFrames(frames);
+                }
                 repository.save(row);
                 return true;
             }
@@ -100,6 +111,7 @@ public class ShAgentIncidentStore {
             row.setSubject(subject);
             row.setMessage(message);
             row.setFix(fix);
+            row.setFrames(frames);
             row.setFirstSeen(now);
             row.setLastSeen(now);
             row.setOccurrences(1);

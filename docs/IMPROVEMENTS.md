@@ -1574,23 +1574,26 @@ promising a user a website.
 
 ### XV.8 Diagnostics name a failure but never carry the evidence (SH190)
 
-An `api-error` finding reports the exception message and then says: *"This call failed
-server-side, so its response is gone. Retry it; if it fails again the instance log has the stack
-trace (the body never will)."* Honest, and a dead end — it directs the agent to a file it has no
-access to, and in this session the running instance was not writing to the log the repository
-contains.
-
-The message alone was enough to identify SH188 only because that exception named its own field.
-That is luck. A `NullPointerException` inside a service method would produce a finding that says
-a call failed and nothing about where, which is exactly as useful as the bare 500.
-
-The fix belongs in SH103's existing window, not in a new capability: capture the throwing frame —
-class, method, line, and the few frames of Shio's own code beneath it — where the incident is
-already recorded, and serve it on the finding. Deliberately **not** a log-tailing tool. A log tail
-hands over every request's data to answer a question that is always about one request; it is a
-per-deployment path an agent should not have to know; and it cannot be scoped by the SH2 site
-allow-list or the SH54 ACL that bounds everything else on this surface. Bounded, attributed
-evidence attached to the incident is smaller and safer than a file.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth carrying.
+>
+> **"Go and read the log" is not a protocol.** The old `fix` was accurate and useless: it named a
+> file the caller has no access to, and in the session that found this the running instance was not
+> even writing to the log the repository contains. Worth generalising — an error whose remedy is
+> outside the caller's reach is an error that has not been reported, however precise it is.
+>
+> **The trimming is the design, not an optimisation.** Only `com.viglet.shio` frames, at most three,
+> no arguments, no locals, proxy frames skipped. That is what makes the evidence a *line*, which is
+> what makes it affordable to attach to every incident — and the exclusions are also the security
+> argument, because arguments are content and content in a diagnostics feed is how a log leaks what
+> the ACL exists to protect.
+>
+> **Absent beats empty, again.** A malformed request rejected by Tomcat has no frame of ours; a 5xx
+> the framework rendered has no trace at all. `null` (omitted, `NON_NULL`) rather than `""`, so a
+> reader is never sent looking for a location that does not exist — the same rule SH121 set for ids,
+> SH193 for `affects` and SH187 for `appearance`. It is becoming the house style, and the reason is
+> consistent: a field that is always present is a field nobody reads.
+>
+> What is left is coverage — three of the four incident kinds still record no frame (**SH269**).
 
 ### The iteration loop — what SH183–SH190 does *not* buy (SH191–SH195)
 
@@ -2374,6 +2377,27 @@ The third reading is the one to test first, and it should be tested against **SH
 same question in general form: what an MCP-only client can and cannot finish. If SH186 concludes
 that a filesystem-free client is a supported shape, this becomes a real gap; if it concludes such a
 client is expected to lean on a companion CLI, this is documentation.
+
+### XVI.21 A frame is evidence for one incident kind and absent for three (SH269)
+
+SH190 attaches the throwing location where an exception is *caught*, and today that is one place:
+`ShAgentErrorRecordingFilter`, which produces `api-error`. The other three kinds are exactly the ones
+whose failures are hardest to diagnose from a message:
+
+- a **webhook** delivery records `HTTP 500` — the remote's status, with no sign of which of Shio's own
+  code built the payload it rejected;
+- an **image transform** failure records the exception message and not which pipeline stage threw,
+  though `ShThumbnailatorImageTransformPipeline` has several;
+- a **scheduled publish** that threw records the exception without naming the writer it threw inside,
+  which is the one case where nobody was watching when it happened.
+
+Each already has a `catch`. The work is passing what it holds to `record(…, frames)`, which is small.
+
+It is filed rather than folded into SH190 for a reason worth stating: each call site belongs to a
+different subsystem with its own notion of what the incident's *subject* is (a URL, a post id, a
+schedule), and the value of the frame depends on getting that pairing right. Three unrelated
+behaviours changed together and judged by one test is the shape SH183's own note warned about when it
+declined to stub three helpers at once.
 
 ---
 

@@ -112,6 +112,38 @@ class ShAgentDurableIncidentTest {
     }
 
     @Test
+    @DisplayName("SH190: the throwing frame is persisted, and a later repeat cannot erase it")
+    void framesSurviveAndAreNotLost() {
+        // The whole point of SH144 was that "was anything failing while I was away" is answerable
+        // after a restart. Evidence that lived only in the process would make the *durable* answer
+        // the weaker one, which is the inversion this pairs with.
+        incidentLog.record(ShAgentIncidentLog.Kind.API_ERROR, "POST /api/v2/agent/batch",
+                "NullPointerException", "Read the frame.", "ShAgentBatchService.upsert:412");
+        // A repeat with no frame: the same rule `fix` follows, because a second occurrence caught
+        // somewhere shallower must not delete the location the first one identified.
+        incidentLog.record(ShAgentIncidentLog.Kind.API_ERROR, "POST /api/v2/agent/batch",
+                "NullPointerException", null, null);
+
+        assertThat(repository.findAll()).singleElement().satisfies(row -> {
+            assertThat(row.getFrames()).isEqualTo("ShAgentBatchService.upsert:412");
+            assertThat(row.getOccurrences()).isEqualTo(2);
+        });
+    }
+
+    @Test
+    @DisplayName("SH190: an incident with no exception behind it stores no frame")
+    void kindsWithNoExceptionStoreNoFrame() {
+        // A webhook that answered 500 and a scheduled publish that missed its window have no trace
+        // to read. Absent, not empty — the field is omitted from the response entirely (NON_NULL),
+        // so a reader is never sent looking for a location that does not exist.
+        incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "https://front.example.com/hook",
+                "HTTP 500", null);
+
+        assertThat(repository.findAll()).singleElement()
+                .satisfies(row -> assertThat(row.getFrames()).isNull());
+    }
+
+    @Test
     @DisplayName("the change feed carries incidents, in their own array")
     void theFeedCarriesIncidents() {
         incidentLog.record(ShAgentIncidentLog.Kind.API_ERROR, "/api/v2/agent/batch",

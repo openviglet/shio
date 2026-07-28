@@ -665,7 +665,18 @@ the CDA + console services (law P10) and holds no business logic of its own.
   that already passed it — the `notes` say so, and SH147 is the real fix. Site-scoped by
   the SH2 allow-list.
 - `GET /agent/diagnostics` — asynchronous failures (SH103): webhook deliveries, image
-  transforms, scheduled publishes, 5xx. Recorded by `ShAgentIncidentLog`; repeats fold into one
+  transforms, scheduled publishes, 5xx. **A row carries `frames` — where in Shio it threw (SH190)**:
+  `Class.method:line`, innermost first, **at most three** and **only `com.viglet.shio`** frames, no
+  arguments and no locals, Spring proxy frames skipped. The old `fix` ended "the instance log has the
+  stack trace (the body never will)", which named a file the caller cannot open — an error whose
+  remedy is out of the caller's reach is an error that has not been reported. A **log-tailing tool
+  was rejected** for SH103's three reasons: it hands over every request's data to answer a question
+  about one, it is a per-deployment path, and it cannot be scoped by the SH2 allow-list or the SH54
+  ACL. `frames` is **absent, not empty**, when there is nothing of ours in the trace (a request
+  Tomcat rejected, or a 5xx the framework rendered with no exception reaching the filter). It is
+  **persisted** (`v2026.3.15`), because SH144's promise is that the durable answer is the good one,
+  and a repeat arriving without a frame **cannot erase** the first one's — the rule `fix` already
+  followed. Only `api-error` populates it today; the other three kinds are **SH269**. Recorded by `ShAgentIncidentLog`; repeats fold into one
   row with a count. **Durable since SH144** (`sh_agent_incident`, written by
   `ShAgentIncidentStore`), so "was anything failing while I was away" is answerable and an empty
   report now means *nothing has failed* rather than *nothing is remembered* — `since` is where

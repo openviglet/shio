@@ -121,6 +121,11 @@ public class ShAgentIncidentLog {
      *                to say
      */
     public void record(Kind kind, String subject, String message, String fix) {
+        record(kind, subject, message, fix, null);
+    }
+
+    /** @param frames SH190 — the throwing location, or {@code null} when there is none */
+    public void record(Kind kind, String subject, String message, String fix, String frames) {
         if (kind == null) {
             return;
         }
@@ -132,12 +137,13 @@ public class ShAgentIncidentLog {
         // `lost` and "there was nowhere to write it" are different facts: only the first one
         // means the durable record is incomplete, and only it should be reported as such.
         boolean lost = store != null && messageText != null
-                && !store.record(kind, subjectText, messageText, trim(fix), Instant.now());
-        remember(kind, subjectText, messageText, trim(fix), lost);
+                && !store.record(kind, subjectText, messageText, trim(fix), trim(frames),
+                        Instant.now());
+        remember(kind, subjectText, messageText, trim(fix), trim(frames), lost);
     }
 
     private synchronized void remember(Kind kind, String subjectText, String messageText,
-                                       String fixText, boolean lost) {
+                                       String fixText, String framesText, boolean lost) {
         for (Incident existing : incidents) {
             if (existing.matches(kind, subjectText, messageText)) {
                 existing.seenAgain();
@@ -151,7 +157,7 @@ public class ShAgentIncidentLog {
         if (lost) {
             unpersisted++;
         }
-        incidents.addLast(new Incident(kind, subjectText, messageText, fixText));
+        incidents.addLast(new Incident(kind, subjectText, messageText, fixText, framesText));
     }
 
     /**
@@ -218,20 +224,23 @@ public class ShAgentIncidentLog {
         private final String subject;
         private final String message;
         private final String fix;
+        /** SH190 — the throwing location, or null when there is no exception behind this kind. */
+        private final String frames;
         private final Instant firstSeen;
         private Instant lastSeen;
         private int count;
 
-        private Incident(Kind kind, String subject, String message, String fix) {
-            this(kind, subject, message, fix, Instant.now(), Instant.now(), 1);
+        private Incident(Kind kind, String subject, String message, String fix, String frames) {
+            this(kind, subject, message, fix, frames, Instant.now(), Instant.now(), 1);
         }
 
-        private Incident(Kind kind, String subject, String message, String fix,
+        private Incident(Kind kind, String subject, String message, String fix, String frames,
                          Instant firstSeen, Instant lastSeen, int count) {
             this.kind = kind;
             this.subject = subject;
             this.message = message;
             this.fix = fix;
+            this.frames = frames;
             this.firstSeen = firstSeen;
             this.lastSeen = lastSeen;
             this.count = count;
@@ -249,7 +258,7 @@ public class ShAgentIncidentLog {
         }
 
         private Incident copy() {
-            return new Incident(kind, subject, message, fix, firstSeen, lastSeen, count);
+            return new Incident(kind, subject, message, fix, frames, firstSeen, lastSeen, count);
         }
 
         public Kind kind() {
@@ -266,6 +275,10 @@ public class ShAgentIncidentLog {
 
         public String fix() {
             return fix;
+        }
+
+        public String frames() {
+            return frames;
         }
 
         public Instant firstSeen() {

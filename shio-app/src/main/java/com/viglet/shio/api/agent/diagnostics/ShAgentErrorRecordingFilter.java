@@ -42,9 +42,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 public class ShAgentErrorRecordingFilter extends OncePerRequestFilter {
 
+    /**
+     * SH190 — this used to end "the instance log has the stack trace (the body never will)", which
+     * directed the agent to a file it has no access to. The frame is now on the incident, so the
+     * advice can name something the reader can actually act on.
+     */
     private static final String FIX =
-            "This call failed server-side, so its response is gone. Retry it; if it fails "
-                    + "again the instance log has the stack trace (the body never will).";
+            "This call failed server-side, so its response is gone. `frames` names where in Shio "
+                    + "it threw, innermost first. Retry it; if it fails again, that location is "
+                    + "the one to read.";
 
     private final ShAgentIncidentLog incidentLog;
 
@@ -60,20 +66,22 @@ public class ShAgentErrorRecordingFilter extends OncePerRequestFilter {
         } catch (ServletException | IOException | RuntimeException e) {
             // Recorded on the way past, then rethrown untouched: this filter observes,
             // it never decides what the caller sees.
-            record(request, rootMessage(e));
+            record(request, rootMessage(e), ShAgentIncidentFrames.of(e));
             throw e;
         }
         if (response.getStatus() >= 500) {
-            record(request, "HTTP " + response.getStatus());
+            // No exception reached this filter — the framework's own error path rendered the 5xx —
+            // so there is no trace to read and `frames` is honestly absent rather than invented.
+            record(request, "HTTP " + response.getStatus(), null);
         }
     }
 
-    private void record(HttpServletRequest request, String message) {
+    private void record(HttpServletRequest request, String message, String frames) {
         // The path, not the query string: a query holds caller-supplied values, and
         // folding repeats by subject is what keeps one broken endpoint from evicting
         // everything else from the window.
         incidentLog.record(ShAgentIncidentLog.Kind.API_ERROR,
-                request.getMethod() + " " + request.getRequestURI(), message, FIX);
+                request.getMethod() + " " + request.getRequestURI(), message, FIX, frames);
     }
 
     private static String rootMessage(Throwable throwable) {

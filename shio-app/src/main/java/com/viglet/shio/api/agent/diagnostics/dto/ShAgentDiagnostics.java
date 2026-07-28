@@ -59,9 +59,14 @@ public record ShAgentDiagnostics(String since, long dropped, Map<String, Integer
      * @param count     occurrences of this exact incident
      * @param firstSeen ISO-8601 first occurrence
      * @param lastSeen  ISO-8601 most recent occurrence
+     * @param frames    SH190 — where in Shio it threw, {@code Class.method:line} innermost first
+     *                  and at most three frames. Absent when there is no exception behind the
+     *                  incident (a webhook that answered 500, a scheduled publish that missed) or
+     *                  when the failure was entirely inside the framework, which is honest rather
+     *                  than empty. It replaces the advice to read a log file the caller cannot open
      */
     @JsonInclude(Include.NON_NULL)
     public record Incident(String kind, String subject, String message, String fix,
-                           int count, String firstSeen, String lastSeen) {
+                           int count, String firstSeen, String lastSeen, String frames) {
     }
 }

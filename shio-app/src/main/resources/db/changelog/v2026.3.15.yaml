@@ -1,0 +1,20 @@
+databaseChangeLog:
+  # SH190 — the throwing location of an incident, so an `api-error` finding stops directing the
+  # caller to an instance log it has no access to. Nullable because most incident kinds have no
+  # exception behind them, and short (VARCHAR, not CLOB) because it is at most three frames.
+  - changeSet:
+      id: sh190-agent-incident-frames
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_agent_incident
+                columnName: frames
+      changes:
+        - addColumn:
+            tableName: sh_agent_incident
+            columns:
+              - column:
+                  name: frames
+                  type: VARCHAR(500)
