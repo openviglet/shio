@@ -131,7 +131,34 @@ class ShAgentRoundTripTest {
             attr.setShWidget(widget);
             attr.setShPostType(postType);
             entityManager.persist(attr);
+
+            // A reference field, so a write can be made to produce a finding of its own. Without
+            // one, every proof this class takes is clean, and the half of the report that
+            // attributes findings to the run has nothing to assert against.
+            ShWidget reference = widgetNamed("Content Select");
+            ShPostTypeAttr related = new ShPostTypeAttr();
+            related.setId(UUID.randomUUID().toString());
+            related.setName("related");
+            related.setLabel("Related");
+            related.setOrdinal(2);
+            related.setRequired((byte) 0);
+            related.setShWidget(reference);
+            related.setShPostType(postType);
+            entityManager.persist(related);
         });
+    }
+
+    /** The catalogue widget by name, created if this test datasource has none. */
+    private ShWidget widgetNamed(String name) {
+        return entityManager
+                .createQuery("select w from ShWidget w where w.name = :name", ShWidget.class)
+                .setParameter("name", name)
+                .getResultStream().findFirst().orElseGet(() -> {
+                    ShWidget created = new ShWidget();
+                    created.setName(name);
+                    entityManager.persist(created);
+                    return created;
+                });
     }
 
     // ── half one: discovery in one call ───────────────────────────────────────────────
@@ -217,8 +244,36 @@ class ShAgentRoundTripTest {
 
         assertThat(body).contains("\"proof\"");
         assertThat(body)
-                .as("the report must say what it is scoped to — a finding attached to a write "
-                        + "reads as an accusation unless it says otherwise")
+                .as("the report must say what it is scoped to — `ok` over a subset is not a "
+                        + "statement about the instance (SH143)")
+                .contains("\"partial\":true", "\"scope\":\"1 address(es)\"");
+        assertThat(body)
+                .as("""
+                        ...and a clean proof does not pay for the attribution prose. This \
+                        assertion used to demand it unconditionally, which asserted a contract \
+                        the service deliberately does not keep: two sentences explaining that \
+                        none of the zero findings were caused by this run is exactly what P3 \
+                        says to stop paying for. The prose is asserted below, where there is \
+                        something to attribute.""")
+                .doesNotContain("address(es) this run touched");
+    }
+
+    /**
+     * The other half of the proof: when the lint <em>does</em> find something, the report says
+     * the findings belong to the addresses this run touched rather than to the run.
+     */
+    @Test
+    @DisplayName("SH157: a proof with findings attributes them to what the run touched")
+    void aProofAttributesItsFindings() throws Exception {
+        String body = batch("/api/v2/agent/batch?verify=true", """
+                {"ops":[{"op":"post.upsert","address":"post:%s/sh157-dangling","type":"%s",\
+                "folder":"/","data":{"headline":"Dangling","related":"no-such-post-id"}}]}"""
+                .formatted(siteName, typeName));
+
+        assertThat(body).contains("\"dangling-reference\"", "\"ok\":false");
+        assertThat(body)
+                .as("a finding attached to a write reads as an accusation unless it says "
+                        + "otherwise")
                 .contains("address(es) this run touched");
     }
 

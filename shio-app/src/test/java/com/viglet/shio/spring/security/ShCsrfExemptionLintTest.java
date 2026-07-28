@@ -66,7 +66,9 @@ class ShCsrfExemptionLintTest {
      *       so a forged POST cannot write, and the GraphiQL console at {@code /graphiql/**} is a
      *       cookie-bearing browser that the narrowed matcher would break for no gain. The
      *       premise is "no mutation exists", which is exactly the kind of premise SH117 watched
-     *       expire, so it is written down rather than assumed.</li>
+     *       expire — so since SH234 it is <b>enforced</b> rather than written down: see
+     *       {@link #theGraphqlPremiseIsStillTrue()}, which fails the build the day a mutation
+     *       lands and states the decision that was made in advance.</li>
      *   <li>{@code SETUP_PATH} — SH6 first-run setup, {@code permitAll} and open only until a
      *       tenant exists; there is no session to ride.</li>
      *   <li>{@code ERROR_PATH} — the error dispatch, not a caller-reachable write.</li>
@@ -126,6 +128,78 @@ class ShCsrfExemptionLintTest {
                             constant, constant)
                     .contains("new ShStatelessRequestMatcher(mvc.matcher(%s), sessionCookieName)".formatted(constant));
         }
+    }
+
+    /** Where a mutation would have to appear: the schema resource, or the programmatic builder. */
+    private static final List<Path> GRAPHQL_SOURCES = List.of(
+            Path.of("src", "main", "resources", "graphql", "schema.graphqls"),
+            Path.of("src", "main", "java", "com", "viglet", "shio", "api", "cda", "graphql",
+                    "ShGraphQLSchema.java"));
+
+    /** A mutation, however it is declared. Asserted against known positives below. */
+    private static final Pattern MUTATION = Pattern.compile(
+            "(?:(?:extend\\s+)?type\\s+Mutation\\b)|(?:\\.mutation\\s*\\()");
+
+    /**
+     * SH234 — <b>the one blanket exemption left is the one with an expiry date, so the expiry is
+     * a build failure.</b>
+     *
+     * <p>{@code /graphql} stays exempt for every caller on two premises: the delivery schema has
+     * no {@code Mutation}, so a forged POST cannot write; and GraphiQL is a cookie-bearing
+     * browser the narrowed matcher would break for a protection that protects nothing. The first
+     * premise is the same shape as "only the CLI reaches the post-type API" — true, load-bearing,
+     * and silently expiring in whichever commit adds the mutation.</p>
+     *
+     * <p>SH167 filed the question of what to do that day; this is the answer, made in advance so
+     * the commit that adds a mutation does not also have to make a security decision under
+     * pressure. <b>Narrow the matcher and turn GraphiQL off by default.</b> A mutation-capable
+     * delivery endpoint does not get a cookie-bearing playground in the same browser as the
+     * console: the narrowed matcher costs nothing once GraphiQL is not the client, and keeping
+     * GraphiQL would mean either shipping a CSRF-aware replacement in the console bundle or
+     * accepting cross-site writes on the delivery API. Neither is worth a query playground.</p>
+     */
+    @Test
+    @DisplayName("SH234: /graphql may stay blanket-exempt only while the schema has no Mutation")
+    void theGraphqlPremiseIsStillTrue() throws IOException {
+        for (final Path source : GRAPHQL_SOURCES) {
+            assertThat(Files.exists(source))
+                    .as("%s is gone — if the GraphQL schema moved, move this guard with it rather "
+                            + "than deleting it: it is the only thing holding /graphql's blanket "
+                            + "CSRF exemption to its premise.", source)
+                    .isTrue();
+            assertThat(MUTATION.matcher(Files.readString(source)).find())
+                    .as("""
+                            SH234: a Mutation appeared in %s, so /graphql can now write — and it is \
+                            CSRF-exempt for every caller, including a browser carrying a console \
+                            session cookie. That combination is a cross-site write on the delivery API.
+
+                            The decision was made in advance (see this method's javadoc): wrap \
+                            GRAPHQL_PATH in ShStatelessRequestMatcher in ShSecurityConfig, move the \
+                            constant from BLANKET_BY_DESIGN to MUST_BE_NARROWED here, and set \
+                            spring.graphql.graphiql.enabled=false — a mutation-capable endpoint does \
+                            not get a cookie-bearing playground in the console's browser.""",
+                            source)
+                    .isFalse();
+        }
+    }
+
+    /**
+     * The guard's own guard (§XIV.4): a lint whose pattern matches nothing passes forever.
+     *
+     * <p>Both spellings a mutation can arrive in are asserted to match, and the current sources
+     * to not match — because this pattern is checked against real files that legitimately
+     * contain the word "Query" and the word "mutation" in prose.</p>
+     */
+    @Test
+    @DisplayName("SH234: the mutation finder actually finds a mutation")
+    void theMutationFinderWorks() {
+        assertThat(MUTATION.matcher("type Mutation {\n  publish(id: ID!): Post\n}").find()).isTrue();
+        assertThat(MUTATION.matcher("extend type Mutation { touch: Boolean }").find()).isTrue();
+        assertThat(MUTATION.matcher("GraphQLSchema.newSchema().query(q).mutation(m).build()").find())
+                .isTrue();
+        // ...and does not fire on prose about mutations, which both sources contain.
+        assertThat(MUTATION.matcher("// the schema exposes no mutation, see SH234").find()).isFalse();
+        assertThat(MUTATION.matcher("type Query { _placeholder: String }").find()).isFalse();
     }
 
     /**

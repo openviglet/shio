@@ -47,12 +47,9 @@ import com.viglet.shio.api.object.dto.ShConsolePostRow;
 class ShConsoleShapeOverlapTest {
 
     /**
-     * Console shape -> the CDA shape it is a superset of. The <em>envelope</em> pairing is
-     * deliberately partial in one direction and that is documented on
-     * {@link ShConsoleListing}: the console listing carries no paging, because it returns a
-     * folder's children whole and three constant fields would be a contract it does not
-     * keep. So the envelope is checked by name-overlap, and the rows are checked as strict
-     * prefixes.
+     * Console shape -> the CDA shape it is a superset of. The rows are checked as strict
+     * prefixes; the envelope is checked separately below, because since SH165 it is not a
+     * superset but an exact match — the paging it used to omit is real now.
      */
     private static final Map<Class<?>, Class<?>> ROW_SUPERSETS = Map.of(
             ShConsoleFolderRow.class, ShCdaFolder.class,
@@ -102,15 +99,19 @@ class ShConsoleShapeOverlapTest {
         Map<String, Class<?>> console = componentsByName(ShConsoleListing.class);
         Map<String, Class<?>> cda = componentsByName(ShCdaListing.class);
 
-        // These three are the same concept in both and must not be renamed apart again.
-        assertThat(console.keySet()).contains("folderId", "folders", "posts");
-        assertThat(cda.keySet()).contains("folderId", "folders", "posts");
-        assertThat(console.get("folderId")).isEqualTo(cda.get("folderId"));
-
-        // ...and the console envelope adds nothing beyond them. A field here would be a
-        // per-listing cost on the console's hottest read, and the two things it used to
-        // carry — the site and the breadcrumb — are what /path answers.
-        assertThat(console.keySet()).containsExactly("folderId", "folders", "posts");
+        // SH165: the envelope is now the CDA's, component for component and in order — the
+        // paging the console listing used to omit is a real contract rather than three
+        // constants. Asserted against the CDA record instead of a literal, so adding a field
+        // to one envelope and not the other fails here rather than drifting quietly.
+        assertThat(console.keySet()).containsExactlyElementsOf(cda.keySet());
+        for (String shared : cda.keySet()) {
+            assertThat(console.get(shared)).as("%s", shared).isEqualTo(cda.get(shared));
+        }
+        // Pinned by name too: these are what the pre-SH120 envelope got wrong (it said
+        // shFolders/shPosts and repeated the site and the breadcrumb /path answers) and what
+        // SH165 added.
+        assertThat(console.keySet())
+                .containsExactly("folderId", "folders", "posts", "page", "size", "totalPosts");
     }
 
     /**

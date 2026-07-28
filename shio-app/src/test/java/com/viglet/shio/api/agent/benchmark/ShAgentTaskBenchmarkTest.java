@@ -84,7 +84,24 @@ import jakarta.persistence.PersistenceContext;
  *
  * @author Alexandre Oliveira
  */
-@SpringBootTest
+/*
+ * The measurement runs on its own database, and that is load-bearing rather than tidy.
+ *
+ * Two of the four canonical tasks read the context pack, which carries the instance's whole
+ * content model — so on the shared test datasource the number this class reports grows with
+ * every post-type any other test in the suite happens to create. It measured 1616 tokens for
+ * add-type-and-10-posts alone and 2243 in a full run, which is how a green gate becomes a red
+ * build that nobody changed the agent path to cause. A benchmark whose result depends on what
+ * ran before it is not a guard, it is a coin flip with a ceiling.
+ *
+ * The extra property is what buys a separate Spring context (and therefore a separate in-memory
+ * H2 with its own seed) — the cost is one more context boot, against a gate that means what it
+ * says.
+ */
+@SpringBootTest(properties = {
+        "spring.datasource.url=jdbc:h2:mem:shio-benchmark;DB_CLOSE_DELAY=-1;MODE=LEGACY;"
+                + "DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true",
+        "shio.schedule.enabled=false" })
 @TestInstance(Lifecycle.PER_CLASS)
 class ShAgentTaskBenchmarkTest {
 

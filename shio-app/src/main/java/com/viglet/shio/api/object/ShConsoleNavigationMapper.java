@@ -50,11 +50,20 @@ public class ShConsoleNavigationMapper {
         this.cdaMapper = cdaMapper;
     }
 
-    /** A folder's children. */
+    /**
+     * A folder's children: every child folder, one page of posts, and the paging the CDA
+     * listing has carried since SH1 (SH165).
+     *
+     * @param page       the zero-based index of the page {@code posts} is
+     * @param size       the page size asked for
+     * @param totalPosts how many posts the folder holds after any filter, not how many are
+     *                   in this page — that is what makes a cut visible (SH138's rule)
+     */
     public ShConsoleListing listing(String folderId, List<ShFolder> folders,
-                                    List<ShPostUnified> posts) {
+                                    List<ShPostUnified> posts, int page, int size,
+                                    long totalPosts) {
         return new ShConsoleListing(folderId, folders.stream().map(this::folderRow).toList(),
-                posts.stream().map(this::postRow).toList());
+                posts.stream().map(this::postRow).toList(), page, size, totalPosts);
     }
 
     /** The breadcrumb, in the CDA's own shape. */

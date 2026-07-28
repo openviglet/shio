@@ -50,3 +50,20 @@ export type ShPostTypeField = {
   widgetSettings?: string;
   fields?: ShPostTypeField[];
 };
+
+/**
+ * What a rename moved (SH163) — the response of `POST /v2/post-type/{name}/rename`.
+ *
+ * It reports rather than just succeeding, because the workaround it replaces (a `PUT` to a new
+ * name) also succeeded and moved nothing: the posts stayed on the original type. `posts` is how
+ * many rows came along, `referencesUpdated` names the `Multi Select` fields that were narrowing
+ * to the old name, and `notes` says what the server cannot rename — a project's content files
+ * and documents address a post-type by name too.
+ */
+export type ShPostTypeRenamed = {
+  from: string;
+  to: string;
+  posts: number;
+  referencesUpdated: string[];
+  notes: string[];
+};

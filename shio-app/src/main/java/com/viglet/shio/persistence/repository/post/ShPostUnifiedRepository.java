@@ -64,6 +64,30 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
                                                                ShPostState state, Pageable pageable);
 
     /**
+     * How many rows point at this post-type, both states counted (SH163's rename report).
+     *
+     * <p>Keyed by <b>id</b> for the {@code @TenantId} reason spelled out on
+     * {@link #findByShPostType_IdAndState}: {@code post_type_id} is a column on this table, and
+     * navigating to {@code shPostType.name} would join the JOINED {@code ShObject} root and die
+     * at prepare time.</p>
+     */
+    long countByShPostType_Id(String postTypeId);
+
+    /**
+     * Every row pointing at this post-type, <b>trash included</b> (SH236).
+     *
+     * <p>Native because {@code ShPostUnified} carries {@code @SQLRestriction("deleted_date is
+     * null")}, so the derived counter above cannot see a trashed post — and a trashed post still
+     * holds its {@code post_type_id}, so it still blocks the delete. A refusal that answered
+     * "used by 0 posts" and then let the delete fail on a constraint would be worse than no
+     * refusal at all. Native SQL bypasses {@code @TenantId} too, hence the explicit tenant.</p>
+     */
+    @Query(value = "select count(*) from sh_post_unified where post_type_id = :postTypeId "
+            + "and tenant_id = :tenant", nativeQuery = true)
+    long countAllByPostTypeIncludingTrash(@Param("postTypeId") String postTypeId,
+                                          @Param("tenant") String tenant);
+
+    /**
      * All posts of a given post type (by id) in a given state (tenant-scoped) — used by
      * the SH61 static-file manager. Keyed by id (the {@code post_type_id} FK column on
      * {@code sh_post_unified}), NOT by name: navigating {@code shPostType.name} forces a
@@ -104,6 +128,55 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     //     dedup draft-preferred. Used only by the PREVIEW-environment read path. ---
 
     List<ShPostUnified> findByShFolderAndStateIn(ShFolder shFolder, Collection<ShPostState> states);
+
+    /**
+     * One page of a folder's posts, one row per logical id, DRAFT preferred — the console
+     * content browser's listing (SH165).
+     *
+     * <p><b>Why this exists rather than reusing the CDA's dedup.</b> {@code ShCdaService}
+     * pages draft-preferred rows by loading the folder whole and slicing the list in memory
+     * ({@code draftPreferred}), which makes the <em>response</em> smaller and the query no
+     * cheaper. The console's listing is the read this repository's largest folders are opened
+     * with, so the dedup is expressed as a predicate instead: a row qualifies if it is the
+     * DRAFT, or it is the PUBLISHED row of a post that has no DRAFT. That is exactly
+     * one row per logical id, so {@code LIMIT}, {@code ORDER BY} and the count query are the
+     * database's job — sorting and paging over the whole folder without loading it.</p>
+     *
+     * <p>{@code p.shFolder = :folder} compares the association to an entity, which compiles to
+     * the {@code folder_id} FK column already on this table: no join, so the SH22
+     * {@code @TenantId} JOINED-join hazard documented above does not apply. The correlated
+     * subquery is on {@code ShPostUnified} itself, which carries its own {@code tenant_id}.</p>
+     *
+     * @param folder the parent folder
+     * <p><b>The filter is the CDA's own predicate (SH240)</b> — {@link #FULLTEXT_PREDICATE},
+     * matching title, summary and the stored field data. It started as a title substring, which
+     * was faithful to what the browser's local filter did and made the console's search box
+     * quietly weaker than the delivery API: a curator who remembered a phrase from a page's body
+     * was told there was nothing there. One predicate, two callers, so the two surfaces cannot
+     * come to disagree about what "matches" means.</p>
+     *
+     * @param like   a lower-cased, {@code %}-wrapped pattern, or {@code null} for all — prefer
+     *               {@link #pageConsoleRows(ShFolder, String, Pageable)}, which normalizes for
+     *               you (see the SH131 note on {@code FULLTEXT_PREDICATE})
+     */
+    @Query("select p from ShPostUnified p where p.shFolder = :folder "
+            + "and (p.state = com.viglet.shio.persistence.model.post.unified.ShPostState.DRAFT "
+            + "  or not exists (select 1 from ShPostUnified d where d.id = p.id "
+            + "    and d.state = com.viglet.shio.persistence.model.post.unified.ShPostState.DRAFT)) "
+            + "and (:like is null or " + FULLTEXT_PREDICATE + ")")
+    Page<ShPostUnified> pageConsoleRowsLike(@Param("folder") ShFolder folder,
+                                            @Param("like") String like, Pageable pageable);
+
+    /**
+     * {@link #pageConsoleRowsLike} with the title filter normalized: {@code null}/blank means
+     * no filter, anything else is lower-cased and {@code %}-wrapped. Call this one — the raw
+     * query is suffixed {@code Like} because normalizing twice searches for {@code %%term%%}
+     * and matches nothing (SH131).
+     */
+    default Page<ShPostUnified> pageConsoleRows(ShFolder folder, String query, Pageable pageable) {
+        return pageConsoleRowsLike(folder,
+                query == null || query.isBlank() ? null : fullTextPattern(query), pageable);
+    }
 
     List<ShPostUnified> findByShSite_IdAndStateIn(String siteId, Collection<ShPostState> states);
 

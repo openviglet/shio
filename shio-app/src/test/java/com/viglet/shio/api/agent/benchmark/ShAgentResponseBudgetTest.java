@@ -104,7 +104,15 @@ import jakarta.persistence.PersistenceContext;
  *
  * @author Alexandre Oliveira
  */
-@SpringBootTest
+// Its own database, for the reason spelled out on ShAgentTaskBenchmarkTest: several of these
+// responses describe the whole instance, so on the shared test datasource their size depends on
+// what every other test created. This class had headroom left and the task benchmark did not —
+// which is the difference between a gate that will fail for the wrong reason and one that
+// already has.
+@SpringBootTest(properties = {
+        "spring.datasource.url=jdbc:h2:mem:shio-budget;DB_CLOSE_DELAY=-1;MODE=LEGACY;"
+                + "DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true",
+        "shio.schedule.enabled=false" })
 @TestInstance(Lifecycle.PER_CLASS)
 class ShAgentResponseBudgetTest {
 

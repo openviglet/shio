@@ -11,11 +11,11 @@ package com.viglet.shio.api.object;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +24,6 @@ import com.viglet.shio.api.object.dto.ShConsoleListing;
 import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.ShObject;
-import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
@@ -53,8 +52,6 @@ import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 @Service
 public class ShObjectNavigationService {
 
-    private static final List<ShPostState> ALL_STATES = List.of(ShPostState.DRAFT, ShPostState.PUBLISHED);
-
     private final ShObjectRepository shObjectRepository;
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
@@ -69,18 +66,49 @@ public class ShObjectNavigationService {
         this.mapper = mapper;
     }
 
+    /** The whole folder, in title order — the pre-SH165 listing, kept for callers with no paging. */
     @Transactional(readOnly = true)
     public Optional<ShConsoleListing> list(String objectId) {
+        return list(objectId, 0, Integer.MAX_VALUE, ShConsoleListingSort.TITLE, null);
+    }
+
+    /**
+     * One page of an object's children (SH165).
+     *
+     * <p>Folders come back whole on every page and posts are paged — see
+     * {@link ShConsoleListing} for why that asymmetry is the right one. The post page is
+     * ordered, filtered and counted by the database
+     * ({@code ShPostUnifiedRepository#pageConsoleRows}), so a folder with ten thousand posts
+     * is no longer one query, one response and one render.</p>
+     *
+     * <p>The {@code query} filter applies to both halves — a folder by name, a post by title —
+     * because the browser's search box has always filtered the combined list, and a search
+     * that quietly stopped matching folders would be a regression dressed as a feature.</p>
+     *
+     * @param sort  the post order; folders keep their manual {@code position} order, which is
+     *              a property of the folder rather than an axis a caller picks
+     * @param query a case-insensitive substring filter, or {@code null} for everything
+     */
+    @Transactional(readOnly = true)
+    public Optional<ShConsoleListing> list(String objectId, int page, int size,
+                                           ShConsoleListingSort sort, String query) {
+        int pageIndex = Math.max(page, 0);
+        int pageSize = Math.max(size, 1);
         return live(objectId).map(object -> switch (object) {
-            case ShFolder folder -> mapper.listing(folder.getId(),
-                    new ArrayList<>(shFolderRepository.findByParentFolderOrderByPositionAsc(folder)),
-                    postsInFolder(folder));
+            case ShFolder folder -> {
+                Page<ShPostUnified> posts = shPostUnifiedRepository.pageConsoleRows(folder, query,
+                        PageRequest.of(pageIndex, pageSize, sort.sort()));
+                yield mapper.listing(folder.getId(),
+                        matching(shFolderRepository.findByParentFolderOrderByPositionAsc(folder), query),
+                        posts.getContent(), pageIndex, pageSize, posts.getTotalElements());
+            }
             // A site lists its root folders. It has no posts of its own — content lives in
             // folders — so this is not an empty answer, it is the answer.
             case ShSite site -> mapper.listing(site.getId(),
-                    sortedByPosition(shFolderRepository.findByShSiteAndRootFolder(site, (byte) 1)),
-                    List.of());
-            default -> mapper.listing(objectId, List.of(), List.of());
+                    matching(sortedByPosition(shFolderRepository.findByShSiteAndRootFolder(site, (byte) 1)),
+                            query),
+                    List.of(), pageIndex, pageSize, 0L);
+            default -> mapper.listing(objectId, List.of(), List.of(), pageIndex, pageSize, 0L);
         });
     }
 
@@ -106,19 +134,24 @@ public class ShObjectNavigationService {
                 .filter(object -> !(object instanceof ShFolder folder) || !folder.isTrashed());
     }
 
-    /** All posts in the folder, one row per logical id, DRAFT preferred over PUBLISHED. */
-    private List<ShPostUnified> postsInFolder(ShFolder folder) {
-        Map<String, ShPostUnified> byId = new LinkedHashMap<>();
-        for (ShPostUnified post : shPostUnifiedRepository.findByShFolderAndStateIn(folder, ALL_STATES)) {
-            ShPostUnified existing = byId.get(post.getId());
-            if (existing == null || post.getState() == ShPostState.DRAFT) {
-                byId.put(post.getId(), post);
-            }
+    /**
+     * The folders whose name matches {@code query}, in the order they came in.
+     *
+     * <p>Filtered here rather than in SQL because folders are not paged: the set is already
+     * loaded, so a second query would buy nothing, and keeping the predicate in one place means
+     * the folder half and the post half cannot come to disagree about what "matches" is.</p>
+     */
+    private static List<ShFolder> matching(Iterable<ShFolder> folders, String query) {
+        List<ShFolder> all = new ArrayList<>();
+        folders.forEach(all::add);
+        if (query == null || query.isBlank()) {
+            return all;
         }
-        List<ShPostUnified> posts = new ArrayList<>(byId.values());
-        posts.sort(Comparator.comparing(p -> p.getTitle() == null ? "" : p.getTitle(),
-                String.CASE_INSENSITIVE_ORDER));
-        return posts;
+        String term = query.trim().toLowerCase();
+        return all.stream()
+                .filter(folder -> folder.getName() != null
+                        && folder.getName().toLowerCase().contains(term))
+                .toList();
     }
 
     /** Ancestor chain from the site's root folder down to (and including) {@code folder}. */

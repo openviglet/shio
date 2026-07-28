@@ -49,7 +49,7 @@
 > §IX.8, §XIII.6), and **SH176–SH182** from driving the *console* over the site that
 > build produced (Block O — shipped, so its design section is gone; see CHANGELOG.md Block O),
 > and **SH227–SH232** from finishing Block M (§XIII.7–§XIII.12), and **SH233–SH234** from
-> reviewing what was still CSRF-exempt (§XIV.10–§XIV.11)
+> reviewing what was still CSRF-exempt (both shipped, so their design sections are gone)
 > — new tasks are expected to accrete this way, and each one's
 > line says what measurement or failure produced it. Superseded and therefore retired: **SH17/SH18** (GraalJS), **SH23 +
 > SH27–SH31** (marketplace → Block J), **SH24 + SH32–SH37** (CRUD-over-MCP → Block H).
@@ -77,7 +77,8 @@
 > (SH102/SH104/SH141/SH144 closed its last four), **Block I is down to SH147**
 > (SH145, SH146, SH148, SH149, SH150, SH198 and SH199 have shipped), J's reconciliation and registry (SH96,
 > SH153–SH156), **Block L is down to SH110** (SH200 and SH201 have shipped, and closing them
-> opened SH222–SH226), M's attribution (SH157–SH161, SH174), N's realignment (SH163–SH167), plus
+> opened SH222–SH226), M's attribution (SH157–SH161, SH174), **Block N is complete**
+> (SH163–SH167 and SH233–SH234 have all shipped; closing it opened SH235–SH240), plus
 > SH44–SH47's tenant work. The highest-value one left is **SH223** (deleting a *site* is SH200
 > one level up: it takes every post past the trash, the audit and the byte cleanup, with the
 > largest blast radius on the surface and no record of what it destroyed).
@@ -333,25 +334,57 @@
 > did the same to the post read), and tokens now clear the concept
 > spec's ≈10× on one canonical task of four rather than three. A large part of the measured
 > advantage was never the protocol — it was the console reads being entity-shaped, and it is
-> now lean on both sides. What is left is the part worth defending (addressing, batching, the
-> context pack, a lint that names the defect), and **SH164** is the task for re-establishing
-> the claim on those sources.
+> now lean on both sides. What is left is the part worth defending — addressing, batching, the
+> context pack, a lint that names the defect — and **SH164 has now measured each of them
+> separately** rather than leaving the claim resting on an aggregate.
 >
-> **What building it opened.** A name-keyed surface has no rename, so the console's API-name
-> field is read-only and moving a post-type is unavailable (**SH163**). The console listing
-> returns a folder's children whole, which is a real limit once a folder is large
-> (**SH165**).
+> ✅ **SH164 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: the claim is attributed per
+> source (addressing 26× and the lint 15× carry the tokens; batching buys turns; projection is
+> the smallest), and the aggregate ≈10× per-task target is retired in favour of per-source floors
+> plus the session claim on calls.
+>
+> ✅ **SH163 and SH165 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: renaming a
+> post-type is an operation that moves it, and the console listing pages — with the sort and the
+> search moving to the server alongside it.
 >
 > ✅ **SH166 and SH167 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: the carried files
 > say they are templates and are reachable over MCP at all, and the last three blanket CSRF
 > exemptions are narrowed to the callers that need them. Reviewing the CDA one turned up
-> **SH233**; leaving `/graphql` blanket is **SH234**.
+> **SH233** and **SH234**, and both have since shipped: a presented `Key` beats an existing
+> session on the CDA path (which is why the Universal Editor could not save), and `/graphql`'s
+> "no Mutation" premise is now a build failure carrying the decision made in advance.
 
-- 📋 **SH163** (deps: SH117 ✅, SH134 ✅) **Renaming a post-type is a move, not an upsert** — the surface is keyed by name, so a `PUT` to a new name creates a second post-type and orphans the first with its content, its history and its `sh_post_unified` rows. The console's API-name field is read-only because of it. Needs the `post.move` treatment for the model: one operation that carries the posts, refuses an occupied name, and says what it moved. → §XIV.1
-- 📋 **SH164** (deps: SH112 ✅, SH117 ✅, SH120 ✅) **Re-establish the token claim on its actual sources** — the ratios fell because the baseline stopped being wasteful, which means the benchmark can no longer distinguish "the protocol is cheaper" from "the old console was fat". Attribute the remaining gap per source (addressing vs id round trips, batch vs N writes, context pack vs crawl, lint vs sweep) so each is defended by its own number, and decide honestly whether ≈10× is still the right target. → §XIV.6
-- 📋 **SH165** (deps: SH120 ✅) **The console listing is unpaged** — `GET /object/{id}/list` returns every child of a folder, so a folder with ten thousand posts is one response and one render. The CDA listing has been paged since SH1; the console's has the shape to accept `page`/`size` and deliberately did not copy the fields rather than pretend. Needs paging on the endpoint and infinite-scroll or pages in the browser. → §XIV.7
-- 📋 **SH233** (deps: SH167 ✅, SH10 ✅) **The Universal Editor's save-back cannot be authenticating the way it thinks it is** — `universal-editor.service.ts` uses a dedicated axios instance with `withCredentials: false`, on the stated premise that the console session cookie must not be sent or the request authenticates as the curator (who has no `ROLE_CDA_WRITE`) instead of as the `Key` token. But `withCredentials` is ignored for **same-origin** XHR, which is what the console is in dev behind the Vite proxy and in production behind one host — so the cookie goes, `ShApiTokenFilter` returns early on the already-set authentication, and the PATCH 403s. Either the token has to win an explicit `Key` header, or the editor needs a cross-origin/credential-less path that actually is one. Needs a browser check (SH182's harness) before it needs a fix. → §XIV.10
-- 💭 **SH234** (deps: SH167 ✅, SH4 ✅) **`/graphql` is the one CSRF exemption left blanket, and its premise is the kind that expires** — SH167 narrowed the CDA, the agent namespace and `/mcp` to session-less callers and deliberately left GraphQL alone: the generated schema has no `Mutation`, so a forged POST cannot write, and the GraphiQL console at `/graphiql/**` is a cookie-bearing browser the narrowed matcher would break for nothing. That is exactly the shape of argument SH117 watched expire on the post-type API. The decision to make ahead of time is what happens to GraphiQL the day a mutation lands. → §XIV.11
+> ⏳ **SH238 is half shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: the fact the editor's
+> save-back rests on is checked in a browser (a probe that fails only on the 403 symptom) and
+> through the real filter chain, and the chain test was verified against the defect. Driving the
+> editor *end to end* still needs a front end to embed — that is Block P, and the remaining task
+> below is scoped to it now.
+>
+> ✅ **SH239 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: the two scaling sources are
+> measured at a second fixture size and required to *rise*, which also exposed that SH164's own
+> first numbers moved with the test order (addressing was 26.2× or 11.8× depending on what ran
+> first; the corrected figures are in the budgets file).
+>
+> ✅ **SH237 and SH240 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: "select everything"
+> pages the rest in before selecting (so the dialog's count is the count that will be acted on),
+> and the listing filter is the CDA's own full-text predicate rather than a title substring.
+>
+> ✅ **SH235 and SH236 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: `shio push` renames a
+> post-type instead of creating and deleting one (two signals, ambiguity refused, the source kept
+> out of `--prune`'s way), and deleting a type content still points at is a teaching 409 naming
+> the count instead of a constraint violation dressed as a server fault.
+>
+> **What finishing the block opened (SH235–SH240), and what is left.** Four came from following one
+> thread each to its client — SH163's rename had no CLI verb and no guard on the delete it replaces
+> (SH235, SH236), and SH165's paging quietly narrowed two things the browser used to do over the
+> whole folder (SH237, SH240) — and all four have shipped, as has SH239, which corrected SH164's own
+> numbers on the way past. **What is left is the one thing this repository cannot do yet**: driving
+> the Universal Editor end to end needs a front end to embed, so SH238's remaining half belongs with
+> Block P.
+
+- ⏳ **SH238** (deps: SH233 ✅, SH182 ✅, Block P) **The Universal Editor is still not driven end to end** — the one fact its save-back rests on is now checked from a browser and through the filter chain (shipped, see CHANGELOG Block N), which is what SH233 needed. What is left is the editor itself: it embeds `site.url` in an iframe, so exercising the properties panel, the field round trip and the publish action needs a front end this repository cannot start yet. Pick it up with Block P's renderer; until then the probe's `skipped` reasons are the honest statement of what is uncovered. → §XIV.15
+
+
 
 ## Block O — The human half (the console the curator uses)
 

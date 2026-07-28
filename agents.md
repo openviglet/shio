@@ -92,7 +92,28 @@ export class ShSiteService {
   same order), then the console-only fields (`date`/`position` on a folder;
   `postTypeTitle`/`published`/`publishStatus`/`state` on a post).
   `ShConsoleShapeOverlapTest` fails the build if a shared component drifts.
-  **Unpaged** — it returns a folder's children whole (SH165).
+  **Paged since SH165**, with the CDA's own `page`/`size`/`totalPosts` (so the envelope is now
+  the CDA's exactly, which is what that test asserts): `?page=&size=&sort=title|date|modifiedDate&q=`.
+  **Only the posts page** — child folders come back whole on every page, because subfolders are
+  structure (the move/copy picker walks them) and `size=1` is how a caller that wants only the
+  structure asks. Three rules worth keeping: the **order and the filter are the server's**, since
+  a client-side sort over a paged listing sorts one page and reads exactly like a correct answer —
+  and **`q` is the CDA's own `FULLTEXT_PREDICATE` (SH240)**: title, summary and stored field data,
+  the same predicate the delivery search uses, so the console cannot come to disagree with it about
+  what "matches" is (it started as a title substring, faithful to the browser's old local filter,
+  which left the console quietly weaker than the API it fronts; folder names stay a substring,
+  since a folder has no content);
+  an unknown `sort` is a teaching **400**, never a fallback to the default, because a listing
+  answered in another order returns other *rows*; and the DRAFT-preference is a **predicate**
+  (`ShPostUnifiedRepository#pageConsoleRows`), not an in-memory dedup like the CDA's, so `LIMIT`
+  and the count are the database's and a post with both rows takes one slot and is counted once.
+  **The browser's `Select → Everything` pages the rest in before selecting (SH237)** — a selection
+  is a list of ids, so "everything" has to be everything, or the delete dialog says "50 item(s)" on
+  a folder of five hundred and the curator is left believing it is empty. Past `SELECT_ALL_CAP`
+  (1000) it selects what it loaded and *says* so rather than pulling an unbounded folder into the
+  browser, which is the response paging removed; `invert` stays deliberately page-scoped, since
+  inverting a set that includes rows nobody has seen is not a gesture anyone means. The rule to
+  keep: **the number in the confirmation dialog is the number that will be acted on.**
 - `GET /api/v2/object/{id}/path` and `GET /api/v2/folder/{id}/path` — the CDA's own
   **`ShCdaPath`**: `{ site, breadcrumb: [...folders], currentFolder }`. Note `site`, not
   `shSite`; a breadcrumb folder carries `root: true|false`, not `rootFolder: 1`.
@@ -466,6 +487,36 @@ asserts both ratios; `ShAgentResponseBudgetTest` guards eleven canonical respons
 read their ceilings from `shio-app/src/test/resources/token-budgets.properties` — the same
 file as the SH132 MCP budgets, because a second place to keep a number is a place that goes
 stale. Raising a ceiling is allowed and must be justified in the commit.
+**Both boot their own in-memory database**: several of the responses they measure describe the
+*instance*, so on the shared test datasource the numbers grew with whatever post-types other
+tests created — the task benchmark measured 1616 tokens alone and 2243 in a full run against an
+1800 ceiling, which is a red build nobody caused.
+
+**And it is attributed per source (SH164, corrected by SH239).** `ShAgentSourceAttributionTest`
+isolates the five ideas a task ratio bundles — addressing, projection, batching, discovery, lint —
+one pair each, with a floor each (`attribution.*` in the same file). It exists because the task
+ratios fell three blocks running while the agent path stood still (SH117/SH120/SH176 each made the
+*baseline* leaner), so one ratio per task could no longer tell "the protocol is cheaper" from "the
+old console was fat". Measured, order-independent: **the lint carries the token claim — 15.5× on
+five posts and 139.6× on forty-five, the only source that scales without bound** (one call against
+one read per candidate, 45× on calls); **addressing is 11.8× and scales sublinearly** to 53.1×,
+because the baseline is a listing *plus* a lean id-keyed read and since SH165 that listing is
+paged, so the growth caps at one page; **batching buys turns, not bytes** (5.0× calls, 6.1×
+tokens); **discovery is a round-trip claim and almost nothing else** (4.0× calls, **1.2×** tokens —
+a context pack describes the instance, so it is not much smaller than the reads it replaces, and
+its call ratio grows by one per folder); **projection is the smallest (1.5×)** and the easiest to
+point at. Its pairs are deliberately generous to the baseline — handed folder, type and post ids it
+could only have crawled for — so each ratio is a **floor** on the advantage.
+**SH239 also corrected SH164's own first numbers**, which were order-dependent: the batching pair
+wrote into the folder the addressing and lint pairs measure, so addressing read 26.2× when batching
+had run first and 11.8× when it had not — the same confound the benchmark's own database fixed, one
+level in. Batching writes to its own folder now, and the scaling claim is asserted by measuring
+**two fixture sizes and requiring the ratio to rise** rather than by argument.
+**The ≈10× per-task target is retired as a headline claim** and kept per source: an aggregate
+mixes five savings, names none, and *falls* when the console gets leaner, so defending it would
+mean arguing against P1. On tokens the claim is ≈10× where it is real (addressing, the lint); on
+calls it is a **session** — a canonical task is 3–4 calls (SH157), one agent session instead of
+three.
 
 ### MCP — `POST /mcp` (SH75/SH83)
 Same capabilities over the Model Context Protocol (JSON-RPC 2.0, revision `2025-06-18`),
@@ -591,7 +642,13 @@ stale; there is no console post-type controller.)
   report, not a model to overwrite.
 - `PUT /api/v2/post-type/{name}` — **upsert**, idempotent by name (what `shio push` converges
   with); rejects system types (409), unknown widgets (400)
-- `DELETE /api/v2/post-type/{name}` — delete a non-system type (204/404/409)
+- `DELETE /api/v2/post-type/{name}` — delete a non-system type (204/404/409). **A type content
+  still points at is a teaching 409 naming the count (SH236)** — it used to be a *500*, because
+  the check was the `system` flag alone and `sh_post_unified.post_type_id` is `onDelete NO ACTION`,
+  so the database refused with a constraint violation the caller reads as a server fault. The
+  count is what makes it actionable (rename vs retire), and **trashed posts are counted too and
+  named separately**: a trashed row still holds the reference, so a refusal saying "0 posts"
+  followed by a 500 would be the worst of both.
 
 **Creating a site is `site.upsert` on the batch surface (SH170)** — addressed `site:<name>`,
 idempotent, and it creates a **blank** site (`ShSiteWriteService.createBlank`), not a clone of the
@@ -614,9 +671,37 @@ or a session). **CSRF is required of session-bearing callers and waived for stat
 (`ShStatelessRequestMatcher`, keyed on the session cookie), which is what lets the CLI and the
 browser share the path safely — do not widen that back to a blanket exemption.
 
-**Renaming a post-type is not supported** (SH163): the name is the key, so a `PUT` to a new
-name creates a second type and orphans the first with its content. The console's API-name
-field is read-only for this reason.
+**Renaming is `POST /api/v2/post-type/{name}/rename` (SH163)** — body `{ "to": "NewName" }`,
+and it is the only way. A `PUT` to a new name creates a *second* post-type and orphans the
+first with its id, its fields and every `sh_post_unified` row pointing at it, while answering
+`200` — SH134's defect one level up, with the same answer: one op that moves and reports what
+moved. The content does not actually move (a post references its type by **id**), so the job is
+the row plus **the one place the model stores a type by name** — a `Multi Select`'s
+`multiselect.postType` (SH154), rewritten and named in `referencesUpdated`. Four refusals: an
+unknown source (400 with the installed names), a blank target (400 — renaming to nothing is a
+delete nobody asked for), an **occupied target (409, never a merge)** and a system type (409) or
+a code-managed one against a `managed:false` hand edit (409, the same claim rule `upsert`
+follows). Renaming to the current name is a **noop**, so a re-run is safe. What it deliberately
+does not do is touch project files: `shio/content/**` frontmatter `type:` and a desired-state
+document's `type` name the post-type too, and the response's `notes` say so rather than the
+server writing a file it does not own. The console's API-name field stays read-only and grows a
+**Rename** button beside it.
+
+**`shio push` reaches it (SH235).** A renamed `shio/post-types/*.json` used to converge as a
+create plus — with `--prune` — a delete aimed at the type it replaced; now `detectTypeRenames`
+finds it from **two signals**, SH150's shape applied to the model: an explicit `"movedFrom":
+"<old name>"` (an instruction `pull` never writes, ignored once the source is gone, and the only
+signal that survives a rename *plus* an edit) and an **identical body** under a new name (the
+plain `git mv`). Three rules carry over: **ambiguity is refused** before anything is written and
+names the candidates; a **plausible but unprovable** pair (same field names, different bodies) is
+*printed* with the `movedFrom` line to add, because silence is how a delete-plus-create destroys
+content quietly; and a rename's source leaves `removed`, or `--prune` deletes the type the rename
+just preserved. Renames are applied **before** upserts (an upsert on the new name first would
+create the second type this exists to prevent), a rename-only change needs **no** upsert at all
+(so `--check` is quiet on the next run), and `movedFrom` is stripped from the body — it is an
+instruction to the CLI, not a field of the model. The content-tree half is *reported*, not
+rewritten: a post-type rename leaves `shio/content/**` declaring the old `type:`, and the command
+says which name to look for.
 
 **Cascade gotcha:** `ShPostTypeAttr` maps `shWidget`/`shPostType`/`shParentPostTypeAttr` as
 `@ManyToOne(cascade=ALL)`, so `ShPostTypeAdminService` detaches those before the
@@ -956,8 +1041,27 @@ nothing that works.
 is a *future* caller rather than a current request, which no functional test can watch for. To
 add one, name the constant in its allow-list with the reason a forged request there can do
 nothing an unauthenticated one could not. `/graphql` is the only current member (no
-`Mutation`; GraphiQL is a cookie-bearing browser) — a premise of exactly the shape that
-expired before, hence **SH234**.
+`Mutation`; GraphiQL is a cookie-bearing browser) — a premise of exactly the shape that expired
+before, so **since SH234 it is enforced, not written down**: the same lint fails the build the
+day a `Mutation` appears in `schema.graphqls` or a `.mutation(` in `ShGraphQLSchema`, and its
+message carries the decision made in advance — **narrow `GRAPHQL_PATH` with
+`ShStatelessRequestMatcher` and set `spring.graphql.graphiql.enabled=false`**. A
+mutation-capable delivery endpoint does not get a cookie-bearing playground in the console's
+browser; keeping GraphiQL would mean shipping a CSRF-aware replacement or accepting cross-site
+writes on the delivery API, and neither is worth a query playground.
+
+**On the CDA, an explicitly presented `Key` beats an existing session (SH233).** `ShApiTokenFilter`
+used to return early whenever anything had authenticated, which read as conservative and was why
+the Universal Editor could not save: the console is **same-origin** with the API, so its session
+cookie rides along whatever the client sets `withCredentials` to (that flag governs cross-origin
+requests only), `SecurityContextHolderFilter` restores the session first, the `Key` header was
+never read, and the PATCH authenticated as a curator with no `ROLE_CDA_WRITE`. Sending a key is a
+request to be *that* principal; the token's scope, allow-list, expiry and rate limit still bound
+it, and a key that cannot authenticate **leaves the context untouched** rather than clearing it.
+The client half is the same fix from the other end: `universal-editor.service.ts` uses the shared
+`@/lib/axios` singleton now, so the request carries CSRF (required of a session-bearing caller
+since SH167) instead of a private `axios.create()` that silently opted out of every shared
+interceptor.
 
 ### Authentication
 - HTTP Basic Auth
@@ -1283,8 +1387,11 @@ CDA shapes (SH117/SH120) and then the post read (SH176) — so the SH112 token r
 product improving and the claim shrinking, three blocks running. **SH157 is the first change
 that moved a ratio the other way**, by folding discovery into one read and proof into the
 write: every canonical task lost a call. The current reading is **tokens 2.8×–10.5×, tool
-calls 2.3×–3.8×** — ≈10× met on one task of four, ≈6× met nowhere. SH164 still owns
-attributing what is left to the sources that actually produce it.
+calls 2.3×–3.8×** — and **SH164/SH239 have since attributed it**: per-source, the lint is 15.5× at
+five posts and 139.6× at forty-five (the only unbounded one), addressing 11.8× rising to 53.1×,
+batching 5.0× on calls and 6.1× on tokens, discovery 4.0× on calls and **1.2×** on tokens,
+projection 1.5×. So quote a *source*, not a task ratio: the aggregate ≈10× is retired precisely
+because it mixes those five and moves when the baseline does.
 
 **The cross-file update rules — follow these every time:**
 

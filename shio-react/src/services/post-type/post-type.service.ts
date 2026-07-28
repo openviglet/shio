@@ -1,4 +1,4 @@
-import type { ShPostType } from "@/models/post-type/post-type";
+import type { ShPostType, ShPostTypeRenamed } from "@/models/post-type/post-type";
 import axios from "axios";
 
 /**
@@ -36,6 +36,22 @@ export class ShPostTypeService {
     const response = await axios.put<ShPostType>(
       `/v2/post-type/${encodeURIComponent(postType.name)}`,
       { ...postType, managed: false }
+    );
+    return response.data;
+  }
+
+  /**
+   * Rename a post-type, carrying its content with it (SH163).
+   *
+   * A `PUT` to a new name creates a *second* post-type and leaves this one's posts behind,
+   * which is why the editor's API-name field was read-only. `managed: false` is the same hand-edit
+   * claim every console write on this surface makes: the server refuses it against a code-managed
+   * type instead of racing the repository that owns the model.
+   */
+  async rename(name: string, to: string): Promise<ShPostTypeRenamed> {
+    const response = await axios.post<ShPostTypeRenamed>(
+      `/v2/post-type/${encodeURIComponent(name)}/rename`,
+      { to, managed: false }
     );
     return response.data;
   }

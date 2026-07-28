@@ -11,6 +11,7 @@ import { BadgeColorful } from "@/components/badge-colorful"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { IconFileText } from "@tabler/icons-react"
@@ -21,6 +22,7 @@ import {
   Info,
   Layers,
   Lock,
+  PencilLine,
   Plus,
   Save,
   Settings2,
@@ -30,6 +32,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
+import axios from "axios"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShWidgetService } from "@/services/widget/widget.service"
 import type { ShPostType, ShPostTypeField } from "@/models/post-type/post-type"
@@ -743,6 +746,9 @@ export default function PostTypeEditPage() {
   const [fields, setFields] = useState<FieldRow[]>([])
   const [widgets, setWidgets] = useState<ShWidget[]>([])
   const [postTypes, setPostTypes] = useState<ShPostType[]>([])
+  const [renameOpen, setRenameOpen] = useState(false)
+  const [renameTo, setRenameTo] = useState("")
+  const [renaming, setRenaming] = useState(false)
 
   useEffect(() => {
     resetBreadcrumb([
@@ -776,6 +782,40 @@ export default function PostTypeEditPage() {
       setIsLoading(false)
     }
   }, [fields, navigate, postTypeName, t])
+
+  /**
+   * SH163 — the rename, and it routes to the new name because the route *is* the key.
+   *
+   * The response says what came along (the posts, and any `Multi Select` that was narrowing to
+   * the old name), plus what the server will not rename: a project's content files and
+   * documents name a post-type too, and nothing here can edit those. That is surfaced as a
+   * toast rather than swallowed — a curator who renamed a code-adjacent type needs to know the
+   * next `shio push --check` will report drift.
+   */
+  const rename = useCallback(async () => {
+    const target = renameTo.trim()
+    if (!target || target === postTypeName) {
+      setRenameOpen(false)
+      return
+    }
+    setRenaming(true)
+    try {
+      const moved = await postTypeService.rename(postTypeName, target)
+      setRenameOpen(false)
+      toast.success(t("content.renamedPostType", { from: moved.from, to: moved.to, count: moved.posts }))
+      if (moved.referencesUpdated.length > 0) {
+        toast.info(t("content.renameRetargeted", { fields: moved.referencesUpdated.join(", ") }))
+      }
+      navigate(`${ROUTES.POST_TYPE_ROOT}/${encodeURIComponent(moved.to)}`)
+    } catch (error) {
+      // 409 = occupied name, a system type, or a code-managed one; 400 = a bad target. Each
+      // arrives as an SH80 problem whose `fix` is the sentence worth showing.
+      const problem = axios.isAxiosError(error) ? error.response?.data : null
+      toast.error(problem?.fix || problem?.detail || problem?.title || t("content.renameError"))
+    } finally {
+      setRenaming(false)
+    }
+  }, [navigate, postTypeName, renameTo, t])
 
   const title = form.watch("title")
   const managed = Boolean(form.watch("managed"))
@@ -881,10 +921,11 @@ export default function PostTypeEditPage() {
                         </FormItem>
                       )}
                     />
-                    {/* The API name is the post-type's identity on the name-keyed
-                        surface (SH117), so it is shown and not edited: changing it here
-                        would write a second post-type and leave this one's content
-                        behind. Renaming is its own operation — see SH163. */}
+                    {/* The API name is the post-type's identity on the name-keyed surface
+                        (SH117), so the field is still not a text box: typing in it would write
+                        a second post-type and leave this one's content behind. Since SH163 the
+                        rename is its own operation, so the field has a button instead of a
+                        dead end. */}
                     <FormItem>
                       <div className="flex items-center gap-1.5">
                         <FormLabel>{t("content.apiName")}</FormLabel>
@@ -892,12 +933,23 @@ export default function PostTypeEditPage() {
                           <TooltipTrigger asChild>
                             <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
                           </TooltipTrigger>
-                          <TooltipContent side="top">{t("content.apiNameReadOnly")}</TooltipContent>
+                          <TooltipContent side="top">{t("content.apiNameRename")}</TooltipContent>
                         </Tooltip>
                       </div>
-                      <FormControl>
-                        <Input readOnly disabled className="bg-muted font-mono" value={postTypeName} />
-                      </FormControl>
+                      <div className="flex items-center gap-2">
+                        <FormControl>
+                          <Input readOnly disabled className="bg-muted font-mono" value={postTypeName} />
+                        </FormControl>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={managed || Boolean(form.watch("system"))}
+                          onClick={() => { setRenameTo(postTypeName); setRenameOpen(true) }}
+                        >
+                          <PencilLine className="mr-2 h-4 w-4" /> {t("content.rename")}
+                        </Button>
+                      </div>
                     </FormItem>
                     <FormField
                       control={form.control}
@@ -955,6 +1007,35 @@ export default function PostTypeEditPage() {
         </Card>
         </fieldset>
       </div>
+
+      {/* SH163 — the rename dialog. It states what a rename does and does not carry, because
+          the operation looks trivial and the thing it replaces looked like it worked. */}
+      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("content.renamePostType")}</DialogTitle>
+            <DialogDescription>{t("content.renamePostTypeHelp")}</DialogDescription>
+          </DialogHeader>
+          <Input
+            className="font-mono"
+            value={renameTo}
+            onChange={(e) => setRenameTo(e.target.value)}
+            autoFocus
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" size="sm" onClick={() => setRenameOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              size="sm"
+              disabled={renaming || !renameTo.trim() || renameTo.trim() === postTypeName}
+              onClick={rename}
+            >
+              {renaming ? t("common.loading") : t("content.rename")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

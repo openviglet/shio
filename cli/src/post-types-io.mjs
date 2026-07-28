@@ -97,7 +97,157 @@ export function planPush(localDefs, remoteDefs, { prune = false } = {}) {
   const { added, changed, removed } = diffDefs(localDefs, remoteDefs);
   const localByName = new Map(localDefs.map((d) => [d.name, d]));
   const remoteByName = new Map(remoteDefs.map((d) => [d.name, d]));
-  const toPut = [...added, ...changed].map((name) => localByName.get(name));
-  const toDelete = prune ? removed.filter((name) => !remoteByName.get(name)?.system) : [];
-  return { toPut, toDelete };
+  const { renames, ambiguous, probable } = detectTypeRenames(localDefs, remoteDefs, { added, removed });
+
+  // A type that was renamed is not "added" (the server has it, under its old name) and its old
+  // name is not "removed" (nothing was removed) — so both lists lose it. Without the second half,
+  // `--prune` would delete the very type the rename preserved, taking its content with it.
+  const renamedTo = new Set(renames.map((rename) => rename.to));
+  const renamedFrom = new Set(renames.map((rename) => rename.from));
+
+  const toPut = [...added, ...changed]
+    .filter((name) => !renamedTo.has(name) || bodyChanged(localByName.get(name), remoteByName))
+    .map((name) => localByName.get(name));
+  const toDelete = prune
+    ? removed.filter((name) => !renamedFrom.has(name) && !remoteByName.get(name)?.system)
+    : [];
+  return { toPut, toDelete, renames, ambiguousRenames: ambiguous, probableRenames: probable };
+}
+
+/**
+ * Whether a renamed type still needs an upsert after the rename lands.
+ *
+ * A rename moves the row and changes nothing else, so a file that was *only* renamed converges
+ * with the rename alone — and skipping the PUT is what keeps `--check` reporting no drift on the
+ * next run. A file that was renamed *and* edited still needs its fields written.
+ */
+function bodyChanged(local, remoteByName) {
+  const source = [...remoteByName.values()].find((remote) => sameBody(local, remote));
+  return !source;
+}
+
+/** Two defs with everything but the name equal — identity by content (SH235's signal 2). */
+function sameBody(a, b) {
+  if (!a || !b) return false;
+  const strip = (def) => JSON.stringify({ ...normalizeDef(def), name: null });
+  return strip(a) === strip(b);
+}
+
+/**
+ * Which pushes are post-type renames rather than create-plus-delete (SH235).
+ *
+ * <h3>The defect</h3>
+ *
+ * The tree is keyed by file name, so `git mv shio/post-types/Article.json Note.json` reads as
+ * "create `Note`" plus, with `--prune`, "delete `Article`" — the create-and-orphan pair SH163
+ * exists to remove, with a delete on the end aimed at a type that still holds every post ever
+ * written against it. SH163 put the rename on the server; this is how `push` reaches it.
+ *
+ * <h3>Two signals, and refusal in between</h3>
+ *
+ * 1. **`movedFrom` in the local def** — explicit, and the only signal that survives a rename plus
+ *    an edit in the same push, because after an edit there is no body left to match on. It is an
+ *    *instruction*: `pull` never writes it, and it is ignored once the source is gone, which is
+ *    what keeps a push re-runnable.
+ * 2. **Identical body** — the plain `git mv`, needing nothing from the author: one added name
+ *    whose def equals one removed name's, everything but `name` compared.
+ *
+ * Ambiguity is **refused**, not guessed: two candidates is a coin flip with a content model's
+ * posts on the table. A pair that is plausible but unprovable — same field names, different
+ * bodies — is reported as `probable` with the `movedFrom` line to add, because silence there is
+ * how a delete-plus-create destroys history without mentioning it.
+ *
+ * @returns {{ renames: {from: string, to: string, explicit: boolean}[],
+ *             ambiguous: {to: string, reason: string, candidates: string[]}[],
+ *             probable: {from: string, to: string}[] }}
+ */
+export function detectTypeRenames(localDefs, remoteDefs, { added = [], removed = [] } = {}) {
+  const localByName = new Map(localDefs.map((d) => [d.name, d]));
+  const remoteByName = new Map(remoteDefs.map((d) => [d.name, d]));
+  const renames = [];
+  const ambiguous = [];
+  const probable = [];
+  const claimed = new Set();
+  // A system type is not renamable on the server, so it is never a candidate here either.
+  const gone = removed.filter((name) => !remoteByName.get(name)?.system);
+
+  // 1. `movedFrom` — explicit and exact.
+  for (const name of added) {
+    const from = localByName.get(name)?.movedFrom;
+    if (!from) continue;
+    if (localByName.has(from)) {
+      ambiguous.push({
+        to: name,
+        reason: `its \`movedFrom: ${from}\` names a post-type the tree still declares`,
+        candidates: [from],
+      });
+      continue;
+    }
+    // The state *after* a successful rename: harmless, and ignoring it keeps the push idempotent.
+    if (!remoteByName.has(from)) continue;
+    if (remoteByName.get(from)?.system) {
+      ambiguous.push({
+        to: name,
+        reason: `\`${from}\` is a system post-type and cannot be renamed`,
+        candidates: [from],
+      });
+      continue;
+    }
+    claimed.add(from);
+    renames.push({ from, to: name, explicit: true });
+  }
+
+  // 2. Identical body — the rename nobody had to declare.
+  for (const name of added) {
+    if (localByName.get(name)?.movedFrom) continue;
+    const local = localByName.get(name);
+    const matches = gone.filter((from) => !claimed.has(from) && sameBody(local, remoteByName.get(from)));
+    if (matches.length > 1) {
+      ambiguous.push({
+        to: name,
+        reason: "more than one post-type on the server has exactly this definition, so which one "
+          + "was renamed cannot be told from the files",
+        candidates: matches,
+      });
+      continue;
+    }
+    if (!matches.length) continue;
+    const from = matches[0];
+    const rivals = added.filter((other) => other !== name && !localByName.get(other)?.movedFrom
+      && sameBody(localByName.get(other), remoteByName.get(from)));
+    if (rivals.length) {
+      ambiguous.push({
+        to: name,
+        reason: "another local definition is identical to the same server post-type, so which of "
+          + `them is the rename of ${from} cannot be told apart`,
+        candidates: [from, ...rivals],
+      });
+      continue;
+    }
+    claimed.add(from);
+    renames.push({ from, to: name, explicit: false });
+  }
+
+  // What is left on each side and might be a pair: worth saying, not enough to act on.
+  const unclaimed = gone.filter((name) => !claimed.has(name));
+  for (const name of added) {
+    if (localByName.get(name)?.movedFrom || renames.some((rename) => rename.to === name)) continue;
+    const likely = unclaimed.filter((from) => sameFieldNames(localByName.get(name), remoteByName.get(from)));
+    // Exactly one candidate, or nothing to say: two is a guess dressed as a warning.
+    if (likely.length === 1) probable.push({ from: likely[0], to: name });
+  }
+
+  return {
+    renames: renames.sort((a, b) => a.to.localeCompare(b.to)),
+    ambiguous: ambiguous.sort((a, b) => a.to.localeCompare(b.to)),
+    probable: probable.sort((a, b) => a.to.localeCompare(b.to)),
+  };
+}
+
+/** Same field names, in any order — a rename plus an edit looks like this. */
+function sameFieldNames(a, b) {
+  if (!a || !b) return false;
+  const names = (def) => (def.fields ?? []).map((field) => field.name).sort().join("\u0000");
+  const own = names(a);
+  return own.length > 0 && own === names(b);
 }

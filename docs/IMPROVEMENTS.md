@@ -1236,27 +1236,12 @@ leaving to whoever next notices the poll is not free.
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 
 > The reorientation was mostly additive, but it did invalidate some existing choices.
-> Block N spent them → [CHANGELOG.md](CHANGELOG.md) Block N. What is left here is the
-> one lesson worth carrying forward (§XIV.4) and the design for what building it
-> opened. Concept spec §10 has the original table.
-
-### XIV.1 Renaming a post-type is a move, not an upsert (SH163)
-
-SH117 left the post-type surface keyed by name, which is right — it is how SH79
-addresses everything else — and it means the one operation the surface cannot express
-is a rename. A `PUT /api/v2/post-type/NewName` does not rename `OldName`; it creates a
-second post-type, and the first keeps its id, its attribute rows and every
-`sh_post_unified` row that points at it. The console's API-name field is read-only for
-exactly this reason, which is honest but not a feature.
-
-This is SH134's problem again, and SH134's shape is the answer: **one operation that
-moves rather than two that happen to leave the right rows behind.** A `post-type.move`
-(or `POST /api/v2/post-type/{name}/rename`) that updates the name in place, refuses an
-occupied target, and reports what it moved. The two questions worth settling first:
-whether a rename should rewrite the `type` in the SH82 content documents and
-`shio/content/**` files that name it (they address the post-type by name too, so a
-rename is drift the next `--check` reports), and whether a *managed* type may be
-renamed over the API at all or only in the repo that owns it.
+> Block N spent them → [CHANGELOG.md](CHANGELOG.md) Block N, and so are the tasks that
+> building it opened (SH163–SH167, SH233, SH234). What is left here is the one lesson worth
+> carrying forward (§XIV.4) and the one task that **finishing** it opened and is still open
+> (§XIV.15: the editor nothing drives, which needs a front end to embed before it can be driven
+> end to end). The other five (SH235–SH237, SH239, SH240) have shipped.
+> Concept spec §10 has the original table.
 
 ### XIV.4 Build-time guard for the `@TenantId` JOINED-join hazard (SH122) — ✅ shipped
 
@@ -1282,87 +1267,26 @@ input (word boundaries fail on both sides of a derived query name). A lint that
 matches nothing passes silently forever, so its patterns are asserted against the
 exact strings that broke production.
 
-### XIV.6 Re-establish the token claim on its actual sources (SH164)
+### XIV.15 The Universal Editor is driven by nothing (SH238)
 
-Block N's uncomfortable result: SH117 and SH120 fixed the baseline, and every token
-ratio in the SH112 benchmark fell against an unchanged agent path — **3.8×–23.3×
-became 2.6×–12.6×**. Nothing regressed. The measurement simply stopped being flattered
-by a console that shipped entity-shaped JSON.
+SH233's defect — a save-back that could not authenticate — lived behind a comment that described
+the mechanism *incorrectly*, and it survived because there is no test anywhere in this repository
+that drives the Universal Editor. Every test either builds the request in Java or mocks the axios
+client, and both of those agree with the comment: they cannot see that a browser attaches a
+same-origin cookie regardless of `withCredentials`.
 
-The problem this leaves is not the smaller number, it is that **the benchmark can no
-longer distinguish "the protocol is cheaper" from "the old console was fat."** A single
-ratio per task mixes four independent savings, so improving the baseline moved all of
-them at once and there is no way to see which of the protocol's ideas is actually
-carrying the claim. The fix is attribution: measure the four sources separately —
-addressing versus id round trips, one batch versus N writes, a context pack versus a
-crawl, a lint that names the defect versus a read-everything sweep — and give each its
-own floor. Then a future baseline improvement moves the number it should move and
-leaves the rest alone.
+This is Block O's lesson recurring in the one place the block did not reach. **The one fact the
+feature rests on has since been checked** (shipped — see CHANGELOG Block N): SH182's harness runs
+the editor's PATCH from a page the console served and fails on the 403 symptom, and a full-chain
+MockMvc test pins the same precedence through the real filter order, verified by restoring the
+defect and watching it fail.
 
-The second half is a judgement call to make deliberately rather than by inertia: with
-the baseline lean, is ≈10× still the right target, or was it always a proxy for "an
-agent can do this in one session instead of three"? A target nobody can hit gets
-disabled; a target that measures the wrong thing gets hit and means nothing.
+What is still open is the editor *itself*, and it is genuinely blocked: it is an
+`<iframe src={site.url}>`, so exercising the properties panel, a field's round trip and the publish
+action needs a front end to embed — which is Block P. The thing to carry forward is why the cheap
+half was worth doing first: the alternative was discovering the next plumbing defect the way this
+one was discovered, by reading the code and noticing that a comment is wrong.
 
-### XIV.7 The console listing is unpaged (SH165)
-
-`GET /api/v2/object/{id}/list` returns every child of a folder. SH120 aligned its
-shape with `ShCdaListing` but deliberately did not copy the `page`/`size`/`totalPosts`
-fields, because three constants pretending to be a contract are worse than an honest
-absence — the CDA has been paged since SH1 and the console has never been.
-
-It is a scaling limit with two halves, and the server half is nearly free: the
-projection already exists, so the endpoint needs the parameters and the count. The
-browser half is the real work and the real decision — pages, infinite scroll, or a
-virtualized list — and it interacts with the browser's client-side sort and search,
-which currently operate on the whole set precisely because the whole set is there. A
-paged listing with a client-side sort would silently sort one page, which is the kind
-of half-migration that is worse than either end state.
-
-### XIV.10 The Universal Editor's save-back cannot be authenticating the way it thinks it is (SH233)
-
-Found while reviewing the CDA's CSRF exemption for SH167, and it is not a CSRF problem —
-it is an authentication one that the exemption was hiding in plain sight.
-
-`shio-react/src/services/universal-editor/universal-editor.service.ts` builds a dedicated
-axios instance with `withCredentials: false` and a comment explaining exactly why: the CDA
-filter authenticates the `Key` token only when no authentication is already present, so if
-the console session cookie rides along, the request authenticates as the logged-in curator —
-who has no `ROLE_CDA_WRITE` — and gets a 403.
-
-The reasoning is right and the mechanism does not implement it. `withCredentials` governs
-**cross-origin** requests only; for a same-origin XHR the browser attaches cookies
-regardless, and the console is same-origin with the API both in dev (behind the Vite proxy)
-and in production. So the cookie is sent, `SecurityContextHolderFilter` restores the session
-before `ShApiTokenFilter` runs, the filter returns early on the already-set authentication,
-and the `Key` header is never read.
-
-Two things to settle before fixing it. First, **whether it is actually broken**, because
-nothing here proves it: this is a browser-runtime behaviour and every test in this repository
-either builds the request in Java or mocks the client. SH182's smoke check is the instrument.
-Second, **which end gives**: either an explicit `Key` header wins over an existing session on
-the CDA path (a change to the filter's early return, with its own escalation question — a
-console user could then present any token), or the editor stops needing to dodge the session
-at all. The second is more honest and larger, because it means answering why a console user
-holding a session cannot write through the CDA in the first place.
-
-### XIV.11 `/graphql` is the one CSRF exemption left blanket (SH234)
-
-SH167 narrowed the CDA, the agent namespace and `/mcp`. GraphQL was deliberately left,
-and the reasoning should be revisited rather than rediscovered.
-
-It rests on two facts, both true today: the generated schema exposes no `Mutation`, so a
-forged POST cannot write; and `/graphiql/**` is a cookie-bearing browser that the narrowed
-matcher would break, for a protection that would be protecting nothing. Together they make
-the exemption free — but the first is precisely the shape of premise that expired on
-`/api/v2/post-type`, where "only the CLI reaches it" was true right up to the commit that
-pointed the React editor at the same URL.
-
-So the decision worth making in advance is what happens to GraphiQL the day a mutation lands.
-The narrowed matcher and a CSRF-aware GraphiQL are compatible; the work is in the console
-bundle rather than in the security config, which is exactly the order that makes it cheap now
-and awkward later. Filing it as a task is the point: the alternative is a comment nobody reads
-in the same commit as the mutation.
 ## XV. The visible site (Block P)
 
 > An agent can build a site's model, folders and pages over the agent surface, and nobody

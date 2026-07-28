@@ -134,6 +134,16 @@ export class ShioAdminClient {
     return this.#request("PUT", `/${encodeURIComponent(name)}`, def);
   }
 
+  /**
+   * POST /api/v2/post-type/{name}/rename (SH163) — the only way to rename a post-type.
+   *
+   * `managed` is omitted deliberately: absent claims code ownership, which is what a `push` is,
+   * and it is the same claim `putPostTypeDef` makes by omitting the key.
+   */
+  renamePostTypeDef(name, to) {
+    return this.#request("POST", `/${encodeURIComponent(name)}/rename`, { to });
+  }
+
   /** DELETE /api/v2/post-type/{name}. */
   deletePostTypeDef(name) {
     return this.#request("DELETE", `/${encodeURIComponent(name)}`);
