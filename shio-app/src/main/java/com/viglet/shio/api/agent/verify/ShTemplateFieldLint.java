@@ -24,9 +24,12 @@ import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.render.ShPageRenderService;
+import com.viglet.shio.render.ShRenderHelpers;
 import com.viglet.shio.render.ShPageRenderService.ShNamedTemplate;
 import com.viglet.shio.render.ShPageRenderService.ShPageTemplates;
+import com.viglet.shio.render.ShTemplateEngine;
 import com.viglet.shio.render.ShTemplateFieldScanner;
+import com.viglet.shio.render.ShTemplateFieldScanner.ShHelperShapes;
 import com.viglet.shio.render.ShTemplateFieldScanner.ShTemplateReference;
 
 /**
@@ -80,20 +83,19 @@ public class ShTemplateFieldLint {
      */
     private static final Set<String> FRAMES = Set.of("post", "site", "theme", "render");
 
-    /**
-     * What every listing helper puts in a row ({@code ShRenderHelpers#row}), plus a folder row's
-     * {@code name}. Referencing one inside a block is correct by construction.
-     */
-    private static final Set<String> ROW_KEYS =
-            Set.of("id", "title", "summary", "url", "link", "type", "name");
+    // SH260 — the row's keys are `ShRenderHelpers.ROW_KEYS`, read rather than restated. This used
+    // to be a copy, and its drift showed up as a warning on a correct listing body.
 
     private final ShPageRenderService renderService;
     private final ShPostTypeRepository shPostTypeRepository;
+    private final ShTemplateEngine engine;
 
     public ShTemplateFieldLint(ShPageRenderService renderService,
-                               ShPostTypeRepository shPostTypeRepository) {
+                               ShPostTypeRepository shPostTypeRepository,
+                               ShTemplateEngine engine) {
         this.renderService = renderService;
         this.shPostTypeRepository = shPostTypeRepository;
+        this.engine = engine;
     }
 
     /**
@@ -144,7 +146,10 @@ public class ShTemplateFieldLint {
         // footer has one defect, and reporting it twice makes a report the reader has to
         // de-duplicate — the same rule SH141 applies to routes and delivery.
         Set<String> reported = new LinkedHashSet<>();
-        for (ShTemplateReference reference : ShTemplateFieldScanner.referencesIn(template)) {
+        // SH260 — the scanner is told what the engine registered, so a helper's own name is never
+        // read as an undeclared field and the two cannot drift.
+        ShHelperShapes helpers = ShHelperShapes.of(engine.registeredHelpers());
+        for (ShTemplateReference reference : ShTemplateFieldScanner.referencesIn(template, helpers)) {
             String root = reference.root();
             if (FRAMES.contains(root)) {
                 continue;
@@ -155,7 +160,7 @@ public class ShTemplateFieldLint {
                 }
                 continue;
             }
-            if (!ROW_KEYS.contains(root) && !anyDeclared.contains(root)
+            if (!ShRenderHelpers.ROW_KEYS.contains(root) && !anyDeclared.contains(root)
                     && reported.add("row:" + root)) {
                 findings.add(declaredNowhere(subject, reference, root));
             }
@@ -180,7 +185,7 @@ public class ShTemplateFieldLint {
                         + "}}`, and no post-type in this instance declares a field of that name — "
                         + "so it cannot resolve for any post the block lists.",
                 "Rename it to a field the listed posts have, or to one of the row values every "
-                        + "listing provides (" + String.join(", ", new TreeSet<>(ROW_KEYS)) + "). "
+                        + "listing provides (" + String.join(", ", new TreeSet<>(ShRenderHelpers.ROW_KEYS)) + "). "
                         + "This is a warning rather than an error because the rows come from a "
                         + "helper, and which posts it finds is not something the CMS can settle.");
     }

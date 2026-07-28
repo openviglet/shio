@@ -2194,35 +2194,28 @@ fired, which is the part a reader would use to tell a good refusal from a confus
 
 ### XVI.14 The helper catalogue is five hardcoded lists (SH260)
 
-`ShRenderHelpers.register()` is where a helper becomes real. Five other places restate what it
-holds, and each restatement exists for a defensible local reason:
-
-| Place | Restates | Because |
-|---|---|---|
-| `ShTemplateValidator.REGISTERED` | the registered names | the refusal lists the choices |
-| `ShTemplateValidator.KNOWN_MISSING_HELPERS` | their complement within the seven | the paramless form the compiler cannot catch |
-| `ShTemplateFieldScanner.BLOCK_HELPERS` | the block helper names | so a helper's name is not read as a field |
-| `ShTemplateFieldScanner.PATH_ARG_INLINE` | which inline helpers take a field | so `{{file_url HERO}}` reports `HERO` |
-| `ShTemplateFieldLint.ROW_KEYS` | `ShRenderHelpers#row`'s keys | so a listing body is not a finding |
-
-SH247 had to edit three of them in step to add two helpers; SH251 added the last two. So the cost
-is already visible, and **every failure mode is silent**: a registered helper missing from the
-scanner's list is reported as an unknown *field*, a row key missing from the lint's list is a
-warning on a correct template, and a name left in `KNOWN_MISSING_HELPERS` after the helper ships
-tells an author a capability is absent while the renderer runs it. None of those announces itself
-as a stale list; each looks like a content defect.
-
-This is SH245's "one writer per verb" one level down, and it wants the same answer: the engine
-should be able to say what it has registered, and each helper what shape its arguments take — then
-the validator's message, the scanner's exclusions and the lint's row keys are all *reads*. The one
-piece that does not follow automatically is `KNOWN_MISSING_HELPERS`, which is a statement about
-what a template author might reasonably expect and not about what exists; it stays a list, and
-becomes empty when `form` lands.
-
-Worth noting what SH247 already did right, since it is the pattern to keep: `ShTemplateValidatorTest`
-asserts *both* directions — `{{#form}}` still refused, `{{#getRelation}}` now accepted — so at
-least the validator's two lists cannot drift from the engine unnoticed. The other three have no
-such test, which is why this is filed rather than left to care.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth keeping.
+>
+> **What got consolidated was not the names but the *shapes*.** The obvious fix — expose the
+> registered names and have the readers ask — solves the validator's list and nothing else, because
+> the scanner does not need to know *what* is registered, it needs to know how a call is written
+> (does the first token belong to the helper or is it a field?). So the registration declares a
+> shape, and that is the piece that could not have been derived: it lives in the author's head at
+> `register()` and was being reconstructed by two other classes from memory.
+>
+> **The dangerous convenience was the one not to provide.** `referencesIn(template)` with no shapes
+> would be defaulting to "nothing is registered", which turns a forgotten argument into a false
+> positive from the rule that exists to catch typos. Removing the overload is what makes the omission
+> a compile error instead of a wrong finding — the same instinct as SH138 making a truncated change
+> set unrepresentable rather than merely avoided.
+>
+> **Two of the new assertions were wrong before they were right**, and the reasons are worth
+> recording because both are about *order*: the engine's list is alphabetical rather than in
+> registration order (a total order per SH136, and registration order was the hand-written list's
+> accident of history), and the refusal that exercises it needs a *parameterised unknown* helper,
+> because `{{#form}}` is in `KNOWN_MISSING_HELPERS` and takes the SH247 branch instead.
+>
+> What is left is that the capability set is still discoverable only by getting a 400 — **SH272**.
 
 ### XVI.15 A hash argument that is a field is not checked (SH261)
 
@@ -2435,6 +2428,29 @@ The argument is not tidiness. SH250 was verified by the *absence* of a warning, 
 a signal in a log clean enough for it to be visible. That property was luck this time. Making it
 design is what this buys, and the beneficiary is whoever reads the build the day something new starts
 warning.
+
+### XVI.24 A helper is registered in code, so the capability set is not discoverable (SH272)
+
+SH260 made the engine the one thing that knows what is registered. Every reader of it is internal:
+the write-time refusal, the SH251 scanner, the SH251 lint. **Nothing on the agent surface says what a
+template may call.**
+
+So an author writing a layout through `post.upsert` learns the set by getting a 400 — a teaching error
+doing the job of documentation, and one that teaches a single name per attempt. That is the opposite
+of law P2, which is that discovery is a product feature rather than a docs problem, and it is the same
+gap the manifest was built to close for endpoints.
+
+The engine can now answer it in one line, and `registeredHelpers()` carries the shapes, so the answer
+can be a *signature* (`{{#query folder= type= limit=}}`, `{{#getRelation FIELD}}`, `{{file_url FIELD}}`)
+rather than a bare list — which is strictly more useful, since the shape is the part an author gets
+wrong.
+
+Where it belongs is the open question. The manifest's `startHere` is for orientation, not reference. A
+`shio://schema`-style MCP resource would be discoverable but only to MCP clients. **The context pack's
+`conventions` is the likely home**: a helper set is exactly the kind of instance-specific fact that
+SH114's memory notes already sit beside, it is read once per session, and SH116's ETag makes it free
+on repeat. The thing to check before choosing is P3 — the pack is budgeted, and five signatures is a
+small but non-zero cost paid by every session including the ones that never write a template.
 
 ---
 

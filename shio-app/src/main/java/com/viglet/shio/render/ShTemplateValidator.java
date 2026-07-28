@@ -80,9 +80,9 @@ public class ShTemplateValidator {
      */
     private static final Set<String> KNOWN_MISSING_HELPERS = Set.of("form");
 
-    /** What {@link ShRenderHelpers} does register, named so a refusal can list the choices. */
-    private static final List<String> REGISTERED =
-            List.of("query", "navigation", "file_url", "getRelation", "search");
+    // SH260 — the registered names are asked for, not restated. This list used to be a copy that
+    // SH247 had to edit in step with the registration, and whose drift showed up as a refusal
+    // message offering the wrong choices.
 
     /** Handlebars.java's own wording, which this re-words rather than passes through. */
     private static final String HELPER_NOT_FOUND = "could not find helper:";
@@ -182,7 +182,7 @@ public class ShTemplateValidator {
                     + helper + "` and render nothing.";
         }
         return "There is no `" + helper + "` helper. The registered set is closed: "
-                + String.join(", ", REGISTERED) + ", plus Handlebars' own built-ins.";
+                + String.join(", ", engine.registeredNames()) + ", plus Handlebars' own built-ins.";
     }
 
     /**

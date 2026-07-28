@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import jakarta.annotation.PostConstruct;
 
@@ -32,6 +33,7 @@ import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.render.ShTemplateEngine.ShHelperShape;
 import com.viglet.shio.utils.ShStableMap;
 
 /**
@@ -121,13 +123,27 @@ public class ShRenderHelpers {
         this.shRenderModel = shRenderModel;
     }
 
+    /**
+     * What every listing helper puts in a row, sorted (SH260).
+     *
+     * <p>Declared here, beside {@link #row}, because this is the method that decides it. SH251's
+     * lint reads it to avoid warning about a legitimate listing body, and before this it kept its
+     * own copy — a fifth restatement of the capability set, whose failure mode was a warning on a
+     * correct template.</p>
+     */
+    public static final Set<String> ROW_KEYS =
+            Set.of("id", "title", "summary", "url", "link", "type", "name");
+
     @PostConstruct
     void register() {
-        engine.register("query", this::query);
-        engine.register("navigation", this::navigation);
-        engine.register("file_url", this::fileUrl);
-        engine.register("getRelation", this::getRelation);
-        engine.register("search", this::search);
+        // The shape is declared with the helper (SH260): the engine is the one place that knows
+        // the capability set, and everything that reads it — the unknown-helper refusal, the SH251
+        // field scanner — asks rather than restating.
+        engine.register("query", ShHelperShape.BLOCK, this::query);
+        engine.register("navigation", ShHelperShape.BLOCK, this::navigation);
+        engine.register("search", ShHelperShape.BLOCK, this::search);
+        engine.register("getRelation", ShHelperShape.BLOCK_PATH_ARG, this::getRelation);
+        engine.register("file_url", ShHelperShape.INLINE_PATH_ARG, this::fileUrl);
     }
 
     /**

@@ -9,7 +9,9 @@
 package com.viglet.shio.render;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.springframework.stereotype.Component;
 
@@ -22,6 +24,7 @@ import com.github.jknack.handlebars.cache.ConcurrentMapTemplateCache;
 import com.github.jknack.handlebars.context.MapValueResolver;
 import com.github.jknack.handlebars.io.TemplateLoader;
 import com.github.jknack.handlebars.io.TemplateSource;
+import com.viglet.shio.utils.ShStableMap;
 
 /**
  * SH183 — the template evaluator, and the three things it deliberately cannot do.
@@ -79,6 +82,23 @@ public class ShTemplateEngine {
 
     private final Handlebars handlebars;
 
+    /**
+     * What has been registered, and the argument shape each one takes (SH260).
+     *
+     * <p>The engine is the only thing that <em>knows</em> the capability set, because it is the
+     * thing being told. Before this, five other places restated it — the validator's list of
+     * choices, its complement within the seven known-missing, the scanner's two exclusion sets, and
+     * the lint's copy of a row's keys — and SH247 had to edit three of them in step to add two
+     * helpers. Every failure mode was silent: a registered helper missing from the scanner's list is
+     * reported as an unknown <em>field</em>, and a name left in the known-missing list after the
+     * helper ships tells an author a capability is absent while the renderer happily runs it.</p>
+     *
+     * <p>A {@code TreeMap} so the order is total: the validator renders this set into a refusal
+     * message, and a message whose word order changed between JVMs would be a byte-instability of
+     * exactly the kind SH136 is about.</p>
+     */
+    private final Map<String, ShHelperShape> registered = new TreeMap<>();
+
     public ShTemplateEngine() {
         this.handlebars = new Handlebars()
                 .with(new ConcurrentMapTemplateCache())
@@ -89,9 +109,64 @@ public class ShTemplateEngine {
         this.handlebars.setInfiniteLoops(false);
     }
 
-    /** Registers a domain helper — the closed capability set, see {@link ShRenderHelpers}. */
-    public void register(String name, Helper<Object> helper) {
+    /**
+     * Registers a domain helper — the closed capability set, see {@link ShRenderHelpers}.
+     *
+     * @param shape how a template calls it, which is what the SH251 scanner needs in order not to
+     *              read a helper's own name as a field reference. Declared here, at the one place
+     *              that has the knowledge, rather than restated by each reader (SH260)
+     */
+    public void register(String name, ShHelperShape shape, Helper<Object> helper) {
         handlebars.registerHelper(name, helper);
+        registered.put(name, shape == null ? ShHelperShape.BLOCK : shape);
+    }
+
+    /** The registered names, sorted — the {@code allowed} set of an unknown-helper refusal. */
+    public List<String> registeredNames() {
+        return List.copyOf(registered.keySet());
+    }
+
+    /**
+     * The registered helpers and their call shapes (SH260).
+     *
+     * <p>{@link ShStableMap} and not {@code Map.copyOf}, which SH136's lint caught here: that copy's
+     * iteration order comes from a per-JVM salt. Only membership is read today — which is exactly
+     * the reasoning that would justify the exemption comment — and the reason not to take it is that
+     * the validator already renders the <em>names</em> into a refusal message, so this map is one
+     * caller away from being observable output.</p>
+     */
+    public Map<String, ShHelperShape> registeredHelpers() {
+        return ShStableMap.copyOf(registered);
+    }
+
+    /**
+     * How a template calls a helper — everything a reader of the <em>markup</em> needs to know.
+     *
+     * <p>Only the distinctions that change how a call is parsed. Whether a helper reads the
+     * database or the model is the helper's business; whether its first token is a field name is
+     * the scanner's, and getting that wrong is the difference between reporting {@code HERO} and
+     * reporting {@code file_url} as an undeclared field.</p>
+     */
+    public enum ShHelperShape {
+
+        /** {@code {{#name hash=…}}…{{/name}}} — a block whose arguments are hash pairs. */
+        BLOCK,
+
+        /** {@code {{#name FIELD}}…{{/name}}} — a block whose first argument is a field path. */
+        BLOCK_PATH_ARG,
+
+        /** {@code {{name FIELD}}} — an inline call whose first argument is a field path. */
+        INLINE_PATH_ARG;
+
+        /** Whether the call's first positional token is a path in the enclosing scope. */
+        public boolean takesPathArgument() {
+            return this != BLOCK;
+        }
+
+        /** Whether the name opens a block, so its own name is never a field reference. */
+        public boolean isBlock() {
+            return this != INLINE_PATH_ARG;
+        }
     }
 
     /**

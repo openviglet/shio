@@ -19,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.post.type.ShSystemPostTypeAttr;
+import com.viglet.shio.render.ShTemplateEngine.ShHelperShape;
 import com.viglet.shio.render.ShTemplateValidator.ShTemplateProblem;
 
 /**
@@ -37,6 +38,8 @@ class ShTemplateValidatorTest {
 
     @Autowired
     private ShTemplateValidator validator;
+    @Autowired
+    private ShTemplateEngine engine;
 
     @Test
     @DisplayName("a sound template produces nothing")
@@ -114,6 +117,47 @@ class ShTemplateValidatorTest {
                 {{#search q="handbook" type="Article" limit=5}}<a href="{{link}}">{{title}}</a>\
                 {{else}}<p>Nothing found</p>{{/search}}"""))
                 .isEmpty();
+    }
+
+    @Test
+    @DisplayName("SH260: the engine is the one source, and the refusal lists exactly what it holds")
+    void theEngineIsTheOneSource() {
+        // Five places used to restate the capability set: this refusal's list of choices, its
+        // complement within the known-missing seven, the SH251 scanner's two exclusion sets, and the
+        // lint's copy of a row's keys. SH247 had to edit three in step to add two helpers, and every
+        // failure mode was silent — a registered helper missing from the scanner's list is reported
+        // as an unknown *field*, so the rule that catches typos would invent one.
+        assertThat(engine.registeredNames())
+                .as("sorted and total, because this set is rendered into a message (SH136)")
+                .containsExactly("file_url", "getRelation", "navigation", "query", "search");
+
+        // A *parameterised* unknown helper, and not `{{#form}}`: that one is in
+        // KNOWN_MISSING_HELPERS and gets the SH247 message instead, so it would not exercise the
+        // engine-derived list at all. This is the branch that answers "what may I call".
+        ShTemplateProblem problem =
+                validator.validate("{{#totallyUnknown q=\"x\"}}y{{/totallyUnknown}}").get(0);
+        assertThat(problem.message())
+                .as("the refusal now *asks* the engine rather than restating it, so a helper added "
+                        + "without touching this class still appears in the choices — the drift that "
+                        + "used to show up as a message offering the wrong ones. Alphabetical and "
+                        + "not registration order, which was the hand-written list's accident of "
+                        + "history and is not a fact a reader needs")
+                .contains("file_url, getRelation, navigation, query, search");
+    }
+
+    @Test
+    @DisplayName("SH260: every registered helper declares how a template calls it")
+    void everyHelperDeclaresItsShape() {
+        // The shape is what the scanner needs, and the only thing that knows it is the registration.
+        // A helper registered without one would default to BLOCK and its argument would go
+        // unchecked — visible here rather than as a missing finding three subsystems away.
+        assertThat(engine.registeredHelpers())
+                .containsEntry("query", ShHelperShape.BLOCK)
+                .containsEntry("navigation", ShHelperShape.BLOCK)
+                .containsEntry("search", ShHelperShape.BLOCK)
+                .containsEntry("getRelation", ShHelperShape.BLOCK_PATH_ARG)
+                .containsEntry("file_url", ShHelperShape.INLINE_PATH_ARG);
+        assertThat(engine.registeredHelpers()).hasSameSizeAs(engine.registeredNames());
     }
 
     @Test

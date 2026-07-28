@@ -368,6 +368,16 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   **id** before the query — `p.shPostType.name` in JPQL trips the SH22 tenant join hazard — and an
   unknown type yields nothing rather than the whole site. It is **not** a `?q=` results page: the
   model holds no request, on purpose (SH183), and that is **SH259**.
+  **The engine is the one source of the capability set (SH260)**: `register(name, ShHelperShape,
+  helper)` records the name *and the call shape* (`BLOCK` / `BLOCK_PATH_ARG` / `INLINE_PATH_ARG`),
+  and every reader asks — the unknown-helper refusal lists `engine.registeredNames()` (alphabetical,
+  a total order), the SH251 scanner takes `ShHelperShapes.of(engine.registeredHelpers())`, and the
+  lint reads `ShRenderHelpers.ROW_KEYS`. Five hand-kept copies used to restate it and every drift was
+  silent: a registered helper missing from the scanner's list is reported as an unknown *field*, so
+  the typo rule invents a typo. **The scanner has no overload that omits the shapes** — a default of
+  "nothing is registered" would turn a forgotten argument into exactly that false positive; pass
+  `ShHelperShapes.none()` and mean it. Adding a helper is now one line plus its shape; the capability
+  set is still not *discoverable* from outside (**SH272**).
   **`form` is the last of the seven and is deliberately unregistered** (SH247): a helper that
   silently renders nothing is worse than Handlebars' unknown-helper error, which carries a line
   and a column — and its absence is a *decision*, since a form needs somewhere for a submission to

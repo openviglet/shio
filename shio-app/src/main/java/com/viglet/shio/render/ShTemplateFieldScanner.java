@@ -12,7 +12,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import com.viglet.shio.render.ShTemplateEngine.ShHelperShape;
 
 /**
  * SH251 — which field names a template interpolates, and <b>whose</b> they are.
@@ -61,25 +64,47 @@ public final class ShTemplateFieldScanner {
      */
     private static final Set<String> BUILTIN_BLOCKS = Set.of("if", "unless", "each", "with");
 
-    /** Registered helpers whose first positional argument is likewise an enclosing-scope path. */
-    private static final Set<String> PATH_ARG_HELPERS = Set.of("getRelation");
-
     /**
-     * Inline helpers that take a field as their argument — {@code {{file_url HERO}}}.
+     * The helper shapes, <b>passed in</b> rather than restated (SH260).
      *
-     * <p>Both halves matter: the helper's own name is not a field (reporting {@code file_url} as
-     * an unknown field would be a false positive on the one helper the 2018 navigation region
-     * used), and its argument <em>is</em> one, so it is exactly the reference worth checking. Kept
-     * here beside the block set rather than read from {@link ShRenderHelpers}, the way
-     * {@code ShTemplateValidator} keeps its own list — and it is the same maintenance hazard,
-     * which is why {@code ShTemplateFieldScannerTest} asserts a call to every registered helper
-     * yields no reference to the helper itself.</p>
+     * <p>This class used to keep two copies of the capability set — which helpers open blocks, and
+     * which take a field as their argument — and both had to be edited in step with
+     * {@code ShRenderHelpers.register()}. The failure mode was silent and backwards: a registered
+     * helper missing from the list was reported as an unknown <em>field</em>, so the rule that
+     * exists to catch typos would invent one. The engine now declares the shape with the helper and
+     * the caller hands the map over, so there is one source and no drift.</p>
+     *
+     * <p>It stays a <em>parameter</em> rather than an injected dependency because this class is
+     * pure — text in, references out — which is what makes its own test cheap enough to assert
+     * every false-positive case.</p>
      */
-    private static final Set<String> PATH_ARG_INLINE = Set.of("file_url");
+    public record ShHelperShapes(Set<String> blocks, Set<String> pathArguments) {
 
-    /** Registered block helpers whose rows come from elsewhere — never a field themselves. */
-    private static final Set<String> BLOCK_HELPERS =
-            Set.of("query", "navigation", "search", "getRelation");
+        /** Derived from what the engine has registered. */
+        public static ShHelperShapes of(Map<String, ShHelperShape> registered) {
+            Set<String> blocks = new java.util.TreeSet<>();
+            Set<String> pathArguments = new java.util.TreeSet<>();
+            for (Map.Entry<String, ShHelperShape> entry : registered.entrySet()) {
+                if (entry.getValue().isBlock()) {
+                    blocks.add(entry.getKey());
+                }
+                if (entry.getValue().takesPathArgument()) {
+                    pathArguments.add(entry.getKey());
+                }
+            }
+            // TreeSet-backed and not `Set.copyOf`, which SH136's lint flags: that copy's iteration
+            // order comes from a per-JVM salt. Membership is all that is read today, and the next
+            // caller to iterate one would inherit an unstable order with nothing to fail.
+            return new ShHelperShapes(
+                    java.util.Collections.unmodifiableSet(blocks),
+                    java.util.Collections.unmodifiableSet(pathArguments));
+        }
+
+        /** Nothing registered: every name reads as a plain reference, which is the safe default. */
+        public static ShHelperShapes none() {
+            return new ShHelperShapes(Set.of(), Set.of());
+        }
+    }
 
     /** Names that are never a field: Handlebars' own, plus the reserved model frames. */
     private static final Set<String> NOT_A_FIELD =
@@ -113,9 +138,16 @@ public final class ShTemplateFieldScanner {
     /**
      * Every field reference in {@code template}, in document order.
      *
+     * <p>There is deliberately <b>no overload that omits {@code helpers}</b>. A convenience form
+     * defaulting to "nothing is registered" would make a forgotten argument report every helper's
+     * own name as an undeclared field — a false positive produced by the rule that exists to catch
+     * typos, which is the worst possible failure for it to have. Callers with no engine pass
+     * {@link ShHelperShapes#none()} and say so.</p>
+     *
      * @param template a {@code PageLayout}'s or {@code Region}'s HTML
+     * @param helpers  what the engine has registered, so a helper's own name is not read as a field
      */
-    public static List<ShTemplateReference> referencesIn(String template) {
+    public static List<ShTemplateReference> referencesIn(String template, ShHelperShapes helpers) {
         List<ShTemplateReference> found = new ArrayList<>();
         if (template == null || template.isBlank()) {
             return found;
@@ -153,14 +185,14 @@ public final class ShTemplateFieldScanner {
                 String name = firstToken(body.substring(1));
                 // The block's own argument is resolved where the block is written, not inside
                 // it: `{{#if TEXT}}` asks about the current scope's TEXT.
-                if (BUILTIN_BLOCKS.contains(name) || PATH_ARG_HELPERS.contains(name)) {
+                if (BUILTIN_BLOCKS.contains(name) || helpers.pathArguments().contains(name)) {
                     addIfPath(found, argumentOf(body.substring(1), name), blocks.peekFirst());
                 }
                 blocks.addFirst(name);
                 continue;
             }
             String token = firstToken(body);
-            if (PATH_ARG_INLINE.contains(token) || BLOCK_HELPERS.contains(token)) {
+            if (helpers.pathArguments().contains(token) || helpers.blocks().contains(token)) {
                 // The helper's name is not a field; its argument is. `{{file_url HERO}}` asks
                 // about HERO, and reporting `file_url` would be a false positive on the very
                 // helper the 2018 navigation region used.

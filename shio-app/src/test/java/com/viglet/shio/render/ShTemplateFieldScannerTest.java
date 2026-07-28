@@ -15,6 +15,10 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+
+import com.viglet.shio.render.ShTemplateEngine.ShHelperShape;
+import com.viglet.shio.render.ShTemplateFieldScanner.ShHelperShapes;
 import com.viglet.shio.render.ShTemplateFieldScanner.ShTemplateReference;
 
 /**
@@ -33,15 +37,30 @@ import com.viglet.shio.render.ShTemplateFieldScanner.ShTemplateReference;
  */
 class ShTemplateFieldScannerTest {
 
+    /**
+     * The shapes the engine registers, spelled out (SH260).
+     *
+     * <p>Explicit rather than defaulted, because there is no overload that omits them: a forgotten
+     * argument would report every helper's own name as an undeclared field, which is the rule
+     * inventing the very defect it exists to catch. Written as the map the engine hands over, so
+     * this test also documents what a caller has to supply.</p>
+     */
+    private static final ShHelperShapes HELPERS = ShHelperShapes.of(Map.of(
+            "query", ShHelperShape.BLOCK,
+            "navigation", ShHelperShape.BLOCK,
+            "search", ShHelperShape.BLOCK,
+            "getRelation", ShHelperShape.BLOCK_PATH_ARG,
+            "file_url", ShHelperShape.INLINE_PATH_ARG));
+
     private static List<String> pageScoped(String template) {
-        return ShTemplateFieldScanner.referencesIn(template).stream()
+        return ShTemplateFieldScanner.referencesIn(template, HELPERS).stream()
                 .filter(ShTemplateReference::isPageScoped)
                 .map(ShTemplateReference::name)
                 .toList();
     }
 
     private static List<String> inBlocks(String template) {
-        return ShTemplateFieldScanner.referencesIn(template).stream()
+        return ShTemplateFieldScanner.referencesIn(template, HELPERS).stream()
                 .filter(reference -> !reference.isPageScoped())
                 .map(reference -> reference.scope() + ":" + reference.name())
                 .toList();
@@ -118,8 +137,8 @@ class ShTemplateFieldScannerTest {
     @Test
     @DisplayName("the reserved frames are paths, and the lint recognises them by their root")
     void framesArePathsWithRoots() {
-        List<ShTemplateReference> found =
-                ShTemplateFieldScanner.referencesIn("{{post.title}} {{site.name}} {{theme.css}}");
+        List<ShTemplateReference> found = ShTemplateFieldScanner.referencesIn(
+                "{{post.title}} {{site.name}} {{theme.css}}", HELPERS);
 
         assertThat(found).extracting(ShTemplateReference::root)
                 .containsExactly("post", "site", "theme");
@@ -136,7 +155,7 @@ class ShTemplateFieldScannerTest {
                 {{#if (eq A B)}}x{{/if}}
                 {{lookup a b}}
                 {{"literal"}}
-                {{42}}"""))
+                {{42}}""", HELPERS))
                 .as("""
                         every one of these is either not a field or is resolved somewhere this \
                         cannot model — and a rule with false positives is one authors learn to \
