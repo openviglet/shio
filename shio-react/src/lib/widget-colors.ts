@@ -14,6 +14,8 @@ export const WIDGET_BADGE_COLORS: Record<string, string> = {
   "Multi Select": "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300 border-cyan-300 dark:border-cyan-800",
   "Ace Editor - Javascript": "bg-yellow-100 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-300 border-yellow-300 dark:border-yellow-800",
   "Ace Editor - HTML": "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 border-orange-300 dark:border-orange-800",
+  // SH252 — its own colour, because the point of the palette is telling field kinds apart.
+  "Ace Editor - CSS": "bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300 border-sky-300 dark:border-sky-800",
   "Content Select": "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300 border-rose-300 dark:border-rose-800",
   "File": "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300 border-pink-300 dark:border-pink-800",
   "Relator": "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300 border-violet-300 dark:border-violet-800",
@@ -32,6 +34,7 @@ export const WIDGET_ACCENT_COLORS: Record<string, string> = {
   "Multi Select": "border-l-cyan-500",
   "Ace Editor - Javascript": "border-l-yellow-500",
   "Ace Editor - HTML": "border-l-orange-500",
+  "Ace Editor - CSS": "border-l-sky-500",
   "Content Select": "border-l-rose-500",
   "File": "border-l-pink-500",
   "Relator": "border-l-violet-500",

@@ -49,6 +49,7 @@ export const WIDGET = {
   MULTI_SELECT: "Multi Select",
   ACE_JS: "Ace Editor - Javascript",
   ACE_HTML: "Ace Editor - HTML",
+  ACE_CSS: "Ace Editor - CSS",
   CONTENT_SELECT: "Content Select",
   FILE: "File",
   RELATOR: "Relator",

@@ -29,6 +29,17 @@ public class ShSystemWidget {
 	public static final String TEXT = "Text";
 	public static final String ACE_JS = "Ace Editor - Javascript";
 	public static final String ACE_HTML = "Ace Editor - HTML";
+	/**
+	 * SH252 — a stylesheet is not an HTML document.
+	 *
+	 * <p>A {@code Theme}'s {@code CSS} field was declared {@code Ace Editor - HTML} because that was
+	 * the closest thing seeded, which cost three things: the console gave a stylesheet an HTML editor,
+	 * SH191's projection gave it a {@code .html} sidecar, and — the one that is a defect rather than an
+	 * inconvenience — {@code ACE_HTML} is in the verify service's {@code MARKUP_WIDGETS}, so the SH100
+	 * routes check and the SH101 digest <b>parsed a stylesheet as HTML</b> looking for links and
+	 * images.</p>
+	 */
+	public static final String ACE_CSS = "Ace Editor - CSS";
 	public static final String HTML_EDITOR = "HTML Editor";
 	public static final String FILE = "File";
 	public static final String TEXT_AREA = "Text Area";

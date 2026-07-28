@@ -351,6 +351,37 @@ test("a sidecar that is a path, not a file name, is refused", () => {
   );
 });
 
+test("a Theme's CSS field lands in a .css, because the widget decides (SH252)", () => {
+  // The whole of SH252 as seen from the projection: nothing here changed. The field's *widget*
+  // changed from `Ace Editor - HTML` to `Ace Editor - CSS` on the server, and the extension
+  // followed — which is the rule SH191 chose ("the widget decides, never the post-type") paying
+  // off rather than being asserted.
+  const theme = {
+    name: "Theme",
+    fields: [
+      { name: "CSS", widget: "Ace Editor - CSS", ordinal: 1 },
+      { name: "JAVASCRIPT", widget: "Ace Editor - Javascript", ordinal: 2 },
+    ],
+  };
+
+  assert.deepEqual(sidecarFieldsFor(theme), [
+    { name: "CSS", ext: "css" },
+    { name: "JAVASCRIPT", ext: "js" },
+  ]);
+
+  const doc = {
+    site: "Bootstrap",
+    url: "/theme",
+    type: "Theme",
+    folder: "/",
+    data: { CSS: "body{font-family:sans-serif}\n", JAVASCRIPT: "console.log('x')\n" },
+  };
+  assert.deepEqual(
+    sidecarsOf(doc, sidecarFieldsFor(theme)).map((sidecar) => sidecar.path),
+    ["Bootstrap/theme.CSS.css", "Bootstrap/theme.JAVASCRIPT.js"],
+  );
+});
+
 // --- folder markers (SH149) ---
 
 /** A marker file's contents, written the way the format writes them. */

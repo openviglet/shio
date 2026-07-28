@@ -1197,8 +1197,11 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   `post.upsert` clear the server's copy; and a sidecar the post **no longer needs is removed**,
   read off the file on disk rather than inferred. A `.remote` conflict copy stays **whole**
   (values in `fields:`), so the artifact a human diffs is one file.
-  A `Theme`'s `CSS` is declared `Ace Editor - HTML` because no CSS widget is seeded, so its
-  sidecar is `.html` today — **SH252** is the one-line fix.
+  Since **SH252** a `Theme`'s `CSS` is declared `Ace Editor - CSS`, so it lands in a `.css` — and the
+  projection needed no change for that, because this map keys on the *widget*. Note the limit:
+  `ShRenderPostTypes.ensure` never touches an existing post-type (SH152), so an instance that already
+  created its `Theme` keeps the old widget and the old `.html` sidecar until the field is changed by
+  hand.
 - **`shio pull --content`** merges three ways against `shio/.shio/content-base.json` (the
   last-synced base + the SH88 cursor): one side changed → that side, different fields →
   merged, same field → **conflict**, which writes nothing, exits 1, and offers
@@ -1547,6 +1550,7 @@ Each widget type has a unique color for visual identification:
 | Multi Select | Cyan | `border-l-cyan-500` |
 | Ace Editor - JS | Yellow | `border-l-yellow-500` |
 | Ace Editor - HTML | Orange | `border-l-orange-500` |
+| Ace Editor - CSS | Sky | `border-l-sky-500` |
 | Content Select | Rose | `border-l-rose-500` |
 | File | Pink | `border-l-pink-500` |
 | Relator | Violet | `border-l-violet-500` |
@@ -1623,6 +1627,7 @@ Registry in `src/components/widgets/index.ts` maps widget names to components vi
 | `Multi Select` | Free-form tag input with Enter to add, X to remove | `arrayValue` |
 | `Ace Editor - Javascript` | CodeMirror (javascript mode, line numbers, folding) | `strValue` |
 | `Ace Editor - HTML` | CodeMirror (html mode) | `strValue` |
+| `Ace Editor - CSS` | CodeMirror (SH252 — a `Theme`'s stylesheet) | `strValue` |
 | `Content Select` | ID input + status indicator + clear button | `strValue` |
 | `File` | ID input + status indicator + clear button | `strValue` |
 | `Relator` | Nested items list with add/remove (uses `crypto.randomUUID()`) | `shChildrenRelatorItems` |

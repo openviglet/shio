@@ -30,6 +30,8 @@ const WIDGET_MAP: Record<string, React.ComponentType<WidgetProps>> = {
   "Multi Select": MultiSelectWidget,
   "Ace Editor - Javascript": AceEditorWidget,
   "Ace Editor - HTML": AceEditorWidget,
+  // SH252 — a stylesheet gets a stylesheet editor.
+  "Ace Editor - CSS": AceEditorWidget,
   "Content Select": ContentSelectWidget,
   "File": FileWidget,
   "Relator": RelatorWidget,

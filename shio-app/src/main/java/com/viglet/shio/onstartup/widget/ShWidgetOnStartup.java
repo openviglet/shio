@@ -97,6 +97,15 @@ public class ShWidgetOnStartup {
 			shWidgetRepository.save(shWidget);
 
 			shWidget = new ShWidget();
+			shWidget.setName(ShSystemWidget.ACE_CSS);
+			shWidget.setDescription("Ace Editor Widget");
+			shWidget.setClassName("com.viglet.shio.widget.ShAceEditorWidget");
+			shWidget.setImplementationCode("template/widget/ace-editor-css.html");
+			shWidget.setType(TEXT_TYPE);
+
+			shWidgetRepository.save(shWidget);
+
+			shWidget = new ShWidget();
 			shWidget.setName(ShSystemWidget.HTML_EDITOR);
 			shWidget.setDescription("HTML Editor Widget");
 			shWidget.setClassName("com.viglet.shio.widget.ShHTMLWidget");

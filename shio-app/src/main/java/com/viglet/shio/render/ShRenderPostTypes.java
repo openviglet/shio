@@ -57,11 +57,11 @@ import com.viglet.shio.widget.ShSystemWidget;
  *
  * <h2>The widgets say what each field is</h2>
  *
- * <p>{@code HTML} is {@code Ace Editor - HTML} and {@code JAVASCRIPT} is
- * {@code Ace Editor - Javascript} — a template is code, and the console should give it a
- * code editor. That the same fields collapse into escaped JSON one-liners when projected
- * to files is SH191, and it is the one place law P4 currently fails on the artifact an
- * iterative loop edits most.</p>
+ * <p>{@code HTML} is {@code Ace Editor - HTML}, {@code JAVASCRIPT} is
+ * {@code Ace Editor - Javascript} and — since SH252 — a {@code Theme}'s {@code CSS} is
+ * {@code Ace Editor - CSS}: a template is code, and the console should give it the right code
+ * editor. SH191 projects each of them to a sidecar file keyed on the widget, so the CSS field now
+ * lands in a {@code .css} rather than a {@code .html}.</p>
  *
  * <p>A region's {@code JAVASCRIPT} exists and is <b>never evaluated on the server</b>. It
  * is the browser's, shipped as a static asset — which is the whole resolution of the
@@ -143,7 +143,13 @@ public class ShRenderPostTypes {
     private ShPostType ensureTheme() {
         return ensure(ShSystemPostType.THEME, "Themes", "Theme",
                 "The stylesheet and script a whole site shares",
-                field(ShSystemPostTypeAttr.CSS, "CSS", ShSystemWidget.ACE_HTML, 1, false),
+                // SH252 — a stylesheet, not an HTML document. Note the limit of this fix: `ensure`
+                // never touches an existing post-type (SH152's provision-never-upsert), so an
+                // instance that already created its Theme keeps `Ace Editor - HTML` on this field.
+                // That is the correct trade — the alternative is a startup that rewrites somebody's
+                // model — and it means the defect persists on existing installs until somebody
+                // changes the field by hand.
+                field(ShSystemPostTypeAttr.CSS, "CSS", ShSystemWidget.ACE_CSS, 1, false),
                 field(ShSystemPostTypeAttr.JAVASCRIPT, "JavaScript",
                         ShSystemWidget.ACE_JS, 2, false));
     }

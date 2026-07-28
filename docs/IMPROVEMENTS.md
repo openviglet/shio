@@ -1881,30 +1881,25 @@ owner and the server only ever answers "here is the current one".
 
 #### XV.18 A stylesheet is not an HTML document, and the catalogue says it is (SH252)
 
-`ShRenderPostTypes.ensureTheme()` declares the `CSS` field as `Ace Editor - HTML`, with no
-comment, because that is the closest thing `ShWidgetOnStartup` seeds: the catalogue has exactly
-two code widgets, `Ace Editor - HTML` and `Ace Editor - Javascript`.
-
-Two consequences, and both are in the one place the mislabel is visible. The console hands a
-stylesheet an HTML editor — wrong mode, wrong bracket matching, wrong everything an editor mode
-does. And SH191, which decided that **the widget** names a code field's extension precisely so
-that a layout somebody models themselves works like a first-party one, gives `Theme.CSS` a
-`.html` sidecar. That is not a defect in SH191's rule; it is the rule reporting accurately what
-the model claims. A special case keyed on the field being called `CSS` would be the wrong repair
-— it re-introduces exactly the type/name guessing the rule exists to avoid, and it would not fix
-the editor.
-
-The catalogue is **closed** (`ShPostTypeAdminService` rejects an unknown widget on upsert), so
-adding one is deliberately more than a string: `ShSystemWidget`, `ShWidgetOnStartup`'s seed,
-the console's `WIDGET_MAP` and `widget-colors.ts`, `shio-model`'s `builders.ts` so the DSL can
-declare it, and `SIDECAR_WIDGETS` in `content-files.mjs`. Six places for one field is why this
-is an idea and not designed work — and the reason to do it anyway is that `Theme.CSS` is the
-field a human hand-edits most until §XV.13's token vocabulary (SH195) replaces the need to.
-
-Worth checking while there: whether the *existing* pair is complete for the render model. A
-`PageLayout`'s `THEME` field is a plain `Text` holding a theme's title, which is a reference
-wearing a string — the same shape SH154 gave a name to for `Multi Select`, and the same reason
-SH193 cannot currently compute a region's blast radius.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth keeping.
+>
+> **It was filed as cosmetic and was a defect.** This section described the wrong editor mode and the
+> `.html` sidecar. Reading the code before changing it found the third consequence: `ACE_HTML` is in
+> the verify service's `MARKUP_WIDGETS`, so a `Theme`'s stylesheet was being **parsed as HTML** by the
+> SH100 routes check and the SH101 digest. Worth generalising — a widget name is not decoration here,
+> it is a *type* that several subsystems dispatch on, so "the closest thing seeded" was a wrong type
+> declaration and behaved like one.
+>
+> **One of the six places needed no edit, and that is the return on SH191's rule.**
+> `SIDECAR_WIDGETS` keys on the widget, so the projection started writing `.css` the moment the
+> field's widget changed. Second time in this block that a decision placed in one spot fixed an
+> untouched call site (SH279's `resolveReference` was the first) — which is the concrete form of the
+> argument SH245 usually makes in the abstract.
+>
+> **The fix does not reach existing installs, and says so.** `ensure` never touches an existing
+> post-type (SH152), so an instance that already created its `Theme` keeps the old widget. The
+> alternative is a startup that rewrites somebody's model, which is worse; recording the limit is what
+> keeps the changelog honest about what shipped.
 
 ## XVI. The human half (Block O) — what reading the console next found
 
@@ -2792,6 +2787,31 @@ Worth stating the uncomfortable part plainly: this block has been verified almos
 hand-running Maven in a tree an IDE is also compiling into. The findings hold — they were reproduced
 deliberately — but the *confidence* they were reported with was higher than the instrument deserved
 until SH282 and SH283 were understood.
+
+### XVI.37 `ShWidget` still carries fields from a UI that was deleted (SH285)
+
+Every seeded widget sets `implementationCode` to `template/widget/<name>.html`. **That directory does
+not exist in the repository** — the templates went with the Thymeleaf UI Block E retired — and nothing
+reads the column.
+
+It is nevertheless persisted, returned by `GET /api/v2/widget`, and **writable** through
+`ShWidgetAPI`. That is the part worth fixing rather than tolerating: a settable field that cannot
+affect anything invites the reasonable inference that a widget is extensible by pointing it at a
+template, which it is not. Dead data that is read-only is clutter; dead data that is *writable* is a
+false affordance.
+
+Noticed while seeding SH252's widget — where the choice was to match the existing inert pattern rather
+than invent a convention, since a lone widget with a different-looking value would read as meaningful.
+
+The task is deliberately **an audit rather than a drop**, because the neighbouring field asks the same
+question and may answer differently: `className` is set to `com.viglet.shio.widget.ShAceEditorWidget`,
+and whether those classes still exist — and whether anything dispatches on them — has not been
+checked. One of the two may be live. So: establish what `ShWidget` still carries that is read by
+something, remove the rest with a Liquibase drop, and narrow the API so the removed fields cannot be
+set.
+
+Worth pairing with SH275's habit: both are about claims a codebase keeps making after they stopped
+being true, and the cheap version of both is to look rather than to reason.
 
 ---
 

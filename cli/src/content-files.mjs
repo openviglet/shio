@@ -55,21 +55,23 @@ const META_ORDER = ["site", "url", "type", "folder", "publish", "movedFrom", "bo
  * expected case, since a layout is content. The widget is the thing that already says "this
  * value is a program": the console gives it a code editor for precisely that reason.
  *
- * <h3>Why only these two</h3>
+ * <h3>Why only the `Ace Editor` family</h3>
  *
  * `HTML Editor` is the *body* (`bodyFieldFor`) and has been since SH86; moving it here
  * would change every existing file. `Text Area` is prose. What is left is the `Ace Editor`
- * pair, which is what a `PageLayout`'s `HTML`, a `Region`'s `HTML`/`JAVASCRIPT` and a
+ * set, which is what a `PageLayout`'s `HTML`, a `Region`'s `HTML`/`JAVASCRIPT` and a
  * `Theme`'s `CSS`/`JAVASCRIPT` are declared as.
  *
- * A `Theme`'s `CSS` field is declared `Ace Editor - HTML` because no CSS widget is seeded,
- * so its sidecar is `.html` today — wrong for highlighting, right for lines, `Grep` and a
- * reviewable diff, which is the whole of law P4's claim. Fixing the extension means
- * seeding the widget; that is **SH252**, and this map is the one line it has to change.
+ * SH252 seeded `Ace Editor - CSS` and pointed a `Theme`'s `CSS` field at it, so that field
+ * now lands in a `.css` rather than the `.html` it used to get. **The fix arrived here for
+ * free**: this map keys on the *widget*, so changing the field's widget changed its
+ * extension with no edit to the projection at all — which is the rule "the widget decides,
+ * never the post-type" paying off rather than being asserted.
  */
 export const SIDECAR_WIDGETS = new Map([
   ["Ace Editor - HTML", "html"],
   ["Ace Editor - Javascript", "js"],
+  ["Ace Editor - CSS", "css"],
 ]);
 
 /** The frontmatter key that names the sidecars — `body:` generalized past one field. */
