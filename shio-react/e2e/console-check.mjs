@@ -140,6 +140,81 @@ async function countFields(page) {
   })
 }
 
+/**
+ * SH238 — the one fact the Universal Editor rests on, checked in a browser.
+ *
+ * The editor is an `<iframe src={site.url}>`, so driving it end to end needs a front end this
+ * repository does not have yet (Block P). Its save-back, though, rests on a single fact that needs
+ * no iframe: **a PATCH from the console origin, carrying a `Key` header, authenticates as the token
+ * and not as the logged-in curator.** SH233 was exactly that fact being false — `withCredentials:
+ * false` does not stop a same-origin request sending the session cookie — and it survived because
+ * every test in this repository builds the request in Java or mocks the client, and the comment
+ * that described the mechanism described it wrongly.
+ *
+ * So this runs the request the editor runs, from a page the console served, and reads the status.
+ * It **fails only on 403**, the symptom: anything else (no WRITE token on the instance, no post,
+ * the CDA refusing for another reason) is reported as skipped with the reason, because a gate that
+ * trips on a missing fixture is a gate people bypass.
+ */
+async function checkEditorSaveBack(context, postId) {
+  const probe = { name: "universal-editor-save-back", path: "/api/v2/cda/post/{id}", ok: true,
+    errors: [], warnings: [], failedRequests: [] }
+  if (!postId) {
+    probe.skipped = "no post discovered to patch"
+    return probe
+  }
+  let token
+  try {
+    const tokens = await api("/api-token")
+    token = (tokens || []).find((t) => t.enabled && t.scope === "WRITE")?.token
+  } catch (e) {
+    probe.skipped = `could not list tokens: ${e.message}`
+    return probe
+  }
+  if (!token) {
+    probe.skipped = "no enabled WRITE token on this instance (the editor needs one to save)"
+    return probe
+  }
+
+  const page = await context.newPage()
+  try {
+    // A page the console served, so the session cookie exists and is same-origin with /api —
+    // which is the whole point: this is the condition SH233's comment believed it had avoided.
+    await page.goto(`${BASE}/console`, { waitUntil: "domcontentloaded", timeout: 20_000 })
+    const result = await page.evaluate(async ({ id, key }) => {
+      const csrf = await fetch("/api/v2/csrf", { credentials: "include" }).then((r) => r.json())
+      // The CSRF header is required because the cookie *is* being sent (SH167 narrowed the CDA's
+      // exemption to session-less callers), which is the other half of what SH233 got wrong.
+      const headers = {
+        "Content-Type": "application/json",
+        Key: key,
+        [csrf.headerName || "X-XSRF-TOKEN"]: csrf.token,
+      }
+      const res = await fetch(`/api/v2/cda/post/${id}`, {
+        method: "PATCH", credentials: "include", headers,
+        // An empty attrs map: the check is about who the request authenticates as, and a smoke
+        // check must not change anybody's content to find out.
+        body: JSON.stringify({ attrs: {} }),
+      })
+      return { status: res.status, body: (await res.text()).slice(0, 300) }
+    }, { id: postId, key: token })
+
+    probe.status = result.status
+    if (result.status === 403) {
+      probe.ok = false
+      probe.errors.push("403 — the PATCH authenticated as the console session rather than the "
+        + `Key token (SH233): ${result.body}`)
+    } else if (result.status >= 400) {
+      probe.skipped = `CDA answered ${result.status}: ${result.body}`
+    }
+  } catch (e) {
+    probe.skipped = `could not run the request: ${String(e).split("\n")[0]}`
+  } finally {
+    await page.close()
+  }
+  return probe
+}
+
 async function main() {
   const { site, routes } = await discoverRoutes(flag("site", process.env.SHIO_SITE))
   await mkdir(OUT, { recursive: true })
@@ -223,6 +298,14 @@ async function main() {
     for (const f of probe.failedRequests.slice(0, 4)) console.log(`       request: ${f}`)
     for (const e of probe.errors.slice(0, 4)) console.log(`       error: ${e.slice(0, 160)}`)
   }
+
+  // SH238: not a route, so it runs after the route walk rather than inside it.
+  const anyPost = routes.find((r) => r.name.startsWith("post-edit:"))
+  const editorProbe = await checkEditorSaveBack(context, anyPost?.path.split("/").pop())
+  report.probes.push(editorProbe)
+  console.log(`${editorProbe.ok ? "ok  " : "FAIL"} ${editorProbe.name.padEnd(30)} `
+    + (editorProbe.skipped ? `skipped: ${editorProbe.skipped}` : `${editorProbe.status}`))
+  for (const e of editorProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
 
   await browser.close()
   await writeFile(join(OUT, "console-check.json"), JSON.stringify(report, null, 2))

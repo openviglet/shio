@@ -354,6 +354,12 @@
 > session on the CDA path (which is why the Universal Editor could not save), and `/graphql`'s
 > "no Mutation" premise is now a build failure carrying the decision made in advance.
 
+> ⏳ **SH238 is half shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: the fact the editor's
+> save-back rests on is checked in a browser (a probe that fails only on the 403 symptom) and
+> through the real filter chain, and the chain test was verified against the defect. Driving the
+> editor *end to end* still needs a front end to embed — that is Block P, and the remaining task
+> below is scoped to it now.
+>
 > ✅ **SH239 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: the two scaling sources are
 > measured at a second fixture size and required to *rise*, which also exposed that SH164's own
 > first numbers moved with the test order (addressing was 26.2× or 11.8× depending on what ran
@@ -368,14 +374,16 @@
 > out of `--prune`'s way), and deleting a type content still points at is a teaching 409 naming
 > the count instead of a constraint violation dressed as a server fault.
 >
-> **What finishing the block opened (SH235–SH240), and what is left.** Five came from following
-> one thread each to its client — SH163's rename had no CLI verb and no guard on the delete it
-> replaces (SH235, SH236), and SH165's paging quietly narrowed two things the browser used to do
-> over the whole folder (SH237, SH240) — and all four have since shipped. **The two still open are
-> the two that need something this repository does not have yet**: SH238 needs a front end to
-> embed before the Universal Editor can be driven end to end. Everything else has shipped.
+> **What finishing the block opened (SH235–SH240), and what is left.** Four came from following one
+> thread each to its client — SH163's rename had no CLI verb and no guard on the delete it replaces
+> (SH235, SH236), and SH165's paging quietly narrowed two things the browser used to do over the
+> whole folder (SH237, SH240) — and all four have shipped, as has SH239, which corrected SH164's own
+> numbers on the way past. **What is left is the one thing this repository cannot do yet**: driving
+> the Universal Editor end to end needs a front end to embed, so SH238's remaining half belongs with
+> Block P.
 
-- 📋 **SH238** (deps: SH233 ✅, SH182 ✅) **The Universal Editor is driven by nothing** — SH233's defect survived because every test in this repository builds the request in Java or mocks the client, and the one comment that described the mechanism described it wrongly. The editor needs a front end to embed, so full coverage waits on Block P; the cheap half does not — SH182's harness can assert that the editor's PATCH reaches the CDA authenticated as the token rather than the curator, which is the single fact the whole feature rests on. → §XIV.15
+- ⏳ **SH238** (deps: SH233 ✅, SH182 ✅, Block P) **The Universal Editor is still not driven end to end** — the one fact its save-back rests on is now checked from a browser and through the filter chain (shipped, see CHANGELOG Block N), which is what SH233 needed. What is left is the editor itself: it embeds `site.url` in an iframe, so exercising the properties panel, the field round trip and the publish action needs a front end this repository cannot start yet. Pick it up with Block P's renderer; until then the probe's `skipped` reasons are the honest statement of what is uncovered. → §XIV.15
+
 
 
 ## Block O — The human half (the console the curator uses)

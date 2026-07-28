@@ -1275,13 +1275,17 @@ that drives the Universal Editor. Every test either builds the request in Java o
 client, and both of those agree with the comment: they cannot see that a browser attaches a
 same-origin cookie regardless of `withCredentials`.
 
-This is Block O's lesson recurring in the one place the block did not reach. Full coverage is
-genuinely blocked — the editor is an `<iframe src={site.url}>`, so exercising it needs a front end
-to embed, which is Block P — but the fact the whole feature rests on is *one* fact and does not
-need the iframe: **the PATCH reaches the CDA authenticated as the token, not as the curator.**
-SH182's harness can assert that today, from a browser, with a WRITE token and a post. Worth doing
-before Block P rather than after, because the alternative is discovering the next plumbing defect
-the same way this one was discovered: by reading the code and noticing the comment is wrong.
+This is Block O's lesson recurring in the one place the block did not reach. **The one fact the
+feature rests on has since been checked** (shipped — see CHANGELOG Block N): SH182's harness runs
+the editor's PATCH from a page the console served and fails on the 403 symptom, and a full-chain
+MockMvc test pins the same precedence through the real filter order, verified by restoring the
+defect and watching it fail.
+
+What is still open is the editor *itself*, and it is genuinely blocked: it is an
+`<iframe src={site.url}>`, so exercising the properties panel, a field's round trip and the publish
+action needs a front end to embed — which is Block P. The thing to carry forward is why the cheap
+half was worth doing first: the alternative was discovering the next plumbing defect the way this
+one was discovered, by reading the code and noticing that a comment is wrong.
 
 ## XV. The visible site (Block P)
 
