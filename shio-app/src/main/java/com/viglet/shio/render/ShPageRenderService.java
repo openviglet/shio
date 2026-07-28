@@ -124,6 +124,15 @@ public class ShPageRenderService {
      * @param state   {@code DRAFT} for preview, {@code PUBLISHED} to see what a visitor gets
      * @return the composed HTML
      */
+    // SH249 — `noRollbackFor` because a caller may legitimately *catch* these. Every exception
+    // this throws is a teaching 4xx over a read that wrote nothing, and `/agent/render` now calls
+    // it speculatively: a post whose type has no layout binding is not a renderable page, and the
+    // digest falls back rather than failing. Without this, that catch blows up at commit with
+    // `UnexpectedRollbackException`, because the inner proxy joins the caller's transaction and
+    // marks it rollback-only whether or not anybody handles the exception. Exactly the hazard SH171
+    // documented for the agent read path, one service along — and the reason it is worth naming
+    // twice is that the failure surfaces at commit, nowhere near the catch that caused it.
+    @Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
     public ShRenderedPage render(String siteKey, String url, ShPostState state) {
         ShSite site = siteByKey(siteKey);
         ShPostUnified page = pageAt(site, url, state);

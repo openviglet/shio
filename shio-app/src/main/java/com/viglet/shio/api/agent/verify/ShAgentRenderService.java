@@ -29,6 +29,7 @@ import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.render.ShPageRenderService;
 import com.viglet.shio.widget.ShSystemWidget;
 
 import tools.jackson.core.JacksonException;
@@ -68,6 +69,12 @@ public class ShAgentRenderService {
 
     private static final String SOURCE_CONTENT = "content";
     private static final String SOURCE_FETCH = "fetch";
+    /**
+     * SH249 — the page as the renderer composes it, which is what a visitor gets and the only
+     * artefact that reflects both regions and sections at once. See
+     * {@code docs/specs/SH249-sections-and-regions.md}.
+     */
+    private static final String SOURCE_RENDERED = "rendered";
 
     /** Plain-text widgets whose value is visible prose — a section's heading and its copy. */
     private static final List<String> TEXT_WIDGETS =
@@ -80,15 +87,18 @@ public class ShAgentRenderService {
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ObjectMapper objectMapper;
     private final ShAgentDeliveryProbe deliveryProbe;
+    private final ShPageRenderService pageRenderService;
 
     public ShAgentRenderService(ShAddressResolver shAddressResolver,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
                                 ObjectMapper objectMapper,
-                                ShAgentDeliveryProbe deliveryProbe) {
+                                ShAgentDeliveryProbe deliveryProbe,
+                                ShPageRenderService pageRenderService) {
         this.shAddressResolver = shAddressResolver;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.objectMapper = objectMapper;
         this.deliveryProbe = deliveryProbe;
+        this.pageRenderService = pageRenderService;
     }
 
     /**
@@ -112,17 +122,60 @@ public class ShAgentRenderService {
         var resolved = shAddressResolver.resolve(rawAddress);
         ShPostUnified post = draftPreferred(resolved.id())
                 .orElseThrow(() -> new NotAPageException(rawAddress, resolved.kind()));
+        String address = shAddressResolver.addressOf(post).toString();
+
+        // SH249 — the rendered page first, because it is what a visitor gets and the only artefact
+        // that reflects regions *and* sections at once. Before this, `/agent/render` composed
+        // sections and `/preview` composed regions, and neither knew the other existed: an agent
+        // proving structure and a human looking at the page could be reading two different
+        // compositions of the same post, which is law P9 failing where it is supposed to work.
+        Optional<String> html = renderedHtml(post);
+        if (html.isPresent()) {
+            return render(SOURCE_RENDERED, address, null, null,
+                    List.of(), ShHtmlOutline.of(html.get()));
+        }
 
         List<String> fields = new ArrayList<>();
         ShHtmlOutline.Outline outline = own(post, fields);
-        // SH169 — a page built the first-party way holds no markup of its own: its structure lives
-        // in the section posts it names, in the order it names them. So the digest composes the way
-        // the page does. Without this, home and pricing both digested as the hash of nothing and
-        // were indistinguishable from a blank page — the digest could answer neither of the two
-        // questions it exists for.
+        // SH169, now the labelled fallback for a post that cannot be rendered — no layout binding
+        // yet, or no friendly URL to render at. That is the normal state of a site mid-build, and
+        // it is exactly the case SH169 was filed for: without this, a section-composed page
+        // digested as the hash of nothing and was indistinguishable from a blank one. `source`
+        // says which question was answered, so a fallback is never mistaken for the real thing.
         outline = outline.merge(composed(post, fields));
-        return render(SOURCE_CONTENT, shAddressResolver.addressOf(post).toString(), null, null,
-                fields, outline);
+        return render(SOURCE_CONTENT, address, null, null, fields, outline);
+    }
+
+    /**
+     * The page as {@link ShPageRenderService} composes it, or empty when it cannot be composed.
+     *
+     * <h3>Why every failure is empty rather than an error</h3>
+     *
+     * <p>The renderer throws a teaching exception for an unbound post-type, an absent layout and a
+     * page it cannot find — all correct for somebody who asked to <em>see</em> a page, and all
+     * wrong here. A digest that started failing where it used to answer would break the SH99 loop
+     * for every site whose model is not finished, which is every site mid-build. So a page that
+     * cannot be rendered falls back and says so in {@code source}.</p>
+     *
+     * <p>A post with no friendly URL (SH172's {@code id:} case) has nothing to render <em>at</em>,
+     * since the render route is addressed by URL. That is the second fallback path and not a
+     * defect.</p>
+     */
+    private Optional<String> renderedHtml(ShPostUnified post) {
+        if (post.getShSite() == null || post.getFurl() == null || post.getFurl().isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(pageRenderService
+                    .render(post.getShSite().getId(), post.getFurl(), post.getState())
+                    .html());
+        } catch (ShTeachingException e) {
+            // Unbound type, missing layout, unknown page: all "this is not a renderable page",
+            // which is information the fallback carries rather than an error the caller has to
+            // handle. Narrow on purpose — anything that is not a teaching exception is a real
+            // failure and is not swallowed here.
+            return Optional.empty();
+        }
     }
 
     /** A post's own markup fields, in ordinal order — what the digest has always read. */

@@ -1823,24 +1823,28 @@ graph does not currently hold it.
 
 #### XV.16 The renderer and the digest compose the same page differently (SH249)
 
-`/agent/render` composes a page's **sections**: SH169 made the digest follow a `Multi Select`
-carrying `references: "post"` and fold each named section's markup into the outline. `/preview`
-composes a page's **regions**: SH183 follows `sh-region="NAME"` in a layout and fills each slot
-from a Region post. Both answer "what is on this page". Neither knows the other exists.
-
-So an agent proving structure and a human looking at the result can be reading two different
-compositions of the same post, and nothing reports the disagreement — which is precisely the
-perception loop (P9) failing in the one place it is supposed to work, since the whole value of a
-cheap textual proof is that it stands in for looking.
-
-The tempting fix is to point the digest at the renderer's HTML, and that is probably right: it
-is what a visitor gets, and it makes SH187 nearly free because the artifact to snapshot is
-already produced. But it should not be done before the prior question is answered, because
-otherwise it silently picks a winner. **Are sections and regions one mechanism or two?** There
-is a real distinction — a section is content a page *names* in a field, a region is markup a
-layout *slots* — and they can legitimately coexist: an SH95 `Page` composed of sections could
-itself be rendered *inside* a layout whose content region iterates them. That is a coherent
-story and it is currently written down nowhere, which is how two composition paths become three.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The decision is a document:
+> [specs/SH249-sections-and-regions.md](../specs/SH249-sections-and-regions.md). Three things to
+> carry.
+>
+> **The prior question had a real answer and it was not "unify them".** Sections and regions differ
+> on every axis that matters — who names them, by what key, whether they vary with the page or with
+> the *type*, whether they are homogeneous. What joins them is that a region's template can iterate
+> a page's section field (SH247's `getRelation`), so a section-composed page renders through the
+> ordinary path and the renderer needs no knowledge of the section vocabulary. **Sections are
+> content a template reads, not a level of the render model** — which is SH185's "the engine never
+> infers ownership" one level out, and it is what stopped this from becoming a third path.
+>
+> **A fallback that is labelled beats a fallback that is guessed at.** SH169's composition stays,
+> for a post with no layout binding or no friendly URL, and `source` says which question was
+> answered. The alternative — fail where the digest used to answer — would have broken the SH99 loop
+> for every site mid-build, which is every site until it is finished.
+>
+> **SH171's hazard is a class, not an incident.** Catching a teaching exception thrown by an inner
+> `@Transactional` marks the caller's transaction rollback-only, and the failure surfaces at
+> *commit*, nowhere near the catch. It cost eleven unrelated test errors here. Any new
+> speculative call into a service that throws teaching exceptions needs `noRollbackFor`, and the
+> tell is that the caller means to *handle* the refusal rather than propagate it.
 
 #### XV.18 A stylesheet is not an HTML document, and the catalogue says it is (SH252)
 
@@ -2246,6 +2250,25 @@ should refuse instead: `post.upsert` could reject a system-type post whose title
 the SH202 treatment and stronger, but it would refuse an import of a package that already contains
 the collision, and refusing to import a site because it has a latent defect is worse than importing
 it and reporting one.
+
+### XVI.17 A whole-site structural proof is now N renders (SH264)
+
+Since SH249 the digest composes the page for real: a layout compile, its regions, and whatever
+`{{#query}}` / `{{#getRelation}}` / `{{#search}}` read. One page is cheap. A sweep is not obviously
+cheap, and nobody has measured it.
+
+The cost is bounded by construction — SH183 clamps every listing, SH247 shares one comparator, and
+each render is independent — so this is not a correctness worry. It is a **Block M discipline**
+worry: the rule there is that a cost is measured rather than asserted, and
+`ShAgentResponseBudgetTest` guards the size of a *response*, not the work behind a sweep. So the
+honest position is that a per-page proof over a large site has an unknown price, and "bounded"
+is an argument, not a number.
+
+The likely answer is a cache keyed on the digest itself, which is neat because the digest *is* the
+question "has this page's structure changed" — a hit means the answer has not moved. But building
+that before measuring would be the thing this codebase keeps refusing elsewhere: SH164/SH239 exist
+precisely because an unmeasured claim about cost drifts. So the first deliverable is a benchmark,
+and the second is whatever it argues for.
 
 ---
 

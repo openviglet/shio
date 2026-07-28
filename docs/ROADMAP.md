@@ -52,7 +52,7 @@
 > reviewing what was still CSRF-exempt (both shipped, so their design sections are gone),
 > and **SH241–SH246** from closing Block O's last two (SH202/SH203) — three of those six are
 > not content defects at all but the *build* they were found through (§XVI.1, §XVI.2, and
-> SH246, shipped) — and **SH247–SH251** plus **SH259–SH263** from building Block P's renderer (§XV.14–§XV.20, §XVI.14–§XVI.16,
+> SH246, shipped) — and **SH247–SH251** plus **SH259–SH264** from building Block P's renderer (§XV.14–§XV.20, §XVI.14–§XVI.17,
 > §XVI.7; SH250 is the build again, and flaky where SH246 was deterministic), and
 > **SH252–SH258** from projecting its templates to files (§XV.18, §XVI.8–§XVI.13 — SH253 is a
 > normalization that causes the drift its own comment says it prevents, and SH254 is the same
@@ -470,8 +470,8 @@
 > and a region's browser JavaScript now reaches the browser. What that leaves is the tasks
 > below plus **SH247**, now down to `form` alone (✅ `getRelation` and `search` shipped — a page
 > composed of SH95 sections renders in the previewer at last, which closes one concrete half of
-> SH249), and **SH249** itself (`/agent/render` and `/preview` still compose the same page two
-> different ways).
+> SH249), and ✅ **SH249** itself — the two composition paths are now one, and the decision is a
+> document (see the shipped pointer below).
 
 > **The model is the one this product already had: page → layout → region.** Recovered from
 > `origin/FSP` (an ancestor of HEAD, last touched 2019-09-09) and from the real template in
@@ -528,6 +528,12 @@
 > `checks=content`, over the bindings rather than the pages. It opened **SH260** (five hardcoded
 > copies of the helper catalogue) and **SH261** (a hash argument that is a field is not checked).
 >
+> ✅ **SH249 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P, and the decision is written down in
+> [specs/SH249-sections-and-regions.md](specs/SH249-sections-and-regions.md): **two mechanisms, one
+> composition path.** The digest reads the rendered page (`source: rendered`) and falls back to
+> SH169's composition, labelled, for a page that cannot be rendered. **SH187 is now nearly free.**
+> It opened **SH264** (a whole-site proof is N renders and nobody has measured it).
+>
 > ✅ **SH193 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: `ShTemplateGraph` inverts the
 > presentation edges, `affects` rides `/agent/changes`, and `verify` warns on an unreachable
 > region or an unbound layout. **Computed rather than extracted, which corrected §XV.11's own
@@ -541,7 +547,7 @@
 > which caught its own author's wrong declarations on the first run. Durable lesson: §XVI.10.
 
 - ⏳ **SH247** (deps: SH183 ✅) **`form` is the last of the seven capabilities** — ✅ `getRelation` and `search` shipped → [CHANGELOG.md](CHANGELOG.md) Block P. What remains is `form`, and it is filed rather than half-built because the missing piece is not code: a form needs a decision about **where a submission goes** — storage, spam, notification, retention — which is a subsystem, and `shFormComponent` was the one of the three removed components that had no obvious replacement. Until then `{{#form}}` is a teaching write-time refusal (SH192) naming SH247, which is the honest state: the author is told the capability is absent instead of shipping a page with a silently missing block. → §XV.14
-- 💭 **SH249** (deps: SH183 ✅, SH101 ✅) **The renderer and the digest disagree about what a page is** — `/agent/render` composes a page's *sections* (SH169) from the SH95 `Multi Select` vocabulary, and `/preview` composes its *regions* from `sh-region`. Both answer "what is on this page" and neither knows about the other, so an agent proving structure and a human looking at the page can be reading two different compositions of the same post. The renderer's own HTML is the better input to a digest — it is what a visitor gets — which also makes SH187 nearly free. The question this has to settle first is whether sections and regions are one mechanism or two: a section is content a page *names*, a region is markup a layout *slots*, and they may legitimately coexist, but "legitimately" has to be written down before two composition paths become three. → §XV.16
+- 💭 **SH264** (deps: SH249 ✅) **A whole-site structural proof is now N renders, and nobody has measured it** — since SH249 the digest composes the page for real, so `shio verify`-style sweeps and any future per-page proof pay a render each: a layout compile, its regions, and whatever `{{#query}}`/`{{#getRelation}}` read. Bounded (SH183 clamps listings, SH247 shares the comparator) and each render is independent, but the number is unknown and Block M's discipline is that a cost is measured rather than asserted — `ShAgentResponseBudgetTest` guards a *response*, not a sweep. What it probably wants is a cache keyed on the digest itself, since the digest is exactly "has this page's structure changed"; what it needs first is a benchmark saying whether that is worth building. → §XVI.17
 - 💭 **SH250** (deps: SH246 ✅) **The suite's mocks depend on dynamic agent attachment, which the JDK is removing** — `ShTenantSuspendedAccessTest` failed six of six with `MockitoException: Could not modify all classes` once during Block P and passed on every re-run, including in isolation; the build log carries the reason on every single run: *"Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK."* So the suite has an intermittent failure mode whose trigger is class-loading order rather than anything a test does, and a deprecation timer attached to it. This is the same shape as SH246 — a red build nobody caused — with the difference that it is *flaky* rather than deterministic, which is worse: it teaches people to re-run. The fix is the one the warning names, configuring Mockito as a `-javaagent` in surefire. Filed as an idea rather than designed because the version and argLine wiring should be checked against what Spring Boot's parent already sets. → §XVI.7
 - 💭 **SH252** (deps: SH191 ✅) **A stylesheet is not an HTML document, and the widget catalogue says it is** — `ShRenderPostTypes` declares a `Theme`'s `CSS` field as `Ace Editor - HTML` because that is the closest thing seeded, so the console gives a stylesheet an HTML editor and SH191's projection gives it a `.html` sidecar. Both are the honest consequence of letting the widget decide, and both are wrong for the one thing an extension and an editor mode are *for*. The catalogue is closed and validated on upsert, so this is five places, not one: `ShSystemWidget`, `ShWidgetOnStartup`'s seed, the console's `WIDGET_MAP` + `widget-colors.ts`, `shio-model`'s `builders.ts`, and `SIDECAR_WIDGETS` in `content-files.mjs`. Worth doing because `Theme.CSS` is the field SH195's token vocabulary would replace, and until then it is the field a human hand-edits most. → §XV.18
 - 📋 **SH258** (deps: SH255 ✅, SH257 ✅) **A declared refusal is not checked for being the *right* refusal** — SH255's table asserts "the value comes back exactly, or the loss is declared", and a **throw** satisfies the declared branch whatever it says. That is how the site-name whitespace defect got through the very run that was extending the table to the frontmatter: `siteDir` trimmed, `parsePost` then refused the file's own path, and the property held — a refusal was declared and a refusal happened. It was found by *reading* the message, which is the one step a table does not take. The fix is to make a `DECLARED` entry name the refusal it expects (a pattern the thrown message must match), so "refused" stops being one outcome and becomes N — the same reason SH80 made every 4xx carry a `fix` rather than a status. It is the difference between a guard that proves a value is not silently lost and one that proves the operator is told something true about it. → §XVI.13

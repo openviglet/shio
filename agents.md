@@ -588,7 +588,25 @@ the CDA + console services (law P10) and holds no business logic of its own.
   here is one that matches everything.
 - `GET /agent/render?address=…` — a page's **structural** digest (SH101): heading outline,
   landmark counts, links, images with alt, word count, plus a `digest` hash over the
-  structure only (a typo fix does not move it; a lost heading does). `?url=` digests the
+  structure only (a typo fix does not move it; a lost heading does).
+  **Since SH249 it reads the *rendered* page** (`source: rendered`) whenever the post-type has an
+  SH183 layout binding — the artefact a visitor gets, and the only one that reflects regions *and*
+  sections at once. Before that, this endpoint composed sections (SH169) while `/preview` composed
+  regions, and neither knew the other existed, so a structural proof and a human looking at the
+  page could describe two different compositions. The decision behind it is a document —
+  [docs/specs/SH249-sections-and-regions.md](docs/specs/SH249-sections-and-regions.md): **two
+  mechanisms, one composition path.** A region is named by a layout, by title, and varies with the
+  post-*type*; a section is named by a page, by URL, in order, and varies with the *page*; they meet
+  because a region's template iterates the field (`{{#getRelation SECTIONS}}`), so **sections are
+  content a template reads, not a level of the render model.** SH169's composition survives as the
+  **labelled** fallback (`source: content`) for a post that cannot be rendered — no binding, or no
+  friendly URL (SH172's `id:` case) — because an unbound type is the normal state of a site
+  mid-build and a digest that failed there would break the SH99 loop; `source` is in the response so
+  a fallback is never mistaken for the real answer. Every render refusal is a fallback and **never**
+  an error, and the catch is narrowed to `ShTeachingException`. `ShPageRenderService.render` is
+  `noRollbackFor = ShTeachingException.class` for SH171's reason — catching a teaching exception from
+  an inner `@Transactional` otherwise marks the caller's transaction rollback-only and blows up at
+  *commit*, nowhere near the catch (it cost eleven unrelated test errors when SH249 landed). `?url=` digests the
   delivered page but is **off** unless `shio.agent.render.allow-fetch=true`, and only for
   the origins of readable sites — an endpoint that fetches arbitrary URLs server-side is a
   request-forgery surface.
