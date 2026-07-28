@@ -2530,6 +2530,55 @@ is a method rather than a new file.
 Worth noting the entry that has already gone stale: SH250 made "Mockito self-attaches" false. Nothing
 noticed, because nothing was watching — which is the argument in miniature.
 
+> ⏳ **The two Handlebars rows are done** → [CHANGELOG.md](CHANGELOG.md) Block P. Three findings.
+>
+> **The gap was the premise, not the behaviour.** The suite already proved *our* engine walks no bean
+> and refuses every partial. It never proved an *unconfigured* one does the dangerous thing — so a
+> library that became safe by default would turn both guards into dead weight and both comments into
+> lies, with nothing failing. That asymmetry is what "asserted for one library and assumed for the
+> rest" actually means in practice: the guard is tested, the reason for it is not.
+>
+> **Measuring corrected an existing assertion's meaning.** `beanPropertiesAreNotResolved` asserts
+> `[{{secret.value}}][{{secret.class.name}}]` → `[][]`, which reads as both routes closed by
+> `MapValueResolver`. In fact `class` is blocked by the library itself, on a default engine. So half
+> that assertion is evidence for the guard and half is evidence for Handlebars. Pinned separately
+> now — and worth generalising: a compound assertion hides which half is load-bearing.
+>
+> **The evidence for the loader premise is the error message, not the failure.** A default engine
+> fails `{{> application}}` with a message naming `/application.hbs` — it is not refusing to look, it
+> is failing to find. "It throws either way" would have been a false confirmation.
+>
+> Two rows are deliberately not assertable and say so: `Map.copyOf` cannot be caught behaviourally at
+> all (SH136's own finding, which is why that guard is a lint), and the MCP SDK is a premise about a
+> dependency this project does not have — **SH276**.
+
+### XVI.28 A premise about a dependency we do not have is unfalsifiable (SH276)
+
+SH75 is hand-rolled MCP — around fifteen hundred lines of JSON-RPC, tool dispatch, resource routing
+and a wire-conformance golden — and the justification is one sentence: *"not the MCP Java SDK, which
+is Jackson-2/Boot-3 while this app is Jackson-3/Boot-4."*
+
+That is the largest inherited premise in the repository measured by code it defends, and it is the one
+kind SH274's method cannot touch. The artefact is **not on the classpath**, so a test cannot ask it
+anything; checking would mean adding the dependency, which is the change being evaluated. Asserting
+the absence of a conflict you have avoided by not depending on something is not a test, it is a
+tautology.
+
+So the instrument has to be different, and there are two honest ones:
+
+- **A dated note** recording the SDK version examined, the conflicting coordinates, and who looked.
+  Weaker than an assertion and much stronger than a sentence in the present tense, because it makes
+  staleness visible: a reader can see the check is three years old and decide.
+- **The budget tests as the standing argument.** SH132 caps the tool count and pins
+  `mcp.tools.list.total`; `ShMcpWireConformanceTest` pins the wire against a golden. A hand-rolled
+  surface that stays inside its budget and conformant is live evidence that the trade is still paying
+  — which is a better ongoing case than a claim about the alternative.
+
+Worth being clear about what this is not: not an argument to adopt the SDK, and not a suspicion that
+the premise is wrong. It is that a sentence in the present tense about somebody else's release train
+is the weakest form of a load-bearing claim, and this one carries more weight than any other in the
+codebase.
+
 ---
 
 # Part 2 — pre-existing sections

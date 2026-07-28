@@ -288,7 +288,14 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   exactly what a front end would serve — the separation `ShPreviewBanner` also keeps.
 - **Three rules on `ShTemplateEngine`, all asserted by `ShRenderNoScriptEngineTest`**, because
   each is a default or a dependency away from being undone and **none of them changes the
-  rendered output when it breaks**. (1) **No script engine**: Handlebars.java declares
+  rendered output when it breaks**. **Since SH275 the tests also assert the
+  premises**, not only the guards: an *unconfigured* `new Handlebars()` does walk a bean
+  (`{{secret.value}}` → the value) and does resolve a partial to a classpath path (the failure names
+  `/application.hbs` — it is not refusing to look, it is failing to find). Without that, a library
+  that became safe by default would turn both guards into dead weight and both comments into lies with
+  nothing failing. One correction that came out of it: `{{secret.class.name}}` is blocked by the
+  library itself, so the existing `[][]` assertion is evidence for the guard in its first half only.
+  (1) **No script engine**: Handlebars.java declares
   `nashorn-core` at *compile* scope for its JS-helper path and the POM **excludes** it — the
   classes are not on the classpath, which is stronger than FSP's option of a `ClassFilter` it
   never passed. (2) **`MapValueResolver` only**: the default chain includes

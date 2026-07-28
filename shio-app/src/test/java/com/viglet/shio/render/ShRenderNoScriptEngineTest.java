@@ -16,6 +16,8 @@ import java.util.Map;
 
 import javax.script.ScriptEngineManager;
 
+import com.github.jknack.handlebars.Handlebars;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -113,6 +115,58 @@ class ShRenderNoScriptEngineTest {
                         content — could ask for application.properties. Composition is \
                         sh-region="NAME", which resolves to a Region post rather than to a path.""")
                 .isInstanceOf(ShTemplateException.class);
+    }
+
+    // ── SH275: the premises these guards rest on, asserted against the library ──────
+
+    @Test
+    @DisplayName("SH275: the library's default resolver DOES walk a bean — so map-only is load-bearing")
+    void theDefaultResolverWalksBeans() {
+        // The three guards above assert *our* behaviour. This asserts the premise that justifies
+        // them, which was a comment: "under Handlebars.java's default resolver chain
+        // `{{secret.value}}` prints it". If that ever stops being true the guard becomes harmless
+        // dead weight and the comments become false — nothing else in the suite would notice, which
+        // is SH275's whole argument.
+        Handlebars defaults = new Handlebars();
+
+        assertThat(render(defaults, "{{secret.value}}", Map.of("secret", new Exposed("classified"))))
+                .as("""
+                        An unconfigured Handlebars reads a bean property. Hand *that* engine an                         entity and a template walks the persistence model — the liability SH183                         excluded a script engine to avoid, reachable without one. If this returns                         empty, the library became safe by default: reopen SH275 and rewrite the                         reasoning rather than deleting the guard.""")
+                .isEqualTo("classified");
+    }
+
+    @Test
+    @DisplayName("SH275: `class` is blocked even by default, so that half of the guard proves nothing")
+    void theDefaultResolverBlocksClassAccess() {
+        // Measured while asserting the premise, and worth pinning because it corrects a natural
+        // reading of the test above: `{{secret.class.name}}` returns empty on a *default* engine
+        // too. So the `[][]` assertion in `beanPropertiesAreNotResolved` is only evidence for the
+        // first half. The reflection route was already closed by the library; the property route is
+        // the one MapValueResolver closes.
+        assertThat(render(new Handlebars(), "{{secret.class.name}}",
+                Map.of("secret", new Exposed("classified"))))
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("SH275: the library's default loader DOES resolve a partial to a file path")
+    void theDefaultLoaderReadsTheClasspath() {
+        // The premise behind `ShRefusingTemplateLoader`. A default engine turns `{{> application}}`
+        // into a *path* and goes looking for it — so on an instance where that file exists, a
+        // layout (which is content) reads it. The refusal is what makes composition
+        // `sh-region="NAME"` and nothing else.
+        assertThatThrownBy(() -> render(new Handlebars(), "{{> application}}", Map.of()))
+                .as("""
+                        the message names the path the default loader resolved, which is the                         evidence: it is not refusing to look, it is failing to find. If a future                         version stops resolving a partial to a path, reopen SH275.""")
+                .hasMessageContaining("application.hbs");
+    }
+
+    private static String render(Handlebars handlebars, String template, Map<String, Object> model) {
+        try {
+            return handlebars.compileInline(template).apply(model);
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Test
