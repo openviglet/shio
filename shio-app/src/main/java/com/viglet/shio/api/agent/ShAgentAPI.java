@@ -327,10 +327,16 @@ public class ShAgentAPI {
             @RequestParam(name = "address") List<String> address,
             @RequestParam(name = "fields", required = false) String fields,
             @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids,
+            @RequestParam(name = "include", required = false) String include,
             @RequestParam(name = "format", required = false) String format,
             @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
-        List<ShAgentDoc> docs = shAgentReadService.read(address, split(fields), ids);
+        // SH262 — `include=impact` attaches each template row's blast radius. A projection on this
+        // read rather than a `GET /agent/impact`, because a new endpoint with no MCP tool is a
+        // REST-only capability (P1) and the tool count is capped at 12 with 11 used; `shio_read`
+        // carries it with no extra schema, and the subject of a read is already an address.
+        List<ShAgentDoc> docs = shAgentReadService.read(address, split(fields), ids,
+                includes(include, "impact"));
         return isTerse(format)
                 ? shAgentBodyEtag.terse("read", ShAgentReadTerse.docs(docs), ifNoneMatch)
                 : shAgentBodyEtag.json("read", docs, ifNoneMatch);
@@ -765,6 +771,24 @@ public class ShAgentAPI {
     }
 
     /** Comma-separated list → trimmed values; blank/absent → empty. */
+    /**
+     * Whether a comma-separated {@code include=} names a section (SH262).
+     *
+     * <p>Deliberately not a teaching 400 on an unknown value, unlike {@code format=} and
+     * {@code checks=}: those <em>select</em> what the response is, so a typo silently returns the
+     * wrong thing; this one only <em>adds</em> a section, so a typo returns the ordinary read. The
+     * cost of being wrong is the caller not getting an extra it asked for, which its own code will
+     * notice, rather than a plausible answer to a different question.</p>
+     */
+    private static boolean includes(String include, String section) {
+        if (include == null || include.isBlank()) {
+            return false;
+        }
+        return java.util.Arrays.stream(include.split(","))
+                .map(String::trim)
+                .anyMatch(value -> value.equalsIgnoreCase(section) || value.equalsIgnoreCase("all"));
+    }
+
     private static List<String> split(String csv) {
         if (csv == null || csv.isBlank()) {
             return List.of();

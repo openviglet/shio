@@ -87,6 +87,19 @@ public final class ShAgentReadTerse {
                         .build());
                 continue;
             }
+            if (doc.impact() != null) {
+                // SH262 — its own line rather than attributes on `doc`, because the header describes
+                // the post and this describes everything *else* the post reaches. A reader that does
+                // not know the line skips it; one that read `doc` as the whole row would have been
+                // silently given a wider meaning.
+                out.append(ShTerse.line("impact")
+                        .word(doc.impact().kind())
+                        .attr("layouts", String.join(",", doc.impact().layouts()))
+                        .attr("types", String.join(",", doc.impact().postTypes()))
+                        .count("pages", doc.impact().pages())
+                        .count("published", doc.impact().published())
+                        .build());
+            }
             out.append("data ").append(doc.data() == null ? "{}" : doc.data().toString()).append('\n');
         }
         return out.toString();

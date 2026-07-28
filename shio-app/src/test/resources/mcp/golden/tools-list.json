@@ -233,6 +233,10 @@
               "type" : "string"
             },
             "type" : "array"
+          },
+          "impact" : {
+            "description" : "#string",
+            "type" : "boolean"
           }
         },
         "required" : [ "address" ],

@@ -297,7 +297,9 @@ public class ShAgentManifestService {
                         "console", "GET /api/v2/agent/find?site=Blog&type=Article"),
                 new ShAgentEndpoint("GET", "/agent/read",
                         "Read posts by address (drafts preferred). Repeat ?address= for several, "
-                                + "and pass ?fields= to fetch only the fields you need.",
+                                + "and pass ?fields= to fetch only the fields you need. On a "
+                                + "PageLayout or Region, include=impact says what renders through "
+                                + "it — ask before you rewrite a shared one.",
                         "console", "GET /api/v2/agent/read?address=post:Blog/blog/hello-world"),
                 new ShAgentEndpoint("GET", "/agent/verify",
                         "Check your own work: required fields, dangling references, missing "

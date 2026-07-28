@@ -39,12 +39,51 @@ import tools.jackson.databind.JsonNode;
 @JsonInclude(Include.NON_NULL)
 public record ShAgentDoc(String address, String type, String state, String folder,
                          java.util.List<String> fields, JsonNode data, String id,
-                         Problem error) {
+                         Problem error, Impact impact) {
 
     /** The seven-field form: a row that resolved, which is every row before SH171. */
     public ShAgentDoc(String address, String type, String state, String folder,
                       java.util.List<String> fields, JsonNode data, String id) {
-        this(address, type, state, folder, fields, data, id, null);
+        this(address, type, state, folder, fields, data, id, null, null);
+    }
+
+    /** The eight-field form: SH171's failed row, before SH262 added the impact projection. */
+    public ShAgentDoc(String address, String type, String state, String folder,
+                      java.util.List<String> fields, JsonNode data, String id, Problem error) {
+        this(address, type, state, folder, fields, data, id, error, null);
+    }
+
+    /** The same row with SH262's blast radius attached. */
+    public ShAgentDoc withImpact(Impact blastRadius) {
+        return new ShAgentDoc(address, type, state, folder, fields, data, id, error, blastRadius);
+    }
+
+    /**
+     * What editing this post would affect — SH262, and only when {@code include=impact} asked.
+     *
+     * <h2>Why it rides a read rather than getting an endpoint</h2>
+     *
+     * <p>SH193 answers "what did I just touch" on the change feed and SH194 answers it on a write.
+     * The question an agent asks <em>first</em> — before rewriting a shared region, what does it
+     * reach — had no surface. A {@code GET /agent/impact} would have been the clearest thing to read
+     * and a fourth contract restating a graph two other surfaces already expose (P10), and it would
+     * have been REST-only: the MCP tool count is capped at 12 with 11 used, so a new endpoint with no
+     * tool is a capability law P1 forbids. Riding {@code /agent/read} means {@code shio_read} carries
+     * it with no new schema, and the subject of a read is already an address.</p>
+     *
+     * <p><b>Opt-in, and absent otherwise.</b> Most reads want the fields; a caller that has not asked
+     * about the blast radius should not pay for the graph walk or the tokens. Absent rather than
+     * empty for a post that is not a template, the rule SH121 set for ids.</p>
+     *
+     * @param kind      {@code region} or {@code layout}
+     * @param layouts   the layouts involved — a region's slotters, or the layout itself
+     * @param postTypes the post-types whose pages render through them
+     * @param pages     draft pages of those types in this site
+     * @param published published pages — the number that decides whether to edit now
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Impact(String kind, java.util.List<String> layouts,
+                         java.util.List<String> postTypes, int pages, int published) {
     }
 
     /**

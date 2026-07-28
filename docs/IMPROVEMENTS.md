@@ -1797,31 +1797,6 @@ available, so a triple-stash over a request value can be *refused when the templ
 rather than found in production. That is a better answer than a front end can give, and it is
 worth doing as part of the same task rather than after it.
 
-#### XV.20 The blast radius is answerable after an edit, not before (SH262)
-
-SH193 put `affects` on `/agent/changes`, which answers *"what did I just touch"*. The question an
-agent asks **first** is the same one in the other tense: before rewriting a shared region, what
-does it reach? `ShTemplateGraph` already computes the answer; what is missing is a surface.
-
-Three candidates, and the differences are real:
-
-- **A field on `/agent/read`** when the address resolves to a layout or region. Cheapest, and it
-  arrives unasked on a read whose caller may only want the HTML — which is a token cost paid by
-  every reader for a question some of them are not asking (P3).
-- **`?include=impact`** on that read. Explicit, and one more axis on a hot path that already has
-  `fields=`.
-- **`GET /agent/impact?address=`**. Clearest to read, and a fourth contract restating a graph two
-  other surfaces already expose — exactly what P10 cautions against.
-
-The deciding constraint is MCP: the tool count is capped at 12 with 11 used, and a new endpoint
-with no tool would be a REST-only capability, which law P1 forbids. So it has to ride an existing
-tool, and `shio_read` is the one whose subject is already an address. That argues for the
-projection form — which is also the one that keeps the default response unchanged.
-
-Worth settling at the same time: whether the impact of a **theme** change is the same question. A
-theme is named by a layout's `THEME` field rather than by a slot, so it is a third edge and the
-graph does not currently hold it.
-
 #### XV.21 A raster is still the only answer to most of "looks wrong" (SH265)
 
 SH187 extracts the appearance surface a document carries and stops exactly where a layout engine
@@ -2812,6 +2787,68 @@ set.
 
 Worth pairing with SH275's habit: both are about claims a codebase keeps making after they stopped
 being true, and the cheap version of both is to look rather than to reason.
+
+### XVI.38 A theme is a third edge, and the graph does not hold it (SH286)
+
+`ShTemplateGraph` holds two edges, both of which are *names inside content*: a post-type reaches a
+layout through `site.postTypeLayout`, and a layout reaches a region through `sh-region="NAME"`. A
+`Theme` is reached a third way — a layout's **`THEME` field** — and the graph never looks at it.
+
+The consequence is narrow and awkward: SH262 answers "what does editing this reach" for a layout and a
+region, and returns **nothing** for a `Theme`, which is indistinguishable from "this theme affects
+nothing". A theme edit is also the presentation change with the *largest* plausible blast radius,
+since one theme is typically bound by every layout in a site.
+
+The edge is cheap: `templatesFor` already resolves a layout and reads its fields, so the theme title is
+one more read per layout with no new query shape. Two questions to settle rather than assume:
+
+- **Is a theme's impact the union of its layouts' impacts?** Probably yes — "every page this restyles"
+  is the union — but the answer should be stated, because the alternative (report the layouts and stop)
+  is defensible and much less useful.
+- **Does `unused-theme` join SH193's warnings?** A `Theme` post no layout names is exactly as
+  unreachable as an unslotted region, and nothing reports it today. If it does join, it is a warning
+  for the same reason the other two are: a theme written before the layout that will use it is work in
+  progress.
+
+### XVI.39 Two `include=` parameters teach an unknown value and the third ignores it (SH287)
+
+`/agent/manifest` and `/agent/context` both throw a teaching 400 for an unknown `include=` section,
+with the vocabulary and a did-you-mean. `/agent/read`'s `include=impact` (SH262) silently returns the
+ordinary read.
+
+The distinction its author reasoned from is genuine: those two parameters **select** the response, so a
+typo silently answers a different question, while this one only **adds** a section, so a typo costs the
+caller an extra it asked for and will notice is absent. By that rule both behaviours are right.
+
+The problem is where the rule lives — in one javadoc, on the newest of the three. The next `include=`
+on this surface will be built by whoever reads whichever of the three they happen to open, and P6's
+promise is that an error teaches, not that it teaches on two thirds of the parameters that can take a
+typo. Settle it in one of two directions:
+
+- **Keep the distinction and make it a rule**: name it in `agents.md`, give the adding form a shared
+  helper so the behaviour is a call and not a re-derivation, and assert it in a test.
+- **Drop it**: `/agent/read` joins the other two, on the argument that a caller who typed
+  `include=impacts` wants to be told, and that "it will notice" assumes a caller that checks.
+
+Worth widening the check while it is open: `?format=` teaches an unknown value and `?fields=` does not
+(an unknown field name is simply absent from the projection), and nobody has asked whether that pair
+is deliberate or two independent decisions that happen to differ.
+
+### XVI.40 The CLI cannot read a post (SH288)
+
+`shio` can resolve an address, digest a page, verify a site, list changes and print a context pack. It
+cannot show one post's content.
+
+For a *tree* that is correct and deliberate: `shio pull --content` puts every post on disk, where
+`Grep` and `Edit` are the cheapest tools an agent has (P4), and a `read` command would be a worse
+version of a file. The honest question is whether "show me this one address" is a real gap or a
+misapplied API habit — a human debugging an agent's work does type it, but they can also open the file.
+
+What that argument does **not** cover is SH262's `impact`, because the projected file holds none of it:
+the blast radius is computed from the site's bindings, not stored in the post, so there is no file to
+read it out of and a terminal user has no path to it at all. So the smaller and better-justified shape
+may be `shio impact <address>` — one question the files genuinely cannot answer — rather than a general
+`read` that duplicates the projection. Decide which before building either.
 
 ---
 

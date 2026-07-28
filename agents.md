@@ -371,8 +371,22 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   used — and **`unused-region`/`unused-layout` warnings in `checks=content`**, which are warnings
   because a region waiting for its layout is work in progress and a gate that failed on that is a
   gate people bypass. `published` is counted separately from `pages`, since "how many are
-  published" is what decides whether an edit is safe now. The **pre-edit** form of the question has
-  no surface yet — **SH262**.
+  published" is what decides whether an edit is safe now.
+- **The pre-edit form of the question is `?include=impact` on `/agent/read` (SH262)** — the same
+  graph, asked *before* the write, which is the answer that decides whether to edit at all. A
+  projection on the read rather than a `GET /agent/impact`, because a new endpoint with no MCP tool
+  is a REST-only capability (P1) and the tool count is capped at 12 with 11 used; `shio_read` takes
+  the same subject a read already takes, an address. Four rules: it is **opt-in** (an unconditional
+  field makes every reader pay for a question some are not asking — P3); the impact is taken from
+  **the post the read already loaded**, never by re-resolving the address, so it cannot describe a
+  different row than the fields do — the DRAFT-preference is exactly what two lookups come to
+  disagree about; it is **absent, not an error**, for a post that is not a template, so a caller
+  reading a mixed list of addresses need not know which rows are templates before it asks; and in
+  terse it is **its own `impact` line**, because `doc` describes the post while this describes what
+  the post reaches. Its one boolean of schema put `tools/list` 19 tokens over the ceiling, and the
+  ceiling did **not** move: the description was trimmed first (165 from 182, wording out, the
+  draft-preference and the address example in) — that is the order, and it is why the capability
+  landed for free.
 - **A template's title is an identity, and a duplicate is an error (SH263)** — `sh-region="NAME"` and a
   `postTypeLayout` binding both address a template by title, and `postOfSystemType` resolves by title
   taking the **first** match, so two `Region` posts called `NAV` rendered whichever row came back.

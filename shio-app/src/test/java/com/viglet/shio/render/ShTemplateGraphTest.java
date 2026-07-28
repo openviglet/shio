@@ -27,6 +27,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.agent.ShAgentChangesService;
 import com.viglet.shio.api.agent.ShAgentProofService;
+import com.viglet.shio.api.agent.ShAgentReadService;
+import com.viglet.shio.api.agent.ShAgentReadTerse;
+import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChanges;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
@@ -83,6 +86,8 @@ class ShTemplateGraphTest {
     private ShHistoryRepository shHistoryRepository;
     @Autowired
     private ShAgentProofService proofService;
+    @Autowired
+    private ShAgentReadService readService;
     @Autowired
     private PlatformTransactionManager transactionManager;
 
@@ -581,6 +586,83 @@ class ShTemplateGraphTest {
                 .as("""
                         the same rule the lint half follows: a plan created no state, so a digest                         of the current one would be a claim about a future that has not happened.""")
                 .isNull();
+    }
+
+    // ── SH262: the blast radius before the edit, on the read ────────────────────────
+
+    @Test
+    @DisplayName("SH262: a read of a region reports what renders through it, when asked")
+    void aReadAnswersTheBlastRadius() {
+        // The question SH193 and SH194 could only answer *afterwards*: this is the one an agent
+        // asks before rewriting a shared region, and until now it had no surface at all.
+        List<ShAgentDoc> docs = readService.read(
+                List.of("post:" + siteName + "/r-nav"), null, false, true);
+
+        assertThat(docs).singleElement().satisfies(doc -> {
+            assertThat(doc.impact()).isNotNull();
+            assertThat(doc.impact().kind()).isEqualTo("region");
+            assertThat(doc.impact().layouts()).containsExactly(ARTICLE_LAYOUT, PAGE_LAYOUT);
+            assertThat(doc.impact().postTypes()).containsExactly(articleType, pageType);
+            assertThat(doc.impact().published())
+                    .as("the number that decides whether to edit now, and the same number the "
+                            + "change feed reports afterwards — one graph, so the answer cannot "
+                            + "differ between before and after (P10)")
+                    .isEqualTo(2);
+            assertThat(doc.data()).as("and the fields are still there: this is a projection on a "
+                    + "read, not a different call").isNotNull();
+        });
+    }
+
+    @Test
+    @DisplayName("SH262: it is absent unless the caller asked, and absent for an ordinary post")
+    void impactIsOptInAndTemplateOnly() {
+        assertThat(readService.read(List.of("post:" + siteName + "/r-nav"), null, false).getFirst()
+                .impact())
+                .as("""
+                        opt-in: most reads want the fields, and a caller that has not asked about \
+                        the blast radius should pay neither the graph walk nor the tokens. This is \
+                        the half a test has to hold, because the cost of the default being wrong \
+                        is invisible — every read would simply be bigger.""")
+                .isNull();
+
+        assertThat(readService.read(List.of("post:" + siteName + "/a1"), null, false, true)
+                .getFirst().impact())
+                .as("an ordinary post asked with impact=true gets no section rather than an "
+                        + "error: a caller reading a mixed list of addresses must not have to know "
+                        + "which of them are templates before it asks")
+                .isNull();
+    }
+
+    @Test
+    @DisplayName("SH262: a failed row in a mixed read keeps its error and gains no impact")
+    void aFailedRowIsUntouched() {
+        List<ShAgentDoc> docs = readService.read(
+                List.of("post:" + siteName + "/r-nav", "post:" + siteName + "/nope"),
+                null, false, true);
+
+        assertThat(docs).hasSize(2);
+        assertThat(docs.get(0).impact()).isNotNull();
+        assertThat(docs.get(1).error())
+                .as("SH171's row survives the projection — there is no post to ask about, and "
+                        + "attaching an empty impact would read as a template that reaches nothing")
+                .isNotNull();
+        assertThat(docs.get(1).impact()).isNull();
+    }
+
+    @Test
+    @DisplayName("SH262: the terse form carries it on its own line")
+    void terseCarriesImpact() {
+        String terse = ShAgentReadTerse.docs(
+                readService.read(List.of("post:" + siteName + "/r-nav"), List.of("HTML"),
+                        false, true));
+
+        assertThat(terse).contains("impact region")
+                .as("""
+                        its own line and not attributes on `doc`, because the header describes the \
+                        post while this describes everything else the post reaches. A reader that \
+                        does not know the line skips it.""")
+                .contains("layouts=" + ARTICLE_LAYOUT + "," + PAGE_LAYOUT)
+                .contains("published=2");
     }
 
     // ── fixture ─────────────────────────────────────────────────────────────────────

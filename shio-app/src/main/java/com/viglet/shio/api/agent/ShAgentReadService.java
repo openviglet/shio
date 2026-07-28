@@ -33,6 +33,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.render.ShTemplateGraph;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 
 import tools.jackson.core.JacksonException;
@@ -81,6 +82,7 @@ public class ShAgentReadService {
     private final ShAddressResolver shAddressResolver;
     private final ObjectMapper objectMapper;
     private final ShAgentProperties properties;
+    private final ShTemplateGraph shTemplateGraph;
 
     public ShAgentReadService(ShAgentSiteAccess siteAccess,
                               ShFolderRepository shFolderRepository,
@@ -88,7 +90,8 @@ public class ShAgentReadService {
                               ShPostTypeRepository shPostTypeRepository,
                               ShAddressResolver shAddressResolver,
                               ObjectMapper objectMapper,
-                              ShAgentProperties properties) {
+                              ShAgentProperties properties,
+                              ShTemplateGraph shTemplateGraph) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -96,6 +99,7 @@ public class ShAgentReadService {
         this.shAddressResolver = shAddressResolver;
         this.objectMapper = objectMapper;
         this.properties = properties;
+        this.shTemplateGraph = shTemplateGraph;
     }
 
     /**
@@ -208,6 +212,21 @@ public class ShAgentReadService {
      * @param ids       include object ids (SH121 default: off)
      */
     public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids) {
+        return read(addresses, fields, ids, false);
+    }
+
+    /**
+     * @param impact SH262 — attach each row's blast radius when the address is a layout or region.
+     *               Opt-in: most reads want the fields, and a caller that has not asked about what a
+     *               template reaches should pay neither the graph walk nor the tokens
+     */
+    public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
+                                 boolean impact) {
+        return readDocs(addresses, fields, ids, impact);
+    }
+
+    private List<ShAgentDoc> readDocs(List<String> addresses, List<String> fields, boolean ids,
+                                      boolean impact) {
         if (addresses == null || addresses.isEmpty()) {
             throw new NoAddressException();
         }
@@ -222,11 +241,11 @@ public class ShAgentReadService {
             // back to reading them one at a time to find out which one was wrong. A single
             // address still throws, because a one-address read that 404s is correct.
             if (addresses.size() == 1) {
-                docs.add(doc(address, wanted, ids));
+                docs.add(doc(address, wanted, ids, impact));
                 continue;
             }
             try {
-                docs.add(doc(address, wanted, ids));
+                docs.add(doc(address, wanted, ids, impact));
             } catch (ShTeachingException failure) {
                 docs.add(failed(address, failure));
             }
@@ -252,7 +271,7 @@ public class ShAgentReadService {
                         fix == null ? null : fix.toString()));
     }
 
-    private ShAgentDoc doc(String rawAddress, List<String> fields, boolean ids) {
+    private ShAgentDoc doc(String rawAddress, List<String> fields, boolean ids, boolean impact) {
         var resolved = shAddressResolver.resolve(rawAddress);
         ShPostUnified post = draftPreferred(resolved.id())
                 .orElseThrow(() -> new NotAPostException(rawAddress, resolved.kind()));
@@ -265,7 +284,25 @@ public class ShAgentReadService {
                 post.getShFolder() == null ? null : folderPath(post.getShFolder()),
                 fields.isEmpty() ? null : fields,
                 projected,
-                ids ? post.getId() : null);
+                ids ? post.getId() : null)
+                .withImpact(impact ? impactOf(post) : null);
+    }
+
+    /**
+     * One row's blast radius, or {@code null} when the post is not a template (SH262).
+     *
+     * <p>Taken from the post the read already loaded rather than by re-resolving the address, so the
+     * impact cannot describe a different row than the fields do — the DRAFT-preference is exactly the
+     * kind of thing two lookups come to disagree about. {@link ShTemplateGraph#impactOf} answers empty
+     * for anything that is not a {@code PageLayout} or a {@code Region}, which is why an ordinary post
+     * asked with {@code include=impact} gets no section rather than an error: a caller reading a mixed
+     * list of addresses should not have to know which ones are templates before it asks.</p>
+     */
+    private ShAgentDoc.Impact impactOf(ShPostUnified post) {
+        return shTemplateGraph.impactOf(post)
+                .map(found -> new ShAgentDoc.Impact(found.kind(), found.layouts(),
+                        found.postTypes(), found.pages(), found.published()))
+                .orElse(null);
     }
 
     /**
