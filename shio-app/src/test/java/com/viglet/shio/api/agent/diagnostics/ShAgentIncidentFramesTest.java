@@ -10,6 +10,12 @@ package com.viglet.shio.api.agent.diagnostics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -107,6 +113,55 @@ class ShAgentIncidentFramesTest {
     @DisplayName("a null throwable is null, so the caller needs no guard")
     void nullIsNull() {
         assertThat(ShAgentIncidentFrames.of(null)).isNull();
+    }
+
+    @Test
+    @DisplayName("SH269: every recorder that holds a throwable passes it")
+    void everyThrowingRecorderPassesTheFrame() throws Exception {
+        // A source lint, not a behavioural test, and deliberately so: each of these three call
+        // sites is in a different subsystem, and reproducing a failing webhook dispatch, a corrupt
+        // image and a scheduled publish that throws would be three integration fixtures asserting
+        // one line each. What can go wrong is a `catch` that records the message and drops the
+        // throwable it is standing on — which is what SH190 shipped with, and is invisible until
+        // somebody reads a diagnostics row and finds no `frames`.
+        assertThat(recordCallsWithoutFrames(Path.of("src", "main", "java", "com", "viglet", "shio")))
+                .as("""
+                        These call `incidentLog.record(...)` from inside a catch block and do not                         pass `ShAgentIncidentFrames.of(...)`. A message alone was the SH190 defect:                         it says a call failed and nothing about where. Pass the throwable, or — if                         the branch genuinely has none, like a webhook the subscriber rejected —                         record with the four-argument form and say so in a comment.""")
+                .isEmpty();
+    }
+
+    /**
+     * Files with a {@code catch} whose {@code incidentLog.record(...)} passes no frame.
+     *
+     * <p>Crude on purpose — a `catch (` anywhere in the 40 lines before the call is enough, and
+     * over-reporting is the safe direction for a guard whose whole job is to notice an omission.
+     * The webhook's give-up branch is not in a catch at all, so it is not a candidate and needs no
+     * exemption.</p>
+     */
+    private static List<String> recordCallsWithoutFrames(Path root) throws Exception {
+        List<String> offenders = new ArrayList<>();
+        try (Stream<Path> files = Files.walk(root)) {
+            for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
+                String source = Files.readString(file);
+                if (!source.contains("incidentLog.record(")) {
+                    continue;
+                }
+                int at = 0;
+                while ((at = source.indexOf("incidentLog.record(", at)) >= 0) {
+                    int close = source.indexOf(");", at);
+                    String call = close < 0 ? source.substring(at) : source.substring(at, close);
+                    String before = source.substring(Math.max(0, at - 1800), at);
+                    // The nearest `catch (` must be closer than the nearest method end, or the
+                    // call is somewhere else in the file and this one is not in a catch at all.
+                    boolean inCatch = before.lastIndexOf("catch (") > before.lastIndexOf("\n    }");
+                    if (inCatch && !call.contains("ShAgentIncidentFrames.of")) {
+                        offenders.add(file.getFileName().toString());
+                    }
+                    at = close < 0 ? source.length() : close;
+                }
+            }
+        }
+        return offenders;
     }
 
     private static RuntimeException thrownHere() {

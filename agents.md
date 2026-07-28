@@ -676,7 +676,14 @@ the CDA + console services (law P10) and holds no business logic of its own.
   Tomcat rejected, or a 5xx the framework rendered with no exception reaching the filter). It is
   **persisted** (`v2026.3.15`), because SH144's promise is that the durable answer is the good one,
   and a repeat arriving without a frame **cannot erase** the first one's — the rule `fix` already
-  followed. Only `api-error` populates it today; the other three kinds are **SH269**. Recorded by `ShAgentIncidentLog`; repeats fold into one
+  followed. Since **SH269** every recorder inside a `catch` passes one — webhook dispatch errors,
+  scheduled publish/unpublish, image transforms — and the webhook's *give-up* branch deliberately
+  does **not**, because delivery completed and the subscriber refused it, so the presence of the
+  field now distinguishes "we failed" from "they refused". Guarded by a **source lint** in
+  `ShAgentIncidentFramesTest` (a `record(...)` inside a `catch` that passes no frame fails the
+  build), because the defect is an omission at a call site and reproducing three async failures
+  would be three fixtures asserting one line each. A `catch` that records *nothing* is still
+  invisible — **SH270**. Recorded by `ShAgentIncidentLog`; repeats fold into one
   row with a count. **Durable since SH144** (`sh_agent_incident`, written by
   `ShAgentIncidentStore`), so "was anything failing while I was away" is answerable and an empty
   report now means *nothing has failed* rather than *nothing is remembered* — `since` is where

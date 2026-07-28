@@ -2380,24 +2380,53 @@ client is expected to lean on a companion CLI, this is documentation.
 
 ### XVI.21 A frame is evidence for one incident kind and absent for three (SH269)
 
-SH190 attaches the throwing location where an exception is *caught*, and today that is one place:
-`ShAgentErrorRecordingFilter`, which produces `api-error`. The other three kinds are exactly the ones
-whose failures are hardest to diagnose from a message:
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two things worth keeping, one of which is a
+> testing judgement rather than a design one.
+>
+> **The absent frame became informative.** Four of the five recorders pass one; the webhook's
+> give-up branch does not, because delivery completed and the *subscriber* rejected it — there is no
+> exception of ours and nothing in Shio's code to point at. SH190 set that rule as a technicality
+> about honesty; here it turns into signal, because the presence of the field now distinguishes "we
+> failed" from "they refused".
+>
+> **A source lint beat three integration fixtures, and the reasoning generalises.** Reproducing a
+> failing webhook dispatch, a corrupt image and a scheduled publish that throws is three expensive
+> fixtures each asserting one line — and none of them tests what actually goes wrong. What goes wrong
+> is a `catch` that records the message and drops the throwable it is standing on: invisible until
+> somebody reads a diagnostics row and finds nothing there. So the guard walks the source for
+> `incidentLog.record(...)` inside a `catch` with no frame, and it was verified the only way a lint
+> can be — by reverting a call site and watching it name the file. Same family as
+> `ShByteStabilityLintTest` and `ShCsrfExemptionLintTest`: when the defect is an *omission at a call
+> site*, the cheap correct test reads the call sites.
+>
+> The gap the lint cannot see is a `catch` that records nothing at all — **SH270**.
 
-- a **webhook** delivery records `HTTP 500` — the remote's status, with no sign of which of Shio's own
-  code built the payload it rejected;
-- an **image transform** failure records the exception message and not which pipeline stage threw,
-  though `ShThumbnailatorImageTransformPipeline` has several;
-- a **scheduled publish** that threw records the exception without naming the writer it threw inside,
-  which is the one case where nobody was watching when it happened.
+### XVI.22 A swallowed exception leaves no frame, and no incident either (SH270)
 
-Each already has a `catch`. The work is passing what it holds to `record(…, frames)`, which is small.
+SH269's lint can only see the recorders that exist. The blind spot is a `catch` that records
+*nothing*, and there are several, most of them correct:
 
-It is filed rather than folded into SH190 for a reason worth stating: each call site belongs to a
-different subsystem with its own notion of what the incident's *subject* is (a URL, a post id, a
-schedule), and the value of the frame depends on getting that pairing right. Three unrelated
-behaviours changed together and judged by one test is the shape SH183's own note warned about when it
-declined to stub three helpers at once.
+- `ShAgentIncidentStore` swallows and logs — deliberately, because a diagnostics write must never
+  turn a webhook timeout into a 500 (SH144's rule).
+- `ShPageRenderService.bindingsOf` returns `Map.of()` for an unparseable `postTypeLayout` (SH183).
+- `ShRenderModel.fieldsOf` returns no fields for a post whose `data` is not an object.
+
+The last two are the interesting ones, because both mean *the content is wrong and the page looks
+empty* — the failure mode this whole block exists to make visible — and both are currently
+invisible everywhere. Neither is a bug: degrading rather than failing is right for a renderer, and
+SH99's lint is the stated place those defects get reported. The question is whether "the lint would
+catch it if anybody ran the lint" is good enough for a condition the renderer has already observed
+at request time.
+
+**What this must not become is more recording.** Logging every handled condition would fill the SH103
+window with things that are working as designed, which is exactly what that task refused when it
+declined to record 4xx. So the deliverable is a *decision* about which degradations are worth an
+incident, and the bar should probably be: the content is malformed in a way the model cannot express,
+and the request succeeded anyway.
+
+The lint shape is available if the answer is "some of them": a `catch` that neither records nor
+rethrows could be made to name a reason inline, the way `byte-stable-exempt` does for SH136. That
+turns a silent decision into a written one without adding a single log line.
 
 ---
 

@@ -25,6 +25,7 @@ import javax.imageio.stream.ImageInputStream;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
+import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentFrames;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.property.ShImageTransformProperties;
 
@@ -135,7 +136,11 @@ public class ShThumbnailatorImageTransformPipeline implements ShImageTransformPi
             incidentLog.record(ShAgentIncidentLog.Kind.TRANSFORM, source.getFilename(),
                     "transform failed, original served: " + e.getMessage(),
                     "The image is delivered untransformed (full size, source format). Re-upload "
-                            + "it if the source is corrupt, or serve it without transform params.");
+                            + "it if the source is corrupt, or serve it without transform params.",
+                    // SH269: which stage threw. This pipeline decodes, resizes, re-encodes and
+                    // writes, and "transform failed" is the same message for all four — the frame
+                    // is the only thing that distinguishes a corrupt source from a missing writer.
+                    ShAgentIncidentFrames.of(e));
             return Optional.empty();
         }
     }

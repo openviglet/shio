@@ -15,6 +15,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import com.viglet.core.webhook.VigletWebhookDispatcher;
 import com.viglet.core.webhook.VigletWebhookRequest;
 import com.viglet.core.webhook.VigletWebhookRetryPolicy;
+import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentFrames;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.persistence.model.webhook.ShSiteWebhook;
 import com.viglet.shio.persistence.repository.webhook.ShSiteWebhookRepository;
@@ -127,8 +128,13 @@ public class ShWebhookDispatcher {
                 // SH103: a log line is not a surface an agent has. A revalidation that
                 // never arrived is the difference between "published" and "visible", so
                 // it is recorded where GET /api/v2/agent/diagnostics can report it.
+                // SH269: the frame, because this branch has a real throwable — a connection
+                // reset, a body that would not serialize — and "dispatch errored" alone does not
+                // say whether the fault was ours or the subscriber's. `CompletionException` wraps
+                // it, and `ShAgentIncidentFrames` walks to the deepest cause for that reason.
                 incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, target.getUrl(),
-                        "dispatch errored: " + error.getMessage(), RETRY_FIX);
+                        "dispatch errored: " + error.getMessage(), RETRY_FIX,
+                        ShAgentIncidentFrames.of(error));
             } else if (result.delivered()) {
                 log.debug("Webhook '{}' delivered ({} {}) for post {} -> {}",
                         target.getName(), event.type().wire(), result.statusCode(), event.postId(),
@@ -137,6 +143,9 @@ public class ShWebhookDispatcher {
                 log.warn("Webhook '{}' failed after {} attempt(s) for {} (last status {}) — dropping {} of post {}",
                         target.getName(), result.attempts(), target.getUrl(), result.statusCode(),
                         event.type().wire(), event.postId());
+                // No frame here, and that is the honest answer rather than an omission: the
+                // delivery completed and the *subscriber* rejected it, so there is no exception of
+                // ours and nothing in Shio's code to point at. SH190's rule — absent beats empty.
                 incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, target.getUrl(),
                         "gave up after " + result.attempts() + " attempt(s), last status "
                                 + result.statusCode(), RETRY_FIX);

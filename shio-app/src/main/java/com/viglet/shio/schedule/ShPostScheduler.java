@@ -10,6 +10,7 @@ import java.time.Instant;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentFrames;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 
@@ -65,8 +66,11 @@ public class ShPostScheduler {
                 log.warn("Scheduled publish failed for post {}: {}", id, e.getMessage());
                 // SH103: nobody is watching at 03:00, and the post is silently not in
                 // the state it was told to be in. Recorded so /agent/diagnostics says so.
+                // SH269: this is the case where nobody was watching, so the frame is worth most
+                // — the message names the symptom and the frame names the writer it threw inside.
                 incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "id:" + id,
-                        "scheduled publish failed: " + e.getMessage(), SCHEDULE_FIX);
+                        "scheduled publish failed: " + e.getMessage(), SCHEDULE_FIX,
+                        ShAgentIncidentFrames.of(e));
             }
         }
 
@@ -77,7 +81,8 @@ public class ShPostScheduler {
             } catch (Exception e) {
                 log.warn("Scheduled unpublish failed for post {}: {}", id, e.getMessage());
                 incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "id:" + id,
-                        "scheduled unpublish failed: " + e.getMessage(), SCHEDULE_FIX);
+                        "scheduled unpublish failed: " + e.getMessage(), SCHEDULE_FIX,
+                        ShAgentIncidentFrames.of(e));
             }
         }
     }
