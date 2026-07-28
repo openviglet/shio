@@ -10,6 +10,7 @@ package com.viglet.shio.api.agent.verify;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -516,6 +517,61 @@ public class ShAgentVerifyService {
         folderFindings(check, scan, findings);
         templateFields(check, scan, findings);
         unusedTemplates(check, scan, findings);
+        duplicateTemplateTitles(check, scan, findings);
+    }
+
+    /**
+     * SH263 — two templates in one site claiming the same title.
+     *
+     * <p>A layout reaches a region with {@code sh-region="NAME"} and a site binds a post-type to a
+     * layout by title, so the renderer resolves by title and takes the <b>first</b> match. Two
+     * {@code Region} posts called {@code NAV} therefore render whichever row comes back first —
+     * intermittently, with nothing reported anywhere, and SH193's graph counts the slot once. SH202's
+     * duplicate-URL defect one namespace over: the identity is a title, and nothing enforced
+     * uniqueness because nothing had noticed a title <em>was</em> an identity.</p>
+     *
+     * <p>An <b>error</b>, unlike the unused-template warnings beside it: an unused region may be work
+     * in progress, while two templates competing for one name is provably wrong whatever anybody
+     * intended, and which page renders correctly is undefined.</p>
+     *
+     * <p>Detection is instance-wide within the site and reporting is subject-scoped (SH143): a scoped
+     * run that saw only one of the two would answer that the name is unique, which is the worst false
+     * green there is.</p>
+     */
+    private void duplicateTemplateTitles(String check, Scan scan, List<Finding> findings) {
+        Set<String> inScope = scan.posts().stream()
+                .map(ShPostUnified::getId)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        for (ShSite site : scan.siteById().values()) {
+            for (Map.Entry<String, List<String>> claimed
+                    : templateGraph.duplicateTitlesIn(site).entrySet()) {
+                for (ShPostUnified post : postsById(scan, claimed.getValue(), inScope)) {
+                    findings.add(Finding.error(check, "duplicate-template-title", address(post), null,
+                            claimed.getKey() + " is claimed by " + claimed.getValue().size()
+                                    + " templates in '" + site.getName() + "' — a layout reaches a "
+                                    + "region by title and a binding names a layout by title, so "
+                                    + "which one renders is undefined.",
+                            "Rename all but one of them (post.upsert with a different title on "
+                                    + "POST /api/v2/agent/batch), or delete the copy. A title is an "
+                                    + "identity here, the way a friendly URL is for a page."));
+                }
+            }
+        }
+    }
+
+    /** The scanned posts among these ids — so the finding is reported once, against a subject. */
+    private static List<ShPostUnified> postsById(Scan scan, Collection<String> ids,
+                                                 Set<String> inScope) {
+        List<ShPostUnified> out = new ArrayList<>();
+        Set<String> seen = new java.util.LinkedHashSet<>();
+        for (ShPostUnified post : scan.posts()) {
+            if (ids.contains(post.getId()) && inScope.contains(post.getId())
+                    && seen.add(post.getId())) {
+                out.add(post);
+            }
+        }
+        return out;
     }
 
     /**

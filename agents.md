@@ -372,8 +372,20 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   because a region waiting for its layout is work in progress and a gate that failed on that is a
   gate people bypass. `published` is counted separately from `pages`, since "how many are
   published" is what decides whether an edit is safe now. The **pre-edit** form of the question has
-  no surface yet — **SH262** — and a **duplicate template title** silently resolves to whichever row
-  comes back first — **SH263**.
+  no surface yet — **SH262**.
+- **A template's title is an identity, and a duplicate is an error (SH263)** — `sh-region="NAME"` and a
+  `postTypeLayout` binding both address a template by title, and `postOfSystemType` resolves by title
+  taking the **first** match, so two `Region` posts called `NAV` rendered whichever row came back.
+  `duplicate-template-title` in `checks=content` is an **error** (unlike the unused-template warnings:
+  an unused region may be work in progress, two templates competing for a name is provably wrong).
+  **Detection is instance-wide within the site, reporting is subject-scoped** — a scoped run seeing one
+  of two would report the name as *unique*, which is a positive wrong answer rather than a missing one.
+  Keyed by post **id**, because a template's own PUBLISHED row shares its id and title with its DRAFT
+  row and counting rows would flag every published template as its own duplicate. Two gaps remain: the
+  write side still permits a collision (**SH277** — and the shape has to be "refuse an interactive
+  write, report a bulk one", or an SH68 import of a package that already contains one would fail), and
+  the resolution order is still unspecified (**SH278** — one `order by` away from a duplicate at least
+  rendering *consistently* wrongly).
 - **Helpers are the closed capability set** `shObject.js` expressed as a convention:
   `{{#query folder= type= limit=}}`, `{{#navigation folder=}}`, `{{file_url}}`, and since SH247
   `{{#getRelation FIELD}}` and `{{#search q= type= limit=}}`. Every listing is sorted by a

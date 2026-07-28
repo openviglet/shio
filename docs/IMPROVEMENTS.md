@@ -2238,27 +2238,27 @@ fired, which is the part a reader would use to tell a good refusal from a confus
 
 ### XVI.16 A duplicate template title is silently the first one (SH263)
 
-`ShPageRenderService.postOfSystemType` resolves a layout or a region **by title** and takes the
-first match. So two `Region` posts both called `NAV` in one site render whichever row the query
-happens to return, and SH193's graph counts the slot once because a slot names a title, not a post.
-
-This is SH202's defect one namespace over. There, the identity was a friendly URL and a clone took
-a name that was already taken; here the identity is a **title**, because a title is what
-`sh-region="NAME"` and a `postTypeLayout` binding both name. That makes it an identity in fact, and
-nothing enforces uniqueness or reports a collision — so the failure is a page that renders the
-wrong region, intermittently, with no error anywhere.
-
-It belongs in `verify` as `duplicate-template-title`, and unlike SH193's unused-template findings it
-is an **error**: an unused region may be work in progress, while two templates competing for one
-name is provably wrong whatever anybody intended. The graph already reads every layout and region
-in the site, so the data is in hand.
-
-Two things to decide. Whether the rule covers `Theme` as well — a layout names its theme by title
-through the `THEME` field, so the same collision exists on a third edge. And whether the write side
-should refuse instead: `post.upsert` could reject a system-type post whose title is taken, which is
-the SH202 treatment and stronger, but it would refuse an import of a package that already contains
-the collision, and refusing to import a site because it has a latent defect is worse than importing
-it and reporting one.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth carrying.
+>
+> **The open question in this section answered itself the other way.** It asked whether the write side
+> should refuse instead, and worried that refusing would break importing a package that already
+> contains a collision. Building the lint made the shape clearer: the two are not alternatives, and the
+> write-side refusal needs a distinction the write path does not currently draw — interactive versus
+> bulk. That is **SH277**, and it is a better task for having the lint first.
+>
+> **Scoping mattered more here than for most rules.** A scoped run that saw one of two duplicates
+> would report that the name is *unique*. Most false greens are an absence of information; this one is
+> a positive wrong answer, which is why detection is instance-wide within the site even though
+> reporting is subject-scoped.
+>
+> **The false positive was the design.** A template's own PUBLISHED row shares its id *and* its title
+> with its DRAFT row, so counting rows would have reported every published template in every instance
+> as a duplicate of itself — a rule that fires everywhere is one nobody reads. Keying by id is the
+> whole implementation and it has its own test.
+>
+> One finding about the test rather than the code: the first version added the duplicate to a
+> `PER_CLASS` fixture and broke two unrelated assertions in the same class. In a shared fixture every
+> mutating test is an input to the others — SH239's confound, one class along.
 
 ### XVI.17 A whole-site structural proof is now N renders (SH264)
 
@@ -2578,6 +2578,48 @@ Worth being clear about what this is not: not an argument to adopt the SDK, and 
 the premise is wrong. It is that a sentence in the present tense about somebody else's release train
 is the weakest form of a load-bearing claim, and this one carries more weight than any other in the
 codebase.
+
+### XVI.29 A title is an identity at read time and not at write time (SH277)
+
+SH263 reports a duplicate template title as an error. Nothing stops one being created, which is the
+asymmetry: the identity is enforced by a lint somebody has to run rather than by the write that breaks
+it.
+
+The machinery and the precedent both exist. `post.upsert` already refuses a `data` key the post-type
+does not declare (SH168) and `post.move` already refuses an occupied friendly URL (SH134) — so "a
+system-type post whose title is taken is a teaching 409 naming the holder" is a shape this codebase has
+written twice.
+
+**The obvious version is wrong in one case that matters.** The SH68 exchange package and SH92's
+blueprints both write templates in bulk, and an import that refused because the *package* contains a
+collision would be worse than one that succeeds and reports it — exactly the reasoning SH189 used for
+`import-no-site`, and the same reason SH152 provisions post-types rather than upserting them. Refusing
+to import a site because it has a latent defect helps nobody.
+
+So the likely shape is **refuse an interactive write, report a bulk one** — and that is a distinction
+the write path does not draw anywhere today. It would need one, which is the real cost of this task and
+the reason it is filed rather than folded into SH263. Worth checking whether SH153's `Declared` idea
+(the blueprint planner telling the batch service what it is about to create) is the seam that already
+half-exists for this.
+
+### XVI.30 The renderer resolves by title in an unspecified order (SH278)
+
+SH263 makes a duplicate title reportable and leaves the underlying behaviour untouched:
+`postOfSystemType` takes the first row a derived finder returns, with no `order by`. So which of two
+templates renders is whatever the database chose — and that is a latent P5 violation independent of the
+lint. The same site can render differently on H2 and on PostgreSQL, and SH101's digest moves with it,
+which is precisely the class of instability SH136 and SH247 both went out of their way to remove
+elsewhere.
+
+The fix is one clause: order by id, or by date then id the way SH247's listings do. The value is not
+that a duplicate starts rendering *correctly* — it cannot — but that "undefined" stops being literally
+true. With a total order a duplicate renders **consistently wrongly**, and a consistent wrong answer is
+far easier to recognise than one that alternates between runs. It also makes the SH102 snapshot and the
+SH101 digest trustworthy on a site that has the defect, which is when somebody is most likely to be
+staring at them.
+
+Worth pairing with SH277 rather than SH263: together they make a title behave like the identity it
+already is — refused when taken, deterministic when duplicated.
 
 ---
 

@@ -260,6 +260,51 @@ public class ShTemplateGraph {
                 new LinkedHashSet<>(graph.boundLayouts()));
     }
 
+    /**
+     * Titles that more than one template in this site claims (SH263).
+     *
+     * <p><b>Why a title is an identity here.</b> A layout reaches a region with
+     * {@code sh-region="NAME"} and a site binds a post-type to a layout by title, so
+     * {@code ShPageRenderService.postOfSystemType} resolves by title and takes the <em>first</em>
+     * match. Two {@code Region} posts both called {@code NAV} therefore render whichever row the
+     * query happens to return — intermittently, with no error anywhere, and SH193's graph counts the
+     * slot once. That is SH202's duplicate-URL defect one namespace over: the identity is a title
+     * rather than a friendly URL, and nothing enforced uniqueness because nothing had noticed a
+     * title was an identity.</p>
+     *
+     * <p><b>Instance-wide within the site, never scoped.</b> "How many templates claim this name" is
+     * a cross-cutting question, and SH143's rule is that a scope narrows the <em>subjects</em> and
+     * not the indexes — a scoped run that only saw one of the two would answer that the name is
+     * unique, which is the worst kind of false green. So this reads every render-type post in the
+     * site and the caller decides which findings are its to report.</p>
+     *
+     * @return title → the ids claiming it, only for titles claimed more than once; both maps sorted
+     */
+    public Map<String, List<String>> duplicateTitlesIn(ShSite site) {
+        Map<String, Map<String, String>> byTitle = new TreeMap<>();
+        for (ShPostUnified post : shPostUnifiedRepository.findByShSite_IdAndStateIn(
+                site.getId(), List.of(ShPostState.DRAFT, ShPostState.PUBLISHED))) {
+            String typeName = post.getShPostType() == null ? null : post.getShPostType().getName();
+            if (typeName == null || !ShRenderPostTypes.NAMES.contains(typeName)
+                    || post.getTitle() == null || post.getTitle().isBlank()) {
+                continue;
+            }
+            // Keyed by id inside, because a post has a DRAFT row and a PUBLISHED row that share
+            // both title and id — counting rows would report every published template as its own
+            // duplicate, which is the false positive that would make this rule useless.
+            byTitle.computeIfAbsent(typeName + " '" + post.getTitle() + "'",
+                            key -> new TreeMap<>())
+                    .put(post.getId(), post.getId());
+        }
+        Map<String, List<String>> duplicates = new TreeMap<>();
+        for (Map.Entry<String, Map<String, String>> entry : byTitle.entrySet()) {
+            if (entry.getValue().size() > 1) {
+                duplicates.put(entry.getKey(), List.copyOf(entry.getValue().keySet()));
+            }
+        }
+        return duplicates;
+    }
+
     /** Templates nothing renders through, plus the layouts that are bound (for the message). */
     public record ShUnusedTemplates(List<ShPostUnified> regions, List<ShPostUnified> layouts,
                                     Set<String> boundLayouts) {

@@ -300,6 +300,108 @@ class ShTemplateGraphTest {
                 .isTrue();
     }
 
+    // ── SH263: a title is an identity ───────────────────────────────────────────────
+
+    /**
+     * A site of its own for the duplicate-title cases.
+     *
+     * <p>Not the shared fixture, deliberately: these need a *second* Region called
+     * {@code SH193_NAV}, and adding one to the class fixture would make every later assertion in
+     * this class see a duplicate — `unusedIsNotAGateFailure` asserts `ok()` is true and started
+     * failing the moment this was written against the shared site. That is SH239's confound
+     * (the batching pair writing into the folder the addressing pair measured), one class along:
+     * a {@code PER_CLASS} fixture makes every mutating test an input to the others.</p>
+     *
+     * @return the new site's name
+     */
+    private String siteWithDuplicateTitles(String... regionTitles) {
+        String name = "sh263-" + UUID.randomUUID().toString().substring(0, 8);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(name);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, when);
+            ShPostType regionType = postType(ShSystemPostType.REGION, (byte) 1, when);
+            int index = 0;
+            for (String title : regionTitles) {
+                post(owner, root, regionType, title, "/r-" + index++,
+                        json("HTML", "<nav>" + title + "</nav>"), when, ShPostState.DRAFT);
+            }
+        });
+        return name;
+    }
+
+    @Test
+    @DisplayName("two templates claiming one title is an error, not a warning")
+    void aDuplicateTitleIsAnError() {
+        // The renderer resolves `sh-region="NAV"` by title and takes the first match, so which of
+        // the two renders is undefined — and before SH263 nothing said so anywhere.
+        String name = siteWithDuplicateTitles("NAV", "NAV", "FOOTER");
+
+        ShAgentReport report = verifyService.verify(name, "content", 200);
+
+        assertThat(report.findings())
+                .filteredOn(finding -> "duplicate-template-title".equals(finding.rule()))
+                .as("""
+                        one finding per template involved, so each is addressed at a subject the                         reader can act on — the shape duplicate-url already uses. FOOTER is unique                         and must not appear.""")
+                .hasSize(2)
+                .allSatisfy(finding -> {
+                    assertThat(finding.severity())
+                            .as("""
+                                    an error, unlike the unused-template warnings beside it: an                                     unused region may be work in progress, while two templates                                     competing for one name is provably wrong whatever anybody meant.""")
+                            .isEqualTo("error");
+                    assertThat(finding.message()).contains("NAV").contains("undefined");
+                    assertThat(finding.fix()).contains("identity");
+                });
+        assertThat(report.findings())
+                .filteredOn(finding -> "duplicate-template-title".equals(finding.rule()))
+                .noneMatch(finding -> finding.message().contains("FOOTER"));
+        assertThat(report.ok())
+                .as("and it fails the gate, which the unused-template warnings deliberately do not")
+                .isFalse();
+    }
+
+    @Test
+    @DisplayName("a published copy of one template is not its own duplicate")
+    void aPublishedRowIsNotADuplicate() {
+        // The false positive that would make this rule useless: a post has a DRAFT row and a
+        // PUBLISHED row sharing both id and title, so counting rows rather than ids would report
+        // every published template in every instance as a duplicate of itself.
+        String name = "sh263-pub-" + UUID.randomUUID().toString().substring(0, 8);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(name);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, when);
+            ShPostType regionType = postType(ShSystemPostType.REGION, (byte) 1, when);
+            String id = UUID.randomUUID().toString();
+            for (ShPostState state : List.of(ShPostState.DRAFT, ShPostState.PUBLISHED)) {
+                ShPostUnified row = new ShPostUnified();
+                row.setId(id);
+                row.setState(state);
+                row.setShSite(owner);
+                row.setShFolder(root);
+                row.setShPostType(regionType);
+                row.setTitle("ONLY_ONE");
+                row.setFurl("/r-only");
+                row.setData(json("HTML", "<nav>one</nav>"));
+                row.setDate(when);
+                row.setOwner("admin");
+                entityManager.persist(row);
+            }
+        });
+
+        assertThat(verifyService.verify(name, "content", 200).findings())
+                .as("the two rows share an id, so they are one template")
+                .noneMatch(finding -> "duplicate-template-title".equals(finding.rule()));
+    }
+
     // ── SH194: the one-call appearance loop ─────────────────────────────────────────
 
     @Test
