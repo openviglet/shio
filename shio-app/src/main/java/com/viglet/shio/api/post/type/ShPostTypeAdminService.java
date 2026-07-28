@@ -22,13 +22,22 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.agent.verify.ShPostReferenceFields;
 import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
+import com.viglet.shio.api.post.type.dto.ShPostTypeRename;
+import com.viglet.shio.api.post.type.dto.ShPostTypeRenamed;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.widget.ShWidget;
+import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.widget.ShWidgetRepository;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Read/write surface for post-types as code (SH16) — the engine behind the
@@ -52,14 +61,20 @@ public class ShPostTypeAdminService {
 
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShWidgetRepository shWidgetRepository;
+    private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShPostTypeAdminMapper mapper;
+    private final ObjectMapper objectMapper;
 
     public ShPostTypeAdminService(ShPostTypeRepository shPostTypeRepository,
                                   ShWidgetRepository shWidgetRepository,
-                                  ShPostTypeAdminMapper mapper) {
+                                  ShPostUnifiedRepository shPostUnifiedRepository,
+                                  ShPostTypeAdminMapper mapper,
+                                  ObjectMapper objectMapper) {
         this.shPostTypeRepository = shPostTypeRepository;
         this.shWidgetRepository = shWidgetRepository;
+        this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.mapper = mapper;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional(readOnly = true)
@@ -252,6 +267,150 @@ public class ShPostTypeAdminService {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         return def.fields().stream()
                 .filter(field -> field.name() != null && !present.contains(field.name()))
+                .toList();
+    }
+
+    /**
+     * Rename a post-type, carrying its content with it (SH163).
+     *
+     * <h2>Why this is an operation rather than a `PUT` to the new name</h2>
+     *
+     * <p>This surface is keyed by name, which is right — it is how SH79 addresses everything —
+     * and it means the one thing a `PUT` cannot express is a rename. `PUT /post-type/NewName`
+     * does not rename {@code OldName}: it <em>creates a second post-type</em>, reports a
+     * perfectly successful write, and leaves the original holding its id, its attribute rows and
+     * every {@code sh_post_unified} row that points at it. That is SH134's defect for posts, one
+     * level up, and it has the same answer — one operation that moves, rather than two that
+     * happen to leave the right rows behind.</p>
+     *
+     * <p>The content does not move at all, and that is the point: a post references its type by
+     * <b>id</b>, so renaming the row is the whole job. What has to be found by hand is the one
+     * place the model stores a post-type <em>by name</em> — a {@code Multi Select}'s
+     * {@code multiselect.postType} (SH154) — because a reference that silently stopped resolving
+     * is exactly the kind of breakage a rename is supposed not to cause.</p>
+     *
+     * <h2>The four refusals</h2>
+     *
+     * <ul>
+     *   <li>an unknown source — 400 with the installed names ({@link ShUnknownPostTypeException});</li>
+     *   <li>a blank target — 400 ({@link ShMissingPostTypeNameException}); renaming to nothing is
+     *       a delete nobody asked for;</li>
+     *   <li>an occupied target — 409 ({@link ShPostTypeExistsException}); merging two models is a
+     *       different operation with different consequences, and guessing which was meant would
+     *       be the worst possible guess;</li>
+     *   <li>a system type — 409 ({@link ShSystemPostTypeException}); and a code-managed type
+     *       against a hand edit — 409 ({@link ShManagedPostTypeException}), the same
+     *       {@code managed}-claim rule {@link #upsert} follows, because a rename is a bigger
+     *       change than the edits that rule already guards.</li>
+     * </ul>
+     *
+     * <p>Renaming to the same name is a <b>no-op</b>, not a conflict: the operation is then
+     * idempotent, which is what lets a caller re-run a script without reading the outcome
+     * first (P5).</p>
+     */
+    @Transactional
+    public ShPostTypeRenamed rename(String from, ShPostTypeRename request) {
+        String to = request == null || request.to() == null ? null : request.to().trim();
+        ShPostType existing = shPostTypeRepository.findByName(from);
+        if (existing == null) {
+            throw new ShUnknownPostTypeException(from, postTypeNames());
+        }
+        if (to == null || to.isBlank()) {
+            throw new ShMissingPostTypeNameException();
+        }
+        if (existing.getSystem() == 1) {
+            throw new ShSystemPostTypeException(from);
+        }
+        if (existing.isManaged() && !request.claimsCodeOwnership()) {
+            throw new ShManagedPostTypeException(from);
+        }
+        if (to.equals(from)) {
+            return renamed(from, to, existing, List.of());
+        }
+        if (shPostTypeRepository.findByName(to) != null) {
+            throw new ShPostTypeExistsException(to);
+        }
+
+        existing.setName(to);
+        existing.setModifier(currentUser());
+        existing.setModifiedDate(Instant.now());
+        shPostTypeRepository.save(existing);
+        return renamed(from, to, existing, retargetReferences(from, to));
+    }
+
+    private ShPostTypeRenamed renamed(String from, String to, ShPostType postType,
+                                      List<String> references) {
+        return new ShPostTypeRenamed(from, to,
+                shPostUnifiedRepository.countByShPostType_Id(postType.getId()), references,
+                List.of("A content file's `type:` and a desired-state document's `type` name this "
+                        + "post-type too. The server does not write project files: update "
+                        + "shio/content/**, shio/post-types/" + from + ".json and any document "
+                        + "that declares `" + from + "`, then re-run `shio push --check`."));
+    }
+
+    /**
+     * Rewrites every {@code multiselect.postType} that named {@code from} (SH154).
+     *
+     * <p>The one structural reference to a post-type <em>by name</em> in the whole model, which
+     * is why it is a list and not a sweep: {@code sh_post_unified} points at the type by id, the
+     * CDA schema is served by name and resolves live, and a {@code Content Select} stores a post
+     * id rather than a type. Anything else that names a type is prose or a project file, and both
+     * are reported rather than rewritten.</p>
+     *
+     * <p>The setting is stored as a verbatim JSON string and comes back re-serialized, so
+     * whitespace inside it is not preserved. That is the cost of editing one key rather than
+     * asking the caller to re-push the type, and it is worth paying: the alternative leaves a
+     * field silently narrowing to a post-type that no longer exists.</p>
+     *
+     * @return {@code PostType.field} for each rewrite, in a deterministic order
+     */
+    private List<String> retargetReferences(String from, String to) {
+        List<String> updated = new ArrayList<>();
+        for (ShPostType postType : shPostTypeRepository.findAll().stream()
+                .sorted(Comparator.comparing(ShPostType::getName,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList()) {
+            boolean touched = false;
+            for (ShPostTypeAttr attr : flatten(postType.getShPostTypeAttrs()).stream()
+                    .sorted(Comparator.comparing(ShPostTypeAttr::getOrdinal))
+                    .toList()) {
+                if (from.equals(ShPostReferenceFields.referencedPostType(attr, objectMapper))
+                        && retarget(attr, to)) {
+                    updated.add(postType.getName() + "." + attr.getName());
+                    touched = true;
+                }
+            }
+            if (touched) {
+                shPostTypeRepository.save(postType);
+            }
+        }
+        return List.copyOf(updated);
+    }
+
+    private boolean retarget(ShPostTypeAttr attr, String to) {
+        try {
+            JsonNode settings = objectMapper.readTree(attr.getWidgetSettings());
+            if (!(settings instanceof ObjectNode root)
+                    || !(root.get("multiselect") instanceof ObjectNode multiselect)) {
+                return false;
+            }
+            multiselect.put("postType", to);
+            attr.setWidgetSettings(objectMapper.writeValueAsString(root));
+            return true;
+        } catch (JacksonException unreadable) {
+            // A settings string that does not parse cannot have been read as a reference in the
+            // first place, so there is nothing here to retarget — and failing the rename over
+            // somebody else's malformed field would be the wrong trade.
+            return false;
+        }
+    }
+
+    /** The installed post-type names, sorted — the {@code allowed} set of a teaching 400. */
+    private List<String> postTypeNames() {
+        return shPostTypeRepository.findAll().stream()
+                .map(ShPostType::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .sorted()
                 .toList();
     }
 

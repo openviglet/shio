@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.api.agent.ShAgentBodyEtag;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
+import com.viglet.shio.api.post.type.dto.ShPostTypeRename;
+import com.viglet.shio.api.post.type.dto.ShPostTypeRenamed;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -123,6 +125,27 @@ public class ShPostTypeAPI {
         log.info("Upserted post-type '{}' ({} field(s)) via admin API",
                 name, saved.fields() != null ? saved.fields().size() : 0);
         return saved;
+    }
+
+    /**
+     * Rename a post-type, carrying its content with it (SH163).
+     *
+     * <p>The verb the surface was missing. A `PUT` to a new name creates a <em>second</em>
+     * post-type and orphans the first with its id, its fields and every post that points at it —
+     * so the console's API-name field was read-only, which was honest and not a feature. This is
+     * SH134's treatment for the model: one operation, an occupied target refused, and a response
+     * that says what moved.</p>
+     *
+     * <p>{@code POST} rather than `PUT`, because it is not idempotent by URL: after it succeeds,
+     * the same request 400s on an unknown source. Renaming to the current name <em>is</em> a
+     * no-op, which is the idempotence that matters for a re-run.</p>
+     */
+    @PostMapping("/{name}/rename")
+    public ShPostTypeRenamed rename(@PathVariable String name, @RequestBody ShPostTypeRename body) {
+        ShPostTypeRenamed renamed = shPostTypeAdminService.rename(name, body);
+        log.info("Renamed post-type '{}' to '{}' ({} post(s), {} reference(s) retargeted)",
+                renamed.from(), renamed.to(), renamed.posts(), renamed.referencesUpdated().size());
+        return renamed;
     }
 
     @DeleteMapping("/{name}")

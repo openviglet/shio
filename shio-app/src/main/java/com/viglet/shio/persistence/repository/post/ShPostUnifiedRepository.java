@@ -64,6 +64,16 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
                                                                ShPostState state, Pageable pageable);
 
     /**
+     * How many rows point at this post-type, both states counted (SH163's rename report).
+     *
+     * <p>Keyed by <b>id</b> for the {@code @TenantId} reason spelled out on
+     * {@link #findByShPostType_IdAndState}: {@code post_type_id} is a column on this table, and
+     * navigating to {@code shPostType.name} would join the JOINED {@code ShObject} root and die
+     * at prepare time.</p>
+     */
+    long countByShPostType_Id(String postTypeId);
+
+    /**
      * All posts of a given post type (by id) in a given state (tenant-scoped) — used by
      * the SH61 static-file manager. Keyed by id (the {@code post_type_id} FK column on
      * {@code sh_post_unified}), NOT by name: navigating {@code shPostType.name} forces a

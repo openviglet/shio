@@ -623,9 +623,21 @@ or a session). **CSRF is required of session-bearing callers and waived for stat
 (`ShStatelessRequestMatcher`, keyed on the session cookie), which is what lets the CLI and the
 browser share the path safely — do not widen that back to a blanket exemption.
 
-**Renaming a post-type is not supported** (SH163): the name is the key, so a `PUT` to a new
-name creates a second type and orphans the first with its content. The console's API-name
-field is read-only for this reason.
+**Renaming is `POST /api/v2/post-type/{name}/rename` (SH163)** — body `{ "to": "NewName" }`,
+and it is the only way. A `PUT` to a new name creates a *second* post-type and orphans the
+first with its id, its fields and every `sh_post_unified` row pointing at it, while answering
+`200` — SH134's defect one level up, with the same answer: one op that moves and reports what
+moved. The content does not actually move (a post references its type by **id**), so the job is
+the row plus **the one place the model stores a type by name** — a `Multi Select`'s
+`multiselect.postType` (SH154), rewritten and named in `referencesUpdated`. Four refusals: an
+unknown source (400 with the installed names), a blank target (400 — renaming to nothing is a
+delete nobody asked for), an **occupied target (409, never a merge)** and a system type (409) or
+a code-managed one against a `managed:false` hand edit (409, the same claim rule `upsert`
+follows). Renaming to the current name is a **noop**, so a re-run is safe. What it deliberately
+does not do is touch project files: `shio/content/**` frontmatter `type:` and a desired-state
+document's `type` name the post-type too, and the response's `notes` say so rather than the
+server writing a file it does not own. The console's API-name field stays read-only and grows a
+**Rename** button beside it.
 
 **Cascade gotcha:** `ShPostTypeAttr` maps `shWidget`/`shPostType`/`shParentPostTypeAttr` as
 `@ManyToOne(cascade=ALL)`, so `ShPostTypeAdminService` detaches those before the

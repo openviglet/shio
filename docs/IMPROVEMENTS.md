@@ -1240,24 +1240,6 @@ leaving to whoever next notices the poll is not free.
 > one lesson worth carrying forward (§XIV.4) and the design for what building it
 > opened. Concept spec §10 has the original table.
 
-### XIV.1 Renaming a post-type is a move, not an upsert (SH163)
-
-SH117 left the post-type surface keyed by name, which is right — it is how SH79
-addresses everything else — and it means the one operation the surface cannot express
-is a rename. A `PUT /api/v2/post-type/NewName` does not rename `OldName`; it creates a
-second post-type, and the first keeps its id, its attribute rows and every
-`sh_post_unified` row that points at it. The console's API-name field is read-only for
-exactly this reason, which is honest but not a feature.
-
-This is SH134's problem again, and SH134's shape is the answer: **one operation that
-moves rather than two that happen to leave the right rows behind.** A `post-type.move`
-(or `POST /api/v2/post-type/{name}/rename`) that updates the name in place, refuses an
-occupied target, and reports what it moved. The two questions worth settling first:
-whether a rename should rewrite the `type` in the SH82 content documents and
-`shio/content/**` files that name it (they address the post-type by name too, so a
-rename is drift the next `--check` reports), and whether a *managed* type may be
-renamed over the API at all or only in the repo that owns it.
-
 ### XIV.4 Build-time guard for the `@TenantId` JOINED-join hazard (SH122) — ✅ shipped
 
 Shipped → [CHANGELOG.md](CHANGELOG.md) Block H (with the three production bugs it
