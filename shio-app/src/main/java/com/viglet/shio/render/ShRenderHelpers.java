@@ -24,11 +24,13 @@ import com.github.jknack.handlebars.Options;
 import com.viglet.shio.api.agent.ShAddress;
 import com.viglet.shio.api.agent.ShAddressResolver;
 import com.viglet.shio.persistence.model.folder.ShFolder;
+import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.utils.ShStableMap;
 
@@ -61,13 +63,19 @@ import com.viglet.shio.utils.ShStableMap;
  *
  * <h2>What is here and what is not</h2>
  *
- * <p>{@code query}, {@code navigation} and {@code file_url} are the three the shipped
- * sample actually used. {@code search}, {@code form} and {@code getRelation} are the
- * remaining three of the seven and are <b>not</b> here: each needs a backing component
- * that the nuclear refactor removed, and inventing them alongside a renderer would be
- * three subsystems judged by one test. They are filed rather than stubbed — a helper that
- * silently renders nothing is worse than an unknown-helper error, which Handlebars raises
- * with the line and column.</p>
+ * <p>{@code query}, {@code navigation} and {@code file_url} are the three the shipped sample
+ * used. SH247 adds {@code getRelation} and {@code search}, which leaves {@code form} as the
+ * only one of the seven still missing — and it is missing for a reason that is not
+ * implementation effort: a form needs a decision about <em>where a submission goes</em>, and
+ * that is a subsystem (storage, spam, notification, GDPR) rather than a helper. It stays
+ * filed rather than stubbed, because a helper that silently renders nothing is worse than the
+ * unknown-helper error Handlebars raises with a line and a column.</p>
+ *
+ * <p><b>Every row the three listing helpers yield has the same shape</b> ({@link #row}), which
+ * is the property that makes them interchangeable in a template: an author who has written a
+ * card for {@code {{#query}}} can iterate a relation or a search result with the same body. A
+ * helper that yielded its own row shape would make the capability set five vocabularies
+ * instead of one.</p>
  *
  * <h2>Determinism</h2>
  *
@@ -86,10 +94,14 @@ public class ShRenderHelpers {
     private static final int DEFAULT_LIMIT = 50;
     private static final int MAX_LIMIT = 500;
 
+    /** The model path holding the site being rendered — read by every listing helper. */
+    private static final String SITE_ID = "site.id";
+
     private final ShTemplateEngine engine;
     private final ShAddressResolver shAddressResolver;
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
+    private final ShPostTypeRepository shPostTypeRepository;
     private final ShSiteRepository shSiteRepository;
     private final ShRenderModel shRenderModel;
 
@@ -97,12 +109,14 @@ public class ShRenderHelpers {
                            ShAddressResolver shAddressResolver,
                            ShFolderRepository shFolderRepository,
                            ShPostUnifiedRepository shPostUnifiedRepository,
+                           ShPostTypeRepository shPostTypeRepository,
                            ShSiteRepository shSiteRepository,
                            ShRenderModel shRenderModel) {
         this.engine = engine;
         this.shAddressResolver = shAddressResolver;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
+        this.shPostTypeRepository = shPostTypeRepository;
         this.shSiteRepository = shSiteRepository;
         this.shRenderModel = shRenderModel;
     }
@@ -112,6 +126,179 @@ public class ShRenderHelpers {
         engine.register("query", this::query);
         engine.register("navigation", this::navigation);
         engine.register("file_url", this::fileUrl);
+        engine.register("getRelation", this::getRelation);
+        engine.register("search", this::search);
+    }
+
+    /**
+     * {@code {{#getRelation SECTIONS}}…{{/getRelation}}} — the posts a reference field names,
+     * in the order the field names them (SH247).
+     *
+     * <h3>It takes the field's value, not the field's name</h3>
+     *
+     * <p>Which means it needs no access to the post-type, and it works on any of the three
+     * shapes a reference actually takes in this model: a {@code Content Select}'s post id
+     * (a single string), an SH95 {@code Multi Select} of friendly URLs (a list), and a
+     * single friendly URL. That is what FSP's {@code getRelation} took too.</p>
+     *
+     * <h3>Each entry resolves by id, then by friendly URL — in that order</h3>
+     *
+     * <p>The same rule SH181 settled for {@code GET /api/v2/site/{id}}: the declared key wins a
+     * collision. A UUID is not a plausible friendly URL, so in practice the two never compete,
+     * and fixing the order means a template's idea of what a reference points at cannot depend
+     * on what else happens to be in the site. The URL half is scoped to the <b>current
+     * site</b>, like {@code query}'s {@code folder} — a relation that could reach another
+     * site's content would make a shared region's output depend on which page slotted it.</p>
+     *
+     * <h3>An entry that resolves to nothing is skipped, not marked</h3>
+     *
+     * <p>Deliberately unlike SH183's missing <em>region</em>, and the difference is who else can
+     * see it. A region slot is named inside a layout's HTML, so before SH193 nothing but the
+     * renderer could report an unfilled one — hence the marker. A dangling reference in a
+     * {@code Content Select} or a {@code references: "post"} {@code Multi Select} is already an
+     * SH154 {@code dangling-reference} finding in {@code shio verify}, with an address and a
+     * {@code fix}. Marking it in the page as well would put the same defect in two reports that
+     * can disagree, and the row shape would have to grow a {@code missing} flag every template
+     * then has to branch on. {@code {{else}}} still renders when <em>nothing</em> resolved, so
+     * "the references are all broken" is not silently an empty {@code <div>}.</p>
+     */
+    Object getRelation(Object context, Options options) throws IOException {
+        String siteId = string(options.context.get(SITE_ID));
+        List<String> references = referencesOf(context);
+        if (siteId == null || references.isEmpty()) {
+            return options.inverse();
+        }
+        ShPostState state = state(options);
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (String reference : references) {
+            resolveReference(siteId, reference, state).ifPresent(post -> rows.add(row(post)));
+        }
+        if (rows.isEmpty()) {
+            return options.inverse();
+        }
+        StringBuilder out = new StringBuilder();
+        for (Map<String, Object> row : rows) {
+            out.append(options.fn(row));
+        }
+        return out;
+    }
+
+    /**
+     * {@code {{#search q="handbook" type="Article" limit=10}}…{{/search}}} — the site's posts
+     * matching a term (SH247).
+     *
+     * <h3>It is the CDA's predicate, not a second idea of what "matches" means</h3>
+     *
+     * <p>{@code FULLTEXT_PREDICATE} (SH131), reached through the repository's {@code search*}
+     * default methods so the term is normalized exactly once — normalizing again searches for
+     * {@code %%term%%} and matches nothing, which looks like an empty index rather than a bug.
+     * Title, summary and stored field data, the same predicate the delivery search and the SH240
+     * console listing use. Three surfaces, one answer.</p>
+     *
+     * <h3>What this is and what it is not</h3>
+     *
+     * <p>A term the <b>template</b> supplies, literal or read from the model
+     * ({@code q=TOPIC} takes the page's own field). That is a tag page, a "more about this"
+     * listing, a curated collection — genuinely the thing several of the 2018 regions were
+     * doing by hand. It is <b>not</b> a search-results page driven by {@code ?q=}, because the
+     * model holds no request parameters: SH183 kept the raw request out of template scope on
+     * purpose, so putting a query string back in is a decision of its own rather than a
+     * consequence of registering this helper. That is SH259.</p>
+     *
+     * <p>A blank {@code q} renders {@code {{else}}} rather than the whole site: a search box
+     * nobody has typed in yet must not read as "everything matched".</p>
+     */
+    Object search(Object context, Options options) throws IOException {
+        String siteId = string(options.context.get(SITE_ID));
+        String term = hash(options, "q", null);
+        if (siteId == null || term == null) {
+            return options.inverse();
+        }
+        String type = hash(options, "type", null);
+        List<ShPostState> states = statesFor(state(options));
+
+        List<ShPostUnified> found = type == null
+                ? shPostUnifiedRepository.searchBySitesAndStateIn(List.of(siteId), states, term)
+                : searchByType(siteId, type, states, term);
+
+        List<Map<String, Object>> rows = preferDraft(found, state(options)).stream()
+                .sorted(byDateThenId())
+                .limit(limit(options))
+                .map(this::row)
+                .toList();
+        if (rows.isEmpty()) {
+            return options.inverse();
+        }
+        StringBuilder out = new StringBuilder();
+        for (Map<String, Object> row : rows) {
+            out.append(options.fn(row));
+        }
+        return out;
+    }
+
+    /**
+     * A type filter resolved to an id before the query, not filtered afterwards.
+     *
+     * <p>Not politeness: {@code p.shPostType.name} in JPQL joins {@code ShPostType}, whose
+     * {@code tenant_id} lives on the {@code ShObject} root, so Hibernate emits the tenant
+     * predicate against a subclass alias that has no such column and the query dies at prepare
+     * time (the SH22 join hazard). The repository's {@code searchBySiteAndTypes*} methods take
+     * ids for exactly that reason.</p>
+     *
+     * <p>An unknown type name yields nothing rather than everything — a filter that silently
+     * stopped filtering would be a template quietly rendering the whole site.</p>
+     */
+    private List<ShPostUnified> searchByType(String siteId, String type, List<ShPostState> states,
+                                             String term) {
+        ShPostType postType = shPostTypeRepository.findByName(type);
+        if (postType == null) {
+            return List.of();
+        }
+        return shPostUnifiedRepository.searchBySiteAndTypesAndStateIn(
+                siteId, List.of(postType.getId()), states, term);
+    }
+
+    /** The reference values a field holds, whatever shape it holds them in. */
+    private List<String> referencesOf(Object value) {
+        if (value instanceof Iterable<?> many) {
+            List<String> out = new ArrayList<>();
+            for (Object item : many) {
+                String text = string(item);
+                if (text != null && !text.isBlank()) {
+                    out.add(text.trim());
+                }
+            }
+            return out;
+        }
+        String single = string(value);
+        return single == null || single.isBlank() ? List.of() : List.of(single.trim());
+    }
+
+    /** By id, then by friendly URL within this site — SH181's order. */
+    private Optional<ShPostUnified> resolveReference(String siteId, String reference,
+                                                     ShPostState state) {
+        List<ShPostState> states = statesFor(state);
+        Optional<ShPostUnified> byId = preferDraft(
+                shPostUnifiedRepository.findById(reference).stream().toList(), state).stream()
+                .findFirst();
+        if (byId.isPresent()) {
+            return byId;
+        }
+        String url = reference.startsWith("/") ? reference : "/" + reference;
+        return preferDraft(
+                shPostUnifiedRepository.findByShSite_IdAndStateIn(siteId, states).stream()
+                        .filter(post -> url.equals(normalizedFurl(post)))
+                        .toList(),
+                state).stream()
+                .findFirst();
+    }
+
+    private String normalizedFurl(ShPostUnified post) {
+        String furl = post.getFurl();
+        if (furl == null || furl.isBlank()) {
+            return null;
+        }
+        return furl.startsWith("/") ? furl : "/" + furl;
     }
 
     /**
@@ -125,7 +312,7 @@ public class ShRenderHelpers {
      * is what stops "no articles yet" from being an empty {@code <div>}.</p>
      */
     Object query(Object context, Options options) throws IOException {
-        String siteId = string(options.context.get("site.id"));
+        String siteId = string(options.context.get(SITE_ID));
         if (siteId == null) {
             return options.inverse();
         }
@@ -159,7 +346,7 @@ public class ShRenderHelpers {
      * {@code navigationFolder} without a second helper name to remember.</p>
      */
     Object navigation(Object context, Options options) throws IOException {
-        String siteId = string(options.context.get("site.id"));
+        String siteId = string(options.context.get(SITE_ID));
         if (siteId == null) {
             return options.inverse();
         }
@@ -248,11 +435,42 @@ public class ShRenderHelpers {
     }
 
     private List<Map<String, Object>> rowsOf(ShFolder folder, String type, int limit, ShPostState state) {
-        // DRAFT-preferred by id, the same rule /agent/read and the console listing use: a
-        // preview must show the edit that has not been published yet, or it is not a preview.
+        return preferDraft(
+                shPostUnifiedRepository.findByShFolderAndStateIn(folder, statesFor(state)), state)
+                .stream()
+                .filter(post -> type == null || type.equals(typeNameOf(post)))
+                .sorted(byDateThenId())
+                .limit(limit)
+                .map(this::row)
+                .toList();
+    }
+
+    /**
+     * The states a listing reads, given the state the page is being rendered in.
+     *
+     * <p>A DRAFT render reads both and prefers the draft; a PUBLISHED render reads only
+     * published rows. Asking for both and filtering afterwards was the old shape and it is one
+     * predicate the database can apply itself.</p>
+     */
+    private List<ShPostState> statesFor(ShPostState state) {
+        return state == ShPostState.PUBLISHED
+                ? List.of(ShPostState.PUBLISHED)
+                : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT);
+    }
+
+    /**
+     * One row per post id, the DRAFT winning — the same rule {@code /agent/read} and the console
+     * listing use: a preview has to show the edit that has not been published yet, or it is not a
+     * preview.
+     *
+     * <p>Shared by all three listing helpers since SH247. It was inline in {@code rowsOf}, and a
+     * second copy in {@code search} would have been a second chance to get the preference
+     * backwards — the failure mode being a preview that shows the live page while the curator is
+     * looking for their unpublished change.</p>
+     */
+    private List<ShPostUnified> preferDraft(List<ShPostUnified> posts, ShPostState state) {
         Map<String, ShPostUnified> byId = new LinkedHashMap<>();
-        for (ShPostUnified post : shPostUnifiedRepository
-                .findByShFolderAndStateIn(folder, List.of(ShPostState.PUBLISHED, ShPostState.DRAFT))) {
+        for (ShPostUnified post : posts) {
             if (state == ShPostState.PUBLISHED && post.getState() != ShPostState.PUBLISHED) {
                 continue;
             }
@@ -261,18 +479,21 @@ public class ShRenderHelpers {
                 byId.put(post.getId(), post);
             }
         }
-        return byId.values().stream()
-                .filter(post -> type == null || type.equals(typeNameOf(post)))
-                // A total order: date alone ties for two posts written in the same
-                // millisecond, and a listing that reorders itself between renders moves
-                // the SH101 digest for a change nobody made.
-                .sorted(Comparator
-                        .comparing((ShPostUnified p) -> p.getDate(),
-                                Comparator.nullsLast(Comparator.reverseOrder()))
-                        .thenComparing(ShPostUnified::getId))
-                .limit(limit)
-                .map(this::row)
-                .toList();
+        return List.copyOf(byId.values());
+    }
+
+    /**
+     * Newest first, with an id tiebreak — a <b>total</b> order.
+     *
+     * <p>Date alone ties for two posts written in the same millisecond, and a listing that
+     * reorders itself between renders moves SH101's digest for a change nobody made. Shared, so
+     * every helper that yields a listing is stable for the same reason rather than by luck.</p>
+     */
+    private Comparator<ShPostUnified> byDateThenId() {
+        return Comparator
+                .comparing((ShPostUnified p) -> p.getDate(),
+                        Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(ShPostUnified::getId);
     }
 
     private String typeNameOf(ShPostUnified post) {

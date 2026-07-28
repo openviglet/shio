@@ -1722,28 +1722,62 @@ Three edges, and they share a shape: each is somewhere the renderer is *nearly* 
 replaced, and where the remaining gap is invisible from the outside because the page still
 comes out.
 
-#### XV.14 Three of the seven capabilities are still missing (SH247)
+#### XV.14 `form` is the last of the seven capabilities (SH247)
 
-`shObject.js` exposed exactly seven functions, and §XV.0's most important finding was that
-this closed set is what a fixed section vocabulary cannot reproduce: **navigation, queries and
-listings, search results and forms are all dynamic**, and all four were first-class in FSP.
-Three shipped as helpers — `{{#query}}`, `{{#navigation}}`, `{{file_url}}` — because those are
-what `openviglet/bootstrap-site` actually used, so those are the ones a real template exercised.
+> ⏳ **`getRelation` and `search` shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. What §XV.14
+> predicted held: they were not equally hard and treating them as one thing would have been the
+> mistake. Two conclusions from building them, plus what is left.
+>
+> **The row shape is the interface, not the helper name.** All five listing helpers yield the
+> same row, so a card body written for `{{#query}}` works for a relation or a search result.
+> That was not in the original design and it is the thing that makes a *closed* capability set
+> feel small rather than arbitrary: five helpers over one vocabulary, instead of five
+> vocabularies. The corollary is that the DRAFT-preference and the total order had to be
+> extracted and shared — a second copy of the preference is a second chance to get it backwards,
+> and that failure mode is a preview showing the live page while the curator hunts for the
+> unpublished change they came to look at.
+>
+> **A missing reference and a missing region are different mistakes with different owners.**
+> SH183 marks an unfilled region slot in the page; `getRelation` skips a dangling reference. That
+> looks inconsistent and is not: a region slot is named inside a layout's HTML, where before
+> SH193 nothing but the renderer could see it, while a dangling post reference is already an
+> SH154 `dangling-reference` finding with an address and a `fix`. The rule to carry: **mark what
+> only the renderer can see; leave to the lint what the lint already reports.** One defect in two
+> reports is two reports that can disagree.
+>
+> **What is left is `form`, and its absence is a decision.** A form needs somewhere for a
+> submission to go — storage, spam handling, notification, retention — which is a subsystem, not a
+> helper. Writing it before that is answered is writing half a feature, and the honest interim
+> state is the one that now exists: `{{#form}}` is a write-time refusal naming SH247, so the
+> author is told the capability is absent rather than shipping a page with a silently missing
+> block.
 
-The other three were not stubbed, and that was a decision rather than an omission. A helper
-registered and returning nothing renders a page that looks finished and is missing a section;
-an *unregistered* helper is a Handlebars error carrying a line and a column, which is the
-difference between "the search box does not work" and "line 14: unknown helper `search`". P6
-prefers the second, and so does anyone debugging.
+#### XV.19 A search results page needs the reader's query (SH259)
 
-They are not equally hard, and the task should not treat them as one thing. **`getRelation`** is
-nearly free: `ShReference` exists, `Content Select` and `Relator` fields exist, and the SH154
-reference-field vocabulary already answers "what does this field point at". **`search`** composes
-`ShPostUnifiedRepository.FULLTEXT_PREDICATE` — the same predicate SH240 pointed the console's
-listing filter at, and the same reasoning applies: the renderer must not acquire a private idea
-of what "matches" means. **`form`** is the one with an actual design question in front of it,
-because a form needs somewhere for a submission to *go*, and Shio has no such destination. Until
-that is answered, writing the helper is writing half a feature.
+`{{#search q="handbook"}}` is a tag page, a curated collection, a "more about this" listing —
+genuinely several of the things the 2018 regions did by hand. It is not what an author means by
+*search*, because the term comes from the template and a results page's term comes from `?q=`.
+
+The render model has no request in it, and that is not an oversight to correct casually. SH183's
+entire resolution of the Block D non-goal turned on a layout being **content**: FSP's failure was
+`getScriptEngine(String[])` without a `ClassFilter`, which put `Java.type()` and the raw
+`HttpServletRequest` in scope of a template somebody could edit through the console. So the
+question this task has to answer is not "how do I pass a parameter" but **what a template is
+allowed to know about the request**.
+
+The narrow answer is a `param` frame holding query-string values as strings — read-only, no
+headers, no cookies, no request object — which covers search, pagination and a filter, and is
+nothing like what was withdrawn. Naming it `param` and not `query` matters only because `query`
+is already a helper.
+
+Two things to settle before it lands. **Caching**: this would be the first render whose output
+depends on something other than content, and while the preview route is `no-store` so nothing is
+stored today, the answer wants writing down before preview is ever reconsidered as delivery.
+**Escaping**: Handlebars escapes `{{param.q}}` by default, so the reflected-XSS risk is an
+author's `{{{param.q}}}` — and unlike a front end, this codebase has SH192's write-time machinery
+available, so a triple-stash over a request value can be *refused when the template is written*
+rather than found in production. That is a better answer than a front end can give, and it is
+worth doing as part of the same task rather than after it.
 
 #### XV.15 A region's browser JavaScript is authored and never served (SH248)
 

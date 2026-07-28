@@ -287,12 +287,32 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   itself; the scan covers the paramless form it cannot. Unknown **field** references are
   **SH251**, and cannot be a write-time check at all — see the roadmap for why.
 - **Helpers are the closed capability set** `shObject.js` expressed as a convention:
-  `{{#query folder= type= limit=}}`, `{{#navigation folder=}}`, `{{file_url}}`. Every listing is
-  sorted by a **total** order (date *plus* an id tiebreak) and the model is built with
-  `ShStableMap` — a render that reorders itself moves SH101's digest for a change nobody made.
-  `search`, `form` and `getRelation` are **deliberately unregistered** (SH247): a helper that
+  `{{#query folder= type= limit=}}`, `{{#navigation folder=}}`, `{{file_url}}`, and since SH247
+  `{{#getRelation FIELD}}` and `{{#search q= type= limit=}}`. Every listing is sorted by a
+  **total** order (date *plus* an id tiebreak) and the model is built with `ShStableMap` — a
+  render that reorders itself moves SH101's digest for a change nobody made.
+  **Every listing helper yields the same row shape** (`ShRenderHelpers#row`), which is what makes
+  a card body written for `{{#query}}` work for a relation or a search result; the DRAFT-preference
+  dedup and the comparator are shared for the same reason — a second copy of the preference is a
+  second chance to get it backwards, and that reads as a preview showing the live page while the
+  curator hunts for their unpublished change. `getRelation` takes the field's **value** (so it
+  needs no post-type) and resolves each entry **by id, then by friendly URL in the current site**
+  — SH181's order; a dangling entry is **skipped**, not marked, because SH154's
+  `dangling-reference` lint already reports it and one defect in two reports is two reports that
+  can disagree (the rule: *mark what only the renderer can see, leave to the lint what the lint
+  reports*). `search` is SH131's `FULLTEXT_PREDICATE` through the repository's `search*` defaults
+  (normalizing twice searches `%%term%%` and matches nothing), its `type` filter resolves to an
+  **id** before the query — `p.shPostType.name` in JPQL trips the SH22 tenant join hazard — and an
+  unknown type yields nothing rather than the whole site. It is **not** a `?q=` results page: the
+  model holds no request, on purpose (SH183), and that is **SH259**.
+  **`form` is the last of the seven and is deliberately unregistered** (SH247): a helper that
   silently renders nothing is worse than Handlebars' unknown-helper error, which carries a line
-  and a column.
+  and a column — and its absence is a *decision*, since a form needs somewhere for a submission to
+  go. `ShTemplateValidator.KNOWN_MISSING_HELPERS` is down to `form`, and
+  `ShTemplateValidatorTest` asserts **both** directions: `{{#form}}` still refused,
+  `{{#getRelation}}`/`{{#search}}` now accepted. That pairing is why the validator test is
+  Spring-wired — it exists so the validator and the renderer cannot disagree about which helpers
+  exist, in either direction.
 - **A region's `JAVASCRIPT` is never evaluated in the JVM, and is shipped to the browser
   (SH248)** — that split is the whole resolution of the Block D non-goal, and SH183 landed
   only the server half, so the field briefly accepted code with no effect. The composer now

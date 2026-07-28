@@ -67,14 +67,22 @@ import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 public class ShTemplateValidator {
 
     /**
-     * The three helpers a template can reasonably expect and not get (SH247). Named
-     * explicitly rather than derived from "everything not registered", because the general
-     * form has false positives and this one has none.
+     * The helpers a template can reasonably expect and not get. Named explicitly rather than
+     * derived from "everything not registered", because the general form has false positives and
+     * this one has none.
+     *
+     * <p>Down to one since SH247 shipped {@code getRelation} and {@code search}. {@code form} is
+     * the last of the seven, and it is the one whose absence is a <em>decision</em> rather than a
+     * gap: a form needs somewhere for a submission to go, which is a subsystem and not a helper.
+     * When it ships, this set becomes empty and the whole scan can go with it — the compiler
+     * already raises an unknown parameterised helper on its own, and that is the only half this
+     * exists to cover.</p>
      */
-    private static final Set<String> KNOWN_MISSING_HELPERS = Set.of("search", "form", "getRelation");
+    private static final Set<String> KNOWN_MISSING_HELPERS = Set.of("form");
 
     /** What {@link ShRenderHelpers} does register, named so a refusal can list the choices. */
-    private static final List<String> REGISTERED = List.of("query", "navigation", "file_url");
+    private static final List<String> REGISTERED =
+            List.of("query", "navigation", "file_url", "getRelation", "search");
 
     /** Handlebars.java's own wording, which this re-words rather than passes through. */
     private static final String HELPER_NOT_FOUND = "could not find helper:";

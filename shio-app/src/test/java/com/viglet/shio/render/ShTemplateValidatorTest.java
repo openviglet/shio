@@ -74,29 +74,46 @@ class ShTemplateValidatorTest {
     }
 
     @Test
-    @DisplayName("a call to one of the three missing helpers is named as such")
+    @DisplayName("a call to the one still-missing helper is named as such")
     void missingHelpersAreNamed() {
         List<ShTemplateProblem> problems =
-                validator.validate("<div>\n{{#search q=\"shoes\"}}<p>{{title}}</p>{{/search}}\n</div>");
+                validator.validate("<div>\n{{#form id=\"contact\"}}<p>{{title}}</p>{{/form}}\n</div>");
 
         assertThat(problems).hasSize(1);
         assertThat(problems.get(0).rule()).isEqualTo("template-unknown-helper");
         assertThat(problems.get(0).message())
                 .as("""
-                        Handlebars treats {{#search}} as a section over a context value named \
-                        `search` and renders nothing at all — so without this the failure mode \
+                        Handlebars treats {{#form}} as a section over a context value named \
+                        `form` and renders nothing at all — so without this the failure mode \
                         is a silently missing block, which is the worst kind.""")
-                .contains("no `search` helper")
+                .contains("no `form` helper")
                 .contains("SH247");
         assertThat(problems.get(0).line()).isEqualTo(2);
     }
 
     @Test
-    @DisplayName("all three of the missing seven are known")
-    void allThreeAreKnown() {
+    @DisplayName("form is the last of the seven, and the scan's list shrank with SH247")
+    void formIsTheLastMissingOne() {
+        // The paramless form is the half the compiler cannot catch — `{{#x}}` with no
+        // parameters is a valid section over a context value — so this is the assertion that
+        // the scan's list shrank when the helpers landed. Had it not, an author would be told a
+        // helper is missing while the renderer happily runs it, which is the same disagreement
+        // this class exists to prevent, pointing the other way.
         assertThat(validator.validate("{{#form}}{{/form}}")).hasSize(1);
-        assertThat(validator.validate("{{getRelation}}")).hasSize(1);
-        assertThat(validator.validate("{{#search}}{{/search}}")).hasSize(1);
+        assertThat(validator.validate("{{#getRelation}}{{/getRelation}}")).isEmpty();
+        assertThat(validator.validate("{{#search}}{{/search}}")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("the helpers SH247 registered compile, parameters and all")
+    void sh247HelpersAreAccepted() {
+        // A parameterised call is the form Handlebars raises `could not find helper` on, so
+        // these fail loudly if the registration and the validator ever drift apart.
+        assertThat(validator.validate("""
+                {{#getRelation SECTIONS}}<section>{{title}}</section>{{/getRelation}}
+                {{#search q="handbook" type="Article" limit=5}}<a href="{{link}}">{{title}}</a>\
+                {{else}}<p>Nothing found</p>{{/search}}"""))
+                .isEmpty();
     }
 
     @Test
