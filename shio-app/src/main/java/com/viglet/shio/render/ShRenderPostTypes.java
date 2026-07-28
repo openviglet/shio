@@ -126,18 +126,20 @@ public class ShRenderPostTypes {
     private ShPostType ensurePageLayout() {
         return ensure(ShSystemPostType.PAGE_LAYOUT, "Page Layouts", "Page Layout",
                 "An HTML skeleton with named sh-region slots",
-                field(ShSystemPostTypeAttr.HTML, "HTML", ShSystemWidget.ACE_HTML, 1, true),
-                field(ShSystemPostTypeAttr.THEME, "Theme", ShSystemWidget.TEXT, 2, false),
+                titleField(),
+                field(ShSystemPostTypeAttr.HTML, "HTML", ShSystemWidget.ACE_HTML, 2, true),
+                field(ShSystemPostTypeAttr.THEME, "Theme", ShSystemWidget.TEXT, 3, false),
                 field(ShSystemPostTypeAttr.JAVASCRIPT, "JavaScript",
-                        ShSystemWidget.ACE_JS, 3, false));
+                        ShSystemWidget.ACE_JS, 4, false));
     }
 
     private ShPostType ensureRegion() {
         return ensure(ShSystemPostType.REGION, "Regions", "Region",
                 "HTML that renders one kind of content, slotted into a layout by name",
-                field(ShSystemPostTypeAttr.HTML, "HTML", ShSystemWidget.ACE_HTML, 1, true),
+                titleField(),
+                field(ShSystemPostTypeAttr.HTML, "HTML", ShSystemWidget.ACE_HTML, 2, true),
                 field(ShSystemPostTypeAttr.JAVASCRIPT, "JavaScript (browser)",
-                        ShSystemWidget.ACE_JS, 2, false));
+                        ShSystemWidget.ACE_JS, 3, false));
     }
 
     private ShPostType ensureTheme() {
@@ -149,9 +151,10 @@ public class ShRenderPostTypes {
                 // That is the correct trade — the alternative is a startup that rewrites somebody's
                 // model — and it means the defect persists on existing installs until somebody
                 // changes the field by hand.
-                field(ShSystemPostTypeAttr.CSS, "CSS", ShSystemWidget.ACE_CSS, 1, false),
+                titleField(),
+                field(ShSystemPostTypeAttr.CSS, "CSS", ShSystemWidget.ACE_CSS, 2, false),
                 field(ShSystemPostTypeAttr.JAVASCRIPT, "JavaScript",
-                        ShSystemWidget.ACE_JS, 2, false));
+                        ShSystemWidget.ACE_JS, 3, false));
     }
 
     private ShPostType ensure(String name, String plural, String title, String description,
@@ -184,11 +187,16 @@ public class ShRenderPostTypes {
         attr.setDescription(spec.label());
         attr.setOrdinal(spec.ordinal());
         attr.setRequired(spec.required() ? (byte) 1 : (byte) 0);
-        // The title is the post's own column, not a field: `sh-region="NAME"` and a
-        // postTypeLayout binding both name a layout or region by title, so it must be the
-        // thing the curator types into the title box rather than a field they could leave
-        // blank while the page silently stops resolving.
-        attr.setIsTitle((byte) 0);
+        // SH277 — the title *is* a field, and this is where SH183 got it wrong. The comment that
+        // stood here said the title is "the post's own column, not a field ... the thing the
+        // curator types into the title box", which rests on a title box that does not exist: a
+        // unified post's title column is derived by the writer from whichever field carries
+        // isTitle, and `post.upsert` sends nothing but `data`. With no such field the column came
+        // out empty, so no `sh-region` slot and no `postTypeLayout` binding could ever resolve to
+        // a template written through the documented flow — and SH168 refused a `TITLE` key as
+        // undeclared, so there was no way to set it either. The 2018 package this model is copied
+        // from declares TITLE first, required and isTitle on all three; that part was dropped.
+        attr.setIsTitle(spec.isTitle() ? (byte) 1 : (byte) 0);
         attr.setIsSummary((byte) 0);
         attr.setShWidget(widget(spec.widget()));
         attr.setShPostType(postType);
@@ -208,6 +216,25 @@ public class ShRenderPostTypes {
         return new FieldSpec(name, label, widget, ordinal, required);
     }
 
-    private record FieldSpec(String name, String label, String widget, int ordinal, boolean required) {
+    /**
+     * The title field every template needs (SH277).
+     *
+     * <p>Identical on all three, because the thing it names is the same on all three: the title is
+     * how a slot ({@code sh-region="NAV"}), a binding ({@code postTypeLayout}) and a layout's
+     * {@code THEME} field address a template. Required, because a template with no title is
+     * content nothing can reach — the strongest form of SH193's {@code unused-region}.</p>
+     */
+    private FieldSpec titleField() {
+        return new FieldSpec(ShSystemPostTypeAttr.TITLE, "Title", ShSystemWidget.TEXT, 1,
+                true, true);
+    }
+
+    private record FieldSpec(String name, String label, String widget, int ordinal,
+                            boolean required, boolean isTitle) {
+
+        /** The ordinary form: a field that is not the post's title. */
+        FieldSpec(String name, String label, String widget, int ordinal, boolean required) {
+            this(name, label, widget, ordinal, required, false);
+        }
     }
 }

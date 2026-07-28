@@ -30,6 +30,7 @@ import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
 import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.render.ShTemplateTitles;
 import com.viglet.shio.render.ShTemplateValidator;
 import com.viglet.shio.render.ShTemplateValidator.ShTemplateProblem;
 import com.viglet.shio.api.error.ShTeachingException;
@@ -134,6 +135,7 @@ public class ShAgentBatchService {
     private final ObjectMapper objectMapper;
     private final ShAgentProperties properties;
     private final ShTemplateValidator shTemplateValidator;
+    private final ShTemplateTitles shTemplateTitles;
 
     public ShAgentBatchService(ShAgentSiteAccess siteAccess,
                                ShFolderRepository shFolderRepository,
@@ -146,7 +148,8 @@ public class ShAgentBatchService {
                                ShTenantQuotaService shTenantQuotaService,
                                ObjectMapper objectMapper,
                                ShAgentProperties properties,
-                               ShTemplateValidator shTemplateValidator) {
+                               ShTemplateValidator shTemplateValidator,
+                               ShTemplateTitles shTemplateTitles) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -159,6 +162,7 @@ public class ShAgentBatchService {
         this.objectMapper = objectMapper;
         this.properties = properties;
         this.shTemplateValidator = shTemplateValidator;
+        this.shTemplateTitles = shTemplateTitles;
     }
 
     /**
@@ -726,12 +730,13 @@ public class ShAgentBatchService {
             if (op.data() == null || sameData(post, op.data())) {
                 return session.change(op, address, Change.NOOP, null, post.getId());
             }
-            String undeclared = note(
+            String undeclared = note(note(
                     checkDeclaredFields(op, address, session,
                             TypeRef.of(post.getShPostType(), session.declaredFieldsOf(
                                     post.getShPostType().getName())),
                             readTree(post.getData())),
-                    checkTemplates(op, address, session, post.getShPostType().getName()));
+                    checkTemplates(op, address, session, post.getShPostType().getName())),
+                    planTemplateTitle(op, session, post.getShPostType(), site, post.getId()));
             if (!session.dryRun) {
                 shContentAclService.requireWrite(post.getId());
                 shPostUnifiedWriteService.update(post.getId(),
@@ -745,9 +750,10 @@ public class ShAgentBatchService {
         }
 
         TypeRef postType = requirePostType(op, address, session);
-        String undeclared = note(
+        String undeclared = note(note(
                 checkDeclaredFields(op, address, session, postType, null),
-                checkTemplates(op, address, session, postType.name()));
+                checkTemplates(op, address, session, postType.name())),
+                planTemplateTitle(op, session, livePostType(postType), site, null));
         ShFolder folder = requireTargetFolder(op, site, address, session);
         session.planPost(address);
         if (session.dryRun || folder == null) {
@@ -867,6 +873,27 @@ public class ShAgentBatchService {
         }
         return "invalid template — a real run will refuse this write: "
                 + String.join("; ", problems);
+    }
+
+    /**
+     * SH277 — the collision note a plan owes, for the write a real run refuses.
+     *
+     * <p>The refusal itself lives on {@code ShPostUnifiedWriteService}, so it applies to the
+     * console and the CDA too; this only covers the half a dry run would otherwise answer green,
+     * and it deliberately asks the *same* component rather than repeating the query.</p>
+     */
+    private String planTemplateTitle(ShAgentBatch.Op op, Session session, ShPostType postType,
+                                     ShSite site, String selfId) {
+        if (!session.dryRun || site == null) {
+            return null;
+        }
+        return shTemplateTitles.planCollision(postType, op.data(), site.getId(), selfId);
+    }
+
+    /** The live entity behind a {@link TypeRef}, or {@code null} for one a plan would create. */
+    private ShPostType livePostType(TypeRef ref) {
+        return ref == null || ref.id() == null ? null : shPostTypeRepository.findById(ref.id())
+                .orElse(null);
     }
 
     /** Joins two optional change notes without producing a stray separator. */

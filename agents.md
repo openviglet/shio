@@ -395,10 +395,30 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   **Detection is instance-wide within the site, reporting is subject-scoped** — a scoped run seeing one
   of two would report the name as *unique*, which is a positive wrong answer rather than a missing one.
   Keyed by post **id**, because a template's own PUBLISHED row shares its id and title with its DRAFT
-  row and counting rows would flag every published template as its own duplicate. Two gaps remain: the
-  write side still permits a collision (**SH277** — and the shape has to be "refuse an interactive
-  write, report a bulk one", or an SH68 import of a package that already contains one would fail); the
-  resolution order is settled (**SH278**, next).
+  row and counting rows would flag every published template as its own duplicate. The resolution order is settled (**SH278**), and
+  the write side refuses (**SH277**).
+- **A template has a title field, and a duplicate title is refused where it is written (SH277)** —
+  two halves, and the second was found by testing the first. `ShRenderPostTypes` declared **no
+  `isTitle` field** on any of the three, on the premise that a title is "the post's own column, not
+  a field ... the thing the curator types into the title box" — and there is no title box: the
+  column is *derived by the writer* from whichever field carries `isTitle`, and `post.upsert` sends
+  only `data`. So a template written through the documented SH183 flow landed with an **empty
+  title** that no `sh-region` and no `postTypeLayout` binding could resolve to, and SH168 refused a
+  `TITLE` key as undeclared, so it could not be set either. `TITLE` (Text, required, `isTitle`) is
+  now first on all three — which is what the 2018 package it was copied from always had. **Every
+  render test built its fixture with `entityManager.persist` + `setTitle`, which is precisely why
+  nothing caught it**; the flow with no end-to-end test is the flow that breaks.
+  The refusal is **`ShTemplateTitles` on `ShPostUnifiedWriteService`**, so the console, the CDA and
+  every agent path refuse identically (SH201). The interactive-vs-bulk distinction SH277 was filed
+  needing turns out to need **no new mechanism**: SH68's import writes through the *repository*, so
+  a writer-level check refuses the interactive write and leaves a package containing a collision
+  importable — its report is SH263's lint. A **plan reports** what a run refuses (SH168), asking the
+  same component through the same `titleOf` the writer uses — a second derivation would disagree the
+  first time a type gains a title field, and would read as the plan being right. Two non-collisions
+  are load-bearing: a template's **own** DRAFT/PUBLISHED pair shares id and title, and a **trashed**
+  template's title is free (no clause needed — `@SQLRestriction` means the finder sees what the
+  renderer sees). Limit: `ensure` never touches an existing type (SH152), so an instance created
+  before this keeps the old shape until the field is added by hand — **SH289**.
 - **The render state reaches every level, and the row order is total (SH278)** — `ShRenderState` is the
   one writer for `statesFor` / `preferDraft`, used by both `ShPageRenderService` and
   `ShRenderHelpers`. A **DRAFT** render resolves the draft layout, the draft region *and* the draft

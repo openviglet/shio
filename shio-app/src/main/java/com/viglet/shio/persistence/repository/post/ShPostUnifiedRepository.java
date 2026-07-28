@@ -346,6 +346,27 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     //     join, no tenant predicate, and cheaper SQL. Callers resolve id → name from
     //     the post-type list they already hold. ---
 
+    /**
+     * SH277 — the ids of posts in one site, of one post-type, holding exactly this title.
+     *
+     * <p>Ids and not rows, because the caller only needs to know whether anybody <em>else</em>
+     * holds the title: returning entities would load the fields of a post nobody is going to read.
+     * Keyed on {@code p.shPostType.id} rather than the type's name for the SH22 reason spelled out
+     * above — reaching {@code p.shPostType.name} joins an {@code ShObject} subclass and the tenant
+     * predicate lands on an alias with no {@code tenant_id}.</p>
+     *
+     * <p><b>Exact match, deliberately.</b> {@code sh-region="NAV"} resolves by exact title, so
+     * {@code nav} and {@code NAV} are two different templates — which is exactly what SH193's
+     * {@code unused-region} fix is about, and a case-insensitive collision check here would refuse
+     * a write that is not a collision. {@code distinct} because a template has a DRAFT row and a
+     * PUBLISHED row that share both id and title.</p>
+     */
+    @Query("select distinct p.id from ShPostUnified p where p.shSite.id = :siteId "
+            + "and p.shPostType.id = :postTypeId and p.title = :title")
+    List<String> findIdsBySiteAndPostTypeAndTitle(@Param("siteId") String siteId,
+                                                  @Param("postTypeId") String postTypeId,
+                                                  @Param("title") String title);
+
     /** @return rows of {@code [postTypeId (String), posts (Long)]}. */
     @Query("select p.shPostType.id, count(distinct p.id) from ShPostUnified p "
             + "where p.shPostType is not null group by p.shPostType.id")

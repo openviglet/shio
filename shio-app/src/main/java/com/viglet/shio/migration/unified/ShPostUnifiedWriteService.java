@@ -24,6 +24,7 @@ import com.viglet.shio.api.history.ShContentAuditService;
 import com.viglet.shio.object.ShObjectPublishStatus;
 import com.viglet.shio.object.ShObjectType;
 import com.viglet.shio.object.ShFolderSite;
+import com.viglet.shio.render.ShTemplateTitles;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
@@ -65,6 +66,8 @@ public class ShPostUnifiedWriteService {
     /** Self-reference so the scheduled sweep re-enters publish/unpublish through the
      *  transactional proxy instead of a bare {@code this} call (S6809). */
     private final ObjectProvider<ShPostUnifiedWriteService> self;
+    /** SH277 — a template's title is its identity, refused here so every surface refuses. */
+    private final ShTemplateTitles shTemplateTitles;
 
     public ShPostUnifiedWriteService(ShFolderRepository shFolderRepository,
                                      ShSiteRepository shSiteRepository,
@@ -73,7 +76,8 @@ public class ShPostUnifiedWriteService {
                                      ObjectMapper objectMapper,
                                      ApplicationEventPublisher eventPublisher,
                                      ShContentAuditService shContentAuditService,
-                                     ObjectProvider<ShPostUnifiedWriteService> self) {
+                                     ObjectProvider<ShPostUnifiedWriteService> self,
+                                     ShTemplateTitles shTemplateTitles) {
         this.shFolderRepository = shFolderRepository;
         this.shSiteRepository = shSiteRepository;
         this.shPostTypeRepository = shPostTypeRepository;
@@ -82,6 +86,7 @@ public class ShPostUnifiedWriteService {
         this.eventPublisher = eventPublisher;
         this.shContentAuditService = shContentAuditService;
         this.self = self;
+        this.shTemplateTitles = shTemplateTitles;
     }
 
     /** Site id of a row, or {@code null} when unresolved (shared by the audit calls). */
@@ -134,6 +139,9 @@ public class ShPostUnifiedWriteService {
         row.setData(dataJson);
 
         applyTitleAndSummary(row, req.data(), postType);
+        // After the title is derived, never before: a template's title is a *field* (SH183's model
+        // is content), so there is nothing to check until the write has decided what it will be.
+        shTemplateTitles.checkFree(row);
 
         ShPostUnified saved = shPostUnifiedRepository.save(row);
         shContentAuditService.record(ShContentAction.CREATE, saved.getId(),
@@ -151,6 +159,7 @@ public class ShPostUnifiedWriteService {
         if (req.data() != null) {
             row.setData(writeJson(req.data()));
             applyTitleAndSummary(row, req.data(), row.getShPostType());
+            shTemplateTitles.checkFree(row);
         }
         row.setModifiedDate(Instant.now());
         if (req.modifier() != null) row.setModifier(req.modifier());
@@ -575,12 +584,36 @@ public class ShPostUnifiedWriteService {
         if (postType == null || postType.getShPostTypeAttrs() == null || data == null) return;
         StringBuilder title = new StringBuilder();
         StringBuilder summary = new StringBuilder();
-        postType.getShPostTypeAttrs().stream()
-                .filter(a -> a.getShParentPostTypeAttr() == null)
-                .sorted((a, b) -> Integer.compare(a.getOrdinal(), b.getOrdinal()))
-                .forEach(attr -> collectTitleSummary(attr, data, title, summary));
+        titleAttrs(postType).forEach(attr -> collectTitleSummary(attr, data, title, summary));
         row.setTitle(title.toString());
         row.setSummary(summary.toString());
+    }
+
+    /**
+     * The title this data <em>would</em> produce for this post-type, without writing anything.
+     *
+     * <p>Exists so a {@code dryRun} can report the SH277 collision a real run will refuse. The
+     * alternative — a second derivation in the planner — is the shape SH245 keeps warning about:
+     * a plan and the write it predicts would disagree the first time a title field is added to a
+     * type, and the disagreement would read as the plan being right.</p>
+     *
+     * @return the derived title, never {@code null}; empty when the type declares no title field
+     */
+    public static String titleOf(ShPostType postType, JsonNode data) {
+        if (postType == null || postType.getShPostTypeAttrs() == null || data == null) {
+            return "";
+        }
+        StringBuilder title = new StringBuilder();
+        StringBuilder ignored = new StringBuilder();
+        titleAttrs(postType).forEach(attr -> collectTitleSummary(attr, data, title, ignored));
+        return title.toString();
+    }
+
+    /** Top-level attributes in ordinal order — the order a multi-field title is joined in. */
+    private static java.util.stream.Stream<ShPostTypeAttr> titleAttrs(ShPostType postType) {
+        return postType.getShPostTypeAttrs().stream()
+                .filter(a -> a.getShParentPostTypeAttr() == null)
+                .sorted((a, b) -> Integer.compare(a.getOrdinal(), b.getOrdinal()));
     }
 
     private static void collectTitleSummary(ShPostTypeAttr attr, JsonNode data,

@@ -2214,7 +2214,9 @@ fired, which is the part a reader would use to tell a good refusal from a confus
 > should refuse instead, and worried that refusing would break importing a package that already
 > contains a collision. Building the lint made the shape clearer: the two are not alternatives, and the
 > write-side refusal needs a distinction the write path does not currently draw — interactive versus
-> bulk. That is **SH277**, and it is a better task for having the lint first.
+> bulk. That is **SH277**, ✅ shipped in turn, and it was a better task for having the lint first — the
+> distinction turned out to need no new mechanism, because the bulk path (SH68's import) writes through
+> the repository rather than the post writer, so putting the refusal on the writer gets both halves.
 >
 > **Scoping mattered more here than for most rules.** A scoped run that saw one of two duplicates
 > would report that the name is *unique*. Most false greens are an absence of information; this one is
@@ -2549,29 +2551,6 @@ the premise is wrong. It is that a sentence in the present tense about somebody 
 is the weakest form of a load-bearing claim, and this one carries more weight than any other in the
 codebase.
 
-### XVI.29 A title is an identity at read time and not at write time (SH277)
-
-SH263 reports a duplicate template title as an error. Nothing stops one being created, which is the
-asymmetry: the identity is enforced by a lint somebody has to run rather than by the write that breaks
-it.
-
-The machinery and the precedent both exist. `post.upsert` already refuses a `data` key the post-type
-does not declare (SH168) and `post.move` already refuses an occupied friendly URL (SH134) — so "a
-system-type post whose title is taken is a teaching 409 naming the holder" is a shape this codebase has
-written twice.
-
-**The obvious version is wrong in one case that matters.** The SH68 exchange package and SH92's
-blueprints both write templates in bulk, and an import that refused because the *package* contains a
-collision would be worse than one that succeeds and reports it — exactly the reasoning SH189 used for
-`import-no-site`, and the same reason SH152 provisions post-types rather than upserting them. Refusing
-to import a site because it has a latent defect helps nobody.
-
-So the likely shape is **refuse an interactive write, report a bulk one** — and that is a distinction
-the write path does not draw anywhere today. It would need one, which is the real cost of this task and
-the reason it is filed rather than folded into SH263. Worth checking whether SH153's `Declared` idea
-(the blueprint planner telling the batch service what it is about to create) is the seam that already
-half-exists for this.
-
 ### XVI.30 The renderer resolves by title in an unspecified order (SH278)
 
 > ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. It was filed as one `order by` and was two
@@ -2849,6 +2828,55 @@ the blast radius is computed from the site's bindings, not stored in the post, s
 read it out of and a terminal user has no path to it at all. So the smaller and better-justified shape
 may be `shio impact <address>` — one question the files genuinely cannot answer — rather than a general
 `read` that duplicates the projection. Decide which before building either.
+
+### XVI.41 A system post-type created by an older build is never reconciled (SH289)
+
+`ShRenderPostTypes.ensure` never touches an existing post-type. That is SH152's rule and it is right:
+the alternative is a startup that rewrites a model somebody may have edited by hand.
+
+The cost has now been paid twice. An instance that created its `Theme` before SH252 keeps
+`Ace Editor - HTML` on a stylesheet — a stale *preference*, mildly annoying. An instance that created
+its render types before SH277 keeps types with **no title field**, where a template cannot be
+addressed and cannot be given a title — a *broken* instance, and one whose owner has no way to find out
+short of reading this changelog.
+
+So the answer is not to relax the rule. It is to make the drift **visible and appliable**:
+
+- **Visible**: a `verify` finding naming the fields the shipped model declares that this instance's
+  type lacks. Probably an **error** rather than a warning, which would make it the first system-model
+  finding that fails a gate — justified, because "your `Region` has no title field" is provable from
+  inside the CMS and is not work in progress.
+- **Appliable**: something the operator runs. `PUT /api/v2/post-type/{name}` refuses a system type —
+  that refusal is why `POST /api/v2/render/post-types` exists at all — so the likely shape is a
+  `reconcile` mode on that endpoint rather than a new one, added under the same provisioning rule:
+  add what is missing, never change or remove what is there (SH152's `mergePostTypes`, which already
+  exists for blueprints and is exactly this decision one surface along).
+
+Two things to settle rather than assume: whether a *renamed* or *removed* field is ever applied
+automatically (almost certainly not — that is the case where the operator's model may be deliberate),
+and whether reconciliation is offered per field or per type.
+
+### XVI.42 Nothing asserts that the system model matches its source package (SH290)
+
+`ShRenderPostTypes` says, in a comment: *"The field names below are the 2018 package's, so a real
+`openviglet/bootstrap-site` export imports and renders without a migration."* SH277 found that claim
+false in the way that mattered — the package declares `TITLE` first, `Text`, required, `isTitle` on
+`PageLayout`, `Region` **and** `Theme`, and the transcription dropped it from all three, which is what
+made a template written through the documented flow unaddressable.
+
+This is SH274's shape exactly: a premise about an artefact **that is in the repository**
+(`shio-app/src/main/resources/import/bootstrap-site/export.json` and `import/post-types.json`), and
+therefore assertable rather than remembered. A test can read the package's own post-types and compare.
+
+The one design constraint is that it must **not** demand equality. The 2018 model also carries
+`DESCRIPTION`, `CACHED` and a `CACHE_TAB` this renderer deliberately does not implement, so the
+assertion is over the fields the shipped model *does* declare — same name, same widget family, same
+title flag — and every deliberate divergence is declared with its reason, the way SH255's `DECLARED`
+list is, so the list cannot rot into a suppression.
+
+Worth doing because the comment is load-bearing: "imports without a migration" is the promise that
+makes the 2018 package the repository's one real end-to-end example, and it was wrong for four blocks
+with nothing to notice.
 
 ---
 
