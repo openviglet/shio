@@ -333,9 +333,14 @@
 > did the same to the post read), and tokens now clear the concept
 > spec's ≈10× on one canonical task of four rather than three. A large part of the measured
 > advantage was never the protocol — it was the console reads being entity-shaped, and it is
-> now lean on both sides. What is left is the part worth defending (addressing, batching, the
-> context pack, a lint that names the defect), and **SH164** is the task for re-establishing
-> the claim on those sources.
+> now lean on both sides. What is left is the part worth defending — addressing, batching, the
+> context pack, a lint that names the defect — and **SH164 has now measured each of them
+> separately** rather than leaving the claim resting on an aggregate.
+>
+> ✅ **SH164 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: the claim is attributed per
+> source (addressing 26× and the lint 15× carry the tokens; batching buys turns; projection is
+> the smallest), and the aggregate ≈10× per-task target is retired in favour of per-source floors
+> plus the session claim on calls.
 >
 > ✅ **SH163 and SH165 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: renaming a
 > post-type is an operation that moves it, and the console listing pages — with the sort and the
@@ -346,7 +351,6 @@
 > exemptions are narrowed to the callers that need them. Reviewing the CDA one turned up
 > **SH233**; leaving `/graphql` blanket is **SH234**.
 
-- 📋 **SH164** (deps: SH112 ✅, SH117 ✅, SH120 ✅) **Re-establish the token claim on its actual sources** — the ratios fell because the baseline stopped being wasteful, which means the benchmark can no longer distinguish "the protocol is cheaper" from "the old console was fat". Attribute the remaining gap per source (addressing vs id round trips, batch vs N writes, context pack vs crawl, lint vs sweep) so each is defended by its own number, and decide honestly whether ≈10× is still the right target. → §XIV.6
 - 📋 **SH233** (deps: SH167 ✅, SH10 ✅) **The Universal Editor's save-back cannot be authenticating the way it thinks it is** — `universal-editor.service.ts` uses a dedicated axios instance with `withCredentials: false`, on the stated premise that the console session cookie must not be sent or the request authenticates as the curator (who has no `ROLE_CDA_WRITE`) instead of as the `Key` token. But `withCredentials` is ignored for **same-origin** XHR, which is what the console is in dev behind the Vite proxy and in production behind one host — so the cookie goes, `ShApiTokenFilter` returns early on the already-set authentication, and the PATCH 403s. Either the token has to win an explicit `Key` header, or the editor needs a cross-origin/credential-less path that actually is one. Needs a browser check (SH182's harness) before it needs a fix. → §XIV.10
 - 💭 **SH234** (deps: SH167 ✅, SH4 ✅) **`/graphql` is the one CSRF exemption left blanket, and its premise is the kind that expires** — SH167 narrowed the CDA, the agent namespace and `/mcp` to session-less callers and deliberately left GraphQL alone: the generated schema has no `Mutation`, so a forged POST cannot write, and the GraphiQL console at `/graphiql/**` is a cookie-bearing browser the narrowed matcher would break for nothing. That is exactly the shape of argument SH117 watched expire on the post-type API. The decision to make ahead of time is what happens to GraphiQL the day a mutation lands. → §XIV.11
 

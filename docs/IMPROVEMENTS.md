@@ -1264,28 +1264,6 @@ input (word boundaries fail on both sides of a derived query name). A lint that
 matches nothing passes silently forever, so its patterns are asserted against the
 exact strings that broke production.
 
-### XIV.6 Re-establish the token claim on its actual sources (SH164)
-
-Block N's uncomfortable result: SH117 and SH120 fixed the baseline, and every token
-ratio in the SH112 benchmark fell against an unchanged agent path — **3.8×–23.3×
-became 2.6×–12.6×**. Nothing regressed. The measurement simply stopped being flattered
-by a console that shipped entity-shaped JSON.
-
-The problem this leaves is not the smaller number, it is that **the benchmark can no
-longer distinguish "the protocol is cheaper" from "the old console was fat."** A single
-ratio per task mixes four independent savings, so improving the baseline moved all of
-them at once and there is no way to see which of the protocol's ideas is actually
-carrying the claim. The fix is attribution: measure the four sources separately —
-addressing versus id round trips, one batch versus N writes, a context pack versus a
-crawl, a lint that names the defect versus a read-everything sweep — and give each its
-own floor. Then a future baseline improvement moves the number it should move and
-leaves the rest alone.
-
-The second half is a judgement call to make deliberately rather than by inertia: with
-the baseline lean, is ≈10× still the right target, or was it always a proxy for "an
-agent can do this in one session instead of three"? A target nobody can hit gets
-disabled; a target that measures the wrong thing gets hit and means nothing.
-
 ### XIV.10 The Universal Editor's save-back cannot be authenticating the way it thinks it is (SH233)
 
 Found while reviewing the CDA's CSRF exemption for SH167, and it is not a CSRF problem —
