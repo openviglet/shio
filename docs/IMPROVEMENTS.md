@@ -1450,145 +1450,29 @@ is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that exis
 
 ### XV.1 A built-in HTML renderer for page layouts (SH183)
 
-**What is missing.** Nothing in this repository renders a page. No template engine is on the
-classpath — no Velocity, Thymeleaf, Handlebars or Freemarker — and `ShSitePostTypeLayout`
-(`format`/`layout`/`mimeType`/`cacheTTL`) survives only because the exchange format and the
-site write service carry it; no code reads it to produce output. `nashorn-core` 15.7 is still
-declared in `shio-app/pom.xml` and nothing uses it: the only reference left anywhere is a
-`ShWebsiteProperties.nashorn` string array. It is an orphan, and a script engine on the
-classpath that nobody calls is build weight and attack surface for free — worth removing
-whichever way this section goes.
-
-Both human-facing visual surfaces therefore point outward at something Shio cannot make:
-
-| Surface | Needs | Without it |
-|---|---|---|
-| Preview (`ShPreviewTokenAPI`) | `site.getUrl()` as a real base | `400 {"error":"site has no url"}` |
-| Universal Editor (`visual-editor.page.tsx`) | `<iframe src={site.url}>` | `universalEditor.siteNoUrl` |
-
-Applying `marketing-site` produces thirteen correct pages and no way to see one.
-
-**The model: page → layout → region.** This is the granularity the original engine intended
-(`PT-PAGE-LAYOUT` and `PT-REGION` are both declared in FSP's `ShSystemPostType`, and the region
-level was never finished — nothing in Java ever read it), and it is the right one for enterprise
-work, because each level is owned by a different person and changes on a different clock:
-
-| Level | Is | Owned by | Changes |
-|---|---|---|---|
-| **Page** | content + a layout binding | author / agent | constantly |
-| **Layout** | an HTML skeleton with named region slots | front-end dev | per template |
-| **Region** | HTML + client JS that renders one kind of content | front-end dev | per component |
-
-Three properties come out of it that a flat renderer cannot give. A region is the **reuse**
-unit, so a header or a product card is authored once and appears on every layout that slots it.
-A region is the **edit** unit, which is what makes the Universal Editor mean something — a
-curator clicks a region and edits that region, rather than being handed a whole page. And a
-region is the **cache** unit, so the FSP `cacheTTL` that already exists per post-type × format
-gets a level where it is actually useful: a navigation region cached for an hour inside a page
-that is not.
-
-**Why this is not the dropped Block D — and where the JavaScript goes.** The binding non-goal
-is *"No GraalJS server-side JS template engine"*. §0.4's argument is specific and still correct:
-an in-JVM script engine is **sandboxing liability**, because what it evaluates is user-supplied
-code. Choosing Groovy changes the syntax and not one word of that argument — which is why
-Groovy is named in the non-goal too, and it is *more* capable inside the JVM than Nashorn, not
-less.
-
-The resolution is to split the two things FSP fused. **HTML composition happens on the server,
-declaratively**; **JavaScript happens in the browser, as it does in every other front end
-written this decade**:
-
-```
-server   layout.hbs + region.hbs  ──Handlebars.java──▶  HTML  (+ data-shio-* annotations)
-browser  region.js as a static asset  ─────────────────▶  interactivity, progressive enhancement
-```
-
-Nothing is evaluated in the JVM. A region author still writes "HTML + JavaScript" — the exact
-material asked for — but the JS is shipped to the client instead of `eval`'d on the server, so
-`Java.type()`, `Runtime.exec` and the raw `HttpServletRequest` are not reachable, by
-construction rather than by a filter someone has to remember to configure.
-
-**Handlebars, in Java, is the same language authors already wrote.** The engine loaded
-`handlebars.min.js`, so the templates in existing sites are Handlebars templates; a pure-Java
-implementation evaluates them without a script engine. It is logic-less by design and its
-expression grammar is not Turing-complete, so the seven `shObject.js` functions become
-**explicitly registered helpers** — `{{#navigation}}`, `{{#query}}`, `{{#search}}`, `{{#form}}`,
-`{{#getRelation}}` — which is what the façade was already trying to express as a convention.
-Two hazards to pin down in the task, because they would smuggle the problem back in: any
-JavaScript-helper integration must stay off, and the value resolver must be restricted to maps
-and declared field data rather than resolving arbitrary bean properties by reflection.
-
-**Who renders — the options, and the recommendation.** They differ by where markup is produced:
-
-| Renders | Mechanism | Costs | Buys |
-|---|---|---|---|
-| **Shio (Java)** | layout + regions composed by Handlebars.java | a renderer, plus the region vocabulary | a site visible with **no client setup at all** — the only option an MCP-only agent can reach, and the only one the Universal Editor can annotate |
-| **Browser** | a static React/Next export served by Shio, fetching from the CDA | almost nothing — Shio already serves `/console/**` and `/file_source/**` | design freedom, no Node in production |
-| **Node** | Next.js, as today | a project and a process the agent cannot create over MCP | SSR, ISR, the production path |
-
-"Deploy React inside Shio and let it render" splits in two, and only one half is available:
-server-rendering React *in the JVM* needs a JS runtime and is the non-goal under a new name;
-serving a **static export** needs no engine and is cheap — but it renders in the browser, so the
-first paint carries no content, which is the wrong trade for preview, for SEO, and for a visual
-editor that has to map a DOM node back to a field.
-
-Recommendation: row one as the default visible path, row two as the upgrade a designer reaches
-for, Next.js unchanged as production delivery (P10).
-
-**Why this fits the agent surface better than a fixed vocabulary.** Layouts and regions are
-**content** — posts of a system post-type. So an agent creates and edits them with
-`post.upsert`, they travel in the SH68 exchange package, they project to files under
-`shio/content/**` (P4), `shio verify` can lint them, and `shio push --content` can converge
-them. A renderer built instead as a closed Java projection of the eight SH95 section types would
-be none of those things: unextendable without a Java release, and invisible to every tool the
-agent already has. The SH95 vocabulary then becomes what it should be — a set of **default
-regions** shipped as content, not the only thing renderable.
-
-It also covers what a fixed section set cannot: navigation, queries and listings, search results
-and forms are dynamic, and all four were first-class in FSP. And it keeps the two axes already
-present in the entity, the exchange format and `ShSiteRequest`: **format** (same post, alternate
-representation, own layout/mime/TTL) and **theme** (`PT-THEME`).
-
-**What it must not become.** A preview URL that renders production content *is* a delivery path
-the moment somebody points DNS at it — and then Shio owns HTML rendering, caching and SEO, the
-position §0.3 and §0.4 declined. If this grows into the delivery path that has to be a decision
-taken deliberately, with the CDA/Next split revisited in the open, not a consequence of a
-preview route getting popular. Until then: a distinct route, an unmistakable banner, no
-freshness headers that invite a CDN, drafts only behind the SH5 preview token.
-
-**And delete the orphan.** `nashorn-core` 15.7 stays in `shio-app/pom.xml` with nothing calling
-it — a script engine on the classpath that no code reaches is build weight and attack surface
-for free. It goes whichever way this section is decided.
-
-**Proof that the model still fits: the 2018 package imports.** `openviglet/bootstrap-site` was
-converted and imported into a current instance. It worked — `201`, and the content arrived
-intact:
-
-| Checked afterwards | Result |
-|---|---|
-| Post-types | all six recreated; every widget the 2018 fields named (`Ace Editor - Javascript`, `Ace Editor - HTML`, `Text Area`, `Content Select`, `Relator`) **still exists** |
-| Layout `HTML` | 1330 chars, byte-identical, both `sh-region="…"` slots present |
-| Region `HTML` | the Handlebars template intact (`{{#each this.posts}}`, `{{this.link}}`) |
-| Region `JAVASCRIPT` | 767 chars preserved |
-| `site.postTypeLayout` | preserved verbatim, in its original simple form |
-
-The conversion was **mechanical — seven renames**, all recorded in the throwaway script: `label`
-→ `title`; the post-type `fields` map → an array carrying `name`, with `title`/`summary` becoming
-`isTitle`/`isSummary`; `site.rootFolders` → `rootFolderIds`; a folder gaining explicit `siteId`
-and `rootFolder` where 2018 implied both; `post.folder`/`postType`/`fields` →
-`folderId`/`postTypeName`/`data`; `title`/`summary` promoted from fields to columns; and files
-needing a manifest entry plus a `files/<id>` zip entry.
-
-Two things this settles. The page → layout → region model is **expressible in today's content
-model with no schema work at all** — SH183 needs a renderer and the three system post-types, not
-a migration. And the real-world `postTypeLayout` was the simple map `{"FOLDER": "…LAYOUT",
-"PT-ARTICLE": "…LAYOUT"}`, not the `ShSitePostTypeLayouts` array of `{format, layout, mimeType,
-cacheTTL}` — so the format axis was built and, in the one shipped example, never used. SH183
-should treat multi-format as the extension it evidently was, and not pay for it up front.
-
-One thing it does not settle: whether the *templates* run. They are Handlebars and they import,
-but nothing has evaluated them, and the region JavaScript still assumes a `shObject` façade that
-would not exist. That is the experiment SH183 has to run.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three conclusions from building
+> it are load-bearing for the rest of this section, so they stay here rather than going
+> with the design:
+>
+> **The non-goal is now a classpath fact, not a policy.** Handlebars.java declares
+> `nashorn-core` at *compile* scope for its JS-helper integration, so the obvious cleanup —
+> delete the orphaned direct declaration, add the template engine — would have swapped an
+> unused script engine for a used one. It is excluded, and `ShRenderNoScriptEngineTest`
+> asserts that along with the two defaults that would undo the rest: the value resolver
+> (`MapValueResolver` only, or a template walks any object it is handed) and the template
+> loader (refusing, or `{{> application}}` in a layout reads the classpath). None of the
+> three changes the rendered output when it breaks, which is why each is a test rather than
+> a review item.
+>
+> **Presentation as content paid off immediately.** Layouts, regions and themes are posts of
+> three system post-types, so everything the agent surface already does works on them with no
+> new code — and the 2018 `openviglet/bootstrap-site` export renders with no migration at
+> all, which is the strongest available evidence that the model was right and only its host
+> was wrong.
+>
+> **What it deliberately left**: `search`, `form` and `getRelation` (**SH247**), the browser
+> JavaScript a region can author but nothing serves (**SH248**), and the fact that
+> `/agent/render` and `/preview` now compose the same page two different ways (**SH249**).
 
 ### XV.2 A site's front-end URL is unreachable from the agent path (SH184)
 
@@ -1818,6 +1702,77 @@ Editor something to offer besides text. Raw CSS stays as the escape hatch; the p
 stops being the interface. The open question is whose vocabulary — inventing one is a design
 project, and adopting an existing convention is cheaper and more portable.
 
+### What building the renderer found (SH247–SH249)
+
+Three edges, and they share a shape: each is somewhere the renderer is *nearly* the thing it
+replaced, and where the remaining gap is invisible from the outside because the page still
+comes out.
+
+#### XV.14 Three of the seven capabilities are still missing (SH247)
+
+`shObject.js` exposed exactly seven functions, and §XV.0's most important finding was that
+this closed set is what a fixed section vocabulary cannot reproduce: **navigation, queries and
+listings, search results and forms are all dynamic**, and all four were first-class in FSP.
+Three shipped as helpers — `{{#query}}`, `{{#navigation}}`, `{{file_url}}` — because those are
+what `openviglet/bootstrap-site` actually used, so those are the ones a real template exercised.
+
+The other three were not stubbed, and that was a decision rather than an omission. A helper
+registered and returning nothing renders a page that looks finished and is missing a section;
+an *unregistered* helper is a Handlebars error carrying a line and a column, which is the
+difference between "the search box does not work" and "line 14: unknown helper `search`". P6
+prefers the second, and so does anyone debugging.
+
+They are not equally hard, and the task should not treat them as one thing. **`getRelation`** is
+nearly free: `ShReference` exists, `Content Select` and `Relator` fields exist, and the SH154
+reference-field vocabulary already answers "what does this field point at". **`search`** composes
+`ShPostUnifiedRepository.FULLTEXT_PREDICATE` — the same predicate SH240 pointed the console's
+listing filter at, and the same reasoning applies: the renderer must not acquire a private idea
+of what "matches" means. **`form`** is the one with an actual design question in front of it,
+because a form needs somewhere for a submission to *go*, and Shio has no such destination. Until
+that is answered, writing the helper is writing half a feature.
+
+#### XV.15 A region's browser JavaScript is authored and never served (SH248)
+
+This is the sharpest of the three, because it is the one place the renderer's own argument is
+not yet true. The resolution of the Block D non-goal is a split: *HTML composes on the server,
+declaratively; JavaScript runs in the browser as a region's static asset.* The first half
+shipped. The second half is a field with a code editor in front of it and nothing on the other
+end — a composed page carries no `<script>` for any region, so `Region.JAVASCRIPT` is currently
+a place an author can put working code and watch it do nothing.
+
+That is worse than not having the field. A missing capability is discoverable; a field that
+accepts input and silently discards its effect teaches the author that they wrote the code
+wrong. It is the same failure shape as SH178's two schema entry points, where one worked and one
+did not and the difference read as a content problem.
+
+Two things to settle. **Where the bytes come from**: inline in the page is simpler, needs no new
+route and cannot 404, but it is uncacheable and repeats on every request; a route (SH38's
+`/file_source/**` is the precedent) is cacheable and is a second thing that can be wrong.
+**Deduplication**: a layout may slot the same region twice — the composer already collapses that
+for `slotsOf` — and emitting a region's script twice would run its initialisation twice, which
+is a class of bug that only appears on the layouts that do it.
+
+#### XV.16 The renderer and the digest compose the same page differently (SH249)
+
+`/agent/render` composes a page's **sections**: SH169 made the digest follow a `Multi Select`
+carrying `references: "post"` and fold each named section's markup into the outline. `/preview`
+composes a page's **regions**: SH183 follows `sh-region="NAME"` in a layout and fills each slot
+from a Region post. Both answer "what is on this page". Neither knows the other exists.
+
+So an agent proving structure and a human looking at the result can be reading two different
+compositions of the same post, and nothing reports the disagreement — which is precisely the
+perception loop (P9) failing in the one place it is supposed to work, since the whole value of a
+cheap textual proof is that it stands in for looking.
+
+The tempting fix is to point the digest at the renderer's HTML, and that is probably right: it
+is what a visitor gets, and it makes SH187 nearly free because the artifact to snapshot is
+already produced. But it should not be done before the prior question is answered, because
+otherwise it silently picks a winner. **Are sections and regions one mechanism or two?** There
+is a real distinction — a section is content a page *names* in a field, a region is markup a
+layout *slots* — and they can legitimately coexist: an SH95 `Page` composed of sections could
+itself be rendered *inside* a layout whose content region iterates them. That is a coherent
+story and it is currently written down nowhere, which is how two composition paths become three.
+
 ## XVI. The human half (Block O) — what reading the console next found
 
 Block O shipped, and its lesson was that **console defects answer `200`**: seven of them, none
@@ -1969,6 +1924,39 @@ argument, so the rare legitimate case is *stated* rather than silently permitted
 keys on needs deciding too, and the cheap version is likely the right one: a write mapping on an
 API class whose body touches a `*Repository.save`/`delete` directly. Precision matters less than
 the build going red the day somebody adds the fifth one.
+
+### XVI.7 The suite's mocks depend on dynamic agent attachment (SH250)
+
+While Block P was being built, `ShTenantSuspendedAccessTest` failed six of six with
+`MockitoException: Could not modify all classes [class ShVigletTenantStore, interface
+VigletTenantStore]`. It then passed on every re-run, in isolation and in the full suite, with no
+change to it or to anything it touches. The trigger is class-loading order, not a defect in the
+test and not a defect in the code it covers.
+
+The cause is printed on every single run of this suite and has been for a long time:
+
+> *Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work
+> in future releases of the JDK. Please add Mockito as an agent to your build.*
+
+So there are two problems stacked. The first is that instrumentation is being installed by
+attaching an agent to the running JVM, which is exactly the kind of thing whose success depends
+on what has already been loaded — hence a failure that appears once and cannot be reproduced.
+The second is a deprecation timer: the JDK is removing dynamic agent loading, and when it does
+this stops being intermittent and starts being permanent.
+
+**It is filed with SH246 rather than beside it because it is the same class of problem and the
+worse member of it.** SH246 was a red build nobody caused, and it was *deterministic*, which is
+why it could be diagnosed in one sitting. This one is flaky, and a flaky suite is more expensive
+than a broken one: it teaches everybody that a red run might mean nothing, which is how a real
+regression gets a re-run instead of an investigation. The whole argument for the SH182 browser
+check was that defects nothing asserts on stay invisible; a gate people have learned to disbelieve
+is the same failure with extra steps.
+
+The fix is the one the warning names — Mockito configured as a `-javaagent` in surefire rather
+than self-attaching. It is filed as an idea rather than designed because the wiring should be
+checked against what Spring Boot's parent POM already sets on `argLine` (and against the JaCoCo
+argLine, if that is ever added), and getting two agents onto one `argLine` is the part that
+actually takes care.
 
 ---
 

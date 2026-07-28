@@ -52,7 +52,9 @@
 > reviewing what was still CSRF-exempt (both shipped, so their design sections are gone),
 > and **SH241–SH246** from closing Block O's last two (SH202/SH203) — three of those six are
 > not content defects at all but the *build* they were found through (§XVI.1, §XVI.2, and
-> SH246, shipped) — new tasks are expected to accrete this way, and each one's
+> SH246, shipped) — and **SH247–SH250** from building Block P's renderer (§XV.14–§XV.16,
+> §XVI.7; the last is the build again, and flaky where SH246 was deterministic)
+> — new tasks are expected to accrete this way, and each one's
 > line says what measurement or failure produced it. Superseded and therefore retired: **SH17/SH18** (GraalJS), **SH23 +
 > SH27–SH31** (marketplace → Block J), **SH24 + SH32–SH37** (CRUD-over-MCP → Block H).
 
@@ -435,12 +437,18 @@
 
 ## Block P — The visible site (what the human actually looks at)
 
-> The differentiator is **making something a person can see**. Today an agent can build a
-> site's content and structure over the agent surface and there is no way to look at it: the
-> preview mints a URL against `site.url` and 400s without one, the Universal Editor is an
-> `<iframe src={site.url}>`, and nothing in this repository renders a page. Both human-facing
-> visual surfaces are windows onto a front end that only `shio init` can scaffold and only a
-> developer's machine can run. → §XV
+> The differentiator is **making something a person can see**. Until SH183 an agent could build
+> a site's content and structure over the agent surface and there was no way to look at it: the
+> preview minted a URL against `site.url` and 400'd without one, the Universal Editor is an
+> `<iframe src={site.url}>`, and nothing in this repository rendered a page. → §XV
+>
+> ✅ **SH183 and SH188 have shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: `/preview/{site}/{url}`
+> composes page → layout → region with Handlebars.java and **no script engine on the classpath**
+> (Nashorn is excluded from the dependency that would have reintroduced it), the three levels are
+> system post-types created on demand, `sh-region` survives the render as SH185's annotation
+> contract, and `may_publish` no longer 500s on a pre-SH107 row. What that leaves is the tasks
+> below plus **SH247**: three of the seven `shObject.js` capabilities landed as helpers, and
+> `search`/`form`/`getRelation` were filed rather than stubbed.
 
 > **The model is the one this product already had: page → layout → region.** Recovered from
 > `origin/FSP` (an ancestor of HEAD, last touched 2019-09-09) and from the real template in
@@ -463,7 +471,6 @@
 > over the CDA (P10), and what lands here is **preview-grade** until that is deliberately
 > revisited.
 
-- 📋 **SH183** (deps: SH68 ✅, SH95 ✅) **Render page → layout → region, server-side, without a script engine** — restore the three-level model as system post-types (`PAGE_LAYOUT`, `REGION`, `THEME`), compose them with a Java Handlebars implementation, and register the seven `shObject.js` capabilities (navigation, query, search, form, relation, links) as explicit helpers instead of bindings on an unfiltered engine. The sample's per-region JavaScript is 767–1098 characters of loop-and-remap that a domain-aware block helper replaces with one line. Layouts and regions being content is what makes them agent-authorable via `post.upsert`, exportable, projectable to files and lintable — a closed Java projection of the SH95 types would be none of those. → §XV.1
 - 📋 **SH184** (deps: SH170 ✅, SH183) **A site's front-end URL is unreachable from the agent path** — `site.url` gates both visual surfaces (`400 site has no url`; `universalEditor.siteNoUrl`), and `site.upsert` deliberately never updates a site, so an agent that builds a site and deploys a front end still cannot connect the two. With SH183 the sensible default is Shio's own preview route. → §XV.2
 - 📋 **SH185** (deps: SH183) **The Universal Editor has no counterpart, and `sh-region` is already the contract** — `visual-editor.page.tsx` posts `{type, data}` into the iframe and listens for replies, and there is not one `postMessage` in `create-shio-app`, `shio-react-sdk`, `shio-sections` or `shio-client`, so the editor cannot work against anything. The 2018 templates already annotate composition with `sh-region="NAME"`; a renderer that preserves those attributes tells the editor which DOM node is which region and which post to save. Needs the protocol written down, SH183 as its first implementation, `"*"` replaced by the site's origin, and `universalEditor: true` demoted until it is true. → §XV.3
 - 📋 **SH187** (deps: SH183, SH169 ✅, SH102 ✅) **The agent sees a page's structure, never its appearance** — SH169 made the digest compose a page's sections, so an agent can prove the outline is right; nothing lets it see that the page *looks* right, since `visualSnapshot` and `signedImageUrls` are `false` and `renderFetch` is off by default. SH102 has shipped as `shio snapshot` and is the correct instrument scoped for the wrong reader — "for the human handoff rather than for the agent", i.e. a CLI command and an image file rather than a call and a payload — and SH183 makes it nearly free, because the renderer's own HTML is the artifact to snapshot. → §XV.4
@@ -474,7 +481,15 @@
 - 📋 **SH193** (deps: SH183, SH154 ✅) **The blast radius of a region change is uncomputable** — `sh-region="NAME"` lives inside an HTML string, so nothing can answer "which layouts slot this region, and which pages use those layouts". Editing a shared region is therefore unbounded and unverifiable, which is the difference between a CMS region and a component in one app. Extract slot references into the reference graph the way SH154 did for `Multi Select` post URLs, so `find`, `verify` and `changes` all agree on who is affected. → §XV.11
 - 📋 **SH194** (deps: SH187, SH102 ✅) **Appearance needs a before/after and a one-call loop** — a snapshot answers "what does this look like"; iteration asks "what did my change do", which is a diff. SH102 shipped that diff, still scoped for the human handoff. The other half is round trips: today a layout edit is upsert, then render, then look. A write that can return the rendered result of what it just changed turns three calls into one. → §XV.12
 - 💭 **SH195** (deps: SH183) **Most layout changes are tokens, not structure** — `PT-THEME` carries `CSS` and `JAVASCRIPT` as opaque blobs, so "tighten the headings" or "change the accent colour" is a stylesheet rewrite with nothing to verify and nothing to diff. A declared token vocabulary (spacing, type scale, colour roles) makes the common change a field edit an agent can make safely and a human can review, and leaves raw CSS as the escape hatch rather than the interface. → §XV.13
-- 💭 **SH186** (deps: SH183, SH166) **An MCP-only agent cannot produce a visible site** — the server never writes a project file (correct — P7), and only the CLI scaffolds one, so a client with no filesystem ends with content nobody can look at. SH183 is the answer if it lands: the site is visible without a project at all, and SH166's unsubstituted-files problem stops being on the critical path. → §XV.5
+- 💭 **SH186** (deps: SH183 ✅, SH166) **An MCP-only agent cannot produce a visible site** — the server never writes a project file (correct — P7), and only the CLI scaffolds one, so a client with no filesystem ends with content nobody can look at. SH183 has shipped and is most of the answer — the site is visible without a project at all — so what is left is the MCP half: `/preview` and `POST /api/v2/render/post-types` are REST-only, so a client with no HTTP of its own still cannot reach them, and SH166's unsubstituted-files problem stops being on the critical path. → §XV.5
+
+> **Opened by building SH183 (SH247–SH250).** Three of the four are the renderer's own
+> unfinished edges; the fourth is the test suite, found the way SH246 was — by running it.
+
+- 📋 **SH247** (deps: SH183 ✅) **Three of the seven capabilities are still missing** — `{{#query}}`, `{{#navigation}}` and `{{file_url}}` landed because they are what `openviglet/bootstrap-site` used; `search`, `form` and `getRelation` are the rest of `shObject.js`'s closed set and each needs a backing component the nuclear refactor removed (`shSearchComponent`, `shFormComponent`, `shGetRelationComponent`). They were **not stubbed on purpose** — a helper that silently renders nothing is worse than the unknown-helper error Handlebars raises with a line and column — but a listing page, a search results page and a contact form are exactly what §XV.0 said a fixed section vocabulary cannot express, so the renderer is not yet a match for what it replaced. `getRelation` is the cheap one (`ShReference` and the `Content Select`/`Relator` fields already exist); `search` composes the SH131 full-text predicate; `form` needs a decision about where a submission goes before it needs code. → §XV.14
+- 📋 **SH248** (deps: SH183 ✅, SH38 ✅) **A region's browser JavaScript is authored and never served** — `Region.JAVASCRIPT` exists, the console gives it a code editor, and the whole resolution of the Block D non-goal is that this JavaScript *runs in the browser as a static asset*. Nothing serves it: the composed page carries no `<script>` for it, so today the field is a place authors put code that has no effect — which is worse than not having the field, because it looks like it works. Needs the composer to emit one tag per region in the page (deduplicated, since a layout may slot a region twice), and a decision on whether the bytes come from a route like SH38's `/file_source/**` or inline. Inline is simpler and uncacheable; a route is cacheable and is a second thing that can 404. → §XV.15
+- 💭 **SH249** (deps: SH183 ✅, SH101 ✅) **The renderer and the digest disagree about what a page is** — `/agent/render` composes a page's *sections* (SH169) from the SH95 `Multi Select` vocabulary, and `/preview` composes its *regions* from `sh-region`. Both answer "what is on this page" and neither knows about the other, so an agent proving structure and a human looking at the page can be reading two different compositions of the same post. The renderer's own HTML is the better input to a digest — it is what a visitor gets — which also makes SH187 nearly free. The question this has to settle first is whether sections and regions are one mechanism or two: a section is content a page *names*, a region is markup a layout *slots*, and they may legitimately coexist, but "legitimately" has to be written down before two composition paths become three. → §XV.16
+- 💭 **SH250** (deps: SH246 ✅) **The suite's mocks depend on dynamic agent attachment, which the JDK is removing** — `ShTenantSuspendedAccessTest` failed six of six with `MockitoException: Could not modify all classes` once during Block P and passed on every re-run, including in isolation; the build log carries the reason on every single run: *"Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK."* So the suite has an intermittent failure mode whose trigger is class-loading order rather than anything a test does, and a deprecation timer attached to it. This is the same shape as SH246 — a red build nobody caused — with the difference that it is *flaky* rather than deterministic, which is worse: it teaches people to re-run. The fix is the one the warning names, configuring Mockito as a `-javaagent` in surefire. Filed as an idea rather than designed because the version and argLine wiring should be checked against what Spring Boot's parent already sets. → §XVI.7
 
 ---
 

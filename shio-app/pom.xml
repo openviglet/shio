@@ -291,10 +291,51 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
+        <!--
+          SH183 — the render path, and the removal of the thing it replaces.
+
+          `org.openjdk.nashorn:nashorn-core` 15.7 used to be declared here with nothing
+          calling it: the FSP engine that evaluated layouts through it was deleted years
+          ago and only a `ShWebsiteProperties.nashorn` string array still named it. A
+          script engine on the classpath that no code reaches is build weight and attack
+          surface for free, so it goes.
+
+          Handlebars.java is what takes its place, and it is the *same language authors
+          already wrote* — the old engine loaded `handlebars.min.js` from a CDN at render
+          time and compiled the layout with it, so a pure-Java implementation runs the
+          existing templates with no script engine at all.
+
+          The exclusion is the load-bearing part. Handlebars.java declares `nashorn-core`
+          at compile scope for its optional JavaScript-helper integration
+          (`registerHelpers(File)` and friends) — precisely the capability the Block D
+          non-goal forbids, which would have arrived transitively while the direct
+          declaration above was being deleted. Excluding it means the JS helper path is
+          absent from the classpath rather than merely unused: a template cannot reach a
+          script engine because there is no script engine to reach, which is the "by
+          construction rather than by a filter someone has to remember to configure"
+          the design asks for. ShRenderNoScriptEngineTest fails the build if it comes back.
+        -->
         <dependency>
-            <groupId>org.openjdk.nashorn</groupId>
-            <artifactId>nashorn-core</artifactId>
-            <version>15.7</version>
+            <groupId>com.github.jknack</groupId>
+            <artifactId>handlebars</artifactId>
+            <version>4.5.3</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.openjdk.nashorn</groupId>
+                    <artifactId>nashorn-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!--
+          SH183 — declared explicitly rather than inherited. jsoup is already on the
+          classpath via `tika-parser-html-module`, and the region composer parses a
+          layout's HTML with it; a render path that depends on a *transitive* parser is
+          one Tika bump away from not compiling, for a reason nothing would connect to
+          rendering. Version left to Spring Boot's dependency management.
+        -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
         </dependency>
     </dependencies>
     <dependencyManagement>

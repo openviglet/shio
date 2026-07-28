@@ -217,6 +217,57 @@ SH134/SH137, and where the console is looser the console is the hole, not the ba
 - `POST /api/v2/site` — create. **Session + CSRF**, so a stateless caller gets a bodiless 403;
   that is the friction SH170 is filed for, and `shio-react/e2e/provision.mjs` walks it by hand.
 
+### The renderer — page → layout → region (SH183)
+
+`GET /preview/{site}/{url}` composes a page out of content the instance already holds, so a
+site an agent built is visible with **no front end and no client setup** — which was the gap
+the whole of Block P is about. Owner: `com.viglet.shio.render`. Production delivery is still
+Next.js over the CDA (P10); this is **preview-grade** and the guards that keep it that way are
+deliberate: a distinct route, `no-store` + `X-Robots-Tag: noindex` (a freshness lifetime is how
+a preview quietly becomes infrastructure), authentication, and a banner the page's own
+stylesheet cannot hide because it is inline-styled rather than classed.
+
+- **The model is content.** `PageLayout` (`HTML`/`THEME`/`JAVASCRIPT`), `Region`
+  (`HTML`/`JAVASCRIPT`) and `Theme` (`CSS`/`JAVASCRIPT`) are **system post-types created on
+  demand** — `POST /api/v2/render/post-types`, idempotent, never touching an existing type
+  (SH38's `File` precedent, SH152's provision-never-upsert rule). The endpoint exists because
+  `PUT /api/v2/post-type/{name}` refuses a system type, so without it the render model would be
+  reachable only by whoever can restart the JVM. Because they are posts, `post.upsert`, the SH68
+  package, the file projection and `shio verify` all work on them for free; the 2018
+  `openviglet/bootstrap-site` export renders with **no migration**.
+- **A page finds its layout through `site.postTypeLayout`**, read as the flat
+  `{"<post type>": "<layout title>"}` map the one shipped example used. The
+  `ShSitePostTypeLayouts` array (`format`/`mimeType`/`cacheTTL`) is the extension it evidently
+  was and is **not** paid for up front — a non-string value is skipped, so the refusal names the
+  post-type instead of a page rendering with a layout nobody chose. Layouts, regions and themes
+  are addressed **by title**, because that is what `sh-region="NAME"` and a binding both name.
+- **`sh-region` survives the render**, joined by `data-shio-region` and
+  `data-shio-region-post`. Do not "tidy up" by stripping it: the rendered DOM is the only place
+  the Universal Editor can learn which node maps to which post, which is SH185's whole problem,
+  and the attribute has been in the content since 2018. A slot with no Region post is **marked**
+  (`data-shio-region-missing` + a constant comment), because a missing region and an empty one
+  are different mistakes — SH169's rule. The marker never interpolates the region name: a name
+  is content, HTML comments decode no entities, and `-->` inside one would close it.
+- **Three rules on `ShTemplateEngine`, all asserted by `ShRenderNoScriptEngineTest`**, because
+  each is a default or a dependency away from being undone and **none of them changes the
+  rendered output when it breaks**. (1) **No script engine**: Handlebars.java declares
+  `nashorn-core` at *compile* scope for its JS-helper path and the POM **excludes** it — the
+  classes are not on the classpath, which is stronger than FSP's option of a `ClassFilter` it
+  never passed. (2) **`MapValueResolver` only**: the default chain includes
+  `JavaBeanValueResolver`, under which a template handed an entity walks the persistence model.
+  (3) **A refusing `TemplateLoader`**: the default reads the classpath, so `{{> application}}`
+  in a layout — which is content — is a file read.
+- **Helpers are the closed capability set** `shObject.js` expressed as a convention:
+  `{{#query folder= type= limit=}}`, `{{#navigation folder=}}`, `{{file_url}}`. Every listing is
+  sorted by a **total** order (date *plus* an id tiebreak) and the model is built with
+  `ShStableMap` — a render that reorders itself moves SH101's digest for a change nobody made.
+  `search`, `form` and `getRelation` are **deliberately unregistered** (SH247): a helper that
+  silently renders nothing is worse than Handlebars' unknown-helper error, which carries a line
+  and a column.
+- **A region's `JAVASCRIPT` is never evaluated in the JVM** — that split is the whole
+  resolution of the Block D non-goal. It is also **not yet served to the browser** (SH248), so
+  the field currently accepts code that has no effect.
+
 ### Static files — upload/serve subsystem (SH38)
 Binary files are first-class `File`-post-type unified posts; the bytes live on
 disk, **keyed by the file post's id** (not the folder tree), under
