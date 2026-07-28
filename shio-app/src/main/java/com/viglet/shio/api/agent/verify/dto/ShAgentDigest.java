@@ -56,7 +56,52 @@ public record ShAgentDigest(String source, String address, String url, Integer s
                             List<String> fields, List<Heading> headings,
                             Map<String, Integer> landmarks, List<Link> links,
                             List<Image> images, int words, String digest,
-                            Appearance appearance, String appearanceDigest) {
+                            Appearance appearance, String appearanceDigest, Markers markers) {
+
+    /** The pre-SH299 form, for a digest with no rendered page to carry markers. */
+    public ShAgentDigest(String source, String address, String url, Integer status,
+                         List<String> fields, List<Heading> headings,
+                         Map<String, Integer> landmarks, List<Link> links,
+                         List<Image> images, int words, String digest,
+                         Appearance appearance, String appearanceDigest) {
+        this(source, address, url, status, fields, headings, landmarks, links, images, words,
+                digest, appearance, appearanceDigest, null);
+    }
+
+    /**
+     * SH299 — how many "this page is broken" markers the rendered page is carrying.
+     *
+     * <h2>Why it is beside the digest and in no hash</h2>
+     *
+     * <p>The three markers — a slot with no Region (SH183), a slot whose Region is unpublished
+     * (SH281) and a layout naming a Theme that does not exist (SH297) — are attributes on elements
+     * the structural outline does not describe. So an agent could close an SH99 loop green on a
+     * page carrying all three, which is the false green SH141 was filed for one level out.</p>
+     *
+     * <p>Folding them into {@code digest} would be worse than leaving them out: the hash would then
+     * move when a region is <em>published</em>, which changes what the page contains and not its
+     * structure — and SH187's whole point is that two hashes exist so "I restyled it" and "I broke
+     * the outline" stay different answers. A third meaning smuggled into the first hash undoes
+     * that. A count is what a caller branches on anyway.</p>
+     *
+     * <p>Deliberately <b>not</b> a new {@code verify} finding: the lint already reports every one of
+     * these through its own queries, and one defect in two reports is two reports that can
+     * disagree — the rule {@code dangling-reference} and the renderer already follow.</p>
+     *
+     * @param missingRegions     slots with no Region post
+     * @param unpublishedRegions slots whose Region exists as a draft only
+     * @param missingThemes      layouts naming a Theme this site has not got — at most one, since
+     *                           a page has one layout, but counted rather than flagged so the
+     *                           three read alike
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Markers(int missingRegions, int unpublishedRegions, int missingThemes) {
+
+        /** Whether the page is carrying any defect at all — the question a caller asks. */
+        public boolean any() {
+            return missingRegions > 0 || unpublishedRegions > 0 || missingThemes > 0;
+        }
+    }
 
     /**
      * SH187 — the part of <em>appearance</em> that is honestly answerable without a browser.

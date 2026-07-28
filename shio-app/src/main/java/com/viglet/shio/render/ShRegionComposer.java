@@ -88,7 +88,7 @@ public class ShRegionComposer {
 
     private static final String ANNOTATION_NAME = "data-shio-region";
     private static final String ANNOTATION_POST = "data-shio-region-post";
-    private static final String ANNOTATION_MISSING = "data-shio-region-missing";
+    public static final String ANNOTATION_MISSING = "data-shio-region-missing";
     /**
      * SH281 — the slot's region exists and has never been published.
      *
@@ -97,13 +97,23 @@ public class ShRegionComposer {
      * missing and empty: the author is looking at the region in the console while the page says it is
      * absent. Reporting "no Region post" for it is not a missing diagnosis, it is a wrong one.</p>
      */
-    private static final String ANNOTATION_UNPUBLISHED = "data-shio-region-unpublished";
+    public static final String ANNOTATION_UNPUBLISHED = "data-shio-region-unpublished";
 
     /** SH297 — the theme title a layout names, on {@code <body>}, escaped as an attribute value. */
     private static final String ANNOTATION_THEME = "data-shio-theme";
 
     /** SH297 — set when that theme does not exist, so the page says what the lint says. */
-    private static final String ANNOTATION_THEME_MISSING = "data-shio-theme-missing";
+    public static final String ANNOTATION_THEME_MISSING = "data-shio-theme-missing";
+
+    /**
+     * SH299 — the three attributes that mean "this page is carrying a defect", in one list.
+     *
+     * <p>Public, and read by {@code /agent/render}: the digest counts them so a proof cannot come
+     * back green on a page that says it is broken. A second hand-kept list of these names in the
+     * verify package would be the drift SH260 removed for helpers, on the rendered side.</p>
+     */
+    public static final List<String> DEFECT_MARKERS =
+            List.of(ANNOTATION_MISSING, ANNOTATION_UNPUBLISHED, ANNOTATION_THEME_MISSING);
 
     /** Constant for the same reason the region markers are: a theme title is content. */
     private static final String MISSING_THEME_MARKER =

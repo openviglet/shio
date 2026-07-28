@@ -385,6 +385,16 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   theme is marked** — because those degrade while a page with no layout is not a page. Checked in
   *both* states, so a draft-only theme stays SH281's `unpublished-template` rather than being
   reported twice.
+  **And a rendered digest counts the markers it carries (SH299)** — `markers: {missingRegions,
+  unpublishedRegions, missingThemes}` on `/agent/render`, because those attributes sit on elements
+  the structural outline does not describe, so a proof could close green on a visibly broken page.
+  It is **in neither hash**: folding it into `digest` would move that hash when a region is
+  *published*, which is not a structural change and would undo SH187's two-question split. Present
+  and all-zero on a clean rendered page (a caller must not have to tell "none" from "not reported"),
+  absent on the `source: content` fallback, and the attribute names are read from
+  `ShRegionComposer.DEFECT_MARKERS` rather than restated. **Not** a new `verify` finding — the lint
+  reports the same defects through its own queries, and one defect in two reports is two reports
+  that can disagree.
 - **The pre-edit form of the question is `?include=impact` on `/agent/read` (SH262)** — the same
   graph, asked *before* the write, which is the answer that decides whether to edit at all. A
   projection on the read rather than a `GET /agent/impact`, because a new endpoint with no MCP tool

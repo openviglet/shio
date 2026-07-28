@@ -73,6 +73,7 @@ class ShAgentRenderedDigestTest {
     private String siteName;
     private String boundType;
     private String looseType;
+    private String brokenType;
 
     @BeforeAll
     void setup() {
@@ -80,6 +81,7 @@ class ShAgentRenderedDigestTest {
         siteName = "sh249-" + suffix;
         boundType = "Sh249Bound" + suffix;
         looseType = "Sh249Loose" + suffix;
+        brokenType = "Sh299Broken" + suffix;
 
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             Instant when = Instant.parse("2026-01-01T00:00:00Z");
@@ -89,7 +91,8 @@ class ShAgentRenderedDigestTest {
             site.setDate(when);
             site.setOwner("admin");
             // Only one of the two types is bound, which is what makes the fallback observable.
-            site.setPostTypeLayout("{\"" + boundType + "\":\"" + LAYOUT + "\"}");
+            site.setPostTypeLayout("{\"" + boundType + "\":\"" + LAYOUT + "\",\""
+                    + brokenType + "\":\"SH299_LAYOUT\"}");
             entityManager.persist(site);
 
             ShFolder root = folder(site, when);
@@ -112,6 +115,15 @@ class ShAgentRenderedDigestTest {
                             + "<main>{{{TEXT}}}</main></body></html>"), when);
             post(site, root, regionType, REGION, "/region", json("HTML",
                     "<nav><a href=\"/docs\">Docs</a></nav>"), when);
+
+            // SH299's subject: a layout with an unfillable slot and a theme that is not there, so
+            // the page renders and carries two markers saying it is broken.
+            ShPostType broken = postType(brokenType, (byte) 0, when, "TEXT");
+            post(site, root, layoutType, "SH299_LAYOUT", "/layout-broken", json(
+                    "HTML", "<html><body><h1>{{post.title}}</h1>"
+                            + "<div sh-region=\"SH299_ABSENT\"></div></body></html>",
+                    "THEME", "SH299_NO_THEME"), when);
+            post(site, root, broken, "Broken page", "/broken", json("TEXT", "<p>x</p>"), when);
 
             post(site, root, bound, "Bound page", "/bound",
                     json("TEXT", "<h2>From the page</h2><p>body</p>"), when);
@@ -226,6 +238,40 @@ class ShAgentRenderedDigestTest {
                 .isNotEqualTo(plain.appearanceDigest());
         assertThat(styled.appearanceDigest())
                 .isEqualTo(renderService.digest("post:" + siteName + "/styled", null).appearanceDigest());
+    }
+
+    @Test
+    @DisplayName("SH299: a rendered page carrying defect markers says how many, beside the digest")
+    void aBrokenPageCountsItsMarkers() {
+        ShAgentDigest digest = renderService.digest("post:" + siteName + "/broken", null);
+
+        assertThat(digest.source()).isEqualTo("rendered");
+        assertThat(digest.markers()).isNotNull();
+        assertThat(digest.markers().missingRegions())
+                .as("""
+                        an SH99 loop could close green on this page before SH299: the markers are \
+                        attributes on elements the structural outline does not describe, which is \
+                        the false green SH141 was filed for one level out — a route that resolves \
+                        in the CMS and does not serve.""")
+                .isEqualTo(1);
+        assertThat(digest.markers().missingThemes()).isEqualTo(1);
+        assertThat(digest.markers().unpublishedRegions()).isZero();
+        assertThat(digest.markers().any()).isTrue();
+    }
+
+    @Test
+    @DisplayName("SH299: a clean page carries the section too, all zeroes")
+    void aCleanPageStillCarriesTheSection() {
+        // Present rather than absent here, unlike `appearance` — because the question is "is this
+        // page broken", and a caller that has to tell "no markers" from "this build does not
+        // report markers" is back to the ambiguity the field exists to remove. It is a rendered
+        // page's field, so the `source: content` fallback still has none.
+        assertThat(renderService.digest("post:" + siteName + "/bound", null).markers())
+                .isNotNull()
+                .satisfies(markers -> assertThat(markers.any()).isFalse());
+        assertThat(renderService.digest("post:" + siteName + "/loose", null).markers())
+                .as("a post that cannot be rendered has no page to carry markers")
+                .isNull();
     }
 
     @Test

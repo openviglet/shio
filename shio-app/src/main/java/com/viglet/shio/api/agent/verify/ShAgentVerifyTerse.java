@@ -111,6 +111,15 @@ public final class ShAgentVerifyTerse {
                     .attr("alt", image.alt())
                     .build());
         }
+        // SH299 — only when the page is carrying one. A line of zeroes on every clean digest is
+        // tokens spent to say nothing happened, and the absence is the same statement.
+        if (digest.markers() != null && digest.markers().any()) {
+            out.append(ShTerse.line("markers")
+                    .count("missingRegions", digest.markers().missingRegions())
+                    .count("unpublishedRegions", digest.markers().unpublishedRegions())
+                    .count("missingThemes", digest.markers().missingThemes())
+                    .build());
+        }
         return out.toString();
     }
 

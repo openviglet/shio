@@ -2950,34 +2950,54 @@ in site Y that slots this name"* is available. What is missing is the message.
 This is message quality rather than detection, which is exactly the thing that decides whether a
 warning gets acted on or added to a baseline (SH142's file exists because that decision happens).
 
-### XVI.51 A marker is in the DOM and not in the digest (SH299)
+### XVI.51 A write's proof does not carry the marker count (SH301)
 
-`/agent/render` hashes a rendered page's **structure**: headings, landmarks, links, images, word
-count. The three defect markers — `data-shio-region-missing` (SH183), `data-shio-region-unpublished`
-(SH281) and `data-shio-theme-missing` (SH297) — are attributes on elements that outline does not
-describe.
+SH194's `?digest=true` returns two hashes per affected page and deliberately nothing else: *"the
+caller is asking whether something moved, which is a comparison against a value it already holds."*
 
-So an agent can close an SH99 loop — write, render, compare the digest, report green — on a page
-that is carrying three markers saying it is broken. That is the same false green SH141 was filed for
-one level out, where a route resolved in the CMS and the front end did not serve it.
+SH299 breaks that premise for one field. A marker count is **not** a comparison — it is an assertion
+about the page as it stands — and the caller that has just rewritten a shared region is exactly the
+one who wants to know whether the ten pages it affected are rendering that region or a marker where
+it should be.
 
-**The obvious fix is wrong in an instructive way.** Folding the markers into `digest` would make the
-hash move when a region is *published* — which is a change to what the page contains but not to its
-structure, and SH187's whole point is that two hashes exist so "I restyled it" and "I broke the
-outline" are different answers. A third meaning smuggled into the first hash undoes that.
+The cost is real: the row grows per affected page, and SH266 already notes the ten-page cap is a
+guess awaiting measurement. So the likely shape is **the count only when it is non-zero**, which
+keeps a clean run's response byte-identical and matches how the terse form already prints it (a line
+of zeroes is tokens spent to say nothing happened).
 
-So the likely shape is a **count beside the digest** — `markers: {missing: 1, unpublished: 0}` —
-which is cheap, is part of no hash, and is exactly what a caller would branch on. Worth deciding at
-the same time whether `verify` should fail when a rendered digest is taken of a page carrying one:
-the lint knows about missing regions and themes through its own queries, and a page that renders a
-marker is the same defect observed from the other end.
+Worth settling together with SH266 rather than before it: both are questions about what a proof row
+may cost.
+
+### XVI.53 A delivery check proves a route serves and never looks at what it served (SH302)
+
+`shio verify --delivery` (SH141) fetches each published page and reports `route-not-served` on a bad
+status. The body is discarded.
+
+Since SH299 that body can be counted for markers with one jsoup parse, turning *"the front end
+answered 200"* into *"the front end answered 200 with a page that is missing a region"* — a much
+stronger claim, and arguably the one a delivery check exists to make.
+
+Two things stop it from being obvious:
+
+- **It only applies to Shio's own `/preview`.** An external Next.js front end renders its own markup
+  from the CDA and carries no `data-shio-*` at all, so the check would silently cover nothing for
+  precisely the deployments SH141 was built for — the "a check that covered nothing while answering
+  ok" failure that task itself warns about.
+- **A marker in *delivered* HTML is a stale-cache signal as much as a content defect.** The CMS may
+  have been fixed since; what is being served is old. That is a different finding with a different
+  fix, and reporting it as the content defect would send somebody to edit a post that is already
+  right.
+
+So the question to settle first is whether the honest form is a delivery *finding* at all, or a note
+saying which pages were checked this way and what was seen.
 
 ### XVI.52 Three markers exist and nothing lists them (SH300)
 
 The rendered DOM carries nine `data-shio-*` attributes: `region`, `region-post`, `region-missing`,
 `region-unpublished`, `theme`, `theme-missing`, `post`, `prop`, `post-type`. They are defined as
 constants in two classes, explained across four changelog entries, and consumed by the Universal
-Editor bridge, by anyone reading preview source, and — if SH299 lands — by the digest.
+Editor bridge, by anyone reading preview source, and — since SH299 — by the digest's
+marker count, which reads three of them out of `ShRegionComposer.DEFECT_MARKERS`.
 
 There is no single place that says what they mean. [SH185's protocol
 document](specs/SH185-universal-editor-protocol.md) covers the editor's four and predates the rest.

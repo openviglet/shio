@@ -21,7 +21,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.ShAddressResolver;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+
 import com.viglet.shio.api.agent.verify.dto.ShAgentDigest;
+import com.viglet.shio.render.ShRegionComposer;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -135,7 +139,8 @@ public class ShAgentRenderService {
             // post's own markup field is not a page and carries no stylesheet, so an appearance
             // block for it would be a section of nulls pretending to be an answer.
             return render(SOURCE_RENDERED, address, null, null, List.of(),
-                    ShHtmlOutline.of(html.get()), ShHtmlAppearance.of(html.get()));
+                    ShHtmlOutline.of(html.get()), ShHtmlAppearance.of(html.get()),
+                    markersOf(html.get()));
         }
 
         List<String> fields = new ArrayList<>();
@@ -361,6 +366,29 @@ public class ShAgentRenderService {
     private ShAgentDigest render(String source, String address, String url, Integer status,
                                  List<String> fields, ShHtmlOutline.Outline outline,
                                  ShHtmlAppearance.Appearance appearance) {
+        return render(source, address, url, status, fields, outline, appearance, null);
+    }
+
+    /**
+     * SH299 — counts the defect markers a rendered page carries.
+     *
+     * <p>Read with {@link ShRegionComposer#DEFECT_MARKERS}, which is the composer's own list, so
+     * this cannot come to count an attribute the renderer stopped emitting or miss one it added —
+     * the drift SH260 removed for helpers, on the rendered side.</p>
+     */
+    private static ShAgentDigest.Markers markersOf(String html) {
+        Document document = Jsoup.parse(html);
+        int missing = document.select("[" + ShRegionComposer.ANNOTATION_MISSING + "]").size();
+        int unpublished =
+                document.select("[" + ShRegionComposer.ANNOTATION_UNPUBLISHED + "]").size();
+        int theme = document.select("[" + ShRegionComposer.ANNOTATION_THEME_MISSING + "]").size();
+        return new ShAgentDigest.Markers(missing, unpublished, theme);
+    }
+
+    private ShAgentDigest render(String source, String address, String url, Integer status,
+                                 List<String> fields, ShHtmlOutline.Outline outline,
+                                 ShHtmlAppearance.Appearance appearance,
+                                 ShAgentDigest.Markers markers) {
         List<ShAgentDigest.Heading> headings = outline.headings().stream()
                 .map(heading -> new ShAgentDigest.Heading(heading.level(), heading.text()))
                 .toList();
@@ -383,7 +411,10 @@ public class ShAgentRenderService {
                 // edit changes how the page looks and not what it is, so one hash covering both
                 // could not tell "I restyled it" from "I broke the outline" — which is precisely
                 // the discrimination an iterative loop needs. Two hashes, two questions.
-                look == null ? null : appearanceDigestOf(look));
+                look == null ? null : appearanceDigestOf(look),
+                // SH299 — beside the two hashes and in neither of them: a marker count says the
+                // page is broken, which is a different question from "did its structure change".
+                markers);
     }
 
     /**
