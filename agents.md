@@ -486,8 +486,21 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   silent: a registered helper missing from the scanner's list is reported as an unknown *field*, so
   the typo rule invents a typo. **The scanner has no overload that omits the shapes** — a default of
   "nothing is registered" would turn a forgotten argument into exactly that false positive; pass
-  `ShHelperShapes.none()` and mean it. Adding a helper is now one line plus its shape; the capability
-  set is still not *discoverable* from outside (**SH272**).
+  `ShHelperShapes.none()` and mean it. Adding a helper is one line plus its shape and its
+  **signature** — SH272 added the third, because a hash parameter's name (`folder=`, `q=`) exists
+  nowhere but inside the helper's body, so no reader could derive it from the registry.
+- **The capability set is discoverable, in the context pack (SH272)** — `registeredSignatures()`
+  renders as a `conventions` line naming every call form (`{{#query folder= type= limit=}}`,
+  `{{#getRelation FIELD}}`, `{{file_url FIELD}}`, …) plus `sh-region`. Before it, an author learned
+  the set by writing a template that called something else and reading the 400 — a teaching error
+  doing the job of documentation, one name per attempt, which is P2 backwards. Three rules: the pack
+  and **not** the manifest (`startHere` is orientation, and an MCP resource would answer only MCP
+  clients — while a helper set is exactly the *instance-specific* fact this section exists for, next
+  to SH114's notes); it is **conditional on the instance's own model** holding a render post-type, so
+  a session that will never write a template pays nothing (P3) and the check costs no query; and a
+  helper registered with no signature is **absent** rather than listed bare, since a half-answer
+  about a capability is what sends somebody guessing. `form` stays unregistered and therefore
+  unadvertised — a list naming it would have the author write what SH192 then refuses.
   **`form` is the last of the seven and is deliberately unregistered** (SH247): a helper that
   silently renders nothing is worse than Handlebars' unknown-helper error, which carries a line
   and a column — and its absence is a *decision*, since a form needs somewhere for a submission to

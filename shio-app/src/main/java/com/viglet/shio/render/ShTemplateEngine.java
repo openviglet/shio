@@ -98,6 +98,8 @@ public class ShTemplateEngine {
      * exactly the kind SH136 is about.</p>
      */
     private final Map<String, ShHelperShape> registered = new TreeMap<>();
+    /** SH272 — how each helper is *called*, in the form an author writes. */
+    private final Map<String, String> signatures = new TreeMap<>();
 
     public ShTemplateEngine() {
         this.handlebars = new Handlebars()
@@ -117,8 +119,40 @@ public class ShTemplateEngine {
      *              that has the knowledge, rather than restated by each reader (SH260)
      */
     public void register(String name, ShHelperShape shape, Helper<Object> helper) {
+        register(name, shape, null, helper);
+    }
+
+    /**
+     * Registers a domain helper with the signature an author would write (SH272).
+     *
+     * @param signature the call as it appears in a template — {@code {{#query folder= type=
+     *                  limit=}}}. The shape says how a call is <em>parsed</em>; this says how it is
+     *                  <em>written</em>, which is the part an author gets wrong and the part no
+     *                  reader could derive: a hash parameter's name exists only inside the helper's
+     *                  body. Declared beside the helper for SH260's reason — the engine is the one
+     *                  source of the capability set, and a signature kept anywhere else is a sixth
+     *                  hand-maintained copy of it
+     */
+    public void register(String name, ShHelperShape shape, String signature,
+                         Helper<Object> helper) {
         handlebars.registerHelper(name, helper);
         registered.put(name, shape == null ? ShHelperShape.BLOCK : shape);
+        if (signature != null && !signature.isBlank()) {
+            signatures.put(name, signature.trim());
+        }
+    }
+
+    /**
+     * Every registered helper's signature, sorted by name (SH272).
+     *
+     * <p>The answer to "what may a template call", which until now was only reachable by writing a
+     * template that called something else and reading the 400. A signature rather than a bare list
+     * because the shape is what an author gets wrong; a helper registered without one is simply
+     * absent here rather than appearing as a name with no call form, since a half-answer about a
+     * capability is the thing that sends somebody guessing.</p>
+     */
+    public List<String> registeredSignatures() {
+        return List.copyOf(signatures.values());
     }
 
     /** The registered names, sorted — the {@code allowed} set of an unknown-helper refusal. */

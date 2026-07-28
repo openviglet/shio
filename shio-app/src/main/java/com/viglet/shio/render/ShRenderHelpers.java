@@ -139,11 +139,19 @@ public class ShRenderHelpers {
         // The shape is declared with the helper (SH260): the engine is the one place that knows
         // the capability set, and everything that reads it — the unknown-helper refusal, the SH251
         // field scanner — asks rather than restating.
-        engine.register("query", ShHelperShape.BLOCK, this::query);
-        engine.register("navigation", ShHelperShape.BLOCK, this::navigation);
-        engine.register("search", ShHelperShape.BLOCK, this::search);
-        engine.register("getRelation", ShHelperShape.BLOCK_PATH_ARG, this::getRelation);
-        engine.register("file_url", ShHelperShape.INLINE_PATH_ARG, this::fileUrl);
+        // The signature travels with the registration for the same reason (SH272): a hash
+        // parameter's name exists only inside the helper's body, so nothing downstream could
+        // derive it, and the context pack now answers "what may a template call" from here.
+        engine.register("query", ShHelperShape.BLOCK,
+                "{{#query folder= type= limit=}}…{{/query}}", this::query);
+        engine.register("navigation", ShHelperShape.BLOCK,
+                "{{#navigation folder=}}…{{/navigation}}", this::navigation);
+        engine.register("search", ShHelperShape.BLOCK,
+                "{{#search q= type= limit=}}…{{/search}}", this::search);
+        engine.register("getRelation", ShHelperShape.BLOCK_PATH_ARG,
+                "{{#getRelation FIELD}}…{{/getRelation}}", this::getRelation);
+        engine.register("file_url", ShHelperShape.INLINE_PATH_ARG,
+                "{{file_url FIELD}}", this::fileUrl);
     }
 
     /**

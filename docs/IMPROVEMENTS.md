@@ -2185,7 +2185,8 @@ fired, which is the part a reader would use to tell a good refusal from a confus
 > accident of history), and the refusal that exercises it needs a *parameterised unknown* helper,
 > because `{{#form}}` is in `KNOWN_MISSING_HELPERS` and takes the SH247 branch instead.
 >
-> What is left is that the capability set is still discoverable only by getting a 400 — **SH272**.
+> What was left — the capability set being discoverable only by getting a 400 — is **SH272**, ✅ shipped
+> in turn: the signature travels with the registration and the context pack states it.
 
 ### XVI.15 A hash argument that is a field is not checked (SH261)
 
@@ -2399,29 +2400,6 @@ The argument is not tidiness. SH250 was verified by the *absence* of a warning, 
 a signal in a log clean enough for it to be visible. That property was luck this time. Making it
 design is what this buys, and the beneficiary is whoever reads the build the day something new starts
 warning.
-
-### XVI.24 A helper is registered in code, so the capability set is not discoverable (SH272)
-
-SH260 made the engine the one thing that knows what is registered. Every reader of it is internal:
-the write-time refusal, the SH251 scanner, the SH251 lint. **Nothing on the agent surface says what a
-template may call.**
-
-So an author writing a layout through `post.upsert` learns the set by getting a 400 — a teaching error
-doing the job of documentation, and one that teaches a single name per attempt. That is the opposite
-of law P2, which is that discovery is a product feature rather than a docs problem, and it is the same
-gap the manifest was built to close for endpoints.
-
-The engine can now answer it in one line, and `registeredHelpers()` carries the shapes, so the answer
-can be a *signature* (`{{#query folder= type= limit=}}`, `{{#getRelation FIELD}}`, `{{file_url FIELD}}`)
-rather than a bare list — which is strictly more useful, since the shape is the part an author gets
-wrong.
-
-Where it belongs is the open question. The manifest's `startHere` is for orientation, not reference. A
-`shio://schema`-style MCP resource would be discoverable but only to MCP clients. **The context pack's
-`conventions` is the likely home**: a helper set is exactly the kind of instance-specific fact that
-SH114's memory notes already sit beside, it is read once per session, and SH116's ETag makes it free
-on repeat. The thing to check before choosing is P3 — the pack is budgeted, and five signatures is a
-small but non-zero cost paid by every session including the ones that never write a template.
 
 ### XVI.25 The scanner is a hand-written parser of somebody else's grammar (SH273)
 
@@ -2877,6 +2855,55 @@ list is, so the list cannot rot into a suppression.
 Worth doing because the comment is load-bearing: "imports without a migration" is the promise that
 makes the 2018 package the repository's one real end-to-end example, and it was wrong for four blocks
 with nothing to notice.
+
+### XVI.43 A helper's signature is prose beside the code that implements it (SH291)
+
+SH272 put the call form at the registration — the one place that knows both the name and the shape,
+which is SH260's rule applied to a third fact. It is still **a string somebody has to keep true**.
+
+Nothing fails if `search` gains a `folder=` parameter and the signature is not updated. The failure
+would be a context pack teaching an incomplete call, and the author would discover it by writing a
+template whose parameter is silently ignored — which is worse than the 400 this task replaced, because
+an ignored hash key is not an error at all.
+
+Three candidate instruments, and the obvious one is unavailable:
+
+- **Reflection** cannot answer it. A hash key is read by `options.hash("q")` inside a method body;
+  there is no signature, annotation or type that carries it. Finding it means reading bytecode or
+  source.
+- **A source lint**, in the shape `ShAgentIncidentFramesTest` and `ShByteStabilityLintTest` already
+  use: every `hash(options, "X"` (and `options.hash("X")`) inside a helper method must appear in that
+  helper's registered signature. Cheap and honest, and brittle in the usual way — it reads the source
+  as text, so a key built from a constant escapes it.
+- **Declare it unenforced.** SH275's pattern: a premise written down as unenforced is not the same
+  defect as one nobody has noticed, and there are five helpers whose parameters have not changed since
+  they were written.
+
+Worth choosing deliberately rather than defaulting to the lint because it is available.
+
+### XVI.44 The pack states the helpers and nothing states the model they run against (SH292)
+
+An author now learns from the context pack that `{{#query folder= type= limit=}}` exists. Nothing
+tells them:
+
+- that a top-level `{{TEXT}}` is the **page's** field while the same reference inside the block is the
+  **listed post's** — the scoping SH251's scanner exists to track, and the single most likely thing to
+  get wrong;
+- that a row carries `title`, `link`, `summary`, `date` (`ShRenderHelpers.ROW_KEYS`);
+- that `post.`, `site.`, `theme.` and `render.` are reserved frames.
+
+The asymmetry has a real cost. SH251's `template-unknown-field` is an **error** at top level and only a
+**warning** inside a `{{#query}}` block, because the rows are whatever the helper found and the engine
+cannot prove what they hold. So the place where the lint is weakest is exactly the place the author
+now has the least documentation for — the pack tells them the block exists and nothing about what is
+in scope inside it.
+
+The content already exists in one place each: `ROW_KEYS` (SH260 made it the source) and the scanner's
+frame list. What needs deciding is **where**, and this is the point where "add it to conventions"
+stops being obviously right: it would roughly double that line for every rendering instance, and P3 is
+a budget rather than a preference. The alternatives are a `shio://` resource (discoverable, MCP-only),
+a section of the pack somebody opts into, or a documentation link — which this codebase has so far
+refused on the grounds that a link is not an appliable unit (P8).
 
 ---
 

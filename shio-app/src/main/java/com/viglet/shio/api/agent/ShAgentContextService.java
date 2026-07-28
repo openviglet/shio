@@ -37,6 +37,8 @@ import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.render.ShTemplateEngine;
+import com.viglet.shio.render.ShRenderPostTypes;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 
 /**
@@ -75,6 +77,7 @@ public class ShAgentContextService {
     private final ShAgentSiteAccess siteAccess;
     private final ShAgentMemoryService memoryService;
     private final ShAgentManifestService shAgentManifestService;
+    private final ShTemplateEngine shTemplateEngine;
 
     public ShAgentContextService(ShFolderRepository shFolderRepository,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
@@ -83,7 +86,8 @@ public class ShAgentContextService {
                                 ShAgentProperties properties,
                                 ShAgentSiteAccess siteAccess,
                                 ShAgentMemoryService memoryService,
-                                ShAgentManifestService shAgentManifestService) {
+                                ShAgentManifestService shAgentManifestService,
+                                ShTemplateEngine shTemplateEngine) {
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostTypeRepository = shPostTypeRepository;
@@ -92,6 +96,7 @@ public class ShAgentContextService {
         this.siteAccess = siteAccess;
         this.memoryService = memoryService;
         this.shAgentManifestService = shAgentManifestService;
+        this.shTemplateEngine = shTemplateEngine;
     }
 
     /** Id-free by default (SH121) — see {@link #context(String, Integer, Integer, String, String, boolean)}. */
@@ -350,6 +355,39 @@ public class ShAgentContextService {
      * remembered one is somebody's claim about an earlier decision. Reading the
      * ground truth before the folklore is the right order when the two disagree.</p>
      */
+    /**
+     * What a template may call, for an instance that has templates (SH272).
+     *
+     * <h2>Why the pack and not the manifest</h2>
+     *
+     * <p>SH260 made the engine the one source of the capability set and every reader of it was
+     * internal, so the only way to learn the set was to write a template calling something else and
+     * read the 400 — a teaching error doing the job of documentation, one name per attempt, which is
+     * the opposite of P2. The manifest's {@code startHere} is orientation rather than reference, and
+     * an MCP resource would answer only MCP clients; this is an <em>instance-specific</em> fact,
+     * which is what this section is for and what SH114's memory notes already sit beside.</p>
+     *
+     * <h2>Why it is conditional</h2>
+     *
+     * <p>P3: the pack is budgeted and read once per session, including by the many sessions that
+     * never write a template. So it is emitted only when the instance's own model holds one of the
+     * render post-types — the same test the neighbouring conventions make about managed and system
+     * types, and it costs no query, because the model is already in hand.</p>
+     */
+    private java.util.Optional<String> templateHelpers(List<ShAgentContext.Type> model) {
+        boolean renders = model.stream().map(ShAgentContext.Type::name)
+                .anyMatch(ShRenderPostTypes.NAMES::contains);
+        List<String> signatures = shTemplateEngine.registeredSignatures();
+        if (!renders || signatures.isEmpty()) {
+            return java.util.Optional.empty();
+        }
+        return java.util.Optional.of("A PageLayout's and a Region's HTML is Handlebars, and the "
+                + "helpers it may call are exactly these: " + String.join(", ", signatures)
+                + ". Anything else is refused when you write the post, with a line and a column. "
+                + "A layout slots a region by title with sh-region=\"TITLE\", and binds to a "
+                + "post-type through the site's postTypeLayout map.");
+    }
+
     private List<String> conventions(List<ShSite> sites, List<ShAgentContext.Type> model,
                                      boolean ids, String site) {
         List<String> conventions = new ArrayList<>();
@@ -399,6 +437,7 @@ public class ShAgentContextService {
                 + "session would otherwise re-derive, write it down: the `shio_remember` tool, "
                 + "`shio remember <key> \"<note>\"`, or PUT /api/v2/agent/memory with "
                 + "{key, note, scope}. Notes come back in this section, attributed.");
+        templateHelpers(model).ifPresent(conventions::add);
         conventions.addAll(remembered(site));
         return conventions;
     }
