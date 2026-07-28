@@ -45,6 +45,7 @@ import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.render.ShRenderPostTypes;
 import com.viglet.shio.render.ShTemplateGraph;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
@@ -518,7 +519,49 @@ public class ShAgentVerifyService {
         templateFields(check, scan, findings);
         unusedTemplates(check, scan, findings);
         duplicateTemplateTitles(check, scan, findings);
+        untitledTemplates(check, scan, findings);
         unpublishedTemplates(check, scan, findings);
+    }
+
+    /**
+     * SH289 — a template with no title, which nothing can address.
+     *
+     * <h2>Why this is the reportable form of a model defect</h2>
+     *
+     * <p>The cause is usually the instance's own model: a render post-type created before SH277
+     * declares no {@code isTitle} field, so every template written through {@code post.upsert}
+     * lands with an empty title column. That defect lives on the <em>post-type</em>, which has no
+     * SH79 address a finding can be hung on and no place in SH143's subject scoping — while its
+     * <b>symptom</b> is a post, addressable and scoped like everything else here. So the rule
+     * reports the symptom, which is also the more useful thing to be told: this template exists,
+     * nothing can reach it, and here is why.</p>
+     *
+     * <p>An <b>error</b>, unlike the unused-template warnings beside it. A region waiting for its
+     * layout is work in progress; a template with no title cannot be named by any {@code sh-region}
+     * slot or {@code postTypeLayout} binding, whatever anybody intended — and it is invisible to
+     * {@code unused-region} too, because {@link ShTemplateGraph} skips a blank title. It is
+     * content nobody can reach and, until now, nothing reported.</p>
+     */
+    private void untitledTemplates(String check, Scan scan, List<Finding> findings) {
+        Set<String> reported = new java.util.LinkedHashSet<>();
+        for (ShPostUnified post : scan.posts()) {
+            String typeName = post.getShPostType() == null ? null : post.getShPostType().getName();
+            if (typeName == null || !ShRenderPostTypes.NAMES.contains(typeName)
+                    || (post.getTitle() != null && !post.getTitle().isBlank())
+                    || !reported.add(post.getId())) {
+                continue;
+            }
+            findings.add(Finding.error(check, "untitled-template", address(post), null,
+                    "This " + typeName + " has no title, so nothing can address it: a layout "
+                            + "reaches a region with `sh-region=\"TITLE\"` and a site binds a "
+                            + "layout by title in `postTypeLayout`. It is invisible to the "
+                            + "unused-template checks for the same reason.",
+                    "Give it a title by writing the TITLE field (post.upsert on "
+                            + "POST /api/v2/agent/batch). If the write is refused as an undeclared "
+                            + "field, this instance's " + typeName + " predates the title field: "
+                            + "run POST /api/v2/render/post-types/reconcile to add it, which "
+                            + "changes nothing else."));
+        }
     }
 
     /**

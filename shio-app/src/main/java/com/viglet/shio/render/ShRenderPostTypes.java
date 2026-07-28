@@ -9,6 +9,7 @@
 package com.viglet.shio.render;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -123,42 +124,113 @@ public class ShRenderPostTypes {
                 .toList();
     }
 
+    /**
+     * SH289 — adds fields an existing render type is missing, and changes nothing else.
+     *
+     * <h2>Why this is a separate call and not a better {@code ensure}</h2>
+     *
+     * <p>{@code ensure} must stay provision-never-upsert (SH152): a startup that rewrote somebody's
+     * model is worse than one that leaves a stale one. But that rule left instances created before
+     * SH252 with an HTML editor on a stylesheet and instances created before SH277 with <b>no title
+     * field at all</b> — where a template cannot be addressed and cannot be given a title, which is
+     * a broken instance rather than a stale preference, and one whose owner had no way to find out.
+     * So the drift becomes something the operator can <em>see</em> and <em>apply</em>, on their
+     * decision rather than the JVM's.</p>
+     *
+     * <p><b>Additive only.</b> A field the type already declares is left exactly as it is —
+     * including its widget, its label and its flags — so this cannot undo a curator's edit. That
+     * makes the SH252 widget drift deliberately <em>out</em> of scope: changing a field is a
+     * different decision from adding a missing one, and doing both under one verb would mean an
+     * operator fixing a missing title also silently accepted a widget change. Removal is never
+     * offered at all.</p>
+     *
+     * @param dryRun report what would be added and write nothing
+     * @return one line per type that is missing something, naming the fields
+     */
+    @Transactional
+    public List<String> reconcile(boolean dryRun) {
+        List<String> report = new ArrayList<>();
+        for (String name : NAMES) {
+            ShPostType live = shPostTypeRepository.findByName(name);
+            if (live == null) {
+                continue;
+            }
+            Set<String> declared = new java.util.TreeSet<>();
+            if (live.getShPostTypeAttrs() != null) {
+                live.getShPostTypeAttrs().forEach(attr -> declared.add(attr.getName()));
+            }
+            List<FieldSpec> missing = specsFor(name).stream()
+                    .filter(spec -> !declared.contains(spec.name()))
+                    .toList();
+            if (missing.isEmpty()) {
+                continue;
+            }
+            report.add(name + ": " + missing.stream().map(FieldSpec::name)
+                    .collect(java.util.stream.Collectors.joining(", ")));
+            if (dryRun) {
+                continue;
+            }
+            Set<ShPostTypeAttr> attrs = live.getShPostTypeAttrs() == null
+                    ? new HashSet<>() : new HashSet<>(live.getShPostTypeAttrs());
+            missing.forEach(spec -> attrs.add(attr(spec, live)));
+            live.setShPostTypeAttrs(attrs);
+            shPostTypeRepository.save(live);
+        }
+        return List.copyOf(report);
+    }
+
+    /**
+     * The fields one render type is defined by — the one table {@link #ensure} and
+     * {@link #reconcile} both read.
+     *
+     * <p>Two readers of one list rather than a creation path and a repair path that each know the
+     * model: SH245's rule, and the failure it prevents is specific — a field added to {@code ensure}
+     * and not to the repair list would be created on new instances and never offered to old ones,
+     * which is precisely the drift this exists to close.</p>
+     */
+    private List<FieldSpec> specsFor(String name) {
+        return switch (name) {
+            case ShSystemPostType.PAGE_LAYOUT -> List.of(
+                    titleField(),
+                    field(ShSystemPostTypeAttr.HTML, "HTML", ShSystemWidget.ACE_HTML, 2, true),
+                    field(ShSystemPostTypeAttr.THEME, "Theme", ShSystemWidget.TEXT, 3, false),
+                    field(ShSystemPostTypeAttr.JAVASCRIPT, "JavaScript",
+                            ShSystemWidget.ACE_JS, 4, false));
+            case ShSystemPostType.REGION -> List.of(
+                    titleField(),
+                    field(ShSystemPostTypeAttr.HTML, "HTML", ShSystemWidget.ACE_HTML, 2, true),
+                    field(ShSystemPostTypeAttr.JAVASCRIPT, "JavaScript (browser)",
+                            ShSystemWidget.ACE_JS, 3, false));
+            // SH252 — a stylesheet, not an HTML document. Note the limit: `ensure` never touches an
+            // existing post-type (SH152), so an instance that already created its Theme keeps
+            // `Ace Editor - HTML` on this field, and SH289's reconcile is deliberately additive so
+            // it does not change it either — a widget change is a different decision from a missing
+            // field, and bundling them would have an operator accept one by fixing the other.
+            case ShSystemPostType.THEME -> List.of(
+                    titleField(),
+                    field(ShSystemPostTypeAttr.CSS, "CSS", ShSystemWidget.ACE_CSS, 2, false),
+                    field(ShSystemPostTypeAttr.JAVASCRIPT, "JavaScript",
+                            ShSystemWidget.ACE_JS, 3, false));
+            default -> List.of();
+        };
+    }
+
     private ShPostType ensurePageLayout() {
         return ensure(ShSystemPostType.PAGE_LAYOUT, "Page Layouts", "Page Layout",
-                "An HTML skeleton with named sh-region slots",
-                titleField(),
-                field(ShSystemPostTypeAttr.HTML, "HTML", ShSystemWidget.ACE_HTML, 2, true),
-                field(ShSystemPostTypeAttr.THEME, "Theme", ShSystemWidget.TEXT, 3, false),
-                field(ShSystemPostTypeAttr.JAVASCRIPT, "JavaScript",
-                        ShSystemWidget.ACE_JS, 4, false));
+                "An HTML skeleton with named sh-region slots");
     }
 
     private ShPostType ensureRegion() {
         return ensure(ShSystemPostType.REGION, "Regions", "Region",
-                "HTML that renders one kind of content, slotted into a layout by name",
-                titleField(),
-                field(ShSystemPostTypeAttr.HTML, "HTML", ShSystemWidget.ACE_HTML, 2, true),
-                field(ShSystemPostTypeAttr.JAVASCRIPT, "JavaScript (browser)",
-                        ShSystemWidget.ACE_JS, 3, false));
+                "HTML that renders one kind of content, slotted into a layout by name");
     }
 
     private ShPostType ensureTheme() {
         return ensure(ShSystemPostType.THEME, "Themes", "Theme",
-                "The stylesheet and script a whole site shares",
-                // SH252 — a stylesheet, not an HTML document. Note the limit of this fix: `ensure`
-                // never touches an existing post-type (SH152's provision-never-upsert), so an
-                // instance that already created its Theme keeps `Ace Editor - HTML` on this field.
-                // That is the correct trade — the alternative is a startup that rewrites somebody's
-                // model — and it means the defect persists on existing installs until somebody
-                // changes the field by hand.
-                titleField(),
-                field(ShSystemPostTypeAttr.CSS, "CSS", ShSystemWidget.ACE_CSS, 2, false),
-                field(ShSystemPostTypeAttr.JAVASCRIPT, "JavaScript",
-                        ShSystemWidget.ACE_JS, 3, false));
+                "The stylesheet and script a whole site shares");
     }
 
-    private ShPostType ensure(String name, String plural, String title, String description,
-                              FieldSpec... fields) {
+    private ShPostType ensure(String name, String plural, String title, String description) {
         ShPostType existing = shPostTypeRepository.findByName(name);
         if (existing != null) {
             return existing;
@@ -173,7 +245,7 @@ public class ShRenderPostTypes {
         postType.setOwner("admin");
 
         Set<ShPostTypeAttr> attrs = new HashSet<>();
-        for (FieldSpec spec : fields) {
+        for (FieldSpec spec : specsFor(name)) {
             attrs.add(attr(spec, postType));
         }
         postType.setShPostTypeAttrs(attrs);

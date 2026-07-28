@@ -418,7 +418,19 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   are load-bearing: a template's **own** DRAFT/PUBLISHED pair shares id and title, and a **trashed**
   template's title is free (no clause needed — `@SQLRestriction` means the finder sees what the
   renderer sees). Limit: `ensure` never touches an existing type (SH152), so an instance created
-  before this keeps the old shape until the field is added by hand — **SH289**.
+  before this keeps the old shape — which **SH289** now repairs.
+- **An older instance's render model is repairable, on the operator's decision (SH289)** —
+  `POST /api/v2/render/post-types/reconcile` (`?dryRun=true` reports, from the same code) adds
+  fields an existing render type lacks and changes nothing else. A **second verb**, not a smarter
+  `ensure`: `ensure` creates what is absent and anything may call it, while this changes a type the
+  instance already has. **Additive only**, so a curator's edit survives — which is why SH252's
+  widget drift is deliberately *not* fixed by it: changing a field is a different decision from
+  adding a missing one. `ensure` and `reconcile` read **one** field table (`specsFor`), or a field
+  added to one would be created on new instances and never offered to old ones — the exact drift
+  this closes. The report is the **symptom**, because a post-type has no SH79 address and no place
+  in SH143's scoping: **`untitled-template`**, an *error* in `checks=content` for a template with a
+  blank title — which `unused-region` cannot see either, since `ShTemplateGraph` skips a blank
+  title, so it was content nobody could reach that nothing reported.
   **And the transcription is now checked (SH290)** — `ShRenderModelSourceTest` compares the three
   types against `import/post-types.json`, the 2018 model they were copied from, which **nothing
   else reads**: a reference with no reader is how a transcription drifts. Field **names** and the
@@ -1043,6 +1055,13 @@ it is a different one. That is never a reason to loosen the agent path to match.
   open, and worth knowing before relying on the undo: **the trash is console-only** — an agent
   can fill it and cannot list or restore it (**SH222**) — and **deleting a whole site** still
   behaves the way a folder delete used to (**SH223**).
+
+**Cascade safety is a fixture's problem too (SH289).** `ShPostTypeAttr` maps `shWidget` as
+`@ManyToOne(cascade = ALL)`, so removing an attribute cascades a `REMOVE` into the **shared widget
+catalog**. `ShPostTypeAdminService.detach` handles it in production; a *test* that mutates a
+post-type needs the same three lines, and the one that did not deleted `Text` and
+`Ace Editor - Javascript` for the whole JVM — surfacing as `Widget 'Text' is not seeded` thrown by
+production code several steps from the cause.
 
 ### Post Types — one name-keyed surface (SH16 + SH117)
 **There is one post-type API and it is keyed by name.** The CLI, the agent path and the

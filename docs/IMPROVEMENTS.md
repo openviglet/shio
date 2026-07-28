@@ -2807,33 +2807,6 @@ read it out of and a terminal user has no path to it at all. So the smaller and 
 may be `shio impact <address>` — one question the files genuinely cannot answer — rather than a general
 `read` that duplicates the projection. Decide which before building either.
 
-### XVI.41 A system post-type created by an older build is never reconciled (SH289)
-
-`ShRenderPostTypes.ensure` never touches an existing post-type. That is SH152's rule and it is right:
-the alternative is a startup that rewrites a model somebody may have edited by hand.
-
-The cost has now been paid twice. An instance that created its `Theme` before SH252 keeps
-`Ace Editor - HTML` on a stylesheet — a stale *preference*, mildly annoying. An instance that created
-its render types before SH277 keeps types with **no title field**, where a template cannot be
-addressed and cannot be given a title — a *broken* instance, and one whose owner has no way to find out
-short of reading this changelog.
-
-So the answer is not to relax the rule. It is to make the drift **visible and appliable**:
-
-- **Visible**: a `verify` finding naming the fields the shipped model declares that this instance's
-  type lacks. Probably an **error** rather than a warning, which would make it the first system-model
-  finding that fails a gate — justified, because "your `Region` has no title field" is provable from
-  inside the CMS and is not work in progress.
-- **Appliable**: something the operator runs. `PUT /api/v2/post-type/{name}` refuses a system type —
-  that refusal is why `POST /api/v2/render/post-types` exists at all — so the likely shape is a
-  `reconcile` mode on that endpoint rather than a new one, added under the same provisioning rule:
-  add what is missing, never change or remove what is there (SH152's `mergePostTypes`, which already
-  exists for blueprints and is exactly this decision one surface along).
-
-Two things to settle rather than assume: whether a *renamed* or *removed* field is ever applied
-automatically (almost certainly not — that is the case where the operator's model may be deliberate),
-and whether reconciliation is offered per field or per type.
-
 ### XVI.43 A helper's signature is prose beside the code that implements it (SH291)
 
 SH272 put the call form at the registration — the one place that knows both the name and the shape,
@@ -2924,6 +2897,60 @@ The reason this is an idea rather than a designed task is the fixture. Hand-writ
 2018 format risks asserting against a shape the 2018 exporter never produced — proving the code
 agrees with the test's author rather than with the artefact. The honest source is a real export, so
 the first step is finding one, not writing one.
+
+### XVI.47 Nothing announces the drift until a template is already broken (SH295)
+
+SH289 reports `untitled-template`, which is a finding on a **post**: it fires once somebody has
+already written a template that cannot be addressed. The drift itself — a render post-type missing a
+field the shipped model declares — is invisible until then, so an instance that has run `ensure` and
+written nothing looks exactly like a healthy one.
+
+The reason it is reported that way is a real constraint, not an oversight: a post-type has no SH79
+address, so it cannot carry a `verify` finding, and SH143's scoping has nowhere to put one. That
+constraint has not gone away, so the answer is not "add a finding".
+
+Two plausible homes, with the trade each carries:
+
+- **The context pack's `conventions`.** An agent reads it before writing anything, which is exactly
+  the moment this matters, and SH272 has just established the precedent for an instance-specific
+  render fact living there. The cost is P3: every session pays for a line that most instances do not
+  need — though the same conditional test SH272 uses (only when the instance has the render model)
+  would narrow it to those that could be affected.
+- **A startup log line.** Free, and nobody reads logs. That is SH103's own argument against a
+  log-tailing tool, applied to ourselves.
+
+Worth settling alongside: whether `GET /api/v2/render/post-types` should report the drift beside each
+type. That call already answers "can this instance render", and the caller asking it is precisely the
+one who needs to know.
+
+### XVI.48 A PER_CLASS fixture has hidden three defects, and nothing warns (SH296)
+
+Three times now, a test class with `@TestInstance(PER_CLASS)` has had one test's writes make another
+test's assertion vacuous:
+
+- **SH239**: a benchmark pair wrote into the folder another pair measured, so one ratio read 26.2×
+  or 11.8× depending on order.
+- **SH272**: a test asserting "this instance has no templates" was really asserting what ran first,
+  because the render post-types are created on first use by anything in the JVM.
+- **SH289**: an additive-only assertion survived a mutation that made the code overwrite every field,
+  because a sibling test had already repaired the fixture, so `reconcile` found nothing to do and
+  wrote nothing.
+
+Each was found by accident. The third only surfaced because the fix was verified **by mutation**
+rather than by a green run — which is the strongest argument that the other two were not the last.
+
+Three instruments, and they are not equally good:
+
+- **A convention: a mutating test forces its precondition rather than creating it once.** That is
+  what SH289 ended up doing, it is cheap, and it makes the test independent of order without any
+  machinery. Its weakness is that it is a habit, not a check.
+- **`@TestMethodOrder(Random)`.** An order dependence would fail loudly — sometimes. A test that
+  fails on some runs is a flake, and SH250's lesson is that a flake is worse than a break because it
+  teaches people that red might mean nothing.
+- **A lint** flagging a `PER_CLASS` class whose tests write through a shared service. Precise in
+  principle, and "writes through a shared service" is most of this codebase's tests.
+
+The likely answer is the first plus writing it down — the other two cost more than the defect does.
 
 ---
 
