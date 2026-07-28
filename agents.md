@@ -419,6 +419,14 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   template's title is free (no clause needed — `@SQLRestriction` means the finder sees what the
   renderer sees). Limit: `ensure` never touches an existing type (SH152), so an instance created
   before this keeps the old shape until the field is added by hand — **SH289**.
+  **And the transcription is now checked (SH290)** — `ShRenderModelSourceTest` compares the three
+  types against `import/post-types.json`, the 2018 model they were copied from, which **nothing
+  else reads**: a reference with no reader is how a transcription drifts. Field **names** and the
+  **title flag** must match; every other difference is declared with a reason (`OMITTED` — no
+  `DESCRIPTION`, no `CACHED`/`CACHE_TAB`, because there is no page-cache subsystem behind them;
+  `WIDGETS` — `PageLayout.THEME` is `Text` because SH183 resolves a theme by title while the 2018
+  `Content Select` stores an id, plus SH252's two), and **a declared difference that no longer
+  exists fails the build** (SH142's rule, third application).
 - **The render state reaches every level, and the row order is total (SH278)** — `ShRenderState` is the
   one writer for `statesFor` / `preferDraft`, used by both `ShPageRenderService` and
   `ShRenderHelpers`. A **DRAFT** render resolves the draft layout, the draft region *and* the draft

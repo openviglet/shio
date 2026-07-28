@@ -2834,28 +2834,6 @@ Two things to settle rather than assume: whether a *renamed* or *removed* field 
 automatically (almost certainly not — that is the case where the operator's model may be deliberate),
 and whether reconciliation is offered per field or per type.
 
-### XVI.42 Nothing asserts that the system model matches its source package (SH290)
-
-`ShRenderPostTypes` says, in a comment: *"The field names below are the 2018 package's, so a real
-`openviglet/bootstrap-site` export imports and renders without a migration."* SH277 found that claim
-false in the way that mattered — the package declares `TITLE` first, `Text`, required, `isTitle` on
-`PageLayout`, `Region` **and** `Theme`, and the transcription dropped it from all three, which is what
-made a template written through the documented flow unaddressable.
-
-This is SH274's shape exactly: a premise about an artefact **that is in the repository**
-(`shio-app/src/main/resources/import/bootstrap-site/export.json` and `import/post-types.json`), and
-therefore assertable rather than remembered. A test can read the package's own post-types and compare.
-
-The one design constraint is that it must **not** demand equality. The 2018 model also carries
-`DESCRIPTION`, `CACHED` and a `CACHE_TAB` this renderer deliberately does not implement, so the
-assertion is over the fields the shipped model *does* declare — same name, same widget family, same
-title flag — and every deliberate divergence is declared with its reason, the way SH255's `DECLARED`
-list is, so the list cannot rot into a suppression.
-
-Worth doing because the comment is load-bearing: "imports without a migration" is the promise that
-makes the 2018 package the repository's one real end-to-end example, and it was wrong for four blocks
-with nothing to notice.
-
 ### XVI.43 A helper's signature is prose beside the code that implements it (SH291)
 
 SH272 put the call form at the registration — the one place that knows both the name and the shape,
@@ -2904,6 +2882,48 @@ stops being obviously right: it would roughly double that line for every renderi
 a budget rather than a preference. The alternatives are a `shio://` resource (discoverable, MCP-only),
 a section of the pack somebody opts into, or a documentation link — which this codebase has so far
 refused on the grounds that a link is not an appliable unit (P8).
+
+### XVI.45 The reference model has thirteen types and three are checked (SH293)
+
+`ShRenderModelSourceTest` compares `PageLayout`, `Region` and `Theme` against
+`import/post-types.json`, because those are the three SH183 transcribed and the three SH277 found a
+defect in.
+
+That file declares ten more: `Text`, `Photo`, `Video`, `Quote`, `Links`, `File`, `TextArea`,
+`Article`, `Alias`, `FolderIndex`. The question the new test answers for three of them is unanswered
+for the rest, and it is really two questions:
+
+- **Which are still provisioned by this system?** `File` is (SH38 creates it on first upload), so it
+  can and should be compared the same way — its `FILE` field is what the static-file subsystem writes
+  into, and a name drift there breaks uploads rather than rendering.
+- **Which are names in `ShSystemPostType` with no creator at all?** `Alias`, `FolderIndex`, `Quote`
+  and others are declared as constants and nothing builds them. That is `ShWidget`'s problem (SH285)
+  one class along: dead declarations that read as capabilities.
+
+So the task is an **audit that produces either a comparison or a deletion for each**, not an
+extension of the test's type list. Extending it blindly would pin ten types this codebase does not
+create, which is a test asserting that a file matches itself.
+
+### XVI.46 "Imports and renders without a migration" is still only a comment (SH294)
+
+SH290 asserts that the render model matches its 2018 source — the half that was actually wrong. The
+comment's full claim is larger: that a real `openviglet/bootstrap-site` export **imports and
+renders**.
+
+Nothing exercises that, and the export bundled here cannot: it declares one post-type (`Page`), no
+`postTypeLayout`, and no template posts. The SH71 starter is a content site, not a rendering one. So
+the strongest end-to-end evidence for Block P's central compatibility claim is a sentence.
+
+What it needs is a fixture that *is* a rendering site in the 2018 shape — a `PageLayout` with
+`sh-region` slots, a `Region`, a bound `postTypeLayout` — imported through `POST /api/v2/import` and
+then fetched from `/preview`. That test would also be the first to exercise SH189's import
+classification and SH280's unpublished-layout refusal together, which is where an imported package's
+own publication state starts to matter.
+
+The reason this is an idea rather than a designed task is the fixture. Hand-writing a package in the
+2018 format risks asserting against a shape the 2018 exporter never produced — proving the code
+agrees with the test's author rather than with the artefact. The honest source is a real export, so
+the first step is finding one, not writing one.
 
 ---
 
