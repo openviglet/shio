@@ -68,20 +68,69 @@ function collectFileFields(fields, into) {
 }
 
 /**
- * The asset path for one server-side file.
+ * Path segments that are not names (SH256).
+ *
+ * <p>An asset path is the only projection path whose output is consumed as a <b>filesystem
+ * path</b> — `readAssetBytes`/`writeAssetBytes` join it under `shio/assets` — so a segment that
+ * navigates instead of naming does not merely produce drift, it leaves the tree. `..` is the
+ * escape; `.` is refused with it because it makes two paths for one asset, which breaks the
+ * idempotence the whole design rests on (P5).</p>
+ */
+const TRAVERSAL = new Set([".", ".."]);
+
+/** A separator inside a single name means the name is claiming to be a path. */
+const SEPARATOR = /[\\/]/;
+
+/**
+ * The asset path for one server-side file, or **null** when the pair has no safe path (SH256).
+ *
+ * <h3>Why null and not a throw</h3>
+ *
+ * This runs while building the inventory from the server's own media listing, so the bad input
+ * is somebody else's data — a `File` post whose name contains a separator. Taking a whole pull
+ * down over one unprojectable asset is SH173's mistake (an un-addressable post in an unrelated
+ * site aborting the command); the caller skips it, counts it, and the `File` field stays an id,
+ * which `idsToPaths` already reports as unresolved.
  *
  * @param {{siteName: string, fileName: string}} item a `ShStaticFileItem`
  * @param {string} chain the containing folder's name chain, e.g. `/media`
+ * @returns {string|null}
  */
 export function assetPathFor(item, chain) {
   const folder = chain && chain !== "/" ? chain : "";
+  const names = [item?.siteName, ...String(folder).split("/"), item?.fileName].filter(
+    (part) => part !== "" && part != null,
+  );
+  // Every segment, not just the file name: a folder chain arrives from the sitemap and a site
+  // name from the listing, and the pair only has to be wrong in one place to escape.
+  if (names.some((part) => TRAVERSAL.has(part) || SEPARATOR.test(part))) return null;
+  if (!item?.siteName || !item?.fileName) return null;
   return `${item.siteName}${folder}/${item.fileName}`;
 }
 
-/** `Blog/media/logo.png` → `{ site: "Blog", folder: "/media", fileName: "logo.png" }`. */
+/**
+ * `Blog/media/logo.png` → `{ site: "Blog", folder: "/media", fileName: "logo.png" }`.
+ *
+ * `null` means "not path-shaped" — which is how every caller tells an asset path from a bare id
+ * (SH145: a value that is not a path is an id already, and is left alone). A path-shaped value
+ * that **navigates** is a different answer and it throws (SH256), because the two silent
+ * readings are both wrong: treating it as an id sends it to the server as a dangling reference
+ * and never mentions that the tree contains an attempted traversal, and treating it as a
+ * location reads bytes from outside the tree and uploads them. Refusing and naming it is the
+ * rule SH191's missing sidecar follows.
+ */
 export function assetLocationOf(path) {
   const parts = String(path).replace(/\\/g, "/").split("/").filter(Boolean);
   if (parts.length < 2) return null;
+  const escaping = parts.filter((part) => TRAVERSAL.has(part));
+  if (escaping.length) {
+    throw new Error(
+      `shio content: asset path "${path}" contains "${escaping[0]}", which navigates the ` +
+        "filesystem instead of naming an asset — under `shio/assets` it can resolve outside " +
+        "the project entirely. An asset path is `<site>/<folder chain>/<file name>`; fix the " +
+        "`File` field that holds this value.",
+    );
+  }
   const site = parts[0];
   const fileName = parts[parts.length - 1];
   const chain = parts.slice(1, -1);

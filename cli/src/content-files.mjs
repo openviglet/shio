@@ -197,14 +197,45 @@ export function sidecarsOf(doc, sidecarFields = []) {
     });
 }
 
-/** The site's directory name. Refuses a name that would escape the tree. */
+/**
+ * The site's directory name. Refuses a name that has no faithful one.
+ *
+ * <p><b>Whitespace is refused rather than trimmed (SH257).</b> This used to `trim()` and keep
+ * going, which made the projection write a file it could not read back: `filePathFor` produced
+ * `Blog/x.md` from a site called `"Blog "` while `serializePost` wrote the untrimmed name into
+ * the frontmatter, and `parsePost` then refused the pair — correctly, since a `site:` that
+ * disagrees with its directory is SH134's half-done rename. So `shio pull --content` emitted a
+ * tree that every later command failed on, and the message blamed the disagreement rather than
+ * the trim that caused it.
+ *
+ * <p>Found while extending SH255's value table to the frontmatter, and worth being precise about
+ * how: the table did <b>not</b> fail on it. It asserts "exact, or declared", and this case was
+ * already a refusal — just the wrong one — so it satisfied the property. It came out of reading
+ * the refusal's message. That gap is SH258.</p></p>
+ *
+ * <p>Refusing is the same answer the slash already gets, and for the same reason: a directory
+ * name that is not the site's name is a lie the rest of the format is built on. Trimming into
+ * the frontmatter too would have been the other candidate and is worse — the file would then
+ * declare a site name that is not the server's, so a push would target or create the wrong
+ * site.</p>
+ */
 export function siteDir(site) {
-  const name = String(site ?? "").trim();
-  if (!name) throw new Error("shio content: a post must say which site it belongs to (`site:`).");
+  const name = String(site ?? "");
+  if (!name.trim()) {
+    throw new Error("shio content: a post must say which site it belongs to (`site:`).");
+  }
   if (/[\\/]|^\.+$/.test(name)) {
     throw new Error(
       `shio content: cannot project site "${name}" — a site name with a slash has no ` +
         "safe directory name. Rename the site, or pass --site to project a different one.",
+    );
+  }
+  if (name !== name.trim()) {
+    throw new Error(
+      `shio content: cannot project site ${JSON.stringify(name)} — its name starts or ends ` +
+        "with whitespace, so its directory name would not be its name and every file in it " +
+        "would disagree with its own path. Rename the site (the surrounding space is almost " +
+        "certainly a typo).",
     );
   }
   return name;

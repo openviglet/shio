@@ -66,6 +66,38 @@ test("an asset's path is its site, its folder chain and its file name", () => {
   assert.equal(assetLocationOf("logo.png"), null);
 });
 
+test("an asset path that navigates is refused, not read as a location or an id (SH256)", () => {
+  // The measured failure: `readAssetBytes` joins the value under `shio/assets`, so this resolved
+  // to `/etc/passwd` — outside the project entirely — and `push --content` would have read those
+  // bytes and uploaded them as an asset, while `folder.upsert` was handed `/../../../../etc`.
+  assert.throws(
+    () => assetLocationOf("Blog/../../../../etc/passwd"),
+    /navigates the filesystem instead of naming an asset/,
+  );
+  // `.` too: it is harmless to read and it makes two paths for one asset, which breaks the
+  // idempotence the whole design rests on.
+  assert.throws(() => assetLocationOf("Blog/./logo.png"), /navigates the filesystem/);
+  // A refusal and not `null`, because null means "this is an id, leave it alone" (SH145) — which
+  // would send the traversal to the server as a dangling reference and never mention it.
+  assert.notEqual(assetLocationOf("Blog/media/logo.png"), null);
+});
+
+test("a file name that cannot be a path segment has no asset path (SH256)", () => {
+  // The pair used to be non-injective: this projected to `Blog/media/a/b.png` and read back as
+  // folder `/media/a`, file `b.png` — a folder nobody asked for, the wrong name, and a collision
+  // with any real asset there.
+  assert.equal(assetPathFor({ siteName: "Blog", fileName: "a/b.png" }, "/media"), null);
+  assert.equal(assetPathFor({ siteName: "Blog", fileName: "a\\b.png" }, "/media"), null);
+  assert.equal(assetPathFor({ siteName: "Blog", fileName: ".." }, "/media"), null);
+  // Every segment, not just the file name: the chain comes from the sitemap and the site from
+  // the media listing, and one bad segment is enough to escape.
+  assert.equal(assetPathFor({ siteName: "Blog", fileName: "logo.png" }, "/../etc"), null);
+  assert.equal(assetPathFor({ siteName: "..", fileName: "logo.png" }, "/media"), null);
+  // null rather than a throw: the bad input is the server's data, and taking a whole pull down
+  // over one unprojectable asset is SH173's mistake. The caller skips it and names it.
+  assert.equal(assetPathFor({ siteName: "Blog", fileName: "logo.png" }, "/media"), "Blog/media/logo.png");
+});
+
 test("only declared File fields are rewritten, never a Text field holding a UUID", () => {
   const uuid = "11111111-2222-3333-4444-555555555555";
   const byId = new Map([[uuid, "Blog/media/logo.png"]]);

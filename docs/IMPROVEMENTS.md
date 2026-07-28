@@ -2049,70 +2049,60 @@ actually takes care.
 > run, which is the strongest evidence that the exemption list has to be checked rather than
 > trusted.
 
-### XVI.11 An asset path accepts traversal, and a `/` in a file name becomes a folder (SH256)
+### XVI.11 An asset path accepts traversal (SH256)
 
-`content-assets.mjs` builds and reads an asset path with two lines that trust their inputs:
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two things worth carrying.
+>
+> **The convention existed and one file had not heard of it.** `siteDir`, `sidecarNameFor` and
+> `ShBlueprintRegistry` all refuse a separator or a `..` in a name, each with its own reasoning
+> written down; `content-assets.mjs` was written before the rule was stated anywhere and never
+> revisited. Worth noticing as a *review* lesson rather than a coding one: the defect is invisible
+> to anyone reading that file on its own, and obvious to anyone who has just read one of the other
+> three.
+>
+> **The two ends refuse differently, on purpose.** `assetLocationOf` throws because its input
+> comes from the tree — hand-editable, and writable by a blueprint or a generated document — and
+> `null` there already means "this is an id, leave it alone" (SH145), so a silent null would send
+> a traversal to the server as a dangling reference and never mention it. `assetPathFor` returns
+> null because its input is the server's own listing, where SH173's rule applies: one
+> unprojectable row must not take down a pull. Same defect, two inputs, two correct answers —
+> which is the thing to check when adding a refusal anywhere here.
 
-```js
-export function assetPathFor(item, chain) {
-  const folder = chain && chain !== "/" ? chain : "";
-  return `${item.siteName}${folder}/${item.fileName}`;
-}
-```
+### XVI.12 Finishing the round-trip table found the defect the table could not (SH257)
 
-and, in the inverse, `fileName = parts[parts.length - 1]` with the rest taken as the chain. Two
-consequences, both measured rather than reasoned about.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The table now covers six round trips and
+> the sixteen new declarations are all refusals, which is what a format whose output is a
+> filesystem path should mostly do.
+>
+> The lesson is the third defect it turned up: `siteDir` trimmed a site's name for the directory
+> while `serializePost` wrote the untrimmed name into the frontmatter, so a pull emitted a file
+> whose `site:` disagreed with its own path and every later command refused it — the projection
+> writing a tree it cannot read. **The table did not catch it**, because it asserts "exact, or
+> declared" and a refusal was declared and a refusal happened; it was caught by reading the
+> message, which blamed the disagreement rather than the trim. So extending a guard is worth doing
+> for the reading it forces as much as for the assertions it adds, and the gap itself is §XVI.13.
 
-**The pair is not injective.** An asset whose file name contains a `/` projects to a path that
-reads back as a *different folder and a different file*: `{site: "Blog", folder: "/media",
-fileName: "a/b.png"}` becomes `Blog/media/a/b.png` and returns `folder: "/media/a", fileName:
-"b.png"`. A push would create a folder nobody asked for, upload under the wrong name, and collide
-with any genuine asset already at that path.
+### XVI.13 A declared refusal is not checked for being the right refusal (SH258)
 
-**Neither end refuses a `..`.** A `File` field reading `Blog/../../../../etc/passwd` resolves
-through `readAssetBytes` (`join(cwd, "shio/assets", path)`) to **`/etc/passwd`** — outside the
-project entirely — and `push --content` reads those bytes and uploads them as an asset, while the
-chain `/../../../../etc` is handed to `folder.upsert`. `Blog/media/..` resolves to the site's own
-asset directory.
+SH255's property is "the value comes back exactly, or the loss is declared". A **throw** satisfies
+the second branch whatever it says, so all of these are indistinguishable to the guard:
 
-**This is the only path in the tree that does not already refuse this**, which is what makes it a
-defect rather than a missing feature: `siteDir` refuses a slash in a site name and says why,
-SH191's `sidecarNameFor` refuses a separator in a field name, and `ShBlueprintRegistry` checks a
-package's path refs per *segment* for `..` (per segment precisely so `app/[...slug]/page.tsx` is
-not rejected as traversal). The convention exists; assets were written before it was stated and
-never revisited.
+- the refusal the format intends, naming the value and what to do about it;
+- a refusal from three layers down that blames a symptom (`siteDir`'s trim, surfacing as
+  `parsePost` complaining that a file disagrees with its own path);
+- a `TypeError` from a bug in the check itself.
 
-**Why "the operator owns their own files anyway" is not the whole answer.** It is true of a human
-typing the path and false of the two writers this product is built for. A `File` value can arrive
-from a blueprint, from a generated desired-state document, or from an agent that read a URL — and
-law P7's whole point is that the human is *reviewing*, so the reviewable artefact must not be able
-to make the tool read a file from outside the tree and put it in the CMS. The severity is modest
-and the shape is exactly the one the rest of the codebase treats as non-negotiable.
+That is not hypothetical — the second is exactly what happened during SH257, and it is why that
+defect had to be found by reading rather than by running.
 
-The fix is symmetrical refusals on both ends and a table entry (SH257). The open question is the
-existing-tree case: a path already on disk that fails the new rule should stop the run and name
-the asset, following SH191's missing-sidecar precedent, rather than being skipped — a skipped
-asset is a post published with a File field pointing at nothing.
+The fix is small: a `DECLARED` entry should carry the refusal it expects — a pattern the thrown
+message has to match — so "refused" stops being one outcome and becomes N. It is the same argument
+SH80 makes for the HTTP surface, that a 4xx has to carry a `fix` rather than just a status, applied
+to a test's own notion of an acceptable failure.
 
-### XVI.12 Two of the six round trips are still examples (SH257)
-
-SH255's table covers four: a post field, a post body, a memory note, an SH191 sidecar. Two are
-missing, and the case for finishing the set is that running the same values against one of them
-*by hand* is what found SH256.
-
-The **asset path** pair is the one that matters, because it is the only round trip whose output is
-consumed as a filesystem path — so a value it mishandles is not just drift but a read outside the
-tree.
-
-The **frontmatter metadata** — `site`, `url`, `type`, `folder` — goes through the same
-`encodeScalar`/`decodeScalar` as a field value but is read by a different branch of
-`splitDocument` and then through `normalizeUrl`/`siteDir`. A site named `true`, a post-type named
-`0042`, a folder chain with a trailing space: each is the shape the list exists to catch, and none
-is currently asserted.
-
-The point is not the two entries. It is that a property asserted only where somebody thought to
-assert it has the same blind spot as no assertion at all, one step smaller — and the evidence is
-that the blind spot is where the next defect was, twice running.
+Worth stating the boundary, because it is easy to over-build: this is not a demand that every
+error message be asserted verbatim. The entry only has to pin the part that identifies *which* rule
+fired, which is the part a reader would use to tell a good refusal from a confusing one.
 
 ---
 

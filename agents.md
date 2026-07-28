@@ -911,20 +911,36 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   rules, so a normalization added later cannot escape it. This is SH145's `idsToPaths` argument
   ("the base, the server side and the file side all speak paths") generalized from one field type
   to every normalization the format has.
-- **The round trip is asserted as a property (SH255)**, in `cli/test/content-round-trip.test.mjs`:
-  one adversarial value list (trailing/leading whitespace, CRLF, lone `\r`, YAML keywords, numeric
-  strings, `: `, ` #`, empty, `-`, `[`, `{`, BOM, a bare `---`, tab, emoji) × four round trips
-  (post field, post body, memory note, SH191 sidecar), plus `projectedPost` asserted to be a
-  **fixed point**. It exists because `parse(serialize(x)) === x` is universally quantified while
+- **The round trip is asserted as a property (SH255, SH257)**, in
+  `cli/test/content-round-trip.test.mjs`: one adversarial value list (trailing/leading whitespace,
+  CRLF, lone `\r`, YAML keywords, numeric strings, `: `, ` #`, empty, `-`, `[`, `{`, BOM, a bare
+  `---`, tab, emoji, `a/b`, `a\b`, `..`, `.`) × **six** round trips (post field, post body, memory
+  note, SH191 sidecar, asset path, and a post's own `type`/`site`), plus `projectedPost` asserted
+  to be a **fixed point**. It exists because `parse(serialize(x)) === x` is universally quantified while
   every test was an *example*, and every fixture happened to be a value its format represents
   exactly — which is how SH253 and SH254 both survived four blocks. **A value a format cannot
   hold must be named in `DECLARED` with the reason**, and a declared loss the format no longer has
   **fails the build** (SH142's rule, so the list cannot rot into a suppression). A refusal counts
-  as legitimate non-holding — it is the only one that cannot lose work silently. There are exactly
-  three: a body's CRLF and lone `\r` (converted on purpose) and an empty note (refused, since
-  SH160's "forgetting is an empty note" deletes the row, so a read never returns one). If you add
-  a normalization anywhere in `content-files.mjs`/`content-notes.mjs`, this is the test that will
-  tell you what it costs.
+  as legitimate non-holding — it is the only one that cannot lose work silently. Three are
+  conversions (a body's CRLF and lone `\r`, an empty note) and the other sixteen are **refusals**,
+  which is what a format whose output is a filesystem path should mostly do. If you add a
+  normalization anywhere in `content-files.mjs`/`content-notes.mjs`/`content-assets.mjs`, this is
+  the test that will tell you what it costs. **Its known limit is SH258**: a declared refusal is
+  not checked for being the *right* refusal, so a throw from three layers down satisfies the
+  property — which is how SH257's own site-name defect got past the run that added those entries.
+- **An asset path may not navigate (SH256).** `assetLocationOf` **throws** on a `.`/`..` segment
+  and `assetPathFor` returns **null** for a name it cannot place — and the asymmetry is the design,
+  not an inconsistency: the first reads a value from the tree (hand-editable, and writable by a
+  blueprint or a generated document) where `null` already means "this is an id, leave it alone"
+  (SH145), while the second reads the server's own media listing, where SH173's rule applies and
+  one unprojectable row must not take down a pull. It is the only path here that used to accept
+  traversal — `siteDir`, `sidecarNameFor` and `ShBlueprintRegistry` all refused it already — and
+  `Blog/../../../../etc/passwd` resolved through `readAssetBytes` to `/etc/passwd`.
+- **A site name that has no faithful directory name is refused, never trimmed (SH257).** `siteDir`
+  used to `trim()`, so a site called `"Blog "` made `pull --content` write a file whose `site:`
+  disagreed with its own path — a tree the pull produced and every later command refused. Trimming
+  into the frontmatter too is the worse fix: the file would declare a name that is not the
+  server's, so a push would target or create the wrong site.
 - **`content-notes.mjs`' `scalar()` and `content-files.mjs`' `encodeScalar` are deliberately two
   functions** (separate parsers, so separate charsets) and must **not** be assumed to agree —
   SH254 was one missing clause (`value !== value.trim()`) hiding behind a comment that claimed

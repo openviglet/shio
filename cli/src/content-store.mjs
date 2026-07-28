@@ -361,6 +361,7 @@ export async function readRemoteAssets(agent, admin, { sites = [] } = {}) {
 
   const byId = new Map();
   const byPath = new Map();
+  const unprojectable = [];
   for (const site of sites) {
     // Site-scoped by name: the listing takes an id, and the sitemap read above already proved
     // the site is readable, so resolving it is one call and not a guess.
@@ -371,11 +372,18 @@ export async function readRemoteAssets(agent, admin, { sites = [] } = {}) {
       if (!item?.id || !item.fileName) continue;
       const chain = chains.get(item.folderId) ?? "/";
       const path = assetPathFor({ ...item, siteName: item.siteName ?? site }, chain);
+      if (path === null) {
+        // SH256 — a name that contains a separator or navigates has no safe file on disk. Skipped
+        // rather than fatal (SH173's rule), and named, because the `File` field pointing at it
+        // stays an id and the operator would otherwise have no idea which asset went missing.
+        unprojectable.push({ id: item.id, site, folder: chain, fileName: item.fileName });
+        continue;
+      }
       byId.set(item.id, path);
       byPath.set(path, item);
     }
   }
-  return { byId, byPath, folderIds, truncated };
+  return { byId, byPath, folderIds, truncated, unprojectable };
 }
 
 /** Every asset file on disk, as tree-relative paths (SH145). */

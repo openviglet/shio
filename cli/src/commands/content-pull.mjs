@@ -125,6 +125,19 @@ export async function run(flags, _positionals, ctx) {
   // read back in the file's, so every later pull reports a change nobody made. After the asset
   // rewrite, because a path is what the file will hold.
   Object.assign(remote, projectRemote(remote, defs));
+  if (assets.unprojectable?.length) {
+    // SH256 — named, because the `File` field pointing at one of these stays an id and a silent
+    // skip would read as "this site has no such asset". The server holds bytes the tree cannot
+    // represent, which is a rename on the server, not something a pull can fix.
+    ctx.stdout.write(
+      `shio pull --content: ${assets.unprojectable.length} asset(s) have a file name that cannot ` +
+        "be a path and were not projected (rename them on the server):\n" +
+        assets.unprojectable
+          .slice(0, 5)
+          .map((row) => `  ! ${row.site}${row.folder === "/" ? "" : row.folder}/ — ${JSON.stringify(row.fileName)}\n`)
+          .join(""),
+    );
+  }
   if (unresolvedAssets.size) {
     // Left as ids on purpose: the File post is in a site this run did not read, or it is gone.
     // Inventing a path would put a broken one in the tree, which pushes back as a failed

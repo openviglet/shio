@@ -31,6 +31,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { assetLocationOf, assetPathFor } from "../src/content-assets.mjs";
 import {
   filePathFor,
   parseFolderMarker,
@@ -76,6 +77,13 @@ const ADVERSARIAL = [
   { name: "BOM", value: "\uFEFFhello" },
   { name: "fence", value: "---" },
   { name: "emoji", value: "ship 🚀" },
+  // Added by SH257 for the asset-path round trip, where a separator or a traversal segment is
+  // the difference between naming a file and navigating to one. They are ordinary strings to
+  // every other format here, which is the point of running one list against all of them.
+  { name: "slash", value: "a/b" },
+  { name: "backslash name", value: "a\\b" },
+  { name: "dot dot", value: ".." },
+  { name: "single dot", value: "." },
 ];
 
 /**
@@ -98,6 +106,31 @@ const DECLARED = {
   // never returns one, and in the file a forgotten note is an absent key. `parseNotes` refuses
   // an entry with no instruction rather than storing a note that says nothing.
   "note/empty": "refused: a note is a key and an instruction, and a forget is an absent key",
+
+  // --- asset paths (SH256): every entry here is a *refusal*, which is the point ---
+  // An asset path is the only round trip whose output is used as a filesystem path, so the
+  // format's job is to reject a value rather than to carry it cleverly.
+  "asset/empty": "refused: a file with no name is not an asset",
+  "asset/slash": "refused: a separator makes the name claim to be a path (SH256)",
+  "asset/backslash": "refused: a separator makes the name claim to be a path (SH256)",
+  "asset/backslash name": "refused: a separator makes the name claim to be a path (SH256)",
+  "asset/dot dot": "refused: navigates instead of naming — under shio/assets it leaves the tree",
+  "asset/single dot": "refused: two paths for one asset breaks idempotence (P5)",
+
+  // --- a site's own name (SH257) ---
+  // The directory name has to *be* the site's name, because the whole format is built on the
+  // path and the frontmatter agreeing. A name with no faithful directory is refused, naming the
+  // site, rather than silently trimmed into a tree no later command can read.
+  "site/empty": "refused: a post must say which site it belongs to",
+  "site/trailing space": "refused: its directory name would not be its name (SH257)",
+  "site/leading space": "refused: its directory name would not be its name (SH257)",
+  "site/trailing newline": "refused: its directory name would not be its name (SH257)",
+  "site/BOM": "refused: a leading BOM is trimmed away, so the directory would not be the name",
+  "site/slash": "refused: a site name with a slash has no safe directory name",
+  "site/backslash": "refused: a site name with a separator has no safe directory name",
+  "site/backslash name": "refused: a site name with a separator has no safe directory name",
+  "site/dot dot": "refused: `..` is not a directory name",
+  "site/single dot": "refused: `.` is not a directory name",
 };
 
 const declared = (format, name) => Object.hasOwn(DECLARED, `${format}/${name}`);
@@ -180,6 +213,34 @@ describe("SH255: every format holds an adversarial value, or declares that it do
         return written.length
           ? written[0].text
           : parsePost(filePathFor(input), serializePost(input, null, fields)).data.HTML;
+      });
+    });
+
+    it(`an asset path holds ${entry.name} as a file name`, () => {
+      assertRoundTrip("asset", entry, () => {
+        const path = assetPathFor({ siteName: "Blog", fileName: entry.value }, "/media");
+        // SH256 — null is the refusal, and a refusal is a legitimate way not to hold a value.
+        // Surfaced as a throw so the DECLARED entry has to say so.
+        if (path === null) throw new Error(`refused: ${JSON.stringify(entry.value)}`);
+        return assetLocationOf(path).fileName;
+      });
+    });
+
+    it(`a post's type holds ${entry.name}`, () => {
+      assertRoundTrip("type", entry, () => {
+        const input = { ...doc({ v: "1" }), type: entry.value };
+        return parsePost(filePathFor(input), serializePost(input, null)).type;
+      });
+    });
+
+    it(`a post's site holds ${entry.name}`, () => {
+      assertRoundTrip("site", entry, () => {
+        const input = { ...doc({ v: "1" }), site: entry.value };
+        // `filePathFor` is inside the thunk on purpose: `siteDir` refusing a name is one of the
+        // outcomes, and the refusal is the *fix* for the site names that have no faithful
+        // directory. Before SH257 the whitespace ones produced a file whose frontmatter
+        // disagreed with its own path — a tree the pull wrote and no later command could read.
+        return parsePost(filePathFor(input), serializePost(input, null)).site;
       });
     });
   }
