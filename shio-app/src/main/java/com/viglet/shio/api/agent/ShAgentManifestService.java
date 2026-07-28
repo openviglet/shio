@@ -108,6 +108,16 @@ public class ShAgentManifestService {
         features.put("exchange", true);
         features.put("imageTransforms", true);
         features.put("postTypesAsCode", true);
+        // SH183 — this instance can render a page itself, so a site is visible with no front
+        // end and no project. It is the flag an MCP-only caller needs most (SH186): without
+        // it, "build a site" ends with content nobody can look at and no way to know that
+        // /preview exists.
+        features.put("serverRender", true);
+        // SH185 — true, and until then it was not. The console shell had posted `sh:*`
+        // messages into an iframe since SH10 with nothing in this repository on the other
+        // side, so this flag claimed a capability no caller could use. An unshipped
+        // capability reports `false` and never overstates; this was the first one to break
+        // its own rule, and the fix was to ship the counterpart rather than to demote it.
         features.put("universalEditor", true);
         features.put("teachingErrors", true);
         features.put("agentContext", true);

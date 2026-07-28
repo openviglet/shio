@@ -25,6 +25,18 @@ import { siteDestination } from "@/lib/site-front-end"
 const siteService = new ShSiteService()
 const editorService = new ShUniversalEditorService()
 
+/**
+ * Ask the page for the SH185 bridge.
+ *
+ * Shio's renderer injects `shio-editor.js` only when the request carries this, so an ordinary
+ * preview — the one a curator opens from **View Site** — ships no editor code at all. A front
+ * end that has never heard of the flag ignores it, which is the behaviour the protocol wants:
+ * the editor degrades to a plain iframe rather than failing.
+ */
+function withEditorFlag(url: string): string {
+  return url + (url.includes("?") ? "&" : "?") + "editor=true"
+}
+
 export default function VisualEditorPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -66,19 +78,47 @@ export default function VisualEditorPage() {
     siteService
       .get(siteId)
       .then((site) => {
-        setSrc(siteDestination(site).url)
+        // `?editor=true` asks Shio's renderer for the SH185 bridge. It is a query param
+        // rather than something the parent turns on afterwards, so an ordinary preview never
+        // ships editor code — and it is harmless on an external front end that ignores it.
+        const destination = siteDestination(site)
+        setSrc(withEditorFlag(destination.url))
         setSiteError(null)
       })
       .catch(() => setSiteError(t("universalEditor.siteNotFound", { key: siteId })))
   }, [siteId, searchParams, t])
 
-  const postToIframe = useCallback((type: string, data: Record<string, unknown>) => {
-    iframeRef.current?.contentWindow?.postMessage({ type, data }, "*")
-  }, [])
+  /**
+   * The origin the framed page lives at (SH185).
+   *
+   * A relative `src` — which is what Shio's own renderer gives us — is same-origin, so it is
+   * this window's. An absolute one carries its own. Deriving it here means both directions of
+   * the bridge can be pinned to a single known origin instead of `"*"`.
+   */
+  const frameOrigin = useMemo(() => {
+    if (!src) return ""
+    try {
+      return new URL(src, window.location.origin).origin
+    } catch {
+      return ""
+    }
+  }, [src])
 
-  // Bridge messages from the rendered page (shio-editor.js).
+  const postToIframe = useCallback((type: string, data: Record<string, unknown>) => {
+    // SH185 — never `"*"`. Posting into an arbitrary iframe origin hands the message to
+    // whatever happens to be in the frame, which is a data-leak shape, and the site's own
+    // origin was knowable the whole time.
+    if (!frameOrigin) return
+    iframeRef.current?.contentWindow?.postMessage({ type, data }, frameOrigin)
+  }, [frameOrigin])
+
+  // Bridge messages from the rendered page (shio-editor.js — SH185).
   useEffect(() => {
     function onMessage(event: MessageEvent) {
+      // The other half of the same rule: a message is only trusted from the origin we
+      // framed. Without this, any page in any tab can post `sh:content-changed` and put a
+      // value into the pending-save set.
+      if (!frameOrigin || event.origin !== frameOrigin) return
       const msg = event.data
       if (!msg || typeof msg.type !== "string" || !msg.type.startsWith("sh:")) return
       switch (msg.type) {
@@ -102,7 +142,7 @@ export default function VisualEditorPage() {
     }
     window.addEventListener("message", onMessage)
     return () => window.removeEventListener("message", onMessage)
-  }, [])
+  }, [frameOrigin])
 
   // Push the current mode to the iframe whenever it changes (once ready).
   useEffect(() => {

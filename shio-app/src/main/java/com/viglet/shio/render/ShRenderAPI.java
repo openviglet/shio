@@ -68,10 +68,13 @@ public class ShRenderAPI {
 
     private final ShPageRenderService shPageRenderService;
     private final ShPreviewBanner banner;
+    private final ShEditorBridge editorBridge;
 
-    public ShRenderAPI(ShPageRenderService shPageRenderService, ShPreviewBanner banner) {
+    public ShRenderAPI(ShPageRenderService shPageRenderService, ShPreviewBanner banner,
+                       ShEditorBridge editorBridge) {
         this.shPageRenderService = shPageRenderService;
         this.banner = banner;
+        this.editorBridge = editorBridge;
     }
 
     /**
@@ -84,11 +87,19 @@ public class ShRenderAPI {
     @GetMapping(value = "/{siteKey}/**", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> page(@PathVariable String siteKey,
                                        @RequestParam(defaultValue = "DRAFT") String state,
+                                       @RequestParam(defaultValue = "false") boolean editor,
                                        HttpServletRequest request) {
         ShRenderedPage rendered = shPageRenderService.render(siteKey, pathWithin(siteKey, request),
                 ShPostState.PUBLISHED.name().equalsIgnoreCase(state)
                         ? ShPostState.PUBLISHED
                         : ShPostState.DRAFT);
+        // SH185 — the editor bridge is opt-in per request. An ordinary preview must ship no
+        // editor code at all: a script that makes elements contenteditable is not something to
+        // leave lying in a page somebody might screenshot, and "off unless asked" is cheaper
+        // to reason about than "on unless the parent says no".
+        String body = editor
+                ? editorBridge.inject(banner.wrap(rendered), originOf(request))
+                : banner.wrap(rendered);
         return ResponseEntity.ok()
                 .contentType(MediaType.TEXT_HTML)
                 // Store nothing, anywhere. See the class note: a freshness lifetime is how
@@ -96,7 +107,45 @@ public class ShRenderAPI {
                 .cacheControl(CacheControl.noStore().mustRevalidate())
                 .header("X-Robots-Tag", "noindex, nofollow")
                 .header("X-Shio-Render-Layout", rendered.layout())
-                .body(banner.wrap(rendered));
+                .body(body);
+    }
+
+    /**
+     * {@code GET /preview/_shio/editor.js} — the page half of the bridge (SH185).
+     *
+     * <p>Served here rather than through {@code ShStaticResourceConfiguration} because it
+     * belongs to the renderer that injects it: one place decides both that the script exists
+     * and when a page gets it. It is {@code no-store} like the pages that reference it —
+     * caching an editor script against a page that is deliberately uncacheable buys a version
+     * skew and nothing else.</p>
+     */
+    @GetMapping(value = "/_shio/editor.js", produces = "application/javascript")
+    public ResponseEntity<String> editorScript() {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .header("X-Robots-Tag", "noindex, nofollow")
+                .body(editorBridge.script());
+    }
+
+    /**
+     * The origin that will be told about, and checked against, on both sides of the bridge.
+     *
+     * <p>The console frames this page, so the parent's origin is the one that requested it.
+     * Deriving it from the request rather than from configuration means it is right behind a
+     * proxy, on a developer's {@code localhost:5173} and in production without anybody
+     * setting a property — and the alternative, {@code "*"}, is what SH185 exists partly to
+     * remove.</p>
+     */
+    private String originOf(HttpServletRequest request) {
+        String origin = request.getHeader("Origin");
+        if (origin != null && !origin.isBlank()) {
+            return origin;
+        }
+        String scheme = request.getScheme();
+        int port = request.getServerPort();
+        boolean defaultPort = ("http".equals(scheme) && port == 80)
+                || ("https".equals(scheme) && port == 443);
+        return scheme + "://" + request.getServerName() + (defaultPort ? "" : ":" + port);
     }
 
     /**

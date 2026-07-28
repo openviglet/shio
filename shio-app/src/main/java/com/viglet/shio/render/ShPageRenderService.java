@@ -140,12 +140,16 @@ public class ShPageRenderService {
         Map<String, ShRenderedRegion> regions = renderRegions(site, slots, stable);
 
         return new ShRenderedPage(
-                composer.compose(layoutHtml, regions),
+                // SH185: the page's own identity goes onto <body>, so a `sh-field` in a layout
+                // needs no `sh-post` to say what it belongs to.
+                composer.compose(layoutHtml, regions, page.getId(),
+                        page.getShPostType() == null ? null : page.getShPostType().getName()),
                 site.getName(),
                 page.getFurl(),
                 layout.getTitle(),
                 slots,
-                state);
+                state,
+                page.getId());
     }
 
     // --- resolution -------------------------------------------------------------
@@ -299,7 +303,7 @@ public class ShPageRenderService {
      * one a curator asks the moment a page looks wrong.
      */
     public record ShRenderedPage(String html, String site, String url, String layout,
-                                 List<String> regions, ShPostState state) {
+                                 List<String> regions, ShPostState state, String postId) {
     }
 
     // --- teaching errors (SH80) ---------------------------------------------

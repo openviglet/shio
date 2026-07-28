@@ -450,9 +450,11 @@
 > replaces one somebody chose, a site with no front end is previewed by Shio itself instead of
 > answering `400 site has no url`, and `may_publish` no longer 500s on a pre-SH107 row.
 >
-> **SH248 has shipped too** — a region's browser JavaScript now reaches the browser, which
-> was the one place the renderer's own argument was not yet true. What that leaves is the
-> tasks below plus **SH247** (three of the seven `shObject.js` capabilities landed as helpers;
+> **SH185 and SH248 have shipped too** — the Universal Editor has a counterpart at last
+> (`shio-editor.js`, plus the field-level `sh-field`/`sh-post` annotations and a protocol
+> written down in [specs/SH185-universal-editor-protocol.md](specs/SH185-universal-editor-protocol.md)),
+> and a region's browser JavaScript now reaches the browser. What that leaves is the tasks
+> below plus **SH247** (three of the seven `shObject.js` capabilities landed as helpers;
 > `search`/`form`/`getRelation` were filed rather than stubbed) and **SH249** (`/agent/render`
 > and `/preview` now compose the same page two different ways).
 
@@ -477,7 +479,6 @@
 > over the CDA (P10), and what lands here is **preview-grade** until that is deliberately
 > revisited.
 
-- 📋 **SH185** (deps: SH183) **The Universal Editor has no counterpart, and `sh-region` is already the contract** — `visual-editor.page.tsx` posts `{type, data}` into the iframe and listens for replies, and there is not one `postMessage` in `create-shio-app`, `shio-react-sdk`, `shio-sections` or `shio-client`, so the editor cannot work against anything. The 2018 templates already annotate composition with `sh-region="NAME"`; a renderer that preserves those attributes tells the editor which DOM node is which region and which post to save. Needs the protocol written down, SH183 as its first implementation, `"*"` replaced by the site's origin, and `universalEditor: true` demoted until it is true. → §XV.3
 - 📋 **SH187** (deps: SH183, SH169 ✅, SH102 ✅) **The agent sees a page's structure, never its appearance** — SH169 made the digest compose a page's sections, so an agent can prove the outline is right; nothing lets it see that the page *looks* right, since `visualSnapshot` and `signedImageUrls` are `false` and `renderFetch` is off by default. SH102 has shipped as `shio snapshot` and is the correct instrument scoped for the wrong reader — "for the human handoff rather than for the agent", i.e. a CLI command and an image file rather than a call and a payload — and SH183 makes it nearly free, because the renderer's own HTML is the artifact to snapshot. → §XV.4
 - 📋 **SH189** (deps: SH68 ✅, SH80 ✅) **Importing an exchange package teaches nothing and is not on the agent surface** — `POST /api/v2/import` answers `ResponseEntity.badRequest().build()`, so a `ShExchangeException` that knows exactly which field or entry was wrong arrives as a bodiless `400`. Bringing the 2018 `bootstrap-site` package forward meant inferring seven schema renames from the Java records instead of reading them off a response. It is also console-only — multipart plus CSRF, no `batch` op, no MCP tool — so an agent can build a site from scratch but cannot import one. → §XV.7
 - 💭 **SH190** (deps: SH103 ✅) **Diagnostics name a failure but never carry the evidence** — an `api-error` finding reports the exception message and then advises "the instance log has the stack trace (the body never will)", which is an accurate description of a protocol that stops one step short: the agent is told to go somewhere it has no access to. The window already exists per SH103; what it needs is the frame that failed, captured where the incident is recorded. Cheaper and more honest than a log-tailing tool, which would hand out everything for a question that is always about one request. → §XV.8

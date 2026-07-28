@@ -70,9 +70,27 @@ public class ShRegionComposer {
     /** The 2018 attribute. Not renamed: existing content carries it. */
     public static final String SLOT_ATTR = "sh-region";
 
+    /**
+     * SH185 — the two attributes a <b>template author</b> writes to make something editable.
+     *
+     * <p>{@code sh-field="TEXT"} says "this element renders that field"; {@code sh-post="{{id}}"}
+     * says "the fields under here belong to that post". They are the author's job and not the
+     * engine's for a reason that only shows up in a listing: a region is rendered against the
+     * <em>page's</em> model, so {@code {{TEXT}}} inside it is the page's TEXT — but inside a
+     * {@code {{#query}}} block {@code {{title}}} is the listed post's. Nothing in the rendered
+     * HTML records which interpolation came from where, and inferring it would mean the
+     * template engine tracking provenance through every helper. The template is the only thing
+     * that knows, so the template says.</p>
+     */
+    public static final String FIELD_ATTR = "sh-field";
+    public static final String POST_ATTR = "sh-post";
+
     private static final String ANNOTATION_NAME = "data-shio-region";
     private static final String ANNOTATION_POST = "data-shio-region-post";
     private static final String ANNOTATION_MISSING = "data-shio-region-missing";
+    private static final String ANNOTATION_FIELD_POST = "data-shio-post";
+    private static final String ANNOTATION_PROP = "data-shio-prop";
+    private static final String ANNOTATION_POST_TYPE = "data-shio-post-type";
 
     /**
      * Fixed, and it does <b>not</b> interpolate the region's name.
@@ -117,6 +135,19 @@ public class ShRegionComposer {
      * @return the composed page
      */
     public String compose(String layoutHtml, Map<String, ShRenderedRegion> regions) {
+        return compose(layoutHtml, regions, null, null);
+    }
+
+    /**
+     * @param pagePostId the page's own post id, stamped on {@code <body>} so a
+     *                   {@code sh-field} with no nearer {@code sh-post} belongs to the page —
+     *                   which is the common case and the one an author should not have to
+     *                   write out (SH185)
+     * @param pageType   the page's post-type name, so the editor can fetch a field schema
+     *                   without a second resolve
+     */
+    public String compose(String layoutHtml, Map<String, ShRenderedRegion> regions,
+                          String pagePostId, String pageType) {
         if (layoutHtml == null || layoutHtml.isBlank()) {
             return "";
         }
@@ -139,8 +170,58 @@ public class ShRegionComposer {
             slot.html(region.html() == null ? "" : region.html());
             filled.add(name);
         }
+        annotateEditable(document, pagePostId, pageType);
         appendRegionScripts(document, regions, filled);
         return document.html();
+    }
+
+    /**
+     * SH185 — turns the author's {@code sh-field}/{@code sh-post} into the {@code data-shio-*}
+     * pair the Universal Editor reads.
+     *
+     * <h3>Why the translation exists at all</h3>
+     *
+     * <p>It would be simpler to have authors write {@code data-shio-prop} directly. Keeping a
+     * short authoring form and a rendered form is the same choice {@code sh-region} already
+     * makes, and it buys the same thing: the {@code sh-*} attributes are a <b>contract the
+     * content declares</b>, so SH193 can extract them into the reference graph and SH192 can
+     * lint them, while the {@code data-*} pair is what a browser and the editor consume. A
+     * single attribute doing both jobs could not be changed on either side without breaking
+     * the other.</p>
+     *
+     * <h3>Ownership is nearest-ancestor, and the page is the default</h3>
+     *
+     * <p>{@code <body>} carries the page's own post, so the common case — a layout
+     * interpolating the page's fields — needs no {@code sh-post} at all. A listing declares
+     * ownership per row ({@code sh-post="{{id}}"}), which is the only place it can be known.
+     * Resolution walks up from the field, so a row's declaration wins over the page's without
+     * either having to know about the other.</p>
+     *
+     * <p>A {@code sh-field} that resolves to <b>no</b> post is annotated as a field and left
+     * without an owner rather than dropped: the editor renders it read-only and says why,
+     * which is SH169's rule — a mistake the author can see beats markup that quietly is not
+     * editable.</p>
+     */
+    private void annotateEditable(Document document, String pagePostId, String pageType) {
+        if (pagePostId != null && !pagePostId.isBlank()) {
+            document.body().attr(ANNOTATION_FIELD_POST, pagePostId);
+            if (pageType != null && !pageType.isBlank()) {
+                document.body().attr(ANNOTATION_POST_TYPE, pageType);
+            }
+        }
+        for (Element owner : document.select("[" + POST_ATTR + "]")) {
+            String postId = owner.attr(POST_ATTR).trim();
+            if (!postId.isEmpty()) {
+                owner.attr(ANNOTATION_FIELD_POST, postId);
+            }
+        }
+        for (Element field : document.select("[" + FIELD_ATTR + "]")) {
+            String prop = field.attr(FIELD_ATTR).trim();
+            if (prop.isEmpty()) {
+                continue;
+            }
+            field.attr(ANNOTATION_PROP, prop);
+        }
     }
 
     /**

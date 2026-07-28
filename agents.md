@@ -243,11 +243,29 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   are addressed **by title**, because that is what `sh-region="NAME"` and a binding both name.
 - **`sh-region` survives the render**, joined by `data-shio-region` and
   `data-shio-region-post`. Do not "tidy up" by stripping it: the rendered DOM is the only place
-  the Universal Editor can learn which node maps to which post, which is SH185's whole problem,
-  and the attribute has been in the content since 2018. A slot with no Region post is **marked**
+  the Universal Editor can learn which node maps to which post, and the attribute has been in
+  the content since 2018. A slot with no Region post is **marked**
   (`data-shio-region-missing` + a constant comment), because a missing region and an empty one
   are different mistakes — SH169's rule. The marker never interpolates the region name: a name
   is content, HTML comments decode no entities, and `-->` inside one would close it.
+- **The Universal Editor has a counterpart, and the protocol is a document (SH185)** —
+  [docs/specs/SH185-universal-editor-protocol.md](docs/specs/SH185-universal-editor-protocol.md).
+  `visual-editor.page.tsx` had posted `sh:*` messages into an iframe since SH10 with nothing in
+  this repository on the other side. `shio-editor.js` is that side, served at
+  `/preview/_shio/editor.js` and injected only for `?editor=true`, so an ordinary preview ships
+  no editor code. Field-level annotation joins `sh-region`: **`sh-field="TEXT"` →
+  `data-shio-prop`, `sh-post="{{id}}"` → `data-shio-post`**, with the page's own post stamped on
+  `<body>` so the common case needs no `sh-post`. **Ownership is the template's job and the
+  engine never infers it** — a region renders against the *page's* model, so `{{TEXT}}` inside
+  it is the page's while inside a `{{#query}}` block `{{title}}` is the listed post's, and the
+  rendered HTML records neither. Resolution is nearest-ancestor. Both attribute forms survive:
+  `sh-*` is a contract the content declares (SH192 lints it, SH193 will graph it), `data-*` is
+  what the browser consumes. **Neither side of the bridge uses `"*"`** — the console pins the
+  iframe's origin and ignores anything else; the page is told its parent's origin on the script
+  tag, because `document.referrer` is empty on some navigations and `window.parent.location`
+  throws cross-origin. The script is **inert when not framed**. Injection happens *after* the
+  render (`ShEditorBridge`), never inside `ShPageRenderService`, so the renderer keeps returning
+  exactly what a front end would serve — the separation `ShPreviewBanner` also keeps.
 - **Three rules on `ShTemplateEngine`, all asserted by `ShRenderNoScriptEngineTest`**, because
   each is a default or a dependency away from being undone and **none of them changes the
   rendered output when it breaks**. (1) **No script engine**: Handlebars.java declares

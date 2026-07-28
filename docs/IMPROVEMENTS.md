@@ -1493,24 +1493,21 @@ is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that exis
 
 ### XV.3 Nothing implements the Universal Editor's iframe protocol (SH185)
 
-`visual-editor.page.tsx` loads the site in an iframe, pushes messages into it
-(`contentWindow.postMessage({type, data}, "*")`) and listens for replies
-(`window.addEventListener("message", onMessage)`). There is not one `postMessage` in
-`create-shio-app`, `shio-react-sdk`, `shio-sections` or `shio-client`. The editor has no
-counterpart anywhere in the repository, so it cannot work even against the first-party starter
-correctly deployed.
-
-Two consequences. `universalEditor: true` in the agent manifest is not true in the sense the
-manifest promises — an unshipped capability reports `false` and never overstates, and this is
-the first flag to break its own rule, so it should be downgraded until an implementation
-exists. And the protocol is unwritten: the message types, the direction each travels, how a
-field maps to a DOM node, and what the editor does when the page was rendered by something
-that never heard of it. SH183 gives it a first implementation to target, which is the right
-order — specifying a wire format with nothing on the other end is how the current shell got
-here.
-
-Worth fixing in the same file: the `"*"` target origin. Posting content into an arbitrary
-iframe origin is a data-leak shape, and the site's own origin is known.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P; the wire format is
+> [specs/SH185-universal-editor-protocol.md](specs/SH185-universal-editor-protocol.md).
+>
+> The decision worth carrying forward is that **a template declares which post a field
+> belongs to, and the engine never infers it**. A region renders against the page's model,
+> so `{{TEXT}}` inside it is the page's — but inside a `{{#query}}` block `{{title}}` is the
+> listed post's, and the rendered HTML records neither. Inferring would mean the template
+> engine tracking provenance through every helper, and getting it wrong means editing the
+> wrong post's content. Every visual editor that works asks the author; the ones that guess
+> are the ones that edit the wrong thing.
+>
+> The other half is that `universalEditor: true` was the first manifest flag to break its own
+> rule — an unshipped capability reports `false` and never overstates. It was fixed by
+> shipping the counterpart rather than by demoting the flag, which was the right way round
+> only because SH183 had already landed something for it to target.
 
 ### XV.4 The agent sees a page's structure, never its appearance (SH187)
 
