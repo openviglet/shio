@@ -25,7 +25,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.mockito.Mockito;
@@ -103,6 +105,10 @@ import jakarta.persistence.PersistenceContext;
         "spring.datasource.url=jdbc:h2:mem:shio-attribution;DB_CLOSE_DELAY=-1;MODE=LEGACY;"
                 + "DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true",
         "shio.schedule.enabled=false" })
+// Method-name ordering, because the SH239 comparison needs the small pairs measured first:
+// `theScalingSourcesActuallyScale` sorts after `addressing` and `lint`, and comparing a ratio
+// against a run that has not happened yet is how this suite would fail on nothing at all.
+@TestMethodOrder(MethodOrderer.MethodName.class)
 @TestInstance(Lifecycle.PER_CLASS)
 class ShAgentSourceAttributionTest {
 
@@ -112,6 +118,14 @@ class ShAgentSourceAttributionTest {
     private static final String NAIVE = "naive";
     /** Enough posts for "read them all" to be visibly worse than "be told which one". */
     private static final int POSTS = 5;
+    /**
+     * The second fixture size (SH239), in its own site so the small pairs stay small.
+     *
+     * <p>Deliberately under the console listing's default page size (50): a naive client does not
+     * know to ask for more, so its listing is capped at one page — which is a real effect of SH165
+     * and one this test exists to *show* rather than to design around.</p>
+     */
+    private static final int SCALE_POSTS = 45;
     private static final Instant WHEN = Instant.parse("2026-01-01T00:00:00Z");
 
     @Autowired
@@ -128,6 +142,16 @@ class ShAgentSourceAttributionTest {
     private Principal principal;
 
     private String siteName;
+    /**
+     * Where the batching pair writes — its own folder, so what it creates never lands in the
+     * folder the addressing and lint pairs measure. Without it, this class had the very confound
+     * it was written to remove: run batching first and the listing addressing is compared against
+     * is twice the size, so the "measurement" moved with the test order.
+     */
+    private String writesFolderId;
+    private String scaleSiteName;
+    private String scaleFolderId;
+    private final List<String> scalePostIds = new ArrayList<>();
     private String blogFolderId;
     private String articleType;
     private String articleTypeId;
@@ -232,7 +256,7 @@ class ShAgentSourceAttributionTest {
             ops.append("{\"op\":\"post.upsert\",\"address\":\"post:").append(siteName)
                     .append("/blog/batched-").append(suffix).append('-').append(i)
                     .append("\",\"type\":\"").append(articleType)
-                    .append("\",\"folder\":\"/blog\",\"data\":{\"headline\":\"Batched ")
+                    .append("\",\"folder\":\"/writes\",\"data\":{\"headline\":\"Batched ")
                     .append(i).append("\"}}");
         }
         String batch = ops.append("]}").toString();
@@ -242,7 +266,7 @@ class ShAgentSourceAttributionTest {
 
         ShAgentBenchmark naive = new ShAgentBenchmark(mockMvc, source, NAIVE);
         for (int i = 1; i <= POSTS; i++) {
-            String body = "{\"folderId\":\"" + blogFolderId + "\",\"postTypeId\":\"" + articleTypeId
+            String body = "{\"folderId\":\"" + writesFolderId + "\",\"postTypeId\":\"" + articleTypeId
                     + "\",\"state\":\"DRAFT\",\"data\":{\"headline\":\"Naive " + suffix + "-" + i
                     + "\"}}";
             naive.call("create " + i, authed(post("/api/v2/post-unified"))
@@ -309,6 +333,80 @@ class ShAgentSourceAttributionTest {
         assertSource(source);
     }
 
+    /**
+     * SH239 — the two sources that are <em>claimed</em> to scale, measured at a second size.
+     *
+     * <p>SH164's most quotable result is that addressing and the lint carry the token advantage
+     * <b>because they grow with the site</b>, and both were measured on five posts — the part of
+     * the claim that matters most was the part still being argued. This runs the same two pairs
+     * against nine times the content and asserts the ratio <em>rises</em>, which is the only way
+     * "it grows with the content" becomes a measurement rather than a story (§XIV.4: characterize
+     * by execution).</p>
+     *
+     * <p><b>What measuring it changed about the claim.</b> The lint grows without bound — one call
+     * against N reads, in calls <em>and</em> tokens. Addressing does not: the lookup it replaces is
+     * a folder listing, and since SH165 that listing is <b>paged</b>, so a naive client's worst case
+     * is capped at one page however large the folder gets. So the honest form of the claim is that
+     * the lint scales with the site and addressing scales up to a page and then flattens — which is
+     * the console's own paging having bounded the baseline it is measured against, the same effect
+     * SH117/SH120/SH176 had and the reason this attribution exists at all.</p>
+     */
+    @Test
+    @DisplayName("SH239: the two scaling sources measure larger at a larger size")
+    void theScalingSourcesActuallyScale() throws Exception {
+        ShAgentBenchmark addressingAgent = new ShAgentBenchmark(mockMvc, "addressing@scale", AGENT);
+        addressingAgent.call("read by address", authed(get("/api/v2/agent/read")
+                .param("address", "post:" + scaleSiteName + "/blog/post-3")));
+        record(addressingAgent);
+
+        ShAgentBenchmark addressingNaive = new ShAgentBenchmark(mockMvc, "addressing@scale", NAIVE);
+        addressingNaive.call("list the folder to find the id",
+                authed(get("/api/v2/object/" + scaleFolderId + "/list")));
+        addressingNaive.call("read by id",
+                authed(get("/api/v2/post-unified/" + scalePostIds.get(2))));
+        record(addressingNaive);
+
+        ShAgentBenchmark lintAgent = new ShAgentBenchmark(mockMvc, "lint@scale", AGENT);
+        lintAgent.call("verify", authed(get("/api/v2/agent/verify")
+                .param("site", scaleSiteName).param("format", "terse")));
+        record(lintAgent);
+
+        ShAgentBenchmark lintNaive = new ShAgentBenchmark(mockMvc, "lint@scale", NAIVE);
+        for (int i = 1; i <= SCALE_POSTS; i++) {
+            lintNaive.call("read candidate " + i,
+                    authed(get("/api/v2/post-unified/" + scalePostIds.get(i - 1))));
+        }
+        record(lintNaive);
+
+        assertSource("addressing@scale");
+        assertSource("lint@scale");
+
+        // The assertion the task is actually about: more content, more advantage. Compared against
+        // the small pairs rather than against a constant, so it stays true if a future change makes
+        // both sizes cheaper — which is exactly what the last three blocks did.
+        assertThat(tokenRatio("lint@scale"))
+                .as("the lint's advantage must grow with the site — it is one call against one "
+                        + "read per candidate, so a flat ratio here means the baseline stopped "
+                        + "reading everything and the claim needs rewriting, not the floor")
+                .isGreaterThan(tokenRatio("lint"));
+        assertThat(callRatio("lint@scale"))
+                .as("...in round trips too, which is the half that has no ceiling")
+                .isGreaterThan(callRatio("lint"));
+        assertThat(tokenRatio("addressing@scale"))
+                .as("addressing's advantage grows too, but only up to a page: the lookup it "
+                        + "replaces is a paged listing since SH165, so this is bounded where the "
+                        + "lint's is not")
+                .isGreaterThan(tokenRatio("addressing"));
+    }
+
+    private int tokenRatio(String source) {
+        return ratio(run(source, NAIVE).tokens(), run(source, AGENT).tokens());
+    }
+
+    private int callRatio(String source) {
+        return ratio(run(source, NAIVE).calls(), run(source, AGENT).calls());
+    }
+
     // ------------------------------------------------------------------ assertions
 
     /**
@@ -350,7 +448,10 @@ class ShAgentSourceAttributionTest {
     private ShAgentBenchmark.Run run(String source, String path) {
         return runs.stream()
                 .filter(run -> run.task().equals(source) && run.path().equals(path))
-                .findFirst().orElseThrow();
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No '" + source + "' (" + path
+                        + ") run recorded yet — the SH239 comparison depends on the small pairs "
+                        + "having run first, which is what @TestMethodOrder on this class is for."));
     }
 
     private void record(ShAgentBenchmark benchmark) {
@@ -401,6 +502,15 @@ class ShAgentSourceAttributionTest {
             root.setOwner("admin");
             entityManager.persist(root);
 
+            ShFolder writes = new ShFolder();
+            writes.setName("writes");
+            writes.setRootFolder((byte) 0);
+            writes.setParentFolder(root);
+            writes.setDate(WHEN);
+            writes.setOwner("admin");
+            entityManager.persist(writes);
+            writesFolderId = writes.getId();
+
             ShFolder blog = new ShFolder();
             blog.setName("blog");
             blog.setRootFolder((byte) 0);
@@ -427,6 +537,52 @@ class ShAgentSourceAttributionTest {
                 String href = i == 3 ? "/blog/does-not-exist" : "/blog/post-1";
                 article(site, blog, type, i,
                         "<p>Body " + i + " <a href=\"" + href + "\">more</a></p>");
+            }
+
+            // SH239's second size, in its own site so the site-scoped lint pair above keeps
+            // measuring five posts rather than fifty.
+            ShSite scaleSite = new ShSite();
+            scaleSiteName = "attr-scale-" + suffix;
+            scaleSite.setName(scaleSiteName);
+            scaleSite.setDate(WHEN);
+            scaleSite.setOwner("admin");
+            entityManager.persist(scaleSite);
+
+            ShFolder scaleRoot = new ShFolder();
+            scaleRoot.setName("root");
+            scaleRoot.setRootFolder((byte) 1);
+            scaleRoot.setShSite(scaleSite);
+            scaleRoot.setDate(WHEN);
+            scaleRoot.setOwner("admin");
+            entityManager.persist(scaleRoot);
+
+            ShFolder scaleBlog = new ShFolder();
+            scaleBlog.setName("blog");
+            scaleBlog.setRootFolder((byte) 0);
+            scaleBlog.setParentFolder(scaleRoot);
+            scaleBlog.setDate(WHEN);
+            scaleBlog.setOwner("admin");
+            entityManager.persist(scaleBlog);
+            scaleFolderId = scaleBlog.getId();
+
+            for (int i = 1; i <= SCALE_POSTS; i++) {
+                String href = i == 3 ? "/blog/does-not-exist" : "/blog/post-1";
+                scalePostIds.add(UUID.randomUUID().toString());
+                for (ShPostState state : List.of(ShPostState.DRAFT, ShPostState.PUBLISHED)) {
+                    ShPostUnified post = new ShPostUnified();
+                    post.setId(scalePostIds.get(i - 1));
+                    post.setState(state);
+                    post.setShSite(scaleSite);
+                    post.setShFolder(scaleBlog);
+                    post.setShPostType(type);
+                    post.setTitle("Post " + i);
+                    post.setFurl("/blog/post-" + i);
+                    post.setDate(WHEN);
+                    post.setPublished(state == ShPostState.PUBLISHED);
+                    post.setData("{\"headline\":\"Post " + i + "\",\"body\":\"<p>Body " + i
+                            + " <a href=\\\"" + href + "\\\">more</a></p>\"}");
+                    entityManager.persist(post);
+                }
             }
         });
     }

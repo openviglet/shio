@@ -492,17 +492,26 @@ stale. Raising a ceiling is allowed and must be justified in the commit.
 tests created — the task benchmark measured 1616 tokens alone and 2243 in a full run against an
 1800 ceiling, which is a red build nobody caused.
 
-**And it is attributed per source (SH164).** `ShAgentSourceAttributionTest` isolates the five
-ideas a task ratio bundles — addressing, projection, batching, discovery, lint — one pair each,
-with a floor each (`attribution.*` in the same file). It exists because the task ratios fell
-three blocks running while the agent path stood still (SH117/SH120/SH176 each made the
-*baseline* leaner), so one ratio per task could no longer tell "the protocol is cheaper" from
-"the old console was fat". What it says, measured: **addressing (26×) and the lint (15×) carry
-the token claim, and they are the two that grow with the site**; **batching buys turns, not
-bytes** (5.0× calls, 6.1× tokens); **discovery is 2.2× on tokens and 4.0× on calls**, which is
-what P2 was always about; **projection is the smallest (1.5×) and the easiest to point at**. Its
-pairs are deliberately generous to the baseline — handed folder, type and post ids it could only
-have crawled for — so each ratio is a **floor** on the advantage.
+**And it is attributed per source (SH164, corrected by SH239).** `ShAgentSourceAttributionTest`
+isolates the five ideas a task ratio bundles — addressing, projection, batching, discovery, lint —
+one pair each, with a floor each (`attribution.*` in the same file). It exists because the task
+ratios fell three blocks running while the agent path stood still (SH117/SH120/SH176 each made the
+*baseline* leaner), so one ratio per task could no longer tell "the protocol is cheaper" from "the
+old console was fat". Measured, order-independent: **the lint carries the token claim — 15.5× on
+five posts and 139.6× on forty-five, the only source that scales without bound** (one call against
+one read per candidate, 45× on calls); **addressing is 11.8× and scales sublinearly** to 53.1×,
+because the baseline is a listing *plus* a lean id-keyed read and since SH165 that listing is
+paged, so the growth caps at one page; **batching buys turns, not bytes** (5.0× calls, 6.1×
+tokens); **discovery is a round-trip claim and almost nothing else** (4.0× calls, **1.2×** tokens —
+a context pack describes the instance, so it is not much smaller than the reads it replaces, and
+its call ratio grows by one per folder); **projection is the smallest (1.5×)** and the easiest to
+point at. Its pairs are deliberately generous to the baseline — handed folder, type and post ids it
+could only have crawled for — so each ratio is a **floor** on the advantage.
+**SH239 also corrected SH164's own first numbers**, which were order-dependent: the batching pair
+wrote into the folder the addressing and lint pairs measure, so addressing read 26.2× when batching
+had run first and 11.8× when it had not — the same confound the benchmark's own database fixed, one
+level in. Batching writes to its own folder now, and the scaling claim is asserted by measuring
+**two fixture sizes and requiring the ratio to rise** rather than by argument.
 **The ≈10× per-task target is retired as a headline claim** and kept per source: an aggregate
 mixes five savings, names none, and *falls* when the console gets leaner, so defending it would
 mean arguing against P1. On tokens the claim is ≈10× where it is real (addressing, the lint); on
@@ -1378,11 +1387,11 @@ CDA shapes (SH117/SH120) and then the post read (SH176) — so the SH112 token r
 product improving and the claim shrinking, three blocks running. **SH157 is the first change
 that moved a ratio the other way**, by folding discovery into one read and proof into the
 write: every canonical task lost a call. The current reading is **tokens 2.8×–10.5×, tool
-calls 2.3×–3.8×** — and **SH164 has since attributed it**: per-source, addressing is 26× and the
-lint 15× (both scale with the site), batching is 5.0× on calls and 6.1× on tokens, discovery
-4.0× on calls and 2.2× on tokens, projection 1.5×. So quote a *source*, not a task ratio: the
-aggregate ≈10× is retired precisely because it mixes those five and moves when the baseline
-does.
+calls 2.3×–3.8×** — and **SH164/SH239 have since attributed it**: per-source, the lint is 15.5× at
+five posts and 139.6× at forty-five (the only unbounded one), addressing 11.8× rising to 53.1×,
+batching 5.0× on calls and 6.1× on tokens, discovery 4.0× on calls and **1.2×** on tokens,
+projection 1.5×. So quote a *source*, not a task ratio: the aggregate ≈10× is retired precisely
+because it mixes those five and moves when the baseline does.
 
 **The cross-file update rules — follow these every time:**
 

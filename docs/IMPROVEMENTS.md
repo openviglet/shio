@@ -1238,9 +1238,9 @@ leaving to whoever next notices the poll is not free.
 > The reorientation was mostly additive, but it did invalidate some existing choices.
 > Block N spent them → [CHANGELOG.md](CHANGELOG.md) Block N, and so are the tasks that
 > building it opened (SH163–SH167, SH233, SH234). What is left here is the one lesson worth
-> carrying forward (§XIV.4) and the two tasks that **finishing** it opened and are still open
-> (§XIV.15–§XIV.16): the editor nothing drives, and the new floors that claim to scale from a
-> single fixture size. The other four (SH235–SH237, SH240) have shipped.
+> carrying forward (§XIV.4) and the one task that **finishing** it opened and is still open
+> (§XIV.15: the editor nothing drives, which needs a front end to embed before it can be driven
+> end to end). The other five (SH235–SH237, SH239, SH240) have shipped.
 > Concept spec §10 has the original table.
 
 ### XIV.4 Build-time guard for the `@TenantId` JOINED-join hazard (SH122) — ✅ shipped
@@ -1282,23 +1282,6 @@ need the iframe: **the PATCH reaches the CDA authenticated as the token, not as 
 SH182's harness can assert that today, from a browser, with a WRITE token and a post. Worth doing
 before Block P rather than after, because the alternative is discovering the next plumbing defect
 the same way this one was discovered: by reading the code and noticing the comment is wrong.
-
-### XIV.16 The attribution floors claim to scale and measure one size (SH239)
-
-SH164's most quotable result is that addressing and the lint carry the token claim *because they
-grow with the site* — the id lookup returns a folder listing, the sweep reads every candidate, and
-neither agent call gets more expensive as the content does. Both are measured on a fixture of five
-posts. So the part of the claim that matters most is the part still being argued rather than
-asserted, which is the failure mode §XIV.4 named: characterize by execution, not by argument.
-
-The fix is small and the design question inside it is not: run the two scaling sources at two
-fixture sizes and assert the ratio **rises**. That converts "it grows with the content" into a
-measurement, and it forces a decision about where the floors belong — at the small size (a floor
-that holds everywhere, and understates the advantage everywhere but the smallest site) or at the
-large one (a floor that says what the protocol is for, and fails on a fixture nobody promised to
-keep large). The first is the safer gate; the second is the honest claim. Stating both, with the
-gate on the small one and the number quoted from the large one, is probably the answer — and it is
-the same shape as the existing split between the loose token ceilings and the robust ratio floors.
 
 ## XV. The visible site (Block P)
 
