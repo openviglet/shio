@@ -65,6 +65,27 @@ describe("content-notes: the file format", () => {
     );
   });
 
+  it("a note with a trailing space is not a permanent conflict (SH254)", () => {
+    // `scalar()` claimed it used "the same rule `content-files` uses" and was missing that
+    // rule's `value !== value.trim()` clause, while `parseNotes` strips trailing whitespace off
+    // every line. So the file could not hold the value — and the symptom was not cosmetic.
+    const note = "keep it terse ";
+    const remote = [{ key: "tone", note, author: "ana" }];
+    const local = parseNotes(
+      "Blog/.memory.yaml",
+      serializeNotes({ site: "Blog", notes: remote }),
+    ).notes;
+
+    assert.equal(local[0].note, note);
+    // The operator-facing half: with an empty base — a fresh clone, the case a projection exists
+    // to serve — both sides looked moved and the values differed, so every pull reported a
+    // conflict, wrote nothing, exited 1, and advised two fixes that cannot settle a value the
+    // format drops on the way in.
+    const plan = reconcileNotes({ base: {}, remote, local });
+    assert.deepEqual(plan.conflicts, []);
+    assert.equal(plan.agreed.tone, note);
+  });
+
   it("addresses a site's notes inside its own content directory", () => {
     assert.equal(notesPathFor("Blog"), `Blog/${NOTES_FILE}`);
     assert.equal(notesSiteOf("Blog/.memory.yaml"), "Blog");

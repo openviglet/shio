@@ -911,6 +911,25 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   rules, so a normalization added later cannot escape it. This is SH145's `idsToPaths` argument
   ("the base, the server side and the file side all speak paths") generalized from one field type
   to every normalization the format has.
+- **The round trip is asserted as a property (SH255)**, in `cli/test/content-round-trip.test.mjs`:
+  one adversarial value list (trailing/leading whitespace, CRLF, lone `\r`, YAML keywords, numeric
+  strings, `: `, ` #`, empty, `-`, `[`, `{`, BOM, a bare `---`, tab, emoji) × four round trips
+  (post field, post body, memory note, SH191 sidecar), plus `projectedPost` asserted to be a
+  **fixed point**. It exists because `parse(serialize(x)) === x` is universally quantified while
+  every test was an *example*, and every fixture happened to be a value its format represents
+  exactly — which is how SH253 and SH254 both survived four blocks. **A value a format cannot
+  hold must be named in `DECLARED` with the reason**, and a declared loss the format no longer has
+  **fails the build** (SH142's rule, so the list cannot rot into a suppression). A refusal counts
+  as legitimate non-holding — it is the only one that cannot lose work silently. There are exactly
+  three: a body's CRLF and lone `\r` (converted on purpose) and an empty note (refused, since
+  SH160's "forgetting is an empty note" deletes the row, so a read never returns one). If you add
+  a normalization anywhere in `content-files.mjs`/`content-notes.mjs`, this is the test that will
+  tell you what it costs.
+- **`content-notes.mjs`' `scalar()` and `content-files.mjs`' `encodeScalar` are deliberately two
+  functions** (separate parsers, so separate charsets) and must **not** be assumed to agree —
+  SH254 was one missing clause (`value !== value.trim()`) hiding behind a comment that claimed
+  they did, which made a note with a trailing space a permanent conflict on every pull. What they
+  share is the property above, not the output.
 - **Code gets a file of its own (SH191).** A `PageLayout`'s `HTML`, a `Region`'s
   `HTML`/`JAVASCRIPT` and a `Theme`'s `CSS` are programs, and before this they projected as
   escaped one-liners inside YAML frontmatter — no line numbers, no highlighting, nothing

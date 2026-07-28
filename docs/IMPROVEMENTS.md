@@ -2013,71 +2013,106 @@ actually takes care.
 > (a defect twice-in-one-process comparison cannot see) and SH188's NULL column (a defect no
 > test that constructs the entity in Java can see).
 
-### XVI.9 A memory note with a trailing space is a permanent conflict (SH254)
+### XVI.9 A comment claiming parity is not parity (SH254)
 
-`content-notes.mjs` decides when a note needs quoting:
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. `content-notes.mjs`' `scalar()` said it
+> used "the same rule `content-files` uses" and was missing that rule's `value !== value.trim()`
+> clause, so a note with a trailing space could not survive the file — and with an empty base
+> that was a **conflict** on every pull, not a phantom write.
+>
+> The durable point is the shape, and it is SH245's ("one writer per verb") in miniature: an
+> invariant asserted in prose is an invariant enforced nowhere, and a comment claiming parity is
+> *worse* than no comment, because it stops the next reader from checking. The repair was not to
+> merge the two functions — they are deliberately separate readers with different parsers and
+> therefore different charsets — but to assert the property they actually have to share, which
+> is §XVI.10.
+
+### XVI.10 The round trip is a property, and it is asserted as one (SH255)
+
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth carrying.
+>
+> **The gap was in *kind*, not in coverage.** `parse(serialize(x)) === x` is universally
+> quantified and every test was an example, with fixtures that all happened to be values their
+> format represents exactly. Two real defects (SH253, SH254) lived in that gap across four
+> blocks. A suite of any size has this blind spot; only a table closes it.
+>
+> **A declared exemption is a decision, and it expires.** A format may legitimately not hold
+> something, so the property is "exact, or named with a reason" — plus SH142's rule, that a
+> declared loss the format no longer has *fails*, or the list rots into a suppression hiding the
+> next defect at the same spot. A refusal counts as legitimate non-holding: it is the only one
+> that cannot lose work silently.
+>
+> **Writing the list is where the thinking happened.** The first draft declared nine losses; the
+> real number is three. The reflex — stripping the body's framing must cost every whitespace-ish
+> value — is wrong, because `bodySafe` keeps those in `fields:`, so they survive the *document*
+> and merely stop being the body. The guard failed its own author's declarations on the first
+> run, which is the strongest evidence that the exemption list has to be checked rather than
+> trusted.
+
+### XVI.11 An asset path accepts traversal, and a `/` in a file name becomes a folder (SH256)
+
+`content-assets.mjs` builds and reads an asset path with two lines that trust their inputs:
 
 ```js
-/** Quoted whenever a bare scalar would be ambiguous — the same rule `content-files` uses. */
-function scalar(value) {
-  const text = String(value ?? "");
-  if (/^[A-Za-z0-9][\w .,/@-]*$/.test(text) && !/^(true|false|null|yes|no|on|off)$/i.test(text)) {
-    return text;
-  }
-  return JSON.stringify(text);
+export function assetPathFor(item, chain) {
+  const folder = chain && chain !== "/" ? chain : "";
+  return `${item.siteName}${folder}/${item.fileName}`;
 }
 ```
 
-It is **not** the same rule. `encodeScalar` in `content-files.mjs` quotes on seven conditions,
-one of which is `value !== value.trim()`; this charset allows a trailing space, and `parseNotes`
-then strips trailing whitespace off every line. So `"keep it terse "` is emitted bare and read
-back as `"keep it terse"`, and the format cannot represent the value.
+and, in the inverse, `fileName = parts[parts.length - 1]` with the rest taken as the chain. Two
+consequences, both measured rather than reasoned about.
 
-Measured, one shape is lost and only one — leading spaces, `: `, ` #`, tabs, newlines,
-YAML keywords and numeric-looking strings all round-trip exactly, because the charset's
-first-character rule and its exclusions cover the rest of `encodeScalar`'s list by accident.
+**The pair is not injective.** An asset whose file name contains a `/` projects to a path that
+reads back as a *different folder and a different file*: `{site: "Blog", folder: "/media",
+fileName: "a/b.png"}` becomes `Blog/media/a/b.png` and returns `folder: "/media/a", fileName:
+"b.png"`. A push would create a folder nobody asked for, upload under the wrong name, and collide
+with any genuine asset already at that path.
 
-**The consequence is worse than SH253's**, which is the part worth knowing before deciding
-priority. With an empty base — a fresh clone, which is the case a projection exists to serve —
-`reconcileNotes` sees `before = null`, `there = "keep it terse "`, `here = "keep it terse"`, so
-both sides look moved and the values differ: a **conflict**. Nothing is written, the pull exits
-1, and the message advises editing the file or running `shio remember` — neither of which can
-settle a value the file drops on the way in. SH253 produced a phantom *write*; this produces a
-phantom *stalemate*, on every run.
+**Neither end refuses a `..`.** A `File` field reading `Blog/../../../../etc/passwd` resolves
+through `readAssetBytes` (`join(cwd, "shio/assets", path)`) to **`/etc/passwd`** — outside the
+project entirely — and `push --content` reads those bytes and uploads them as an asset, while the
+chain `/../../../../etc` is handed to `folder.upsert`. `Blog/media/..` resolves to the site's own
+asset directory.
 
-The fix is one predicate, and the second half is what stops it recurring: assert that the two
-`scalar` implementations agree, rather than asserting it in a comment. A comment claiming parity
-is exactly what made this invisible to review — it is the same failure mode as SH245's "one
-writer per verb", an invariant stated in prose and enforced nowhere. Whether the two should be
-*one* function is the open question: the formats are deliberately separate readers (SH161 argues
-for a small dedicated one over a YAML dependency), so sharing the scalar rule is a smaller change
-than sharing the parser and probably the right size.
+**This is the only path in the tree that does not already refuse this**, which is what makes it a
+defect rather than a missing feature: `siteDir` refuses a slash in a site name and says why,
+SH191's `sidecarNameFor` refuses a separator in a field name, and `ShBlueprintRegistry` checks a
+package's path refs per *segment* for `..` (per segment precisely so `app/[...slug]/page.tsx` is
+not rejected as traversal). The convention exists; assets were written before it was stated and
+never revisited.
 
-### XVI.10 The round trip is a property, and nothing asserts it as one (SH255)
+**Why "the operator owns their own files anyway" is not the whole answer.** It is true of a human
+typing the path and false of the two writers this product is built for. A `File` value can arrive
+from a blueprint, from a generated desired-state document, or from an agent that read a URL — and
+law P7's whole point is that the human is *reviewing*, so the reviewable artefact must not be able
+to make the tool read a file from outside the tree and put it in the CMS. The severity is modest
+and the shape is exactly the one the rest of the codebase treats as non-negotiable.
 
-SH253 and SH254 are one defect found twice. Both are a value a format silently changes; both
-survived because **every fixture in the suite is a value its format represents exactly**, so
-`parse(serialize(x)) === x` was asserted only where it is trivially true. The post round-trip
-test uses LF bodies, where the CRLF normalization is the identity function. The notes tests use
-notes without trailing spaces.
+The fix is symmetrical refusals on both ends and a table entry (SH257). The open question is the
+existing-tree case: a path already on disk that fails the new rule should stop the run and name
+the asset, following SH191's missing-sidecar precedent, rather than being skipped — a skipped
+asset is a post published with a File field pointing at nothing.
 
-That is not a gap in coverage so much as a gap in *kind*: the property is universally quantified
-and every test is an example. The missing piece is one adversarial value list — trailing and
-leading whitespace, CRLF and a lone `\r`, YAML keywords, numeric-looking strings, `: `, ` #`,
-the empty string, a lone `-`, a leading BOM — run as a table against all three round trips
-(`parsePost`/`serializePost`, `parseFolderMarker`/`serializeFolder`, `parseNotes`/
-`serializeNotes`).
+### XVI.12 Two of the six round trips are still examples (SH257)
 
-**The exemption list is as important as the assertion**, because a format is allowed not to
-represent something: a body with trailing whitespace stays in `fields:` on purpose (`bodySafe`),
-which is the format handling the case correctly rather than losing it. So the guard is "exact, or
-named with a reason" — the shape `ShByteStabilityLintTest` and `ShFolderSiteInvariantTest`
-already use on the Java side, and the reason those two catch defects no behavioural test can.
+SH255's table covers four: a post field, a post body, a memory note, an SH191 sidecar. Two are
+missing, and the case for finishing the set is that running the same values against one of them
+*by hand* is what found SH256.
 
-It is the complement of SH253 rather than a replacement: `projectedPost` makes a value the format
-cannot hold read as *unchanged* instead of eternally in flight, which is the right runtime
-behaviour; this makes the set of such values *known* instead of discovered one blocked pull at a
-time.
+The **asset path** pair is the one that matters, because it is the only round trip whose output is
+consumed as a filesystem path — so a value it mishandles is not just drift but a read outside the
+tree.
+
+The **frontmatter metadata** — `site`, `url`, `type`, `folder` — goes through the same
+`encodeScalar`/`decodeScalar` as a field value but is read by a different branch of
+`splitDocument` and then through `normalizeUrl`/`siteDir`. A site named `true`, a post-type named
+`0042`, a folder chain with a trailing space: each is the shape the list exists to catch, and none
+is currently asserted.
+
+The point is not the two entries. It is that a property asserted only where somebody thought to
+assert it has the same blind spot as no assertion at all, one step smaller — and the evidence is
+that the blind spot is where the next defect was, twice running.
 
 ---
 

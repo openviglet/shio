@@ -199,13 +199,34 @@ function index(notes) {
   return map;
 }
 
-/** Quoted whenever a bare scalar would be ambiguous — the same rule `content-files` uses. */
+/**
+ * Quoted whenever a bare scalar would not come back exactly (SH254).
+ *
+ * <p>This used to claim it was "the same rule `content-files` uses" and was missing one of that
+ * rule's clauses: `encodeScalar` quotes when `value !== value.trim()`, while the charset below
+ * happily allows a <b>trailing space</b> — and `parseNotes` strips trailing whitespace off every
+ * line, so the value could not survive. The consequence was not cosmetic: with an empty base (a
+ * fresh clone), `reconcileNotes` saw the server's `"terse "` and the file's `"terse"` as two
+ * different edits and reported a <b>conflict</b>, on every pull, forever, while the message
+ * advised editing the file or running `shio remember` — neither of which can settle a value the
+ * format drops on the way in.</p>
+ *
+ * <p><b>The two rules are deliberately still two.</b> These are separate readers on purpose
+ * (SH161 chose a small dedicated one over a YAML dependency for four keys), and their bare-scalar
+ * charsets differ because their parsers do. What has to agree is not the output but the
+ * <i>property</i> — that a value comes back exactly — and that is asserted directly, as a table
+ * over adversarial values run against all three of this tree's round trips (SH255). A comment
+ * claiming parity is what made this invisible to review in the first place.</p>
+ */
 function scalar(value) {
   const text = String(value ?? "");
-  if (/^[A-Za-z0-9][\w .,/@-]*$/.test(text) && !/^(true|false|null|yes|no|on|off)$/i.test(text)) {
-    return text;
-  }
-  return JSON.stringify(text);
+  const bare =
+    /^[A-Za-z0-9][\w .,/@-]*$/.test(text) &&
+    // The clause that was missing. `parseNotes` trims, so trailing whitespace has to be quoted
+    // or it is simply gone.
+    text === text.trim() &&
+    !/^(true|false|null|yes|no|on|off)$/i.test(text);
+  return bare ? text : JSON.stringify(text);
 }
 
 function unscalar(raw) {
