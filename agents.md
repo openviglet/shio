@@ -342,7 +342,14 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `{{& TEXT}}` — unescaped output, the same reference as a triple stash — being dropped. **Add a row
   when you touch the scanner**; `UNREACHABLE` is a claim about another part of the system (three rows
   rest on SH183's refusing `TemplateLoader`) so it must carry its reason. Whether Handlebars.java's
-  AST would replace all of this is now cheap to check and unchecked — **SH274**.
+  AST would replace all of this is **asserted rather than remembered (SH274)**: on 4.5.3
+  `Template#collect` is *deduplicated* — four references to `TEXT` at three scopes return `[TEXT]` —
+  `collect(SECTION)` gives only the helper's name, and the structural nodes are in `internal`.
+  `ShHandlebarsAstPremiseTest` pins that with a version number, so a bump that adds scope information
+  **fails the build** and reopens the question. One happy finding: `collectReferenceParameters()`
+  returns the hash *path* and not the hash *literal*, the library drawing SH261's line in the same
+  place independently. The same kind of unenforced premise about a dependency exists elsewhere —
+  **SH275**.
 - **A layout's and a region's blast radius is computed, never stored (SH193)** — `ShTemplateGraph`
   inverts the presentation edges (layout → the post-types bound to it, region → the layouts that
   slot it → their types → page and published counts). **Computed on demand and not extracted into

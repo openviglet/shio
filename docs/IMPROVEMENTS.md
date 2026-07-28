@@ -2475,6 +2475,65 @@ small but non-zero cost paid by every session including the ones that never writ
 >
 > The AST alternative is now cheap to evaluate and still unevaluated — **SH274**.
 
+### XVI.26 The AST question is answerable now, and was answered (SH274)
+
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The premise holds; three things came out of
+> checking it that would not have come out of continuing to believe it.
+>
+> **The reality was worse than the premise claimed.** The inherited belief was "flat, no scope".
+> `collect` is actually *deduplicated*: four references to `TEXT` at three different scopes return
+> `[TEXT]`. So the belief was directionally right and quantitatively wrong, which is the most common
+> way an inherited premise misleads — it stays true enough to keep, while nobody knows how much
+> margin there is.
+>
+> **Checking a premise can validate an unrelated decision.** `collectReferenceParameters()` returns
+> the hash *path* and not the hash *literal* — the library drawing SH261's line in exactly the same
+> place, independently. That is stronger evidence for SH261 than its own tests, because it comes from
+> somewhere that had no knowledge of them. Worth expecting: reading a dependency properly tends to
+> settle more than the question you went in with.
+>
+> **The answer is enforced, not recorded.** Four assertions, a version number, and a failure message
+> that says to reopen the task. A design note saying "we checked and it was fine" is a habit with a
+> date on it; an assertion is a tripwire. That difference is the whole deliverable.
+>
+> The same shape of unenforced claim exists for several other dependencies — **SH275**.
+
+### XVI.27 A dependency's premise is asserted for one library and assumed for the rest (SH275)
+
+SH274 converted one inherited belief about somebody else's code into four assertions with a version
+number, and the conversion paid twice: the reality was worse than the belief (deduplication, not just
+missing scope) and one API independently confirmed SH261's rule.
+
+The same kind of claim is load-bearing elsewhere and enforced nowhere. A partial list, from the
+comments they currently live in:
+
+| Claim | Where it matters | Enforced? |
+|---|---|---|
+| Nashorn's classes are not on the classpath | SH183's whole non-goal | **yes** — `ShRenderNoScriptEngineTest` |
+| the default `TemplateLoader` reads the classpath | why ours refuses everything | no |
+| the default resolver chain includes `JavaBeanValueResolver` | why the context is map-only | no |
+| Mockito self-attaches without a `-javaagent` | SH250's flake | no (and now false) |
+| `Map.copyOf` iterates from a per-JVM salt | SH136's whole lint | no |
+| the MCP Java SDK is Jackson-2 / Boot-3 | why SH75 is hand-rolled | no |
+
+Every row is a fact about code this project does not own, and a version bump can change any of them
+silently. The one that is enforced is enforced because SH183 judged it worth a test — which is exactly
+the judgement to make for the rest, rather than doing all of them.
+
+**The bar should be: does the premise expiring change behaviour, or only tidiness?** `Map.copyOf`
+becoming order-stable would make SH136's lint pedantic but harmless. The default resolver chain
+changing would silently put the persistence model back in template scope, which is the liability the
+whole of Block P was built to avoid — and nothing would fail. That one is the next candidate, and
+`ShRenderNoScriptEngineTest` is the model: it already asserts two of the three defaults, so the third
+is a method rather than a new file.
+
+Worth noting the entry that has already gone stale: SH250 made "Mockito self-attaches" false. Nothing
+noticed, because nothing was watching — which is the argument in miniature.
+
+---
+
+# Part 2 — pre-existing sections
+
 ## I. Headless foundation — the CDA
 
 > ✅ **Fully shipped (SH1–SH5)** → [CHANGELOG.md](CHANGELOG.md) Block A; per-task
