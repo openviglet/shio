@@ -141,7 +141,7 @@ public class ShBlueprintService {
 
         return new ShBlueprintApplied(dryRun, blueprint.name(), blueprint.manifest().version(),
                 siteName, values, written.postTypes(), written.content(),
-                filePaths(blueprint), dryRun ? null : verify(blueprint, values, siteName),
+                carriedFiles(blueprint), dryRun ? null : verify(blueprint, values, siteName),
                 written.site(),
                 dryRun ? null : record(blueprint, values, siteName, actor));
     }
@@ -258,18 +258,34 @@ public class ShBlueprintService {
     }
 
     /**
-     * The front-end files the package carries — reported, never written.
+     * The front-end files the package carries — reported, never written, and named as the
+     * templates they are (SH166).
      *
      * <p>These belong in the caller's project, not in the CMS, and the server has no
      * business writing into a working tree it cannot see. So the response names them and
      * {@code shio apply --blueprint} writes them; a caller on MCP alone learns that the
      * package has a front-end half rather than silently getting only the content half
      * (P9: say what was not done).</p>
+     *
+     * <p>Each row also carries the {@code {{placeholder}}}s still standing in that file,
+     * because "not written" was only half of what is untrue about the result. SH119 leaves
+     * substitution of carried files to the client, so the bytes a caller fetches from
+     * {@code ?include=files} are a template — and a caller who did not know that writes
+     * {@code {{projectName}}} into a project and finds out at build time. The names are read
+     * from the bytes rather than taken from the manifest's parameter list: a package may
+     * declare a parameter its files never use, and reporting that one would send the caller
+     * looking for a placeholder that is not there.</p>
      */
-    private static List<String> filePaths(ShBlueprint blueprint) {
+    private static List<ShBlueprintApplied.CarriedFile> carriedFiles(ShBlueprint blueprint) {
         return blueprint.files().isEmpty()
                 ? null
-                : blueprint.files().stream().map(ShBlueprint.File::path).toList();
+                : blueprint.files().stream()
+                        .map(file -> new ShBlueprintApplied.CarriedFile(file.path(),
+                                // distinct: `placeholders` reports every occurrence, and a
+                                // README that says {{projectName}} four times has one parameter.
+                                ShBlueprintParams.placeholders(file.text()).stream()
+                                        .distinct().sorted().toList()))
+                        .toList();
     }
 
     private List<String> readableSites() {

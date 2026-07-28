@@ -1319,35 +1319,50 @@ which currently operate on the whole set precisely because the whole set is ther
 paged listing with a client-side sort would silently sort one page, which is the kind
 of half-migration that is worse than either end state.
 
-### XIV.8 A blueprint's carried files reach an MCP-only caller unsubstituted (SH166)
+### XIV.10 The Universal Editor's save-back cannot be authenticating the way it thinks it is (SH233)
 
-SH119 split parameter substitution by who knows the answer: the server substitutes a
-package's content, and the client substitutes its carried files. That is right for the
-CLI — the project's npm name is local identity the server has no business being told,
-and the server never writes a project file anyway — and it leaves a caller with no CLI
-holding source that still says `{{projectName}}` with nothing to fill it in from.
+Found while reviewing the CDA's CSRF exemption for SH167, and it is not a CSRF problem —
+it is an authentication one that the exemption was hiding in plain sight.
 
-Three options, in increasing order of how much they concede: say so (the tool result
-names the files as templates and lists the parameters, which is P9 and costs nothing);
-substitute server-side when the caller supplied the parameter anyway, since an MCP
-apply *does* send `params`; or accept that a front-end half needs a filesystem and that
-an MCP-only client is not the audience for it. The first is almost certainly worth
-doing regardless of which of the others follows.
+`shio-react/src/services/universal-editor/universal-editor.service.ts` builds a dedicated
+axios instance with `withCredentials: false` and a comment explaining exactly why: the CDA
+filter authenticates the `Key` token only when no authentication is already present, so if
+the console session cookie rides along, the request authenticates as the logged-in curator —
+who has no `ROLE_CDA_WRITE` — and gets a 403.
 
-### XIV.9 Review the remaining blanket CSRF exemptions (SH167)
+The reasoning is right and the mechanism does not implement it. `withCredentials` governs
+**cross-origin** requests only; for a same-origin XHR the browser attaches cookies
+regardless, and the console is same-origin with the API both in dev (behind the Vite proxy)
+and in production. So the cookie is sent, `SecurityContextHolderFilter` restores the session
+before `ShApiTokenFilter` runs, the filter returns early on the already-set authentication,
+and the `Key` header is never read.
 
-`/api/v2/post-type` was CSRF-exempt wholesale because only the stateless `shio` CLI
-reached it. SH117 pointed a browser at the same path, and the exemption became a hole
-that no console feature would have surfaced — so it was narrowed to callers holding no
-session cookie (`ShStatelessRequestMatcher`).
+Two things to settle before fixing it. First, **whether it is actually broken**, because
+nothing here proves it: this is a browser-runtime behaviour and every test in this repository
+either builds the request in Java or mocks the client. SH182's smoke check is the instrument.
+Second, **which end gives**: either an explicit `Key` header wins over an existing session on
+the CDA path (a change to the filter's early return, with its own escalation question — a
+console user could then present any token), or the editor stops needing to dodge the session
+at all. The second is more honest and larger, because it means answering why a console user
+holding a session cannot write through the CDA in the first place.
 
-`/api/v2/cda/**`, `/api/v2/agent/**` and `/mcp` rest on the same argument, and the
-argument is true of all three *today*. It was also true of the post-type API until it
-wasn't. The check now exists and costs one matcher, so the question is no longer
-whether it is possible but which of the three should adopt it before a feature decides
-for us. The agent namespace is the one to watch: SH109's review queue is a console
-surface over agent writes, and the moment the console reads or writes there from a
-session, that path is in the same position `/api/v2/post-type` was in.
+### XIV.11 `/graphql` is the one CSRF exemption left blanket (SH234)
+
+SH167 narrowed the CDA, the agent namespace and `/mcp`. GraphQL was deliberately left,
+and the reasoning should be revisited rather than rediscovered.
+
+It rests on two facts, both true today: the generated schema exposes no `Mutation`, so a
+forged POST cannot write; and `/graphiql/**` is a cookie-bearing browser that the narrowed
+matcher would break, for a protection that would be protecting nothing. Together they make
+the exemption free — but the first is precisely the shape of premise that expired on
+`/api/v2/post-type`, where "only the CLI reaches it" was true right up to the commit that
+pointed the React editor at the same URL.
+
+So the decision worth making in advance is what happens to GraphiQL the day a mutation lands.
+The narrowed matcher and a CSRF-aware GraphiQL are compatible; the work is in the console
+bundle rather than in the security config, which is exactly the order that makes it cheap now
+and awkward later. Filing it as a task is the point: the alternative is a comment nobody reads
+in the same commit as the mutation.
 ## XV. The visible site (Block P)
 
 > An agent can build a site's model, folders and pages over the agent surface, and nobody

@@ -31,6 +31,9 @@ import tools.jackson.databind.JsonNode;
  */
 public final class ShBlueprintTerse {
 
+    private static final String FILES = "files";
+    private static final String PLACEHOLDERS = "placeholders";
+
     private ShBlueprintTerse() {
         // utility
     }
@@ -46,7 +49,7 @@ public final class ShBlueprintTerse {
                     .attr("version", summary.version())
                     .count("types", summary.postTypes())
                     .count("posts", summary.posts())
-                    .count("files", summary.files())
+                    .count(FILES, summary.files())
                     .attr("params", params(summary.params()))
                     .attr("about", summary.description())
                     .build());
@@ -64,7 +67,7 @@ public final class ShBlueprintTerse {
                 .count("types", summary.postTypes())
                 .count("folders", blueprint.declaredFolders())
                 .count("posts", summary.posts())
-                .count("files", summary.files())
+                .count(FILES, summary.files())
                 .attr("about", summary.description())
                 .build());
         List<String> required = ShBlueprintParams.required(summary.params());
@@ -84,9 +87,51 @@ public final class ShBlueprintTerse {
             out.append(ShTerse.line("type").word(name).build());
         }
         for (ShBlueprint.File file : blueprint.files()) {
-            out.append(ShTerse.line("file").word(file.path()).build());
+            out.append(ShTerse.line("file")
+                    .word(file.path())
+                    .attr(PLACEHOLDERS, placeholders(file))
+                    .build());
         }
         return out.toString();
+    }
+
+    /**
+     * The carried files with their bodies, for a caller that has no CLI to fetch them
+     * (SH166) — {@code shio://blueprint/<name>/files}.
+     *
+     * <p>Served verbatim, placeholders standing, because that is what they are: SH119 leaves
+     * carried-file substitution to the client on the ground that a project's npm name is
+     * local identity the server has no business being told, and pretending otherwise here
+     * would mean either inventing values or accepting parameters on a read. So each body is
+     * preceded by the line that says which names are still in it, and the {@code param} rows
+     * from {@code shio://blueprint/<name>} say what to put there.</p>
+     */
+    public static String fileBodies(ShBlueprint blueprint) {
+        StringBuilder out = new StringBuilder(ShTerse.line(FILES)
+                .word(blueprint.name())
+                .count(FILES, blueprint.files().size())
+                .build());
+        for (ShBlueprint.File file : blueprint.files()) {
+            out.append(ShTerse.line("file")
+                    .word(file.path())
+                    .attr(PLACEHOLDERS, placeholders(file))
+                    .build());
+            // The body is not a terse line — it is source, and a line-oriented encoding that
+            // tried to escape it would make it unusable for the one thing it is for.
+            out.append(file.text());
+            if (!file.text().endsWith("\n")) {
+                out.append('\n');
+            }
+            out.append("--\n");
+        }
+        return out.toString();
+    }
+
+    /** The distinct {@code {{name}}}s standing in a carried file, or {@code null} if it is literal. */
+    private static String placeholders(ShBlueprint.File file) {
+        List<String> names = ShBlueprintParams.placeholders(file.text()).stream()
+                .distinct().sorted().toList();
+        return names.isEmpty() ? null : String.join(",", names);
     }
 
     /**
@@ -116,13 +161,7 @@ public final class ShBlueprintTerse {
                     .build());
         }
         out.append(ShAgentReadTerse.changes(applied.content()));
-        if (applied.files() != null) {
-            for (String path : applied.files()) {
-                // Said explicitly: the server did not write these. An agent that assumed
-                // otherwise would report a finished front end that does not exist.
-                out.append(ShTerse.line("file").word(path).word("not-written").build());
-            }
-        }
+        files(out, applied);
         ShBlueprintApplied.Verified verified = applied.verify();
         if (verified != null) {
             out.append(ShTerse.line("verify")
@@ -136,6 +175,31 @@ public final class ShBlueprintTerse {
             }
         }
         return out.toString();
+    }
+
+    /**
+     * The carried files: one line each, saying they were not written and what is still
+     * standing in them (SH166).
+     *
+     * <p>Both words earn their place. <b>not-written</b> stops an agent reporting a finished
+     * front end that does not exist; <b>placeholders</b> stops the agent that goes and fetches
+     * the bytes from committing {@code {{projectName}}} into somebody's project. Every name
+     * listed has its resolved value in the {@code param} lines above, so the caller has
+     * everything it needs to substitute for itself — which is the whole answer for a client
+     * with no CLI to do it for them.</p>
+     */
+    private static void files(StringBuilder out, ShBlueprintApplied applied) {
+        if (applied.files() == null) {
+            return;
+        }
+        for (ShBlueprintApplied.CarriedFile file : applied.files()) {
+            out.append(ShTerse.line("file")
+                    .word(file.path())
+                    .word("not-written")
+                    .attr(PLACEHOLDERS, file.placeholders() == null
+                            ? null : String.join(",", file.placeholders()))
+                    .build());
+        }
     }
 
     private static String params(JsonNode schema) {

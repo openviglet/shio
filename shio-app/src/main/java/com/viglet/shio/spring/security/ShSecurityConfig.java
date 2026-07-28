@@ -47,7 +47,13 @@ public class ShSecurityConfig {
     public static final String ERROR_PATH = "/error/**";
     /** The CDA namespace (SH1) — read (GET) for ROLE_CDA, write (SH10) for ROLE_CDA_WRITE. */
     private static final String CDA_PATH = "/api/v2/cda/**";
-    /** GraphQL delivery (SH4) — a CDA surface, token-authenticated POST reads. */
+    /**
+     * GraphQL delivery (SH4) — a CDA surface, token-authenticated POST reads.
+     * The one exemption SH167 deliberately left blanket: the schema exposes no
+     * {@code Mutation}, so a forged POST here cannot write, and the GraphiQL console at
+     * {@code /graphiql/**} is a cookie-bearing browser that would break under the narrowed
+     * matcher for no gain. Revisit the moment a mutation is added — see SH234.
+     */
     private static final String GRAPHQL_PATH = "/graphql";
     /** First-run setup (SH6) — open until a tenant exists. */
     private static final String SETUP_PATH = "/api/v2/setup";
@@ -55,7 +61,11 @@ public class ShSecurityConfig {
     private static final String ROLE_CDA_WRITE = "CDA_WRITE";
     /** Post-types-as-code admin API (SH16) — console-authenticated, used by the stateless {@code shio} CLI. */
     private static final String POST_TYPE_PATH = "/api/v2/post-type/**";
-    /** The agent surface (Block H) — stateless callers: a CDA {@code Key} token or the {@code shio} CLI's Basic auth. */
+    /**
+     * The agent surface (Block H) — stateless callers: a CDA {@code Key} token or the
+     * {@code shio} CLI's Basic auth. CSRF-exempt only for those (SH167): the namespace is
+     * {@code authenticated()} and nothing else, so a browser session reaches its writes too.
+     */
     private static final String AGENT_PATH = "/api/v2/agent/**";
 
     /**
@@ -66,7 +76,7 @@ public class ShSecurityConfig {
      * console-only feature, which law P1 forbids.
      */
     private static final String REVIEW_PATH = "/api/v2/review/**";
-    /** The MCP endpoint (SH75) — the same surface over JSON-RPC; equally stateless. */
+    /** The MCP endpoint (SH75) — the same surface over JSON-RPC; equally stateless, equally narrowed. */
     private static final String MCP_PATH = "/mcp";
     /** Tenant catalog (SH22) — writes are admin-only; {@code GET /current} stays open to any user. */
     private static final String TENANT_PATH = "/api/v2/tenant";
@@ -120,8 +130,9 @@ public class ShSecurityConfig {
                 .ignoringRequestMatchers(
                         mvc.matcher(GRAPHQL_PATH),
                         // CDA writes (SH10) are token-authenticated (Key header) and stateless,
-                        // so there is no session/XSRF cookie to validate; reads were never CSRF-checked.
-                        mvc.matcher(CDA_PATH),
+                        // so there is no session/XSRF cookie to validate; reads were never
+                        // CSRF-checked. Narrowed by SH167 all the same — see the note below.
+                        new ShStatelessRequestMatcher(mvc.matcher(CDA_PATH), sessionCookieName),
                         // Post-types-as-code (SH16) — the shio CLI calls it statelessly with HTTP
                         // Basic, so there is no session/XSRF cookie; same rationale as CDA. But
                         // SH117 retired the id-keyed console twin and pointed the React editor
@@ -131,14 +142,17 @@ public class ShSecurityConfig {
                         new ShStatelessRequestMatcher(mvc.matcher(POST_TYPE_PATH), sessionCookieName),
                         // SH109 — same narrowed exemption, same reason (see REVIEW_PATH).
                         new ShStatelessRequestMatcher(mvc.matcher(REVIEW_PATH), sessionCookieName),
-                        // Agent writes (SH81/SH82) — same rationale again: the callers
-                        // are a token-authenticated agent and the stateless shio CLI,
-                        // neither of which holds a session or an XSRF cookie. Reads on
-                        // this namespace were never CSRF-checked. Authentication still
-                        // applies (anyRequest().authenticated()), and the ACL + quota
-                        // checks inside the batch engine are what actually bound it.
-                        mvc.matcher(AGENT_PATH),
-                        mvc.matcher(MCP_PATH),
+                        // Agent writes (SH81/SH82) and MCP (SH75) — the callers are a
+                        // token-authenticated agent and the stateless shio CLI, neither of which
+                        // holds a session or an XSRF cookie, so the narrowed matcher costs them
+                        // nothing. SH167 applied it anyway: `anyRequest().authenticated()` means a
+                        // logged-in curator's session already reaches `POST /api/v2/agent/batch`,
+                        // which deletes content — a blanket exemption there is a cross-site write
+                        // on the most destructive endpoint in the product, and no console feature
+                        // would have surfaced it. Authentication still applies, and the ACL +
+                        // quota checks inside the batch engine are what actually bound it.
+                        new ShStatelessRequestMatcher(mvc.matcher(AGENT_PATH), sessionCookieName),
+                        new ShStatelessRequestMatcher(mvc.matcher(MCP_PATH), sessionCookieName),
                         mvc.matcher(SETUP_PATH),
                         mvc.matcher(ERROR_PATH),
                         mvc.matcher(LOGOUT_PATH),

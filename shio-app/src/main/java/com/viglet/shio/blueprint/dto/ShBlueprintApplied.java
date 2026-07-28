@@ -27,6 +27,25 @@ import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
  * <em>server never wrote</em>, and saying so is the difference between an honest report
  * and a claim (P9).</p>
  *
+ * <h2>And they are templates, which SH166 made the response say</h2>
+ *
+ * <p>Saying "the server did not write these" was only half the truth. SH119 split
+ * substitution by who knows the answer — the server fills a package's <em>content</em>, the
+ * CLI fills its <em>carried files</em>, because a project's npm name is local identity the
+ * server has no business being told — so what the response names are files that still say
+ * {@code {{projectName}}}. A CLI caller never notices; a caller on MCP alone was told the
+ * paths and left to discover the placeholders by reading the source, which is P9 failing on
+ * its own terms: the report described what was not done and not what is therefore untrue of
+ * the result.</p>
+ *
+ * <p>So each row now names the placeholders standing in that file. The alternative —
+ * substituting server-side, since an apply does send {@code params} — was rejected for a
+ * reason worth recording: the bodies do not travel on this response at all. They come from
+ * {@code GET /agent/blueprints/{name}?include=files}, a read that has no parameter values to
+ * substitute with, and giving it some would put a write's arguments on a cacheable GET
+ * (SH116). Naming the placeholders is what lets the caller that fetched them substitute for
+ * itself with the {@code params} echoed alongside.</p>
+ *
  * <h2>Why the model is provisioned, never overwritten</h2>
  *
  * <p>A blueprint seeds a content model; it does not own it. So a post-type that already
@@ -45,7 +64,8 @@ import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
  *                  result, and the next apply has to be able to reproduce it (P5)
  * @param postTypes one row per post-type the package carries
  * @param content   the SH82 change set for the folders, posts and publishes
- * @param files     the front-end files the package carries and the server did not write
+ * @param files     the front-end files the package carries and the server did not write,
+ *                  each naming the {@code {{placeholder}}}s still standing in it (SH166)
  * @param verify    the post-apply proof; {@code null} on a plan, which has nothing to prove
  * @param recordedAs the SH114 memory key this apply wrote the package and version to (SH155),
  *                  or {@code null} on a plan and when the note could not be filed. Reported
@@ -59,13 +79,13 @@ import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 public record ShBlueprintApplied(boolean dryRun, String blueprint, String version, String site,
                                  java.util.Map<String, String> params,
                                  List<PostType> postTypes, ShAgentChangeSet content,
-                                 List<String> files, Verified verify, String createdSite,
+                                 List<CarriedFile> files, Verified verify, String createdSite,
                                  String recordedAs) {
 
     /** The nine-field form: the site was already there, which is every pre-SH151 apply. */
     public ShBlueprintApplied(boolean dryRun, String blueprint, String version, String site,
                               java.util.Map<String, String> params, List<PostType> postTypes,
-                              ShAgentChangeSet content, List<String> files, Verified verify) {
+                              ShAgentChangeSet content, List<CarriedFile> files, Verified verify) {
         this(dryRun, blueprint, version, site, params, postTypes, content, files, verify, null,
                 null);
     }
@@ -73,10 +93,32 @@ public record ShBlueprintApplied(boolean dryRun, String blueprint, String versio
     /** The ten-field form: pre-SH155, when an apply left no record of itself. */
     public ShBlueprintApplied(boolean dryRun, String blueprint, String version, String site,
                               java.util.Map<String, String> params, List<PostType> postTypes,
-                              ShAgentChangeSet content, List<String> files, Verified verify,
+                              ShAgentChangeSet content, List<CarriedFile> files, Verified verify,
                               String createdSite) {
         this(dryRun, blueprint, version, site, params, postTypes, content, files, verify,
                 createdSite, null);
+    }
+
+    /**
+     * One front-end file the package carries and the server did not write (SH166).
+     *
+     * <p>{@code placeholders} is what turns a path into an instruction. It lists the
+     * {@code {{name}}}s still standing in that file's bytes — always a subset of the
+     * package's declared parameters, because {@code ShBlueprintRegistry} refuses to load a
+     * package containing one that is not, so every name here has a value in the {@code params}
+     * echoed on the same response. {@code null} when the file is literal, so a package with
+     * nothing to substitute reads exactly as it did before this existed.</p>
+     *
+     * @param path         where the file belongs, relative to the project root
+     * @param placeholders the parameter names still to substitute, sorted; {@code null} if none
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record CarriedFile(String path, List<String> placeholders) {
+
+        public CarriedFile {
+            placeholders = placeholders == null || placeholders.isEmpty()
+                    ? null : List.copyOf(placeholders);
+        }
     }
 
     /**

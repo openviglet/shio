@@ -478,7 +478,17 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
   `shio_changes` · `shio_verify` · `shio_digest` · `shio_remember`. Every tool is a *shape*
   over a REST surface — if a tool needs new logic, the logic goes on the REST side first.
 - **Resources**: `shio://manifest` · `shio://blueprints` · `shio://context` ·
-  `shio://schema/{postType}`.
+  `shio://schema/{postType}` · `shio://blueprint/{name}` (+ the `/files` suffix, SH166).
+  The last one is the only route an MCP-only caller has to a package's **carried files** —
+  they travel on `GET /agent/blueprints/{name}?include=files` otherwise, which a client with
+  no HTTP of its own cannot call. Served **verbatim, placeholders standing**, because SH119
+  leaves carried-file substitution to the client (a project's npm name is local identity the
+  server has no business being told); each body is preceded by the line naming the
+  `{{placeholder}}`s in it, and an apply's `file <path> not-written placeholders=…` rows say
+  the same thing for the caller that never fetches them. A **resource** rather than an
+  argument on `shio_apply` because that tool is at 457/460 and `tools/list` is paid every
+  turn. One bean serves both URIs: `ShMcpResource#matches` keys on the literal prefix before
+  the first brace, so two beans would both claim `shio://blueprint/…`.
 - `shio_apply` covers **two** verbs on purpose: a desired-state document, or a blueprint
   (`blueprint` + `params`). "Converge to this document" and "converge to this package" are
   one decision with two inputs, and a separate tool would cost more schema per turn than
@@ -513,8 +523,9 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
 Addresses (SH79): `post:<site>/<friendly-url>` · `folder:<site>/<name-chain>` ·
 `site:<name>` · `id:<uuid>`. **Writes take only `post:`/`folder:`** — a folder path and
 a friendly URL are separate namespaces, and a write that guessed wrong would create
-content in the wrong place silently. CSRF-exempt (stateless callers), authenticated
-like every other API; the SH54 ACL and SH22 quota apply on the agent path identically.
+content in the wrong place silently. CSRF-exempt **only for callers holding no session
+cookie** (SH167 — see below), authenticated like every other API; the SH54 ACL and SH22
+quota apply on the agent path identically.
 
 ### What bounds an agent — Block L (SH106–SH109, SH200, SH201)
 
@@ -818,9 +829,17 @@ from becoming a third contract (P10).
   survives. And it is **honoured on a dry run only**, so a declaration cannot stand in for an
   apply that did not happen. `ShBlueprintWriteService.plan` is `@Transactional(readOnly = true)`,
   which makes that a claim the database enforces rather than one a test has to remember.
-- **The server never writes a project file.** `files` are returned and the CLI writes them
-  (never over an existing one without `--force`); an MCP-only caller is told what it has
-  *not* got.
+- **The server never writes a project file, and never substitutes one.** `files` are returned
+  and the CLI writes them (never over an existing one without `--force`); an MCP-only caller
+  is told what it has *not* got — **and since SH166, that the bytes are templates**. Each row
+  of an apply names the `{{placeholder}}`s standing in that file, read from the **bytes** and
+  not from the manifest's parameter list (a package may declare a parameter its files never
+  use, and reporting that one sends the caller hunting for something that is not there). Every
+  name has its resolved value in the `params` the same response echoes, defaults included,
+  which is what makes the report actionable rather than a warning. Server-side substitution
+  was refused for a reason worth keeping: the bodies travel on a **read**
+  (`?include=files`, or `shio://blueprint/{name}/files`) that has no parameter values, and
+  giving a cacheable GET a write's arguments fights SH116.
 - **An apply records itself (SH155).** It writes an SH114 note scoped to the site, keyed
   `blueprint.<name>`, saying which package and version built it and with which parameters —
   and the response names the key in `recordedAs`. One note **per package**, because a site can
@@ -921,6 +940,24 @@ failure is invisible to every other test in this repository.
 - `ShCsrfHeaderFilter` forces lazy token materialization + adds `X-XSRF-TOKEN` response header + `Access-Control-Expose-Headers`
 - `ShCsrfController` at `GET /api/v2/csrf` returns token as JSON
 - Frontend: `src/lib/axios.ts` interceptor fetches token from `/v2/csrf` before PUT/POST/DELETE, reads from response header, auto-retries on 403
+
+**Every exemption is session-narrowed, and the one that is not is argued (SH167).**
+`/api/v2/post-type`, `/api/v2/review/**`, `/api/v2/cda/**`, `/api/v2/agent/**` and `/mcp` are
+wrapped in **`ShStatelessRequestMatcher`**: exempt for a caller holding no session cookie,
+CSRF-checked for one that does. A blanket exemption is only safe while no cookie-bearing
+client reaches the path, which was true of the post-type API right up to the commit (SH117)
+that pointed the React editor at it — and nothing in that commit would have noticed. The
+agent namespace is the one that made this urgent rather than tidy: it is gated by
+`anyRequest().authenticated()` and nothing more, so a curator's session already reaches
+`POST /api/v2/agent/batch`, which deletes content. The CDA is a pre-emption — a
+session-bearing CDA write already failed for want of `ROLE_CDA_WRITE`, so narrowing it breaks
+nothing that works.
+**`ShCsrfExemptionLintTest` fails the build on a new blanket entry**, because the failure mode
+is a *future* caller rather than a current request, which no functional test can watch for. To
+add one, name the constant in its allow-list with the reason a forged request there can do
+nothing an unauthenticated one could not. `/graphql` is the only current member (no
+`Mutation`; GraphiQL is a cookie-bearing browser) — a premise of exactly the shape that
+expired before, hence **SH234**.
 
 ### Authentication
 - HTTP Basic Auth

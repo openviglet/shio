@@ -4,6 +4,11 @@
   "result" : {
     "resourceTemplates" : [ {
       "description" : "#string",
+      "mimeType" : "text/plain",
+      "name" : "Shio blueprint",
+      "uriTemplate" : "shio://blueprint/{name}"
+    }, {
+      "description" : "#string",
       "mimeType" : "application/json",
       "name" : "Post-type schema",
       "uriTemplate" : "shio://schema/{postType}"
