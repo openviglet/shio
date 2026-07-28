@@ -699,6 +699,15 @@ public class ShAgentVerifyService {
                                 + "A title that merely differs in case or spacing is the usual "
                                 + "cause — a slot is matched exactly."));
             }
+            for (ShPostUnified theme : unused.themes()) {
+                findings.add(Finding.warning(check, "unused-theme", address(theme), null,
+                        "No bound layout in '" + site.getName() + "' names the theme '"
+                                + theme.getTitle() + "', so its CSS and JavaScript reach no page. "
+                                + "A layout names its theme in its THEME field, by title.",
+                        "Set THEME to '" + theme.getTitle() + "' on the layout that should use "
+                                + "it, or delete the theme. A layout that names it but is itself "
+                                + "unbound reports unused-layout beside this."));
+            }
             for (ShPostUnified layout : unused.layouts()) {
                 findings.add(Finding.warning(check, "unused-layout", address(layout), null,
                         "No post-type in '" + site.getName() + "' is bound to the layout '"

@@ -75,7 +75,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
      * about the blast radius should not pay for the graph walk or the tokens. Absent rather than
      * empty for a post that is not a template, the rule SH121 set for ids.</p>
      *
-     * @param kind      {@code region} or {@code layout}
+     * @param kind      {@code region}, {@code layout} or {@code theme} (SH286)
      * @param layouts   the layouts involved — a region's slotters, or the layout itself
      * @param postTypes the post-types whose pages render through them
      * @param pages     draft pages of those types in this site

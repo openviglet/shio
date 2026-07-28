@@ -2745,28 +2745,6 @@ set.
 Worth pairing with SH275's habit: both are about claims a codebase keeps making after they stopped
 being true, and the cheap version of both is to look rather than to reason.
 
-### XVI.38 A theme is a third edge, and the graph does not hold it (SH286)
-
-`ShTemplateGraph` holds two edges, both of which are *names inside content*: a post-type reaches a
-layout through `site.postTypeLayout`, and a layout reaches a region through `sh-region="NAME"`. A
-`Theme` is reached a third way — a layout's **`THEME` field** — and the graph never looks at it.
-
-The consequence is narrow and awkward: SH262 answers "what does editing this reach" for a layout and a
-region, and returns **nothing** for a `Theme`, which is indistinguishable from "this theme affects
-nothing". A theme edit is also the presentation change with the *largest* plausible blast radius,
-since one theme is typically bound by every layout in a site.
-
-The edge is cheap: `templatesFor` already resolves a layout and reads its fields, so the theme title is
-one more read per layout with no new query shape. Two questions to settle rather than assume:
-
-- **Is a theme's impact the union of its layouts' impacts?** Probably yes — "every page this restyles"
-  is the union — but the answer should be stated, because the alternative (report the layouts and stop)
-  is defensible and much less useful.
-- **Does `unused-theme` join SH193's warnings?** A `Theme` post no layout names is exactly as
-  unreachable as an unslotted region, and nothing reports it today. If it does join, it is a warning
-  for the same reason the other two are: a theme written before the layout that will use it is work in
-  progress.
-
 ### XVI.39 Two `include=` parameters teach an unknown value and the third ignores it (SH287)
 
 `/agent/manifest` and `/agent/context` both throw a teaching 400 for an unknown `include=` section,
@@ -2951,6 +2929,51 @@ Three instruments, and they are not equally good:
   principle, and "writes through a shared service" is most of this codebase's tests.
 
 The likely answer is the first plus writing it down — the other two cost more than the defect does.
+
+### XVI.49 A theme is named by title and nothing refuses a broken name (SH297)
+
+The three presentation edges now behave differently when a name does not resolve, and only two of
+those behaviours were decided:
+
+| edge | names by | when it does not resolve |
+|---|---|---|
+| post-type → layout | `postTypeLayout` | **409** on render (SH280), and a `verify` finding |
+| layout → region | `sh-region` in markup | a **marker** in the HTML (SH169, SH281) |
+| layout → theme | `THEME` field | **silence** |
+
+`themeOf` returns `null` and the page renders unstyled. Nothing in the response, the digest or the
+lint says why — which is precisely the failure mode Block P has spent itself removing, and it is
+worse here than elsewhere because *unstyled but serving* reads as a CSS problem rather than as a
+missing post, so the search starts in the wrong place.
+
+The likely shape is both halves of SH281's answer: a `verify` **error** (a layout naming a theme
+this site does not have is provably wrong, unlike the unused-template warnings, which are about
+intent) and a marker, since a theme *degrades* the page rather than failing it — the same reason a
+missing region is marked and a missing layout refuses.
+
+Worth checking while there: SH277's duplicate-title refusal already covers a second `Theme` with the
+same title, because it keys on the post-type rather than on how the title is used. That is the right
+behaviour and it arrived without anyone deciding it, so it is worth an assertion.
+
+### XVI.50 An unused-template finding cannot say what happened (SH298)
+
+`unused-region`, `unused-layout` and now `unused-theme` all walk one site's graph, and all report the
+same thing: nothing here uses this. That is true and it is not what the reader needs.
+
+Two cases it cannot distinguish today:
+
+- **A site with no bindings at all.** Every template in it is "unused", which is correct and useless:
+  the actual defect is one missing `postTypeLayout` entry, and the report buries it under one finding
+  per template.
+- **A template in the wrong site.** Its layouts are next door, and the fix it is given — "add
+  `sh-region="X"` to the layout that should show it" — names a layout the reader will not find,
+  because it is in another site.
+
+The graph already holds every site's bindings, so the information to say *"there is a layout named X
+in site Y that slots this name"* is available. What is missing is the message.
+
+This is message quality rather than detection, which is exactly the thing that decides whether a
+warning gets acted on or added to a baseline (SH142's file exists because that decision happens).
 
 ---
 

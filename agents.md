@@ -371,7 +371,13 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   used — and **`unused-region`/`unused-layout` warnings in `checks=content`**, which are warnings
   because a region waiting for its layout is work in progress and a gate that failed on that is a
   gate people bypass. `published` is counted separately from `pages`, since "how many are
-  published" is what decides whether an edit is safe now.
+  published" is what decides whether an edit is safe now. **A theme is the third edge (SH286)** —
+  named by a layout's `THEME` *field* rather than by a slot, read through
+  `ShPageRenderService.themeTitleOf` so the graph and the renderer cannot disagree; its impact is
+  the union of its layouts', which is the largest blast radius in the model and the one that used
+  to answer nothing. `unused-theme` joins the two warnings, reporting a theme **no bound layout**
+  names — including one named only by an unbound layout, since that layout's own `unused-layout`
+  finding beside it is what says where the chain broke.
 - **The pre-edit form of the question is `?include=impact` on `/agent/read` (SH262)** — the same
   graph, asked *before* the write, which is the answer that decides whether to edit at all. A
   projection on the read rather than a `GET /agent/impact`, because a new endpoint with no MCP tool

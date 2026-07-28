@@ -94,6 +94,11 @@ public class ShTemplateGraph {
         // type -> layout title, and the two inversions a caller actually asks for.
         Map<String, Set<String>> typesByLayout = new TreeMap<>();
         Map<String, Set<String>> layoutsByRegion = new TreeMap<>();
+        // SH286 — the third edge, and the one that is not a slot: a layout names its theme in a
+        // *field* (THEME) rather than in its markup, so it is read from the layout post and not
+        // from the HTML. Same shape as the other two once inverted, which is why it fits here
+        // rather than in a graph of its own.
+        Map<String, Set<String>> layoutsByTheme = new TreeMap<>();
         Set<String> resolvedLayouts = new TreeSet<>();
 
         for (Map.Entry<String, String> binding : new TreeMap<>(bindings).entrySet()) {
@@ -112,9 +117,15 @@ public class ShTemplateGraph {
                 layoutsByRegion.computeIfAbsent(region.name(), key -> new TreeSet<>())
                         .add(layoutTitle);
             }
+            // Read through the renderer's own accessor, so the graph and the page cannot come to
+            // disagree about which theme a layout uses (SH281's rule for the lint, same reason).
+            String themeTitle = renderService.themeTitleOf(templates.get().layout().post());
+            if (themeTitle != null && !themeTitle.isBlank()) {
+                layoutsByTheme.computeIfAbsent(themeTitle, key -> new TreeSet<>()).add(layoutTitle);
+            }
         }
         return new ShSiteTemplateGraph(site.getName(), site.getId(), typesByLayout,
-                layoutsByRegion, resolvedLayouts);
+                layoutsByRegion, layoutsByTheme, resolvedLayouts);
     }
 
     /**
@@ -130,25 +141,38 @@ public class ShTemplateGraph {
                 ? null : post.getShPostType().getName();
         ShSite site = post == null ? null : post.getShSite();
         if (site == null || post.getTitle() == null
-                || !(ShSystemPostType.REGION.equals(typeName)
-                        || ShSystemPostType.PAGE_LAYOUT.equals(typeName))) {
+                || !ShRenderPostTypes.NAMES.contains(typeName)) {
             return Optional.empty();
         }
         ShSiteTemplateGraph graph = of(site);
-        Set<String> layouts = ShSystemPostType.REGION.equals(typeName)
-                ? graph.layoutsSlotting(post.getTitle())
-                : Set.of(post.getTitle());
+        // A region and a theme are both reached *through* layouts, and differ only in how the
+        // layout names them — a slot in the markup or a field on the post. A layout is its own
+        // starting point.
+        Set<String> layouts = switch (typeName) {
+            case ShSystemPostType.REGION -> graph.layoutsSlotting(post.getTitle());
+            case ShSystemPostType.THEME -> graph.layoutsThemed(post.getTitle());
+            default -> Set.of(post.getTitle());
+        };
         Set<String> types = new TreeSet<>();
         for (String layout : layouts) {
             types.addAll(graph.typesUsing(layout));
         }
         return Optional.of(new ShTemplateImpact(
-                ShSystemPostType.REGION.equals(typeName) ? "region" : "layout",
+                kindOf(typeName),
                 post.getTitle(),
                 List.copyOf(layouts),
                 List.copyOf(types),
                 pageCount(site, types, ShPostState.DRAFT),
                 pageCount(site, types, ShPostState.PUBLISHED)));
+    }
+
+    /** The wire word for a template kind — lower case, and the same one `affects` has used. */
+    private static String kindOf(String typeName) {
+        return switch (typeName) {
+            case ShSystemPostType.REGION -> "region";
+            case ShSystemPostType.THEME -> "theme";
+            default -> "layout";
+        };
     }
 
     /**
@@ -177,6 +201,7 @@ public class ShTemplateGraph {
     public record ShSiteTemplateGraph(String siteName, String siteId,
                                       Map<String, Set<String>> typesByLayout,
                                       Map<String, Set<String>> layoutsByRegion,
+                                      Map<String, Set<String>> layoutsByTheme,
                                       Set<String> boundLayouts) {
 
         public Set<String> typesUsing(String layoutTitle) {
@@ -185,6 +210,16 @@ public class ShTemplateGraph {
 
         public Set<String> layoutsSlotting(String regionTitle) {
             return layoutsByRegion.getOrDefault(regionTitle, Set.of());
+        }
+
+        /** The bound layouts that name this theme — SH286's edge, inverted. */
+        public Set<String> layoutsThemed(String themeTitle) {
+            return layoutsByTheme.getOrDefault(themeTitle, Set.of());
+        }
+
+        /** Every theme name any bound layout uses — the set a Theme has to be in to be used. */
+        public Set<String> usedThemes() {
+            return new TreeSet<>(layoutsByTheme.keySet());
         }
 
         /**
@@ -205,7 +240,7 @@ public class ShTemplateGraph {
     /**
      * What one template change affects.
      *
-     * @param kind      {@code region} or {@code layout}
+     * @param kind      {@code region}, {@code layout} or {@code theme}
      * @param title     the template's title, which is how a slot and a binding name it
      * @param layouts   the layouts involved — the region's slotters, or the layout itself
      * @param postTypes the post-types whose pages render through those layouts
@@ -241,6 +276,8 @@ public class ShTemplateGraph {
         // describe it as two.
         Map<String, ShPostUnified> seenRegions = new LinkedHashMap<>();
         Map<String, ShPostUnified> seenLayouts = new LinkedHashMap<>();
+        Map<String, ShPostUnified> seenThemes = new LinkedHashMap<>();
+        Set<String> usedThemes = graph.usedThemes();
         for (ShPostUnified post : templates) {
             String typeName = post.getShPostType() == null ? null : post.getShPostType().getName();
             String title = post.getTitle();
@@ -252,12 +289,18 @@ public class ShTemplateGraph {
             } else if (ShSystemPostType.PAGE_LAYOUT.equals(typeName)
                     && graph.typesUsing(title).isEmpty()) {
                 seenLayouts.putIfAbsent(title, post);
+            } else if (ShSystemPostType.THEME.equals(typeName) && !usedThemes.contains(title)) {
+                // SH286 — a Theme no *bound* layout names. Note "bound": a theme named only by a
+                // layout nothing binds is unreachable too, and reporting both is right, because
+                // the layout gets its own unused-layout finding and the two together say where
+                // the chain is broken.
+                seenThemes.putIfAbsent(title, post);
             }
         }
         regions.addAll(seenRegions.values());
         layouts.addAll(seenLayouts.values());
         return new ShUnusedTemplates(List.copyOf(regions), List.copyOf(layouts),
-                new LinkedHashSet<>(graph.boundLayouts()));
+                List.copyOf(seenThemes.values()), new LinkedHashSet<>(graph.boundLayouts()));
     }
 
     /**
@@ -408,6 +451,6 @@ public class ShTemplateGraph {
 
     /** Templates nothing renders through, plus the layouts that are bound (for the message). */
     public record ShUnusedTemplates(List<ShPostUnified> regions, List<ShPostUnified> layouts,
-                                    Set<String> boundLayouts) {
+                                    List<ShPostUnified> themes, Set<String> boundLayouts) {
     }
 }

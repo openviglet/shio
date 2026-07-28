@@ -145,7 +145,7 @@ public record ShAgentChanges(int found, boolean window, String since, String cur
      * needs no twelfth MCP tool, so {@code shio_changes} carries it for free. The pre-edit form
      * of the question is a separate read and is SH262.</p>
      *
-     * @param kind      {@code region} or {@code layout}
+     * @param kind      {@code region}, {@code layout} or {@code theme} (SH286)
      * @param layouts   the layouts involved — a region's slotters, or the layout itself
      * @param postTypes the post-types whose pages render through them
      * @param pages     draft pages of those types in this site

@@ -75,6 +75,8 @@ class ShTemplateGraphTest {
     private static final String ORPHAN_LAYOUT = "SH193_ORPHAN_LAYOUT";
     private static final String SHARED_REGION = "SH193_NAV";
     private static final String LONELY_REGION = "SH193_LONELY";
+    private static final String USED_THEME = "SH286_THEME";
+    private static final String LONELY_THEME = "SH286_LONELY_THEME";
 
     @Autowired
     private ShTemplateGraph graph;
@@ -126,7 +128,8 @@ class ShTemplateGraphTest {
 
             // Both layouts slot the shared region; only the article layout slots nothing else.
             post(created, root, layoutType, ARTICLE_LAYOUT, "/l-article",
-                    json("HTML", "<body><div sh-region=\"" + SHARED_REGION + "\"></div>{{TEXT}}</body>"),
+                    json("HTML", "<body><div sh-region=\"" + SHARED_REGION + "\"></div>{{TEXT}}</body>",
+                            "THEME", USED_THEME),
                     when, ShPostState.DRAFT);
             post(created, root, layoutType, PAGE_LAYOUT, "/l-page",
                     json("HTML", "<body><div sh-region=\"" + SHARED_REGION + "\"></div></body>"),
@@ -138,6 +141,13 @@ class ShTemplateGraphTest {
                     json("HTML", "<nav>shared</nav>"), when, ShPostState.DRAFT);
             post(created, root, regionType, LONELY_REGION, "/r-lonely",
                     json("HTML", "<aside>nobody slots me</aside>"), when, ShPostState.DRAFT);
+
+            // SH286 — the third edge: one theme a bound layout names, one nothing names.
+            ShPostType themeType = postType(ShSystemPostType.THEME, (byte) 1, when);
+            post(created, root, themeType, USED_THEME, "/t-used",
+                    json("CSS", "body{color:red}"), when, ShPostState.DRAFT);
+            post(created, root, themeType, LONELY_THEME, "/t-lonely",
+                    json("CSS", "body{color:blue}"), when, ShPostState.DRAFT);
 
             // Two article drafts, one of them also published; one page, published.
             post(created, root, article, "A1", "/a1", json("TEXT", "one"), when, ShPostState.DRAFT);
@@ -586,6 +596,71 @@ class ShTemplateGraphTest {
                 .as("""
                         the same rule the lint half follows: a plan created no state, so a digest                         of the current one would be a claim about a future that has not happened.""")
                 .isNull();
+    }
+
+    // ── SH286: a theme is the third edge ────────────────────────────────────────────
+
+    @Test
+    @DisplayName("SH286: a theme's blast radius is every page its layouts render")
+    void aThemeReachesEveryPageOfItsLayouts() {
+        ShTemplateImpact impact = impactOf(USED_THEME);
+
+        assertThat(impact.kind()).isEqualTo("theme");
+        assertThat(impact.layouts())
+                .as("""
+                        the third edge, and the one that is not a slot: a layout names its theme \
+                        in a THEME *field* rather than in its markup, so the graph reads it from \
+                        the layout post through the renderer's own accessor.""")
+                .containsExactly(ARTICLE_LAYOUT);
+        assertThat(impact.postTypes()).containsExactly(articleType);
+        assertThat(impact.published())
+                .as("a theme edit restyles every page of every type its layouts serve, which is "
+                        + "the largest blast radius in the model and was the one that answered "
+                        + "nothing at all before this")
+                .isEqualTo(1);
+        assertThat(impact.isUsed()).isTrue();
+    }
+
+    @Test
+    @DisplayName("SH286: a read of a theme answers include=impact, like the other two")
+    void aReadOfAThemeAnswersImpact() {
+        assertThat(readService.read(List.of("post:" + siteName + "/t-used"), null, false, true))
+                .singleElement()
+                .satisfies(doc -> {
+                    assertThat(doc.impact()).isNotNull();
+                    assertThat(doc.impact().kind()).isEqualTo("theme");
+                    assertThat(doc.impact().layouts()).containsExactly(ARTICLE_LAYOUT);
+                });
+        assertThat(readService.read(List.of("post:" + siteName + "/t-lonely"), null, false, true)
+                .getFirst().impact())
+                .as("""
+                        and an unused theme still answers — with empty layouts, which says \
+                        "nothing renders through this" rather than "this is not a template". \
+                        Before SH286 a Theme got no impact section at all, which was \
+                        indistinguishable from the same answer for an Article.""")
+                .isNotNull()
+                .satisfies(impact -> assertThat(impact.layouts()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("SH286: verify warns about a theme no bound layout names")
+    void verifyReportsAnUnusedTheme() {
+        ShAgentReport report = verifyService.verify(siteName, "content", 200);
+
+        assertThat(report.findings())
+                .filteredOn(finding -> "unused-theme".equals(finding.rule()))
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.severity())
+                            .as("a warning, like its two siblings: a theme written before the "
+                                    + "layout that will name it is work in progress")
+                            .isEqualTo("warning");
+                    assertThat(finding.message()).contains(LONELY_THEME).contains("THEME");
+                });
+        assertThat(report.findings())
+                .filteredOn(finding -> "unused-theme".equals(finding.rule()))
+                .as("and the theme a bound layout names is not reported")
+                .noneMatch(finding -> finding.message().contains(USED_THEME));
     }
 
     // ── SH262: the blast radius before the edit, on the read ────────────────────────
