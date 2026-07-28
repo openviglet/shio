@@ -1549,32 +1549,28 @@ promising a user a website.
 
 ### XV.7 Importing an exchange package teaches nothing and is not on the agent surface (SH189)
 
-`ShExchangeImportAPI` ends every failure the same way:
-
-```java
-} catch (IOException | ShExchangeException e) {
-    return ResponseEntity.badRequest().build();
-}
-```
-
-`ShExchangeException` knows what went wrong; the caller gets a `400` with no body. Bringing
-`bootstrap-site` forward therefore meant reading the `ShExchange*` records in Java to infer seven
-field renames, because the endpoint would not say whether the failure was the manifest schema,
-the zip layout, a missing post-type or a bad reference. Every other write surface here answers a
-bad request with `fix`/`allowed`/`didYouMean` — in the same session a mistyped address came back
-with `didYouMean: "bootstrap_nav_region"` unprompted. Import is the outlier, and it is the one
-endpoint whose input a human assembled by hand and cannot inspect.
-
-The second half is a law P1 problem. Import is console-only: multipart plus a CSRF token, no
-`batch` op, no MCP tool. An agent can create a site, a model and a hundred posts from nothing and
-cannot accept a package a human hands it — which is the cheapest possible starting point, and the
-form every first-party template ships in.
-
-Two decisions for the task. Whether the manifest gets a version field and a stated migration
-path, now that there is proof a real package can be seven renames behind. And whether the
-agent-side verb is a `batch` op, its own endpoint, or `shio import` in the CLI — the last is
-enough if a package always comes from a filesystem, and is not if an MCP client is meant to
-accept one.
+> ⏳ **The teaching half shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two things it settled and
+> two it split off.
+>
+> **The bodiless 400 is gone, and classification was worth more than the message.** Passing the
+> exception's text through would have been most of the value; it would not have told the caller what
+> *kind* of thing to look at, and the four causes need four different next actions. The slug is the
+> kind, the `fix` is the action. The cause's message is carried as well as the wrapper's, because
+> Jackson names the offending property in the cause — reporting only the wrapper would have
+> reproduced this defect one level in.
+>
+> **The second decision this section asked for answers itself.** "Whether the agent-side verb is a
+> `batch` op, its own endpoint, or `shio import`" — the endpoint already exists and was
+> console-only for a mundane reason: a stateless caller could not satisfy CSRF. SH167's matcher
+> fixes that in one line, and nothing new needed inventing. The general lesson: before designing a
+> new surface for a capability, check whether the existing one is unreachable rather than absent.
+>
+> **What split off.** The classifier string-matches log messages because `ShExchangeException` has
+> no kind (**SH267**) — a shape this codebase refuses elsewhere, and worth fixing on its own because
+> it touches the export path too. And the CLI/MCP reach is **SH268**, where the interesting part is
+> that an SH68 package is a *zip*: a client with no filesystem cannot produce one, so "add a tool"
+> is not the answer and the honest option may be for the manifest to say this capability is
+> CLI-shaped.
 
 ### XV.8 Diagnostics name a failure but never carry the evidence (SH190)
 
@@ -2325,6 +2321,59 @@ Two shapes, and they are not equivalent:
 The second is probably right. It should not be chosen before SH264 says what one render costs,
 because the interesting case — is fifty renders a reasonable request or an accident — is exactly the
 question the measurement answers.
+
+### XVI.19 `ShExchangeException` has no kind (SH267)
+
+SH189's teaching errors classify by testing the message:
+
+```java
+if (lower.contains("manifest")) { … }
+if (lower.contains("zip") || lower.contains("escapes")) { … }
+if (lower.contains("no site")) { … }
+```
+
+That works, and it is the shape this codebase refuses everywhere else. The information — *which*
+failure this is — exists at the `throw` and is discarded there, so it has to be reconstructed by
+guessing at prose. Two consequences follow, and the second is the one that will bite: a message
+reworded for clarity silently changes an HTTP response, and a new failure mode added to the codec
+lands in the catch-all with no sign that anybody should look at it.
+
+`ShExchangeException` is a bare `RuntimeException(String)` with fifteen call sites across
+`ShExchangePackageCodec`, `ShSiteExportService` and `ShSiteImportService`. Giving it a kind — a
+nested enum, or a subclass per failure mode — turns the classifier into a `switch` and makes the
+messages presentational again.
+
+It is a separate task from SH189 because of blast radius: the same exception is thrown on the
+**export** path, which has its own callers and its own tests, and a task that quietly widened from
+"make import teach" to "restructure the exchange layer's error model" is the kind that gets abandoned
+half-done.
+
+### XVI.20 Import is not on the agent path, and a package is a file (SH268)
+
+No `shio import`, no `batch` op, no MCP tool. So an agent can create a site, a model and a hundred
+posts from nothing, and cannot accept a package a human hands it — which is the cheapest possible
+starting point and the form every first-party template ships in.
+
+The CLI half is now straightforward: SH189 made the endpoint reachable by a credential client, so
+`shio import <file>` is a multipart POST and a report.
+
+**The MCP half is a real design question, and this is the interesting part.** An SH68 package is a
+**zip**. A client with no filesystem can neither read one nor hand bytes over JSON-RPC. Three
+options, none free:
+
+- **A URL the server fetches.** This is SH101's request-forgery surface argued a second time, and it
+  would need the same treatment — off by default, an origin allow-list — for a capability far less
+  central than a render digest.
+- **A base64 body.** A megabyte of tokens for something a shell does in one line, which is P3's
+  argument against it and also SH114's argument about `shio_remember` running the other way.
+- **Say so.** The manifest reports capabilities precisely so a client learns what it cannot do
+  *before* promising a user something. "Import is CLI-shaped" is a legitimate answer, and an
+  explicit flag is better than an MCP client discovering the gap by not finding a tool.
+
+The third reading is the one to test first, and it should be tested against **SH186** — which is the
+same question in general form: what an MCP-only client can and cannot finish. If SH186 concludes
+that a filesystem-free client is a supported shape, this becomes a real gap; if it concludes such a
+client is expected to lean on a companion CLI, this is documentation.
 
 ---
 

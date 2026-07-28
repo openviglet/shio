@@ -30,8 +30,24 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  * Content import API (SH70): accepts an exchange package zip (SH68) and clones it
  * into the install via {@link ShSiteImportService}, returning the created site.
  * Backs the console "Import" action ({@code ShSiteService.import} → multipart
- * {@code POST /api/v2/import}). Session-authenticated and CSRF-protected like the
- * rest of the console API.
+ * {@code POST /api/v2/import}).
+ *
+ * <h2>Every failure teaches (SH189)</h2>
+ *
+ * <p>This used to answer {@code ResponseEntity.badRequest().build()} for all of them, so a caller
+ * could not tell a manifest-schema mismatch from a bad zip from a package with no site in it —
+ * while {@code ShExchangeException} knew exactly which. Bringing the 2018
+ * {@code openviglet/bootstrap-site} package forward meant reading the {@code ShExchange*} records
+ * in Java to infer seven field renames as a result. See {@link ShImportFailedException}.</p>
+ *
+ * <h2>Reachable by a stateless caller (SH189/SH167)</h2>
+ *
+ * <p>CSRF is narrowed with {@code ShStatelessRequestMatcher} rather than left blanket: exempt for a
+ * caller holding no session cookie, checked for one that does. That is what lets a credential-based
+ * client — the CLI, a CI job — POST a package with HTTP Basic while the console's cookie-bearing
+ * form stays protected, and it is the same treatment SH167 gave the post-type, review, CDA and
+ * agent paths. Law P1's remaining half for this capability is a command and an MCP route, which is
+ * <b>SH268</b>: an exchange package is a file, and a client with no filesystem cannot produce one.</p>
  *
  * @author Alexandre Oliveira
  */
@@ -50,14 +66,16 @@ public class ShExchangeImportAPI {
     public ResponseEntity<ShSite> importPackage(@RequestParam("file") MultipartFile file,
                                                 Principal principal) {
         if (file == null || file.isEmpty()) {
-            return ResponseEntity.badRequest().build();
+            throw ShImportFailedException.noFile();
         }
         try (InputStream in = file.getInputStream()) {
             ShSite site = shSiteImportService.importPackage(in,
                     principal != null ? principal.getName() : null);
             return ResponseEntity.status(HttpStatus.CREATED).body(site);
         } catch (IOException | ShExchangeException e) {
-            return ResponseEntity.badRequest().build();
+            // Classified rather than flattened: the four causes need four different next actions,
+            // and the cause's own message is the part that names the offending field.
+            throw ShImportFailedException.of(e, file.getOriginalFilename());
         }
     }
 }

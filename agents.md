@@ -217,6 +217,26 @@ SH134/SH137, and where the console is looser the console is the hole, not the ba
 - `POST /api/v2/site` — create. **Session + CSRF**, so a stateless caller gets a bodiless 403;
   that is the friction SH170 is filed for, and `shio-react/e2e/provision.mjs` walks it by hand.
 
+### Importing an exchange package — `POST /api/v2/import`
+
+Multipart (`file`), accepts an SH68 package zip and clones it in via `ShSiteImportService`.
+**Every failure teaches (SH189)** — it used to answer `ResponseEntity.badRequest().build()` for all
+of them while `ShExchangeException` knew exactly which, and bringing the 2018
+`openviglet/bootstrap-site` package forward cost seven field renames inferred by reading Java.
+`ShImportFailedException` classifies into four kinds (`import-manifest-unreadable`,
+`import-package-unreadable`, `import-no-site`, `import-failed`, plus `import-no-file`), each with an
+SH80 `fix` naming the *action* rather than restating the diagnosis. Two rules: the **cause's**
+message is carried as well as the wrapper's, because that is where Jackson names the property that
+did not map (reporting only the wrapper reproduces the defect one level in); and the `no-site` case
+points at `PUT /api/v2/post-type/{name}` and `POST /api/v2/agent/apply`, since a package with no site
+is usually a post-type-only or blueprint-shaped archive.
+**CSRF is session-narrowed, not exempt** (SH167's matcher, registered in
+`ShCsrfExemptionLintTest.MUST_BE_NARROWED`) — the console posts this form with a cookie, so a
+blanket exemption would let a forged request create a *site* against a curator's session.
+Two halves stay open: the classifier string-matches log messages because `ShExchangeException` has no
+kind (**SH267**), and there is still no `shio import` or MCP route (**SH268** — a package is a zip,
+so a filesystem-free client cannot produce one and "add a tool" is not the answer).
+
 ### The renderer — page → layout → region (SH183)
 
 `GET /preview/{site}/{url}` composes a page out of content the instance already holds, so a
@@ -1345,8 +1365,8 @@ failure is invisible to every other test in this repository.
 - Frontend: `src/lib/axios.ts` interceptor fetches token from `/v2/csrf` before PUT/POST/DELETE, reads from response header, auto-retries on 403
 
 **Every exemption is session-narrowed, and the one that is not is argued (SH167).**
-`/api/v2/post-type`, `/api/v2/review/**`, `/api/v2/cda/**`, `/api/v2/agent/**` and `/mcp` are
-wrapped in **`ShStatelessRequestMatcher`**: exempt for a caller holding no session cookie,
+`/api/v2/post-type`, `/api/v2/review/**`, `/api/v2/cda/**`, `/api/v2/agent/**`, `/mcp` and — since
+SH189 — `/api/v2/import` are wrapped in **`ShStatelessRequestMatcher`**: exempt for a caller holding no session cookie,
 CSRF-checked for one that does. A blanket exemption is only safe while no cookie-bearing
 client reaches the path, which was true of the post-type API right up to the commit (SH117)
 that pointed the React editor at it — and nothing in that commit would have noticed. The

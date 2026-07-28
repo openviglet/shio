@@ -95,7 +95,11 @@ class ShCsrfExemptionLintTest {
      * already reaches {@code POST /api/v2/agent/batch} — the endpoint that deletes content.</p>
      */
     private static final List<String> MUST_BE_NARROWED = List.of(
-            "CDA_PATH", "POST_TYPE_PATH", "REVIEW_PATH", "AGENT_PATH", "MCP_PATH");
+            "CDA_PATH", "POST_TYPE_PATH", "REVIEW_PATH", "AGENT_PATH", "MCP_PATH",
+            // SH189. The console posts this multipart form with a session cookie, so a blanket
+            // exemption would be an invitation to forge a *site creation* against a curator's
+            // browser — about as far from harmless as this list gets.
+            "IMPORT_PATH");
 
     @Test
     @DisplayName("SH167: every CSRF exemption is either session-narrowed or argued in the allow-list")

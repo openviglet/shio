@@ -62,6 +62,14 @@ public class ShSecurityConfig {
     /** Post-types-as-code admin API (SH16) — console-authenticated, used by the stateless {@code shio} CLI. */
     private static final String POST_TYPE_PATH = "/api/v2/post-type/**";
     /**
+     * SH189 — the exchange import. Narrowed rather than blanket for SH167's reason: the console
+     * posts the multipart form with a session cookie and must stay CSRF-checked, while a
+     * credential-based client (the CLI, a CI job) holds no cookie and cannot send a token. A
+     * blanket exemption here would be an invitation to forge a *site creation* against a
+     * curator's browser session, which is about as far from harmless as this list gets.
+     */
+    private static final String IMPORT_PATH = "/api/v2/import";
+    /**
      * The agent surface (Block H) — stateless callers: a CDA {@code Key} token or the
      * {@code shio} CLI's Basic auth. CSRF-exempt only for those (SH167): the namespace is
      * {@code authenticated()} and nothing else, so a browser session reaches its writes too.
@@ -140,6 +148,7 @@ public class ShSecurityConfig {
                         // the exemption is narrowed to callers that hold no session, or unifying
                         // the APIs would have meant dropping CSRF on the content model.
                         new ShStatelessRequestMatcher(mvc.matcher(POST_TYPE_PATH), sessionCookieName),
+                        new ShStatelessRequestMatcher(mvc.matcher(IMPORT_PATH), sessionCookieName),
                         // SH109 — same narrowed exemption, same reason (see REVIEW_PATH).
                         new ShStatelessRequestMatcher(mvc.matcher(REVIEW_PATH), sessionCookieName),
                         // Agent writes (SH81/SH82) and MCP (SH75) — the callers are a
