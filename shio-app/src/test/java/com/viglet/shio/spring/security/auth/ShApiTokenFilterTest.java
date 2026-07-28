@@ -370,6 +370,90 @@ class ShApiTokenFilterTest {
         assertThat(((ShApiTokenContext) auth.getDetails()).preview()).isTrue();
     }
 
+    // ── SH233: which credential wins when a caller holds both ──────────────────────────
+
+    @Test
+    void aPresentedKeyWinsOverAnExistingSession() throws Exception {
+        // The defect this fixes: the console is same-origin with the API, so its session cookie
+        // rides along whatever `withCredentials` says (that flag is cross-origin only), the
+        // security context is restored before this filter runs, and the `Key` header was never
+        // read — so the Universal Editor's PATCH authenticated as a curator with no
+        // ROLE_CDA_WRITE and 403'd. Presenting a key is a request to be that principal.
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.WRITE, Set.of())));
+        SecurityContextHolder.getContext().setAuthentication(session("curator"));
+
+        filter().doFilter(request("PATCH", "/api/v2/cda/post/abc"),
+                new MockHttpServletResponse(), new MockFilterChain());
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(auth.getName()).isEqualTo("alice");
+        assertThat(auth.getAuthorities()).extracting("authority").contains("ROLE_CDA_WRITE");
+    }
+
+    @Test
+    void withoutAKeyAnExistingSessionIsLeftAlone() throws Exception {
+        // No stubbing: the filter must not even look a token up when none was presented.
+        MockHttpServletRequest req = new MockHttpServletRequest("PATCH", "/api/v2/cda/post/abc");
+        req.setRequestURI("/api/v2/cda/post/abc");
+        SecurityContextHolder.getContext().setAuthentication(session("curator"));
+
+        filter().doFilter(req, new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getName())
+                .isEqualTo("curator");
+    }
+
+    @Test
+    void anUnusableKeyDoesNotUnauthenticateTheSession() throws Exception {
+        // A key is a request to be someone, not a request to stop being someone else — so a
+        // rejected one leaves the context as it was and the call fails on authorization, which
+        // is the same answer it gave before this rule existed.
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key")).thenReturn(Optional.empty());
+        SecurityContextHolder.getContext().setAuthentication(session("curator"));
+
+        filter().doFilter(request("GET", "/api/v2/cda/site"),
+                new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getName())
+                .isEqualTo("curator");
+    }
+
+    @Test
+    void aKeyStillCannotAuthenticateAConsoleRequest() throws Exception {
+        // The SH2 confinement is what stops this being an escalation: outside the delivery and
+        // agent namespaces the header is ignored, session or no session.
+        SecurityContextHolder.getContext().setAuthentication(session("curator"));
+
+        filter().doFilter(request("DELETE", "/api/v2/post-unified/abc"),
+                new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getName())
+                .isEqualTo("curator");
+    }
+
+    @Test
+    void aSessionDoesNotExemptAKeyFromItsOwnBounds() throws Exception {
+        // Holding a console session must not buy the token anything: a READ key that PATCHes is
+        // still the SH2 403, and the session is not consulted as a fallback.
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.READ, Set.of())));
+        SecurityContextHolder.getContext().setAuthentication(session("curator"));
+        MockHttpServletResponse res = new MockHttpServletResponse();
+
+        filter().doFilter(request("PATCH", "/api/v2/cda/post/abc"), res, new MockFilterChain());
+
+        assertThat(res.getStatus()).isEqualTo(403);
+    }
+
+    /** A console session, as SecurityContextHolderFilter would have restored it. */
+    private static Authentication session(String username) {
+        return new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                username, "x",
+                java.util.List.of(new org.springframework.security.core.authority
+                        .SimpleGrantedAuthority("ROLE_USER")));
+    }
+
     @Test
     void exceedingRateLimitReturns429() throws Exception {
         when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))

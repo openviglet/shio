@@ -42,6 +42,14 @@ import lombok.extern.slf4j.Slf4j;
  * per-token rate limit (SH3), returning {@code 429} when the budget is spent.
  * </p>
  *
+ * <p><b>A presented {@code Key} wins over an existing session (SH233).</b> The filter used to
+ * return immediately whenever anything had already authenticated, which read as conservative
+ * and meant a caller holding both a session cookie and a token got the session — the case that
+ * broke the Universal Editor's save-back, because a browser sends a same-origin cookie whatever
+ * the client asks for. Sending a key is a request to be that principal; nothing about the
+ * token's own bounds changes, and a key that cannot authenticate leaves the context untouched.
+ * </p>
+ *
  * @author Alexandre Oliveira
  * @since 2026.2
  */
@@ -98,8 +106,24 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
                                     @NotNull HttpServletResponse response,
                                     @NotNull FilterChain filterChain) throws ServletException, IOException {
 
-        // Only process if no authentication is already set
-        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+        String tokenValue = request.getHeader(TOKEN_HEADER);
+        boolean presented = tokenValue != null && !tokenValue.isBlank();
+
+        // An explicitly presented `Key` wins over an authentication already in the context
+        // (SH233). This used to return here whenever anything had authenticated, which sounds
+        // conservative and was in fact the reason the Universal Editor could not save: the
+        // console is same-origin with the API, so its session cookie rides along whatever the
+        // client sets `withCredentials` to (that flag governs cross-origin requests only),
+        // `SecurityContextHolderFilter` restores the session before this filter runs, and the
+        // `Key` header was never read — leaving the request authenticated as a curator who has
+        // no ROLE_CDA_WRITE, and a 403.
+        //
+        // It is not an escalation: presenting a valid token *is* the authorization, and the
+        // token's own scope, allow-list, expiry and rate limit still bound the request exactly
+        // as they do for a cookie-less caller. Nor does it widen CSRF: a forged cross-site
+        // request cannot set a custom header without the target's CORS consent, and since SH167
+        // a session-bearing caller on these paths is CSRF-checked anyway.
+        if (!presented && SecurityContextHolder.getContext().getAuthentication() != null) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -114,8 +138,7 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
             return;
         }
 
-        String tokenValue = request.getHeader(TOKEN_HEADER);
-        if (tokenValue == null || tokenValue.isBlank()) {
+        if (!presented) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -125,6 +148,10 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         // tokens of other tenants. The token's own tenant is then propagated below.
         ShApiToken apiToken = shApiTokenRepository.findByTokenAcrossTenants(tokenValue).orElse(null);
         if (apiToken == null || !apiToken.isEnabled()) {
+            // A token that cannot authenticate leaves whatever is in the context alone rather
+            // than clearing it (SH233): a presented key is a request to be *this* principal, not
+            // a request to stop being the other one. The request then succeeds or fails on
+            // authorization exactly as it did before, which is what keeps this change additive.
             filterChain.doFilter(request, response);
             return;
         }

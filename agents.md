@@ -998,8 +998,27 @@ nothing that works.
 is a *future* caller rather than a current request, which no functional test can watch for. To
 add one, name the constant in its allow-list with the reason a forged request there can do
 nothing an unauthenticated one could not. `/graphql` is the only current member (no
-`Mutation`; GraphiQL is a cookie-bearing browser) — a premise of exactly the shape that
-expired before, hence **SH234**.
+`Mutation`; GraphiQL is a cookie-bearing browser) — a premise of exactly the shape that expired
+before, so **since SH234 it is enforced, not written down**: the same lint fails the build the
+day a `Mutation` appears in `schema.graphqls` or a `.mutation(` in `ShGraphQLSchema`, and its
+message carries the decision made in advance — **narrow `GRAPHQL_PATH` with
+`ShStatelessRequestMatcher` and set `spring.graphql.graphiql.enabled=false`**. A
+mutation-capable delivery endpoint does not get a cookie-bearing playground in the console's
+browser; keeping GraphiQL would mean shipping a CSRF-aware replacement or accepting cross-site
+writes on the delivery API, and neither is worth a query playground.
+
+**On the CDA, an explicitly presented `Key` beats an existing session (SH233).** `ShApiTokenFilter`
+used to return early whenever anything had authenticated, which read as conservative and was why
+the Universal Editor could not save: the console is **same-origin** with the API, so its session
+cookie rides along whatever the client sets `withCredentials` to (that flag governs cross-origin
+requests only), `SecurityContextHolderFilter` restores the session first, the `Key` header was
+never read, and the PATCH authenticated as a curator with no `ROLE_CDA_WRITE`. Sending a key is a
+request to be *that* principal; the token's scope, allow-list, expiry and rate limit still bound
+it, and a key that cannot authenticate **leaves the context untouched** rather than clearing it.
+The client half is the same fix from the other end: `universal-editor.service.ts` uses the shared
+`@/lib/axios` singleton now, so the request carries CSRF (required of a session-bearing caller
+since SH167) instead of a private `axios.create()` that silently opted out of every shared
+interceptor.
 
 ### Authentication
 - HTTP Basic Auth

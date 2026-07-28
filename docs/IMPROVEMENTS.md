@@ -1236,9 +1236,9 @@ leaving to whoever next notices the poll is not free.
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 
 > The reorientation was mostly additive, but it did invalidate some existing choices.
-> Block N spent them → [CHANGELOG.md](CHANGELOG.md) Block N. What is left here is the
-> one lesson worth carrying forward (§XIV.4) and the design for what building it
-> opened. Concept spec §10 has the original table.
+> Block N spent them → [CHANGELOG.md](CHANGELOG.md) Block N, and so are the tasks that
+> building it opened (SH163–SH167, SH233, SH234). What is left here is the one lesson worth
+> carrying forward (§XIV.4). Concept spec §10 has the original table.
 
 ### XIV.4 Build-time guard for the `@TenantId` JOINED-join hazard (SH122) — ✅ shipped
 
@@ -1264,50 +1264,6 @@ input (word boundaries fail on both sides of a derived query name). A lint that
 matches nothing passes silently forever, so its patterns are asserted against the
 exact strings that broke production.
 
-### XIV.10 The Universal Editor's save-back cannot be authenticating the way it thinks it is (SH233)
-
-Found while reviewing the CDA's CSRF exemption for SH167, and it is not a CSRF problem —
-it is an authentication one that the exemption was hiding in plain sight.
-
-`shio-react/src/services/universal-editor/universal-editor.service.ts` builds a dedicated
-axios instance with `withCredentials: false` and a comment explaining exactly why: the CDA
-filter authenticates the `Key` token only when no authentication is already present, so if
-the console session cookie rides along, the request authenticates as the logged-in curator —
-who has no `ROLE_CDA_WRITE` — and gets a 403.
-
-The reasoning is right and the mechanism does not implement it. `withCredentials` governs
-**cross-origin** requests only; for a same-origin XHR the browser attaches cookies
-regardless, and the console is same-origin with the API both in dev (behind the Vite proxy)
-and in production. So the cookie is sent, `SecurityContextHolderFilter` restores the session
-before `ShApiTokenFilter` runs, the filter returns early on the already-set authentication,
-and the `Key` header is never read.
-
-Two things to settle before fixing it. First, **whether it is actually broken**, because
-nothing here proves it: this is a browser-runtime behaviour and every test in this repository
-either builds the request in Java or mocks the client. SH182's smoke check is the instrument.
-Second, **which end gives**: either an explicit `Key` header wins over an existing session on
-the CDA path (a change to the filter's early return, with its own escalation question — a
-console user could then present any token), or the editor stops needing to dodge the session
-at all. The second is more honest and larger, because it means answering why a console user
-holding a session cannot write through the CDA in the first place.
-
-### XIV.11 `/graphql` is the one CSRF exemption left blanket (SH234)
-
-SH167 narrowed the CDA, the agent namespace and `/mcp`. GraphQL was deliberately left,
-and the reasoning should be revisited rather than rediscovered.
-
-It rests on two facts, both true today: the generated schema exposes no `Mutation`, so a
-forged POST cannot write; and `/graphiql/**` is a cookie-bearing browser that the narrowed
-matcher would break, for a protection that would be protecting nothing. Together they make
-the exemption free — but the first is precisely the shape of premise that expired on
-`/api/v2/post-type`, where "only the CLI reaches it" was true right up to the commit that
-pointed the React editor at the same URL.
-
-So the decision worth making in advance is what happens to GraphiQL the day a mutation lands.
-The narrowed matcher and a CSRF-aware GraphiQL are compatible; the work is in the console
-bundle rather than in the security config, which is exactly the order that makes it cheap now
-and awkward later. Filing it as a task is the point: the alternative is a comment nobody reads
-in the same commit as the mutation.
 ## XV. The visible site (Block P)
 
 > An agent can build a site's model, folders and pages over the agent surface, and nobody
