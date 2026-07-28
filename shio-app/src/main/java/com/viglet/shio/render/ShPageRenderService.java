@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -151,12 +152,17 @@ public class ShPageRenderService {
         String layoutHtml = engine.render(fieldOf(layout, ShSystemPostTypeAttr.HTML), stable);
         List<String> slots = composer.slotsOf(layoutHtml);
         Map<String, ShRenderedRegion> regions = renderRegions(site, slots, stable, state);
+        // SH281 — of the slots that did not resolve, which exist as an unpublished draft. The marker
+        // needs to tell "create this region" from "publish the one you are looking at", because
+        // reporting the second as the first is a wrong diagnosis rather than a missing one.
+        Set<String> unpublishedSlots = unresolvedButDrafted(site, slots, regions, state);
 
         return new ShRenderedPage(
                 // SH185: the page's own identity goes onto <body>, so a `sh-field` in a layout
                 // needs no `sh-post` to say what it belongs to.
                 composer.compose(layoutHtml, regions, page.getId(),
-                        page.getShPostType() == null ? null : page.getShPostType().getName()),
+                        page.getShPostType() == null ? null : page.getShPostType().getName(),
+                        unpublishedSlots),
                 site.getName(),
                 page.getFurl(),
                 layout.getTitle(),
@@ -340,6 +346,30 @@ public class ShPageRenderService {
         return bindings;
     }
 
+    /**
+     * Slots that produced no region here and do have a draft (SH281).
+     *
+     * <p>Only asked on a PUBLISHED render: on a draft render an unresolved slot really has no post,
+     * because {@code statesFor(DRAFT)} already read both states. So this costs nothing in the case
+     * that runs most, which is the preview.</p>
+     */
+    private Set<String> unresolvedButDrafted(ShSite site, List<String> slots,
+                                             Map<String, ShRenderedRegion> rendered,
+                                             ShPostState state) {
+        if (state != ShPostState.PUBLISHED) {
+            return Set.of();
+        }
+        Set<String> unpublished = new java.util.TreeSet<>();
+        for (String name : slots) {
+            if (!rendered.containsKey(name)
+                    && postOfSystemType(site, ShSystemPostType.REGION, name, ShPostState.DRAFT)
+                            .isPresent()) {
+                unpublished.add(name);
+            }
+        }
+        return unpublished;
+    }
+
     private Map<String, ShRenderedRegion> renderRegions(ShSite site, List<String> slots,
                                                         Map<String, Object> model,
                                                         ShPostState state) {
@@ -412,6 +442,17 @@ public class ShPageRenderService {
         // such column, and the query dies at prepare time.
         return shPostUnifiedRepository.findByShSite_IdAndShPostType_IdAndStateIn(
                 site.getId(), type.getId(), ShRenderState.statesFor(state));
+    }
+
+    /**
+     * The title a layout names its theme by, or {@code null} (SH281).
+     *
+     * <p>Exposed so the lint reads the binding from the same place the renderer does: a theme is
+     * reached through a layout's {@code THEME} field, and a second reader parsing that field would be
+     * a second thing that can disagree about which theme a page uses.</p>
+     */
+    public String themeTitleOf(ShPostUnified layout) {
+        return fieldOf(layout, ShSystemPostTypeAttr.THEME);
     }
 
     private String fieldOf(ShPostUnified post, String field) {

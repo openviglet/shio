@@ -2697,30 +2697,53 @@ does not show up where it is written, it shows up on somebody else's database.
 
 ### XVI.33 A region and a theme have the same unpublished problem, and worse (SH281)
 
-SH280 gave the **layout** level a distinct 409 and a `verify` warning. SH278 changed all three levels,
-and the other two fail in ways that are harder to notice:
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two things worth keeping.
+>
+> **A wrong diagnosis is worse than a missing one, and this section is the clearest case of it.** An
+> unfilled slot said "no Region post" while the region sat in the console as a draft. A silent failure
+> sends somebody looking; a confident wrong answer sends them to create a duplicate. That is the same
+> asymmetry SH189 found in import (a bodiless 400 versus four classified ones) and SH280 found in the
+> layout refusal, and it is now three for three: **when a message can be wrong rather than absent,
+> fixing it beats adding one.**
+>
+> **The shape of the fix follows from the level's contract.** A layout that cannot resolve refuses,
+> because there is no page without one; a region and a theme degrade, because the rest of the page is
+> still worth serving. So these two get a marker and a finding rather than an exception — and the
+> finding's `fix` says explicitly that neither refuses the render, because a reader who has just met
+> SH280's 409 would otherwise expect one. Matching the instrument to the level's contract is the part
+> that took thought; the code is small.
+>
+> A separate attribute rather than a value on the existing one, so SH169's rule survives a third state
+> — missing, empty, unpublished must stay distinguishable in the DOM and therefore in the digest.
 
-- **An unpublished region is not an error at all.** `renderRegions` skips a slot it cannot resolve, and
-  SH183's marker records *"no Region post"* — which, when the region exists as a draft, is a **wrong
-  diagnosis** rather than a missing one. The author is told the region does not exist while looking at
-  it in the console.
-- **An unpublished theme silently yields no CSS.** `themeOf` returns null and the page renders
-  unstyled, with nothing said in the markup, the digest or the lint. SH187's `appearance` block would
-  show `definedClasses: 0`, which is a symptom and not a diagnosis.
+### XVI.34 A green compile hides broken code (SH282)
 
-Both are the distinction SH280 drew — absent versus unpublished — at levels where the renderer
-**deliberately degrades rather than refusing**, which is the right behaviour for a preview and is why
-the fix cannot be a second exception. It has to be a *marker* and a *finding* that tell the two apart.
+`./mvnw compile` reported success while `ShPageRenderService` was missing a method that
+`ShTemplateGraph` called. The defect surfaced on the first request that reached it, as a
+`ServletException` wrapping `java.lang.Error: Unresolved compilation problem` — and because the call
+site was on the verify path, it read as **53 errors across five unrelated test classes**, none of which
+had anything to do with the change.
 
-One constraint to respect: SH169 established that a missing region and an empty one are different
-mistakes and must not hash the same. This adds a **third** state to that pair — missing, empty,
-unpublished — so whatever marker carries it has to keep all three distinguishable, including in
-SH101's digest.
+That is the Eclipse compiler's *proceed-on-error* behaviour: ecj emits a class file with the error
+embedded rather than failing the build, so a compile error becomes a runtime error in whatever happens
+to call the broken member. It is a deliberate feature — it makes an IDE usable while you type — and it
+is the wrong default for a build.
 
-Worth noting the pattern this makes with SH280: SH278 was a one-clause correctness fix that has now
-produced two follow-ups about *how its consequences are reported*. That ratio is normal for a change
-that makes something previously-silent observable, and it is a reason to expect the reporting work
-rather than to regret the fix.
+It happened **three times in one session**: a `` that was a backspace rather than a word boundary,
+a char literal mangled across a line break, and this missing accessor. Each cost a full suite run to
+localise, because the failure appears wherever the code is *used* rather than where it is written.
+
+Two candidate fixes and the choice needs one piece of information nobody has:
+
+- **Turn `proceedOnError` off** in the compiler plugin configuration. Smallest change; keeps whatever
+  ecj was chosen for.
+- **Move to javac.** Fails on the first error, which is the behaviour a build wants — and gives up
+  whatever the reason for ecj was.
+
+**And that reason is not recorded anywhere**, which is the actual finding: a compiler choice is a
+load-bearing build decision (it changes what "the build passed" means) and it is undocumented — the
+same class of unenforced, unexplained premise SH275 is about, one layer further down. So the first step
+is archaeology, not configuration.
 
 ---
 

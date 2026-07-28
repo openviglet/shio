@@ -415,6 +415,74 @@ class ShPageRenderTest {
                 .contains("<p>body</p>");
     }
 
+    @Test
+    @DisplayName("SH281: an unpublished region is marked as unpublished, not as missing")
+    void anUnpublishedRegionIsMarkedAsSuch() {
+        // SH183 marks an unfilled slot "no Region post". Since SH278 a PUBLISHED render reads only
+        // published rows, so a *drafted* region produces that same marker — which is not a missing
+        // diagnosis but a wrong one: the author is looking at the region in the console while the
+        // page says it does not exist. SH169's rule is that different mistakes must not look alike,
+        // and this is a third state beside missing and empty.
+        String site = "sh281-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh281Page" + UUID.randomUUID().toString().substring(0, 8);
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"SH281_LAYOUT\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+            ShPostType regionType = postType(ShSystemPostType.REGION, (byte) 1, when);
+
+            String layoutHtml = "<html><body>"
+                    + "<div sh-region=\"SH281_DRAFTED\"></div>"
+                    + "<div sh-region=\"SH281_ABSENT\"></div></body></html>";
+            publishedAndDraft(owner, root, layoutType, "SH281_LAYOUT", "/l",
+                    json("HTML", layoutHtml), when);
+            // Exists as a draft only: the case that used to read as "no Region post".
+            post(owner, root, regionType, "SH281_DRAFTED", "/r-drafted",
+                    json("HTML", "<nav>drafted</nav>"), when);
+            publishedAndDraft(owner, root, pageType, "Home", "/", json("TEXT", "b"), when);
+        });
+
+        String html = shPageRenderService.render(site, "/", ShPostState.PUBLISHED).html();
+
+        assertThat(html)
+                .as("the drafted region says so, and says what to do about it")
+                .contains("data-shio-region-unpublished")
+                .contains("not published");
+        assertThat(html)
+                .as("""
+                        and the genuinely absent one keeps the SH183 marker, so the two remain                         distinguishable in the delivered DOM and therefore in SH101's digest.""")
+                .contains("data-shio-region-missing")
+                .contains("no Region post");
+    }
+
+    /** A post with both rows sharing one id — the shape a published template actually has. */
+    private void publishedAndDraft(ShSite site, ShFolder folder, ShPostType type, String title,
+                                   String furl, String data, Instant when) {
+        String id = UUID.randomUUID().toString();
+        for (ShPostState state : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT)) {
+            ShPostUnified row = new ShPostUnified();
+            row.setId(id);
+            row.setState(state);
+            row.setShSite(site);
+            row.setShFolder(folder);
+            row.setShPostType(type);
+            row.setTitle(title);
+            row.setFurl(furl);
+            row.setData(data);
+            row.setDate(when);
+            row.setOwner("admin");
+            entityManager.persist(row);
+        }
+    }
+
     // ── the claim ────────────────────────────────────────────────────────────────────
 
     @Test

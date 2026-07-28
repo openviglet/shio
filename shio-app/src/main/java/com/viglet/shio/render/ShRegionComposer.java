@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.DataNode;
@@ -88,6 +89,15 @@ public class ShRegionComposer {
     private static final String ANNOTATION_NAME = "data-shio-region";
     private static final String ANNOTATION_POST = "data-shio-region-post";
     private static final String ANNOTATION_MISSING = "data-shio-region-missing";
+    /**
+     * SH281 — the slot's region exists and has never been published.
+     *
+     * <p>A separate attribute rather than a value on {@code data-shio-region-missing}, because SH169's
+     * rule is that different mistakes must not look alike, and this is a <b>third</b> state beside
+     * missing and empty: the author is looking at the region in the console while the page says it is
+     * absent. Reporting "no Region post" for it is not a missing diagnosis, it is a wrong one.</p>
+     */
+    private static final String ANNOTATION_UNPUBLISHED = "data-shio-region-unpublished";
     private static final String ANNOTATION_FIELD_POST = "data-shio-post";
     private static final String ANNOTATION_PROP = "data-shio-prop";
     private static final String ANNOTATION_POST_TYPE = "data-shio-post-type";
@@ -106,6 +116,10 @@ public class ShRegionComposer {
      */
     private static final String MISSING_MARKER =
             "<!-- shio: no Region post for this slot; see data-shio-region -->";
+
+    /** Constant for the same reason {@code MISSING_MARKER} is: a region name is content. */
+    private static final String UNPUBLISHED_MARKER =
+            "<!-- shio: this slot's Region post is not published; see data-shio-region -->";
 
     /**
      * @param layoutHtml a layout's {@code HTML} field
@@ -135,7 +149,7 @@ public class ShRegionComposer {
      * @return the composed page
      */
     public String compose(String layoutHtml, Map<String, ShRenderedRegion> regions) {
-        return compose(layoutHtml, regions, null, null);
+        return compose(layoutHtml, regions, null, null, Set.of());
     }
 
     /**
@@ -148,6 +162,15 @@ public class ShRegionComposer {
      */
     public String compose(String layoutHtml, Map<String, ShRenderedRegion> regions,
                           String pagePostId, String pageType) {
+        return compose(layoutHtml, regions, pagePostId, pageType, Set.of());
+    }
+
+    /**
+     * @param unpublishedSlots SH281 — slot names whose Region post exists and is not published, so
+     *                         the marker can say which of the two mistakes this is
+     */
+    public String compose(String layoutHtml, Map<String, ShRenderedRegion> regions,
+                          String pagePostId, String pageType, Set<String> unpublishedSlots) {
         if (layoutHtml == null || layoutHtml.isBlank()) {
             return "";
         }
@@ -160,8 +183,11 @@ public class ShRegionComposer {
             ShRenderedRegion region = regions.get(name);
             slot.attr(ANNOTATION_NAME, name);
             if (region == null) {
-                slot.attr(ANNOTATION_MISSING, "true");
-                slot.html(MISSING_MARKER);
+                // SH281 — which of the two it is, because they need different actions: create the
+                // region, or publish the one you are looking at.
+                boolean unpublished = unpublishedSlots != null && unpublishedSlots.contains(name);
+                slot.attr(unpublished ? ANNOTATION_UNPUBLISHED : ANNOTATION_MISSING, "true");
+                slot.html(unpublished ? UNPUBLISHED_MARKER : MISSING_MARKER);
                 continue;
             }
             if (region.postId() != null) {

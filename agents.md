@@ -414,9 +414,17 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   every site mid-build, and the general rule is that *work in progress and something wrong are
   separated by another condition, not a stricter first one*. Checked and negative: SH68 import is
   faithful to each post's own state and no first-party blueprint ships a layout, so this is an
-  agent-built-site exposure rather than an imported one. **The region and theme levels have the same
-  problem unfixed** — an unpublished region is reported as "no Region post" (a wrong diagnosis) and an
-  unpublished theme silently yields no CSS — which is **SH281**.
+  agent-built-site exposure rather than an imported one. **The region and theme levels get a marker and a
+  finding instead of a refusal (SH281)**, because they *degrade* rather than failing — a slot is
+  skipped so the rest of the page still serves, which is right for a preview. So
+  `data-shio-region-unpublished` joins `data-shio-region-missing` as a **separate attribute**, keeping
+  SH169's missing/empty distinction intact across a third state; the marker text is a constant for
+  SH183's reason (a region name is content and `-->` would close the comment); it is computed only on
+  a PUBLISHED render, since `statesFor(DRAFT)` already read both states; and `verify` reports
+  **`unpublished-template`** for a region or theme a published page needs, with a `fix` that says
+  explicitly that neither refuses the render — otherwise a reader who has just met SH280's 409 expects
+  one. The rule across all three: **when a message can be wrong rather than absent, fixing it beats
+  adding one** (SH189's bodiless 400, SH280's "no such layout", this).
 - **Helpers are the closed capability set** `shObject.js` expressed as a convention:
   `{{#query folder= type= limit=}}`, `{{#navigation folder=}}`, `{{file_url}}`, and since SH247
   `{{#getRelation FIELD}}` and `{{#search q= type= limit=}}`. Every listing is sorted by a

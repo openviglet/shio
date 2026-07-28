@@ -464,6 +464,61 @@ class ShTemplateGraphTest {
                 .noneMatch(finding -> "unpublished-layout".equals(finding.rule()));
     }
 
+    @Test
+    @DisplayName("SH281: verify reports an unpublished region and an unpublished theme")
+    void verifyReportsUnpublishedDependencies() {
+        // These two levels degrade rather than refusing — a slot is skipped and a theme yields no
+        // CSS — so a report is the only way anybody learns. The layout level has a 409 for the same
+        // situation (SH280); this is what the other two get instead.
+        String name = "sh281v-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh281vPage" + UUID.randomUUID().toString().substring(0, 8);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(name);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"SH281V_LAYOUT\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+            ShPostType regionType = postType(ShSystemPostType.REGION, (byte) 1, when);
+            ShPostType themeType = postType(ShSystemPostType.THEME, (byte) 1, when);
+
+            // The layout is published; its region and its theme are not.
+            String layoutData = json("HTML",
+                    "<html><body><div sh-region=\"SH281V_NAV\"></div></body></html>",
+                    "THEME", "SH281V_THEME");
+            for (ShPostState state : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT)) {
+                post(owner, root, layoutType, "SH281V_LAYOUT", "/l", layoutData, when, state);
+            }
+            post(owner, root, regionType, "SH281V_NAV", "/r",
+                    json("HTML", "<nav>x</nav>"), when, ShPostState.DRAFT);
+            post(owner, root, themeType, "SH281V_THEME", "/t",
+                    json("CSS", "body{color:red}"), when, ShPostState.DRAFT);
+            post(owner, root, pageType, "Home", "/", json("TEXT", "b"), when, ShPostState.PUBLISHED);
+        });
+
+        assertThat(verifyService.verify(name, "content", 200).findings())
+                .filteredOn(finding -> "unpublished-template".equals(finding.rule()))
+                .as("both levels, each naming the layout that needs it")
+                .hasSize(2)
+                .allSatisfy(finding -> {
+                    assertThat(finding.severity()).isEqualTo("warning");
+                    assertThat(finding.message()).contains("SH281V_LAYOUT")
+                            .contains("never been published");
+                    assertThat(finding.fix())
+                            .as("""
+                                    and the fix says why this is a report and not a refusal: the                                     page is served incomplete or unstyled rather than failing.""")
+                            .contains("post.publish")
+                            .contains("refuses the render");
+                })
+                .extracting(com.viglet.shio.api.agent.verify.dto.ShAgentReport.Finding::message)
+                .anySatisfy(message -> assertThat(message).contains("Region 'SH281V_NAV'"))
+                .anySatisfy(message -> assertThat(message).contains("Theme 'SH281V_THEME'"));
+    }
+
     // ── SH194: the one-call appearance loop ─────────────────────────────────────────
 
     @Test

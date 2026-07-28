@@ -548,6 +548,22 @@ public class ShAgentVerifyService {
                                 + "built with post.upsert has draft templates until somebody "
                                 + "publishes them, because publishing is a separate act (P7)."));
             }
+            // SH281 — the two levels that degrade rather than refusing. A skipped slot and a missing
+            // stylesheet are both silent in the delivered page, so a report is the only way anybody
+            // learns; the layout level has a 409 for the same situation (SH280).
+            for (Map.Entry<String, Set<String>> stranded
+                    : templateGraph.unpublishedDependencies(site).entrySet()) {
+                findings.add(Finding.warning(check, "unpublished-template",
+                        "site:" + site.getName(), null,
+                        stranded.getKey() + " has never been published, and published pages in '"
+                                + site.getName() + "' render through the layout(s) that need it ("
+                                + String.join(", ", stranded.getValue()) + "). A published render "
+                                + "reads only published rows, so a region is skipped and a theme "
+                                + "yields no CSS — silently, in both cases.",
+                        "Publish it with a post.publish op (POST /api/v2/agent/batch). Unlike a "
+                                + "missing layout, neither of these refuses the render: the page is "
+                                + "served incomplete or unstyled, which is why it is reported here."));
+            }
         }
     }
 

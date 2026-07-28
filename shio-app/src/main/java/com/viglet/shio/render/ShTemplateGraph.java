@@ -342,6 +342,57 @@ public class ShTemplateGraph {
         return stranded;
     }
 
+    /**
+     * Regions and themes a published page needs and nobody has published (SH281).
+     *
+     * <p>The layout level refuses (SH280). These two <b>degrade</b>: an unresolved slot is skipped and
+     * an unresolved theme yields no CSS, which is right for a preview and means the only way anybody
+     * learns is a report. So the same published-pages condition applies — a draft region behind no
+     * published page is somebody working — and the finding names what to publish.</p>
+     *
+     * @return {@code "Region 'NAV'"} → the layouts needing it, sorted; themes likewise
+     */
+    public Map<String, Set<String>> unpublishedDependencies(ShSite site) {
+        Map<String, Set<String>> stranded = new TreeMap<>();
+        for (Map.Entry<String, String> binding
+                : new TreeMap<>(renderService.layoutBindings(site)).entrySet()) {
+            if (pageCount(site, Set.of(binding.getKey()), ShPostState.PUBLISHED) == 0) {
+                continue;
+            }
+            Optional<ShPageTemplates> templates =
+                    renderService.templatesFor(site, binding.getKey());
+            if (templates.isEmpty()) {
+                continue;
+            }
+            String layoutTitle = binding.getValue();
+            for (ShNamedTemplate region : templates.get().regions()) {
+                if (!isPublished(site, ShSystemPostType.REGION, region.name())) {
+                    stranded.computeIfAbsent("Region '" + region.name() + "'",
+                            key -> new TreeSet<>()).add(layoutTitle);
+                }
+            }
+            String themeTitle = renderService.themeTitleOf(templates.get().layout().post());
+            if (themeTitle != null && !themeTitle.isBlank()
+                    && !isPublished(site, ShSystemPostType.THEME, themeTitle)) {
+                stranded.computeIfAbsent("Theme '" + themeTitle + "'", key -> new TreeSet<>())
+                        .add(layoutTitle);
+            }
+        }
+        return stranded;
+    }
+
+    /** Whether a render-type post with this title has a published row. */
+    private boolean isPublished(ShSite site, String typeName, String title) {
+        for (ShPostUnified post : shPostUnifiedRepository.findByShSite_IdAndStateIn(
+                site.getId(), List.of(ShPostState.PUBLISHED))) {
+            String name = post.getShPostType() == null ? null : post.getShPostType().getName();
+            if (typeName.equals(name) && title.equals(post.getTitle())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Every render-type row in the site carrying this title, both states. */
     private List<ShPostUnified> templatesOfTitle(ShSite site, String title) {
         List<ShPostUnified> out = new ArrayList<>();
