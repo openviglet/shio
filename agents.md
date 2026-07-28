@@ -606,7 +606,22 @@ the CDA + console services (law P10) and holds no business logic of its own.
   an error, and the catch is narrowed to `ShTeachingException`. `ShPageRenderService.render` is
   `noRollbackFor = ShTeachingException.class` for SH171's reason — catching a teaching exception from
   an inner `@Transactional` otherwise marks the caller's transaction rollback-only and blows up at
-  *commit*, nowhere near the catch (it cost eleven unrelated test errors when SH249 landed). `?url=` digests the
+  *commit*, nowhere near the catch (it cost eleven unrelated test errors when SH249 landed).
+  **A rendered digest also carries `appearance` and a second hash, `appearanceDigest` (SH187)** —
+  the class inventory, the classes no stylesheet the page carries defines, inline `style=` counts,
+  images with no declared size, and the external sheets that explain the rest. It is **not** a
+  rendering: computed style and box geometry need a layout engine, and that limit is the design
+  rather than a gap (the raster half is **SH265**). The unstyled-class list is **advisory, never a
+  lint finding** — the 2018 `bootstrap-site` package loads Bootstrap from a CDN, so a rule reporting
+  every class the `Theme` lacks would fire dozens of times on the one real example in the repo.
+  **Two hashes on purpose**: `d:` covers structure and `a:` covers appearance, because one hash over
+  both could not tell "I restyled it" from "I broke the outline" — the comparison an iterative loop
+  needs, and the half of SH194 that is now done. Both are **absent** for a `source: content`
+  fallback (a markup field is not a document and has no stylesheet). The CSS is read out of the
+  rendered page's own `<style>` blocks, not from the `Theme` post, so it is whatever the page
+  actually carries. The manifest reports `appearanceDigest: true` and keeps
+  **`visualSnapshot: false`**, the only honest pair — there is still no raster here, and an agent
+  reading `true` would hunt for a PNG. `?url=` digests the
   delivered page but is **off** unless `shio.agent.render.allow-fetch=true`, and only for
   the origins of readable sites — an endpoint that fetches arbitrary URLs server-side is a
   request-forgery surface.

@@ -55,7 +55,36 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 public record ShAgentDigest(String source, String address, String url, Integer status,
                             List<String> fields, List<Heading> headings,
                             Map<String, Integer> landmarks, List<Link> links,
-                            List<Image> images, int words, String digest) {
+                            List<Image> images, int words, String digest,
+                            Appearance appearance, String appearanceDigest) {
+
+    /**
+     * SH187 — the part of <em>appearance</em> that is honestly answerable without a browser.
+     *
+     * <p>Present only for a {@code source: rendered} digest, because it describes the document a
+     * visitor gets; a post's own markup fields are not a page and have no stylesheet. Absent, not
+     * empty, for everything else — the rule SH121 set for ids and SH193 followed for
+     * {@code affects}.</p>
+     *
+     * <p><b>It is not a rendering.</b> Computed style and box geometry need a layout engine. What is
+     * here is the stylistic surface the document itself carries, and its most useful member is
+     * {@code unstyledClasses} — markup written against class names the stylesheet does not have,
+     * which is the appearance defect an <em>agent</em> actually creates. That list is
+     * <b>advisory</b>: a page may load a stylesheet this instance has never seen, which is why
+     * {@code externalStylesheets} is beside it.</p>
+     *
+     * @param classes             every class the markup uses, sorted
+     * @param unstyledClasses     those no stylesheet the page carries defines — advisory
+     * @param inlineStyles        {@code style="…"} attributes: styling the theme cannot reach
+     * @param imagesWithoutSize   images with no declared width/height, so the page reflows on load
+     * @param externalStylesheets sheets loaded from elsewhere — why unstyledClasses may be long
+     * @param definedClasses      class selectors the page's own stylesheets define
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Appearance(List<String> classes, List<String> unstyledClasses, int inlineStyles,
+                             List<String> imagesWithoutSize, List<String> externalStylesheets,
+                             int definedClasses) {
+    }
 
     /** @param level 1–6 */
     public record Heading(int level, String text) {

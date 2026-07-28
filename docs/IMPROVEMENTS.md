@@ -1511,24 +1511,26 @@ is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that exis
 
 ### XV.4 The agent sees a page's structure, never its appearance (SH187)
 
-SH169 closed the structural half: `/agent/render` composes a page's referenced sections, so an
-agent can prove the outline, the landmarks, the links and the alt text are right, and a
-missing section changes the digest instead of hashing to the same empty value as everything
-else. What no instrument reports is whether the page *looks* right — `visualSnapshot` and
-`signedImageUrls` are `false`, and `renderFetch` is off by default and origin-checked when
-enabled.
-
-So an agent asked to change how a page looks still has to hand the question to a human, which
-is the expensive unit Block K exists to remove. ✅ **SH102 has shipped and it is the right
-instrument** — `shio snapshot`: a PNG, a baseline and a diff — but it shipped scoped *"for the
-human handoff rather than for the agent"*, deliberately, and that framing is what this task
-revisits: visual autonomy needs the agent to be the reader, which means a call on the agent
-surface rather than a CLI command, and a payload a model can act on rather than an image file.
-SH183 makes
-it cheap instead of a new subsystem, because the renderer's own HTML is the artifact, produced
-in-process with no browser and no outbound fetch. Whether a raster image follows is then a
-smaller, separate question about what a hash of structure cannot catch — which is most of what
-"looks wrong" means.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth keeping.
+>
+> **The honest scope was the whole design.** There is no layout engine, so overlap, contrast,
+> truncation and anything responsive are out of reach — and saying that plainly is what made the
+> rest possible. What *is* in the document: the class inventory, the classes no stylesheet the page
+> carries defines, inline styles, images with no declared size. It covers the appearance failure an
+> **agent** creates (markup written against class names the theme lacks) rather than the ones a
+> human notices, and that turned out to be the useful trade.
+>
+> **Two hashes, because they answer different questions.** Folding appearance into SH101's `digest`
+> would have made a restyle and a structural break indistinguishable — the one comparison an
+> iterative loop most needs to make. `d:` and `a:` prefixes so they cannot be confused in a report.
+>
+> **A capability flag is added, not repurposed.** `visualSnapshot` stays `false` because there is
+> still no raster on this surface; `appearanceDigest: true` joins it. An agent that read
+> `visualSnapshot: true` would hunt for a PNG — which is the same rule that flag's own comment set
+> and SH185 broke once with `universalEditor`.
+>
+> The remaining raster question is **SH265**, and the reason it is not a footnote: most of what
+> "looks wrong" means still needs pixels.
 
 ### XV.5 An MCP-only agent cannot produce a visible site (SH186)
 
@@ -1811,6 +1813,29 @@ projection form — which is also the one that keeps the default response unchan
 Worth settling at the same time: whether the impact of a **theme** change is the same question. A
 theme is named by a layout's `THEME` field rather than by a slot, so it is a third edge and the
 graph does not currently hold it.
+
+#### XV.21 A raster is still the only answer to most of "looks wrong" (SH265)
+
+SH187 extracts the appearance surface a document carries and stops exactly where a layout engine
+would begin. Overlap, contrast, truncation, a broken grid, anything responsive: none of it is in the
+markup, and no amount of parsing invents it.
+
+The pieces exist. SH102 rasterizes already, through an **optional** Playwright import with a
+teaching error naming the install — deliberately optional so `@viglet/shio` never pulls a browser.
+SH249 made the input free: the renderer's own HTML, in-process, no outbound fetch. So the open
+question is not how to take the picture.
+
+It is **who reads it and where it lives.** An image on the agent surface is tokens an agent mostly
+cannot use — SH102's own framing, and still true. But the pixel diff SH102 computes is a *number*,
+and a number is exactly what an agent can act on. So the shape to design is probably: snapshot the
+rendered HTML server-side, return the **diff ratio** against a stored baseline plus a signed URL for
+the human who wants to look. That reuses the SH25 signing path rather than inventing a second one.
+
+Two decisions in front of it. Whether an instance may run a browser at all — the reason SH102 kept
+Playwright out of the CLI's dependencies applies with more force server-side, where the operator did
+not choose it. And where the baseline lives: `shio/snapshots/` is a project directory and this would
+be instance state, which is either a new store or an argument that the *client* stays the baseline's
+owner and the server only ever answers "here is the current one".
 
 #### XV.15 A region's browser JavaScript is authored and never served (SH248)
 

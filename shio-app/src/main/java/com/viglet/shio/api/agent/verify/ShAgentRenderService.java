@@ -131,8 +131,11 @@ public class ShAgentRenderService {
         // compositions of the same post, which is law P9 failing where it is supposed to work.
         Optional<String> html = renderedHtml(post);
         if (html.isPresent()) {
-            return render(SOURCE_RENDERED, address, null, null,
-                    List.of(), ShHtmlOutline.of(html.get()));
+            // SH187 — appearance only here, because it describes the *document* a visitor gets. A
+            // post's own markup field is not a page and carries no stylesheet, so an appearance
+            // block for it would be a section of nulls pretending to be an answer.
+            return render(SOURCE_RENDERED, address, null, null, List.of(),
+                    ShHtmlOutline.of(html.get()), ShHtmlAppearance.of(html.get()));
         }
 
         List<String> fields = new ArrayList<>();
@@ -352,6 +355,12 @@ public class ShAgentRenderService {
 
     private ShAgentDigest render(String source, String address, String url, Integer status,
                                  List<String> fields, ShHtmlOutline.Outline outline) {
+        return render(source, address, url, status, fields, outline, null);
+    }
+
+    private ShAgentDigest render(String source, String address, String url, Integer status,
+                                 List<String> fields, ShHtmlOutline.Outline outline,
+                                 ShHtmlAppearance.Appearance appearance) {
         List<ShAgentDigest.Heading> headings = outline.headings().stream()
                 .map(heading -> new ShAgentDigest.Heading(heading.level(), heading.text()))
                 .toList();
@@ -361,10 +370,50 @@ public class ShAgentRenderService {
         List<ShAgentDigest.Image> images = outline.images().stream()
                 .map(image -> new ShAgentDigest.Image(image.src(), image.alt()))
                 .toList();
+        ShAgentDigest.Appearance look = appearance == null ? null : new ShAgentDigest.Appearance(
+                appearance.classes(), appearance.unstyledClasses(), appearance.inlineStyles(),
+                appearance.imagesWithoutSize(), appearance.externalStylesheets(),
+                appearance.definedClasses());
         return new ShAgentDigest(source, address, url, status,
                 fields.isEmpty() ? null : List.copyOf(fields),
                 headings, outline.landmarks(), links, images, outline.words(),
-                digestOf(headings, outline.landmarks(), links, images));
+                digestOf(headings, outline.landmarks(), links, images),
+                look,
+                // SH187/SH194 — a *second* hash, deliberately not folded into `digest`. A theme
+                // edit changes how the page looks and not what it is, so one hash covering both
+                // could not tell "I restyled it" from "I broke the outline" — which is precisely
+                // the discrimination an iterative loop needs. Two hashes, two questions.
+                look == null ? null : appearanceDigestOf(look));
+    }
+
+    /**
+     * A hash over the appearance surface only.
+     *
+     * <p>Its own inputs are sorted before hashing (SH136's rule that a hash sorts its own inputs
+     * rather than trusting the caller), and the counts are included because "six inline styles
+     * became seven" is a change to how the page looks.</p>
+     */
+    private static String appearanceDigestOf(ShAgentDigest.Appearance look) {
+        StringBuilder canonical = new StringBuilder();
+        canonical.append(String.join(",", new java.util.TreeSet<>(look.classes()))).append('|')
+                .append(String.join(",", new java.util.TreeSet<>(look.unstyledClasses()))).append('|')
+                .append(look.inlineStyles()).append('|')
+                .append(String.join(",", new java.util.TreeSet<>(look.imagesWithoutSize()))).append('|')
+                .append(String.join(",", new java.util.TreeSet<>(look.externalStylesheets()))).append('|')
+                .append(look.definedClasses());
+        try {
+            byte[] hash = MessageDigest.getInstance("SHA-256")
+                    .digest(canonical.toString().getBytes(StandardCharsets.UTF_8));
+            // `a:` rather than `d:`, so the two hashes cannot be confused for one another in a
+            // report, a log or a diff — they answer different questions.
+            StringBuilder hex = new StringBuilder("a:");
+            for (int i = 0; i < 6; i++) {
+                hex.append(String.format("%02x", hash[i]));
+            }
+            return hex.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 unavailable", e);
+        }
     }
 
     private static boolean internal(String href) {

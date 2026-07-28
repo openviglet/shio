@@ -216,6 +216,13 @@ public class ShAgentManifestService {
         // human has a command for it" would cost three orders of magnitude more tokens than
         // the digest the agent should be using, for a capability the protocol does not offer.
         features.put("visualSnapshot", false);
+        // SH187 — the part of appearance this surface *does* answer: the class inventory, which of
+        // them no stylesheet the page carries defines, inline styles, images that will reflow, and
+        // a second hash over all of it so an agent can tell "I restyled it" from "I broke the
+        // outline". A separate flag rather than flipping `visualSnapshot`, for that flag's own
+        // stated reason: there is still no raster on this surface, and an agent that read
+        // `visualSnapshot: true` would go looking for a PNG. Two capabilities, two answers.
+        features.put("appearanceDigest", true);
         return features;
     }
 

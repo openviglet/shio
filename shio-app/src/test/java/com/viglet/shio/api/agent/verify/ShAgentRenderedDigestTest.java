@@ -106,7 +106,8 @@ class ShAgentRenderedDigestTest {
             // page's own fields nor any section — so seeing them proves the digest read the
             // rendered page rather than the content.
             post(site, root, layoutType, LAYOUT, "/layout", json("HTML",
-                    "<html><body><h1>{{post.title}}</h1>"
+                    "<html><head><style>.hero{display:block}.lede{font-size:1.2em}</style></head>"
+                            + "<body><h1>{{post.title}}</h1>"
                             + "<div sh-region=\"" + REGION + "\"></div>"
                             + "<main>{{{TEXT}}}</main></body></html>"), when);
             post(site, root, regionType, REGION, "/region", json("HTML",
@@ -116,6 +117,11 @@ class ShAgentRenderedDigestTest {
                     json("TEXT", "<h2>From the page</h2><p>body</p>"), when);
             post(site, root, loose, "Loose page", "/loose",
                     json("TEXT", "<h2>Only the field</h2>"), when);
+            // SH187's subject: two classes the stylesheet defines, one it does not, an inline
+            // style, and an image with no declared size.
+            post(site, root, bound, "Styled page", "/styled", json("TEXT",
+                    "<section class=\"hero\"><p class=\"lede typo-here\" style=\"color:red\">x</p>"
+                            + "<img src=\"/file_source/x/hero.png\" alt=\"Hero\"></section>"), when);
         });
     }
 
@@ -180,6 +186,58 @@ class ShAgentRenderedDigestTest {
         // question about the same kind of post, and the reason `source` has to be in the response
         // rather than implied.
         assertThat(rendered).isNotEqualTo(content);
+    }
+
+    // ── SH187: appearance ───────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("a rendered digest carries the appearance surface the document holds")
+    void appearanceIsReported() {
+        ShAgentDigest digest = renderService.digest("post:" + siteName + "/styled", null);
+
+        assertThat(digest.appearance()).isNotNull();
+        assertThat(digest.appearance().classes())
+                .as("every stylistic hook the markup uses, sorted")
+                .containsExactly("hero", "lede", "typo-here");
+        assertThat(digest.appearance().unstyledClasses())
+                .as("""
+                        the appearance defect an *agent* actually creates: markup written against                         a class the stylesheet does not have. `hero` and `lede` are defined in the                         theme; `typo-here` is not, and nothing else in the system reports it.""")
+                .containsExactly("typo-here");
+        assertThat(digest.appearance().definedClasses()).isPositive();
+        assertThat(digest.appearance().inlineStyles())
+                .as("styling the theme cannot reach and a curator cannot review")
+                .isEqualTo(1);
+        assertThat(digest.appearance().imagesWithoutSize())
+                .as("the one appearance defect a parser can be certain of — the page reflows on load")
+                .containsExactly("/file_source/x/hero.png");
+    }
+
+    @Test
+    @DisplayName("the appearance hash is separate from the structural one, and answers a different question")
+    void twoHashesTwoQuestions() {
+        ShAgentDigest styled = renderService.digest("post:" + siteName + "/styled", null);
+        ShAgentDigest plain = renderService.digest("post:" + siteName + "/bound", null);
+
+        assertThat(styled.appearanceDigest()).startsWith("a:");
+        assertThat(styled.digest()).startsWith("d:");
+        assertThat(styled.appearanceDigest())
+                .as("""
+                        Two hashes because a theme edit changes how a page looks and not what it                         is: one hash covering both could not tell "I restyled it" from "I broke                         the outline", which is exactly the discrimination an iterative loop needs.""")
+                .isNotEqualTo(plain.appearanceDigest());
+        assertThat(styled.appearanceDigest())
+                .isEqualTo(renderService.digest("post:" + siteName + "/styled", null).appearanceDigest());
+    }
+
+    @Test
+    @DisplayName("a page that could not be rendered has no appearance at all")
+    void theFallbackHasNoAppearance() {
+        ShAgentDigest digest = renderService.digest("post:" + siteName + "/loose", null);
+
+        assertThat(digest.appearance())
+                .as("""
+                        absent, not a section of nulls: a post's own markup field is not a document                         and carries no stylesheet, so there is nothing honest to say about how it                         looks. SH121's rule for ids, SH193's for `affects`.""")
+                .isNull();
+        assertThat(digest.appearanceDigest()).isNull();
     }
 
     // ── fixture ─────────────────────────────────────────────────────────────────────
