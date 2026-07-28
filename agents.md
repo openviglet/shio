@@ -1890,6 +1890,21 @@ the `pnpm` field in `package.json`, so this setting lives in the workspace file.
 2. `pnpm install` — pnpm finds the workspace root (`../`) and installs all members
 3. `pnpm run compile:build` (`tsc -b` + `vite build`)
 
+**A verification run needs `clean` (SH282).** Measured: with a call to a method that does not exist,
+`./mvnw -pl shio-app -am compile` prints **"Nothing to compile - all classes are up to date"** and
+**BUILD SUCCESS**; `clean compile` fails correctly with `cannot find symbol`. The cause is not the
+compiler — this build uses plain javac — it is that **the IDE compiles into `target/classes` on save**,
+so the `.class` outlives the `.java` and `maven-compiler-plugin`'s staleness check skips the module.
+Eclipse JDT also emits a class with `java.lang.Error: Unresolved compilation problem` embedded rather
+than no class, so the broken member fails at *runtime*, in whatever test calls it — one missing accessor
+read as 53 errors across five unrelated test classes. `-Dmaven.compiler.useIncrementalCompilation=false`
+does **not** help; the staleness check is what short-circuits. So: **`mvnw … clean test`, and treat
+"Nothing to compile" as no information.** The tell for the underlying defect is a `ServletException`
+wrapping `java.lang.Error`.
+**And do not sum `target/surefire-reports/` for a test count (SH283)** — it accumulates, so a targeted
+`-Dtest=X` run leaves reports beside the full run's and the sum double-counts those classes. Take the
+number from the run's own summary.
+
 **Skip the frontend build for backend-only work.** The three frontend executions
 bind to `generate-resources`, so a plain `mvn compile`/`test` triggers the
 (slow, Node-dependent) React build. For backend compile/test, always pass

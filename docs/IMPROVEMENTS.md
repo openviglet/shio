@@ -2716,34 +2716,59 @@ does not show up where it is written, it shows up on somebody else's database.
 > A separate attribute rather than a value on the existing one, so SH169's rule survives a third state
 > — missing, empty, unpublished must stay distinguishable in the DOM and therefore in the digest.
 
-### XVI.34 A green compile hides broken code (SH282)
+### XVI.34 `mvn compile` reports success on code that does not compile (SH282)
 
-`./mvnw compile` reported success while `ShPageRenderService` was missing a method that
-`ShTemplateGraph` called. The defect surfaced on the first request that reached it, as a
-`ServletException` wrapping `java.lang.Error: Unresolved compilation problem` — and because the call
-site was on the verify path, it read as **53 errors across five unrelated test classes**, none of which
-had anything to do with the change.
+Measured rather than reasoned about, and **the first diagnosis filed here was wrong** — worth leaving
+that on the record, because the wrong version was plausible and would have produced the wrong fix.
 
-That is the Eclipse compiler's *proceed-on-error* behaviour: ecj emits a class file with the error
-embedded rather than failing the build, so a compile error becomes a runtime error in whatever happens
-to call the broken member. It is a deliberate feature — it makes an IDE usable while you type — and it
-is the wrong default for a build.
+**What was filed:** ecj's proceed-on-error, on the strength of the message
+`java.lang.Error: Unresolved compilation problem`, which is characteristically Eclipse's. Proposed fix:
+turn `proceedOnError` off or move to javac.
 
-It happened **three times in one session**: a `` that was a backspace rather than a word boundary,
-a char literal mangled across a line break, and this missing accessor. Each cost a full suite run to
-localise, because the failure appears wherever the code is *used* rather than where it is written.
+**What is true:** this build already uses plain javac — there is no ecj configuration anywhere. The
+sequence is:
 
-Two candidate fixes and the choice needs one piece of information nobody has:
+1. the **IDE** (Eclipse JDT, via the VS Code Java extension) compiles into `target/classes` on save,
+   and for broken source it emits a class with the error embedded rather than no class at all;
+2. that `.class` is therefore *newer* than the `.java`, so `maven-compiler-plugin`'s staleness check
+   reports **"Nothing to compile - all classes are up to date"** and skips the module;
+3. `mvn compile` exits 0 on source that does not compile;
+4. the embedded `Error` surfaces at runtime, in whatever test calls the broken member — which is how
+   one missing accessor read as 53 errors across five unrelated test classes.
 
-- **Turn `proceedOnError` off** in the compiler plugin configuration. Smallest change; keeps whatever
-  ecj was chosen for.
-- **Move to javac.** Fails on the first error, which is the behaviour a build wants — and gives up
-  whatever the reason for ecj was.
+Reproduced deliberately: a call to a non-existent method gives BUILD SUCCESS on `compile` and
+`cannot find symbol` on `clean compile`. `-Dmaven.compiler.useIncrementalCompilation=false` does **not**
+help, because what short-circuits is the staleness check rather than the incremental mode.
 
-**And that reason is not recorded anywhere**, which is the actual finding: a compiler choice is a
-load-bearing build decision (it changes what "the build passed" means) and it is undocumented — the
-same class of unenforced, unexplained premise SH275 is about, one layer further down. So the first step
-is archaeology, not configuration.
+**The fix is about where the IDE writes, not about the compiler.** Giving the IDE its own output
+directory is the real answer and needs checking against what the extension supports; failing that, the
+rule is that a verification run needs `clean`. The generalisable lesson is smaller and sharper than the
+one filed: **"nothing to compile" is not the same as "nothing is wrong", and a build that can skip work
+can skip the work that would have failed.**
+
+### XVI.35 A stale `target/` misreports the suite in the other direction (SH283)
+
+Found while measuring SH282. `shio-app/target/surefire-reports/` **accumulates** across invocations, so
+reports written by a targeted `-Dtest=X` run sit beside the full run's, and summing the directory counts
+those classes twice. The figure quoted through this whole block drifted up to 977; a clean run says
+**974**.
+
+Nothing was failing and nothing was concealed — the sum was simply not the number of tests. But the
+shape is exactly SH282's: **an artefact left in `target/` by an earlier command silently changes what a
+later command appears to say.** Two of those in one investigation is a pattern rather than a
+coincidence.
+
+Two candidate answers, and they protect different things:
+
+- **Take the count from the run**, by parsing surefire's own end-of-run summary the way a CI reporter
+  does. Correct regardless of what is in the directory, and it is the only version that stays correct
+  when somebody runs a subset deliberately.
+- **Clean the reports directory** before a measuring run. Simpler, and it makes a subset run
+  indistinguishable from a full one, which is a different way to be wrong.
+
+The first is better. It matters more than it sounds because **every test count quoted in a commit
+message in this block came from that sum** — so the number was decoration rather than evidence, which
+is the opposite of what a measured claim is supposed to be.
 
 ---
 
