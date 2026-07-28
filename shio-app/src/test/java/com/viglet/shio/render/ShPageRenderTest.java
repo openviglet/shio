@@ -463,6 +463,82 @@ class ShPageRenderTest {
                 .contains("no Region post");
     }
 
+    @Test
+    @DisplayName("SH297: a layout naming a theme that is not there says so on the page")
+    void aMissingThemeIsMarked() {
+        // The third edge's failure mode, and the one that was silent: themeOf returns null, the
+        // page renders with no stylesheet, and nothing anywhere says why — which reads as a CSS
+        // fault rather than a missing post, so the search starts in the wrong place.
+        String site = "sh297-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh297Page" + UUID.randomUUID().toString().substring(0, 8);
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"SH297_LAYOUT\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+
+            post(owner, root, layoutType, "SH297_LAYOUT", "/l",
+                    json("HTML", "<html><head><style>{{theme.css}}</style></head>"
+                            + "<body><p>{{TEXT}}</p></body></html>",
+                            "THEME", "SH297_NO_SUCH_THEME"),
+                    when);
+            post(owner, root, pageType, "Home", "/", json("TEXT", "body"), when);
+        });
+
+        String html = shPageRenderService.render(site, "/", ShPostState.DRAFT).html();
+
+        assertThat(html)
+                .as("""
+                        marked rather than refused, because a theme degrades the page the way a \
+                        region does (SH281): an unstyled page still serves, which is right for a \
+                        preview — a layout that is absent is the one that 409s (SH280).""")
+                .contains("data-shio-theme-missing")
+                .contains("SH297_NO_SUCH_THEME")
+                .contains("names a Theme that does not exist");
+        assertThat(html)
+                .as("the title travels as an attribute, where jsoup escapes it; the comment is a "
+                        + "constant, because a title is content and `-->` inside one would close "
+                        + "it (SH183's rule, third application)")
+                .doesNotContain("<!-- shio: this layout names a Theme that does not exist; "
+                        + "see data-shio-theme SH297");
+    }
+
+    @Test
+    @DisplayName("SH297: a layout with no theme at all is not marked")
+    void noThemeNamedIsNotADefect() {
+        // "No theme named" and "a theme named that is not there" are different facts, and only the
+        // second is a defect. A layout that brings its own styles is entirely ordinary.
+        String site = "sh297b-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh297bPage" + UUID.randomUUID().toString().substring(0, 8);
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"SH297B_LAYOUT\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+
+            post(owner, root, layoutType, "SH297B_LAYOUT", "/l",
+                    json("HTML", "<html><body><p>{{TEXT}}</p></body></html>"), when);
+            post(owner, root, pageType, "Home", "/", json("TEXT", "body"), when);
+        });
+
+        assertThat(shPageRenderService.render(site, "/", ShPostState.DRAFT).html())
+                .doesNotContain("data-shio-theme-missing");
+    }
+
     /** A post with both rows sharing one id — the shape a published template actually has. */
     private void publishedAndDraft(ShSite site, ShFolder folder, ShPostType type, String title,
                                    String furl, String data, Instant when) {

@@ -98,6 +98,16 @@ public class ShRegionComposer {
      * absent. Reporting "no Region post" for it is not a missing diagnosis, it is a wrong one.</p>
      */
     private static final String ANNOTATION_UNPUBLISHED = "data-shio-region-unpublished";
+
+    /** SH297 — the theme title a layout names, on {@code <body>}, escaped as an attribute value. */
+    private static final String ANNOTATION_THEME = "data-shio-theme";
+
+    /** SH297 — set when that theme does not exist, so the page says what the lint says. */
+    private static final String ANNOTATION_THEME_MISSING = "data-shio-theme-missing";
+
+    /** Constant for the same reason the region markers are: a theme title is content. */
+    private static final String MISSING_THEME_MARKER =
+            " shio: this layout names a Theme that does not exist; see data-shio-theme ";
     private static final String ANNOTATION_FIELD_POST = "data-shio-post";
     private static final String ANNOTATION_PROP = "data-shio-prop";
     private static final String ANNOTATION_POST_TYPE = "data-shio-post-type";
@@ -171,6 +181,18 @@ public class ShRegionComposer {
      */
     public String compose(String layoutHtml, Map<String, ShRenderedRegion> regions,
                           String pagePostId, String pageType, Set<String> unpublishedSlots) {
+        return compose(layoutHtml, regions, pagePostId, pageType, unpublishedSlots, null);
+    }
+
+    /**
+     * @param missingTheme SH297 — the theme title this layout names and the site has not got, so
+     *                     the page carries the same defect the lint reports. Marked rather than
+     *                     refused, because a theme <em>degrades</em> the page (SH281's rule for a
+     *                     region): an unstyled page still serves, and for a preview that is right
+     */
+    public String compose(String layoutHtml, Map<String, ShRenderedRegion> regions,
+                          String pagePostId, String pageType, Set<String> unpublishedSlots,
+                          String missingTheme) {
         if (layoutHtml == null || layoutHtml.isBlank()) {
             return "";
         }
@@ -197,8 +219,30 @@ public class ShRegionComposer {
             filled.add(name);
         }
         annotateEditable(document, pagePostId, pageType);
+        markMissingTheme(document, missingTheme);
         appendRegionScripts(document, regions, filled);
         return document.html();
+    }
+
+    /**
+     * SH297 — says on the page that its layout names a theme that is not there.
+     *
+     * <p>On {@code <body>} and not on a slot, because a theme is not slotted: a layout names it in
+     * a field and decides itself where {@code {{theme.css}}} goes, so there is no element that
+     * stands for it. The name travels as an <b>attribute</b>, where jsoup escapes it, and the
+     * comment is a constant — SH183's rule, because a title is content and {@code -->} inside one
+     * would close the comment and put the rest of the page into the document as markup.</p>
+     *
+     * <p>A distinct attribute from the region markers for SH281's reason: three states that need
+     * three different actions must not share one flag, or the marker diagnoses the wrong thing.</p>
+     */
+    private void markMissingTheme(Document document, String missingTheme) {
+        if (missingTheme == null || missingTheme.isBlank()) {
+            return;
+        }
+        document.body().attr(ANNOTATION_THEME, missingTheme);
+        document.body().attr(ANNOTATION_THEME_MISSING, "true");
+        document.body().prependChild(new org.jsoup.nodes.Comment(MISSING_THEME_MARKER));
     }
 
     /**

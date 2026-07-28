@@ -663,6 +663,50 @@ class ShTemplateGraphTest {
                 .noneMatch(finding -> finding.message().contains(USED_THEME));
     }
 
+    @Test
+    @DisplayName("SH297: a layout naming a theme the site has not got is an error")
+    void verifyReportsAMissingTheme() {
+        String name = "sh297v-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh297vPage" + UUID.randomUUID().toString().substring(0, 8);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(name);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"SH297V_LAYOUT\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+            postType(type, (byte) 0, when);
+            post(owner, root, layoutType, "SH297V_LAYOUT", "/l",
+                    json("HTML", "<body>{{TEXT}}</body>", "THEME", "SH297V_ABSENT"),
+                    when, ShPostState.DRAFT);
+        });
+
+        ShAgentReport report = verifyService.verify(name, "content", 200);
+
+        assertThat(report.findings())
+                .filteredOn(finding -> "missing-theme".equals(finding.rule()))
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.severity())
+                            .as("""
+                                    an error, unlike the unused-* warnings beside it: the layout \
+                                    names a theme and no post of that title exists in either \
+                                    state, which is a claim that turned out false rather than a \
+                                    guess about whether somebody is still working.""")
+                            .isEqualTo("error");
+                    assertThat(finding.address())
+                            .as("reported against the layout, because that is the post to edit — "
+                                    + "the theme does not exist, so it has no address")
+                            .contains("/l");
+                    assertThat(finding.message()).contains("SH297V_ABSENT")
+                            .contains("looks like a CSS fault");
+                });
+        assertThat(report.ok()).isFalse();
+    }
+
     // ── SH262: the blast radius before the edit, on the read ────────────────────────
 
     @Test

@@ -142,8 +142,14 @@ public class ShPageRenderService {
         // curator is editing rather than a mix of what is live and what is not.
         ShPostUnified layout = layoutFor(site, page, state);
 
-        Map<String, Object> model = new LinkedHashMap<>(
-                renderModel.of(page, themeOf(site, layout, state)));
+        ShThemeAssets theme = themeOf(site, layout, state);
+        // SH297 — the layout names a theme and the site has not got one. Computed here rather than
+        // inside themeOf because "no theme named" and "a theme named that is not there" are
+        // different facts and only the second is a defect.
+        String themeTitle = themeTitleOf(layout);
+        String missingTheme = theme == null && themeTitle != null && !themeTitle.isBlank()
+                ? themeTitle : null;
+        Map<String, Object> model = new LinkedHashMap<>(renderModel.of(page, theme));
         // Reserved, like `post`/`site`/`theme`: it lets the helpers pick DRAFT vs PUBLISHED
         // and lets a layout render its own "you are looking at a draft" marker.
         model.put("render", ShStableMap.copyOf(Map.of("state", state.name())));
@@ -162,7 +168,7 @@ public class ShPageRenderService {
                 // needs no `sh-post` to say what it belongs to.
                 composer.compose(layoutHtml, regions, page.getId(),
                         page.getShPostType() == null ? null : page.getShPostType().getName(),
-                        unpublishedSlots),
+                        unpublishedSlots, missingTheme),
                 site.getName(),
                 page.getFurl(),
                 layout.getTitle(),

@@ -45,6 +45,8 @@ import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.post.type.ShSystemPostType;
+import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.render.ShRenderPostTypes;
 import com.viglet.shio.render.ShTemplateGraph;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
@@ -520,6 +522,7 @@ public class ShAgentVerifyService {
         unusedTemplates(check, scan, findings);
         duplicateTemplateTitles(check, scan, findings);
         untitledTemplates(check, scan, findings);
+        missingThemes(check, scan, findings);
         unpublishedTemplates(check, scan, findings);
     }
 
@@ -561,6 +564,46 @@ public class ShAgentVerifyService {
                             + "field, this instance's " + typeName + " predates the title field: "
                             + "run POST /api/v2/render/post-types/reconcile to add it, which "
                             + "changes nothing else."));
+        }
+    }
+
+    /**
+     * SH297 — a layout naming a theme this site does not have.
+     *
+     * <p>An <b>error</b>, unlike the unused-template warnings: the layout says which theme it uses
+     * and there is no such post, in either state, which is a claim that turned out false rather
+     * than a guess about whether somebody is still working. Reported against the <em>layout</em>,
+     * because that is the post to edit — the theme does not exist, so it has no address.</p>
+     *
+     * <p>The render marks the same defect on the page (SH297's other half); this is how somebody
+     * who is not looking at the page finds out.</p>
+     */
+    private void missingThemes(String check, Scan scan, List<Finding> findings) {
+        for (ShSite site : scan.siteById().values()) {
+            Map<String, String> broken = templateGraph.missingThemes(site);
+            if (broken.isEmpty()) {
+                continue;
+            }
+            for (ShPostUnified post : scan.posts()) {
+                String typeName = post.getShPostType() == null
+                        ? null : post.getShPostType().getName();
+                String named = post.getTitle() == null ? null : broken.get(post.getTitle());
+                if (!ShSystemPostType.PAGE_LAYOUT.equals(typeName) || named == null
+                        || post.getShSite() == null
+                        || !site.getId().equals(post.getShSite().getId())) {
+                    continue;
+                }
+                findings.add(Finding.error(check, "missing-theme", address(post),
+                        ShSystemPostTypeAttr.THEME,
+                        "This layout's THEME names '" + named + "', and '" + site.getName()
+                                + "' has no Theme post with that title — so the page renders with "
+                                + "no stylesheet at all, which looks like a CSS fault rather than "
+                                + "a missing post.",
+                        "Create a Theme titled '" + named + "' (post.upsert on "
+                                + "POST /api/v2/agent/batch), correct the THEME field to a theme "
+                                + "that exists, or clear it if this layout brings its own styles. "
+                                + "A theme is addressed by title, and matched exactly."));
+            }
         }
     }
 

@@ -424,6 +424,61 @@ public class ShTemplateGraph {
         return stranded;
     }
 
+    /**
+     * SH297 — layouts naming a theme this site does not have.
+     *
+     * <h2>Why this one is an error where the unused-* rules are warnings</h2>
+     *
+     * <p>The three presentation edges failed in three different ways and only two of them were
+     * decided: an absent layout is a 409 (SH280), an absent region is a marker in the HTML
+     * (SH169/SH281), and an absent <em>theme</em> was silence — {@code themeOf} returns null, the
+     * page renders unstyled, and nothing said why. That is the worst of the three to debug, because
+     * unstyled-but-serving reads as a CSS problem rather than a missing post, so the search starts
+     * in the wrong place.</p>
+     *
+     * <p>Unlike {@code unused-theme}, this is provable: the layout <b>names</b> a theme, and no post
+     * of that title exists in either state. That is a statement about intent that turned out false,
+     * not a guess about whether somebody is still working — SH99's line for what makes {@code ok}
+     * false.</p>
+     *
+     * @return layout title → the theme title it names and this site has not got, sorted
+     */
+    public Map<String, String> missingThemes(ShSite site) {
+        Map<String, String> broken = new TreeMap<>();
+        for (Map.Entry<String, String> binding
+                : new TreeMap<>(renderService.layoutBindings(site)).entrySet()) {
+            Optional<ShPageTemplates> templates =
+                    renderService.templatesFor(site, binding.getKey());
+            if (templates.isEmpty()) {
+                continue;
+            }
+            String themeTitle = renderService.themeTitleOf(templates.get().layout().post());
+            if (themeTitle != null && !themeTitle.isBlank()
+                    && !exists(site, ShSystemPostType.THEME, themeTitle)) {
+                broken.put(binding.getValue(), themeTitle);
+            }
+        }
+        return broken;
+    }
+
+    /**
+     * Whether a render-type post with this title exists in <em>either</em> state.
+     *
+     * <p>Both states deliberately: a theme that exists only as a draft is SH281's
+     * {@code unpublished-template}, a different finding with a different fix. Reporting it here as
+     * well would be one defect in two reports that can disagree.</p>
+     */
+    private boolean exists(ShSite site, String typeName, String title) {
+        for (ShPostUnified post : shPostUnifiedRepository.findByShSite_IdAndStateIn(
+                site.getId(), List.of(ShPostState.DRAFT, ShPostState.PUBLISHED))) {
+            String name = post.getShPostType() == null ? null : post.getShPostType().getName();
+            if (typeName.equals(name) && title.equals(post.getTitle())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Whether a render-type post with this title has a published row. */
     private boolean isPublished(ShSite site, String typeName, String title) {
         for (ShPostUnified post : shPostUnifiedRepository.findByShSite_IdAndStateIn(

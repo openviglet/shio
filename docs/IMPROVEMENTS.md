@@ -2930,31 +2930,6 @@ Three instruments, and they are not equally good:
 
 The likely answer is the first plus writing it down — the other two cost more than the defect does.
 
-### XVI.49 A theme is named by title and nothing refuses a broken name (SH297)
-
-The three presentation edges now behave differently when a name does not resolve, and only two of
-those behaviours were decided:
-
-| edge | names by | when it does not resolve |
-|---|---|---|
-| post-type → layout | `postTypeLayout` | **409** on render (SH280), and a `verify` finding |
-| layout → region | `sh-region` in markup | a **marker** in the HTML (SH169, SH281) |
-| layout → theme | `THEME` field | **silence** |
-
-`themeOf` returns `null` and the page renders unstyled. Nothing in the response, the digest or the
-lint says why — which is precisely the failure mode Block P has spent itself removing, and it is
-worse here than elsewhere because *unstyled but serving* reads as a CSS problem rather than as a
-missing post, so the search starts in the wrong place.
-
-The likely shape is both halves of SH281's answer: a `verify` **error** (a layout naming a theme
-this site does not have is provably wrong, unlike the unused-template warnings, which are about
-intent) and a marker, since a theme *degrades* the page rather than failing it — the same reason a
-missing region is marked and a missing layout refuses.
-
-Worth checking while there: SH277's duplicate-title refusal already covers a second `Theme` with the
-same title, because it keys on the post-type rather than on how the title is used. That is the right
-behaviour and it arrived without anyone deciding it, so it is worth an assertion.
-
 ### XVI.50 An unused-template finding cannot say what happened (SH298)
 
 `unused-region`, `unused-layout` and now `unused-theme` all walk one site's graph, and all report the
@@ -2974,6 +2949,48 @@ in site Y that slots this name"* is available. What is missing is the message.
 
 This is message quality rather than detection, which is exactly the thing that decides whether a
 warning gets acted on or added to a baseline (SH142's file exists because that decision happens).
+
+### XVI.51 A marker is in the DOM and not in the digest (SH299)
+
+`/agent/render` hashes a rendered page's **structure**: headings, landmarks, links, images, word
+count. The three defect markers — `data-shio-region-missing` (SH183), `data-shio-region-unpublished`
+(SH281) and `data-shio-theme-missing` (SH297) — are attributes on elements that outline does not
+describe.
+
+So an agent can close an SH99 loop — write, render, compare the digest, report green — on a page
+that is carrying three markers saying it is broken. That is the same false green SH141 was filed for
+one level out, where a route resolved in the CMS and the front end did not serve it.
+
+**The obvious fix is wrong in an instructive way.** Folding the markers into `digest` would make the
+hash move when a region is *published* — which is a change to what the page contains but not to its
+structure, and SH187's whole point is that two hashes exist so "I restyled it" and "I broke the
+outline" are different answers. A third meaning smuggled into the first hash undoes that.
+
+So the likely shape is a **count beside the digest** — `markers: {missing: 1, unpublished: 0}` —
+which is cheap, is part of no hash, and is exactly what a caller would branch on. Worth deciding at
+the same time whether `verify` should fail when a rendered digest is taken of a page carrying one:
+the lint knows about missing regions and themes through its own queries, and a page that renders a
+marker is the same defect observed from the other end.
+
+### XVI.52 Three markers exist and nothing lists them (SH300)
+
+The rendered DOM carries nine `data-shio-*` attributes: `region`, `region-post`, `region-missing`,
+`region-unpublished`, `theme`, `theme-missing`, `post`, `prop`, `post-type`. They are defined as
+constants in two classes, explained across four changelog entries, and consumed by the Universal
+Editor bridge, by anyone reading preview source, and — if SH299 lands — by the digest.
+
+There is no single place that says what they mean. [SH185's protocol
+document](specs/SH185-universal-editor-protocol.md) covers the editor's four and predates the rest.
+
+This is exactly the gap SH272 closed for helpers, on the other side of the renderer: **the rendered
+DOM is a contract**, it has grown by three attributes in two blocks, and the only way to learn it is
+`git log`. The consumer is different, though — a front-end developer or an editor implementation
+rather than an agent mid-session — so this probably belongs in the protocol document rather than in
+the context pack, which is a budgeted per-session read.
+
+The part worth copying from SH273 is the **test**: a table asserting that the constants in the code
+and the rows in the document agree, because a hand-kept list of what a renderer emits drifts
+silently, and the failure direction is under-documentation nobody notices.
 
 ---
 

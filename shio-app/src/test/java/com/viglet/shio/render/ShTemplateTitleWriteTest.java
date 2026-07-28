@@ -163,6 +163,30 @@ class ShTemplateTitleWriteTest {
                 .isNull();
     }
 
+    @Test
+    @DisplayName("SH297: a Theme's title is an identity too, and that was never decided")
+    void aThemeTitleIsAlsoAnIdentity() {
+        // SH277 keyed the refusal on the post-type rather than on how a title is *used*, so a
+        // second Theme is refused as well — which is right, since SH286 made a theme reachable by
+        // title through a layout's THEME field. It arrived without anyone deciding it, which is
+        // exactly the kind of behaviour worth an assertion before somebody "simplifies" the rule
+        // to the two types that have slots and bindings.
+        String site = newSite();
+        batchService.run(new ShAgentBatch(false, List.of(theme(site, "/t-one", "SKIN"))),
+                false, "tester");
+
+        assertThat(catchThrowable(() -> batchService.run(new ShAgentBatch(false, List.of(
+                theme(site, "/t-two", "SKIN"))), false, "tester")))
+                .isInstanceOf(ShTeachingException.class)
+                .satisfies(failure -> assertThat(((ShTeachingException) failure).problem()
+                        .toProblemDetail().getStatus()).isEqualTo(409));
+    }
+
+    private ShAgentBatch.Op theme(String site, String url, String title) {
+        return new ShAgentBatch.Op("post.upsert", "post:" + site + url,
+                ShSystemPostType.THEME, "/", data(title, "body{color:red}"));
+    }
+
     // --- fixture ---
 
     private String newSite() {
@@ -178,10 +202,14 @@ class ShTemplateTitleWriteTest {
                 ShSystemPostType.REGION, "/", data(title, "<nav>" + title + "</nav>"));
     }
 
-    private JsonNode data(String title, String html) {
+    private JsonNode data(String title, String body) {
+        // The second key is whichever field the type declares — HTML for a Region, CSS for a Theme
+        // — so one helper serves both. An undeclared key would be refused by SH168.
+        String field = body.startsWith("body{")
+                ? ShSystemPostTypeAttr.CSS : ShSystemPostTypeAttr.HTML;
         return objectMapper.valueToTree(Map.of(
                 ShSystemPostTypeAttr.TITLE, title,
-                ShSystemPostTypeAttr.HTML, html));
+                field, body));
     }
 
     private static Throwable catchThrowable(Runnable work) {

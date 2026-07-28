@@ -378,6 +378,13 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   to answer nothing. `unused-theme` joins the two warnings, reporting a theme **no bound layout**
   names — including one named only by an unbound layout, since that layout's own `unused-layout`
   finding beside it is what says where the chain broke.
+  **And a theme it names that does not exist is reported both ways (SH297)** — the page carries
+  `data-shio-theme-missing` on `<body>` and `verify` reports `missing-theme`, an **error** against
+  the *layout* (the theme has no address, since it does not exist). The rule across the three edges
+  is now complete and deliberately uneven: **a missing layout refuses (409), a missing region or
+  theme is marked** — because those degrade while a page with no layout is not a page. Checked in
+  *both* states, so a draft-only theme stays SH281's `unpublished-template` rather than being
+  reported twice.
 - **The pre-edit form of the question is `?include=impact` on `/agent/read` (SH262)** — the same
   graph, asked *before* the write, which is the answer that decides whether to edit at all. A
   projection on the read rather than a `GET /agent/impact`, because a new endpoint with no MCP tool
