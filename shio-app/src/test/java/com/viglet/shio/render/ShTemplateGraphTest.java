@@ -26,6 +26,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.agent.ShAgentChangesService;
+import com.viglet.shio.api.agent.ShAgentProofService;
+import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChanges;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
 import com.viglet.shio.api.agent.verify.ShAgentVerifyService;
@@ -79,6 +81,8 @@ class ShTemplateGraphTest {
     private ShAgentChangesService shAgentChangesService;
     @Autowired
     private ShHistoryRepository shHistoryRepository;
+    @Autowired
+    private ShAgentProofService proofService;
     @Autowired
     private PlatformTransactionManager transactionManager;
 
@@ -294,6 +298,70 @@ class ShTemplateGraphTest {
                 .as("this fixture has no content errors, so an unused template must not fail it — "
                         + "a gate that failed on work in progress is a gate people bypass")
                 .isTrue();
+    }
+
+    // ── SH194: the one-call appearance loop ─────────────────────────────────────────
+
+    @Test
+    @DisplayName("a write to a shared region returns the digests of the pages it affected")
+    void aWriteReturnsTheAffectedPageDigests() {
+        // The loop this closes: upsert the region, render a page, compare. SH157 folded the lint
+        // into the write; this folds the look. What is asserted is the difference between
+        // "touched" and "affected" — the rows come back for the *pages*, not for the region that
+        // was written, and only SH193's graph can make that step.
+        ShAgentChangeSet written = proofService.attach(upsertOf("/r-nav"), false, true);
+
+        assertThat(written.digests()).isNotNull();
+        assertThat(written.digests()).extracting(ShAgentChangeSet.PageDigest::address)
+                .as("""
+                        the three pages of the two post-types whose layouts slot this region — not                         the region's own address, which would answer nothing, because a template                         digested as a page is not a page.""")
+                .containsExactlyInAnyOrder(
+                        "post:" + siteName + "/a1",
+                        "post:" + siteName + "/a2",
+                        "post:" + siteName + "/p1");
+        assertThat(written.digests()).allSatisfy(row -> {
+            assertThat(row.digest()).startsWith("d:");
+            assertThat(row.source()).isEqualTo("rendered");
+        });
+    }
+
+    @Test
+    @DisplayName("a write to an ordinary page returns that page and nothing else")
+    void aPageWriteReturnsItself() {
+        ShAgentChangeSet written = proofService.attach(upsertOf("/a1"), false, true);
+
+        assertThat(written.digests()).extracting(ShAgentChangeSet.PageDigest::address)
+                .as("for a page, touched and affected coincide — the graph step is a no-op here")
+                .containsExactly("post:" + siteName + "/a1");
+    }
+
+    @Test
+    @DisplayName("digests are absent unless asked for, so nobody pays for a render they did not want")
+    void digestsAreOptIn() {
+        assertThat(proofService.attach(upsertOf("/r-nav"), false, false).digests()).isNull();
+    }
+
+    /** One committed `post.upsert` row against an address — the shape a real batch produces. */
+    private ShAgentChangeSet upsertOf(String url) {
+        return new ShAgentChangeSet(false, 1, 1,
+                List.of(new ShAgentChangeSet.Change("post.upsert", "post:" + siteName + url,
+                        ShAgentChangeSet.Change.UPDATE, null, null)));
+    }
+
+    @Test
+    @DisplayName("a dry run returns no digests, because it changed nothing to compare")
+    void aDryRunHasNoDigests() {
+        ShAgentChangeSet planned = proofService.attach(
+                new ShAgentChangeSet(true, 1, 1,
+                        List.of(new ShAgentChangeSet.Change("post.upsert",
+                                "post:" + siteName + "/r-nav",
+                                ShAgentChangeSet.Change.UPDATE, null, null))),
+                false, true);
+
+        assertThat(planned.digests())
+                .as("""
+                        the same rule the lint half follows: a plan created no state, so a digest                         of the current one would be a claim about a future that has not happened.""")
+                .isNull();
     }
 
     // ── fixture ─────────────────────────────────────────────────────────────────────

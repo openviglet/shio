@@ -45,7 +45,7 @@ import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
  */
 @JsonInclude(Include.NON_NULL)
 public record ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change> results,
-                               String confirm, ShAgentReport proof) {
+                               String confirm, ShAgentReport proof, List<PageDigest> digests) {
 
     /**
      * <b>This type cannot represent a truncated change set (SH138).</b>
@@ -77,13 +77,13 @@ public record ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change
 
     /** The four-field form: no destructive rows, so no token to hand back (SH108). */
     public ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change> results) {
-        this(dryRun, ops, changed, results, null, null);
+        this(dryRun, ops, changed, results, null, null, null);
     }
 
     /** Every caller from before SH157 — the SH108 form, with no proof attached. */
     public ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change> results,
                             String confirm) {
-        this(dryRun, ops, changed, results, confirm, null);
+        this(dryRun, ops, changed, results, confirm, null, null);
     }
 
     /**
@@ -94,7 +94,39 @@ public record ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change
      * about to discard, and would make a read failure able to fail a write that succeeded.</p>
      */
     public ShAgentChangeSet withProof(ShAgentReport report) {
-        return new ShAgentChangeSet(dryRun, ops, changed, results, confirm, report);
+        return new ShAgentChangeSet(dryRun, ops, changed, results, confirm, report, digests);
+    }
+
+    /**
+     * SH194 — the rendered digests of the pages this run affected.
+     *
+     * <p>The other half of SH157's argument. That one folded the closing <em>lint</em> into the
+     * write; this folds the closing <em>look</em>, which is the loop an appearance change actually
+     * runs: upsert the layout, render a page, compare. One call instead of three.</p>
+     */
+    public ShAgentChangeSet withDigests(List<PageDigest> pageDigests) {
+        return new ShAgentChangeSet(dryRun, ops, changed, results, confirm, proof,
+                pageDigests == null || pageDigests.isEmpty() ? null : List.copyOf(pageDigests));
+    }
+
+    /**
+     * One affected page's two hashes — and deliberately <b>only</b> the hashes.
+     *
+     * <p>A full SH101 digest per page would be the expensive way to answer a cheap question. What
+     * a write's caller is asking is "did this move", which is a comparison against the value it
+     * already holds, so the outline, the links and the images are all payload it would discard.
+     * The two hashes separately, because SH187 made them separate on purpose: a restyle moves
+     * {@code appearanceDigest} alone and a structural break moves {@code digest}.</p>
+     *
+     * @param address          the page's SH79 address
+     * @param source           {@code rendered}, or {@code content} for a page that cannot be
+     *                         rendered (SH249) — so a caller knows which question was answered
+     * @param digest           the structural hash ({@code d:…})
+     * @param appearanceDigest the appearance hash ({@code a:…}), absent on a fallback
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record PageDigest(String address, String source, String digest,
+                             String appearanceDigest) {
     }
 
     /**

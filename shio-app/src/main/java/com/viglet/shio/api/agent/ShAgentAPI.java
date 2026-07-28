@@ -350,6 +350,11 @@ public class ShAgentAPI {
      *               {@code /agent/verify} call because it is scoped to the change rather than
      *               to the site. Opt-in: a caller that does not want it should not pay for it,
      *               and it is skipped on a {@code dryRun}, where there is nothing to prove
+     * @param digest SH194 — also return the two SH187 hashes for each page this run <b>affected</b>,
+     *               which for a write to a shared layout or region is not the address written but
+     *               every page that renders through it (SH193's graph). It closes the appearance
+     *               loop the way {@code verify} closed the correctness one: upsert, render, compare
+     *               becomes one call. Opt-in and capped, because each row is a real render
      */
     @PostMapping("/batch")
     @Operation(summary = "Apply N addressed content ops atomically; dryRun reports without writing")
@@ -358,11 +363,13 @@ public class ShAgentAPI {
                                                 defaultValue = "false") boolean ids,
                                         @RequestParam(name = "verify", required = false,
                                                 defaultValue = "false") boolean verify,
+                                        @RequestParam(name = "digest", required = false,
+                                                defaultValue = "false") boolean digest,
                                         @RequestParam(name = "format", required = false)
                                         String format,
                                         Principal principal) {
         return rendered(shAgentProofService.attach(
-                shAgentBatchService.run(batch, ids, name(principal)), verify), format);
+                shAgentBatchService.run(batch, ids, name(principal)), verify, digest), format);
     }
 
     /**
@@ -386,6 +393,7 @@ public class ShAgentAPI {
      * @param verify SH157 — see {@link #batch}. Worth more here than anywhere: an apply is
      *               the call that writes a whole section, so the report it would otherwise
      *               take a second round trip to fetch is the one most likely to be needed
+     * @param digest SH194 — see {@link #batch}
      */
     @PostMapping("/apply")
     @Operation(summary = "Apply a desired-state content document atomically")
@@ -394,11 +402,14 @@ public class ShAgentAPI {
                                                 defaultValue = "false") boolean ids,
                                         @RequestParam(name = "verify", required = false,
                                                 defaultValue = "false") boolean verify,
+                                        @RequestParam(name = "digest", required = false,
+                                                defaultValue = "false") boolean digest,
                                         @RequestParam(name = "format", required = false)
                                         String format,
                                         Principal principal) {
         return rendered(shAgentProofService.attach(
-                shAgentDesiredStateService.apply(desired, ids, name(principal)), verify), format);
+                shAgentDesiredStateService.apply(desired, ids, name(principal)), verify, digest),
+                format);
     }
 
     /**

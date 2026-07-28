@@ -1697,18 +1697,27 @@ and proof that a single-app loop can simply do without.
 
 #### XV.12 Appearance needs a before/after and a one-call loop (SH194)
 
-Two costs, both per iteration. **Feedback**: SH187 produces a snapshot, which answers "what does
-this look like"; a loop asks "what did my change do", and that is a diff. ✅ SH102 shipped that
-diff (`shio snapshot`, with a baseline and a `.prev.png`), and it is still scoped *"for the human
-handoff rather than for the agent"* — the framing SH187 corrects, not a missing capability.
-**Round trips**: a layout change today is `post.upsert`, then
-`/agent/render`, then a look. Three calls per tweak, and a tweak is the unit of this work. A write
-that can return the rendered digest of what it just changed collapses that, and it is the same
-idea SH157 identified for closing the tool-call gap — a write that returns its own verification.
-
-The honest limit: a structural digest cannot see most of what "looks wrong" means. Spacing,
-weight, contrast and alignment do not move a hash. That is the argument for the raster half of
-SH102 rather than against the digest, and it is also why XV.13 matters more than it looks.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P, in two halves that turned out to belong to
+> different tasks. The *before/after* came free with SH187's second hash; the *round trip* is
+> `?digest=true`.
+>
+> **The reusable shape is SH157's, and it generalises further than it looked.** "A write returns its
+> own proof" was filed as a lint idea. It is really a rule about *closing turns*: whatever an agent
+> would call next to find out whether its write worked belongs in the write's response. Lint, then
+> digest — and the next instrument that appears should be asked the same question before it gets an
+> endpoint of its own.
+>
+> **"Affected" is not "touched".** For a page they coincide; for a template they do not, and the
+> honest answer needs SH193's graph. Worth noting that this is the first consumer of that graph
+> which uses it to *do* something rather than to report — which is usually the sign a graph was
+> worth building.
+>
+> **Only the hashes.** The caller is asking whether something moved, which is a comparison against a
+> value it already holds; the outline would be payload it discards. That is P3 applied to a response
+> nobody had thought of as a budget.
+>
+> The ceiling is the open question — ten pages is a guess, not a measurement (**SH266**, waiting on
+> **SH264**).
 
 #### XV.13 Most layout changes are tokens, not structure (SH195)
 
@@ -2294,6 +2303,28 @@ question "has this page's structure changed" — a hit means the answer has not 
 that before measuring would be the thing this codebase keeps refusing elsewhere: SH164/SH239 exist
 precisely because an unmeasured claim about cost drifts. So the first deliverable is a benchmark,
 and the second is whatever it argues for.
+
+### XVI.18 A write's digest ceiling is a number nobody chose (SH266)
+
+`?digest=true` renders at most ten pages. Ten because each row is a real render (SH249) and a shared
+region can reach hundreds — so the cap is doing real work — but ten specifically because it reads
+well, which is not a reason.
+
+The honest ceiling depends on two things nobody has established. What a render costs, which is
+**SH264**'s open benchmark. And what the caller is doing: an agent iterating on one layout wants two
+or three, while a migration verifying a section wants a bound it can raise deliberately.
+
+Two shapes, and they are not equivalent:
+
+- **A property** (`shio.agent.render.max-write-digests`). An operator's decision, which fits a cost
+  question — and invisible to the agent unless the manifest reports it, which it then must, because
+  SH121's `limits` section exists precisely so a caller can know its bounds without discovering them.
+- **`?digest=<n>`**, clamped by the server. This is how `limit` already works on every other read
+  here, so it needs no new concept and lets the caller say what it is doing.
+
+The second is probably right. It should not be chosen before SH264 says what one render costs,
+because the interesting case — is fifty renders a reasonable request or an accident — is exactly the
+question the measurement answers.
 
 ---
 

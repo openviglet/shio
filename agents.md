@@ -469,7 +469,17 @@ the CDA + console services (law P10) and holds no business logic of its own.
   commits (inside it, the lint would read state a rollback is about to discard), a **dry run
   gets none** (linting a state the plan has not created reads as "the plan is clean"), and an
   op that wrote no fields has its address named, because a finding against it predates the
-  run. Only `post:` addresses are linted today (SH228). **`?format=terse` since SH157** —
+  run. Only `post:` addresses are linted today (SH228).
+  **`?digest=true` closes the *appearance* loop the same way (SH194)** — the two SH187 hashes for
+  each page the run **affected**, which for a write to a shared layout or region is not the address
+  written but every page that renders through it (SH193's graph; this is that graph's first consumer
+  that uses it to *do* something rather than to report). Only the hashes, never the outline: the
+  caller is asking whether something moved, which is a comparison against a value it already holds.
+  **Capped at ten pages** because each row is a real render (SH249) and the cut is reported as a row
+  — the ceiling is a guess awaiting SH264's measurement (**SH266**). Skipped on a `dryRun` for the
+  same reason `verify` is, and opt-in so nobody pays for a render they did not ask for.
+  `ShAgentProofService.attach` is `@Transactional(readOnly = true)`: it still runs after the write
+  commits, and it needs a session of its own because the graph walks LAZY associations. **`?format=terse` since SH157** —
   the write surface was the one part of this namespace without one. **A `post.upsert` refuses a `data` key the post-type
   does not declare** (SH168) — a 400 carrying the field list and the nearest name, because an
   upsert declares whole state and a typo *replaced* the field it meant. Keys the post already
