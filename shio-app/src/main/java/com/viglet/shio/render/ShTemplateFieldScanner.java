@@ -174,7 +174,12 @@ public final class ShTemplateFieldScanner {
                 continue;
             }
             char kind = body.charAt(0);
-            if (kind == '!' || kind == '>' || kind == '&' || kind == '=') {
+            // No `&` case, and it would be unreachable if there were one: `strip` above has already
+            // removed it, because `{{& TEXT}}` is Handlebars' unescaped-output form — the same
+            // reference as `{{{TEXT}}}`. It used to be skipped here, which dropped a real field
+            // silently, and the fix is in `strip` rather than a deletion here. Found by enumerating
+            // the grammar for SH273, not by anything failing.
+            if (kind == '!' || kind == '>' || kind == '=') {
                 continue;
             }
             if (kind == '/') {
@@ -355,7 +360,9 @@ public final class ShTemplateFieldScanner {
      */
     private static String strip(String body) {
         String out = body;
-        while (out.startsWith("{") || out.startsWith("~")) {
+        // `{` a triple stash, `~` whitespace control, `&` unescaped output. All three change how the
+        // value is emitted and none changes what it resolves to, so all three come off.
+        while (out.startsWith("{") || out.startsWith("~") || out.startsWith("&")) {
             out = out.substring(1).trim();
         }
         while (out.endsWith("}") || out.endsWith("~")) {

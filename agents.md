@@ -335,8 +335,14 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `q="two words"` and get the right answer by accident. Handlebars' `{{~TEXT~}}` form had to be
   stripped explicitly (left alone it silently *drops* the reference), which is the failure direction
   to watch here: an unrecognised construct yields no reference and the lint quietly stops covering it.
-  The scanner is now a hand-written reader of several constructs of Handlebars' grammar with no
-  statement of what it does *not* handle — **SH273**.
+  **What the scanner does with every construct is a table** —
+  `ShTemplateGrammarCoverageTest`, thirty rows, each `REPORTED` / `SKIPPED` / `UNREACHABLE` with a
+  reason, plus a check that every marker the scanner branches on has a row (SH273). It exists because
+  the failure mode here is *silent under-reporting* and writing the table immediately found
+  `{{& TEXT}}` — unescaped output, the same reference as a triple stash — being dropped. **Add a row
+  when you touch the scanner**; `UNREACHABLE` is a claim about another part of the system (three rows
+  rest on SH183's refusing `TemplateLoader`) so it must carry its reason. Whether Handlebars.java's
+  AST would replace all of this is now cheap to check and unchecked — **SH274**.
 - **A layout's and a region's blast radius is computed, never stored (SH193)** — `ShTemplateGraph`
   inverts the presentation edges (layout → the post-types bound to it, region → the layouts that
   slot it → their types → page and published counts). **Computed on demand and not extracted into

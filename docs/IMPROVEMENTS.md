@@ -2453,34 +2453,27 @@ small but non-zero cost paid by every session including the ones that never writ
 
 ### XVI.25 The scanner is a hand-written parser of somebody else's grammar (SH273)
 
-`ShTemplateFieldScanner` now reads mustaches, block nesting, triple stashes, whitespace-control
-markers, positional arguments and — since SH261 — hash pairs, with quote and paren tracking. Every
-addition was justified on its own and defensible in isolation. The total is a small parser of
-Handlebars' syntax, maintained against no specification.
-
-**The risk is specific, not aesthetic: the failure mode is silent under-reporting.** A construct the
-scanner does not recognise yields no reference, so the SH251 lint quietly stops covering it and
-nothing goes red. That is exactly what `{{~TEXT~}}` did — a real reference dropped — and it was
-caught by the scanner's own test noticing an asymmetry, not by anything systematic. There is no way to
-know what else is missing without enumerating the grammar.
-
-Two ways out, and they should be weighed rather than assumed:
-
-- **Use Handlebars.java's AST.** Rejected twice, for a stated reason — it is internal API and its
-  public surface (`Template#collect`) gives no scope information. Worth re-checking against the
-  current version rather than inherited: if the AST is reachable and carries nesting, most of this
-  class disappears.
-- **Make the coverage explicit.** A table of every construct the grammar has and what this does with
-  each — reported, skipped-with-reason, or known-unhandled — asserted by a test. That is SH255's
-  "exact, or declared" applied to a parser instead of a format, and it converts an unbounded risk
-  into a written one for very little work.
-
-The second is cheap and probably first: it is also how the first option gets evaluated honestly,
-since a coverage table makes "does the AST give us more" a question with an answer.
-
----
-
-# Part 2 — pre-existing sections
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth keeping.
+>
+> **The table found a defect the moment it was written**, which is the argument for it in one line:
+> `{{& TEXT}}` — unescaped output, the same reference as a triple stash — was skipped as though it
+> were a directive, so a real field was silently uncovered by the lint. Nothing was failing. The
+> defect was found by *enumerating*, which is exactly what this section predicted and exactly why
+> "we would have noticed" is not a plan.
+>
+> **Three dispositions, not two, and the third carries a reason.** `SKIPPED` means "not a field";
+> `UNREACHABLE` means "could be a field, and something else already stops it mattering" — three rows
+> rest on SH183's refusing `TemplateLoader` making partials fail to compile. That second kind is a
+> claim about another part of the system, so it rots when that part changes and has to be written
+> down rather than assumed. A test enforces that every such row says why.
+>
+> **Verifying the fix corrected the fix.** It was made in two places — the directive skip-list and
+> `strip` — and reverting the first showed it had never mattered, because `strip` runs earlier and
+> the branch was already unreachable. The comment now says so. That is three changes in this stretch
+> whose halves were not both load-bearing, each caught by reverting one and watching the test rather
+> than by reading the code. Cheap habit, high yield.
+>
+> The AST alternative is now cheap to evaluate and still unevaluated — **SH274**.
 
 ## I. Headless foundation — the CDA
 
