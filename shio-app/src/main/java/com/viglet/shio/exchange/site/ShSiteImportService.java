@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -29,6 +30,8 @@ import com.viglet.shio.exchange.ShExchangePackageCodec;
 import com.viglet.shio.exchange.model.ShExchangeFolder;
 import com.viglet.shio.exchange.model.ShExchangePackage;
 import com.viglet.shio.exchange.model.ShExchangePost;
+import com.viglet.shio.api.agent.memory.ShAgentMemoryService;
+import com.viglet.shio.api.agent.memory.dto.ShAgentNote;
 import com.viglet.shio.exchange.model.ShExchangeSite;
 import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -83,6 +86,7 @@ public class ShSiteImportService {
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShPostTypeRepository shPostTypeRepository;
     private final ObjectMapper objectMapper;
+    private final ShAgentMemoryService shAgentMemoryService;
 
     public ShSiteImportService(ShExchangePackageCodec codec,
                                ShPostTypeAdminService shPostTypeAdminService,
@@ -90,7 +94,8 @@ public class ShSiteImportService {
                                ShFolderRepository shFolderRepository,
                                ShPostUnifiedRepository shPostUnifiedRepository,
                                ShPostTypeRepository shPostTypeRepository,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               ShAgentMemoryService shAgentMemoryService) {
         this.codec = codec;
         this.shPostTypeAdminService = shPostTypeAdminService;
         this.shSiteRepository = shSiteRepository;
@@ -98,6 +103,7 @@ public class ShSiteImportService {
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostTypeRepository = shPostTypeRepository;
         this.objectMapper = objectMapper;
+        this.shAgentMemoryService = shAgentMemoryService;
     }
 
     /**
@@ -155,21 +161,33 @@ public class ShSiteImportService {
         return cloneInto(tenantScopedSiteNames(pkg, tenantId), tenantId).postTypesCreated();
     }
 
-    /** Strip sites/folders/posts, keeping only the post-type model. */
+    /** Strip sites/folders/posts — and therefore the notes — keeping only the post-type model. */
     private static ShExchangePackage withoutContent(ShExchangePackage pkg) {
         return new ShExchangePackage(pkg.version(), pkg.exportedAt(), pkg.generator(),
                 List.of(), pkg.postTypes(), List.of(), List.of(), pkg.files());
     }
 
-    /** Append the tenant to each site name so the clone clears the global unique-name index. */
+    /**
+     * Append the tenant to each site name so the clone clears the global unique-name index.
+     *
+     * <p>The notes are renamed with them (SH161). A note is matched to its site by <b>name</b>,
+     * so a rewrite that moved the sites and left the notes behind would file every one of them
+     * against a scope no site in the package answers to — and they would be dropped silently on
+     * import, which is the failure this whole task exists to stop.</p>
+     */
     private static ShExchangePackage tenantScopedSiteNames(ShExchangePackage pkg, String tenantId) {
+        UnaryOperator<String> scoped = name -> name + " (" + tenantId + ")";
         List<ShExchangeSite> sites = pkg.sites().stream()
-                .map(s -> new ShExchangeSite(s.id(), s.name() + " (" + tenantId + ")",
+                .map(s -> new ShExchangeSite(s.id(), scoped.apply(s.name()),
                         s.description(), s.url(), s.furl(), s.postTypeLayout(),
                         s.searchablePostTypes(), s.formSuccess(), s.owner(), s.rootFolderIds()))
                 .toList();
+        List<ShAgentNote> notes = pkg.notes().stream()
+                .map(n -> new ShAgentNote(n.scope() == null ? null : scoped.apply(n.scope()),
+                        n.key(), n.note(), n.author(), n.updated()))
+                .toList();
         return new ShExchangePackage(pkg.version(), pkg.exportedAt(), pkg.generator(),
-                sites, pkg.postTypes(), pkg.folders(), pkg.posts(), pkg.files());
+                sites, pkg.postTypes(), pkg.folders(), pkg.posts(), pkg.files(), notes);
     }
 
     private CloneResult cloneInto(ShExchangePackage pkg, String owner) {
@@ -206,6 +224,11 @@ public class ShSiteImportService {
             site.setDate(now);
             ShSite saved = shSiteRepository.save(site);
             sitesByOldId.put(exSite.id(), saved);
+            // SH161: a note names its site by name, and a clone renames the site — so the
+            // exported scope has to be translated to whatever this instance ended up calling
+            // it. Carried through verbatim, every note would be filed against a site that
+            // does not exist here, which is indistinguishable from losing them.
+            importNotes(pkg, exSite.name(), saved.getName());
             if (firstSite == null) {
                 firstSite = saved;
             }
@@ -247,6 +270,23 @@ public class ShSiteImportService {
         }
 
         return new CloneResult(firstSite, postTypesCreated);
+    }
+
+    /**
+     * File the package's notes for one imported site (SH161).
+     *
+     * <p>Matched on the <em>exported</em> scope and written under the <em>new</em> name. A
+     * pre-SH161 package carries no notes at all and this is a no-op, which is the whole
+     * compatibility story: absent means none.</p>
+     */
+    private void importNotes(ShExchangePackage pkg, String exportedName, String importedName) {
+        if (pkg.notes().isEmpty() || exportedName == null) {
+            return;
+        }
+        List<ShAgentNote> mine = pkg.notes().stream()
+                .filter(note -> exportedName.equalsIgnoreCase(note.scope()))
+                .toList();
+        shAgentMemoryService.importNotes(importedName, mine);
     }
 
     /** Outcome of a clone: the first created site (or {@code null} for a model-only package) and the number of post-types created. */

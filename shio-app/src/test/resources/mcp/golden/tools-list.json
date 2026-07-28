@@ -243,6 +243,27 @@
       "description" : "#string",
       "inputSchema" : {
         "properties" : {
+          "key" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "note" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "site" : {
+            "description" : "#string",
+            "type" : "string"
+          }
+        },
+        "required" : [ "key" ],
+        "type" : "object"
+      },
+      "name" : "shio_remember"
+    }, {
+      "description" : "#string",
+      "inputSchema" : {
+        "properties" : {
           "address" : {
             "description" : "#string",
             "type" : "string"
@@ -317,6 +338,10 @@
               "type" : "object"
             },
             "type" : "array"
+          },
+          "verify" : {
+            "description" : "#string",
+            "type" : "boolean"
           }
         },
         "required" : [ "ops" ],

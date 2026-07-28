@@ -147,7 +147,7 @@ public class ShAgentChangesService {
         return new ShAgentChanges(changes.size(), from == null, since, failures.cursor(),
                 more || failures.more(), changes,
                 failures.rows().isEmpty() ? null : failures.rows(),
-                notes(from == null, scope, ceiling, config, changes, cap, failures));
+                notes(from == null, scope, config, changes, cap, failures));
     }
 
     /**
@@ -321,7 +321,7 @@ public class ShAgentChangesService {
      * What the response cannot show. Every note is here because its absence would make a
      * true statement read as a stronger one (the SH103 rule, and SH138's).
      */
-    private List<String> notes(boolean window, Scope scope, Instant ceiling,
+    private List<String> notes(boolean window, Scope scope,
                               ShAgentProperties.Changes config,
                               List<ShAgentChanges.Change> changes, int cap,
                               Incidents failures) {
@@ -339,9 +339,15 @@ public class ShAgentChangesService {
                     + "since=<cursor> to get everything after this position");
         }
         if (config.getLagMillis() > 0) {
-            notes.add("entries after " + ceiling + " are held back for " + config.getLagMillis()
-                    + "ms so a transaction still committing cannot land behind the cursor; a "
-                    + "write that takes longer than that can still be reported late");
+            // SH159: the note names the lag, not the ceiling instant it produces. The instant
+            // was `now - lag`, recomputed per call, so this line alone made every response
+            // different bytes from the last one and no `changes` read could ever revalidate —
+            // on the endpoint whose whole job is being polled. It also told the caller nothing
+            // it could act on: the actionable number is how far behind the edge of the feed is,
+            // and that is a constant.
+            notes.add("entries younger than " + config.getLagMillis() + "ms are held back so a "
+                    + "transaction still committing cannot land behind the cursor; a write that "
+                    + "takes longer than that can still be reported late");
         }
         if (!scope.unrestricted()) {
             notes.add("scoped to " + scope.siteIds().size() + " readable site(s); entries for "

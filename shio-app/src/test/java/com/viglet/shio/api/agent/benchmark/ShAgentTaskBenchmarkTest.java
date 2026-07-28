@@ -271,9 +271,13 @@ class ShAgentTaskBenchmarkTest {
         String task = "build-marketing-site";
 
         ShAgentBenchmark agent = new ShAgentBenchmark(mockMvc, task, AGENT);
-        agent.call("manifest", authed(get("/api/v2/agent/manifest")));
-        agent.call("context", authed(get("/api/v2/agent/context")
-                .param("site", blankSiteName).param("format", "terse")));
+        // SH157: discovery is one call. This used to be a manifest read followed by a context
+        // read — always, in that order, in every session — and the pack now carries the
+        // capabilities half of the manifest when asked. The endpoint index it leaves behind is
+        // the part an ETag already makes free.
+        agent.call("context + capabilities", authed(get("/api/v2/agent/context")
+                .param("site", blankSiteName).param("format", "terse")
+                .param("include", "all,manifest")));
         agent.call("blueprints", authed(get("/api/v2/agent/blueprints").param("format", "terse")));
         String applyBody = "{\"site\":\"" + blankSiteName + "\",\"params\":{\"brand\":\"Acme\"}}";
         agent.call("apply blueprint",
@@ -318,10 +322,12 @@ class ShAgentTaskBenchmarkTest {
         agent.call("upsert post-type", authed(put("/api/v2/post-type/" + typeName))
                 .contentType(MediaType.APPLICATION_JSON).content(typeBody), typeBody);
         String batch = batchOfPosts(typeName, "agent-" + suffix);
-        agent.call("batch write", authed(post("/api/v2/agent/batch"))
+        // SH157: the write returns its own proof, so the closing verify turn is gone — and the
+        // report is better than the one it replaces, because it is scoped to the ten posts
+        // this call wrote instead of to the whole site.
+        agent.call("batch write + proof", authed(post("/api/v2/agent/batch")
+                        .param("verify", "true").param("format", "terse"))
                 .contentType(MediaType.APPLICATION_JSON).content(batch), batch);
-        agent.call("verify", authed(get("/api/v2/agent/verify")
-                .param("site", siteName).param("format", "terse")));
         record(agent);
 
         ShAgentBenchmark naive = new ShAgentBenchmark(mockMvc, task, NAIVE);
@@ -363,10 +369,12 @@ class ShAgentTaskBenchmarkTest {
         String fix = "{\"ops\":[{\"op\":\"post.upsert\",\"address\":\"" + address
                 + "\",\"data\":{\"headline\":\"Post 3\","
                 + "\"body\":\"<p>Body 3 <a href=\\\"/blog/post-1\\\">more</a></p>\"}}]}";
-        agent.call("fix", authed(post("/api/v2/agent/batch"))
+        // SH157: fix and re-verify in one call. This is the task the round-trip claim was
+        // always weakest on — three of its four calls were framing — and the proof returned
+        // here is exactly the re-verify it replaces, narrowed to the post that was fixed.
+        agent.call("fix + re-verify", authed(post("/api/v2/agent/batch")
+                        .param("verify", "true").param("format", "terse"))
                 .contentType(MediaType.APPLICATION_JSON).content(fix), fix);
-        agent.call("re-verify", authed(get("/api/v2/agent/verify")
-                .param("site", siteName).param("format", "terse")));
         record(agent);
 
         ShAgentBenchmark naive = new ShAgentBenchmark(mockMvc, task, NAIVE);
@@ -416,10 +424,10 @@ class ShAgentTaskBenchmarkTest {
                     .append("\",\"data\":{\"headline\":\"Publicação ").append(i).append("\"}}");
         }
         String batch = ops.append("]}").toString();
-        agent.call("write the translations atomically", authed(post("/api/v2/agent/batch"))
-                .contentType(MediaType.APPLICATION_JSON).content(batch), batch);
-        agent.call("verify", authed(get("/api/v2/agent/verify")
-                .param("site", siteName).param("format", "terse")));
+        // SH157: written and proved in one call (see the other three tasks for the argument).
+        agent.call("write the translations atomically + proof",
+                authed(post("/api/v2/agent/batch").param("verify", "true").param("format", "terse"))
+                        .contentType(MediaType.APPLICATION_JSON).content(batch), batch);
         record(agent);
 
         ShAgentBenchmark naive = new ShAgentBenchmark(mockMvc, task, NAIVE);

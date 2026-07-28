@@ -12,6 +12,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
 
 /**
  * The result of a batch (SH81) or of a plan/apply run (SH82) — one row per op, in
@@ -31,13 +32,20 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * @param results one row per op
  * @param confirm the SH108 confirm token, on a {@code dryRun} that would delete something —
  *                pass it back on the real call. Absent means this run destroys nothing
+ * @param proof   SH157 — the SH99 lint over exactly the addresses this run touched, present
+ *                when the caller asked for it with {@code verify=true}. It removes the
+ *                closing turn of every write-then-check loop, and it is strictly better than
+ *                a separate {@code /agent/verify} call because it is already scoped to the
+ *                change instead of to the site. <b>Read its notes before attributing
+ *                anything</b>: it reports the state those addresses are in <em>now</em>, and
+ *                a finding on a post this run only published or moved was already there
  *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
 @JsonInclude(Include.NON_NULL)
 public record ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change> results,
-                               String confirm) {
+                               String confirm, ShAgentReport proof) {
 
     /**
      * <b>This type cannot represent a truncated change set (SH138).</b>
@@ -69,7 +77,24 @@ public record ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change
 
     /** The four-field form: no destructive rows, so no token to hand back (SH108). */
     public ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change> results) {
-        this(dryRun, ops, changed, results, null);
+        this(dryRun, ops, changed, results, null, null);
+    }
+
+    /** Every caller from before SH157 — the SH108 form, with no proof attached. */
+    public ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change> results,
+                            String confirm) {
+        this(dryRun, ops, changed, results, confirm, null);
+    }
+
+    /**
+     * The same change set carrying its own verification (SH157).
+     *
+     * <p>Attached by the controller after the write transaction has committed, never inside
+     * it: a lint that ran in the writer's transaction would report the state a rollback is
+     * about to discard, and would make a read failure able to fail a write that succeeded.</p>
+     */
+    public ShAgentChangeSet withProof(ShAgentReport report) {
+        return new ShAgentChangeSet(dryRun, ops, changed, results, confirm, report);
     }
 
     /**

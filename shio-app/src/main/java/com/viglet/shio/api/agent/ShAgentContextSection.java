@@ -35,7 +35,29 @@ public enum ShAgentContextSection {
     SITES,
     MODEL,
     SITEMAP,
-    CONVENTIONS;
+    CONVENTIONS,
+    /**
+     * SH157 — the manifest's {@code features}, {@code limits} and {@code startHere}, folded
+     * into this response so a session's two opening reads can be one.
+     *
+     * <p><b>The one section you have to ask for by name.</b> Every other section is about this
+     * instance's content, which is what the pack is; this one is about the protocol, which a
+     * session that has already read the manifest knows. Making it default would charge every
+     * caller for a document most of them already hold, which is the exact cost this whole
+     * block exists to remove.</p>
+     */
+    MANIFEST;
+
+    /**
+     * What a bare {@code /agent/context} returns, and what {@code include=all} means.
+     *
+     * <p>Everything except {@link #MANIFEST} — see its note. "All the sections of the context
+     * pack" and "the context pack plus a different document" are different requests, and only
+     * the first one should be reachable without saying so.</p>
+     */
+    private static Set<ShAgentContextSection> defaults() {
+        return EnumSet.complementOf(EnumSet.of(MANIFEST));
+    }
 
     /** Lower-case names, in declaration order — the {@code allowed} set of the 400. */
     public static List<String> names() {
@@ -49,14 +71,16 @@ public enum ShAgentContextSection {
     /**
      * Parses a comma-separated {@code include=} value.
      *
-     * @param raw the raw parameter; blank or {@code all} means every section
+     * @param raw the raw parameter; blank or {@code all} means every content section.
+     *            {@code all} is also valid <em>inside</em> the list, so {@code all,manifest}
+     *            is "the usual pack plus this instance's capabilities"
      * @return the requested sections
      * @throws ShTeachingException 400 naming the allowed sections and the nearest
      *         match — an unknown section is a typo, and typos should cost one call
      */
     public static Set<ShAgentContextSection> parse(String raw) {
         if (raw == null || raw.isBlank() || "all".equalsIgnoreCase(raw.trim())) {
-            return EnumSet.allOf(ShAgentContextSection.class);
+            return defaults();
         }
         EnumSet<ShAgentContextSection> sections = EnumSet.noneOf(ShAgentContextSection.class);
         for (String token : raw.split(",")) {
@@ -64,9 +88,18 @@ public enum ShAgentContextSection {
             if (name.isEmpty()) {
                 continue;
             }
+            // `all` is a token, not only a whole value (SH157). Once one section had to be
+            // asked for by name, `all,manifest` became the natural way to write "the usual
+            // pack plus capabilities" — and it is the form the manifest's own example shows,
+            // so refusing it would make the endpoint index a set of instructions that do not
+            // work. Anywhere else in the list it still means what it always meant.
+            if ("all".equalsIgnoreCase(name)) {
+                sections.addAll(defaults());
+                continue;
+            }
             sections.add(resolve(name));
         }
-        return sections.isEmpty() ? EnumSet.allOf(ShAgentContextSection.class) : sections;
+        return sections.isEmpty() ? defaults() : sections;
     }
 
     private static ShAgentContextSection resolve(String name) {

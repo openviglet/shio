@@ -13,6 +13,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -73,6 +74,7 @@ public class ShAgentContextService {
     private final ShAgentProperties properties;
     private final ShAgentSiteAccess siteAccess;
     private final ShAgentMemoryService memoryService;
+    private final ShAgentManifestService shAgentManifestService;
 
     public ShAgentContextService(ShFolderRepository shFolderRepository,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
@@ -80,7 +82,8 @@ public class ShAgentContextService {
                                 ShCdaMapper mapper,
                                 ShAgentProperties properties,
                                 ShAgentSiteAccess siteAccess,
-                                ShAgentMemoryService memoryService) {
+                                ShAgentMemoryService memoryService,
+                                ShAgentManifestService shAgentManifestService) {
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostTypeRepository = shPostTypeRepository;
@@ -88,6 +91,7 @@ public class ShAgentContextService {
         this.properties = properties;
         this.siteAccess = siteAccess;
         this.memoryService = memoryService;
+        this.shAgentManifestService = shAgentManifestService;
     }
 
     /** Id-free by default (SH121) — see {@link #context(String, Integer, Integer, String, String, boolean)}. */
@@ -158,7 +162,21 @@ public class ShAgentContextService {
         // what the pack *says*, not how the same statement was measured, and SH116 will
         // hand this value to `If-None-Match`, where two representations must not share
         // an entity tag.
-        return withDigest(pack, digest(ShAgentContextTerse.body(pack)));
+        // SH157 — capabilities ride along when asked for, and they are attached *after* the
+        // digest is taken. The digest answers "has the content changed"; the manifest is not
+        // content, and letting a build number move it would send every agent re-reading every
+        // site's sitemap the first time this instance was upgraded.
+        ShAgentContext digested = withDigest(pack, digest(ShAgentContextTerse.body(pack)));
+        return sections.contains(ShAgentContextSection.MANIFEST)
+                ? digested.withCapabilities(ShAgentManifestSection.project(
+                        shAgentManifestService.manifest(),
+                        // features + limits + startHere. Not the endpoint index: it is ~87% of
+                        // the manifest, it changes only when the build does, and it is exactly
+                        // the thing SH116's ETag makes free to keep. Folding it in here would
+                        // re-send it every time a post changed.
+                        EnumSet.of(ShAgentManifestSection.FEATURES, ShAgentManifestSection.LIMITS,
+                                ShAgentManifestSection.START_HERE)))
+                : digested;
     }
 
     private int resolveBudget(Integer budget) {
@@ -375,10 +393,12 @@ public class ShAgentContextService {
         // The instruction that makes the memory self-sustaining. Without it an agent
         // has no reason to write anything down, and a store nobody writes to is a
         // store that never pays back the row it costs.
+        // SH160 names the MCP tool first now. This line is read by clients that have no
+        // shell, and pointing those at a CLI command was the dead end that task closed.
         conventions.add("This instance remembers. When you work something out that the next "
-                + "session would otherwise re-derive, write it down: "
-                + "`shio remember <key> \"<note>\"` (or PUT /api/v2/agent/memory with "
-                + "{key, note, scope}). Notes come back in this section, attributed.");
+                + "session would otherwise re-derive, write it down: the `shio_remember` tool, "
+                + "`shio remember <key> \"<note>\"`, or PUT /api/v2/agent/memory with "
+                + "{key, note, scope}. Notes come back in this section, attributed.");
         conventions.addAll(remembered(site));
         return conventions;
     }

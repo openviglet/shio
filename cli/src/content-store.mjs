@@ -25,6 +25,7 @@ import {
   serializePost,
 } from "./content-files.mjs";
 import { ASSETS_DIR, assetPathFor } from "./content-assets.mjs";
+import { NOTES_FILE, notesPathFor, parseNotes, serializeNotes } from "./content-notes.mjs";
 import { addressOf, baseEntryFor } from "./content-sync.mjs";
 
 /** Where the projection lives, and where the snapshot that tracks it lives. */
@@ -61,10 +62,14 @@ export async function readBase(ctx, path = BASE_FILE) {
       // every local marker looks locally added. Both are the safe reading: one writes a
       // marker, the other keeps one, and neither deletes anything.
       folders: Array.isArray(parsed.folders) ? parsed.folders : [],
+      // SH161 — site → { key: note }, the last agreed memory. Absent in a pre-SH161
+      // snapshot, which reads as "we have never agreed about any note": every server note
+      // is an addition and every local one is kept. Both are the safe reading.
+      notes: parsed.notes && typeof parsed.notes === "object" ? parsed.notes : {},
     };
   } catch (error) {
     if (error?.code === "ENOENT") {
-      return { version: BASE_VERSION, cursor: null, partial: false, posts: {}, folders: [] };
+      return { version: BASE_VERSION, cursor: null, partial: false, posts: {}, folders: [], notes: {} };
     }
     throw error;
   }
@@ -86,10 +91,23 @@ export async function writeBase(ctx, base, path = BASE_FILE) {
     folders: [...(base.folders ?? [])]
       .map((marker) => ({ site: marker.site, folder: marker.folder }))
       .sort((a, b) => a.site.localeCompare(b.site) || a.folder.localeCompare(b.folder)),
+    notes: sortedNotes(base.notes),
   };
   const target = join(ctx.cwd, path);
   await ctx.fs.mkdir(dirOf(target), { recursive: true });
   await ctx.fs.writeFile(target, `${JSON.stringify(body, null, 2)}\n`, "utf8");
+}
+
+/** Site → key → note, both levels sorted, so the committed diff shows an edit (P5). */
+function sortedNotes(notes) {
+  const out = {};
+  for (const site of Object.keys(notes ?? {}).sort()) {
+    const entries = notes[site] ?? {};
+    const keyed = {};
+    for (const key of Object.keys(entries).sort()) keyed[key] = entries[key];
+    out[site] = keyed;
+  }
+  return out;
 }
 
 /** Every entry as fingerprints, whichever shape it was stored in (SH148). */
@@ -166,6 +184,60 @@ export async function writeFolderMarker(ctx, marker, { dir = FOLDERS_DIR } = {})
   await ctx.fs.mkdir(dirOf(target), { recursive: true });
   await ctx.fs.writeFile(target, serializeFolder(marker), "utf8");
   return relPath;
+}
+
+/**
+ * One site's notes as the file tree holds them (SH161), or `null` when there is no file.
+ *
+ * `null` and `[]` are different answers and both callers depend on the difference: no file
+ * means this tree has never projected the site's memory, so a push must not read it as
+ * "every note was deleted".
+ */
+export async function readLocalNotes(ctx, site, { dir = CONTENT_DIR } = {}) {
+  const relPath = notesPathFor(site);
+  try {
+    const text = await ctx.fs.readFile(join(ctx.cwd, dir, relPath), "utf8");
+    return parseNotes(relPath, text).notes;
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+/** Writes one site's notes file. */
+export async function writeLocalNotes(ctx, { site, notes }, { dir = CONTENT_DIR } = {}) {
+  const relPath = notesPathFor(site);
+  const target = join(ctx.cwd, dir, relPath);
+  await ctx.fs.mkdir(dirOf(target), { recursive: true });
+  await ctx.fs.writeFile(target, serializeNotes({ site, notes }), "utf8");
+  return relPath;
+}
+
+/** Removes a site's notes file; one that is already gone is not an error. */
+export async function deleteLocalNotes(ctx, site, { dir = CONTENT_DIR } = {}) {
+  const relPath = notesPathFor(site);
+  try {
+    await ctx.fs.unlink(join(ctx.cwd, dir, relPath));
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+  return relPath;
+}
+
+/**
+ * One site's notes as the server holds them (SH161) — its own, never the instance-wide ones.
+ *
+ * `GET /agent/memory?site=` returns the site's notes *plus* the instance-wide ones, because
+ * that is the shape a session wants to read. Projecting them all would write another
+ * instance's house rules into this repository and push them back somewhere else, which is the
+ * surprise P7 exists to prevent — so the instance-wide rows are dropped here rather than
+ * asking the server for a second shape.
+ */
+export async function readRemoteNotes(agent, site) {
+  const memory = await agent.memory({ site });
+  return (memory?.notes ?? [])
+    .filter((note) => note.scope && note.scope.toLowerCase() === String(site).toLowerCase())
+    .map((note) => ({ key: note.key, note: note.note, author: note.author ?? null }));
 }
 
 /** Removes one folder marker; a marker that is already gone is not an error. */

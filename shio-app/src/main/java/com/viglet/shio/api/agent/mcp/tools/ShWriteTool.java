@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.ShAgentReadTerse;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
+import com.viglet.shio.api.agent.ShAgentProofService;
 import com.viglet.shio.api.agent.ShAgentSessionContext;
 import com.viglet.shio.api.agent.mcp.ShMcpTool;
 import com.viglet.shio.api.error.ShProblem;
@@ -40,9 +41,12 @@ import tools.jackson.databind.JsonNode;
 public class ShWriteTool implements ShMcpTool {
 
     private final ShAgentBatchService shAgentBatchService;
+    private final ShAgentProofService shAgentProofService;
 
-    public ShWriteTool(ShAgentBatchService shAgentBatchService) {
+    public ShWriteTool(ShAgentBatchService shAgentBatchService,
+                       ShAgentProofService shAgentProofService) {
         this.shAgentBatchService = shAgentBatchService;
+        this.shAgentProofService = shAgentProofService;
     }
 
     @Override
@@ -95,7 +99,11 @@ public class ShWriteTool implements ShMcpTool {
                                         "data", ShMcpTool.object(
                                                 "Field values keyed by post-type field name.")))),
                 "dryRun", ShMcpTool.bool("Report what would change and write nothing."),
-                "confirm", ShMcpTool.string("dryRun's token; required to delete.")),
+                "confirm", ShMcpTool.string("dryRun's token; required to delete."),
+                // SH157: the closing turn of the write-then-check loop, as an argument.
+                // ~15 tokens of schema against a whole round trip, and the report it returns
+                // is scoped to what changed rather than to the site.
+                "verify", ShMcpTool.bool("Lint what this run touched and return the findings.")),
                 List.of("ops"));
     }
 
@@ -114,13 +122,15 @@ public class ShWriteTool implements ShMcpTool {
                 ShMcpArgs.string(op, "to"),
                 ShMcpArgs.node(op, "data"))));
 
-        return ShAgentReadTerse.changes(shAgentBatchService.run(
-                new ShAgentBatch(ShMcpArgs.bool(arguments, "dryRun"), List.copyOf(parsed),
-                        ShMcpArgs.string(arguments, "confirm")),
-                false,
-                // The agent session id travels into the SH51 audit here, which is what
-                // makes "show me what this run changed" answerable later (SH109).
-                ShAgentSessionContext.actor()));
+        return ShAgentReadTerse.changes(shAgentProofService.attach(
+                shAgentBatchService.run(
+                        new ShAgentBatch(ShMcpArgs.bool(arguments, "dryRun"), List.copyOf(parsed),
+                                ShMcpArgs.string(arguments, "confirm")),
+                        false,
+                        // The agent session id travels into the SH51 audit here, which is what
+                        // makes "show me what this run changed" answerable later (SH109).
+                        ShAgentSessionContext.actor()),
+                ShMcpArgs.bool(arguments, "verify")));
     }
 
     /** A 400 that shows the smallest working call rather than restating the schema. */

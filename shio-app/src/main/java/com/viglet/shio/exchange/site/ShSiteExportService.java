@@ -24,6 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.FileSystemUtils;
 
+import com.viglet.shio.api.agent.memory.ShAgentMemoryService;
+import com.viglet.shio.api.agent.memory.dto.ShAgentNote;
 import com.viglet.shio.api.post.type.ShPostTypeAdminMapper;
 import com.viglet.shio.api.post.type.ShPostTypeAdminService;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
@@ -79,6 +81,7 @@ public class ShSiteExportService {
     private final ShPostTypeAdminService shPostTypeAdminService;
     private final ShExchangePackageCodec codec;
     private final ObjectMapper objectMapper;
+    private final ShAgentMemoryService shAgentMemoryService;
 
     public ShSiteExportService(ShSiteRepository shSiteRepository,
                                ShFolderRepository shFolderRepository,
@@ -86,7 +89,8 @@ public class ShSiteExportService {
                                ShPostTypeAdminMapper postTypeMapper,
                                ShPostTypeAdminService shPostTypeAdminService,
                                ShExchangePackageCodec codec,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               ShAgentMemoryService shAgentMemoryService) {
         this.shSiteRepository = shSiteRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -94,6 +98,7 @@ public class ShSiteExportService {
         this.shPostTypeAdminService = shPostTypeAdminService;
         this.codec = codec;
         this.objectMapper = objectMapper;
+        this.shAgentMemoryService = shAgentMemoryService;
     }
 
     /** Build the export archive for a site, or empty if the site does not exist. */
@@ -136,7 +141,10 @@ public class ShSiteExportService {
 
         return new ShExchangePackage(ShExchangePackage.CURRENT_VERSION, Instant.now().toString(),
                 "shio-export", List.of(toExchangeSite(site, roots)), List.copyOf(postTypes.values()),
-                exFolders, posts, List.of());
+                exFolders, posts, List.of(),
+                // SH161: what earlier sessions worked out about this site travels with it.
+                // Site-scoped only — see ShAgentMemoryService#scopedNotes.
+                shAgentMemoryService.scopedNotes(site.getName()));
     }
 
     /**
@@ -152,12 +160,15 @@ public class ShSiteExportService {
         List<ShExchangeFolder> exFolders = new ArrayList<>();
         List<ShExchangePost> exPosts = new ArrayList<>();
 
+        List<ShAgentNote> exNotes = new ArrayList<>();
+
         for (ShSite site : shSiteRepository.findAll()) {
             Set<ShFolder> roots = shFolderRepository.findByShSiteAndRootFolder(site, (byte) 1);
             List<ShFolder> folders = new ArrayList<>();
             roots.forEach(root -> collectFolders(root, folders));
 
             exSites.add(toExchangeSite(site, roots));
+            exNotes.addAll(shAgentMemoryService.scopedNotes(site.getName()));
             folders.forEach(folder -> exFolders.add(toExchangeFolder(folder)));
             for (ShFolder folder : folders) {
                 for (ShPostUnified row : shPostUnifiedRepository.findByShFolderAndStateIn(folder, ALL_STATES)) {
@@ -168,7 +179,7 @@ public class ShSiteExportService {
 
         return new ShExchangePackage(ShExchangePackage.CURRENT_VERSION, Instant.now().toString(),
                 "shio-tenant-export", exSites, shPostTypeAdminService.list(),
-                exFolders, exPosts, List.of());
+                exFolders, exPosts, List.of(), exNotes);
     }
 
     private ShExchangeSite toExchangeSite(ShSite site, Set<ShFolder> roots) {

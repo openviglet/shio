@@ -11,6 +11,7 @@ package com.viglet.shio.exchange.model;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.viglet.shio.api.agent.memory.dto.ShAgentNote;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 
 /**
@@ -29,8 +30,18 @@ import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
  *       {@code data} JSON document (see {@link ShExchangePost}), <em>not</em> the
  *       old split-model flat attribute map;</li>
  *   <li>post-types reuse the canonical lossless {@link ShPostTypeDef} (SH16) so
- *       the content model has a single interchange shape.</li>
+ *       the content model has a single interchange shape;</li>
+ *   <li>the site's SH114 memory notes travel as {@link ShAgentNote}s (SH161), for
+ *       the same reason and reusing the same shape.</li>
  * </ul>
+ *
+ * <p><b>Why notes are in here (SH161).</b> A site's notes are what earlier sessions
+ * worked out about it — "this site's blog uses Article, not Post" — and until they
+ * travelled, exporting a site silently dropped all of it. The compounding saving the
+ * memory exists to produce only compounds if it survives a move. Only the
+ * <em>site-scoped</em> notes travel: the instance-wide ones describe the installation
+ * rather than the site, and importing another instance's house rules would be a
+ * surprise (P7).</p>
  *
  * <p>A {@code version} stamps the format so future readers can migrate older
  * packages; it defaults to {@link #CURRENT_VERSION} when absent. Static binary
@@ -49,7 +60,20 @@ public record ShExchangePackage(
         List<ShPostTypeDef> postTypes,
         List<ShExchangeFolder> folders,
         List<ShExchangePost> posts,
-        List<ShExchangeFile> files) {
+        List<ShExchangeFile> files,
+        List<ShAgentNote> notes) {
+
+    /**
+     * Every reader and writer from before SH161. Kept because a package is a format other
+     * code constructs, and a new component on a record is a compile break at every call site
+     * — including the ones that have nothing to say about memory.
+     */
+    public ShExchangePackage(int version, String exportedAt, String generator,
+                             List<ShExchangeSite> sites, List<ShPostTypeDef> postTypes,
+                             List<ShExchangeFolder> folders, List<ShExchangePost> posts,
+                             List<ShExchangeFile> files) {
+        this(version, exportedAt, generator, sites, postTypes, folders, posts, files, List.of());
+    }
 
     /** Current package format version. */
     public static final int CURRENT_VERSION = 1;
@@ -61,5 +85,8 @@ public record ShExchangePackage(
         folders = folders == null ? List.of() : List.copyOf(folders);
         posts = posts == null ? List.of() : List.copyOf(posts);
         files = files == null ? List.of() : List.copyOf(files);
+        // A package written before SH161 has no `notes` key at all, which is why absent has to
+        // mean "none" rather than being a parse failure — an older export must still import.
+        notes = notes == null ? List.of() : List.copyOf(notes);
     }
 }

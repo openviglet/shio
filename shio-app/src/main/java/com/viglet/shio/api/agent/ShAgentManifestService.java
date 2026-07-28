@@ -175,6 +175,17 @@ public class ShAgentManifestService {
         features.put("instanceMemory", true);
         features.put("conditionalReads", true);
         features.put("agentsMd", true);
+        // SH174: this document can be asked for in pieces and in the terse encoding. It is
+        // advertised because the saving is unreachable by guessing — a capability check that
+        // does not know `?include=features,limits` exists pays the full endpoint index to read
+        // one boolean, on the first call of every session, where no ETag can help.
+        features.put("manifestProjection", true);
+        // SH157, the two halves of the round-trip claim. Both are opt-in and both are
+        // unreachable by guessing, which is exactly what a capability flag is for:
+        // `?include=manifest` on the context pack folds a session's two opening reads into
+        // one, and `?verify=true` on a write folds the closing one in.
+        features.put("contextCapabilities", true);
+        features.put("writeProof", true);
         // Block L: what bounds this caller. Reported here because all three change what a
         // write does, and a caller that has to discover them by being refused pays for the
         // discovery twice — once in the failed call and once in the confusion.
@@ -217,13 +228,17 @@ public class ShAgentManifestService {
     private List<ShAgentEndpoint> endpoints() {
         return List.of(
                 new ShAgentEndpoint("GET", "/agent/manifest",
-                        "This document: version, capabilities, limits, endpoint index.",
-                        "console", "GET /api/v2/agent/manifest"),
+                        "This document: version, capabilities, limits, endpoint index. "
+                                + "include=features,limits drops the index when you only need a "
+                                + "capability check; format=terse compacts what is left.",
+                        "console", "GET /api/v2/agent/manifest?include=features,limits"),
                 new ShAgentEndpoint("GET", "/agent/context",
                         "Start here: content model + sitemap by path + conventions in one call. "
-                                + "Add format=terse for the compact encoding, and re-check `digest` "
-                                + "next session instead of re-reading.",
-                        "console", "GET /api/v2/agent/context?format=terse"),
+                                + "include=manifest adds this instance's capabilities so you need "
+                                + "no separate manifest read; format=terse compacts it; re-check "
+                                + "`digest` next session instead of re-reading.",
+                        "console",
+                        "GET /api/v2/agent/context?format=terse&include=all,manifest"),
                 new ShAgentEndpoint("GET", "/agent/resolve",
                         "Turn a content address into an object id — post:<site>/<url>, "
                                 + "folder:<site>/<path>, site:<name> or id:<uuid>. Build the "
@@ -237,7 +252,7 @@ public class ShAgentManifestService {
                                 + "relocate with post.move, a section with folder.move — "
                                 + "re-addressing an upsert creates a second post, and deleting the "
                                 + "old folder takes everything inside it.",
-                        "console", "POST /api/v2/agent/batch"),
+                        "console", "POST /api/v2/agent/batch?verify=true"),
                 new ShAgentEndpoint("POST", "/agent/plan",
                         "Diff a desired-state content document against this instance. "
                                 + "Writes nothing; changed=0 means no drift.",

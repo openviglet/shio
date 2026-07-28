@@ -45,6 +45,13 @@ import com.viglet.shio.api.cda.dto.ShCdaSchemaField;
  * @param digest      stable fingerprint of the content of this pack, computed over
  *                    the canonical terse rendering, so it is identical for the JSON
  *                    and terse forms. An agent stores it and re-reads only on change
+ * @param capabilities SH157 — the manifest's {@code features}, {@code limits} and
+ *                    {@code startHere}, carried here when {@code include=manifest} names
+ *                    them, so a session's two opening reads can be one. <b>Absent unless
+ *                    asked for</b>: every session that already knows this instance would
+ *                    otherwise pay for it again, and the endpoint index — the expensive part
+ *                    — deliberately stays on {@code /agent/manifest}, where it is worth an
+ *                    ETag of its own because it changes only when the build does
  * @param budget      what this response cost and whether anything was cut
  *
  * @author Alexandre Oliveira
@@ -59,8 +66,22 @@ public record ShAgentContext(
         List<Type> model,
         List<Node> sitemap,
         List<String> conventions,
+        ShAgentManifest capabilities,
         String digest,
         Budget budget) {
+
+    /** Every caller from before SH157, which is every one that does not ask for capabilities. */
+    public ShAgentContext(int protocol, String manifest, Instance instance, List<Site> sites,
+                          List<Type> model, List<Node> sitemap, List<String> conventions,
+                          String digest, Budget budget) {
+        this(protocol, manifest, instance, sites, model, sitemap, conventions, null, digest, budget);
+    }
+
+    /** The same pack carrying capabilities — the one thing SH157 adds to this shape. */
+    public ShAgentContext withCapabilities(ShAgentManifest value) {
+        return new ShAgentContext(protocol, manifest, instance, sites, model, sitemap,
+                conventions, value, digest, budget);
+    }
 
     /**
      * @param product product name

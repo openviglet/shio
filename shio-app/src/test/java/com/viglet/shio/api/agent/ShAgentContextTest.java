@@ -346,8 +346,13 @@ class ShAgentContextTest {
                     var properties = ((ShAgentContextSection.UnknownSectionException) thrown)
                             .toProblemDetail().getProperties();
                     assertThat(properties).containsEntry("didYouMean", "sitemap");
+                    // `manifest` (SH157) is in the allowed set even though it is not in the
+                    // default one. A caller reading this error is asking what it may name,
+                    // and the section it has to name explicitly is the one it most needs
+                    // told about.
                     assertThat(properties.get("allowed")).isEqualTo(
-                            List.of("instance", "sites", "model", "sitemap", "conventions"));
+                            List.of("instance", "sites", "model", "sitemap", "conventions",
+                                    "manifest"));
                 });
     }
 

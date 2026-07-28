@@ -45,9 +45,18 @@ public final class ShAgentContextTerse {
         // utility
     }
 
-    /** The full response: the canonical body plus the digest and budget lines. */
+    /**
+     * The full response: the canonical body plus the capabilities, digest and budget lines.
+     *
+     * <p>SH157's capabilities sit here rather than in {@link #body(ShAgentContext)} for the
+     * same reason the digest and budget do — the digest is taken over the body, and a build
+     * number moving it would send every agent re-reading every sitemap after an upgrade.</p>
+     */
     public static String render(ShAgentContext pack) {
         StringBuilder out = new StringBuilder(body(pack));
+        if (pack.capabilities() != null) {
+            out.append(ShAgentManifestTerse.render(pack.capabilities()));
+        }
         out.append(ShTerse.line("digest").word(pack.digest()).build());
         ShAgentContext.Budget budget = pack.budget();
         if (budget != null) {

@@ -226,15 +226,37 @@ sections and posts together.
 The namespace shaped for a coding agent rather than a browser. It is a **shape over**
 the CDA + console services (law P10) and holds no business logic of its own.
 - `GET /agent/manifest` — capabilities, limits, a curated endpoint index. **Read this
-  first**; unshipped capabilities are reported `false`, never omitted.
+  first**; unshipped capabilities are reported `false`, never omitted. **Projectable since
+  SH174**: `?include=identity,features,limits,endpoints,start-here` and `?format=json|terse`,
+  with an unknown `format` a teaching 400 the way `/agent/context` has always answered.
+  `include=features,limits` is the capability check and measures **298** against the full
+  document's **2343** — the read this exists for, since no `304` helps on a session's first
+  call. `format=terse` saves only 11%, and that is the finding rather than a defect: this
+  document's weight is prose (a purpose sentence and a runnable example, twenty-nine times),
+  kept verbatim because an abbreviated example is a call the instance would reject (SH230).
 - `GET /agent/context` — model + sitemap + conventions in one call. `?format=terse`,
   `?include=`, `?budget=`, `?from=`, `?ids=true` (rows are **id-free by default**, SH121).
-  The `digest` is how a later session skips re-reading.
+  The `digest` is how a later session skips re-reading. **`include=all,manifest` folds the
+  manifest read into this one (SH157)** — it adds `capabilities` (features, limits,
+  startHere) and deliberately *not* the endpoint index, which is ~87% of the manifest,
+  changes only when the build does, and is what SH116's ETag already makes free. `manifest`
+  is **the one section you must name**: `include=all` still means all the sections of the
+  *pack*, so no session pays for a document it already holds. Capabilities are attached
+  **after the digest is taken** — a build number must not move a content digest, or an
+  upgrade sends every agent re-reading every sitemap.
 - `GET /agent/resolve?address=…` — an address → an object id, for id-keyed endpoints.
 - `POST /agent/batch` — **writes**: N addressed ops (`site.upsert`, `folder.upsert`,
   `folder.move`, `post.upsert`, `post.move`, `post.publish`, `post.unpublish`, `folder.delete`,
   `post.delete`) in one transaction; `{"dryRun":true}` reports without writing, and a batch that deletes needs
-  SH108's `confirm` from its own dry run. **A `post.upsert` refuses a `data` key the post-type
+  SH108's `confirm` from its own dry run. **`?verify=true` returns the run's own proof
+  (SH157)** — the SH99 lint over exactly the addresses it touched, which removes the closing
+  turn of every write-then-check loop and is better than a separate `/agent/verify` because
+  it is scoped to the change rather than the site. It runs *after* the write transaction
+  commits (inside it, the lint would read state a rollback is about to discard), a **dry run
+  gets none** (linting a state the plan has not created reads as "the plan is clean"), and an
+  op that wrote no fields has its address named, because a finding against it predates the
+  run. Only `post:` addresses are linted today (SH228). **`?format=terse` since SH157** —
+  the write surface was the one part of this namespace without one. **A `post.upsert` refuses a `data` key the post-type
   does not declare** (SH168) — a 400 carrying the field list and the nearest name, because an
   upsert declares whole state and a typo *replaced* the field it meant. Keys the post already
   holds are grandfathered (so a post carrying one stays fixable) and the `unknown-field` lint
@@ -394,9 +416,20 @@ the CDA + console services (law P10) and holds no business logic of its own.
   `(tenant, scope, key)`, so re-stating a convention rewrites one row; `scope` is a site name
   or `""` for the whole instance (empty, never `NULL` — a unique index does not treat `NULL`s
   as equal). Deliberately **not** content: read on the hot path, never delivered, and it must
-  survive an SH82 `prune`. **No MCP tool** — a tool schema is paid every turn and a coding
-  agent has a shell, so the write path is `shio remember`; SH160 is the open question for a
-  client without one, and SH161 is that notes do not yet travel with an exported site.
+  survive an SH82 `prune`. Written three ways: the **`shio_remember` MCP tool** (SH160),
+  `shio remember`, or the endpoint. SH114 argued against the tool and was right about Claude
+  Code — a schema is paid every turn and a coding agent has a shell — and wrong about a pure
+  MCP client, which could read the memory and never write one; P1 wins because the memory is
+  the only mechanism that makes session N+1 cheaper than N, and a store nobody can write to
+  stays empty. **A site's notes travel with it (SH161)**: the SH68 package carries them and
+  re-scopes them on import (a note names its site by name, and an import renames the site),
+  and `shio pull/push --content` projects them to `shio/content/<site>/.memory.yaml` with the
+  same three-way merge the content tree uses. Only the *site-scoped* notes — an instance-wide
+  note describes the installation, and importing another instance's house rules is a P7
+  surprise (SH231 revisits that for a whole-instance move). Two rules on the file side: no
+  file at all means "never projected", never "forget everything", so a first push from a
+  fresh clone cannot wipe a site's memory; and notes are applied **outside** the desired-state
+  document, because a note is not content and `--prune` must never reach it.
 
 **Byte stability (SH136).** `Map.copyOf`/`Set.copyOf` iterate in an order derived from a salt
 set **once per JVM**, so they are a silent re-ordering wearing a defensive copy's clothes: the
@@ -414,7 +447,13 @@ until order-independence became assertable.
 `X-Shio-Est-Tokens`. A tag names a **representation**, not a state — the SH77 digest covers
 content only, so JSON and terse share it and every tag mixes in `format` + `ids`. Responses
 say `Cache-Control: no-cache` (store it, ask first), never a freshness lifetime. The rest of
-the surface is still unconditional (SH159).
+`find`, `read`, `changes` and the SH16 post-type listing joined them in **SH159**, tagged
+over the **rendered body** rather than a content digest — those four have no digest of their
+own, and four hand-derived ones would be four things that can quietly disagree with what was
+sent. Hashing the bytes also gets the representation rule for free: a two-field projection
+and a whole document are different bytes. `changes` revalidates in **cursor** mode and not in
+window mode, which is correct — without `since`, its own cursor is the moving edge of the
+feed (SH232).
 
 **`?format=` on `/agent/context` has three values (SH78, SH115):** `json`, `terse`, and
 `agents-md` — the same pack rendered as project agent instructions, which is what
@@ -436,24 +475,38 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
 `claude mcp add shio -- shio mcp`.
 - **Tools** (`ShMcpTool` beans, auto-registered): `shio_context` · `shio_find` ·
   `shio_read` · `shio_write` · `shio_apply` · `shio_publish` · `shio_assets` ·
-  `shio_changes` · `shio_verify` · `shio_digest`. Every tool is a *shape* over a REST
-  surface — if a tool needs new logic, the logic goes on the REST side first.
+  `shio_changes` · `shio_verify` · `shio_digest` · `shio_remember`. Every tool is a *shape*
+  over a REST surface — if a tool needs new logic, the logic goes on the REST side first.
 - **Resources**: `shio://manifest` · `shio://blueprints` · `shio://context` ·
   `shio://schema/{postType}`.
 - `shio_apply` covers **two** verbs on purpose: a desired-state document, or a blueprint
   (`blueprint` + `params`). "Converge to this document" and "converge to this package" are
-  one decision with two inputs, and an eleventh tool would cost more schema per turn than
+  one decision with two inputs, and a separate tool would cost more schema per turn than
   the two arguments do — see the budget note below.
+- `shio_remember` (SH160) is the **eleventh** tool, and the one place P1 was allowed to
+  outrank P3. SH114 argued against it correctly for Claude Code — a schema is paid every
+  turn and a coding agent has a shell — and wrongly for a pure MCP client, which could read
+  the memory and never write one, so `instanceMemory: true` was a half-truth for exactly the
+  clients the manifest informs. It wins because the memory is the only mechanism that makes
+  session N+1 cheaper than N and is write-once-read-many: a store nobody can write to stays
+  empty. **Forgetting is an empty note, not a twelfth tool.** A `remember` property on
+  `shio_write` was rejected as a cheaper shape that does not deliver the capability — most
+  conclusions worth keeping are reached while *reading*, with no write to hang them on.
 - **Prompts**: `new-site` · `add-section` · `translate-site` · `audit-content`.
 - **Error routing matters**: a fixable failure (bad address, unknown post-type) is a
   tool *result* with `isError:true` so the model reads the SH80 `fix`; a JSON-RPC
   `error` is only for an unusable message (unknown method/tool), which the client
   swallows. Getting this backwards throws away the teaching error.
 - A tool-count test fails the build past 12 — tool schemas are context paid every turn.
-  The real ceilings are `mcp.tools.list.total` (2160) and `mcp.tools.list.max-per-tool`
-  (460) in `src/test/resources/token-budgets.properties`, both measured; raising one is
-  allowed and must be justified in the commit. `shio_apply` is the tool to watch — at 437
-  it is the largest, because it carries the blueprint verb as well as the document one.
+  The real ceilings are `mcp.tools.list.total` (**2360**, raised by SH160 for the eleventh
+  tool, measured 2327) and `mcp.tools.list.max-per-tool` (460) in
+  `src/test/resources/token-budgets.properties`, both measured; raising one is allowed and
+  must be justified in the commit — and the description is trimmed *first*, which is what
+  took `shio_remember` from 167 to 128 before the ceiling moved. **`shio_apply` is the tool
+  to watch and it is now the constraint**: at **457** against 460 it is the largest, because
+  it carries the blueprint verb as well as the document one, and it is why SH157's `verify`
+  argument could go on `shio_write` and not on it (SH227). The answer there is a trim, not a
+  raise.
   `ShMcpWireConformanceTest` pins `tools/list` against a golden — regenerate with
   `-Dshio.mcp.golden.update=true` and review the diff when the surface really changes.
 
@@ -1184,11 +1237,17 @@ own sub-ranges; superseded ids are retired, never reused). The `→ §x.y` point
 line is its IMPROVEMENTS.md design section. Per-task implementable specs live in
 `docs/specs/SH<n>-<slug>.md`; the product concept is `docs/specs/SH74-agent-native-cms.md`.
 Blocks **H–L, M, N and O** have shipped (Block L except **SH110**, still blocked on SH45);
-the live backlog is the per-block follow-ups and Blocks A–G's remaining SH44–SH47 tenant work. Block N's
-result is worth knowing before you quote a number: aligning the console reads on the CDA
-shapes made the *baseline* lean, so the SH112 token ratios fell from 3.8×–23.3× to
-2.6×–12.6× with the agent path unchanged — and to **2.1×–12.1×** once Block O's SH176 did the
-same to the post read (SH164).
+the live backlog is the per-block follow-ups and Blocks A–G's remaining SH44–SH47 tenant work.
+
+**Before you quote a benchmark number, know which way it moved and why.** Blocks N and O both
+made the *baseline* lean rather than the agent path fast — aligning the console reads on the
+CDA shapes (SH117/SH120) and then the post read (SH176) — so the SH112 token ratios fell from
+3.8×–23.3× to 2.6×–12.6× and then 2.1×–12.1× with the agent path untouched. That is the
+product improving and the claim shrinking, three blocks running. **SH157 is the first change
+that moved a ratio the other way**, by folding discovery into one read and proof into the
+write: every canonical task lost a call. The current reading is **tokens 2.8×–10.5×, tool
+calls 2.3×–3.8×** — ≈10× met on one task of four, ≈6× met nowhere. SH164 still owns
+attributing what is left to the sources that actually produce it.
 
 **The cross-file update rules — follow these every time:**
 

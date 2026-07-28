@@ -11,6 +11,7 @@ package com.viglet.shio.api.agent;
 import java.util.List;
 
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
+import com.viglet.shio.api.agent.verify.ShAgentVerifyTerse;
 import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.api.agent.dto.ShAgentFound;
 
@@ -106,6 +107,15 @@ public final class ShAgentReadTerse {
                     .attr("id", change.id())
                     .attr("note", change.detail())
                     .build());
+        }
+        if (result.confirm() != null) {
+            out.append(ShTerse.line("confirm").word(result.confirm()).build());
+        }
+        // SH157 — the proof, in the encoding the verify report already has. Reusing that
+        // renderer rather than inventing lines here is what keeps a finding from reading one
+        // way after a write and another way after `shio_verify` (P10).
+        if (result.proof() != null) {
+            out.append(ShAgentVerifyTerse.report(result.proof()));
         }
         return out.toString();
     }

@@ -35,7 +35,9 @@ import {
   readBase,
   readLocal,
   readLocalFolders,
+  readLocalNotes,
   readRemote,
+  readRemoteNotes,
   readRemoteAssets,
   sitesOf,
   writeBase,
@@ -47,6 +49,7 @@ import {
   planPushContent,
   splitDocuments,
 } from "../content-sync.mjs";
+import { reconcileNotes } from "../content-notes.mjs";
 
 export async function run(flags, _positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
@@ -194,14 +197,40 @@ export async function run(flags, _positionals, ctx) {
     );
   }
 
+  // SH161 — the site memory, applied after the content and outside the document.
+  //
+  // Deliberately *not* compiled into the desired-state document, and this is the load-bearing
+  // part: a note is not content. It is read on the hot path, never delivered, and it must
+  // survive an SH82 `prune` — folding it into the document would make it exactly the thing
+  // prune deletes when a tree stops mentioning it. So notes travel as their own idempotent
+  // upserts, and `--check` reports them without writing, the way a plan does.
+  const notes = await pushNotes(client, ctx, {
+    base: base.notes ?? {},
+    sites: sitesOf(local, markers),
+    dir,
+    planOnly,
+  });
+
   const changed = results.reduce((total, result) => total + (result.changed ?? 0), 0);
   const ops = results.reduce((total, result) => total + (result.ops ?? 0), 0);
   ctx.stdout.write(
     render({ documents, results, changed, ops, behind, removed, moves, planOnly, prune }),
   );
+  if (notes.written.length || notes.forgotten.length) {
+    ctx.stdout.write(
+      `  memory: ${notes.written.length} note(s) ${planOnly ? "would be written" : "written"}` +
+        (notes.forgotten.length
+          ? `, ${notes.forgotten.length} ${planOnly ? "would be forgotten" : "forgotten"}`
+          : "") +
+        "\n",
+    );
+  }
 
   if (flags.check) {
-    if (changed === 0) {
+    // A note that differs is drift too. Reporting `in sync` while the file says one thing and
+    // the instance another would make the gate quietly weaker than the thing it guards.
+    const noteDrift = notes.written.length + notes.forgotten.length;
+    if (changed === 0 && noteDrift === 0) {
       ctx.stdout.write("shio push --content --check: in sync — the file tree matches the server.\n");
       return { changed, ops, check: true, drift: false, exitCode: 0 };
     }
@@ -233,11 +262,12 @@ export async function run(flags, _positionals, ctx) {
         partial: base.partial || truncated,
         posts: nextPosts,
         folders: base.folders,
+        notes: notes.agreed,
       },
       flags.baseFile ?? BASE_FILE,
     );
   }
-  return { changed, ops, documents, behind, removed, moves };
+  return { changed, ops, documents, behind, removed, moves, notes };
 }
 
 /**
@@ -264,6 +294,61 @@ export async function run(flags, _positionals, ctx) {
  * and never silently redirected to the site root, which is how an asset ends up somewhere
  * nobody looks.
  */
+/**
+ * Converges each site's memory notes (SH161).
+ *
+ * <h3>Why a note is not part of the document</h3>
+ *
+ * A desired-state document is content, and `--prune` deletes what one does not declare. A
+ * note is deliberately not content — it is read on the hot path, never delivered, and SH114
+ * made it a table precisely so it survives a prune. Compiling it into the document would
+ * hand prune the power to erase the instance's memory the first time somebody pushed a tree
+ * that had not projected it yet.
+ *
+ * <h3>Why absence is not deletion</h3>
+ *
+ * No `.memory.yaml` for a site means this tree has never projected that site's memory, which
+ * is the state of every project that predates SH161 and every fresh clone before its first
+ * pull. Reading that as "forget everything" would destroy the memory of a site on the first
+ * push from a checkout. A note is only forgotten when it was in the **base** — the two sides
+ * agreed on it once — and the file has since dropped it. That is a deletion somebody made.
+ */
+async function pushNotes(client, ctx, { base, sites, dir, planOnly }) {
+  const written = [];
+  const forgotten = [];
+  const agreed = { ...base };
+
+  for (const site of sites) {
+    const local = await readLocalNotes(ctx, site, { dir });
+    if (local === null) {
+      // Never projected here. Leave the server's memory exactly as it is.
+      continue;
+    }
+    const remote = await readRemoteNotes(client, site);
+    const plan = reconcileNotes({ base: base[site] ?? {}, remote, local });
+
+    for (const entry of local) {
+      const current = remote.find((row) => row.key === entry.key);
+      if (current && current.note === entry.note) continue;
+      if (plan.conflicts.some((conflict) => conflict.key === entry.key)) continue;
+      if (!planOnly) await client.remember({ scope: site, key: entry.key, note: entry.note });
+      written.push(`${site}:${entry.key}`);
+    }
+    for (const key of plan.forgetRemote) {
+      if (!planOnly) await client.forget({ scope: site, key });
+      forgotten.push(`${site}:${key}`);
+    }
+    if (plan.conflicts.length) {
+      ctx.stdout.write(
+        `shio push --content: ${plan.conflicts.length} memory note(s) for ${site} changed on ` +
+          "both sides and were left alone — run `shio pull --content` to see them.\n",
+      );
+    }
+    agreed[site] = Object.fromEntries(local.map((entry) => [entry.key, entry.note]));
+  }
+  return { written, forgotten, agreed };
+}
+
 async function resolveAssets(ctx, { client, admin, posts, sites, assetsDir, planOnly, stdout }) {
   const fileFieldMap = fileFields(await admin.getPostTypeDefs());
   const needed = new Set();

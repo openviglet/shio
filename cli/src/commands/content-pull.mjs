@@ -30,9 +30,12 @@ import {
   bodyFields,
   deleteDoc,
   deleteFolderMarker,
+  deleteLocalNotes,
   readBase,
   readLocal,
   readLocalFolders,
+  readLocalNotes,
+  readRemoteNotes,
   sitesOf,
   readRemote,
   readRemoteAssets,
@@ -41,8 +44,10 @@ import {
   writeBase,
   writeDoc,
   writeFolderMarker,
+  writeLocalNotes,
   writeRemoteSidecar,
 } from "../content-store.mjs";
+import { reconcileNotes } from "../content-notes.mjs";
 import {
   ancestorsOf,
   baseEntryFor,
@@ -128,6 +133,7 @@ export async function run(flags, _positionals, ctx) {
     kept: [],
     folders: { written: [], deleted: [], kept: [] },
     assets: assets.written,
+    notes: { written: [], deleted: [], conflicts: [] },
   };
   const nextPosts = { ...base.posts };
   // Collected from the documents rather than read back off `nextPosts` (SH148): a base entry is
@@ -214,6 +220,53 @@ export async function run(flags, _positionals, ctx) {
     report.folders.kept.push(`folder:${marker.site}${marker.folder}`);
   }
 
+  // SH161 — the site memory. Last, because it is per-site and the site list is only settled
+  // once the posts and folders have been walked. A note is not content: it is never a
+  // desired-state document and `--prune` can never act on it.
+  const noteSites = sitesOf(local, localFolders).length
+    ? sitesOf(local, localFolders)
+    : [...new Set(Object.values(remote).map((doc) => doc.site).filter(Boolean))];
+  const nextNotes = { ...(base.notes ?? {}) };
+  for (const noteSite of noteSites) {
+    const localNotes = await readLocalNotes(ctx, noteSite, { dir });
+    const plan = reconcileNotes({
+      base: (base.notes ?? {})[noteSite] ?? {},
+      remote: await readRemoteNotes(agent, noteSite),
+      // No file yet is not "every note was deleted" — it is a tree that has never projected
+      // this site's memory, so the server's notes are all additions.
+      local: localNotes ?? [],
+    });
+    // A locally deleted note is honoured by `push --content`, not here: a pull writes files,
+    // and forgetting a note on the server as a side effect of reading would be the same
+    // surprise a pull that published a draft would be.
+    const keep = [
+      ...plan.write,
+      ...Object.keys(plan.agreed)
+        .filter((key) => !plan.write.some((entry) => entry.key === key))
+        .map((key) => ({
+          key,
+          note: plan.agreed[key],
+          author: (localNotes ?? []).find((entry) => entry.key === key)?.author ?? null,
+        })),
+    ];
+    for (const conflict of plan.conflicts) {
+      report.notes.conflicts.push(`${noteSite}:${conflict.key}`);
+    }
+    if (plan.conflicts.length) continue;
+
+    if (!keep.length) {
+      if (localNotes !== null && !dryRun) await deleteLocalNotes(ctx, noteSite, { dir });
+      if (localNotes !== null) report.notes.deleted.push(noteSite);
+      delete nextNotes[noteSite];
+      continue;
+    }
+    if (plan.write.length || plan.deleteLocal.length || localNotes === null) {
+      if (!dryRun) await writeLocalNotes(ctx, { site: noteSite, notes: keep }, { dir });
+      report.notes.written.push(noteSite);
+    }
+    nextNotes[noteSite] = Object.fromEntries(keep.map((entry) => [entry.key, entry.note]));
+  }
+
   // The cursor is taken *after* the read, so anything that landed during it is reported
   // by the next pull rather than assumed to be included in this one.
   const cursor = await currentCursor(agent, site, base.cursor);
@@ -225,12 +278,24 @@ export async function run(flags, _positionals, ctx) {
         partial: base.partial || truncated || foldersTruncated,
         posts: nextPosts,
         folders: folderPlan.agreed,
+        notes: nextNotes,
       },
       flags.baseFile ?? BASE_FILE,
     );
   }
 
   ctx.stdout.write(render(report, { dir, dryRun, truncated: truncated || foldersTruncated }));
+  if (report.notes.conflicts.length) {
+    // Reported, and the file is left exactly as it was — the same rule the post merge
+    // follows. A note is one sentence somebody meant; picking a side would discard the
+    // other one with nothing to recover it from.
+    ctx.stderr.write(
+      `shio pull --content: ${report.notes.conflicts.length} memory note(s) changed on both ` +
+        `sides and were not written (${report.notes.conflicts.join(", ")}). Edit the note in ` +
+        "shio/content/<site>/.memory.yaml, or run `shio remember <key> \"<note>\"` to settle " +
+        "it on the server, then pull again.\n",
+    );
+  }
   if (report.conflicts.length) {
     ctx.stderr.write(
       `shio pull --content: ${report.conflicts.length} post(s) in conflict — nothing was written ` +

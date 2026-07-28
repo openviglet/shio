@@ -47,7 +47,8 @@
 > what the SH112 benchmark measured while implementing Block M, and **SH168–SH175** from
 > the first end-to-end agent-driven build over the finished surface (§VIII.12–§VIII.16,
 > §IX.8, §XIII.6), and **SH176–SH182** from driving the *console* over the site that
-> build produced (Block O — shipped, so its design section is gone; see CHANGELOG.md Block O)
+> build produced (Block O — shipped, so its design section is gone; see CHANGELOG.md Block O),
+> and **SH227–SH232** from finishing Block M (§XIII.7–§XIII.12)
 > — new tasks are expected to accrete this way, and each one's
 > line says what measurement or failure produced it. Superseded and therefore retired: **SH17/SH18** (GraalJS), **SH23 +
 > SH27–SH31** (marketplace → Block J), **SH24 + SH32–SH37** (CRUD-over-MCP → Block H).
@@ -91,8 +92,8 @@
 > fails per row, an address without a URL falls back to `id:`, `site.upsert` puts site creation on
 > the surface, the CI gate stops failing on content the tree does not manage, `folder` states
 > its own conditional requirement, and the render digest composes a page out of the sections it
-> names instead of reporting the hash of nothing. **Nothing is left from that build** — SH174 is
-> Block M's.
+> names instead of reporting the hash of nothing. **Nothing is left from that build** — SH174 was
+> Block M's, and has shipped with the rest of it.
 >
 > **And what driving the console over it found (Block O, shipped).** Seven defects, every one
 > of them answering `200` and none visible to a Java test, a CLI test or the MCP golden: the
@@ -299,31 +300,25 @@
 
 ## Block M — Token economy (measured)
 
-> ✅ **Block M shipped (SH112–SH116, SH127)** → see [CHANGELOG.md](CHANGELOG.md) Block M:
-> the task benchmark, response budgets, instance memory, the `AGENTS.md` generator,
-> conditional agent reads, and the lean delivery JSON.
+> ✅ **Block M shipped in full (SH112–SH116, SH127, SH157–SH161, SH174)** → see
+> [CHANGELOG.md](CHANGELOG.md) Block M: the task benchmark, response budgets, instance
+> memory, the `AGENTS.md` generator, conditional agent reads, the lean delivery JSON, and
+> the six follow-ups the measurement itself opened.
 >
-> **What the measurement actually says.** Tokens: **3.8×–23.3×** cheaper on the agent
-> path across the four canonical tasks, so the concept spec's ≈10× target is met on
-> three of four (the fourth, a blueprint apply, also provisions a model the baseline
-> assumes into existence). Tool calls: **1.8×–3.3×** against a ≈6× target — **not met
-> anywhere**, which is **SH157**. The numbers and their ceilings live in
-> [token-budgets.properties](../shio-app/src/test/resources/token-budgets.properties);
-> the run is archived to `target/agent-benchmark.json`.
->
-> **What building it opened.** Driving the write surface over real HTTP for the first
-> time found that an omitted optional flag was a 400 — invisible to every test that
-> builds the request record in Java, and a config-drift hazard that is now **SH158**.
-> Memory is readable and writable over REST and the CLI but not over MCP alone
-> (**SH160**), it does not travel with an exported site (**SH161**), and conditional
-> reads stop at the three discovery endpoints (**SH159**).
+> **What the measurement says now.** Tokens **2.8×–10.5×**, tool calls **2.3×–3.8×** across
+> the four canonical tasks. SH157 is the first change in three blocks to move a ratio by
+> improving the *agent* path rather than by the baseline getting leaner: every task lost a
+> call, because discovery folded into one read and proof folded into the write. The ≈10×
+> token target is met on one task of four and the ≈6× call target on none — the remaining
+> calls are real work, so the next one to remove is a harder argument than these two were.
+> Numbers and ceilings: [token-budgets.properties](../shio-app/src/test/resources/token-budgets.properties).
 
-- 📋 **SH157** (deps: SH112 ✅) **Close the tool-call gap** — the benchmark says tokens clear the ≈10× target and round trips do not (best 3.3× against ≈6×). The remaining calls are discovery (manifest + context) and proof (verify), so the candidates are a discovery read that answers both at once and a write that returns its own verification. → §XIII.1
-- 📋 **SH158** (deps: SH112 ✅) **Guard the request-reading config against test/prod drift** — `src/test/resources/application.properties` *shadows* the main file rather than merging with it, so a deserialization setting can be right in production and absent in every test. That is exactly how the primitive-null 400 survived three blocks. A test that asserts the mirrored keys agree costs nothing and closes the class of bug, not the instance. → §XIII.2
-- 📋 **SH159** (deps: SH116 ✅) **Conditional reads for the rest of the surface** — ETags reach manifest, context and the blueprint catalogue. `find`, `read`, `changes` and the SH16 post-type API are all repeat reads with stable digests available, and each one left unconditional is a full payload an agent pays to learn nothing changed. → §XIII.3
-- 💭 **SH160** (deps: SH114 ✅) **Memory for a client with no shell** — `shio remember` was chosen over an eleventh MCP tool because a tool schema is paid every turn and a coding agent has a terminal. A pure MCP client does not, so it can read the memory (it rides in the context pack) but never write one. Decide between a tool, an argument on an existing tool, and leaving it. → §XIII.4
-- 📋 **SH174** (deps: SH78 ✅, SH116 ✅) **The manifest has no terse form** — it is the document every session reads first and the most expensive one on the surface (2169 tokens against the context pack's 410), because its endpoint index carries a purpose sentence and an example per row. `?format=` is also silently ignored there while `/agent/context` teaches a 400 for the same mistake. → §XIII.6
-- 📋 **SH161** (deps: SH114 ✅, SH68 ✅) **Memory travels with the content** — a site's notes are neither exported by the SH68 exchange package nor projected by `shio pull --content`, so migrating a site or rebuilding it from files silently drops everything earlier sessions worked out. The compounding saving only compounds if it survives a move. → §XIII.5
+- 📋 **SH227** (deps: SH157 ✅, SH132 ✅) **`shio_apply` cannot ask for its own proof** — `shio_write` took SH157's `verify` argument for ~15 tokens, and the desired-state tool could not: at 457 measured against a 460 per-tool ceiling there is no room, so the write most likely to want a lint (a whole section at once) is the one that must still spend a second call on it. The fix is a trim, not a raise — the ceiling exists to force exactly this decision. → §XIII.7
+- 📋 **SH228** (deps: SH157 ✅) **A write proves only its posts** — the SH157 proof lints the `post:` addresses a run touched and silently ignores the rest, so a batch of `folder.upsert`s comes back with no proof at all rather than with the empty-folder warning the lint already knows how to produce. An agent that scaffolds a structure and reads `proof: absent` learns nothing, and cannot tell that from "nothing was wrong". → §XIII.8
+- 📋 **SH229** (deps: SH116 ✅, SH159 ✅) **Nothing checks that an ETag covers every parameter that changes the bytes** — SH157 found `include` missing from the context pack's tag, three blocks after SH116 wrote down the rule it breaks: two projections of one unchanged pack shared a tag, so `include=model` could revalidate against a full pack's cache. SH174 then had to re-derive the same guard by hand for the manifest. This is the SH136 shape exactly — an invariant about how code is *written* — and it wants the same answer, a lint, not another careful reviewer. → §XIII.9
+- 💭 **SH230** (deps: SH174 ✅) **The manifest's weight is prose, and terse barely touches it** — `format=terse` measured 2088 against JSON's 2343, an 11% saving where the same encoding is worth a third to a half everywhere else, because ~87% of the document is a purpose sentence and a runnable example per endpoint and both are kept verbatim on purpose. `include=features,limits` (298) is the real lever and it only helps a caller that already knows what it wants. Worth deciding whether the index can be earned rather than paid: derivable examples elided, or the index behind its own `include`. → §XIII.10
+- 💭 **SH231** (deps: SH161 ✅) **An instance's own notes travel nowhere** — SH161 made a *site's* notes ride its export, and deliberately left the instance-wide ones behind, because importing another installation's house rules alongside somebody's blog is a P7 surprise. That reasoning is right for a site import and wrong for a whole-instance migration, which is the case where those notes are most valuable and least reproducible. The tenant export is the place; the decision is what an import does with them. → §XIII.11
+- 💭 **SH232** (deps: SH159 ✅) **`/agent/changes` cannot revalidate the way it is most often called** — in cursor mode an unchanged range is byte-identical and free, which is the SH88 walk working as intended. In window mode the response's own cursor is the moving edge of the feed, so no two calls agree and every poll pays in full. That is *correct* — the answers really do differ — but the window is what a session opens with, and it is the read most likely to be repeated by a client that has not kept a cursor. → §XIII.12
 
 ## Block N — Realignment of what already shipped
 

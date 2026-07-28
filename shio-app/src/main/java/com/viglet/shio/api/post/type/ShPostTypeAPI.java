@@ -13,11 +13,14 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.api.agent.ShAgentBodyEtag;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -61,21 +64,41 @@ import lombok.extern.slf4j.Slf4j;
 public class ShPostTypeAPI {
 
     private final ShPostTypeAdminService shPostTypeAdminService;
+    private final ShAgentBodyEtag shAgentBodyEtag;
 
-    public ShPostTypeAPI(ShPostTypeAdminService shPostTypeAdminService) {
+    public ShPostTypeAPI(ShPostTypeAdminService shPostTypeAdminService,
+                         ShAgentBodyEtag shAgentBodyEtag) {
         this.shPostTypeAdminService = shPostTypeAdminService;
+        this.shAgentBodyEtag = shAgentBodyEtag;
     }
 
+    /**
+     * The whole model, losslessly — and conditionally since SH159.
+     *
+     * <p>This is the largest repeat read outside the agent namespace and the one that changes
+     * least: a content model is edited in bursts and then read on every {@code shio push
+     * --check}, every console editor load and every session that wants the field list. Its
+     * {@code ShPostTypeDef}s carry every {@code widgetSettings} string verbatim, which is what
+     * makes them lossless and also what makes them heavy.</p>
+     *
+     * <p>The tag is over the rendered bytes ({@link ShAgentBodyEtag}), so it cannot disagree
+     * with what was sent. Reaching into the agent package for that helper is deliberate and is
+     * the direction P10 allows: the mechanism is one implementation of one HTTP behaviour, and
+     * a second copy of it here is how the two would come to answer {@code 304} under slightly
+     * different conditions.</p>
+     */
     @GetMapping
-    public List<ShPostTypeDef> list() {
-        return shPostTypeAdminService.list();
+    public ResponseEntity<Object> list(
+            @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
+        return shAgentBodyEtag.json("post-type.list", shPostTypeAdminService.list(), ifNoneMatch);
     }
 
     @GetMapping("/{name}")
-    public ResponseEntity<ShPostTypeDef> get(@PathVariable String name) {
+    public ResponseEntity<Object> get(@PathVariable String name,
+            @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
         return shPostTypeAdminService.get(name)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .map(def -> shAgentBodyEtag.json("post-type." + name, def, ifNoneMatch))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     /**

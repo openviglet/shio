@@ -420,9 +420,17 @@ export class ShioAgentClient {
     return res.json();
   }
 
-  /** GET /api/v2/agent/manifest. */
-  async getManifest() {
-    const url = `${this.baseUrl}/api/v2/agent/manifest`;
+  /**
+   * GET /api/v2/agent/manifest.
+   *
+   * @param {string[]} [include] SH174 sections — `identity`, `features`, `limits`,
+   *   `endpoints`, `start-here`. Omit for the whole document. A caller that only needs a
+   *   capability flag should pass `["features"]`: the endpoint index is roughly 87% of this
+   *   response, it is the same twenty-nine rows every time, and no ETag helps on a first call.
+   */
+  async getManifest(include) {
+    const query = include?.length ? `?include=${encodeURIComponent(include.join(","))}` : "";
+    const url = `${this.baseUrl}/api/v2/agent/manifest${query}`;
     const res = await this.fetch(url, {
       method: "GET",
       headers: { Authorization: this.#authHeader(), Accept: "application/json" },

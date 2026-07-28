@@ -139,6 +139,83 @@ public class ShAgentMemoryService {
     }
 
     /**
+     * One site's own notes — <b>not</b> the instance-wide ones, and not filtered by the SH2
+     * allow-list (SH161).
+     *
+     * <p>The travelling set. An SH68 export carries this and nothing else, because the
+     * instance-wide notes describe the <em>installation</em> — "copy is authored in files
+     * here", "this deployment publishes on Fridays" — and importing another instance's house
+     * rules alongside somebody's blog is the kind of surprise P7 exists to prevent.</p>
+     *
+     * <p>No allow-list filter because the caller has already been authorized for the site by
+     * the export endpoint, and a partial export is worse than none: it would produce a package
+     * that looks complete and silently drops what the reader could not see.</p>
+     */
+    public List<ShAgentNote> scopedNotes(String siteName) {
+        if (siteName == null || siteName.isBlank()) {
+            return List.of();
+        }
+        List<ShAgentNote> notes = new ArrayList<>();
+        for (ShAgentMemoryEntry row : repository.findAllByOrderByScopeAscMemoryKeyAsc()) {
+            if (siteName.equalsIgnoreCase(nullSafe(row.getScope()))) {
+                notes.add(new ShAgentNote(row.getScope(), row.getMemoryKey(), row.getNote(),
+                        row.getAuthor(),
+                        row.getModifiedDate() != null ? row.getModifiedDate() : row.getCreatedDate()));
+            }
+        }
+        return List.copyOf(notes);
+    }
+
+    /**
+     * Re-file a package's notes against the site they arrived with (SH161).
+     *
+     * <p>Called on import, where the site may well have been <em>renamed</em> — a clone
+     * uniquifies the name, and a tenant provision suffixes it. A note names its site by name,
+     * so re-scoping is the whole job; carrying the exported scope through verbatim would file
+     * every note against a site that does not exist here, which is indistinguishable from
+     * losing them.</p>
+     *
+     * <p>The original {@code author} is preserved and the timestamps are set to now, and that
+     * split is deliberate. Attribution is the load-bearing half — SH114 keeps it precisely so a
+     * human's instruction and an agent's inference stay distinguishable — while the dates
+     * describe this instance's copy, which really did arrive now.</p>
+     *
+     * <p>Idempotent by {@code (scope, key)} like every other write here, so re-importing a
+     * package updates the notes rather than duplicating them. Validation is skipped on purpose:
+     * these values were validated when they were first written, and refusing a whole site
+     * import over a note that predates a tightened key rule would be the wrong trade.</p>
+     *
+     * @return how many notes were written
+     */
+    @Transactional
+    public int importNotes(String siteName, List<ShAgentNote> notes) {
+        if (siteName == null || siteName.isBlank() || notes == null || notes.isEmpty()) {
+            return 0;
+        }
+        Instant now = Instant.now();
+        int written = 0;
+        for (ShAgentNote note : notes) {
+            String key = note.key() == null ? "" : note.key().trim().toLowerCase(Locale.ROOT);
+            if (key.isEmpty() || note.note() == null || note.note().isBlank()) {
+                continue;
+            }
+            ShAgentMemoryEntry row = repository.findByScopeAndMemoryKey(siteName, key)
+                    .orElseGet(ShAgentMemoryEntry::new);
+            if (row.getCreatedDate() == null) {
+                row.setCreatedDate(now);
+                row.setScope(siteName);
+                row.setMemoryKey(key);
+            }
+            row.setNote(note.note());
+            row.setAuthor(note.author());
+            row.setModifiedDate(now);
+            repository.save(row);
+            written++;
+        }
+        return written;
+    }
+
+    /**
      * Forget one note.
      *
      * @return {@code true} when a row was removed; {@code false} when there was

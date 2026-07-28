@@ -12,6 +12,8 @@ import java.security.Principal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -99,6 +101,8 @@ public class ShAgentAPI {
     private final ShAgentMemoryService shAgentMemoryService;
     private final ShBlueprintRegistry shBlueprintRegistry;
     private final ShBlueprintService shBlueprintService;
+    private final ShAgentBodyEtag shAgentBodyEtag;
+    private final ShAgentProofService shAgentProofService;
 
     public ShAgentAPI(ShAgentManifestService shAgentManifestService,
                       ShAgentContextService shAgentContextService,
@@ -112,7 +116,9 @@ public class ShAgentAPI {
                       ShAgentDiagnosticsService shAgentDiagnosticsService,
                       ShAgentMemoryService shAgentMemoryService,
                       ShBlueprintRegistry shBlueprintRegistry,
-                      ShBlueprintService shBlueprintService) {
+                      ShBlueprintService shBlueprintService,
+                      ShAgentBodyEtag shAgentBodyEtag,
+                      ShAgentProofService shAgentProofService) {
         this.shAgentManifestService = shAgentManifestService;
         this.shAgentContextService = shAgentContextService;
         this.shAddressResolver = shAddressResolver;
@@ -126,24 +132,72 @@ public class ShAgentAPI {
         this.shAgentMemoryService = shAgentMemoryService;
         this.shBlueprintRegistry = shBlueprintRegistry;
         this.shBlueprintService = shBlueprintService;
+        this.shAgentBodyEtag = shAgentBodyEtag;
+        this.shAgentProofService = shAgentProofService;
     }
 
     /**
-     * The manifest (SH76), conditionally (SH116).
+     * The manifest (SH76), conditionally (SH116), and projectably (SH174).
      *
      * <p>It is deterministic and it changes only when the build or the operator's
      * configuration does, so after the first read it should cost a header for the
      * life of the deployment.</p>
+     *
+     * <p>The ETag covers the <em>representation</em>, not just the state, so {@code format} and
+     * {@code include} are both mixed into it. Without that, a client holding the tag for
+     * {@code ?include=features} would be told its cached two-line answer is still current when
+     * it asked for the whole document — which is the same mistake SH116 already guards on the
+     * context pack, one endpoint over.</p>
+     *
+     * @param include comma-separated sections
+     *                ({@code identity,features,limits,endpoints,start-here}); omit for all.
+     *                {@code features,limits} is the capability check, and it is the read this
+     *                parameter exists for — confirming one boolean should not cost the
+     *                twenty-nine-row endpoint index
+     * @param format  {@code json} (default) or {@code terse}. An unknown value is a teaching
+     *                400, the way {@code /agent/context} has always answered
+     * @param ifNoneMatch a tag from a previous read (SH116)
      */
     @GetMapping("/manifest")
     @Operation(summary = "Describe this instance to an agent: version, capabilities, limits, endpoints")
     public ResponseEntity<Object> manifest(
+            @RequestParam(name = "include", required = false) String include,
+            @RequestParam(name = "format", required = false) String format,
             @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
-        ShAgentManifest manifest = shAgentManifestService.manifest();
-        String etag = ShAgentEtag.of("manifest", shAgentManifestService.digest());
-        return ShAgentEtag.matches(ifNoneMatch, etag)
-                ? ShAgentEtag.notModified(etag)
+
+        Set<ShAgentManifestSection> sections = ShAgentManifestSection.parse(include);
+        Representation representation = Representation.ofManifest(format);
+        String etag = ShAgentEtag.of("manifest", shAgentManifestService.digest(),
+                representation.name(), manifestSectionKey(sections));
+        if (ShAgentEtag.matches(ifNoneMatch, etag)) {
+            return ShAgentEtag.notModified(etag);
+        }
+
+        ShAgentManifest manifest =
+                ShAgentManifestSection.project(shAgentManifestService.manifest(), sections);
+        return representation == Representation.TERSE
+                ? ShAgentEtag.ok(etag).contentType(MediaType.TEXT_PLAIN)
+                        .body(ShAgentManifestTerse.render(manifest))
                 : ShAgentEtag.ok(etag).body(manifest);
+    }
+
+    /**
+     * A stable key for a section set. Declaration order, not request order — {@code
+     * include=limits,features} and {@code include=features,limits} are the same representation
+     * and must share a tag, or a caller alternating between two equivalent spellings would
+     * revalidate on every call and never get a 304.
+     */
+    private static String manifestSectionKey(Set<ShAgentManifestSection> sections) {
+        return sections.stream().map(ShAgentManifestSection::wireName).collect(Collectors.joining(","));
+    }
+
+    /**
+     * The same, for the context pack's sections. Separately named rather than overloaded:
+     * two {@code Set<…>} parameters erase to the same signature, so the compiler refuses the
+     * pair outright.
+     */
+    private static String contextSectionKey(Set<ShAgentContextSection> sections) {
+        return sections.stream().map(ShAgentContextSection::wireName).collect(Collectors.joining(","));
     }
 
     /**
@@ -177,12 +231,19 @@ public class ShAgentAPI {
             @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids,
             @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
+        Set<ShAgentContextSection> sections = ShAgentContextSection.parse(include);
         ShAgentContext pack = shAgentContextService.context(site, depth, budget, include, from, ids);
         Representation representation = Representation.of(format);
         // The digest covers the pack's content; the representation covers its bytes.
         // Both belong in the tag — see ShAgentEtag.
+        //
+        // `include` joined them in SH157, and it was a latent defect before that: a caller
+        // asking for `include=model` and one asking for the whole pack were handed the same
+        // tag off the same digest, so the first could revalidate against the second's cache
+        // and keep a pack with no sitemap in it. SH174 guards the identical thing on the
+        // manifest; this is the endpoint that already had the bug.
         String etag = ShAgentEtag.of("context", pack.digest(), representation.name(),
-                Boolean.toString(ids));
+                Boolean.toString(ids), contextSectionKey(sections));
         if (ShAgentEtag.matches(ifNoneMatch, etag)) {
             return ShAgentEtag.notModified(etag);
         }
@@ -226,6 +287,10 @@ public class ShAgentAPI {
      * @param after  the previous page's {@code cursor} — how a result past the cap is walked
      *               to the end instead of refused (SH146)
      * @param format {@code json} (default) or {@code terse}
+     * @param ifNoneMatch a tag from a previous read (SH159) — an identical result answers
+     *                    {@code 304} and costs no tokens. This is the read an agent repeats on
+     *                    every iteration of a loop, so it is the one where revalidation
+     *                    compounds
      */
     @GetMapping("/find")
     @Operation(summary = "Find posts by site / type / folder / text — identifiers, not bodies")
@@ -237,13 +302,13 @@ public class ShAgentAPI {
             @RequestParam(name = "limit", required = false) Integer limit,
             @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids,
             @RequestParam(name = "after", required = false) String after,
-            @RequestParam(name = "format", required = false) String format) {
+            @RequestParam(name = "format", required = false) String format,
+            @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
         ShAgentFound found = shAgentReadService.find(site, type, folder, q, limit, ids, after);
         return isTerse(format)
-                ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
-                        .body(ShAgentReadTerse.found(found))
-                : ResponseEntity.ok(found);
+                ? shAgentBodyEtag.terse("find", ShAgentReadTerse.found(found), ifNoneMatch)
+                : shAgentBodyEtag.json("find", found, ifNoneMatch);
     }
 
     /**
@@ -251,6 +316,10 @@ public class ShAgentAPI {
      *
      * @param address repeatable — several posts in one call
      * @param fields  comma-separated field names; omit for the whole document
+     * @param ifNoneMatch a tag from a previous read (SH159). The projection is part of the
+     *                    representation, so a two-field read never answers {@code 304} to a
+     *                    caller holding the whole document — that falls out of tagging the
+     *                    rendered bytes rather than a content digest
      */
     @GetMapping("/read")
     @Operation(summary = "Read posts by address, with an optional per-field projection")
@@ -258,13 +327,13 @@ public class ShAgentAPI {
             @RequestParam(name = "address") List<String> address,
             @RequestParam(name = "fields", required = false) String fields,
             @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids,
-            @RequestParam(name = "format", required = false) String format) {
+            @RequestParam(name = "format", required = false) String format,
+            @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
         List<ShAgentDoc> docs = shAgentReadService.read(address, split(fields), ids);
         return isTerse(format)
-                ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
-                        .body(ShAgentReadTerse.docs(docs))
-                : ResponseEntity.ok(docs);
+                ? shAgentBodyEtag.terse("read", ShAgentReadTerse.docs(docs), ifNoneMatch)
+                : shAgentBodyEtag.json("read", docs, ifNoneMatch);
     }
 
     /**
@@ -275,14 +344,25 @@ public class ShAgentAPI {
      * same report and writes nothing.</p>
      *
      * @param ids include object ids in the result rows (SH121 default: off)
+     * @param verify SH157 — run the SH99 lint over exactly the addresses this run touched and
+     *               return the findings in {@code proof}. It removes the closing turn of every
+     *               write-then-check loop, and the report is better than a separate
+     *               {@code /agent/verify} call because it is scoped to the change rather than
+     *               to the site. Opt-in: a caller that does not want it should not pay for it,
+     *               and it is skipped on a {@code dryRun}, where there is nothing to prove
      */
     @PostMapping("/batch")
     @Operation(summary = "Apply N addressed content ops atomically; dryRun reports without writing")
-    public ShAgentChangeSet batch(@RequestBody ShAgentBatch batch,
-                                  @RequestParam(name = "ids", required = false,
-                                          defaultValue = "false") boolean ids,
-                                  Principal principal) {
-        return shAgentBatchService.run(batch, ids, name(principal));
+    public ResponseEntity<Object> batch(@RequestBody ShAgentBatch batch,
+                                        @RequestParam(name = "ids", required = false,
+                                                defaultValue = "false") boolean ids,
+                                        @RequestParam(name = "verify", required = false,
+                                                defaultValue = "false") boolean verify,
+                                        @RequestParam(name = "format", required = false)
+                                        String format,
+                                        Principal principal) {
+        return rendered(shAgentProofService.attach(
+                shAgentBatchService.run(batch, ids, name(principal)), verify), format);
     }
 
     /**
@@ -300,14 +380,42 @@ public class ShAgentAPI {
         return shAgentDesiredStateService.plan(desired, ids, name(principal));
     }
 
-    /** Make the desired-state document true, atomically (SH82). */
+    /**
+     * Make the desired-state document true, atomically (SH82).
+     *
+     * @param verify SH157 — see {@link #batch}. Worth more here than anywhere: an apply is
+     *               the call that writes a whole section, so the report it would otherwise
+     *               take a second round trip to fetch is the one most likely to be needed
+     */
     @PostMapping("/apply")
     @Operation(summary = "Apply a desired-state content document atomically")
-    public ShAgentChangeSet apply(@RequestBody ShAgentDesiredState desired,
-                                  @RequestParam(name = "ids", required = false,
-                                          defaultValue = "false") boolean ids,
-                                  Principal principal) {
-        return shAgentDesiredStateService.apply(desired, ids, name(principal));
+    public ResponseEntity<Object> apply(@RequestBody ShAgentDesiredState desired,
+                                        @RequestParam(name = "ids", required = false,
+                                                defaultValue = "false") boolean ids,
+                                        @RequestParam(name = "verify", required = false,
+                                                defaultValue = "false") boolean verify,
+                                        @RequestParam(name = "format", required = false)
+                                        String format,
+                                        Principal principal) {
+        return rendered(shAgentProofService.attach(
+                shAgentDesiredStateService.apply(desired, ids, name(principal)), verify), format);
+    }
+
+    /**
+     * A change set in the caller's encoding (SH157).
+     *
+     * <p>The write surface was the one part of this namespace with no terse form, which was an
+     * oversight rather than a decision — {@code ShAgentReadTerse.changes} has rendered change
+     * sets for MCP since SH83, and only the REST endpoints could not ask for it. It matters
+     * more now that a write can carry a lint report: folding the closing turn in is supposed
+     * to be a saving, and paying for the report in JSON while the separate {@code verify} it
+     * replaced could be terse would trade one target for the other.</p>
+     */
+    private ResponseEntity<Object> rendered(ShAgentChangeSet changes, String format) {
+        return isTerse(format)
+                ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
+                        .body(ShAgentReadTerse.changes(changes))
+                : ResponseEntity.ok(changes);
     }
 
     /**
@@ -457,6 +565,17 @@ public class ShAgentAPI {
      * @param since  a cursor from a previous call
      * @param limit  entries to return
      * @param ids    include object ids (SH121 default: off)
+     * @param ifNoneMatch a tag from a previous read (SH159). This is the poll — "has anything
+     *                    happened since I last looked" — and the honest answer is very often
+     *                    "no", so a {@code 304} is what makes asking cheap enough to do often.
+     *                    <b>It revalidates in cursor mode, not in window mode</b>, and that
+     *                    asymmetry is correct rather than a gap: without {@code since} the
+     *                    response's own cursor is the moving edge of the feed, so two calls a
+     *                    second apart really are different answers. With {@code since} — the
+     *                    way SH88 intends the feed to be walked, carrying the previous
+     *                    cursor back — an unchanged range is byte-identical and free. A
+     *                    repeating incident (SH144) raises its count and correctly does not
+     *                    match; that is the stream saying it is still happening
      */
     @GetMapping("/changes")
     @Operation(summary = "Content changes since a cursor: what a human (or another session) did")
@@ -465,13 +584,13 @@ public class ShAgentAPI {
             @RequestParam(name = "since", required = false) String since,
             @RequestParam(name = "limit", required = false) Integer limit,
             @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids,
-            @RequestParam(name = "format", required = false) String format) {
+            @RequestParam(name = "format", required = false) String format,
+            @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
         ShAgentChanges changes = shAgentChangesService.changes(site, since, limit, ids);
         return isTerse(format)
-                ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
-                        .body(ShAgentChangesTerse.render(changes))
-                : ResponseEntity.ok(changes);
+                ? shAgentBodyEtag.terse("changes", ShAgentChangesTerse.render(changes), ifNoneMatch)
+                : shAgentBodyEtag.json("changes", changes, ifNoneMatch);
     }
 
     /**
@@ -582,7 +701,41 @@ public class ShAgentAPI {
                 // slightly wrong payload; with three, `agent-md` would quietly return
                 // JSON and the caller would conclude the feature does not exist —
                 // which is the probing cost this whole surface exists to remove (P6).
-                default -> throw new UnknownFormatException(format);
+                default -> throw new UnknownFormatException(format,
+                        "The context pack has three renderings.",
+                        List.of("json", "terse", "agents-md"),
+                        "Use terse for an agent, json for a program, agents-md to write "
+                                + "project instructions to a file.");
+            };
+        }
+
+        /**
+         * The manifest's renderings (SH174) — {@code json} and {@code terse}, and nothing else.
+         *
+         * <p>Separate from {@link #of(String)} because the allowed set genuinely differs:
+         * {@code agents-md} renders a <em>context pack</em> as project instructions, and there
+         * is no such artifact for a capability document. Accepting it here to reuse one parser
+         * would mean either producing something nobody asked for or a 500 in the renderer.</p>
+         *
+         * <p>Until SH174 this endpoint ignored {@code format=} entirely and returned full JSON
+         * without comment, while its immediate neighbour taught a 400 for the same mistake. That
+         * is the failure mode SH80 exists to prevent, and it is worse here than anywhere else on
+         * the surface: the caller believes it asked for the compact form, gets the 2169-token
+         * one, and is billed for the difference on the first call of every session.</p>
+         */
+        static Representation ofManifest(String format) {
+            if (format == null || format.isBlank()) {
+                return JSON;
+            }
+            return switch (format.trim().toLowerCase(Locale.ROOT)) {
+                case "json" -> JSON;
+                case "terse" -> TERSE;
+                default -> throw new UnknownFormatException(format,
+                        "The manifest has two renderings. `agents-md` renders the context pack, "
+                                + "not this document.",
+                        List.of("json", "terse"),
+                        "Use terse for an agent, json for a program. To drop the endpoint index "
+                                + "entirely, ask for `?include=features,limits`.");
             };
         }
     }
@@ -590,13 +743,12 @@ public class ShAgentAPI {
     /** A 400 that names the renderings rather than making the caller guess (SH80). */
     public static class UnknownFormatException extends ShTeachingException {
 
-        public UnknownFormatException(String sent) {
+        public UnknownFormatException(String sent, String detail, List<String> allowed, String fix) {
             super(ShProblem.badRequest("unknown-format", "Unknown format '" + sent + "'")
-                    .withDetail("The context pack has three renderings.")
-                    .withAllowed(List.of("json", "terse", "agents-md"))
+                    .withDetail(detail)
+                    .withAllowed(allowed)
                     .withDidYouMeanFrom(sent)
-                    .withFix("Use terse for an agent, json for a program, agents-md to write "
-                            + "project instructions to a file.")
+                    .withFix(fix)
                     .withExample("?format=terse"));
         }
     }

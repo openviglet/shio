@@ -1080,142 +1080,158 @@ Two candidate answers, not exclusive:
 
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
-> ✅ **Block M shipped** → [CHANGELOG.md](CHANGELOG.md) Block M. The design rationale for
-> the shipped work lives there and in the code; `git log` is the history. What follows is
-> only the unshipped remainder, and all of it exists because the block did what it was
-> built to do: produce numbers, and then disagree with an assumption.
+> ✅ **Block M shipped in full**, including the six follow-ups the measurement itself opened
+> → [CHANGELOG.md](CHANGELOG.md) Block M. The design rationale for shipped work lives there
+> and in the code; `git log` is the history. What follows is only the unshipped remainder —
+> and, again, all of it exists because the block did what it was built to do: produce
+> numbers, and then disagree with an assumption.
+>
+> The current reading is **tokens 2.8×–10.5×, tool calls 2.3×–3.8×**. SH157 was the first
+> change in three blocks to move a ratio by improving the *agent* path rather than by the
+> baseline getting leaner, and what it left behind is mostly the shape of that argument
+> getting harder: the calls that remain are real work.
 
-### XIII.1 Close the tool-call gap (SH157)
+### XIII.7 `shio_apply` cannot ask for its own proof (SH227)
 
-The benchmark's own verdict. Tokens clear the concept spec's ≈10× target on three of the
-four canonical tasks; **tool calls clear nothing** — the best task is 3.3× against a ≈6×
-target, and the worst is 1.8×.
+SH157 gave `shio_write` a `verify` argument for about fifteen tokens of schema, and could
+not give it to `shio_apply`. The measured tool sits at **457 against a 460 per-tool
+ceiling** — there is no room, and the ceiling exists precisely to make that a decision
+rather than a drift.
 
-The reason is visible in the traces and is not a payload problem: the agent path's calls
-are no longer *content* calls. Every task opens with discovery (manifest, then context)
-and closes with proof (verify), and the actual work in between is one or two calls. So
-the remaining round trips are the framing, and shrinking them means either answering two
-questions in one read or folding the proof into the write:
+The awkward part is which tool got it. A desired-state apply writes a whole section at
+once, so it is the write *most* likely to want a lint of what it just did; the batch that
+did get the argument is the finer-grained one. An MCP client therefore still spends the
+closing turn on exactly the operation where folding it in saves most.
 
-- **Discovery in one call.** The manifest and the context pack are two reads a session
-  makes back to back, always, in that order. A `?include=manifest` on the context pack —
-  or simply serving the manifest's `startHere` inside the pack — removes one turn from
-  every session in existence. The reason they are separate is that the manifest is
-  instance-scoped and cacheable for a deployment while the pack changes with content;
-  SH116 makes that distinction cheap to preserve (two tags, one response is not possible
-  — which is the actual design problem here, not the merging).
-- **A write that returns its own proof.** `POST /agent/batch` already knows what it
-  touched. Running the SH99 checks over exactly those addresses and returning the findings
-  costs the server almost nothing and removes the verify turn — and it is strictly better
-  than a separate verify, because it scopes the report to the change instead of the site.
-  The risk is a write that reports a pre-existing defect as if the write caused it, so the
-  findings have to be attributed.
+The fix is a trim, not a raise. `shio_apply` is the tool the budget file has been warning
+about since Block J — it is the only one carrying two verbs, and its description has grown
+each time one of them gained an option. Two directions are worth measuring before choosing:
+state the blueprint verb in one clause instead of a sentence, or move the parameter
+documentation that duplicates the schema out of the description. If neither buys fifteen
+tokens, the honest answer is that the eleventh tool (SH160) used the headroom and this one
+needs the twelfth slot's argument instead.
 
-Both are additive and neither changes an existing contract. The benchmark is the
-acceptance test: the ratio floors in `token-budgets.properties` move up when this lands,
-and that is the only evidence that should be accepted for it.
+### XIII.8 A write proves only its posts (SH228)
 
-### XIII.2 Guard the request-reading config against test/prod drift (SH158)
+The SH157 proof collects the `post:` addresses a run touched and lints those. Everything
+else it silently drops — so a batch of `folder.upsert` ops comes back with **no `proof` key
+at all**, which an agent cannot distinguish from "asked for, and nothing was wrong".
 
-`src/test/resources/application.properties` **shadows** the main file on the test
-classpath rather than merging with it. That is ordinary Spring Boot behaviour and it is
-also how an entire class of defect hides: a setting that governs how a request is *read*
-can be correct in production and simply absent from every test, and no test can notice,
-because the tests are the thing that is misconfigured.
+That is the wrong answer twice over. The lint already has rules that apply to folders (an
+empty folder is one of its warnings), so the report exists and is simply not being asked
+for; and "scaffold the structure, then fill it" is a real, common first step whose whole
+point is to be checked before content goes in.
 
-It is not hypothetical. `spring.jackson.deserialization.fail-on-null-for-primitives=false`
-is required for the write surfaces to accept a body that omits an optional flag, and its
-absence made `POST /agent/batch {"ops":[…]}` a 400 through four blocks — found only when
-SH112 sent real JSON for the first time.
+Two things to decide. Whether a folder address can be handed to `verify`'s SH143 `address=`
+scope at all, or whether it needs `folder=` (which is a subtree, and a subtree of a
+just-created folder is empty by construction — so it may report the very warning the
+scaffold expects). And what an *empty* proof should look like: absent is currently
+ambiguous, and a caller that asked for verification deserves an explicit clean report, the
+same way `verify` itself answers `ok` with no findings rather than nothing.
 
-The fix is not another setting; it is a test that reads both files and asserts that the
-keys which affect deserialization agree. Cheap, and it closes the class rather than the
-instance. Worth pairing with the narrower guard: at least one test per write surface that
-sends the **minimal** body the documentation shows, since a request record constructed in
-Java exercises none of the binding.
+### XIII.9 Nothing checks that an ETag covers every parameter that changes the bytes (SH229)
 
-### XIII.3 Conditional reads for the rest of the surface (SH159)
+SH116 wrote the rule down clearly — *a tag identifies a representation, so `format`, `ids`
+and `fields` all belong in it* — and then SH157 found `include` missing from the context
+pack's own tag, three blocks later. Two projections of one unchanged pack shared a tag off
+the same digest, so a caller asking for `include=model` could revalidate against a full
+pack's cached copy and keep a pack with no sitemap in it. Nothing failed; nothing could
+have.
 
-SH116 covers the manifest, the context pack and the blueprint catalogue — the three
-discovery reads. It does not cover `find`, `read`, `changes`, or the SH16 post-type API,
-and each of those is a repeat read with a stable digest already available or cheap to
-compute. `find` in particular is the read an agent makes on every iteration of a loop.
+SH174 then had to derive the same guard by hand for the manifest, and SH159 sidestepped it
+entirely by hashing the rendered body — which is exact, and is also an admission that
+getting the discriminator list right by hand is not something to keep doing.
 
-The work is mechanical; the judgement is the same one SH116 already made and must not be
-relaxed: the tag identifies a **representation**, so `format`, `ids` and `fields` all
-belong in it. A `read` projected to two fields must not answer 304 to a caller that asked
-for the whole document.
+This is the **SH136 shape exactly**: an invariant about how code is *written*, invisible to
+behavioural tests because any single request is internally consistent. It wants the same
+answer — a lint. The tractable form is a test that, for each conditional endpoint, walks its
+`@RequestParam`s and fails when one is absent from the tag's inputs, with an explicit
+exemption list for the parameters that genuinely do not change the bytes (`budget`, which
+only bounds a walk that is already reflected in the content, is the interesting case to get
+right). The alternative — make `ShAgentBodyEtag` the only way to build a tag on this surface
+— is stronger and costs the three discovery endpoints their cheap digest-based path.
 
-### XIII.4 Memory for a client with no shell (SH160)
+### XIII.10 The manifest's weight is prose, and terse barely touches it (SH230)
 
-`shio remember` was chosen over an eleventh MCP tool on a clear argument: a tool schema is
-paid on every turn of every session, and a coding agent has a terminal, so a capability
-used a handful of times per session should not tax every turn. That argument is right for
-Claude Code and wrong for a pure MCP client, which can *read* the memory (it rides in the
-context pack for free) but has no way to write one.
+SH174 measured it and the number is worth keeping in view:
 
-Three options, and the answer is not obvious:
-
-1. **An eleventh tool.** Measured cost is roughly 110 tokens per turn against a
-   `mcp.tools.list.total` of 2160 with about 60 of headroom — so it also means raising the
-   ceiling, which is the thing the ceiling exists to make deliberate.
-2. **An argument on an existing tool.** `shio_write` is a write and "remember this" is a
-   write; a `remember` property costs perhaps 30 tokens. But it would couple a note to a
-   content transaction that may roll back, and a note is not content — that separation is
-   load-bearing (see the CHANGELOG on why memory is a table).
-3. **Leave it.** Accept that the MCP surface is read-only for memory and say so in the
-   manifest, so a client learns it from a flag rather than from a missing tool.
-
-Option 3 is the honest default and the current state; the task is to decide rather than to
-let it be decided by nobody looking.
-
-### XIII.5 Memory travels with the content (SH161)
-
-A site's notes live only in the instance that learned them. An SH68 exchange package does
-not carry them, and `shio pull --content` does not project them — so exporting a site to
-another instance, or rebuilding one from files, silently drops everything earlier sessions
-worked out. The compounding saving only compounds if it survives a move.
-
-Both halves are small and both have a decision in them. In the exchange package, notes are
-site-scoped data and belong beside the content; the instance-wide ones do **not** travel,
-because they describe the installation rather than the site, and importing another
-instance's house rules would be a surprise (P7). In the file projection, notes are not
-posts and must not become a desired-state document that `--prune` can act on — the natural
-home is a single `shio/content/<site>/.memory.yaml`, read on push and written on pull, with
-the same three-way merge the content tree already uses.
-
-### XIII.6 The manifest has no terse form (SH174)
-
-Every session starts with `GET /agent/manifest`, and the manifest is the most expensive
-document on the surface:
-
-| Response | `X-Shio-Est-Tokens` |
+| Reading of `/agent/manifest` | `X-Shio-Est-Tokens` |
 |---|---|
-| `/agent/manifest` | **2169** |
-| `/agent/context?format=terse` | 410 |
-| `/agent/blueprints?format=terse` | 467 |
-| `/agent/verify?format=terse` (clean) | 14 |
+| full JSON | **2343** |
+| `format=terse` | 2088 (**1.1×**) |
+| `include=features,limits` | 298 (**7.9×**) |
 
-SH78 gave the pack, the catalogue and the report a compact encoding and left the one
-document that is *always* read at full JSON. Nearly all of it is the endpoint index — a
-purpose sentence and an example per row, twenty-nine rows — which is genuinely the valuable
-part on a first read and pure repetition on every subsequent one. SH116 already covers the
-repeat case with an ETag, so the target here is the **first** call of a session, which no
-`304` can help.
+Everywhere else on the surface the terse encoding is worth a third to a half, because
+everywhere else the payload is *rows* and JSON's cost is the key names repeated per row.
+The manifest is not rows. It is twenty-nine endpoint entries whose weight is a purpose
+sentence and a runnable example, both kept verbatim on purpose — an abbreviated example is
+a call the instance would reject.
 
-Two candidates, and they are not exclusive. A terse encoding of the same content, in the
-line-oriented form the rest of the surface uses. Or `?include=` on the manifest the way the
-context pack has it, so a caller that only needs `features` and `limits` — the two things a
-capability check reads — does not pay for the index. The second is probably the better first
-move: an agent re-reading the manifest to confirm a feature flag is the common case, and it
-currently costs 2169 tokens to answer a boolean.
+So the index is the target, and `include` only helps a caller that already knows what it
+wants. Two candidates, and both have a real objection:
 
-There is a second, smaller thing to fix in the same place. `/agent/manifest?format=terse`
-returns full JSON with no complaint, while `/agent/context?format=nonsense` is a teaching
-400 (SH115). Silently ignoring an unknown parameter is the failure mode SH80 exists to
-prevent — the caller believes it asked for something and is billed for the full document —
-so whichever encoding lands, an unsupported `format=` on this endpoint should answer the way
-its neighbour does.
+- **Elide a derivable example.** Most entries' examples are `METHOD {apiBase}{path}` with no
+  parameters, so the string adds nothing a reader cannot reconstruct. Against it:
+  `ShAgentManifestTest` asserts every indexed endpoint carries a runnable example, and that
+  assertion exists because a missing example is what sends an agent guessing. A rule the
+  reader has to know in order to reconstruct is not obviously better than the bytes.
+- **Put the index behind its own `include`, and default it off.** Honest about what the
+  document is for — a capability check — and it moves the cost to the session that actually
+  wants the index. Against it: the first read of a *first* session is exactly when the index
+  is worth having, and defaulting it off means that session pays two calls instead of one,
+  which is the opposite of SH157.
+
+There may be a third: the index is the most cacheable document on the surface and the only
+part of the manifest that never changes between builds. A separate `/agent/endpoints` with
+its own long-lived tag would make the manifest small permanently, at the cost of one more
+endpoint on a surface whose whole pitch is that it has few.
+
+### XIII.11 An instance's own notes travel nowhere (SH231)
+
+SH161 made a site's notes ride its export and deliberately left the instance-wide ones
+behind. That reasoning holds for a *site* import — importing another installation's house
+rules alongside somebody's blog is a P7 surprise, and nobody asked for them — and it does
+not hold for the case where those notes matter most: moving a whole instance.
+
+An instance-wide note is the accumulated answer to "how is this deployment driven" — copy
+is authored in files here, this front end owns `/docs/**`, publishing happens on Fridays.
+It is the least reproducible thing in the system and the only one with no export path at
+all.
+
+The tenant package (`buildTenantPackage`) is the obvious home, since it already means
+"everything this installation is". The decision is what an import does with them, and the
+options are not equal: merging them into the target's memory is the surprise SH161 refused;
+importing them **scoped to nothing and marked as imported** would need a provenance field
+the note shape does not have; and writing them to a *file* for a human to review is the
+option that fits P7 and does not need a schema change at all. That last one is probably
+right, and it makes this a CLI task rather than a server one.
+
+### XIII.12 `/agent/changes` cannot revalidate the way it is most often called (SH232)
+
+After SH159, the change feed answers `304` in cursor mode: an unchanged range is
+byte-identical and free, which is the SH88 walk working exactly as designed. In **window**
+mode it never will, because the response's own cursor is `now - lagMillis` — the moving edge
+of the feed — so two calls a second apart genuinely are different answers.
+
+That is correct behaviour, and it is also the read most likely to be repeated by a client
+that has not kept a cursor: the window is what a session opens with, and "has anything
+changed since I got here" is asked more often than it is answered yes.
+
+Three shapes, in increasing order of how much they concede:
+
+- **Quantise the window cursor** to the second or the configured lag, so consecutive polls
+  inside one tick agree. Cheap, and it makes the cursor slightly less precise than the
+  position it names — which is the one property SH88 spent a whole task getting right.
+- **Tag the window response over its `changes` array only**, excluding the cursor. Honest
+  about what the caller is asking (*did anything happen*), and it means a `304` withholds a
+  cursor the caller might have wanted — tolerable, since a caller that wanted the cursor is
+  the caller who should be in cursor mode.
+- **Say nothing and document it**, which is the current state. Defensible: the fix for a
+  client that polls the window is to keep the cursor it was already given, and that is one
+  line in the endpoint's own description.
+
+The third is the default and the first is probably wrong. Worth deciding rather than
+leaving to whoever next notices the poll is not free.
 
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 

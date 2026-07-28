@@ -210,6 +210,12 @@ class ShAgentResponseBudgetTest {
     @Test
     void everyCanonicalResponseStaysWithinItsBudget() throws Exception {
         measure("manifest", get("/api/v2/agent/manifest"));
+        // SH174's two cheaper reads of the same document. They are budgeted separately rather
+        // than folded into `manifest` because their whole purpose is to be a fraction of it —
+        // a ceiling they shared would let the saving erode without failing anything.
+        measure("manifest.terse", get("/api/v2/agent/manifest").param("format", "terse"));
+        measure("manifest.check", get("/api/v2/agent/manifest")
+                .param("include", "features,limits"));
         measure("context.terse", context("terse"));
         measure("context.json", context(null));
         measure("context.agents-md", context("agents-md"));
