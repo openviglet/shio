@@ -23,6 +23,8 @@ import {
   parsePost,
   serializeFolder,
   serializePost,
+  sidecarFieldsFor,
+  sidecarsOf,
 } from "./content-files.mjs";
 import { ASSETS_DIR, assetPathFor } from "./content-assets.mjs";
 import { NOTES_FILE, notesPathFor, parseNotes, serializeNotes } from "./content-notes.mjs";
@@ -151,9 +153,40 @@ export async function readLocal(ctx, { dir = CONTENT_DIR, site = null } = {}) {
     if (site && !relPath.startsWith(`${site}/`)) continue;
     const text = await ctx.fs.readFile(join(root, relPath), "utf8");
     const doc = parsePost(relPath, text);
+    await loadSidecars(ctx, root, relPath, doc);
     docs[addressOf(doc)] = doc;
   }
   return docs;
+}
+
+/**
+ * Fills in the values the frontmatter's `files:` block points at (SH191).
+ *
+ * <h3>Why a missing sidecar is a refusal</h3>
+ *
+ * The alternative readings are both worse than stopping. Treating it as an empty value
+ * publishes a layout with no HTML — a blank site, from a push that reported success.
+ * Treating it as an absent field makes `push --content` declare a post without the field it
+ * has, and `post.upsert` declares *whole* state, so the server's copy is cleared too. Same
+ * class as the `url:`-versus-path refusal: half a rename is not a state anyone meant.
+ */
+async function loadSidecars(ctx, root, relPath, doc) {
+  const entries = Object.entries(doc.sidecarFiles ?? {});
+  if (!entries.length) return doc;
+  const dir = relPath.slice(0, relPath.lastIndexOf("/") + 1);
+  for (const [field, name] of entries) {
+    try {
+      doc.data[field] = await ctx.fs.readFile(join(root, `${dir}${name}`), "utf8");
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+      throw new Error(
+        `shio content: ${relPath}: its \`files: ${field}: ${name}\` names a file that is not ` +
+          `there (expected ${dir}${name}). Restore it, or delete the \`files:\` line and put ` +
+          "the value back in `fields:`.",
+      );
+    }
+  }
+  return doc;
 }
 
 /**
@@ -418,33 +451,76 @@ async function walk(ctx, root, prefix) {
   return out;
 }
 
-/** Writes one post to its file, creating the folders on the way. */
-export async function writeDoc(ctx, doc, bodyField, { dir = CONTENT_DIR } = {}) {
+/**
+ * Writes one post to its file plus its sidecars, creating the folders on the way (SH191).
+ *
+ * A sidecar the previous version of this file named and this one does not is **removed**, so
+ * a field that stopped being code (or stopped existing) does not leave a `.html` behind that
+ * nothing references. That is read off the file on disk rather than inferred, because only
+ * the file knows what the last write produced.
+ *
+ * @param {{name: string, ext: string}[]} [options.sidecars] the post-type's code fields
+ */
+export async function writeDoc(ctx, doc, bodyField, { dir = CONTENT_DIR, sidecars = [] } = {}) {
   const relPath = filePathFor(doc);
   const target = join(ctx.cwd, dir, relPath);
+  const stale = new Set(Object.values(await namedSidecars(ctx, dir, relPath)));
   await ctx.fs.mkdir(dirOf(target), { recursive: true });
-  await ctx.fs.writeFile(target, serializePost(doc, bodyField), "utf8");
+  const written = sidecarsOf(doc, sidecars);
+  for (const sidecar of written) {
+    stale.delete(sidecar.name);
+    await ctx.fs.writeFile(join(ctx.cwd, dir, sidecar.path), sidecar.text, "utf8");
+  }
+  await ctx.fs.writeFile(target, serializePost(doc, bodyField, sidecars), "utf8");
+  for (const name of stale) await unlinkQuietly(ctx, join(ctx.cwd, dir, dirOf(relPath), name));
   return relPath;
 }
 
-/** Removes a post's file. A missing file is already the desired state. */
+/**
+ * Removes a post's file and every sidecar it named. A missing file is already the desired state.
+ */
 export async function deleteDoc(ctx, doc, { dir = CONTENT_DIR } = {}) {
   const relPath = filePathFor(doc);
-  try {
-    await ctx.fs.unlink(join(ctx.cwd, dir, relPath));
-  } catch (error) {
-    if (error?.code !== "ENOENT") throw error;
+  for (const name of Object.values(await namedSidecars(ctx, dir, relPath))) {
+    await unlinkQuietly(ctx, join(ctx.cwd, dir, dirOf(relPath), name));
   }
+  await unlinkQuietly(ctx, join(ctx.cwd, dir, relPath));
   return relPath;
 }
 
-/** Writes the server's copy beside the local file, for a conflict a human has to read. */
+/**
+ * Writes the server's copy beside the local file, for a conflict a human has to read.
+ *
+ * Deliberately **whole**: no sidecars, so the values stay in `fields:` and the artifact is one
+ * file to open and diff. A `.remote` that spawned its own `.html` and `.js` would leave three
+ * files nobody named, and they would not be cleaned up by the write that resolves the conflict.
+ */
 export async function writeRemoteSidecar(ctx, doc, bodyField, { dir = CONTENT_DIR } = {}) {
   const relPath = `${filePathFor(doc)}.remote`;
   const target = join(ctx.cwd, dir, relPath);
   await ctx.fs.mkdir(dirOf(target), { recursive: true });
   await ctx.fs.writeFile(target, serializePost(doc, bodyField), "utf8");
   return relPath;
+}
+
+/** The `files:` block of the post file already on disk, or `{}` when there is none. */
+async function namedSidecars(ctx, dir, relPath) {
+  try {
+    const text = await ctx.fs.readFile(join(ctx.cwd, dir, relPath), "utf8");
+    return parsePost(relPath, text).sidecarFiles ?? {};
+  } catch {
+    // Absent, or unparseable — either way there is nothing this write is responsible for
+    // cleaning up, and refusing to write over a broken file would strand the tree.
+    return {};
+  }
+}
+
+async function unlinkQuietly(ctx, target) {
+  try {
+    await ctx.fs.unlink(target);
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
 }
 
 /**
@@ -543,6 +619,22 @@ export function bodyFields(defs) {
   const map = new Map();
   for (const def of defs ?? []) {
     if (def?.name) map.set(def.name, bodyFieldFor(def));
+  }
+  return map;
+}
+
+/**
+ * Sidecar-field lookup by post-type name (SH191) — the same shape as {@link bodyFields}.
+ *
+ * Only the *write* side consults it, exactly like the body field: every file records the
+ * sidecars it produced in its own `files:` block, so reading a projection back never depends
+ * on the model being reachable. That is what lets a hand-authored tree be pushed from a clone
+ * that has never pulled the post-types.
+ */
+export function sidecarFields(defs) {
+  const map = new Map();
+  for (const def of defs ?? []) {
+    if (def?.name) map.set(def.name, sidecarFieldsFor(def));
   }
   return map;
 }

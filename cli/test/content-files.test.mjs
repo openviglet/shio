@@ -26,6 +26,9 @@ import {
   pathToUrl,
   serializeFolder,
   serializePost,
+  sidecarFieldsFor,
+  sidecarNameFor,
+  sidecarsOf,
   urlToPath,
 } from "../src/content-files.mjs";
 
@@ -207,6 +210,144 @@ test("a movedFrom that is the post's own URL is refused", () => {
   assert.throws(
     () => parsePost("Blog/blog/hello.md", "---\nsite: Blog\nurl: /blog/hello\nmovedFrom: /blog/hello\n---\n"),
     /is its own URL/,
+  );
+});
+
+// --- code fields project as sidecar files (SH191) ---
+
+/** The render model's `Region`, as `shio pull` serializes a post-type def. */
+const REGION = {
+  name: "Region",
+  fields: [
+    { name: "HTML", widget: "Ace Editor - HTML", ordinal: 1 },
+    { name: "JAVASCRIPT", widget: "Ace Editor - Javascript", ordinal: 2 },
+  ],
+};
+
+const TEMPLATE = '<div class="cards">\n  {{#each this.posts}}\n    <b>{{title}}</b>\n  {{/each}}\n</div>\n';
+const SCRIPT = "document.querySelectorAll('.cards').forEach((n) => n.classList.add('ready'));\n";
+
+const REGION_DOC = {
+  site: "Bootstrap",
+  url: "/region/content-list",
+  type: "Region",
+  folder: "/Regions",
+  data: { HTML: TEMPLATE, JAVASCRIPT: SCRIPT },
+};
+
+test("the widget decides which fields earn a sidecar, and the extension", () => {
+  assert.deepEqual(sidecarFieldsFor(REGION), [
+    { name: "HTML", ext: "html" },
+    { name: "JAVASCRIPT", ext: "js" },
+  ]);
+  // Not the post-type: a layout somebody models themselves has to work the same way, and
+  // prose fields must never become files.
+  assert.deepEqual(
+    sidecarFieldsFor({ fields: [{ name: "summary", widget: "Text Area", ordinal: 1 }] }),
+    [],
+  );
+  // The body is already a file; it must not become two.
+  assert.deepEqual(
+    sidecarFieldsFor({
+      fields: [
+        { name: "content", widget: "HTML Editor", ordinal: 1 },
+        { name: "HTML", widget: "Ace Editor - HTML", ordinal: 2 },
+      ],
+    }),
+    [{ name: "HTML", ext: "html" }],
+  );
+});
+
+test("a sidecar's name carries the field, so two same-widget fields cannot collide", () => {
+  assert.equal(sidecarNameFor("content-list.md", { name: "HTML", ext: "html" }), "content-list.HTML.html");
+  const two = sidecarFieldsFor({
+    fields: [
+      { name: "HEADER", widget: "Ace Editor - HTML", ordinal: 1 },
+      { name: "FOOTER", widget: "Ace Editor - HTML", ordinal: 2 },
+    ],
+  });
+  const names = sidecarsOf({ ...REGION_DOC, data: { HEADER: "<h1/>", FOOTER: "<hr/>" } }, two)
+    .map((sidecar) => sidecar.name);
+  assert.deepEqual(new Set(names).size, 2);
+});
+
+test("a code field leaves the frontmatter and becomes a file the frontmatter names", () => {
+  const sidecars = sidecarFieldsFor(REGION);
+  const text = serializePost(REGION_DOC, null, sidecars);
+
+  assert.match(text, /^files:\n {2}HTML: content-list\.HTML\.html\n {2}JAVASCRIPT: content-list\.JAVASCRIPT\.js$/m);
+  // The whole point: neither program is in the document any more, escaped or otherwise.
+  assert.doesNotMatch(text, /fields:/);
+  assert.doesNotMatch(text, /card/);
+
+  const written = sidecarsOf(REGION_DOC, sidecars);
+  assert.deepEqual(
+    written.map((sidecar) => sidecar.path),
+    ["Bootstrap/region/content-list.HTML.html", "Bootstrap/region/content-list.JAVASCRIPT.js"],
+  );
+  // Verbatim — an editor opens a real HTML document, and the round trip is byte-for-byte.
+  assert.equal(written[0].text, TEMPLATE);
+});
+
+test("the sidecar round trip is exact, so a pull never reports a change nobody made", () => {
+  const sidecars = sidecarFieldsFor(REGION);
+  const text = serializePost(REGION_DOC, null, sidecars);
+  const parsed = parsePost(filePathFor(REGION_DOC), text);
+
+  // The values are the store's to read; the format's job is to say where they went.
+  assert.deepEqual(parsed.sidecarFiles, {
+    HTML: "content-list.HTML.html",
+    JAVASCRIPT: "content-list.JAVASCRIPT.js",
+  });
+  assert.deepEqual(parsed.data, {});
+  // Reassembled the way `readLocal` does it, the document is the one that went in — including
+  // a value whose trailing newline a normalizing writer would have eaten.
+  for (const sidecar of sidecarsOf(REGION_DOC, sidecars)) parsed.data[sidecar.field] = sidecar.text;
+  assert.deepEqual(parsed.data, REGION_DOC.data);
+});
+
+test("an empty code field stays out of files: rather than writing an empty program", () => {
+  const sidecars = sidecarFieldsFor(REGION);
+  const text = serializePost({ ...REGION_DOC, data: { HTML: TEMPLATE, JAVASCRIPT: "" } }, null, sidecars);
+
+  assert.match(text, /^ {2}HTML: content-list\.HTML\.html$/m);
+  assert.doesNotMatch(text, /JAVASCRIPT: content-list/);
+  // It is still a field the post holds, so it stays declared — just not as a file, because an
+  // empty file cannot be told apart from one somebody emptied.
+  assert.match(text, /^fields:\n {2}JAVASCRIPT: ""$/m);
+});
+
+test("a post-type with no code fields serializes exactly as it did before", () => {
+  assert.equal(serializePost(DOC, "content", []), serializePost(DOC, "content"));
+});
+
+test("one field cannot have two values: files: versus fields: is refused", () => {
+  assert.throws(
+    () =>
+      parsePost(
+        "Bootstrap/region/x.md",
+        "---\nsite: Bootstrap\nurl: /region/x\nfiles:\n  HTML: x.HTML.html\nfields:\n  HTML: <p/>\n---\n",
+      ),
+    /is in both/,
+  );
+  assert.throws(
+    () =>
+      parsePost(
+        "Bootstrap/region/x.md",
+        "---\nsite: Bootstrap\nurl: /region/x\nbody: HTML\nfiles:\n  HTML: x.HTML.html\n---\n",
+      ),
+    /both the document body/,
+  );
+});
+
+test("a sidecar that is a path, not a file name, is refused", () => {
+  assert.throws(
+    () =>
+      parsePost(
+        "Bootstrap/region/x.md",
+        "---\nsite: Bootstrap\nurl: /region/x\nfiles:\n  HTML: ../../../etc/passwd\n---\n",
+      ),
+    /is a path, not a file name/,
   );
 });
 

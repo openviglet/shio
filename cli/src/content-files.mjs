@@ -35,6 +35,8 @@
  *  - **Relator items and any other non-scalar stay JSON** on one line. A YAML rendering
  *    of arbitrary nesting is a second serialization format to specify and get wrong, and
  *    the write side already speaks JSON.
+ *  - **Code gets a file of its own** (SH191, see `SIDECAR_WIDGETS`): one field, one
+ *    sidecar, named in the frontmatter the way `body:` already names the document body.
  */
 
 /** Frontmatter delimiter. */
@@ -42,6 +44,36 @@ const FENCE = "---";
 
 /** Metadata key order — fixed, so a diff never shows a reordering. */
 const META_ORDER = ["site", "url", "type", "folder", "publish", "movedFrom", "body"];
+
+/**
+ * The widgets whose value is **code**, and the extension each one's sidecar takes (SH191).
+ *
+ * <h3>Why the widget decides, and never the post-type</h3>
+ *
+ * A rule keyed on the post-type would work for exactly the three types SH183 ships and
+ * stop working the moment somebody models a layout type of their own — which is the
+ * expected case, since a layout is content. The widget is the thing that already says "this
+ * value is a program": the console gives it a code editor for precisely that reason.
+ *
+ * <h3>Why only these two</h3>
+ *
+ * `HTML Editor` is the *body* (`bodyFieldFor`) and has been since SH86; moving it here
+ * would change every existing file. `Text Area` is prose. What is left is the `Ace Editor`
+ * pair, which is what a `PageLayout`'s `HTML`, a `Region`'s `HTML`/`JAVASCRIPT` and a
+ * `Theme`'s `CSS`/`JAVASCRIPT` are declared as.
+ *
+ * A `Theme`'s `CSS` field is declared `Ace Editor - HTML` because no CSS widget is seeded,
+ * so its sidecar is `.html` today — wrong for highlighting, right for lines, `Grep` and a
+ * reviewable diff, which is the whole of law P4's claim. Fixing the extension means
+ * seeding the widget; that is **SH252**, and this map is the one line it has to change.
+ */
+export const SIDECAR_WIDGETS = new Map([
+  ["Ace Editor - HTML", "html"],
+  ["Ace Editor - Javascript", "js"],
+]);
+
+/** The frontmatter key that names the sidecars — `body:` generalized past one field. */
+const FILES_KEY = "files";
 
 /**
  * Scalars that must be quoted because YAML would read them as something else, or
@@ -72,6 +104,53 @@ export function bodyFieldFor(def) {
 }
 
 /**
+ * The fields of a post-type that project to a sidecar file, sorted by name (SH191).
+ *
+ * Sorted rather than ordinal-ordered on purpose: the order is only ever used to emit the
+ * `files:` block, and a diff must not move a line because somebody reordered fields in the
+ * console. The body field is excluded — a post has one body and it is already a file.
+ *
+ * @param {object} def a post-type def (`shio pull` shape) or `{ fields: [...] }`
+ * @returns {{name: string, ext: string}[]}
+ */
+export function sidecarFieldsFor(def) {
+  const body = bodyFieldFor(def);
+  return (def?.fields ?? [])
+    .filter((field) => field?.name && field.name !== body && SIDECAR_WIDGETS.has(field.widget))
+    .map((field) => ({ name: field.name, ext: SIDECAR_WIDGETS.get(field.widget) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * A sidecar's file name — `<post stem>.<FIELD>.<ext>` (SH191).
+ *
+ * <h3>Why the field name is always in it</h3>
+ *
+ * `home.html` beside `home.md` is prettier, and it collides the moment a post-type declares
+ * two `Ace Editor - HTML` fields — silently, because the second write would overwrite the
+ * first and the file would still parse. Including the field unconditionally is the same
+ * discipline `bodyFieldFor` follows: a rule that changes a file name when somebody adds a
+ * field is a silent content move wearing a formatting diff.
+ *
+ * It is a **basename**, not a path: the sidecar always sits beside its `.md`, so there is
+ * nowhere for a `/` or a `..` to be meaningful and every one is a traversal attempt.
+ *
+ * @param {string} postFileName the post's own file name, e.g. `hello.md`
+ * @param {{name: string, ext: string}} field
+ * @returns {string} e.g. `hello.HTML.html`
+ */
+export function sidecarNameFor(postFileName, { name, ext }) {
+  const stem = String(postFileName).replace(/\.md$/i, "");
+  if (/[\\/]/.test(name)) {
+    throw new Error(
+      `shio content: field "${name}" cannot project to a file — a field name with a slash ` +
+        "has no safe file name.",
+    );
+  }
+  return `${stem}.${name}.${ext}`;
+}
+
+/**
  * The file path a post projects to, relative to the content root.
  *
  * @param {{ site: string, url: string }} doc
@@ -79,6 +158,43 @@ export function bodyFieldFor(def) {
  */
 export function filePathFor({ site, url }) {
   return `${siteDir(site)}/${urlToPath(url)}`;
+}
+
+/**
+ * The sidecar files one post projects to, as tree-relative paths and their contents (SH191).
+ *
+ * Only a field the post actually holds a non-empty string in gets a file: an absent or empty
+ * `JAVASCRIPT` would otherwise litter the tree with empty programs, and — worse — a file
+ * whose emptiness is indistinguishable from one whose content somebody deleted.
+ *
+ * @param {object} doc     the same shape `serializePost` takes
+ * @param {{name: string, ext: string}[]} [sidecarFields]
+ * @returns {{ field: string, path: string, name: string, text: string }[]}
+ */
+export function sidecarsOf(doc, sidecarFields = []) {
+  const data = doc?.data && typeof doc.data === "object" ? doc.data : {};
+  const relPath = filePathFor(doc);
+  const dir = relPath.slice(0, relPath.lastIndexOf("/"));
+  const fileName = relPath.slice(relPath.lastIndexOf("/") + 1);
+  return sidecarFields
+    .filter((field) => sidecarSafe(data[field.name]))
+    .map((field) => {
+      const name = sidecarNameFor(fileName, field);
+      return {
+        field: field.name,
+        name,
+        path: `${dir}/${name}`,
+        // **Verbatim** — the one place in this format that normalizes nothing, and
+        // deliberately unlike the body's CRLF → LF. A sidecar is read back as the whole file
+        // with no framing to strip, so byte-for-byte is achievable here and it is what keeps
+        // the round trip exact: normalize on the way out and a server value holding CRLF (or
+        // a trailing blank line) reads back different from the fingerprint the base took
+        // from the *server's* copy, and every later pull reports a "local change" nobody
+        // made, forever, until somebody pushes. That is a live defect on the body field —
+        // SH253 — and it is not worth reproducing on the artifact an iterative loop edits most.
+        text: String(data[field.name]),
+      };
+    });
 }
 
 /** The site's directory name. Refuses a name that would escape the tree. */
@@ -127,10 +243,14 @@ export function normalizeUrl(url) {
  * @param {boolean} [doc.publish] published state, when known
  * @param {object} doc.data    field values keyed by attribute name
  * @param {string|null} [bodyField] field to render as the document body
+ * @param {{name: string, ext: string}[]} [sidecarFields] fields that project to files (SH191)
  * @returns {string}
  */
-export function serializePost(doc, bodyField = null) {
+export function serializePost(doc, bodyField = null, sidecarFields = []) {
   const data = doc.data && typeof doc.data === "object" ? doc.data : {};
+  // SH191 — computed from the same function the writer uses, so a `files:` line can never
+  // name a file the writer did not produce.
+  const sidecars = sidecarFields.length ? sidecarsOf(doc, sidecarFields) : [];
   // The one normalization in the format: a body's line endings become LF. Without it a
   // server value holding CRLF would serialize one way and parse back another, and every
   // pull would report a change nobody made.
@@ -159,8 +279,18 @@ export function serializePost(doc, bodyField = null) {
     if (meta[key] === undefined) continue;
     lines.push(`${key}: ${encodeScalar(meta[key])}`);
   }
+  // SH191 — after the metadata and before `fields:`, because a reader scanning the top of the
+  // file is asking "what is this and where is its content", and the answer is now two places.
+  if (sidecars.length) {
+    lines.push(`${FILES_KEY}:`);
+    for (const sidecar of sidecars) {
+      lines.push(`  ${sidecar.field}: ${encodeScalar(sidecar.name)}`);
+    }
+  }
+  const inFiles = new Set(sidecars.map((sidecar) => sidecar.field));
   const fieldNames = Object.keys(data)
     .filter((name) => !(body !== null && name === bodyField))
+    .filter((name) => !inFiles.has(name))
     .sort();
   if (fieldNames.length) {
     lines.push("fields:");
@@ -286,12 +416,16 @@ export function parseFolderMarker(relPath, text) {
  * guessing which would either duplicate the post or delete the original. SH134 learned
  * this on the API side; the file side gets it for free by refusing.
  *
+ * Since SH191 a post's code fields live in sidecar files that the frontmatter names, so what
+ * comes back here is `sidecarFiles` — field → file name — and **not** their values: this
+ * module is pure, and reading them is `content-store.mjs`' job.
+ *
  * @param {string} relPath path relative to the content root, e.g. `Blog/blog/hello.md`
  * @param {string} text    file contents
- * @returns {{ site, url, type, folder, publish, bodyField, data }}
+ * @returns {{ site, url, type, folder, publish, bodyField, sidecarFiles, data }}
  */
 export function parsePost(relPath, text) {
-  const { meta, fields, body } = splitDocument(relPath, text);
+  const { meta, fields, files, body } = splitDocument(relPath, text);
   const fromPath = relPath ? locationOf(relPath) : {};
 
   const site = meta.site ?? fromPath.site;
@@ -325,6 +459,42 @@ export function parsePost(relPath, text) {
     );
   }
 
+  // SH191 — the sidecars, validated here and read by the store. Two refusals, both the
+  // `url:`-versus-path rule applied to a second pair of places one value can live.
+  const sidecarFiles = {};
+  for (const [field, name] of Object.entries(files)) {
+    if (!name) {
+      throw fault(relPath, `its \`${FILES_KEY}: ${field}:\` names no file`);
+    }
+    if (/[\\/]|^\.\.?$/.test(name)) {
+      // A sidecar always sits beside its `.md`, so a path separator here is never a location
+      // — it is a way out of the tree, and this file may have arrived from anywhere.
+      throw fault(
+        relPath,
+        `its \`${FILES_KEY}: ${field}: ${name}\` is a path, not a file name — a sidecar sits ` +
+          "beside its post file",
+      );
+    }
+    if (Object.hasOwn(fields, field)) {
+      // Two places holding one field's value, and no way to tell which the author edited.
+      // Whichever side won would silently discard the other, which is the failure this
+      // format refuses everywhere else it can be caught.
+      throw fault(
+        relPath,
+        `its \`${field}\` is in both \`${FILES_KEY}:\` (${name}) and \`fields:\`. One field has ` +
+          `one value — delete whichever is stale`,
+      );
+    }
+    if (field === meta.body) {
+      throw fault(
+        relPath,
+        `its \`${field}\` is both the document body (\`body: ${field}\`) and a sidecar ` +
+          `(\`${FILES_KEY}: ${field}: ${name}\`). One field has one value`,
+      );
+    }
+    sidecarFiles[field] = name;
+  }
+
   const data = { ...fields };
   const bodyField = meta.body ?? null;
   if (body !== null && body !== "") {
@@ -345,6 +515,7 @@ export function parsePost(relPath, text) {
     publish: typeof meta.publish === "boolean" ? meta.publish : undefined,
     movedFrom: meta.movedFrom ? normalizeUrl(meta.movedFrom) : undefined,
     bodyField,
+    sidecarFiles,
     data,
   };
 }
@@ -364,8 +535,8 @@ export function locationOf(relPath) {
  * does **not** use it — a merge has to know *which* fields differ, so `content-sync.mjs`
  * compares field by field.
  */
-export function canonicalize(doc, bodyField = null) {
-  return serializePost(doc, bodyField);
+export function canonicalize(doc, bodyField = null, sidecarFields = []) {
+  return serializePost(doc, bodyField, sidecarFields);
 }
 
 // --- internals ---
@@ -373,6 +544,17 @@ export function canonicalize(doc, bodyField = null) {
 /** A body has to survive the round trip exactly, or it stays a field. */
 function bodySafe(value) {
   return typeof value === "string" && value.trim() === value && value !== "";
+}
+
+/**
+ * A sidecar holds a whole file, so any non-empty string survives it verbatim (SH191).
+ *
+ * The bar is lower than `bodySafe`'s on purpose: a body is framed by the rest of the
+ * document and has to be told apart from it, while a sidecar *is* the file. An empty value
+ * is excluded because an empty file cannot be told apart from one somebody emptied.
+ */
+function sidecarSafe(value) {
+  return typeof value === "string" && value !== "";
 }
 
 function encodeField(name, value) {
@@ -423,7 +605,7 @@ function decodeScalar(raw) {
   return text;
 }
 
-/** Splits a file into frontmatter, fields and body — the only place the fence matters. */
+/** Splits a file into frontmatter, fields, files and body — the only place the fence matters. */
 function splitDocument(relPath, text) {
   const source = String(text ?? "").replace(/^﻿/, "");
   const lines = source.split(/\r?\n/);
@@ -439,7 +621,9 @@ function splitDocument(relPath, text) {
 
   const meta = {};
   const fields = {};
-  let inFields = false;
+  const files = {};
+  // Which nested block the reader is inside: `fields`, `files` (SH191) or neither.
+  let block = null;
   let lastField = null;
   for (const line of lines.slice(1, end)) {
     if (!line.trim() || line.trim().startsWith("#")) continue;
@@ -455,19 +639,25 @@ function splitDocument(relPath, text) {
     if (split < 0) continue;
     const key = line.slice(0, split).trim();
     const rest = line.slice(split + 1);
-    if (!indented && key === "fields") {
-      inFields = true;
+    if (!indented && (key === "fields" || key === FILES_KEY)) {
+      block = key;
       lastField = null;
       continue;
     }
-    if (inFields && indented) {
+    if (block === FILES_KEY && indented) {
+      // No sequences here: a field has exactly one sidecar, and `lastField` deliberately
+      // stays null so a stray `- item` under `files:` cannot append to a field's value.
+      files[key] = String(decodeScalar(rest) ?? "");
+      continue;
+    }
+    if (block === "fields" && indented) {
       lastField = key;
       // `key:` with nothing after it opens a sequence (that is the only shape that emits
       // it), so an empty list stays an empty list rather than becoming null.
       fields[key] = rest.trim() === "" ? [] : decodeScalar(rest);
       continue;
     }
-    inFields = false;
+    block = null;
     lastField = null;
     meta[key] = decodeScalar(rest);
   }
@@ -477,7 +667,7 @@ function splitDocument(relPath, text) {
     .join("\n")
     .replace(/^\n/, "")
     .replace(/\s+$/, "");
-  return { meta, fields, body };
+  return { meta, fields, files, body };
 }
 
 function fault(relPath, why) {

@@ -899,6 +899,29 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
 - **Losslessness beats prettiness:** a value that would not survive the round trip stays in
   `fields:` (as JSON) instead of becoming the body. The one normalization is CRLF → LF in
   the body, so a pull cannot report a change nobody made.
+- **Code gets a file of its own (SH191).** A `PageLayout`'s `HTML`, a `Region`'s
+  `HTML`/`JAVASCRIPT` and a `Theme`'s `CSS` are programs, and before this they projected as
+  escaped one-liners inside YAML frontmatter — no line numbers, no highlighting, nothing
+  `Grep` reaches, and every tweak a re-escape. Law P4 failed on the artifact an iterative loop
+  edits most. They now project as **sidecars** beside the `.md` —
+  `content-list.HTML.html`, `content-list.JAVASCRIPT.js` — named by a `files:` block the way
+  `body:` already names the document body, so reading a file back never needs the model.
+  Five rules: **the widget decides, never the post-type** (`SIDECAR_WIDGETS`, the
+  `Ace Editor` pair) — a rule keyed on the type stops working the moment somebody models
+  their own layout, which is the expected case since a layout is content; the file name
+  **always carries the field**, because `home.html` collides silently the day a type declares
+  two `Ace Editor - HTML` fields, and a name that changes when a field is added is the silent
+  content move `bodyFieldFor` refuses; the bytes are **verbatim** — the one place this format
+  normalizes nothing, deliberately unlike the body's CRLF → LF, because a sidecar is read
+  back as the whole file with no framing to strip, and normalizing means the value differs
+  from the fingerprint the base took from the *server's* copy and every later pull reports a
+  local change nobody made (that is live on the body — **SH253**); a **missing** file named by
+  `files:` is a refusal, since "empty" publishes a blank layout and "absent" makes
+  `post.upsert` clear the server's copy; and a sidecar the post **no longer needs is removed**,
+  read off the file on disk rather than inferred. A `.remote` conflict copy stays **whole**
+  (values in `fields:`), so the artifact a human diffs is one file.
+  A `Theme`'s `CSS` is declared `Ace Editor - HTML` because no CSS widget is seeded, so its
+  sidecar is `.html` today — **SH252** is the one-line fix.
 - **`shio pull --content`** merges three ways against `shio/.shio/content-base.json` (the
   last-synced base + the SH88 cursor): one side changed → that side, different fields →
   merged, same field → **conflict**, which writes nothing, exits 1, and offers

@@ -36,6 +36,7 @@ import {
   readLocalFolders,
   readLocalNotes,
   readRemoteNotes,
+  sidecarFields,
   sitesOf,
   readRemote,
   readRemoteAssets,
@@ -100,6 +101,10 @@ export async function run(flags, _positionals, ctx) {
 
   const defs = await admin.getPostTypeDefs();
   const bodyField = bodyFields(defs);
+  // SH191 — a layout's HTML and a region's JavaScript are programs, and a program in escaped
+  // JSON inside YAML frontmatter is the one place law P4 fails on the artifact an iterative
+  // loop edits most. They project beside the `.md` instead.
+  const sidecarField = sidecarFields(defs);
 
   // SH145 — the assets, before the posts. Every `File` field on the way in is rewritten from
   // an id to an asset path, so the base, the server side and the file side all speak paths and
@@ -159,7 +164,12 @@ export async function run(flags, _positionals, ctx) {
       case "remote-added":
       case "remote-changed":
       case "merged":
-        if (!dryRun) await writeDoc(ctx, result.doc, fieldFor(bodyField, result.doc), { dir });
+        if (!dryRun) {
+          await writeDoc(ctx, result.doc, fieldFor(bodyField, result.doc), {
+            dir,
+            sidecars: sidecarsFor(sidecarField, result.doc),
+          });
+        }
         report.written.push(`${address}${result.kind === "merged" ? " (merged)" : ""}`);
         nextPosts[address] = baseEntryFor(result.doc);
         break;
@@ -347,6 +357,17 @@ function addresses(base, remote, local) {
 
 function fieldFor(bodyField, doc) {
   return doc?.bodyField ?? bodyField.get(doc?.type) ?? null;
+}
+
+/**
+ * The code fields of the post-type this document has (SH191).
+ *
+ * A type this run could not read the def for gets **none**, which keeps the values in
+ * `fields:` — the pre-SH191 shape. Ugly, and it is the only reading that cannot lose content:
+ * inventing a sidecar for a field whose widget is unknown would put prose in a `.html`.
+ */
+function sidecarsFor(sidecarField, doc) {
+  return sidecarField.get(doc?.type) ?? [];
 }
 
 /**

@@ -26,6 +26,14 @@ const DEFS = [
       { name: "body", widget: "HTML Editor", ordinal: 2 },
     ],
   },
+  // SH183's render model, as SH191 needs to see it: two code fields, no body field at all.
+  {
+    name: "Region",
+    fields: [
+      { name: "HTML", widget: "Ace Editor - HTML", ordinal: 1 },
+      { name: "JAVASCRIPT", widget: "Ace Editor - Javascript", ordinal: 2 },
+    ],
+  },
 ];
 
 /** An in-memory fs with the handful of calls the content commands make. */
@@ -916,6 +924,98 @@ test("pull --content leaves an agreed marker byte-identical", async () => {
 
   assert.deepEqual(result.folders, { written: [], deleted: [], kept: [] });
   assert.equal(ctx.fs.files.get(markerPath("Blog", "/news")), markerFile("Blog", "/news"));
+});
+
+// --- a template projects as files (SH191) ---
+
+const REGION_HTML = '<div class="cards">\n  {{#each this.posts}}<b>{{title}}</b>{{/each}}\n</div>\n';
+const REGION_JS = "document.querySelectorAll('.cards').forEach((n) => n.classList.add('ready'));\n";
+const REGION_REMOTE = {
+  address: "post:Blog/region/content-list",
+  type: "Region",
+  state: "DRAFT",
+  folder: "/Regions",
+  data: { HTML: REGION_HTML, JAVASCRIPT: REGION_JS },
+};
+const REGION_MD = "/repo/shio/content/Blog/region/content-list.md";
+const REGION_HTML_FILE = "/repo/shio/content/Blog/region/content-list.HTML.html";
+const REGION_JS_FILE = "/repo/shio/content/Blog/region/content-list.JAVASCRIPT.js";
+
+test("pull --content writes a template as a real .html beside the post file", async () => {
+  const ctx = ctxWith(server({ remote: { "post:Blog/region/content-list": REGION_REMOTE } }));
+
+  await contentPull.run({}, [], ctx);
+
+  // Verbatim, so the file an editor opens is the program and `Grep` reaches it — which is the
+  // whole of law P4's claim, and what escaped JSON in YAML frontmatter defeated.
+  assert.equal(ctx.fs.files.get(REGION_HTML_FILE), REGION_HTML);
+  assert.equal(ctx.fs.files.get(REGION_JS_FILE), REGION_JS);
+  const md = ctx.fs.files.get(REGION_MD);
+  assert.match(md, /^files:\n {2}HTML: content-list\.HTML\.html\n {2}JAVASCRIPT: content-list\.JAVASCRIPT\.js$/m);
+  assert.doesNotMatch(md, /\{\{#each/);
+});
+
+test("a pull straight after a pull reports nothing changed — the round trip is exact", async () => {
+  const fetchImpl = server({ remote: { "post:Blog/region/content-list": REGION_REMOTE } });
+  const ctx = ctxWith(fetchImpl);
+
+  await contentPull.run({}, [], ctx);
+  // Same tree, same server, same base: a second pull that reported a change would mean the
+  // format normalized something on the way out, and every CI drift gate would go red on its own.
+  const again = await contentPull.run({}, [], { ...ctx, stdout: sink(), stderr: sink() });
+
+  assert.deepEqual(again.written, []);
+  assert.deepEqual(again.kept, []);
+  assert.deepEqual(again.unchanged, ["post:Blog/region/content-list"]);
+});
+
+test("push --content sends the sidecar's bytes as the field's value", async () => {
+  const fetchImpl = server({ remote: {} });
+  const ctx = ctxWith(fetchImpl, {
+    [REGION_MD]:
+      "---\nsite: Blog\nurl: /region/content-list\ntype: Region\nfolder: /Regions\n" +
+      "files:\n  HTML: content-list.HTML.html\n  JAVASCRIPT: content-list.JAVASCRIPT.js\n---\n",
+    [REGION_HTML_FILE]: REGION_HTML,
+    [REGION_JS_FILE]: REGION_JS,
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  const applied = fetchImpl.calls.find((call) => call.url.includes("/agent/apply"));
+  const post = applied.body.posts.find((row) => row.url === "/region/content-list");
+  assert.equal(post.data.HTML, REGION_HTML);
+  assert.equal(post.data.JAVASCRIPT, REGION_JS);
+});
+
+test("a files: entry whose file is gone is refused, never pushed as empty", async () => {
+  // The two silent readings are both destructive: empty publishes a blank layout, absent makes
+  // `post.upsert` — which declares whole state — clear the server's copy.
+  const ctx = ctxWith(server({ remote: {} }), {
+    [REGION_MD]:
+      "---\nsite: Blog\nurl: /region/content-list\ntype: Region\nfolder: /Regions\n" +
+      "files:\n  HTML: content-list.HTML.html\n---\n",
+  });
+
+  await assert.rejects(() => contentPush.run({}, [], ctx), /names a file that is not there/);
+});
+
+test("a sidecar the post no longer needs is removed, not left orphaned", async () => {
+  const emptied = { ...REGION_REMOTE, data: { HTML: REGION_HTML, JAVASCRIPT: "" } };
+  const ctx = ctxWith(server({ remote: { "post:Blog/region/content-list": REGION_REMOTE } }));
+
+  await contentPull.run({}, [], ctx);
+  assert.equal(ctx.fs.files.has(REGION_JS_FILE), true);
+
+  // The server's JavaScript was cleared. The `.js` must go with it — a file nothing references
+  // is one a later reader edits expecting it to matter.
+  const next = ctxWith(server({ remote: { "post:Blog/region/content-list": emptied } }), {
+    ...Object.fromEntries(ctx.fs.files),
+  });
+  await contentPull.run({}, [], next);
+
+  assert.equal(next.fs.files.has(REGION_JS_FILE), false);
+  assert.equal(next.fs.files.get(REGION_HTML_FILE), REGION_HTML);
+  assert.doesNotMatch(next.fs.files.get(REGION_MD), /JAVASCRIPT: content-list/);
 });
 
 // --- the dev loop (SH90) ---

@@ -1608,30 +1608,19 @@ and proof that a single-app loop can simply do without.
 
 #### XV.9 A template is code and must project as files (SH191)
 
-`content-files.mjs` is deliberately narrow: `bodyFieldFor` returns a field only when its widget
-is `HTML Editor`, and the comment says why — a value that would not survive the round trip stays
-in `fields:` as JSON rather than becoming prettier. That rule is right for content and wrong for
-presentation, because a layout's fields are `Ace Editor - HTML` and `Ace Editor - Javascript`,
-which do not qualify. The imported region projects like this:
-
-```yaml
-fields:
-  HTML: "<div class=\"card-columns\">\n {{#each this.posts}}    \n  <div class=\"card\">\n…"
-  JAVASCRIPT: "load('https://cdnjs.cloudflare.com/…');\nvar template = Handlebars.compile(html);\n…"
-```
-
-An HTML document and a JavaScript program, as escaped one-liners inside YAML. No line numbers, no
-highlighting, no `Grep`, no diff a human can review, and every edit means re-escaping by hand.
-Law P4 says files beat APIs for authoring, and this is the artifact an iterative loop touches more
-than any other.
-
-The fix is a multi-file projection: `bootstrap_content_list_region.md` for the metadata beside
-`bootstrap_content_list_region.html` and `.js`, with frontmatter naming which field each sidecar
-carries — the same trick `body:` already plays, generalized past one field and one widget. Two
-things to settle: which widgets earn a sidecar (`Ace Editor - *` is the obvious set, and it should
-be the *widget* that decides, not the post-type, or the rule stops working the moment someone
-models their own layout type), and what a pull does when a sidecar and the frontmatter disagree —
-the same refusal `url:`-versus-path already gets.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Both open questions closed the way
+> the design guessed, and building it opened two tasks:
+>
+> **The extension is the widget's, and the widget catalogue is short one entry.** A `Theme`'s
+> `CSS` field is declared `Ace Editor - HTML` because no CSS widget is seeded, so its sidecar
+> is `.html` — the honest consequence of letting the widget decide, and a one-line fix once
+> the widget exists (**SH252**).
+>
+> **A projection that normalizes cannot be exact.** The body field's CRLF → LF exists so a
+> pull "cannot report a change nobody made", and it achieves the opposite: the base
+> fingerprint is taken from the *server's* document, so the normalized file reads back
+> different from the base and every later pull reports a local change until somebody pushes.
+> Sidecars are verbatim for that reason; the body is **SH253**.
 
 #### XV.10 A template must fail at write time, not at view time (SH192)
 
@@ -1784,6 +1773,33 @@ is a real distinction — a section is content a page *names* in a field, a regi
 layout *slots* — and they can legitimately coexist: an SH95 `Page` composed of sections could
 itself be rendered *inside* a layout whose content region iterates them. That is a coherent
 story and it is currently written down nowhere, which is how two composition paths become three.
+
+#### XV.18 A stylesheet is not an HTML document, and the catalogue says it is (SH252)
+
+`ShRenderPostTypes.ensureTheme()` declares the `CSS` field as `Ace Editor - HTML`, with no
+comment, because that is the closest thing `ShWidgetOnStartup` seeds: the catalogue has exactly
+two code widgets, `Ace Editor - HTML` and `Ace Editor - Javascript`.
+
+Two consequences, and both are in the one place the mislabel is visible. The console hands a
+stylesheet an HTML editor — wrong mode, wrong bracket matching, wrong everything an editor mode
+does. And SH191, which decided that **the widget** names a code field's extension precisely so
+that a layout somebody models themselves works like a first-party one, gives `Theme.CSS` a
+`.html` sidecar. That is not a defect in SH191's rule; it is the rule reporting accurately what
+the model claims. A special case keyed on the field being called `CSS` would be the wrong repair
+— it re-introduces exactly the type/name guessing the rule exists to avoid, and it would not fix
+the editor.
+
+The catalogue is **closed** (`ShPostTypeAdminService` rejects an unknown widget on upsert), so
+adding one is deliberately more than a string: `ShSystemWidget`, `ShWidgetOnStartup`'s seed,
+the console's `WIDGET_MAP` and `widget-colors.ts`, `shio-model`'s `builders.ts` so the DSL can
+declare it, and `SIDECAR_WIDGETS` in `content-files.mjs`. Six places for one field is why this
+is an idea and not designed work — and the reason to do it anyway is that `Theme.CSS` is the
+field a human hand-edits most until §XV.13's token vocabulary (SH195) replaces the need to.
+
+Worth checking while there: whether the *existing* pair is complete for the render model. A
+`PageLayout`'s `THEME` field is a plain `Text` holding a theme's title, which is a reference
+wearing a string — the same shape SH154 gave a name to for `Multi Select`, and the same reason
+SH193 cannot currently compute a region's blast radius.
 
 ## XVI. The human half (Block O) — what reading the console next found
 
@@ -1969,6 +1985,44 @@ than self-attaching. It is filed as an idea rather than designed because the wir
 checked against what Spring Boot's parent POM already sets on `argLine` (and against the JaCoCo
 argLine, if that is ever added), and getting two agents onto one `argLine` is the part that
 actually takes care.
+
+### XVI.8 The body's CRLF normalization causes the drift it was written to prevent (SH253)
+
+`serializePost` carries this comment, and it is the only normalization in the whole projection
+format:
+
+```js
+// The one normalization in the format: a body's line endings become LF. Without it a
+// server value holding CRLF would serialize one way and parse back another, and every
+// pull would report a change nobody made.
+```
+
+The reasoning is sound about the *file* and wrong about the *comparison*, because the base
+snapshot is not taken from the file. `content-pull.mjs` records
+`nextPosts[address] = baseEntryFor(result.doc)` — the merge result, which for a
+`remote-changed`/`remote-added` post **is the server's document**, CRLF intact. So the pull
+writes LF to disk, fingerprints CRLF into the base, and the next pull reads the file, compares
+it to the base, and finds them different. `reconcile` answers `local-changed`, so the pull keeps
+the file and reports it as a local-only change, every time, forever, until somebody pushes —
+and `push --content --check`, the CI drift gate, fails on content nobody edited.
+
+Verified rather than argued: serialize a body of `"a\r\nb"`, parse it back, digest the remote
+document as the pull does, and `reconcile` returns `local-changed`.
+
+Nothing catches it because **no test in the suite uses a CRLF value** — the round-trip tests
+assert `parse(serialize(doc)) === doc.data` on LF content, where the normalization is the
+identity function. That is the shape worth remembering: a rule stated in a comment, contradicted
+by a caller two files away, and invisible to every assertion because the fixtures all happen to
+satisfy it. SH191's sidecars avoid it by normalizing nothing, which is available to them and not
+to the body, whose framing genuinely has to be stripped on read.
+
+**Two candidate fixes, and they are not equivalent.** Fingerprint the *projected* document
+rather than the remote one — that is, take the base from what was actually written, which is the
+only thing the next pull will read. It is correct for every future normalization and it changes
+what "agreed" means, so the `--ours`/`--theirs` paths and the v1-snapshot upgrade both want
+re-reading before it lands. Or normalize the remote value before digesting it: one line, fixes
+this case, and silently wrong the next time somebody adds a normalization — which is exactly how
+this defect was introduced. The first is the real answer; the second is what a hurry would pick.
 
 ---
 
