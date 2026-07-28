@@ -1935,6 +1935,16 @@ that layout from `ShTenantContext`.
 Tests skip Liquibase (`spring.liquibase.enabled=false`) and build the schema from
 entity metadata via `ddl-auto=create-drop` on a fresh in-memory H2 per run.
 
+**Mockito runs as a `-javaagent`, not by self-attaching (SH250).** Surefire and failsafe both carry
+`@{argLine} -javaagent:${org.mockito:mockito-core:jar}`, with the path supplied by
+`maven-dependency-plugin`'s `properties` goal and `argLine` declared **empty** in `<properties>` so
+the late replacement always resolves. **`@{argLine}` and never `${argLine}`** — JaCoCo already sets
+that property, so the plain form would replace its agent and coverage would silently stop being
+collected. Before this, instrumentation was installed by attaching to the running JVM, which
+succeeds or fails on class-loading order: `ShTenantSuspendedAccessTest` failed six of six once and
+passed on every re-run. A flake is worse than a break, because it teaches people that red might mean
+nothing. If you add another agent, append to `argLine` the same way.
+
 ## Common Issues & Solutions
 
 ### Optimistic Locking on Startup

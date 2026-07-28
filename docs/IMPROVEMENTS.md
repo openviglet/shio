@@ -2060,36 +2060,20 @@ the build going red the day somebody adds the fifth one.
 
 ### XVI.7 The suite's mocks depend on dynamic agent attachment (SH250)
 
-While Block P was being built, `ShTenantSuspendedAccessTest` failed six of six with
-`MockitoException: Could not modify all classes [class ShVigletTenantStore, interface
-VigletTenantStore]`. It then passed on every re-run, in isolation and in the full suite, with no
-change to it or to anything it touches. The trigger is class-loading order, not a defect in the
-test and not a defect in the code it covers.
-
-The cause is printed on every single run of this suite and has been for a long time:
-
-> *Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work
-> in future releases of the JDK. Please add Mockito as an agent to your build.*
-
-So there are two problems stacked. The first is that instrumentation is being installed by
-attaching an agent to the running JVM, which is exactly the kind of thing whose success depends
-on what has already been loaded — hence a failure that appears once and cannot be reproduced.
-The second is a deprecation timer: the JDK is removing dynamic agent loading, and when it does
-this stops being intermittent and starts being permanent.
-
-**It is filed with SH246 rather than beside it because it is the same class of problem and the
-worse member of it.** SH246 was a red build nobody caused, and it was *deterministic*, which is
-why it could be diagnosed in one sitting. This one is flaky, and a flaky suite is more expensive
-than a broken one: it teaches everybody that a red run might mean nothing, which is how a real
-regression gets a re-run instead of an investigation. The whole argument for the SH182 browser
-check was that defects nothing asserts on stay invisible; a gate people have learned to disbelieve
-is the same failure with extra steps.
-
-The fix is the one the warning names — Mockito configured as a `-javaagent` in surefire rather
-than self-attaching. It is filed as an idea rather than designed because the wiring should be
-checked against what Spring Boot's parent POM already sets on `argLine` (and against the JaCoCo
-argLine, if that is ever added), and getting two agents onto one `argLine` is the part that
-actually takes care.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two things worth keeping.
+>
+> **The hypothetical in this section's own last paragraph was already true.** It said the wiring
+> "should be checked against what Spring Boot's parent POM already sets on `argLine` (and against the
+> JaCoCo argLine, if that is ever added)". JaCoCo sets it *today* — the build prints `argLine set to
+> -javaagent:…org.jacoco.agent…` — so `@{argLine}`, surefire's late replacement, was load-bearing
+> rather than defensive: `${argLine}` would have silently replaced JaCoCo's agent with Mockito's and
+> coverage would have quietly stopped being collected. Worth generalising: when a design note hedges
+> about a condition, check whether it already holds before treating the hedge as future work.
+>
+> **Fixing a flake is worth more than its size suggests.** The change is a dozen lines of POM. What
+> it buys is that a red run means something again — and the value was demonstrated immediately, since
+> SH250's own fix was verified by the *absence* of a warning, which is only a signal in a log clean
+> enough for an absence to be visible. That property is currently luck, not design: **SH271**.
 
 ### XVI.8 A normalization has to hold for the comparison, not just the file (SH253)
 
@@ -2427,6 +2411,30 @@ and the request succeeded anyway.
 The lint shape is available if the answer is "some of them": a `catch` that neither records nor
 rethrows could be made to name a reason inline, the way `byte-stable-exempt` does for SH136. That
 turns a silent decision into a written one without adding a single log line.
+
+### XVI.23 A warning printed on every run is a warning nobody reads (SH271)
+
+SH250's fix was named by the build's own output — *"add Mockito as an agent to your build"* — on every
+run, for as long as anyone can remember. What turned it into a task was a **flake**, not the message.
+That is the whole finding: the message was doing nothing.
+
+Two others are in exactly that state right now:
+
+- `logback` on every context start: *"This appender no longer admits a layout as a sub-component, set
+  an encoder instead."* A deprecation on a timer, like the Mockito one — it will stop being a warning
+  and start being a config error.
+- The JVM: *"Sharing is only supported for boot loader classes because bootstrap classpath has been
+  appended."* Probably harmless, and now caused by the agent SH250 added, which is worth knowing
+  rather than shrugging at.
+
+The work is to fix what is fixable and, for whatever genuinely is not, silence it **deliberately** —
+and the second half matters as much as the first, because an undecided warning is indistinguishable
+from an unnoticed one.
+
+The argument is not tidiness. SH250 was verified by the *absence* of a warning, and an absence is only
+a signal in a log clean enough for it to be visible. That property was luck this time. Making it
+design is what this buys, and the beneficiary is whoever reads the build the day something new starts
+warning.
 
 ---
 

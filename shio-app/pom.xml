@@ -19,6 +19,12 @@
              Default false = build the console; pass -Dskip.npm=true to skip it and run
              against a previously-built src/main/resources/public. -->
         <skip.npm>false</skip.npm>
+        <!-- SH250 — surefire's `@{argLine}` is a *late* replacement of this property, so it has
+             to exist even when nothing has set it, or the build fails resolving it. Declared empty
+             here so the Mockito agent below can append rather than replace: the next tool that
+             wants the JVM's command line (JaCoCo is the likely one) sets `argLine` and both agents
+             end up on it, which is the part the task note said would actually take care. -->
+        <argLine></argLine>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>21</maven.compiler.source>
@@ -452,10 +458,42 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- SH250 — resolves each dependency's path into a property so the Mockito jar can be
+                 named as a `-javaagent` below. `${org.mockito:mockito-core:jar}` is this plugin's
+                 output; without it the agent path would have to be hard-coded against the local
+                 repository layout, which differs per machine and per Maven version. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>resolve-agent-paths</id>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.6</version>
+                <configuration>
+                    <!-- SH250 — Mockito as a real agent instead of self-attaching.
+                         The suite printed this on every run: "Mockito is currently self-attaching
+                         to enable the inline-mock-maker. This will no longer work in future
+                         releases of the JDK." Two problems stacked: instrumentation installed by
+                         attaching to the *running* JVM succeeds or fails depending on what has
+                         already been loaded — which is why ShTenantSuspendedAccessTest failed six
+                         of six once during Block P and passed on every re-run, in isolation and in
+                         the full suite — and the JDK is removing dynamic agent loading, so the
+                         intermittent failure becomes permanent. A flaky suite is more expensive
+                         than a broken one: it teaches everybody that a red run might mean nothing,
+                         which is how a real regression gets a re-run instead of an investigation.
+                         `@{argLine}` (late replacement) rather than `${argLine}` so a future
+                         JaCoCo argLine is appended to, not overwritten. -->
+                    <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -472,6 +510,11 @@
                 <configuration>
                     <classesDirectory>${project.build.outputDirectory}</classesDirectory>
                     <testFailureIgnore>true</testFailureIgnore>
+                    <!-- SH250 — the SH26 cross-database ITs boot the full context and mock
+                         alongside it, so they need the same agent for the same reason surefire
+                         does. Merged into the existing block rather than added as a second one:
+                         two `configuration` elements on one plugin is a non-parseable POM. -->
+                    <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
                 </configuration>
             </plugin>
             <plugin>
