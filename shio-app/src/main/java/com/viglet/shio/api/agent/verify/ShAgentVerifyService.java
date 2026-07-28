@@ -518,6 +518,37 @@ public class ShAgentVerifyService {
         templateFields(check, scan, findings);
         unusedTemplates(check, scan, findings);
         duplicateTemplateTitles(check, scan, findings);
+        unpublishedTemplates(check, scan, findings);
+    }
+
+    /**
+     * SH280 — a bound layout with no published row, where published pages depend on it.
+     *
+     * <p>Since SH278 a PUBLISHED render reads only published rows at every level, so an unpublished
+     * layout stops a published page rendering. The refusal says so now, but a refusal only reaches
+     * whoever asked for the page; this is how the operator finds it first. A <b>warning</b>, because
+     * the SH99 line is that {@code ok} is false only for what the CMS can prove is wrong and the
+     * remedy here is one publish away — but reported per layout, naming the types whose pages are
+     * affected, because "publish something" is not actionable and "publish this" is.</p>
+     *
+     * <p>Site-level rather than subject-addressed, so it is emitted once per site in the scan rather
+     * than once per affected page — the number of stranded pages is in the message, not in the count.</p>
+     */
+    private void unpublishedTemplates(String check, Scan scan, List<Finding> findings) {
+        for (ShSite site : scan.siteById().values()) {
+            for (Map.Entry<String, Set<String>> stranded
+                    : templateGraph.unpublishedBoundLayouts(site).entrySet()) {
+                findings.add(Finding.warning(check, "unpublished-layout",
+                        "site:" + site.getName(), null,
+                        "Layout '" + stranded.getKey() + "' has never been published, and '"
+                                + site.getName() + "' has published pages bound to it ("
+                                + String.join(", ", stranded.getValue()) + ") — a published render "
+                                + "reads only published rows, so those pages cannot render.",
+                        "Publish the layout with a post.publish op (POST /api/v2/agent/batch). A site "
+                                + "built with post.upsert has draft templates until somebody "
+                                + "publishes them, because publishing is a separate act (P7)."));
+            }
+        }
     }
 
     /**

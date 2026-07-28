@@ -289,8 +289,28 @@ public class ShPageRenderService {
                     bindings.keySet().stream().sorted().toList());
         }
         return postOfSystemType(site, ShSystemPostType.PAGE_LAYOUT, layoutName, state)
-                .orElseThrow(() -> new MissingLayoutException(site.getName(), typeName, layoutName,
-                        titlesOfSystemType(site, ShSystemPostType.PAGE_LAYOUT)));
+                .orElseThrow(() -> missingLayout(site, typeName, layoutName, state));
+    }
+
+    /**
+     * The right refusal for a layout that did not resolve (SH280).
+     *
+     * <p>Two situations that look identical from here and need different sentences. SH278 made a
+     * PUBLISHED render read only published rows, which is correct — a visitor must not get an
+     * unpublished edit — and it turned "the layout exists but nobody has published it" into a
+     * failure where it used to silently render the draft. That is <b>the normal state of a site
+     * built through the SH183 flow</b>, since {@code post.upsert} writes a DRAFT and publishing is a
+     * separate act (P7). Telling that operator "no such layout" sends them to create a second one.</p>
+     */
+    private ShTeachingException missingLayout(ShSite site, String typeName, String layoutName,
+                                              ShPostState state) {
+        boolean existsAsDraft = state == ShPostState.PUBLISHED
+                && postOfSystemType(site, ShSystemPostType.PAGE_LAYOUT, layoutName,
+                        ShPostState.DRAFT).isPresent();
+        return existsAsDraft
+                ? new UnpublishedLayoutException(site.getName(), typeName, layoutName)
+                : new MissingLayoutException(site.getName(), typeName, layoutName,
+                        titlesOfSystemType(site, ShSystemPostType.PAGE_LAYOUT));
     }
 
     private Map<String, String> bindingsOf(ShSite site) {
@@ -462,6 +482,30 @@ public class ShPageRenderService {
     }
 
     /** A 404: the binding names a layout nobody created — listing the ones that exist. */
+    /**
+     * The layout is there and is not published (SH280).
+     *
+     * <p>Its own type rather than a reworded {@code MissingLayoutException}, because the two carry
+     * different {@code fix}es and a caller that branches on the problem type should be able to tell
+     * "you have not written this yet" from "you have not published it". A {@code 409} rather than a
+     * {@code 404}: the thing exists, the request conflicts with its state.</p>
+     */
+    public static class UnpublishedLayoutException extends ShTeachingException {
+
+        public UnpublishedLayoutException(String siteName, String typeName, String layoutName) {
+            super(ShProblem.conflict("render-layout-unpublished",
+                            "Layout '" + layoutName + "' exists in site '" + siteName
+                                    + "' but has never been published")
+                    .withDetail("This is a PUBLISHED render, which reads only published rows at "
+                            + "every level, so an unpublished layout cannot be used — what a visitor "
+                            + "gets must not depend on an edit nobody has published. Site '" + siteName
+                            + "' binds post-type '" + typeName + "' to that layout.")
+                    .withFix("Publish the layout (a post.publish op on POST /api/v2/agent/batch), or "
+                            + "render the preview instead, which reads drafts. A site built with "
+                            + "post.upsert has draft templates until somebody publishes them."));
+        }
+    }
+
     public static class MissingLayoutException extends ShTeachingException {
 
         public MissingLayoutException(String siteName, String typeName, String layoutName,

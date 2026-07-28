@@ -10,6 +10,7 @@ package com.viglet.shio.render;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 import java.time.Instant;
 import java.util.List;
@@ -348,6 +349,70 @@ class ShPageRenderTest {
                 .as("and a published render never picks up the unpublished name")
                 .contains("live.png")
                 .doesNotContain("drafted.png");
+    }
+
+    @Test
+    @DisplayName("SH280: an unpublished layout says so, rather than 'no such layout'")
+    void anUnpublishedLayoutSaysSo() {
+        // The situation SH278 turned from silent into a failure, and it is the *normal* state of a
+        // site built through the SH183 flow: post.upsert writes a DRAFT and publishing is separate
+        // (P7). Telling that operator "no such layout" sends them to create a second one.
+        String site = "sh280-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh280Page" + UUID.randomUUID().toString().substring(0, 8);
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"SH280_LAYOUT\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+
+            // The layout exists as a draft only — exactly what post.upsert leaves behind.
+            post(owner, root, layoutType, "SH280_LAYOUT", "/l",
+                    json("HTML", "<html><body>{{{TEXT}}}</body></html>"), when);
+            // The page is published, so the site has something that cannot render.
+            String pageId = UUID.randomUUID().toString();
+            for (ShPostState state : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT)) {
+                ShPostUnified page = new ShPostUnified();
+                page.setId(pageId);
+                page.setState(state);
+                page.setShSite(owner);
+                page.setShFolder(root);
+                page.setShPostType(pageType);
+                page.setTitle("Home");
+                page.setFurl("/");
+                page.setData(json("TEXT", "<p>body</p>"));
+                page.setDate(when);
+                page.setOwner("admin");
+                entityManager.persist(page);
+            }
+        });
+
+        ShPageRenderService.UnpublishedLayoutException thrown =
+                catchThrowableOfType(ShPageRenderService.UnpublishedLayoutException.class,
+                        () -> shPageRenderService.render(site, "/", ShPostState.PUBLISHED));
+
+        // The type is the contract — a caller that branches on the problem should be able to tell
+        // "you have not written this" from "you have not published it". Asserted on the
+        // ProblemDetail rather than on getMessage(), because ShTeachingException's message is the
+        // *detail* and the distinguishing sentence is the title.
+        assertThat(thrown).isNotNull();
+        assertThat(thrown.toProblemDetail().getTitle()).contains("never been published");
+        assertThat(thrown.toProblemDetail().getStatus())
+                .as("409, not 404: the layout exists, the request conflicts with its state")
+                .isEqualTo(409);
+        assertThat(thrown.toProblemDetail().getProperties().get("fix").toString())
+                .as("P6 — the action is `publish it`, which the 404's fix could not have said")
+                .contains("post.publish");
+
+        assertThat(shPageRenderService.render(site, "/", ShPostState.DRAFT).html())
+                .as("and the preview still works, which is what makes the message's advice true")
+                .contains("<p>body</p>");
     }
 
     // ── the claim ────────────────────────────────────────────────────────────────────

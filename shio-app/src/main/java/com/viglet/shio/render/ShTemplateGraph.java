@@ -305,6 +305,56 @@ public class ShTemplateGraph {
         return duplicates;
     }
 
+    /**
+     * Bound layouts with no published row, where the site has published pages of that type (SH280).
+     *
+     * <p>SH278 made a PUBLISHED render read only published rows at every level, so an unpublished
+     * layout stops a published page rendering — and that is the normal state of a site built through
+     * the SH183 flow, since {@code post.upsert} writes a DRAFT and publishing is a separate act (P7).
+     * The refusal now says so, but a refusal only reaches whoever asked for the page: the point of
+     * reporting it is to find it before a visitor does.</p>
+     *
+     * <p><b>The published-pages condition is what keeps this from firing on every site mid-build.</b>
+     * A draft layout bound to a type with no published pages is somebody working, not a defect; the
+     * same layout with published pages behind it is a page that 404s in production. Same shape as
+     * SH193's unused-template warnings — the difference between work in progress and something wrong
+     * is almost always a second condition, not a stricter first one.</p>
+     *
+     * @return layout title → the post-types whose published pages cannot render, both sorted
+     */
+    public Map<String, Set<String>> unpublishedBoundLayouts(ShSite site) {
+        Map<String, Set<String>> stranded = new TreeMap<>();
+        for (Map.Entry<String, String> binding
+                : new TreeMap<>(renderService.layoutBindings(site)).entrySet()) {
+            String typeName = binding.getKey();
+            String layoutTitle = binding.getValue();
+            if (pageCount(site, Set.of(typeName), ShPostState.PUBLISHED) == 0) {
+                continue;
+            }
+            boolean publishedLayout = ShRenderState
+                    .preferDraft(templatesOfTitle(site, layoutTitle), ShPostState.PUBLISHED)
+                    .stream()
+                    .anyMatch(post -> post.getState() == ShPostState.PUBLISHED);
+            if (!publishedLayout) {
+                stranded.computeIfAbsent(layoutTitle, key -> new TreeSet<>()).add(typeName);
+            }
+        }
+        return stranded;
+    }
+
+    /** Every render-type row in the site carrying this title, both states. */
+    private List<ShPostUnified> templatesOfTitle(ShSite site, String title) {
+        List<ShPostUnified> out = new ArrayList<>();
+        for (ShPostUnified post : shPostUnifiedRepository.findByShSite_IdAndStateIn(
+                site.getId(), List.of(ShPostState.DRAFT, ShPostState.PUBLISHED))) {
+            String typeName = post.getShPostType() == null ? null : post.getShPostType().getName();
+            if (ShSystemPostType.PAGE_LAYOUT.equals(typeName) && title.equals(post.getTitle())) {
+                out.add(post);
+            }
+        }
+        return out;
+    }
+
     /** Templates nothing renders through, plus the layouts that are bound (for the message). */
     public record ShUnusedTemplates(List<ShPostUnified> regions, List<ShPostUnified> layouts,
                                     Set<String> boundLayouts) {

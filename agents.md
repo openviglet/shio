@@ -406,7 +406,17 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   templates** (**SH280**). `post.upsert` writes a draft and publishing is separate (P7), so a site
   built through the SH183 flow has draft templates until somebody publishes them — and such a site now
   raises `MissingLayoutException` on a published render where it used to silently use the draft. The
-  behaviour is right; the message does not yet distinguish "no such layout" from "not published".
+  behaviour is right, and since **SH280** the refusal says which: `UnpublishedLayoutException` is a
+  **409** ("exists, never published") with its own `fix` naming `post.publish`, distinct from the 404
+  ("no such layout") so a caller can branch on it. And because a refusal only reaches whoever asked for
+  the page, `verify` reports **`unpublished-layout`** (a warning) for a bound layout with no published
+  row **where the site has published pages of that type** — that second condition is what keeps it off
+  every site mid-build, and the general rule is that *work in progress and something wrong are
+  separated by another condition, not a stricter first one*. Checked and negative: SH68 import is
+  faithful to each post's own state and no first-party blueprint ships a layout, so this is an
+  agent-built-site exposure rather than an imported one. **The region and theme levels have the same
+  problem unfixed** — an unpublished region is reported as "no Region post" (a wrong diagnosis) and an
+  unpublished theme silently yields no CSS — which is **SH281**.
 - **Helpers are the closed capability set** `shObject.js` expressed as a convention:
   `{{#query folder= type= limit=}}`, `{{#navigation folder=}}`, `{{file_url}}`, and since SH247
   `{{#getRelation FIELD}}` and `{{#search q= type= limit=}}`. Every listing is sorted by a

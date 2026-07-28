@@ -402,6 +402,68 @@ class ShTemplateGraphTest {
                 .noneMatch(finding -> "duplicate-template-title".equals(finding.rule()));
     }
 
+    @Test
+    @DisplayName("SH280: verify warns when published pages depend on an unpublished layout")
+    void verifyWarnsAboutAnUnpublishedLayout() {
+        String name = "sh280v-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh280vPage" + UUID.randomUUID().toString().substring(0, 8);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(name);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"SH280V_LAYOUT\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+            post(owner, root, layoutType, "SH280V_LAYOUT", "/l",
+                    json("HTML", "<html><body>x</body></html>"), when, ShPostState.DRAFT);
+            post(owner, root, pageType, "Home", "/", json("TEXT", "b"), when, ShPostState.PUBLISHED);
+        });
+
+        assertThat(verifyService.verify(name, "content", 200).findings())
+                .filteredOn(finding -> "unpublished-layout".equals(finding.rule()))
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.severity())
+                            .as("a warning: the remedy is one publish away, and SH99's line is that "
+                                    + "ok is false only for what the CMS can prove is wrong")
+                            .isEqualTo("warning");
+                    assertThat(finding.message()).contains("SH280V_LAYOUT").contains(type);
+                    assertThat(finding.fix()).contains("post.publish");
+                });
+    }
+
+    @Test
+    @DisplayName("SH280: a draft layout with no published pages behind it is work in progress")
+    void aDraftLayoutWithNoPublishedPagesIsSilent() {
+        // The second condition is what keeps this from firing on every site mid-build — the same
+        // shape SH193's unused-template warnings use. Work in progress and something wrong are
+        // almost always separated by another condition rather than by a stricter first one.
+        String name = "sh280q-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh280qPage" + UUID.randomUUID().toString().substring(0, 8);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(name);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"SH280Q_LAYOUT\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+            post(owner, root, layoutType, "SH280Q_LAYOUT", "/l",
+                    json("HTML", "<html><body>x</body></html>"), when, ShPostState.DRAFT);
+            post(owner, root, pageType, "Home", "/", json("TEXT", "b"), when, ShPostState.DRAFT);
+        });
+
+        assertThat(verifyService.verify(name, "content", 200).findings())
+                .noneMatch(finding -> "unpublished-layout".equals(finding.rule()));
+    }
+
     // ── SH194: the one-call appearance loop ─────────────────────────────────────────
 
     @Test

@@ -2672,31 +2672,55 @@ does not show up where it is written, it shows up on somebody else's database.
 
 ### XVI.32 A published render now requires published templates (SH280)
 
-SH278 made a PUBLISHED render read only published rows at every level — page, layout, region, theme.
-That is correct: what a visitor gets must not depend on an edit nobody has published. It is also a
-**behaviour change**, and the direction matters. Before it, a draft-only layout was silently used for a
-published render, so the change turns something that quietly worked into a refusal.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth keeping.
+>
+> **The urgency check came back negative, and that is a result.** This section's third item worried
+> that if the SH68 import or SH92 blueprints wrote templates without publishing them, every imported
+> site would arrive broken. Import is *faithful* — it preserves each post's own state from the package
+> — and no first-party blueprint ships a `PageLayout`. So the exposure is an agent-built site rather
+> than an imported one, and the task shrank. Worth doing that check first every time: it was the
+> cheapest of the three items and it determined the size of the other two.
+>
+> **The second condition is what makes a lint usable.** `unpublished-layout` fires only where the site
+> has *published pages* of the bound type. Without it the rule would report every site mid-build,
+> which is how a warning becomes noise. Stated generally: **the difference between work in progress
+> and something wrong is almost always another condition, not a stricter first one** — SH193's unused
+> templates needed the same shape, and so did SH270's question about which degradations deserve an
+> incident.
+>
+> **A distinct type beats a better sentence.** `UnpublishedLayoutException` is a 409 with its own
+> `fix`, not a reworded 404, so a caller can branch on it. The alternative — one exception whose text
+> explains both cases — reads fine to a human and gives a program nothing.
+>
+> The same distinction is unmade at the region and theme levels, where the renderer degrades rather
+> than refusing — **SH281**.
 
-**Who this hits is not an edge case.** `post.upsert` writes a DRAFT and publishing is a separate,
-explicit act (P7), so a site built through the SH183 flow has draft templates until somebody publishes
-them. Such a site now raises `MissingLayoutException` on a published render where it used to work, and
-SH249's digest falls back to `source: content` without saying why.
+### XVI.33 A region and a theme have the same unpublished problem, and worse (SH281)
 
-**It was found writing SH279's fixture, not by SH278's own tests** — which is the tell, and the reason
-it is filed rather than folded in. A test author supplies whatever the code demands and moves on; the
-same demand met by an operator is an incident.
+SH280 gave the **layout** level a distinct 409 and a `verify` warning. SH278 changed all three levels,
+and the other two fail in ways that are harder to notice:
 
-Three things it wants, in order of how much they help:
+- **An unpublished region is not an error at all.** `renderRegions` skips a slot it cannot resolve, and
+  SH183's marker records *"no Region post"* — which, when the region exists as a draft, is a **wrong
+  diagnosis** rather than a missing one. The author is told the region does not exist while looking at
+  it in the console.
+- **An unpublished theme silently yields no CSS.** `themeOf` returns null and the page renders
+  unstyled, with nothing said in the markup, the digest or the lint. SH187's `appearance` block would
+  show `definedClasses: 0`, which is a symptom and not a diagnosis.
 
-- **The refusal should distinguish the two cases.** "No such layout" and "the layout exists but has no
-  published row" are different sentences with different fixes, and only the second tells the operator
-  to publish something. That is P6, and it is the smallest of the three.
-- **`shio verify` should probably warn** when a bound layout has no published row while the site has
-  published pages. That is the SH193 graph plus one state check, and it is the form that finds the
-  problem before a visitor does.
-- **The SH68 import and SH92 blueprint paths need checking** for whether they publish the templates
-  they write. If they do not, every imported site is in this state on arrival, which would make this
-  the more urgent half.
+Both are the distinction SH280 drew — absent versus unpublished — at levels where the renderer
+**deliberately degrades rather than refusing**, which is the right behaviour for a preview and is why
+the fix cannot be a second exception. It has to be a *marker* and a *finding* that tell the two apart.
+
+One constraint to respect: SH169 established that a missing region and an empty one are different
+mistakes and must not hash the same. This adds a **third** state to that pair — missing, empty,
+unpublished — so whatever marker carries it has to keep all three distinguishable, including in
+SH101's digest.
+
+Worth noting the pattern this makes with SH280: SH278 was a one-clause correctness fix that has now
+produced two follow-ups about *how its consequences are reported*. That ratio is normal for a change
+that makes something previously-silent observable, and it is a reason to expect the reporting work
+rather than to regret the fix.
 
 ---
 
