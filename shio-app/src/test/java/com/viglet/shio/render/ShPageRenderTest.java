@@ -260,6 +260,96 @@ class ShPageRenderTest {
                 .doesNotContain("DRAFTED");
     }
 
+    @Test
+    @DisplayName("SH279: {{file_url}} reads the same row the rest of the render does")
+    void fileUrlFollowsTheRenderState() {
+        // `findById` returns a row per state and this took whichever came first. The bytes of a File
+        // post are immutable (SH145), but `data.FILE` is the *name* in the path — so a draft that
+        // renamed the file could produce either path depending on what the database returned.
+        // Its own site, not the class fixture: SH263's lesson about PER_CLASS.
+        String site = "sh279-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh279Page" + UUID.randomUUID().toString().substring(0, 8);
+        String fileId = UUID.randomUUID().toString();
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"SH279_LAYOUT\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+            ShPostType fileType = postType("File", (byte) 1, when);
+
+            // Both states of the layout too. Worth knowing why: since SH278 a PUBLISHED render reads
+            // only published rows at every level, so a draft-only layout now raises
+            // MissingLayoutException where it used to silently render the draft. That is the correct
+            // trade — what a visitor gets must not depend on an unpublished edit — and it is a
+            // behaviour change for any instance whose templates were never published (SH280).
+            String layoutId = UUID.randomUUID().toString();
+            for (ShPostState state : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT)) {
+                ShPostUnified row = new ShPostUnified();
+                row.setId(layoutId);
+                row.setState(state);
+                row.setShSite(owner);
+                row.setShFolder(root);
+                row.setShPostType(layoutType);
+                row.setTitle("SH279_LAYOUT");
+                row.setFurl("/l");
+                row.setData(json("HTML",
+                        "<html><body><img src=\"{{file_url HERO}}\"></body></html>"));
+                row.setDate(when);
+                row.setOwner("admin");
+                entityManager.persist(row);
+            }
+            // One File post, two rows, two names.
+            for (ShPostState state : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT)) {
+                ShPostUnified row = new ShPostUnified();
+                row.setId(fileId);
+                row.setState(state);
+                row.setShSite(owner);
+                row.setShFolder(root);
+                row.setShPostType(fileType);
+                row.setTitle("hero");
+                row.setData(json("FILE",
+                        state == ShPostState.PUBLISHED ? "live.png" : "drafted.png"));
+                row.setDate(when);
+                row.setOwner("admin");
+                entityManager.persist(row);
+            }
+            // Both states of the page, so the published render has a page to render at all — the
+            // fixture's own first version only made a draft and the PUBLISHED assertion failed on
+            // `UnknownPageException`, which is the renderer being right rather than a defect.
+            String pageId = UUID.randomUUID().toString();
+            for (ShPostState state : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT)) {
+                ShPostUnified page = new ShPostUnified();
+                page.setId(pageId);
+                page.setState(state);
+                page.setShSite(owner);
+                page.setShFolder(root);
+                page.setShPostType(pageType);
+                page.setTitle("Home");
+                page.setFurl("/");
+                page.setData(json("HERO", fileId));
+                page.setDate(when);
+                page.setOwner("admin");
+                entityManager.persist(page);
+            }
+        });
+
+        assertThat(shPageRenderService.render(site, "/", ShPostState.DRAFT).html())
+                .as("a preview resolves the asset the curator is editing")
+                .contains("drafted.png")
+                .doesNotContain("live.png");
+        assertThat(shPageRenderService.render(site, "/", ShPostState.PUBLISHED).html())
+                .as("and a published render never picks up the unpublished name")
+                .contains("live.png")
+                .doesNotContain("drafted.png");
+    }
+
     // ── the claim ────────────────────────────────────────────────────────────────────
 
     @Test

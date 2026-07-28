@@ -396,7 +396,17 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   callers should now use it, not only which copies to delete. The fold is ordered by **title then id**,
   so a duplicate title renders *consistently* wrongly rather than alternating; and reverting the fix
   left the draft-preview test **passing on H2**, which is why an unordered finder is a P5 violation you
-  cannot see where you wrote it (**SH279** sweeps for the same shape elsewhere).
+  cannot see where you wrote it. **The render package's other unordered reads are ordered too (SH279)**:
+  `{{file_url}}` and `currentFolder` now follow the render state, and `rootFolder` is ordered *and* has
+  its "one root by construction" rule named, because that is the reasoning that held for a title until
+  SH263 broke it. `resolveReference` needed no change — the shared `preferDraft` had already made it
+  deterministic, which is the payoff for putting the order in one writer. Call sites outside
+  `com.viglet.shio.render` are not swept yet.
+  **One consequence worth knowing before you debug a blank page: a PUBLISHED render now needs published
+  templates** (**SH280**). `post.upsert` writes a draft and publishing is separate (P7), so a site
+  built through the SH183 flow has draft templates until somebody publishes them — and such a site now
+  raises `MissingLayoutException` on a published render where it used to silently use the draft. The
+  behaviour is right; the message does not yet distinguish "no such layout" from "not published".
 - **Helpers are the closed capability set** `shObject.js` expressed as a convention:
   `{{#query folder= type= limit=}}`, `{{#navigation folder=}}`, `{{file_url}}`, and since SH247
   `{{#getRelation FIELD}}` and `{{#search q= type= limit=}}`. Every listing is sorted by a

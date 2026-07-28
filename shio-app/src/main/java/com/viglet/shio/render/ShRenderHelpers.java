@@ -301,6 +301,11 @@ public class ShRenderHelpers {
             return byId;
         }
         String url = reference.startsWith("/") ? reference : "/" + reference;
+        // SH279 — a friendly URL is unique per site and that uniqueness is *reported* by SH99's
+        // `duplicate-url` rule rather than enforced (SH243 is open about a trashed post still holding
+        // one), so two posts can answer here. No ordering is added because `preferDraft` gained a
+        // total order in SH278: this read is already deterministic through the shared writer, which
+        // is the argument for having put the order there rather than at each call site.
         return preferDraft(
                 shPostUnifiedRepository.findByShSite_IdAndStateIn(siteId, states).stream()
                         .filter(post -> url.equals(normalizedFurl(post)))
@@ -403,7 +408,11 @@ public class ShRenderHelpers {
         if (id == null || id.isBlank()) {
             return "";
         }
-        return shPostUnifiedRepository.findById(id).stream()
+        // SH279 — the same row the rest of the render reads. `findById` returns a row per state and
+        // this took whichever came first, so a draft that renamed the file could produce the
+        // published path or the draft one depending on the database. The bytes are immutable (SH145)
+        // but `data.FILE` is the *name* in the path, so the two rows can disagree.
+        return preferDraft(shPostUnifiedRepository.findById(id), state(options)).stream()
                 .findFirst()
                 .map(this::bytePath)
                 .orElse("");
@@ -422,8 +431,13 @@ public class ShRenderHelpers {
         if (site == null) {
             return Optional.empty();
         }
-        // rootFolder is a byte flag on ShFolder; a site has exactly one.
-        return shFolderRepository.findByShSiteAndRootFolder(site, (byte) 1).stream().findFirst();
+        // `rootFolder` is a byte flag and a site gets exactly one, from `ShSiteWriteService` —
+        // guaranteed by construction and **not** enforced by a constraint or a lint. SH279's bar
+        // says name the rule or order the read; this does both, because "one by construction" is
+        // the reasoning that was true of a template's title until SH263 proved it was not.
+        return shFolderRepository.findByShSiteAndRootFolder(site, (byte) 1).stream()
+                .min(java.util.Comparator.comparing(folder ->
+                        folder.getId() == null ? "" : folder.getId()));
     }
 
     /**
@@ -445,7 +459,10 @@ public class ShRenderHelpers {
         if (postId == null) {
             return Optional.empty();
         }
-        return shPostUnifiedRepository.findById(postId).stream()
+        // SH279 — one row, chosen the same way everything else chooses. SH134 moves both rows of a
+        // post together so they agree about the folder today; that is a property of the move verb
+        // rather than of this read, and relying on it silently is what the sweep is about.
+        return preferDraft(shPostUnifiedRepository.findById(postId), state(options)).stream()
                 .findFirst()
                 .map(ShPostUnified::getShFolder);
     }

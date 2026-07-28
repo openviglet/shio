@@ -2653,6 +2653,51 @@ and is that guarantee enforced?**
 Worth doing as a sweep rather than opportunistically, because the failure mode is environmental: it
 does not show up where it is written, it shows up on somebody else's database.
 
+> ⏳ **The render package is done** → [CHANGELOG.md](CHANGELOG.md) Block P. Two findings.
+>
+> **One call site needed nothing, and that vindicated where SH278 put the order.**
+> `resolveReference`'s friendly-URL branch can match two posts — a URL's uniqueness is *reported* by
+> SH99 rather than enforced — and it was already deterministic, because the total order went into the
+> shared `preferDraft` rather than into each caller. Fixing a rule in one place fixed a call site
+> nobody had looked at, which is the return on SH245's "one writer per verb" that is usually asserted
+> and rarely demonstrated.
+>
+> **The `rootFolder` case is the interesting shape.** Uniqueness *is* guaranteed — a site gets one
+> root from `ShSiteWriteService` — and it is enforced by nothing. So the bar's two answers were both
+> "yes and no", and the resolution was to do both halves: name the rule in a comment *and* order the
+> read. That is the right default when a guarantee is real but unenforced, because the cost of
+> ordering is a clause and the cost of being wrong is environmental.
+>
+> The remaining call sites are outside `com.viglet.shio.render` and listed on the roadmap line.
+
+### XVI.32 A published render now requires published templates (SH280)
+
+SH278 made a PUBLISHED render read only published rows at every level — page, layout, region, theme.
+That is correct: what a visitor gets must not depend on an edit nobody has published. It is also a
+**behaviour change**, and the direction matters. Before it, a draft-only layout was silently used for a
+published render, so the change turns something that quietly worked into a refusal.
+
+**Who this hits is not an edge case.** `post.upsert` writes a DRAFT and publishing is a separate,
+explicit act (P7), so a site built through the SH183 flow has draft templates until somebody publishes
+them. Such a site now raises `MissingLayoutException` on a published render where it used to work, and
+SH249's digest falls back to `source: content` without saying why.
+
+**It was found writing SH279's fixture, not by SH278's own tests** — which is the tell, and the reason
+it is filed rather than folded in. A test author supplies whatever the code demands and moves on; the
+same demand met by an operator is an incident.
+
+Three things it wants, in order of how much they help:
+
+- **The refusal should distinguish the two cases.** "No such layout" and "the layout exists but has no
+  published row" are different sentences with different fixes, and only the second tells the operator
+  to publish something. That is P6, and it is the smallest of the three.
+- **`shio verify` should probably warn** when a bound layout has no published row while the site has
+  published pages. That is the SH193 graph plus one state check, and it is the form that finds the
+  problem before a visitor does.
+- **The SH68 import and SH92 blueprint paths need checking** for whether they publish the templates
+  they write. If they do not, every imported site is in this state on arrival, which would make this
+  the more urgent half.
+
 ---
 
 # Part 2 — pre-existing sections
