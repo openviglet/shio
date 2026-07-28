@@ -27,6 +27,7 @@ import com.viglet.shio.persistence.model.agent.ShAgentIncident;
 import com.viglet.shio.persistence.model.history.ShHistory;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.render.ShTemplateGraph;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
@@ -82,6 +83,7 @@ public class ShAgentChangesService {
     private final ShAddressResolver shAddressResolver;
     private final ShAgentProperties properties;
     private final ShAgentIncidentStore incidentStore;
+    private final ShTemplateGraph templateGraph;
 
     public ShAgentChangesService(ShHistoryRepository shHistoryRepository,
                                  ShPostUnifiedRepository shPostUnifiedRepository,
@@ -89,7 +91,8 @@ public class ShAgentChangesService {
                                  ShAgentSiteAccess siteAccess,
                                  ShAddressResolver shAddressResolver,
                                  ShAgentProperties properties,
-                                 ShAgentIncidentStore incidentStore) {
+                                 ShAgentIncidentStore incidentStore,
+                                 ShTemplateGraph templateGraph) {
         this.shHistoryRepository = shHistoryRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shFolderRepository = shFolderRepository;
@@ -97,6 +100,7 @@ public class ShAgentChangesService {
         this.shAddressResolver = shAddressResolver;
         this.properties = properties;
         this.incidentStore = incidentStore;
+        this.templateGraph = templateGraph;
     }
 
     /**
@@ -279,12 +283,18 @@ public class ShAgentChangesService {
         // One lookup per distinct object, not per row: a post that was created, updated
         // and published appears three times in a feed and has one address.
         Map<String, Optional<String>> addresses = new LinkedHashMap<>();
+        // SH193 — one graph read per distinct object, for the same reason the addresses are
+        // memoized: a region that was updated and published is two rows and one blast radius.
+        Map<String, Optional<ShAgentChanges.Affects>> impacts = new LinkedHashMap<>();
         List<ShAgentChanges.Change> changes = new ArrayList<>(entries.size());
         for (ShHistory entry : entries) {
             String objectId = entry.getShObject();
             Optional<String> address = objectId == null
                     ? Optional.empty()
                     : addresses.computeIfAbsent(objectId, this::addressOf);
+            Optional<ShAgentChanges.Affects> affects = objectId == null
+                    ? Optional.empty()
+                    : impacts.computeIfAbsent(objectId, this::affectsOf);
             changes.add(new ShAgentChanges.Change(
                     entry.getAction(),
                     address.orElse(null),
@@ -292,9 +302,30 @@ public class ShAgentChangesService {
                     entry.getOwner(),
                     entry.getDescription(),
                     entry.getShSite() == null ? null : scope.names().get(entry.getShSite()),
-                    ids ? objectId : null));
+                    ids ? objectId : null,
+                    affects.orElse(null)));
         }
         return List.copyOf(changes);
+    }
+
+    /**
+     * The blast radius of a template change, or empty for everything else (SH193).
+     *
+     * <p>DRAFT-preferred like {@link #addressOf}, because the graph is a question about the
+     * template as it now stands rather than as it was published. A row whose object is gone — the
+     * normal state of a {@code DELETE} — gets nothing, which is right: the pages it used to reach
+     * are answered by the entry itself, and computing a graph from a deleted template would
+     * describe a site that no longer exists.</p>
+     */
+    private Optional<ShAgentChanges.Affects> affectsOf(String objectId) {
+        List<ShPostUnified> rows = shPostUnifiedRepository.findById(objectId);
+        return rows.stream()
+                .filter(row -> row.getState() == ShPostState.DRAFT)
+                .findFirst()
+                .or(() -> rows.stream().findFirst())
+                .flatMap(templateGraph::impactOf)
+                .map(impact -> new ShAgentChanges.Affects(impact.kind(), impact.layouts(),
+                        impact.postTypes(), impact.pages(), impact.published()));
     }
 
     /**

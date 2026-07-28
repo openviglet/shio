@@ -123,9 +123,35 @@ public record ShAgentChanges(int found, boolean window, String since, String cur
      * @param what    the human-readable description recorded at the time
      * @param site    the site's name, for a feed that spans more than one
      * @param id      the object id — omitted unless the caller asked for ids (SH121)
+     * @param affects SH193 — the blast radius, present only when the changed object is a
+     *                {@code PageLayout} or a {@code Region}. Absent everywhere else, which is
+     *                what keeps an ordinary feed byte-identical: a field that is always there is
+     *                a field every row pays for, and this one answers a question only two
+     *                post-types can raise
      */
     @JsonInclude(Include.NON_NULL)
     public record Change(String action, String address, String at, String by, String what,
-                         String site, String id) {
+                         String site, String id, Affects affects) {
+    }
+
+    /**
+     * What a template change reaches (SH193).
+     *
+     * <p>On the change feed rather than on a read of its own, which is the design's own
+     * suggestion and buys two things: it arrives at the moment it matters — an agent has just
+     * edited a shared region and the next question is always "what did I just touch" — and it
+     * needs no twelfth MCP tool, so {@code shio_changes} carries it for free. The pre-edit form
+     * of the question is a separate read and is SH262.</p>
+     *
+     * @param kind      {@code region} or {@code layout}
+     * @param layouts   the layouts involved — a region's slotters, or the layout itself
+     * @param postTypes the post-types whose pages render through them
+     * @param pages     draft pages of those types in this site
+     * @param published published pages — the number that decides whether the edit was safe to
+     *                  make now, which is why it is separate rather than a total
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Affects(String kind, List<String> layouts, List<String> postTypes,
+                          int pages, int published) {
     }
 }

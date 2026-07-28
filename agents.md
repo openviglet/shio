@@ -312,6 +312,23 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   *drops* the reference), and a **hash** argument that is a field (`{{#search q=TOPIC}}`) is still
   unchecked — **SH261**. The helper names are restated in five places and nothing checks that they
   agree — **SH260**.
+- **A layout's and a region's blast radius is computed, never stored (SH193)** — `ShTemplateGraph`
+  inverts the presentation edges (layout → the post-types bound to it, region → the layouts that
+  slot it → their types → page and published counts). **Computed on demand and not extracted into
+  `ShReference`**, which §XV.11 proposed and which is not available: `ShReference` joins
+  `object_from`/`object_to` to `ShObject`, and a post is **not** an `ShObject`. It is also the
+  better answer — an extracted edge goes stale when `site.postTypeLayout` changes, which is an
+  `ShSite` write no post-level extraction would see, and a computed graph needs no migration, so it
+  is right for an imported 2018 package immediately. Cost is bounded by *bindings*, not pages
+  (SH251's finding). Two surfaces, no new contract: **`affects` on `/agent/changes`** for a row
+  whose object is a `PageLayout` or `Region` — absent everywhere else, so an ordinary feed stays
+  byte-identical, and it rides `shio_changes` because the MCP tool count is capped at 12 with 11
+  used — and **`unused-region`/`unused-layout` warnings in `checks=content`**, which are warnings
+  because a region waiting for its layout is work in progress and a gate that failed on that is a
+  gate people bypass. `published` is counted separately from `pages`, since "how many are
+  published" is what decides whether an edit is safe now. The **pre-edit** form of the question has
+  no surface yet — **SH262** — and a **duplicate template title** silently resolves to whichever row
+  comes back first — **SH263**.
 - **Helpers are the closed capability set** `shObject.js` expressed as a convention:
   `{{#query folder= type= limit=}}`, `{{#navigation folder=}}`, `{{file_url}}`, and since SH247
   `{{#getRelation FIELD}}` and `{{#search q= type= limit=}}`. Every listing is sorted by a

@@ -44,6 +44,7 @@ import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.render.ShTemplateGraph;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.widget.ShSystemWidget;
@@ -131,6 +132,7 @@ public class ShAgentVerifyService {
     private final ShAgentDeliveryProbe deliveryProbe;
     private final ShAgentMemoryService shAgentMemoryService;
     private final ShTemplateFieldLint templateFieldLint;
+    private final ShTemplateGraph templateGraph;
 
     public ShAgentVerifyService(ShAgentSiteAccess siteAccess,
                                 ShFolderRepository shFolderRepository,
@@ -143,7 +145,8 @@ public class ShAgentVerifyService {
                                 ShAgentChangesService shAgentChangesService,
                                 ShAgentDeliveryProbe deliveryProbe,
                                 ShAgentMemoryService shAgentMemoryService,
-                                ShTemplateFieldLint templateFieldLint) {
+                                ShTemplateFieldLint templateFieldLint,
+                                ShTemplateGraph templateGraph) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -156,6 +159,7 @@ public class ShAgentVerifyService {
         this.deliveryProbe = deliveryProbe;
         this.shAgentMemoryService = shAgentMemoryService;
         this.templateFieldLint = templateFieldLint;
+        this.templateGraph = templateGraph;
     }
 
     /** The whole instance — what CI asks for, and the shape every rule was written against. */
@@ -511,6 +515,56 @@ public class ShAgentVerifyService {
         duplicateUrls(check, scan, findings);
         folderFindings(check, scan, findings);
         templateFields(check, scan, findings);
+        unusedTemplates(check, scan, findings);
+    }
+
+    /**
+     * SH193 — a Region no layout slots, or a PageLayout no post-type binds.
+     *
+     * <p>The inverse of the blast-radius question and the half of it that is a <b>defect</b>: this
+     * is content nobody can reach, and nothing could tell it apart from content that is merely not
+     * visited. It is a <b>warning</b>, deliberately — an unused template is often work in progress,
+     * and SH99's rule is that {@code ok} is false only for what the CMS can prove is wrong. A
+     * region waiting for the layout that will slot it is not wrong.</p>
+     *
+     * <p>Scoped like every other rule here: only templates among this run's subjects (SH143).</p>
+     */
+    private void unusedTemplates(String check, Scan scan, List<Finding> findings) {
+        Map<String, List<ShPostUnified>> bySite = new LinkedHashMap<>();
+        for (ShPostUnified post : scan.posts()) {
+            ShSite site = post.getShSite();
+            if (site != null && site.getId() != null) {
+                bySite.computeIfAbsent(site.getId(), key -> new ArrayList<>()).add(post);
+            }
+        }
+        for (Map.Entry<String, List<ShPostUnified>> entry : bySite.entrySet()) {
+            ShSite site = scan.siteById().get(entry.getKey());
+            if (site == null) {
+                continue;
+            }
+            ShTemplateGraph.ShUnusedTemplates unused = templateGraph.unusedIn(site, entry.getValue());
+            for (ShPostUnified region : unused.regions()) {
+                findings.add(Finding.warning(check, "unused-region", address(region), null,
+                        "No layout in '" + site.getName() + "' slots a region called '"
+                                + region.getTitle() + "', so nothing renders it. A layout reaches a "
+                                + "region by title, with `sh-region=\"" + region.getTitle() + "\"`.",
+                        "Add `<div sh-region=\"" + region.getTitle() + "\"></div>` to the layout "
+                                + "that should show it, or delete the region if it is finished with. "
+                                + "A title that merely differs in case or spacing is the usual "
+                                + "cause — a slot is matched exactly."));
+            }
+            for (ShPostUnified layout : unused.layouts()) {
+                findings.add(Finding.warning(check, "unused-layout", address(layout), null,
+                        "No post-type in '" + site.getName() + "' is bound to the layout '"
+                                + layout.getTitle() + "', so no page renders through it."
+                                + (unused.boundLayouts().isEmpty()
+                                        ? " This site binds no layouts at all."
+                                        : " Bound: " + String.join(", ", unused.boundLayouts()) + "."),
+                        "Bind a post-type to it in the site's `postTypeLayout` map "
+                                + "(`{\"<post type>\":\"" + layout.getTitle() + "\"}`), or delete "
+                                + "the layout."));
+            }
+        }
     }
 
     /**

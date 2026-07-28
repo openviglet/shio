@@ -1,0 +1,267 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.render;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.post.type.ShSystemPostType;
+import com.viglet.shio.render.ShPageRenderService.ShNamedTemplate;
+import com.viglet.shio.render.ShPageRenderService.ShPageTemplates;
+
+/**
+ * SH193 — who depends on a layout or a region, so a shared-presentation edit has a blast radius.
+ *
+ * <h2>The question and why nothing could answer it</h2>
+ *
+ * <p>Composition is an attribute inside an HTML string — {@code <div sh-region="NAV">} — so
+ * "which layouts slot this region, which pages use those layouts, how many are published" was
+ * unanswerable. Editing a shared region was therefore an unbounded change: nobody could say what
+ * it touched beforehand, and {@code verify} could not prove afterwards that nothing broke, because
+ * it did not know what depended on it. That is the difference between a CMS region and a component
+ * in one application, where the blast radius is the file.</p>
+ *
+ * <h2>Computed, not extracted — and that is a correction to the design</h2>
+ *
+ * <p>§XV.11 proposed extracting slot references at write time into {@code ShReference}, "which
+ * already exists and already survives a move", following SH154's treatment of {@code Multi Select}
+ * post URLs. <b>That is not available:</b> {@code ShReference} joins {@code object_from} and
+ * {@code object_to} to {@code ShObject}, and a post is <em>not</em> an {@code ShObject} — the
+ * unified model is its own table. A post-to-post edge would need a new table.</p>
+ *
+ * <p>It is not needed, and SH251 is the evidence. That task established that a page's presentation
+ * resolves from its <b>post-type</b> rather than from the page: {@code site.postTypeLayout} is
+ * keyed by type and a layout's slots are static attributes, so the whole forward index for a site
+ * is (number of bindings) resolutions regardless of how many pages exist. Inverting it is a map
+ * built in memory. Two properties come free that a persisted index would have had to earn:</p>
+ *
+ * <ul>
+ *   <li><b>It cannot go stale.</b> An extracted edge has to be maintained when a layout is edited
+ *       to drop a slot, when a region is renamed, and when {@code site.postTypeLayout} changes —
+ *       the third being a {@code ShSite} write that no post-level extraction would ever see.</li>
+ *   <li><b>It needs no migration and no backfill</b>, so it answers correctly for the 2018
+ *       {@code bootstrap-site} package the moment it is imported.</li>
+ * </ul>
+ *
+ * <p>What a persisted graph would buy is a cheap reverse query at scale. That is a real trade and
+ * it is not this one: the cost here is bounded by bindings, and the page counts are one aggregate
+ * query per type.</p>
+ *
+ * @author Alexandre Oliveira
+ * @since 2026.3
+ */
+@Service
+@Transactional(readOnly = true)
+public class ShTemplateGraph {
+
+    private final ShPageRenderService renderService;
+    private final ShPostUnifiedRepository shPostUnifiedRepository;
+
+    public ShTemplateGraph(ShPageRenderService renderService,
+                           ShPostUnifiedRepository shPostUnifiedRepository) {
+        this.renderService = renderService;
+        this.shPostUnifiedRepository = shPostUnifiedRepository;
+    }
+
+    /**
+     * One site's presentation graph, both directions.
+     *
+     * @param site the site whose {@code postTypeLayout} bindings define it
+     */
+    public ShSiteTemplateGraph of(ShSite site) {
+        Map<String, String> bindings = renderService.layoutBindings(site);
+        // type -> layout title, and the two inversions a caller actually asks for.
+        Map<String, Set<String>> typesByLayout = new TreeMap<>();
+        Map<String, Set<String>> layoutsByRegion = new TreeMap<>();
+        Set<String> resolvedLayouts = new TreeSet<>();
+
+        for (Map.Entry<String, String> binding : new TreeMap<>(bindings).entrySet()) {
+            String typeName = binding.getKey();
+            Optional<ShPageTemplates> templates = renderService.templatesFor(site, typeName);
+            if (templates.isEmpty()) {
+                // The binding names a layout that is not there. Already
+                // `MissingLayoutException` when somebody asks for the page; the graph simply has
+                // no edge for it, which is honest — an absent layout slots nothing.
+                continue;
+            }
+            String layoutTitle = binding.getValue();
+            resolvedLayouts.add(layoutTitle);
+            typesByLayout.computeIfAbsent(layoutTitle, key -> new TreeSet<>()).add(typeName);
+            for (ShNamedTemplate region : templates.get().regions()) {
+                layoutsByRegion.computeIfAbsent(region.name(), key -> new TreeSet<>())
+                        .add(layoutTitle);
+            }
+        }
+        return new ShSiteTemplateGraph(site.getName(), site.getId(), typesByLayout,
+                layoutsByRegion, resolvedLayouts);
+    }
+
+    /**
+     * What a change to one template would affect, or empty when the post is not a template.
+     *
+     * <p>Takes the post rather than a title because the two system types share a namespace with
+     * everything else: a {@code Region} called {@code NAV} and an {@code Article} called
+     * {@code NAV} are different posts, and answering for the wrong one would be worse than
+     * answering nothing.</p>
+     */
+    public Optional<ShTemplateImpact> impactOf(ShPostUnified post) {
+        String typeName = post == null || post.getShPostType() == null
+                ? null : post.getShPostType().getName();
+        ShSite site = post == null ? null : post.getShSite();
+        if (site == null || post.getTitle() == null
+                || !(ShSystemPostType.REGION.equals(typeName)
+                        || ShSystemPostType.PAGE_LAYOUT.equals(typeName))) {
+            return Optional.empty();
+        }
+        ShSiteTemplateGraph graph = of(site);
+        Set<String> layouts = ShSystemPostType.REGION.equals(typeName)
+                ? graph.layoutsSlotting(post.getTitle())
+                : Set.of(post.getTitle());
+        Set<String> types = new TreeSet<>();
+        for (String layout : layouts) {
+            types.addAll(graph.typesUsing(layout));
+        }
+        return Optional.of(new ShTemplateImpact(
+                ShSystemPostType.REGION.equals(typeName) ? "region" : "layout",
+                post.getTitle(),
+                List.copyOf(layouts),
+                List.copyOf(types),
+                pageCount(site, types, ShPostState.DRAFT),
+                pageCount(site, types, ShPostState.PUBLISHED)));
+    }
+
+    /**
+     * How many pages of these types the site holds.
+     *
+     * <p>Counted per state rather than deduplicated in memory: "how many are published" is the
+     * number that decides whether an edit is safe to make now, and a DRAFT-preferred count would
+     * quietly answer a different question.</p>
+     */
+    private int pageCount(ShSite site, Collection<String> typeNames, ShPostState state) {
+        if (typeNames.isEmpty()) {
+            return 0;
+        }
+        int total = 0;
+        for (ShPostUnified post : shPostUnifiedRepository
+                .findByShSite_IdAndStateIn(site.getId(), List.of(state))) {
+            String name = post.getShPostType() == null ? null : post.getShPostType().getName();
+            if (name != null && typeNames.contains(name)) {
+                total++;
+            }
+        }
+        return total;
+    }
+
+    /** One site's graph: layout → the types that use it, region → the layouts that slot it. */
+    public record ShSiteTemplateGraph(String siteName, String siteId,
+                                      Map<String, Set<String>> typesByLayout,
+                                      Map<String, Set<String>> layoutsByRegion,
+                                      Set<String> boundLayouts) {
+
+        public Set<String> typesUsing(String layoutTitle) {
+            return typesByLayout.getOrDefault(layoutTitle, Set.of());
+        }
+
+        public Set<String> layoutsSlotting(String regionTitle) {
+            return layoutsByRegion.getOrDefault(regionTitle, Set.of());
+        }
+
+        /**
+         * Every region name any bound layout slots — the set a Region has to be in to be used.
+         *
+         * <p>A {@code TreeSet} and not {@code Set.copyOf}, which SH136's lint caught here: that
+         * copy's iteration order comes from a per-JVM salt, so the same graph would iterate
+         * differently after a restart. It is only a membership test today, which is exactly the
+         * reasoning that would have justified an exemption — and the reason not to take one is
+         * that the next caller to iterate or serialize this would inherit an unstable order
+         * silently, with nothing to fail. The source is a {@code TreeMap}, so sorted is free.</p>
+         */
+        public Set<String> slottedRegions() {
+            return new TreeSet<>(layoutsByRegion.keySet());
+        }
+    }
+
+    /**
+     * What one template change affects.
+     *
+     * @param kind      {@code region} or {@code layout}
+     * @param title     the template's title, which is how a slot and a binding name it
+     * @param layouts   the layouts involved — the region's slotters, or the layout itself
+     * @param postTypes the post-types whose pages render through those layouts
+     * @param pages     draft pages of those types in this site
+     * @param published published pages of those types — the number that decides whether an edit
+     *                  is safe to make right now
+     */
+    public record ShTemplateImpact(String kind, String title, List<String> layouts,
+                                   List<String> postTypes, int pages, int published) {
+
+        /** Whether anything at all renders through this template. */
+        public boolean isUsed() {
+            return !layouts.isEmpty() && !postTypes.isEmpty();
+        }
+    }
+
+    /**
+     * The templates a site holds that nothing renders through, by kind (SH193).
+     *
+     * <p>The inverse query, and the one that is a <em>defect</em> rather than information: a
+     * Region no layout slots and a PageLayout no post-type binds are content nobody can reach,
+     * and until now nothing could tell them from content that is merely not visited.</p>
+     *
+     * @return region titles and layout titles, each sorted
+     */
+    public ShUnusedTemplates unusedIn(ShSite site, Collection<ShPostUnified> templates) {
+        ShSiteTemplateGraph graph = of(site);
+        Set<String> slotted = graph.slottedRegions();
+        List<ShPostUnified> regions = new ArrayList<>();
+        List<ShPostUnified> layouts = new ArrayList<>();
+        // LinkedHashMap keyed by title: a site with two Region posts of the same title is a
+        // separate defect (the renderer resolves the first), and reporting it twice here would
+        // describe it as two.
+        Map<String, ShPostUnified> seenRegions = new LinkedHashMap<>();
+        Map<String, ShPostUnified> seenLayouts = new LinkedHashMap<>();
+        for (ShPostUnified post : templates) {
+            String typeName = post.getShPostType() == null ? null : post.getShPostType().getName();
+            String title = post.getTitle();
+            if (title == null || title.isBlank()) {
+                continue;
+            }
+            if (ShSystemPostType.REGION.equals(typeName) && !slotted.contains(title)) {
+                seenRegions.putIfAbsent(title, post);
+            } else if (ShSystemPostType.PAGE_LAYOUT.equals(typeName)
+                    && graph.typesUsing(title).isEmpty()) {
+                seenLayouts.putIfAbsent(title, post);
+            }
+        }
+        regions.addAll(seenRegions.values());
+        layouts.addAll(seenLayouts.values());
+        return new ShUnusedTemplates(List.copyOf(regions), List.copyOf(layouts),
+                new LinkedHashSet<>(graph.boundLayouts()));
+    }
+
+    /** Templates nothing renders through, plus the layouts that are bound (for the message). */
+    public record ShUnusedTemplates(List<ShPostUnified> regions, List<ShPostUnified> layouts,
+                                    Set<String> boundLayouts) {
+    }
+}

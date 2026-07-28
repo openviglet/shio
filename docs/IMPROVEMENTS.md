@@ -1667,25 +1667,31 @@ and proof that a single-app loop can simply do without.
 > the scanner's own test caught it dropping `{{~TEXT~}}` — Handlebars' whitespace-control form —
 > which is the failure direction that stays quiet: a reference not reported, not a wrong one.
 
-#### XV.11 The blast radius of a region change is uncomputable (SH193)
+#### XV.11 The blast radius of a region change (SH193)
 
-Composition is expressed as an attribute inside an HTML string:
-
-```html
-<div sh-region="BOOTSTRAP_NAV_REGION"> </div>
-```
-
-so the content graph cannot answer the question every shared-presentation edit begins with: which
-layouts slot this region, which pages use those layouts, how many are published. Changing a
-navigation region is an unbounded edit, and `verify` cannot prove afterwards that nothing broke
-because it does not know what depended on it.
-
-SH154 solved the identical problem one level up: a `Multi Select` holding post URLs became a real
-reference because `widgetSettings` declared what the field held, and then the lint, the digest and
-the change feed could all agree about it. Slot references want the same treatment — extracted at
-write time into `ShReference`, which already exists and already survives a move. Once they are
-edges, "what does this change affect" is a query, `changes` can report it, and SH140's
-inbound-links idea gets its second use.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. This section proposed the wrong
+> mechanism, and the correction is the part worth keeping.
+>
+> **`ShReference` cannot hold this edge.** The proposal was to extract slot references at write
+> time into it, "which already exists and already survives a move", by analogy with SH154. But
+> `ShReference` joins `object_from`/`object_to` to `ShObject`, and **a post is not an `ShObject`**
+> — `ShPostUnified` is its own table. The analogy to SH154 was sound and the vehicle was not, and
+> the general lesson is to check the *shape* of the thing being reused, not just that it exists:
+> "already exists" was true and did nothing to make it applicable.
+>
+> **Computing beat extracting on the merits, not just on convenience.** SH251 had established
+> that presentation resolves from the post-type, so a site's forward index costs one resolution
+> per binding however many pages there are, and inverting it is a map. That buys two properties an
+> extracted index would have had to earn: it **cannot go stale** — and the interesting staleness is
+> not the post write anyone would remember to hook, it is `site.postTypeLayout` changing, which is
+> an `ShSite` write no post-level extraction would ever see — and it needs **no migration**, so it
+> is correct for an imported 2018 package immediately. A persisted graph buys a cheap reverse query
+> at scale; that is a real trade for a different day.
+>
+> **The surface question answered itself through the MCP cap.** The tool count is capped at 12 with
+> 11 used and `tools/list` paid every turn, so a new tool was not available — which pushed the
+> answer onto `/agent/changes`, where this section had already suggested it belonged. Constraints
+> from P3 selecting the P2 design is a pattern worth noticing rather than resenting.
 
 #### XV.12 Appearance needs a before/after and a one-call loop (SH194)
 
@@ -1780,6 +1786,31 @@ author's `{{{param.q}}}` — and unlike a front end, this codebase has SH192's w
 available, so a triple-stash over a request value can be *refused when the template is written*
 rather than found in production. That is a better answer than a front end can give, and it is
 worth doing as part of the same task rather than after it.
+
+#### XV.20 The blast radius is answerable after an edit, not before (SH262)
+
+SH193 put `affects` on `/agent/changes`, which answers *"what did I just touch"*. The question an
+agent asks **first** is the same one in the other tense: before rewriting a shared region, what
+does it reach? `ShTemplateGraph` already computes the answer; what is missing is a surface.
+
+Three candidates, and the differences are real:
+
+- **A field on `/agent/read`** when the address resolves to a layout or region. Cheapest, and it
+  arrives unasked on a read whose caller may only want the HTML — which is a token cost paid by
+  every reader for a question some of them are not asking (P3).
+- **`?include=impact`** on that read. Explicit, and one more axis on a hot path that already has
+  `fields=`.
+- **`GET /agent/impact?address=`**. Clearest to read, and a fourth contract restating a graph two
+  other surfaces already expose — exactly what P10 cautions against.
+
+The deciding constraint is MCP: the tool count is capped at 12 with 11 used, and a new endpoint
+with no tool would be a REST-only capability, which law P1 forbids. So it has to ride an existing
+tool, and `shio_read` is the one whose subject is already an address. That argues for the
+projection form — which is also the one that keeps the default response unchanged.
+
+Worth settling at the same time: whether the impact of a **theme** change is the same question. A
+theme is named by a layout's `THEME` field rather than by a slot, so it is a third edge and the
+graph does not currently hold it.
 
 #### XV.15 A region's browser JavaScript is authored and never served (SH248)
 
@@ -2191,6 +2222,30 @@ enclosing scope. It is filed as an idea rather than designed for one reason: a s
 deliberately does not do. The likely shape is to accept only the unambiguous case — an unquoted
 value made entirely of path characters — and leave everything else alone, which is the same
 "weak claim, always true" bar the in-block warning already uses.
+
+### XVI.16 A duplicate template title is silently the first one (SH263)
+
+`ShPageRenderService.postOfSystemType` resolves a layout or a region **by title** and takes the
+first match. So two `Region` posts both called `NAV` in one site render whichever row the query
+happens to return, and SH193's graph counts the slot once because a slot names a title, not a post.
+
+This is SH202's defect one namespace over. There, the identity was a friendly URL and a clone took
+a name that was already taken; here the identity is a **title**, because a title is what
+`sh-region="NAME"` and a `postTypeLayout` binding both name. That makes it an identity in fact, and
+nothing enforces uniqueness or reports a collision — so the failure is a page that renders the
+wrong region, intermittently, with no error anywhere.
+
+It belongs in `verify` as `duplicate-template-title`, and unlike SH193's unused-template findings it
+is an **error**: an unused region may be work in progress, while two templates competing for one
+name is provably wrong whatever anybody intended. The graph already reads every layout and region
+in the site, so the data is in hand.
+
+Two things to decide. Whether the rule covers `Theme` as well — a layout names its theme by title
+through the `THEME` field, so the same collision exists on a third edge. And whether the write side
+should refuse instead: `post.upsert` could reject a system-type post whose title is taken, which is
+the SH202 treatment and stronger, but it would refuse an import of a package that already contains
+the collision, and refusing to import a site because it has a latent defect is worse than importing
+it and reporting one.
 
 ---
 
