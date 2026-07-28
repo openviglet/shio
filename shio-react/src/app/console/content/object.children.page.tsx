@@ -34,11 +34,16 @@ const previewService = new ShPreviewTokenService()
  * fields carry the CDA's names. It used to be `{ shFolders, shPosts, shSite, breadcrumb }`
  * of raw JPA entities; the site and the breadcrumb now come from `/path`, which is the one
  * endpoint that answers "where am I".
+ *
+ * SH165: the posts are one page of the folder's content — `folders` is still the whole set.
  */
 interface ObjectListResponse {
   folderId?: string
   folders: ConsoleFolderRow[]
   posts: ConsolePostRow[]
+  page: number
+  size: number
+  totalPosts: number
 }
 
 /** A folder row: the CDA's `{id, name, root}` plus the console's ordering axis. */
@@ -82,12 +87,28 @@ interface ObjectChild {
   publishStatus?: string
 }
 
+/** Posts per request. The folder's subfolders come whole regardless (SH165). */
+const PAGE_SIZE = 50
+
+/**
+ * The browser's sort selector → the endpoint's `sort` (SH165).
+ *
+ * The order used to be applied here, over the whole folder, which was right while the whole
+ * folder was in the browser. With the posts paged it has to be the server's, or "sort by date"
+ * would order the fifty rows that happen to be loaded and quietly leave the rest where they
+ * were. `order` is manual position, which only a folder has — so for the posts underneath it
+ * both `order` and `name` mean title.
+ */
+const POST_SORT: Record<string, string> = { order: "title", name: "title", date: "date" }
+
 export default function ObjectChildrenPage() {
   const { objectId } = useParams() as { objectId: string }
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { resetBreadcrumb } = useBreadcrumb()
-  const [listData, setListData] = useState<ObjectListResponse>({ folders: [], posts: [] })
+  const [listData, setListData] = useState<ObjectListResponse>({ folders: [], posts: [], page: 0, size: PAGE_SIZE, totalPosts: 0 })
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [appliedQuery, setAppliedQuery] = useState("")
   const [breadcrumbPath, setBreadcrumbPath] = useState<BreadcrumbPathItem[]>([])
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [lastPostType, setLastPostType] = useState<ShPostType | null>(null)
@@ -108,11 +129,54 @@ export default function ObjectChildrenPage() {
   const [folderDialogPath, setFolderDialogPath] = useState<Array<{ id: string; name: string }>>([])
 
 
+  /**
+   * The search box talks to the server now, so it is debounced: it used to filter an array
+   * already in the browser, where every keystroke was free.
+   */
+  useEffect(() => {
+    const timer = setTimeout(() => setAppliedQuery(searchQuery.trim()), 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  /** One page of posts, plus the folder's whole subfolder set. */
+  const fetchPage = useCallback((page: number) => {
+    const params = new URLSearchParams({
+      page: String(page),
+      size: String(PAGE_SIZE),
+      sort: POST_SORT[sortBy] ?? "title",
+    })
+    if (appliedQuery) params.set("q", appliedQuery)
+    return axios.get<ObjectListResponse>(`/v2/object/${objectId}/list?${params}`)
+  }, [objectId, sortBy, appliedQuery])
+
+  /** The next page, appended. Only the posts accumulate — the folders are already all here. */
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true)
+    try {
+      const res = await fetchPage(listData.page + 1)
+      setListData((prev) => ({
+        ...res.data,
+        folders: res.data.folders ?? prev.folders,
+        posts: [...prev.posts, ...(res.data.posts ?? [])],
+      }))
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [fetchPage, listData.page])
+
+  // Sort and search re-query from page 0: the server owns both, so changing either changes
+  // which rows the first page holds.
   useEffect(() => {
     setLoading(true)
+    fetchPage(0)
+      .then((res) => setListData(res.data))
+      .finally(() => setLoading(false))
+  }, [fetchPage])
+
+  useEffect(() => {
     setSelectedItems(new Set())
 
-    const fetchPath = axios.get(`/v2/object/${objectId}/path`).then((res) => {
+    axios.get(`/v2/object/${objectId}/path`).then((res) => {
       const data = res.data
       const items: BreadcrumbPathItem[] = []
       // SH120: `ShCdaPath` — { site, breadcrumb: [...folders], currentFolder }.
@@ -127,14 +191,6 @@ export default function ObjectChildrenPage() {
       setBreadcrumbPath([])
     })
 
-    const fetchChildren = axios.get<ObjectListResponse>(`/v2/object/${objectId}/list`).then((res) => {
-      setListData({
-        folders: res.data.folders ?? [],
-        posts: res.data.posts ?? [],
-      })
-    })
-
-    Promise.all([fetchPath, fetchChildren]).finally(() => setLoading(false))
     postTypeService.query().then((pts) => {
       const savedName = localStorage.getItem("sh-last-post-type")
       const saved = pts.find(p => p.name === savedName)
@@ -158,33 +214,43 @@ export default function ObjectChildrenPage() {
     resetBreadcrumb(items)
   }, [breadcrumbPath, resetBreadcrumb, t])
 
-  const combinedItems: ObjectChild[] = [
-    ...listData.folders.map((folder) => ({
+  /**
+   * Folders first — the whole set, ordered here — then the posts in the order the server
+   * returned them (SH165).
+   *
+   * The two halves are ordered by different parties on purpose, and that is the honest split
+   * rather than an inconsistency: the folders are all present, so sorting them locally says
+   * something true about the whole set; the posts are a page, so only the server can. Merging
+   * the two into one sorted sequence would interleave complete data with partial data and read
+   * as a single sorted list, which is exactly the half-migration this task had to avoid.
+   */
+  const folderItems: ObjectChild[] = [...listData.folders]
+    .map((folder) => ({
       id: folder.id,
       name: folder.name,
       date: folder.date ?? "",
       objectType: "FOLDER" as const,
       position: folder.position,
-    })),
-    ...listData.posts.map((post) => ({
-      id: post.id,
-      name: post.title ?? "",
-      date: post.date ?? "",
-      objectType: "POST" as const,
-      postTypeName: post.postTypeTitle || post.postType,
-      publishStatus: post.publishStatus,
-    })),
-  ]
+    }))
+    .sort((a, b) => {
+      if (sortBy === "name") return a.name.localeCompare(b.name)
+      if (sortBy === "date") return new Date(b.date).getTime() - new Date(a.date).getTime()
+      return (a.position ?? 0) - (b.position ?? 0)
+    })
 
-  const filteredItems = searchQuery
-    ? combinedItems.filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : combinedItems
+  const postItems: ObjectChild[] = listData.posts.map((post) => ({
+    id: post.id,
+    name: post.title ?? "",
+    date: post.date ?? "",
+    objectType: "POST" as const,
+    postTypeName: post.postTypeTitle || post.postType,
+    publishStatus: post.publishStatus,
+  }))
 
-  const sortedItems = [...filteredItems].sort((a, b) => {
-    if (sortBy === "name") return a.name.localeCompare(b.name)
-    if (sortBy === "date") return new Date(b.date).getTime() - new Date(a.date).getTime()
-    return (a.position ?? 0) - (b.position ?? 0)
-  })
+  const combinedItems: ObjectChild[] = [...folderItems, ...postItems]
+  const sortedItems = combinedItems
+  const loadedPosts = listData.posts.length
+  const hasMorePosts = loadedPosts < listData.totalPosts
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedItems((prev) => {
@@ -252,9 +318,14 @@ export default function ObjectChildrenPage() {
     }
   }
 
+  /**
+   * Back to the first page after a write. Re-fetching only the pages already loaded would be
+   * a lie after a create or a delete — the rows have shifted — and silently dropping the reader
+   * back to page 1 is the behaviour a curator can actually predict.
+   */
   const refreshList = async () => {
-    const res = await axios.get<ObjectListResponse>(`/v2/object/${objectId}/list`)
-    setListData({ folders: res.data.folders ?? [], posts: res.data.posts ?? [] })
+    const res = await fetchPage(0)
+    setListData(res.data)
   }
 
   const handleClone = async (itemId: string) => {
@@ -297,6 +368,16 @@ export default function ObjectChildrenPage() {
     }
   }
 
+  /**
+   * The move/copy picker's folder list. It asks for `size=1` because it renders no posts and
+   * the folders come back whole on any page (SH165) — one row of content instead of fifty, for
+   * a dialog that walks a site folder by folder.
+   */
+  const fetchDialogFolders = (id: string) =>
+    axios.get<ObjectListResponse>(`/v2/object/${id}/list?size=1`).then((res) => {
+      setFolderDialogFolders((res.data.folders ?? []).map(f => ({ id: f.id, name: f.name })))
+    })
+
   const openFolderDialog = (mode: "copy" | "move", ids: string[]) => {
     setFolderDialogMode(mode)
     setFolderDialogIds(ids)
@@ -304,18 +385,14 @@ export default function ObjectChildrenPage() {
     const startId = siteId || objectId
     setFolderDialogCurrentId(startId)
     setFolderDialogPath([])
-    axios.get<ObjectListResponse>(`/v2/object/${startId}/list`).then((res) => {
-      setFolderDialogFolders((res.data.folders ?? []).map(f => ({ id: f.id, name: f.name })))
-    })
+    fetchDialogFolders(startId)
     setFolderDialogOpen(true)
   }
 
   const navigateFolderDialog = (folderId: string, folderName: string) => {
     setFolderDialogCurrentId(folderId)
     setFolderDialogPath(prev => [...prev, { id: folderId, name: folderName }])
-    axios.get<ObjectListResponse>(`/v2/object/${folderId}/list`).then((res) => {
-      setFolderDialogFolders((res.data.folders ?? []).map(f => ({ id: f.id, name: f.name })))
-    })
+    fetchDialogFolders(folderId)
   }
 
   const goBackFolderDialog = (index: number) => {
@@ -323,9 +400,7 @@ export default function ObjectChildrenPage() {
     const targetId = index === 0 ? (siteId || objectId) : targetPath.at(-1)!.id
     setFolderDialogCurrentId(targetId)
     setFolderDialogPath(targetPath)
-    axios.get<ObjectListResponse>(`/v2/object/${targetId}/list`).then((res) => {
-      setFolderDialogFolders((res.data.folders ?? []).map(f => ({ id: f.id, name: f.name })))
-    })
+    fetchDialogFolders(targetId)
   }
 
   const confirmFolderDialog = async () => {
@@ -358,7 +433,9 @@ export default function ObjectChildrenPage() {
   const siteId = site?.id ?? null
   const siteName = site?.name ?? null
   const folderCount = listData.folders.length
-  const postCount = listData.posts.length
+  // The folder's post count, not the loaded one: the stats bar answers "what is in here", and
+  // since SH165 those are two different numbers.
+  const postCount = listData.totalPosts
 
   return (
     <>
@@ -637,6 +714,19 @@ export default function ObjectChildrenPage() {
                 <Folder className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
                 <p className="text-sm text-muted-foreground">{t("common.noResults")}</p>
                 <p className="text-xs text-muted-foreground/70 mt-1">{t("content.createFolderOrPost")}</p>
+              </div>
+            )}
+
+            {/* SH165: the page boundary, stated. A list that just stopped at fifty rows would
+                look complete, which is the failure mode paging introduces. */}
+            {!loading && hasMorePosts && (
+              <div className="flex flex-col items-center gap-2 border-t px-4 py-4">
+                <span className="text-xs text-muted-foreground">
+                  {t("content.showingPosts", { loaded: loadedPosts, total: listData.totalPosts })}
+                </span>
+                <Button variant="outline" size="sm" disabled={loadingMore} onClick={loadMore}>
+                  {loadingMore ? t("common.loading") : t("content.loadMore")}
+                </Button>
               </div>
             )}
           </CardContent>

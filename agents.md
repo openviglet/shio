@@ -92,7 +92,16 @@ export class ShSiteService {
   same order), then the console-only fields (`date`/`position` on a folder;
   `postTypeTitle`/`published`/`publishStatus`/`state` on a post).
   `ShConsoleShapeOverlapTest` fails the build if a shared component drifts.
-  **Unpaged** — it returns a folder's children whole (SH165).
+  **Paged since SH165**, with the CDA's own `page`/`size`/`totalPosts` (so the envelope is now
+  the CDA's exactly, which is what that test asserts): `?page=&size=&sort=title|date|modifiedDate&q=`.
+  **Only the posts page** — child folders come back whole on every page, because subfolders are
+  structure (the move/copy picker walks them) and `size=1` is how a caller that wants only the
+  structure asks. Three rules worth keeping: the **order and the filter are the server's**, since
+  a client-side sort over a paged listing sorts one page and reads exactly like a correct answer;
+  an unknown `sort` is a teaching **400**, never a fallback to the default, because a listing
+  answered in another order returns other *rows*; and the DRAFT-preference is a **predicate**
+  (`ShPostUnifiedRepository#pageConsoleRows`), not an in-memory dedup like the CDA's, so `LIMIT`
+  and the count are the database's and a post with both rows takes one slot and is counted once.
 - `GET /api/v2/object/{id}/path` and `GET /api/v2/folder/{id}/path` — the CDA's own
   **`ShCdaPath`**: `{ site, breadcrumb: [...folders], currentFolder }`. Note `site`, not
   `shSite`; a breadcrumb folder carries `root: true|false`, not `rootFolder: 1`.

@@ -105,6 +105,50 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
 
     List<ShPostUnified> findByShFolderAndStateIn(ShFolder shFolder, Collection<ShPostState> states);
 
+    /**
+     * One page of a folder's posts, one row per logical id, DRAFT preferred — the console
+     * content browser's listing (SH165).
+     *
+     * <p><b>Why this exists rather than reusing the CDA's dedup.</b> {@code ShCdaService}
+     * pages draft-preferred rows by loading the folder whole and slicing the list in memory
+     * ({@code draftPreferred}), which makes the <em>response</em> smaller and the query no
+     * cheaper. The console's listing is the read this repository's largest folders are opened
+     * with, so the dedup is expressed as a predicate instead: a row qualifies if it is the
+     * DRAFT, or it is the PUBLISHED row of a post that has no DRAFT. That is exactly
+     * one row per logical id, so {@code LIMIT}, {@code ORDER BY} and the count query are the
+     * database's job — sorting and paging over the whole folder without loading it.</p>
+     *
+     * <p>{@code p.shFolder = :folder} compares the association to an entity, which compiles to
+     * the {@code folder_id} FK column already on this table: no join, so the SH22
+     * {@code @TenantId} JOINED-join hazard documented above does not apply. The correlated
+     * subquery is on {@code ShPostUnified} itself, which carries its own {@code tenant_id}.</p>
+     *
+     * @param folder the parent folder
+     * @param term   a lower-cased, {@code %}-wrapped title filter, or {@code null} for all —
+     *               prefer {@link #pageConsoleRows(ShFolder, String, Pageable)}, which
+     *               normalizes for you (see the SH131 note on {@code FULLTEXT_PREDICATE})
+     */
+    @Query("select p from ShPostUnified p where p.shFolder = :folder "
+            + "and (p.state = com.viglet.shio.persistence.model.post.unified.ShPostState.DRAFT "
+            + "  or not exists (select 1 from ShPostUnified d where d.id = p.id "
+            + "    and d.state = com.viglet.shio.persistence.model.post.unified.ShPostState.DRAFT)) "
+            + "and (:term is null or lower(p.title) like :term)")
+    Page<ShPostUnified> pageConsoleRowsLike(@Param("folder") ShFolder folder,
+                                            @Param("term") String term, Pageable pageable);
+
+    /**
+     * {@link #pageConsoleRowsLike} with the title filter normalized: {@code null}/blank means
+     * no filter, anything else is lower-cased and {@code %}-wrapped. Call this one — the raw
+     * query is suffixed {@code Like} because normalizing twice searches for {@code %%term%%}
+     * and matches nothing (SH131).
+     */
+    default Page<ShPostUnified> pageConsoleRows(ShFolder folder, String query, Pageable pageable) {
+        String term = query == null || query.isBlank()
+                ? null
+                : "%" + query.trim().toLowerCase() + "%";
+        return pageConsoleRowsLike(folder, term, pageable);
+    }
+
     List<ShPostUnified> findByShSite_IdAndStateIn(String siteId, Collection<ShPostState> states);
 
     List<ShPostUnified> findByShSite_IdAndShPostType_IdAndStateIn(String siteId, String postTypeId,

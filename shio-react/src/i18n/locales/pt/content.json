@@ -169,6 +169,8 @@
   "content.folderCount_other": "{{count}} pastas",
   "content.postCount_one": "{{count}} post",
   "content.postCount_other": "{{count}} posts",
+  "content.showingPosts": "Exibindo {{loaded}} de {{total}} posts",
+  "content.loadMore": "Carregar mais",
   "content.selectPostTypeTooltip": "Selecione o tipo de post",
   "content.batchContent": "Conteúdo",
   "content.actionInBatch": "Ação em Lote",

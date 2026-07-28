@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.api.acl.ShContentAclService;
@@ -53,10 +54,31 @@ public class ShObjectAPI {
         this.shContentAclService = shContentAclService;
     }
 
+    /**
+     * An object's children — child folders whole, posts one page at a time (SH165).
+     *
+     * <p>It used to return every child of a folder, so a folder with ten thousand posts was
+     * one query, one response and one render; the CDA listing has been paged since SH1 and this
+     * one never was. The parameters are the CDA's plus the two the console needs and a delivery
+     * API does not: {@code sort}, because the browser's own sort would otherwise sort a single
+     * page, and {@code q}, because its search box would otherwise search one.</p>
+     *
+     * <p>An unknown {@code sort} is a teaching {@code 400} rather than a fallback to the
+     * default — see {@link ShUnknownListingSortException}.</p>
+     *
+     * @param page zero-based page index (default {@code 0})
+     * @param size posts per page (default {@code 50})
+     * @param sort {@code title} (default), {@code date} or {@code modifiedDate}
+     * @param q    a case-insensitive substring matched against folder names and post titles
+     */
     @GetMapping("/{id}/list")
-    public ResponseEntity<ShConsoleListing> list(@PathVariable String id) {
+    public ResponseEntity<ShConsoleListing> list(@PathVariable String id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String q) {
         shContentAclService.requireRead(id);
-        return shObjectNavigationService.list(id)
+        return shObjectNavigationService.list(id, page, size, ShConsoleListingSort.of(sort), q)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }

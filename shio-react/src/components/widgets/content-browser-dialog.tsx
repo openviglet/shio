@@ -13,13 +13,36 @@ import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import axios from "axios"
 import type { ShFolder } from "@/models/folder/folder"
-import type { ShPostUnified as ShPost } from "@/models/post-unified/post-unified"
 import type { ShSite } from "@/models/site/site"
 
-/** SH120: the CDA listing envelope — `folders`/`posts`, rows carrying the CDA's names. */
+/**
+ * SH120: the CDA listing envelope — `folders`/`posts`, rows carrying the CDA's names.
+ * SH165 added the paging: `posts` is one page, `folders` is the whole set.
+ */
 interface ObjectListResponse {
   folders: ShFolder[]
-  posts: ShPost[]
+  posts: ConsolePostRow[]
+  page: number
+  size: number
+  totalPosts: number
+}
+
+/**
+ * A post row as this listing actually delivers it.
+ *
+ * <p>It used to be typed as the JPA entity (`ShPostUnified`), which had been wrong since
+ * SH120 flattened the row: `shPostType.name` is `postType` and `shPostType.title` is
+ * `postTypeTitle`. Nothing failed loudly — the type badge simply never rendered, and the
+ * `file` select mode filtered on `shPostType?.name === "File"`, which is `undefined` for every
+ * row, so the File picker showed no files at all. Another read faithful to a shape the server
+ * stopped sending (Block O's lesson, one component late).</p>
+ */
+interface ConsolePostRow {
+  id: string
+  title?: string
+  furl?: string
+  postType?: string
+  postTypeTitle?: string
 }
 
 interface BreadcrumbItem {
@@ -27,6 +50,9 @@ interface BreadcrumbItem {
   name: string
   type: "SITE_LIST" | "SITE" | "FOLDER"
 }
+
+/** Posts per request in the picker — smaller than the browser's, since the dialog is short. */
+const PICKER_PAGE_SIZE = 25
 
 export interface ContentBrowserSelection {
   id: string
@@ -56,7 +82,11 @@ export function ContentBrowserDialog({
   const [loading, setLoading] = useState(false)
   const [sites, setSites] = useState<ShSite[]>([])
   const [folders, setFolders] = useState<ShFolder[]>([])
-  const [posts, setPosts] = useState<ShPost[]>([])
+  const [posts, setPosts] = useState<ConsolePostRow[]>([])
+  const [postPage, setPostPage] = useState(0)
+  const [totalPosts, setTotalPosts] = useState(0)
+  const [currentFolder, setCurrentFolder] = useState<string | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [breadcrumb, setBreadcrumb] = useState<BreadcrumbItem[]>([])
   const [selectedItem, setSelectedItem] = useState<{ id: string; name: string; type: "FOLDER" | "POST" } | null>(null)
 
@@ -114,15 +144,39 @@ export function ContentBrowserDialog({
     setLoading(true)
     setSelectedItem(null)
     try {
-      const res = await axios.get<ObjectListResponse>(`/v2/object/${objectId}/list`)
+      const res = await axios.get<ObjectListResponse>(`/v2/object/${objectId}/list?page=0&size=${PICKER_PAGE_SIZE}`)
       setFolders(res.data.folders ?? [])
       setPosts(res.data.posts ?? [])
+      setPostPage(res.data.page ?? 0)
+      setTotalPosts(res.data.totalPosts ?? 0)
+      setCurrentFolder(objectId)
       setSites([])
       setBreadcrumb(crumbs)
     } finally {
       setLoading(false)
     }
   }, [])
+
+  /**
+   * The next page of this folder's posts (SH165).
+   *
+   * A picker is the surface where a silent cut does the most damage — the content the user is
+   * looking for simply is not in the list and nothing says why — so the count is shown and the
+   * rest is one click away.
+   */
+  const loadMorePosts = useCallback(async () => {
+    if (!currentFolder) return
+    setLoadingMore(true)
+    try {
+      const next = postPage + 1
+      const res = await axios.get<ObjectListResponse>(`/v2/object/${currentFolder}/list?page=${next}&size=${PICKER_PAGE_SIZE}`)
+      setPosts((prev) => [...prev, ...(res.data.posts ?? [])])
+      setPostPage(res.data.page ?? next)
+      setTotalPosts(res.data.totalPosts ?? 0)
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [currentFolder, postPage])
 
   // Navigate to a site
   const navigateToSite = useCallback((site: ShSite) => {
@@ -154,9 +208,15 @@ export function ContentBrowserDialog({
 
   // In "file" select mode, only File-type posts are pickable (SH62) — folders stay
   // navigable, but other content types are hidden so the user can't pick a non-file.
+  // `postType` is the row's own field since SH120; reading `shPostType.name` here matched
+  // nothing, so this filter used to hide every file in the instance.
   const visiblePosts = selectMode === "file"
-    ? posts.filter((p) => p.shPostType?.name === "File")
+    ? posts.filter((p) => p.postType === "File")
     : posts
+
+  // What the folder holds minus what the filter above hides is not something the server told
+  // us, so the count is stated in the server's terms and the button offers the next page.
+  const hasMorePosts = posts.length < totalPosts
 
   // Handle content selection confirm
   const handleSelect = useCallback(() => {
@@ -294,13 +354,25 @@ export function ContentBrowserDialog({
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{post.title}</p>
                   </div>
-                  {post.shPostType && (
+                  {(post.postTypeTitle || post.postType) && (
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 shrink-0">
-                      {post.shPostType.title || post.shPostType.name}
+                      {post.postTypeTitle || post.postType}
                     </Badge>
                   )}
                 </button>
               ))}
+
+              {/* SH165: this list is a page. Say so, and offer the rest. */}
+              {hasMorePosts && (
+                <div className="flex flex-col items-center gap-1.5 pt-2">
+                  <span className="text-xs text-muted-foreground">
+                    {t("content.showingPosts", { loaded: posts.length, total: totalPosts })}
+                  </span>
+                  <Button type="button" variant="outline" size="sm" disabled={loadingMore} onClick={loadMorePosts}>
+                    {loadingMore ? t("common.loading") : t("content.loadMore")}
+                  </Button>
+                </div>
+              )}
 
               {/* Empty state */}
               {sites.length === 0 && folders.length === 0 && visiblePosts.length === 0 && (

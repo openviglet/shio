@@ -1304,21 +1304,6 @@ the baseline lean, is ≈10× still the right target, or was it always a proxy f
 agent can do this in one session instead of three"? A target nobody can hit gets
 disabled; a target that measures the wrong thing gets hit and means nothing.
 
-### XIV.7 The console listing is unpaged (SH165)
-
-`GET /api/v2/object/{id}/list` returns every child of a folder. SH120 aligned its
-shape with `ShCdaListing` but deliberately did not copy the `page`/`size`/`totalPosts`
-fields, because three constants pretending to be a contract are worse than an honest
-absence — the CDA has been paged since SH1 and the console has never been.
-
-It is a scaling limit with two halves, and the server half is nearly free: the
-projection already exists, so the endpoint needs the parameters and the count. The
-browser half is the real work and the real decision — pages, infinite scroll, or a
-virtualized list — and it interacts with the browser's client-side sort and search,
-which currently operate on the whole set precisely because the whole set is there. A
-paged listing with a client-side sort would silently sort one page, which is the kind
-of half-migration that is worse than either end state.
-
 ### XIV.10 The Universal Editor's save-back cannot be authenticating the way it thinks it is (SH233)
 
 Found while reviewing the CDA's CSRF exemption for SH167, and it is not a CSRF problem —

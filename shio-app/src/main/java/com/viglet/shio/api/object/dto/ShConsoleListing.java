@@ -23,23 +23,34 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * what {@code /path} returns. One shape to learn (P5), and one place to get the
  * breadcrumb.</p>
  *
- * <p><b>What it deliberately does not copy is the paging.</b> {@code ShCdaListing} carries
- * {@code page}/{@code size}/{@code totalPosts}; this listing returns a folder's children
- * whole, so those fields would be three constants pretending to be a contract. The
- * unpaged-ness is a real limitation rather than a shape decision — a folder with ten
- * thousand posts is one response — and it is tracked as SH165 rather than papered over with
- * fields that always say the same thing.</p>
+ * <p><b>It carries the CDA's paging since SH165</b> — {@code page}, {@code size},
+ * {@code totalPosts}, the same three components in the same order. Until then it returned a
+ * folder's children whole, which was documented here as a real limitation rather than papered
+ * over with three constants: a folder with ten thousand posts was one query, one response and
+ * one render. The envelope is now the CDA's exactly, which is what {@code
+ * ShConsoleShapeOverlapTest} asserts.</p>
  *
- * @param folderId the folder these children belong to; the site's id when listing a site
- * @param folders  child folders, in manual (position) order
- * @param posts    the folder's posts, one row per logical id, DRAFT preferred
+ * <p><b>Only the posts are paged.</b> Child folders come back whole on every page, which is
+ * the CDA's behaviour too: a folder's subfolders are structure rather than content — the
+ * console's move/copy picker walks them and the browser sorts them locally — and a page of
+ * folders would mean the picker paging as well, for a set that is bounded by how people
+ * organise a site rather than by how much they publish. {@code totalPosts} is named for what
+ * it counts for the same reason.</p>
+ *
+ * @param folderId   the folder these children belong to; the site's id when listing a site
+ * @param folders    child folders, in manual (position) order — the whole set, every page
+ * @param posts      one page of the folder's posts, one row per logical id, DRAFT preferred
+ * @param page       the zero-based page index this response answers
+ * @param size       the page size it was asked for
+ * @param totalPosts how many posts the folder holds in total (after any {@code q} filter)
  *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
 @JsonInclude(Include.NON_NULL)
 public record ShConsoleListing(String folderId, List<ShConsoleFolderRow> folders,
-                               List<ShConsolePostRow> posts) {
+                               List<ShConsolePostRow> posts, int page, int size,
+                               long totalPosts) {
     public ShConsoleListing {
         folders = folders == null ? List.of() : List.copyOf(folders);
         posts = posts == null ? List.of() : List.copyOf(posts);
