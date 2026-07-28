@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.TenantId;
@@ -112,9 +113,30 @@ public class ShApiToken implements Serializable {
      * <p>It gates the <b>agent surface</b> (batch/apply publish ops, {@code shio_publish}).
      * A console-authenticated caller has no token and is unaffected; the SH10 CDA write
      * path is the Universal Editor's, where a human is already the one clicking.</p>
+     *
+     * <p><b>Nullable on purpose, and read through {@link #isMayPublish()} (SH188).</b>
+     * {@code v2026.3.11} added the column with no default and no backfill, stating the
+     * intent that it "read as {@code false} when absent" — which a primitive
+     * {@code boolean} cannot do: Hibernate throws {@code IllegalArgumentException}
+     * hydrating NULL into one, so every install that held a token before that changeset
+     * failed on {@code GET /api/v2/api-token} and on minting a preview token. The
+     * wrapper is what makes the absent case expressible; {@code v2026.3.14} repairs the
+     * rows and adds the default {@code ephemeral} has had since SH13, so a fresh install
+     * never stores NULL again. Both halves are kept: the migration fixes what is on disk,
+     * the null read means a row arriving NULL from anywhere else is still only
+     * <em>not granted</em> rather than a 500.</p>
      */
+    @Getter(AccessLevel.NONE)
     @Column(name = "may_publish")
-    private boolean mayPublish = false;
+    private Boolean mayPublish = Boolean.FALSE;
+
+    /**
+     * @return whether this credential may publish — {@code false} when the column is
+     *         NULL, which is what "not granted" looks like on a pre-SH107 row.
+     */
+    public boolean isMayPublish() {
+        return Boolean.TRUE.equals(mayPublish);
+    }
 
     /** @return {@code true} when this token carries an expiry that has passed. */
     public boolean isExpired(Instant now) {

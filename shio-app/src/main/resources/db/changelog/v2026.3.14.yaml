@@ -1,0 +1,46 @@
+databaseChangeLog:
+  # SH188 — repair `api_token.may_publish`, which v2026.3.11 added nullable with no
+  # default and no backfill.
+  #
+  # The intent recorded there was that the column "read as `false` when absent", and the
+  # entity mapped it as a primitive `boolean`, which cannot express absent: Hibernate
+  # throws IllegalArgumentException hydrating NULL into one. So every install that held
+  # an api_token row before SH107 landed failed on `GET /api/v2/api-token` and on
+  # `POST /api/v2/preview-token` — preview dead for a reason of its own, independent of
+  # the missing `site.url` (SH184). The entity now maps `Boolean` and reads it through
+  # `isMayPublish()`; this file is the other half, so the NULL never reaches Java.
+  #
+  # The precedent is one table over and two changesets earlier: SH13's `ephemeral` was
+  # added `boolean` with `defaultValueBoolean: false` and has never had this problem.
+  # `addDefaultValue` alone does not touch rows that already exist, hence the explicit
+  # update — the two changesets together are what "read as false when absent" means on
+  # disk.
+  #
+  # The unquoted `may_publish` in the where clause is deliberate and is the same rule the
+  # SH22 `tenant_id` discriminator documents: PostgreSQL folds an unquoted reference to
+  # lower case and matches the lower-case column, MariaDB is case-insensitive, and H2
+  # matches under the load-bearing DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true
+  # datasource params. Type kept DB-agnostic (lowercase `boolean`) per
+  # ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on PostgreSQL
+  # (QUOTE_ALL_OBJECTS does not propagate through `include`, so it is re-declared per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh188-api-token-may-publish-backfill
+      author: alexandre
+      changes:
+        - update:
+            tableName: api_token
+            columns:
+              - column:
+                  name: may_publish
+                  valueBoolean: false
+            where: may_publish IS NULL
+  - changeSet:
+      id: sh188-api-token-may-publish-default
+      author: alexandre
+      changes:
+        - addDefaultValue:
+            tableName: api_token
+            columnName: may_publish
+            columnDataType: boolean
+            defaultValueBoolean: false

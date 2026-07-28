@@ -97,8 +97,40 @@ class ShH2SchemaIT {
         assertColumnExists("site_webhook", "target_url");
         assertColumnExists("api_token", "expires_at");
         assertColumnExists("api_token", "ephemeral");
+        assertColumnExists("api_token", "may_publish");
         assertColumnExists("sh_post_unified", "publish_scheduled_date");
         assertColumnExists("sh_post_unified", "unpublish_scheduled_date");
+    }
+
+    /**
+     * SH188 — {@code may_publish} arrived (v2026.3.11) with no default and no backfill,
+     * against an entity that mapped it as a primitive {@code boolean}; every install
+     * holding a token from before then failed on {@code GET /api/v2/api-token}. The
+     * entity now reads NULL as not-granted, and v2026.3.14 is the other half: the
+     * default {@code ephemeral} has carried since SH13, so a row can no longer be
+     * written without one. Asserting the default is how the migration half stays
+     * proven — the entity fix alone would make this test pass at runtime and leave the
+     * column able to store NULL forever.
+     */
+    @Test
+    void mayPublishCarriesADefaultLikeEveryOtherBooleanFlag() {
+        assertThat(columnDefault("api_token", "may_publish"))
+                .as("api_token.may_publish must default to false on H2 after v2026.3.14")
+                .isNotNull()
+                .satisfies(value -> assertThat(value.toUpperCase()).contains("FALSE"));
+        assertThat(columnDefault("api_token", "ephemeral"))
+                .as("the SH13 precedent this follows")
+                .isNotNull();
+    }
+
+    private String columnDefault(String table, String column) {
+        return (String) entityManager
+                .createNativeQuery("SELECT COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS "
+                        + "WHERE UPPER(TABLE_NAME) = UPPER(?1) "
+                        + "AND UPPER(COLUMN_NAME) = UPPER(?2)")
+                .setParameter(1, table)
+                .setParameter(2, column)
+                .getSingleResult();
     }
 
     private void assertColumnExists(String table, String column) {

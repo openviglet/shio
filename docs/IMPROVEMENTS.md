@@ -1663,34 +1663,6 @@ minimum honest behaviour is for a blueprint apply to say plainly that the conten
 and the site has no renderer, and for the manifest to carry a flag a client can read before
 promising a user a website.
 
-### XV.6 `may_publish` is NULL on existing rows and the field is a primitive (SH188)
-
-`v2026.3.11.yaml` adds `api_token.may_publish` nullable, with no backfill and no
-`defaultValueBoolean`, and its comment states the intent plainly: *"read as `false` when absent —
-the direction a default on this field has to fail in."* The entity does not implement that intent:
-
-```java
-@Column(name = "may_publish")
-private boolean mayPublish = false;      // Hibernate cannot set a primitive from SQL NULL
-```
-
-So on any instance holding an `api_token` row from before the changeset ran, reading a token
-throws `IllegalArgumentException: Can not set boolean field … to null value`. It takes out
-`GET /api/v2/api-token` and — the part that matters for this block — `POST /api/v2/preview-token`,
-which is the console's *Preview draft* button. Preview is broken for two independent reasons, and
-SH184 alone would not fix it.
-
-Three candidate fixes, not equivalent. A `Boolean` wrapper with an explicit null-to-false read
-implements the comment exactly and keeps "absent means no" true permanently. A
-`defaultValueBoolean: false` plus a backfill changeset puts the default in the database, which is
-easier to reason about but leaves the primitive one NULL away from throwing again. Both together
-cost one more line.
-
-Worth recording *how* this surfaced, because it argues for the instrument: no test caught it, the
-failure needs a database with pre-existing rows, and it appeared as an `api-error` finding in
-`shio verify` because SH103's incident window had recorded the 500. Block K doing its job on a
-defect nobody was looking for.
-
 ### XV.7 Importing an exchange package teaches nothing and is not on the agent surface (SH189)
 
 `ShExchangeImportAPI` ends every failure the same way:
@@ -1860,7 +1832,10 @@ asserted at the level the agent surface is.
 > rules: a copy corrects each of its names **in the scope that name is unique in** (title per
 > folder, URL per site — sharing one counter renames a page for a collision the curator cannot
 > see), and **the client prevents what it can see, the server refuses what it must**. The five
-> sections below are what finishing them found.
+> sections below are what finishing them found. A sixth, **SH246** — the Java suite red by one
+> since SH144 made the incident store durable — has since shipped too; its answer was the
+> SH164/SH239 precedent, that a test asserting something about the whole instance has to boot
+> its own database.
 
 ### XVI.1 No CI workflow runs on the branch the work happens on (SH241)
 
@@ -1994,37 +1969,6 @@ argument, so the rare legitimate case is *stated* rather than silently permitted
 keys on needs deciding too, and the cheap version is likely the right one: a write mapping on an
 API class whose body touches a `*Repository.save`/`delete` directly. Precision matters less than
 the build going red the day somebody adds the fifth one.
-
-### XVI.6 The Java suite is red on the default branch, and has been quietly (SH246)
-
-`./mvnw -pl shio-app -am test` fails 1 of 824. The failing assertion is
-`ShAgentRoundTripTest.aWriteCanReturnItsOwnProof`, and it is not reporting a defect in the
-code it names.
-
-SH144 made the SH103 incident feed **durable** — that was its whole point, so that "was
-anything failing while I was away" is answerable and an empty report means *nothing has
-failed* rather than *nothing is remembered*. The consequence for the test suite is that
-`ShAgentDurableIncidentTest`, which deliberately records an `api-error` for `/skip-guard`,
-leaves that row in `sh_agent_incident` on the datasource every other test shares.
-`aWriteCanReturnItsOwnProof` asserts that a **clean** `?verify=true` proof does not pay for
-the attribution prose, and its proof is not clean: the `diagnostics` group is cross-cutting,
-so the write's own proof picks up an incident written by a test that ran before it. Running
-those two classes and nothing else reproduces it exactly; running either alone passes.
-
-**The product behaviour is right and must not be "fixed".** SH143's rule is that scoping
-narrows the *subjects* of a run and leaves the cross-cutting indexes whole, and SH157's proof
-says so in its own `notes`: *these are their findings now, not necessarily defects this run
-introduced*. Narrowing diagnostics to the addresses a write touched would make a write's proof
-claim the instance is healthy when it is not. So the defect is the test's isolation, and the
-precedent is already in the repository and already argued: the SH164/SH239 benchmarks boot
-their own in-memory database because several of the responses they measure describe the
-*instance*, and on the shared datasource their numbers moved with whatever other tests had
-created. This is the same problem with a different observable — an assertion instead of a
-token count — and it takes the same answer.
-
-It is filed apart from §XVI.1 deliberately. SH241 explains why nobody noticed; this is what
-there was to notice. Both matter, and fixing only the trigger would turn a silent red build
-into a loud one without making it green.
 
 ---
 

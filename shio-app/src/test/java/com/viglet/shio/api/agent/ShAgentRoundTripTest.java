@@ -58,7 +58,19 @@ import jakarta.persistence.PersistenceContext;
  *
  * @author Alexandre Oliveira
  */
-@SpringBootTest
+// SH246 — its own database, for the reason ShAgentResponseBudgetTest and the SH164/SH239
+// benchmarks already boot theirs: `aWriteCanReturnItsOwnProof` asserts that a *clean* proof
+// carries no attribution prose, and "clean" is a statement about the whole instance. SH144
+// made the SH103 incident store durable, so ShAgentDurableIncidentTest's deliberately-recorded
+// /skip-guard 500 stays in `sh_agent_incident` on the shared test datasource and the proof's
+// `diagnostics` group then reports a finding this run did not cause. Both behaviours are
+// correct — SH143 keeps the cross-cutting checks whole on purpose, and the proof's own `notes`
+// say the findings are not necessarily the run's — so the fix belongs to the test, and it is
+// isolation rather than a weaker assertion: the point of the assertion is that a clean proof
+// is cheap, and it can only be made against an instance that is actually clean.
+@SpringBootTest(properties =
+        "spring.datasource.url=jdbc:h2:mem:shio-roundtrip;DB_CLOSE_DELAY=-1;MODE=LEGACY;"
+                + "DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true")
 @TestInstance(Lifecycle.PER_CLASS)
 class ShAgentRoundTripTest {
 
