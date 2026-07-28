@@ -1856,38 +1856,175 @@ time. The pattern is consistent enough to state as an expectation: **when a verb
 surfaces, the console's copy is where the careless version lives**, because nothing on it is
 asserted at the level the agent surface is.
 
-### XVI.1 The console's clone mints a duplicate friendly URL (SH202)
+> ✅ **SH202 and SH203 shipped** → [CHANGELOG.md](CHANGELOG.md) Block O. Their two durable
+> rules: a copy corrects each of its names **in the scope that name is unique in** (title per
+> folder, URL per site — sharing one counter renames a page for a collision the curator cannot
+> see), and **the client prevents what it can see, the server refuses what it must**. The five
+> sections below are what finishing them found.
 
-"Clone" is copy-to-same-folder, and `copyPost` derives the copy's `furl` from the source's
-title — which is the same title, so the same slug. Two posts in one site then claim one URL.
+### XVI.1 No CI workflow runs on the branch the work happens on (SH241)
 
-What makes it worth its own task rather than a footnote is that every downstream mechanism
-already treats this as broken, and correctly: `shio verify` reports `duplicate-url` as an
-**error** (not a warning — it is broken from a visitor's point of view), and `findPost` resolves
-the URL to whichever row it reaches first, so the clone is unaddressable and so, now, is the
-original. SH134 spent real design effort refusing an occupied address on *move*; create simply
-does not ask.
+Three workflows exist. `build.yml` (Maven build + Sonar) and `codeql-analysis.yml` are
+`workflow_dispatch:`-only — no `push`, no `pull_request`. `console-check.yml` has
+`push: branches: [main]` and `pull_request`, and the repository's default branch is **`2026.3`**;
+`main` is a stale branch. So on a push to the branch everything is actually developed on,
+**nothing runs**.
 
-The fix has an obvious shape (suffix until free) and one decision inside it: whether a copy
-should also get a distinguishable **title**, since duplicate titles in a listing are the symptom
-the curator actually sees, and a `-2` URL under an identical title still leaves two rows that
-look the same. Worth doing together, because the URL is derived from the title and fixing only
-the derived value leaves the display ambiguous.
+That matters more here than it would elsewhere, because SH182 exists precisely to catch the
+class of defect nothing else can see. Block O's whole finding was that console defects answer
+`200` and are invisible to Java tests, CLI tests and the MCP golden; the answer was a browser
+walking the routes in CI. A gate that does not run on the branch is not a gate — it is a script
+in the repository, and the block's most durable output has been inert since it shipped.
 
-### XVI.2 The move dialog offers destinations the server refuses (SH203)
+The evidence it is not hypothetical: picking up Block O's follow-ups meant building the console,
+and the build was **already red** (§XVI.2). Nothing had reported it, because nothing had run.
 
-SH137 added the guard that a folder cannot move into its own subtree — a cycle detaches the
-subtree from the site root and sends the recursive delete round the loop. The guard is right and
-belongs on the server. But the console's move dialog starts at the site root and navigates
-*down*, so the folders inside the one being dragged are exactly the ones a curator scrolls into,
-and they now answer `409`.
+The fix is a trigger, and the choice worth making deliberately is *which* jobs run on push
+versus pull request — the console check packages a jar and drives Chromium, so it is a
+pull-request and merge-queue gate rather than something to pay for on every push, while the
+Java suite is cheap enough to run on both. What must not survive is the current state, where
+the answer is "neither".
 
-The design point generalizes past this dialog: **a picker that lists choices the server will
-refuse teaches the user that the operation fails at random.** The refusal is the backstop, not
-the interface — the tree should disable the moving folder's own subtree, and keep the `409` for
-the case the UI cannot know about (a concurrent move, a stale tree). That division — the client
-prevents what it can see, the server refuses what it must — is the same one SH108's confirm flow
-already uses, where the CLI prints the deletions *and* the server still demands the token.
+### XVI.2 An unmet peer range is not a build failure (SH242)
+
+`monaco-graphql@1.8.0` declares `peerDependencies: { "monaco-editor": ">= 0.20.0 < 0.53" }`.
+A Dependabot bump set the console's direct dependency to `monaco-editor: 0.56.0`. pnpm resolved
+it, and nothing failed.
+
+What made it fatal rather than merely unsupported is that 0.56 introduced an `exports` map
+(`"."`, `"./*.js"`, `"./*"`) whose patterns re-prefix `esm/vs/`, so the deep specifier
+`monaco-editor/esm/vs/editor/editor.worker` expands to `esm/vs/esm/vs/editor/editor.worker.js`
+and resolves to nothing — and 0.56 had also *removed* files monaco-graphql imports outright
+(`esm/vs/editor/edcore.main.js`). `pnpm run compile:build` therefore failed, which is
+`mvn package`, which is the release jar and the SH182 check.
+
+The fix was a pin, not a shim: `@graphiql/react` already depends on `monaco-editor@0.52.2`
+exactly, so the console's `0.56.0` was the outlier and aligning on 0.52.2 both satisfies the
+peer range and collapses three copies of Monaco to one. The first attempt was a Vite `resolve`
+alias remapping the broken prefix, and it is worth recording why that was wrong: it made the
+first two specifiers resolve and then failed on a third, because the packages are genuinely
+incompatible and an alias only hides the *symptom* at whichever import the bundler reaches
+first. A build error that moves when you patch it is telling you the version is wrong.
+
+The generalizable half is the guard. This is a **resolution** fact — true the moment the
+lockfile is written, invisible to every runtime test — so the instrument has to be the
+installer: `strict-peer-dependencies` (pnpm's default is off) turns "resolved a version the
+dependent does not support" into a refusal. That is cheap and it is the only thing that would
+have caught this at the bump rather than three commits later. It depends on SH241 only in the
+sense that a guard nothing runs is the same as no guard.
+
+### XVI.3 A trashed post still holds its friendly URL, and nothing knows it (SH243)
+
+`ShPostUnified` carries `@SQLRestriction("deleted_date is null")`, which is what makes the SH55
+trash invisible to every normal read. The cost is that every question of the form "is this URL
+free" is answered *only about live posts*: SH202's new check, SH139's move refusal, and the
+`duplicate-url` lint all inherit the restriction from the finders they use.
+
+The failure is short: clone a page (`home` → `home-2`), delete the copy, clone again — the
+second copy takes `home-2`, because as far as the query is concerned nothing holds it. Then
+untrash the first. `restoreFromTrash` clears `deleted_date` with **no check at all**, and the
+instance now has exactly the duplicate SH202 was filed to remove, produced by two operations
+that are each individually correct.
+
+SH236 met this blind spot from the post-type side — a trashed post still holds its
+`post_type_id`, so a delete refusal that counted only live rows would have said "0 posts" and
+then failed with a constraint violation — and its answer is the one to copy: **count the trashed
+rows too and name them separately**, because the caller's next move differs (restore it, or
+purge it). Applied here that is two changes rather than one: the free-URL search should see the
+trash so a copy skips a URL that is only sleeping, and `restoreFromTrash` should refuse a
+restore onto an occupied URL with a teaching error instead of creating the duplicate silently.
+
+The second is the important one and it is not obviously a refusal — an alternative is to restore
+under a numbered URL the way a copy does. That would be wrong here: a restore is a request to
+get *the thing that was there* back, and quietly returning it at a different address is the
+class of surprise P7 exists to prevent. Refuse, name the occupant, and let the human choose.
+
+### XVI.4 Duplicating content is console-only (SH244)
+
+Copy lives at `PUT /api/v2/object/copyto/{dest}` and nowhere else: no `batch` op, no MCP verb,
+no CLI path. That is law P1's "no feature whose only interface is the console".
+
+For a **post** this is close to harmless, and worth saying so rather than overstating the gap:
+an agent duplicates a page by reading it and upserting the fields at a new address, which is two
+calls and loses nothing, because a copy of a post is genuinely just its field values somewhere
+else. The honest gap is the **folder**. The one thing a folder copy buys is the whole subtree in
+a single call, and reproducing it over the agent surface means walking the tree, reading every
+post and emitting an upsert each — the exact discovery-and-write loop Block H exists to remove,
+in the one case where the server can do it in one traversal.
+
+If it lands, it is a `folder.copy` op on the batch surface rather than a new endpoint, and it
+composes rather than forks: SH202's naming and SH203's cycle guard already live on the shared
+writers, so the op is an address pair and a call. Two things it must inherit rather than
+reinvent — the copy is **draft** (`copyPost` sets `published(false)`, and a batch that published
+a hundred pages by copying a folder would need SH107's gate for a reason nobody intended) and it
+is **not** destructive, so it needs no SH108 confirm.
+
+It stays 💭 rather than 📋 because the demand is unproven: no blueprint, no CLI command and no
+recorded session has wanted it. Filed so that the next one does not have to rediscover that the
+capability is reachable but expensive.
+
+### XVI.5 Make "one writer per verb" a lint, not an expectation (SH245)
+
+Four times the same defect has been found the same way. Fixing the agent's version of a verb
+meant reading the console's, and the console's was the careless one:
+
+| verb | what the console's copy did | found by |
+|---|---|---|
+| move a post | re-slugged `furl` from the title, changing live URLs | SH139 |
+| move a folder | no cycle guard — re-parenting into its own subtree detached it | SH137 |
+| delete a folder | `deleteAll` on the repository: no trash, no audit, no lifecycle event | SH200 |
+| copy a folder | duplicate URLs, and non-termination on its own subtree | SH202/SH203 |
+
+The rule that would have prevented all four is already written down — a content mutation goes
+through the writer service, and the two surfaces cannot diverge on what a verb means — and it is
+enforced nowhere. Every instance was caught by a person happening to read the neighbouring file
+while fixing something else, which is not a method that scales and has already missed three of
+these for at least a release each.
+
+This repository has the right instrument for invariants that no functional test can watch:
+`ShByteStabilityLintTest` fails the build on `Map.copyOf` where iteration order is observable,
+`ShFolderSiteInvariantTest` on a direct `folder.getShSite()`, and `ShCsrfExemptionLintTest` on a
+new blanket CSRF exemption. Each exists because the failure mode is a *future* caller rather than
+a current request. This is the same shape: a controller method that writes content without
+delegating to the writer that owns the verb.
+
+The design work is the exemption hatch, not the check. The precedent is
+`ShFolderSite-exempt: <reason>` and `byte-stable-exempt: <reason>` — a named comment carrying the
+argument, so the rare legitimate case is *stated* rather than silently permitted. What the lint
+keys on needs deciding too, and the cheap version is likely the right one: a write mapping on an
+API class whose body touches a `*Repository.save`/`delete` directly. Precision matters less than
+the build going red the day somebody adds the fifth one.
+
+### XVI.6 The Java suite is red on the default branch, and has been quietly (SH246)
+
+`./mvnw -pl shio-app -am test` fails 1 of 824. The failing assertion is
+`ShAgentRoundTripTest.aWriteCanReturnItsOwnProof`, and it is not reporting a defect in the
+code it names.
+
+SH144 made the SH103 incident feed **durable** — that was its whole point, so that "was
+anything failing while I was away" is answerable and an empty report means *nothing has
+failed* rather than *nothing is remembered*. The consequence for the test suite is that
+`ShAgentDurableIncidentTest`, which deliberately records an `api-error` for `/skip-guard`,
+leaves that row in `sh_agent_incident` on the datasource every other test shares.
+`aWriteCanReturnItsOwnProof` asserts that a **clean** `?verify=true` proof does not pay for
+the attribution prose, and its proof is not clean: the `diagnostics` group is cross-cutting,
+so the write's own proof picks up an incident written by a test that ran before it. Running
+those two classes and nothing else reproduces it exactly; running either alone passes.
+
+**The product behaviour is right and must not be "fixed".** SH143's rule is that scoping
+narrows the *subjects* of a run and leaves the cross-cutting indexes whole, and SH157's proof
+says so in its own `notes`: *these are their findings now, not necessarily defects this run
+introduced*. Narrowing diagnostics to the addresses a write touched would make a write's proof
+claim the instance is healthy when it is not. So the defect is the test's isolation, and the
+precedent is already in the repository and already argued: the SH164/SH239 benchmarks boot
+their own in-memory database because several of the responses they measure describe the
+*instance*, and on the shared datasource their numbers moved with whatever other tests had
+created. This is the same problem with a different observable — an assertion instead of a
+token count — and it takes the same answer.
+
+It is filed apart from §XVI.1 deliberately. SH241 explains why nobody noticed; this is what
+there was to notice. Both matter, and fixing only the trigger would turn a silent red build
+into a loud one without making it green.
 
 ---
 

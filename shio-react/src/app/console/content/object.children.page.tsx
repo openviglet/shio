@@ -136,6 +136,16 @@ export default function ObjectChildrenPage() {
   const [folderDialogFolders, setFolderDialogFolders] = useState<Array<{ id: string; name: string }>>([])
   const [folderDialogCurrentId, setFolderDialogCurrentId] = useState<string | null>(null)
   const [folderDialogPath, setFolderDialogPath] = useState<Array<{ id: string; name: string }>>([])
+  /**
+   * SH203 — the folders in this run that cannot be their own destination.
+   *
+   * Only folder ids: a post has no subtree, so it can go anywhere. The dialog navigates
+   * strictly *down* from the site root, so "is this row inside a folder being moved" needs
+   * nothing from the server — a row is unreachable exactly when it is one of these, and
+   * disabling it means the walk can never get inside one. Hence no ancestor check: there is
+   * no way to arrive below a blocked row in the first place.
+   */
+  const [folderDialogBlockedIds, setFolderDialogBlockedIds] = useState<Set<string>>(new Set())
 
 
   /**
@@ -430,6 +440,14 @@ export default function ObjectChildrenPage() {
   const openFolderDialog = (mode: "copy" | "move", ids: string[]) => {
     setFolderDialogMode(mode)
     setFolderDialogIds(ids)
+    // SH203 — both modes, because both refuse this destination: a move would detach the
+    // subtree from the site root (SH137) and a copy would recurse into the copies it is
+    // making. Reading the folders off `combinedItems` is complete even under SH165 paging
+    // and an SH237 select-everything: only *posts* are paged, and child folders come back
+    // whole on every page, so every folder that could be in the selection is on screen.
+    setFolderDialogBlockedIds(new Set(
+      combinedItems.filter(i => i.objectType === "FOLDER" && ids.includes(i.id)).map(i => i.id)
+    ))
     // Start at site root
     const startId = siteId || objectId
     setFolderDialogCurrentId(startId)
@@ -452,12 +470,25 @@ export default function ObjectChildrenPage() {
     fetchDialogFolders(targetId)
   }
 
-  const confirmFolderDialog = async () => {
-    if (!folderDialogCurrentId) return
+  /**
+   * Why the current folder cannot be the destination, or null when it can (SH203).
+   *
+   * The refusals stay on the server — this only stops the dialog from *offering* them.
+   * A picker that lists choices the server will reject teaches the curator that the
+   * operation fails at random; the same division SH108's confirm flow uses, where the CLI
+   * prints the deletions and the server still demands the token.
+   */
+  const folderDialogBlockedReason = (() => {
+    if (!folderDialogCurrentId) return null
+    if (folderDialogBlockedIds.has(folderDialogCurrentId)) return t("content.moveInsideItself")
     if (folderDialogMode === "move" && folderDialogCurrentId === objectId) {
-      toast.warning("Cannot move to the same folder")
-      return
+      return t("content.moveSameFolder")
     }
+    return null
+  })()
+
+  const confirmFolderDialog = async () => {
+    if (!folderDialogCurrentId || folderDialogBlockedReason) return
     const endpoint = folderDialogMode === "copy" ? "copyto" : "moveto"
     try {
       await axios.put(`/v2/object/${endpoint}/${folderDialogCurrentId}`, folderDialogIds)
@@ -818,21 +849,37 @@ export default function ObjectChildrenPage() {
             {folderDialogFolders.length === 0 && (
               <div className="px-4 py-6 text-center text-sm text-muted-foreground">{t("content.noSubfolders")}</div>
             )}
-            {folderDialogFolders.map(folder => (
-              <button
-                key={folder.id}
-                type="button"
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50 transition-colors text-left"
-                onClick={() => navigateFolderDialog(folder.id, folder.name)}
-              >
-                <Folder className="h-4 w-4 text-amber-500 shrink-0" />
-                <span className="truncate">{folder.name}</span>
-              </button>
-            ))}
+            {folderDialogFolders.map(folder => {
+              // SH203 — a folder being moved or copied is shown and disabled rather than
+              // hidden: a curator looking for "Docs" in the tree needs to see that it is
+              // the thing they are dragging, not conclude the picker has lost it.
+              const blocked = folderDialogBlockedIds.has(folder.id)
+              return (
+                <button
+                  key={folder.id}
+                  type="button"
+                  disabled={blocked}
+                  title={blocked ? t("content.moveInsideItself") : undefined}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left enabled:hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => navigateFolderDialog(folder.id, folder.name)}
+                >
+                  <Folder className="h-4 w-4 text-amber-500 shrink-0" />
+                  <span className="truncate">{folder.name}</span>
+                  {blocked && (
+                    <span className="ml-auto text-xs text-muted-foreground shrink-0">
+                      {folderDialogMode === "copy" ? t("content.beingCopied") : t("content.beingMoved")}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
           </div>
+          {folderDialogBlockedReason && (
+            <p className="text-xs text-muted-foreground">{folderDialogBlockedReason}</p>
+          )}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" size="sm" onClick={() => setFolderDialogOpen(false)}>{t("common.cancel")}</Button>
-            <Button size="sm" onClick={confirmFolderDialog}>
+            <Button size="sm" onClick={confirmFolderDialog} disabled={!!folderDialogBlockedReason}>
               {folderDialogMode === "copy" ? t("content.copyHere") : t("content.moveHere")}
             </Button>
           </div>

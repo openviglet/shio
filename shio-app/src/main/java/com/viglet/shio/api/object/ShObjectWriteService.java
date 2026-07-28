@@ -10,7 +10,9 @@ package com.viglet.shio.api.object;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -159,6 +161,33 @@ public class ShObjectWriteService {
         }
     }
 
+    /**
+     * Duplicates objects into {@code destId}.
+     *
+     * <h2>A copy needs a name of its own (SH202)</h2>
+     *
+     * <p>"Clone" in the console is copy-to-the-same-folder, and this used to derive the
+     * copy's {@code furl} from the source's title — the same title, so the same slug. Two
+     * posts in one site then claimed one URL, which every downstream mechanism already
+     * treated as broken and correctly: {@code shio verify} reports {@code duplicate-url} as
+     * an <em>error</em>, and address resolution returns whichever row it reaches first, so
+     * the clone was unaddressable and so, from that moment, was the original. SH134 spent
+     * its whole design budget refusing an occupied address on a <em>move</em>; create simply
+     * never asked.</p>
+     *
+     * <p><b>The title moves too</b>, not just the URL it derives: a {@code -2} URL under an
+     * identical title still leaves two rows the curator cannot tell apart, and that is the
+     * symptom they actually see. So a clone is "Home (2)" / {@code home-2} and not "Home" /
+     * {@code home-2}.</p>
+     *
+     * <p>But the two answer to different scopes and are therefore corrected
+     * <b>independently</b>: a <b>title</b> is unique per folder (a display concern — two
+     * pages called "Overview" in different sections are not a defect), a <b>friendly URL</b>
+     * is unique per site (it is the address). A copy into an empty folder of another site
+     * keeps both verbatim; a copy into another folder of the <em>same</em> site keeps its
+     * title and moves only its URL. See {@link #freeNaming} for why sharing one counter
+     * between them was the wrong simplification.</p>
+     */
     @Transactional
     public List<ShObject> copyTo(String destId, List<String> ids) {
         ShObject dest = live(destId);
@@ -169,6 +198,11 @@ public class ShObjectWriteService {
         for (String id : ids) {
             ShObject object = live(id);
             if (object instanceof ShFolder folder) {
+                // SH203 — the copy's own cycle guard. Unlike a move's, this one is not about
+                // detaching a subtree: copyFolder saves the copy and then walks the source's
+                // children, so a destination inside the source makes the walk descend into
+                // the copies it is still making, and it never returns.
+                shFolderWriteService.checkCopyable(id, dest);
                 copies.add(copyFolder(folder, dest));
             } else if (dest instanceof ShFolder destFolder) {
                 copyPost(id, destFolder);
@@ -201,9 +235,13 @@ public class ShObjectWriteService {
     }
 
     private ShFolder copyFolder(ShFolder source, ShObject dest) {
+        // SH202 one level up: a folder is addressed by its name chain (SH79), so two
+        // siblings of the same name make `folder:<site>/a/b` resolve to whichever the walk
+        // reaches first — the post case's defect with the addressing scheme swapped.
+        String name = freeFolderName(source.getName(), dest);
         ShFolder copy = new ShFolder();
-        copy.setName(source.getName());
-        copy.setFurl(ShURLFormatter.format(safe(source.getName())));
+        copy.setName(name);
+        copy.setFurl(ShURLFormatter.format(name));
         copy.setOwner(source.getOwner());
         copy.setDate(Instant.now());
         reparent(copy, dest);
@@ -219,23 +257,147 @@ public class ShObjectWriteService {
     }
 
     private void copyPost(String postId, ShFolder destFolder) {
+        List<ShPostUnified> sources = shPostUnifiedRepository.findById(postId);
+        if (sources.isEmpty()) {
+            return;
+        }
         String newId = UUID.randomUUID().toString();
-        for (ShPostUnified source : shPostUnifiedRepository.findById(postId)) {
+        // One name for the logical post, not one per state row: DRAFT and PUBLISHED are two
+        // rows of the same post, and letting them be numbered independently would produce a
+        // copy whose published URL is not the one its draft claims.
+        Naming naming = freeNaming(sources.get(0).getTitle(), destFolder);
+        for (ShPostUnified source : sources) {
             ShPostUnified copy = new ShPostUnified();
             copy.setId(newId);
             copy.setState(source.getState());
             copy.setShPostType(source.getShPostType());
             copy.setShFolder(destFolder);
             copy.setShSite(ShFolderSite.of(destFolder));
-            copy.setTitle(source.getTitle());
+            copy.setTitle(naming.title());
             copy.setSummary(source.getSummary());
-            copy.setFurl(ShURLFormatter.format(safe(source.getTitle())));
+            copy.setFurl(naming.furl());
             copy.setOwner(source.getOwner());
             copy.setData(source.getData());
             copy.setDate(Instant.now());
             copy.setPublished(false);
             shPostUnifiedRepository.save(copy);
         }
+    }
+
+    /** What a copy will be called, and where it will answer. */
+    private record Naming(String title, String furl) {
+    }
+
+    /**
+     * A title free in the destination folder and a URL free in the destination site (SH202).
+     *
+     * <p><b>Two counters, not one.</b> The first version of this shared a counter so the
+     * title and the URL could never disagree, and its own test caught what that costs: a
+     * page copied into a folder holding no page of that name came out "Contact (2)" because
+     * the <em>URL</em> was taken somewhere else in the site. The rename was correct in a
+     * scope the curator cannot see from the place it shows up, which is its own kind of
+     * confusing. Each name is now corrected only where it is actually ambiguous — and in the
+     * case that motivated the task, the clone, both are, so both still move together.</p>
+     *
+     * <p>That the two can end up disagreeing is not a compromise: they are separate
+     * namespaces (SH79) and the model already treats them that way — SH139's whole point is
+     * that renaming or moving a post does <em>not</em> re-derive its URL.</p>
+     *
+     * <p>Both loops terminate because every {@code n} yields a distinct candidate while the
+     * sets they test against are finite. The bound is the number of copies of that page that
+     * already exist, which is the honest one rather than an invented ceiling.</p>
+     */
+    private Naming freeNaming(String rawTitle, ShFolder destFolder) {
+        String title = safe(rawTitle);
+        Set<String> takenTitles = postTitlesIn(destFolder);
+        String freeTitle = null;
+        for (int n = 1; freeTitle == null; n++) {
+            String candidate = numbered(title, n);
+            if (!takenTitles.contains(candidate)) {
+                freeTitle = candidate;
+            }
+        }
+
+        // The slug is derived from the source's title, not from the numbered one: the two
+        // counters are independent, and deriving it from `freeTitle` would silently couple
+        // them again through the formatter.
+        String destSiteId = ShFolderSite.idOf(destFolder);
+        String base = ShURLFormatter.format(title);
+        for (int n = 1; ; n++) {
+            String furl = n == 1 ? base : base + "-" + n;
+            if (urlFree(destSiteId, furl)) {
+                return new Naming(freeTitle, furl);
+            }
+        }
+    }
+
+    /** The folder half: a name free among the destination's own children. */
+    private String freeFolderName(String rawName, ShObject dest) {
+        String name = safe(rawName);
+        Set<String> taken = folderNamesIn(dest);
+        for (int n = 1; ; n++) {
+            String candidate = numbered(name, n);
+            if (!taken.contains(candidate)) {
+                return candidate;
+            }
+        }
+    }
+
+    /**
+     * {@code "Home"}, {@code "Home (2)"}, {@code "Home (3)"} — a numeric suffix rather than
+     * a word, because the server writes this string into content the console renders in
+     * whichever language the curator picked, and {@code "Home (copy)"} would be English in
+     * a Portuguese listing forever.
+     */
+    private static String numbered(String base, int n) {
+        return n == 1 ? base : base + " (" + n + ")";
+    }
+
+    /**
+     * Whether no live post in {@code destSiteId} already answers at {@code furl}.
+     *
+     * <p>A blank URL is treated as free: an uploaded file post never gets one (SH38, which
+     * is why SH172 needed the {@code id:} address fallback), so blank is a legitimate shared
+     * value rather than a collision.</p>
+     */
+    private boolean urlFree(String destSiteId, String furl) {
+        if (destSiteId == null || furl == null || furl.isBlank()) {
+            return true;
+        }
+        for (ShPostState state : ALL_STATES) {
+            if (shPostUnifiedRepository.findByShSite_IdAndFurlAndState(destSiteId, furl, state).isPresent()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private Set<String> postTitlesIn(ShFolder destFolder) {
+        Set<String> titles = new HashSet<>();
+        for (ShPostUnified row : shPostUnifiedRepository.findByShFolderAndStateIn(destFolder, ALL_STATES)) {
+            if (row.getTitle() != null) {
+                titles.add(row.getTitle());
+            }
+        }
+        return titles;
+    }
+
+    private Set<String> folderNamesIn(ShObject dest) {
+        Set<ShFolder> siblings;
+        if (dest instanceof ShFolder destFolder) {
+            siblings = shFolderRepository.findByParentFolder(destFolder);
+        } else if (dest instanceof ShSite destSite) {
+            siblings = shFolderRepository.findByShSiteAndRootFolder(destSite, (byte) 1);
+        } else {
+            return Set.of();
+        }
+        Set<String> names = new HashSet<>();
+        for (ShFolder sibling : siblings) {
+            if (sibling.getName() != null) {
+                names.add(sibling.getName());
+            }
+        }
+        return names;
     }
 
     /** Distinct logical post ids (the copy is keyed by id, state is re-fetched in copyPost). */

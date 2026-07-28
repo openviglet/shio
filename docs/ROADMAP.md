@@ -49,7 +49,9 @@
 > §IX.8, §XIII.6), and **SH176–SH182** from driving the *console* over the site that
 > build produced (Block O — shipped, so its design section is gone; see CHANGELOG.md Block O),
 > and **SH227–SH232** from finishing Block M (§XIII.7–§XIII.12), and **SH233–SH234** from
-> reviewing what was still CSRF-exempt (both shipped, so their design sections are gone)
+> reviewing what was still CSRF-exempt (both shipped, so their design sections are gone),
+> and **SH241–SH246** from closing Block O's last two (SH202/SH203) — three of those six are
+> not content defects at all but the *build* they were found through (§XVI.1, §XVI.2, §XVI.6)
 > — new tasks are expected to accrete this way, and each one's
 > line says what measurement or failure produced it. Superseded and therefore retired: **SH17/SH18** (GraalJS), **SH23 +
 > SH27–SH31** (marketplace → Block J), **SH24 + SH32–SH37** (CRUD-over-MCP → Block H).
@@ -100,8 +102,9 @@
 > **And what driving the console over it found (Block O, shipped).** Seven defects, every one
 > of them answering `200` and none visible to a Java test, a CLI test or the MCP golden: the
 > gap was one of *medium*. The block's most durable output is therefore the browser check that
-> found them, now a CI gate. Two of the seven were one lesson arriving late — a read faithful
-> to the *storage* shape is not a read a console can use. Its write-side twin, **SH168**, has
+> found them — which is a CI *workflow* and, as **SH241** records, not yet a CI *gate*: it
+> triggers on `main`, and the default branch is `2026.3`. Two of the seven were one lesson
+> arriving late — a read faithful to the *storage* shape is not a read a console can use. Its write-side twin, **SH168**, has
 > since shipped: the same class of defect, caught before it destroys anything.
 
 ## Block H — The Agent Gateway (MCP + agent-shaped protocol)
@@ -388,10 +391,12 @@
 
 ## Block O — The human half (the console the curator uses)
 
-> ✅ **Block O shipped (SH176–SH182)** → see [CHANGELOG.md](CHANGELOG.md) Block O: the console
-> smoke check in CI, the post read that carries its post-type and parsed data, `schemaJson`
-> retired, one form-schema entry point, View Site pointed at something that exists, a
-> not-found route, and a site read that answers the key it is given.
+> ✅ **Block O shipped, follow-ups included (SH176–SH182, SH202, SH203)** → see
+> [CHANGELOG.md](CHANGELOG.md) Block O: the console smoke check in CI, the post read that
+> carries its post-type and parsed data, `schemaJson` retired, one form-schema entry point,
+> View Site pointed at something that exists, a not-found route, a site read that answers the
+> key it is given, a copy that takes names which are free, and a picker that stops offering
+> destinations the server refuses. **The tasks below are new**, opened by finishing the last two.
 >
 > **What building it taught.** Every defect in the block answered `200`, and none was visible
 > to a Java test, a CLI test or the MCP golden — the gap was one of *medium*, so the block's
@@ -408,10 +413,25 @@
 > **And what SH137/SH139 found on the way past.** Fixing the agent's move verbs meant reading the
 > console's, and the same lesson landed a third time: the console path is where the careless
 > version of a shared verb lives, because nothing on it is asserted at the level the agent
-> surface is. The two below are what that reading turned up.
+> surface is. **SH202 and SH203 were what that reading turned up, and both have shipped** —
+> see [CHANGELOG.md](CHANGELOG.md) Block O: a copy takes names that are free, and the picker
+> stops offering destinations the server refuses.
+>
+> **What finishing them opened.** SH203's own reading found that *copy* had no cycle guard at
+> all and did not terminate — the fourth time a shared verb's console copy was the careless
+> one, which is now enough of a pattern to act on rather than note (SH245). And **half of what
+> it opened is not content at all but the build it was found through**: the console bundle was
+> already red (SH242), the Java suite is red too and for an unrelated reason (SH246), and
+> neither had been reported because no workflow runs on this branch (SH241) — a block whose
+> lesson was "defects here answer `200`" turning out to have a gate that never fires. The
+> remaining two are content-model gaps SH202 could see but not fix (SH243, SH244).
 
-- 📋 **SH202** (deps: SH99 ✅) **The console's clone mints a duplicate friendly URL** — "clone" is copy-to-same-folder, and `copyPost` re-slugs `furl` from the title, so cloning yields two posts in one site claiming one URL. `shio verify` reports that as a `duplicate-url` **error**, address resolution picks whichever it reaches first, and the curator's most casual action is the thing that produces it. A copy needs a free URL (`-2`, or the SH134 occupied-target rule applied on create). → §XVI.1
-- 💭 **SH203** (deps: SH137 ✅) **The move dialog offers destinations the server refuses** — it navigates *down* from the site root, so the folders inside the one being moved are reachable and now answer `409` (SH137's cycle guard, correctly). A picker that lists choices which cannot work teaches the curator that moves fail at random; the subtree being moved should be disabled in the tree, with the refusal kept as the backstop it is. → §XVI.2
+- 📋 **SH241** (deps: SH182 ✅) **No CI workflow runs on the branch the work happens on** — `build.yml` and `codeql-analysis.yml` are `workflow_dispatch:`-only, and `console-check.yml` triggers on `push: branches: [main]` while the default branch is `2026.3`. So the Java suite never runs automatically at all, and the SH182 browser gate — built precisely because console defects answer `200` — never runs on a push. It is not a hypothetical: `pnpm run compile:build` was **already failing on the default branch** when Block O's follow-ups were picked up, and nothing had said so. → §XVI.1
+- 📋 **SH242** (deps: SH241) **An unmet peer range is not a build failure** — a Dependabot bump put `monaco-editor` at `0.56.0` against `monaco-graphql@1.8`'s declared peer of `>= 0.20.0 < 0.53`, and pnpm resolved it, printed a warning nobody reads and failed nothing; 0.56's new `exports` map then made every `monaco-editor/esm/vs/…` specifier unresolvable and the console bundle undeliverable. Pinning to the `0.52.2` that `@graphiql/react` already depends on fixed it, but the *class* of defect — a bump landing a version the dependent does not support — is a **resolution** fact no test can see. `strict-peer-dependencies` turns it into the refusal it should be. → §XVI.2
+- 💭 **SH243** (deps: SH202 ✅, SH55 ✅) **A trashed post still holds its friendly URL, and nothing knows it** — `ShPostUnified` carries `@SQLRestriction("deleted_date is null")`, so every free-URL check is blind to the trash: SH202's new one, SH139's move refusal, and the `duplicate-url` lint. Clone a page, delete the copy, clone again — the second copy takes `home-2` back, and `restoreFromTrash` clears `deleted_date` with no check at all, so untrashing the first recreates exactly the duplicate SH202 removed. SH236 hit this blind spot from the post-type side and answered it by counting trashed rows separately and naming them; the same shape applies, and a restore onto an occupied URL should be a teaching refusal, not a silent one. → §XVI.3
+- 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — copy/clone is `PUT /api/v2/object/copyto/{dest}` with no `batch` op, no MCP verb and no CLI path, which is law P1's "no feature whose only interface is the console". An agent duplicates a *post* by reading it and upserting the fields at a new address, so nothing is unreachable; a **folder** is the gap, because the one thing a copy buys is the subtree in a single call, and reproducing it means walking the tree and upserting every post. If it lands it is a `folder.copy` op, and SH202's naming and SH203's cycle guard are already the shared writer's, so it composes rather than forks. → §XVI.4
+- 💭 **SH245** (deps: SH139 ✅, SH202 ✅, SH203 ✅) **Make "one writer per verb" a lint, not an expectation** — four times now the console's copy of a shared verb was the careless one: the move that re-slugged live URLs (SH139), the folder move with no cycle guard (SH137), the folder delete that skipped the trash and the audit (SH200), and the copy that minted duplicate URLs and did not terminate on its own subtree (SH202/SH203). Each was found by reading the console path while fixing the agent's, which is a discovery method that depends on somebody happening to look. The invariant is stated in `agents.md` and enforced nowhere: a write on `ShObjectAPI`/`ShFolderAPI` that mutates content should have to go through the writer service, the way `ShByteStabilityLintTest` and `ShFolderSiteInvariantTest` already fail the build on their own invariants. → §XVI.5
+- 📋 **SH246** (deps: SH144 ✅, SH157 ✅) **The Java suite is red on the default branch, and has been quietly** — `./mvnw -pl shio-app -am test` fails 1 of 824, and the failure is cross-test contamination rather than a defect: SH144 made the SH103 incident store **durable**, so `ShAgentDurableIncidentTest`'s deliberately-recorded `/skip-guard` 500 stays in `sh_agent_incident` on the shared test datasource, and `ShAgentRoundTripTest.aWriteCanReturnItsOwnProof` — which asserts a *clean* `?verify=true` proof carries no attribution prose — then sees a `diagnostics` finding it did not cause. Reproduces with exactly those two classes and no others. The product behaviour is correct (SH143 keeps cross-cutting checks whole on purpose, and the proof's own `notes` say the findings are not necessarily this run's), so the fix belongs to the test: the precedent is the SH164/SH239 benchmarks, which boot their own in-memory database for this exact reason. Filed separately from **SH241** because that one is why nobody noticed. → §XVI.6
 
 ## Block P — The visible site (what the human actually looks at)
 

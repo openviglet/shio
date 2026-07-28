@@ -191,6 +191,28 @@ public class ShFolderWriteService {
         shFolderRepository.findById(folderId).ifPresent(folder -> requireMovable(folder, newParent));
     }
 
+    /**
+     * Refuses a <b>copy</b> whose destination is the folder itself or inside it (SH203).
+     *
+     * <p>Lives beside {@link #checkMovable} for the reason SH137 gave for putting the move
+     * guard here: this is the one place that knows what a folder's subtree is, and a second
+     * copy of the walk is how the two operations come to disagree about it. They refuse the
+     * same destination for different reasons — see {@link ShFolderCopyException.Cycle} — but
+     * they must refuse exactly the same set of destinations, or the move dialog cannot
+     * disable one subtree for both modes.</p>
+     */
+    @Transactional(readOnly = true)
+    public void checkCopyable(String folderId, ShObject destination) {
+        if (!(destination instanceof ShFolder destFolder)) {
+            return;
+        }
+        shFolderRepository.findById(folderId).ifPresent(folder -> {
+            if (isInSubtree(folder, destFolder)) {
+                throw new ShFolderCopyException.Cycle(folder.getName(), destFolder.getName());
+            }
+        });
+    }
+
     private void requireMovable(ShFolder folder, ShObject newParent) {
         if (folder.getRootFolder() == 1) {
             // The walk, not the field — even though a root folder is the one folder where the
@@ -212,11 +234,19 @@ public class ShFolderWriteService {
      * is bounded by the tree's depth, while the subtree is bounded by its size.</p>
      */
     private void requireOutsideSubtree(ShFolder folder, ShFolder destination) {
+        if (isInSubtree(folder, destination)) {
+            throw new ShFolderMoveException.Cycle(folder.getName(), destination.getName());
+        }
+    }
+
+    /** Whether {@code destination} is {@code folder} itself or a descendant of it. */
+    private boolean isInSubtree(ShFolder folder, ShFolder destination) {
         for (ShFolder cursor = destination; cursor != null; cursor = cursor.getParentFolder()) {
             if (folder.getId().equals(cursor.getId())) {
-                throw new ShFolderMoveException.Cycle(folder.getName(), destination.getName());
+                return true;
             }
         }
+        return false;
     }
 
     /**

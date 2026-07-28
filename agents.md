@@ -154,7 +154,28 @@ is refused whole. The rule to keep is symmetrical: **the two surfaces enforce th
 whichever is stricter is the correct one** — the agent path has checked both ends since
 SH134/SH137, and where the console is looser the console is the hole, not the bar.
 
-- `PUT /api/v2/object/copyto/{destFolderId}` - Copy objects (body: `[id1, id2]`)
+- `PUT /api/v2/object/copyto/{destFolderId}` — Copy objects (body: `[id1, id2]`).
+  **A copy takes names that are free (SH202).** It used to re-slug the copy's `furl` from the
+  source's title — the same title, so the same slug — and since "clone" is copy-to-the-same-folder,
+  the curator's most casual action put two posts in one site on one URL: a `duplicate-url`
+  **error** from `shio verify`, and an address that resolves to whichever row is reached first,
+  so the *original* went unaddressable too. Now `Home` clones as `Home (2)` / `home-2`, and the
+  same numbering applies to a copied folder's **name**, because a folder is addressed by its
+  name chain (SH79) and two siblings called `docs` are the same defect one level up. Two rules:
+  the **title moves with the URL** (a `-2` URL under an identical title leaves two rows the
+  curator cannot tell apart, which is the symptom they actually see), but the two counters are
+  **independent** — a title is unique per *folder*, a URL per *site*, so a copy into another
+  folder of the same site keeps its title and moves only its URL. Sharing one counter was the
+  first implementation and it renamed a page for a collision in a scope the curator cannot see.
+  The suffix is numeric, not `(copy)`, because the server writes it into content the console
+  renders in whichever language the curator picked.
+  **A folder cannot be copied into its own subtree (SH203).** SH137 gave *move* that guard and
+  argued copy needed none — "the new folder is not yet in the tree, so it cannot be its own
+  ancestor" — which is true of the folder being created and false of the traversal that fills
+  it: `copyFolder` saves the copy and then walks `findByParentFolder(source)`, so a destination
+  inside the source makes the walk descend into the copies it is still making, and it never
+  returns. Both refusals now live on `ShFolderWriteService` (`checkMovable` / `checkCopyable`),
+  the one place that knows what a subtree is.
 - `PUT /api/v2/object/moveto/{destFolderId}` — Move objects (body: `[id1, id2]`).
   **A move relocates and changes nothing else (SH139):** it keeps the post's `furl`
   (it used to re-slug it from the title, silently changing a published page's live
@@ -167,7 +188,19 @@ SH134/SH137, and where the console is looser the console is the hole, not the ba
   into its own subtree does not fail — it detaches the subtree from the site root and
   sends the recursive delete round the loop. Both are **409**s, so the console dialog
   needs its error path (it has one now).
-- Clone = copy to same folder
+  **And the picker no longer offers them (SH203).** The move/copy dialog navigates *down*
+  from the site root, so the folders inside the one being dragged are exactly the ones a
+  curator scrolls into — and they answer 409. A picker that lists choices the server will
+  refuse teaches the curator that the operation fails at random, so the folders in the run
+  are shown **disabled** (not hidden — someone hunting for "Docs" needs to see that it is the
+  thing they are dragging, not conclude the picker lost it) and the confirm button carries the
+  reason. The division to keep is the one SH108's confirm flow already uses: **the client
+  prevents what it can see, the server refuses what it must** — a concurrent move or a stale
+  tree is still the 409's job. It needs nothing new from the server, because the dialog only
+  ever walks downward: a row is unreachable exactly when it is one of the ids being moved, and
+  disabling it means the walk can never get *inside* one. That is why there is no ancestor
+  check, and why the same disabling covers **copy** as well as move.
+- Clone = copy to same folder — which is the gesture SH202 is about; see `copyto` above.
 
 ### Folders
 - `GET /api/v2/folder/{id}` - Get folder
@@ -1451,10 +1484,14 @@ the `pnpm` field in `package.json`, so this setting lives in the workspace file.
 **Skip the frontend build for backend-only work.** The three frontend executions
 bind to `generate-resources`, so a plain `mvn compile`/`test` triggers the
 (slow, Node-dependent) React build. For backend compile/test, always pass
-`-Dskip.installnodepnpm=true -Dskip.pnpm=true` — these are the
-`frontend-maven-plugin` per-goal skip flags and leave the Java build untouched:
-`./mvnw -pl shio-app -am test -Dskip.installnodepnpm=true -Dskip.pnpm=true`.
+**`-Dskip.npm=true`** — the single `<skip>${skip.npm}</skip>` toggle on the
+plugin, which leaves the Java build untouched:
+`./mvnw -pl shio-app -am test -Dskip.npm=true`.
 (Still run the **full** suite, not a single `-Dtest` class.)
+This file used to document `-Dskip.installnodepnpm=true -Dskip.pnpm=true`, which are
+`frontend-maven-plugin`'s **per-goal** properties and are not what this pom is wired
+for — passing them silently runs the React build anyway, so the documented
+backend-only command was neither.
 
 ### Publishing to npm
 `.github/workflows/publish-js-sdk.yml` (manual `workflow_dispatch`): bumps the
