@@ -2748,27 +2748,50 @@ can skip the work that would have failed.**
 
 ### XVI.35 A stale `target/` misreports the suite in the other direction (SH283)
 
-Found while measuring SH282. `shio-app/target/surefire-reports/` **accumulates** across invocations, so
-reports written by a targeted `-Dtest=X` run sit beside the full run's, and summing the directory counts
-those classes twice. The figure quoted through this whole block drifted up to 977; a clean run says
-**974**.
+> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two things worth keeping, and the first is a
+> correction to this section as originally written.
+>
+> **The accumulating directory was the second link, not the cause.** This section blamed
+> `target/surefire-reports/` for accumulating, which is true. The reason anybody was reading that
+> directory is that **`-q` suppresses surefire's `Results:` summary** — it is a Maven INFO line, so
+> quiet mode deletes the only authoritative total, and summing files is what you do next. Fixing the
+> visible link would have left the cause in place: a future measurement would have found some other way
+> to be wrong. Worth generalising — *when a workaround produces a wrong answer, the bug is usually in
+> whatever made the workaround necessary.*
+>
+> **The inflated numbers were corrected rather than dropped.** 977 claimed, 974 real. Nothing was
+> failing, so the temptation is to treat it as cosmetic — and a test count is offered as **evidence**,
+> which makes "it was arithmetic over a directory" a defect in the evidence rather than in the tests.
+> The earlier commit messages carry the wrong figure and the changelog now says so.
+>
+> The fix is a command in `agents.md`, verified in both directions, sitting beside SH282's because they
+> are one shape: an artefact of an earlier command changing what a later one appears to say.
 
-Nothing was failing and nothing was concealed — the sum was simply not the number of tests. But the
-shape is exactly SH282's: **an artefact left in `target/` by an earlier command silently changes what a
-later command appears to say.** Two of those in one investigation is a pattern rather than a
-coincidence.
+### XVI.36 Nothing in CI would have caught either measurement defect (SH284)
 
-Two candidate answers, and they protect different things:
+SH282 and SH283 are both artefacts of a **local working tree**: an IDE writing compiled classes into
+`target/classes`, and a reports directory accumulating across hand-run commands. Neither can happen in a
+job that starts from a clone.
 
-- **Take the count from the run**, by parsing surefire's own end-of-run summary the way a CI reporter
-  does. Correct regardless of what is in the directory, and it is the only version that stays correct
-  when somebody runs a subset deliberately.
-- **Clean the reports directory** before a measuring run. Simpler, and it makes a subset run
-  indistinguishable from a full one, which is a different way to be wrong.
+That is the strongest argument yet for **SH241** — the open task that no workflow triggers on the branch
+the work happens on — and it changes that task's *justification* rather than just adding weight to it.
+SH241 was filed as "the Java suite never runs automatically". The sharper form is:
 
-The first is better. It matters more than it sounds because **every test count quoted in a commit
-message in this block came from that sum** — so the number was decoration rather than evidence, which
-is the opposite of what a measured claim is supposed to be.
+> **A clean-room build is the only thing that can tell a real green from a local one.**
+
+Filed separately because that reframing has consequences SH241 does not currently carry:
+
+- **The workflow should publish surefire's summary as the run's headline**, so a count is never
+  re-derived by hand. SH283 exists because a number was reconstructed; a CI job that prints the
+  authoritative line removes the reconstruction rather than making it more careful.
+- **SH282 still wants a local guard.** CI protects the *branch*; it does nothing for the person about to
+  commit, who will see the same false green and only learn from a failed pipeline. That is a slower loop
+  than the one SH282 is about, so "CI will catch it" is not a resolution.
+
+Worth stating the uncomfortable part plainly: this block has been verified almost entirely by
+hand-running Maven in a tree an IDE is also compiling into. The findings hold — they were reproduced
+deliberately — but the *confidence* they were reported with was higher than the instrument deserved
+until SH282 and SH283 were understood.
 
 ---
 

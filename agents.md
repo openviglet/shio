@@ -1901,9 +1901,19 @@ read as 53 errors across five unrelated test classes. `-Dmaven.compiler.useIncre
 does **not** help; the staleness check is what short-circuits. So: **`mvnw … clean test`, and treat
 "Nothing to compile" as no information.** The tell for the underlying defect is a `ServletException`
 wrapping `java.lang.Error`.
-**And do not sum `target/surefire-reports/` for a test count (SH283)** — it accumulates, so a targeted
-`-Dtest=X` run leaves reports beside the full run's and the sum double-counts those classes. Take the
-number from the run's own summary.
+**Measure the suite from the run, not from `target/` (SH283).** The verified command:
+
+```
+./mvnw -pl shio-app -am clean test -Dskip.npm=true 2>&1 | grep -E "Tests run:.*Failures.*Errors" | tail -1
+```
+
+Two traps, and the first causes the second. **`-q` suppresses surefire's `Results:` summary entirely**
+— it is a Maven INFO line, so quiet mode removes the only authoritative total. Without it the obvious
+fallback is to sum `target/surefire-reports/*.txt`, and **that directory accumulates**: reports from a
+targeted `-Dtest=X` run sit beside the full run's, so the sum double-counts those classes (977 claimed
+during Block P, 974 on a clean run). So drop `-q` when the number matters, and keep `clean` for SH282's
+reason. Both traps are the same shape — *an artefact of an earlier command changing what a later one
+appears to say* — which is worth remembering as a class, since `target/` holds several.
 
 **Skip the frontend build for backend-only work.** The three frontend executions
 bind to `generate-resources`, so a plain `mvn compile`/`test` triggers the
