@@ -395,6 +395,17 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `ShRegionComposer.DEFECT_MARKERS` rather than restated. **Not** a new `verify` finding — the lint
   reports the same defects through its own queries, and one defect in two reports is two reports
   that can disagree.
+- **The rendered DOM is a contract, and it is a table with a test (SH300)** — every `data-shio-*`
+  attribute is listed in the appendix of
+  [docs/specs/SH185-universal-editor-protocol.md](docs/specs/SH185-universal-editor-protocol.md),
+  and `ShRenderedDomContractTest` fails the build when the code emits one with no row or a row names
+  one nothing writes. **Add the row when you add the attribute.** It reads *source* (Java and the
+  injected JS), because an inline literal is what a constant scan misses. Three producers, one
+  contract: the renderer's eleven, plus three the bridge sets in the browser (`data-shio-editing`,
+  `-editable`, `-editor`) that exist only while `?editor=true` is on — a reader of the DOM cannot
+  tell which side wrote one, which is why they are one set to the test and two tables to a reader.
+  A name that is **read and never written** gets a row saying so rather than being left out
+  (`data-shio-label` — **SH303**), because from the reading side it looks like a working feature.
 - **The pre-edit form of the question is `?include=impact` on `/agent/read` (SH262)** — the same
   graph, asked *before* the write, which is the answer that decides whether to edit at all. A
   projection on the read rather than a `GET /agent/impact`, because a new endpoint with no MCP tool

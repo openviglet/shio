@@ -2968,6 +2968,54 @@ of zeroes is tokens spent to say nothing happened).
 Worth settling together with SH266 rather than before it: both are questions about what a proof row
 may cost.
 
+### XVI.52 The editor reads a label the renderer never writes (SH303)
+
+`render/shio-editor.js` labels a field with `el.getAttribute("data-shio-label") || prop`. Nothing
+emits `data-shio-label`: `annotateEditable` translates `sh-field` → `data-shio-prop` and `sh-post` →
+`data-shio-post`, and there is no `sh-label` case. So every field in the Universal Editor has always
+been labelled `TEXT`, `HTML` or `DESCRIPTION` — the field's *name* — rather than "Headline".
+
+Found by writing SH300's table, which is the argument for tables of this kind: the defect is
+invisible from either side alone. The script looks correct (it has a fallback), and the composer
+looks correct (it translates everything it knows about).
+
+The fix is two lines, and the reason it is a task is that the **author-facing** half needs a
+decision:
+
+- **`sh-label="Headline"` on the element.** Obvious, symmetric with `sh-field`, and it duplicates
+  something the post-type already declares — the field's `label`, which the console shows and
+  `shio pull` round-trips.
+- **Look it up from the model.** The page already carries `data-shio-post-type` for exactly this
+  kind of second-hand lookup, so the editor could fetch the schema once and label every field from
+  it, with no new attribute and nothing for an author to keep in sync.
+
+Only the second removes the dead read rather than filling it in, and it is the one that keeps a
+label in one place. The first is the one a template author would expect. Worth ten minutes of
+thought before the two lines.
+
+### XVI.53 A delivery check proves a route serves and never looks at what it served (SH302)
+
+`shio verify --delivery` (SH141) fetches each published page and reports `route-not-served` on a bad
+status. The body is discarded.
+
+Since SH299 that body can be counted for markers with one jsoup parse, turning *"the front end
+answered 200"* into *"the front end answered 200 with a page that is missing a region"* — a much
+stronger claim, and arguably the one a delivery check exists to make.
+
+Two things stop it from being obvious:
+
+- **It only applies to Shio's own `/preview`.** An external Next.js front end renders its own markup
+  from the CDA and carries no `data-shio-*` at all, so the check would silently cover nothing for
+  precisely the deployments SH141 was built for — the "a check that covered nothing while answering
+  ok" failure that task itself warns about.
+- **A marker in *delivered* HTML is a stale-cache signal as much as a content defect.** The CMS may
+  have been fixed since; what is being served is old. That is a different finding with a different
+  fix, and reporting it as the content defect would send somebody to edit a post that is already
+  right.
+
+So the question to settle first is whether the honest form is a delivery *finding* at all, or a note
+saying which pages were checked this way and what was seen.
+
 ### XVI.53 A delivery check proves a route serves and never looks at what it served (SH302)
 
 `shio verify --delivery` (SH141) fetches each published page and reports `route-not-served` on a bad
@@ -3011,6 +3059,33 @@ the context pack, which is a budgeted per-session read.
 The part worth copying from SH273 is the **test**: a table asserting that the constants in the code
 and the rows in the document agree, because a hand-kept list of what a renderer emits drifts
 silently, and the failure direction is under-documentation nobody notices.
+
+### XVI.54 Two editor scripts, two vocabularies, both served (SH304)
+
+- `shio-app/src/main/resources/render/shio-editor.js` — SH185's, 170 lines, **injected** into Shio's
+  own preview for `?editor=true`, reads `data-shio-*` written by the renderer.
+- `shio-app/src/main/resources/universal-editor/shio-editor.js` — 550 lines, **served** at a path the
+  security config permits, for a front end that includes it itself, reads `data-sh-*` written by hand
+  by that front end's author.
+
+Two implementations of one protocol against two attribute vocabularies, and only the first is
+specified. This is P10's warning about a second contract, inside a single feature — and the
+unspecified one is the case SH185 explicitly leaves open: *"an external front end has to emit the
+annotations itself."*
+
+Three ways out, and they are not equivalent:
+
+- **Teach the old script the `data-shio-*` names.** Cheapest, one vocabulary, and it silently breaks
+  any front end already annotated with `data-sh-*`.
+- **Emit the annotations from `@viglet/shio-react-sdk`,** so a Next.js project produces the same DOM
+  Shio's own renderer does and the injected script works unchanged. The answer SH185 gestures at, and
+  much the most work — but it is the one that makes the *rendered DOM* the single contract, which is
+  what SH300 just wrote down.
+- **Delete the old script** and declare external visual editing unsupported until the SDK lands.
+  Honest, and a capability regression for whoever is using it.
+
+Worth settling before either file is touched again, because every edit to the pair widens the
+distance between them.
 
 ---
 

@@ -164,6 +164,59 @@ never heard of it.**
 
 ---
 
+## Appendix — every `data-shio-*` attribute (SH300)
+
+Part 1 lists the four the editor reads. The rendered DOM has since grown five more — SH183's slot
+markers, SH281's unpublished state, SH297's theme — and they are read by other things: the SH299
+digest counts three of them, and anyone debugging a preview reads all of them in source. **The
+rendered DOM is a contract**, and until this table the only way to learn it was `git log`.
+
+The rule this table follows is SH273's: it is **asserted**, not maintained by hope.
+`ShRenderedDomContractTest` fails the build when the code emits an attribute with no row, or a row
+names one nothing emits — because the failure direction here is silent under-documentation, which no
+functional test can see.
+
+| Attribute | Where | Emitted by | Means |
+|---|---|---|---|
+| `data-shio-region` | the slot element | `ShRegionComposer` | this element is a region slot; the value is the region's title, exactly as `sh-region` wrote it |
+| `data-shio-region-post` | the slot element | `ShRegionComposer` | the id of the Region post that filled it |
+| `data-shio-region-missing` | the slot element | `ShRegionComposer` | no Region post has that title (SH183) |
+| `data-shio-region-unpublished` | the slot element | `ShRegionComposer` | a Region post has that title and is not published; only a PUBLISHED render can produce it (SH281) |
+| `data-shio-theme` | `<body>` | `ShRegionComposer` | the theme title this page's layout names, when it does not resolve |
+| `data-shio-theme-missing` | `<body>` | `ShRegionComposer` | that theme does not exist in this site, in either state (SH297) |
+| `data-shio-post` | `<body>`, or any element | `ShRegionComposer` | fields below here belong to this post; `<body>` carries the page's own |
+| `data-shio-post-type` | `<body>` | `ShRegionComposer` | the page's post-type name |
+| `data-shio-prop` | any element | `ShRegionComposer` | this element renders that field of the nearest `data-shio-post` |
+| `data-shio-preview` | the banner element | `ShPreviewBanner` | this node is Shio's own preview banner and not the page |
+| `data-shio-editor-origin` | the injected `<script>` | `ShEditorBridge` | the console origin the bridge may talk to (never `"*"`) |
+
+**Three are defect markers** — `region-missing`, `region-unpublished`, `theme-missing` — and they
+are listed once in code, as `ShRegionComposer.DEFECT_MARKERS`, which is what the SH299 digest counts.
+A fourth kind of defect gets a fourth attribute rather than a value on an existing one: SH169's rule
+that different mistakes must not look alike, and the reason `region-unpublished` is not
+`region-missing="unpublished"`.
+
+**Three more are set by the bridge script in the browser, not by the renderer.** They exist only
+while `?editor=true` is on, and a front end styling edit mode reads them:
+
+| Attribute | Where | Means |
+|---|---|---|
+| `data-shio-editing` | `<html>` | edit mode is on; the bridge's own stylesheet keys every outline off this, so turning it off restores the page exactly |
+| `data-shio-editable` | a field element | whether this field resolved to a post the editor can write; `false` is drawn differently rather than hidden (SH185's "a field with no owner is shown, not hidden") |
+| `data-shio-editor` | the injected `<style>` | marks the bridge's own stylesheet, so it is never mistaken for the page's |
+
+**And one name is read and never written**, which the table says rather than omitting:
+
+| Attribute | Read by | Status |
+|---|---|---|
+| `data-shio-label` | `render/shio-editor.js` | **nothing emits it.** The bridge falls back to the property name, so a human-readable label is silently unavailable. The author-facing `sh-label` is not translated by `annotateEditable` — **SH303** |
+
+The older `resources/universal-editor/shio-editor.js` is a **different vocabulary** (`data-sh-*`,
+author-written, for an external front end that includes the script itself) and is deliberately out of
+this table: it is not what the renderer emits. Whether two scripts should exist is **SH304**.
+
+---
+
 ## What this does not settle
 
 - **Saving is still SH10's CDA path** (`PATCH /api/v2/cda/post/{id}` with a WRITE token). The
