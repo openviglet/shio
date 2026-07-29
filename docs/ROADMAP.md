@@ -48,6 +48,10 @@
 > instrument that finds every other break is the deliverable, and it lands before the fixes.* So
 > do not work SH325–SH337 by hand first — SH338 enumerates them and finds the ones nobody has hit.
 >
+> ✅ **SH332 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: the op vocabulary is a `shio://ops`
+> resource, declared once and asserted against the planner's own refusals. It opened **SH346** — the
+> resource is MCP-only.
+>
 > ✅ **SH331 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: one refusal where arguments are read,
 > synonyms accepted **and reported**, and a `data` key never touched. **0 silent drops, 6/6 naive
 > calls landing first try** — SH340's measurement changed the design from four renames to one guard.
@@ -73,8 +77,7 @@
 > fourteen had no task** (SH342–SH344), and one (`reviewQueue`) turned out to be a decision rather
 > than a gap.
 
-1. **SH332** — publish the op vocabulary, which is what would have prevented two of SH331's four mistakes.
-2. **SH342–SH344** — the reachability gaps the SH338 and SH339 inventories name; SH327 is now one of them.
+1. **SH342–SH344** — the reachability gaps the SH338 and SH339 inventories name; SH327 is now one of them.
 3. Then the rest of SH326–SH337, in whatever order SH338's output argues for.
 
 > **Deprioritized deliberately:** SH258, SH296, SH317, SH318 and SH324 all audit the audits — each
@@ -461,7 +464,7 @@
 - 📋 **SH328** (deps: SH184 ✅, SH193 ✅) **`postTypeLayout` is the one edge that makes a site render and no agent op can write it** — an agent builds theme, regions, layout and pages and cannot bind them, while SH272's own convention line instructs the write. Per-key fill following SH184, never a replace. → §XVI.58
 - 📋 **SH329** (deps: SH153 ✅) **A dry run cannot plan into the site the same batch creates, and its `fix` names a parameter that does not exist** — SH153's `Declared` covers pending folders but not a pending site, so "look before you write" fails on an agent's first act. → §XVI.58
 - 📋 **SH330** (deps: SH144 ✅, SH99 ✅) **A past 5xx keeps `verify` red forever** — `checks=diagnostics` reports a durable incident as an *error* with no verb to resolve one, so the CI gate stays red after the cause is fixed. SH99's own rule makes it a warning. → §XVI.58
-- 📋 **SH332** (deps: SH331 📋) **The op vocabulary exists only as prose in a tool description** — `ShAgentBatchService` knows the set exhaustively and nothing publishes it, which is what let two of SH331's four mistakes happen. A `shio://ops` resource: SH260's move for helpers, SH300's for DOM attributes. → §XVI.58
+- 💭 **SH346** (deps: SH332 ✅) **The op vocabulary is MCP-only, which is the P1 shape this repo refuses** — `shio://ops` is a resource, so an HTTP-only agent cannot read the one document that says which keys a write takes. The rendering is a plain string; which REST surface carries it is the decision (a manifest section costs the SH113 budget every session, a context-pack section moves the SH116 digest). → §XVI.62
 - 📋 **SH342** (deps: SH338 ✅) **Two id-keyed post verbs have no address-native form, so `locales` and `scheduledPublish` are advertised and unreachable** — found by SH338's inventory, not by a build: `POST /post-unified/{id}/translate` and `/{id}/schedule` are undeclared, `post.upsert` takes no locale and `shio_publish` takes only an address and `dryRun`. → §XVI.61
 - 📋 **SH343** (deps: SH338 ✅) **The agent sees webhook failures and cannot touch a subscription** — `/api/v2/site-webhook` is undeclared and MCP-unreachable, so `webhooks: true` means the agent reads its own delivery incidents in diagnostics with no way to create, inspect or repair what produced them. → §XVI.61
 - 📋 **SH344** (deps: SH338 ✅, SH184 ✅) **The agent cannot mint the preview token its own answer requires** — `ShPreviewTokenAPI` is undeclared, so SH184's "an external front end needs a token to turn draft mode on" ends at a call the agent has no route to. → §XVI.61

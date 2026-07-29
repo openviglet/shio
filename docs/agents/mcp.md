@@ -38,6 +38,16 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
   empty. **Forgetting is an empty note, not a twelfth tool.** A `remember` property on
   `shio_write` was rejected as a cheaper shape that does not deliver the capability — most
   conclusions worth keeping are reached while *reading*, with no write to hang them on.
+- **`shio://ops` is the write vocabulary (SH332)** — every op `/agent/batch` accepts and the keys each
+  takes, owned by `ShAgentOps`. It exists because the op set was prose inside one tool's description,
+  and two of SH331's four wrong calls were an agent inferring a key nothing stated; a **resource**
+  rather than more description, since `tools/list` is paid every turn (P3). The op *names* come from
+  `ShAgentBatchService.OPS`, and the per-op keys are asserted against the planner's own refusals —
+  **a source scan is not faithful here**, because a handler reads `op.address()` through a helper
+  (measured: the scan finds nothing on five of the nine). An op added to `OPS` with no spec **fails
+  the build**. Three requirement kinds, because two are conditional (SH175): `type`/`folder` on
+  `post.upsert` only when creating, `to`|`folder` on `post.move`. **Known gap: MCP-only (SH346)** —
+  an HTTP-only agent cannot read it.
 - **Prompts**: `new-site` · `add-section` · `translate-site` · `audit-content`.
 - **One name per concept, and an unrecognised argument refused once (SH331)** —
   `ShMcpVocabulary`, called from `ShMcpServer.toolsCall`, so there is a single place where arguments

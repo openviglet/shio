@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Configuration;
 import com.viglet.shio.api.agent.ShAgentContextService;
 import com.viglet.shio.api.agent.ShAgentContextTerse;
 import com.viglet.shio.api.agent.ShAgentManifestService;
+import com.viglet.shio.api.agent.ShAgentOps;
 import com.viglet.shio.api.agent.mcp.ShMcpResource;
 import com.viglet.shio.api.cda.ShCdaService;
 import com.viglet.shio.api.error.ShProblem;
@@ -57,6 +58,32 @@ public class ShMcpResources {
                         + "index. Read it before assuming a capability exists.",
                 JSON,
                 uri -> objectMapper.writeValueAsString(manifestService.manifest()));
+    }
+
+    /**
+     * The op vocabulary (SH332).
+     *
+     * <p>Two of SH331's four wrong calls were an agent inferring a key name because nothing stated
+     * it: {@code tools/list} carries tool schemas, and the <em>op</em> set — which verbs exist and
+     * which keys each takes — lived only as prose inside {@code shio_write}'s description. This is
+     * the half of SH331 that prevents the guess instead of repairing it, and it is the same move
+     * SH260 made for render helpers and SH300 for DOM attributes.</p>
+     *
+     * <p>A <b>resource</b> and not more tool description, for the reason that keeps deciding this:
+     * {@code tools/list} is re-sent every turn (P3), while a resource is one row on
+     * {@code resources/list} and is read once by whoever is about to write. Terse for the reason
+     * SH332 states outright — this vocabulary is optimised for agent reliability, not human
+     * readability.</p>
+     */
+    @Bean
+    ShMcpResource shMcpOpsResource() {
+        return resource("shio://ops", "Shio write vocabulary",
+                "Every op POST /api/v2/agent/batch accepts and the keys each one takes — "
+                        + "site.upsert, folder.upsert/move/delete, post.upsert/move/publish/"
+                        + "unpublish/delete. Read it before a first write: an unrecognised key is "
+                        + "refused, so the list is exhaustive rather than indicative.",
+                TEXT,
+                uri -> ShAgentOps.terse());
     }
 
     /**
