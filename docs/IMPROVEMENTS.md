@@ -2968,30 +2968,27 @@ of zeroes is tokens spent to say nothing happened).
 Worth settling together with SH266 rather than before it: both are questions about what a proof row
 may cost.
 
-### XVI.52 The editor reads a label the renderer never writes (SH303)
+### XVI.52 A listing's rows are another post-type (SH305)
 
-`render/shio-editor.js` labels a field with `el.getAttribute("data-shio-label") || prop`. Nothing
-emits `data-shio-label`: `annotateEditable` translates `sh-field` → `data-shio-prop` and `sh-post` →
-`data-shio-post`, and there is no `sh-label` case. So every field in the Universal Editor has always
-been labelled `TEXT`, `HTML` or `DESCRIPTION` — the field's *name* — rather than "Headline".
+SH303 sends the **page's** post-type with each selection and the console labels fields from its
+schema. That is right for the common case — a layout interpolating the page's own fields, which is
+what `<body>`'s `data-shio-post` and `data-shio-post-type` describe.
 
-Found by writing SH300's table, which is the argument for tables of this kind: the defect is
-invisible from either side alone. The script looks correct (it has a fallback), and the composer
-looks correct (it translates everything it knows about).
+A `{{#query}}` or `{{#getRelation}}` block renders rows of *other* posts. SH185 already handles
+ownership there: each row carries `sh-post="{{id}}"`, and the nearest-ancestor walk finds it. The
+**type** does not travel, so a row's field is labelled from the page's schema — and when that schema
+has no such field the label falls back to the field name, which is indistinguishable from a
+post-type that simply declares no labels. Silent, and wrong in the direction that looks fine.
 
-The fix is two lines, and the reason it is a task is that the **author-facing** half needs a
-decision:
+Two candidate fixes, and the obvious one is not clearly right:
 
-- **`sh-label="Headline"` on the element.** Obvious, symmetric with `sh-field`, and it duplicates
-  something the post-type already declares — the field's `label`, which the console shows and
-  `shio pull` round-trips.
-- **Look it up from the model.** The page already carries `data-shio-post-type` for exactly this
-  kind of second-hand lookup, so the editor could fetch the schema once and label every field from
-  it, with no new attribute and nothing for an author to keep in sync.
+- **Emit `data-shio-post-type` per row.** The renderer knows it (the row came from a real post), and
+  it is bytes on every listing row of every page, paid by every visitor, for a case only the editor
+  uses. That is SH121's trade about ids, and it went the other way.
+- **Resolve the type from the post id in the console.** It has the id already (that is what a save
+  needs), so this is one fetch it is going to make anyway when editing begins.
 
-Only the second removes the dead read rather than filling it in, and it is the one that keeps a
-label in one place. The first is the one a template author would expect. Worth ten minutes of
-thought before the two lines.
+Worth measuring rather than choosing by taste.
 
 ### XVI.53 A delivery check proves a route serves and never looks at what it served (SH302)
 
@@ -3086,6 +3083,29 @@ Three ways out, and they are not equivalent:
 
 Worth settling before either file is touched again, because every edit to the pair widens the
 distance between them.
+
+### XVI.55 Nothing tests the bridge script, in any language (SH306)
+
+`render/shio-editor.js` is 170 lines implementing one side of the SH185 protocol, and it has **no
+test**. `ShEditorBridgeTest` asserts the *injection* — that the script tag appears for
+`?editor=true`, not otherwise, with the parent origin on it — and stops at the file boundary. SH303
+changed three functions inside it and the only check was `node --check`, which proves it parses.
+
+What is worth testing is pure and small:
+
+- `labelOf` / `describe` — the shape of the message the console consumes.
+- `ownerOf` — the nearest-ancestor walk, which is the rule SH185 states as load-bearing and the one
+  a refactor would most plausibly break.
+- The origin guard, which must never accept `"*"` and never post to an unexpected parent. That is a
+  security property currently guaranteed by reading the file.
+
+The obstacle is structural: it is a browser IIFE served as a static resource, with no module
+boundary. Two ways out, and they cost different things — a DOM harness (`jsdom`, in the
+`shio-react` workspace where a test runner already exists, importing the file as text and evaluating
+it), or restructuring the script to expose a testable core, which changes a file that is
+deliberately dependency-free and inert when not framed.
+
+Worth deciding now, because the next change to it will be exactly as unverified as this one.
 
 ---
 

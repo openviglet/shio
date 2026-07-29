@@ -68,14 +68,19 @@ class ShRenderedDomContractTest {
      * <p>Declared rather than excluded: a name the consumer looks for and the renderer never writes
      * is a capability that silently does nothing, which is worth a row precisely because it looks
      * like a working feature from the reading side.</p>
+     *
+     * <p><b>Empty since SH303</b>, which found the one entry — {@code data-shio-label} — and removed
+     * the <em>read</em> rather than adding the write, because a field's label is declared by the
+     * post-type and a copy in the markup is a second place for it to be wrong. The mechanism stays
+     * for the next one.</p>
      */
-    private static final Set<String> READ_BUT_NEVER_EMITTED = Set.of("data-shio-label");
+    private static final Set<String> READ_BUT_NEVER_EMITTED = Set.of();
 
     @Test
     @DisplayName("every attribute the renderer emits has a row in the protocol document")
     void everyEmittedAttributeIsDocumented() {
         Set<String> emitted = produced();
-        Set<String> documented = attributesIn(Stream.of(read(DOC)));
+        Set<String> documented = documented();
 
         assertThat(documented)
                 .as("""
@@ -90,7 +95,7 @@ class ShRenderedDomContractTest {
     @DisplayName("every documented attribute is emitted, or declared as read-only")
     void everyDocumentedAttributeIsReal() {
         Set<String> read = attributesIn(Stream.of(read(EDITOR_JS)));
-        Set<String> documented = new TreeSet<>(attributesIn(Stream.of(read(DOC))));
+        Set<String> documented = new TreeSet<>(documented());
         documented.removeAll(produced());
         documented.removeAll(READ_BUT_NEVER_EMITTED);
 
@@ -125,6 +130,21 @@ class ShRenderedDomContractTest {
     }
 
     // --- reading ---
+
+    /**
+     * The attributes the appendix's <b>tables</b> name — rows only, not prose.
+     *
+     * <p>The distinction is load-bearing and was found by this test failing: SH303 removed
+     * {@code data-shio-label} and the document still discusses it, correctly, in a paragraph
+     * explaining why the read went away. A scan of the whole file read that paragraph as a claim
+     * that the attribute exists. <b>The contract is the table</b>; prose is free to talk about
+     * names that no longer exist, which is most of what makes a document worth reading.</p>
+     */
+    private static Set<String> documented() {
+        return attributesIn(read(DOC).lines()
+                .filter(line -> line.startsWith("|")));
+    }
+
 
     /**
      * Every attribute something writes: the renderer's, plus the three the bridge sets at runtime.

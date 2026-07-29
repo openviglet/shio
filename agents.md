@@ -404,8 +404,12 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   contract: the renderer's eleven, plus three the bridge sets in the browser (`data-shio-editing`,
   `-editable`, `-editor`) that exist only while `?editor=true` is on — a reader of the DOM cannot
   tell which side wrote one, which is why they are one set to the test and two tables to a reader.
-  A name that is **read and never written** gets a row saying so rather than being left out
-  (`data-shio-label` — **SH303**), because from the reading side it looks like a working feature.
+  A name that is **read and never written** gets a row saying so rather than being left out,
+  because from the reading side it looks like a working feature — the one such name,
+  `data-shio-label`, is gone since **SH303** removed the *read*: a field's label is declared by the
+  post-type, the bridge sends `data-shio-post-type` with each selection, and the console resolves
+  labels from the schema. The scan reads **table rows only**, since prose may legitimately discuss
+  an attribute that no longer exists.
 - **The pre-edit form of the question is `?include=impact` on `/agent/read` (SH262)** — the same
   graph, asked *before* the write, which is the answer that decides whether to edit at all. A
   projection on the read rather than a `GET /agent/impact`, because a new endpoint with no MCP tool

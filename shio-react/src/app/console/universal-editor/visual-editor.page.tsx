@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { toast } from "@viglet/viglet-design-system"
+import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShSiteService } from "@/services/site/site.service"
 import { ShUniversalEditorService } from "@/services/universal-editor/universal-editor.service"
 import { UE_TOKEN_KEY } from "./editor-sites.page"
@@ -55,8 +56,16 @@ export default function VisualEditorPage() {
   const [siteError, setSiteError] = useState<string | null>(null)
   // Pending edits keyed by `${postId}:${prop}` so re-edits of the same field collapse.
   const [changes, setChanges] = useState<Map<string, ContentChange>>(new Map())
+  // SH303 — field name -> declared label, from the page's post-type. A field's label belongs to
+  // the model: the console shows it, `shio pull` round-trips it, and the page carrying a copy
+  // would be a second place for it to be wrong. Until SH303 the bridge read a `data-shio-label`
+  // nothing emitted, so every field in this panel was labelled `TEXT` or `HTML`.
+  const [fieldLabels, setFieldLabels] = useState<Record<string, string>>({})
 
   const token = useMemo(() => localStorage.getItem(UE_TOKEN_KEY) ?? "", [])
+  const postTypeService = useMemo(() => new ShPostTypeService(), [])
+  // The type whose labels are loaded, so selecting a second field does not re-fetch.
+  const loadedTypeRef = useRef<string | null>(null)
 
   // Resolve the iframe URL: an explicit ?url= (external mode), the site's own front end,
   // or — since SH184 — Shio's own renderer.
@@ -148,6 +157,30 @@ export default function VisualEditorPage() {
   useEffect(() => {
     if (ready) postToIframe("sh:mode-change", { mode: editMode ? "edit" : "preview" })
   }, [ready, editMode, postToIframe])
+
+  // SH303 — resolve the declared field labels once per post-type. Fetched here rather than sent
+  // by the page for the reason above: one place declares a label, and it is the post-type. A
+  // failure is silent on purpose — the panel falls back to the field name, which is what it
+  // showed before this existed, so a labelling nicety can never break the editor.
+  useEffect(() => {
+    const postType = selected?.postType
+    if (!postType || loadedTypeRef.current === postType) return
+    loadedTypeRef.current = postType
+    postTypeService
+      .get(postType)
+      .then((def) => {
+        const labels: Record<string, string> = {}
+        for (const field of def.fields ?? []) {
+          if (field.label) labels[field.name] = field.label
+        }
+        setFieldLabels(labels)
+      })
+      .catch(() => setFieldLabels({}))
+  }, [selected?.postType, postTypeService])
+
+  // The declared label for a field name, or "" when the schema has not arrived (or has no
+  // label for it) — the caller falls back to the name the bridge sent.
+  const labelFor = (prop?: string | null) => (prop ? fieldLabels[prop] ?? "" : "")
 
   const persist = async (publish: boolean) => {
     if (!token) {
@@ -262,13 +295,17 @@ export default function VisualEditorPage() {
           {selected ? (
             <div className="space-y-3">
               <div>
-                <div className="font-semibold">{selected.label || selected.prop || selected.model}</div>
+                <div className="font-semibold">
+                  {labelFor(selected.prop) || selected.label || selected.model}
+                </div>
                 {selected.model && <div className="text-xs text-muted-foreground">{selected.model}</div>}
               </div>
               <div className="space-y-2">
                 {(selected.fields ?? []).map((f) => (
                   <div key={f.prop} className="rounded-md border p-2">
-                    <div className="text-xs font-medium text-muted-foreground">{f.label || f.prop}</div>
+                    <div className="text-xs font-medium text-muted-foreground">
+                      {labelFor(f.prop) || f.label || f.prop}
+                    </div>
                     <div className="text-sm break-words">{f.value || <span className="italic text-muted-foreground">—</span>}</div>
                   </div>
                 ))}

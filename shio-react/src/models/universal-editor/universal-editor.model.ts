@@ -47,8 +47,17 @@ export type ContentChange = {
 export type SelectedElement = {
   postId: string | null
   model: string
+  /**
+   * The field's *name*. Until SH303 the bridge tried `data-shio-label` first, which nothing has
+   * ever emitted — so this has always been the raw name, and the console now resolves the
+   * declared label from the post-type instead. A label belongs to the model, which is where the
+   * console shows it and `shio pull` round-trips it; a copy in the markup is a second place for
+   * it to be wrong.
+   */
   label: string
   type: string
   prop: string | null
+  /** SH303 — the page's post-type, so the labels can be looked up in one fetch. */
+  postType?: string | null
   fields?: Array<{ prop: string; type: string; label: string; value: string }>
 }

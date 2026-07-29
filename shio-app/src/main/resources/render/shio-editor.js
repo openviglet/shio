@@ -37,6 +37,7 @@
   var script = document.currentScript;
   var PARENT_ORIGIN = (script && script.getAttribute("data-shio-editor-origin")) || "";
   var PAGE_POST = document.body ? document.body.getAttribute("data-shio-post") : null;
+  var PAGE_TYPE = document.body ? document.body.getAttribute("data-shio-post-type") : null;
 
   if (!PARENT_ORIGIN || window.parent === window) {
     // Not framed, or nobody told us who framed us. Do nothing at all: a page that starts
@@ -58,12 +59,19 @@
   }
 
   /**
-   * A field's label. The post-type's real label lives on the server, and the console fetches
-   * it with the field schema; this is what to show before that arrives, and it beats showing
-   * the raw field name to a curator.
+   * A field's label is the *model's*, and the page does not carry one (SH303).
+   *
+   * This used to read `data-shio-label`, which nothing has ever emitted — the composer
+   * translates `sh-field` and `sh-post` and there is no `sh-label` case — so the fallback was
+   * the only branch that ever ran and every field in the editor was labelled `TEXT` or `HTML`.
+   * The fix is not to start emitting it: a field's label is declared once, by the post-type,
+   * where the console shows it and `shio pull` round-trips it, and a copy in the markup is a
+   * second place for it to be wrong. So the page sends the post-type instead (below) and the
+   * console labels from the schema — which is what `data-shio-post-type` was put on <body> for
+   * and what nothing had used.
    */
-  function labelOf(el, prop) {
-    return el.getAttribute("data-shio-label") || prop;
+  function labelOf(prop) {
+    return prop;
   }
 
   function describe(el) {
@@ -71,9 +79,13 @@
     return {
       postId: ownerOf(el),
       model: el.getAttribute("data-shio-region") || "",
-      label: labelOf(el, prop),
+      label: labelOf(prop),
       type: "text",
       prop: prop,
+      // SH303 — the post-type travels with the selection so the console can resolve every
+      // field's declared label in one fetch. It is the page's own type, from <body>; a region
+      // listing rows of another type is not editable through this path yet.
+      postType: PAGE_TYPE,
       fields: fieldsOf(ownerOf(el))
     };
   }
@@ -88,7 +100,7 @@
     document.querySelectorAll(FIELD).forEach(function (el) {
       if (ownerOf(el) !== postId) return;
       var prop = el.getAttribute("data-shio-prop");
-      out.push({ prop: prop, type: "text", label: labelOf(el, prop), value: el.innerHTML });
+      out.push({ prop: prop, type: "text", label: labelOf(prop), value: el.innerHTML });
     });
     return out;
   }
@@ -105,7 +117,7 @@
       prop: el.getAttribute("data-shio-prop"),
       type: "text",
       value: el.innerHTML,
-      label: labelOf(el, el.getAttribute("data-shio-prop"))
+      label: labelOf(el.getAttribute("data-shio-prop"))
     });
   }
 

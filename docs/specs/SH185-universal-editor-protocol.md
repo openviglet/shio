@@ -185,7 +185,7 @@ functional test can see.
 | `data-shio-theme` | `<body>` | `ShRegionComposer` | the theme title this page's layout names, when it does not resolve |
 | `data-shio-theme-missing` | `<body>` | `ShRegionComposer` | that theme does not exist in this site, in either state (SH297) |
 | `data-shio-post` | `<body>`, or any element | `ShRegionComposer` | fields below here belong to this post; `<body>` carries the page's own |
-| `data-shio-post-type` | `<body>` | `ShRegionComposer` | the page's post-type name |
+| `data-shio-post-type` | `<body>` | `ShRegionComposer` | the page's post-type name; the bridge sends it with each selection so the console can label fields from the model (SH303) |
 | `data-shio-prop` | any element | `ShRegionComposer` | this element renders that field of the nearest `data-shio-post` |
 | `data-shio-preview` | the banner element | `ShPreviewBanner` | this node is Shio's own preview banner and not the page |
 | `data-shio-editor-origin` | the injected `<script>` | `ShEditorBridge` | the console origin the bridge may talk to (never `"*"`) |
@@ -205,11 +205,14 @@ while `?editor=true` is on, and a front end styling edit mode reads them:
 | `data-shio-editable` | a field element | whether this field resolved to a post the editor can write; `false` is drawn differently rather than hidden (SH185's "a field with no owner is shown, not hidden") |
 | `data-shio-editor` | the injected `<style>` | marks the bridge's own stylesheet, so it is never mistaken for the page's |
 
-**And one name is read and never written**, which the table says rather than omitting:
-
-| Attribute | Read by | Status |
-|---|---|---|
-| `data-shio-label` | `render/shio-editor.js` | **nothing emits it.** The bridge falls back to the property name, so a human-readable label is silently unavailable. The author-facing `sh-label` is not translated by `annotateEditable` — **SH303** |
+**There is no read-and-never-written name any more.** Writing this table found one —
+`data-shio-label`, which the bridge asked for and nothing had ever emitted, so every field in the
+editor was labelled with its raw name. **SH303** removed the read rather than adding the write: a
+field's label is declared once, by the post-type, and a copy in the markup is a second place for it
+to be wrong. The bridge sends `data-shio-post-type`'s value with each selection instead, and the
+console resolves the labels from the schema — which is what that attribute was put on `<body>` for
+and what nothing had used. If a name ever ends up in that state again it belongs in a row here, not
+left out: from the reading side it looks like a working feature.
 
 The older `resources/universal-editor/shio-editor.js` is a **different vocabulary** (`data-sh-*`,
 author-written, for an external front end that includes the script itself) and is deliberately out of
