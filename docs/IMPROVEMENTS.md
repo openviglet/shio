@@ -3123,6 +3123,301 @@ written into `agents.md` beside the measure-first rule:
 Writing the lint first would have found the ninth site before it was written rather than after, and
 it costs nothing extra: the lint was going to exist anyway.
 
+## XVI.58 What an end-to-end MCP build of a site actually costs (SH325–SH332)
+
+An agent connected over the `shio mcp` stdio bridge and built a working site from nothing — a
+`Theme`, two `Region`s, a `PageLayout` with `sh-region` slots and `sh-field` annotations, three
+`Page`s, published, rendering at `/preview/Demo/home` with `?editor=true` injecting the bridge. It
+worked, and the SH99 gate closed green (`report ok checks=content,routes checked=10`).
+
+Everything that made it *hard* is below. The pattern across all eight is worth stating first, because
+it is not "features are missing": **every capability existed, and the friction was in reaching it.**
+Three of the eight are a route that only a browser can take, three are a vocabulary the agent had to
+guess at, one is a plan that cannot describe its own first step, and one is a bootstrap that fails on
+every instance older than the feature.
+
+### The bootstrap fails on every existing instance (SH325)
+
+`ShWidgetOnStartup.createDefaultRows()` guards the **entire** widget catalog with
+`if (shWidgetRepository.findAll().isEmpty())`. So SH252's `Ace Editor - CSS` is created only on a
+brand-new database, and on every instance that predates it `POST /api/v2/render/post-types` throws
+`IllegalStateException: Widget 'Ace Editor - CSS' is not seeded` — a **500**. SH183's whole render
+model is therefore uncreatable on any existing install, which is where every real user is.
+
+The sharpest part: **SH289's `reconcile` fails identically.** That verb exists precisely to repair an
+older instance's render model, and it is broken by the same defect it was written to repair — because
+both go through `specsFor`, which SH289 deliberately made the one field table. One reader, one bug,
+both doors.
+
+This is SH152's provision-never-upsert rule applied at the wrong **granularity**. Post-types are
+provisioned per type ("`ensure` creates what is absent"); widgets are provisioned per *catalog*. And
+unlike a post-type, a widget catalog is closed and code-owned — a curator never adds one — so
+per-widget find-or-create is both safe and obviously correct. The same guard is why an
+SH60-deprecated `reCAPTCHA` row is still being served by `GET /api/v2/widget` on this instance:
+nothing has ever revisited a catalog that is not empty.
+
+Second half: the `IllegalStateException` should be a teaching refusal. The code knows exactly which
+widget is missing and exactly what to run — that is SH189's bodiless-400 lesson, and it is a 500 here
+only because nobody expected the branch to be reachable.
+
+### Three routes only a browser can take (SH326, SH327, SH328)
+
+**SH328 is the one that matters most**, because it sits in the middle of the feature.
+`site.postTypeLayout` is the single edge that connects a layout to content, and
+`ShSiteWriteService.FILLABLE` is `["url", "description", "furl"]`. So an agent can create the theme,
+the regions, the layout and the pages — and then cannot bind them. Nothing renders.
+
+What makes it acute rather than merely missing is that the protocol *already tells the agent to do
+it*. SH272's conventions line ends "and binds to a post-type through the site's `postTypeLayout`
+map", and SH298's `unused-layout` fix says `Bind a post-type to it in the site's postTypeLayout map`.
+Two surfaces instruct the agent to perform a write that no agent op can perform. The only route is
+the console's id-keyed `PUT /api/v2/site/{id}` — a full replace that nulls `postTypeLayout` and
+`searchablePostTypes` when a field is omitted (the hazard `ShSiteWriteService`'s own comment warns
+about), behind session + CSRF.
+
+The shape should follow SH184 exactly, one field-type wider: **per-key fill, never a replace.** An
+entry for a post-type that has no binding is filled; one that already names a layout is kept and
+reported. That keeps "fills what is empty, never replaces what somebody chose" intact, keeps the op
+idempotent, and lets a `dryRun` answer from the same code that writes (`planFill`'s rule).
+
+**SH326** is the same class one level out: `POST /api/v2/render/post-types` and `/reconcile` have no
+MCP tool and no CLI command, so an MCP-only client — the operator this product is designed for —
+cannot create the render model at all. Meanwhile the manifest reports `serverRender: true`, which is
+the identical half-truth `instanceMemory: true` was before SH160: true of the instance, useless to
+the client reading it. The answer is *not* a twelfth tool (the cap is 12 with 11 used, and
+`tools/list` is paid every turn — P3); it is an **op on the existing write surface**, where
+`site.upsert` and `folder.upsert` already live.
+
+**SH327** is why even the REST fallback is unpleasant: `/api/v2/render/**` is not in SH167's
+`ShStatelessRequestMatcher` list, so a Basic-auth caller gets a **bodiless 403** and has to walk
+`GET /api/v2/csrf` → cookie → `X-XSRF-TOKEN` by hand. That is SH170's friction on `POST /api/v2/site`
+and SH189's on `/api/v2/import`, for a third path.
+
+### A plan cannot describe its own first step (SH329)
+
+`{site.upsert site:Demo}, {folder.upsert folder:Demo/pages}` with `dryRun:true` fails at `ops[1]`
+with `No readable site 'Demo'`. SH153 built `ShAgentBatchService.Declared` for exactly this — a plan
+resolving against what the plan itself would create — and applied it to blueprint plans, where the
+declared resources are the site and its post-types. A plain batch declares pending **folders** and
+not a pending **site**, so "look before you write" is broken for precisely the bootstrap case: the
+first thing any agent does on a new instance.
+
+The message is the second defect and the worse one. `Fix: Pass ?site= with one of the listed names` /
+`Example: ?site=Bootstrap` is a **read-scoping** error surfacing on a write op — there is no `?site=`
+on `POST /api/v2/agent/batch`. P6 says errors are instructions; this one instructs the caller to do
+something that does not exist, which is worse than saying nothing, and it is what a shared resolver
+costs when only one of its callers was considered.
+
+### A content gate reporting operational history (SH330)
+
+`checks=diagnostics` is in the default set and turns an SH144 incident into a verify **error**. There
+is no verb to acknowledge or resolve one, so any instance that has ever returned a 5xx fails
+`shio verify` — which exits 1 on an error — **forever**, after the cause is fixed. This was observed
+directly: the SH325 500 kept `ok:false` on a site whose content was clean, and `checks=content,routes`
+had to be named explicitly to see the truth.
+
+The durability is right (SH144's promise is that an empty report means nothing has failed, not that
+nothing is remembered). What is wrong is the **severity**, and SH99's own rule settles it: `ok` is
+false only for what the CMS can prove from inside itself *now*. A past incident is not that — it is
+the definition of a warning. SH142's baseline is not the escape hatch either: it keys on
+`(rule, address, field)` and an `api-error` finding carries no address.
+
+### One vocabulary, because the agent guessed wrong three times (SH331, SH332)
+
+Four wrong calls in this run, none of them a random guess — each was a rule the agent applied
+consistently and Shio breaks in one of its surfaces:
+
+| sent | wanted | the inconsistency |
+|---|---|---|
+| `postType` | `type` | the concept has four names: `postTypeId` (REST), `shPostType` (console), `type` (batch + document), `postType` (`POST /api/v2/post-unified`) |
+| `address` + `folder:"folder:Demo/templates"` | `url` + `folder:"/pages"` | `shio_write` names a subject `address` and takes SH79 addresses; `shio_apply` names it `url` and takes bare paths — so `folder` means two different things |
+| `addresses:[…]` | `address:[…]` | a plural-valued field with a singular name |
+| `scope:"Demo"` | `site:"Demo"` | `PUT /api/v2/agent/memory` takes `scope`, `shio remember` takes `--site`, `shio_remember` takes `site` |
+
+**The fourth is the serious one, because it did not fail.** `shio_remember` ignored the unknown key
+and wrote the note instance-wide; the response said `(instance-wide)` and never mentioned dropping an
+argument, so the note landed where no session working on that site will read it and the call looked
+like a success. Finding out why took reading the tool's Java.
+
+That is a direct violation of the rule SH320 settled one task earlier — **a parameter that selects or
+bounds work teaches; one that only adds a section does not** — and `site`/`scope` plainly selects,
+since it decides which memory the note joins and therefore which sessions ever see it. The lesson is
+not that the rule needs restating but that it needs an **instrument**: SH320 established a principle,
+and here is a tool written before it that nobody audited against it. A lint over MCP argument handling
+— every declared property read, every unrecognised key refused — is the shape, and it is the argument
+SH322 just made about greps: the pattern that finds the next occurrence is worth more than the fix to
+this one.
+
+The teaching errors caught the other three immediately, which is why they cost minutes rather than hours —
+but P2 is that one call replaces a session, and a `fix` that repairs a guess is a safety net, not a
+vocabulary. **SH331** is the alignment: one name per concept across both surfaces, `address` accepting
+a string or an array everywhere, and — the part that removes the round trip rather than shortening it
+— **an unambiguous synonym accepted and reported** rather than refused. Sending `postType` should
+work and come back with a note naming the canonical key.
+
+That last point needs a boundary drawn, or it will be "simplified" into the opposite of SH168.
+Accepting a synonym is safe **for an op's argument names**, which are a closed set the server owns
+and where the intent is unambiguous. It is *not* safe for a `data` key, where SH168's whole point is
+that an upsert declares whole state and a near-miss silently replaced the field it meant. Closed set,
+server-owned, unambiguous — all three, or refuse. It also sits correctly against SH320's rule: a
+synonym does not select or bound work, so accepting it cannot answer a different question than the
+one asked.
+
+**SH332** is what would have prevented two of the three outright. `tools/list` carries tool schemas,
+but the **op** vocabulary — `site.upsert`, `post.move`, `folder.delete`, and each op's required and
+optional keys — exists only as prose inside a tool description. `ShAgentBatchService` already knows
+the set exhaustively; publishing it as a resource is P2 applied to the write surface, and it is the
+same move SH260 made for helpers and SH300 for DOM attributes: **the code that owns the set answers
+what the set is, instead of a reader restating it.** Every hand-kept copy in this repository has
+drifted, and a drifted op list does not fail a build — it makes an agent invent a key.
+
+The design steer here is explicit and worth recording, because it inverts the usual one: this
+vocabulary is optimised for **agent reliability, not human readability**. The console is the human's
+surface. If a canonical op list reads as machine noise, that is acceptable; an agent that has to
+infer a key name from four inconsistent spellings is not.
+
+### The preview renders a site nobody can walk through (SH336, SH337)
+
+`{{link}}` is `post.getFurl()` — `/contato` — and the page is served at `/preview/Demo/contato`. So
+every internal link in a previewed page points outside the preview: `GET /contato` is a **404**.
+`ShRenderAPI.pathWithin` uses the `/preview/<site>` prefix to *parse* an incoming path and nothing
+anywhere rewrites an outgoing one.
+
+Two things make this worse than a broken link. It compounds SH334 — the editor is an iframe on the
+preview, so with no page picker *and* no working links, exactly one page of a site is reachable in the
+Universal Editor, by any means. And **the lint cannot see it**: `verify`'s `routes` check resolves a
+link against content friendly URLs, where `/contato` is correct, because from the content's point of
+view nothing is wrong. The breakage lives in the preview's own address space, which no check models.
+
+The inversion is active rather than merely absent, which is the detail worth keeping: a hand-written
+`/preview/Demo/home` link — one that *works* in the preview — is reported `link-unresolved`, while
+every link that is actually broken passes. The instrument built to find broken links is pointing the
+wrong way for a previewed site. That is the same class as SH330 (a check reporting the wrong thing
+confidently) and it argues the same way: **a check that is wrong is worse than a check that is
+missing.**
+
+**Three mechanisms, three jobs, and the mistake would be picking one.** The proposal that came out of
+this run was a server-side DOM pass; the objection raised against it — that it would move SH101's
+digest and make preview and delivery incomparable — turned out to be **wrong on the facts**, and
+checking that is what clarified the division. `ShPreviewBanner.wrap` and `ShEditorBridge.inject` are
+applied only in `ShRenderAPI.page`, while `/agent/render` calls `ShPageRenderService.render` directly,
+so nothing injected at that layer is ever hashed.
+
+So the **server pass carries the common case** (a): it fixes 2018 content with no author change, and it
+is the only one of the three under which middle-click, "copy link address", a screenshot and a
+JS-disabled browser all still work. It must rewrite a root-relative URL *only* when it resolves to a
+furl in this site — `{{file_url}}` emits `/file_source/<id>/<name>`, a real server path, and SH141's
+declared `frontend-routes` are real too — which means reusing the index `routes` already builds rather
+than inventing a rule.
+
+**Click interception in the browser is the complement** (b), and it earns its place on one argument
+the server pass cannot answer: a region's SH248 `JAVASCRIPT` can build a nav at runtime, and no
+server-side pass will ever see those links. It belongs in `shio-editor.js`, which already ships JS and
+already walks the DOM — and deliberately **not** as a new always-on preview script, because *"an
+ordinary preview must ship no editor code at all"* is a rule with a real reason (a page somebody
+screenshots should not be running our JavaScript), and weakening it to fix link navigation would be
+paying a permanent cost for an occasional one.
+
+**And a helper answers what neither rewrite can** (c) — **SH337**. A canonical tag, an `og:url`, a
+sitemap entry, an absolute link in an email: none of those is a click, so nothing can be intercepted
+and nothing can be rewritten after the fact. They need the site's real origin, the server already has
+exactly one answer for it (`ShSiteFrontEnd`, SH184), and no template can ask. That gap exists whether
+or not the preview is ever made navigable, which is why it is its own task.
+
+What is *not* an option is making `{{link}}` preview-aware. It is content-facing, so the same field
+would mean two different things in two renders — the coupling SH187 spent a task splitting apart.
+
+### The curator is already authenticated and the editor asks for a token anyway (SH335)
+
+Editing text inline and pressing *Salvar rascunho* answers:
+
+> Nenhum token de API com escopo WRITE encontrado. Crie um em Admin → Tokens de API para habilitar o
+> salvamento.
+
+The curator is sitting inside an authenticated console session, and the console is being asked for a
+bearer credential to write its own content. The save path is `PATCH /api/v2/cda/post/{id}` — the
+**CDA**, gated on `ROLE_CDA_WRITE` — with the token read out of `localStorage` under `sh-ue-token`,
+where it was pasted by hand on the editor-sites page.
+
+Meanwhile `ShPostUnifiedAPI` already exposes `GET /{id}`, `PUT /{id}` and `POST /{id}/publish`, all
+session-authenticated, and the post edit page has been using them the whole time. So the flagship
+console feature reaches its own content through a third contract, which is **P10 read backwards**:
+compose, don't fork — and this is the one place in the product that forked.
+
+Three consequences. The feature is **unusable on a fresh instance**, since no WRITE token exists until
+somebody creates one, and "the editor silently saves nothing" is how that presents.
+
+It is a **security downgrade**, and the argument against it is already written down in this
+repository: SH106 refused to alias the `AGENT` scope to `WRITE` precisely because a `WRITE` key
+"patches published content outside the agent protocol's guards". The editor now instructs the curator
+to mint that key and leave it in browser storage, reachable by any XSS on the console, to do something
+the session cookie already authorizes. A long-lived, exfiltratable credential replacing an
+ambient one is a strictly worse position.
+
+And it opens a hole in SH107. The publish gate is enforced in `ShAgentBatchService` on the stated
+premise that "a console caller has no token and is unaffected" — which was true when it was written
+and this path makes false. `PATCH {publish:true}` and `POST /post/{id}/publish` on the CDA check no
+`may_publish` at all, so a console gesture now carries a credential whose publish authority nothing
+gates. **This is the shape to watch for generally: a guard whose correctness rests on a sentence about
+what some *other* surface does not do.** SH167's blanket-CSRF lint exists for the same reason — a
+premise that expired when a cookie-bearing client arrived at the path — and SH234 turned that one into
+a build failure rather than a comment. This premise deserves the same treatment.
+
+**Why it is not a one-line swap**, and the decision that has to come first: the CDA offers a *merge*
+(`PATCH` these attrs into the draft) while the console offers *whole state* (`PUT` a `data` map, per
+SH168's rule that an upsert declares everything). The editor edits two or three fields of a page, so
+pointing it at `PUT` means read-modify-write on the client — which it is halfway to already, since
+`getEditable` reads the post for the properties panel — and that reintroduces a lost update the PATCH
+does not have. The alternative is a merge verb on the console surface, which is the thing genuinely
+missing rather than the thing being worked around. Cheaper: the read-modify-write. Righter: the merge
+verb. Pick before touching the client, not after.
+
+### The last mile is the human's, and it opened on a 404 (SH333, SH334)
+
+The site rendered, the digest was clean and the SH99 gate closed green — and when the curator opened
+the Universal Editor on it, the canvas showed this:
+
+```json
+{"detail":"Looked for a DRAFT post whose friendly URL is '/'.","status":404,
+ "title":"No page at '/' in site 'Demo'",
+ "fix":"GET /api/v2/agent/find?site=Demo lists the addresses this site holds."}
+```
+
+Three things are wrong in that one frame, and they are worth separating because only one of them is a
+console bug.
+
+**The teaching error reached the wrong reader.** SH80's contract is that every 4xx carries a `fix`,
+and this one is a good fix — for an API caller. A curator looking at an editor canvas cannot run a
+`GET`, so the most carefully designed part of the response is the least usable part of it. The rule
+this suggests is narrow and general: **a teaching error is addressed to whoever can act on it**, and a
+surface that renders a machine's error to a human has not reported the error, it has relocated it.
+That is SH189's argument (a refusal that teaches nothing) inverted — a refusal that teaches the wrong
+audience.
+
+**Nothing timed out.** The iframe has no `onLoad`/`onError`, and the SH185 handshake never completes
+because an error page carries no `editor.js`, so the badge read `Conectando…` indefinitely. "Still
+loading" and "this will never load" were indistinguishable. The honest instrument is the handshake
+timeout rather than inspecting the frame's document, for the same reason SH185 pins the origin instead
+of using `"*"`: the editor must work against an external front end it cannot read. **SH333.**
+
+**And the editor can only ever open one page.** `siteDestination` mirrors `ShSiteFrontEnd`, whose job
+is to answer "where can a person look at this site", and its answer is the site **root**. There is no
+picker, no address bar, no navigation — so the curator can edit a page at furl `/` and reach every
+other page only by hand-writing the `?url=` external-mode escape hatch. Of the three pages this run
+built, one was editable.
+
+The root cause is a model gap rather than a console one, and it is the part worth carrying forward:
+**a page at furl `/` is a convention that nothing enforces, defaults or reports.** The SH71 starter
+has one and the `Cafeteria` fixture has one, which is why this has never surfaced; an agent following
+SH79 has no reason to create one, because nothing in the address scheme, the render model or the lint
+says a site needs a home. So "this site has no home page" is a state the product now produces
+routinely — an agent-built site is the normal case — and never names.
+
+That ordering matters for **SH334**: a `verify` warning for a site with published pages and nothing at
+`/` is cheaper than a picker and removes most of the occasions for one. Build the warning first and
+find out whether the picker is still the thing needed, rather than assuming the fix belongs in the
+console because that is where the symptom appeared.
+
 ---
 
 # Part 2 — pre-existing sections
