@@ -374,6 +374,31 @@ id-keyed post verbs with no address-native form), `webhooks` (SH343) and `previe
 That is the return on the instrument, and it is the argument for building one before working the
 thirteen known instances by hand.
 
+**And a benchmark over a correct script cannot see what an agent gets wrong (SH340).**
+`ShAgentTaskBenchmarkTest` measures call and token ratios over a canonical task, which means it
+measures a script — and a script never sends `postType` where the surface wants `type`.
+`ShAgentNaiveClientBenchmarkTest` drives the MCP surface the way a **naive** client does (the four
+wrong calls a real session sent, plus a sweep adding one unrecognised key per read tool) and counts
+the outcomes against `naive.*` ceilings in `token-budgets.properties`. **A silent drop is counted
+separately and is the expensive one**: a teaching error costs one round trip and the `fix` makes the
+retry land, while a dropped argument costs a wrong outcome nobody notices. Measured: **6 teaching, 6
+silent drops, 0 accepted in 12 calls** — and the sweep is the finding, since `shio_context`,
+`shio_find`, `shio_verify` and `shio_changes` all accept an unknown key and answer 200. So SH331's
+`scope`/`site` case is the default behaviour of this surface, not one tool's oversight.
+
+**A read-only transaction must not eat the refusal it just wrote (SH345).** A class-level
+`@Transactional(readOnly = true)` that throws a `ShTeachingException` declares
+`noRollbackFor = ShTeachingException.class`, and `ShTeachingRollbackLintTest` fails the build
+otherwise. Without it the bean marks a *participating* transaction rollback-only, so a caller that
+declared `noRollbackFor` on purpose — `ShAgentReadService`'s per-row errors, `ShAgentRenderService`'s
+SH249 fallback — fails at **commit** with `UnexpectedRollbackException`, nowhere near the cause: that
+is how `GET /agent/find?site=nope` answered a 500 instead of a teaching 404. The rule is safe as an
+absolute because a read-only transaction has nothing to roll back; a **writing** one is the opposite
+and is out of scope, since a refused batch must roll back. Two things the lint got wrong first, both
+worth knowing: keyed on any read-only annotation it flags classes whose *writing* methods throw, and
+matching `throw new X(` literally it misses the owner-qualified `Outer.XException` — which was the
+very bean it was written from.
+
 **A ROADMAP entry is one sentence: what + why + `→` pointer.** The reasoning belongs in
 IMPROVEMENTS.md, which is what the pointer addresses; a line that restates it makes the roadmap a
 history instead of a queue, and lets two files disagree about one design. Measured when it was

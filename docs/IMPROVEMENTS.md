@@ -3221,6 +3221,12 @@ and here is a tool written before it that nobody audited against it. A lint over
 SH322 just made about greps: the pattern that finds the next occurrence is worth more than the fix to
 this one.
 
+**Measured since (SH340): 6 silent drops and 6 teaching errors in 12 naive calls**, and the sweep says
+the fourth row is not special — `shio_context`, `shio_find`, `shio_verify` and `shio_changes` all accept
+an unrecognised key and answer 200. So "an unknown argument is dropped" is the default behaviour of this
+surface rather than one tool's oversight, which raises what SH331 has to deliver: not four renames but a
+refusal, applied once, where arguments are read.
+
 The teaching errors caught the other three immediately, which is why they cost minutes rather than hours —
 but P2 is that one call replaces a session, and a `fix` that repairs a guess is a safety net, not a
 vocabulary. **SH331** is the alignment: one name per concept across both surfaces, `address` accepting
@@ -3346,53 +3352,12 @@ because working thirteen known instances by hand leaves the fourteenth to the ne
 > stateless-writable, 3 real gaps** — and the bodiless 403 this section predicted was measured
 > before it was fixed: 403, no content type, empty body, on all four paths tried.
 
-**SH340** closes the measurement gap, and it is the one that most directly serves the agent's own
-working cost. `ShAgentTaskBenchmarkTest` asserts call and token ratios over a canonical task, which
-means it measures a **correct script** — and is therefore structurally blind to SH331, since a script
-never sends `postType` for `type` or `addresses` for `address`. The session behind this block sent
-four wrong calls in about twenty-five. Two design points decide whether the metric means anything: the
-fixture must be driven the way a *naive* client would drive it, because writing it with the correct
-keys defeats the entire purpose; and a **silently dropped argument must count more heavily than a
-teaching error**, because a teaching error costs one round trip while a dropped argument (SH331's
-`scope`/`site` case) costs a wrong outcome nobody notices.
-
-### XVI.61 The four reachability gaps nothing had named (SH342–SH344)
-
-These come from SH338's own output rather than from a build, which is the point of having built it:
-thirteen of the fourteen unreachable capabilities had either a task or a stated reason, and **four
-had neither**. They are grouped here because they share one shape — *an id-keyed REST verb that
-never grew an address-native form* — and separated into three tasks because the subsystems behind
-them have nothing else in common.
-
-**SH342 — `locales` and `scheduledPublish` are advertised and have no agent form.** Both are
-`POST /api/v2/post-unified/{id}/…` (`translate`, `schedule`), both undeclared in the manifest's
-endpoint index, and neither has an address-native equivalent: `post.upsert` takes no locale, and
-`shio_publish` takes an address and `dryRun`. So the manifest tells an agent this instance does
-content i18n and scheduled publishing, and the agent can do neither. The design question is the same
-one for both and worth answering once: **a locale is part of a post's identity in a way an SH79
-address does not express** (SH323 settled the neighbouring case — an address carries no locale, which
-is exactly why `duplicate-url` is locale-blind), so `post.translate` cannot simply take a second
-address. Either the op takes `{from, locale}` and returns the new post's address, or the locale
-becomes an addressing dimension, which is a much larger change. Scheduling is the easier half: a
-`when` on `post.publish` is additive, and the only real decision is whether a schedule in the past
-publishes immediately or refuses.
-
-**SH343 — the agent reads its own webhook failures and cannot touch the subscription.** SH103 put
-webhook delivery failures in `/agent/diagnostics` and SH269 gave them frames, so the agent is told
-precisely which subscription is failing and has no route to inspect, repair or remove it:
-`/api/v2/site-webhook` is undeclared and MCP-unreachable. That asymmetry is the interesting part —
-**a diagnostic for a resource the reader cannot act on is SH190's defect one level up** (the `fix`
-that named a log file the caller cannot open). Whether the answer is a declared route, a `webhook.*`
-batch op or an admission that this is console-shaped is undecided; what is not is that
-`webhooks: true` plus an incident feed is currently a promise the surface does not keep.
-
-**SH344 — the agent cannot mint the preview token its own answer requires.** SH184 resolved "where
-can a person look at this site" and its external-front-end branch ends in a token: `ShPreviewTokenAPI`
-returns one so a Next.js deployment can turn draft mode on at `/api/preview`. That endpoint is
-undeclared, so the agent that just deployed the front end cannot produce the credential the flow
-needs. It is the narrowest of the three and the cheapest to close — one entry in the endpoint index,
-and a decision about whether minting a preview token needs its own gate the way SH107 gates
-publishing.
+> ✅ **SH340 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The number is **6 teaching errors
+> and 6 silent drops in 12 naive calls**, and the sweep found more than the task predicted: four of
+> six read tools ignore an unrecognised key, so SH331's `scope`/`site` case is a **class** rather
+> than a slip. Its first run also found **SH345** — `?site=nope` answered a 500 because a read-only
+> transaction marked itself rollback-only and destroyed the refusal it had just written (✅ shipped,
+> with the lint SH322's rule demands).
 
 ### XVI.60 The roadmap became a history instead of a queue (SH341)
 

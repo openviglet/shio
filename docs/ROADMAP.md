@@ -48,6 +48,14 @@
 > instrument that finds every other break is the deliverable, and it lands before the fixes.* So
 > do not work SH325–SH337 by hand first — SH338 enumerates them and finds the ones nobody has hit.
 >
+> ✅ **SH340 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: a naive client's calls are counted —
+> **6 teaching errors and 6 silent drops in 12 calls** — and the sweep found that four of six read
+> tools ignore an unrecognised argument, so SH331's one case is a class.
+>
+> ✅ **SH345 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: `?site=nope` answered a **500**, because
+> a read-only transaction marked itself rollback-only and destroyed the refusal it had just written.
+> Found by SH340's own first run.
+>
 > ✅ **SH339 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: **25 mutating roots, 8
 > stateless-writable, 3 real gaps** — and a CSRF refusal now carries a body that differs for a
 > browser and for an agent, because the measured one was empty.
@@ -61,9 +69,10 @@
 > fourteen had no task** (SH342–SH344), and one (`reviewQueue`) turned out to be a decision rather
 > than a gap.
 
-1. **SH340** — first-attempt success as a measured number (the class behind SH331).
-2. **SH342–SH344** — the reachability gaps the SH338 and SH339 inventories name; SH327 is now one of them.
-3. Then the rest of SH326–SH337, in whatever order SH338's output argues for.
+1. **SH331** — one name per concept, and an unrecognised key refused. SH340 now measures the cost: **6 silent drops in 12 naive calls**.
+2. **SH332** — publish the op vocabulary, which is what would have prevented two of SH331's four mistakes.
+3. **SH342–SH344** — the reachability gaps the SH338 and SH339 inventories name; SH327 is now one of them.
+4. Then the rest of SH326–SH337, in whatever order SH338's output argues for.
 
 > **Deprioritized deliberately:** SH258, SH296, SH317, SH318 and SH324 all audit the audits — each
 > correct, all second-order, and queued behind the items above. The original reason was that
@@ -454,7 +463,6 @@
 - 📋 **SH342** (deps: SH338 ✅) **Two id-keyed post verbs have no address-native form, so `locales` and `scheduledPublish` are advertised and unreachable** — found by SH338's inventory, not by a build: `POST /post-unified/{id}/translate` and `/{id}/schedule` are undeclared, `post.upsert` takes no locale and `shio_publish` takes only an address and `dryRun`. → §XVI.61
 - 📋 **SH343** (deps: SH338 ✅) **The agent sees webhook failures and cannot touch a subscription** — `/api/v2/site-webhook` is undeclared and MCP-unreachable, so `webhooks: true` means the agent reads its own delivery incidents in diagnostics with no way to create, inspect or repair what produced them. → §XVI.61
 - 📋 **SH344** (deps: SH338 ✅, SH184 ✅) **The agent cannot mint the preview token its own answer requires** — `ShPreviewTokenAPI` is undeclared, so SH184's "an external front end needs a token to turn draft mode on" ends at a call the agent has no route to. → §XVI.61
-- 📋 **SH340** (deps: SH331 📋) **The benchmark measures a correct script, so it cannot see the calls an agent gets wrong** — blind to SH331 by construction; the real build sent four wrong calls in ~25. Count `isError` results and dropped arguments against a ceiling in `token-budgets.properties`, driven the way a naive client would. → §XVI.59
 - ⏳ **SH341** (deps: —) **The roadmap carries prose it is not the home for** — ✅ two halves done: SH325–SH340 compressed to a sentence each, and nine shipped-history bodies collapsed to the pointer line the rules prescribe (~2.6k words; every dropped id verified present in CHANGELOG first). **What remains:** the other 79 task lines (avg 113 words against a one-sentence rule) need their `→ §` coverage checked before cutting, since some may be the only home for their reasoning; three mixed blockquotes (Block P's L537 shape) interleave shipped notes with open-task provenance and want hand treatment; then a length assertion, so the rule stops depending on the writer noticing it. → §XVI.60
 - 📋 **SH336** (deps: SH183 ✅, SH334 📋) **The preview is not navigable: every internal link 404s** — `{{link}}` is a bare furl while the page is served under `/preview/<site>/`, and the lint cannot see it (from the content's view `/contato` is correct). Three mechanisms, three jobs: a server DOM pass beside the banner for the common case, click interception in `shio-editor.js` for JS-built links, SH337 for absolute URLs. Never make `{{link}}` preview-aware. → §XVI.58
 - 📋 **SH337** (deps: SH183 ✅, SH184 ✅) **A template cannot ask for the site's base URL** — so a canonical tag, an `og:url` or a sitemap entry is unbuildable; `ShSiteFrontEnd` already holds the one answer and nothing exposes it to the render model. → §XVI.58
