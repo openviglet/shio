@@ -3221,26 +3221,12 @@ and here is a tool written before it that nobody audited against it. A lint over
 SH322 just made about greps: the pattern that finds the next occurrence is worth more than the fix to
 this one.
 
-**Measured since (SH340): 6 silent drops and 6 teaching errors in 12 naive calls**, and the sweep says
-the fourth row is not special — `shio_context`, `shio_find`, `shio_verify` and `shio_changes` all accept
-an unrecognised key and answer 200. So "an unknown argument is dropped" is the default behaviour of this
-surface rather than one tool's oversight, which raises what SH331 has to deliver: not four renames but a
-refusal, applied once, where arguments are read.
-
-The teaching errors caught the other three immediately, which is why they cost minutes rather than hours —
-but P2 is that one call replaces a session, and a `fix` that repairs a guess is a safety net, not a
-vocabulary. **SH331** is the alignment: one name per concept across both surfaces, `address` accepting
-a string or an array everywhere, and — the part that removes the round trip rather than shortening it
-— **an unambiguous synonym accepted and reported** rather than refused. Sending `postType` should
-work and come back with a note naming the canonical key.
-
-That last point needs a boundary drawn, or it will be "simplified" into the opposite of SH168.
-Accepting a synonym is safe **for an op's argument names**, which are a closed set the server owns
-and where the intent is unambiguous. It is *not* safe for a `data` key, where SH168's whole point is
-that an upsert declares whole state and a near-miss silently replaced the field it meant. Closed set,
-server-owned, unambiguous — all three, or refuse. It also sits correctly against SH320's rule: a
-synonym does not select or bound work, so accepting it cannot answer a different question than the
-one asked.
+> ✅ **SH331 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The measurement changed the design:
+> four of six read tools ignored an unrecognised key, so the answer was **one refusal where
+> arguments are read**, not four renames. Synonyms are accepted and reported, the recursion reaches
+> an op's arguments (where the real mistake was) and stops structurally at `data`. After: **0 silent
+> drops, 6/6 naive calls landing first try**. **SH332** is still open and is the half that would
+> have prevented the guessing rather than repairing it.
 
 **SH332** is what would have prevented two of the three outright. `tools/list` carries tool schemas,
 but the **op** vocabulary — `site.upsert`, `post.move`, `folder.delete`, and each op's required and

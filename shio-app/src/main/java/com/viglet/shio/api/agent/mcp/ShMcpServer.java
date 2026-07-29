@@ -221,16 +221,39 @@ public class ShMcpServer {
                 .orElseThrow(() -> new ShMcpProtocolException(INVALID_PARAMS,
                         "Unknown tool '" + name + "'.", toolNames()));
         JsonNode arguments = params.get("arguments");
-        JsonNode safe = arguments == null || !arguments.isObject()
-                ? objectMapper.createObjectNode() : arguments;
+        ObjectNode safe = arguments instanceof ObjectNode object
+                ? object : objectMapper.createObjectNode();
         try {
-            return content(tool.call(safe), false);
+            // SH331 — one place where arguments are read, so an unrecognised key is refused once
+            // rather than dropped eleven times. SH340 measured what it used to cost: four of six
+            // read tools answered 200 while ignoring a key, and the one that mattered wrote a
+            // memory note to the wrong scope and called it success.
+            ShMcpVocabulary.Normalized normalized =
+                    ShMcpVocabulary.normalize(name, safe, tool.inputSchema());
+            return content(withNotes(tool.call(normalized.arguments()), normalized.notes()), false);
         } catch (ShTeachingException e) {
             // The whole point of SH80 is that the *model* reads the fix, so it travels
             // as a tool result rather than a protocol error, rendered as text because
             // that is what a model actually reads.
             return content(renderProblem(e), true);
         }
+    }
+
+    /**
+     * Appends the SH331 synonym notes to a tool's own text.
+     *
+     * <p><b>After</b> the payload, never before: a caller that parses the first line of a terse
+     * response must not have to know whether a note is there. And reported at all because a synonym
+     * accepted in silence teaches nothing — the caller keeps sending it, which is the state SH340
+     * measured as six silent drops in twelve calls.</p>
+     */
+    private static String withNotes(String text, List<String> notes) {
+        if (notes.isEmpty()) {
+            return text;
+        }
+        StringBuilder body = new StringBuilder(text == null ? "" : text);
+        notes.forEach(note -> body.append("\nnote: ").append(note));
+        return body.toString();
     }
 
     private ObjectNode content(String text, boolean isError) {

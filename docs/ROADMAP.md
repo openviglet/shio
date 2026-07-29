@@ -48,6 +48,10 @@
 > instrument that finds every other break is the deliverable, and it lands before the fixes.* So
 > do not work SH325–SH337 by hand first — SH338 enumerates them and finds the ones nobody has hit.
 >
+> ✅ **SH331 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: one refusal where arguments are read,
+> synonyms accepted **and reported**, and a `data` key never touched. **0 silent drops, 6/6 naive
+> calls landing first try** — SH340's measurement changed the design from four renames to one guard.
+>
 > ✅ **SH340 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: a naive client's calls are counted —
 > **6 teaching errors and 6 silent drops in 12 calls** — and the sweep found that four of six read
 > tools ignore an unrecognised argument, so SH331's one case is a class.
@@ -69,10 +73,9 @@
 > fourteen had no task** (SH342–SH344), and one (`reviewQueue`) turned out to be a decision rather
 > than a gap.
 
-1. **SH331** — one name per concept, and an unrecognised key refused. SH340 now measures the cost: **6 silent drops in 12 naive calls**.
-2. **SH332** — publish the op vocabulary, which is what would have prevented two of SH331's four mistakes.
-3. **SH342–SH344** — the reachability gaps the SH338 and SH339 inventories name; SH327 is now one of them.
-4. Then the rest of SH326–SH337, in whatever order SH338's output argues for.
+1. **SH332** — publish the op vocabulary, which is what would have prevented two of SH331's four mistakes.
+2. **SH342–SH344** — the reachability gaps the SH338 and SH339 inventories name; SH327 is now one of them.
+3. Then the rest of SH326–SH337, in whatever order SH338's output argues for.
 
 > **Deprioritized deliberately:** SH258, SH296, SH317, SH318 and SH324 all audit the audits — each
 > correct, all second-order, and queued behind the items above. The original reason was that
@@ -458,7 +461,6 @@
 - 📋 **SH328** (deps: SH184 ✅, SH193 ✅) **`postTypeLayout` is the one edge that makes a site render and no agent op can write it** — an agent builds theme, regions, layout and pages and cannot bind them, while SH272's own convention line instructs the write. Per-key fill following SH184, never a replace. → §XVI.58
 - 📋 **SH329** (deps: SH153 ✅) **A dry run cannot plan into the site the same batch creates, and its `fix` names a parameter that does not exist** — SH153's `Declared` covers pending folders but not a pending site, so "look before you write" fails on an agent's first act. → §XVI.58
 - 📋 **SH330** (deps: SH144 ✅, SH99 ✅) **A past 5xx keeps `verify` red forever** — `checks=diagnostics` reports a durable incident as an *error* with no verb to resolve one, so the CI gate stays red after the cause is fixed. SH99's own rule makes it a warning. → §XVI.58
-- 📋 **SH331** (deps: SH168 ✅, SH320 ✅) **The surfaces name the same concepts differently, and one drops an unknown argument silently** — four wrong calls in one build (`postType`/`type`; address-vs-bare-path; `addresses`/`address`; and `scope`/`site` on `shio_remember`, which reported success and wrote to the wrong scope — a live SH320 violation). One name per concept; a synonym accepted and reported for **op arguments only**, never a `data` key. → §XVI.58
 - 📋 **SH332** (deps: SH331 📋) **The op vocabulary exists only as prose in a tool description** — `ShAgentBatchService` knows the set exhaustively and nothing publishes it, which is what let two of SH331's four mistakes happen. A `shio://ops` resource: SH260's move for helpers, SH300's for DOM attributes. → §XVI.58
 - 📋 **SH342** (deps: SH338 ✅) **Two id-keyed post verbs have no address-native form, so `locales` and `scheduledPublish` are advertised and unreachable** — found by SH338's inventory, not by a build: `POST /post-unified/{id}/translate` and `/{id}/schedule` are undeclared, `post.upsert` takes no locale and `shio_publish` takes only an address and `dryRun`. → §XVI.61
 - 📋 **SH343** (deps: SH338 ✅) **The agent sees webhook failures and cannot touch a subscription** — `/api/v2/site-webhook` is undeclared and MCP-unreachable, so `webhooks: true` means the agent reads its own delivery incidents in diagnostics with no way to create, inspect or repair what produced them. → §XVI.61

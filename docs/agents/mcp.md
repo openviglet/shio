@@ -39,6 +39,24 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
   `shio_write` was rejected as a cheaper shape that does not deliver the capability — most
   conclusions worth keeping are reached while *reading*, with no write to hang them on.
 - **Prompts**: `new-site` · `add-section` · `translate-site` · `audit-content`.
+- **One name per concept, and an unrecognised argument refused once (SH331)** —
+  `ShMcpVocabulary`, called from `ShMcpServer.toolsCall`, so there is a single place where arguments
+  are read. Filed as four renames; **SH340's measurement changed it into one guard**, because four of
+  six read tools were accepting an unknown key and answering 200 — the default behaviour of the
+  surface, not one tool's slip. A known **synonym** is rewritten and **reported** in a `note:` line
+  (a silent rewrite leaves the caller sending the alias forever); anything else is a teaching 400
+  carrying the declared set and a `didYouMean`. Four rules: the alias table holds only names *this
+  product itself uses* elsewhere (`postType`/`postTypeId`/`shPostType` for `type`, `scope` for
+  `site`, `cursor` for `since`, `check` for `checks`, `addresses` for `address`), never a guess at
+  what a model might type; an alias **never displaces** a canonical value the caller also sent (two
+  spellings present is two values, so it is refused rather than resolved by guessing); the recursion
+  reaches **an op's arguments**, because `shio_write` declares only `ops` and that is where the real
+  mistake was; and it **must never touch a `data` key** — the guard is structural, since `data` is
+  declared with no `properties` and therefore has nothing to validate. That last one is SH168's line
+  and the first thing a "simplification" would break: an upsert declares whole state, so a near-miss
+  on a field name silently replaces the field it meant. Closed set, server-owned, unambiguous — all
+  three, or refuse. Measured by `ShAgentNaiveClientBenchmarkTest`: **0 silent drops, 6/6 naive calls
+  landing on the first attempt.**
 - **Error routing matters**: a fixable failure (bad address, unknown post-type) is a
   tool *result* with `isError:true` so the model reads the SH80 `fix`; a JSON-RPC
   `error` is only for an unusable message (unknown method/tool), which the client

@@ -80,10 +80,76 @@ class ShAgentNaiveClientBenchmarkTest {
 
     private static final String BUDGETS = "/token-budgets.properties";
 
+    /**
+     * The site every naive call names.
+     *
+     * <p>It has to exist, and the first version of this benchmark got that wrong in a way worth
+     * recording: with no such site, `find`, `verify`, `read` and `write` answered a teaching error
+     * because the <em>site</em> was missing, and the run scored them as vocabulary failures. The
+     * number was real and it was measuring the fixture. A benchmark about argument names must fail
+     * only for an argument name.</p>
+     */
+    private static final String SITE = "NaiveBench";
+    private static final String URL = "/home";
+
     @Autowired
     private ShMcpServer shMcpServer;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private org.springframework.transaction.PlatformTransactionManager transactionManager;
+
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
+    @org.junit.jupiter.api.BeforeAll
+    void seedASiteTheCallsCanName() {
+        new org.springframework.transaction.support.TransactionTemplate(transactionManager)
+                .executeWithoutResult(status -> {
+                    com.viglet.shio.persistence.model.site.ShSite site =
+                            new com.viglet.shio.persistence.model.site.ShSite();
+                    site.setName(SITE);
+                    site.setDate(java.time.Instant.parse("2026-01-01T00:00:00Z"));
+                    site.setOwner("admin");
+                    entityManager.persist(site);
+
+                    com.viglet.shio.persistence.model.folder.ShFolder root =
+                            new com.viglet.shio.persistence.model.folder.ShFolder();
+                    root.setName("root");
+                    root.setRootFolder((byte) 1);
+                    root.setShSite(site);
+                    root.setDate(java.time.Instant.parse("2026-01-01T00:00:00Z"));
+                    root.setOwner("admin");
+                    entityManager.persist(root);
+
+                    com.viglet.shio.persistence.model.post.type.ShPostType type =
+                            new com.viglet.shio.persistence.model.post.type.ShPostType();
+                    type.setName("Article");
+                    type.setTitle("Article");
+                    type.setSystem((byte) 0);
+                    type.setDate(java.time.Instant.parse("2026-01-01T00:00:00Z"));
+                    type.setOwner("admin");
+                    entityManager.persist(type);
+
+                    for (com.viglet.shio.persistence.model.post.unified.ShPostState state
+                            : com.viglet.shio.persistence.model.post.unified.ShPostState.values()) {
+                        com.viglet.shio.persistence.model.post.unified.ShPostUnified post =
+                                new com.viglet.shio.persistence.model.post.unified.ShPostUnified();
+                        post.setId("naive-home");
+                        post.setState(state);
+                        post.setShSite(site);
+                        post.setShFolder(root);
+                        post.setShPostType(type);
+                        post.setTitle("Home");
+                        post.setFurl(URL);
+                        post.setLocale("en");
+                        post.setOwner("admin");
+                        post.setDate(java.time.Instant.parse("2026-01-01T00:00:00Z"));
+                        post.setData("{\"title\":\"Home\"}");
+                        entityManager.persist(post);
+                    }
+                });
+    }
 
     /** What became of a naive call. */
     private enum Outcome {
@@ -91,7 +157,16 @@ class ShAgentNaiveClientBenchmarkTest {
         TEACHING_ERROR,
         /** Succeeded while ignoring a key the caller sent. A wrong outcome nobody notices. */
         SILENT_DROP,
-        /** The surface understood it. What SH331 will turn the rows above into. */
+        /**
+         * Succeeded <em>and said so</em>: the synonym was read and a note named the canonical key.
+         *
+         * <p>Distinguished from {@link #SILENT_DROP} by the note, which is the only observable
+         * difference between "understood you" and "ignored you" from outside — and the reason SH331
+         * reports rather than quietly rewrites. The first version of this benchmark had no such row
+         * and therefore scored SH331's own fix as a drop.</p>
+         */
+        SYNONYM_ACCEPTED,
+        /** Nothing unusual was sent, so there was nothing to accept or refuse. */
         ACCEPTED
     }
 
@@ -110,17 +185,27 @@ class ShAgentNaiveClientBenchmarkTest {
     private List<Naive> naiveCalls() {
         List<Naive> calls = new ArrayList<>();
         calls.add(new Naive("read: plural name for a repeatable field", "shio_read",
-                Map.of("addresses", List.of("post:Demo/home")), "address"));
+                Map.of("addresses", List.of("post:" + SITE + URL)), "address"));
         calls.add(new Naive("find: the fourth spelling of one concept", "shio_find",
-                Map.of("site", "Demo", "postType", "Article"), "type"));
-        calls.add(new Naive("write: the same, on the write surface", "shio_write",
-                Map.of("address", "post:Demo/home", "postType", "Article", "dryRun", true), "type"));
+                Map.of("site", SITE, "postType", "Article"), "type"));
+        // The real mistake was inside an op, not at the top level: shio_write declares only `ops`,
+        // and `postType`-for-`type` was written in the op object. Sending it at the top level
+        // instead — which the first version of this row did — measures a *shape* mistake and
+        // teaches for a different reason than the one under test.
+        calls.add(new Naive("write: the same concept, inside an op", "shio_write",
+                Map.of("ops", List.of(new LinkedHashMap<>(Map.of(
+                                "op", "post.upsert",
+                                "address", "post:" + SITE + URL,
+                                "postType", "Article",
+                                "data", Map.of()))),
+                        "dryRun", true),
+                "type"));
         calls.add(new Naive("verify: singular for a comma-separated set", "shio_verify",
-                Map.of("site", "Demo", "check", "content"), "checks"));
+                Map.of("site", SITE, "check", "content"), "checks"));
         calls.add(new Naive("changes: the word the response itself uses", "shio_changes",
-                Map.of("cursor", "2026-01-01T00:00:00Z|x"), "since"));
+                Map.of("cursor", "2026-01-01T00:00:00Z|naive-home"), "since"));
         calls.add(new Naive("remember: the endpoint's word, not the tool's", "shio_remember",
-                Map.of("scope", "Demo", "key", "sh340-probe", "note", "measured by SH340"), "site"));
+                Map.of("scope", SITE, "key", "sh340-probe", "note", "measured by SH340"), "site"));
         return calls;
     }
 
@@ -150,35 +235,53 @@ class ShAgentNaiveClientBenchmarkTest {
             Set<String> declared = declaredProperties(tool);
             Map<String, Object> arguments = new LinkedHashMap<>();
             arguments.put("shio340UnknownKey", "x");
+            if ("shio_read".equals(tool) || "shio_digest".equals(tool)) {
+                // Both require an address, and a refusal for a *missing required* argument is not
+                // the thing being measured — without this the sweep scores them as compliant for
+                // the wrong reason, which is the same fixture defect the SITE constant above fixed.
+                arguments.put("address", "post:" + SITE + URL);
+            }
             JsonNode result = callTool(tool, arguments);
             Outcome outcome = classify(result, arguments.keySet(), declared);
             outcomes.put("sweep: " + tool, outcome);
             report.add("  %-14s sweep %s".formatted(outcome, tool));
         }
 
-        long teaching = outcomes.values().stream().filter(o -> o == Outcome.TEACHING_ERROR).count();
         long drops = outcomes.values().stream().filter(o -> o == Outcome.SILENT_DROP).count();
-        long accepted = outcomes.values().stream().filter(o -> o == Outcome.ACCEPTED).count();
+        long landed = outcomes.entrySet().stream()
+                .filter(entry -> !entry.getKey().startsWith("sweep"))
+                .filter(entry -> entry.getValue() == Outcome.SYNONYM_ACCEPTED
+                        || entry.getValue() == Outcome.ACCEPTED)
+                .count();
+        long naive = outcomes.keySet().stream().filter(key -> !key.startsWith("sweep")).count();
+        long failedFirstAttempts = naive - landed;
 
-        System.out.printf("%n[SH340] naive client — %d calls: %d teaching, %d SILENT DROP, %d accepted%n",
-                outcomes.size(), teaching, drops, accepted);
+        System.out.printf("%n[SH340] naive client — %d calls: %d/%d landed first try, "
+                + "%d SILENT DROP%n", outcomes.size(), landed, naive, drops);
         report.forEach(System.out::println);
         System.out.println();
 
         assertThat(drops)
                 .as("""
-                        SH340: a dropped argument is the expensive failure — the call reports \
-                        success and the outcome is wrong, which is what SH331's scope/site case did \
-                        (the note landed instance-wide and finding out meant reading the tool's \
-                        Java). A teaching error costs one round trip; this costs a wrong answer \
-                        nobody looks for. Lowering this ceiling is what SH331 and SH332 are for.""")
+                        SH340: a dropped argument is the expensive failure — the call reports                         success and the outcome is wrong, which is what SH331's scope/site case did                         (the note landed instance-wide and finding out meant reading the tool's                         Java). A teaching error costs one round trip; this costs a wrong answer                         nobody looks for.""")
                 .isLessThanOrEqualTo(budget("naive.max-silent-drops"));
-        assertThat(teaching)
+        assertThat(failedFirstAttempts)
                 .as("""
-                        a teaching error is the acceptable failure and still a failure: P2 is that \
-                        one call replaces a session, and a `fix` that repairs a guess is a safety \
-                        net rather than a vocabulary. SH331 turns these into accepted synonyms.""")
-                .isLessThanOrEqualTo(budget("naive.max-teaching-errors"));
+                        first-attempt success, which is what this benchmark is named for: a call a                         real agent made, landing without a round trip. SH331 turned these from                         teaching errors and silent drops into accepted synonyms — a ceiling above                         zero here means one of them regressed.""")
+                .isLessThanOrEqualTo(budget("naive.max-failed-first-attempts"));
+
+        // The sweep is a different claim and gets a different assertion: every read tool must
+        // *refuse* an argument it does not declare. Counting these against a budget would be
+        // backwards — a refusal here is the fix working, so the number to watch is not how many
+        // there are but whether any tool is missing from the set.
+        assertThat(outcomes.entrySet().stream()
+                        .filter(entry -> entry.getKey().startsWith("sweep"))
+                        .filter(entry -> entry.getValue() != Outcome.TEACHING_ERROR)
+                        .map(Map.Entry::getKey)
+                        .toList())
+                .as("""
+                        an unrecognised argument is refused, once, where arguments are read                         (SH331). Before that, four of these six answered 200 having ignored the                         key — which is how a wrong outcome reports success.""")
+                .isEmpty();
     }
 
     @Test
@@ -216,7 +319,15 @@ class ShAgentNaiveClientBenchmarkTest {
         if (isError) {
             return Outcome.TEACHING_ERROR;
         }
-        return unknownKeys(sent, declared).isEmpty() ? Outcome.ACCEPTED : Outcome.SILENT_DROP;
+        Set<String> unknown = unknownKeys(sent, declared);
+        String body = result.get("content").get(0).get("text").asString();
+        if (unknown.isEmpty()) {
+            // A nested alias (inside an op) leaves every top-level key declared, so the only signal
+            // that something was renamed is the note itself — which is the point of reporting it.
+            return body.contains("note: read `") ? Outcome.SYNONYM_ACCEPTED : Outcome.ACCEPTED;
+        }
+        boolean reported = unknown.stream().allMatch(key -> body.contains("`" + key + "`"));
+        return reported ? Outcome.SYNONYM_ACCEPTED : Outcome.SILENT_DROP;
     }
 
     private static Set<String> unknownKeys(Set<String> sent, Set<String> declared) {

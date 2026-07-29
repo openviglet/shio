@@ -381,10 +381,14 @@ measures a script — and a script never sends `postType` where the surface want
 wrong calls a real session sent, plus a sweep adding one unrecognised key per read tool) and counts
 the outcomes against `naive.*` ceilings in `token-budgets.properties`. **A silent drop is counted
 separately and is the expensive one**: a teaching error costs one round trip and the `fix` makes the
-retry land, while a dropped argument costs a wrong outcome nobody notices. Measured: **6 teaching, 6
-silent drops, 0 accepted in 12 calls** — and the sweep is the finding, since `shio_context`,
-`shio_find`, `shio_verify` and `shio_changes` all accept an unknown key and answer 200. So SH331's
-`scope`/`site` case is the default behaviour of this surface, not one tool's oversight.
+retry land, while a dropped argument costs a wrong outcome nobody notices. Measured before SH331: **6 silent drops in 12
+calls**, and the sweep was the finding — `shio_context`, `shio_find`, `shio_verify` and
+`shio_changes` all accepted an unknown key and answered 200, so the `scope`/`site` case was the
+default behaviour of the surface rather than one tool's oversight. That measurement is what turned
+SH331 from four renames into one guard; after it, **0 drops and 6/6 naive calls land first try**.
+One caution the first run earned: the fixture named a site the isolated database did not contain, so
+four rows failed for the *site* and were scored as vocabulary failures. A benchmark about argument
+names must fail only for an argument name — SH324's class, in a benchmark instead of a fixture.
 
 **A read-only transaction must not eat the refusal it just wrote (SH345).** A class-level
 `@Transactional(readOnly = true)` that throws a `ShTeachingException` declares
