@@ -2636,30 +2636,6 @@ read it out of and a terminal user has no path to it at all. So the smaller and 
 may be `shio impact <address>` — one question the files genuinely cannot answer — rather than a general
 `read` that duplicates the projection. Decide which before building either.
 
-### XVI.44 The pack states the helpers and nothing states the model they run against (SH292)
-
-An author now learns from the context pack that `{{#query folder= type= limit=}}` exists. Nothing
-tells them:
-
-- that a top-level `{{TEXT}}` is the **page's** field while the same reference inside the block is the
-  **listed post's** — the scoping SH251's scanner exists to track, and the single most likely thing to
-  get wrong;
-- that a row carries `title`, `link`, `summary`, `date` (`ShRenderHelpers.ROW_KEYS`);
-- that `post.`, `site.`, `theme.` and `render.` are reserved frames.
-
-The asymmetry has a real cost. SH251's `template-unknown-field` is an **error** at top level and only a
-**warning** inside a `{{#query}}` block, because the rows are whatever the helper found and the engine
-cannot prove what they hold. So the place where the lint is weakest is exactly the place the author
-now has the least documentation for — the pack tells them the block exists and nothing about what is
-in scope inside it.
-
-The content already exists in one place each: `ROW_KEYS` (SH260 made it the source) and the scanner's
-frame list. What needs deciding is **where**, and this is the point where "add it to conventions"
-stops being obviously right: it would roughly double that line for every rendering instance, and P3 is
-a budget rather than a preference. The alternatives are a `shio://` resource (discoverable, MCP-only),
-a section of the pack somebody opts into, or a documentation link — which this codebase has so far
-refused on the grounds that a link is not an appliable unit (P8).
-
 ### XVI.45 The reference model has thirteen types and three are checked (SH293)
 
 `ShRenderModelSourceTest` compares `PageLayout`, `Region` and `Theme` against

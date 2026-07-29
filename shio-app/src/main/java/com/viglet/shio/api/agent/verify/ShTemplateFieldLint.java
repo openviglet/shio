@@ -25,6 +25,7 @@ import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.render.ShPageRenderService;
 import com.viglet.shio.render.ShRenderHelpers;
+import com.viglet.shio.render.ShRenderModel;
 import com.viglet.shio.render.ShPageRenderService.ShNamedTemplate;
 import com.viglet.shio.render.ShPageRenderService.ShPageTemplates;
 import com.viglet.shio.render.ShTemplateEngine;
@@ -78,10 +79,14 @@ import com.viglet.shio.render.ShTemplateFieldScanner.ShTemplateReference;
 public class ShTemplateFieldLint {
 
     /**
-     * The reserved model frames (SH183): {@code post}, {@code site}, {@code theme},
-     * {@code render}. A path rooted at one of these is not a field and is never reported.
+     * The reserved model frames (SH183): a path rooted at one of these is not a field and is never
+     * reported.
+     *
+     * <p>SH292 — read from {@link ShRenderModel#FRAMES} rather than restated. This was a private copy
+     * of a set three other places write, which is exactly the shape SH260 removed for the row keys
+     * two lines below, and the pack now teaches the list — so a drift here would reach an author.</p>
      */
-    private static final Set<String> FRAMES = Set.of("post", "site", "theme", "render");
+    private static final Set<String> FRAMES = ShRenderModel.FRAMES;
 
     // SH260 — the row's keys are `ShRenderHelpers.ROW_KEYS`, read rather than restated. This used
     // to be a copy, and its drift showed up as a warning on a correct listing body.

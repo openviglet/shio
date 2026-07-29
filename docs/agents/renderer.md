@@ -361,7 +361,14 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   clients — while a helper set is exactly the *instance-specific* fact this section exists for, next
   to SH114's notes); it is **conditional on the instance's own model** holding a render post-type, so
   a session that will never write a template pays nothing (P3) and the check costs no query; and a
-  helper registered with no signature is **absent** rather than listed bare, since a half-answer
+  **And the model is stated too, since SH292** — a second conditional line says that a bare
+  `{{FIELD}}` is the page's field at the top level and the listed post's inside a block, names the row
+  keys (`ShRenderHelpers.ROW_KEYS`) and the reserved frames (`ShRenderModel.FRAMES`, now the single
+  source — `ShTemplateFieldLint` had a private copy). Both derived, never restated, and both under
+  `response.context.conventions.render` (195) — the first ceiling the conventions section has had,
+  because the response budget test measures the pack *without* it. Measured: helpers 120 tokens,
+  model 59.
+  A helper registered with no signature is **absent** rather than listed bare, since a half-answer
   about a capability is what sends somebody guessing. `form` stays unregistered and therefore
   unadvertised — a list naming it would have the author write what SH192 then refuses.
   **`form` is the last of the seven and is deliberately unregistered** (SH247): a helper that

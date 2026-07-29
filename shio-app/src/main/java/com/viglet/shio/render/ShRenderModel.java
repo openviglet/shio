@@ -10,6 +10,7 @@ package com.viglet.shio.render;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.springframework.stereotype.Component;
@@ -66,6 +67,19 @@ import tools.jackson.databind.ObjectMapper;
  */
 @Component
 public class ShRenderModel {
+
+    /**
+     * The reserved top-level frames of the render model — SH260's rule applied to a fourth fact.
+     *
+     * <p>{@code post}, {@code site} and {@code theme} are put by {@link #of}; {@code render} is put
+     * by {@code ShPageRenderService}. Three writers and, before SH292, a fourth <em>private</em> copy
+     * in {@code ShTemplateFieldLint} used to filter them — a set nobody owned, which is the shape
+     * whose drift SH260 found showing up as a warning on a correct template. The context pack now
+     * <b>tells an author</b> what these are, so a stale list would be a wrong instruction rather than
+     * an internal inconsistency, and `ShRenderConventionsTest` asserts the writers against it in both
+     * directions.</p>
+     */
+    public static final Set<String> FRAMES = Set.of("post", "site", "theme", "render");
 
     private final ObjectMapper objectMapper;
 
