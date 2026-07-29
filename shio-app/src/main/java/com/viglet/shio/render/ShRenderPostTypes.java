@@ -18,6 +18,8 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.post.type.ShPostTypeAdminMapper;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -276,12 +278,49 @@ public class ShRenderPostTypes {
     }
 
     private ShWidget widget(String name) {
-        ShWidget widget = shWidgetRepository.findByName(name);
+        // findFirstByName, not findByName: the derived single-result form throws
+        // IncorrectResultSizeDataAccessException on a duplicated catalogue row, which would be a
+        // second 500 hiding behind the one SH325 came to fix (SH321's shape, third occurrence).
+        ShWidget widget = shWidgetRepository.findFirstByName(name);
         if (widget == null) {
-            throw new IllegalStateException(
-                    "Widget '" + name + "' is not seeded; cannot create the render post types");
+            throw new UnseededWidgetException(name);
         }
         return widget;
+    }
+
+    /**
+     * The instance's widget catalogue is missing a row this model needs (SH325).
+     *
+     * <h2>Why it teaches instead of throwing</h2>
+     *
+     * <p>This used to be an {@code IllegalStateException} — a <b>500</b> — and it was reachable on
+     * every install older than SH252: the catalogue was seeded only when it was entirely empty, and
+     * only inside {@code ShOnStartup}'s first-time gate, so {@code Ace Editor - CSS} never arrived
+     * and SH183's render model could not be created at all. The seeding is fixed, which makes this
+     * branch nearly unreachable — and that is exactly the state SH189 warns about: nobody expected
+     * the branch to be reached, so the server knew precisely which widget was missing and answered
+     * with the least useful thing available.</p>
+     *
+     * <p>A <b>409</b> rather than a 500 because the caller can act on it: restarting the instance
+     * now seeds what is absent, and the widget can be created directly if a restart is not
+     * available. It names the widget, because "not seeded" without the name sends the reader
+     * hunting through a field table.</p>
+     */
+    public static class UnseededWidgetException extends ShTeachingException {
+
+        public UnseededWidgetException(String widgetName) {
+            super(ShProblem.conflict("widget-not-seeded",
+                            "Widget '" + widgetName + "' is missing from this instance's catalogue")
+                    .withDetail("The render post-types (PageLayout, Region, Theme) declare a field "
+                            + "backed by widget '" + widgetName + "', and no row of that name "
+                            + "exists here. The widget catalogue is code-owned and seeded at "
+                            + "startup; an instance created before this widget was added has been "
+                            + "missing it since (SH325).")
+                    .withFix("Restart the instance — the catalogue is seeded per widget on every "
+                            + "startup, so the missing row is created. If a restart is not "
+                            + "available, create it with POST /api/v2/widget and retry.")
+                    .withExample("POST /api/v2/render/post-types"));
+        }
     }
 
     private FieldSpec field(String name, String label, String widget, int ordinal, boolean required) {

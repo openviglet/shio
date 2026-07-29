@@ -8,6 +8,8 @@
  */
 package com.viglet.shio.onstartup;
 
+import java.util.List;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -65,13 +67,30 @@ public class ShOnStartup implements ApplicationRunner {
 	@Transactional
 	public void run(ApplicationArguments arg0) throws Exception {
 
+		// SH325 — the widget catalogue is seeded on *every* startup, outside the first-time gate.
+		//
+		// It is the one seed that must be: the catalogue is closed and code-owned (a widget is a
+		// Java class plus a React component, so a curator never adds one), and a release that adds
+		// a widget has no other way to reach an instance that already exists. SH252's
+		// `Ace Editor - CSS` is what proved it — inside this gate, POST /api/v2/render/post-types
+		// answered 500 on every install older than the feature, and SH289's `reconcile`, the verb
+		// written to repair exactly that, failed identically.
+		//
+		// Safe because `createDefaultRows` is per-widget find-or-create and touches nothing that
+		// exists. The other seeds stay inside the gate deliberately: a locale, a group, a user and
+		// a config var are all things an operator legitimately edits or deletes, so re-creating
+		// them on boot would undo a decision.
+		List<String> widgets = shWidgetOnStartup.createDefaultRows();
+		if (!widgets.isEmpty()) {
+			log.info("Widget catalog: created {}", widgets);
+		}
+
 		if (!shConfigVarRepository.existsByPathAndName(shConfigProperties.getSystem(),
 				ShConfigVarOnStartup.FIRST_TIME_NAME)) {
 
 			log.info("First Time Configuration ...");
 
 			shLocaleOnStartup.createDefaultRows();
-			shWidgetOnStartup.createDefaultRows();
 			shGroupOnStartup.createDefaultRows();
 			shUserOnStartup.createDefaultRows();
 			shAuthProviderVendorOnStartup.createDefaultRows();

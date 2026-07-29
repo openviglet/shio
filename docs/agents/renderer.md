@@ -21,6 +21,19 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   reachable only by whoever can restart the JVM. Because they are posts, `post.upsert`, the SH68
   package, the file projection and `shio verify` all work on them for free; the 2018
   `openviglet/bootstrap-site` export renders with **no migration**.
+  **The widgets those fields reference are seeded per widget, on every startup (SH325).** They used
+  to be seeded per *catalogue* — `if (findAll().isEmpty())` — and inside `ShOnStartup`'s first-time
+  gate, which are **two** guards where the task named one: on any instance older than SH252's
+  `Ace Editor - CSS`, this endpoint answered a **500** (`Widget '…' is not seeded`) and SH289's
+  `reconcile`, the verb written to repair exactly that, failed identically because both read
+  `specsFor`. One reader, one bug, both doors. That is SH152's rule at the wrong **granularity**: a
+  widget catalogue is closed and code-owned (a widget is a Java class plus a React component), so
+  find-or-create per row is safe and is the only way a release that adds a widget reaches an instance
+  that already exists. It is **additive only** (SH289's rule again — changing a seeded row is a
+  different decision, and removing one is a migration, which is why the SH60-deprecated `reCAPTCHA`
+  row is still served on old instances), and the remaining refusal is a teaching **409**
+  (`widget-not-seeded`) naming the widget and the restart, because the branch is now nearly
+  unreachable and that is precisely the state SH189 warns about.
 - **A page finds its layout through `site.postTypeLayout`**, read as the flat
   `{"<post type>": "<layout title>"}` map the one shipped example used. The
   `ShSitePostTypeLayouts` array (`format`/`mimeType`/`cacheTTL`) is the extension it evidently

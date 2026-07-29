@@ -3129,29 +3129,9 @@ Three of the eight are a route that only a browser can take, three are a vocabul
 guess at, one is a plan that cannot describe its own first step, and one is a bootstrap that fails on
 every instance older than the feature.
 
-### The bootstrap fails on every existing instance (SH325)
-
-`ShWidgetOnStartup.createDefaultRows()` guards the **entire** widget catalog with
-`if (shWidgetRepository.findAll().isEmpty())`. So SH252's `Ace Editor - CSS` is created only on a
-brand-new database, and on every instance that predates it `POST /api/v2/render/post-types` throws
-`IllegalStateException: Widget 'Ace Editor - CSS' is not seeded` — a **500**. SH183's whole render
-model is therefore uncreatable on any existing install, which is where every real user is.
-
-The sharpest part: **SH289's `reconcile` fails identically.** That verb exists precisely to repair an
-older instance's render model, and it is broken by the same defect it was written to repair — because
-both go through `specsFor`, which SH289 deliberately made the one field table. One reader, one bug,
-both doors.
-
-This is SH152's provision-never-upsert rule applied at the wrong **granularity**. Post-types are
-provisioned per type ("`ensure` creates what is absent"); widgets are provisioned per *catalog*. And
-unlike a post-type, a widget catalog is closed and code-owned — a curator never adds one — so
-per-widget find-or-create is both safe and obviously correct. The same guard is why an
-SH60-deprecated `reCAPTCHA` row is still being served by `GET /api/v2/widget` on this instance:
-nothing has ever revisited a catalog that is not empty.
-
-Second half: the `IllegalStateException` should be a teaching refusal. The code knows exactly which
-widget is missing and exactly what to run — that is SH189's bodiless-400 lesson, and it is a 500 here
-only because nobody expected the branch to be reachable.
+> ✅ **SH325 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The catalogue is seeded per widget
+> and outside `ShOnStartup`'s first-time gate — **there were two guards and this section named
+> one**, which is SH322's lesson a third time: fixing the reported line would have changed nothing.
 
 ### Three routes only a browser can take (SH326, SH327, SH328)
 

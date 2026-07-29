@@ -48,16 +48,19 @@
 > instrument that finds every other break is the deliverable, and it lands before the fixes.* So
 > do not work SH325–SH337 by hand first — SH338 enumerates them and finds the ones nobody has hit.
 >
+> ✅ **SH325 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: the widget catalogue is seeded per
+> widget on every startup, so the render model is creatable on an existing instance — and there were
+> **two** guards where the entry named one.
+>
 > ✅ **SH338 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: **52 features classified, 14 not
 > agent-reachable**, held as an asserted list. It did what it was filed to do — **four of the
 > fourteen had no task** (SH342–SH344), and one (`reviewQueue`) turned out to be a decision rather
 > than a gap.
 
-1. **SH325** — the blocker: no pre-existing instance can create the render model at all.
-2. **SH339** — the stateless-reachability lint (the class behind SH327, SH335, and the shipped SH170).
-3. **SH340** — first-attempt success as a measured number (the class behind SH331).
-4. **SH342–SH344** — the reachability gaps SH338's inventory found that nothing had named.
-5. Then the rest of SH326–SH337, in whatever order SH338's output argues for.
+1. **SH339** — the stateless-reachability lint (the class behind SH327, SH335, and the shipped SH170).
+2. **SH340** — first-attempt success as a measured number (the class behind SH331).
+3. **SH342–SH344** — the reachability gaps SH338's inventory found that nothing had named.
+4. Then the rest of SH326–SH337, in whatever order SH338's output argues for.
 
 > **Deprioritized deliberately:** SH258, SH296, SH317, SH318 and SH324 all audit the audits — each
 > correct, all second-order, and queued behind the four above, because reachability has zero
@@ -437,7 +440,6 @@
 - 📋 **SH258** (deps: SH255 ✅, SH257 ✅) **A declared refusal is not checked for being the *right* refusal** — SH255's table asserts "the value comes back exactly, or the loss is declared", and a **throw** satisfies the declared branch whatever it says. That is how the site-name whitespace defect got through the very run that was extending the table to the frontmatter: `siteDir` trimmed, `parsePost` then refused the file's own path, and the property held — a refusal was declared and a refusal happened. It was found by *reading* the message, which is the one step a table does not take. The fix is to make a `DECLARED` entry name the refusal it expects (a pattern the thrown message must match), so "refused" stops being one outcome and becomes N — the same reason SH80 made every 4xx carry a `fix` rather than a status. It is the difference between a guard that proves a value is not silently lost and one that proves the operator is told something true about it. → §XVI.13
 - 📋 **SH259** (deps: SH247 ⏳, SH183 ✅) **A search results page needs the reader's query, and the model holds no request** — SH247's `{{#search q=…}}` takes a term the *template* supplies, which is a tag page or a curated collection and is not the thing an author means by "search". The results page needs `?q=`, and the render model deliberately has no request in it: SH183's whole non-goal resolution was that a layout is content and must not have the raw `HttpServletRequest` in scope, which is what made FSP's engine a sandboxing liability. So the question is not how to pass a parameter but **what a template is allowed to know about the request** — the narrow answer is one `param` frame holding query-string values as strings, read-only, never headers or cookies, which is enough for search, pagination and a filter and is nothing like a request object. Two things to settle: whether a `no-store` preview varying by query string needs anything said about caching when preview is not delivery (probably not, but it is the first render whose output depends on something other than content), and whether a value reaching a template unescaped is a stored-XSS surface the way it would be in a front end — Handlebars escapes `{{q}}` by default, so the risk is an author's `{{{q}}}`, and a write-time refusal (SH192's machinery) is available where a front end would have none. → §XV.19
 - ⏳ **SH275** (deps: SH274 ✅) **The load-bearing dependency premises are asserted; the rest are declared** — ✅ the two that pass the bar are done → [CHANGELOG.md](CHANGELOG.md) Block P: an unconfigured Handlebars *does* walk a bean and *does* resolve a partial to a classpath path, so SH183's two guards are provably guarding something. What remains is the judgement pass over the rest of §XVI.27's table — deciding which are load-bearing rather than asserting all of them — plus the finding that `{{secret.class.name}}` is blocked by the library itself, so half of one existing assertion proves less than it appears to. → §XVI.27
-- 📋 **SH325** (deps: SH252 ✅, SH289 ✅) **The widget catalogue is seeded only into an empty database, so no pre-existing instance can create the render model** — `POST /api/v2/render/post-types` throws `IllegalStateException: Widget 'Ace Editor - CSS' is not seeded` (a **500**), and SH289's `reconcile` fails identically because both read `specsFor`. Seed per widget; make the refusal teach. → §XVI.58
 - 📋 **SH326** (deps: SH183 ✅, SH325 📋) **An MCP-only client cannot create the render model** — no tool and no CLI command reach `/render/post-types`, while the manifest reports `serverRender: true` (SH160's half-truth again). An op on the existing write surface, not a twelfth tool — the cap is 12 with 11 used. → §XVI.58
 - 📋 **SH327** (deps: SH167 ✅) **`/api/v2/render/**` is not session-narrowed, and its 403 is bodiless** — a Basic-auth caller must walk the CSRF dance by hand and is told nothing. SH167's matcher plus a teaching refusal. → §XVI.58
 - 📋 **SH328** (deps: SH184 ✅, SH193 ✅) **`postTypeLayout` is the one edge that makes a site render and no agent op can write it** — an agent builds theme, regions, layout and pages and cannot bind them, while SH272's own convention line instructs the write. Per-key fill following SH184, never a replace. → §XVI.58
