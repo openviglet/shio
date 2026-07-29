@@ -25,10 +25,16 @@ the live backlog is the per-block follow-ups and Blocks A–G's remaining SH44�
 **Counting the backlog is a script, not a grep.** `python scripts/status-roadmap.py`
 (or `status-roadmap.cmd` from the repo root) parses `ROADMAP.md` and reports the four
 markers per Block, with totals — the measurement SH341 made by hand. It counts list
-bullets only, so the legend table and the `> ✅ …` shipped pointers cannot inflate it;
-`--tasks` lists each task with its line number, `--status <DES|IDEA|PART|WIP>` narrows,
-and `--json` is for anything programmatic. If the totals ever look wrong, suspect a task
-line that is not a bullet before you suspect the parser.
+bullets carrying one of the four active markers **and** a bold `**SH<n>**`, so shipped
+work cannot inflate it: rule 1's `> ✅ … shipped` pointers are not bullets, the legend
+table is not a bullet, and `- ✅ **SH22**` leads with a marker the script does not count.
+A `(deps: SH183 ✅)` annotation inside an active line is not a status and does not
+change its marker. `--tasks` lists each task with its line number,
+`--status <DES|IDEA|PART|WIP>` narrows, `--json` is for anything programmatic, and
+**`--audit`** prints every marker-bearing line it did *not* count with the reason —
+including the one dangerous shape, a bullet with a marker and no `**SH<n>**`, which
+would otherwise be dropped in silence. Reading 97 active lines across 10 blocks at
+2026-07-29: 38 📋 · 54 💭 · 5 ⏳ · 0 🛠, with 44 lines excluded.
 
 **Before you quote a benchmark number, know which way it moved and why.** Blocks N and O both
 made the *baseline* lean rather than the agent path fast — aligning the console reads on the

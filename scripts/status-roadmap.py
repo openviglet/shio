@@ -49,11 +49,28 @@ FENCE_RE = re.compile(r"^\s*(```|~~~)")
 PART_RE = re.compile(r"^#[ \t]+(.*\S)")
 GROUP_RE = re.compile(r"^##[ \t]+(.*\S)")
 
+# --- the audit's shapes: every other way a marker reaches a line ----------------
+# A shipped/superseded bullet (`- ✅ **SH22** …`) and a shipped pointer
+# (`> ✅ **SH191 has shipped** → …`) must never be counted; a bullet that carries
+# an active marker but no bold SH id would be dropped *silently*, which is the one
+# failure this script could have and not show. --audit names all three.
+SHIPPED_MARKERS = ["✅", "⛔"]
+SHIPPED_BULLET_RE = re.compile(r"^[ \t]*-[ \t]+(" + "|".join(SHIPPED_MARKERS) + r")️?[ \t]")
+POINTER_RE = re.compile(
+    r"^[ \t]*>[ \t]*(" + "|".join(SHIPPED_MARKERS + MARKERS) + r")️?[ \t]"
+)
+LEGEND_RE = re.compile(r"^[ \t]*\|[ \t]*(" + "|".join(MARKERS) + r")️?[ \t]*\|")
+SUSPECT_RE = re.compile(r"^[ \t]*-[ \t]+(" + "|".join(MARKERS) + r")️?[ \t]")
+
 DEFAULT_ROADMAP = Path(__file__).resolve().parent.parent / "docs" / "ROADMAP.md"
 
 
-def parse(path: Path) -> list[dict]:
-    """Return one dict per task line, in document order."""
+def parse(path: Path, audit: list[dict] | None = None) -> list[dict]:
+    """Return one dict per task line, in document order.
+
+    When `audit` is given, append every marker-bearing line that was *not* counted,
+    tagged with why — so "is it counting shipped tasks?" is answerable by the tool.
+    """
     tasks: list[dict] = []
     part = ""
     group = "(no group)"
@@ -86,6 +103,21 @@ def parse(path: Path) -> list[dict]:
                     "nested": bool(m.group("indent")),
                 }
             )
+            continue
+
+        if audit is None:
+            continue
+        if SHIPPED_BULLET_RE.match(raw):
+            why = "shipped/superseded bullet — excluded"
+        elif POINTER_RE.match(raw):
+            why = "blockquote pointer — excluded"
+        elif LEGEND_RE.match(raw):
+            why = "legend table row — excluded"
+        elif SUSPECT_RE.match(raw):
+            why = "LOOKS LIKE A TASK BUT HAS NO **SH<n>** — NOT COUNTED"
+        else:
+            continue
+        audit.append({"line": lineno, "group": group, "why": why, "text": raw.strip()})
     return tasks
 
 
@@ -95,7 +127,7 @@ def short_group(name: str) -> str:
     return head if len(head) <= 46 else head[:45] + "…"
 
 
-def render(tasks: list[dict], show_tasks: bool) -> str:
+def render(tasks: list[dict], show_tasks: bool, name: str = "ROADMAP.md") -> str:
     groups: dict[str, Counter] = {}
     order: list[str] = []
     part_of: dict[str, str] = {}
@@ -149,9 +181,32 @@ def render(tasks: list[dict], show_tasks: bool) -> str:
                 out.append(f"── {current}")
             out.append(
                 f"  {t['status']} {SHORT[t['status']]:<5} {t['id']:<12} {t['title']}"
-                f"  (ROADMAP.md:{t['line']})"
+                f"  ({name}:{t['line']})"
             )
 
+    return "\n".join(out)
+
+
+def render_audit(skipped: list[dict], name: str) -> str:
+    """Summarise, then list, every marker-bearing line that was not counted."""
+    out = ["", "Audit — marker-bearing lines NOT counted"]
+    by_reason: dict[str, list[dict]] = {}
+    for s in skipped:
+        by_reason.setdefault(s["why"], []).append(s)
+
+    for why, rows in by_reason.items():
+        out.append(f"  {len(rows):>4}  {why}")
+
+    suspects = [s for s in skipped if s["why"].startswith("LOOKS LIKE")]
+    if suspects:
+        out.append("")
+        out.append("  These would be invisible to the count — fix the line or the parser:")
+        for s in suspects:
+            out.append(f"    {name}:{s['line']}  {s['text'][:110]}")
+    else:
+        out.append("")
+        out.append("  No task-shaped line was dropped: every bullet with an active marker")
+        out.append("  carries a **SH<n>** id and is counted above.")
     return "\n".join(out)
 
 
@@ -162,6 +217,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--file", type=Path, default=DEFAULT_ROADMAP, help="roadmap path")
     ap.add_argument("--tasks", action="store_true", help="list every task line too")
+    ap.add_argument(
+        "--audit",
+        action="store_true",
+        help="show every marker-bearing line that was NOT counted, and why",
+    )
     ap.add_argument("--json", action="store_true", dest="as_json", help="machine-readable output")
     ap.add_argument(
         "--status",
@@ -200,7 +260,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
 
-    tasks = parse(args.file)
+    skipped: list[dict] = []
+    tasks = parse(args.file, audit=skipped if args.audit else None)
     if wanted:
         tasks = [t for t in tasks if t["status"] in wanted]
 
@@ -223,13 +284,16 @@ def main(argv: list[str] | None = None) -> int:
                     "counts": {m: total[m] for m in MARKERS},
                     "groups": groups,
                     "tasks": tasks,
+                    **({"notCounted": skipped} if args.audit else {}),
                 },
                 ensure_ascii=False,
                 indent=2,
             )
         )
     else:
-        print(render(tasks, args.tasks))
+        print(render(tasks, args.tasks, args.file.name))
+        if args.audit:
+            print(render_audit(skipped, args.file.name))
     return 0
 
 
