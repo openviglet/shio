@@ -3381,6 +3381,29 @@ the cheap one may be the one that has to be undone.
 > ceiling. It also sharpens **SH317**, filed as "nobody has counted the cost": the cost includes
 > correctness, not only seconds.
 
+### XVI.65 Export answers a bodiless 500, and the kind that would fix it now exists (SH349)
+
+SH189 fixed the bodiless 400 on `POST /api/v2/import`. Nothing was done about the direction the same
+exception travels the other way, and SH267 measured it while classifying the throw sites: three of
+the eight kinds — `MANIFEST_UNWRITABLE`, `ARCHIVE_UNWRITABLE`, `POST_DATA_INVALID` — are reachable
+only from `GET /api/v2/site/{id}/export`, and that endpoint catches nothing. `ShApiExceptionHandler`
+handles `ShTeachingException` and four Spring exceptions; `ShExchangeException` is not among them, so
+an export failure is a **500 with no body**, which is the defect SH189 exists to have removed. The
+console's "Download" button is the caller, and what a curator sees is a failed download.
+
+**The interesting half is not the wrapper.** Two of the three kinds are genuinely internal (a temp
+directory that could not be written is not the caller's business, and the honest answer is a 500 that
+carries an SH190 incident rather than advice nobody can act on). The third is not internal at all:
+`POST_DATA_INVALID` on the export path means **one post's `data` column is not JSON**, which is a
+content defect the caller can fix — and the throw site knows the row it was reading and discards it.
+So the shape is probably a teaching 409 naming the post's address, not a 400 about the request, and
+the work is at the `throw` rather than at the endpoint. That is SH267's lesson applied one level
+further: a kind made the classification honest, and the next thing thrown away at the same `throw` is
+*which post*.
+
+Worth asking first whether `shio verify` should be reporting an unparseable `data` before an export
+ever fails on it — a defect found by a 500 during a download is a defect found late.
+
 ### XVI.64 SH348 is four layers deep and the op is the last one — measured (SH348)
 
 §XVI.64 predicted that "the file projection decides it, not the op", and said the next step was to
