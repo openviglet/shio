@@ -225,6 +225,43 @@ class ShEditorBridgeTest {
                 .contains("frameOrigin");
     }
 
+    /**
+     * SH350 — the published external bridge obeys the same rule, asserted from the suite that runs.
+     *
+     * <p>{@code @viglet/shio-editor-cors} is the home for external editing (SH304 established that,
+     * and it is why deleting the server's copy cost no capability). It posted to {@code "*"} and read
+     * {@code event.data.type} without ever looking at {@code event.origin}, so any page framing a
+     * front end that included it could ask for the content map and rewrite the DOM.</p>
+     *
+     * <p>The guard lives here rather than in the JS workspace <em>on purpose</em>: this is the suite
+     * the build gates on, and the sibling test above already reads the console's TSX for the same
+     * rule — one instrument covering all three implementations beats three that run at different
+     * times. What is still missing is a <b>behavioural</b> test of the bridge in a DOM, which needs a
+     * harness this workspace does not have; that decision is SH306's and is not pretended here.</p>
+     */
+    @Test
+    @DisplayName("SH350: the published external bridge pins its origin in both directions")
+    void thePublishedBridgePinsItsOrigin() throws IOException {
+        String source = Files.readString(
+                Path.of("..", "shio-js-sdk", "src", "shio-editor-cors.ts"), StandardCharsets.UTF_8);
+
+        assertThat(source)
+                .as("outbound: the message carries page content, so \"*\" publishes it")
+                .doesNotContain(", \"*\")");
+        assertThat(source)
+                .as("inbound: sh:request-content answers with the whole content map and "
+                        + "sh:content-patch rewrites the DOM, so the sender has to be the shell")
+                .contains("event.origin !== state.parentOrigin");
+        assertThat(source)
+                .as("""
+                        and it has to be *told* which origin: a framed page cannot work it out \
+                        (document.referrer is empty on some navigations, window.parent.location \
+                        throws cross-origin). Inert without it, which is the rule SH185 set for the \
+                        injected bridge - stated by the meta name it reads.""")
+                .contains("urn:shio:system:editor-origin")
+                .contains("if (!state.parentOrigin)");
+    }
+
     @Test
     @DisplayName("the script speaks exactly the four messages the console implements")
     void theProtocolMatchesTheConsole() {

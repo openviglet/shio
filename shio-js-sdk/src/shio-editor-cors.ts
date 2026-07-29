@@ -19,6 +19,16 @@ interface EditorState {
   connectionUrl: string | null;
   siteName: string | null;
   folderPath: string | null;
+  /**
+   * The editor shell's origin, and the bridge is inert without it (SH350).
+   *
+   * It has to be *told*: a framed page cannot work out who framed it -
+   * `document.referrer` is empty on some navigations and `window.parent.location`
+   * throws cross-origin - which is why the server-injected bridge is handed
+   * `data-shio-editor-origin` at render time. This package is included by the front
+   * end itself, so it comes from the same meta tags the connection does.
+   */
+  parentOrigin: string | null;
 }
 
 interface ActiveEditor {
@@ -65,6 +75,15 @@ interface EditorMessage {
 const MODE_PREVIEW = "preview" as const;
 const MODE_EDIT = "edit" as const;
 
+/**
+ * Where the editor shell's origin comes from (SH350).
+ *
+ * A meta tag rather than a script attribute, because this package is bundled by the front end
+ * rather than injected as a tag - and because that is where this bridge already reads its
+ * configuration (`urn:shio:system:connection`, `...:site`, `...:path`).
+ */
+const EDITOR_ORIGIN_META = "urn:shio:system:editor-origin";
+
 const state: EditorState = {
   mode: MODE_PREVIEW,
   selectedElement: null,
@@ -73,6 +92,7 @@ const state: EditorState = {
   connectionUrl: null,
   siteName: null,
   folderPath: null,
+  parentOrigin: null,
 };
 
 // ── Connection ────────────────────────────────────────────────────────────
@@ -192,11 +212,18 @@ function getComponentFields(el: HTMLElement): DomFieldInfo[] {
 
 function sendToParent(type: string, data: unknown): void {
   if (window.parent && window.parent !== window) {
-    window.parent.postMessage({ type, data }, "*");
+    // SH350 - never "*": this message carries page content, and "*" hands it to whatever
+    // origin framed the page. No origin means no conversation (see init).
+    if (!state.parentOrigin) return;
+    window.parent.postMessage({ type, data }, state.parentOrigin);
   }
 }
 
 function onParentMessage(event: MessageEvent): void {
+  // SH350 - the sender's origin, checked before anything is read. Without this, any page that
+  // frames this one could ask for the content map (`sh:request-content`) and rewrite the DOM
+  // (`sh:content-patch`); `event.data.type` was the only thing this looked at.
+  if (!state.parentOrigin || event.origin !== state.parentOrigin) return;
   if (!event.data || !event.data.type) return;
 
   const msg = event.data as EditorMessage;
@@ -633,6 +660,20 @@ function injectStyles(): void {
 function init(): void {
   // Only initialize if we're inside an iframe (loaded by the editor shell)
   if (window === window.parent) return;
+
+  // SH350 - and only if the page says which origin is allowed to drive it. A page that starts
+  // making things contenteditable, and answering questions about its content, for an unnamed
+  // parent is the defect this fixes; the server-injected bridge has had this rule since SH185.
+  state.parentOrigin = readMeta(EDITOR_ORIGIN_META);
+  if (!state.parentOrigin) {
+    // Deliberately loud rather than silent: a front end that upgraded this package and did not
+    // add the meta tag would otherwise see editing "just stop working" with nothing to read.
+    console.warn(
+      '[shio-editor] inert: add <meta name="' + EDITOR_ORIGIN_META +
+        '" content="https://your-console-origin"> so this page knows which origin may edit it.'
+    );
+    return;
+  }
 
   // Read connection metadata
   state.connectionUrl = readConnectionMeta();

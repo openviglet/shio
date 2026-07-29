@@ -9,6 +9,11 @@
   <meta name="urn:shio:system:connection" content="shio:http://localhost:2710">
   <meta name="urn:shio:system:site" content="viglet_corporate">
   <meta name="urn:shio:system:path" content="Home">
+  <!-- SH350 - which origin may drive the editor. The bridge is inert without it, because a
+       framed page cannot work out who framed it. This is the console's origin: the packaged
+       console is served by Shio itself, a console running from the Vite dev server is
+       http://localhost:5173. -->
+  <meta name="urn:shio:system:editor-origin" content="http://localhost:2710">
 </head>
 <body>
   <div id="root"></div>

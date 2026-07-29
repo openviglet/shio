@@ -70,7 +70,11 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   posted to `"*"` and never read `event.origin`; that script was a copy of the published
   `@viglet/shio-editor-cors` and is gone, along with the permitted path. **One bridge per producer**:
   this one for the markup the renderer emits, the npm package for a front end that writes its own
-  `data-sh-*` by hand — and the package still has both defects, which is **SH350**. The console pins the
+  `data-sh-*` by hand. **SH350 fixed the package too**: it reads
+  `<meta name="urn:shio:system:editor-origin">` and is **inert without it**, because a framed page
+  cannot work out who framed it — the same reason the injected script is handed
+  `data-shio-editor-origin`. All three implementations are asserted from `ShEditorBridgeTest`; a
+  *behavioural* DOM test is still missing and is SH306's decision. The console pins the
   iframe's origin and ignores anything else; the page is told its parent's origin on the script
   tag, because `document.referrer` is empty on some navigations and `window.parent.location`
   throws cross-origin. The script is **inert when not framed**. Injection happens *after* the

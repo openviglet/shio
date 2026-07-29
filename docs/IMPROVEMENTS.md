@@ -2821,32 +2821,6 @@ The part worth copying from SH273 is the **test**: a table asserting that the co
 and the rows in the document agree, because a hand-kept list of what a renderer emits drifts
 silently, and the failure direction is under-documentation nobody notices.
 
-### XVI.54 The published external bridge posts to `"*"` (SH350)
-
-> ✅ **SH304 shipped and corrected its own premise** → [CHANGELOG.md](CHANGELOG.md) Block P. It asked
-> which of two scripts should survive and offered "delete the old one" as *honest, and a capability
-> regression*. Measured, the regression does not exist: the external bridge has a published home,
-> **`@viglet/shio-editor-cors`** (665 lines, `data-sh-*`), and the copy under
-> `resources/universal-editor/` was a **duplicate** of it on the server's static surface. Two
-> vocabularies for two different *producers* — the renderer writes `data-shio-*`, an external front
-> end's author writes `data-sh-*` — is not P10 duplication; two copies of the same script are.
-
-What is left is a defect the removal only moved out of reach, and it is the sharper half:
-`@viglet/shio-editor-cors` **posts to `"*"`** (line 195) and its `onParentMessage` checks
-`event.data.type` and never `event.origin`. So any page that frames a front end including it can send
-`sh:request-content` and receive the whole content map, and send `sh:content-patch` to rewrite the
-DOM. `renderer.md` has claimed "neither side of the bridge uses `"*"`" since SH185, and that claim was
-true only of the half SH185 wrote.
-
-Two things make it its own task rather than part of SH304. It is **JS-workspace work on a published
-package**, and the fix is an **API change**: the script cannot know who framed it (`document.referrer`
-is empty on some navigations, `window.parent.location` throws cross-origin), so the parent origin has
-to be passed in — which is exactly what the server-injected bridge does with
-`data-shio-editor-origin`, and what an external front end would have to start doing. Worth settling at
-the same time whether it should read `data-shio-*` as well, so a front end that renders Shio's own
-markup can use one vocabulary.
-
-
 ### XVI.55 Nothing tests the bridge script, in any language (SH306)
 
 `render/shio-editor.js` is 170 lines implementing one side of the SH185 protocol, and it has **no

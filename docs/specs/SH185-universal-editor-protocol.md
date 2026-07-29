@@ -220,9 +220,10 @@ the `/universal-editor/**` permitted path. What remains is one bridge per *produ
 markup the renderer emits (`data-shio-*`), and the npm package for a front end that writes its own
 annotations by hand (`data-sh-*`) — deliberately out of this table, because it is not what the renderer
 emits. `ShEditorBridgeTest` now asserts that exactly one served script implements this protocol and
-that neither half posts to `"*"`. The published package still does both of the things this document
-forbids (posts to `"*"`, never reads `event.origin`): that is **SH350**, and until it lands, an
-external front end including it should treat its messages as readable by whatever framed the page.
+that neither half posts to `"*"`. **SH350** brought the published package under the same rule: it posts to the origin named by
+`<meta name="urn:shio:system:editor-origin">`, checks `event.origin` before reading a message, and is
+inert until the page declares that origin — a front end that includes the bridge has to add the tag,
+which is the external counterpart of the `data-shio-editor-origin` the server injects.
 
 ---
 
