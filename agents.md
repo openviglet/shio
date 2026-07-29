@@ -976,6 +976,14 @@ the pages and a tenth of the bindings is seven times cheaper, so the premise hol
 **uncached** on purpose — inside a read-only transaction SH311's cache takes 84 to 8, which is what
 production pays and is not what the claim is about.
 
+**A test that measures the whole instance may not share it, and `ShBenchmarkIsolationLintTest`
+enforces it (SH315).** Three source rules: a `@SpringBootTest` in the benchmark package declares its
+own `spring.datasource.url`; so does any test calling `verify(null, …)`, `context(null, …)` or
+`changes(null, …)`; and no two classes claim the same in-memory database. It exists because the
+convention was documented on four classes and broken five times (SH239, SH272, SH289, SH314, and two
+incident tests found while writing the lint) — always caught by accident, because the code is right
+and only the *measurement* is wrong.
+
 **Both boot their own in-memory database**: several of the responses they measure describe the
 *instance*, so on the shared test datasource the numbers grew with whatever post-types other
 tests created — the task benchmark measured 1616 tokens alone and 2243 in a full run against an

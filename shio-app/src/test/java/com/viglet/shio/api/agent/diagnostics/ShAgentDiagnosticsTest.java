@@ -32,7 +32,15 @@ import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
  *
  * @author Alexandre Oliveira
  */
-@SpringBootTest
+// Its own database, and its own context with it (SH315). Every assertion here reads the incident
+// log through an *instance-wide* `verify(null, "diagnostics", …)` and one of them asserts
+// `singleElement()` — so on the shared context any other test that recorded an incident would break
+// it, in whatever order the suite happened to run. Nothing did today; that is not a property, it is
+// a coincidence, and it is the fifth appearance of the shared-fixture lesson (SH239, SH272, SH289,
+// SH314).
+@SpringBootTest(properties =
+        "spring.datasource.url=jdbc:h2:mem:shio-diagnostics;DB_CLOSE_DELAY=-1;MODE=LEGACY;"
+                + "DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true")
 class ShAgentDiagnosticsTest {
 
     @Autowired

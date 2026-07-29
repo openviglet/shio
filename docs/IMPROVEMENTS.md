@@ -3129,29 +3129,31 @@ It is filed as an idea rather than a plan because it wants a measurement first: 
 assembly may be cheap enough that this is optimisation for its own sake, and this block has just
 spent three tasks establishing that a cost is measured before it is fixed.
 
-### XVI.57 A benchmark's fixture is instance-wide, and nothing enforces isolation (SH315)
+### XVI.57 Isolation has a price, and the list of what needs it is hand-kept (SH317, SH318)
 
-Four times a shared fixture has made one measurement an input to another:
+SH315's rule is right and it costs something. A distinct `spring.datasource.url` is a distinct
+**context cache key**, so every class that correctly isolates its database also boots its own Spring
+application context — twelve of them now, growing by one each time the rule is applied. That is the
+largest fixed cost in the Java suite and nobody has counted it. **SH317.**
 
-- **SH239** — a benchmark pair wrote into the folder another pair measured; one ratio read 26.2× or
-  11.8× depending on order.
-- **SH272** — a test asserting "this instance has no templates" was asserting what ran first.
-- **SH289** — an additive-only assertion survived a mutation because a sibling had already repaired
-  the fixture.
-- **SH314** — two large fixture sites pushed a neighbouring benchmark's three-site `verify` number
-  from 59 to 159, and it passed or failed on method order.
+Two directions, and the first may not exist: *share a context but not a database* would need a
+per-test schema or a reset that does not dirty the context, since the URL is the cache key; *accept
+it and measure it* at least tells the next person whether the thirteenth class costs two seconds or
+twenty. Surefire already prints per-class elapsed time, so the measurement is nearly free — and it
+belongs beside SH283's lesson that the suite's own numbers must come from the run rather than from
+`target/`.
 
-Every one was caught by accident. The fourth only because the number is printed on every run, which
-is itself a SH264 decision that happened to pay off immediately.
+**SH318** is the other half. The lint knows three instance-wide reads — `verify(null, …)`,
+`context(null, …)`, `changes(null, …)` — because those are the three that had already gone wrong.
+`find` with no site, the SH62 media listing, `GET /api/v2/site`, the SH16 post-type listing and
+`diagnostics` are instance-wide too, and a test asserting a count on any of them has the same latent
+order-dependence.
 
-The convention already exists and is already documented: `ShAgentTaskBenchmarkTest`,
-`ShAgentResponseBudgetTest`, `ShRenderSweepBenchmarkTest` and `ShTemplateGraphScaleBenchmarkTest` all
-boot a database of their own, each with a comment explaining why. What is missing is **enforcement** —
-a lint that fails a `@SpringBootTest` in the benchmark package which does not set its own
-`spring.datasource.url`. Ten lines, and it closes the class of defect rather than the instances.
-
-Worth pairing with **SH296**, which is the same lesson one level in: a `PER_CLASS` fixture shared
-between *methods* of one class.
+That list is hand-kept, which is precisely the shape SH260 removed for helpers and SH300 for DOM
+attributes. The honest version derives it from the surface: **a read whose site parameter is nullable
+is instance-wide by construction.** Worth doing when the third or fourth name gets added by hand —
+and worth writing down now, because the lint's message reads as though the list were exhaustive when
+it is a list of the ones that have already bitten.
 
 ---
 

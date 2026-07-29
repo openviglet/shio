@@ -45,7 +45,13 @@ import com.viglet.shio.persistence.repository.agent.ShAgentIncidentRepository;
  *
  * @author Alexandre Oliveira
  */
-@SpringBootTest
+// Its own database (SH315). Every assertion here reads the incident stream through an
+// *instance-wide* `changes(null, …)` and several assert `singleElement()` — so on the shared context
+// any other test that recorded an incident would break them, in whatever order the suite ran.
+// Nothing did today; that is a coincidence, not a property.
+@SpringBootTest(properties =
+        "spring.datasource.url=jdbc:h2:mem:shio-incidents;DB_CLOSE_DELAY=-1;MODE=LEGACY;"
+                + "DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true")
 class ShAgentDurableIncidentTest {
 
     @Autowired
