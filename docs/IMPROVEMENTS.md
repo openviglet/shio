@@ -3111,22 +3111,47 @@ cannot be "every address resolves". It is probably: resolvable, unless the rule 
 of ones that name an absent thing on purpose — SH255's `DECLARED` shape, where the declaration is
 the interesting artefact.
 
-### XVI.50 The "bounded by bindings, not pages" claim has never been measured (SH314)
+### XVI.50 Every caller asks the graph to rebuild itself (SH316)
 
-SH311 aimed at the digest sweep and made a three-site `verify` pass **2.3× cheaper** — 137 queries to
-59 — because `ShTemplateGraph` resolves through the same `templatesFor` path and now hits the cache.
+SH314 confirms the walk is bounded by bindings; SH311 makes the queries behind it nearly free inside
+one read-only transaction. Neither touches the shape above them: `ShTemplateGraph.of(site)` is called
+**once per question**.
 
-That is worth understanding rather than banking. It means the graph's cost was dominated by
-**re-resolution**, not by the per-binding walk SH251's argument assumes. And that argument is
-load-bearing in three places: SH193 computes the graph on demand instead of storing it *because* the
-cost is per binding; SH251 lints templates rather than pages for the same reason; SH262 attaches an
-impact to a read on the same basis.
+In a single `verify` pass that is `unusedIn`, `duplicateTitlesIn`, `missingThemes`, one `impactOf`
+per template post, and one `usedElsewhere` per site per finding — each assembling the same map of the
+same site. Since SH311 they share the underlying template lists, so what is left is the assembly:
+maps, sorts and set unions rather than queries.
 
-Nobody has measured the slope. The task is a benchmark that scales **bindings** and **pages**
-independently and reports both — a site with 2 bindings and 500 pages beside one with 50 bindings and
-20 pages. If the claim holds it stops being an argument and becomes a number. If it does not, three
-shipped designs are resting on something that is not true, which is exactly the shape SH290 found in
-a comment and SH164 found in a benchmark.
+The natural fix is SH311's, one layer up — memoize the assembled `ShSiteTemplateGraph` for the length
+of the transaction, with the same read-only condition making staleness unaskable. It is small.
+
+It is filed as an idea rather than a plan because it wants a measurement first: after SH311 the
+assembly may be cheap enough that this is optimisation for its own sake, and this block has just
+spent three tasks establishing that a cost is measured before it is fixed.
+
+### XVI.57 A benchmark's fixture is instance-wide, and nothing enforces isolation (SH315)
+
+Four times a shared fixture has made one measurement an input to another:
+
+- **SH239** — a benchmark pair wrote into the folder another pair measured; one ratio read 26.2× or
+  11.8× depending on order.
+- **SH272** — a test asserting "this instance has no templates" was asserting what ran first.
+- **SH289** — an additive-only assertion survived a mutation because a sibling had already repaired
+  the fixture.
+- **SH314** — two large fixture sites pushed a neighbouring benchmark's three-site `verify` number
+  from 59 to 159, and it passed or failed on method order.
+
+Every one was caught by accident. The fourth only because the number is printed on every run, which
+is itself a SH264 decision that happened to pay off immediately.
+
+The convention already exists and is already documented: `ShAgentTaskBenchmarkTest`,
+`ShAgentResponseBudgetTest`, `ShRenderSweepBenchmarkTest` and `ShTemplateGraphScaleBenchmarkTest` all
+boot a database of their own, each with a comment explaining why. What is missing is **enforcement** —
+a lint that fails a `@SpringBootTest` in the benchmark package which does not set its own
+`spring.datasource.url`. Ten lines, and it closes the class of defect rather than the instances.
+
+Worth pairing with **SH296**, which is the same lesson one level in: a `PER_CLASS` fixture shared
+between *methods* of one class.
 
 ---
 

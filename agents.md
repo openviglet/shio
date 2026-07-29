@@ -970,6 +970,11 @@ post-level listener sees (SH193's trap), and **a writing transaction gets no cac
 `isCurrentTransactionReadOnly()` on the line above the lookup rather than a convention. A *standalone*
 render is deliberately still 19 — independent calls share nothing — and the benchmark asserts that,
 so a cache that ever outlives a transaction fails there instead of arriving quietly.
+**And "bounded by bindings, not pages" is measured (SH314)**, because SH193, SH251 and SH262 all rest
+on it: 2 bindings + 60 pages graphs in **12** queries, 20 bindings + 6 pages in **84**. Thirty times
+the pages and a tenth of the bindings is seven times cheaper, so the premise holds. Measured
+**uncached** on purpose — inside a read-only transaction SH311's cache takes 84 to 8, which is what
+production pays and is not what the claim is about.
 
 **Both boot their own in-memory database**: several of the responses they measure describe the
 *instance*, so on the shared test datasource the numbers grew with whatever post-types other
