@@ -182,6 +182,23 @@ rule on a second identity. **`ShAddressResolver` refuses** with a teaching **409
 by `id:`, because an address is what a *write* takes and picking the first is how an edit lands on
 the wrong post. Before this, the derived `Optional` finder threw
 `IncorrectResultSizeDataAccessException` and eight call sites answered **500**.
+**The rule now covers locale, and a lint keeps it covered (SH323).** The locale-keyed finder was
+the same derived `Optional` one parameter along — SH321 fixed eight call sites and missed it, so the
+CDA's localized read still 500'd — and `ShFurlReaderLintTest` refuses the next one: a derived
+`Optional` over a `furl` fails the build, with `default` as the only hatch, because a default method
+reads the ordered `List` and *picks* rather than assuming the data. That order (**the lint before
+the fixes**) is SH322's habit in its first application.
+**And `duplicate-url` is deliberately locale-blind — that is the definition, not an oversight.** Two
+published translations at one URL look like legitimate content the lint wrongly flags, and the
+address grammar settles it the other way: `post:<site>/<furl>` carries **no locale**, so
+`ShAddressResolver` refuses the pair and `post.move` refuses the URL — the CMS cannot *name* either
+post, whatever tells them apart. A locale-aware lint would leave the agent path refusing content
+`verify` had just called clean, which is the worst failure available here. Locale-aware delivery is
+for a translation with its **own** URL, plus `availableLocales` linking the two — and the finding
+*says so* when the claimants differ by locale (appended, so an ordinary one stays byte-identical),
+because the message it had reads as carelessness to somebody who chose deliberately. The locales
+come from the cross-cutting URL index, never the loaded rows: a scoped run holds one of the two and
+cannot speak for the other (SH143, SH263).
 
 ### There is NO generic `DELETE /api/v2/object/{id}` endpoint
 Delete must be done by type: `/v2/post-unified/{id}` or `/v2/folder/{id}`.

@@ -31,7 +31,11 @@ name-keyed post-type surface).
 - **A friendly URL is not unique by construction (SH321).** The finder returns an
   ordered `List`: a reader that must serve something takes the first;
   `ShAddressResolver` **refuses** with a teaching 409, because an address is what a
-  *write* takes.
+  *write* takes. **A derived `Optional` over a `furl` fails the build** —
+  `ShFurlReaderLintTest`, `default` is the one hatch (SH323).
+- **`duplicate-url` is locale-blind on purpose (SH323).** An address carries no
+  locale, so two posts on one URL are unaddressable whatever tells them apart. A
+  translation needs its own URL.
 
 ## Guards that already exist
 
