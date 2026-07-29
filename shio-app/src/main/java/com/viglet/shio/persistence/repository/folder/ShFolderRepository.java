@@ -68,6 +68,33 @@ public interface ShFolderRepository extends JpaRepository<ShFolder, String> {
 	@Query("select f from ShFolder f where f.shSite = ?1 and f.rootFolder = ?2 and f.deletedDate is null")
 	Set<ShFolder> findByShSiteAndRootFolder(ShSite shSite, byte rootFolder);
 
+	/**
+	 * SH279 — a site's root folder, resolved the same way by every caller.
+	 *
+	 * <h2>Why this exists rather than eight {@code findFirst()}s</h2>
+	 *
+	 * <p>{@link #findByShSiteAndRootFolder} returns a {@code Set}, and eight call sites took the
+	 * first element of it — the address resolver, the CDA, the console's navigation and write
+	 * services, the exchange export twice, the post writer and the agent's site access. A
+	 * {@code Set} has no order, so "the first" was the database's choice, and SH278's lesson is
+	 * that such a choice is invisible on H2 and surfaces on somebody else's engine.</p>
+	 *
+	 * <p><b>A site has one root by construction</b> — {@code ShSiteWriteService} creates exactly one
+	 * and {@code ShFolderWriteService} nulls {@code shSite} on every child (SH128). That premise is
+	 * the reason this was harmless in practice, and SH263 is the reason it is not a defence: a title
+	 * was also unique in practice until it wasn't. So the order is stated rather than assumed, and
+	 * it costs one comparator.</p>
+	 *
+	 * <p>The bar SH279 sets is two questions — <em>does anything guarantee uniqueness, and is that
+	 * guarantee enforced?</em> Here the answer is "yes, by construction, and nothing checks it", so
+	 * the finder is ordered <em>and</em> {@code ShRootFolderReaderLintTest} keeps the raw
+	 * {@code Set} finder from being read directly again.</p>
+	 */
+	default java.util.Optional<ShFolder> findRootFolder(ShSite shSite) {
+		return findByShSiteAndRootFolder(shSite, (byte) 1).stream()
+				.min(java.util.Comparator.comparing(ShFolder::getId));
+	}
+
 	@Query("select f from ShFolder f where f.shSite = ?1 and f.name = ?2 and f.deletedDate is null")
 	ShFolder findByShSiteAndName(ShSite shSite, String name);
 

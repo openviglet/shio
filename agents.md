@@ -498,8 +498,15 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `{{file_url}}` and `currentFolder` now follow the render state, and `rootFolder` is ordered *and* has
   its "one root by construction" rule named, because that is the reasoning that held for a title until
   SH263 broke it. `resolveReference` needed no change — the shared `preferDraft` had already made it
-  deterministic, which is the payoff for putting the order in one writer. Call sites outside
-  `com.viglet.shio.render` are not swept yet.
+  deterministic, which is the payoff for putting the order in one writer.
+  **The sweep is finished, and it is one reader plus a lint (SH279)**:
+  `ShFolderRepository.findRootFolder(site)` orders before it picks, nine call sites use it, and
+  `ShRootFolderReaderLintTest` refuses a `findFirst`/`get(0)`/`min` over the raw
+  `findByShSiteAndRootFolder` — which returns a **`Set`**, so picking from it asked the database to
+  choose where a post lands and what a CDA listing describes. The lint **permits iterating** (the
+  exchange export walks every root) and refuses **picking**. It found the ninth call site itself, and
+  it was SH279's own first half: the render helper had added the comparator *inline*, leaving one
+  ordered reader and eight unordered ones — SH245's rule from the other side.
   **One consequence worth knowing before you debug a blank page: a PUBLISHED render now needs published
   templates** (**SH280**). `post.upsert` writes a draft and publishing is separate (P7), so a site
   built through the SH183 flow has draft templates until somebody publishes them — and such a site now

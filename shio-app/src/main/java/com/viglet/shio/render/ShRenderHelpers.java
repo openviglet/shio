@@ -439,13 +439,12 @@ public class ShRenderHelpers {
         if (site == null) {
             return Optional.empty();
         }
-        // `rootFolder` is a byte flag and a site gets exactly one, from `ShSiteWriteService` —
-        // guaranteed by construction and **not** enforced by a constraint or a lint. SH279's bar
-        // says name the rule or order the read; this does both, because "one by construction" is
-        // the reasoning that was true of a template's title until SH263 proved it was not.
-        return shFolderRepository.findByShSiteAndRootFolder(site, (byte) 1).stream()
-                .min(java.util.Comparator.comparing(folder ->
-                        folder.getId() == null ? "" : folder.getId()));
+        // SH279's second half found this one with its own lint: the first half added the
+        // comparator *here*, inline, which left the codebase with one ordered reader and eight
+        // unordered ones. `findRootFolder` is now the only place that picks, and it is where the
+        // "one root by construction" reasoning lives — SH245's rule, that extracting a rule means
+        // asking which callers should use it and not only which copies to delete.
+        return shFolderRepository.findRootFolder(site);
     }
 
     /**

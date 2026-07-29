@@ -292,8 +292,10 @@ public class ShAddressResolver {
     }
 
     private Optional<ShFolder> rootFolder(ShSite site) {
-        return shFolderRepository.findByShSiteAndRootFolder(site, ROOT_FOLDER).stream()
-                .min(Comparator.comparing(ShFolder::getId));
+        // SH279 — one reader for "the site's root", ordered there. This had the comparator
+        // already; sharing it is the other half of SH245's rule, that an extracted rule should be
+        // asked which callers now use it rather than only which copies to delete.
+        return shFolderRepository.findRootFolder(site);
     }
 
     private List<ShFolder> children(ShFolder folder) {

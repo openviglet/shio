@@ -99,8 +99,10 @@ public class ShPostUnifiedWriteService {
             ShSite site = shSiteRepository.findById(containerId)
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Folder or site not found: " + containerId));
-            return shFolderRepository.findByShSiteAndRootFolder(site, (byte) 1).stream()
-                    .findFirst()
+            // SH279 — the writer's landing folder was the database's choice too, which is the
+            // worst of the eight: a post created at a site id would have landed in whichever root
+            // came back, and where a post lives is not a thing to leave to a Set's iteration.
+            return shFolderRepository.findRootFolder(site)
                     .orElseThrow(() -> new IllegalStateException(
                             "Site " + containerId + " has no root folder"));
         });

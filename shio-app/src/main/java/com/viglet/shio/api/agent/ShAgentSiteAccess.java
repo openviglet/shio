@@ -100,8 +100,7 @@ public class ShAgentSiteAccess {
 
     /** The folder every sitemap path is relative to. */
     public Optional<ShFolder> rootFolder(ShSite site) {
-        return shFolderRepository.findByShSiteAndRootFolder(site, ROOT_FOLDER).stream()
-                .min(Comparator.comparing(ShFolder::getId));
+        return shFolderRepository.findRootFolder(site);
     }
 
     private static boolean matches(ShSite site, String wanted) {

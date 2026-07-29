@@ -460,8 +460,10 @@ public class ShCdaService {
     }
 
     private String rootFolderId(ShSite site) {
-        return shFolderRepository.findByShSiteAndRootFolder(site, ROOT_FOLDER).stream()
-                .findFirst()
+        // SH279 — was `findFirst()` over a Set: the delivery API's idea of "the root" was the
+        // database's choice, and a CDA listing is the one place where picking the other root would
+        // be visible to a visitor rather than to a curator.
+        return shFolderRepository.findRootFolder(site)
                 .map(ShFolder::getId)
                 .orElse(null);
     }

@@ -2550,52 +2550,6 @@ codebase.
 > runs against*. That is the case for deciding an order rather than discovering one, and it is why
 > SH279 sweeps for the same shape elsewhere.
 
-### XVI.31 A derived finder with no order is a latent P5 violation (SH279)
-
-SH278's finding generalises further than its fix. `postOfSystemType` took `findFirst()` over an
-unordered derived finder, so the row it returned was the database's choice — and the serious half of
-the resulting defect was **invisible on H2** and would have surfaced on somebody's PostgreSQL. Nothing
-in the suite could have caught it, because the suite runs on the engine that happened to be kind.
-
-The same shape appears wherever a derived Spring Data finder feeds a `findFirst`, a `get(0)` or an
-in-memory fold. From a first read:
-
-- `ShRenderHelpers.resolveReference` scans `findByShSite_IdAndStateIn` for a matching friendly URL;
-- `ShTemplateGraph.pageCount` walks the same finder;
-- `ShStaticFileService`'s post-type bootstrap uses `findFirstByName`.
-
-Most are harmless **because the result is unique in practice** — which is precisely the reasoning that
-was true of `postOfSystemType` until SH263 demonstrated that a title can be duplicated and nothing
-prevents it. "Unique in practice" is a premise about data, and SH275 is the argument for why premises
-of that kind should be enforced rather than believed.
-
-So the work is a sweep with a bar, and the bar is two questions: **does anything guarantee uniqueness,
-and is that guarantee enforced?**
-
-- Not guaranteed → order the query. It is one clause and it costs nothing.
-- Guaranteed → name the rule that enforces it, the way SH128's site invariant is both stated and
-  linted (`ShFolderSiteInvariantTest`). A guarantee nobody can point at is the same as none.
-
-Worth doing as a sweep rather than opportunistically, because the failure mode is environmental: it
-does not show up where it is written, it shows up on somebody else's database.
-
-> ⏳ **The render package is done** → [CHANGELOG.md](CHANGELOG.md) Block P. Two findings.
->
-> **One call site needed nothing, and that vindicated where SH278 put the order.**
-> `resolveReference`'s friendly-URL branch can match two posts — a URL's uniqueness is *reported* by
-> SH99 rather than enforced — and it was already deterministic, because the total order went into the
-> shared `preferDraft` rather than into each caller. Fixing a rule in one place fixed a call site
-> nobody had looked at, which is the return on SH245's "one writer per verb" that is usually asserted
-> and rarely demonstrated.
->
-> **The `rootFolder` case is the interesting shape.** Uniqueness *is* guaranteed — a site gets one
-> root from `ShSiteWriteService` — and it is enforced by nothing. So the bar's two answers were both
-> "yes and no", and the resolution was to do both halves: name the rule in a comment *and* order the
-> read. That is the right default when a guarantee is real but unenforced, because the cost of
-> ordering is a clause and the cost of being wrong is environmental.
->
-> The remaining call sites are outside `com.viglet.shio.render` and listed on the roadmap line.
-
 ### XVI.32 A published render now requires published templates (SH280)
 
 > ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth keeping.
@@ -3127,6 +3081,34 @@ Two fixes, and the cheap one is probably right:
 There is a real argument for doing neither: the manifest reports the ceiling, and this surface is
 designed for agents that read the manifest first. The population affected is exactly the caller that
 did not — which may be small enough to leave alone, but should be *decided* rather than defaulted.
+
+### XVI.31 The neighbouring case, and the habit the sweep taught (SH321, SH322)
+
+**SH321.** SH279 was about picking from an unordered set. The neighbouring case is a finder that
+cannot pick at all: `ShAddressResolver` resolves a `post:` address through
+`findByShSite_IdAndFurlAndState`, which returns an `Optional`, so two posts sharing a friendly URL
+make Spring Data throw `IncorrectResultSizeDataAccessException` — a **500** for a defect the instance
+lints as `duplicate-url` and has done since SH100.
+
+Loud beats silently picking one, so this is not urgent. It is wrong the way SH189's bodiless 400 was
+wrong: the server knows exactly what happened and answers with the least useful thing available. A
+teaching 409 naming both posts' `id:` addresses and pointing at `shio verify` costs nothing and turns
+a crash into the report that already exists.
+
+**SH322** is the process finding, and the more valuable one. SH279's body named three call sites from
+a first read and added "whatever a grep turns up". The grep — written as a lint — found **nine**, one
+of which the *previous half of the same task* had created by adding a comparator inline.
+
+That is not a documentation failure. It is evidence that "find the other call sites" is a job for an
+executable pattern rather than a reading, and this repository already knows that in three places:
+`ShByteStabilityLintTest`, `ShFolderSiteInvariantTest`, `ShAgentIncidentFramesTest`. What is missing
+is the habit stated:
+
+> **When a task's body says "and whatever a grep turns up", the grep is the deliverable — and it
+> lands as a lint before the fixes do.**
+
+Writing the lint first would have found the ninth site before it was written rather than after, and
+it costs nothing extra: the lint was going to exist anyway.
 
 ---
 
