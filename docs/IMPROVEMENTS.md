@@ -3327,6 +3327,103 @@ or not the preview is ever made navigable, which is why it is its own task.
 What is *not* an option is making `{{link}}` preview-aware. It is content-facing, so the same field
 would mean two different things in two renders — the coupling SH187 spent a task splitting apart.
 
+## XVI.59 Reachability has no instrument, and that is why the same defects keep coming back (SH338–SH341)
+
+This section is a strategy change, not a defect. It comes from asking why SH325–SH337 exist at all,
+given how carefully everything they touch was built.
+
+**The pattern.** Four exploratory builds have each produced 6–13 tasks — SH168–175 (the first
+end-to-end agent build), SH176–182 (driving the console over what that build produced), SH247–285
+(building the renderer) and SH325–337 (building a site over MCP). That method plainly works: it is the
+most productive thing in this repository's history. What it also does is find **the same classes
+repeatedly**:
+
+| first time | again |
+|---|---|
+| SH160 — `instanceMemory: true` was a half-truth "for exactly the clients the manifest informs" | SH326 — `serverRender: true`, identical shape |
+| SH170 — `POST /api/v2/site` needs session + CSRF, worked around in `e2e/provision.mjs` | SH327 (`/api/v2/render/**`) and SH335 (the editor demanding a `WRITE` token) |
+
+**Why they come back is structural.** This repository is unusually good at converting a defect into a
+build guard — eleven of them — and every single one guards *internal consistency*: the code agrees
+with itself (`ShByteStabilityLintTest`, `ShRootFolderReaderLintTest`, `ShFolderSiteInvariantTest`,
+`ShTenantJoinLintTest`), the code agrees with its own documentation (`ShRenderedDomContractTest`,
+`ShTemplateGrammarCoverageTest`, `ShHandlebarsAstPremiseTest`), or a decision was taken rather than
+inherited (`ShCsrfExemptionLintTest`, `ShRequestReadingConfigLintTest`, `ShBenchmarkIsolationLintTest`).
+
+Not one of them asks whether the **intended operator can reach the capability**. And not one of
+SH325–SH337 is a consistency defect — every one of them is a capability that exists, is internally
+consistent, and cannot be reached from where the product says its operator stands.
+
+So a consistency defect becomes a permanent guard, and a reachability defect becomes a task that is
+fixed once and guards nothing. **P1 — the law the product is named after — is the only one of the ten
+with no instrument**, while P3 has `ShAgentResponseBudgetTest` plus the task benchmark, P5 has the
+byte-stability lint, P6 has a `fix` on every 4xx and P10 has `ShConsoleShapeOverlapTest`.
+
+**The rule this argues for is SH322's, one level up.** SH322 established that when a task says "and
+whatever a grep turns up", the grep is the deliverable and it lands before the fixes. The same holds
+for laws: *when a review finds a law is being broken, the instrument that finds every other break is
+the deliverable.* Hence the ordering in the roadmap's priority queue — **SH338 before SH325–337**,
+because working thirteen known instances by hand leaves the fourteenth to the next exploratory build.
+
+**SH338** is the P1 conformance test, and its shape is `ShCsrfExemptionLintTest`'s rather than
+anything new: every `features` key the manifest reports `true` maps to a declared route, or is named
+in an exception list with the reason it is REST- or console-only. Both sides are already
+machine-readable — the manifest's `features` is a flat boolean map, MCP tools are auto-registered
+`ShMcpTool` beans — so this needs no new metadata. Three things to get right: a feature is not 1:1
+with a tool (`teachingErrors`, `conditionalReads` and `terseResponses` are properties of every route
+and belong in the exception list with that as the stated reason, not forced into a fake mapping); an
+exception that has become **unnecessary** must fail the build, or the list rots into blanket
+suppression (SH142's rule, and this is its fourth application); and the exception list is the real
+deliverable, because it is the first honest inventory of how far P1 is actually honoured.
+
+**SH339** is the narrower sibling. `ShCsrfExemptionLintTest` asks "is this blanket exemption a
+decision?" — the right question from the security side, which leaves the operator side unasked, and
+the recurring class above is the cost. The inverse assertion is that every mutating path outside
+`/console/**` is reachable by a stateless credential or names the reason a browser session is
+required. Worth keeping distinct from SH338: SH338 asks whether a capability has an agent route at
+all, SH339 asks whether the route it has can be used without a cookie. And a path that legitimately
+requires a session must still **refuse with a body** — a bodiless 403 is SH189's defect, and it is
+what made SH327 cost a CSRF dance to diagnose rather than a read.
+
+**SH340** closes the measurement gap, and it is the one that most directly serves the agent's own
+working cost. `ShAgentTaskBenchmarkTest` asserts call and token ratios over a canonical task, which
+means it measures a **correct script** — and is therefore structurally blind to SH331, since a script
+never sends `postType` for `type` or `addresses` for `address`. The session behind this block sent
+four wrong calls in about twenty-five. Two design points decide whether the metric means anything: the
+fixture must be driven the way a *naive* client would drive it, because writing it with the correct
+keys defeats the entire purpose; and a **silently dropped argument must count more heavily than a
+teaching error**, because a teaching error costs one round trip while a dropped argument (SH331's
+`scope`/`site` case) costs a wrong outcome nobody notices.
+
+### XVI.60 The roadmap became a history instead of a queue (SH341)
+
+Measured rather than asserted, which is the point: **95 active task lines averaging 142 words each**,
+against this project's own rule that a roadmap entry is *"≈1 sentence: what + why + pointer"*. Task
+bodies are **65%** of the document. The worst single line is 555 words — and six of the worst eight
+were added in the session that then noticed the problem, which is the useful part of the finding: the
+drift is not caused by carelessness but by writing the analysis where the analysis is freshest
+instead of where it belongs.
+
+The structural cause is that a task line and its `→ §` pointer are **redundant by design** — the
+pointer exists precisely so the line does not have to carry the reasoning — so nothing pushes back
+when the line grows. Every constraint here is enforced somewhere except this one: response sizes have
+a budget test, tool schemas have a ceiling, and `ShRenderedDomContractTest` fails when a table drifts
+from the code. A roadmap entry's length has only a sentence in `agents.md`.
+
+Two consequences worth separating. The **cost to a reader** is that picking work now means paging
+through prose, which is the opposite of what a queue is for. The **cost to correctness** is subtler:
+when the roadmap carries the full argument, IMPROVEMENTS stops being the single home for design
+rationale, and the two can then disagree — the failure mode this three-file split exists to prevent.
+
+The compression is lossless where the detail is already in IMPROVEMENTS, which is true of SH325–SH340
+by construction (§XVI.58 and §XVI.59 were written first, then the lines cut). It is *not* verified for
+the other 79, which is why **SH341** is a task rather than something done in one sweep: some of those
+lines may be the only place their reasoning exists, and compressing them blind would destroy it. The
+check is mechanical — every task with a `→ §` pointer whose section actually covers it can be cut to a
+sentence; a task whose pointer is missing or thin needs its rationale *moved* first. And the durable
+fix is the usual one for this repository: a length assertion, so the rule stops depending on whoever
+is writing the entry noticing it.
+
 ### The curator is already authenticated and the editor asks for a token anyway (SH335)
 
 Editing text inline and pressing *Salvar rascunho* answers:

@@ -1000,6 +1000,28 @@ Corollary, from SH322: **when a task says "and whatever a grep turns up", the gr
 deliverable** — it lands as a lint *before* the fixes, because that is what finds the call site
 nobody read. SH279's own first half created one of the nine sites its second half had to fix.
 
+**And the same rule holds for a law, not just a call site (SH338).** When a review finds a design
+law is being broken, the instrument that finds *every other* break is the deliverable, and it lands
+before the fixes. This is filed because the omission is measurable: eleven lints in this repository
+guard **internal consistency** — the code agrees with itself, or with its own documentation, or a
+decision was taken rather than inherited — and **none** guards *reachability*, whether the operator
+the product is designed for can actually invoke a capability. So a consistency defect becomes a
+permanent guard and a reachability defect becomes a task that is fixed once and guards nothing,
+which is why **P1 is the only one of the ten laws with no instrument** while P3 has the budget
+tests, P5 has `ShByteStabilityLintTest`, P6 has a `fix` on every 4xx and P10 has
+`ShConsoleShapeOverlapTest`. The cost is not hypothetical: SH160's `instanceMemory: true`
+half-truth came back as SH326's `serverRender: true`, and SH170's session+CSRF friction came back
+as SH327 and SH335 — the same classes, two blocks apart, each found by a human doing a build rather
+than by a build failing. **Before "fix the thirteen instances", ask what would have failed.**
+
+**A ROADMAP entry is one sentence: what + why + `→` pointer.** The reasoning belongs in
+IMPROVEMENTS.md, which is what the pointer addresses; a line that restates it makes the roadmap a
+history instead of a queue, and lets two files disagree about one design. Measured when it was
+noticed (SH341): 95 active task lines averaging **142** words, worst 555 — and six of the worst
+eight were written in the same session that then found the problem, so treat this as a drift the
+process invites rather than a lapse. If the analysis feels too big for the line, that is the
+signal it goes in IMPROVEMENTS, not that the line should grow.
+
 **The cost of all of it is measured, not asserted (Block M).** `ShAgentTaskBenchmarkTest`
 runs four canonical jobs over the agent surface *and* over the id-keyed console/CDA path and
 asserts both ratios; `ShAgentResponseBudgetTest` guards eleven canonical response sizes. Both
