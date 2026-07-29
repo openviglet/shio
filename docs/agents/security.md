@@ -13,8 +13,9 @@
 
 **Every exemption is session-narrowed, and the one that is not is argued (SH167).**
 `/api/v2/post-type`, `/api/v2/review/**`, `/api/v2/cda/**`, `/api/v2/agent/**`, `/mcp`, — since
-SH189 — `/api/v2/import` — since SH327 — `/api/v2/render/**` and — since SH344 —
-`/api/v2/preview-token` are wrapped in **`ShStatelessRequestMatcher`**: exempt for a caller holding no session cookie,
+SH189 — `/api/v2/import` — since SH327 — `/api/v2/render/**`, — since SH344 —
+`/api/v2/preview-token` and — since SH343 — `/api/v2/site-webhook/**` are wrapped in
+**`ShStatelessRequestMatcher`**: exempt for a caller holding no session cookie,
 CSRF-checked for one that does. A blanket exemption is only safe while no cookie-bearing
 client reaches the path, which was true of the post-type API right up to the commit (SH117)
 that pointed the React editor at it — and nothing in that commit would have noticed. The
@@ -46,10 +47,18 @@ configuration that **every mutating controller root is stateless-writable or cla
 the inventory: **25 roots, 8 writable**, and of the 17 that need a session, 5 are `AGENT_EQUIVALENT`
 (the capability has an address-native form — SH170's own resolution was to grow `site.upsert`, not to
 open `POST /api/v2/site` to a token), 9 are `CONSOLE_ADMIN` (an agent minting its own API token is the
-escalation Block L prevents), and **1 is a real gap**: `/api/v2/site-webhook` (SH343).
-`/api/v2/render/post-types` (SH327) and `/api/v2/preview-token` (SH344) were the other two and are
-closed — which is the only way an entry may leave this list: the lint failed until the note was
-removed. A path that becomes writable while
+escalation Block L prevents), and **the gap list is empty** since SH343.
+`/api/v2/render/post-types` (SH327), `/api/v2/preview-token` (SH344) and `/api/v2/site-webhook`
+(SH343) were the three, and each left the only way an entry may: the lint failed until the note was
+removed.
+
+**And SH343 found the limit both instruments share: neither asks what a newly-widened path
+*returns*.** Narrowing CSRF on `/api/v2/site-webhook` widens who reaches its `GET` from a console
+session to any token-authenticated caller — and that read was serializing the subscription's HMAC
+`secret` in plain text, because the controller returns the entity directly. So the exposure closed
+first (`@JsonProperty(WRITE_ONLY)`, lossless since the secret is caller-supplied and must equal the
+receiver's `SHIO_WEBHOOK_SECRET`). **A reachability change is also an access change**: ask what the
+path returns in the same commit as the matcher. A path that becomes writable while
 still listed fails the build — SH142's rule, so the inventory cannot rot. It is deliberately distinct
 from SH338's `ShAgentP1ConformanceTest`: that one asks whether a capability has an agent route at
 all, this one asks whether the route it has works without a cookie, and a capability can pass either

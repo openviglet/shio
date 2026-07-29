@@ -90,6 +90,23 @@ public class ShSecurityConfig {
      */
     private static final String PREVIEW_TOKEN_PATH = "/api/v2/preview-token";
     /**
+     * SH343 — webhook subscriptions. The agent reads its own delivery failures in
+     * {@code /agent/diagnostics} (SH103, with SH269's frames) and had no route to inspect, repair or
+     * remove the subscription that produced them: a diagnostic for a resource the reader cannot act
+     * on is SH190's defect one level up.
+     *
+     * <p><b>Narrowed only after the read stopped leaking.</b> This path returns {@code ShSiteWebhook}
+     * directly, and its HMAC {@code secret} serialized in plain text — measured. Narrowing widens who
+     * reaches that read from a console session to any token-authenticated caller, so the exposure was
+     * closed first ({@code @JsonProperty(WRITE_ONLY)}, lossless because the secret is caller-supplied).
+     * The order matters more than either change: <b>a reachability change is also an access change.</b></p>
+     *
+     * <p>Not a {@code webhook.*} batch op, for SH327's reason: every op on that surface is addressed
+     * ({@code site:}/{@code folder:}/{@code post:}), and a webhook has no SH79 address — an op there
+     * would be a verb with no subject.</p>
+     */
+    private static final String WEBHOOK_PATH = "/api/v2/site-webhook/**";
+    /**
      * SH189 — the exchange import. Narrowed rather than blanket for SH167's reason: the console
      * posts the multipart form with a session cookie and must stay CSRF-checked, while a
      * credential-based client (the CLI, a CI job) holds no cookie and cannot send a token. A
@@ -196,6 +213,9 @@ public class ShSecurityConfig {
                         // SH344 — see PREVIEW_TOKEN_PATH: the last step of SH184's answer, and it
                         // grants nothing an agent's own credential does not already carry.
                         new ShStatelessRequestMatcher(mvc.matcher(PREVIEW_TOKEN_PATH), sessionCookieName),
+                        // SH343 — see WEBHOOK_PATH. Narrowed only after the secret stopped coming
+                        // back on the read, because narrowing is what widens who can read it.
+                        new ShStatelessRequestMatcher(mvc.matcher(WEBHOOK_PATH), sessionCookieName),
                         new ShStatelessRequestMatcher(mvc.matcher(IMPORT_PATH), sessionCookieName),
                         // SH109 — same narrowed exemption, same reason (see REVIEW_PATH).
                         new ShStatelessRequestMatcher(mvc.matcher(REVIEW_PATH), sessionCookieName),

@@ -3376,14 +3376,23 @@ desired-state document cannot declare one. Making locale an addressing dimension
 model and touches every resolver, every lint, and SH323's own decision. Settle which before any code:
 the cheap one may be the one that has to be undone.
 
-**SH343 — the agent reads its own webhook failures and cannot touch the subscription.** SH103 put
-webhook delivery failures in `/agent/diagnostics` and SH269 gave them frames, so the agent is told
-precisely which subscription is failing and has no route to inspect, repair or remove it:
-`/api/v2/site-webhook` is undeclared and MCP-unreachable. That asymmetry is the interesting part —
-**a diagnostic for a resource the reader cannot act on is SH190's defect one level up** (the `fix`
-that named a log file the caller cannot open). Whether the answer is a declared route, a `webhook.*`
-batch op or an admission that this is console-shaped is undecided; what is not is that
-`webhooks: true` plus an incident feed is a promise the surface does not keep.
+> ✅ **SH343 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P, and it found something the task had not
+> predicted: the read returned the HMAC `secret` in plain text, so **the exposure had to close before
+> the narrowing** — a reachability change is also an access change, and "who can read this now" belongs
+> in the same commit as the CSRF matcher. Write-only is lossless because the secret is caller-supplied.
+> A declared route rather than a `webhook.*` op, for SH327's reason: every op on that surface is
+> addressed and a webhook has no SH79 address. Funded by pruning the two id-keyed twins of
+> `post.upsert`/`post.publish` from the index, so no ceiling moved.
+
+> **What the two instruments have been worth, five tasks in.** SH338 and SH339 were built before any of
+> these fixes, on the argument that working thirteen known instances by hand leaves the fourteenth to
+> the next exploratory build. Since then they have: named four gaps nobody had filed (SH342–SH344 and
+> the `locales` half); refused to let three entries outlive their fixes (SH327, SH344, SH343); forced
+> two budget decisions to be *answered* rather than deferred (which `/cda/**` and `/post-unified` rows
+> earn their place); and twice been wrong in a way worth recording — the stale check catches the
+> *predicted* fix rather than any fix (SH342), and neither instrument asks what a newly-widened path
+> **returns** (SH343). Both limits are now written into the tests themselves. **SH339's gap list is
+> empty; the P1 inventory is 10, from 14.**
 
 > ✅ **SH344 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Declared and CSRF-narrowed, with **no
 > new gate** (a `PREVIEW` token for one post grants draft read the caller already has), and **funded by

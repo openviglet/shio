@@ -11,6 +11,8 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -64,7 +66,24 @@ public class ShSiteWebhook implements Serializable {
     /**
      * Shared HMAC-SHA256 secret. Must equal {@code SHIO_WEBHOOK_SECRET} on the
      * receiver (e.g. {@code create-shio-app}'s {@code /api/revalidate}).
+     *
+     * <p><b>Write-only on the wire (SH343).</b> It used to serialize in plain text on every read —
+     * measured, not suspected: {@code GET /api/v2/site-webhook} handed every subscription's signing
+     * key to any authenticated caller, and this entity is returned directly by that controller. A
+     * signing secret read back is a signing secret anyone who can read the list can forge deliveries
+     * with.</p>
+     *
+     * <p>Never returning it is <b>lossless</b>, which is what makes this the right fix rather than a
+     * trade: the value is <em>caller-supplied</em> — it has to equal the receiver's
+     * {@code SHIO_WEBHOOK_SECRET}, so whoever sets it already knows it and the server has no reason
+     * to hand it back. That is also why this is not the usual "show it once on creation" pattern,
+     * which exists for secrets the server generates.</p>
+     *
+     * <p>Found while making the path reachable (SH343's own purpose): narrowing CSRF would have
+     * widened who reaches this read from a console session to any token-authenticated caller, so the
+     * exposure had to be closed <em>before</em> the reachability, not after. The order is the finding.</p>
      */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(name = "secret")
     private String secret;
 

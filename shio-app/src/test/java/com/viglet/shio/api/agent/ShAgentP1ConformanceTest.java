@@ -212,6 +212,11 @@ class ShAgentP1ConformanceTest {
         byFeature.put("previewTokens", route("/preview-token", "mints a short-lived PREVIEW token "
                 + "for one post of one site; the response's token is null when Shio previews the "
                 + "site itself, because /preview/** is already authenticated (SH184)"));
+        // SH343 — declared and CSRF-narrowed. The exposure it uncovered is the part to remember: the
+        // read returned the HMAC `secret` in plain text, so making the path reachable *first* would
+        // have widened who could forge deliveries. A reachability change is also an access change.
+        byFeature.put("webhooks", route("/site-webhook", "subscribe to content transitions; the "
+                + "secret is write-only, and delivery failures ride /agent/diagnostics"));
         byFeature.put("postTypesAsCode", route("/post-type/{name}", "the one name-keyed post-type "
                 + "surface (SH16/SH117), read and upserted over HTTP"));
 
@@ -270,9 +275,6 @@ class ShAgentP1ConformanceTest {
         byFeature.put("locales", new Delivery(Reach.REST_ONLY, "/post-unified/{id}/translate",
                 "SH53's translate is id-keyed, undeclared and has no address-native form — "
                 + "post.upsert takes no locale, so an agent cannot make a translation at all"));
-        byFeature.put("webhooks", new Delivery(Reach.REST_ONLY, "/site-webhook",
-                "/api/v2/site-webhook is undeclared and MCP-unreachable, so the agent sees webhook "
-                + "*failures* in diagnostics and cannot create, inspect or repair a subscription"));
         byFeature.put("postTypeMerge", new Delivery(Reach.REST_ONLY, "shio_apply.mergePostTypes",
                 "a deliberate trade, not an oversight: the opt-in is a body field on the blueprint "
                 + "apply, and adding it to shio_apply puts that tool over the SH132 per-tool ceiling "
@@ -410,8 +412,7 @@ class ShAgentP1ConformanceTest {
                         "reviewQueue",
                         "trash",
                         "universalEditor",
-                        "visualSnapshot",
-                        "webhooks");
+                        "visualSnapshot");
 
         assertThat(advertisedNow)
                 .as("a flag that is off claims nothing, so it cannot be a P1 break — but it must "
@@ -431,10 +432,11 @@ class ShAgentP1ConformanceTest {
                 .contains("shio_write", "shio_read", "shio_verify", "shio_remember")
                 .hasSizeGreaterThanOrEqualTo(11);
         assertThat(paths)
-                .contains("/agent/resolve", "/post-type/{name}", "/render/post-types")
+                .contains("/agent/resolve", "/post-type/{name}", "/render/post-types",
+                        "/site-webhook", "/preview-token")
                 .as("the paths a current exception awaits must still be absent, or the guard is "
                         + "asserting nothing")
-                .doesNotContain("/agent/import", "/agent/trash", "/site-webhook");
+                .doesNotContain("/agent/import", "/agent/trash", "/review/sessions");
     }
 
     private Set<String> toolNames() {

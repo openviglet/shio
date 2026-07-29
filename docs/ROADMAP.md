@@ -48,6 +48,10 @@
 > instrument that finds every other break is the deliverable, and it lands before the fixes.* So
 > do not work SH325–SH337 by hand first — SH338 enumerates them and finds the ones nobody has hit.
 >
+> ✅ **SH343 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: webhooks are declared and
+> CSRF-narrowed — and the read was **leaking the HMAC secret in plain text**, which had to close
+> first, because narrowing is what widens who can read it. **SH339's gap list is now empty.**
+>
 > ✅ **SH344 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: the preview token is declared and
 > CSRF-narrowed, and it was **funded by pruning two `/cda/**` rows** rather than by another budget
 > raise — SH327's raise is given back in full. The P1 inventory is **11 unreachable, from 14**.
@@ -94,7 +98,7 @@
 > fourteen had no task** (SH342–SH344), and one (`reviewQueue`) turned out to be a decision rather
 > than a gap.
 
-1. **SH343** — the last gap either inventory still names; **SH348** needs its design question settled first (→ §XVI.64).
+1. **SH348** — the only reachability task left, and it needs its design question settled first (→ §XVI.64). SH339's gap list is **empty**.
 3. Then the rest of SH326–SH337, in whatever order SH338's output argues for.
 
 > **Deprioritized deliberately:** SH258, SH296, SH317, SH318 and SH324 all audit the audits — each
@@ -482,7 +486,6 @@
 - 📋 **SH330** (deps: SH144 ✅, SH99 ✅) **A past 5xx keeps `verify` red forever** — `checks=diagnostics` reports a durable incident as an *error* with no verb to resolve one, so the CI gate stays red after the cause is fixed. SH99's own rule makes it a warning. → §XVI.58
 - 💭 **SH346** (deps: SH332 ✅) **The op vocabulary is MCP-only, which is the P1 shape this repo refuses** — `shio://ops` is a resource, so an HTTP-only agent cannot read the one document that says which keys a write takes. The rendering is a plain string; which REST surface carries it is the decision (a manifest section costs the SH113 budget every session, a context-pack section moves the SH116 digest). → §XVI.62
 - 📋 **SH348** (deps: SH342 ✅) **`locales` is the half of SH342 an address cannot express** — `POST /post-unified/{id}/translate` is id-keyed and undeclared, and `post.upsert` takes no locale, so an agent cannot make a translation at all. SH323 settled that an SH79 address carries no locale, so `post.translate` cannot simply take a second address: the decision is whether a translation has an address before it has a URL, and the file projection decides it, not the op. → §XVI.64
-- 📋 **SH343** (deps: SH338 ✅) **The agent sees webhook failures and cannot touch a subscription** — `/api/v2/site-webhook` is undeclared and MCP-unreachable, so `webhooks: true` means the agent reads its own delivery incidents in diagnostics with no way to create, inspect or repair what produced them. → §XVI.61
 - ⏳ **SH341** (deps: —) **The roadmap carries prose it is not the home for** — ✅ two halves done: SH325–SH340 compressed to a sentence each, and nine shipped-history bodies collapsed to the pointer line the rules prescribe (~2.6k words; every dropped id verified present in CHANGELOG first). **What remains:** the other 79 task lines (avg 113 words against a one-sentence rule) need their `→ §` coverage checked before cutting, since some may be the only home for their reasoning; three mixed blockquotes (Block P's L537 shape) interleave shipped notes with open-task provenance and want hand treatment; then a length assertion, so the rule stops depending on the writer noticing it. → §XVI.60
 - 📋 **SH336** (deps: SH183 ✅, SH334 📋) **The preview is not navigable: every internal link 404s** — `{{link}}` is a bare furl while the page is served under `/preview/<site>/`, and the lint cannot see it (from the content's view `/contato` is correct). Three mechanisms, three jobs: a server DOM pass beside the banner for the common case, click interception in `shio-editor.js` for JS-built links, SH337 for absolute URLs. Never make `{{link}}` preview-aware. → §XVI.58
 - 📋 **SH337** (deps: SH183 ✅, SH184 ✅) **A template cannot ask for the site's base URL** — so a canonical tag, an `og:url` or a sitemap entry is unbuildable; `ShSiteFrontEnd` already holds the one answer and nothing exposes it to the render model. → §XVI.58

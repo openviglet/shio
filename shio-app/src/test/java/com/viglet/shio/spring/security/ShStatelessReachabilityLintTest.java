@@ -132,9 +132,6 @@ class ShStatelessReachabilityLintTest {
                 "the widget catalogue is closed and code-owned, and since SH325 it is seeded per "
                 + "widget on every startup — so there is nothing an agent should be adding here"));
 
-        byPath.put("/api/v2/site-webhook", new Requirement(Reason.GAP,
-                "SH343 — the agent reads its own webhook delivery failures in /agent/diagnostics "
-                + "and cannot touch the subscription that produced them"));
         return byPath;
     }
 
@@ -206,7 +203,9 @@ class ShStatelessReachabilityLintTest {
                         the gaps are the deliverable: each is a capability the product offers and \
                         its own primary operator cannot invoke over HTTP. Closing one is an edit \
                         here; gaining one must be a reviewable diff with a task id.""")
-                .containsExactlyInAnyOrder("/api/v2/site-webhook");
+                .as("""
+                        **empty, as of SH343.** Every mutating path is now either stateless-writable,                         an AGENT_EQUIVALENT whose capability has an address-native form, or a                         CONSOLE_ADMIN boundary where a stateless route would be an escalation. That                         is the state this inventory was built to reach, and the assertion stays exact                         so the next gap is a reviewable diff with a task id.""")
+                .isEmpty();
     }
 
     @Test

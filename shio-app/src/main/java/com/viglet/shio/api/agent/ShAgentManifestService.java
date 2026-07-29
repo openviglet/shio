@@ -369,6 +369,10 @@ public class ShAgentManifestService {
                 // SH327 — declared because `serverRender: true` was a half-truth without it: the
                 // capability existed and the endpoint that provisions it appeared nowhere a caller
                 // reads. SH338's inventory named it and SH339's named the CSRF half.
+                new ShAgentEndpoint("POST", "/site-webhook",
+                        "Subscribe to content transitions: {siteId, name, url, secret, events}. The "
+                                + "secret is write-only. Failures show in /agent/diagnostics.",
+                        "console", "POST /api/v2/site-webhook"),
                 new ShAgentEndpoint("POST", "/preview-token",
                         "Mint a short-lived token so an external front end can show a draft. "
                                 + "Body: {postId}. Returns previewUrl + token; token is null when "
@@ -379,15 +383,16 @@ public class ShAgentManifestService {
                                 + "idempotent. Then /preview/{site}/{url} shows a page, no front "
                                 + "end needed.",
                         "console", "POST /api/v2/render/post-types"),
-                new ShAgentEndpoint("POST", "/post-unified",
-                        "Create a post. Body: {folderId, postTypeId, data, state}. Use state=DRAFT.",
-                        "console", "POST /api/v2/post-unified"),
+                // SH343 — the create and publish rows that stood here were pruned to fund the webhook
+                // row, on a sharper version of SH344's reasoning: they are the exact id-keyed twins of
+                // `post.upsert` and `post.publish`, so listing them in the *agent* manifest pointed the
+                // agent at the path this whole surface exists to replace. `POST /api/v2/site` has never
+                // been indexed for that reason (SH170 grew an op instead) — these two were the anomaly.
+                // `PUT /post-unified/{id}` stays: a caller holding an id from /agent/resolve has one
+                // honest reason to write in place.
                 new ShAgentEndpoint("PUT", "/post-unified/{id}",
                         "Update a post's data in place.",
                         "console", "PUT /api/v2/post-unified/{id}"),
-                new ShAgentEndpoint("POST", "/post-unified/{id}/publish",
-                        "Publish a draft — the only call that changes what visitors see.",
-                        "console", "POST /api/v2/post-unified/{id}/publish"),
                 new ShAgentEndpoint("POST", "/staticfile/upload",
                         "Upload a binary as a File post (multipart: file, folderId, createPost).",
                         "console", "POST /api/v2/staticfile/upload"),
