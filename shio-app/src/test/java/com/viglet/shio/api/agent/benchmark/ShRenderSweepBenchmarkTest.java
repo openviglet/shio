@@ -136,18 +136,43 @@ class ShRenderSweepBenchmarkTest {
                 .as("a sweep is N renders and this is the N — the regression guard on it")
                 .isLessThanOrEqualTo(ceiling("render.digest.max-marginal-page-queries"));
 
-        // THE FINDING, asserted rather than remembered (SH274's shape). Measured: the marginal
-        // page costs the same as the first, so nothing about the presentation chain is reused
-        // between pages — every page re-resolves its layout, both regions and the theme. That is
-        // SH264's answer, and it is what justifies SH311 with a number rather than a guess. If a
-        // cache ever lands, this assertion fails and sends its author to reopen the question here.
+        // ASSERTED, not remembered (SH274's shape): independent calls share nothing. SH311's cache
+        // is scoped to one read-only transaction on purpose — staleness must not cross a call —
+        // so N separate /agent/render requests still pay the full chain each, and that is correct
+        // rather than a gap. The sweep test below is where reuse is supposed to show; if this
+        // number ever drops to meet it, something is caching across transactions and the question
+        // of when it is invalidated has been reopened without anyone saying so.
         assertThat(marginal)
-                .as("no reuse across pages today: %d queries for the first page and %d for the "
-                        + "next, so a whole-site proof pays for the layout, its regions and the "
-                        + "theme once per page rather than once per binding. A cache would show up "
-                        + "here first, and this is what makes it impossible to add one and leave "
-                        + "the story stale", one, marginal)
+                .as("independent calls share nothing: %d queries for the first page and %d for the "
+                        + "next. A cache that made these diverge would be one living longer than a "
+                        + "transaction, which is the lifetime SH311 deliberately refused", one,
+                        marginal)
                 .isGreaterThanOrEqualTo(one - 2);
+    }
+
+    @Test
+    @DisplayName("SH311: one sweep resolves the presentation chain once, not once per page")
+    void aSweepResolvesTheChainOnce() {
+        String site = siteNames.get(1);
+        // A sweep is what `?digest=true` does: N pages inside ONE read-only transaction. The test
+        // above measures the other shape — N independent calls, each its own transaction — and both
+        // are real: an agent looping /agent/render gets the first, a write's proof gets this.
+        TransactionTemplate sweep = new TransactionTemplate(transactionManager);
+        sweep.setReadOnly(true);
+        long queries = queriesFor(() -> sweep.executeWithoutResult(status -> {
+            for (int page = 0; page < PAGES; page++) {
+                renderService.digest("post:" + site + "/page-" + page, null);
+            }
+        }));
+
+        long perPage = queries / PAGES;
+        measured.put("render.sweep.total-queries", queries);
+        measured.put("render.sweep.per-page-queries", perPage);
+        assertThat(perPage)
+                .as("SH311 — the presentation chain resolved once for the whole sweep rather than "
+                        + "once per page. The comparison that matters is against the standalone "
+                        + "number above: they measured the same 21 before this existed.")
+                .isLessThanOrEqualTo(ceiling("render.sweep.max-per-page-queries"));
     }
 
     @Test

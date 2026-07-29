@@ -960,12 +960,16 @@ file as the SH132 MCP budgets, because a second place to keep a number is a plac
 stale. Raising a ceiling is allowed and must be justified in the commit.
 **And the render sweep is measured in queries, not milliseconds (SH264).**
 `ShRenderSweepBenchmarkTest` counts Hibernate statements — a timing ceiling on a shared machine is a
-flake, and SH250's rule is that a flake is worse than a break. It prints on every run. The measured
-answer: **21 queries per rendered digest, and the same 21 for the next page of the same site** —
-nothing about the presentation chain is reused between pages, which is per-page work carrying
-per-type information (**SH311**). The marginal-page assertion is deliberately written to *fail* when
-a cache lands, so the story cannot go stale. A three-site `verify` pass is 137 queries and 1,119
-characters of finding prose, which is where SH298's and SH308's longer messages get watched.
+flake, and SH250's rule is that a flake is worse than a break. It prints on every run. The measured answer,
+and what SH311 did with it: a rendered digest cost 21 queries per page and the *same* 21 for the next
+page of the same site, which is per-page work carrying per-**type** information. **SH311 caches the
+resolved templates for the length of one read-only transaction** — a sweep of ten pages is now
+**6 queries per page** and a three-site `verify` pass **59 instead of 137**. The lifetime is the
+design: a longer-lived cache would need invalidating on a `site.postTypeLayout` write that no
+post-level listener sees (SH193's trap), and **a writing transaction gets no cache at all**, which is
+`isCurrentTransactionReadOnly()` on the line above the lookup rather than a convention. A *standalone*
+render is deliberately still 19 — independent calls share nothing — and the benchmark asserts that,
+so a cache that ever outlives a transaction fails there instead of arriving quietly.
 
 **Both boot their own in-memory database**: several of the responses they measure describe the
 *instance*, so on the shared test datasource the numbers grew with whatever post-types other

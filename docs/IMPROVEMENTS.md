@@ -2233,35 +2233,45 @@ fired, which is the part a reader would use to tell a good refusal from a confus
 > `PER_CLASS` fixture and broke two unrelated assertions in the same class. In a shared fixture every
 > mutating test is an input to the others — SH239's confound, one class along.
 
-### XVI.17 A sweep re-resolves the presentation chain per page (SH311, SH312)
+### XVI.17 A transaction-bound cache is invisible outside a transaction (SH313)
 
-SH264 measured it: **21 queries for a page's rendered digest, and the same 21 for the next page of
-the same site.** `templatesFor` re-reads the layout, both regions and the theme every time.
+SH311 binds its resolved templates to `TransactionSynchronizationManager`, which is what makes
+staleness impossible: the cache cannot outlive the call, and a **writing** transaction is excluded by
+a condition rather than by a convention.
 
-A binding resolves to the same templates for every page of its type — that is SH251's own finding,
-and it is what made the graph affordable in the first place. So this is per-**page** work carrying
-per-**type** information, which is the clearest possible case for a cache. **SH311.**
+The consequence nobody has looked at is the other side of that. A call path that renders outside a
+Spring transaction — or inside a writing one — gets no cache, no warning and no test saying so. Today
+`ShPageRenderService.render` is `@Transactional(readOnly = true)`, so the three real entry points are
+covered by accident of that annotation rather than by anything that checks.
 
-The shape is easy and the *lifetime* is the design question:
+Two cheap instruments:
 
-- **Request-scoped** is trivially correct and buys nothing where it matters: `/preview` renders one
-  page per request.
-- **Longer-lived** has to be invalidated when a layout, a region or a theme changes, and when
-  `site.postTypeLayout` changes — that last one is an `ShSite` write, which no post-level listener
-  sees. It is exactly the trap SH193 avoided by computing the graph rather than storing it.
-- **Sweep-scoped** — one `?digest=true` batch, one `verify` pass — is where the repetition actually
-  is, and staleness cannot outlive the call. Probably the answer.
+- **A test per entry point** (`/preview`, `/agent/render`, `?digest=true`) asserting the cache is
+  actually active there, so a refactor that moves a transaction boundary fails rather than costing
+  three times as much silently.
+- **A signal when a render finds no cache** — a counter or a debug line — so the next path that
+  appears announces itself instead of quietly paying 19 queries a page.
 
-The benchmark's marginal-page assertion is written to **fail** when this lands, which is the
-intended way to be told that the story needs updating.
+The second is the more valuable one, because the failure mode here is a performance regression that
+looks exactly like normal operation.
 
-**SH312** is the other half of the honesty: the fixture is one layout, two regions, one theme, ten
-pages and **no helpers**. That is enough to answer "is anything reused" and not enough to answer
-"what does a real sweep cost", because helpers are the part that varies without bound — a listing
-region calls `{{#query limit=10}}` (a query per page plus the rows), and a section-composed page
-reads a post per `{{#getRelation}}` entry. The 21 is a floor for the simplest page there is. Worth
-extending the fixture, and worth doing **after** SH311, because a cache changes which number is
-interesting.
+### XVI.17 The benchmark measures one site's shape, and a real site is not this shape (SH312)
+
+SH264's fixture is one layout, two regions, one theme, ten pages and **no helpers**. That was enough
+to answer "is anything reused" — it was not — and SH311 has since made a sweep cost 6 queries a page
+instead of 19.
+
+It is not enough to answer *what does a real sweep cost*, because helpers are the part that varies
+without bound: a listing region calls `{{#query limit=10}}`, which is a query per page **plus** the
+rows it reads, and a section-composed page reads a post per `{{#getRelation}}` entry. Those reads are
+per-*page* by nature — they depend on the page's own field values — so SH311's cache does not touch
+them, and the 6 is a floor for the simplest page there is.
+
+Worth extending the fixture with a listing region and a section-composed page, and recording both
+numbers beside the current ones. Worth doing **after** SH311 rather than with it, because the cache
+changed which number is the interesting one — and it will change again if anyone caches helper
+results, which is a much harder question (a listing's rows are content, so a cache there is a
+freshness decision rather than a resolution one).
 
 ### XVI.18 A write's digest ceiling is a number nobody chose (SH266)
 
@@ -3100,6 +3110,23 @@ required; SH297's `missing-theme` names a theme that **deliberately** does not e
 cannot be "every address resolves". It is probably: resolvable, unless the rule is in a declared list
 of ones that name an absent thing on purpose — SH255's `DECLARED` shape, where the declaration is
 the interesting artefact.
+
+### XVI.50 The "bounded by bindings, not pages" claim has never been measured (SH314)
+
+SH311 aimed at the digest sweep and made a three-site `verify` pass **2.3× cheaper** — 137 queries to
+59 — because `ShTemplateGraph` resolves through the same `templatesFor` path and now hits the cache.
+
+That is worth understanding rather than banking. It means the graph's cost was dominated by
+**re-resolution**, not by the per-binding walk SH251's argument assumes. And that argument is
+load-bearing in three places: SH193 computes the graph on demand instead of storing it *because* the
+cost is per binding; SH251 lints templates rather than pages for the same reason; SH262 attaches an
+impact to a read on the same basis.
+
+Nobody has measured the slope. The task is a benchmark that scales **bindings** and **pages**
+independently and reports both — a site with 2 bindings and 500 pages beside one with 50 bindings and
+20 pages. If the claim holds it stops being an argument and becomes a number. If it does not, three
+shipped designs are resting on something that is not true, which is exactly the shape SH290 found in
+a comment and SH164 found in a benchmark.
 
 ---
 
