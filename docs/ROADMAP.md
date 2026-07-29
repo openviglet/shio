@@ -153,48 +153,7 @@
 > too thin: CRUD-over-MCP reproduces every discovery/write cost it was meant to fix.
 > → §VIII
 
-> ✅ **The gateway is shipped, and so is the follow-up pass** →
-> [CHANGELOG.md](CHANGELOG.md) Block H: **SH76** (manifest) · **SH80** (teaching errors) ·
-> **SH77** (context pack) · **SH78** (token-lean responses) · **SH79** (path addressing) ·
-> **SH121** (id-free reads) · **SH81** (batch writes) · **SH82** (desired-state
-> plan/apply) · **SH75** (MCP host + `shio mcp`) · **SH83** (the agent tools, resources
-> and prompts) · **SH123** (field projection) · **SH122** (tenant-join guard) ·
-> **SH124** (delivery cost header) · **SH125** (null-omission policy) · **SH126**
-> (`shio context` CLI) · **SH134** (`post.move`) · **SH135** (folder prune) · **SH128**
-> (site-resolution guard) · **SH130** (MCP wire conformance) · **SH131** (full-text bind
-> contract) · **SH132** (tool-list budget) · **SH129** (`shio apply` CLI) · **SH84**
-> (tenant sweep, SH22 half).
->
-> **What is deliberately not in it, and why:** `shio_verify` waits for **SH99** — a
-> verify that only pretends leaves the agent believing its work was checked, which is
-> worse than knowing it was not. `shio_changes` ships as a *window* over the SH51 audit;
-> the `since=` cursor is **SH88**, and faking one over a timestamp would look resumable
-> while dropping same-timestamp entries. Both are reported `false` in the manifest so no
-> caller has to probe.
->
-> **What the follow-up pass taught, and what it opened.** Two of the guards paid for
-> themselves the day they were written: SH128's lint found four more live instances of
-> the same defect (one of them a scoped CDA token denied on every non-root folder), and
-> SH130's transcript found `tools/list` serializing differently on every boot. Both were
-> invisible to the behavioural tests that already covered those paths. The general
-> lesson is now a working rule — **when a defect class recurs, the fix is a guard per
-> invariant, written the first time the invariant is violated** — and everything it turned up
-> has now shipped (SH136–SH139). What replaced it is a different *kind* of item: not a missing
-> capability but an **asymmetry** between two paths that do the same thing — folder writes that
-> are not audited the way post writes are (**SH196**), and the four cross-block findings that
-> came out of the same reading (SH198–SH203). ✅ **SH136** → [CHANGELOG.md](CHANGELOG.md) was
-> the rule's clearest
-> vindication: the byte-stability lint found **four** live instabilities, one of them inside
-> SH101's render digest, and none of them detectable by any test that runs in a single JVM.
-> ✅ **SH137** → [CHANGELOG.md](CHANGELOG.md) closed the move gap one level up,
-> and the guard rule paid out a fourth time: writing the one folder-move writer both surfaces
-> call turned up a live console defect nobody had filed — the move dialog could re-parent a
-> folder into its own subtree, which succeeds and produces a cycle.
-> ✅ **SH138** → [CHANGELOG.md](CHANGELOG.md) found something the hazard framing missed:
-> the plan was never truncated, but a compiled document was held to the *hand-written*
-> batch's op ceiling, so a large prune failed with advice ("split into batches") that
-> nobody can follow for ops the server generated. A ceiling with no usable way past it is
-> the same dead end as a silent cut, reached from the other side.
+> ✅ **Block H shipped, follow-up pass included (SH75–SH84, SH121–SH135)** → see [CHANGELOG.md](CHANGELOG.md) Block H.
 
 - 💭 **SH84** (deps: SH83 ✅, SH22 ✅) **Turing ecosystem wiring** — the SH22 tenant sweep and its test shipped; what remains is the Turing integration (replaces old SH37). → §VIII.9
 - 💭 **SH140** (deps: SH134 ✅, SH100) **Report inbound links when a post moves** — `ShReference` is id-keyed and survives a move, but a URL typed into another post's rich text does not, and nothing tells the agent which pages it just broke. The cheap version is a count in the change detail; the real one belongs with SH100's route verification, which SH141 has since extended to a delivery-side proof — so a broken inbound link is now checkable rather than only reportable.
@@ -206,21 +165,7 @@
 > Two of the three human round trips in a typical build exist only because the
 > agent cannot check its own work. This block is the cheapest large win after H. → §IX
 
-> ✅ **The block is complete (SH99–SH104, SH141–SH144, SH154)** → see
-> [CHANGELOG.md](CHANGELOG.md) Block K. The loop, its follow-ups and the human-facing
-> handoff have all shipped; the last piece was SH102's optional PNG.
->
-> One thing worth carrying forward, because it is a rule and not a task: **`ok` is false only
-> for an error**. A warning is what the CMS cannot prove from inside itself, and the three
-> mechanisms that grew out of respecting that line — SH141's delivery-side proof, SH142's
-> accepted findings, and SH114-declared front-end routes — are all ways of turning a warning
-> into either a fact or an explicit decision, rather than ways of making the gate stricter.
->
-> **What closing the last four opened (SH204–SH209).** Each line below says which task produced
-> it. Two are about the shape of a *record* (SH204, SH205), one is a cost the delivery proof
-> currently pays inside a transaction (SH206), one is half a promise SH104 made (SH207), one is a
-> fragility that broke the CLI twice in a single session (SH208), and one is the missing scale of
-> SH102 (SH209).
+> ✅ **Block K shipped (SH99–SH104, SH141–SH144, SH154)** → see [CHANGELOG.md](CHANGELOG.md) Block K.
 
 - 💭 **SH204** (deps: SH144 ✅) **An incident should name its site where one is knowable** — SH144 folded incidents into the change feed, and they carry no site, so `site=` cannot narrow them and the response has to say so in a note. That note is the honest form, not the fix. Two of the four recorders already know: the webhook dispatcher holds a `ShSiteWebhook`, and a scheduled publish holds the post. Attributing those would let a site-scoped read narrow them like every other row, and let `shio report --site` show one site's failures instead of the instance's. The 5xx filter and the transform pipeline often cannot know, and must keep reporting honestly rather than guessing. → §IX.5
 - 💭 **SH205** (deps: SH144 ✅) **The incident fold key is the human message, so one problem becomes many rows** — folding is what makes the durable table affordable (it grows with the number of *problems*, not with traffic), and the key is `(kind, subject, message)` where the message carries varying detail: "gave up after 3 attempt(s), last status 500" and the same failure with 503 are two rows for one broken webhook. It defeats folding exactly where volume is highest, and then pushes the cap. The fix is a stable `signature` beside the human message — the same split SH142 needed between a finding's identity and its prose. → §IX.6
@@ -236,22 +181,7 @@
 > tree than with read-modify-write over HTTP. Project content to disk, reconcile
 > with the server. Largest cycle reducer in the proposal. → §X
 
-> ✅ **The block is shipped bar one task** → [CHANGELOG.md](CHANGELOG.md) Block I:
-> **SH86** (projection format) · **SH88** (change feed + cursor) · **SH87** (`pull --content` /
-> `push --content`) · **SH89** (three-way merge) · **SH90** (`shio dev --content`) · **SH145**
-> (assets) · **SH146** (paged `find`) · **SH148** (fingerprint merge base) · **SH149** (folders
-> as files) · **SH150** (a rename is a move) · **SH173** · **SH198** (the suite runs green) ·
-> **SH199** (a large tree splits).
->
-> **What is deliberately not in it:** conflicts are *reported*, never written as `<<<<<<<`
-> markers — a marker in a field value is content the next push would publish; and asset
-> *deletion* does not project, because bytes go when their post goes and a `File` post can be
-> referenced by content this tree does not own.
->
-> **What remains is one task and its follow-ups.** **SH147** is the change feed's own honesty
-> note: the lag narrows the stamp-before-commit window, it does not close it. **SH210–SH215**
-> came out of shipping the rest of the block — the projection's own edges, now that both
-> directions of it exist.
+> ✅ **Block I shipped bar SH199 (SH86–SH90, SH145–SH150, SH210–SH215)** → see [CHANGELOG.md](CHANGELOG.md) Block I.
 
 - 📋 **SH147** (deps: SH88 ✅) **Commit-ordered change feed** — SH51 stamps the audit row inside the writer's transaction, so a slow commit can land an older timestamp behind a cursor that already passed it, and for a *sync* feed that is a lost edit rather than a late one. The 1s lag narrows the window; only commit-ordered sequencing closes it. **Scoped in July 2026 and deliberately not started:** "assigned at commit" does not exist in JPA (`beforeCommit` still interleaves), the working shape is a `seq` assigned inside the transaction plus a reader that **stops at a gap**, and the blocker is that a portable monotonic non-PK column across H2/MariaDB/PostgreSQL can only be *proved* by the SH26 Testcontainers ITs — which need Docker. Landing the changeset without them would repeat the SH2/SH5 drift. → §X.3
 - 📋 **SH210** (deps: SH145 ✅) **Editing an asset's bytes in place does nothing** — `push --content` resolves a `File` path against the server's inventory and reuses the id when the path is already there, so replacing `shio/assets/Blog/media/logo.png` with different bytes uploads nothing and reports success. It is the one silent no-op left in the projection, and it is the *common* edit for an image. The fix needs both halves: a bytes fingerprint in the base snapshot to notice the change, and a way to land it — an upload always creates a new id-keyed post, so either the reference is repointed (cheap, leaves the old bytes) or SH38 grows a replace-bytes path. → §X.13
@@ -267,39 +197,7 @@
 > **appliable**, not readable. **Absorbs the old SH23 epic** (SH27–SH31): a
 > human-browsable template catalog becomes an agent-appliable blueprint registry. → §XI
 
-> ✅ **The format, the verb, the first-party set, the section vocabulary and the plugin are
-> shipped** → [CHANGELOG.md](CHANGELOG.md) Block J: **SH92** (package format + load-time
-> validation) · **SH93** (`/agent/blueprints`, `shio apply --blueprint`, `blueprint` on
-> `shio_apply`) · **SH94** (`blog` · `docs` · `product-catalog` · `marketing-site` ·
-> `landing`) · **SH95** (`@viglet/shio-sections`) · **SH97** (the Claude Code plugin).
->
-> **Block J is otherwise closed.** SH153, SH155, SH156 and SH96's local half have all shipped;
-> what remains below is what driving them turned up (SH216–SH221), not what they left undone.
->
-> ✅ **Where a package may come from now has an answer (SH96, local half)**: the classpath, plus
-> one directory an operator names with `shio.blueprint.path`. Whoever can set that could already
-> put a jar on the classpath, so it grants no new authority — and the person who set it is the
-> person vouching for what is in it. Collisions refuse rather than shadow, an unreadable path
-> fails rather than loading fewer packages, and every package reports its origin. The
-> **community** half — naming convention, curated index, provenance — is **SH217**.
->
-> ✅ **The front-end half has landed (SH156)**: `landing` and `marketing-site` carry the
-> starter tree plus a section overlay, generated by one `emit` and guarded by a drift test —
-> the copies exist because the instance cannot run a JS build, and nobody writes them. It also
-> unblocked itself by publishing `@viglet/shio-model` and `@viglet/shio-sections`, which the
-> release workflow had never shipped. The three non-section packages still want a listing page
-> of their own (**SH216**).
->
-> **What building it opened, and what has since closed.** The two halves that had to meet each
-> other did not quite fit. ✅ **SH151, SH152 and SH154 have shipped** →
-> [CHANGELOG.md](CHANGELOG.md): an apply can create its target site (blank, opt-in, named in the
-> plan), it can add the fields an existing post-type lacks — which SH168 turned from a nicety into
-> the difference between a refused write and a package that cannot land — the lint now reads a
-> `Multi Select` that declares itself as holding post URLs, so a `Page` naming a section that is not
-> there is an error instead of a green run. ✅ **SH153** and **SH155** have closed the rest: a plan
-> declares what it would create instead of writing it and rolling back, so planning a package no
-> longer needs write access — and a site now records which package and version built it, as an
-> SH114 note that reaches the next session through the context pack it already reads.
+> ✅ **Block J shipped (SH92–SH97, SH119, SH151–SH156, SH166)** → see [CHANGELOG.md](CHANGELOG.md) Block J.
 
 - 💭 **SH217** (deps: SH96 ✅) **The community half of the registry** — SH96 shipped the local trust model (an operator names a directory; collisions refuse, origins are reported). What is still missing is how a package a *stranger* wrote earns that place: a `shio-blueprint-*` naming convention, a curated index, and provenance stronger than "somebody put it there" (absorbs old SH28/SH29/SH31). → §XI.5
 - 📋 **SH216** (deps: SH156 ✅) **`blog`, `docs` and `product-catalog` carry an index page** — SH156 gave the two section packages a front end and deliberately left these three out: they do not compose sections, so the section overlay would ship them a dependency they never import. What they actually lack is a *listing* page over their own content (`/blog`, the docs nav, the catalogue grid), which is per-package and needs the SDK's `query` rather than the section dispatcher. → §XI.11
@@ -310,30 +208,9 @@
 
 ## Block L — Agent safety & human-in-the-loop
 
-> ✅ **SH106–SH109 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block L: the `AGENT` token scope
-> and the agent session id as a column, draft-by-default with a per-credential publish gate,
-> confirm tokens on destructive writes, and the review queue.
->
-> **The invariant held:** every guard is *narrower* than what an agent could reach before —
-> nothing on the surface gained a capability. Two of them are deliberate tightenings and the
-> changelog says so: a `WRITE` token that used to publish through the agent surface now needs
-> `mayPublish`, and a prune now needs the token from its own plan.
->
-> **What building it taught.** The publish gate wanted to live at the publish site and belongs
-> before the first write instead — "you cannot publish" is a different answer from a half-built
-> site with a 403 at the end. And the review queue is only expressible because a *run* has an
-> identity: a session minted per request would have produced two hundred one-change sessions,
-> which is the same as having none.
+> ✅ **SH106–SH109 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block L. SH110 remains, blocked on SH45.
 
-> ✅ **SH200 and SH201 have shipped** → [CHANGELOG.md](CHANGELOG.md) Block L: a folder delete
-> trashes its subtree through the post writer instead of erasing it past the trash, the audit and
-> the byte cleanup; and the console's move/copy authorizes its sources, not only its destination.
->
-> **What driving those two found (SH222–SH226).** The block's invariant now cuts both ways —
-> *whichever surface is stricter is the correct one* — and applying it turned up the same
-> asymmetry in three more places: the trash an agent can fill but not read, the site delete that
-> is SH200 one level up, and a permanent deletion nobody records. Everything below is a
-> follow-up; nothing in Block L is unbuilt except SH110.
+> ✅ **SH200 and SH201 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block L.
 
 - 💭 **SH110** (deps: SH106 ✅, SH45) **Agent budget guards** — per-session call/write/storage ceilings, layered on SH45's per-tenant metering. Still blocked on SH45: building the ceiling first means a second metering mechanism to reconcile later. A runaway agent should hit a ceiling and report it, not a bill. → §XII.5
 - 📋 **SH222** (deps: SH200 ✅, SH55 ✅) **An agent can fill the trash and cannot read it** — `post.delete` and `folder.delete` both answer "to trash (restorable)", and that is the only place the trash appears on the agent surface: there is no `/agent` read, no MCP tool and no `shio` command that lists or restores it. So the undo the protocol *advertises* is reachable only by a human in the console, which inverts P1 on the one capability an agent most needs after a mistake — and makes the reassurance in the change set something the caller cannot act on. → §XII.6
@@ -344,18 +221,7 @@
 
 ## Block M — Token economy (measured)
 
-> ✅ **Block M shipped in full (SH112–SH116, SH127, SH157–SH161, SH174)** → see
-> [CHANGELOG.md](CHANGELOG.md) Block M: the task benchmark, response budgets, instance
-> memory, the `AGENTS.md` generator, conditional agent reads, the lean delivery JSON, and
-> the six follow-ups the measurement itself opened.
->
-> **What the measurement says now.** Tokens **2.8×–10.5×**, tool calls **2.3×–3.8×** across
-> the four canonical tasks. SH157 is the first change in three blocks to move a ratio by
-> improving the *agent* path rather than by the baseline getting leaner: every task lost a
-> call, because discovery folded into one read and proof folded into the write. The ≈10×
-> token target is met on one task of four and the ≈6× call target on none — the remaining
-> calls are real work, so the next one to remove is a harder argument than these two were.
-> Numbers and ceilings: [token-budgets.properties](../shio-app/src/test/resources/token-budgets.properties).
+> ✅ **Block M shipped in full (SH112–SH116, SH127, SH157–SH161, SH174)** → see [CHANGELOG.md](CHANGELOG.md) Block M.
 
 - 📋 **SH227** (deps: SH157 ✅, SH132 ✅) **`shio_apply` cannot ask for its own proof** — `shio_write` took SH157's `verify` argument for ~15 tokens, and the desired-state tool could not: at 457 measured against a 460 per-tool ceiling there is no room, so the write most likely to want a lint (a whole section at once) is the one that must still spend a second call on it. The fix is a trim, not a raise — the ceiling exists to force exactly this decision. → §XIII.7
 - 📋 **SH228** (deps: SH157 ✅) **A write proves only its posts** — the SH157 proof lints the `post:` addresses a run touched and silently ignores the rest, so a batch of `folder.upsert`s comes back with no proof at all rather than with the empty-folder warning the lint already knows how to produce. An agent that scaffolds a structure and reads `proof: absent` learns nothing, and cannot tell that from "nothing was wrong". → §XIII.8
@@ -366,35 +232,7 @@
 
 ## Block N — Realignment of what already shipped
 
-> ✅ **Block N shipped (SH117, SH119, SH120, SH162)** → see [CHANGELOG.md](CHANGELOG.md) Block N:
-> one name-keyed post-type surface, the starter as a blueprint, console navigation reads on
-> the CDA shapes, and the SDK type mirror with a test behind it.
->
-> **What it cost the claim, and why that is the right outcome.** SH117 and SH120 both fixed
-> the *baseline* the SH112 benchmark measures against, so every token ratio fell against an
-> unchanged agent path: **3.8×–23.3× became 2.6×–12.6×** (and 2.1×–12.1× after Block O's SH176
-> did the same to the post read), and tokens now clear the concept
-> spec's ≈10× on one canonical task of four rather than three. A large part of the measured
-> advantage was never the protocol — it was the console reads being entity-shaped, and it is
-> now lean on both sides. What is left is the part worth defending — addressing, batching, the
-> context pack, a lint that names the defect — and **SH164 has now measured each of them
-> separately** rather than leaving the claim resting on an aggregate.
->
-> ✅ **SH164 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: the claim is attributed per
-> source (addressing 26× and the lint 15× carry the tokens; batching buys turns; projection is
-> the smallest), and the aggregate ≈10× per-task target is retired in favour of per-source floors
-> plus the session claim on calls.
->
-> ✅ **SH163 and SH165 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: renaming a
-> post-type is an operation that moves it, and the console listing pages — with the sort and the
-> search moving to the server alongside it.
->
-> ✅ **SH166 and SH167 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: the carried files
-> say they are templates and are reachable over MCP at all, and the last three blanket CSRF
-> exemptions are narrowed to the callers that need them. Reviewing the CDA one turned up
-> **SH233** and **SH234**, and both have since shipped: a presented `Key` beats an existing
-> session on the CDA path (which is why the Universal Editor could not save), and `/graphql`'s
-> "no Mutation" premise is now a build failure carrying the decision made in advance.
+> ✅ **Block N shipped (SH117, SH119, SH120, SH162)** → see [CHANGELOG.md](CHANGELOG.md) Block N.
 
 > ⏳ **SH238 is half shipped** → see [CHANGELOG.md](CHANGELOG.md) Block N: the fact the editor's
 > save-back rests on is checked in a browser (a probe that fails only on the 403 symptom) and
@@ -430,41 +268,7 @@
 
 ## Block O — The human half (the console the curator uses)
 
-> ✅ **Block O shipped, follow-ups included (SH176–SH182, SH202, SH203)** → see
-> [CHANGELOG.md](CHANGELOG.md) Block O: the console smoke check in CI, the post read that
-> carries its post-type and parsed data, `schemaJson` retired, one form-schema entry point,
-> View Site pointed at something that exists, a not-found route, a site read that answers the
-> key it is given, a copy that takes names which are free, and a picker that stops offering
-> destinations the server refuses. **The tasks below are new**, opened by finishing the last two.
->
-> **What building it taught.** Every defect in the block answered `200`, and none was visible
-> to a Java test, a CLI test or the MCP golden — the gap was one of *medium*, so the block's
-> most durable output is the browser check that found them (SH182) rather than any one fix.
-> Two of the seven were the same lesson one endpoint late: a read faithful to the *storage*
-> shape is not a read the console can use (SH176, after SH120), and a second way of saying
-> one thing is a second thing to keep right (SH177/SH178).
->
-> **What it opened.** The check asserts *a* field renders, not the *right* field, and it has no
-> accepted-findings baseline — SH142's shape (now shipped for `shio verify`) applies to it
-> unchanged. The site provisioning it needed walked the console's CSRF path by hand, which was
-> **SH170** measured rather than argued, and has since shipped.
->
-> **And what SH137/SH139 found on the way past.** Fixing the agent's move verbs meant reading the
-> console's, and the same lesson landed a third time: the console path is where the careless
-> version of a shared verb lives, because nothing on it is asserted at the level the agent
-> surface is. **SH202 and SH203 were what that reading turned up, and both have shipped** —
-> see [CHANGELOG.md](CHANGELOG.md) Block O: a copy takes names that are free, and the picker
-> stops offering destinations the server refuses.
->
-> **What finishing them opened.** SH203's own reading found that *copy* had no cycle guard at
-> all and did not terminate — the fourth time a shared verb's console copy was the careless
-> one, which is now enough of a pattern to act on rather than note (SH245). And **half of what
-> it opened is not content at all but the build it was found through**: the console bundle was
-> already red (SH242), the Java suite was red too and for an unrelated reason (SH246 — shipped,
-> see [CHANGELOG.md](CHANGELOG.md) Block O), and neither had been reported because no workflow
-> runs on this branch (SH241) — a block whose lesson was "defects here answer `200`" turning
-> out to have a gate that never fires. The remaining two are content-model gaps SH202 could
-> see but not fix (SH243, SH244).
+> ✅ **Block O shipped, follow-ups included (SH176–SH182, SH202, SH203)** → see [CHANGELOG.md](CHANGELOG.md) Block O.
 
 - 📋 **SH241** (deps: SH182 ✅) **No CI workflow runs on the branch the work happens on** — `build.yml` and `codeql-analysis.yml` are `workflow_dispatch:`-only, and `console-check.yml` triggers on `push: branches: [main]` while the default branch is `2026.3`. So the Java suite never runs automatically at all, and the SH182 browser gate — built precisely because console defects answer `200` — never runs on a push. It is not a hypothetical: `pnpm run compile:build` was **already failing on the default branch** when Block O's follow-ups were picked up, and nothing had said so. → §XVI.1
 - 📋 **SH242** (deps: SH241) **An unmet peer range is not a build failure** — a Dependabot bump put `monaco-editor` at `0.56.0` against `monaco-graphql@1.8`'s declared peer of `>= 0.20.0 < 0.53`, and pnpm resolved it, printed a warning nobody reads and failed nothing; 0.56's new `exports` map then made every `monaco-editor/esm/vs/…` specifier unresolvable and the console bundle undeliverable. Pinning to the `0.52.2` that `@graphiql/react` already depends on fixed it, but the *class* of defect — a bump landing a version the dependent does not support — is a **resolution** fact no test can see. `strict-peer-dependencies` turns it into the refusal it should be. → §XVI.2
@@ -635,7 +439,7 @@
 - 📋 **SH338** (deps: —) **P1 is the only law with no instrument, and it is the one the product is named after** — SH326, SH328 and SH335 are live breaks and SH160 was the same shape two blocks earlier. Copy `ShCsrfExemptionLintTest`: every `features` key reported `true` maps to a declared route or is named with the reason it is REST/console-only. The exception list is the deliverable. → §XVI.59
 - 📋 **SH339** (deps: SH167 ✅, SH338 📋) **The CSRF lint guards which paths are *exempt* and nothing guards which are *reachable*** — the class behind SH170, SH327 and SH335. Assert that every mutating path outside `/console/**` is usable by a stateless credential or names why not; one that is not must still refuse with a body. → §XVI.59
 - 📋 **SH340** (deps: SH331 📋) **The benchmark measures a correct script, so it cannot see the calls an agent gets wrong** — blind to SH331 by construction; the real build sent four wrong calls in ~25. Count `isError` results and dropped arguments against a ceiling in `token-budgets.properties`, driven the way a naive client would. → §XVI.59
-- 📋 **SH341** (deps: —) **The roadmap is 65% task prose and its own rule says one sentence** — measured: 95 active lines averaging 142 words, worst 555. SH325–SH340 are compressed (their detail is in §XVI.58–59); the other 79 need their `→ §` coverage checked before cutting, since some may be the only home for their reasoning. Then a length assertion, so the rule stops depending on the writer noticing it. → §XVI.60
+- ⏳ **SH341** (deps: —) **The roadmap carries prose it is not the home for** — ✅ two halves done: SH325–SH340 compressed to a sentence each, and nine shipped-history bodies collapsed to the pointer line the rules prescribe (~2.6k words; every dropped id verified present in CHANGELOG first). **What remains:** the other 79 task lines (avg 113 words against a one-sentence rule) need their `→ §` coverage checked before cutting, since some may be the only home for their reasoning; three mixed blockquotes (Block P's L537 shape) interleave shipped notes with open-task provenance and want hand treatment; then a length assertion, so the rule stops depending on the writer noticing it. → §XVI.60
 - 📋 **SH336** (deps: SH183 ✅, SH334 📋) **The preview is not navigable: every internal link 404s** — `{{link}}` is a bare furl while the page is served under `/preview/<site>/`, and the lint cannot see it (from the content's view `/contato` is correct). Three mechanisms, three jobs: a server DOM pass beside the banner for the common case, click interception in `shio-editor.js` for JS-built links, SH337 for absolute URLs. Never make `{{link}}` preview-aware. → §XVI.58
 - 📋 **SH337** (deps: SH183 ✅, SH184 ✅) **A template cannot ask for the site's base URL** — so a canonical tag, an `og:url` or a sitemap entry is unbuildable; `ShSiteFrontEnd` already holds the one answer and nothing exposes it to the render model. → §XVI.58
 - 📋 **SH335** (deps: SH233 ✅, SH176 ✅) **The Universal Editor makes an authenticated curator mint and paste a CDA `WRITE` token to save** — P10 from the wrong side: it forked onto the CDA when the console already owns session-authenticated `PUT`/`publish`. Unusable out of the box, parks the most dangerous credential in `localStorage`, and bypasses SH107's publish gate. Needs a merge verb or a client read-modify-write — decide which first. → §XVI.58
