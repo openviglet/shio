@@ -183,6 +183,13 @@ class ShAgentP1ConformanceTest {
                 + "one since= answers what changed and what broke"));
         byFeature.put("durableIncidents", mcp("shio_changes", "the same feed, and the row survives a "
                 + "restart (SH144)"));
+        // SH342 — `when` on post.publish. Note what this exposed about the rot check itself: the
+        // exception named `/post-unified/{id}/schedule` as what would resolve it, and the fix took a
+        // different shape (an argument on a tool that already existed), so nothing failed and the
+        // entry had to be moved by hand. The stale check catches the predicted fix, not any fix —
+        // worth knowing before trusting it as the only guard.
+        byFeature.put("scheduledPublish", mcp("shio_write", "post.publish with an ISO-8601 `when`; "
+                + "a past instant is refused rather than read as now"));
         byFeature.put("instanceMemory", mcp("shio_remember", "SH160 — the eleventh tool exists "
                 + "because this flag was a half-truth for exactly the clients the manifest informs"));
 
@@ -257,9 +264,6 @@ class ShAgentP1ConformanceTest {
         byFeature.put("locales", new Delivery(Reach.REST_ONLY, "/post-unified/{id}/translate",
                 "SH53's translate is id-keyed, undeclared and has no address-native form — "
                 + "post.upsert takes no locale, so an agent cannot make a translation at all"));
-        byFeature.put("scheduledPublish", new Delivery(Reach.REST_ONLY, "/post-unified/{id}/schedule",
-                "SH15 schedules by id over an undeclared route, and shio_publish takes only an "
-                + "address and dryRun — so `true` advertises a capability with no agent form"));
         byFeature.put("previewTokens", new Delivery(Reach.REST_ONLY, "/agent/preview-token",
                 "ShPreviewTokenAPI is undeclared, so the agent cannot mint the token an external "
                 + "front end needs to show a draft — the last step of SH184's answer"));
@@ -402,7 +406,6 @@ class ShAgentP1ConformanceTest {
                         "postTypeMerge",
                         "previewTokens",
                         "reviewQueue",
-                        "scheduledPublish",
                         "trash",
                         "universalEditor",
                         "visualSnapshot",

@@ -97,7 +97,15 @@ public class ShWriteTool implements ShMcpTool {
                                                 "post.move / folder.move: the new address. A "
                                                         + "folder's is its whole name chain."),
                                         "data", ShMcpTool.object(
-                                                "Field values keyed by post-type field name.")))),
+                                                "Field values keyed by post-type field name."),
+                                        // SH342 — the agent-native form of scheduled publishing,
+                                        // which the manifest advertised while only an id-keyed
+                                        // console route could reach it. Funded by trimming
+                                        // shio_apply's description rather than by raising the
+                                        // ceiling, which is the order agents.md sets.
+                                        "when", ShMcpTool.string(
+                                                "post.publish: ISO-8601 instant to schedule "
+                                                        + "for. Omit to publish now.")))),
                 "dryRun", ShMcpTool.bool("Report what would change and write nothing."),
                 "confirm", ShMcpTool.string("dryRun's token; required to delete."),
                 // SH157: the closing turn of the write-then-check loop, as an argument.

@@ -84,6 +84,7 @@ public final class ShAgentOps {
     private static final String FOLDER = "folder";
     private static final String TO = "to";
     private static final String DATA = "data";
+    private static final String WHEN = "when";
 
     private static final Map<String, OpSpec> SPECS = ShStableMap.copyOf(Map.of(
             ShAgentBatchService.SITE_UPSERT, new OpSpec(ShAgentBatchService.SITE_UPSERT,
@@ -110,8 +111,9 @@ public final class ShAgentOps {
                     "Change a post's URL, its folder, or both, keeping its id and history. A "
                             + "published post's live URL changes immediately."),
             ShAgentBatchService.POST_PUBLISH, new OpSpec(ShAgentBatchService.POST_PUBLISH,
-                    List.of(ADDRESS), List.of(), List.of(), List.of(),
-                    "Publish the draft at that address. Needs a credential with mayPublish."),
+                    List.of(ADDRESS), List.of(), List.of(), List.of(WHEN),
+                    "Publish the draft at that address, or schedule it with an ISO-8601 `when` "
+                            + "(SH342). Needs a credential with mayPublish."),
             ShAgentBatchService.POST_UNPUBLISH, new OpSpec(ShAgentBatchService.POST_UNPUBLISH,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Withdraw the published row; the draft stays."),

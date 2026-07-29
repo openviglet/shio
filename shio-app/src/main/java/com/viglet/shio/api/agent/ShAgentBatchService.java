@@ -8,6 +8,7 @@
  */
 package com.viglet.shio.api.agent;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -1098,6 +1099,18 @@ public class ShAgentBatchService {
             }
             throw new ShAddressResolver.UnresolvedAddressException(address, List.of());
         }
+        // SH342 — a scheduled publish, which is the same op with a `when`. It comes *before* the
+        // no-drift check on purpose: "the draft already matches what is published" makes publishing
+        // now a noop, and says nothing about a transition asked for at a later instant.
+        Instant when = scheduleInstant(op, address);
+        if (when != null) {
+            if (!session.dryRun) {
+                shContentAclService.requireWrite(draft.getId());
+                shPostUnifiedWriteService.schedule(draft.getId(), when, null, session.actor);
+            }
+            return session.change(op, address, Change.UPDATE, "scheduled to publish at " + when,
+                    draft.getId());
+        }
         if (published.isPresent() && sameContent(draft, published.get())) {
             return session.change(op, address, Change.NOOP, null, draft.getId());
         }
@@ -1106,6 +1119,32 @@ public class ShAgentBatchService {
             shPostUnifiedWriteService.publish(draft.getId(), session.actor);
         }
         return session.change(op, address, Change.PUBLISH, null, draft.getId());
+    }
+
+    /**
+     * The op's {@code when}, or {@code null} for "now" (SH342).
+     *
+     * <p>Two refusals, and both are decisions rather than validation. An unparseable instant is a
+     * teaching 400 because a caller that believes it scheduled something and did not has no way to
+     * find out — the publish simply never happens. And an instant <b>in the past</b> is refused
+     * rather than treated as "now": {@code post.publish} with no {@code when} already means now, so
+     * accepting a past date would make two different calls mean the same thing and would silently
+     * swallow the mistake this actually catches, which is a timezone or a stale timestamp.</p>
+     */
+    private Instant scheduleInstant(ShAgentBatch.Op op, ShAddress address) {
+        if (op.when() == null || op.when().isBlank()) {
+            return null;
+        }
+        Instant when;
+        try {
+            when = Instant.parse(op.when().trim());
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new BadScheduleException(op.op(), address, op.when(), false);
+        }
+        if (when.isBefore(Instant.now())) {
+            throw new BadScheduleException(op.op(), address, op.when(), true);
+        }
+        return when;
     }
 
     private Change postUnpublish(ShAgentBatch.Op op, Session session) {
@@ -1517,6 +1556,37 @@ public class ShAgentBatchService {
     }
 
     /** A 400 naming the closed op vocabulary, with the nearest match. */
+    /**
+     * A {@code when} that is not a future instant (SH342).
+     *
+     * <p>One exception with two messages rather than two classes: the caller's mistake is the same
+     * shape — a timestamp that will not schedule anything — and what differs is which half of it was
+     * wrong. A past instant is the interesting case, because the tempting behaviour is to treat it as
+     * "now" and the cost of that is silence: a stale timestamp or a timezone slip would publish
+     * immediately and look like exactly what was asked for.</p>
+     */
+    public static class BadScheduleException extends ShTeachingException {
+
+        public BadScheduleException(String op, ShAddress address, String sent, boolean past) {
+            super(ShProblem.badRequest("bad-schedule",
+                            past ? "`when` is in the past" : "`when` is not an ISO-8601 instant")
+                    .withDetail(past
+                            ? "'" + sent + "' has already passed, so nothing would ever fire. "
+                                    + "Publishing now is what this op means with no `when` at all, "
+                                    + "so a past instant is more likely a timezone or a stale "
+                                    + "timestamp than a request."
+                            : "'" + sent + "' could not be read as an instant. It must be UTC "
+                                    + "ISO-8601, which is the form /agent/changes and the audit "
+                                    + "trail already use.")
+                    .withFix(past
+                            ? "Send a future instant, or drop `when` to publish immediately."
+                            : "Use an instant like 2026-08-01T09:00:00Z.")
+                    .withExample("{\"op\":\"" + op + "\",\"address\":\""
+                            + (address == null ? "post:Blog/blog/hello" : address.toString())
+                            + "\",\"when\":\"2026-08-01T09:00:00Z\"}"));
+        }
+    }
+
     public static class UnknownOpException extends ShTeachingException {
 
         public UnknownOpException(String sent) {

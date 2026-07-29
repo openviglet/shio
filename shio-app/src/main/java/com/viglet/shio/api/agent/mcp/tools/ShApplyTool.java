@@ -65,12 +65,16 @@ public class ShApplyTool implements ShMcpTool {
 
     @Override
     public String description() {
+        // SH342 trimmed this from 457 to fund a `when` on post.publish, which is the order
+        // agents.md sets for this tool: "the answer there is a trim, not a raise". Every
+        // decision-changing fact is kept — idempotent, the blueprint verb, dryRun and changed=0 —
+        // and what went is the sentence explaining *why* idempotence is useful, which a caller
+        // that has read "applying twice changes nothing" does not need spelled out.
         return "Declare what a site section should contain and make it so. Unlike shio_write "
                 + "this is a statement, not a script: applying the same document twice changes "
-                + "nothing the second time, so you can re-send it after a compaction without "
-                + "remembering what you already did. Set `blueprint` to apply a ready-made "
-                + "section from shio://blueprints instead of declaring one. Use dryRun=true "
-                + "to see the diff first; a plan with changed=0 means there is no drift.";
+                + "nothing, so it is safe to re-send after a compaction. Set `blueprint` to apply "
+                + "a ready-made section from shio://blueprints instead of declaring one. "
+                + "dryRun=true shows the diff; changed=0 means no drift.";
     }
 
     @Override

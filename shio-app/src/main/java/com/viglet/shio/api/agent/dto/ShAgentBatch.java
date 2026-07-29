@@ -81,13 +81,24 @@ public record ShAgentBatch(boolean dryRun, List<Op> ops, String confirm) {
      *                A folder's {@code to} is its whole name chain, since that is what
      *                addresses a folder (SH79); the last segment is its new name
      * @param data    the post's field values, keyed by post-type attribute name
+     * @param when    an ISO-8601 instant for {@code post.publish} and {@code post.unpublish}:
+     *                schedule the transition instead of doing it now (SH342). Absent means now,
+     *                which is what the op has always meant — so the two are never the same call,
+     *                and a {@code when} in the past is refused rather than treated as "now". SH15's
+     *                sweep is what fires it; this is the agent-native form of a capability the
+     *                manifest advertised and only an id-keyed console route could reach.
      */
     public record Op(String op, String address, String type, String folder, String to,
-                     JsonNode data) {
+                     JsonNode data, String when) {
+
+        /** The six-field form, for the ops that never schedule. */
+        public Op(String op, String address, String type, String folder, String to, JsonNode data) {
+            this(op, address, type, folder, to, data, null);
+        }
 
         /** The five-field form, for callers that never move. */
         public Op(String op, String address, String type, String folder, JsonNode data) {
-            this(op, address, type, folder, null, data);
+            this(op, address, type, folder, null, data, null);
         }
     }
 }

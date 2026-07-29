@@ -403,6 +403,17 @@ worth knowing: keyed on any read-only annotation it flags classes whose *writing
 matching `throw new X(` literally it misses the owner-qualified `Outer.XException` — which was the
 very bean it was written from.
 
+**A scheduled publish is `when` on `post.publish` (SH342).** ISO-8601, absent means now, and a
+**past instant is refused rather than read as now** — publishing now is what the op already means with
+no `when`, so accepting a past date would make two calls mean the same thing and swallow the timezone
+slip this catches. Checked before the no-drift noop, since "the draft matches what is published" says
+nothing about a transition asked for later; a shape over `ShPostUnifiedWriteService#schedule` (P10),
+not a second scheduler. Two things it cost, both worth knowing before proposing the next argument:
+`tools/list` had **one token** of headroom (2359/2360), so `shio_apply` was trimmed to 440 before the
+ceiling moved to 2375 — this surface is a wall, not a budget. And SH338's rot check did **not** fire,
+because the exception named the route it expected and the fix took another shape: **the stale check
+catches the predicted fix, not any fix.**
+
 **A ROADMAP entry is one sentence: what + why + `→` pointer.** The reasoning belongs in
 IMPROVEMENTS.md, which is what the pointer addresses; a line that restates it makes the roadmap a
 history instead of a queue, and lets two files disagree about one design. Measured when it was

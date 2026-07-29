@@ -336,6 +336,10 @@
                 "type" : {
                   "description" : "#string",
                   "type" : "string"
+                },
+                "when" : {
+                  "description" : "#string",
+                  "type" : "string"
                 }
               },
               "required" : [ "op", "address" ],

@@ -98,8 +98,10 @@ class ShStatelessReachabilityLintTest {
                 "copyto/moveto are the console's gestures; the agent moves with post.move and "
                 + "folder.move, which share the same writers (SH139)"));
         byPath.put("/api/v2/post-unified", new Requirement(Reason.AGENT_EQUIVALENT,
-                "post.upsert / post.move / post.publish. Two verbs on it are *not* covered and are "
-                + "SH342: /{id}/translate and /{id}/schedule have no address-native form"));
+                "post.upsert / post.move / post.publish, and since SH342 a scheduled publish is "
+                + "`when` on post.publish. What is still uncovered is /{id}/translate — SH342's "
+                + "other half, and the harder one: a locale is part of a post's identity in a way an "
+                + "SH79 address does not express (SH323 settled that an address carries no locale)"));
         byPath.put("/api/v2/site", new Requirement(Reason.AGENT_EQUIVALENT,
                 "site.upsert (SH170) — and this path is the reason that task exists, since a "
                 + "stateless caller here gets a bodiless 403 and the CLI's e2e/provision.mjs walks "

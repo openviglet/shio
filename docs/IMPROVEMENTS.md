@@ -3358,6 +3358,60 @@ because working thirteen known instances by hand leaves the fourteenth to the ne
 > transaction marked itself rollback-only and destroyed the refusal it had just written (✅ shipped,
 > with the lint SH322's rule demands).
 
+### XVI.61 The reachability gaps nothing had named (SH343, SH344, SH348)
+
+These came from SH338's and SH339's output rather than from a build, which is the point of having
+built them: most of the unreachable capabilities had either a task or a stated reason, and these had
+neither. They share one shape — *an id-keyed REST verb that never grew an address-native form* — and
+are separate tasks because the subsystems behind them have nothing else in common.
+
+**SH348 — a locale is part of a post's identity and an address cannot say so.** `post.upsert` takes no
+locale and `POST /post-unified/{id}/translate` is id-keyed and undeclared, so an agent cannot make a
+translation at all. SH323 settled the neighbouring question in the direction that makes this hard: an
+SH79 address is `post:<site>/<furl>` and carries **no locale**, which is exactly why `duplicate-url` is
+locale-blind. So `post.translate` cannot take a second address, and the two candidate shapes are not
+equivalent. An op taking `{from, locale}` and *returning* the new post's address is additive and leaves
+the address grammar alone — but then a translation has no address until it has a URL, so a
+desired-state document cannot declare one. Making locale an addressing dimension is honest about the
+model and touches every resolver, every lint, and SH323's own decision. Settle which before any code:
+the cheap one may be the one that has to be undone.
+
+**SH343 — the agent reads its own webhook failures and cannot touch the subscription.** SH103 put
+webhook delivery failures in `/agent/diagnostics` and SH269 gave them frames, so the agent is told
+precisely which subscription is failing and has no route to inspect, repair or remove it:
+`/api/v2/site-webhook` is undeclared and MCP-unreachable. That asymmetry is the interesting part —
+**a diagnostic for a resource the reader cannot act on is SH190's defect one level up** (the `fix`
+that named a log file the caller cannot open). Whether the answer is a declared route, a `webhook.*`
+batch op or an admission that this is console-shaped is undecided; what is not is that
+`webhooks: true` plus an incident feed is a promise the surface does not keep.
+
+**SH344 — the agent cannot mint the preview token its own answer requires.** SH184 resolved "where can
+a person look at this site" and its external-front-end branch ends in a token: `ShPreviewTokenAPI`
+returns one so a Next.js deployment can turn draft mode on at `/api/preview`. That endpoint is
+undeclared, so the agent that just deployed the front end cannot produce the credential the flow
+needs. The narrowest of the three and the cheapest to close — one entry in the endpoint index, the
+CSRF narrowing SH327 just did for `/render/**`, and a decision about whether minting a preview token
+needs its own gate the way SH107 gates publishing.
+
+### XVI.63 The test context cache has a ceiling and it is silent (SH347)
+
+Found by the full suite rather than by the change that caused it: `ShAgentDurableIncidentTest`
+`#theCapDropsTheOldest` failed in the whole run and passed both in isolation and paired with the new
+test. The cause is measured, not guessed. **SH315's isolated-datasource rule has produced 33 distinct
+Spring context keys, and the default `spring.test.context.cache.maxSize` is 32.** An evicted context is
+rebuilt, `ddl-auto=create-drop` recreates the schema mid-run, and rows a later test in the *shared*
+datasource is asserting about are gone.
+
+Raised to 64, because the alternative is to stop applying SH315 correctly — and SH315 is right: a test
+that measures the whole instance may not share it. What is unresolved is that the ceiling gives no
+warning. Nothing says a run is one context away from an order-dependent red, and an order-dependent red
+is the worst kind (SH250: a flake is worse than a break, because it teaches people that red might mean
+nothing). Two candidate instruments, and the cheap one is probably right: a test that counts distinct
+`spring.datasource.url` values and fails when the count approaches `maxSize` — the same shape as the
+token budgets, where a number nobody can see is a number that surprises somebody. This also sharpens
+**SH317**, which was filed as "nobody has counted the cost": the cost turns out to include correctness,
+not only seconds.
+
 ### XVI.60 The roadmap became a history instead of a queue (SH341)
 
 Measured rather than asserted, which is the point: **95 active task lines averaging 142 words each**,
