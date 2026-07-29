@@ -369,8 +369,8 @@ public class ShAgentAPI {
     public ResponseEntity<Object> batch(@RequestBody ShAgentBatch batch,
                                         @RequestParam(name = "ids", required = false,
                                                 defaultValue = "false") boolean ids,
-                                        @RequestParam(name = "verify", required = false,
-                                                defaultValue = "false") boolean verify,
+                                        @RequestParam(name = "verify", required = false)
+                                        String verify,
                                         @RequestParam(name = "digest", required = false)
                                         String digest,
                                         @RequestParam(name = "format", required = false)
@@ -379,8 +379,12 @@ public class ShAgentAPI {
         // SH266 — `digest` takes true/false *or* a page count, which is how `limit` already reads
         // everywhere else on this surface. A count is clamped to the instance's ceiling rather
         // than refused: the caller wants as many as it can have, and the cut is already a row.
+        // SH320 — `verify` bounds work (a whole lint pass), so it teaches rather than reading an
+        // unknown value as false. `ids` deliberately stays on Spring's lenient binding: it only
+        // adds a field to rows that are otherwise identical.
         return rendered(shAgentProofService.attach(
-                shAgentBatchService.run(batch, ids, name(principal)), verify,
+                shAgentBatchService.run(batch, ids, name(principal)),
+                ShAgentFlag.of(verify, "verify"),
                 ShAgentDigestPages.wanted(digest), ShAgentDigestPages.count(digest)), format);
     }
 
@@ -412,16 +416,17 @@ public class ShAgentAPI {
     public ResponseEntity<Object> apply(@RequestBody ShAgentDesiredState desired,
                                         @RequestParam(name = "ids", required = false,
                                                 defaultValue = "false") boolean ids,
-                                        @RequestParam(name = "verify", required = false,
-                                                defaultValue = "false") boolean verify,
+                                        @RequestParam(name = "verify", required = false)
+                                        String verify,
                                         @RequestParam(name = "digest", required = false)
                                         String digest,
                                         @RequestParam(name = "format", required = false)
                                         String format,
                                         Principal principal) {
-        // SH266 — same reading as /batch: true, false, or a page count the server clamps.
+        // SH266/SH320 — same reading as /batch.
         return rendered(shAgentProofService.attach(
-                shAgentDesiredStateService.apply(desired, ids, name(principal)), verify,
+                shAgentDesiredStateService.apply(desired, ids, name(principal)),
+                ShAgentFlag.of(verify, "verify"),
                 ShAgentDigestPages.wanted(digest), ShAgentDigestPages.count(digest)),
                 format);
     }

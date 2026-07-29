@@ -952,6 +952,15 @@ and a whole document are different bytes. `changes` revalidates in **cursor** mo
 window mode, which is correct — without `since`, its own cursor is the moving edge of the
 feed (SH232).
 
+**One rule for an unrecognised parameter value (SH320): a parameter that *selects or bounds work*
+teaches; one that only *adds a section* does not.** So `?format=` and `?digest=` are teaching 400s
+(they choose what the response is — a typo answers a different question), `?include=` is deliberately
+lenient (a typo costs the caller an extra its own code will notice, which is also the answer to
+SH287), and `?verify=` moved to the teaching side via `ShAgentFlag`, because it runs a whole lint
+pass: `?verify=yes` used to be a caller asking for proof, getting silence, and reading a 200.
+`?ids=` stays lenient — it only adds a field to rows that are otherwise identical, and `?ids=1` is
+informal rather than wrong; `1`/`0` are accepted everywhere for that reason.
+
 **`?format=` on `/agent/context` has three values (SH78, SH115):** `json`, `terse`, and
 `agents-md` — the same pack rendered as project agent instructions, which is what
 `shio context --as agents-md --out AGENTS.md` writes. An unknown value is a teaching **400**,

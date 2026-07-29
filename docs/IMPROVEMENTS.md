@@ -2744,30 +2744,6 @@ set.
 Worth pairing with SH275's habit: both are about claims a codebase keeps making after they stopped
 being true, and the cheap version of both is to look rather than to reason.
 
-### XVI.39 Two `include=` parameters teach an unknown value and the third ignores it (SH287)
-
-`/agent/manifest` and `/agent/context` both throw a teaching 400 for an unknown `include=` section,
-with the vocabulary and a did-you-mean. `/agent/read`'s `include=impact` (SH262) silently returns the
-ordinary read.
-
-The distinction its author reasoned from is genuine: those two parameters **select** the response, so a
-typo silently answers a different question, while this one only **adds** a section, so a typo costs the
-caller an extra it asked for and will notice is absent. By that rule both behaviours are right.
-
-The problem is where the rule lives — in one javadoc, on the newest of the three. The next `include=`
-on this surface will be built by whoever reads whichever of the three they happen to open, and P6's
-promise is that an error teaches, not that it teaches on two thirds of the parameters that can take a
-typo. Settle it in one of two directions:
-
-- **Keep the distinction and make it a rule**: name it in `agents.md`, give the adding form a shared
-  helper so the behaviour is a call and not a re-derivation, and assert it in a test.
-- **Drop it**: `/agent/read` joins the other two, on the argument that a caller who typed
-  `include=impacts` wants to be told, and that "it will notice" assumes a caller that checks.
-
-Worth widening the check while it is open: `?format=` teaches an unknown value and `?fields=` does not
-(an unknown field name is simply absent from the projection), and nobody has asked whether that pair
-is deliberate or two independent decisions that happen to differ.
-
 ### XVI.40 The CLI cannot read a post (SH288)
 
 `shio` can resolve an address, digest a page, verify a site, list changes and print a context pack. It
@@ -3151,29 +3127,6 @@ Two fixes, and the cheap one is probably right:
 There is a real argument for doing neither: the manifest reports the ceiling, and this surface is
 designed for agents that read the manifest first. The population affected is exactly the caller that
 did not — which may be small enough to leave alone, but should be *decided* rather than defaulted.
-
-### XVI.39 One surface, four opinions about an unrecognised value (SH320)
-
-A single request to `/agent/batch` can carry four query parameters that disagree about what to do
-with a value they do not recognise:
-
-| Parameter | Unknown value |
-|---|---|
-| `?digest=` | teaches (SH266) — `yes` and `0` are 400s |
-| `?verify=`, `?ids=` | Spring's boolean binding — `yes` is silently **false**, `1` is true |
-| `?format=` | teaches (SH78) |
-| `?include=` | ignored (SH262, and SH287 is already filed on it) |
-
-The difference is invisible until somebody mistypes, and then it is invisible again, because three
-of the four answer a plausible-looking response to a different question.
-
-The fix is **not** obviously "make them all teach". Spring's binding is what makes `?ids=1` work, and
-tightening it would break callers who are not wrong so much as informal. So what this wants first is
-the rule stated: *a parameter that **selects or bounds work** teaches; one that only **adds a
-section** does not.* By that rule `digest` and `format` are right, `include` is right, and the
-boolean pair is the odd one — which is a much smaller change than it looked before the rule existed.
-
-SH287 folds into this rather than being answered separately.
 
 ---
 
