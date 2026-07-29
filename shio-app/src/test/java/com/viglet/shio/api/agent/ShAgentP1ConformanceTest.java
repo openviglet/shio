@@ -206,6 +206,12 @@ class ShAgentP1ConformanceTest {
         byFeature.put("serverRender", route("/render/post-types", "provisions the PageLayout / "
                 + "Region / Theme model; /preview/{site}/{url} then renders a page with no front "
                 + "end at all. The one endpoint that makes a site *visible*"));
+        // SH344 — the last step of SH184's answer: an agent that has deployed a front end can now
+        // mint the token that front end needs to show a draft. Declared *and* CSRF-narrowed, which is
+        // the pair SH327 established as the unit of a fix here.
+        byFeature.put("previewTokens", route("/preview-token", "mints a short-lived PREVIEW token "
+                + "for one post of one site; the response's token is null when Shio previews the "
+                + "site itself, because /preview/** is already authenticated (SH184)"));
         byFeature.put("postTypesAsCode", route("/post-type/{name}", "the one name-keyed post-type "
                 + "surface (SH16/SH117), read and upserted over HTTP"));
 
@@ -264,9 +270,6 @@ class ShAgentP1ConformanceTest {
         byFeature.put("locales", new Delivery(Reach.REST_ONLY, "/post-unified/{id}/translate",
                 "SH53's translate is id-keyed, undeclared and has no address-native form — "
                 + "post.upsert takes no locale, so an agent cannot make a translation at all"));
-        byFeature.put("previewTokens", new Delivery(Reach.REST_ONLY, "/agent/preview-token",
-                "ShPreviewTokenAPI is undeclared, so the agent cannot mint the token an external "
-                + "front end needs to show a draft — the last step of SH184's answer"));
         byFeature.put("webhooks", new Delivery(Reach.REST_ONLY, "/site-webhook",
                 "/api/v2/site-webhook is undeclared and MCP-unreachable, so the agent sees webhook "
                 + "*failures* in diagnostics and cannot create, inspect or repair a subscription"));
@@ -404,7 +407,6 @@ class ShAgentP1ConformanceTest {
                         "graphql",
                         "locales",
                         "postTypeMerge",
-                        "previewTokens",
                         "reviewQueue",
                         "trash",
                         "universalEditor",

@@ -171,13 +171,12 @@ class ShAgentManifestTest {
         // P3: the manifest is read every session, so it must stay small on purpose.
         // If this trips, the index is drifting into a full API dump — prune it.
         //
-        // Raised from 30 by SH327, which added POST /render/post-types: the endpoint that makes a
-        // site *visible* and the one an agent could not call. The count is a proxy and the tokens are
-        // the cost — `response.manifest` in token-budgets.properties is the real guard, and it did
-        // **not** move, because the entry's prose was trimmed to fit it (the same order
-        // ShMcpToolBudgetTest states for tool descriptions). If this trips again, ask which of the
-        // seven /cda/** rows earns its place beside it rather than reaching for the number.
-        assertThat(shAgentManifestService.manifest().endpoints()).hasSizeLessThan(31);
+        // SH327 raised this to 31 and **SH344 put it back**: that task needed a row of its own and
+        // answered the question the SH327 note left — which of the seven /cda/** rows earns its place
+        // — by pruning the two the agent surface fully supersedes. 29 endpoints now, and the token
+        // budget went back to 2500 as well. If this trips again, ask the same question before
+        // reaching for the number: the count is a proxy and `response.manifest` is the cost.
+        assertThat(shAgentManifestService.manifest().endpoints()).hasSizeLessThan(30);
     }
 
     @Test

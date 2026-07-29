@@ -78,6 +78,18 @@ public class ShSecurityConfig {
      */
     private static final String RENDER_PATH = "/api/v2/render/**";
     /**
+     * SH344 — the last step of SH184's answer. An agent that has just deployed a front end needs a
+     * preview token so that front end can turn its own draft mode on, and could not mint one: the
+     * route was undeclared and session-only, so a credential-based caller got a bodiless 403.
+     *
+     * <p><b>No new gate, and that is a decision rather than an omission.</b> The token this mints is
+     * {@code PREVIEW} scope, one site, one post, and expiring — it grants draft read on a post the
+     * caller can already read, and SH106 gives the {@code AGENT} scope draft reads outright. So there
+     * is nothing here to escalate to, which is the test SH107's publish gate had to pass and this
+     * does not: publishing changes what the public sees, minting a preview token does not.</p>
+     */
+    private static final String PREVIEW_TOKEN_PATH = "/api/v2/preview-token";
+    /**
      * SH189 — the exchange import. Narrowed rather than blanket for SH167's reason: the console
      * posts the multipart form with a session cookie and must stay CSRF-checked, while a
      * credential-based client (the CLI, a CI job) holds no cookie and cannot send a token. A
@@ -181,6 +193,9 @@ public class ShSecurityConfig {
                         // SH327 — see RENDER_PATH. The endpoint that makes a site visible was the
                         // one an agent could not call, which is what SH339's inventory named.
                         new ShStatelessRequestMatcher(mvc.matcher(RENDER_PATH), sessionCookieName),
+                        // SH344 — see PREVIEW_TOKEN_PATH: the last step of SH184's answer, and it
+                        // grants nothing an agent's own credential does not already carry.
+                        new ShStatelessRequestMatcher(mvc.matcher(PREVIEW_TOKEN_PATH), sessionCookieName),
                         new ShStatelessRequestMatcher(mvc.matcher(IMPORT_PATH), sessionCookieName),
                         // SH109 — same narrowed exemption, same reason (see REVIEW_PATH).
                         new ShStatelessRequestMatcher(mvc.matcher(REVIEW_PATH), sessionCookieName),

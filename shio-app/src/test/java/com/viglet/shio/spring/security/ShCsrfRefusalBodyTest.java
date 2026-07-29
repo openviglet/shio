@@ -145,6 +145,20 @@ class ShCsrfRefusalBodyTest {
     }
 
     @Test
+    @DisplayName("SH344: the preview token is mintable without a cookie")
+    void thePreviewTokenIsMintableStatelessly() throws Exception {
+        // The last step of SH184's answer: an agent that deployed a front end needs the token that
+        // front end uses to show a draft, and could not mint one. No new gate — the token is PREVIEW
+        // scope for one post of one site, so it grants draft read the caller already has (SH106).
+        assertThat(secured.perform(post("/api/v2/preview-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"postId\":\"whatever\"}"))
+                .andReturn().getResponse().getStatus())
+                .as("401, not 403: it passed CSRF and failed authentication")
+                .isEqualTo(401);
+    }
+
+    @Test
     @DisplayName("SH339: the narrowed exemptions still work, so nothing was widened")
     void theNarrowedExemptionsStillWork() throws Exception {
         // A session-less agent write passes CSRF and stops at authentication (SH167's 401), which is

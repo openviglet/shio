@@ -3385,13 +3385,12 @@ that named a log file the caller cannot open). Whether the answer is a declared 
 batch op or an admission that this is console-shaped is undecided; what is not is that
 `webhooks: true` plus an incident feed is a promise the surface does not keep.
 
-**SH344 — the agent cannot mint the preview token its own answer requires.** SH184 resolved "where can
-a person look at this site" and its external-front-end branch ends in a token: `ShPreviewTokenAPI`
-returns one so a Next.js deployment can turn draft mode on at `/api/preview`. That endpoint is
-undeclared, so the agent that just deployed the front end cannot produce the credential the flow
-needs. The narrowest of the three and the cheapest to close — one entry in the endpoint index, the
-CSRF narrowing SH327 just did for `/render/**`, and a decision about whether minting a preview token
-needs its own gate the way SH107 gates publishing.
+> ✅ **SH344 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Declared and CSRF-narrowed, with **no
+> new gate** (a `PREVIEW` token for one post grants draft read the caller already has), and **funded by
+> pruning** the two `/cda/**` rows the agent surface fully supersedes — so SH327's budget raise is given
+> back and the document is *smaller* with a capability added. That is the answer to the question SH327
+> left open: a manifest row is affordable when something in the index has stopped earning its place, and
+> asking which is cheaper than raising a ceiling twice.
 
 > ✅ **SH347 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The ceiling is configured rather than
 > inherited and `ShContextCacheHeadroomTest` fails with room to spare (**28 against 64**, margin 8).

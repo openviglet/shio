@@ -333,12 +333,15 @@ public class ShAgentManifestService {
                 new ShAgentEndpoint("GET", "/cda/site",
                         "List published sites (id, name, root folder id).",
                         "token:READ", "GET /api/v2/cda/site"),
-                new ShAgentEndpoint("GET", "/cda/object/{folderId}/list",
-                        "List a folder's children — subfolders + published posts.",
-                        "token:READ", "GET /api/v2/cda/object/{folderId}/list?page=0&size=50"),
-                new ShAgentEndpoint("GET", "/cda/object/{id}/path",
-                        "Breadcrumb path for a folder or post — use it to build a path address.",
-                        "token:READ", "GET /api/v2/cda/object/{id}/path"),
+                // SH344 — the two CDA navigation rows that stood here were pruned to fund this one,
+                // which is the question the SH327 note said the next raise had to answer. They are
+                // the two the agent surface fully supersedes: the context pack's sitemap *is* the
+                // folder tree and /agent/find walks it by address, so listing children by folder id
+                // and building a breadcrumb from an id are steps an agent no longer takes. The four
+                // CDA rows that remain describe what a *front end* reads — one post, a query, a
+                // search, a schema — which is code the agent writes and cannot derive from here.
+                // The index says of itself that it is curated, not exhaustive; this is that being
+                // true rather than stated.
                 new ShAgentEndpoint("GET", "/cda/post/{id}",
                         "One published post with expanded attributes.",
                         "token:READ", "GET /api/v2/cda/post/{id}"),
@@ -366,6 +369,11 @@ public class ShAgentManifestService {
                 // SH327 — declared because `serverRender: true` was a half-truth without it: the
                 // capability existed and the endpoint that provisions it appeared nowhere a caller
                 // reads. SH338's inventory named it and SH339's named the CSRF half.
+                new ShAgentEndpoint("POST", "/preview-token",
+                        "Mint a short-lived token so an external front end can show a draft. "
+                                + "Body: {postId}. Returns previewUrl + token; token is null when "
+                                + "Shio previews the site itself.",
+                        "console", "POST /api/v2/preview-token"),
                 new ShAgentEndpoint("POST", "/render/post-types",
                         "Create the PageLayout/Region/Theme types this instance renders with; "
                                 + "idempotent. Then /preview/{site}/{url} shows a page, no front "

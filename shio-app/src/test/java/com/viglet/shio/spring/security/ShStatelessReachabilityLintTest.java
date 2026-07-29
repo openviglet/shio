@@ -135,9 +135,6 @@ class ShStatelessReachabilityLintTest {
         byPath.put("/api/v2/site-webhook", new Requirement(Reason.GAP,
                 "SH343 — the agent reads its own webhook delivery failures in /agent/diagnostics "
                 + "and cannot touch the subscription that produced them"));
-        byPath.put("/api/v2/preview-token", new Requirement(Reason.GAP,
-                "SH344 — SH184's answer for an external front end ends in a token the agent has no "
-                + "route to mint"));
         return byPath;
     }
 
@@ -209,9 +206,7 @@ class ShStatelessReachabilityLintTest {
                         the gaps are the deliverable: each is a capability the product offers and \
                         its own primary operator cannot invoke over HTTP. Closing one is an edit \
                         here; gaining one must be a reviewable diff with a task id.""")
-                .containsExactlyInAnyOrder(
-                        "/api/v2/preview-token",
-                        "/api/v2/site-webhook");
+                .containsExactlyInAnyOrder("/api/v2/site-webhook");
     }
 
     @Test
