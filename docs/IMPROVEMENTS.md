@@ -2821,29 +2821,6 @@ The part worth copying from SH273 is the **test**: a table asserting that the co
 and the rows in the document agree, because a hand-kept list of what a renderer emits drifts
 silently, and the failure direction is under-documentation nobody notices.
 
-### XVI.55 Nothing tests the bridge script, in any language (SH306)
-
-`render/shio-editor.js` is 170 lines implementing one side of the SH185 protocol, and it has **no
-test**. `ShEditorBridgeTest` asserts the *injection* — that the script tag appears for
-`?editor=true`, not otherwise, with the parent origin on it — and stops at the file boundary. SH303
-changed three functions inside it and the only check was `node --check`, which proves it parses.
-
-What is worth testing is pure and small:
-
-- `labelOf` / `describe` — the shape of the message the console consumes.
-- `ownerOf` — the nearest-ancestor walk, which is the rule SH185 states as load-bearing and the one
-  a refactor would most plausibly break.
-- The origin guard, which must never accept `"*"` and never post to an unexpected parent. That is a
-  security property currently guaranteed by reading the file.
-
-The obstacle is structural: it is a browser IIFE served as a static resource, with no module
-boundary. Two ways out, and they cost different things — a DOM harness (`jsdom`, in the
-`shio-react` workspace where a test runner already exists, importing the file as text and evaluating
-it), or restructuring the script to expose a testable core, which changes a file that is
-deliberately dependency-free and inert when not framed.
-
-Worth deciding now, because the next change to it will be exactly as unverified as this one.
-
 ### XVI.56 A finding's address is a string, and nothing checks it resolves (SH309)
 
 Every teaching message in `verify` is assembled by concatenation: SH308 puts `post:blog/l-article`

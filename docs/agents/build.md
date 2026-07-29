@@ -16,6 +16,13 @@ vocabulary — SH95, depends on the DSL; **both publish since SH156**),
 the package exists so the plugin's manifests have a test — SH97). Run
 `pnpm install` once at the repo root. **Node ≥26** — `shio-sections`' tests import
 `.ts` directly and rely on native type stripping.
+**Tests are `node --test "test/*.test.mjs"` per package**, listed in the root `test` script — no
+vitest, no jest. `shio-react` joined that list in **SH306**, with `jsdom` as its only test
+dependency: it runs the served `render/shio-editor.js` in a real DOM, which is the only faithful way
+to test it (every function in it *is* DOM behaviour, and evaluating it from the Java suite is closed by
+the no-script-engine non-goal). **These do not run under `./mvnw test`** — the Maven gate is Java only,
+so a rule that must never regress silently also belongs in `ShEditorBridgeTest` as a textual guard.
+Running the JS suite in CI is SH241/SH284's open work.
 Native build scripts are allowlisted via `onlyBuiltDependencies` in
 `pnpm-workspace.yaml` (`esbuild`, `@tailwindcss/oxide`) — pnpm 11 no longer reads
 the `pnpm` field in `package.json`, so this setting lives in the workspace file.
