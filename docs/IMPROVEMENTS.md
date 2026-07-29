@@ -3393,24 +3393,41 @@ needs. The narrowest of the three and the cheapest to close — one entry in the
 CSRF narrowing SH327 just did for `/render/**`, and a decision about whether minting a preview token
 needs its own gate the way SH107 gates publishing.
 
-### XVI.63 The test context cache has a ceiling and it is silent (SH347)
+> ✅ **SH347 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The ceiling is configured rather than
+> inherited and `ShContextCacheHeadroomTest` fails with room to spare (**28 against 64**, margin 8).
+> The lesson worth keeping: **an invisible limit is a limit nobody recognises when it is crossed**, and
+> the symptom it produced — a test failing only in the full suite — reads as a flake rather than as a
+> ceiling. It also sharpens **SH317**, filed as "nobody has counted the cost": the cost includes
+> correctness, not only seconds.
 
-Found by the full suite rather than by the change that caused it: `ShAgentDurableIncidentTest`
-`#theCapDropsTheOldest` failed in the whole run and passed both in isolation and paired with the new
-test. The cause is measured, not guessed. **SH315's isolated-datasource rule has produced 33 distinct
-Spring context keys, and the default `spring.test.context.cache.maxSize` is 32.** An evicted context is
-rebuilt, `ddl-auto=create-drop` recreates the schema mid-run, and rows a later test in the *shared*
-datasource is asserting about are gone.
+### XVI.64 What the SH348 decision has to settle first (SH348)
 
-Raised to 64, because the alternative is to stop applying SH315 correctly — and SH315 is right: a test
-that measures the whole instance may not share it. What is unresolved is that the ceiling gives no
-warning. Nothing says a run is one context away from an order-dependent red, and an order-dependent red
-is the worst kind (SH250: a flake is worse than a break, because it teaches people that red might mean
-nothing). Two candidate instruments, and the cheap one is probably right: a test that counts distinct
-`spring.datasource.url` values and fails when the count approaches `maxSize` — the same shape as the
-token budgets, where a number nobody can see is a number that surprises somebody. This also sharpens
-**SH317**, which was filed as "nobody has counted the cost": the cost turns out to include correctness,
-not only seconds.
+The task is blocked on a question, and the question is not "which shape is nicer" — it is **whether a
+translation has an address before it has a URL**. Recorded here because both candidate shapes look
+reasonable and one of them is a decision this product would have to undo.
+
+**Shape A — `post.translate {from, locale}`, returning the new post's address.** Additive, leaves the
+SH79 grammar untouched, and honours SH323's finding directly: an address carries no locale, so the op
+takes one address and a locale rather than two addresses. Its cost is that the created translation has
+**no address of its own until somebody assigns a URL** — `ShPostUnifiedWriteService.translate` assigns
+no `furl` (verified while shipping SH323), so the new post is reachable only as `id:` (SH172's
+fallback). That in turn means a **desired-state document cannot declare a translation**, because Block I
+addresses posts by URL and a document is state: the tree would have to name something that does not yet
+exist. So Shape A gives the agent a verb and leaves `shio push --content` unable to express the result.
+
+**Shape B — locale as an addressing dimension.** Honest about the model: the identity of a translated
+page includes its locale, and saying so in the address makes a document able to declare one. Its cost is
+every resolver, every lint, the SH79 grammar, the CLI's file-per-URL projection (two locales at one URL
+would be two files at one path) and SH323's own decision, which is *load-bearing*: `duplicate-url` is
+locale-blind precisely because an address carries no locale, and it is an error for exactly the reason
+that two posts on one URL are unaddressable. Reversing that is not a syntax change.
+
+**What decides it is the file projection, not the op.** If a translation must be declarable in
+`shio/content/**` then the URL has to carry the locale one way or another — a path prefix (`pt-br/...`)
+is the obvious candidate and is a *content* convention rather than an address grammar change, which
+would let Shape A stand and leave SH323 intact. That is the thing to test before writing either: take
+the 2018 `bootstrap-site` package or a two-locale fixture through `pull --content`, and see what the
+tree wants to look like. Measure before you fix, on a design question.
 
 ### XVI.60 The roadmap became a history instead of a queue (SH341)
 

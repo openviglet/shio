@@ -102,6 +102,18 @@ that layout from `ShTenantContext`.
 Tests skip Liquibase (`spring.liquibase.enabled=false`) and build the schema from
 entity metadata via `ddl-auto=create-drop` on a fresh in-memory H2 per run.
 
+**The test context cache has a chosen ceiling, and a guard keeps room under it (SH347).**
+`spring.test.context.cache.maxSize=64` in `src/test/resources/application.properties`, because
+SH315's isolated-datasource rule has produced **28** in-memory databases and the framework default is
+**32**. Crossing it is not a time cost: an evicted context is rebuilt, `ddl-auto=create-drop`
+recreates the schema mid-run, and rows a later test in the *shared* datasource asserts about are gone
+— which surfaces as a test failing only in the full suite and passing in isolation. That happened once
+(`ShAgentDurableIncidentTest#theCapDropsTheOldest`) and read as a flake. `ShContextCacheHeadroomTest`
+now fails while there is still room, and asserts the ceiling is **configured** rather than inherited,
+since the original defect was a limit nobody had chosen. It counts a **lower bound** — a context key is
+the whole property set, not the URL — which is what the margin of 8 covers; widen the margin before
+widening the counter.
+
 **Mockito runs as a `-javaagent`, not by self-attaching (SH250).** Surefire and failsafe both carry
 `@{argLine} -javaagent:${org.mockito:mockito-core:jar}`, with the path supplied by
 `maven-dependency-plugin`'s `properties` goal and `argLine` declared **empty** in `<properties>` so
