@@ -403,6 +403,15 @@ worth knowing: keyed on any read-only annotation it flags classes whose *writing
 matching `throw new X(` literally it misses the owner-qualified `Outer.XException` — which was the
 very bean it was written from.
 
+**A post's locale is on the read, and only when it is not the default (SH348).** `/agent/read` and
+`find`'s rows carry `locale` — before this the string appeared nowhere in `ShAgentReadService`, so
+`locales: true` advertised a capability no read reported the state of. **Absent means the instance
+default**, which the context pack publishes on the first call a session makes, so absence is
+unambiguous rather than merely cheap (SH121's pattern, not SH299's: a locale has a knowable default and
+a marker count does not). The default is `ShPostUnifiedWriteService.DEFAULT_LOCALE` — named once,
+because the writer owns it and the pack reports it. This is **step 1 of SH348's four**; the projection
+still drops it, so a round trip through files relocalizes a post (→ §XVI.64).
+
 **A scheduled publish is `when` on `post.publish` (SH342).** ISO-8601, absent means now, and a
 **past instant is refused rather than read as now** — publishing now is what the op already means with
 no `when`, so accepting a past date would make two calls mean the same thing and swallow the timezone

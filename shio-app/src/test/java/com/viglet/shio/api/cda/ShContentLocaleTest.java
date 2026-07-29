@@ -52,6 +52,8 @@ class ShContentLocaleTest {
     @Autowired
     private ShCdaService shCdaService;
     @Autowired
+    private com.viglet.shio.api.agent.ShAgentReadService shAgentReadService;
+    @Autowired
     private PlatformTransactionManager transactionManager;
 
     @PersistenceContext
@@ -60,6 +62,7 @@ class ShContentLocaleTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private String siteId;
+    private String siteName;
     private String folderId;
     private String postTypeId;
 
@@ -68,7 +71,8 @@ class ShContentLocaleTest {
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         tx.executeWithoutResult(s -> {
             ShSite site = new ShSite();
-            site.setName("loc-site-" + UUID.randomUUID());
+            siteName = "loc-site-" + UUID.randomUUID();
+            site.setName(siteName);
             site.setUrl("http://loc.example.test");
             site.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             site.setOwner("admin");
@@ -171,6 +175,29 @@ class ShContentLocaleTest {
                         instead (ShAddressResolver.DuplicateUrlException).""")
                 .isEqualTo(blind.id());
         assertThat(List.of("First", "Second")).contains(scoped.title());
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("SH348: the agent read reports a non-default locale, and omits the default")
+    void theAgentReadSeesTheLocale() {
+        // Before SH348 the string `locale` appeared nowhere in ShAgentReadService, so `locales: true`
+        // in the manifest was a capability no read reported the state of — the first of the four
+        // layers that made `post.translate` unbuildable (§XVI.64).
+        persistPublished("/sh348-pt", "pt-br", "Sobre", UUID.randomUUID().toString());
+        persistPublished("/sh348-en", "en", "About", UUID.randomUUID().toString());
+
+        var translated = shAgentReadService.read(
+                List.of("post:" + siteName + "/sh348-pt"), List.of(), false, false);
+        var ordinary = shAgentReadService.read(
+                List.of("post:" + siteName + "/sh348-en"), List.of(), false, false);
+
+        assertThat(translated.getFirst().locale())
+                .as("present where it carries information")
+                .isEqualTo("pt-br");
+        assertThat(ordinary.getFirst().locale())
+                .as("""
+                        absent for the instance default, which is P3 rather than laziness: a                         monolingual instance pays nothing per row (measured — the response budget did                         not move), and absence is unambiguous because the context pack publishes the                         default on the call SH77 tells a session to make first.""")
+                .isNull();
     }
 
     private void persistPublished(String furl, String locale, String title, String group) {

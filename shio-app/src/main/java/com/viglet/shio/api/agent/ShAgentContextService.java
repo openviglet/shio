@@ -30,6 +30,7 @@ import com.viglet.shio.api.cda.ShCdaMapper;
 import com.viglet.shio.api.cda.dto.ShCdaPostTypeSchema;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -132,7 +133,8 @@ public class ShAgentContextService {
         Map<String, Long> postsByType = counts(shPostUnifiedRepository.countDistinctByPostTypeId());
 
         ShAgentContext.Instance instance = sections.contains(ShAgentContextSection.INSTANCE)
-                ? new ShAgentContext.Instance("Viglet Shio CMS", version(), "en")
+                ? new ShAgentContext.Instance("Viglet Shio CMS", version(),
+                        ShPostUnifiedWriteService.DEFAULT_LOCALE)
                 : null;
         List<ShAgentContext.Site> siteRows = sections.contains(ShAgentContextSection.SITES)
                 ? siteRows(sites, postsBySite, ids)

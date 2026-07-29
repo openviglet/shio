@@ -53,6 +53,18 @@ import tools.jackson.databind.node.ObjectNode;
 @Service
 public class ShPostUnifiedWriteService {
 
+    /**
+     * The locale new content gets when the caller names none (SH53), named once (SH348).
+     *
+     * <p>It was written {@code "en"} in two places — here and in the context pack's
+     * {@code Instance} — which is the drift SH260 and SH300 each spent a task removing for a
+     * different set. The pack <em>reports</em> the writer's decision, so the writer owns the value:
+     * anything comparing a post's locale against "the default" (SH348's read projection) has to read
+     * the same constant or the comparison can disagree with what the pack published.</p>
+     */
+    public static final String DEFAULT_LOCALE = "en";
+
+
     /** Recorded as the {@code publisher} for transitions fired by the SH15 sweep. */
     private static final String SCHEDULER_ACTOR = "scheduler";
 
@@ -129,7 +141,7 @@ public class ShPostUnifiedWriteService {
         row.setOwner(req.owner());
         row.setDate(Instant.now());
         row.setModifiedDate(Instant.now());
-        row.setLocale(req.locale() != null && !req.locale().isBlank() ? req.locale() : "en");
+        row.setLocale(req.locale() != null && !req.locale().isBlank() ? req.locale() : DEFAULT_LOCALE);
         row.setTranslationGroupId(req.translationGroupId() != null && !req.translationGroupId().isBlank()
                 ? req.translationGroupId() : postId);
         row.setPublished(state == ShPostState.PUBLISHED);

@@ -60,8 +60,17 @@ public record ShAgentFound(int count, boolean truncated, List<Row> results, List
      * @param state   {@code DRAFT} / {@code PUBLISHED}
      * @param title   the post title, so the agent can choose without a second call
      * @param id      omitted unless the caller asked for ids (SH121)
+     * @param locale  present only when it is <b>not</b> the instance default (SH348) — this is the
+     *                row where a caller discovers a site has translations at all, and on a
+     *                monolingual instance it costs nothing because {@code NON_NULL} omits it
      */
     @JsonInclude(Include.NON_NULL)
-    public record Row(String address, String type, String state, String title, String id) {
+    public record Row(String address, String type, String state, String title, String id,
+                      String locale) {
+
+        /** The five-field form, before SH348 made a non-default locale visible. */
+        public Row(String address, String type, String state, String title, String id) {
+            this(address, type, state, title, id, null);
+        }
     }
 }

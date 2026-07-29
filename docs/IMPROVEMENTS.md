@@ -3426,8 +3426,9 @@ form for `translate`" but "the agent cannot see which locale a post is in" — w
 address question is premature: neither candidate shape can be evaluated until a locale is *readable*.
 
 **The order the work has to take**, and it inverts the task as filed: expose the locale on
-`/agent/read` (and `find`'s rows), carry it in the projection, decide how the tree names two locales of
-one page, and only then choose the op. The tree question is the one with teeth — Block I is one file per
+`/agent/read` (and `find`'s rows) — ✅ **done**, non-default only, with the `"en"` default named once so
+the read cannot disagree with what the pack publishes — then carry it in the projection, decide how the
+tree names two locales of one page, and only then choose the op. The tree question is the one with teeth — Block I is one file per
 URL, so two locales of one page are either two URLs (SH323's rule, and a *content* convention such as a
 path prefix) or one path holding two documents (a format change). The first leaves SH323 intact and is
 almost certainly right; it is also the one that needs no address-grammar change, which is what makes

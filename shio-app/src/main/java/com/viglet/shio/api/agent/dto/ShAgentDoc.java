@@ -39,23 +39,47 @@ import tools.jackson.databind.JsonNode;
 @JsonInclude(Include.NON_NULL)
 public record ShAgentDoc(String address, String type, String state, String folder,
                          java.util.List<String> fields, JsonNode data, String id,
-                         Problem error, Impact impact) {
+                         Problem error, Impact impact, String locale) {
+
+    /**
+     * The nine-field form, before SH348 made a post's locale visible.
+     *
+     * <p><b>{@code locale} is present only when it is not the instance default</b>, which is the P3
+     * shape: a monolingual instance — the overwhelming case — pays nothing per row, and the field is
+     * always there where it carries information. Absence is unambiguous rather than merely cheap,
+     * because the context pack publishes the default on the one call SH77 tells a session to make
+     * first, so a reader interpreting an absent locale already holds the answer. That is what makes
+     * this SH121's pattern (ids off by default) rather than SH299's (present and zero): a marker
+     * count has no knowable default, and this does.</p>
+     */
+    public ShAgentDoc(String address, String type, String state, String folder,
+                      java.util.List<String> fields, JsonNode data, String id,
+                      Problem error, Impact impact) {
+        this(address, type, state, folder, fields, data, id, error, impact, null);
+    }
+
+    /** The same row with SH348's locale attached. */
+    public ShAgentDoc withLocale(String postLocale) {
+        return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
+                postLocale);
+    }
 
     /** The seven-field form: a row that resolved, which is every row before SH171. */
     public ShAgentDoc(String address, String type, String state, String folder,
                       java.util.List<String> fields, JsonNode data, String id) {
-        this(address, type, state, folder, fields, data, id, null, null);
+        this(address, type, state, folder, fields, data, id, null, null, null);
     }
 
     /** The eight-field form: SH171's failed row, before SH262 added the impact projection. */
     public ShAgentDoc(String address, String type, String state, String folder,
                       java.util.List<String> fields, JsonNode data, String id, Problem error) {
-        this(address, type, state, folder, fields, data, id, error, null);
+        this(address, type, state, folder, fields, data, id, error, null, null);
     }
 
     /** The same row with SH262's blast radius attached. */
     public ShAgentDoc withImpact(Impact blastRadius) {
-        return new ShAgentDoc(address, type, state, folder, fields, data, id, error, blastRadius);
+        return new ShAgentDoc(address, type, state, folder, fields, data, id, error, blastRadius,
+                locale);
     }
 
     /**

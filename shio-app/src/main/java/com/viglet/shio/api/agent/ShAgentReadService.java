@@ -26,6 +26,7 @@ import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.api.agent.dto.ShAgentFound;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -285,7 +286,30 @@ public class ShAgentReadService {
                 fields.isEmpty() ? null : fields,
                 projected,
                 ids ? post.getId() : null)
-                .withImpact(impact ? impactOf(post) : null);
+                .withImpact(impact ? impactOf(post) : null)
+                .withLocale(nonDefaultLocale(post));
+    }
+
+    /**
+     * A post's locale, or {@code null} when it is the instance default (SH348).
+     *
+     * <p>Before this the agent surface could not see a locale at all — the string appeared nowhere in
+     * this service — so {@code locales: true} in the manifest was a capability whose *state* no read
+     * reported. That is the first of the four layers SH348 turned out to be: the projection cannot
+     * carry what the read does not return, and a document cannot declare what the projection drops.</p>
+     *
+     * <p><b>Conditional rather than always-present</b>, which is P3 and not laziness: a monolingual
+     * instance pays nothing per row, and the field appears exactly where it carries information. The
+     * default comes from {@link ShPostUnifiedWriteService#DEFAULT_LOCALE} — the writer owns it, the
+     * context pack reports it — so this comparison cannot disagree with what the pack published.</p>
+     */
+    private static String nonDefaultLocale(ShPostUnified post) {
+        String locale = post.getLocale();
+        if (locale == null || locale.isBlank()
+                || locale.equals(ShPostUnifiedWriteService.DEFAULT_LOCALE)) {
+            return null;
+        }
+        return locale;
     }
 
     /**
@@ -432,7 +456,8 @@ public class ShAgentReadService {
                 post.getShPostType() == null ? null : post.getShPostType().getName(),
                 post.getState() == null ? null : post.getState().name(),
                 post.getTitle(),
-                ids ? post.getId() : null);
+                ids ? post.getId() : null,
+                nonDefaultLocale(post));
     }
 
     private static boolean matchesType(ShPostUnified post, String type) {

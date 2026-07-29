@@ -54,6 +54,7 @@ public final class ShAgentReadTerse {
                     .attr("type", row.type())
                     .attr("state", row.state())
                     .attr("id", row.id())
+                    .attr("locale", row.locale())
                     .attr("title", row.title())
                     .build());
         }
@@ -74,6 +75,10 @@ public final class ShAgentReadTerse {
                     .attr("type", doc.type())
                     .attr("state", doc.state())
                     .attr("folder", doc.folder())
+                    // SH348 — absent when it is the instance default, which the context pack
+                    // publishes; `ShTerse.attr` already omits a null, so the conditional costs
+                    // nothing here and a monolingual instance's line is byte-identical.
+                    .attr("locale", doc.locale())
                     .attr("id", doc.id())
                     .attr("fields", doc.fields() == null ? null : String.join(",", doc.fields()))
                     .build());
