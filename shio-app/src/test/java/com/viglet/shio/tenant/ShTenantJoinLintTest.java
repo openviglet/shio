@@ -106,7 +106,8 @@ class ShTenantJoinLintTest {
                         %s
                         Fix: filter/select the association's **id** (the FK column is already on \
                         the owning table — no join at all) and resolve id -> name in the service. \
-                        See ShTenantJoinHazardTest and agents.md -> Common Issues.""",
+                        See ShTenantJoinHazardTest, agents.md -> Invariants that fail silently, \
+                        and docs/agents/database.md.""",
                         String.join("\n", violations))
                 .isEmpty();
     }

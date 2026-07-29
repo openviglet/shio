@@ -1,0 +1,226 @@
+# Content API — console reads, posts, objects, folders, sites, files
+
+> Split out of the repo-root `agents.md` (see its routing table for the index).
+> Read this before touching the area it covers. Detail here is authoritative.
+
+### Content Navigation — the console reads use the CDA shapes (SH120)
+- `GET /api/v2/site` - List all sites
+- `GET /api/v2/object/{id}/list` — children as `ShConsoleListing`:
+  `{ folderId, folders, posts }` — `ShCdaListing`'s envelope. Rows are **strict supersets**
+  of `ShCdaFolder` / `ShCdaPostSummary`: the CDA's components first (same names, same types,
+  same order), then the console-only fields (`date`/`position` on a folder;
+  `postTypeTitle`/`published`/`publishStatus`/`state` on a post).
+  `ShConsoleShapeOverlapTest` fails the build if a shared component drifts.
+  **Paged since SH165**, with the CDA's own `page`/`size`/`totalPosts` (so the envelope is now
+  the CDA's exactly, which is what that test asserts): `?page=&size=&sort=title|date|modifiedDate&q=`.
+  **Only the posts page** — child folders come back whole on every page, because subfolders are
+  structure (the move/copy picker walks them) and `size=1` is how a caller that wants only the
+  structure asks. Three rules worth keeping: the **order and the filter are the server's**, since
+  a client-side sort over a paged listing sorts one page and reads exactly like a correct answer —
+  and **`q` is the CDA's own `FULLTEXT_PREDICATE` (SH240)**: title, summary and stored field data,
+  the same predicate the delivery search uses, so the console cannot come to disagree with it about
+  what "matches" is (it started as a title substring, faithful to the browser's old local filter,
+  which left the console quietly weaker than the API it fronts; folder names stay a substring,
+  since a folder has no content);
+  an unknown `sort` is a teaching **400**, never a fallback to the default, because a listing
+  answered in another order returns other *rows*; and the DRAFT-preference is a **predicate**
+  (`ShPostUnifiedRepository#pageConsoleRows`), not an in-memory dedup like the CDA's, so `LIMIT`
+  and the count are the database's and a post with both rows takes one slot and is counted once.
+  **The browser's `Select → Everything` pages the rest in before selecting (SH237)** — a selection
+  is a list of ids, so "everything" has to be everything, or the delete dialog says "50 item(s)" on
+  a folder of five hundred and the curator is left believing it is empty. Past `SELECT_ALL_CAP`
+  (1000) it selects what it loaded and *says* so rather than pulling an unbounded folder into the
+  browser, which is the response paging removed; `invert` stays deliberately page-scoped, since
+  inverting a set that includes rows nobody has seen is not a gesture anyone means. The rule to
+  keep: **the number in the confirmation dialog is the number that will be acted on.**
+- `GET /api/v2/object/{id}/path` and `GET /api/v2/folder/{id}/path` — the CDA's own
+  **`ShCdaPath`**: `{ site, breadcrumb: [...folders], currentFolder }`. Note `site`, not
+  `shSite`; a breadcrumb folder carries `root: true|false`, not `rootFolder: 1`.
+- Owned by `ShConsoleNavigationMapper`, which composes `ShCdaMapper` rather than restating
+  it. **Do not serialize `ShFolder`/`ShPostUnified` out of a console read** — that was the
+  old shape, and it dragged each post's attributes, folder, site and post-type field tree
+  along to render one row.
+
+### Posts (unified model only)
+Content posts live in `sh_post_unified` (NOT the legacy split `ShPost`/`ShPostDraft`,
+deleted in the nuclear refactor). All post CRUD is the unified API:
+- `GET /api/v2/post-unified/{id}?state=DRAFT|PUBLISHED`, `/folder/{folderId}`, `/{id}/versions`
+- `POST /api/v2/post-unified` (body `{ folderId, postTypeId, data, state }`)
+- `PUT /api/v2/post-unified/{id}`, `POST .../publish|unpublish|restore|schedule`
+- `DELETE /api/v2/post-unified/{id}`
+
+**Every post-shaped response on this controller is a `ShConsolePost`, never the entity (SH176)**
+— reads *and* writes, owned by `ShConsolePostMapper` + `ShConsolePostReadService`. It carries
+`data` **parsed** (the column is a JSON string) and the post-type as its SH16 `ShPostTypeDef`,
+so the form projects `fields` (there is no `schemaJson` — SH177 dropped the column and deleted
+`/api/v2/migration/unified/**`, its only writer). Mapping happens **inside a transaction**,
+because `shPostType`/`shFolder` are LAZY and a detached proxy is exactly how the post-type used
+to reach the browser as `null` and every post edit page rendered zero fields. A write therefore
+re-reads rather than mapping the entity its own (closed) transaction returned. `undeclaredFields`
+names data keys the post-type does not declare — the console shows them with a warning instead
+of hiding them, which is the read side of SH168.
+- `GET /api/v2/post/xp/{id}` - resolve a referenced post for display (returns
+  `{ shPost, allowPublish }`, DRAFT-preferred); used by Content Select / File widgets
+- There is **no** `/api/v2/post` controller — do not add one.
+
+### Object Operations
+**Both ends are authorized (SH201).** These two used to check `requireWrite(destId)` and nothing
+else, so write on any single folder was enough to relocate content *out of* a subtree the caller
+could not write — a removal, from the owner's point of view — or to copy content they had never
+been granted read on. A move now requires WRITE on every source, a copy requires READ, and the
+checks run over the whole body **before** the write service starts, so a partly-authorized batch
+is refused whole. The rule to keep is symmetrical: **the two surfaces enforce the same ACL, and
+whichever is stricter is the correct one** — the agent path has checked both ends since
+SH134/SH137, and where the console is looser the console is the hole, not the bar.
+
+- `PUT /api/v2/object/copyto/{destFolderId}` — Copy objects (body: `[id1, id2]`).
+  **A copy takes names that are free (SH202).** It used to re-slug the copy's `furl` from the
+  source's title — the same title, so the same slug — and since "clone" is copy-to-the-same-folder,
+  the curator's most casual action put two posts in one site on one URL: a `duplicate-url`
+  **error** from `shio verify`, and an address that resolves to whichever row is reached first,
+  so the *original* went unaddressable too. Now `Home` clones as `Home (2)` / `home-2`, and the
+  same numbering applies to a copied folder's **name**, because a folder is addressed by its
+  name chain (SH79) and two siblings called `docs` are the same defect one level up. Two rules:
+  the **title moves with the URL** (a `-2` URL under an identical title leaves two rows the
+  curator cannot tell apart, which is the symptom they actually see), but the two counters are
+  **independent** — a title is unique per *folder*, a URL per *site*, so a copy into another
+  folder of the same site keeps its title and moves only its URL. Sharing one counter was the
+  first implementation and it renamed a page for a collision in a scope the curator cannot see.
+  The suffix is numeric, not `(copy)`, because the server writes it into content the console
+  renders in whichever language the curator picked.
+  **A folder cannot be copied into its own subtree (SH203).** SH137 gave *move* that guard and
+  argued copy needed none — "the new folder is not yet in the tree, so it cannot be its own
+  ancestor" — which is true of the folder being created and false of the traversal that fills
+  it: `copyFolder` saves the copy and then walks `findByParentFolder(source)`, so a destination
+  inside the source makes the walk descend into the copies it is still making, and it never
+  returns. Both refusals now live on `ShFolderWriteService` (`checkMovable` / `checkCopyable`),
+  the one place that knows what a subtree is.
+- `PUT /api/v2/object/moveto/{destFolderId}` — Move objects (body: `[id1, id2]`).
+  **A move relocates and changes nothing else (SH139):** it keeps the post's `furl`
+  (it used to re-slug it from the title, silently changing a published page's live
+  URL), assigns one only when there is none, and delegates the post branch to
+  `ShPostUnifiedWriteService#move` — the same writer `post.move` uses, so the console
+  and the agent cannot diverge on what a move means. A cross-site move onto an
+  occupied URL is a teaching **409**, never quietly uniquified.
+  **The folder branch delegates to `ShFolderWriteService#move` (SH137)**, which is where
+  the cycle and site-root guards live: this path had neither, and a folder re-parented
+  into its own subtree does not fail — it detaches the subtree from the site root and
+  sends the recursive delete round the loop. Both are **409**s, so the console dialog
+  needs its error path (it has one now).
+  **And the picker no longer offers them (SH203).** The move/copy dialog navigates *down*
+  from the site root, so the folders inside the one being dragged are exactly the ones a
+  curator scrolls into — and they answer 409. A picker that lists choices the server will
+  refuse teaches the curator that the operation fails at random, so the folders in the run
+  are shown **disabled** (not hidden — someone hunting for "Docs" needs to see that it is the
+  thing they are dragging, not conclude the picker lost it) and the confirm button carries the
+  reason. The division to keep is the one SH108's confirm flow already uses: **the client
+  prevents what it can see, the server refuses what it must** — a concurrent move or a stale
+  tree is still the 409's job. It needs nothing new from the server, because the dialog only
+  ever walks downward: a row is unreachable exactly when it is one of the ids being moved, and
+  disabling it means the walk can never get *inside* one. That is why there is no ancestor
+  check, and why the same disabling covers **copy** as well as move.
+- Clone = copy to same folder — which is the gesture SH202 is about; see `copyto` above.
+
+### Folders
+- `GET /api/v2/folder/{id}` - Get folder
+- `POST /api/v2/folder/{parentFolderId}` - Create folder
+- `PUT /api/v2/folder/{id}` - Update folder
+- `DELETE /api/v2/folder/{id}` - Delete folder
+
+### Sites
+- `GET /api/v2/site` - List all sites
+- `GET /api/v2/site/{id}` — one site **by id, furl or name** (SH181, in that order so the
+  declared key wins a collision). The reads resolve any of the three; `PUT`, `DELETE` and
+  `/{id}/export` stay strictly id-keyed — a read that resolved a near-miss shows the curator
+  the wrong site, a write that did would change it.
+- `POST /api/v2/site` — create. **Session + CSRF**, so a stateless caller gets a bodiless 403;
+  that is the friction SH170 is filed for, and `shio-react/e2e/provision.mjs` walks it by hand.
+
+### Importing an exchange package — `POST /api/v2/import`
+
+Multipart (`file`), accepts an SH68 package zip and clones it in via `ShSiteImportService`.
+**Every failure teaches (SH189)** — it used to answer `ResponseEntity.badRequest().build()` for all
+of them while `ShExchangeException` knew exactly which, and bringing the 2018
+`openviglet/bootstrap-site` package forward cost seven field renames inferred by reading Java.
+`ShImportFailedException` classifies into four kinds (`import-manifest-unreadable`,
+`import-package-unreadable`, `import-no-site`, `import-failed`, plus `import-no-file`), each with an
+SH80 `fix` naming the *action* rather than restating the diagnosis. Two rules: the **cause's**
+message is carried as well as the wrapper's, because that is where Jackson names the property that
+did not map (reporting only the wrapper reproduces the defect one level in); and the `no-site` case
+points at `PUT /api/v2/post-type/{name}` and `POST /api/v2/agent/apply`, since a package with no site
+is usually a post-type-only or blueprint-shaped archive.
+**CSRF is session-narrowed, not exempt** (SH167's matcher, registered in
+`ShCsrfExemptionLintTest.MUST_BE_NARROWED`) — the console posts this form with a cookie, so a
+blanket exemption would let a forged request create a *site* against a curator's session.
+Two halves stay open: the classifier string-matches log messages because `ShExchangeException` has no
+kind (**SH267**), and there is still no `shio import` or MCP route (**SH268** — a package is a zip,
+so a filesystem-free client cannot produce one and "add a tool" is not the answer).
+
+### Static files — upload/serve subsystem (SH38)
+Binary files are first-class `File`-post-type unified posts; the bytes live on
+disk, **keyed by the file post's id** (not the folder tree), under
+`shio.file-source.path` (default `store/file_source/<postId>/<fileName>`).
+- `POST /api/v2/staticfile/upload` (multipart: `file`, `folderId`, `createPost`) —
+  creates a **published** `File` `ShPostUnified` (`data.FILE` = original name) +
+  writes the bytes in the same tx; returns the created post (the `File` widget
+  stores its `id`). `ShStaticFileService.resolveOrCreateFilePostType()` bootstraps
+  the system `File` post type on first use (system post types are **not** seeded).
+- `GET /api/v2/staticfile/{id}` — streams the bytes; `GET /pre-upload/{folderId}/{fileName}`
+  is a legacy-parity existence check (never blocks upload).
+- Bytes are also public at `/file_source/<postId>/<fileName>` via
+  `ShStaticResourceConfiguration` (a purely-additive `WebMvcConfigurer`; only
+  `/file_source/**` is exposed — **not** `/store/**`, which holds the H2 DB/logs).
+- Deleting the post removes its bytes (`ShStaticFileCleanupListener` on the `DELETE`
+  `ShPostLifecycleEvent`). Owner: `com.viglet.shio.api.staticfile` +
+  `ShFileSourceProperties`. Per-tenant isolation (SH47) will prefix `tenantId`.
+
+**A friendly URL is not unique by construction, and the two readers differ (SH321).** Nothing in the
+schema prevents two posts in one site claiming one — `duplicate-url` is an SH99 *error* for exactly
+that — so the finder returns an **ordered `List`**. A reader that must serve something takes the
+first (`findByShSite_IdAndFurlAndState`'s default): consistently wrong beats alternating, SH278's
+rule on a second identity. **`ShAddressResolver` refuses** with a teaching **409** naming both posts
+by `id:`, because an address is what a *write* takes and picking the first is how an edit lands on
+the wrong post. Before this, the derived `Optional` finder threw
+`IncorrectResultSizeDataAccessException` and eight call sites answered **500**.
+
+### There is NO generic `DELETE /api/v2/object/{id}` endpoint
+Delete must be done by type: `/v2/post-unified/{id}` or `/v2/folder/{id}`.
+
+**A folder delete is reversible, and it is a delegation (SH200).** It used to clear the subtree
+with `shPostUnifiedRepository.deleteAll` — the repository, not the post writer — which skipped
+the SH55 trash, the SH51 audit and the `DELETE` lifecycle event (so no webhook, and SH38's byte
+cleanup never ran) in one line. That made the *most* destructive op on the surface the *least*
+recoverable and the least observable, which is the inversion the task was filed for. Now every
+post beneath it goes through `ShPostUnifiedWriteService#delete`, so a folder delete means exactly
+what N post deletes mean, and `ShFolder.deleted_date` is stamped down the subtree instead of rows
+being removed — the folder rows have to outlive the gesture, because a trashed post keeps its
+`folder_id` and the `sh_post_unified.folder_id → ShObject` FK is `onDelete NO ACTION`. **The FK
+ordering that motivated the old direct `deleteAll` is satisfied at purge time** (`ShFolderWriteService#purge`),
+which is also where the lifecycle event fires — SH55's rule that a reversible trash has no side
+effects. Beside it: `GET /v2/folder/trash` (one row per deleted *section*, not per folder in it),
+`POST /v2/folder/{id}/untrash`, `DELETE /v2/folder/{id}/purge`, and the console's trash page lists
+sections and posts together.
+- **Every folder read excludes a trashed folder**, in `ShFolderRepository` — its derived finders
+  are spelled out as JPQL with `deletedDate is null`, keeping their names so no call site changed.
+  There is deliberately **no `@SQLRestriction` on `ShFolder`**: it would also fire when a
+  `@ManyToOne` to a folder is initialized, and a trashed post's `getShFolder()` is precisely what
+  the trash listing reads. Ids still resolve polymorphically through `ShObjectRepository`, which
+  knows nothing about this — the three paths that matter guard it by hand, and **SH226** is the
+  open task to make that an invariant rather than a convention.
+- **A restore returns what *that* deletion trashed** — the delete stamps one instant down the
+  subtree and anything marked earlier stays in the trash. Compared on loaded `Instant`s, never in
+  SQL: timestamp equality is a fractional-second promise H2, MariaDB and PostgreSQL do not make
+  the same way.
+- **The audit records the folder *and* each post**, which is what lets the SH109 queue undo a
+  section in one entry — "restore the section" is the gesture a human means. `/agent/changes`
+  resolves a folder address for such an entry (through the trash, since the folder is deleted by
+  then): an entry nobody can address is a change nobody can act on.
+
+**Backend ownership (rebuilt 2026.2 after the nuclear refactor wiped them):**
+- `ShFolderAPI` + `ShFolderWriteService` (`com.viglet.shio.api.folder`)
+- `ShObjectAPI` + `ShObjectNavigationService` + `ShObjectWriteService` (`...api.object`)
+  — list/path/copyto/moveto; `clear-cache` is a no-op (no page-cache subsystem yet).
+  Folders/sites are `ShObject` subclasses; **posts are not** (`ShPostUnified` is its
+  own table) — so copy/move resolves folder ids via `ShObjectRepository` and post ids
+  via `ShPostUnifiedRepository`. `/list` dedups posts by id, DRAFT-preferred.
+

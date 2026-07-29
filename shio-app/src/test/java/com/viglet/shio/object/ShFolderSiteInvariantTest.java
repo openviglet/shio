@@ -110,7 +110,8 @@ class ShFolderSiteInvariantTest {
                         Fix: ShFolderSite.of(folder) / ShFolderSite.idOf(folder), which walks \
                         to the root. If the direct read is genuinely what you mean (the \
                         exchange export, a LAZY-proxy touch), add a `%s: <reason>` comment. \
-                        See agents.md and IMPROVEMENTS.md SS VIII.10.""",
+                        See agents.md -> Invariants that fail silently, \
+                        docs/agents/troubleshooting.md, and IMPROVEMENTS.md SS VIII.10.""",
                         String.join("\n", violations), EXEMPT)
                 .isEmpty();
     }

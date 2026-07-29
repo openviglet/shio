@@ -59,7 +59,13 @@ src/main/resources/js/client-side/build
 /scripts/sonar/scan.log
 
 # === AI / Tooling ===
-/.claude/
+# `.claude/skills/` is shared project convention and IS committed — it is the
+# lazy-loaded half of agents.md (see its routing table). Everything else under
+# .claude/ is local machine state: settings, locks, scheduled-task bookkeeping.
+# Note the `*` — git does not descend into an ignored directory, so `/.claude/`
+# without it would make the negation below unreachable.
+/.claude/*
+!/.claude/skills/
 /shio-examples/corporate-site/node_modules
 /shio-js-sdk/node_modules
 /shio-examples/blog-site/node_modules

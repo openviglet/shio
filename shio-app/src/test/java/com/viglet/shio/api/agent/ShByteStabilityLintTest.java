@@ -103,7 +103,8 @@ class ShByteStabilityLintTest {
                         (a TreeMap stays sorted, a LinkedHashMap stays in insertion order). \
                         If the order is genuinely not observable — a keyed lookup that is \
                         never iterated or serialized — add a `byte-stable-exempt: <reason>` \
-                        comment. See agents.md and IMPROVEMENTS.md SS VIII.11.""",
+                        comment. See docs/agents/agent-surface.md (Byte stability) and \
+                        IMPROVEMENTS.md SS VIII.11.""",
                         String.join("\n  ", offenders))
                 .isEmpty();
     }
