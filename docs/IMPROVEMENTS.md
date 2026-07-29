@@ -2821,32 +2821,31 @@ The part worth copying from SH273 is the **test**: a table asserting that the co
 and the rows in the document agree, because a hand-kept list of what a renderer emits drifts
 silently, and the failure direction is under-documentation nobody notices.
 
-### XVI.54 Two editor scripts, two vocabularies, both served (SH304)
+### XVI.54 The published external bridge posts to `"*"` (SH350)
 
-- `shio-app/src/main/resources/render/shio-editor.js` — SH185's, 170 lines, **injected** into Shio's
-  own preview for `?editor=true`, reads `data-shio-*` written by the renderer.
-- `shio-app/src/main/resources/universal-editor/shio-editor.js` — 550 lines, **served** at a path the
-  security config permits, for a front end that includes it itself, reads `data-sh-*` written by hand
-  by that front end's author.
+> ✅ **SH304 shipped and corrected its own premise** → [CHANGELOG.md](CHANGELOG.md) Block P. It asked
+> which of two scripts should survive and offered "delete the old one" as *honest, and a capability
+> regression*. Measured, the regression does not exist: the external bridge has a published home,
+> **`@viglet/shio-editor-cors`** (665 lines, `data-sh-*`), and the copy under
+> `resources/universal-editor/` was a **duplicate** of it on the server's static surface. Two
+> vocabularies for two different *producers* — the renderer writes `data-shio-*`, an external front
+> end's author writes `data-sh-*` — is not P10 duplication; two copies of the same script are.
 
-Two implementations of one protocol against two attribute vocabularies, and only the first is
-specified. This is P10's warning about a second contract, inside a single feature — and the
-unspecified one is the case SH185 explicitly leaves open: *"an external front end has to emit the
-annotations itself."*
+What is left is a defect the removal only moved out of reach, and it is the sharper half:
+`@viglet/shio-editor-cors` **posts to `"*"`** (line 195) and its `onParentMessage` checks
+`event.data.type` and never `event.origin`. So any page that frames a front end including it can send
+`sh:request-content` and receive the whole content map, and send `sh:content-patch` to rewrite the
+DOM. `renderer.md` has claimed "neither side of the bridge uses `"*"`" since SH185, and that claim was
+true only of the half SH185 wrote.
 
-Three ways out, and they are not equivalent:
+Two things make it its own task rather than part of SH304. It is **JS-workspace work on a published
+package**, and the fix is an **API change**: the script cannot know who framed it (`document.referrer`
+is empty on some navigations, `window.parent.location` throws cross-origin), so the parent origin has
+to be passed in — which is exactly what the server-injected bridge does with
+`data-shio-editor-origin`, and what an external front end would have to start doing. Worth settling at
+the same time whether it should read `data-shio-*` as well, so a front end that renders Shio's own
+markup can use one vocabulary.
 
-- **Teach the old script the `data-shio-*` names.** Cheapest, one vocabulary, and it silently breaks
-  any front end already annotated with `data-sh-*`.
-- **Emit the annotations from `@viglet/shio-react-sdk`,** so a Next.js project produces the same DOM
-  Shio's own renderer does and the injected script works unchanged. The answer SH185 gestures at, and
-  much the most work — but it is the one that makes the *rendered DOM* the single contract, which is
-  what SH300 just wrote down.
-- **Delete the old script** and declare external visual editing unsupported until the SDK lands.
-  Honest, and a capability regression for whoever is using it.
-
-Worth settling before either file is touched again, because every edit to the pair widens the
-distance between them.
 
 ### XVI.55 Nothing tests the bridge script, in any language (SH306)
 

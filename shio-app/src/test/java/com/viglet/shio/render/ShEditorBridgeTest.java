@@ -10,7 +10,13 @@ package com.viglet.shio.render;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -144,6 +150,79 @@ class ShEditorBridgeTest {
     @DisplayName("the script checks the sender's origin on the way in")
     void theScriptChecksIncomingOrigin() {
         assertThat(bridge.script()).contains("event.origin !== PARENT_ORIGIN");
+    }
+
+    /**
+     * SH304 — one implementation of the protocol, and neither side posts to {@code "*"}.
+     *
+     * <p>Both halves of this were stated as load-bearing and neither was asserted, which is how the
+     * repository ended up serving <b>two</b> bridges: this one (specified, 182 lines,
+     * {@code data-shio-*}) and an unspecified 550-line script at {@code /universal-editor/}
+     * ({@code data-sh-*}, written by hand by whatever front end included it). That is P10's own
+     * warning — two contracts for one feature — and the unspecified one was the one exposed to
+     * external front ends. It also broke the single security rule the protocol states, in both
+     * directions: it posted to {@code "*"} and it never looked at {@code event.origin}, so any page
+     * that framed a front end including it could ask for the content map and get it, and patch the
+     * DOM. Deleted, with external editing declared unsupported until the SDK emits the annotations
+     * (SH350) — a capability regression stated out loud beats one nobody can see.</p>
+     */
+    @Test
+    @DisplayName("SH304: exactly one bridge is served, and no served script posts to \"*\"")
+    void oneBridgeAndNoWildcardOrigin() throws IOException {
+        Path resources = Path.of("src", "main", "resources");
+        List<Path> bridges;
+        try (Stream<Path> files = Files.walk(resources)) {
+            bridges = files.filter(file -> file.toString().endsWith(".js"))
+                    // The built console bundle is Vite's output, not a script this repository writes.
+                    .filter(file -> !file.toString().replace('\\', '/').contains("/public/"))
+                    // A bridge is defined by what it does, not by where it sits: the legacy AngularJS
+                    // UI ships four scripts and a Handlebars build that talk to nobody's parent.
+                    .filter(ShEditorBridgeTest::postsToAParent)
+                    .sorted()
+                    .toList();
+        }
+
+        assertThat(bridges.stream().map(file -> file.getFileName().toString()).toList())
+                .as("""
+                        A second implementation of the SH185 protocol must be a decision, not a file \
+                        somebody adds. If this list grows, either the new script is part of the \
+                        protocol (specify it in docs/specs/SH185-universal-editor-protocol.md and \
+                        add it here) or it is not (do not serve it).""")
+                .containsExactly("shio-editor.js");
+
+        for (Path script : bridges) {
+            assertThat(Files.readString(script, StandardCharsets.UTF_8))
+                    .as("""
+                            %s posts to "*", which hands every message - including page content - to \
+                            whatever origin framed the page. renderer.md has claimed "neither side of \
+                            the bridge uses \\"*\\"" since SH185 and nothing asserted it.""", script)
+                    .doesNotContain("postMessage(\"*\"")
+                    .doesNotContain(", \"*\")");
+        }
+    }
+
+    /** True for a script that talks to whatever framed it — the defining act of a bridge. */
+    private static boolean postsToAParent(Path script) {
+        try {
+            return Files.readString(script, StandardCharsets.UTF_8).contains("postMessage");
+        } catch (IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
+    }
+
+    @Test
+    @DisplayName("SH304: the console's half does not post to \"*\" either")
+    void theConsoleHalfPinsItsOriginToo() throws IOException {
+        Path editor = Path.of("..", "shio-react", "src", "app", "console", "universal-editor",
+                "visual-editor.page.tsx");
+
+        assertThat(Files.readString(editor, StandardCharsets.UTF_8))
+                .as("""
+                        The rule is about the bridge, not about one file of it, and the console is the \
+                        half that posts *into* an iframe whose origin it chose - so a "*" here would \
+                        hand the message to whatever the site's url happens to resolve to today.""")
+                .doesNotContain(", \"*\")")
+                .contains("frameOrigin");
     }
 
     @Test

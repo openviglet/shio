@@ -327,7 +327,11 @@ public class ShSecurityConfig {
                                 mvc.matcher("/graphiql/**"),
                                 mvc.matcher("/store/**"),
                                 mvc.matcher("/file_source/**"),
-                                mvc.matcher("/universal-editor/**"),
+                                // SH304 removed `/universal-editor/**`: the only thing served there
+                                // was a second, unspecified implementation of the SH185 bridge that
+                                // posted to "*" and never checked event.origin. External editing is
+                                // unsupported until the SDK emits the annotations (SH350); the
+                                // specified bridge is injected into Shio's own preview instead.
                                 mvc.matcher(SETUP_PATH),
                                 mvc.matcher("/setup"),
                                 mvc.matcher("/setup/**"),

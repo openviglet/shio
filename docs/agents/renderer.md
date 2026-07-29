@@ -64,7 +64,13 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   it is the page's while inside a `{{#query}}` block `{{title}}` is the listed post's, and the
   rendered HTML records neither. Resolution is nearest-ancestor. Both attribute forms survive:
   `sh-*` is a contract the content declares (SH192 lints it, SH193 will graph it), `data-*` is
-  what the browser consumes. **Neither side of the bridge uses `"*"`** — the console pins the
+  what the browser consumes. **Neither side of the bridge uses `"*"`, and since SH304 that is a test
+  rather than a sentence** (`ShEditorBridgeTest`, over this script and the console's page) — it was
+  false for the second, unspecified script the server used to serve at `/universal-editor/`, which
+  posted to `"*"` and never read `event.origin`; that script was a copy of the published
+  `@viglet/shio-editor-cors` and is gone, along with the permitted path. **One bridge per producer**:
+  this one for the markup the renderer emits, the npm package for a front end that writes its own
+  `data-sh-*` by hand — and the package still has both defects, which is **SH350**. The console pins the
   iframe's origin and ignores anything else; the page is told its parent's origin on the script
   tag, because `document.referrer` is empty on some navigations and `window.parent.location`
   throws cross-origin. The script is **inert when not framed**. Injection happens *after* the

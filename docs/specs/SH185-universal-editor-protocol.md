@@ -214,9 +214,15 @@ console resolves the labels from the schema — which is what that attribute was
 and what nothing had used. If a name ever ends up in that state again it belongs in a row here, not
 left out: from the reading side it looks like a working feature.
 
-The older `resources/universal-editor/shio-editor.js` is a **different vocabulary** (`data-sh-*`,
-author-written, for an external front end that includes the script itself) and is deliberately out of
-this table: it is not what the renderer emits. Whether two scripts should exist is **SH304**.
+**SH304 settled the second script.** `resources/universal-editor/shio-editor.js` was a copy of the
+published `@viglet/shio-editor-cors` sitting on the server's static surface, and it is gone along with
+the `/universal-editor/**` permitted path. What remains is one bridge per *producer*: this one for the
+markup the renderer emits (`data-shio-*`), and the npm package for a front end that writes its own
+annotations by hand (`data-sh-*`) — deliberately out of this table, because it is not what the renderer
+emits. `ShEditorBridgeTest` now asserts that exactly one served script implements this protocol and
+that neither half posts to `"*"`. The published package still does both of the things this document
+forbids (posts to `"*"`, never reads `event.origin`): that is **SH350**, and until it lands, an
+external front end including it should treat its messages as readable by whatever framed the page.
 
 ---
 
