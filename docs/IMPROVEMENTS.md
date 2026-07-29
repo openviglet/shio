@@ -3408,34 +3408,39 @@ the cheap one may be the one that has to be undone.
 > ceiling. It also sharpens **SH317**, filed as "nobody has counted the cost": the cost includes
 > correctness, not only seconds.
 
-### XVI.64 What the SH348 decision has to settle first (SH348)
+### XVI.64 SH348 is four layers deep and the op is the last one — measured (SH348)
 
-The task is blocked on a question, and the question is not "which shape is nicer" — it is **whether a
-translation has an address before it has a URL**. Recorded here because both candidate shapes look
-reasonable and one of them is a decision this product would have to undo.
+§XVI.64 predicted that "the file projection decides it, not the op", and said the next step was to
+measure rather than to write either shape. Measured, and the prediction was right for a stronger reason
+than it gave: the op is the **fourth** layer, and the first three each make the one below it impossible.
 
-**Shape A — `post.translate {from, locale}`, returning the new post's address.** Additive, leaves the
-SH79 grammar untouched, and honours SH323's finding directly: an address carries no locale, so the op
-takes one address and a locale rather than two addresses. Its cost is that the created translation has
-**no address of its own until somebody assigns a URL** — `ShPostUnifiedWriteService.translate` assigns
-no `furl` (verified while shipping SH323), so the new post is reachable only as `id:` (SH172's
-fallback). That in turn means a **desired-state document cannot declare a translation**, because Block I
-addresses posts by URL and a document is state: the tree would have to name something that does not yet
-exist. So Shape A gives the agent a verb and leaves `shio push --content` unable to express the result.
+| layer | measured |
+|---|---|
+| `/agent/read` | the string `locale` appears **zero times** in `ShAgentReadService`. A post's locale is not projected, not omitted — absent. The context pack reports the *instance's* default locale, which is a different fact. |
+| the file projection | `projectedPost` returns **nine keys** (`bodyField, data, folder, movedFrom, publish, sidecarFiles, site, type, url`) and neither `locale` nor `translationGroupId` is among them. |
+| a desired-state document | therefore cannot declare a translation, because Block I compiles documents out of the tree. |
+| `post.translate` | would create content `shio push --content` **silently relocalizes to `en`** on the next run, since `create` defaults the locale and nothing in the tree contradicts it. |
 
-**Shape B — locale as an addressing dimension.** Honest about the model: the identity of a translated
-page includes its locale, and saying so in the address makes a document able to declare one. Its cost is
-every resolver, every lint, the SH79 grammar, the CLI's file-per-URL projection (two locales at one URL
-would be two files at one path) and SH323's own decision, which is *load-bearing*: `duplicate-url` is
-locale-blind precisely because an address carries no locale, and it is an error for exactly the reason
-that two posts on one URL are unaddressable. Reversing that is not a syntax change.
+**So `locales: true` is a broader half-truth than SH338's inventory captured.** Not "there is no agent
+form for `translate`" but "the agent cannot see which locale a post is in" — which also means the SH348
+address question is premature: neither candidate shape can be evaluated until a locale is *readable*.
 
-**What decides it is the file projection, not the op.** If a translation must be declarable in
-`shio/content/**` then the URL has to carry the locale one way or another — a path prefix (`pt-br/...`)
-is the obvious candidate and is a *content* convention rather than an address grammar change, which
-would let Shape A stand and leave SH323 intact. That is the thing to test before writing either: take
-the 2018 `bootstrap-site` package or a two-locale fixture through `pull --content`, and see what the
-tree wants to look like. Measure before you fix, on a design question.
+**The order the work has to take**, and it inverts the task as filed: expose the locale on
+`/agent/read` (and `find`'s rows), carry it in the projection, decide how the tree names two locales of
+one page, and only then choose the op. The tree question is the one with teeth — Block I is one file per
+URL, so two locales of one page are either two URLs (SH323's rule, and a *content* convention such as a
+path prefix) or one path holding two documents (a format change). The first leaves SH323 intact and is
+almost certainly right; it is also the one that needs no address-grammar change, which is what makes
+Shape A viable after all.
+
+**And this exposed a blind spot in the guard that should have caught it.** SH255's round-trip table is
+the instrument for "a value the format cannot hold must be declared" — and it tests **values of fields
+the format has**, never **fields the format lacks**. So a dropped field is exactly the loss it cannot
+see. `cli/test/content-projection-coverage.test.mjs` closes that: the projected key set is asserted
+exactly, and every dropped field is declared with a reason, so the first step of SH348 cannot be taken
+without deleting a line from that table. Third instrument in this block found to have a blind spot,
+after SH338's stale check (catches the *predicted* fix) and SH339's (never asks what a widened path
+returns) — all three now written into the tests themselves.
 
 ### XVI.60 The roadmap became a history instead of a queue (SH341)
 
