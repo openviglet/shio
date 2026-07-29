@@ -133,6 +133,13 @@ SH134/SH137, and where the console is looser the console is the hole, not the ba
   declared key wins a collision). The reads resolve any of the three; `PUT`, `DELETE` and
   `/{id}/export` stay strictly id-keyed — a read that resolved a near-miss shows the curator
   the wrong site, a write that did would change it.
+- `GET /api/v2/site/{id}/export` — a portable SH68 zip (id-keyed). **A failure the caller can fix
+  teaches (SH349)**: a post whose stored `data` is not JSON answers **409 `export-post-data-invalid`**
+  naming the post's SH79 address (also in `at`), the parser's own offset, and a runnable
+  `agent/read` + `post.upsert` fix. The address is built with `ShFolderSite.of`, never
+  `folder.getShSite()` — only a root folder carries the site. The other two export-side
+  `ShExchangeException.Kind`s are the instance's own IO and stay a 500, rethrown unchanged, because
+  `ShAgentErrorRecordingFilter` (`/api/*`) already records them as an SH190 incident with `frames`.
 - `POST /api/v2/site` — create. **Session + CSRF**, so a stateless caller gets a bodiless 403;
   that is the friction SH170 is filed for, and `shio-react/e2e/provision.mjs` walks it by hand.
 

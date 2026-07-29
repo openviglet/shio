@@ -8,6 +8,8 @@
  */
 package com.viglet.shio.exchange;
 
+import java.util.Optional;
+
 /**
  * Unchecked failure while reading or writing a content exchange package (SH68):
  * a malformed manifest, an I/O error, or a corrupt / unsafe zip.
@@ -70,20 +72,46 @@ public class ShExchangeException extends RuntimeException {
     }
 
     private final Kind kind;
+    private final String subject;
 
     public ShExchangeException(Kind kind, String message, Throwable cause) {
-        super(message, cause);
-        this.kind = requireKind(kind);
+        this(kind, null, message, cause);
     }
 
     public ShExchangeException(Kind kind, String message) {
-        super(message);
+        this(kind, null, message, null);
+    }
+
+    /**
+     * A failure <em>about</em> one addressable thing (SH349).
+     *
+     * <p>The kind said which failure this is and left the other half at the {@code throw}: a post
+     * whose {@code data} is not JSON is a defect in a <b>named post</b>, and the export path knew
+     * which one and discarded it. A named factory rather than a fourth constructor, because
+     * {@code (kind, message, subject, cause)} and {@code (kind, subject, message, cause)} are the
+     * same signature to the compiler and the wrong one reads perfectly.</p>
+     *
+     * @param subject an SH79 address ({@code post:site/url}), or any stable identifier a reader can
+     *                act on — never a sentence, since it is interpolated into a teaching error
+     */
+    public static ShExchangeException about(Kind kind, String subject, String message, Throwable cause) {
+        return new ShExchangeException(kind, subject, message, cause);
+    }
+
+    private ShExchangeException(Kind kind, String subject, String message, Throwable cause) {
+        super(message, cause);
         this.kind = requireKind(kind);
+        this.subject = subject == null || subject.isBlank() ? null : subject;
     }
 
     /** What kind of failure this is — never {@code null}. */
     public Kind kind() {
         return kind;
+    }
+
+    /** What the failure is about, when the throw site knew — an SH79 address for a post. */
+    public Optional<String> subject() {
+        return Optional.ofNullable(subject);
     }
 
     private static Kind requireKind(Kind kind) {

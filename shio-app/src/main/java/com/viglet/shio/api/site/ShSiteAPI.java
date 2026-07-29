@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.api.site.dto.ShSiteRequest;
+import com.viglet.shio.exchange.ShExchangeException;
 import com.viglet.shio.exchange.site.ShSiteExportService;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
@@ -146,15 +147,26 @@ public class ShSiteAPI {
     /**
      * Export a site as a portable exchange zip (SH69) — the console "Download"
      * action. 404 if the site does not exist.
+     *
+     * <p><b>And a failure the caller can fix teaches (SH349).</b> This used to catch nothing, so an
+     * export failure was the body-less 500 SH189 removed from import. One of the exchange layer's
+     * export-side kinds is the caller's — a post whose {@code data} is not JSON — and
+     * {@link ShExportFailedException} answers that with a 409 naming the post. Everything else is the
+     * instance's own IO and is rethrown unchanged, because {@code ShAgentErrorRecordingFilter}
+     * already records it as an SH190 incident with frames.</p>
      */
     @GetMapping(value = "/{id}/export", produces = "application/zip")
     public ResponseEntity<byte[]> export(@PathVariable String id) {
-        return shSiteExportService.exportSite(id)
-                .<ResponseEntity<byte[]>>map(archive -> ResponseEntity.ok()
-                        .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
-                                .filename(archive.fileName()).build().toString())
-                        .contentType(MediaType.parseMediaType("application/zip"))
-                        .body(archive.content()))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        try {
+            return shSiteExportService.exportSite(id)
+                    .<ResponseEntity<byte[]>>map(archive -> ResponseEntity.ok()
+                            .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                                    .filename(archive.fileName()).build().toString())
+                            .contentType(MediaType.parseMediaType("application/zip"))
+                            .body(archive.content()))
+                    .orElseGet(() -> ResponseEntity.notFound().build());
+        } catch (ShExchangeException e) {
+            throw ShExportFailedException.forCaller(e).map(RuntimeException.class::cast).orElse(e);
+        }
     }
 }

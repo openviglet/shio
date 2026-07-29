@@ -9,6 +9,7 @@
 package com.viglet.shio.exchange.site;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -35,6 +36,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
+import com.viglet.shio.exchange.ShExchangeException;
 import com.viglet.shio.exchange.ShExchangePackageCodec;
 import com.viglet.shio.exchange.model.ShExchangeFolder;
 import com.viglet.shio.exchange.model.ShExchangePackage;
@@ -45,6 +47,7 @@ import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.model.widget.ShWidget;
 import com.viglet.shio.persistence.repository.widget.ShWidgetRepository;
@@ -95,6 +98,7 @@ class ShSiteExportServiceTest {
     private String rootFolderId;
     private String childFolderId;
     private String postTypeName;
+    private String postTypeId;
     private String postId;
 
     @BeforeAll
@@ -156,6 +160,7 @@ class ShSiteExportServiceTest {
             postType.setShPostTypeAttrs(Set.of(titleAttr));
             entityManager.persist(postType);
             postTypeName = postType.getName();
+            postTypeId = postType.getId();
 
             ObjectNode data = objectMapper.createObjectNode();
             data.put(ShSystemPostTypeAttr.TITLE, "Exported Post");
@@ -219,5 +224,100 @@ class ShSiteExportServiceTest {
     void exportEndpointUnknownSiteReturnsNotFound() throws Exception {
         mockMvc.perform(get("/api/v2/site/missing-" + UUID.randomUUID() + "/export").principal(mockPrincipal))
                 .andExpect(status().isNotFound());
+    }
+
+    /**
+     * SH349 — a post whose {@code data} column is not JSON used to reach the console's Download button
+     * as a body-less 500: {@code ShSiteAPI.export} caught nothing and {@code ShApiExceptionHandler}
+     * does not handle {@code ShExchangeException}, which is SH189's defect in the other direction.
+     *
+     * <p>Its own site, deliberately: the corrupt row must not be visible to the round-trip test above,
+     * and a fixture that breaks a neighbour is how a suite starts depending on method order.</p>
+     */
+    @Test
+    void exportEndpointNamesThePostWhoseDataIsNotJson() throws Exception {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        String[] created = new String[4]; // site id, site name, post furl, post id
+
+        tx.executeWithoutResult(status -> {
+            ShSite site = new ShSite();
+            site.setName("ut-export-broken-" + UUID.randomUUID());
+            site.setDescription("SH349");
+            site.setUrl("http://example.test");
+            site.setFurl("export-broken");
+            site.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            site.setOwner("admin");
+            entityManager.persist(site);
+
+            ShFolder root = new ShFolder();
+            root.setName("root");
+            root.setRootFolder((byte) 1);
+            root.setShSite(site);
+            root.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            root.setOwner("admin");
+            entityManager.persist(root);
+
+            // Below the root, and that is load-bearing: only a root folder carries `shSite`, so a post
+            // in the root would let `folder.getShSite()` work and the address assertion below would
+            // prove nothing. Found by reverting ShFolderSite.of and watching this test still pass.
+            ShFolder child = new ShFolder();
+            child.setName("Archive");
+            child.setRootFolder((byte) 0);
+            child.setParentFolder(root);
+            child.setFurl("archive");
+            child.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            child.setOwner("admin");
+            entityManager.persist(child);
+
+            ObjectNode data = objectMapper.createObjectNode();
+            data.put(ShSystemPostTypeAttr.TITLE, "Broken Post");
+            ShPostUnified post = shPostUnifiedWriteService.create(new CreateRequest(
+                    child.getId(), postTypeId, data, ShPostState.DRAFT, "admin", null, null));
+
+            created[0] = site.getId();
+            created[1] = site.getName();
+            created[2] = post.getFurl();
+            created[3] = post.getId();
+        });
+
+        // What no widget writes and no API accepts, but a column can hold: half a document. The
+        // failure has to be reachable to be worth a message, so it is produced at the column.
+        // By id and not by find(): the key is the composite (id, state) of ShPostUnifiedId, and a
+        // bulk update also means the export below reads the column rather than a managed instance.
+        tx.executeWithoutResult(status -> entityManager
+                .createQuery("update ShPostUnified p set p.data = :data where p.id = :id")
+                .setParameter("data", "{\"TITLE\": not json")
+                .setParameter("id", created[3])
+                .executeUpdate());
+
+        // A post with no friendly URL has no SH79 post: address, so it is named by id rather than as
+        // `post:site/null` — the reason addressOf checks the furl before building either form.
+        assertThatExceptionOfType(ShExchangeException.class)
+                .isThrownBy(() -> shSiteExportService.exportSite(created[0]))
+                .satisfies(thrown -> {
+                    assertThat(thrown.kind()).isEqualTo(ShExchangeException.Kind.POST_DATA_INVALID);
+                    assertThat(thrown.subject()).contains("id:" + created[3]);
+                });
+
+        tx.executeWithoutResult(status -> entityManager
+                .createQuery("update ShPostUnified p set p.furl = :furl where p.id = :id")
+                .setParameter("furl", "broken-post")
+                .setParameter("id", created[3])
+                .executeUpdate());
+
+        String address = "post:" + created[1] + "/broken-post";
+        mockMvc.perform(get("/api/v2/site/" + created[0] + "/export").principal(mockPrincipal))
+                .andExpect(status().isConflict())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .as("""
+                                409 with a slug, an address and a runnable fix, where the same request \
+                                produced an escaping exception and no body before. The address is the \
+                                point: the site walk visits every post, so "one of them is broken" is \
+                                not something a curator can act on. The site comes from \
+                                ShFolderSite.of, so this also proves a post below the root is not \
+                                named `post:null/...`.""")
+                        .contains("export-post-data-invalid")
+                        .contains(address)
+                        .contains("post.upsert"));
     }
 }

@@ -35,6 +35,7 @@ import com.viglet.shio.exchange.model.ShExchangeFolder;
 import com.viglet.shio.exchange.model.ShExchangePackage;
 import com.viglet.shio.exchange.model.ShExchangePost;
 import com.viglet.shio.exchange.model.ShExchangeSite;
+import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -223,19 +224,41 @@ public class ShSiteExportService {
                 row.isPublished(),
                 row.getPublishStatus(),
                 0,
-                parseData(row.getData()));
+                parseData(row));
     }
 
-    private JsonNode parseData(String data) {
+    /**
+     * SH349 — the failure names <em>which</em> post, because this is the one export failure a caller
+     * can act on and an address is what they act with.
+     */
+    private JsonNode parseData(ShPostUnified row) {
+        String data = row.getData();
         if (data == null || data.isBlank()) {
             return objectMapper.createObjectNode();
         }
         try {
             return objectMapper.readTree(data);
         } catch (RuntimeException e) {
-            throw new ShExchangeException(ShExchangeException.Kind.POST_DATA_INVALID,
-                    "Failed to parse post data JSON", e);
+            throw ShExchangeException.about(ShExchangeException.Kind.POST_DATA_INVALID,
+                    addressOf(row), "Failed to parse post data JSON", e);
         }
+    }
+
+    /**
+     * The post's SH79 address, or {@code id:<uuid>} when it has no friendly URL.
+     *
+     * <p>The site comes from {@code ShFolderSite.of} and never from {@code folder.getShSite()}: only
+     * a root folder carries the site, so the direct read would name {@code post:null/…} for every
+     * post that is not at the top of the tree — which is every post this can be thrown for.</p>
+     */
+    private static String addressOf(ShPostUnified row) {
+        if (!hasText(row.getFurl()) || row.getShFolder() == null) {
+            return "id:" + row.getId();
+        }
+        ShSite site = ShFolderSite.of(row.getShFolder());
+        return site == null || !hasText(site.getName())
+                ? "id:" + row.getId()
+                : "post:" + site.getName() + "/" + row.getFurl();
     }
 
     private byte[] zip(ShExchangePackage pkg) {
