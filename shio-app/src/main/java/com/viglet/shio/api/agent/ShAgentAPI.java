@@ -356,7 +356,9 @@ public class ShAgentAPI {
      *               {@code /agent/verify} call because it is scoped to the change rather than
      *               to the site. Opt-in: a caller that does not want it should not pay for it,
      *               and it is skipped on a {@code dryRun}, where there is nothing to prove
-     * @param digest SH194 — also return the two SH187 hashes for each page this run <b>affected</b>,
+     * @param digest SH194/SH266 — {@code true} for the instance's default page count, or a number
+     *               ({@code ?digest=40}) the server clamps to its ceiling. Returns the two SH187
+     *               hashes for each page this run <b>affected</b>,
      *               which for a write to a shared layout or region is not the address written but
      *               every page that renders through it (SH193's graph). It closes the appearance
      *               loop the way {@code verify} closed the correctness one: upsert, render, compare
@@ -369,13 +371,17 @@ public class ShAgentAPI {
                                                 defaultValue = "false") boolean ids,
                                         @RequestParam(name = "verify", required = false,
                                                 defaultValue = "false") boolean verify,
-                                        @RequestParam(name = "digest", required = false,
-                                                defaultValue = "false") boolean digest,
+                                        @RequestParam(name = "digest", required = false)
+                                        String digest,
                                         @RequestParam(name = "format", required = false)
                                         String format,
                                         Principal principal) {
+        // SH266 — `digest` takes true/false *or* a page count, which is how `limit` already reads
+        // everywhere else on this surface. A count is clamped to the instance's ceiling rather
+        // than refused: the caller wants as many as it can have, and the cut is already a row.
         return rendered(shAgentProofService.attach(
-                shAgentBatchService.run(batch, ids, name(principal)), verify, digest), format);
+                shAgentBatchService.run(batch, ids, name(principal)), verify,
+                ShAgentDigestPages.wanted(digest), ShAgentDigestPages.count(digest)), format);
     }
 
     /**
@@ -408,13 +414,15 @@ public class ShAgentAPI {
                                                 defaultValue = "false") boolean ids,
                                         @RequestParam(name = "verify", required = false,
                                                 defaultValue = "false") boolean verify,
-                                        @RequestParam(name = "digest", required = false,
-                                                defaultValue = "false") boolean digest,
+                                        @RequestParam(name = "digest", required = false)
+                                        String digest,
                                         @RequestParam(name = "format", required = false)
                                         String format,
                                         Principal principal) {
+        // SH266 — same reading as /batch: true, false, or a page count the server clamps.
         return rendered(shAgentProofService.attach(
-                shAgentDesiredStateService.apply(desired, ids, name(principal)), verify, digest),
+                shAgentDesiredStateService.apply(desired, ids, name(principal)), verify,
+                ShAgentDigestPages.wanted(digest), ShAgentDigestPages.count(digest)),
                 format);
     }
 

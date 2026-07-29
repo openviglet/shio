@@ -2273,30 +2273,6 @@ changed which number is the interesting one — and it will change again if anyo
 results, which is a much harder question (a listing's rows are content, so a cache there is a
 freshness decision rather than a resolution one).
 
-### XVI.18 A write's digest ceiling is a number nobody chose (SH266)
-
-`?digest=true` renders at most ten pages. Ten because each row is a real render (SH249) and a shared
-region can reach hundreds — so the cap is doing real work — but ten specifically because it reads
-well, which is not a reason.
-
-The honest ceiling depends on two things. What a render costs, which **SH264 has now measured**: 21
-queries per page, and the *same* 21 for the tenth page as for the first, because nothing about the
-presentation chain is reused between pages. Ten pages is therefore ~210 queries of work behind one
-write's proof. And what the caller is doing: an agent iterating on one layout wants two
-or three, while a migration verifying a section wants a bound it can raise deliberately.
-
-Two shapes, and they are not equivalent:
-
-- **A property** (`shio.agent.render.max-write-digests`). An operator's decision, which fits a cost
-  question — and invisible to the agent unless the manifest reports it, which it then must, because
-  SH121's `limits` section exists precisely so a caller can know its bounds without discovering them.
-- **`?digest=<n>`**, clamped by the server. This is how `limit` already works on every other read
-  here, so it needs no new concept and lets the caller say what it is doing.
-
-The second is probably right. It should not be chosen before SH264 says what one render costs,
-because the interesting case — is fifty renders a reasonable request or an accident — is exactly the
-question the measurement answers.
-
 ### XVI.19 `ShExchangeException` has no kind (SH267)
 
 SH189's teaching errors classify by testing the message:
@@ -3154,6 +3130,50 @@ attributes. The honest version derives it from the surface: **a read whose site 
 is instance-wide by construction.** Worth doing when the third or fourth name gets added by hand —
 and worth writing down now, because the lint's message reads as though the list were exhaustive when
 it is a list of the ones that have already bitten.
+
+### XVI.18 A clamped count is invisible unless the answer is cut (SH319)
+
+SH266 clamps `?digest=<n>` to the instance's ceiling rather than refusing it, on the argument that a
+caller asking for more wants as many as it can have and the cut row tells it the rest.
+
+That argument has a hole. The cut row appears when the **pages** run out, not when the **request**
+was reduced. So `?digest=200` against a ceiling of 100, on a write that affected ninety pages,
+returns ninety rows and says nothing at all — and the caller cannot tell whether ninety was
+everything or the instance quietly disagreed with it.
+
+Two fixes, and the cheap one is probably right:
+
+- **A `notes` line when the requested count exceeded the ceiling.** SH146's shape: report the
+  narrowing once rather than per row.
+- **Echo the effective count.** More precise, and it adds a field every response carries for a case
+  most callers never hit.
+
+There is a real argument for doing neither: the manifest reports the ceiling, and this surface is
+designed for agents that read the manifest first. The population affected is exactly the caller that
+did not — which may be small enough to leave alone, but should be *decided* rather than defaulted.
+
+### XVI.39 One surface, four opinions about an unrecognised value (SH320)
+
+A single request to `/agent/batch` can carry four query parameters that disagree about what to do
+with a value they do not recognise:
+
+| Parameter | Unknown value |
+|---|---|
+| `?digest=` | teaches (SH266) — `yes` and `0` are 400s |
+| `?verify=`, `?ids=` | Spring's boolean binding — `yes` is silently **false**, `1` is true |
+| `?format=` | teaches (SH78) |
+| `?include=` | ignored (SH262, and SH287 is already filed on it) |
+
+The difference is invisible until somebody mistypes, and then it is invisible again, because three
+of the four answer a plausible-looking response to a different question.
+
+The fix is **not** obviously "make them all teach". Spring's binding is what makes `?ids=1` work, and
+tightening it would break callers who are not wrong so much as informal. So what this wants first is
+the rule stated: *a parameter that **selects or bounds work** teaches; one that only **adds a
+section** does not.* By that rule `digest` and `format` are right, `include` is right, and the
+boolean pair is the odd one — which is a much smaller change than it looked before the rule existed.
+
+SH287 folds into this rather than being answered separately.
 
 ---
 

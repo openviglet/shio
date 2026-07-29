@@ -234,7 +234,8 @@ public class ShAgentManifestService {
                 rateLimit.getRefillTokens(),
                 rateLimit.getRefillPeriodSeconds(),
                 50,
-                shCdaProperties.getCache().getMaxAgeSeconds());
+                shCdaProperties.getCache().getMaxAgeSeconds(),
+                shAgentProperties.getRender().getMaxWriteDigests());
     }
 
     /**

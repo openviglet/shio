@@ -196,6 +196,27 @@ public class ShAgentProperties {
          * ~512 KB of HTML is the same digest for any page a human would call a page.
          */
         private int maxBytes = 512 * 1024;
+
+        /**
+         * Pages a write's {@code ?digest=} proof will render when the caller names no count.
+         *
+         * <p>Ten, unchanged from SH194 — but ten for a reason now. SH264 measured a swept page at
+         * <b>6 queries</b> (SH311 caches the presentation chain for the length of the read-only
+         * transaction a proof runs in), so this default is ~60 queries of work behind one write,
+         * which is the same order as the write itself.</p>
+         */
+        private int writeDigests = 10;
+
+        /**
+         * The ceiling the caller's own {@code ?digest=<n>} is clamped to.
+         *
+         * <p>An operator's decision, because it is a bound on work the server does on somebody
+         * else's behalf. Clamped rather than refused: a caller asking for more than the instance
+         * allows wants as many as it can have, and the cut is already reported as a row, so there
+         * is nothing a 400 would tell it that the answer does not (SH138's rule that a cut is
+         * visible).</p>
+         */
+        private int maxWriteDigests = 100;
     }
 
     /** Agent content-read limits (SH83's `find`). */

@@ -79,16 +79,28 @@ public class ShAgentProofService {
     private static final int NAMED = 5;
 
     /**
-     * How many pages a write will render to answer {@code ?digest=true}.
+     * How many pages a write renders to answer {@code ?digest=}, when the caller names no count.
      *
-     * <p>Low on purpose. A write to a shared region can affect every page of several post-types,
-     * and each digest is a real render (SH249) — so an uncapped answer would make one `post.upsert`
-     * cost hundreds of template compiles, which is exactly the unmeasured cost SH264 is filed for.
-     * Ten is enough to see that a change did what was intended and small enough that nobody has to
-     * think about it; the cut is always reported, because an unreported cut reads as a complete
-     * answer (SH138's rule).</p>
+     * <p>Ten was a guess that read well (SH194), which is what SH266 was filed about. It is still
+     * ten and now for a reason: SH264 measured a swept page at <b>6 queries</b> — SH311 caches the
+     * presentation chain for the length of the read-only transaction a proof runs in — so the
+     * default is ~60 queries behind one write, the same order as the write itself.</p>
+     *
+     * <p>Both numbers are the operator's now ({@code shio.agent.render.write-digests} and
+     * {@code max-write-digests}), and the caller may name its own count: an agent iterating on one
+     * layout wants two, a migration verifying a section wants forty. The cut is always reported,
+     * because an unreported cut reads as a complete answer (SH138).</p>
      */
-    private static final int MAX_DIGESTS = 10;
+    private int maxDigests(Integer requested) {
+        int ceiling = Math.max(1, properties.getRender().getMaxWriteDigests());
+        if (requested == null || requested <= 0) {
+            return Math.min(Math.max(1, properties.getRender().getWriteDigests()), ceiling);
+        }
+        // Clamped, never refused: a caller asking for more than the instance allows wants as many
+        // as it can have, and it learns the real number from the reported cut rather than from a
+        // 400 that would tell it nothing the answer does not.
+        return Math.min(requested, ceiling);
+    }
 
     private final ShAgentVerifyService shAgentVerifyService;
     private final ShAgentRenderService shAgentRenderService;
@@ -96,19 +108,22 @@ public class ShAgentProofService {
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShPageRenderService shPageRenderService;
     private final ShTemplateGraph shTemplateGraph;
+    private final ShAgentProperties properties;
 
     public ShAgentProofService(ShAgentVerifyService shAgentVerifyService,
                                ShAgentRenderService shAgentRenderService,
                                ShAddressResolver shAddressResolver,
                                ShPostUnifiedRepository shPostUnifiedRepository,
                                ShPageRenderService shPageRenderService,
-                               ShTemplateGraph shTemplateGraph) {
+                               ShTemplateGraph shTemplateGraph,
+                               ShAgentProperties properties) {
         this.shAgentVerifyService = shAgentVerifyService;
         this.shAgentRenderService = shAgentRenderService;
         this.shAddressResolver = shAddressResolver;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPageRenderService = shPageRenderService;
         this.shTemplateGraph = shTemplateGraph;
+        this.properties = properties;
     }
 
     /**
@@ -137,8 +152,19 @@ public class ShAgentProofService {
     // read, which is exactly what a proof is.
     @Transactional(readOnly = true)
     public ShAgentChangeSet attach(ShAgentChangeSet changes, boolean verify, boolean digest) {
+        return attach(changes, verify, digest, null);
+    }
+
+    /**
+     * @param pages SH266 — how many affected pages to digest, clamped to the instance's ceiling.
+     *              {@code null} takes the configured default, which is what {@code digest=true}
+     *              means
+     */
+    @Transactional(readOnly = true)
+    public ShAgentChangeSet attach(ShAgentChangeSet changes, boolean verify, boolean digest,
+                                   Integer pages) {
         ShAgentChangeSet linted = attachProof(changes, verify);
-        return digest && !changes.dryRun() ? linted.withDigests(digestsOf(changes)) : linted;
+        return digest && !changes.dryRun() ? linted.withDigests(digestsOf(changes, pages)) : linted;
     }
 
     private ShAgentChangeSet attachProof(ShAgentChangeSet changes, boolean verify) {
@@ -205,12 +231,13 @@ public class ShAgentProofService {
      * digest is a real render (SH249) and a shared region can reach hundreds of pages; the note
      * says what was left out, since an unreported cut reads as a complete answer (SH138).</p>
      */
-    private List<ShAgentChangeSet.PageDigest> digestsOf(ShAgentChangeSet changes) {
+    private List<ShAgentChangeSet.PageDigest> digestsOf(ShAgentChangeSet changes, Integer pages) {
+        int ceiling = maxDigests(pages);
         Set<String> addresses = new TreeSet<>();
         boolean cut = false;
         for (String touched : postAddresses(changes, row -> true)) {
             for (String affected : affectedPages(touched)) {
-                if (addresses.size() >= MAX_DIGESTS) {
+                if (addresses.size() >= ceiling) {
                     cut = true;
                     break;
                 }
@@ -232,7 +259,7 @@ public class ShAgentProofService {
         }
         if (cut) {
             out.add(new ShAgentChangeSet.PageDigest(
-                    "(more affected pages than the " + MAX_DIGESTS + "-page ceiling)", null,
+                    "(more affected pages than the " + ceiling + "-page ceiling)", null,
                     null, null));
         }
         return out;

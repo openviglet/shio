@@ -26,6 +26,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.agent.ShAgentChangesService;
+import com.viglet.shio.api.agent.ShAgentDigestPages;
 import com.viglet.shio.api.agent.ShAgentProofService;
 import com.viglet.shio.api.agent.ShAgentReadService;
 import com.viglet.shio.api.agent.ShAgentReadTerse;
@@ -557,6 +558,58 @@ class ShTemplateGraphTest {
             assertThat(row.digest()).startsWith("d:");
             assertThat(row.source()).isEqualTo("rendered");
         });
+    }
+
+    @Test
+    @DisplayName("SH266: the caller names how many pages to digest, and the cut is a row")
+    void theCallerNamesTheDigestCount() {
+        // SH194 capped this at ten because each row is a real render and ten read well. SH264 has
+        // since measured a swept page at 6 queries, so the ceiling can be a decision: the default
+        // stays, and a caller that wants fewer — an agent iterating on one layout — says so.
+        ShAgentChangeSet written = proofService.attach(upsertOf("/r-nav"), false, true, 2);
+
+        assertThat(written.digests()).hasSize(3);
+        assertThat(written.digests()).element(2)
+                .satisfies(row -> assertThat(row.address())
+                        .as("""
+                                the cut is a row, not a silence: an unreported cut reads as a \
+                                complete answer (SH138), and it names the ceiling that applied so \
+                                the caller learns the real bound from the answer rather than from \
+                                the manifest it did not read.""")
+                        .contains("2-page ceiling"));
+        assertThat(written.digests()).filteredOn(row -> row.digest() != null)
+                .as("two real digests and one cut row")
+                .hasSize(2);
+    }
+
+    @Test
+    @DisplayName("SH266: `digest=yes` teaches instead of quietly meaning false")
+    void aBadDigestValueTeaches() {
+        assertThat(catchThrowable(() -> ShAgentDigestPages.count("yes")))
+                .as("""
+                        a caller writing `digest=yes` believes it asked for something. Reading it \
+                        as false would answer a different question and look successful — the same \
+                        false green that made an unknown `format` a 400 rather than a fallback.""")
+                .isInstanceOf(ShAgentDigestPages.BadDigestValueException.class);
+        assertThat(catchThrowable(() -> ShAgentDigestPages.count("0")))
+                .as("zero is not 'no digests' — that is `false`, and a caller that computed a "
+                        + "count and got zero has a bug it should hear about")
+                .isInstanceOf(ShAgentDigestPages.BadDigestValueException.class);
+        assertThat(ShAgentDigestPages.wanted("true")).isTrue();
+        assertThat(ShAgentDigestPages.count("true"))
+                .as("`true` still means the instance's default, which is what every pre-SH266 "
+                        + "caller sends")
+                .isNull();
+        assertThat(ShAgentDigestPages.count("40")).isEqualTo(40);
+    }
+
+    private static Throwable catchThrowable(Runnable work) {
+        try {
+            work.run();
+            return null;
+        } catch (Throwable failure) {
+            return failure;
+        }
     }
 
     @Test

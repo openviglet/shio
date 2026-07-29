@@ -692,8 +692,13 @@ the CDA + console services (law P10) and holds no business logic of its own.
   written but every page that renders through it (SH193's graph; this is that graph's first consumer
   that uses it to *do* something rather than to report). Only the hashes, never the outline: the
   caller is asking whether something moved, which is a comparison against a value it already holds.
-  **Capped at ten pages** because each row is a real render (SH249) and the cut is reported as a row
-  — the ceiling is a guess awaiting SH264's measurement (**SH266**). Skipped on a `dryRun` for the
+**`?digest=<n>` since SH266** — true for the instance's default (ten), or a count the server
+  **clamps** to `shio.agent.render.max-write-digests` and reports the cut as a row (SH138). One
+  parameter, because everywhere else here a count *is* the parameter; a bad value (`yes`, `0`) is a
+  teaching 400, since a caller that believes it asked for something must not be answered a different
+  question. Ten is a measurement now, not a guess: SH264 puts a swept page at 6 queries, so the
+  default is ~60 queries behind one write. The ceiling is in the manifest's `limits`, because one the
+  caller cannot see is one it learns by being cut off. Skipped on a `dryRun` for the
   same reason `verify` is, and opt-in so nobody pays for a render they did not ask for.
   `ShAgentProofService.attach` is `@Transactional(readOnly = true)`: it still runs after the write
   commits, and it needs a session of its own because the graph walks LAZY associations. **`?format=terse` since SH157** —

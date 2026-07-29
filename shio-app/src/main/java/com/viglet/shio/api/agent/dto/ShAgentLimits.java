@@ -31,5 +31,14 @@ public record ShAgentLimits(
         long rateLimitRefillTokens,
         long rateLimitPeriodSeconds,
         int defaultPageSize,
-        long cacheMaxAgeSeconds) {
+        long cacheMaxAgeSeconds,
+        /**
+         * SH266 — the most pages a write's {@code ?digest=<n>} proof will render.
+         *
+         * <p>Here because a ceiling the caller cannot see is one it learns by being cut off. SH121's
+         * whole argument for this section is that a limit an agent knows in advance shapes the call
+         * it makes: an agent that knows the number is 100 asks for what it needs, and one that does
+         * not either asks for the default forever or discovers the bound by reading a cut row.</p>
+         */
+        int maxDigestPages) {
 }
