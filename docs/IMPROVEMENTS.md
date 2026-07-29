@@ -3082,14 +3082,7 @@ There is a real argument for doing neither: the manifest reports the ceiling, an
 designed for agents that read the manifest first. The population affected is exactly the caller that
 did not — which may be small enough to leave alone, but should be *decided* rather than defaulted.
 
-### XVI.31 Two follow-ups from the URL sweep (SH323, SH324)
-
-**SH323 — the locale finder still throws.** `findByShSite_IdAndFurlAndStateAndLocale` is SH321's
-shape one parameter along, and the mechanical fix is the same. What stops it being a one-line commit
-is a question the locale dimension raises first: `duplicate-url` does **not** consider locale, so two
-posts at one URL in *different* locales are legitimate content that a locale-aware finder would
-happily return and a locale-blind lint already flags. The check and the finder disagree about what
-"duplicate" means, and only one of them can be right. Settle that, then fix the finder.
+### XVI.31 A follow-up from the URL sweep (SH324)
 
 **SH324 — a fixture can model a shape the product cannot produce.** SH321's refusal fired on
 `ShTemplateGraphTest`, which built a published post as two `post(...)` calls and therefore two ids —

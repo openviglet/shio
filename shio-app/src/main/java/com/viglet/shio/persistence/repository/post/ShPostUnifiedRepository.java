@@ -248,9 +248,43 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     /** All sibling translation rows (across states) sharing a translation group. */
     List<ShPostUnified> findByTranslationGroupId(String translationGroupId);
 
-    /** Resolve a post by site + friendly URL + locale (SH53 locale-aware delivery). */
-    Optional<ShPostUnified> findByShSite_IdAndFurlAndStateAndLocale(String siteId, String furl,
-                                                                    ShPostState state, String locale);
+    /**
+     * Every post claiming this friendly URL in this state <em>and</em> this locale, by id — SH323.
+     *
+     * <p>SH321's shape one parameter along, and it needed the same fix for the same reason: the
+     * derived {@code Optional} finder threw {@code IncorrectResultSizeDataAccessException}, so
+     * two posts sharing a URL <em>within one locale</em> reached the CDA's localized read as a
+     * <b>500</b>.</p>
+     *
+     * <h2>Why the locale does not make a shared URL legitimate</h2>
+     *
+     * <p>The tempting reading is that {@code duplicate-url} should be locale-aware, since two
+     * translations at one URL are told apart here. It is the wrong one, and the reason is the
+     * address grammar: an SH79 address is {@code post:<site>/<furl>} and carries <b>no locale</b>,
+     * so two posts sharing a URL are unaddressable whatever distinguishes them —
+     * {@code ShAddressResolver} refuses (SH321), and SH134's occupied-target check on
+     * {@code post.move} is locale-blind too. Making the lint locale-aware would leave the agent
+     * path <em>refusing</em> content {@code verify} had just called clean, which is the false green
+     * this codebase treats as the worst failure available. So the locale-blind rule is the
+     * definition: <b>one published URL, one post, per site.</b> What locale-aware delivery is for
+     * is a translation with its <em>own</em> URL, plus {@code availableLocales} linking the two.</p>
+     */
+    List<ShPostUnified> findByShSite_IdAndFurlAndStateAndLocaleOrderByIdAsc(
+            String siteId, String furl, ShPostState state, String locale);
+
+    /**
+     * Resolve a post by site + friendly URL + locale (SH53 locale-aware delivery).
+     *
+     * <p>Takes the first of the ordered list for the reason spelled out on
+     * {@link #findByShSite_IdAndFurlAndState}: a reader that must serve something serves the same
+     * row every time, so a duplicate is a defect somebody recognises rather than one that reads as
+     * flakiness in delivery.</p>
+     */
+    default Optional<ShPostUnified> findByShSite_IdAndFurlAndStateAndLocale(
+            String siteId, String furl, ShPostState state, String locale) {
+        return findByShSite_IdAndFurlAndStateAndLocaleOrderByIdAsc(siteId, furl, state, locale)
+                .stream().findFirst();
+    }
 
     // --- Full-text search (SH52). The predicate matches title, summary and the raw
     //     attribute data CLOB (portable LIKE — keeps the SH26 cross-DB guarantee,
@@ -413,11 +447,17 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
      * this URL" and "does this link resolve anywhere in the site". Neither can be answered
      * from the scoped subject set, and neither needs a post's data, its post-type or its
      * attribute tree — which is the part a full read pass is expensive for. So the index
-     * is a three-column projection: one query per site, no entities, no lazy loading.</p>
+     * is a four-column projection: one query per site, no entities, no lazy loading.</p>
      *
-     * @return rows of {@code [id (String), furl (String), state (ShPostState)]}
+     * <p>The fourth column is the {@code locale} (SH323), and it is here rather than read off the
+     * subject rows for the same reason the index exists at all: a scoped run holds one of two
+     * posts sharing a URL, so a message that named the <em>other</em> one's locale from the loaded
+     * rows would be guessing. A claim about content outside the scope has to come from the
+     * cross-cutting index or not be made.</p>
+     *
+     * @return rows of {@code [id (String), furl (String), state (ShPostState), locale (String)]}
      */
-    @Query("select p.id, p.furl, p.state from ShPostUnified p "
+    @Query("select p.id, p.furl, p.state, p.locale from ShPostUnified p "
             + "where p.shSite.id = :siteId and p.state in :states")
     List<Object[]> findUrlIndexBySiteId(@Param("siteId") String siteId,
                                        @Param("states") Collection<ShPostState> states);

@@ -127,6 +127,13 @@ class ShContentLocaleTest {
     @Test
     void cdaResolvesByLocaleAndReportsAvailable() {
         // Two PUBLISHED translations sharing one furl + group, differing by locale.
+        //
+        // SH323 — this shape is *deliverable* and is still a defect the instance reports: an SH79
+        // address carries no locale, so `ShAddressResolver` refuses the pair (SH321) and
+        // `duplicate-url` is an error over it, with a clause naming the locales so the curator who
+        // did this deliberately is told why it does not help. What locale-aware delivery is for is
+        // a translation with its own URL. The assertions below are the *delivery* contract, which
+        // is unchanged.
         String group = UUID.randomUUID().toString();
         persistPublished("/about-loc", "en", "About", group);
         persistPublished("/about-loc", "pt-br", "Sobre", group);
@@ -139,6 +146,31 @@ class ShContentLocaleTest {
         assertThat(pt.locale()).isEqualTo("pt-br");
         assertThat(pt.title()).isEqualTo("Sobre");
         assertThat(en.availableLocales()).containsExactlyInAnyOrder("en", "pt-br");
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("SH323: two posts on one URL in one locale resolve, not 500")
+    void theLocaleScopedReadIsDeterministicOnAContestedUrl() {
+        // The actual SH323 defect: `findByShSite_IdAndFurlAndStateAndLocale` was a derived
+        // Optional, so Spring Data expected at most one row and threw
+        // IncorrectResultSizeDataAccessException — a 500 for a defect `duplicate-url` reports.
+        // Two posts, one locale, *separate* translation groups: not translations, just a
+        // contested URL, which is what SH321 fixed one parameter along.
+        String contested = "/contested-loc";
+        persistPublished(contested, "en", "First", UUID.randomUUID().toString());
+        persistPublished(contested, "en", "Second", UUID.randomUUID().toString());
+
+        ShCdaPost scoped = shCdaService.getPostByUrl(siteId, contested, "en").orElseThrow();
+        ShCdaPost blind = shCdaService.getPostByUrl(siteId, contested).orElseThrow();
+
+        assertThat(scoped.id())
+                .as("""
+                        the same row every request — SH278's rule on a second identity: \
+                        consistently wrong is a defect somebody recognises and `verify` names, \
+                        while a coin-flip reads as flakiness in delivery. A *write* refuses \
+                        instead (ShAddressResolver.DuplicateUrlException).""")
+                .isEqualTo(blind.id());
+        assertThat(List.of("First", "Second")).contains(scoped.title());
     }
 
     private void persistPublished(String furl, String locale, String title, String group) {

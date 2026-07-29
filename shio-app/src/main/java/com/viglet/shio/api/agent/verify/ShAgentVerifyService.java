@@ -421,6 +421,7 @@ public class ShAgentVerifyService {
         Set<String> allIds = new HashSet<>();
         Set<String> publishedIds = new HashSet<>();
         Map<String, Map<String, List<String>>> publishedByUrl = new HashMap<>();
+        Map<String, String> publishedLocales = new HashMap<>();
         for (ShSite each : sites) {
             siteById.put(each.getId(), each);
             Map<String, List<String>> byUrl = new HashMap<>();
@@ -432,6 +433,9 @@ public class ShAgentVerifyService {
                     publishedIds.add(id);
                     if (!isBlank(furl)) {
                         byUrl.computeIfAbsent(normalized(furl), ignored -> new ArrayList<>()).add(id);
+                    }
+                    if (!isBlank((String) row[3])) {
+                        publishedLocales.put(id, (String) row[3]);
                     }
                 }
             }
@@ -457,6 +461,7 @@ public class ShAgentVerifyService {
                 .sorted(Comparator.comparing(ShPostUnified::getId))
                 .toList();
         return new Scan(siteById, posts, published, allIds, publishedIds, publishedByUrl,
+                publishedLocales,
                 folders(siteById.keySet(), scope.folderIds()),
                 shFolderRepository.findParentFolderIds(),
                 shPostUnifiedRepository.findFolderIdsWithPosts());
@@ -922,13 +927,49 @@ public class ShAgentVerifyService {
             }
             String others = claiming.stream().sorted()
                     .reduce((first, second) -> first + ", " + second).orElse("");
+            String locales = distinctLocales(claiming, scan);
             findings.add(Finding.error(check, "duplicate-url", address(post), null,
                     "Published URL '" + post.getFurl() + "' is claimed by "
                             + claiming.size() + " posts (" + others + ") — which one a "
-                            + "visitor gets is undefined.",
+                            + "visitor gets is undefined."
+                            + (locales == null ? ""
+                                    : " They are different translations (" + locales + "), which "
+                                    + "does not make the URL free: an SH79 address carries no "
+                                    + "locale, so no write can name either of them."),
                     "Give one of them a different URL with a post.move op "
-                            + "(POST /api/v2/agent/batch), or unpublish the duplicate."));
+                            + "(POST /api/v2/agent/batch), or unpublish the duplicate."
+                            + (locales == null ? ""
+                                    : " A translation needs a URL of its own; the CDA still "
+                                    + "reports the pair through availableLocales.")));
         }
+    }
+
+    /**
+     * The locales of a set of URL claimants, sorted — or {@code null} when they all share one.
+     *
+     * <p>SH323's half of the message. Two published translations at one URL is the case where
+     * {@code duplicate-url} reads as an accusation of carelessness against somebody who made a
+     * deliberate choice, so the finding says why the locale does not help: an SH79 address is
+     * {@code post:<site>/<furl>} and carries no locale, so {@code ShAddressResolver} refuses the
+     * pair (SH321) and {@code post.move} would refuse the URL — the CMS cannot name either post,
+     * whatever tells them apart. Locale-aware delivery is for a translation with its <b>own</b>
+     * URL.</p>
+     *
+     * <p>Read from the cross-cutting index and never from the loaded rows: a scoped run may hold
+     * one of the two, and a message naming the other's locale from the subject set would be a
+     * guess (SH143's rule, and SH263's — a positive wrong answer is worse than a missing one).
+     * {@code null} rather than an empty string so the ordinary single-locale finding stays
+     * byte-identical, which is how every appended clause in this report behaves (SH298).</p>
+     */
+    private String distinctLocales(List<String> claiming, Scan scan) {
+        List<String> locales = claiming.stream()
+                .map(id -> scan.publishedLocales().get(id))
+                .filter(locale -> locale != null && !locale.isBlank())
+                .distinct()
+                .sorted()
+                .toList();
+        return locales.size() <= 1 ? null
+                : "locales " + String.join(", ", locales);
     }
 
     /**
@@ -1627,6 +1668,7 @@ public class ShAgentVerifyService {
                         List<ShPostUnified> published, Set<String> allIds,
                         Set<String> publishedIds,
                         Map<String, Map<String, List<String>>> publishedByUrl,
+                        Map<String, String> publishedLocales,
                         List<Scanned> folders, Set<String> folderParents,
                         Set<String> foldersWithPosts) {
 
