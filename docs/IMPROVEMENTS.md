@@ -2233,24 +2233,35 @@ fired, which is the part a reader would use to tell a good refusal from a confus
 > `PER_CLASS` fixture and broke two unrelated assertions in the same class. In a shared fixture every
 > mutating test is an input to the others — SH239's confound, one class along.
 
-### XVI.17 A whole-site structural proof is now N renders (SH264)
+### XVI.17 A sweep re-resolves the presentation chain per page (SH311, SH312)
 
-Since SH249 the digest composes the page for real: a layout compile, its regions, and whatever
-`{{#query}}` / `{{#getRelation}}` / `{{#search}}` read. One page is cheap. A sweep is not obviously
-cheap, and nobody has measured it.
+SH264 measured it: **21 queries for a page's rendered digest, and the same 21 for the next page of
+the same site.** `templatesFor` re-reads the layout, both regions and the theme every time.
 
-The cost is bounded by construction — SH183 clamps every listing, SH247 shares one comparator, and
-each render is independent — so this is not a correctness worry. It is a **Block M discipline**
-worry: the rule there is that a cost is measured rather than asserted, and
-`ShAgentResponseBudgetTest` guards the size of a *response*, not the work behind a sweep. So the
-honest position is that a per-page proof over a large site has an unknown price, and "bounded"
-is an argument, not a number.
+A binding resolves to the same templates for every page of its type — that is SH251's own finding,
+and it is what made the graph affordable in the first place. So this is per-**page** work carrying
+per-**type** information, which is the clearest possible case for a cache. **SH311.**
 
-The likely answer is a cache keyed on the digest itself, which is neat because the digest *is* the
-question "has this page's structure changed" — a hit means the answer has not moved. But building
-that before measuring would be the thing this codebase keeps refusing elsewhere: SH164/SH239 exist
-precisely because an unmeasured claim about cost drifts. So the first deliverable is a benchmark,
-and the second is whatever it argues for.
+The shape is easy and the *lifetime* is the design question:
+
+- **Request-scoped** is trivially correct and buys nothing where it matters: `/preview` renders one
+  page per request.
+- **Longer-lived** has to be invalidated when a layout, a region or a theme changes, and when
+  `site.postTypeLayout` changes — that last one is an `ShSite` write, which no post-level listener
+  sees. It is exactly the trap SH193 avoided by computing the graph rather than storing it.
+- **Sweep-scoped** — one `?digest=true` batch, one `verify` pass — is where the repetition actually
+  is, and staleness cannot outlive the call. Probably the answer.
+
+The benchmark's marginal-page assertion is written to **fail** when this lands, which is the
+intended way to be told that the story needs updating.
+
+**SH312** is the other half of the honesty: the fixture is one layout, two regions, one theme, ten
+pages and **no helpers**. That is enough to answer "is anything reused" and not enough to answer
+"what does a real sweep cost", because helpers are the part that varies without bound — a listing
+region calls `{{#query limit=10}}` (a query per page plus the rows), and a section-composed page
+reads a post per `{{#getRelation}}` entry. The 21 is a floor for the simplest page there is. Worth
+extending the fixture, and worth doing **after** SH311, because a cache changes which number is
+interesting.
 
 ### XVI.18 A write's digest ceiling is a number nobody chose (SH266)
 
@@ -2258,8 +2269,10 @@ and the second is whatever it argues for.
 region can reach hundreds — so the cap is doing real work — but ten specifically because it reads
 well, which is not a reason.
 
-The honest ceiling depends on two things nobody has established. What a render costs, which is
-**SH264**'s open benchmark. And what the caller is doing: an agent iterating on one layout wants two
+The honest ceiling depends on two things. What a render costs, which **SH264 has now measured**: 21
+queries per page, and the *same* 21 for the tenth page as for the first, because nothing about the
+presentation chain is reused between pages. Ten pages is therefore ~210 queries of work behind one
+write's proof. And what the caller is doing: an agent iterating on one layout wants two
 or three, while a migration verifying a section wants a bound it can raise deliberately.
 
 Two shapes, and they are not equivalent:
@@ -2929,42 +2942,6 @@ Three instruments, and they are not equally good:
   principle, and "writes through a shared service" is most of this codebase's tests.
 
 The likely answer is the first plus writing it down — the other two cost more than the defect does.
-
-### XVI.50 `verify`'s messages are long, and nothing measures them (SH310)
-
-`ShAgentResponseBudgetTest` guards a `/agent/verify` **response**, and SH298 and SH308 have just
-added two sentences and an address to a rule that fires once per unused template. A hundred unused
-regions in a site with no bindings is now a hundred copies of the same two sentences — worth their
-tokens once, repetition after that.
-
-Three shapes, and they are not equivalent:
-
-- **Fold the repeated sentence into the report's `notes`,** which is SH146's precedent: a cut is
-  reported once rather than per row. Cheapest on tokens, and it separates the finding from the
-  explanation, which a reader scanning findings may prefer anyway.
-- **Truncate the message and keep the `fix`.** P6 says an error teaches; it does not say it teaches
-  at length.
-- **Accept it** and let the budget test fail the day it matters — which is what a budget test is
-  for, and the answer most consistent with Block M's "measure, do not assert".
-
-The measurement decides, and it needs the same many-site fixture SH307 and SH264 both want.
-
-### XVI.50 `usedElsewhere` is unmeasured (SH307)
-
-SH298 answers *"is this title used in another site"* by building every in-scope site's graph, once
-per unused template. `ShTemplateGraph.of()` resolves each binding through `templatesFor`, which
-reads the layout post and every region it slots — so a ten-site instance with ten unused templates
-is a hundred graph builds inside one `verify` pass.
-
-It is bounded by **bindings** rather than pages (SH251's finding, which is what makes the whole
-graph affordable), and it has never been measured. That is the same shape as SH264 and filed for the
-same reason: Block M's discipline is that a cost is measured rather than asserted, and this one is
-inside the pass a CI gate runs.
-
-The fix, if it matters, is one line — build each site's graph once per run and pass the map down —
-so the task is really the measurement. Worth doing **with** SH264 rather than separately: both want
-a benchmark over a many-site instance, which does not exist yet, and building that fixture once is
-most of the work for either.
 
 ### XVI.52 A listing's rows are another post-type (SH305)
 

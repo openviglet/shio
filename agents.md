@@ -958,6 +958,15 @@ asserts both ratios; `ShAgentResponseBudgetTest` guards eleven canonical respons
 read their ceilings from `shio-app/src/test/resources/token-budgets.properties` — the same
 file as the SH132 MCP budgets, because a second place to keep a number is a place that goes
 stale. Raising a ceiling is allowed and must be justified in the commit.
+**And the render sweep is measured in queries, not milliseconds (SH264).**
+`ShRenderSweepBenchmarkTest` counts Hibernate statements — a timing ceiling on a shared machine is a
+flake, and SH250's rule is that a flake is worse than a break. It prints on every run. The measured
+answer: **21 queries per rendered digest, and the same 21 for the next page of the same site** —
+nothing about the presentation chain is reused between pages, which is per-page work carrying
+per-type information (**SH311**). The marginal-page assertion is deliberately written to *fail* when
+a cache lands, so the story cannot go stale. A three-site `verify` pass is 137 queries and 1,119
+characters of finding prose, which is where SH298's and SH308's longer messages get watched.
+
 **Both boot their own in-memory database**: several of the responses they measure describe the
 *instance*, so on the shared test datasource the numbers grew with whatever post-types other
 tests created — the task benchmark measured 1616 tokens alone and 2243 in a full run against an
