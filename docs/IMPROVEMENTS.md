@@ -1594,7 +1594,7 @@ promising a user a website.
 >
 > What is left is coverage — three of the four incident kinds still record no frame (**SH269**).
 
-### The iteration loop — what SH183–SH190 does *not* buy (SH191–SH195)
+### XV.13 The iteration loop — what SH183–SH190 does *not* buy (SH191–SH195)
 
 The target is a loop: change the layout, see the result, correct it, repeat — the Lovable
 experience, with the CMS as the accelerator rather than a code generator. SH183–SH190 get a site
@@ -1733,7 +1733,7 @@ Editor something to offer besides text. Raw CSS stays as the escape hatch; the p
 stops being the interface. The open question is whose vocabulary — inventing one is a design
 project, and adopting an existing convention is cheaper and more portable.
 
-### What building the renderer found (SH247–SH249)
+### XV.14 What building the renderer found (SH247–SH249)
 
 Three edges, and they share a shape: each is somewhere the renderer is *nearly* the thing it
 replaced, and where the remaining gap is invisible from the outside because the page still
@@ -2255,7 +2255,7 @@ Two cheap instruments:
 The second is the more valuable one, because the failure mode here is a performance regression that
 looks exactly like normal operation.
 
-### XVI.17 The benchmark measures one site's shape, and a real site is not this shape (SH312)
+### XVI.19 The benchmark measures one site's shape, and a real site is not this shape (SH312)
 
 SH264's fixture is one layout, two regions, one theme, ten pages and **no helpers**. That was enough
 to answer "is anything reused" — it was not — and SH311 has since made a sweep cost 6 queries a page
@@ -2755,29 +2755,6 @@ Two things stop it from being obvious:
 So the question to settle first is whether the honest form is a delivery *finding* at all, or a note
 saying which pages were checked this way and what was seen.
 
-### XVI.53 A delivery check proves a route serves and never looks at what it served (SH302)
-
-`shio verify --delivery` (SH141) fetches each published page and reports `route-not-served` on a bad
-status. The body is discarded.
-
-Since SH299 that body can be counted for markers with one jsoup parse, turning *"the front end
-answered 200"* into *"the front end answered 200 with a page that is missing a region"* — a much
-stronger claim, and arguably the one a delivery check exists to make.
-
-Two things stop it from being obvious:
-
-- **It only applies to Shio's own `/preview`.** An external Next.js front end renders its own markup
-  from the CDA and carries no `data-shio-*` at all, so the check would silently cover nothing for
-  precisely the deployments SH141 was built for — the "a check that covered nothing while answering
-  ok" failure that task itself warns about.
-- **A marker in *delivered* HTML is a stale-cache signal as much as a content defect.** The CMS may
-  have been fixed since; what is being served is old. That is a different finding with a different
-  fix, and reporting it as the content defect would send somebody to edit a post that is already
-  right.
-
-So the question to settle first is whether the honest form is a delivery *finding* at all, or a note
-saying which pages were checked this way and what was seen.
-
 ### XVI.56 A finding's address is a string, and nothing checks it resolves (SH309)
 
 Every teaching message in `verify` is assembled by concatenation: SH308 puts `post:blog/l-article`
@@ -2878,7 +2855,7 @@ furl and different ids (narrow, cheap, and it only catches this one shape). The 
 probably the right first move, on the same reasoning SH322 just wrote down: the pattern that finds
 the next occurrence is worth more than the fix to this one.
 
-### XVI.31 The habit the sweep taught (SH322)
+### XVI.23 The habit the sweep taught (SH322)
 
 SH279's body named three call sites from a first read and added "whatever a grep turns up". The grep
 — written as a lint — found **nine**, one of which the *previous half of the same task* had created
@@ -2913,7 +2890,7 @@ every instance older than the feature.
 > and outside `ShOnStartup`'s first-time gate — **there were two guards and this section named
 > one**, which is SH322's lesson a third time: fixing the reported line would have changed nothing.
 
-### Three routes only a browser can take (SH326, SH327, SH328)
+### XVI.58 Three routes only a browser can take (SH326, SH327, SH328)
 
 **SH328 is the one that matters most**, because it sits in the middle of the feature.
 `site.postTypeLayout` is the single edge that connects a layout to content, and
@@ -2948,7 +2925,7 @@ the client reading it. The answer is *not* a twelfth tool (the cap is 12 with 11
 > exercised in the direction of a gap closing. Since SH339 the bodiless 403 is gone everywhere, so the
 > third path's symptom outlived its cause by one task.
 
-### A plan cannot describe its own first step (SH329)
+### XVI.59 A plan cannot describe its own first step (SH329)
 
 `{site.upsert site:Demo}, {folder.upsert folder:Demo/pages}` with `dryRun:true` fails at `ops[1]`
 with `No readable site 'Demo'`. SH153 built `ShAgentBatchService.Declared` for exactly this — a plan
@@ -2963,7 +2940,7 @@ on `POST /api/v2/agent/batch`. P6 says errors are instructions; this one instruc
 something that does not exist, which is worse than saying nothing, and it is what a shared resolver
 costs when only one of its callers was considered.
 
-### A content gate reporting operational history (SH330)
+### XVI.24 A content gate reporting operational history (SH330)
 
 `checks=diagnostics` is in the default set and turns an SH144 incident into a verify **error**. There
 is no verb to acknowledge or resolve one, so any instance that has ever returned a 5xx fails
@@ -2977,7 +2954,7 @@ false only for what the CMS can prove from inside itself *now*. A past incident 
 the definition of a warning. SH142's baseline is not the escape hatch either: it keys on
 `(rule, address, field)` and an `api-error` finding carries no address.
 
-### One vocabulary, because the agent guessed wrong three times (SH331, SH332)
+### XVI.29 One vocabulary, because the agent guessed wrong three times (SH331, SH332)
 
 Four wrong calls in this run, none of them a random guess — each was a rule the agent applied
 consistently and Shio breaks in one of its surfaces:
@@ -3034,7 +3011,7 @@ and it costs a round trip exactly when the caller is already committed to writin
 Measure before choosing: the manifest's own numbers are known (298 tokens for `include=features,limits`
 against 2343 for the whole document), so the cost of a section is answerable rather than arguable.
 
-### The preview renders a site nobody can walk through (SH336, SH337)
+### XVI.34 The preview renders a site nobody can walk through (SH336, SH337)
 
 `{{link}}` is `post.getFurl()` — `/contato` — and the page is served at `/preview/Demo/contato`. So
 every internal link in a previewed page points outside the preview: `GET /contato` is a **404**.
@@ -3188,27 +3165,6 @@ the cheap one may be the one that has to be undone.
 > ceiling. It also sharpens **SH317**, filed as "nobody has counted the cost": the cost includes
 > correctness, not only seconds.
 
-### XVI.66 The rationale file's own numbering is unchecked (SH351)
-
-Found while removing a shipped task's section: `### XVI.52` named **two** different tasks (SH305's, and
-SH300's — which had shipped and should have been deleted), and pulling them apart revealed that
-**SH302's section is in the file twice, verbatim**. Measured across the whole file: 120 sections, three
-colliding numbers (`XVI.17` → SH313 and SH312, `XVI.31` → SH324 and SH322, `XVI.53` → SH302 twice).
-
-This matters more than tidiness because of how the three files are wired. A ROADMAP line is one
-sentence plus a `→ §x.y` pointer, and that pointer is *the* route from a task to its design — the
-reason the roadmap is allowed to stay terse. A number that names two sections makes the pointer
-ambiguous, and a section for a task that has shipped makes it wrong: a reader following it lands on
-reasoning for work already done, which is the exact failure the "IMPROVEMENTS is for unshipped
-sections only" rule exists to prevent.
-
-**The lint is the deliverable and it lands before the renumbering** (SH322's habit): no two sections
-share a number, no section body appears twice, and every section's task id is either in ROADMAP or the
-section is marked shipped. The last clause is the one with teeth — it is what would have caught SH300's
-leftover on the commit that shipped it, rather than three blocks later. Renumbering also means fixing
-every `→ §` pointer that resolves to a moved section, so the lint should check that too: a pointer to a
-section number nothing declares is the same defect one level out.
-
 ### XVI.64 SH348 is four layers deep and the op is the last one — measured (SH348)
 
 §XVI.64 predicted that "the file projection decides it, not the op", and said the next step was to
@@ -3290,7 +3246,7 @@ sentence; a task whose pointer is missing or thin needs its rationale *moved* fi
 fix is the usual one for this repository: a length assertion, so the rule stops depending on whoever
 is writing the entry noticing it.
 
-### The curator is already authenticated and the editor asks for a token anyway (SH335)
+### XVI.38 The curator is already authenticated and the editor asks for a token anyway (SH335)
 
 Editing text inline and pressing *Salvar rascunho* answers:
 
@@ -3335,7 +3291,7 @@ does not have. The alternative is a merge verb on the console surface, which is 
 missing rather than the thing being worked around. Cheaper: the read-modify-write. Righter: the merge
 verb. Pick before touching the client, not after.
 
-### The last mile is the human's, and it opened on a 404 (SH333, SH334)
+### XVI.39 The last mile is the human's, and it opened on a 404 (SH333, SH334)
 
 The site rendered, the digest was clean and the SH99 gate closed green — and when the curator opened
 the Universal Editor on it, the canvas showed this:

@@ -17,7 +17,13 @@ touch one, check whether a sibling needs updating:
 
 Tasks are numbered `SH<n>` (not contiguous across blocks — epics like SH25/SH62/SH67/SH74
 own sub-ranges; superseded ids are retired, never reused). The `→ §x.y` pointer on a task
-line is its IMPROVEMENTS.md design section. Per-task implementable specs live in
+line is its IMPROVEMENTS.md design section — **and `ShDesignRationalePointerLintTest` fails the
+build on five things about it (SH351)**: an unnumbered section (nothing can point at it), a number
+or a body used twice, a pointer that resolves to nothing, a pointer that resolves to a section which
+does not name that task *while the task has its own*, and a section whose task has left the backlog
+without saying why it is still there. Measured when it landed: 121 sections, 82 pointers, **11 of
+them dead** and 14 more landing on somebody else's design. If a task has no rationale section, the
+line carries **no pointer** — a pointer to nowhere reads as though the design exists. Per-task implementable specs live in
 `docs/specs/SH<n>-<slug>.md`; the product concept is `docs/specs/SH74-agent-native-cms.md`.
 Blocks **H–L, M, N and O** have shipped (Block L except **SH110**, still blocked on SH45);
 the live backlog is the per-block follow-ups and Blocks A–G's remaining SH44–SH47 tenant work.
