@@ -16,7 +16,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
@@ -119,7 +121,8 @@ public class ShSecurityConfig {
             ShAuthenticationEntryPoint shAuthenticationEntryPoint,
             ShOAuth2UserService shOAuth2UserService,
             ShOidcUserService shOidcUserService,
-            ShTenantFilter shTenantFilter) {
+            ShTenantFilter shTenantFilter,
+            ShCsrfAccessDeniedHandler shCsrfAccessDeniedHandler) {
 
         http.headers(header -> header.frameOptions(
                 HeadersConfigurer.FrameOptionsConfig::disable)
@@ -135,6 +138,19 @@ public class ShSecurityConfig {
         http.csrf(csrf -> csrf
                 .csrfTokenRepository(csrfTokenRepository)
                 .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                // SH339 — a CSRF refusal answers with a body. Measured before this: 403, no content
+                // type, empty body, which is SH189's defect on the surface whose caller is most
+                // likely to be a program. Wired onto CsrfFilter alone, and deliberately not as the
+                // chain-wide accessDeniedHandler: a CSRF rejection and an authorization denial have
+                // different remedies, and one handler for both would have to guess which it is
+                // sending. The status stays 403 — the console's axios interceptor retries on it.
+                .withObjectPostProcessor(new ObjectPostProcessor<CsrfFilter>() {
+                    @Override
+                    public <O extends CsrfFilter> O postProcess(O filter) {
+                        filter.setAccessDeniedHandler(shCsrfAccessDeniedHandler);
+                        return filter;
+                    }
+                })
                 .ignoringRequestMatchers(
                         mvc.matcher(GRAPHQL_PATH),
                         // CDA writes (SH10) are token-authenticated (Key header) and stateless,

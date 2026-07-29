@@ -3342,14 +3342,9 @@ because working thirteen known instances by hand leaves the fourteenth to the ne
 > the instrument found what hand-work would not have. **52 features, 14 unreachable, four of them
 > named by nothing** — §XVI.61 is what those four became.
 
-**SH339** is the narrower sibling. `ShCsrfExemptionLintTest` asks "is this blanket exemption a
-decision?" — the right question from the security side, which leaves the operator side unasked, and
-the recurring class above is the cost. The inverse assertion is that every mutating path outside
-`/console/**` is reachable by a stateless credential or names the reason a browser session is
-required. Worth keeping distinct from SH338: SH338 asks whether a capability has an agent route at
-all, SH339 asks whether the route it has can be used without a cookie. And a path that legitimately
-requires a session must still **refuse with a body** — a bodiless 403 is SH189's defect, and it is
-what made SH327 cost a CSRF dance to diagnose rather than a read.
+> ✅ **SH339 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. **25 mutating roots, 8
+> stateless-writable, 3 real gaps** — and the bodiless 403 this section predicted was measured
+> before it was fixed: 403, no content type, empty body, on all four paths tried.
 
 **SH340** closes the measurement gap, and it is the one that most directly serves the agent's own
 working cost. `ShAgentTaskBenchmarkTest` asserts call and token ratios over a canonical task, which

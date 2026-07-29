@@ -35,6 +35,40 @@ mutation-capable delivery endpoint does not get a cookie-bearing playground in t
 browser; keeping GraphiQL would mean shipping a CSRF-aware replacement or accepting cross-site
 writes on the delivery API, and neither is worth a query playground.
 
+**And the inverse question has its own lint (SH339): which mutating paths can an agent write to at
+all?** `ShCsrfExemptionLintTest` asks whether an exemption is a *decision* — the right question from
+the security side, which leaves the operator side unasked, and the cost of that gap is a recurring
+class: SH170 (creating a site needs session + CSRF, worked around by hand in `e2e/provision.mjs`),
+then SH327 (`/api/v2/render/**`) and SH335 — the same defect three times, each found by a human doing
+a build rather than by a build failing. `ShStatelessReachabilityLintTest` asserts over the same
+configuration that **every mutating controller root is stateless-writable or classified**, and prints
+the inventory: **25 roots, 8 writable**, and of the 17 that need a session, 5 are `AGENT_EQUIVALENT`
+(the capability has an address-native form — SH170's own resolution was to grow `site.upsert`, not to
+open `POST /api/v2/site` to a token), 9 are `CONSOLE_ADMIN` (an agent minting its own API token is the
+escalation Block L prevents), and **3 are real gaps**: `/api/v2/render/post-types` (SH327),
+`/api/v2/site-webhook` (SH343), `/api/v2/preview-token` (SH344). A path that becomes writable while
+still listed fails the build — SH142's rule, so the inventory cannot rot. It is deliberately distinct
+from SH338's `ShAgentP1ConformanceTest`: that one asks whether a capability has an agent route at
+all, this one asks whether the route it has works without a cookie, and a capability can pass either
+and fail the other.
+
+**A CSRF refusal carries a body, and the body depends on who is asking (SH339).** Measured first: a
+POST to `/api/v2/render/post-types`, `/api/v2/site`, `/api/v2/site-webhook` or
+`/api/v2/preview-token` answered **403, no content type, empty body** — SH189's defect on the surface
+whose caller is most often a program, and what made SH327 cost an experiment rather than a read.
+`ShCsrfAccessDeniedHandler` writes an SH80 problem instead, and **branches on the session cookie**:
+a browser gets `csrf-token-required` and is told to fetch `GET /api/v2/csrf`; a stateless caller gets
+`csrf-token-unobtainable`, because it cannot obtain a token at all — for it the 403 is a fact about
+the *route*, so the fix points at `POST /api/v2/agent/batch`. Telling that caller to fetch a token
+would be advice it cannot follow, which is why both messages are asserted; one of them alone would
+pass on a handler that gives everybody the browser's answer. Three rules: the **status stays 403**
+(the console's axios interceptor re-fetches and retries on exactly that, so a teaching body is purely
+additive); it is wired onto **`CsrfFilter` alone** via an `ObjectPostProcessor` and *not* as the
+chain-wide `accessDeniedHandler`, since a CSRF rejection and an authorization denial have different
+remedies and one handler for both would have to guess which it is sending; and the body is built as an
+ordered map rather than by serializing `ProblemDetail`, because an order that reaches the wire is a
+decision (P5).
+
 **On the CDA, an explicitly presented `Key` beats an existing session (SH233).** `ShApiTokenFilter`
 used to return early whenever anything had authenticated, which read as conservative and was why
 the Universal Editor could not save: the console is **same-origin** with the API, so its session
