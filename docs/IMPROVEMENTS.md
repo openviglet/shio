@@ -3188,6 +3188,27 @@ the cheap one may be the one that has to be undone.
 > ceiling. It also sharpens **SH317**, filed as "nobody has counted the cost": the cost includes
 > correctness, not only seconds.
 
+### XVI.66 The rationale file's own numbering is unchecked (SH351)
+
+Found while removing a shipped task's section: `### XVI.52` named **two** different tasks (SH305's, and
+SH300's — which had shipped and should have been deleted), and pulling them apart revealed that
+**SH302's section is in the file twice, verbatim**. Measured across the whole file: 120 sections, three
+colliding numbers (`XVI.17` → SH313 and SH312, `XVI.31` → SH324 and SH322, `XVI.53` → SH302 twice).
+
+This matters more than tidiness because of how the three files are wired. A ROADMAP line is one
+sentence plus a `→ §x.y` pointer, and that pointer is *the* route from a task to its design — the
+reason the roadmap is allowed to stay terse. A number that names two sections makes the pointer
+ambiguous, and a section for a task that has shipped makes it wrong: a reader following it lands on
+reasoning for work already done, which is the exact failure the "IMPROVEMENTS is for unshipped
+sections only" rule exists to prevent.
+
+**The lint is the deliverable and it lands before the renumbering** (SH322's habit): no two sections
+share a number, no section body appears twice, and every section's task id is either in ROADMAP or the
+section is marked shipped. The last clause is the one with teeth — it is what would have caught SH300's
+leftover on the commit that shipped it, rather than three blocks later. Renumbering also means fixing
+every `→ §` pointer that resolves to a moved section, so the lint should check that too: a pointer to a
+section number nothing declares is the same defect one level out.
+
 ### XVI.64 SH348 is four layers deep and the op is the last one — measured (SH348)
 
 §XVI.64 predicted that "the file projection decides it, not the op", and said the next step was to
