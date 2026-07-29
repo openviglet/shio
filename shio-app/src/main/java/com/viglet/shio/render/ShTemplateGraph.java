@@ -425,6 +425,52 @@ public class ShTemplateGraph {
     }
 
     /**
+     * SH298 — where else in these sites a template name is used.
+     *
+     * <h2>Why a lint needs this</h2>
+     *
+     * <p>Every unused-template rule walks <em>one</em> site's graph and reports the same sentence:
+     * nothing here uses this. True, and not what the reader needs — because the two cases that
+     * actually happen look identical. A template sitting in the wrong site is told to "add
+     * {@code sh-region} to the layout that should show it", naming a layout that is next door and
+     * that the reader will not find; and a site with no bindings at all reports one finding per
+     * template when the defect is a single missing {@code postTypeLayout} entry.</p>
+     *
+     * <p>The graph already holds every site's bindings, so the information exists. Only the message
+     * was missing — which is the difference between a lint that says something is wrong and one
+     * that says what happened, and that difference decides whether a warning is acted on or added
+     * to an SH142 baseline.</p>
+     *
+     * @param sites  the sites to look in — the run's own scope, never the whole instance: a finding
+     *               that named a site the caller cannot read would be a small disclosure and an
+     *               unhelpful one
+     * @param kind   {@code region}, {@code layout} or {@code theme}
+     * @param title  the template title to look for
+     * @param except the site the finding is about
+     * @return the other sites' names that use it, sorted
+     */
+    public Set<String> usedElsewhere(Collection<ShSite> sites, String kind, String title,
+                                     ShSite except) {
+        Set<String> found = new TreeSet<>();
+        for (ShSite site : sites) {
+            if (site == null || site.getId() == null || site.getId().equals(
+                    except == null ? null : except.getId())) {
+                continue;
+            }
+            ShSiteTemplateGraph graph = of(site);
+            boolean uses = switch (kind) {
+                case "region" -> graph.slottedRegions().contains(title);
+                case "theme" -> graph.usedThemes().contains(title);
+                default -> !graph.typesUsing(title).isEmpty();
+            };
+            if (uses) {
+                found.add(site.getName());
+            }
+        }
+        return found;
+    }
+
+    /**
      * SH297 — layouts naming a theme this site does not have.
      *
      * <h2>Why this one is an error where the unused-* rules are warnings</h2>

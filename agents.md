@@ -378,6 +378,11 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   to answer nothing. `unused-theme` joins the two warnings, reporting a theme **no bound layout**
   names — including one named only by an unbound layout, since that layout's own `unused-layout`
   finding beside it is what says where the chain broke.
+  **An unused-* finding says what happened (SH298)**: when the title is used in another of the run's
+  sites it names that site and points at `post.move` (a stray template is a move, not a
+  re-creation), and when the site binds no layouts at all it says *that* — one missing
+  `postTypeLayout` entry rather than N faulty templates. Appended, so a finding with nothing extra
+  to say stays byte-identical.
   **And a theme it names that does not exist is reported both ways (SH297)** — the page carries
   `data-shio-theme-missing` on `<body>` and `verify` reports `missing-theme`, an **error** against
   the *layout* (the theme has no address, since it does not exist). The rule across the three edges

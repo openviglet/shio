@@ -707,6 +707,46 @@ class ShTemplateGraphTest {
         assertThat(report.ok()).isFalse();
     }
 
+    @Test
+    @DisplayName("SH298: an unused template says where that name *is* used")
+    void anUnusedTemplateNamesTheSiteThatUsesIt() {
+        // The case the fix line used to get wrong: "add sh-region to the layout that should show
+        // it" names a layout in another site, which the reader will not find - so the message
+        // reported that something was wrong and never what had happened.
+        String other = "sh298-" + UUID.randomUUID().toString().substring(0, 8);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(other);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, when);
+            ShPostType regionType = postType(ShSystemPostType.REGION, (byte) 1, when);
+            // The same title the shared fixture's layouts slot - but this site binds no layout, so
+            // here it is unused while the name is plainly in use next door.
+            post(owner, root, regionType, SHARED_REGION, "/r-stray",
+                    json("HTML", "<nav>stray</nav>"), when, ShPostState.DRAFT);
+        });
+
+        ShAgentReport report = verifyService.verify(null, "content", 500);
+
+        assertThat(report.findings())
+                .filteredOn(finding -> "unused-region".equals(finding.rule()))
+                .filteredOn(finding -> finding.address() != null
+                        && finding.address().contains("/r-stray"))
+                .singleElement()
+                .satisfies(finding -> assertThat(finding.message())
+                        .as("the root cause, said once: this site binds nothing, so every template "
+                                + "in it is unused and the defect is one missing postTypeLayout "
+                                + "entry rather than N faulty templates")
+                        .contains("binds no layouts at all")
+                        .as("and where the name is used, so a stray template is a move rather than "
+                                + "a re-creation")
+                        .contains(siteName)
+                        .contains("post.move"));
+    }
+
     // ── SH262: the blast radius before the edit, on the read ────────────────────────
 
     @Test

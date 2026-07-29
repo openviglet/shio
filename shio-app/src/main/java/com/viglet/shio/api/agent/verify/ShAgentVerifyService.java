@@ -568,6 +568,30 @@ public class ShAgentVerifyService {
     }
 
     /**
+     * SH298 - the sentence that says <em>what happened</em>, when the name is used next door.
+     *
+     * <p>A template in the wrong site is the case the fix line gets wrong: "add `sh-region` to the
+     * layout that should show it" names a layout the reader cannot find, because it is in another
+     * site. Naming that site turns "something is wrong" into "here is what happened", which is what
+     * decides whether a warning is acted on or added to an SH142 baseline.</p>
+     *
+     * <p>Scoped to the run's own sites, never the instance: a finding naming a site the caller
+     * cannot read would be a disclosure, and an unhelpful one.</p>
+     *
+     * @return a leading-space sentence, or {@code ""} - appended, so a finding with nothing to add
+     *         stays byte-identical to what it was
+     */
+    private String elsewhere(Scan scan, ShSite site, String kind, String title) {
+        Set<String> others = templateGraph.usedElsewhere(scan.siteById().values(), kind, title,
+                site);
+        if (others.isEmpty()) {
+            return "";
+        }
+        return " A " + kind + " of that name is used in " + String.join(", ", others)
+                + " - if this one belongs there, move it (post.move) rather than re-creating it.";
+    }
+
+    /**
      * SH297 — a layout naming a theme this site does not have.
      *
      * <p>An <b>error</b>, unlike the unused-template warnings: the layout says which theme it uses
@@ -732,11 +756,20 @@ public class ShAgentVerifyService {
                 continue;
             }
             ShTemplateGraph.ShUnusedTemplates unused = templateGraph.unusedIn(site, entry.getValue());
+            // SH298 - the site binds nothing, so *every* template in it is unused and the defect
+            // is one missing postTypeLayout entry rather than N faulty templates. Said in each
+            // finding, because a reader acting on one must not be sent to fix the same root cause
+            // N times.
+            String rootless = unused.boundLayouts().isEmpty()
+                    ? " This site binds no layouts at all, so nothing in it renders - that is one "
+                            + "missing `postTypeLayout` entry rather than a fault in this template."
+                    : "";
             for (ShPostUnified region : unused.regions()) {
                 findings.add(Finding.warning(check, "unused-region", address(region), null,
                         "No layout in '" + site.getName() + "' slots a region called '"
                                 + region.getTitle() + "', so nothing renders it. A layout reaches a "
-                                + "region by title, with `sh-region=\"" + region.getTitle() + "\"`.",
+                                + "region by title, with `sh-region=\"" + region.getTitle() + "\"`."
+                                + rootless + elsewhere(scan, site, "region", region.getTitle()),
                         "Add `<div sh-region=\"" + region.getTitle() + "\"></div>` to the layout "
                                 + "that should show it, or delete the region if it is finished with. "
                                 + "A title that merely differs in case or spacing is the usual "
@@ -746,7 +779,8 @@ public class ShAgentVerifyService {
                 findings.add(Finding.warning(check, "unused-theme", address(theme), null,
                         "No bound layout in '" + site.getName() + "' names the theme '"
                                 + theme.getTitle() + "', so its CSS and JavaScript reach no page. "
-                                + "A layout names its theme in its THEME field, by title.",
+                                + "A layout names its theme in its THEME field, by title."
+                                + rootless + elsewhere(scan, site, "theme", theme.getTitle()),
                         "Set THEME to '" + theme.getTitle() + "' on the layout that should use "
                                 + "it, or delete the theme. A layout that names it but is itself "
                                 + "unbound reports unused-layout beside this."));
@@ -756,8 +790,9 @@ public class ShAgentVerifyService {
                         "No post-type in '" + site.getName() + "' is bound to the layout '"
                                 + layout.getTitle() + "', so no page renders through it."
                                 + (unused.boundLayouts().isEmpty()
-                                        ? " This site binds no layouts at all."
-                                        : " Bound: " + String.join(", ", unused.boundLayouts()) + "."),
+                                        ? rootless
+                                        : " Bound: " + String.join(", ", unused.boundLayouts()) + ".")
+                                + elsewhere(scan, site, "layout", layout.getTitle()),
                         "Bind a post-type to it in the site's `postTypeLayout` map "
                                 + "(`{\"<post type>\":\"" + layout.getTitle() + "\"}`), or delete "
                                 + "the layout."));

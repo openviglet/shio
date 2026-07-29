@@ -2930,43 +2930,22 @@ Three instruments, and they are not equally good:
 
 The likely answer is the first plus writing it down — the other two cost more than the defect does.
 
-### XVI.50 An unused-template finding cannot say what happened (SH298)
+### XVI.50 `usedElsewhere` is unmeasured (SH307)
 
-`unused-region`, `unused-layout` and now `unused-theme` all walk one site's graph, and all report the
-same thing: nothing here uses this. That is true and it is not what the reader needs.
+SH298 answers *"is this title used in another site"* by building every in-scope site's graph, once
+per unused template. `ShTemplateGraph.of()` resolves each binding through `templatesFor`, which
+reads the layout post and every region it slots — so a ten-site instance with ten unused templates
+is a hundred graph builds inside one `verify` pass.
 
-Two cases it cannot distinguish today:
+It is bounded by **bindings** rather than pages (SH251's finding, which is what makes the whole
+graph affordable), and it has never been measured. That is the same shape as SH264 and filed for the
+same reason: Block M's discipline is that a cost is measured rather than asserted, and this one is
+inside the pass a CI gate runs.
 
-- **A site with no bindings at all.** Every template in it is "unused", which is correct and useless:
-  the actual defect is one missing `postTypeLayout` entry, and the report buries it under one finding
-  per template.
-- **A template in the wrong site.** Its layouts are next door, and the fix it is given — "add
-  `sh-region="X"` to the layout that should show it" — names a layout the reader will not find,
-  because it is in another site.
-
-The graph already holds every site's bindings, so the information to say *"there is a layout named X
-in site Y that slots this name"* is available. What is missing is the message.
-
-This is message quality rather than detection, which is exactly the thing that decides whether a
-warning gets acted on or added to a baseline (SH142's file exists because that decision happens).
-
-### XVI.51 A write's proof does not carry the marker count (SH301)
-
-SH194's `?digest=true` returns two hashes per affected page and deliberately nothing else: *"the
-caller is asking whether something moved, which is a comparison against a value it already holds."*
-
-SH299 breaks that premise for one field. A marker count is **not** a comparison — it is an assertion
-about the page as it stands — and the caller that has just rewritten a shared region is exactly the
-one who wants to know whether the ten pages it affected are rendering that region or a marker where
-it should be.
-
-The cost is real: the row grows per affected page, and SH266 already notes the ten-page cap is a
-guess awaiting measurement. So the likely shape is **the count only when it is non-zero**, which
-keeps a clean run's response byte-identical and matches how the terse form already prints it (a line
-of zeroes is tokens spent to say nothing happened).
-
-Worth settling together with SH266 rather than before it: both are questions about what a proof row
-may cost.
+The fix, if it matters, is one line — build each site's graph once per run and pass the map down —
+so the task is really the measurement. Worth doing **with** SH264 rather than separately: both want
+a benchmark over a many-site instance, which does not exist yet, and building that fixture once is
+most of the work for either.
 
 ### XVI.52 A listing's rows are another post-type (SH305)
 
@@ -3106,6 +3085,24 @@ it), or restructuring the script to expose a testable core, which changes a file
 deliberately dependency-free and inert when not framed.
 
 Worth deciding now, because the next change to it will be exactly as unverified as this one.
+
+### XVI.56 A finding names a site and gives no address for it (SH308)
+
+SH298's new sentence — *"a region of that name is used in Blog"* — says what happened and then stops
+at the reader's judgement: there is no address for **the layout that slots it**, which is the thing
+to open.
+
+The graph knows which layout it is. Naming the title would be easy and only half useful, because a
+layout title is not an address either; the honest form is the layout post's `post:` address, which
+means `usedElsewhere` would have to carry the post rather than the title. That is a small change to
+a method that currently returns site names, and it is the difference between a finding a reader can
+act on and one they have to investigate.
+
+Worth doing because SH80's promise is that an error carries what to do next, and this is the one
+instruction in the rule that does not.
+
+It settles a smaller question the same way: `unused-layout`'s existing *"Bound: A, B"* list names
+layout **titles**, for the same reason and with the same limitation.
 
 ---
 
