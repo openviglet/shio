@@ -3358,16 +3358,9 @@ for laws: *when a review finds a law is being broken, the instrument that finds 
 the deliverable.* Hence the ordering in the roadmap's priority queue — **SH338 before SH325–337**,
 because working thirteen known instances by hand leaves the fourteenth to the next exploratory build.
 
-**SH338** is the P1 conformance test, and its shape is `ShCsrfExemptionLintTest`'s rather than
-anything new: every `features` key the manifest reports `true` maps to a declared route, or is named
-in an exception list with the reason it is REST- or console-only. Both sides are already
-machine-readable — the manifest's `features` is a flat boolean map, MCP tools are auto-registered
-`ShMcpTool` beans — so this needs no new metadata. Three things to get right: a feature is not 1:1
-with a tool (`teachingErrors`, `conditionalReads` and `terseResponses` are properties of every route
-and belong in the exception list with that as the stated reason, not forced into a fake mapping); an
-exception that has become **unnecessary** must fail the build, or the list rots into blanket
-suppression (SH142's rule, and this is its fourth application); and the exception list is the real
-deliverable, because it is the first honest inventory of how far P1 is actually honoured.
+> ✅ **SH338 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The prediction this section made held:
+> the instrument found what hand-work would not have. **52 features, 14 unreachable, four of them
+> named by nothing** — §XVI.61 is what those four became.
 
 **SH339** is the narrower sibling. `ShCsrfExemptionLintTest` asks "is this blanket exemption a
 decision?" — the right question from the security side, which leaves the operator side unasked, and
@@ -3387,6 +3380,44 @@ fixture must be driven the way a *naive* client would drive it, because writing 
 keys defeats the entire purpose; and a **silently dropped argument must count more heavily than a
 teaching error**, because a teaching error costs one round trip while a dropped argument (SH331's
 `scope`/`site` case) costs a wrong outcome nobody notices.
+
+### XVI.61 The four reachability gaps nothing had named (SH342–SH344)
+
+These come from SH338's own output rather than from a build, which is the point of having built it:
+thirteen of the fourteen unreachable capabilities had either a task or a stated reason, and **four
+had neither**. They are grouped here because they share one shape — *an id-keyed REST verb that
+never grew an address-native form* — and separated into three tasks because the subsystems behind
+them have nothing else in common.
+
+**SH342 — `locales` and `scheduledPublish` are advertised and have no agent form.** Both are
+`POST /api/v2/post-unified/{id}/…` (`translate`, `schedule`), both undeclared in the manifest's
+endpoint index, and neither has an address-native equivalent: `post.upsert` takes no locale, and
+`shio_publish` takes an address and `dryRun`. So the manifest tells an agent this instance does
+content i18n and scheduled publishing, and the agent can do neither. The design question is the same
+one for both and worth answering once: **a locale is part of a post's identity in a way an SH79
+address does not express** (SH323 settled the neighbouring case — an address carries no locale, which
+is exactly why `duplicate-url` is locale-blind), so `post.translate` cannot simply take a second
+address. Either the op takes `{from, locale}` and returns the new post's address, or the locale
+becomes an addressing dimension, which is a much larger change. Scheduling is the easier half: a
+`when` on `post.publish` is additive, and the only real decision is whether a schedule in the past
+publishes immediately or refuses.
+
+**SH343 — the agent reads its own webhook failures and cannot touch the subscription.** SH103 put
+webhook delivery failures in `/agent/diagnostics` and SH269 gave them frames, so the agent is told
+precisely which subscription is failing and has no route to inspect, repair or remove it:
+`/api/v2/site-webhook` is undeclared and MCP-unreachable. That asymmetry is the interesting part —
+**a diagnostic for a resource the reader cannot act on is SH190's defect one level up** (the `fix`
+that named a log file the caller cannot open). Whether the answer is a declared route, a `webhook.*`
+batch op or an admission that this is console-shaped is undecided; what is not is that
+`webhooks: true` plus an incident feed is currently a promise the surface does not keep.
+
+**SH344 — the agent cannot mint the preview token its own answer requires.** SH184 resolved "where
+can a person look at this site" and its external-front-end branch ends in a token: `ShPreviewTokenAPI`
+returns one so a Next.js deployment can turn draft mode on at `/api/preview`. That endpoint is
+undeclared, so the agent that just deployed the front end cannot produce the credential the flow
+needs. It is the narrowest of the three and the cheapest to close — one entry in the endpoint index,
+and a decision about whether minting a preview token needs its own gate the way SH107 gates
+publishing.
 
 ### XVI.60 The roadmap became a history instead of a queue (SH341)
 

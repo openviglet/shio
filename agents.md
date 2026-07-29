@@ -149,10 +149,12 @@ environment.
 the deliverable** — it lands as a lint *before* the fixes, because that is what
 finds the call site nobody read. **And the same holds for a law, not just a call
 site (SH338):** when a review finds a design law is being broken, the instrument
-that finds every *other* break lands before the fixes. Eleven lints here guard
-internal consistency and **none** guards reachability, which is why P1 is the only
-one of the ten laws with no instrument. Before "fix the thirteen instances", ask
-what would have failed.
+that finds every *other* break lands before the fixes. Eleven lints here guarded
+internal consistency and none guarded reachability, which is why P1 — the law the
+product is named after — was the only one of the ten with no instrument. It has one
+now: **`ShAgentP1ConformanceTest`** classifies all 52 manifest `features` keys and
+holds the **14** the agent cannot reach as an asserted list, four of which no task
+had named. Before "fix the thirteen instances", ask what would have failed.
 
 ### Committing
 

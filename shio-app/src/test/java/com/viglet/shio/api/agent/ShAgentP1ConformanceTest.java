@@ -1,0 +1,440 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.api.agent;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.viglet.shio.api.agent.dto.ShAgentEndpoint;
+import com.viglet.shio.api.agent.dto.ShAgentManifest;
+import com.viglet.shio.api.agent.mcp.ShMcpTool;
+
+/**
+ * SH338 — P1 is the only one of the ten laws with no instrument, and it is the one the product is
+ * named after.
+ *
+ * <h2>Why this exists</h2>
+ *
+ * <p>Four exploratory builds have each produced 6–13 tasks, and they keep finding the <b>same
+ * classes</b>: SH160's {@code instanceMemory: true} half-truth came back as SH326's
+ * {@code serverRender: true}; SH170's session+CSRF friction came back as SH327 and SH335. The reason
+ * is structural. This repository is unusually good at turning a defect into a build guard — eleven
+ * lints do exactly that — and every one of them guards <em>internal consistency</em>: the code agrees
+ * with itself, or with its own documentation, or a decision was taken rather than inherited. Not one
+ * asks whether the <b>operator the product is designed for can reach the capability</b>. So a
+ * consistency defect becomes a permanent guard and a reachability defect becomes a task that is fixed
+ * once and guards nothing.</p>
+ *
+ * <p>The rule is SH322's, one level up: <b>when a review finds a law is being broken, the instrument
+ * that finds every other break is the deliverable, and it lands before the fixes.</b> Hence this test
+ * before SH325–SH337.</p>
+ *
+ * <h2>What it asserts</h2>
+ *
+ * <p>Every key the manifest's {@code features} map reports is classified, and a key reported
+ * {@code true} must be <em>reachable</em> — an MCP tool an MCP-only client can invoke, or a route
+ * declared in the manifest's own endpoint index — or else named in the exception list below with the
+ * reason a {@code true} there is still honest. Both sides are already machine-readable, so this needs
+ * no new metadata: {@code features} is a flat boolean map and {@code ShMcpTool} beans are
+ * auto-registered.</p>
+ *
+ * <p>Three things it deliberately gets right, all of them SH338's own design notes:</p>
+ *
+ * <ul>
+ *   <li><b>A feature is not 1:1 with a tool.</b> {@code teachingErrors}, {@code conditionalReads} and
+ *       {@code terseResponses} are properties of <em>every</em> route, and forcing them into a fake
+ *       mapping would make the table lie in the direction that is hardest to notice. They are
+ *       {@link Reach#CROSS_CUTTING}, which is a classification and not an excuse.</li>
+ *   <li><b>An exception that has become unnecessary fails the build</b> (SH142's rule, fourth
+ *       application) — each one names the tool or index path that <em>would</em> resolve it, and the
+ *       test asserts that name is still absent. Ship the tool and forget the table, and this fails.</li>
+ *   <li><b>The exception list is the real deliverable</b>, because it is the first honest inventory of
+ *       how far P1 is actually honoured. It is asserted <em>exactly</em>, so gaining one is a
+ *       reviewable diff with a reason attached, and the run prints it.</li>
+ * </ul>
+ *
+ * <h2>What it is not</h2>
+ *
+ * <p>It does not ask whether a declared route can be called <b>without a cookie</b> — that is SH339,
+ * and it is deliberately a separate instrument: this one asks whether a capability has an agent route
+ * at all, that one asks whether the route it has is usable by a stateless credential.</p>
+ *
+ * @author Alexandre Oliveira
+ */
+@SpringBootTest
+class ShAgentP1ConformanceTest {
+
+    @Autowired
+    private ShAgentManifestService shAgentManifestService;
+    @Autowired
+    private List<ShMcpTool> mcpTools;
+
+    /** How a capability reaches the operator P1 names. */
+    private enum Reach {
+
+        /** An MCP-only client can invoke it. The strictest bar, and what P1 actually asks for. */
+        MCP_TOOL(false),
+        /** Declared in the manifest's endpoint index, so an agent with HTTP finds it (P2). */
+        AGENT_ROUTE(false),
+        /** A property of every route rather than a call — {@code true} is honest with no target. */
+        CROSS_CUTTING(false),
+        /** Describes the installation, not a capability to invoke ({@code multiTenant}, {@code oidc}). */
+        INSTANCE_FACT(false),
+
+        /** P1 break: HTTP-reachable, but undeclared here and unreachable from MCP. */
+        REST_ONLY(true),
+        /** P1 break: needs a browser session, so the agent cannot use it at all. */
+        CONSOLE_ONLY(true),
+        /** P1 break: only the CLI does it, so a client with no shell cannot. */
+        CLI_ONLY(true);
+
+        private final boolean exception;
+
+        Reach(boolean exception) {
+            this.exception = exception;
+        }
+
+        boolean isException() {
+            return exception;
+        }
+    }
+
+    /**
+     * @param reach  how it is reached
+     * @param target for a reachable feature, the tool name or index path that delivers it; for an
+     *               exception, the tool name or index path whose <em>appearance</em> would resolve it
+     *               — which is what makes a stale exception fail rather than rot
+     * @param why    the claim. For a cross-cutting or instance fact it is the whole justification;
+     *               for an exception it is what P1 is paying for and, where one exists, the task id
+     */
+    private record Delivery(Reach reach, String target, String why) {
+    }
+
+    private static Delivery mcp(String tool, String why) {
+        return new Delivery(Reach.MCP_TOOL, tool, why);
+    }
+
+    private static Delivery route(String path, String why) {
+        return new Delivery(Reach.AGENT_ROUTE, path, why);
+    }
+
+    private static Delivery crossCutting(String why) {
+        return new Delivery(Reach.CROSS_CUTTING, null, why);
+    }
+
+    private static Delivery instanceFact(String why) {
+        return new Delivery(Reach.INSTANCE_FACT, null, why);
+    }
+
+    /**
+     * Every feature key, classified. Add a feature to the manifest and this test fails until it is
+     * classified here — which is the point: the classification is a decision about P1, and the
+     * cheapest moment to make it is when the flag is written.
+     */
+    private static Map<String, Delivery> classification() {
+        Map<String, Delivery> byFeature = new TreeMap<>();
+
+        // --- Reachable from an MCP-only client -------------------------------------------------
+        byFeature.put("search", mcp("shio_find", "?q= on the find tool, SH131's predicate"));
+        byFeature.put("imageTransforms", mcp("shio_assets", "the SH25 transform surface"));
+        byFeature.put("agentContext", mcp("shio_context", "the context pack, P2's one call"));
+        byFeature.put("contextCapabilities", mcp("shio_context", "include=manifest folds the two "
+                + "opening reads into one (SH157) — the tool takes `include`"));
+        byFeature.put("batchWrites", mcp("shio_write", "N addressed ops in one transaction"));
+        byFeature.put("postMove", mcp("shio_write", "post.move — the op whose absence sends an agent "
+                + "to the destructive workaround (SH134)"));
+        byFeature.put("folderMove", mcp("shio_write", "folder.move, the same one level up (SH137)"));
+        byFeature.put("siteUpsert", mcp("shio_write", "site.upsert — SH170's whole point was that "
+                + "this must not be console-only"));
+        byFeature.put("writeProof", mcp("shio_write", "?verify=true on the write, which is why the "
+                + "argument went on this tool and not on shio_apply (SH227)"));
+        byFeature.put("confirmTokens", mcp("shio_write", "the SH108 token is a `confirm` argument"));
+        byFeature.put("desiredState", mcp("shio_apply", "converge to a document"));
+        byFeature.put("folderPrune", mcp("shio_apply", "prune removes undeclared folders (SH135)"));
+        byFeature.put("blueprints", mcp("shio_apply", "the blueprint verb, plus the "
+                + "shio://blueprints resource for the catalogue"));
+        byFeature.put("contentLint", mcp("shio_verify", "the SH99 rules"));
+        byFeature.put("routeCheck", mcp("shio_verify", "checks=routes"));
+        byFeature.put("deliveryProof", mcp("shio_verify", "checks=delivery (SH141)"));
+        byFeature.put("renderDigest", mcp("shio_digest", "the structural digest (SH101)"));
+        byFeature.put("appearanceDigest", mcp("shio_digest", "the second hash (SH187)"));
+        byFeature.put("renderFetch", mcp("shio_digest", "?url= digests the delivered page, when the "
+                + "operator has allowed fetching"));
+        byFeature.put("changeCursor", mcp("shio_changes", "since= is the SH88 cursor"));
+        byFeature.put("diagnostics", mcp("shio_changes", "incidents ride the change feed (SH144), so "
+                + "one since= answers what changed and what broke"));
+        byFeature.put("durableIncidents", mcp("shio_changes", "the same feed, and the row survives a "
+                + "restart (SH144)"));
+        byFeature.put("instanceMemory", mcp("shio_remember", "SH160 — the eleventh tool exists "
+                + "because this flag was a half-truth for exactly the clients the manifest informs"));
+
+        // --- Declared in the endpoint index ---------------------------------------------------
+        byFeature.put("pathAddressing", route("/agent/resolve", "an address becomes an id, so no "
+                + "UUID has to survive between calls (SH79)"));
+        byFeature.put("manifestProjection", route("/agent/manifest", "?include= on this document "
+                + "(SH174); the shio://manifest resource takes no arguments"));
+        byFeature.put("postTypesAsCode", route("/post-type/{name}", "the one name-keyed post-type "
+                + "surface (SH16/SH117), read and upserted over HTTP"));
+
+        // --- Properties of the surface rather than calls on it --------------------------------
+        byFeature.put("teachingErrors", crossCutting("every 4xx carries fix/allowed/didYouMean "
+                + "(P6/SH80) — a property of every route, and forcing it into a mapping would make "
+                + "this table lie"));
+        byFeature.put("terseResponses", crossCutting("?format=terse on every read"));
+        byFeature.put("conditionalReads", crossCutting("ETag + If-None-Match (SH116/SH159)"));
+        byFeature.put("fieldProjection", crossCutting("?fields= on the reads that carry bodies"));
+        byFeature.put("contentAcl", crossCutting("SH54 applies on every path identically"));
+        byFeature.put("publishGate", crossCutting("SH107 — a protocol fact about the credential; "
+                + "whether this caller has it is answered by trying"));
+        byFeature.put("agentTokenScope", crossCutting("SH106 — what the credential is, not a call"));
+
+        // --- Facts about the installation -----------------------------------------------------
+        byFeature.put("multiTenant", instanceFact("whether content is tenant-isolated (SH22); it "
+                + "changes how every answer is scoped, and there is no tenant call here"));
+        byFeature.put("oidc", instanceFact("how a human authenticates"));
+        byFeature.put("rateLimit", instanceFact("a bound, also reported in `limits`"));
+        byFeature.put("signedImageUrls", instanceFact("whether a transform URL must be signed "
+                + "(SH25); the URL shape, not an operation"));
+        byFeature.put("mcp", instanceFact("that this instance speaks the protocol at all — the flag "
+                + "an HTTP-only caller reads to learn a bridge exists"));
+
+        byFeature.putAll(p1Exceptions());
+        return byFeature;
+    }
+
+    /**
+     * The P1 exception list — the inventory this test exists to produce.
+     *
+     * <p>Each entry is a capability the manifest advertises that the product's own primary operator
+     * cannot reach the way P1 says it should. The {@code target} is what would resolve it, and it is
+     * asserted <b>absent</b>: ship that tool or declare that route and this list fails until the entry
+     * is removed, which is SH142's rule against a suppression file that rots.</p>
+     */
+    private static Map<String, Delivery> p1Exceptions() {
+        Map<String, Delivery> byFeature = new TreeMap<>();
+
+        byFeature.put("serverRender", new Delivery(Reach.REST_ONLY, "/render/post-types",
+                "SH326 — /preview/{site}/{url} and POST /api/v2/render/post-types are the whole "
+                + "capability and neither is declared here or reachable from MCP, so an MCP-only "
+                + "client reads `true` and ends with a site nobody can look at. SH160's shape again, "
+                + "which is why SH338 exists (SH186 is the task)"));
+        byFeature.put("universalEditor", new Delivery(Reach.CONSOLE_ONLY, "/agent/editable",
+                "SH185's bridge is a browser protocol and the console is its only client. `true` is "
+                + "honest to a human and not to an agent; SH335 is what that costs in practice"));
+        byFeature.put("reviewQueue", new Delivery(Reach.CONSOLE_ONLY, "/review/sessions",
+                "SH109 put this off the agent namespace on purpose — it is the human's veto over "
+                + "the agent's work, so an agent approving its own run is the thing it prevents. The "
+                + "one exception here that is a design decision rather than a gap"));
+        byFeature.put("trash", new Delivery(Reach.CONSOLE_ONLY, "/agent/trash",
+                "SH222 — an agent can fill the trash (folder.delete, post.delete) and can neither "
+                + "list nor restore it, so the recoverability SH200 built is not recoverability from "
+                + "where the deletion was made"));
+        byFeature.put("exchange", new Delivery(Reach.REST_ONLY, "/agent/import",
+                "export is declared (GET /site/{id}/export) and import is not: POST /api/v2/import "
+                + "is undeclared and MCP-unreachable, so an agent can hand a package over and cannot "
+                + "accept one — the cheapest possible starting point (SH268)"));
+        byFeature.put("locales", new Delivery(Reach.REST_ONLY, "/post-unified/{id}/translate",
+                "SH53's translate is id-keyed, undeclared and has no address-native form — "
+                + "post.upsert takes no locale, so an agent cannot make a translation at all"));
+        byFeature.put("scheduledPublish", new Delivery(Reach.REST_ONLY, "/post-unified/{id}/schedule",
+                "SH15 schedules by id over an undeclared route, and shio_publish takes only an "
+                + "address and dryRun — so `true` advertises a capability with no agent form"));
+        byFeature.put("previewTokens", new Delivery(Reach.REST_ONLY, "/agent/preview-token",
+                "ShPreviewTokenAPI is undeclared, so the agent cannot mint the token an external "
+                + "front end needs to show a draft — the last step of SH184's answer"));
+        byFeature.put("webhooks", new Delivery(Reach.REST_ONLY, "/site-webhook",
+                "/api/v2/site-webhook is undeclared and MCP-unreachable, so the agent sees webhook "
+                + "*failures* in diagnostics and cannot create, inspect or repair a subscription"));
+        byFeature.put("postTypeMerge", new Delivery(Reach.REST_ONLY, "shio_apply.mergePostTypes",
+                "a deliberate trade, not an oversight: the opt-in is a body field on the blueprint "
+                + "apply, and adding it to shio_apply puts that tool over the SH132 per-tool ceiling "
+                + "it is already 3 tokens under. Recorded so the trade stays visible"));
+        byFeature.put("graphql", new Delivery(Reach.REST_ONLY, "/graphql",
+                "the delivery surface a front end queries, undeclared here on purpose — an agent "
+                + "reads content through /agent/read and the CDA. `true` describes what the instance "
+                + "serves to the site, not what it offers the agent"));
+        byFeature.put("contentAsFiles", new Delivery(Reach.CLI_ONLY, "shio_files",
+                "Block I is `shio pull/push --content` and is CLI-shaped by design (P4 is about "
+                + "Edit/Write/Grep on a disk). A client with no filesystem cannot use it, and the "
+                + "flag does not say so"));
+        byFeature.put("agentsMd", new Delivery(Reach.CLI_ONLY, "shio_context.format",
+                "?format=agents-md renders the pack as project instructions and shio_context takes "
+                + "no `format`, so the one output meant to be written to a file is reachable only by "
+                + "whoever has a file to write it to"));
+        byFeature.put("visualSnapshot", new Delivery(Reach.CLI_ONLY, "shio_snapshot",
+                "reported `false`, which is the honest answer (SH102): `shio snapshot` rasterizes "
+                + "and this surface has no endpoint and no tool. Classified rather than omitted so "
+                + "flipping it to `true` has to pass through this table"));
+        return byFeature;
+    }
+
+    @Test
+    @DisplayName("every advertised capability is reachable, or is a named P1 exception")
+    void everyAdvertisedCapabilityIsReachableOrNamed() {
+        ShAgentManifest manifest = shAgentManifestService.manifest();
+        Map<String, Boolean> features = manifest.features();
+        Map<String, Delivery> classified = classification();
+        Set<String> tools = toolNames();
+        Set<String> declaredPaths = declaredPaths(manifest.endpoints());
+
+        assertThat(classified.keySet())
+                .as("""
+                        every feature key is a claim about what this instance offers, so every one \
+                        is a P1 decision — and the cheapest moment to make it is when the flag is \
+                        written. A key here that the manifest no longer reports is the other half \
+                        of the same rule (SH142): a classification for a capability that is gone \
+                        would read as coverage.""")
+                .containsExactlyInAnyOrderElementsOf(features.keySet());
+
+        List<String> problems = new ArrayList<>();
+        features.forEach((feature, advertised) -> {
+            Delivery delivery = classified.get(feature);
+            if (Boolean.FALSE.equals(advertised)) {
+                // Nothing is claimed, so nothing has to be reachable. It stays classified.
+                return;
+            }
+            if (delivery.why() == null || delivery.why().isBlank()) {
+                problems.add(feature + ": no reason given");
+            }
+            switch (delivery.reach()) {
+                case MCP_TOOL -> {
+                    if (!tools.contains(delivery.target())) {
+                        problems.add(feature + ": names tool '" + delivery.target()
+                                + "', which is not registered");
+                    }
+                }
+                case AGENT_ROUTE -> {
+                    if (!declaredPaths.contains(delivery.target())) {
+                        problems.add(feature + ": names route '" + delivery.target()
+                                + "', which is not in the endpoint index");
+                    }
+                }
+                case CROSS_CUTTING, INSTANCE_FACT -> {
+                    if (delivery.target() != null) {
+                        problems.add(feature + ": a cross-cutting property names a target, which "
+                                + "means it is really a route — classify it as one");
+                    }
+                }
+                case REST_ONLY, CONSOLE_ONLY, CLI_ONLY -> {
+                    if (tools.contains(delivery.target()) || declaredPaths.contains(delivery.target())) {
+                        problems.add(feature + ": exception is stale — '" + delivery.target()
+                                + "' now exists, so the capability is reachable and the entry must go");
+                    }
+                }
+            }
+        });
+
+        assertThat(problems)
+                .as("""
+                        P1 says every capability lands MCP → files/CLI → REST → console, so a \
+                        `features` key reported true that no tool and no declared route delivers is \
+                        the law being broken — and a stale exception is worse than none, because it \
+                        reads as a known gap when the gap has been closed.""")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("the P1 exception list is exactly this, and the run prints it")
+    void theExceptionListIsTheDeliverable() {
+        Map<String, Boolean> features = shAgentManifestService.manifest().features();
+        Map<String, Delivery> classified = classification();
+
+        Map<Reach, List<String>> byReach = new LinkedHashMap<>();
+        classified.forEach((feature, delivery) -> byReach
+                .computeIfAbsent(delivery.reach(), ignored -> new ArrayList<>())
+                .add(feature));
+
+        List<String> unreachable = classified.entrySet().stream()
+                .filter(entry -> entry.getValue().reach().isException())
+                .map(Map.Entry::getKey)
+                .sorted()
+                .toList();
+        List<String> advertisedNow = unreachable.stream()
+                .filter(feature -> Boolean.TRUE.equals(features.get(feature)))
+                .toList();
+
+        System.out.printf("%n[SH338] P1 conformance — %d features classified%n", classified.size());
+        new TreeMap<>(byReach).forEach((reach, list) ->
+                System.out.printf("  %-14s %2d  %s%n", reach, list.size(), new TreeSet<>(list)));
+        System.out.printf("  not agent-reachable: %d, of which advertised true on this instance: "
+                + "%d — %s%n%n", unreachable.size(), advertisedNow.size(), advertisedNow);
+
+        assertThat(unreachable)
+                .as("""
+                        the inventory is the deliverable, so it is asserted exactly: gaining an \
+                        entry must be a reviewable diff with a reason, and closing one must be an \
+                        edit here rather than a number quietly moving. Only `reviewQueue` is a \
+                        decision (SH109); the rest are gaps, most with a task id.
+
+                        Asserted over the *classification* and not over what this instance \
+                        advertises, because a config-driven flag (webhooks, previewTokens, \
+                        scheduledPublish) would drop out of the list on an instance that disables \
+                        it — and a P1 inventory that shrinks when an operator turns a subsystem off \
+                        is measuring the environment instead of the code. SH315's lesson, one \
+                        surface along.""")
+                .containsExactly(
+                        "agentsMd",
+                        "contentAsFiles",
+                        "exchange",
+                        "graphql",
+                        "locales",
+                        "postTypeMerge",
+                        "previewTokens",
+                        "reviewQueue",
+                        "scheduledPublish",
+                        "serverRender",
+                        "trash",
+                        "universalEditor",
+                        "visualSnapshot",
+                        "webhooks");
+
+        assertThat(advertisedNow)
+                .as("a flag that is off claims nothing, so it cannot be a P1 break — but it must "
+                        + "still be classified, or flipping it on would bypass this table")
+                .isSubsetOf(unreachable);
+    }
+
+    @Test
+    @DisplayName("the guard is not vacuous: the two reachability checks can fail")
+    void theGuardCanFail() {
+        Set<String> tools = toolNames();
+        Set<String> paths = declaredPaths(shAgentManifestService.manifest().endpoints());
+
+        assertThat(tools)
+                .as("if the registry came back empty every MCP_TOOL row would pass by accident, "
+                        + "which is the lint-that-reports-zero-forever failure")
+                .contains("shio_write", "shio_read", "shio_verify", "shio_remember")
+                .hasSizeGreaterThanOrEqualTo(11);
+        assertThat(paths)
+                .contains("/agent/resolve", "/post-type/{name}")
+                .doesNotContain("/render/post-types", "/agent/import", "/site-webhook");
+    }
+
+    private Set<String> toolNames() {
+        return mcpTools.stream().map(ShMcpTool::name)
+                .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
+    }
+
+    private static Set<String> declaredPaths(List<ShAgentEndpoint> endpoints) {
+        return endpoints.stream().map(ShAgentEndpoint::path)
+                .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
+    }
+}

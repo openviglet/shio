@@ -341,12 +341,38 @@ guard **internal consistency** — the code agrees with itself, or with its own 
 decision was taken rather than inherited — and **none** guards *reachability*, whether the operator
 the product is designed for can actually invoke a capability. So a consistency defect becomes a
 permanent guard and a reachability defect becomes a task that is fixed once and guards nothing,
-which is why **P1 is the only one of the ten laws with no instrument** while P3 has the budget
+which is why **P1 was the only one of the ten laws with no instrument** while P3 has the budget
 tests, P5 has `ShByteStabilityLintTest`, P6 has a `fix` on every 4xx and P10 has
 `ShConsoleShapeOverlapTest`. The cost is not hypothetical: SH160's `instanceMemory: true`
 half-truth came back as SH326's `serverRender: true`, and SH170's session+CSRF friction came back
 as SH327 and SH335 — the same classes, two blocks apart, each found by a human doing a build rather
 than by a build failing. **Before "fix the thirteen instances", ask what would have failed.**
+
+**P1 has an instrument now, and its exception list is the inventory (SH338).**
+`ShAgentP1ConformanceTest` classifies **every** key in the manifest's `features` map — a key
+reported `true` must be delivered by a registered `ShMcpTool` or by a path in the manifest's own
+endpoint index, or be named in the exception list with the reason a `true` there is still honest.
+Both sides were already machine-readable, so it needs no new metadata. Four rules carry the
+design. **A feature is not 1:1 with a tool**: `teachingErrors`, `conditionalReads`,
+`terseResponses` and four others are properties of *every* route and are classified
+`CROSS_CUTTING`, because forcing them into a mapping would make the table lie in the direction
+hardest to notice; `multiTenant`, `oidc` and `rateLimit` are `INSTANCE_FACT`s, which describe the
+installation rather than offering a capability. **A stale exception fails the build** (SH142's
+rule, fourth application): each one names the tool or index path that *would* resolve it and that
+name is asserted **absent**, so shipping the route and forgetting the table is a red build rather
+than a list that rots into suppression. **The list is asserted over the classification, not over
+what the instance advertises** — a config-driven flag (`webhooks`, `previewTokens`,
+`scheduledPublish`) drops out when an operator disables the subsystem, and an inventory that
+shrinks when somebody turns something off is measuring the environment (SH315's lesson, one
+surface along). And **the run prints it**, like the SH264 sweep benchmark.
+The measured answer: **52 features, 14 not agent-reachable** — 8 `REST_ONLY`, 3 `CONSOLE_ONLY`,
+3 `CLI_ONLY`. Only `reviewQueue` is a decision (SH109 keeps the human's veto off the agent
+namespace) and three more are deliberate trades (`graphql` is the front end's, `contentAsFiles` is
+CLI-shaped by P4, `postTypeMerge` would put `shio_apply` over its SH132 ceiling). The rest are
+gaps, and **four had no task at all** before this ran: `locales` and `scheduledPublish` (SH342 —
+id-keyed post verbs with no address-native form), `webhooks` (SH343) and `previewTokens` (SH344).
+That is the return on the instrument, and it is the argument for building one before working the
+thirteen known instances by hand.
 
 **A ROADMAP entry is one sentence: what + why + `→` pointer.** The reasoning belongs in
 IMPROVEMENTS.md, which is what the pointer addresses; a line that restates it makes the roadmap a

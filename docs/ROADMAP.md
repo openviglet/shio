@@ -41,17 +41,22 @@
 > SH160's `instanceMemory: true` half-truth returned as SH326's `serverRender: true`; SH170's
 > session+CSRF friction returned as SH327 and SH335. The reason is structural — this repository
 > turns an **internal-consistency** defect into a build guard (eleven lints do exactly that) and a
-> **reachability** defect into a task, which is fixed once and guards nothing. **P1 is the only one
+> **reachability** defect into a task, which is fixed once and guards nothing. **P1 was the only one
 > of the ten laws with no instrument**, and it is the law the product is named after. → §XVI.59
 >
 > **The rule, which is SH322's one level up:** *when a review finds a law is being broken, the
 > instrument that finds every other break is the deliverable, and it lands before the fixes.* So
 > do not work SH325–SH337 by hand first — SH338 enumerates them and finds the ones nobody has hit.
+>
+> ✅ **SH338 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: **52 features classified, 14 not
+> agent-reachable**, held as an asserted list. It did what it was filed to do — **four of the
+> fourteen had no task** (SH342–SH344), and one (`reviewQueue`) turned out to be a decision rather
+> than a gap.
 
-1. **SH338** — the P1 conformance test. Its exception list is the first honest inventory of how far P1 is honoured.
-2. **SH325** — the blocker: no pre-existing instance can create the render model at all.
-3. **SH339** — the stateless-reachability lint (the class behind SH327, SH335, and the shipped SH170).
-4. **SH340** — first-attempt success as a measured number (the class behind SH331).
+1. **SH325** — the blocker: no pre-existing instance can create the render model at all.
+2. **SH339** — the stateless-reachability lint (the class behind SH327, SH335, and the shipped SH170).
+3. **SH340** — first-attempt success as a measured number (the class behind SH331).
+4. **SH342–SH344** — the reachability gaps SH338's inventory found that nothing had named.
 5. Then the rest of SH326–SH337, in whatever order SH338's output argues for.
 
 > **Deprioritized deliberately:** SH258, SH296, SH317, SH318 and SH324 all audit the audits — each
@@ -440,7 +445,9 @@
 - 📋 **SH330** (deps: SH144 ✅, SH99 ✅) **A past 5xx keeps `verify` red forever** — `checks=diagnostics` reports a durable incident as an *error* with no verb to resolve one, so the CI gate stays red after the cause is fixed. SH99's own rule makes it a warning. → §XVI.58
 - 📋 **SH331** (deps: SH168 ✅, SH320 ✅) **The surfaces name the same concepts differently, and one drops an unknown argument silently** — four wrong calls in one build (`postType`/`type`; address-vs-bare-path; `addresses`/`address`; and `scope`/`site` on `shio_remember`, which reported success and wrote to the wrong scope — a live SH320 violation). One name per concept; a synonym accepted and reported for **op arguments only**, never a `data` key. → §XVI.58
 - 📋 **SH332** (deps: SH331 📋) **The op vocabulary exists only as prose in a tool description** — `ShAgentBatchService` knows the set exhaustively and nothing publishes it, which is what let two of SH331's four mistakes happen. A `shio://ops` resource: SH260's move for helpers, SH300's for DOM attributes. → §XVI.58
-- 📋 **SH338** (deps: —) **P1 is the only law with no instrument, and it is the one the product is named after** — SH326, SH328 and SH335 are live breaks and SH160 was the same shape two blocks earlier. Copy `ShCsrfExemptionLintTest`: every `features` key reported `true` maps to a declared route or is named with the reason it is REST/console-only. The exception list is the deliverable. → §XVI.59
+- 📋 **SH342** (deps: SH338 ✅) **Two id-keyed post verbs have no address-native form, so `locales` and `scheduledPublish` are advertised and unreachable** — found by SH338's inventory, not by a build: `POST /post-unified/{id}/translate` and `/{id}/schedule` are undeclared, `post.upsert` takes no locale and `shio_publish` takes only an address and `dryRun`. → §XVI.61
+- 📋 **SH343** (deps: SH338 ✅) **The agent sees webhook failures and cannot touch a subscription** — `/api/v2/site-webhook` is undeclared and MCP-unreachable, so `webhooks: true` means the agent reads its own delivery incidents in diagnostics with no way to create, inspect or repair what produced them. → §XVI.61
+- 📋 **SH344** (deps: SH338 ✅, SH184 ✅) **The agent cannot mint the preview token its own answer requires** — `ShPreviewTokenAPI` is undeclared, so SH184's "an external front end needs a token to turn draft mode on" ends at a call the agent has no route to. → §XVI.61
 - 📋 **SH339** (deps: SH167 ✅, SH338 📋) **The CSRF lint guards which paths are *exempt* and nothing guards which are *reachable*** — the class behind SH170, SH327 and SH335. Assert that every mutating path outside `/console/**` is usable by a stateless credential or names why not; one that is not must still refuse with a body. → §XVI.59
 - 📋 **SH340** (deps: SH331 📋) **The benchmark measures a correct script, so it cannot see the calls an agent gets wrong** — blind to SH331 by construction; the real build sent four wrong calls in ~25. Count `isError` results and dropped arguments against a ceiling in `token-budgets.properties`, driven the way a naive client would. → §XVI.59
 - ⏳ **SH341** (deps: —) **The roadmap carries prose it is not the home for** — ✅ two halves done: SH325–SH340 compressed to a sentence each, and nine shipped-history bodies collapsed to the pointer line the rules prescribe (~2.6k words; every dropped id verified present in CHANGELOG first). **What remains:** the other 79 task lines (avg 113 words against a one-sentence rule) need their `→ §` coverage checked before cutting, since some may be the only home for their reasoning; three mixed blockquotes (Block P's L537 shape) interleave shipped notes with open-task provenance and want hand treatment; then a length assertion, so the rule stops depending on the writer noticing it. → §XVI.60
