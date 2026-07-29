@@ -378,8 +378,9 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   to answer nothing. `unused-theme` joins the two warnings, reporting a theme **no bound layout**
   names — including one named only by an unbound layout, since that layout's own `unused-layout`
   finding beside it is what says where the chain broke.
-  **An unused-* finding says what happened (SH298)**: when the title is used in another of the run's
-  sites it names that site and points at `post.move` (a stray template is a move, not a
+  **An unused-* finding says what happened (SH298/SH308)**: when the title is used in another of the
+  run's sites it names **the layout post's address** there — a site name is not an address and a
+  title is not one either — and points at `post.move` (a stray template is a move, not a
   re-creation), and when the site binds no layouts at all it says *that* — one missing
   `postTypeLayout` entry rather than N faulty templates. Appended, so a finding with nothing extra
   to say stays byte-identical.

@@ -582,12 +582,21 @@ public class ShAgentVerifyService {
      *         stays byte-identical to what it was
      */
     private String elsewhere(Scan scan, ShSite site, String kind, String title) {
-        Set<String> others = templateGraph.usedElsewhere(scan.siteById().values(), kind, title,
-                site);
+        List<ShTemplateGraph.ShTemplateUse> others =
+                templateGraph.usedElsewhere(scan.siteById().values(), kind, title, site);
         if (others.isEmpty()) {
             return "";
         }
-        return " A " + kind + " of that name is used in " + String.join(", ", others)
+        // SH308 - the layout's own address, because "used in Blog" tells the reader what happened
+        // and leaves them to find it. A site name is not an address and a layout title is not one
+        // either; the post is (SH79), and it is the thing to open.
+        StringBuilder where = new StringBuilder();
+        for (ShTemplateGraph.ShTemplateUse use : others) {
+            where.append(where.isEmpty() ? "" : ", ")
+                    .append("'").append(use.layout().getTitle()).append("' in '")
+                    .append(use.siteName()).append("' (").append(address(use.layout())).append(")");
+        }
+        return " That name is used by " + where
                 + " - if this one belongs there, move it (post.move) rather than re-creating it.";
     }
 

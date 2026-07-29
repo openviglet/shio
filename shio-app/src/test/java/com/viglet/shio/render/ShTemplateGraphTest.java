@@ -744,7 +744,13 @@ class ShTemplateGraphTest {
                         .as("and where the name is used, so a stray template is a move rather than "
                                 + "a re-creation")
                         .contains(siteName)
-                        .contains("post.move"));
+                        .contains("post.move")
+                        .as("SH308 — the layout's own address. A site name is not an address and a "
+                                + "layout title is not one either, so \"used in Blog\" told the "
+                                + "reader what happened and then left them to find it; this names "
+                                + "the post to open")
+                        .contains("post:" + siteName + "/l-article")
+                        .contains(ARTICLE_LAYOUT));
     }
 
     // ── SH262: the blast radius before the edit, on the read ────────────────────────

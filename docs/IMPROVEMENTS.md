@@ -2930,6 +2930,25 @@ Three instruments, and they are not equally good:
 
 The likely answer is the first plus writing it down — the other two cost more than the defect does.
 
+### XVI.50 `verify`'s messages are long, and nothing measures them (SH310)
+
+`ShAgentResponseBudgetTest` guards a `/agent/verify` **response**, and SH298 and SH308 have just
+added two sentences and an address to a rule that fires once per unused template. A hundred unused
+regions in a site with no bindings is now a hundred copies of the same two sentences — worth their
+tokens once, repetition after that.
+
+Three shapes, and they are not equivalent:
+
+- **Fold the repeated sentence into the report's `notes`,** which is SH146's precedent: a cut is
+  reported once rather than per row. Cheapest on tokens, and it separates the finding from the
+  explanation, which a reader scanning findings may prefer anyway.
+- **Truncate the message and keep the `fix`.** P6 says an error teaches; it does not say it teaches
+  at length.
+- **Accept it** and let the budget test fail the day it matters — which is what a budget test is
+  for, and the answer most consistent with Block M's "measure, do not assert".
+
+The measurement decides, and it needs the same many-site fixture SH307 and SH264 both want.
+
 ### XVI.50 `usedElsewhere` is unmeasured (SH307)
 
 SH298 answers *"is this title used in another site"* by building every in-scope site's graph, once
@@ -3086,23 +3105,24 @@ deliberately dependency-free and inert when not framed.
 
 Worth deciding now, because the next change to it will be exactly as unverified as this one.
 
-### XVI.56 A finding names a site and gives no address for it (SH308)
+### XVI.56 A finding's address is a string, and nothing checks it resolves (SH309)
 
-SH298's new sentence — *"a region of that name is used in Blog"* — says what happened and then stops
-at the reader's judgement: there is no address for **the layout that slots it**, which is the thing
-to open.
+Every teaching message in `verify` is assembled by concatenation: SH308 puts `post:blog/l-article`
+into one, `dangling-reference` puts a URL into another, SH297 names a theme title, SH289 names an
+endpoint. Where they are asserted at all it is with `contains("post:")`.
 
-The graph knows which layout it is. Naming the title would be easy and only half useful, because a
-layout title is not an address either; the honest form is the layout post's `post:` address, which
-means `usedElsewhere` would have to carry the post rather than the title. That is a small change to
-a method that currently returns site names, and it is the difference between a finding a reader can
-act on and one they have to investigate.
+The failure mode is specific and this repository has already had it once: SH172's `id:` fallback
+lives in `ShAddressResolver.addressOf` precisely because an address was being built in three places
+and one of them was wrong. A finding that names an address which does not resolve is worse than one
+with no address, because the reader stops trusting the rest of the report.
 
-Worth doing because SH80's promise is that an error carries what to do next, and this is the one
-instruction in the rule that does not.
-
-It settles a smaller question the same way: `unused-layout`'s existing *"Bound: A, B"* list names
-layout **titles**, for the same reason and with the same limitation.
+The instrument is cheap — walk a report's findings, extract anything matching the SH79 grammar from
+`message` and `fix`, resolve it — and the interesting part is the exception. `duplicate-url` names a
+URL two posts claim; `unpublished-template` names something that exists but not in the state
+required; SH297's `missing-theme` names a theme that **deliberately** does not exist. So the rule
+cannot be "every address resolves". It is probably: resolvable, unless the rule is in a declared list
+of ones that name an absent thing on purpose — SH255's `DECLARED` shape, where the declaration is
+the interesting artefact.
 
 ---
 

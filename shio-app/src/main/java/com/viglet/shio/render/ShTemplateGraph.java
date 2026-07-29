@@ -449,25 +449,52 @@ public class ShTemplateGraph {
      * @param except the site the finding is about
      * @return the other sites' names that use it, sorted
      */
-    public Set<String> usedElsewhere(Collection<ShSite> sites, String kind, String title,
-                                     ShSite except) {
-        Set<String> found = new TreeSet<>();
+    public List<ShTemplateUse> usedElsewhere(Collection<ShSite> sites, String kind, String title,
+                                             ShSite except) {
+        List<ShTemplateUse> found = new ArrayList<>();
         for (ShSite site : sites) {
             if (site == null || site.getId() == null || site.getId().equals(
                     except == null ? null : except.getId())) {
                 continue;
             }
-            ShSiteTemplateGraph graph = of(site);
-            boolean uses = switch (kind) {
-                case "region" -> graph.slottedRegions().contains(title);
-                case "theme" -> graph.usedThemes().contains(title);
-                default -> !graph.typesUsing(title).isEmpty();
-            };
-            if (uses) {
-                found.add(site.getName());
+            for (Map.Entry<String, String> binding
+                    : new TreeMap<>(renderService.layoutBindings(site)).entrySet()) {
+                Optional<ShPageTemplates> templates =
+                        renderService.templatesFor(site, binding.getKey());
+                if (templates.isEmpty() || !uses(templates.get(), kind, title)) {
+                    continue;
+                }
+                // SH308 — the *post*, not the title. A reader told "that name is used in Blog" is
+                // told what happened and then left to find it; the layout post is the thing to
+                // open, and only its address says where. A title is not an address (SH79) and a
+                // site name is not one either.
+                ShPostUnified layout = templates.get().layout().post();
+                if (found.stream().noneMatch(use -> use.layout().getId().equals(layout.getId()))) {
+                    found.add(new ShTemplateUse(site.getName(), layout));
+                }
             }
         }
-        return found;
+        return List.copyOf(found);
+    }
+
+    /** Whether this resolved layout reaches a template of that kind and title. */
+    private boolean uses(ShPageTemplates templates, String kind, String title) {
+        return switch (kind) {
+            case "region" -> templates.regions().stream()
+                    .anyMatch(region -> title.equals(region.name()));
+            case "theme" -> title.equals(renderService.themeTitleOf(templates.layout().post()));
+            default -> title.equals(templates.layout().name());
+        };
+    }
+
+    /**
+     * One place a template title is in use: the site, and the layout post that reaches it.
+     *
+     * @param siteName the site's name, for the sentence
+     * @param layout   the layout post — the caller turns it into an SH79 address, which is the
+     *                 thing a reader can act on
+     */
+    public record ShTemplateUse(String siteName, ShPostUnified layout) {
     }
 
     /**
