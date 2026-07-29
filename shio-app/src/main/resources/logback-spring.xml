@@ -2,11 +2,15 @@
 <configuration>
 	<appender name="CONSOLE"
 		class="ch.qos.logback.core.ConsoleAppender">
-		<layout class="ch.qos.logback.classic.PatternLayout">
+		<!-- An encoder and not a layout element (SH271): logback wrapped the layout in a
+		     LayoutWrappingEncoder and said so on every startup, three lines at a time.
+		     The pattern text is unchanged, so the output is byte-identical to what the
+		     wrapper produced; the sibling logback-spring-console.xml was already right. -->
+		<encoder>
 			<Pattern>
 				%msg%n
 			</Pattern>
-		</layout>
+		</encoder>
 	</appender>
 	<logger name="com.viglet.shio.Shio" level="info"
 		additivity="false">

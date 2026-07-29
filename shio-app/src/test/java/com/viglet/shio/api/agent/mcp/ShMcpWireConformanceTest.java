@@ -273,7 +273,7 @@ class ShMcpWireConformanceTest {
      */
     private JsonNode shape(JsonNode node) {
         if (node == null || node.isNull()) {
-            return objectMapper.getNodeFactory().textNode("#null");
+            return objectMapper.getNodeFactory().stringNode("#null");
         }
         if (node.isObject()) {
             ObjectNode out = objectMapper.createObjectNode();
@@ -291,6 +291,6 @@ class ShMcpWireConformanceTest {
         String token = node.isString() ? "#string"
                 : node.isBoolean() ? "#boolean"
                 : node.isNumber() ? "#number" : "#other";
-        return objectMapper.getNodeFactory().textNode(token);
+        return objectMapper.getNodeFactory().stringNode(token);
     }
 }

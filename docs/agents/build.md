@@ -49,6 +49,23 @@ available**: `java.project.outputPath` has no effect on a Maven project (the pat
 `pom`), and `.vscode/` is `.gitignore`d, so no editor setting can be a repository guarantee. A
 developer who wants the cause gone rather than caught can set `"java.autobuild.enabled": false`
 locally, at the price of losing cross-file diagnostics for unopened files.
+**One warning is expected output; anything else is new (SH271).** A clean run prints exactly one:
+
+```
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes
+because bootstrap classpath has been appended
+```
+
+That is SH250's `-javaagent:mockito-core` appending to the bootstrap classpath, so class-data sharing
+narrows to boot classes. **Accepted deliberately** — the only ways to remove it are `-Xshare:off`,
+which gives up the sharing that still works, or dropping the agent, which was the fix for a flake. No
+test can assert it (a test runs inside the JVM whose startup printed it). The other three families are
+guarded by `ShBuildWarningLintTest`: every plugin in both POMs is pinned (a `<profile>` declaration
+inherits from the same POM's `<build>`, which is how Maven merges them), no logback appender uses a
+`<layout>` where logback wants an `<encoder>`, and `showDeprecation` stays on so javac names a
+deprecated API instead of saying "recompile with `-Xlint:deprecation`". **So a second warning line in a
+build log is news** — which is the property SH250's verification depended on and got by luck.
+
 **Measure the suite from the run, not from `target/` (SH283).** The verified command:
 
 ```

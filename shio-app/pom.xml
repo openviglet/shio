@@ -365,6 +365,12 @@
                     <version>3.15.0</version>
                     <configuration>
                         <parameters>true</parameters>
+                        <!-- SH271 — say which API, not "recompile for details". javac reported a
+                             deprecated call in one test file and then withheld the name of the
+                             method, which is a warning that costs a second build to read and
+                             therefore does not get read. It was `textNode`, renamed by Jackson 3;
+                             with this on, the next one names itself the first time. -->
+                        <showDeprecation>true</showDeprecation>
                         <!-- Pin Lombok as an annotation processor explicitly.
                              Newer javac (JDK 23+) no longer auto-discovers
                              processors from the classpath, which silently
@@ -392,6 +398,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
+                <!-- Pinned at the version Maven 3.9.9 was already binding (SH271). Unversioned, it
+                     was the one thing in this build Maven itself called malformed, on every run:
+                     "future Maven versions might no longer support building such malformed
+                     projects". Pinned to what runs today rather than to the newest, because the
+                     `overwrite` behaviour below is load-bearing and an upgrade is its own decision. -->
+                <version>3.3.1</version>
                 <configuration>
                     <overwrite>true</overwrite>
                 </configuration>
@@ -465,6 +477,11 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
+                <!-- Pinned at what Maven 3.9.9 was already binding (SH271). Maven never warned about
+                     this one — only about maven-resources-plugin — so it took its version from the
+                     wrapper's distribution silently, on the path SH250's `-javaagent` argLine depends
+                     on. Found by the lint that turned that warning into a build failure. -->
+                <version>3.7.0</version>
                 <executions>
                     <execution>
                         <id>resolve-agent-paths</id>
