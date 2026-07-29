@@ -33,6 +33,7 @@ anything in this area.** It is the authoritative account of:
 | `ShHandlebarsAstPremiseTest` | a Handlebars.java bump adds scope information and reopens the AST question |
 | `ShRenderedDomContractTest` | code emits a `data-shio-*` attribute with no row in the SH185 spec appendix, or a row names one nothing writes |
 | `ShRenderModelSourceTest` | the three render post-types drift from `import/post-types.json`, or a declared difference no longer exists |
+| `ShHelperSignatureLintTest` | a helper's registered signature omits a hash key its body reads, or declares one nothing reads — plus the two ways the text scan could be fooled (a non-literal key, a key read two calls down) |
 | `ShRenderSweepBenchmarkTest` | the per-page query count regresses (6/page in a sweep, 19 standalone) |
 
 ## The two rules most often broken here

@@ -344,6 +344,14 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `ShHelperShapes.none()` and mean it. Adding a helper is one line plus its shape and its
   **signature** — SH272 added the third, because a hash parameter's name (`folder=`, `q=`) exists
   nowhere but inside the helper's body, so no reader could derive it from the registry.
+  **The signature is checked against the body now, both ways (SH291)** — `ShHelperSignatureLintTest`
+  fails if a helper reads a hash key its signature omits (an incomplete call in the served context
+  pack) *or* declares one nothing reads (a parameter that is silently ignored, which is not an error
+  at write time). It reads the source as text, so it also fails on the two things that would make it
+  meaningless: a key that is not a string literal, and a key read more than one call below the helper
+  (`limit(options)` is followed; a longer chain is not). An accessor whose key is its own parameter is
+  exempt by construction. So adding a helper with a wrong signature is a build failure, not a stale
+  string.
 - **The capability set is discoverable, in the context pack (SH272)** — `registeredSignatures()`
   renders as a `conventions` line naming every call form (`{{#query folder= type= limit=}}`,
   `{{#getRelation FIELD}}`, `{{file_url FIELD}}`, …) plus `sh-region`. Before it, an author learned

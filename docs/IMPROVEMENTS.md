@@ -2659,31 +2659,6 @@ read it out of and a terminal user has no path to it at all. So the smaller and 
 may be `shio impact <address>` — one question the files genuinely cannot answer — rather than a general
 `read` that duplicates the projection. Decide which before building either.
 
-### XVI.43 A helper's signature is prose beside the code that implements it (SH291)
-
-SH272 put the call form at the registration — the one place that knows both the name and the shape,
-which is SH260's rule applied to a third fact. It is still **a string somebody has to keep true**.
-
-Nothing fails if `search` gains a `folder=` parameter and the signature is not updated. The failure
-would be a context pack teaching an incomplete call, and the author would discover it by writing a
-template whose parameter is silently ignored — which is worse than the 400 this task replaced, because
-an ignored hash key is not an error at all.
-
-Three candidate instruments, and the obvious one is unavailable:
-
-- **Reflection** cannot answer it. A hash key is read by `options.hash("q")` inside a method body;
-  there is no signature, annotation or type that carries it. Finding it means reading bytecode or
-  source.
-- **A source lint**, in the shape `ShAgentIncidentFramesTest` and `ShByteStabilityLintTest` already
-  use: every `hash(options, "X"` (and `options.hash("X")`) inside a helper method must appear in that
-  helper's registered signature. Cheap and honest, and brittle in the usual way — it reads the source
-  as text, so a key built from a constant escapes it.
-- **Declare it unenforced.** SH275's pattern: a premise written down as unenforced is not the same
-  defect as one nobody has noticed, and there are five helpers whose parameters have not changed since
-  they were written.
-
-Worth choosing deliberately rather than defaulting to the lint because it is available.
-
 ### XVI.44 The pack states the helpers and nothing states the model they run against (SH292)
 
 An author now learns from the context pack that `{{#query folder= type= limit=}}` exists. Nothing
