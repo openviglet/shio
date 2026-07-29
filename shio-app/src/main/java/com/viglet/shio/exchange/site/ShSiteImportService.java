@@ -118,11 +118,15 @@ public class ShSiteImportService {
             Path root = codec.unzip(zipStream, dest);
             ShExchangePackage pkg = codec.readPackage(root);
             if (pkg.sites().isEmpty()) {
-                throw new ShExchangeException("Package contains no site to import");
+                throw new ShExchangeException(ShExchangeException.Kind.NO_SITE,
+                        "Package contains no site to import");
             }
             return cloneInto(pkg, owner).site();
         } catch (IOException e) {
-            throw new ShExchangeException("Failed to read import package", e);
+            // The upload itself: a truncated or non-zip stream. Before SH267 the message named
+            // neither "manifest" nor "zip", so this reached the caller as the catch-all.
+            throw new ShExchangeException(ShExchangeException.Kind.ARCHIVE_UNREADABLE,
+                    "Failed to read import package", e);
         } finally {
             if (dest != null) {
                 FileSystemUtils.deleteRecursively(dest.toFile());
@@ -337,7 +341,8 @@ public class ShSiteImportService {
         try {
             json = objectMapper.writeValueAsString(data != null ? data : objectMapper.createObjectNode());
         } catch (RuntimeException e) {
-            throw new ShExchangeException("Failed to serialize imported post data", e);
+            throw new ShExchangeException(ShExchangeException.Kind.POST_DATA_INVALID,
+                    "Failed to serialize imported post data", e);
         }
         for (Map.Entry<String, String> entry : idRemap.entrySet()) {
             json = json.replace(entry.getKey(), entry.getValue());

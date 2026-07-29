@@ -233,7 +233,8 @@ public class ShSiteExportService {
         try {
             return objectMapper.readTree(data);
         } catch (RuntimeException e) {
-            throw new ShExchangeException("Failed to parse post data JSON", e);
+            throw new ShExchangeException(ShExchangeException.Kind.POST_DATA_INVALID,
+                    "Failed to parse post data JSON", e);
         }
     }
 
@@ -245,7 +246,8 @@ public class ShSiteExportService {
             codec.zip(dir, out);
             return out.toByteArray();
         } catch (IOException e) {
-            throw new ShExchangeException("Failed to build export archive", e);
+            throw new ShExchangeException(ShExchangeException.Kind.ARCHIVE_UNWRITABLE,
+                    "Failed to build export archive", e);
         } finally {
             if (dir != null) {
                 FileSystemUtils.deleteRecursively(dir.toFile());

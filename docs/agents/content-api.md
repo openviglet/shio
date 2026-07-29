@@ -142,18 +142,26 @@ Multipart (`file`), accepts an SH68 package zip and clones it in via `ShSiteImpo
 **Every failure teaches (SH189)** — it used to answer `ResponseEntity.badRequest().build()` for all
 of them while `ShExchangeException` knew exactly which, and bringing the 2018
 `openviglet/bootstrap-site` package forward cost seven field renames inferred by reading Java.
-`ShImportFailedException` classifies into four kinds (`import-manifest-unreadable`,
+`ShImportFailedException` classifies into four slugs (`import-manifest-unreadable`,
 `import-package-unreadable`, `import-no-site`, `import-failed`, plus `import-no-file`), each with an
 SH80 `fix` naming the *action* rather than restating the diagnosis. Two rules: the **cause's**
 message is carried as well as the wrapper's, because that is where Jackson names the property that
 did not map (reporting only the wrapper reproduces the defect one level in); and the `no-site` case
 points at `PUT /api/v2/post-type/{name}` and `POST /api/v2/agent/apply`, since a package with no site
 is usually a post-type-only or blueprint-shaped archive.
+**The classification comes from `ShExchangeException.Kind`, never from the message (SH267)** — a
+`switch` with **no `default`**, so a new kind fails the build until somebody decides what a caller
+should do about it, and the kind is mandatory at all thirteen throw sites because there is no
+message-only constructor. Two properties are asserted over *every* kind: a reworded message cannot
+change the slug or the fix, and every kind (export-side ones included) yields a slug and a non-blank
+`fix`. Mapping the thirteen sites to what the old string match produced is what found the defects —
+a missing `export.json` and a truncated upload both answered `import-failed`, and the manifest fix
+named `shio-exchange.json`, a file this codebase never writes; the manifest entry name is
+interpolated from `ShExchangePackageCodec.MANIFEST_ENTRY` now.
 **CSRF is session-narrowed, not exempt** (SH167's matcher, registered in
 `ShCsrfExemptionLintTest.MUST_BE_NARROWED`) — the console posts this form with a cookie, so a
 blanket exemption would let a forged request create a *site* against a curator's session.
-Two halves stay open: the classifier string-matches log messages because `ShExchangeException` has no
-kind (**SH267**), and there is still no `shio import` or MCP route (**SH268** — a package is a zip,
+One half stays open: there is still no `shio import` or MCP route (**SH268** — a package is a zip,
 so a filesystem-free client cannot produce one and "add a tool" is not the answer).
 
 ### Static files — upload/serve subsystem (SH38)

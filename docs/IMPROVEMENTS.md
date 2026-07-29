@@ -1565,9 +1565,8 @@ promising a user a website.
 > fixes that in one line, and nothing new needed inventing. The general lesson: before designing a
 > new surface for a capability, check whether the existing one is unreachable rather than absent.
 >
-> **What split off.** The classifier string-matches log messages because `ShExchangeException` has
-> no kind (**SH267**) — a shape this codebase refuses elsewhere, and worth fixing on its own because
-> it touches the export path too. And the CLI/MCP reach is **SH268**, where the interesting part is
+> **What split off.** The string-matching classifier was **SH267**, ✅ shipped in turn → see
+> [CHANGELOG.md](CHANGELOG.md) Block P. What remains is the CLI/MCP reach, **SH268**, where the interesting part is
 > that an SH68 package is a *zip*: a client with no filesystem cannot produce one, so "add a tool"
 > is not the answer and the honest option may be for the manifest to say this capability is
 > CLI-shaped.
@@ -2272,32 +2271,6 @@ numbers beside the current ones. Worth doing **after** SH311 rather than with it
 changed which number is the interesting one — and it will change again if anyone caches helper
 results, which is a much harder question (a listing's rows are content, so a cache there is a
 freshness decision rather than a resolution one).
-
-### XVI.19 `ShExchangeException` has no kind (SH267)
-
-SH189's teaching errors classify by testing the message:
-
-```java
-if (lower.contains("manifest")) { … }
-if (lower.contains("zip") || lower.contains("escapes")) { … }
-if (lower.contains("no site")) { … }
-```
-
-That works, and it is the shape this codebase refuses everywhere else. The information — *which*
-failure this is — exists at the `throw` and is discarded there, so it has to be reconstructed by
-guessing at prose. Two consequences follow, and the second is the one that will bite: a message
-reworded for clarity silently changes an HTTP response, and a new failure mode added to the codec
-lands in the catch-all with no sign that anybody should look at it.
-
-`ShExchangeException` is a bare `RuntimeException(String)` with fifteen call sites across
-`ShExchangePackageCodec`, `ShSiteExportService` and `ShSiteImportService`. Giving it a kind — a
-nested enum, or a subclass per failure mode — turns the classifier into a `switch` and makes the
-messages presentational again.
-
-It is a separate task from SH189 because of blast radius: the same exception is thrown on the
-**export** path, which has its own callers and its own tests, and a task that quietly widened from
-"make import teach" to "restructure the exchange layer's error model" is the kind that gets abandoned
-half-done.
 
 ### XVI.20 Import is not on the agent path, and a package is a file (SH268)
 

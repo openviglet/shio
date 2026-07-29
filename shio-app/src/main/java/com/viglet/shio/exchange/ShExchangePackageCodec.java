@@ -23,6 +23,7 @@ import java.util.zip.ZipOutputStream;
 
 import org.springframework.stereotype.Component;
 
+import com.viglet.shio.exchange.ShExchangeException.Kind;
 import com.viglet.shio.exchange.model.ShExchangePackage;
 
 import tools.jackson.databind.DeserializationFeature;
@@ -77,7 +78,8 @@ public class ShExchangePackageCodec {
         try {
             return mapper.writeValueAsString(pkg);
         } catch (RuntimeException e) {
-            throw new ShExchangeException("Failed to serialize exchange manifest", e);
+            throw new ShExchangeException(Kind.MANIFEST_UNWRITABLE,
+                    "Failed to serialize exchange manifest", e);
         }
     }
 
@@ -86,7 +88,8 @@ public class ShExchangePackageCodec {
         try {
             return mapper.readValue(json, ShExchangePackage.class);
         } catch (RuntimeException e) {
-            throw new ShExchangeException("Failed to parse exchange manifest", e);
+            throw new ShExchangeException(Kind.MANIFEST_UNREADABLE,
+                    "Failed to parse exchange manifest", e);
         }
     }
 
@@ -95,7 +98,8 @@ public class ShExchangePackageCodec {
         try {
             return mapper.readValue(in, ShExchangePackage.class);
         } catch (RuntimeException e) {
-            throw new ShExchangeException("Failed to parse exchange manifest", e);
+            throw new ShExchangeException(Kind.MANIFEST_UNREADABLE,
+                    "Failed to parse exchange manifest", e);
         }
     }
 
@@ -109,7 +113,8 @@ public class ShExchangePackageCodec {
             Files.createDirectories(dir);
             Files.writeString(dir.resolve(MANIFEST_ENTRY), writeManifest(pkg), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new ShExchangeException("Failed to write package to " + dir, e);
+            throw new ShExchangeException(Kind.MANIFEST_UNWRITABLE,
+                    "Failed to write package to " + dir, e);
         }
     }
 
@@ -118,7 +123,11 @@ public class ShExchangePackageCodec {
         try (InputStream in = Files.newInputStream(dir.resolve(MANIFEST_ENTRY))) {
             return readManifest(in);
         } catch (IOException e) {
-            throw new ShExchangeException("Failed to read package from " + dir, e);
+            // MANIFEST_MISSING, not ARCHIVE_UNREADABLE: the zip already extracted, and what failed
+            // is opening `export.json` at the root the unzip picked. Before SH267 this fell into the
+            // catch-all, because the message names neither "manifest" nor "zip".
+            throw new ShExchangeException(Kind.MANIFEST_MISSING,
+                    "Failed to read package from " + dir, e);
         }
     }
 
@@ -144,7 +153,7 @@ public class ShExchangePackageCodec {
                 zos.closeEntry();
             }
         } catch (IOException e) {
-            throw new ShExchangeException("Failed to zip package", e);
+            throw new ShExchangeException(Kind.ARCHIVE_UNWRITABLE, "Failed to zip package", e);
         }
     }
 
@@ -162,7 +171,8 @@ public class ShExchangePackageCodec {
                 while ((entry = zis.getNextEntry()) != null) {
                     Path target = root.resolve(entry.getName()).normalize();
                     if (!target.startsWith(root)) {
-                        throw new ShExchangeException("Zip entry escapes target directory: " + entry.getName());
+                        throw new ShExchangeException(Kind.ARCHIVE_UNSAFE,
+                                "Zip entry escapes target directory: " + entry.getName());
                     }
                     if (entry.isDirectory()) {
                         Files.createDirectories(target);
@@ -175,7 +185,7 @@ public class ShExchangePackageCodec {
             }
             return locateManifestRoot(root);
         } catch (IOException e) {
-            throw new ShExchangeException("Failed to unzip package", e);
+            throw new ShExchangeException(Kind.ARCHIVE_UNREADABLE, "Failed to unzip package", e);
         }
     }
 
