@@ -83,8 +83,11 @@
       type: "text",
       prop: prop,
       // SH303 — the post-type travels with the selection so the console can resolve every
-      // field's declared label in one fetch. It is the page's own type, from <body>; a region
-      // listing rows of another type is not editable through this path yet.
+      // field's declared label in one fetch. It is the page's own type, from <body>, and since
+      // SH305 that is a *fallback*: a row of a listing is a post of some other type, and the
+      // console reads that post's own declared fields instead of labelling it from this. The row's
+      // type deliberately does not travel — ~31 bytes on every listing row of every page, paid by
+      // every visitor, for a case only the editor uses (SH121's trade about ids).
       postType: PAGE_TYPE,
       fields: fieldsOf(ownerOf(el))
     };

@@ -20,6 +20,7 @@ import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShSiteService } from "@/services/site/site.service"
 import { ShUniversalEditorService } from "@/services/universal-editor/universal-editor.service"
 import { UE_TOKEN_KEY } from "./editor-sites.page"
+import { labelSource, labelSourceKey, labelsFrom } from "./field-labels"
 import type { ContentChange, SelectedElement } from "@/models/universal-editor/universal-editor.model"
 import { siteDestination } from "@/lib/site-front-end"
 
@@ -64,8 +65,9 @@ export default function VisualEditorPage() {
 
   const token = useMemo(() => localStorage.getItem(UE_TOKEN_KEY) ?? "", [])
   const postTypeService = useMemo(() => new ShPostTypeService(), [])
-  // The type whose labels are loaded, so selecting a second field does not re-fetch.
-  const loadedTypeRef = useRef<string | null>(null)
+  // Which label source is loaded (SH305 - a post id or a type name, so a row and the page
+  // cannot collide), so selecting a second field of the same post re-fetches nothing.
+  const loadedLabelsRef = useRef<string | null>(null)
 
   // Resolve the iframe URL: an explicit ?url= (external mode), the site's own front end,
   // or — since SH184 — Shio's own renderer.
@@ -158,25 +160,28 @@ export default function VisualEditorPage() {
     if (ready) postToIframe("sh:mode-change", { mode: editMode ? "edit" : "preview" })
   }, [ready, editMode, postToIframe])
 
-  // SH303 — resolve the declared field labels once per post-type. Fetched here rather than sent
-  // by the page for the reason above: one place declares a label, and it is the post-type. A
-  // failure is silent on purpose — the panel falls back to the field name, which is what it
-  // showed before this existed, so a labelling nicety can never break the editor.
+  // SH303 — resolve the declared field labels rather than reading them off the page: one place
+  // declares a label, and it is the post-type. SH305 — and it is the *selected post's* type, not
+  // the page's, or every row of a listing is labelled from the wrong schema (silently, since a
+  // name the schema lacks falls back to the field name). `labelSource` picks: the post when a
+  // WRITE token can read it — `GET /api/v2/cda/post/{id}` answers with that post's own declared
+  // fields — and the page's type otherwise, which is SH303's behaviour and the honest fallback for
+  // an editor that cannot save yet. A failure is silent on purpose: the panel falls back to the
+  // field name, so a labelling nicety can never break the editor.
   useEffect(() => {
-    const postType = selected?.postType
-    if (!postType || loadedTypeRef.current === postType) return
-    loadedTypeRef.current = postType
-    postTypeService
-      .get(postType)
-      .then((def) => {
-        const labels: Record<string, string> = {}
-        for (const field of def.fields ?? []) {
-          if (field.label) labels[field.name] = field.label
-        }
-        setFieldLabels(labels)
-      })
+    const source = labelSource(selected, !!token)
+    const key = labelSourceKey(source)
+    if (source.kind === "none" || loadedLabelsRef.current === key) return
+    loadedLabelsRef.current = key
+
+    const fields = source.kind === "post"
+      ? editorService.getEditable(source.postId, token).then((editable) => editable.fields)
+      : postTypeService.get(source.postType).then((def) => def.fields)
+
+    fields
+      .then((declared) => setFieldLabels(labelsFrom(declared)))
       .catch(() => setFieldLabels({}))
-  }, [selected?.postType, postTypeService])
+  }, [selected, token, postTypeService])
 
   // The declared label for a field name, or "" when the schema has not arrived (or has no
   // label for it) — the caller falls back to the name the bridge sent.

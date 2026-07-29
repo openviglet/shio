@@ -2732,28 +2732,6 @@ Three instruments, and they are not equally good:
 
 The likely answer is the first plus writing it down — the other two cost more than the defect does.
 
-### XVI.52 A listing's rows are another post-type (SH305)
-
-SH303 sends the **page's** post-type with each selection and the console labels fields from its
-schema. That is right for the common case — a layout interpolating the page's own fields, which is
-what `<body>`'s `data-shio-post` and `data-shio-post-type` describe.
-
-A `{{#query}}` or `{{#getRelation}}` block renders rows of *other* posts. SH185 already handles
-ownership there: each row carries `sh-post="{{id}}"`, and the nearest-ancestor walk finds it. The
-**type** does not travel, so a row's field is labelled from the page's schema — and when that schema
-has no such field the label falls back to the field name, which is indistinguishable from a
-post-type that simply declares no labels. Silent, and wrong in the direction that looks fine.
-
-Two candidate fixes, and the obvious one is not clearly right:
-
-- **Emit `data-shio-post-type` per row.** The renderer knows it (the row came from a real post), and
-  it is bytes on every listing row of every page, paid by every visitor, for a case only the editor
-  uses. That is SH121's trade about ids, and it went the other way.
-- **Resolve the type from the post id in the console.** It has the id already (that is what a save
-  needs), so this is one fetch it is going to make anyway when editing begins.
-
-Worth measuring rather than choosing by taste.
-
 ### XVI.53 A delivery check proves a route serves and never looks at what it served (SH302)
 
 `shio verify --delivery` (SH141) fetches each published page and reports `route-not-served` on a bad
@@ -2799,27 +2777,6 @@ Two things stop it from being obvious:
 
 So the question to settle first is whether the honest form is a delivery *finding* at all, or a note
 saying which pages were checked this way and what was seen.
-
-### XVI.52 Three markers exist and nothing lists them (SH300)
-
-The rendered DOM carries nine `data-shio-*` attributes: `region`, `region-post`, `region-missing`,
-`region-unpublished`, `theme`, `theme-missing`, `post`, `prop`, `post-type`. They are defined as
-constants in two classes, explained across four changelog entries, and consumed by the Universal
-Editor bridge, by anyone reading preview source, and — since SH299 — by the digest's
-marker count, which reads three of them out of `ShRegionComposer.DEFECT_MARKERS`.
-
-There is no single place that says what they mean. [SH185's protocol
-document](specs/SH185-universal-editor-protocol.md) covers the editor's four and predates the rest.
-
-This is exactly the gap SH272 closed for helpers, on the other side of the renderer: **the rendered
-DOM is a contract**, it has grown by three attributes in two blocks, and the only way to learn it is
-`git log`. The consumer is different, though — a front-end developer or an editor implementation
-rather than an agent mid-session — so this probably belongs in the protocol document rather than in
-the context pack, which is a budgeted per-session read.
-
-The part worth copying from SH273 is the **test**: a table asserting that the constants in the code
-and the rows in the document agree, because a hand-kept list of what a renderer emits drifts
-silently, and the failure direction is under-documentation nobody notices.
 
 ### XVI.56 A finding's address is a string, and nothing checks it resolves (SH309)
 
