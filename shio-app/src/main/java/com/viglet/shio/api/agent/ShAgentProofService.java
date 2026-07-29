@@ -248,8 +248,11 @@ public class ShAgentProofService {
         for (String address : addresses) {
             try {
                 ShAgentDigest digest = shAgentRenderService.digest(address, null);
+                // SH301 — the count travels only when it is non-zero, so a clean run is byte-identical
+                // to the pre-SH301 response and the caller's `?digest=<n>` does not multiply.
                 out.add(new ShAgentChangeSet.PageDigest(digest.address(), digest.source(),
-                        digest.digest(), digest.appearanceDigest()));
+                        digest.digest(), digest.appearanceDigest(),
+                        digest.markers() != null && digest.markers().any() ? digest.markers() : null));
             } catch (RuntimeException e) {
                 // A page that cannot be digested is not a reason to fail a write that already
                 // committed — the same rule the lint half follows. It is simply absent, and the

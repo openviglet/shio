@@ -626,6 +626,56 @@ class ShTemplateGraphTest {
     }
 
     @Test
+    @DisplayName("SH301: a clean page's row is byte-identical, and a broken one says how many markers")
+    void markersRideAlongOnlyWhenThereAreSome() {
+        // Clean first, because "absent when zero" is the half that keeps SH266's `?digest=<n>` from
+        // multiplying: a field on every row would cost the caller whatever count it asked for.
+        assertThat(proofService.attach(upsertOf("/r-nav"), false, true).digests())
+                .as("nothing here is broken, so the row carries the two hashes and nothing else")
+                .allSatisfy(row -> assertThat(row.markers()).isNull());
+
+        // Its own site, following the SH281 precedent in this class: the shared fixture is PER_CLASS
+        // and JUnit's method order is deterministic but arbitrary, so a test that broke a layout in it
+        // would make some other test's failure depend on which ran first.
+        String name = "sh301m-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh301mPage" + UUID.randomUUID().toString().substring(0, 8);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(name);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"SH301M_LAYOUT\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+            // The write SH301 is about: a layout slotting a region that does not exist, so every page
+            // it reaches renders a marker where the slot should be.
+            post(owner, root, layoutType, "SH301M_LAYOUT", "/l",
+                    json("HTML", "<html><body><div sh-region=\"SH301M_GONE\"></div></body></html>"),
+                    when, ShPostState.DRAFT);
+            post(owner, root, pageType, "Home", "/home", json("TEXT", "b"), when, ShPostState.DRAFT);
+        });
+
+        ShAgentChangeSet written = proofService.attach(
+                new ShAgentChangeSet(false, 1, 1,
+                        List.of(new ShAgentChangeSet.Change("post.upsert", "post:" + name + "/l",
+                                ShAgentChangeSet.Change.UPDATE, null, null))),
+                false, true);
+
+        assertThat(written.digests())
+                .as("""
+                        a marker count is not a comparison - it is an assertion about the page                         *now*, which is why it is the one non-hash field SH194's rule admits. And                         the caller that most wants it is this one: somebody who has just rewritten a                         shared template and is being told which pages it reached.""")
+                .anySatisfy(row -> {
+                    assertThat(row.address()).isEqualTo("post:" + name + "/home");
+                    assertThat(row.markers()).isNotNull();
+                    assertThat(row.markers().missingRegions()).isEqualTo(1);
+                    assertThat(row.markers().any()).isTrue();
+                });
+    }
+
+    @Test
     @DisplayName("digests are absent unless asked for, so nobody pays for a render they did not want")
     void digestsAreOptIn() {
         assertThat(proofService.attach(upsertOf("/r-nav"), false, false).digests()).isNull();

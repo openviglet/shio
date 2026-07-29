@@ -42,6 +42,12 @@ the CDA + console services (law P10) and holds no business logic of its own.
   written but every page that renders through it (SH193's graph; this is that graph's first consumer
   that uses it to *do* something rather than to report). Only the hashes, never the outline: the
   caller is asking whether something moved, which is a comparison against a value it already holds.
+  **One exception since SH301: `markers`, present only when non-zero.** A marker count is not a
+  comparison — it is an assertion about the page *now* ("this one is rendering a slot with no
+  Region"), and the caller being told which pages a shared-region write reached is exactly who needs
+  it. It costs no extra work (each row is already a real render, and it has carried the count since
+  SH299) and nothing at all on a clean run: measured, a clean row stays byte-identical at ~25 tokens
+  and a broken one is ~43, against a second digest call per page at 6 queries plus a full response.
 **`?digest=<n>` since SH266** — true for the instance's default (ten), or a count the server
   **clamps** to `shio.agent.render.max-write-digests` and reports the cut as a row (SH138). One
   parameter, because everywhere else here a count *is* the parameter; a bad value (`yes`, `0`) is a

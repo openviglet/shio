@@ -12,6 +12,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.viglet.shio.api.agent.verify.dto.ShAgentDigest;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
 
 /**
@@ -118,15 +119,35 @@ public record ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change
      * The two hashes separately, because SH187 made them separate on purpose: a restyle moves
      * {@code appearanceDigest} alone and a structural break moves {@code digest}.</p>
      *
+     * <h3>The one exception, and why it is not a comparison (SH301)</h3>
+     *
+     * <p>{@code markers} rides along, and it is the only field here that is not a hash. The rule above
+     * holds for everything a caller can diff against a value it already has; a <b>marker count is an
+     * assertion about the page now</b> — "this page is rendering a slot with no Region" — and the
+     * caller that most wants it is exactly this one: somebody who has just rewritten a shared region
+     * and is being told which pages it reached. Without it, the honest next step is a second call per
+     * page, which is the round trip SH194 exists to remove.</p>
+     *
+     * <p><b>Present only when it is non-zero.</b> A clean run stays byte-identical to the pre-SH301
+     * response, which matters because since SH266 the caller names the page count — a field on every
+     * row would multiply whatever it asked for. It also costs no extra work: the digest behind each
+     * row is a real render and has carried the count since SH299; this stops throwing it away.</p>
+     *
      * @param address          the page's SH79 address
      * @param source           {@code rendered}, or {@code content} for a page that cannot be
      *                         rendered (SH249) — so a caller knows which question was answered
      * @param digest           the structural hash ({@code d:…})
      * @param appearanceDigest the appearance hash ({@code a:…}), absent on a fallback
+     * @param markers          how many defect markers the rendered page carries, absent when none
      */
     @JsonInclude(Include.NON_NULL)
     public record PageDigest(String address, String source, String digest,
-                             String appearanceDigest) {
+                             String appearanceDigest, ShAgentDigest.Markers markers) {
+
+        /** The pre-SH301 form: no marker count, which is what a cut row and a fallback carry. */
+        public PageDigest(String address, String source, String digest, String appearanceDigest) {
+            this(address, source, digest, appearanceDigest, null);
+        }
     }
 
     /**
