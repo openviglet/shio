@@ -124,8 +124,10 @@ an earlier command changing what a later one appears to say*:
   SUCCESS**: the IDE compiles into `target/classes` on save, so the `.class`
   outlives the `.java` and the staleness check skips the module.
   `-Dmaven.compiler.useIncrementalCompilation=false` does *not* help. Treat
-  "Nothing to compile" as **no information**; the tell for the underlying defect is
-  a `ServletException` wrapping `java.lang.Error`.
+  "Nothing to compile" as **no information**. You no longer have to recognise the
+  tell — `ShIdeCompiledClassLintTest` fails the build naming the file — but `clean`
+  stays the rule, because a *stale but valid* class is indistinguishable from a
+  compiled one.
 - **Do not add `-q` when the number matters, and do not sum `target/surefire-reports/` (SH283).**
   `-q` suppresses surefire's `Results:` summary — the only authoritative total — and
   that directory *accumulates*, so a targeted `-Dtest=X` run's reports inflate the

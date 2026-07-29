@@ -2569,36 +2569,6 @@ codebase.
 > A separate attribute rather than a value on the existing one, so SH169's rule survives a third state
 > — missing, empty, unpublished must stay distinguishable in the DOM and therefore in the digest.
 
-### XVI.34 `mvn compile` reports success on code that does not compile (SH282)
-
-Measured rather than reasoned about, and **the first diagnosis filed here was wrong** — worth leaving
-that on the record, because the wrong version was plausible and would have produced the wrong fix.
-
-**What was filed:** ecj's proceed-on-error, on the strength of the message
-`java.lang.Error: Unresolved compilation problem`, which is characteristically Eclipse's. Proposed fix:
-turn `proceedOnError` off or move to javac.
-
-**What is true:** this build already uses plain javac — there is no ecj configuration anywhere. The
-sequence is:
-
-1. the **IDE** (Eclipse JDT, via the VS Code Java extension) compiles into `target/classes` on save,
-   and for broken source it emits a class with the error embedded rather than no class at all;
-2. that `.class` is therefore *newer* than the `.java`, so `maven-compiler-plugin`'s staleness check
-   reports **"Nothing to compile - all classes are up to date"** and skips the module;
-3. `mvn compile` exits 0 on source that does not compile;
-4. the embedded `Error` surfaces at runtime, in whatever test calls the broken member — which is how
-   one missing accessor read as 53 errors across five unrelated test classes.
-
-Reproduced deliberately: a call to a non-existent method gives BUILD SUCCESS on `compile` and
-`cannot find symbol` on `clean compile`. `-Dmaven.compiler.useIncrementalCompilation=false` does **not**
-help, because what short-circuits is the staleness check rather than the incremental mode.
-
-**The fix is about where the IDE writes, not about the compiler.** Giving the IDE its own output
-directory is the real answer and needs checking against what the extension supports; failing that, the
-rule is that a verification run needs `clean`. The generalisable lesson is smaller and sharper than the
-one filed: **"nothing to compile" is not the same as "nothing is wrong", and a build that can skip work
-can skip the work that would have failed.**
-
 ### XVI.35 A stale `target/` misreports the suite in the other direction (SH283)
 
 > ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two things worth keeping, and the first is a
@@ -2637,9 +2607,11 @@ Filed separately because that reframing has consequences SH241 does not currentl
 - **The workflow should publish surefire's summary as the run's headline**, so a count is never
   re-derived by hand. SH283 exists because a number was reconstructed; a CI job that prints the
   authoritative line removes the reconstruction rather than making it more careful.
-- **SH282 still wants a local guard.** CI protects the *branch*; it does nothing for the person about to
-  commit, who will see the same false green and only learn from a failed pipeline. That is a slower loop
-  than the one SH282 is about, so "CI will catch it" is not a resolution.
+- **SH282's local guard exists now** (`ShIdeCompiledClassLintTest`, ✅ shipped → [CHANGELOG.md](CHANGELOG.md)
+  Block P), which settles the half of this argument that said "CI will catch it" is not a resolution: CI
+  protects the *branch* and the lint protects the person about to commit. What CI still adds is the
+  clean-room build — the only thing that can tell a real green from a local one, since the guard catches a
+  broken class and not a stale-but-valid one.
 
 Worth stating the uncomfortable part plainly: this block has been verified almost entirely by
 hand-running Maven in a tree an IDE is also compiling into. The findings hold — they were reproduced

@@ -38,6 +38,17 @@ read as 53 errors across five unrelated test classes. `-Dmaven.compiler.useIncre
 does **not** help; the staleness check is what short-circuits. So: **`mvnw … clean test`, and treat
 "Nothing to compile" as no information.** The tell for the underlying defect is a `ServletException`
 wrapping `java.lang.Error`.
+**And the tell is now a build failure, not something you have to recognise (SH282 shipped).**
+`ShIdeCompiledClassLintTest` scans `target/classes` and `target/test-classes` for the marker Eclipse
+JDT embeds and fails naming the file, with `clean` as the fix — 813 class files, 4.4 MB, ~94 ms, and
+verified by planting one and watching the run go red with "Nothing to compile" in the same output.
+Two things it deliberately does not do. It cannot see a **stale but valid** class (an IDE-written
+class and a Maven-written one both post-date their source — that is why the module was skipped), so
+`clean` stays the rule rather than becoming redundant. And **redirecting the IDE's output is not
+available**: `java.project.outputPath` has no effect on a Maven project (the path comes from the
+`pom`), and `.vscode/` is `.gitignore`d, so no editor setting can be a repository guarantee. A
+developer who wants the cause gone rather than caught can set `"java.autobuild.enabled": false`
+locally, at the price of losing cross-file diagnostics for unopened files.
 **Measure the suite from the run, not from `target/` (SH283).** The verified command:
 
 ```
