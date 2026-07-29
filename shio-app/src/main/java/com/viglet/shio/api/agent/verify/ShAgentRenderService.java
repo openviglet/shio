@@ -68,7 +68,9 @@ import tools.jackson.databind.ObjectMapper;
  * @since 2026.3
  */
 @Service
-@Transactional(readOnly = true)
+// SH345 — this service *catches* teaching exceptions to build SH249's labelled fallback, so
+// a poisoned transaction here fails at commit with the fallback already computed.
+@Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
 public class ShAgentRenderService {
 
     private static final String SOURCE_CONTENT = "content";

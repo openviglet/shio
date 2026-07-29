@@ -55,7 +55,9 @@ import com.viglet.shio.persistence.repository.agent.ShAgentMemoryRepository;
  * @since 2026.3
  */
 @Service
-@Transactional(readOnly = true)
+// SH345 — the class-level read path; the writing methods below override this annotation
+// entirely, so their rollback behaviour is unchanged.
+@Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
 public class ShAgentMemoryService {
 
     /** Slug grammar: lowercase, digits, dash, dot — the same alphabet a file name uses. */

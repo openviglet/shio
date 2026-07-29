@@ -22,6 +22,14 @@ line is its IMPROVEMENTS.md design section. Per-task implementable specs live in
 Blocks **H–L, M, N and O** have shipped (Block L except **SH110**, still blocked on SH45);
 the live backlog is the per-block follow-ups and Blocks A–G's remaining SH44–SH47 tenant work.
 
+**Counting the backlog is a script, not a grep.** `python scripts/status-roadmap.py`
+(or `status-roadmap.cmd` from the repo root) parses `ROADMAP.md` and reports the four
+markers per Block, with totals — the measurement SH341 made by hand. It counts list
+bullets only, so the legend table and the `> ✅ …` shipped pointers cannot inflate it;
+`--tasks` lists each task with its line number, `--status <DES|IDEA|PART|WIP>` narrows,
+and `--json` is for anything programmatic. If the totals ever look wrong, suspect a task
+line that is not a bullet before you suspect the parser.
+
 **Before you quote a benchmark number, know which way it moved and why.** Blocks N and O both
 made the *baseline* lean rather than the agent path fast — aligning the console reads on the
 CDA shapes (SH117/SH120) and then the post read (SH176) — so the SH112 token ratios fell from

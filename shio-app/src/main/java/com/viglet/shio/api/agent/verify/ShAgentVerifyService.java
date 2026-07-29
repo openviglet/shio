@@ -103,7 +103,8 @@ import tools.jackson.databind.ObjectMapper;
  * @since 2026.3
  */
 @Service
-@Transactional(readOnly = true)
+// SH345 — see ShAgentSiteAccess.
+@Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
 public class ShAgentVerifyService {
 
     private static final List<ShPostState> BOTH_STATES =

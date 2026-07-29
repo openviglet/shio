@@ -61,7 +61,9 @@ import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
  * @since 2026.3
  */
 @Service
-@Transactional(readOnly = true)
+// SH345 — see ShAgentSiteAccess: on a read-only path, rollback-only can only take away a
+// caller's ability to report the refusal.
+@Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
 public class ShAgentContextService {
 
     private static final List<ShPostState> BOTH_STATES = List.of(ShPostState.DRAFT, ShPostState.PUBLISHED);

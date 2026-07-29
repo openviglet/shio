@@ -15,6 +15,8 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.error.ShTeachingException;
+
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
@@ -41,7 +43,12 @@ import com.viglet.shio.spring.security.auth.ShApiTokenContext;
  * @since 2026.3
  */
 @Service
-@Transactional(readOnly = true)
+// SH345 — a read-only transaction has nothing to roll back, and marking it
+// rollback-only destroyed the very refusal below: as a *participating* transaction this bean's
+// interceptor called setRollbackOnly() on the tx ShAgentReadService.find owns, so find's own
+// noRollbackFor could not save it and `?site=nope` answered UnexpectedRollbackException — a 500
+// where the teaching 404 had already been written. SH171's diagnosis, one bean along.
+@Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
 public class ShAgentSiteAccess {
 
     private static final byte ROOT_FOLDER = 1;
