@@ -43,6 +43,7 @@ const PROJECTED = [
   "publish",
   "sidecarFiles",
   "site",
+  "translationOf",
   "type",
   "url",
 ];
@@ -55,11 +56,12 @@ const PROJECTED = [
  * starts carrying it — this test fails until you do.
  */
 const DROPPED = {
-  // `locale` was here and is not any more: SH348's steps 1 and 2 put it on `/agent/read` and then in
-  // the frontmatter, and the table failing on the way is what a closing gap is supposed to look like.
-  translationGroupId: "SH348 — the last gap, and the one that needs an intent channel rather than a "
-    + "field: an agent must not invent a group id, so the tree should say `translationOf: <url>` and "
-    + "let the server resolve it, the way SH150's `moves` says `from` rather than an id.",
+  // `locale` and the sibling link were both here. SH348 closed them in three steps and the table
+  // failed on each one, which is what a closing gap is supposed to look like — the guard fires in the
+  // direction of the fix, not only against a regression.
+  translationGroupId: "carried as `translationOf: <url>` instead, deliberately: an agent must not "
+    + "invent an identifier the server owns, and a UUID in a file is what Block I exists to remove "
+    + "(SH150's shape — `moves` names a `from` address, not an id).",
   title: "derived by the writer from whichever field carries isTitle (SH277), so storing it would be "
     + "a second copy that can disagree with `data`.",
   summary: "derived the same way as `title`.",
@@ -93,7 +95,7 @@ describe("SH348: the content projection's field coverage", () => {
     );
   });
 
-  it("carries a non-default locale and still drops the sibling link", () => {
+  it("carries a non-default locale and the sibling link as a URL", () => {
     const projected = projectedPost(
       { site: "Blog", url: "/sobre", type: "Article", locale: "pt-br", translationGroupId: "grp-1" },
       "TITLE",
@@ -108,9 +110,16 @@ describe("SH348: the content projection's field coverage", () => {
     assert.equal(
       projected.translationGroupId,
       undefined,
-      "still dropped, and declared: the sibling link needs an intent channel, not a field",
+      "never the raw id — the link travels as an address, which is the whole of SH150's shape",
     );
-    assert.ok(DROPPED.translationGroupId.includes("SH348"));
+    assert.equal(
+      projectedPost(
+        { site: "Blog", url: "/sobre", type: "Article", translationOf: "/about" },
+        "TITLE",
+      ).translationOf,
+      "/about",
+      "SH348 step 4: the tree records which post this one translates, by URL",
+    );
   });
 
   it("a default-locale post is byte-identical to before SH348", () => {

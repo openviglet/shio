@@ -602,6 +602,14 @@ export async function readRemote(client, { site = null, sites = [], limit = 200,
  * The publish state is deliberately absent: the projection is the DRAFT (see
  * `content-sync.mjs`), so nothing here can flip a live page by being written to disk.
  */
+/** `post:Blog/about` → `/about`; anything else (absent, or another site) → `undefined`. */
+function translationUrl(address) {
+  if (typeof address !== "string" || !address.startsWith("post:")) return undefined;
+  const rest = address.slice("post:".length);
+  const slash = rest.indexOf("/");
+  return slash < 0 ? undefined : normalizeUrl(rest.slice(slash));
+}
+
 export function fromAgentDoc(doc) {
   const address = String(doc?.address ?? "");
   if (!address.startsWith("post:")) return null;
@@ -616,6 +624,10 @@ export function fromAgentDoc(doc) {
     // SH348 — the read reports a locale only when it is not the instance default, so this is
     // `undefined` for a monolingual site and the file is byte-identical to before.
     locale: doc.locale ? String(doc.locale) : undefined,
+    // SH348 — the read reports the group's anchor as a `post:` address; the tree stores the URL,
+    // because a file already knows its own site (the path names it) and a cross-site translation is
+    // not a thing a site-scoped tree can hold.
+    translationOf: translationUrl(doc.translationOf),
     data: doc.data && typeof doc.data === "object" ? doc.data : {},
   };
 }

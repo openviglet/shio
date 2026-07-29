@@ -226,6 +226,53 @@ class ShContentLocaleTest {
                 .isEqualTo("pt-br");
     }
 
+    @Test
+    @org.junit.jupiter.api.DisplayName("SH348: a declared translationOf joins the group, and the read reports the anchor")
+    void aDeclaredTranslationJoinsTheGroup() {
+        var original = new com.viglet.shio.api.agent.dto.ShAgentBatch.Op(
+                com.viglet.shio.api.agent.ShAgentBatchService.POST_UPSERT,
+                "post:" + siteName + "/sh348-about", postTypeName, "/", null,
+                objectMapper.createObjectNode(), null, null, null);
+        var translation = new com.viglet.shio.api.agent.dto.ShAgentBatch.Op(
+                com.viglet.shio.api.agent.ShAgentBatchService.POST_UPSERT,
+                "post:" + siteName + "/sh348-sobre", postTypeName, "/", null,
+                objectMapper.createObjectNode(), null, "pt-br", "/sh348-about");
+        shAgentBatchService.run(
+                new com.viglet.shio.api.agent.dto.ShAgentBatch(false, List.of(original, translation)),
+                false, "ut-sh348");
+
+        var read = shAgentReadService.read(
+                List.of("post:" + siteName + "/sh348-sobre", "post:" + siteName + "/sh348-about"),
+                List.of(), false, false);
+
+        assertThat(read.get(0).translationOf())
+                .as("""
+                        the translation points at the group's anchor by address — never a group id,                         which is what makes the tree hold it (SH150's shape).""")
+                .isEqualTo("post:" + siteName + "/sh348-about");
+        assertThat(read.get(1).translationOf())
+                .as("""
+                        and the anchor points at nothing, which is how a reader tells the original                         from its translations without a second call. A self-link is the one shape the                         convention cannot express, so it is refused on the way in.""")
+                .isNull();
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("SH348: translationOf naming nothing is a teaching 400")
+    void anUnresolvableTranslationTargetIsRefused() {
+        var op = new com.viglet.shio.api.agent.dto.ShAgentBatch.Op(
+                com.viglet.shio.api.agent.ShAgentBatchService.POST_UPSERT,
+                "post:" + siteName + "/sh348-orphan", postTypeName, "/", null,
+                objectMapper.createObjectNode(), null, "pt-br", "/no-such-original");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> shAgentBatchService.run(
+                new com.viglet.shio.api.agent.dto.ShAgentBatch(false, List.of(op)), false, "ut"))
+                .as("creating an unlinked post and reporting success is the silent drop SH331 removed")
+                .isInstanceOf(com.viglet.shio.api.agent.ShAgentBatchService.BatchOpException.class)
+                .satisfies(failure -> assertThat(
+                        ((com.viglet.shio.api.agent.ShAgentBatchService.BatchOpException) failure)
+                                .problem().toProblemDetail().getProperties().get("fix").toString())
+                        .contains("push the post it translates first"));
+    }
+
     private void persistPublished(String furl, String locale, String title, String group) {
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         tx.executeWithoutResult(s -> {

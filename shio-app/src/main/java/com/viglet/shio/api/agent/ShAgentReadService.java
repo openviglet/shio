@@ -287,7 +287,8 @@ public class ShAgentReadService {
                 projected,
                 ids ? post.getId() : null)
                 .withImpact(impact ? impactOf(post) : null)
-                .withLocale(nonDefaultLocale(post));
+                .withLocale(nonDefaultLocale(post))
+                .withTranslationOf(anchorAddress(post));
     }
 
     /**
@@ -310,6 +311,29 @@ public class ShAgentReadService {
             return null;
         }
         return locale;
+    }
+
+    /**
+     * The address of this post's translation anchor, or {@code null} (SH348).
+     *
+     * <p>The anchor is the group member whose <b>id is the group id</b> — the post the others were
+     * created from ({@code translate} seeds the group with the source's id). Every translation points
+     * at it and it points at nothing, which makes the relationship a <em>forest</em>: acyclic by
+     * construction, one field per file, and a reader can tell the original from its translations
+     * without a second call.</p>
+     *
+     * <p>{@code null} for a post with no siblings, which is almost every post — so this is free on a
+     * monolingual instance. Also {@code null} for the anchor itself, and that is not an omission: a
+     * file saying it is a translation of itself would be a cycle the format cannot represent.</p>
+     */
+    private String anchorAddress(ShPostUnified post) {
+        String group = post.getTranslationGroupId();
+        if (group == null || group.isBlank() || group.equals(post.getId())) {
+            return null;
+        }
+        return draftPreferred(group)
+                .map(anchor -> shAddressResolver.addressOf(anchor).toString())
+                .orElse(null);
     }
 
     /**

@@ -39,7 +39,7 @@ import tools.jackson.databind.JsonNode;
 @JsonInclude(Include.NON_NULL)
 public record ShAgentDoc(String address, String type, String state, String folder,
                          java.util.List<String> fields, JsonNode data, String id,
-                         Problem error, Impact impact, String locale) {
+                         Problem error, Impact impact, String locale, String translationOf) {
 
     /**
      * The nine-field form, before SH348 made a post's locale visible.
@@ -55,31 +55,48 @@ public record ShAgentDoc(String address, String type, String state, String folde
     public ShAgentDoc(String address, String type, String state, String folder,
                       java.util.List<String> fields, JsonNode data, String id,
                       Problem error, Impact impact) {
-        this(address, type, state, folder, fields, data, id, error, impact, null);
+        this(address, type, state, folder, fields, data, id, error, impact, null, null);
     }
 
     /** The same row with SH348's locale attached. */
     public ShAgentDoc withLocale(String postLocale) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                postLocale);
+                postLocale, translationOf);
+    }
+
+    /**
+     * The address of the post this one is a translation <b>of</b> (SH348), or {@code null}.
+     *
+     * <p>Always the group's <em>anchor</em> — the member whose id is the group id, which is the post
+     * the others were created from. Pointing every translation at the anchor rather than at each other
+     * makes the relationship a forest instead of a graph: acyclic, deterministic, and expressible in
+     * one field per file. The anchor itself reports nothing, which is how a reader tells the original
+     * from its translations without a second call.</p>
+     *
+     * <p>Absent for a post with no siblings, which is almost every post — so this costs nothing on a
+     * monolingual instance, the same P3 shape as {@code locale} beside it.</p>
+     */
+    public ShAgentDoc withTranslationOf(String anchorAddress) {
+        return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact, locale,
+                anchorAddress);
     }
 
     /** The seven-field form: a row that resolved, which is every row before SH171. */
     public ShAgentDoc(String address, String type, String state, String folder,
                       java.util.List<String> fields, JsonNode data, String id) {
-        this(address, type, state, folder, fields, data, id, null, null, null);
+        this(address, type, state, folder, fields, data, id, null, null, null, null);
     }
 
     /** The eight-field form: SH171's failed row, before SH262 added the impact projection. */
     public ShAgentDoc(String address, String type, String state, String folder,
                       java.util.List<String> fields, JsonNode data, String id, Problem error) {
-        this(address, type, state, folder, fields, data, id, error, null, null);
+        this(address, type, state, folder, fields, data, id, error, null, null, null);
     }
 
     /** The same row with SH262's blast radius attached. */
     public ShAgentDoc withImpact(Impact blastRadius) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, blastRadius,
-                locale);
+                locale, translationOf);
     }
 
     /**

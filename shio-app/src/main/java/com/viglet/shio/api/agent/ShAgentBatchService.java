@@ -767,7 +767,7 @@ public class ShAgentBatchService {
                 // SH348 — the locale is honoured on create and nowhere else. The writer defaults a
                 // blank one, so absent still means DEFAULT_LOCALE and nothing changes for a
                 // monolingual tree.
-                session.actor, op.locale(), null));
+                session.actor, op.locale(), translationGroupFor(op, address, session)));
         // The address *is* the identity here, so the furl is written from it rather
         // than derived from a title — two posts with the same headline must still be
         // two addresses, and the next run must find this one again.
@@ -1122,6 +1122,39 @@ public class ShAgentBatchService {
             shPostUnifiedWriteService.publish(draft.getId(), session.actor);
         }
         return session.change(op, address, Change.PUBLISH, null, draft.getId());
+    }
+
+    /**
+     * The translation group a created post joins, or {@code null} (SH348).
+     *
+     * <p>The op names an <b>address</b> and the server resolves it to the group — SH150's shape, and
+     * for its reason: an agent must not have to invent an identifier the server owns, and a group id
+     * in a file is the UUID Block I exists to remove. The target's group is used rather than its id,
+     * so translating a translation joins the same group instead of starting a second one.</p>
+     *
+     * <p>Two refusals, both teaching. An <b>unresolvable</b> target is a 400 naming it, because the
+     * alternative — creating an unlinked post and reporting success — is the silent-drop failure SH331
+     * spent a task removing. And a post <b>cannot be a translation of itself</b>: that is the one
+     * shape the anchor convention cannot express, so it is refused rather than stored as a cycle
+     * nothing can read back.</p>
+     */
+    private String translationGroupFor(ShAgentBatch.Op op, ShAddress address, Session session) {
+        if (op.translationOf() == null || op.translationOf().isBlank()) {
+            return null;
+        }
+        String raw = op.translationOf().trim();
+        ShAddress target = raw.startsWith("post:")
+                ? ShAddress.parse(raw)
+                : ShAddress.post(address.site(), raw);
+        if (target.toString().equalsIgnoreCase(address.toString())) {
+            throw new BadTranslationTargetException(address, raw, true);
+        }
+        ShSite site = requireSite(target.site(), session);
+        ShPostUnified anchor = state(site, target, ShPostState.DRAFT)
+                .or(() -> state(site, target, ShPostState.PUBLISHED))
+                .orElseThrow(() -> new BadTranslationTargetException(address, raw, false));
+        String group = anchor.getTranslationGroupId();
+        return group == null || group.isBlank() ? anchor.getId() : group;
     }
 
     /**
@@ -1559,6 +1592,35 @@ public class ShAgentBatchService {
     }
 
     /** A 400 naming the closed op vocabulary, with the nearest match. */
+    /**
+     * A {@code translationOf} that names nothing, or names this post (SH348).
+     *
+     * <p>One exception, two messages, for {@code BadScheduleException}'s reason: the caller's mistake
+     * has one shape — a link that cannot be made — and what differs is why. The self-reference case is
+     * the interesting one, because storing it would produce a file that says it is a translation of
+     * itself, which the anchor convention reads as "I am the original" and would silently lose.</p>
+     */
+    public static class BadTranslationTargetException extends ShTeachingException {
+
+        public BadTranslationTargetException(ShAddress subject, String sent, boolean self) {
+            super(ShProblem.badRequest("bad-translation-target",
+                            self ? "`translationOf` names this post" : "`translationOf` names no post")
+                    .withDetail(self
+                            ? "'" + sent + "' is the post being written. A post is the original or a "
+                                    + "translation of another one; a link to itself is the one shape "
+                                    + "this cannot express."
+                            : "'" + sent + "' does not resolve to a post. Declaring the original in "
+                                    + "the same document is enough — it is created first — but it has "
+                                    + "to exist by the time this row runs.")
+                    .withFix(self
+                            ? "Drop `translationOf` on the original and put it on the translation."
+                            : "Check the URL, or push the post it translates first. "
+                                    + "GET /api/v2/agent/find?site=<site> lists what is there.")
+                    .withExample("{\"op\":\"post.upsert\",\"address\":\"" + subject
+                            + "\",\"locale\":\"pt-br\",\"translationOf\":\"/about\"}"));
+        }
+    }
+
     /**
      * A {@code when} that is not a future instant (SH342).
      *

@@ -3439,11 +3439,17 @@ address question is premature: neither candidate shape can be evaluated until a 
    address carries no locale), so one file per URL was always the right shape and nothing about Block I
    has to change. The path-prefix idea this section floated is a *content* convention an author may
    adopt, not something the format needs to know.
-4. ⏳ **The op.** What is left is not `translate` but the **sibling link**: `translationGroupId` is still
-   dropped, and it should stay dropped as a field. An agent must not invent a group id, so the tree
-   should say `translationOf: <url>` and let the server resolve it to the group — SH150's shape, where
-   `moves` names a `from` address rather than an id. That is the remaining design decision, and it is
-   much smaller than the address question this section started with.
+4. ✅ **The op** — which was not `translate` but a field: `translationOf: <url>` on `post.upsert`,
+   resolved server-side to the target's group. `translationGroupId` stays out of the tree deliberately.
+   Every translation points at the group's **anchor** and the anchor points at nothing, so the
+   relationship is a forest: acyclic, one field per file, and the original is identifiable without a
+   second call. A declaring post is compiled *after* the others, so the author never orders the tree.
+
+**Read backwards, SH348 is the case for measuring first.** Filed as "give `translate` an agent form", it
+was four layers with the op last, and two of the four **dissolved** rather than being decided: the tree
+needed no new convention (SH323 already forces two locales onto two URLs) and the link needed no new op
+(an address on an existing one). The measurement was the whole task and the code was small — which is
+the opposite of how the task read when it was written.
 
 **And this exposed a blind spot in the guard that should have caught it.** SH255's round-trip table is
 the instrument for "a value the format cannot hold must be declared" — and it tests **values of fields

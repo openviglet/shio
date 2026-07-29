@@ -79,6 +79,7 @@ public final class ShAgentReadTerse {
                     // publishes; `ShTerse.attr` already omits a null, so the conditional costs
                     // nothing here and a monolingual instance's line is byte-identical.
                     .attr("locale", doc.locale())
+                    .attr("translationOf", doc.translationOf())
                     .attr("id", doc.id())
                     .attr("fields", doc.fields() == null ? null : String.join(",", doc.fields()))
                     .build());

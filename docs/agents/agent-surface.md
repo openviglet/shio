@@ -412,7 +412,11 @@ a marker count does not). The default is `ShPostUnifiedWriteService.DEFAULT_LOCA
 because the writer owns it and the pack reports it. **And `post.upsert` accepts one, on create only** (SH348 step 2): the file projection carries
 `locale:`, so a `pt-br` page pulled to files and pushed elsewhere is no longer rebuilt as `en`.
 Relocalizing an existing post is deliberately not possible here — that is its own gesture, the way
-`post.move` is for an address. What is left of SH348 is the sibling link (→ §XVI.64).
+`post.move` is for an address. **The sibling link is `translationOf`** on the same op: an address, never
+a group id, resolved server-side to the target's group. Every translation names the group's *anchor* and
+the anchor names nothing, which keeps it a forest; a declaring post is compiled after the others, so a
+document never has to be ordered by hand; and a target that resolves to nothing is a teaching 400,
+because creating an unlinked post and reporting success is SH331's silent drop.
 
 **A scheduled publish is `when` on `post.publish` (SH342).** ISO-8601, absent means now, and a
 **past instant is refused rather than read as now** — publishing now is what the op already means with

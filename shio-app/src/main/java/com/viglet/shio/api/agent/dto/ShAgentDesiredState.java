@@ -106,11 +106,17 @@ public record ShAgentDesiredState(String site, List<Folder> folders, List<Post> 
      *                be exactly the surprise P7 forbids
      */
     public record Post(String url, String type, String folder, JsonNode data, Boolean publish,
-                       String locale) {
+                       String locale, String translationOf) {
+
+        /** The six-field form, before SH348 made the sibling link declarable. */
+        public Post(String url, String type, String folder, JsonNode data, Boolean publish,
+                    String locale) {
+            this(url, type, folder, data, publish, locale, null);
+        }
 
         /** The five-field form, before SH348 made a locale declarable. */
         public Post(String url, String type, String folder, JsonNode data, Boolean publish) {
-            this(url, type, folder, data, publish, null);
+            this(url, type, folder, data, publish, null, null);
         }
     }
 }

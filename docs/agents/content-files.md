@@ -19,9 +19,11 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   page claims to be in, and create is where the loss was — Block I promises the tree is a complete
   description of a site, so a tree that could not say `pt-br` rebuilt the page as `en` elsewhere.
   **Two locales of one page are two URLs**, because SH323 already forces that (a friendly URL is
-  site-unique and an address carries no locale) — so one file per URL needed no new convention. What is
-  still dropped is `translationGroupId`, and deliberately: an agent must not invent a group id, so the
-  sibling link wants `translationOf: <url>` and server-side resolution (SH150's shape). The table exists
+  site-unique and an address carries no locale) — so one file per URL needed no new convention. The
+  sibling link is **`translationOf: <url>`**, an address and never a group id (SH150's shape): every
+  translation names the group's *anchor*, the anchor names nothing, and the server orders a declaring
+  post after the others so the author never has to sequence the tree. `translationGroupId` stays out
+  of the tree deliberately — a UUID in a file is what Block I exists to remove. The table exists
   because SH255's round-trip guard tests values of fields the format **has** and cannot see a field it
   **lacks**.
 - **The path is the URL, not the folder chain.** A URL is unique per site, so the tree

@@ -458,6 +458,9 @@ export function documentsFor(posts, { prune = false, markers = [], sites = [], m
         // claims to be in. Create is where the loss was, since that is when a tree describes a
         // site somewhere else.
         locale: post.locale ?? undefined,
+        // SH348 — honoured on create, like `locale`. The server orders a declaring post after the
+        // ones that do not declare, so listing the original anywhere in the tree is enough.
+        translationOf: post.translationOf ?? undefined,
         data: post.data ?? {},
         // Absent means "leave the publish state alone" on the server side, so a file that
         // says nothing about publishing cannot unpublish a live page (P7).

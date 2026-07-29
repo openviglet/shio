@@ -128,13 +128,22 @@ public class ShAgentDesiredStateService {
         for (ShAgentDesiredState.Move move : nullSafe(desired.moves())) {
             moves.add(moveOp(site, move));
         }
-        for (ShAgentDesiredState.Post post : nullSafe(desired.posts())) {
+        // SH348 — a post that declares `translationOf` is emitted after the ones that do not, so the
+        // original exists by the time the translation's row runs. One comparator instead of asking the
+        // author to order a file tree they did not write: a pull walks the disk alphabetically, so
+        // "list the original first" would work by luck and fail on the first site where it does not.
+        // Stable, so two posts in the same class keep document order (P5).
+        List<ShAgentDesiredState.Post> ordered = new ArrayList<>(nullSafe(desired.posts()));
+        ordered.sort(Comparator.comparing(post ->
+                post.translationOf() == null || post.translationOf().isBlank() ? 0 : 1));
+        for (ShAgentDesiredState.Post post : ordered) {
             if (post.url() == null || post.url().isBlank()) {
                 throw new MissingPostUrlException();
             }
             String address = ShAddress.post(site, post.url()).toString();
             upserts.add(new ShAgentBatch.Op(ShAgentBatchService.POST_UPSERT, address,
-                    post.type(), post.folder(), null, post.data(), null, post.locale()));
+                    post.type(), post.folder(), null, post.data(), null, post.locale(),
+                    post.translationOf()));
             // Absent `publish` means "leave it alone", so only an explicit true or false
             // produces an op. Treating absence as false would unpublish live pages the
             // moment someone trimmed a field from the document (P7).

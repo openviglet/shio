@@ -190,6 +190,12 @@ class ShAgentP1ConformanceTest {
         // worth knowing before trusting it as the only guard.
         byFeature.put("scheduledPublish", mcp("shio_write", "post.publish with an ISO-8601 `when`; "
                 + "a past instant is refused rather than read as now"));
+        // SH348 — closed in four steps, and the op turned out to be the last of them: the read reports
+        // a non-default locale and the group's anchor, the file projection carries both, and
+        // `post.upsert` honours them on create. `/post-unified/{id}/translate` is still there and is
+        // no longer the only way in.
+        byFeature.put("locales", mcp("shio_write", "post.upsert takes `locale` and `translationOf` "
+                + "(an address, never a group id) on create; the read reports both"));
         byFeature.put("instanceMemory", mcp("shio_remember", "SH160 — the eleventh tool exists "
                 + "because this flag was a half-truth for exactly the clients the manifest informs"));
 
@@ -272,9 +278,6 @@ class ShAgentP1ConformanceTest {
                 "export is declared (GET /site/{id}/export) and import is not: POST /api/v2/import "
                 + "is undeclared and MCP-unreachable, so an agent can hand a package over and cannot "
                 + "accept one — the cheapest possible starting point (SH268)"));
-        byFeature.put("locales", new Delivery(Reach.REST_ONLY, "/post-unified/{id}/translate",
-                "SH53's translate is id-keyed, undeclared and has no address-native form — "
-                + "post.upsert takes no locale, so an agent cannot make a translation at all"));
         byFeature.put("postTypeMerge", new Delivery(Reach.REST_ONLY, "shio_apply.mergePostTypes",
                 "a deliberate trade, not an oversight: the opt-in is a body field on the blueprint "
                 + "apply, and adding it to shio_apply puts that tool over the SH132 per-tool ceiling "
@@ -407,7 +410,6 @@ class ShAgentP1ConformanceTest {
                         "contentAsFiles",
                         "exchange",
                         "graphql",
-                        "locales",
                         "postTypeMerge",
                         "reviewQueue",
                         "trash",

@@ -88,6 +88,12 @@ public record ShAgentBatch(boolean dryRun, List<Op> ops, String confirm) {
      *                {@code post.move} is for its address. Create is also where the loss actually was
      *                — Block I promises the tree is a complete description of a site, so a tree that
      *                cannot say "this page is pt-br" rebuilds it as `en` somewhere else.
+     * @param translationOf the {@code post:} address, or bare URL in the same site, of the post this
+     *                one is a translation <b>of</b> (SH348) — an <em>address</em> and never a group id,
+     *                which is SH150's shape: {@code moves} names a {@code from} address rather than an
+     *                id, because an agent must not have to invent an identifier the server owns.
+     *                Honoured on create, like {@code locale}, and resolved to the target's translation
+     *                group. Pointing at the group's anchor keeps the relationship a forest.
      * @param when    an ISO-8601 instant for {@code post.publish} and {@code post.unpublish}:
      *                schedule the transition instead of doing it now (SH342). Absent means now,
      *                which is what the op has always meant — so the two are never the same call,
@@ -96,22 +102,28 @@ public record ShAgentBatch(boolean dryRun, List<Op> ops, String confirm) {
      *                manifest advertised and only an id-keyed console route could reach.
      */
     public record Op(String op, String address, String type, String folder, String to,
-                     JsonNode data, String when, String locale) {
+                     JsonNode data, String when, String locale, String translationOf) {
+
+        /** The eight-field form, before SH348 made the sibling link declarable. */
+        public Op(String op, String address, String type, String folder, String to, JsonNode data,
+                  String when, String locale) {
+            this(op, address, type, folder, to, data, when, locale, null);
+        }
 
         /** The seven-field form, before SH348 made a locale declarable. */
         public Op(String op, String address, String type, String folder, String to, JsonNode data,
                   String when) {
-            this(op, address, type, folder, to, data, when, null);
+            this(op, address, type, folder, to, data, when, null, null);
         }
 
         /** The six-field form, for the ops that never schedule. */
         public Op(String op, String address, String type, String folder, String to, JsonNode data) {
-            this(op, address, type, folder, to, data, null, null);
+            this(op, address, type, folder, to, data, null, null, null);
         }
 
         /** The five-field form, for callers that never move. */
         public Op(String op, String address, String type, String folder, JsonNode data) {
-            this(op, address, type, folder, null, data, null, null);
+            this(op, address, type, folder, null, data, null, null, null);
         }
     }
 }
