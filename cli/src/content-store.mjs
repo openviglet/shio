@@ -613,6 +613,9 @@ export function fromAgentDoc(doc) {
     url: normalizeUrl(rest.slice(slash)),
     type: doc.type ?? null,
     folder: doc.folder == null ? null : normalizeUrl(doc.folder),
+    // SH348 — the read reports a locale only when it is not the instance default, so this is
+    // `undefined` for a monolingual site and the file is byte-identical to before.
+    locale: doc.locale ? String(doc.locale) : undefined,
     data: doc.data && typeof doc.data === "object" ? doc.data : {},
   };
 }

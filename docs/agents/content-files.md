@@ -9,15 +9,21 @@ frontmatter for the metadata + `fields:`, and the post's first `HTML Editor` fie
 document body (the file records which field that was as `body:`, so reading it back never
 needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
 `content-sync.mjs` (the three-way merge, pure) and `content-store.mjs` (disk + wire).
-- **The projection's field set is a table with a test (SH348).** Nine keys —
-  `bodyField, data, folder, movedFrom, publish, sidecarFiles, site, type, url` — and everything a post
-  carries that is *dropped* is declared with a reason in
-  `cli/test/content-projection-coverage.test.mjs`. Two of those are gaps rather than decisions:
-  **`locale` and `translationGroupId`**. Measured consequence — a `pt-br` page pulled to files and
-  pushed back comes out as `en`, because `/agent/read` does not return a locale (zero occurrences in
-  `ShAgentReadService`), so the tree could not carry it even if the format wanted to. That is why
-  SH348's first step is the *read*, not the op. The table exists because SH255's round-trip guard tests
-  values of fields the format **has** and cannot see a field it **lacks**.
+- **The projection's field set is a table with a test (SH348).** Ten keys —
+  `bodyField, data, folder, locale, movedFrom, publish, sidecarFiles, site, type, url` — and everything
+  a post carries that is *dropped* is declared with a reason in
+  `cli/test/content-projection-coverage.test.mjs`. **`locale:` is written only when the server reported
+  one**, and `/agent/read` reports it only when it is not the instance default, so a monolingual tree is
+  byte-identical to before SH348 and a translated page can finally say so. `post.upsert` honours it **on
+  create only**: relocalizing an existing post would make a routine push change what language a live
+  page claims to be in, and create is where the loss was — Block I promises the tree is a complete
+  description of a site, so a tree that could not say `pt-br` rebuilt the page as `en` elsewhere.
+  **Two locales of one page are two URLs**, because SH323 already forces that (a friendly URL is
+  site-unique and an address carries no locale) — so one file per URL needed no new convention. What is
+  still dropped is `translationGroupId`, and deliberately: an agent must not invent a group id, so the
+  sibling link wants `translationOf: <url>` and server-side resolution (SH150's shape). The table exists
+  because SH255's round-trip guard tests values of fields the format **has** and cannot see a field it
+  **lacks**.
 - **The path is the URL, not the folder chain.** A URL is unique per site, so the tree
   cannot collide; the folder travels in frontmatter because SH79 keeps the two namespaces
   apart. A file whose path and `url:` **disagree** is an error — a half-done rename is a

@@ -105,6 +105,12 @@ public record ShAgentDesiredState(String site, List<Folder> folders, List<Post> 
      *                silently unpublished live pages because a field was omitted would
      *                be exactly the surprise P7 forbids
      */
-    public record Post(String url, String type, String folder, JsonNode data, Boolean publish) {
+    public record Post(String url, String type, String folder, JsonNode data, Boolean publish,
+                       String locale) {
+
+        /** The five-field form, before SH348 made a locale declarable. */
+        public Post(String url, String type, String folder, JsonNode data, Boolean publish) {
+            this(url, type, folder, data, publish, null);
+        }
     }
 }

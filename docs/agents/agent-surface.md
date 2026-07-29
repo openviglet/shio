@@ -409,8 +409,10 @@ very bean it was written from.
 default**, which the context pack publishes on the first call a session makes, so absence is
 unambiguous rather than merely cheap (SH121's pattern, not SH299's: a locale has a knowable default and
 a marker count does not). The default is `ShPostUnifiedWriteService.DEFAULT_LOCALE` — named once,
-because the writer owns it and the pack reports it. This is **step 1 of SH348's four**; the projection
-still drops it, so a round trip through files relocalizes a post (→ §XVI.64).
+because the writer owns it and the pack reports it. **And `post.upsert` accepts one, on create only** (SH348 step 2): the file projection carries
+`locale:`, so a `pt-br` page pulled to files and pushed elsewhere is no longer rebuilt as `en`.
+Relocalizing an existing post is deliberately not possible here — that is its own gesture, the way
+`post.move` is for an address. What is left of SH348 is the sibling link (→ §XVI.64).
 
 **A scheduled publish is `when` on `post.publish` (SH342).** ISO-8601, absent means now, and a
 **past instant is refused rather than read as now** — publishing now is what the op already means with

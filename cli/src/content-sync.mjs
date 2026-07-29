@@ -453,6 +453,11 @@ export function documentsFor(posts, { prune = false, markers = [], sites = [], m
         url: post.url,
         type: post.type ?? undefined,
         folder: post.folder ?? "/",
+        // SH348 — honoured on *create* only (see ShAgentBatch.Op#locale): an upsert that
+        // relocalized an existing post would make a routine push change what language a live page
+        // claims to be in. Create is where the loss was, since that is when a tree describes a
+        // site somewhere else.
+        locale: post.locale ?? undefined,
         data: post.data ?? {},
         // Absent means "leave the publish state alone" on the server side, so a file that
         // says nothing about publishing cannot unpublish a live page (P7).

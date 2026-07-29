@@ -81,6 +81,13 @@ public record ShAgentBatch(boolean dryRun, List<Op> ops, String confirm) {
      *                A folder's {@code to} is its whole name chain, since that is what
      *                addresses a folder (SH79); the last segment is its new name
      * @param data    the post's field values, keyed by post-type attribute name
+     * @param locale  the locale a {@code post.upsert} <b>creates</b> in (SH348), absent meaning the
+     *                instance default. Deliberately create-only: an upsert that relocalized an
+     *                existing post would make a routine `shio push` change what language a live page
+     *                claims to be in, and changing a post's locale is its own gesture the way
+     *                {@code post.move} is for its address. Create is also where the loss actually was
+     *                — Block I promises the tree is a complete description of a site, so a tree that
+     *                cannot say "this page is pt-br" rebuilds it as `en` somewhere else.
      * @param when    an ISO-8601 instant for {@code post.publish} and {@code post.unpublish}:
      *                schedule the transition instead of doing it now (SH342). Absent means now,
      *                which is what the op has always meant — so the two are never the same call,
@@ -89,16 +96,22 @@ public record ShAgentBatch(boolean dryRun, List<Op> ops, String confirm) {
      *                manifest advertised and only an id-keyed console route could reach.
      */
     public record Op(String op, String address, String type, String folder, String to,
-                     JsonNode data, String when) {
+                     JsonNode data, String when, String locale) {
+
+        /** The seven-field form, before SH348 made a locale declarable. */
+        public Op(String op, String address, String type, String folder, String to, JsonNode data,
+                  String when) {
+            this(op, address, type, folder, to, data, when, null);
+        }
 
         /** The six-field form, for the ops that never schedule. */
         public Op(String op, String address, String type, String folder, String to, JsonNode data) {
-            this(op, address, type, folder, to, data, null);
+            this(op, address, type, folder, to, data, null, null);
         }
 
         /** The five-field form, for callers that never move. */
         public Op(String op, String address, String type, String folder, JsonNode data) {
-            this(op, address, type, folder, null, data, null);
+            this(op, address, type, folder, null, data, null, null);
         }
     }
 }

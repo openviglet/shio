@@ -54,6 +54,8 @@ class ShContentLocaleTest {
     @Autowired
     private com.viglet.shio.api.agent.ShAgentReadService shAgentReadService;
     @Autowired
+    private com.viglet.shio.api.agent.ShAgentBatchService shAgentBatchService;
+    @Autowired
     private PlatformTransactionManager transactionManager;
 
     @PersistenceContext
@@ -65,6 +67,7 @@ class ShContentLocaleTest {
     private String siteName;
     private String folderId;
     private String postTypeId;
+    private String postTypeName;
 
     @BeforeAll
     void setup() {
@@ -89,7 +92,8 @@ class ShContentLocaleTest {
             folderId = root.getId();
 
             ShPostType pt = new ShPostType();
-            pt.setName("PT-LOC-" + UUID.randomUUID());
+            postTypeName = "PT-LOC-" + UUID.randomUUID();
+            pt.setName(postTypeName);
             pt.setTitle("Locale Test Post Type");
             pt.setSystem((byte) 0);
             pt.setDate(Instant.parse("2026-01-01T00:00:00Z"));
@@ -198,6 +202,28 @@ class ShContentLocaleTest {
                 .as("""
                         absent for the instance default, which is P3 rather than laziness: a                         monolingual instance pays nothing per row (measured — the response budget did                         not move), and absence is unambiguous because the context pack publishes the                         default on the call SH77 tells a session to make first.""")
                 .isNull();
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("SH348: a document declaring a locale creates the post in it")
+    void anUpsertHonoursADeclaredLocale() {
+        // Step 2's server half. Without it the file projection could say `locale: pt-br` and a push
+        // would still create an `en` post — a tree that claims to be a complete description of a
+        // site and rebuilds it in the wrong language (Block I's promise, quietly broken).
+        var op = new com.viglet.shio.api.agent.dto.ShAgentBatch.Op(
+                com.viglet.shio.api.agent.ShAgentBatchService.POST_UPSERT,
+                "post:" + siteName + "/sh348-created", postTypeName, "/", null,
+                objectMapper.createObjectNode(), null, "pt-br");
+        shAgentBatchService.run(
+                new com.viglet.shio.api.agent.dto.ShAgentBatch(false, List.of(op)),
+                false, "ut-sh348");
+
+        var created = shAgentReadService.read(
+                List.of("post:" + siteName + "/sh348-created"), List.of(), false, false);
+        assertThat(created.getFirst().locale())
+                .as("created in the declared locale, and the read reports it because it is not the "
+                        + "instance default — the two halves of step 1 and step 2 meeting")
+                .isEqualTo("pt-br");
     }
 
     private void persistPublished(String furl, String locale, String title, String group) {

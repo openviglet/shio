@@ -43,7 +43,10 @@
 const FENCE = "---";
 
 /** Metadata key order — fixed, so a diff never shows a reordering. */
-const META_ORDER = ["site", "url", "type", "folder", "publish", "movedFrom", "body"];
+// SH348 — `locale` sits after `folder` because it is *state* the server reports, unlike `publish`
+// and `movedFrom` after it, which are instructions the author writes. The order is observable in
+// every file, so it is a decision rather than an accident (P5).
+const META_ORDER = ["site", "url", "type", "folder", "locale", "publish", "movedFrom", "body"];
 
 /**
  * The widgets whose value is **code**, and the extension each one's sidecar takes (SH191).
@@ -296,6 +299,11 @@ export function serializePost(doc, bodyField = null, sidecarFields = []) {
     url: normalizeUrl(doc.url),
     type: doc.type ?? null,
     folder: doc.folder == null ? null : normalizeUrl(doc.folder),
+    // SH348 — written only when the server reported one, which it now does only for a *non-default*
+    // locale (`/agent/read` omits the default). So a monolingual tree is byte-identical to before
+    // and a translated page finally says so: without this, Block I's promise that the tree is a
+    // complete description of a site rebuilt every `pt-br` page as `en` somewhere else.
+    locale: doc.locale ? String(doc.locale) : undefined,
     publish: typeof doc.publish === "boolean" ? doc.publish : undefined,
     // SH150 — an instruction, like `publish`: it says where this post came from, so a push
     // can move it instead of re-creating it. A pull never writes one (the server has no such
@@ -545,6 +553,7 @@ export function parsePost(relPath, text) {
     url,
     type: meta.type ?? null,
     folder: meta.folder == null ? null : normalizeUrl(meta.folder),
+    locale: meta.locale ? String(meta.locale) : undefined,
     publish: typeof meta.publish === "boolean" ? meta.publish : undefined,
     movedFrom: meta.movedFrom ? normalizeUrl(meta.movedFrom) : undefined,
     bodyField,

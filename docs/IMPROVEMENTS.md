@@ -3425,14 +3425,25 @@ than it gave: the op is the **fourth** layer, and the first three each make the 
 form for `translate`" but "the agent cannot see which locale a post is in" — which also means the SH348
 address question is premature: neither candidate shape can be evaluated until a locale is *readable*.
 
-**The order the work has to take**, and it inverts the task as filed: expose the locale on
-`/agent/read` (and `find`'s rows) — ✅ **done**, non-default only, with the `"en"` default named once so
-the read cannot disagree with what the pack publishes — then carry it in the projection, decide how the
-tree names two locales of one page, and only then choose the op. The tree question is the one with teeth — Block I is one file per
-URL, so two locales of one page are either two URLs (SH323's rule, and a *content* convention such as a
-path prefix) or one path holding two documents (a format change). The first leaves SH323 intact and is
-almost certainly right; it is also the one that needs no address-grammar change, which is what makes
-Shape A viable after all.
+**The order the work has to take**, and it inverts the task as filed. Three of the four are done:
+
+1. ✅ **Expose the locale on the read** — `/agent/read` and `find`'s rows carry it, *non-default only*,
+   with the `"en"` default named once so the read cannot disagree with what the pack publishes.
+2. ✅ **Carry it in the projection** — frontmatter `locale:`, written only when the server reported one,
+   so a monolingual tree is byte-identical. `post.upsert` honours it **on create** and nowhere else: an
+   upsert that relocalized an existing post would make a routine `shio push` change what language a
+   live page claims to be in, and create is where the loss actually was — Block I promises the tree is
+   a complete description of a site, so a tree that cannot say `pt-br` rebuilds the page as `en`.
+3. ✅ **The tree needs no new convention**, which is the step that dissolved rather than being decided:
+   SH323 already forces two locales of one page onto **two URLs** (a friendly URL is site-unique and an
+   address carries no locale), so one file per URL was always the right shape and nothing about Block I
+   has to change. The path-prefix idea this section floated is a *content* convention an author may
+   adopt, not something the format needs to know.
+4. ⏳ **The op.** What is left is not `translate` but the **sibling link**: `translationGroupId` is still
+   dropped, and it should stay dropped as a field. An agent must not invent a group id, so the tree
+   should say `translationOf: <url>` and let the server resolve it to the group — SH150's shape, where
+   `moves` names a `from` address rather than an id. That is the remaining design decision, and it is
+   much smaller than the address question this section started with.
 
 **And this exposed a blind spot in the guard that should have caught it.** SH255's round-trip table is
 the instrument for "a value the format cannot hold must be declared" — and it tests **values of fields

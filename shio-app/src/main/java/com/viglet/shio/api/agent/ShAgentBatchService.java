@@ -764,7 +764,10 @@ public class ShAgentBatchService {
         shTenantQuotaService.checkCanCreatePost();
         ShPostUnified created = shPostUnifiedWriteService.create(new CreateRequest(
                 folder.getId(), postType.id(), op.data(), ShPostState.DRAFT,
-                session.actor, null, null));
+                // SH348 — the locale is honoured on create and nowhere else. The writer defaults a
+                // blank one, so absent still means DEFAULT_LOCALE and nothing changes for a
+                // monolingual tree.
+                session.actor, op.locale(), null));
         // The address *is* the identity here, so the furl is written from it rather
         // than derived from a title — two posts with the same headline must still be
         // two addresses, and the next run must find this one again.

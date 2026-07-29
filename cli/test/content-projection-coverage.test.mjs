@@ -38,6 +38,7 @@ const PROJECTED = [
   "bodyField",
   "data",
   "folder",
+  "locale",
   "movedFrom",
   "publish",
   "sidecarFiles",
@@ -54,10 +55,11 @@ const PROJECTED = [
  * starts carrying it — this test fails until you do.
  */
 const DROPPED = {
-  locale: "SH348 — a gap, not a decision. /agent/read does not return it either, so the tree could "
-    + "not carry it even if the format wanted to; a round trip therefore relocalizes a post to `en`.",
-  translationGroupId: "SH348 — the same gap one field along. Without it, two translations project as "
-    + "two unrelated posts and the sibling link is lost on the next push.",
+  // `locale` was here and is not any more: SH348's steps 1 and 2 put it on `/agent/read` and then in
+  // the frontmatter, and the table failing on the way is what a closing gap is supposed to look like.
+  translationGroupId: "SH348 — the last gap, and the one that needs an intent channel rather than a "
+    + "field: an agent must not invent a group id, so the tree should say `translationOf: <url>` and "
+    + "let the server resolve it, the way SH150's `moves` says `from` rather than an id.",
   title: "derived by the writer from whichever field carries isTitle (SH277), so storing it would be "
     + "a second copy that can disagree with `data`.",
   summary: "derived the same way as `title`.",
@@ -91,20 +93,31 @@ describe("SH348: the content projection's field coverage", () => {
     );
   });
 
-  it("drops a translation's locale and its sibling link, and both are declared", () => {
+  it("carries a non-default locale and still drops the sibling link", () => {
     const projected = projectedPost(
       { site: "Blog", url: "/sobre", type: "Article", locale: "pt-br", translationGroupId: "grp-1" },
       "TITLE",
     );
 
-    assert.equal(projected.locale, undefined, "locale must be either carried or declared dropped");
-    assert.equal(projected.translationGroupId, undefined);
-    for (const field of ["locale", "translationGroupId"]) {
-      assert.ok(
-        DROPPED[field]?.includes("SH348"),
-        `${field} is dropped and must name the task that owns it`,
-      );
-    }
+    assert.equal(
+      projected.locale,
+      "pt-br",
+      "SH348 step 2: a translated page has to be able to say so, or Block I's promise that the tree "
+        + "is a complete description of a site rebuilds it as `en` somewhere else",
+    );
+    assert.equal(
+      projected.translationGroupId,
+      undefined,
+      "still dropped, and declared: the sibling link needs an intent channel, not a field",
+    );
+    assert.ok(DROPPED.translationGroupId.includes("SH348"));
+  });
+
+  it("a default-locale post is byte-identical to before SH348", () => {
+    // The whole reason `/agent/read` omits a default locale (step 1) is that a monolingual tree must
+    // not change. If this ever fails, every file in every existing project gains a line.
+    const projected = projectedPost({ site: "Blog", url: "/about", type: "Article" }, "TITLE");
+    assert.equal(projected.locale, undefined);
   });
 
   it("declares a reason for everything it drops, and nothing it keeps", () => {

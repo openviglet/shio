@@ -133,8 +133,8 @@ public class ShAgentDesiredStateService {
                 throw new MissingPostUrlException();
             }
             String address = ShAddress.post(site, post.url()).toString();
-            upserts.add(op(ShAgentBatchService.POST_UPSERT, address,
-                    post.type(), post.folder(), post.data()));
+            upserts.add(new ShAgentBatch.Op(ShAgentBatchService.POST_UPSERT, address,
+                    post.type(), post.folder(), null, post.data(), null, post.locale()));
             // Absent `publish` means "leave it alone", so only an explicit true or false
             // produces an op. Treating absence as false would unpublish live pages the
             // moment someone trimmed a field from the document (P7).
