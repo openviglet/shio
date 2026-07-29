@@ -619,6 +619,15 @@ disk, **keyed by the file post's id** (not the folder tree), under
   `ShPostLifecycleEvent`). Owner: `com.viglet.shio.api.staticfile` +
   `ShFileSourceProperties`. Per-tenant isolation (SH47) will prefix `tenantId`.
 
+**A friendly URL is not unique by construction, and the two readers differ (SH321).** Nothing in the
+schema prevents two posts in one site claiming one — `duplicate-url` is an SH99 *error* for exactly
+that — so the finder returns an **ordered `List`**. A reader that must serve something takes the
+first (`findByShSite_IdAndFurlAndState`'s default): consistently wrong beats alternating, SH278's
+rule on a second identity. **`ShAddressResolver` refuses** with a teaching **409** naming both posts
+by `id:`, because an address is what a *write* takes and picking the first is how an edit lands on
+the wrong post. Before this, the derived `Optional` finder threw
+`IncorrectResultSizeDataAccessException` and eight call sites answered **500**.
+
 ### There is NO generic `DELETE /api/v2/object/{id}` endpoint
 Delete must be done by type: `/v2/post-unified/{id}` or `/v2/folder/{id}`.
 
@@ -972,6 +981,24 @@ informal rather than wrong; `1`/`0` are accepted everywhere for that reason.
 `agents-md` — the same pack rendered as project agent instructions, which is what
 `shio context --as agents-md --out AGENTS.md` writes. An unknown value is a teaching **400**,
 not a silent fallback to JSON.
+
+**Measure before you fix, and the measurement is the first deliverable.** P3 makes this binding for
+tokens and `ShAgentResponseBudgetTest` for response sizes; the same rule applies to **any** cost —
+queries, renders, suite time. A performance change lands as two things in this order: a benchmark
+that says what the cost is today, then whatever that number argues for. Not the other way round, and
+not the fix alone.
+
+Three reasons it is a rule rather than a preference, all paid for here: SH164/SH239 exist because an
+unmeasured claim about cost drifted for three blocks with nobody noticing; SH264 measured a sweep at
+21 queries a page and the number *changed the design* of the cache SH311 then built (sweep-scoped,
+not longer-lived); and SH314 measured a premise three shipped designs rested on and found it held —
+which is only worth knowing because it might not have. A cost that is argued rather than measured is
+the same defect as a premise carried in a comment (SH275, SH290), and it fails the same way: quietly,
+and in somebody else's environment.
+
+Corollary, from SH322: **when a task says "and whatever a grep turns up", the grep is the
+deliverable** — it lands as a lint *before* the fixes, because that is what finds the call site
+nobody read. SH279's own first half created one of the nine sites its second half had to fix.
 
 **The cost of all of it is measured, not asserted (Block M).** `ShAgentTaskBenchmarkTest`
 runs four canonical jobs over the agent surface *and* over the id-keyed console/CDA path and

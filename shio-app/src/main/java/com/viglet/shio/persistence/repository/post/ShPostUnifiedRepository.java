@@ -48,8 +48,37 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
 
     // --- CDA (SH1) read finders ---
 
-    /** Resolve a post by site + friendly URL; rides {@code idx_post_unified_furl (furl, state)}. */
-    Optional<ShPostUnified> findByShSite_IdAndFurlAndState(String siteId, String furl, ShPostState state);
+    /**
+     * Every post claiming this friendly URL in this state, by id — SH321.
+     *
+     * <p>A {@code List}, and ordered, because a friendly URL is <b>not</b> unique by construction:
+     * nothing in the schema prevents two posts in one site from claiming it, which is why
+     * {@code duplicate-url} has been an SH99 <em>error</em> since SH100. The derived
+     * {@code Optional} finder this replaces threw {@code IncorrectResultSizeDataAccessException}
+     * when that happened, so a content defect the instance itself reports came out of eight call
+     * sites as a <b>500</b> — the server knowing exactly what went wrong and saying the least
+     * useful thing available (SH189's bodiless 400, one layer down).</p>
+     *
+     * <p>Rides {@code idx_post_unified_furl (furl, state)}.</p>
+     */
+    List<ShPostUnified> findByShSite_IdAndFurlAndStateOrderByIdAsc(String siteId, String furl,
+                                                                   ShPostState state);
+
+    /**
+     * The post at a friendly URL, deterministically, for readers that must serve something.
+     *
+     * <p>Takes the first of the ordered list, which is SH278's rule applied to a second identity:
+     * a duplicate resolves <b>consistently</b> wrongly rather than alternating between requests.
+     * Consistently wrong is a defect somebody recognises and {@code verify} already names; a
+     * coin-flip is one that reads as flakiness in delivery.</p>
+     *
+     * <p>A <em>write</em> path must not use this — resolving to whichever post sorted first is how
+     * an edit lands on the wrong one. {@code ShAddressResolver} refuses instead.</p>
+     */
+    default Optional<ShPostUnified> findByShSite_IdAndFurlAndState(String siteId, String furl,
+                                                                   ShPostState state) {
+        return findByShSite_IdAndFurlAndStateOrderByIdAsc(siteId, furl, state).stream().findFirst();
+    }
 
     Page<ShPostUnified> findByShFolderAndState(ShFolder shFolder, ShPostState state, Pageable pageable);
 

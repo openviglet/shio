@@ -123,6 +123,42 @@ class ShAddressResolverTest {
     }
 
     @Test
+    @org.junit.jupiter.api.DisplayName("SH321: two posts on one URL is a teaching 409, not a 500")
+    void aContestedUrlIsRefused() {
+        // Before SH321 the derived Optional finder threw IncorrectResultSizeDataAccessException
+        // here, so a defect the instance already reports as `duplicate-url` (an SH99 error since
+        // SH100) reached the caller as a 500 — the server knowing exactly what happened and
+        // answering with the least useful thing available.
+        String contested = "/blog/contested";
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            ShSite site = entityManager.find(ShSite.class, siteId);
+            ShFolder root = entityManager.find(ShFolder.class, rootFolderId);
+            ShPostType type = entityManager
+                    .createQuery("select t from ShPostType t where t.name = :n", ShPostType.class)
+                    .setParameter("n", postTypeName)
+                    .getSingleResult();
+            post(site, root, type, "First", contested, ShPostState.DRAFT);
+            post(site, root, type, "Second", contested, ShPostState.DRAFT);
+        });
+
+        assertThatThrownBy(() -> resolver.resolve("post:" + siteName + contested))
+                .isInstanceOf(ShAddressResolver.DuplicateUrlException.class)
+                .satisfies(failure -> {
+                    var problem = ((ShAddressResolver.DuplicateUrlException) failure)
+                            .problem().toProblemDetail();
+                    assertThat(problem.getStatus()).isEqualTo(409);
+                    assertThat(problem.getProperties().get("allowed").toString())
+                            .as("both posts by `id:` address — the one form that resolves for "
+                                    + "either of them, since the `post:` address is precisely what "
+                                    + "is ambiguous (SH172's fallback, met from the other side)")
+                            .contains("id:");
+                    assertThat(problem.getProperties().get("fix").toString())
+                            .contains("post.move")
+                            .contains("verify");
+                });
+    }
+
+    @Test
     void resolvesAPostByItsFriendlyUrl() {
         ShAgentResolved resolved = resolver.resolve("post:" + siteName + "/blog/hello-world");
 

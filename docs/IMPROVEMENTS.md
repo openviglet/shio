@@ -3082,27 +3082,40 @@ There is a real argument for doing neither: the manifest reports the ceiling, an
 designed for agents that read the manifest first. The population affected is exactly the caller that
 did not — which may be small enough to leave alone, but should be *decided* rather than defaulted.
 
-### XVI.31 The neighbouring case, and the habit the sweep taught (SH321, SH322)
+### XVI.31 Two follow-ups from the URL sweep (SH323, SH324)
 
-**SH321.** SH279 was about picking from an unordered set. The neighbouring case is a finder that
-cannot pick at all: `ShAddressResolver` resolves a `post:` address through
-`findByShSite_IdAndFurlAndState`, which returns an `Optional`, so two posts sharing a friendly URL
-make Spring Data throw `IncorrectResultSizeDataAccessException` — a **500** for a defect the instance
-lints as `duplicate-url` and has done since SH100.
+**SH323 — the locale finder still throws.** `findByShSite_IdAndFurlAndStateAndLocale` is SH321's
+shape one parameter along, and the mechanical fix is the same. What stops it being a one-line commit
+is a question the locale dimension raises first: `duplicate-url` does **not** consider locale, so two
+posts at one URL in *different* locales are legitimate content that a locale-aware finder would
+happily return and a locale-blind lint already flags. The check and the finder disagree about what
+"duplicate" means, and only one of them can be right. Settle that, then fix the finder.
 
-Loud beats silently picking one, so this is not urgent. It is wrong the way SH189's bodiless 400 was
-wrong: the server knows exactly what happened and answers with the least useful thing available. A
-teaching 409 naming both posts' `id:` addresses and pointing at `shio verify` costs nothing and turns
-a crash into the report that already exists.
+**SH324 — a fixture can model a shape the product cannot produce.** SH321's refusal fired on
+`ShTemplateGraphTest`, which built a published post as two `post(...)` calls and therefore two ids —
+two posts sharing a URL, which is the defect rather than a published page. The suite was green for
+blocks with a fixture describing something `ShPostUnifiedWriteService` cannot create, and
+`ShPageRenderTest` had the correct helper the whole time.
 
-**SH322** is the process finding, and the more valuable one. SH279's body named three call sites from
-a first read and added "whatever a grep turns up". The grep — written as a lint — found **nine**, one
-of which the *previous half of the same task* had created by adding a comparator inline.
+This is SH290's class one layer down: a hand-written artefact claiming to represent something it does
+not. Two instruments, and they cost very differently — build fixtures **through the writer** wherever
+the test is not about the persistence shape itself (right, and it makes a test depend on the code it
+may be testing), or a **lint** asserting that no fixture persists two `ShPostUnified` rows with one
+furl and different ids (narrow, cheap, and it only catches this one shape). The narrow one is
+probably the right first move, on the same reasoning SH322 just wrote down: the pattern that finds
+the next occurrence is worth more than the fix to this one.
+
+### XVI.31 The habit the sweep taught (SH322)
+
+SH279's body named three call sites from a first read and added "whatever a grep turns up". The grep
+— written as a lint — found **nine**, one of which the *previous half of the same task* had created
+by adding a comparator inline. SH321, filed from the same sweep, then turned eight 500s into a
+refusal and a deterministic read.
 
 That is not a documentation failure. It is evidence that "find the other call sites" is a job for an
 executable pattern rather than a reading, and this repository already knows that in three places:
-`ShByteStabilityLintTest`, `ShFolderSiteInvariantTest`, `ShAgentIncidentFramesTest`. What is missing
-is the habit stated:
+`ShByteStabilityLintTest`, `ShFolderSiteInvariantTest`, `ShAgentIncidentFramesTest`. The habit is now
+written into `agents.md` beside the measure-first rule:
 
 > **When a task's body says "and whatever a grep turns up", the grep is the deliverable — and it
 > lands as a lint before the fixes do.**

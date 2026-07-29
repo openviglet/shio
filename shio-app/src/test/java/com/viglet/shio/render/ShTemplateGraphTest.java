@@ -152,10 +152,13 @@ class ShTemplateGraphTest {
 
             // Two article drafts, one of them also published; one page, published.
             post(created, root, article, "A1", "/a1", json("TEXT", "one"), when, ShPostState.DRAFT);
-            post(created, root, article, "A2", "/a2", json("TEXT", "two"), when, ShPostState.DRAFT);
-            post(created, root, article, "A2", "/a2", json("TEXT", "two"), when, ShPostState.PUBLISHED);
-            post(created, root, page, "P1", "/p1", json("TEXT", "p"), when, ShPostState.DRAFT);
-            post(created, root, page, "P1", "/p1", json("TEXT", "p"), when, ShPostState.PUBLISHED);
+            // SH321 found this fixture modelling a published post the way the product never
+            // produces one: two `post(...)` calls mint two ids, so A2's draft and published rows
+            // were *different posts sharing a friendly URL* — which is the duplicate-url defect,
+            // not a published page. The pair shares an id, as `publishedAndDraft` does in
+            // ShPageRenderTest and as ShPostUnifiedWriteService does in production.
+            publishedAndDraft(created, root, article, "A2", "/a2", json("TEXT", "two"), when);
+            publishedAndDraft(created, root, page, "P1", "/p1", json("TEXT", "p"), when);
         });
     }
 
@@ -947,6 +950,26 @@ class ShTemplateGraphTest {
         type.setOwner("admin");
         entityManager.persist(type);
         return type;
+    }
+
+    /** A post with both state rows under one id — the shape a published post actually has. */
+    private void publishedAndDraft(ShSite owner, ShFolder folder, ShPostType type, String title,
+                                   String furl, String data, Instant when) {
+        String id = UUID.randomUUID().toString();
+        for (ShPostState state : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT)) {
+            ShPostUnified row = new ShPostUnified();
+            row.setId(id);
+            row.setState(state);
+            row.setShSite(owner);
+            row.setShFolder(folder);
+            row.setShPostType(type);
+            row.setTitle(title);
+            row.setFurl(furl);
+            row.setData(data);
+            row.setDate(when);
+            row.setOwner("admin");
+            entityManager.persist(row);
+        }
     }
 
     private void post(ShSite owner, ShFolder folder, ShPostType type, String title, String furl,

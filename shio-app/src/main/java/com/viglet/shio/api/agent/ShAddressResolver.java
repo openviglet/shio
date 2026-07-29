@@ -168,11 +168,16 @@ public class ShAddressResolver {
         // address and a delivery URL never disagree about the same post.
         for (String candidate : furlCandidates(address.path())) {
             List<ShPostUnified> rows = BOTH_STATES.stream()
-                    .map(state -> shPostUnifiedRepository
-                            .findByShSite_IdAndFurlAndState(site.get().getId(), candidate, state))
-                    .flatMap(Optional::stream)
+                    .flatMap(state -> shPostUnifiedRepository
+                            .findByShSite_IdAndFurlAndStateOrderByIdAsc(
+                                    site.get().getId(), candidate, state).stream())
                     .toList();
             if (!rows.isEmpty()) {
+                // SH321 — an address is what a *write* takes (SH79 allows only post:/folder: on the
+                // write side), so resolving a contested URL to whichever post sorted first is how
+                // an edit lands on the wrong one. The reader that must serve something picks
+                // deterministically (the repository's own default); this one refuses.
+                refuseDuplicateUrl(candidate, rows);
                 return Optional.of(postResolved(draftPreferred(rows)));
             }
         }
@@ -300,6 +305,47 @@ public class ShAddressResolver {
 
     private List<ShFolder> children(ShFolder folder) {
         return shFolderRepository.findByParentFolderOrderByPositionAsc(folder);
+    }
+
+    /**
+     * SH321 — two posts claiming one friendly URL is a refusal, not a coin flip and not a 500.
+     *
+     * <p>Before this, the derived {@code Optional} finder threw
+     * {@code IncorrectResultSizeDataAccessException} here, so a content defect the instance already
+     * reports as {@code duplicate-url} (an SH99 error since SH100) reached the caller as a
+     * <b>500</b>: the server knowing exactly what happened and answering with the least useful
+     * thing available, which is SH189's bodiless 400 one layer down.</p>
+     *
+     * <p>Both posts are named by {@code id:} address, because that is the one form that resolves
+     * for either of them — a {@code post:} address is exactly what is ambiguous here (SH172's
+     * reason for the fallback, met from the other side).</p>
+     */
+    private static void refuseDuplicateUrl(String furl, List<ShPostUnified> rows) {
+        List<String> ids = rows.stream()
+                .map(ShPostUnified::getId)
+                .distinct()
+                .sorted()
+                .toList();
+        if (ids.size() > 1) {
+            throw new DuplicateUrlException(furl, ids);
+        }
+    }
+
+    /** A 409 that names both posts and the surface that already explains the defect (SH80). */
+    public static class DuplicateUrlException extends ShTeachingException {
+
+        public DuplicateUrlException(String furl, List<String> ids) {
+            super(ShProblem.conflict("duplicate-url",
+                            "'" + furl + "' is claimed by " + ids.size() + " posts")
+                    .withDetail("A friendly URL is a post's address in this site, and these posts "
+                            + "share one — so the address is ambiguous and any write against it "
+                            + "would land on whichever the database sorted first.")
+                    .withAllowed(ids.stream().map(id -> "id:" + id).toList())
+                    .withFix("Give all but one of them a different URL (post.move on "
+                            + "POST /api/v2/agent/batch), then retry. GET /api/v2/agent/verify "
+                            + "reports this as `duplicate-url` with both addresses.")
+                    .withExample("GET /api/v2/agent/read?address=id:" + ids.getFirst()));
+        }
     }
 
     private static ShPostUnified draftPreferred(List<ShPostUnified> rows) {
