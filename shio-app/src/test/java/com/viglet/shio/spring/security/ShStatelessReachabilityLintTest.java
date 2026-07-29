@@ -123,14 +123,13 @@ class ShStatelessReachabilityLintTest {
                 "exchange providers — instance wiring, not content"));
         byPath.put("/api/v2/config/email", new Requirement(Reason.CONSOLE_ADMIN,
                 "SMTP credentials; an agent writing these could redirect mail"));
+        // SH327 — /api/v2/render/** is CSRF-narrowed now, so it left this list the only way an
+        // entry may: the capability became reachable and the lint refused to let the note outlive
+        // the gap. It is classified in ShAgentP1ConformanceTest as an AGENT_ROUTE instead.
         byPath.put("/api/v2/widget", new Requirement(Reason.CONSOLE_ADMIN,
                 "the widget catalogue is closed and code-owned, and since SH325 it is seeded per "
                 + "widget on every startup — so there is nothing an agent should be adding here"));
 
-        byPath.put("/api/v2/render/post-types", new Requirement(Reason.GAP,
-                "SH327 — creating the SH183 render model needs session + CSRF, so the one endpoint "
-                + "that makes a site *visible* is the one an agent cannot call. SH338 has the same "
-                + "capability as serverRender in its own list, from the other side"));
         byPath.put("/api/v2/site-webhook", new Requirement(Reason.GAP,
                 "SH343 — the agent reads its own webhook delivery failures in /agent/diagnostics "
                 + "and cannot touch the subscription that produced them"));
@@ -210,7 +209,6 @@ class ShStatelessReachabilityLintTest {
                         here; gaining one must be a reviewable diff with a task id.""")
                 .containsExactlyInAnyOrder(
                         "/api/v2/preview-token",
-                        "/api/v2/render/post-types",
                         "/api/v2/site-webhook");
     }
 

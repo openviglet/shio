@@ -3161,10 +3161,12 @@ the client reading it. The answer is *not* a twelfth tool (the cap is 12 with 11
 `tools/list` is paid every turn — P3); it is an **op on the existing write surface**, where
 `site.upsert` and `folder.upsert` already live.
 
-**SH327** is why even the REST fallback is unpleasant: `/api/v2/render/**` is not in SH167's
-`ShStatelessRequestMatcher` list, so a Basic-auth caller gets a **bodiless 403** and has to walk
-`GET /api/v2/csrf` → cookie → `X-XSRF-TOKEN` by hand. That is SH170's friction on `POST /api/v2/site`
-and SH189's on `/api/v2/import`, for a third path.
+> ✅ **SH327 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: `/api/v2/render/**` is narrowed with
+> `ShStatelessRequestMatcher` and `POST /render/post-types` is declared in the manifest index. Both
+> halves were needed — reachable *and* discoverable — and both of the instruments built two tasks
+> earlier failed until their entries were removed, which is the first time that mechanism has been
+> exercised in the direction of a gap closing. Since SH339 the bodiless 403 is gone everywhere, so the
+> third path's symptom outlived its cause by one task.
 
 ### A plan cannot describe its own first step (SH329)
 

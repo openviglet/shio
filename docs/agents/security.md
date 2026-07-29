@@ -12,8 +12,9 @@
 - Frontend: `src/lib/axios.ts` interceptor fetches token from `/v2/csrf` before PUT/POST/DELETE, reads from response header, auto-retries on 403
 
 **Every exemption is session-narrowed, and the one that is not is argued (SH167).**
-`/api/v2/post-type`, `/api/v2/review/**`, `/api/v2/cda/**`, `/api/v2/agent/**`, `/mcp` and — since
-SH189 — `/api/v2/import` are wrapped in **`ShStatelessRequestMatcher`**: exempt for a caller holding no session cookie,
+`/api/v2/post-type`, `/api/v2/review/**`, `/api/v2/cda/**`, `/api/v2/agent/**`, `/mcp`, — since
+SH189 — `/api/v2/import` and — since SH327 — `/api/v2/render/**` are wrapped in
+**`ShStatelessRequestMatcher`**: exempt for a caller holding no session cookie,
 CSRF-checked for one that does. A blanket exemption is only safe while no cookie-bearing
 client reaches the path, which was true of the post-type API right up to the commit (SH117)
 that pointed the React editor at it — and nothing in that commit would have noticed. The
@@ -45,8 +46,9 @@ configuration that **every mutating controller root is stateless-writable or cla
 the inventory: **25 roots, 8 writable**, and of the 17 that need a session, 5 are `AGENT_EQUIVALENT`
 (the capability has an address-native form — SH170's own resolution was to grow `site.upsert`, not to
 open `POST /api/v2/site` to a token), 9 are `CONSOLE_ADMIN` (an agent minting its own API token is the
-escalation Block L prevents), and **3 are real gaps**: `/api/v2/render/post-types` (SH327),
-`/api/v2/site-webhook` (SH343), `/api/v2/preview-token` (SH344). A path that becomes writable while
+escalation Block L prevents), and **2 are real gaps**: `/api/v2/site-webhook` (SH343) and
+`/api/v2/preview-token` (SH344) — `/api/v2/render/post-types` was the third and is closed (SH327),
+which is the only way an entry may leave this list: the lint failed until the note was removed. A path that becomes writable while
 still listed fails the build — SH142's rule, so the inventory cannot rot. It is deliberately distinct
 from SH338's `ShAgentP1ConformanceTest`: that one asks whether a capability has an agent route at
 all, this one asks whether the route it has works without a cookie, and a capability can pass either

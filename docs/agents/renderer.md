@@ -21,6 +21,11 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   reachable only by whoever can restart the JVM. Because they are posts, `post.upsert`, the SH68
   package, the file projection and `shio verify` all work on them for free; the 2018
   `openviglet/bootstrap-site` export renders with **no migration**.
+  **And it is reachable without a browser (SH327):** `/api/v2/render/**` is CSRF-narrowed and this
+  endpoint is declared in the manifest's index, because `serverRender: true` was a half-truth while the
+  one call that makes a site visible needed a session cookie and appeared in no document a caller
+  reads. Reachable *and* discoverable — one without the other is a capability an agent finds by
+  guessing.
   **The widgets those fields reference are seeded per widget, on every startup (SH325).** They used
   to be seeded per *catalogue* — `if (findAll().isEmpty())` — and inside `ShOnStartup`'s first-time
   gate, which are **two** guards where the task named one: on any instance older than SH252's

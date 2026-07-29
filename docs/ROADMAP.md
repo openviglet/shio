@@ -48,6 +48,10 @@
 > instrument that finds every other break is the deliverable, and it lands before the fixes.* So
 > do not work SH325–SH337 by hand first — SH338 enumerates them and finds the ones nobody has hit.
 >
+> ✅ **SH327 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: `/api/v2/render/**` is CSRF-narrowed
+> and `POST /render/post-types` is in the manifest index, so the endpoint that makes a site *visible*
+> is reachable and discoverable. Both inventories refused to let their entries outlive the fix.
+>
 > ✅ **SH332 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: the op vocabulary is a `shio://ops`
 > resource, declared once and asserted against the planner's own refusals. It opened **SH346** — the
 > resource is MCP-only.
@@ -77,7 +81,7 @@
 > fourteen had no task** (SH342–SH344), and one (`reviewQueue`) turned out to be a decision rather
 > than a gap.
 
-1. **SH342–SH344** — the reachability gaps the SH338 and SH339 inventories name; SH327 is now one of them.
+1. **SH342–SH344** — the reachability gaps the SH338 and SH339 inventories still name (SH327 is closed).
 3. Then the rest of SH326–SH337, in whatever order SH338's output argues for.
 
 > **Deprioritized deliberately:** SH258, SH296, SH317, SH318 and SH324 all audit the audits — each
@@ -460,7 +464,6 @@
 - 📋 **SH259** (deps: SH247 ⏳, SH183 ✅) **A search results page needs the reader's query, and the model holds no request** — SH247's `{{#search q=…}}` takes a term the *template* supplies, which is a tag page or a curated collection and is not the thing an author means by "search". The results page needs `?q=`, and the render model deliberately has no request in it: SH183's whole non-goal resolution was that a layout is content and must not have the raw `HttpServletRequest` in scope, which is what made FSP's engine a sandboxing liability. So the question is not how to pass a parameter but **what a template is allowed to know about the request** — the narrow answer is one `param` frame holding query-string values as strings, read-only, never headers or cookies, which is enough for search, pagination and a filter and is nothing like a request object. Two things to settle: whether a `no-store` preview varying by query string needs anything said about caching when preview is not delivery (probably not, but it is the first render whose output depends on something other than content), and whether a value reaching a template unescaped is a stored-XSS surface the way it would be in a front end — Handlebars escapes `{{q}}` by default, so the risk is an author's `{{{q}}}`, and a write-time refusal (SH192's machinery) is available where a front end would have none. → §XV.19
 - ⏳ **SH275** (deps: SH274 ✅) **The load-bearing dependency premises are asserted; the rest are declared** — ✅ the two that pass the bar are done → [CHANGELOG.md](CHANGELOG.md) Block P: an unconfigured Handlebars *does* walk a bean and *does* resolve a partial to a classpath path, so SH183's two guards are provably guarding something. What remains is the judgement pass over the rest of §XVI.27's table — deciding which are load-bearing rather than asserting all of them — plus the finding that `{{secret.class.name}}` is blocked by the library itself, so half of one existing assertion proves less than it appears to. → §XVI.27
 - 📋 **SH326** (deps: SH183 ✅, SH325 📋) **An MCP-only client cannot create the render model** — no tool and no CLI command reach `/render/post-types`, while the manifest reports `serverRender: true` (SH160's half-truth again). An op on the existing write surface, not a twelfth tool — the cap is 12 with 11 used. → §XVI.58
-- 📋 **SH327** (deps: SH167 ✅) **`/api/v2/render/**` is not session-narrowed, and its 403 is bodiless** — a Basic-auth caller must walk the CSRF dance by hand and is told nothing. SH167's matcher plus a teaching refusal. → §XVI.58
 - 📋 **SH328** (deps: SH184 ✅, SH193 ✅) **`postTypeLayout` is the one edge that makes a site render and no agent op can write it** — an agent builds theme, regions, layout and pages and cannot bind them, while SH272's own convention line instructs the write. Per-key fill following SH184, never a replace. → §XVI.58
 - 📋 **SH329** (deps: SH153 ✅) **A dry run cannot plan into the site the same batch creates, and its `fix` names a parameter that does not exist** — SH153's `Declared` covers pending folders but not a pending site, so "look before you write" fails on an agent's first act. → §XVI.58
 - 📋 **SH330** (deps: SH144 ✅, SH99 ✅) **A past 5xx keeps `verify` red forever** — `checks=diagnostics` reports a durable incident as an *error* with no verb to resolve one, so the CI gate stays red after the cause is fixed. SH99's own rule makes it a warning. → §XVI.58

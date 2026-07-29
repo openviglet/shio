@@ -64,6 +64,20 @@ public class ShSecurityConfig {
     /** Post-types-as-code admin API (SH16) — console-authenticated, used by the stateless {@code shio} CLI. */
     private static final String POST_TYPE_PATH = "/api/v2/post-type/**";
     /**
+     * SH327 — the SH183 render model, provisioned. Narrowed for SH167's reason and reachable for
+     * SH339's: this is the endpoint that makes a site <em>visible</em>, and it was the one an agent
+     * could not call. A curator's browser stays CSRF-checked; a credential-based caller holds no
+     * cookie and could not obtain a token, so before this it got a bodiless 403 and no way forward.
+     *
+     * <p>It is the same class of thing as {@code POST_TYPE_PATH} beside it — provisioning a content
+     * model, idempotent, creating only the three system types {@code PUT /api/v2/post-type/{name}}
+     * refuses — which is why it gets the same treatment rather than a new op on the write surface.
+     * SH170's site creation went the other way (an op, not an opened endpoint) because a site is
+     * addressable and this is not: there is nothing to name, so {@code ensure} has no address and
+     * would be a verb with no subject.</p>
+     */
+    private static final String RENDER_PATH = "/api/v2/render/**";
+    /**
      * SH189 — the exchange import. Narrowed rather than blanket for SH167's reason: the console
      * posts the multipart form with a session cookie and must stay CSRF-checked, while a
      * credential-based client (the CLI, a CI job) holds no cookie and cannot send a token. A
@@ -164,6 +178,9 @@ public class ShSecurityConfig {
                         // the exemption is narrowed to callers that hold no session, or unifying
                         // the APIs would have meant dropping CSRF on the content model.
                         new ShStatelessRequestMatcher(mvc.matcher(POST_TYPE_PATH), sessionCookieName),
+                        // SH327 — see RENDER_PATH. The endpoint that makes a site visible was the
+                        // one an agent could not call, which is what SH339's inventory named.
+                        new ShStatelessRequestMatcher(mvc.matcher(RENDER_PATH), sessionCookieName),
                         new ShStatelessRequestMatcher(mvc.matcher(IMPORT_PATH), sessionCookieName),
                         // SH109 — same narrowed exemption, same reason (see REVIEW_PATH).
                         new ShStatelessRequestMatcher(mvc.matcher(REVIEW_PATH), sessionCookieName),

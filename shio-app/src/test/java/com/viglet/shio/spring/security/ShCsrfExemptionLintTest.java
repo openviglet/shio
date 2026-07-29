@@ -99,7 +99,10 @@ class ShCsrfExemptionLintTest {
             // SH189. The console posts this multipart form with a session cookie, so a blanket
             // exemption would be an invitation to forge a *site creation* against a curator's
             // browser — about as far from harmless as this list gets.
-            "IMPORT_PATH");
+            "IMPORT_PATH",
+            // SH327. The endpoint that makes a site visible; a curator's browser stays checked, a
+            // credential-based caller could not obtain a token and got a bodiless 403.
+            "RENDER_PATH");
 
     @Test
     @DisplayName("SH167: every CSRF exemption is either session-narrowed or argued in the allow-list")

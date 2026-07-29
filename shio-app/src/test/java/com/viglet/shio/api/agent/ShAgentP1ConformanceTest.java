@@ -191,6 +191,14 @@ class ShAgentP1ConformanceTest {
                 + "UUID has to survive between calls (SH79)"));
         byFeature.put("manifestProjection", route("/agent/manifest", "?include= on this document "
                 + "(SH174); the shio://manifest resource takes no arguments"));
+        // SH327 — was the REST_ONLY entry this inventory named first: /preview and
+        // POST /api/v2/render/post-types were the whole capability and neither was declared here nor
+        // reachable without a cookie, so `serverRender: true` was SH160's half-truth again. The
+        // endpoint is in the index and CSRF-narrowed now, and this lint refused to let the exception
+        // outlive the fix.
+        byFeature.put("serverRender", route("/render/post-types", "provisions the PageLayout / "
+                + "Region / Theme model; /preview/{site}/{url} then renders a page with no front "
+                + "end at all. The one endpoint that makes a site *visible*"));
         byFeature.put("postTypesAsCode", route("/post-type/{name}", "the one name-keyed post-type "
                 + "surface (SH16/SH117), read and upserted over HTTP"));
 
@@ -231,11 +239,6 @@ class ShAgentP1ConformanceTest {
     private static Map<String, Delivery> p1Exceptions() {
         Map<String, Delivery> byFeature = new TreeMap<>();
 
-        byFeature.put("serverRender", new Delivery(Reach.REST_ONLY, "/render/post-types",
-                "SH326 — /preview/{site}/{url} and POST /api/v2/render/post-types are the whole "
-                + "capability and neither is declared here or reachable from MCP, so an MCP-only "
-                + "client reads `true` and ends with a site nobody can look at. SH160's shape again, "
-                + "which is why SH338 exists (SH186 is the task)"));
         byFeature.put("universalEditor", new Delivery(Reach.CONSOLE_ONLY, "/agent/editable",
                 "SH185's bridge is a browser protocol and the console is its only client. `true` is "
                 + "honest to a human and not to an agent; SH335 is what that costs in practice"));
@@ -400,7 +403,6 @@ class ShAgentP1ConformanceTest {
                         "previewTokens",
                         "reviewQueue",
                         "scheduledPublish",
-                        "serverRender",
                         "trash",
                         "universalEditor",
                         "visualSnapshot",
@@ -424,8 +426,10 @@ class ShAgentP1ConformanceTest {
                 .contains("shio_write", "shio_read", "shio_verify", "shio_remember")
                 .hasSizeGreaterThanOrEqualTo(11);
         assertThat(paths)
-                .contains("/agent/resolve", "/post-type/{name}")
-                .doesNotContain("/render/post-types", "/agent/import", "/site-webhook");
+                .contains("/agent/resolve", "/post-type/{name}", "/render/post-types")
+                .as("the paths a current exception awaits must still be absent, or the guard is "
+                        + "asserting nothing")
+                .doesNotContain("/agent/import", "/agent/trash", "/site-webhook");
     }
 
     private Set<String> toolNames() {

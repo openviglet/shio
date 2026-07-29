@@ -52,8 +52,15 @@ import jakarta.servlet.http.Cookie;
 @TestInstance(Lifecycle.PER_CLASS)
 class ShCsrfRefusalBodyTest {
 
-    /** Session-required by design (SH170), and the path SH327 is filed about. */
-    private static final String SESSION_REQUIRED = "/api/v2/render/post-types";
+    /**
+     * Session-required by design (SH170): the console's own site-creation endpoint, whose agent form
+     * is `site.upsert` on the batch surface.
+     *
+     * <p>It used to be {@code /api/v2/render/post-types}, which <b>SH327 has since narrowed</b> — so
+     * this constant moved rather than the assertions changing, and that is the point: the messages
+     * below are about what a caller is told, not about which path happens to be closed this week.</p>
+     */
+    private static final String SESSION_REQUIRED = "/api/v2/site";
 
     @Autowired
     private WebApplicationContext webApplicationContext;
@@ -118,6 +125,23 @@ class ShCsrfRefusalBodyTest {
                         and NOT the stateless answer — a handler that sent one message to both \
                         would pass a test that only checked the other, which is why both are here.""")
                 .doesNotContain("csrf-token-unobtainable");
+    }
+
+    @Test
+    @DisplayName("SH327: the render model is reachable without a cookie")
+    void theRenderModelIsReachableStatelessly() throws Exception {
+        // The whole of Block P is "the visible site", and this was the one endpoint that makes a
+        // site visible and that an agent could not call — SH338 named it as `serverRender` and SH339
+        // named the CSRF half. A session-less caller now passes CSRF and stops at authentication
+        // (401), which is the same signal SH167's own test uses for the agent namespace working.
+        assertThat(secured.perform(post("/api/v2/render/post-types")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andReturn().getResponse().getStatus())
+                .as("""
+                        401, not 403: it passed CSRF and failed authentication. A 403 here means the \
+                        narrowing was reverted and an agent is back to a refusal it cannot act on — \
+                        it holds no session, so it cannot obtain the token being demanded.""")
+                .isEqualTo(401);
     }
 
     @Test

@@ -363,6 +363,14 @@ public class ShAgentManifestService {
                 new ShAgentEndpoint("PUT", "/post-type/{name}",
                         "Upsert a post-type by name; idempotent. Rejects system types (409).",
                         "console", "PUT /api/v2/post-type/Article"),
+                // SH327 — declared because `serverRender: true` was a half-truth without it: the
+                // capability existed and the endpoint that provisions it appeared nowhere a caller
+                // reads. SH338's inventory named it and SH339's named the CSRF half.
+                new ShAgentEndpoint("POST", "/render/post-types",
+                        "Create the PageLayout/Region/Theme types this instance renders with; "
+                                + "idempotent. Then /preview/{site}/{url} shows a page, no front "
+                                + "end needed.",
+                        "console", "POST /api/v2/render/post-types"),
                 new ShAgentEndpoint("POST", "/post-unified",
                         "Create a post. Body: {folderId, postTypeId, data, state}. Use state=DRAFT.",
                         "console", "POST /api/v2/post-unified"),
