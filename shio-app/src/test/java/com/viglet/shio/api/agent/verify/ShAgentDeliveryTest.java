@@ -211,6 +211,51 @@ class ShAgentDeliveryTest {
     }
 
     @Test
+    @DisplayName("SH302: a clean pass says how much it proved, per site")
+    void coverageIsANoteAndNotSilence() {
+        ShAgentReport report = shAgentVerifyService.verify(siteName, "delivery", 200);
+
+        assertThat(report.notes())
+                .as("""
+                        Findings appear only on failure, so a run that proved forty pages and a run \
+                        that proved none used to read identically - and "silence is not evidence" is \
+                        what this check is most easily wrong about.""")
+                .anySatisfy(note -> assertThat(note)
+                        .contains("The delivery check proved")
+                        .contains("published page(s) of '" + siteName + "'"));
+    }
+
+    @Test
+    @DisplayName("SH302: nothing this check fetches can carry a render marker, by construction")
+    void everyFetchedPageIsRenderedElsewhere() {
+        // The measurement that dissolved SH302's proposal. Counting SH299's defect markers in the
+        // *delivered* body would have been a strictly stronger claim — except the pass only ever
+        // fetches a site that has its own front-end URL: a site without one gets `site-url-missing`
+        // and is never fetched at all, and naming `delivery` for it is a teaching 400. So every body
+        // it could parse was rendered by somebody else's front end from the CDA and carries no
+        // `data-shio-*`. A marker count could only ever have printed zero, which is the "covered
+        // nothing while answering ok" failure SH141 warns about. Asserted here so the idea cannot come
+        // back as a plausible-sounding feature.
+        ShAgentReport withUrl = shAgentVerifyService.verify(siteName, "delivery", 200);
+        assertThat(rules(withUrl, "site-url-missing"))
+                .as("a site with a front-end URL is fetched, and that is the only kind that is")
+                .isEmpty();
+
+        ShAgentReport withoutUrl = shAgentVerifyService.verify(urllessSiteName, null, 200);
+        assertThat(rules(withoutUrl, "site-url-missing"))
+                .as("and Shio's own /preview - the only render that carries markers - is never a "
+                        + "delivery target: it is reported as unprovable instead")
+                .hasSize(1);
+        // `notes()` is absent rather than empty when a run has nothing to say (SH78's lean JSON), so
+        // the assertion has to allow for that — and a run that fetched nothing having no coverage note
+        // at all is the property, not a technicality.
+        assertThat(withoutUrl.notes() == null ? List.<String>of() : withoutUrl.notes())
+                .as("so no coverage note claims to have proved anything for it")
+                .noneSatisfy(note -> assertThat(note)
+                        .contains("published page(s) of '" + urllessSiteName + "'"));
+    }
+
+    @Test
     @DisplayName("an unresolved link is proved: served means silence, 404 means an error")
     void unresolvedLinksAreAdjudicated() {
         ShAgentReport report = shAgentVerifyService.verify(siteName, "content,routes,delivery", 200);

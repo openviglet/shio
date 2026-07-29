@@ -2732,29 +2732,6 @@ Three instruments, and they are not equally good:
 
 The likely answer is the first plus writing it down — the other two cost more than the defect does.
 
-### XVI.53 A delivery check proves a route serves and never looks at what it served (SH302)
-
-`shio verify --delivery` (SH141) fetches each published page and reports `route-not-served` on a bad
-status. The body is discarded.
-
-Since SH299 that body can be counted for markers with one jsoup parse, turning *"the front end
-answered 200"* into *"the front end answered 200 with a page that is missing a region"* — a much
-stronger claim, and arguably the one a delivery check exists to make.
-
-Two things stop it from being obvious:
-
-- **It only applies to Shio's own `/preview`.** An external Next.js front end renders its own markup
-  from the CDA and carries no `data-shio-*` at all, so the check would silently cover nothing for
-  precisely the deployments SH141 was built for — the "a check that covered nothing while answering
-  ok" failure that task itself warns about.
-- **A marker in *delivered* HTML is a stale-cache signal as much as a content defect.** The CMS may
-  have been fixed since; what is being served is old. That is a different finding with a different
-  fix, and reporting it as the content defect would send somebody to edit a post that is already
-  right.
-
-So the question to settle first is whether the honest form is a delivery *finding* at all, or a note
-saying which pages were checked this way and what was seen.
-
 ### XVI.56 A finding's address is a string, and nothing checks it resolves (SH309)
 
 Every teaching message in `verify` is assembled by concatenation: SH308 puts `post:blog/l-article`

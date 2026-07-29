@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -1274,6 +1275,9 @@ public class ShAgentVerifyService {
             if (uri == null) {
                 continue;
             }
+            // Status only, and SH302 measured why the body would buy nothing: the `origins` map above
+            // holds a site only when it has its own front-end URL, so every page this pass fetches is
+            // rendered by somebody else's front end and carries no `data-shio-*` to count.
             ShAgentDeliveryProbe.Outcome outcome = deliveryProbe.status(uri);
             if (outcome.failure() != null) {
                 // Fail fast per origin: one unreachable front end is one finding, and the
@@ -1330,6 +1334,7 @@ public class ShAgentVerifyService {
                                     : "Fix the link, publish the page it means, or add the route "
                                             + "to the front end."));
         }
+        deliveryCoverage(targets, fetches, notes);
         if (fetches.exhausted() && fetches.skipped() > 0) {
             notes.add("The delivery check stopped after " + fetches.byUrl().size()
                     + " request(s) and left " + fetches.skipped()
@@ -1339,6 +1344,49 @@ public class ShAgentVerifyService {
     }
 
     /** The site behind an id, for a finding that names a site rather than a post. */
+    /**
+     * SH302 — what the pass actually proved, said out loud.
+     *
+     * <h3>The stronger check this task proposed is not available, and that is the finding</h3>
+     *
+     * <p>SH141 discards the body; since SH299 that body could be counted for defect markers, turning
+     * "the front end answered 200" into "…with a page that is missing a region". Measured, the idea
+     * dissolves: the {@code origins} map is populated <b>only</b> for a site that has its own
+     * front-end URL — a site without one gets {@code site-url-missing} and is never fetched, and
+     * naming {@code delivery} for it is a teaching 400. So <em>every</em> page this pass fetches is
+     * rendered by somebody else's front end, from the CDA, and carries no {@code data-shio-*} at all.
+     * A marker count here could not have found a defect; it could only ever have printed zero, which
+     * is the "a check that covered nothing while answering ok" failure SH141 itself warns about.</p>
+     *
+     * <p>What was worth taking from the task is the other half of its own question — "or a note saying
+     * which pages were checked this way". A clean delivery pass used to say <b>nothing</b>: findings
+     * appear only on failure, so a run that proved forty pages and a run that proved none read
+     * identically. Coverage is now a note, per site, because "silence is not evidence" is the thing
+     * this check is most easily wrong about.</p>
+     */
+    private void deliveryCoverage(List<Target> targets, Fetches fetches, List<String> notes) {
+        Map<String, Integer> provedBySite = new TreeMap<>();
+        Set<String> counted = new LinkedHashSet<>();
+        for (Target target : targets) {
+            // A page's own URL only: a link target is somebody else's page, and it is proved as a
+            // link rather than as coverage of this site's pages.
+            if (target.href() != null || !counted.add(target.url())) {
+                continue;
+            }
+            ShAgentDeliveryProbe.Outcome outcome = fetches.byUrl().get(target.url());
+            if (outcome == null || !outcome.served()) {
+                continue;
+            }
+            ShSite owner = siteById(target.siteId());
+            String name = owner == null ? target.siteId() : owner.getName();
+            provedBySite.merge(name, 1, Integer::sum);
+        }
+        provedBySite.forEach((site, proved) -> notes.add("The delivery check proved " + proved
+                + " published page(s) of '" + site + "' by fetching them. What it proves is that the "
+                + "route answers: the page's own markup is the content checks' subject, and an "
+                + "external front end carries none of Shio's render markers to look at."));
+    }
+
     private ShSite siteById(String siteId) {
         return siteAccess.readable().stream()
                 .filter(site -> siteId.equals(site.getId()))

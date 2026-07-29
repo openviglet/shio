@@ -159,6 +159,14 @@ the CDA + console services (law P10) and holds no business logic of its own.
   no URL is a **warning** when the group arrived by default and a **400** when the caller named it
   (a group that joined on its own must not fail a call that never asked); and the pass is bounded
   by `shio.agent.verify.max-fetches` + `fetch-budget-millis`, with every cut in `notes`.
+  **Coverage is a note, and marker counting is settled as impossible here (SH302).** A clean pass
+  emitted nothing at all, so forty proved pages and zero proved pages read identically — it now says
+  how many it proved per site. Counting SH299's defect markers in the delivered body would be a
+  stronger claim and **cannot work**: the pass fetches a site only when it has its own front-end URL,
+  so every body it could parse is somebody else's render from the CDA and carries no `data-shio-*`.
+  Asserted, not remembered — `ShAgentDeliveryTest` pins that Shio's own `/preview` is never a delivery
+  target. (Switching to the body-bearing fetch would also have cost no extra network: `status()`
+  already discards a body it has transferred. Cheapness was never the question.)
   When delivery runs, `routes` **hands it the unresolved links instead of warning** — the same
   defect reported once as a maybe and once as a fact is a report the reader has to de-duplicate.
   The legitimate exception is **declared, never guessed**: `ShFrontEndRoutes` reads glob patterns
