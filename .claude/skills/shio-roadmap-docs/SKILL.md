@@ -1,6 +1,6 @@
 ---
 name: shio-roadmap-docs
-description: How to maintain the Shio roadmap/docs — the three docs/ files (ROADMAP.md, CHANGELOG.md, IMPROVEMENTS.md), their single-responsibility split, the cross-file update rules, and where a finished task's decision goes (docs/agents/ + docs/specs/). Also the one-task-one-commit rule and the end-user documentation decision (vigletdocs docs-shio). Use whenever adding a new task, marking a task shipped, editing any of those files or agents.md, or picking the next SH-number. Covers task numbering, non-goals, keeping the files in sync, and batching under /loop.
+description: How to maintain the Shio roadmap/docs — the three docs/ files (ROADMAP.md, CHANGELOG.md, IMPROVEMENTS.md), which are owned by the roadkeep CLI and never hand-edited, plus their single-responsibility split, the cross-file update rules, and where a finished task's decision goes (docs/agents/ + docs/specs/). Also the one-task-one-commit rule and the end-user documentation decision (vigletdocs docs-shio). Use whenever adding a new task, marking a task shipped, shipping, retiring, linting, editing any of those files or agents.md, or picking the next SH-number. Covers roadkeep, roadkeep.toml, task numbering, non-goals, keeping the files in sync, and batching under /loop.
 ---
 
 # Roadmap & docs maintenance
@@ -33,6 +33,16 @@ documentation").
 
 ---
 
+## ⛔ READ SECOND — the three files are owned by `roadkeep`
+
+[`roadkeep.toml`](../../../roadkeep.toml) declares this project's format, and the roadkeep
+plugin (declared in `.claude/settings.json`, so a clone gets it) carries the rest: a hook that
+**denies a hand-edit** to any of the three and names the command, the `mcp__roadkeep__*` tools
+whose input schema *is* this schema, and its own skill with the write path. Start a task with
+`brief`, not by reading the files; `lint` is the gate. The rules below are the reasoning.
+
+---
+
 The roadmap is **split across three files in `docs/`** that must be kept in sync.
 Each has one job — never duplicate content between them, and when you touch one,
 check whether a sibling needs updating:
@@ -48,8 +58,10 @@ positioning lives in IMPROVEMENTS §0's non-goals, and the task counter is deriv
 see below. Per-task implementable specs are `docs/specs/SH<n>-<slug>.md`; the product
 concept is [`docs/specs/SH74-agent-native-cms.md`](../../../docs/specs/SH74-agent-native-cms.md).
 
-**Task numbering — there is no counter file, so derive it and derive it correctly.**
-Take the max across all three docs plus `agents.md`:
+**Task numbering — `add` derives it, and `python -m roadkeep.cli next-id` prints it.**
+It scans the same sources and never fills a gap, so the grep below is the manual
+equivalent kept for the reasoning; `id_sources` in `roadkeep.toml` is what adds
+`agents.md` to the scan. Take the max across all three docs plus `agents.md`:
 
 ```
 grep -ohE 'SH[0-9]{1,4}' docs/ROADMAP.md docs/CHANGELOG.md docs/IMPROVEMENTS.md agents.md \
@@ -64,7 +76,8 @@ real maximum block letter** — grep it to confirm before creating a block.
 
 **The cross-file update rules — follow these every time:**
 
-1. **When a task ships (mark it ✅):** move its full entry from `ROADMAP.md` →
+1. **When a task ships (mark it ✅):** `ship <id>` makes all three edits in one
+   transaction — what follows is what it does and why. Move its full entry from `ROADMAP.md` →
    `CHANGELOG.md` (under its Block heading; the detailed shipped report lives
    *there*, not in the roadmap), and replace it in `ROADMAP.md` with **nothing**
    (delete it) or, if siblings still reference it or it's an epic header, a single
@@ -75,7 +88,8 @@ real maximum block letter** — grep it to confirm before creating a block.
    one. This is the founding rule. **The roadmap must never carry a multi-sentence ✅
    task body.** When an epic's children all ship, collapse the whole epic to one
    shipped pointer. **Then run the end-user-docs decision** (below).
-2. **When you add a new task:** add the one-liner to `ROADMAP.md` (with `deps:` + a
+2. **When you add a new task:** `add --block <x> --symptom "…" --why "…"` writes the
+   line and `section add <id> --title "…"` the rationale. Add the one-liner to `ROADMAP.md` (with `deps:` + a
    `→ §x.y` pointer) and, if it needs design, add the rationale subsection to
    `IMPROVEMENTS.md`. Status markers (✅/📋/💭/⏳/🛠) live **only** in `ROADMAP.md`.
 3. **Status belongs to exactly one file.** If a marker in `IMPROVEMENTS.md` disagrees

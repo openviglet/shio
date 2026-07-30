@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn -q -pl shio-app test-compile)",
+      "Bash(mvn -pl shio-app test-compile)",
+      "Bash(mvn -pl shio-app clean test-compile -DskipFrontend)",
+      "Bash(mvn -pl shio-app test -Dtest=ShPostUnifiedAPITest)",
+      "Bash(mvn -pl shio-app test -Dtest=ShPostUnifiedAPITest#stage02PostUnifiedCreateDraft)",
+      "Bash(mvn -pl shio-app test)",
+      "Bash(mvn -pl shio-app clean compile -DskipFrontend)"
+    ]
+  },
+  "extraKnownMarketplaces": {
+    "alegauss": {
+      "source": {
+        "source": "github",
+        "repo": "alegauss/roadkeep"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "roadkeep@alegauss": true
+  }
+}

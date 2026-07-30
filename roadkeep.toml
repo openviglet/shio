@@ -40,7 +40,32 @@ line = 320
 section = 250
 prose = 88
 
+[limits.changelog]
+# The ledger's own numbers (RK50). Its 233 entries predate the tool and read 1038
+# characters at the median, 4122 at the worst: holding history to the 320 a roadmap line is
+# refused at produces 600 findings about work nobody will redo. The gate that matters is
+# still the write path - `ship` copies a why already refused at 200, so every entry this
+# tool writes is short by construction, and only a hand-written `record` could use the room.
+why = 4200
+line = 4300
+
+[rules.changelog]
+# The two prose rules this file's history cannot obey (RK52). `why is one sentence` says the
+# remainder belongs in the section the line points at, and a shipped line has none: 233 of
+# these entries are paragraphs written before the tool existed, and no edit short of deleting
+# them satisfies the rule. The roadmap keeps both rules, which is where they bite.
+one_sentence = false
+terminator = false
+
 [markers]
 open = ["📋", "💭", "⏳", "🛠"]
 shipped = "✅"
 retired = "🗑"
+
+[ledger]
+# The two slots Shio's ledger lines do not have: no marker, because the file itself is the
+# statement that the work shipped (RK43), and no bold symptom, because every entry is
+# `- **SH134** - <prose>` (RK48). Declared here, so those 234 entries parse and the 96 deps
+# that point at them resolve instead of reading as "in neither file".
+marker = false
+symptom = false

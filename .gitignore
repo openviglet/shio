@@ -66,6 +66,9 @@ src/main/resources/js/client-side/build
 # without it would make the negation below unreachable.
 /.claude/*
 !/.claude/skills/
+# settings.json IS committed: it declares the roadkeep marketplace and enables the
+# plugin, so a clone gets the hook, the tools and the skill without any local setup.
+!/.claude/settings.json
 /shio-examples/corporate-site/node_modules
 /shio-js-sdk/node_modules
 /shio-examples/blog-site/node_modules

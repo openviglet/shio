@@ -77,7 +77,7 @@ describes. The per-area detail below is **authoritative** — do not restate it 
 | Liquibase, migrations, cross-DB ITs, multi-tenancy (SH22) | [docs/agents/database.md](docs/agents/database.md) | `shio-database` |
 | Build, Maven/pnpm wiring, publishing | [docs/agents/build.md](docs/agents/build.md) | `shio-build-test` |
 | Common issues and solutions | [docs/agents/troubleshooting.md](docs/agents/troubleshooting.md) | `shio-build-test` |
-| ROADMAP / CHANGELOG / IMPROVEMENTS upkeep rules | [docs/agents/docs-process.md](docs/agents/docs-process.md) | `shio-roadmap-docs` |
+| ROADMAP / CHANGELOG / IMPROVEMENTS upkeep rules — those three are **owned by `roadkeep`** ([roadkeep.toml](roadkeep.toml)), never hand-edited | [docs/agents/docs-process.md](docs/agents/docs-process.md) | `shio-roadmap-docs` |
 
 Addresses (SH79), used everywhere: `post:<site>/<friendly-url>` ·
 `folder:<site>/<name-chain>` · `site:<name>` · `id:<uuid>`. **Writes take only
