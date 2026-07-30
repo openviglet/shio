@@ -76,18 +76,12 @@ real maximum block letter** — grep it to confirm before creating a block.
 
 **The cross-file update rules — follow these every time:**
 
-1. **When a task ships (mark it ✅):** `ship <id>` makes all three edits in one
-   transaction — what follows is what it does and why. Move its full entry from `ROADMAP.md` →
-   `CHANGELOG.md` (under its Block heading; the detailed shipped report lives
-   *there*, not in the roadmap), and replace it in `ROADMAP.md` with **nothing**
-   (delete it) or, if siblings still reference it or it's an epic header, a single
-   terse pointer line:
-   `> ✅ **<scope> shipped (SH..–SH..)** → see [CHANGELOG.md](CHANGELOG.md) Block X.`
-   Then **delete** its design subsection from `IMPROVEMENTS.md`. `git log` is the
-   history — do **not** leave a shipped implementation report behind or re-accrete
-   one. This is the founding rule. **The roadmap must never carry a multi-sentence ✅
-   task body.** When an epic's children all ship, collapse the whole epic to one
-   shipped pointer. **Then run the end-user-docs decision** (below).
+1. **When a task ships: `ship <id>`** — one transaction (ledger entry, roadmap line deleted,
+   `§x.y` dropped, dependents re-annotated) or none of it. The `> ✅ … shipped` pointer line
+   for an epic is **retired**: the tool deletes the line, and a line the tool cannot write is
+   one somebody hand-edits into a file the hook defends. A follow-up names its shipped parent
+   in `(deps: SH22)`, which `roadkeep deps` resolves. **Then run the end-user-docs decision**
+   (below).
 2. **When you add a new task:** `add --block <x> --symptom "…" --why "…"` writes the
    line and `section add <id> --title "…"` the rationale. Add the one-liner to `ROADMAP.md` (with `deps:` + a
    `→ §x.y` pointer) and, if it needs design, add the rationale subsection to

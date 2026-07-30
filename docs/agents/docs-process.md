@@ -42,24 +42,15 @@ line carries **no pointer** — a pointer to nowhere reads as though the design 
 Blocks **H–L, M, N and O** have shipped (Block L except **SH110**, still blocked on SH45);
 the live backlog is the per-block follow-ups and Blocks A–G's remaining SH44–SH47 tenant work.
 
-**Counting the backlog is `roadkeep stats` (or `--json`), and `roadkeep audit` names
-every marker-bearing line it could not read.** Both read the format from
-`roadkeep.toml`, so neither can disagree with the parser that writes the lines. The
-script below predates the tool and answers the same question — 32 📋 · 43 💭 · 4 ⏳ ·
-0 🛠 from both today — which is exactly when retiring one is cheap.
-`python scripts/status-roadmap.py`
-(or `status-roadmap.cmd` from the repo root) parses `ROADMAP.md` and reports the four
-markers per Block, with totals — the measurement SH341 made by hand. It counts list
-bullets carrying one of the four active markers **and** a bold `**SH<n>**`, so shipped
-work cannot inflate it: rule 1's `> ✅ … shipped` pointers are not bullets, the legend
-table is not a bullet, and `- ✅ **SH22**` leads with a marker the script does not count.
-A `(deps: SH183 ✅)` annotation inside an active line is not a status and does not
-change its marker. `--tasks` lists each task with its line number,
-`--status <DES|IDEA|PART|WIP>` narrows, `--json` is for anything programmatic, and
-**`--audit`** prints every marker-bearing line it did *not* count with the reason —
-including the one dangerous shape, a bullet with a marker and no `**SH<n>**`, which
-would otherwise be dropped in silence. Reading 97 active lines across 10 blocks at
-2026-07-29: 38 📋 · 54 💭 · 5 ⏳ · 0 🛠, with 44 lines excluded.
+**Counting the backlog is `roadkeep stats` (or `--json`), and `roadkeep audit` names every
+marker-bearing line it could not read.** Both read the format from `roadkeep.toml`, so neither
+can disagree with the parser that writes the lines — which is why `scripts/status-roadmap.py`
+was retired rather than kept beside it: it answered the same question (32 📋 · 43 💭 · 4 ⏳ ·
+0 🛠, agreeing to the line on the day it went) with a second implementation of the format, and
+two counters that agree today are two that will disagree the moment the format moves. `stats`
+takes `--block`, `list --ids` is the ids alone, and `audit` reports every line it skipped with
+the reason — including the dangerous shape, a bullet with a marker and no `**SH<n>**`, which
+would otherwise be dropped in silence. `roadkeep lint` is the same reader as a gate.
 
 **Before you quote a benchmark number, know which way it moved and why.** Blocks N and O both
 made the *baseline* lean rather than the agent path fast — aligning the console reads on the
@@ -76,18 +67,16 @@ because it mixes those five and moves when the baseline does.
 
 **The cross-file update rules — follow these every time:**
 
-1. **When a task ships (mark it ✅): `ship <id>` does all of this**, validated first and
-   all-or-nothing. What follows is what it does, and the one thing it does not: it deletes
-   the roadmap line rather than leaving the `> ✅ … shipped` pointer, so an epic header is
-   still a hand-written line. Move its full entry from `ROADMAP.md` →
-   `CHANGELOG.md` (under its Block heading; the detailed shipped report lives
-   *there*, not in the roadmap), and replace it in `ROADMAP.md` with **nothing**
-   (delete it) or, if siblings still reference it or it's an epic header, a single
-   terse pointer line: `> ✅ **<scope> shipped (SH..–SH..)** → see [CHANGELOG.md](CHANGELOG.md) Block X.`
-   Then **delete** its design subsection from `IMPROVEMENTS.md` — `git log` is the
-   history; do not leave a shipped implementation report behind. **The roadmap must
-   never carry a multi-sentence ✅ task body** — that's the changelog's job. When an
-   epic's children all ship, collapse the whole epic to one shipped pointer.
+1. **When a task ships: `ship <id>`.** One transaction, validated before anything is
+   written: the ledger entry appears under its Block, the roadmap line **is deleted**, its
+   `§x.y` section is dropped from `IMPROVEMENTS.md`, and every line whose `(deps: …)` named
+   it is re-annotated. `--why` restates the sentence as an outcome; the design's own is kept
+   verbatim otherwise, and the tool rewrites neither.
+   The roadmap therefore carries **no `> ✅ … shipped` pointer** for a shipped epic — that
+   convention is retired, because a line the tool cannot write is a line somebody has to
+   hand-edit, and the hook denies it. `git log` and the changelog are the history; a follow-up
+   that needs to name its shipped parent does so in its own `(deps: SH22)`, which is where a
+   reader can resolve it (`roadkeep deps <id>`).
 2. **When you add a new task:** add the one-liner to `ROADMAP.md` (with `deps:` +
    a `→ §x.y` pointer) and, if it needs design, add the rationale subsection to
    `IMPROVEMENTS.md`. Status markers (✅/📋/💭/⏳/🛠) live **only** in `ROADMAP.md`.
