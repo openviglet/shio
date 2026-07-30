@@ -64,7 +64,23 @@ import org.junit.jupiter.api.Test;
  * section covers them), and those lost their pointer: a pointer to nowhere is worse than no pointer,
  * because it reads as though the design exists.</p>
  *
- * <p>The fifth check is the one with teeth. "Every pointer resolves" would have passed on eight lines
+ * <h2>Four checks, because roadkeep owns the fifth</h2>
+ *
+ * <p>"Every roadmap pointer resolves to a section that exists" left this file when the project
+ * adopted roadkeep: {@code roadkeep lint} reports it as {@code ref.unresolved}, from the same
+ * parser that writes the lines, so keeping a second implementation here would be two readers of
+ * one format waiting to disagree.</p>
+ *
+ * <p>The four that stay are <b>not</b> duplicates, and the reason is the numbering scheme.
+ * roadkeep keys a section on its anchor and asks whether a <em>task line</em> points at it; its
+ * ownership checks ({@code section.orphan}, {@code section.stale}) only fire for an id-shaped
+ * anchor, and this project's anchors are a hand-kept outline ({@code §XVI.12}, declared as
+ * {@code ref_scheme = "outline"}). Under that scheme roadkeep cannot tell which task a section
+ * belongs to — the id is in the heading's prose, which it does not read. So "a section carries a
+ * number", "no two say the same thing", "a task points at its own section" and "a section whose
+ * task has left says why" remain this repository's to enforce.</p>
+ *
+ * <p>The last of them is the one with teeth. "Every pointer resolves" would have passed on eight lines
  * pointing at a section about three other tasks; <b>if a section names a task, that task's line must
  * point at it</b>. An epic section that names none of its follow-ups is unaffected, which is why
  * §VI.1's four and §VIII.11's one need no exemption list — they have no section of their own to be
@@ -174,35 +190,6 @@ class ShDesignRationalePointerLintTest {
         assertThat(byHeader)
                 .as("SH302's rationale was in this file twice, verbatim; the second copy is what a "
                         + "reader would eventually correct in one place only")
-                .isEmpty();
-    }
-
-    @Test
-    @DisplayName("every roadmap pointer resolves to a section that exists")
-    void everyPointerResolves() {
-        TreeSet<String> declared = new TreeSet<>();
-        sections().forEach(section -> {
-            if (section.number() != null) {
-                declared.add(section.number());
-            }
-        });
-
-        Map<String, String> dead = new LinkedHashMap<>();
-        List<String> roadmap = lines(ROADMAP);
-        for (int i = 0; i < roadmap.size(); i++) {
-            Matcher matcher = POINTER.matcher(roadmap.get(i));
-            while (matcher.find()) {
-                if (!declared.contains(matcher.group(1))) {
-                    dead.put("ROADMAP.md:" + (i + 1), "§" + matcher.group(1));
-                }
-            }
-        }
-
-        assertThat(dead)
-                .as("""
-                        A pointer to nowhere is worse than no pointer: it reads as though the design \
-                        exists somewhere. Three lines lost theirs in SH351 rather than being given \
-                        invented rationale (SH259, SH265, SH301) - dropping it is the honest form.""")
                 .isEmpty();
     }
 
