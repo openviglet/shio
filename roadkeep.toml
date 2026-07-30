@@ -1,0 +1,46 @@
+# Shio's roadkeep configuration — written by roadkeep RK20, the first real corpus.
+#
+# NOT WIRED INTO CI, AND NOT READY TO BE. Under this file `roadkeep lint` reports 403
+# findings on Shio, of which about 174 are false: the tool cannot yet read an outline
+# rationale file (151 headings, 0 sections) or a ledger whose lines carry no status marker
+# (920 lines, 0 entries). Both are roadkeep's defects, not Shio's, and both are on
+# roadkeep's own backlog. This file exists so the measurement is reproducible —
+# `roadkeep -C . lint --json` — and should reach CI only once those two are fixed.
+#
+# Every value here is what the 78 lines in docs/ROADMAP.md already spell, so adopting the
+# tool changes the format of nothing that is already correct.
+
+prefix = "SH"
+
+# Shio numbers its rationale by a hand-kept outline (§XVI.47), not by task id. Migrating a
+# live outline is a separate decision from adopting the tool, so the scheme follows the
+# file rather than the file following the scheme.
+ref_scheme = "outline"
+
+[files]
+roadmap = "docs/ROADMAP.md"
+changelog = "docs/CHANGELOG.md"
+improvements = "docs/IMPROVEMENTS.md"
+# no strategy: Shio has none — absent, not empty
+
+[limits]
+# symptom is left at the default because the corpus already meets it: 0 of 78 lines exceed
+# 120 characters, p90 is 86. The field the authors kept short is the one whose scope is
+# bounded by what it is — "what does not work" is one clause.
+symptom = 120
+
+# why is left at the default *although* 70 of 78 lines exceed it, which is the opposite
+# reasoning and the whole finding of RK20: those 70 are not rationale with nowhere to go.
+# 67 of them point at a section in IMPROVEMENTS.md that already exists and already makes
+# the same argument, so the limit is not asking anybody to delete a design — it is asking
+# for the sentence that the paragraph at the pointer is the long form of.
+why = 200
+line = 320
+
+section = 250
+prose = 88
+
+[markers]
+open = ["📋", "💭", "⏳", "🛠"]
+shipped = "✅"
+retired = "🗑"
