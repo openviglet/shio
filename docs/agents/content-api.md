@@ -168,8 +168,12 @@ interpolated from `ShExchangePackageCodec.MANIFEST_ENTRY` now.
 **CSRF is session-narrowed, not exempt** (SH167's matcher, registered in
 `ShCsrfExemptionLintTest.MUST_BE_NARROWED`) — the console posts this form with a cookie, so a
 blanket exemption would let a forged request create a *site* against a curator's session.
-One half stays open: there is still no `shio import` or MCP route (**SH268** — a package is a zip,
-so a filesystem-free client cannot produce one and "add a tool" is not the answer).
+**`shio import <file.zip>` is the CLI half (SH268)** — multipart, printing `imported site:<name>`, and
+the teaching body is rendered by `formatError` rather than swallowed. **There is no MCP route and that
+is a decision**: an SH68 package is a zip and this surface is JSON, so the capability is CLI-shaped by
+construction (SH186 is the precedent that makes it a decision — a REST-only capability whose input is
+JSON became an op there). The P1 inventory carries `exchange` as `CLI_ONLY` with that reason, so an MCP
+client reads which tool to reach for instead of discovering it by failing.
 
 ### Static files — upload/serve subsystem (SH38)
 Binary files are first-class `File`-post-type unified posts; the bytes live on

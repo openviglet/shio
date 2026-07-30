@@ -2258,33 +2258,6 @@ changed which number is the interesting one — and it will change again if anyo
 results, which is a much harder question (a listing's rows are content, so a cache there is a
 freshness decision rather than a resolution one).
 
-### XVI.20 Import is not on the agent path, and a package is a file (SH268)
-
-No `shio import`, no `batch` op, no MCP tool. So an agent can create a site, a model and a hundred
-posts from nothing, and cannot accept a package a human hands it — which is the cheapest possible
-starting point and the form every first-party template ships in.
-
-The CLI half is now straightforward: SH189 made the endpoint reachable by a credential client, so
-`shio import <file>` is a multipart POST and a report.
-
-**The MCP half is a real design question, and this is the interesting part.** An SH68 package is a
-**zip**. A client with no filesystem can neither read one nor hand bytes over JSON-RPC. Three
-options, none free:
-
-- **A URL the server fetches.** This is SH101's request-forgery surface argued a second time, and it
-  would need the same treatment — off by default, an origin allow-list — for a capability far less
-  central than a render digest.
-- **A base64 body.** A megabyte of tokens for something a shell does in one line, which is P3's
-  argument against it and also SH114's argument about `shio_remember` running the other way.
-- **Say so.** The manifest reports capabilities precisely so a client learns what it cannot do
-  *before* promising a user something. "Import is CLI-shaped" is a legitimate answer, and an
-  explicit flag is better than an MCP client discovering the gap by not finding a tool.
-
-The third reading is the one to test first, and it should be tested against **SH186** — which is the
-same question in general form: what an MCP-only client can and cannot finish. If SH186 concludes
-that a filesystem-free client is a supported shape, this becomes a real gap; if it concludes such a
-client is expected to lean on a companion CLI, this is documentation.
-
 ### XVI.21 A frame is evidence for one incident kind and absent for three (SH269)
 
 > ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two things worth keeping, one of which is a

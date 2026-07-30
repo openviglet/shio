@@ -58,6 +58,7 @@ const COMMANDS = {
   mcp: () => import("./commands/mcp.mjs"),
   resolve: () => import("./commands/resolve.mjs"),
   apply: () => import("./commands/apply.mjs"),
+  import: () => import("./commands/import.mjs"),
   blueprints: () => import("./commands/blueprints.mjs"),
   verify: () => import("./commands/verify.mjs"),
   changes: () => import("./commands/changes.mjs"),
@@ -87,6 +88,8 @@ Commands:
   apply [file]   Plan/apply a desired-state content document (--dry-run, --check, - for stdin)
                  or a ready-made package (--blueprint <name> --site <site>;
                   --create-site makes the site, --merge-post-types adds missing fields)
+  import <file>  Clone an SH68 exchange package (.zip) into this instance — the way to accept
+                 a site somebody hands you (export it with GET /api/v2/site/{id}/export)
   blueprints     List the appliable starting points (blueprints <name> for its parameters)
   verify         Lint the content and its routes; exits non-zero on an error (CI gate)
   changes        What changed, with a cursor to resume from (--since, --cursor)

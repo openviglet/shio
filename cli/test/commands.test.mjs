@@ -11,6 +11,8 @@ import { test } from "node:test";
 
 import * as types from "../src/commands/types.mjs";
 import * as push from "../src/commands/push.mjs";
+import * as importCmd from "../src/commands/import.mjs";
+import { formatError } from "../src/format-error.mjs";
 
 function sink() {
   const out = { text: "" };
@@ -221,4 +223,73 @@ test("push applies upserts (PUT) when not a dry run", async () => {
   const puts = fetchFn.calls.filter((c) => c.method === "PUT");
   assert.equal(puts.length, 1);
   assert.equal(puts[0].url, "http://localhost:2710/api/v2/post-type/News");
+});
+
+test("SH268: import posts the package as multipart and prints the site's address", async () => {
+  const stdout = sink();
+  const fetch = fetchScript(() => ({ status: 201, body: { id: "site-1", name: "Bootstrap" } }));
+  const ctx = {
+    env: { SHIO_URL: "http://shio.test", SHIO_USER: "u", SHIO_PASSWORD: "p" },
+    cwd: "/proj",
+    stdout,
+    stderr: sink(),
+    fetch,
+    // The bytes come from disk, so the command takes its reader from ctx like every other one.
+    readFile: async (path) => {
+      assert.equal(norm(path), "/packages/bootstrap-site.zip");
+      return new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
+    },
+  };
+
+  const site = await importCmd.run({}, ["/packages/bootstrap-site.zip"], ctx);
+
+  assert.equal(site.name, "Bootstrap");
+  assert.equal(stdout.text, "imported site:Bootstrap" + String.fromCharCode(10),
+    "the name is what the next command addresses it by (SH79), not the id the response leads with");
+  const [call] = fetch.calls;
+  assert.equal(call.method, "POST");
+  assert.equal(call.url, "http://shio.test/api/v2/import");
+  assert.ok(call.body instanceof FormData, "multipart, because that is the endpoint the console uses");
+  assert.equal(call.body.get("file").name, "bootstrap-site.zip",
+    "the file name travels: SH189's errors echo it, because a caller who uploaded the wrong file "
+      + "learns more from its name than from any diagnosis of the contents");
+});
+
+test("SH268: import with no file says what to pass, and never calls the instance", async () => {
+  const fetch = fetchScript(() => ({ body: {} }));
+  const ctx = { env: {}, cwd: "/proj", stdout: sink(), stderr: sink(), fetch };
+
+  await assert.rejects(() => importCmd.run({}, [], ctx), /a package file is required/);
+  assert.equal(fetch.calls.length, 0);
+});
+
+test("SH268: a teaching refusal reaches the operator instead of being swallowed", async () => {
+  // SH189 and SH267 made this body say which of four things went wrong, with a fix. A CLI that
+  // reported "import failed" would put the operator back where the console was.
+  const fetch = fetchScript(() => ({
+    status: 409,
+    body: { type: "https://shio.viglet.com/errors/import-no-site", title: "The package holds no site.",
+      fix: "apply post-types with PUT /api/v2/post-type/{name}" },
+  }));
+  const ctx = {
+    env: { SHIO_URL: "http://shio.test", SHIO_USER: "u", SHIO_PASSWORD: "p" },
+    cwd: "/proj",
+    stdout: sink(),
+    stderr: sink(),
+    fetch,
+    readFile: async () => new Uint8Array([1, 2, 3]),
+  };
+
+  const err = await importCmd.run({}, ["types-only.zip"], ctx).then(
+    () => null,
+    (thrown) => thrown,
+  );
+  assert.ok(err, "a refusal must not resolve");
+  assert.equal(err.status, 409);
+  // The body is what carries SH189's slug and fix, and `formatError` is what the operator reads:
+  // asserting the rendering rather than the exception is the difference between "the teaching error
+  // exists" and "the teaching error arrives".
+  const shown = formatError(err);
+  assert.match(shown, /holds no site/);
+  assert.match(shown, /post-type/);
 });

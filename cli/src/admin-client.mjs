@@ -119,6 +119,27 @@ export class ShioAdminClient {
     return res.json();
   }
 
+  /**
+   * POST /api/v2/import — clone an SH68 exchange package into this instance (SH268).
+   *
+   * Multipart for `uploadStaticFile`'s reason (P10: the endpoint the console uses is the endpoint),
+   * and reachable at all only since SH189 narrowed its CSRF to session-bearing callers. The failure
+   * bodies are worth surfacing verbatim: SH189/SH267 made them say which of four things went wrong,
+   * with a `fix`, and swallowing that here would put the CLI back where the console was.
+   */
+  async importPackage({ bytes, fileName }) {
+    const form = new FormData();
+    form.append("file", new Blob([bytes], { type: "application/zip" }), fileName);
+    const url = `${this.baseUrl}/api/v2/import`;
+    const res = await this.fetch(url, {
+      method: "POST",
+      headers: { Authorization: this.#authHeader(), Accept: "application/json" },
+      body: form,
+    });
+    if (!res.ok) throw new ShioHttpError(res.status, url, await bodyOf(res));
+    return res.json();
+  }
+
   /** GET /api/v2/post-type — all lossless post-type defs. */
   getPostTypeDefs() {
     return this.#request("GET", "");

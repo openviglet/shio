@@ -279,10 +279,19 @@ class ShAgentP1ConformanceTest {
                 "SH222 — an agent can fill the trash (folder.delete, post.delete) and can neither "
                 + "list nor restore it, so the recoverability SH200 built is not recoverability from "
                 + "where the deletion was made"));
-        byFeature.put("exchange", new Delivery(Reach.REST_ONLY, "/agent/import",
-                "export is declared (GET /site/{id}/export) and import is not: POST /api/v2/import "
-                + "is undeclared and MCP-unreachable, so an agent can hand a package over and cannot "
-                + "accept one — the cheapest possible starting point (SH268)"));
+        // SH268 — a decision now, not a gap, and SH186 is what makes it one rather than a preference.
+        // That task took a REST-only capability whose input is *JSON* and made it an op, reaching MCP
+        // through an existing tool. An SH68 package is a **zip**: a client with no filesystem can
+        // neither read one nor put one in a JSON-RPC message, and both ways of pretending otherwise
+        // are worse than saying so — a URL the server fetches is SH101's request-forgery surface
+        // argued again, and a base64 body is a megabyte of tokens for what `shio import` does in a
+        // line. So the capability is CLI-shaped, `shio import` exists, and this row is the manifest
+        // telling an MCP client which tool to reach for instead of letting it find out by failing.
+        byFeature.put("exchange", new Delivery(Reach.CLI_ONLY, "shio import",
+                "an SH68 package is a zip, and this surface is JSON — so import is CLI-shaped by "
+                + "construction rather than by omission (SH268, decided against SH186's precedent). "
+                + "`shio import <file>` posts it; export stays declared (GET /site/{id}/export) "
+                + "because a zip *out* is a byte stream a caller can already ask for"));
         byFeature.put("postTypeMerge", new Delivery(Reach.REST_ONLY, "shio_apply.mergePostTypes",
                 "a deliberate trade, not an oversight: the opt-in is a body field on the blueprint "
                 + "apply, and adding it to shio_apply puts that tool over the SH132 per-tool ceiling "
