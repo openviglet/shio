@@ -32,6 +32,8 @@ import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.render.ShTemplateTitles;
+import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
+import com.viglet.shio.render.ShRenderPostTypes;
 import com.viglet.shio.render.ShTemplateValidator;
 import com.viglet.shio.render.ShTemplateValidator.ShTemplateProblem;
 import com.viglet.shio.api.error.ShTeachingException;
@@ -110,10 +112,27 @@ public class ShAgentBatchService {
      */
     public static final String SITE_UPSERT = "site.upsert";
 
+    /**
+     * SH186 — provisions the three render post-types, which was the last step only REST could take.
+     *
+     * <p>An MCP-only client has no HTTP of its own, and {@code PUT /api/v2/post-type/{name}} refuses a
+     * system type — which is precisely why {@code POST /api/v2/render/post-types} exists. So an agent
+     * driving this instance over JSON-RPC could write a layout's HTML and never create the type to
+     * write it as: the manifest indexed the endpoint, the client could read that it existed, and
+     * calling it was somebody else's job. That is the one gap between "an agent builds the site" and
+     * "a human can look at it".</p>
+     *
+     * <p><b>An op and not a thirteenth tool.</b> {@code tools/list} is paid on every turn of every
+     * session (SH132), and this is a once-per-instance step — the same trade SH193 and SH262 made by
+     * riding an existing tool. It reaches MCP through {@code shio_write} / {@code shio_apply} for free,
+     * and the REST endpoint stays exactly as it was for the console.</p>
+     */
+    public static final String RENDER_PROVISION = "render.provision";
+
     /** The closed op vocabulary, in the order a teaching error lists it. */
     public static final List<String> OPS = List.of(
             SITE_UPSERT, FOLDER_UPSERT, FOLDER_MOVE, FOLDER_DELETE, POST_UPSERT, POST_MOVE,
-            POST_PUBLISH, POST_UNPUBLISH, POST_DELETE);
+            POST_PUBLISH, POST_UNPUBLISH, POST_DELETE, RENDER_PROVISION);
 
     /**
      * The ops that destroy something and therefore need confirming (SH108). Everything else
@@ -137,6 +156,7 @@ public class ShAgentBatchService {
     private final ShAgentProperties properties;
     private final ShTemplateValidator shTemplateValidator;
     private final ShTemplateTitles shTemplateTitles;
+    private final ShRenderPostTypes shRenderPostTypes;
 
     public ShAgentBatchService(ShAgentSiteAccess siteAccess,
                                ShFolderRepository shFolderRepository,
@@ -150,7 +170,8 @@ public class ShAgentBatchService {
                                ObjectMapper objectMapper,
                                ShAgentProperties properties,
                                ShTemplateValidator shTemplateValidator,
-                               ShTemplateTitles shTemplateTitles) {
+                               ShTemplateTitles shTemplateTitles,
+                               ShRenderPostTypes shRenderPostTypes) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -164,6 +185,7 @@ public class ShAgentBatchService {
         this.properties = properties;
         this.shTemplateValidator = shTemplateValidator;
         this.shTemplateTitles = shTemplateTitles;
+        this.shRenderPostTypes = shRenderPostTypes;
     }
 
     /**
@@ -407,8 +429,50 @@ public class ShAgentBatchService {
             case POST_PUBLISH -> postPublish(op, session);
             case POST_UNPUBLISH -> postUnpublish(op, session);
             case POST_DELETE -> postDelete(op, session);
+            case RENDER_PROVISION -> renderProvision(op, session);
             default -> throw new UnknownOpException(op.op());
         };
+    }
+
+    // --- render ops (SH186) ---
+
+    /**
+     * Creates the {@code PageLayout} / {@code Region} / {@code Theme} types, idempotently.
+     *
+     * <p>Addressless, and it is the only op that is. Everything else here acts on a post, a folder or
+     * a site; this acts on the <em>instance's model</em>, and inventing an address for it
+     * ({@code render:post-types}) would add a fourth address kind for one op — SH79's forms are the
+     * vocabulary an agent has to learn, and one of them existing for a single caller is worse than an
+     * op whose {@code address} is the instance itself.</p>
+     *
+     * <p>Delegates to {@link ShRenderPostTypes#ensure()}, which is what the REST endpoint calls — the
+     * op is a <em>shape</em> over the existing service and never a second implementation (P10). A
+     * {@code dryRun} answers from {@link ShRenderPostTypes#existing()} and writes nothing, so a plan
+     * says which of the three are missing without creating them.</p>
+     */
+    private Change renderProvision(ShAgentBatch.Op op, Session session) {
+        List<String> already = shRenderPostTypes.existing().stream()
+                .map(ShPostTypeDef::name)
+                .toList();
+        List<String> missing = ShRenderPostTypes.NAMES.stream()
+                .filter(name -> !already.contains(name))
+                .toList();
+        // The row's address is the op's own when it named one — an agent provisioning while building a
+        // site has `site:<name>` in hand and a row that echoes it reads in place. Otherwise the model
+        // is the subject and there is no SH79 form for it, so the field is absent rather than invented:
+        // a plausible-looking `render:post-types` would be a fourth address kind for one op.
+        String address = op.address() == null || op.address().isBlank() ? null : op.address().trim();
+        if (missing.isEmpty()) {
+            return new Change(op.op(), address, Change.NOOP,
+                    "all three render post-types exist", null);
+        }
+        if (session.dryRun) {
+            return new Change(op.op(), address, Change.CREATE,
+                    "would create " + String.join(", ", missing), null);
+        }
+        shRenderPostTypes.ensure();
+        return new Change(op.op(), address, Change.CREATE,
+                "created " + String.join(", ", missing), null);
     }
 
     // --- site ops ---

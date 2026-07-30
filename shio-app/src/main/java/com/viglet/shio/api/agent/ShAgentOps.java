@@ -119,7 +119,15 @@ public final class ShAgentOps {
                     "Withdraw the published row; the draft stays."),
             ShAgentBatchService.POST_DELETE, new OpSpec(ShAgentBatchService.POST_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
-                    "Trash a post. Needs `confirm` from its own dry run.")));
+                    "Trash a post. Needs `confirm` from its own dry run."),
+            // SH186 — the one addressless op. It acts on the instance's model rather than on a post, a
+            // folder or a site, and `address` is optional only so a row can echo the site being built.
+            ShAgentBatchService.RENDER_PROVISION, new OpSpec(ShAgentBatchService.RENDER_PROVISION,
+                    List.of(), List.of(), List.of(), List.of(ADDRESS),
+                    "Create the PageLayout/Region/Theme post-types this instance renders with, "
+                            + "idempotently. Do this once before writing a layout: post.upsert "
+                            + "cannot create a system type, and until they exist /preview has "
+                            + "nothing to compose. Takes no address.")));
 
     private ShAgentOps() {
         // utility

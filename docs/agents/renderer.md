@@ -15,7 +15,12 @@ stylesheet cannot hide because it is inline-styled rather than classed.
 
 - **The model is content.** `PageLayout` (`HTML`/`THEME`/`JAVASCRIPT`), `Region`
   (`HTML`/`JAVASCRIPT`) and `Theme` (`CSS`/`JAVASCRIPT`) are **system post-types created on
-  demand** — `POST /api/v2/render/post-types`, idempotent, never touching an existing type
+  demand** — `POST /api/v2/render/post-types`, idempotent, never touching an existing type, **and
+  since SH186 also the `render.provision` batch op**, because a client speaking only JSON-RPC has no
+  HTTP of its own and `post.upsert` cannot create a system type: an op rather than a thirteenth MCP
+  tool (`tools/list` is paid every turn for a once-per-instance step), delegating to the same
+  `ShRenderPostTypes.ensure()`. It is the **one addressless op** — it acts on the instance's model, and
+  a `render:post-types` address would be a fourth SH79 form for one caller
   (SH38's `File` precedent, SH152's provision-never-upsert rule). The endpoint exists because
   `PUT /api/v2/post-type/{name}` refuses a system type, so without it the render model would be
   reachable only by whoever can restart the JVM. Because they are posts, `post.upsert`, the SH68

@@ -1532,21 +1532,6 @@ is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that exis
 > The remaining raster question is **SH265**, and the reason it is not a footnote: most of what
 > "looks wrong" means still needs pixels.
 
-### XV.5 An MCP-only agent cannot produce a visible site (SH186)
-
-The server never writes a project file, deliberately: a project's name is local identity, and
-writing to a developer's filesystem from a content API is the surprise P7 exists to prevent.
-Only `shio init` scaffolds a front end, and only a machine with a shell can run one. An MCP
-client with no filesystem — the Claude Desktop shape — can therefore build a complete,
-verified site that nobody can look at, and nothing in the protocol says so.
-
-SH166 covers the narrower symptom (carried files arrive with `{{projectName}}` unsubstituted).
-The broader gap disappears if SH183 lands: the site is visible with no project at all, and the
-front-end half becomes an upgrade rather than a prerequisite. If SH183 does not land, the
-minimum honest behaviour is for a blueprint apply to say plainly that the content is in place
-and the site has no renderer, and for the manifest to carry a flag a client can read before
-promising a user a website.
-
 ### XV.7 Importing an exchange package teaches nothing and is not on the agent surface (SH189)
 
 > ⏳ **The teaching half shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two things it settled and

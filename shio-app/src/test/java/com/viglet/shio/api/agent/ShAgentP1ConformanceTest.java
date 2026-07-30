@@ -209,9 +209,14 @@ class ShAgentP1ConformanceTest {
         // reachable without a cookie, so `serverRender: true` was SH160's half-truth again. The
         // endpoint is in the index and CSRF-narrowed now, and this lint refused to let the exception
         // outlive the fix.
+        // SH186 closed the half SH327 left: an MCP-only client has no HTTP of its own, so a declared,
+        // CSRF-narrowed *REST* endpoint was still unreachable for it — and `post.upsert` cannot create
+        // a system post-type. `render.provision` is an op, so it arrives through shio_write with no
+        // thirteenth tool on `tools/list`.
         byFeature.put("serverRender", route("/render/post-types", "provisions the PageLayout / "
-                + "Region / Theme model; /preview/{site}/{url} then renders a page with no front "
-                + "end at all. The one endpoint that makes a site *visible*"));
+                + "Region / Theme model — and since SH186 the `render.provision` batch op does the "
+                + "same for a client that speaks only JSON-RPC; /preview/{site}/{url} then renders a "
+                + "page with no front end at all. The one capability that makes a site *visible*"));
         // SH344 — the last step of SH184's answer: an agent that has deployed a front end can now
         // mint the token that front end needs to show a draft. Declared *and* CSRF-narrowed, which is
         // the pair SH327 established as the unit of a fix here.

@@ -40,6 +40,52 @@ class ShRenderPostTypesTest {
 
     @Autowired
     private ShRenderPostTypes shRenderPostTypes;
+    @Autowired
+    private com.viglet.shio.api.agent.ShAgentBatchService batchService;
+
+    @Test
+    @DisplayName("SH186: an MCP-only agent can provision them, because it is a batch op")
+    void theOpProvisionsWithoutRest() {
+        // The gap: `PUT /api/v2/post-type/{name}` refuses a system type, which is why
+        // `POST /api/v2/render/post-types` exists — and a client speaking only JSON-RPC has no HTTP to
+        // call it with. So an agent could write a layout's HTML and never create the type to write it
+        // as. An op rather than a thirteenth tool, because `tools/list` is paid every turn (SH132).
+        com.viglet.shio.api.agent.dto.ShAgentBatch.Op provision =
+                new com.viglet.shio.api.agent.dto.ShAgentBatch.Op(
+                        com.viglet.shio.api.agent.ShAgentBatchService.RENDER_PROVISION,
+                        null, null, null, null, null, null, null);
+
+        // A plan writes nothing and says what is missing — the same rule every other op follows.
+        com.viglet.shio.api.agent.dto.ShAgentChangeSet planned = batchService.run(
+                new com.viglet.shio.api.agent.dto.ShAgentBatch(true, List.of(provision)), false, "tester");
+        assertThat(planned.results()).singleElement().satisfies(row -> {
+            assertThat(row.action()).isEqualTo("create");
+            assertThat(row.detail()).contains("would create").contains(ShSystemPostType.REGION);
+            assertThat(row.address())
+                    .as("""
+                            addressless on purpose: this acts on the instance's model, and inventing                             a `render:post-types` form would add a fourth SH79 address kind for one op""")
+                    .isNull();
+        });
+        assertThat(shRenderPostTypes.existing()).isEmpty();
+
+        com.viglet.shio.api.agent.dto.ShAgentChangeSet applied = batchService.run(
+                new com.viglet.shio.api.agent.dto.ShAgentBatch(false, List.of(provision)), false, "tester");
+        assertThat(applied.results()).singleElement().satisfies(row ->
+                assertThat(row.action()).isEqualTo("create"));
+        assertThat(shRenderPostTypes.existing()).extracting(ShPostTypeDef::name)
+                .containsExactlyInAnyOrder(ShSystemPostType.PAGE_LAYOUT, ShSystemPostType.REGION,
+                        ShSystemPostType.THEME);
+
+        // Idempotent, and it says so rather than reporting a second creation: an agent re-running its
+        // own build must be able to tell "already there" from "made it again" (P5).
+        com.viglet.shio.api.agent.dto.ShAgentChangeSet again = batchService.run(
+                new com.viglet.shio.api.agent.dto.ShAgentBatch(false, List.of(provision)), false, "tester");
+        assertThat(again.results()).singleElement().satisfies(row -> {
+            assertThat(row.action()).isEqualTo("noop");
+            assertThat(row.detail()).contains("all three render post-types exist");
+        });
+        assertThat(again.changed()).isZero();
+    }
 
     @Test
     @DisplayName("the three arrive with the 2018 field names, so a real export renders")
