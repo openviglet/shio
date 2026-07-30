@@ -78,7 +78,24 @@ public class ShAgentIncidentLog {
         TRANSFORM,
 
         /** A scheduled publish/unpublish threw; the post is not in the state it was told to be. */
-        SCHEDULE;
+        SCHEDULE,
+
+        /**
+         * SH270 — a page rendered <em>incomplete</em> because the content itself is malformed.
+         *
+         * <p>The four kinds above are operational: something the instance was doing failed. This one
+         * is the opposite shape and it is the gap SH269's lint could not see, because the lint can
+         * only check the recorders that exist. Two render paths <b>degrade silently by design</b> —
+         * a {@code postTypeLayout} that is not JSON yields no bindings, and a post whose {@code data}
+         * is not an object yields no fields — and the result in both cases is a page that looks
+         * <em>empty</em> rather than a failure anybody can see. Nothing reported them.</p>
+         *
+         * <p>Deliberately narrow. "Record every swallowed exception" would fill the window with
+         * handled conditions, which is what SH103 refused for 4xx: a degradation earns an incident
+         * only when the content is wrong <em>and</em> the symptom is silence. Folding by subject keeps
+         * one broken post to one entry however many times it renders.</p>
+         */
+        CONTENT;
 
         public String wireName() {
             return name().toLowerCase(Locale.ROOT).replace('_', '-');

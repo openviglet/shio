@@ -22,6 +22,9 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.agent.ShAddress;
+import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentFrames;
+import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -103,6 +106,7 @@ public class ShPageRenderService {
     private final ShRegionComposer composer;
     private final ShRenderModel renderModel;
     private final ObjectMapper objectMapper;
+    private final ShAgentIncidentLog incidentLog;
 
     public ShPageRenderService(ShSiteRepository shSiteRepository,
                                ShPostUnifiedRepository shPostUnifiedRepository,
@@ -110,7 +114,8 @@ public class ShPageRenderService {
                                ShTemplateEngine engine,
                                ShRegionComposer composer,
                                ShRenderModel renderModel,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               ShAgentIncidentLog incidentLog) {
         this.shSiteRepository = shSiteRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostTypeRepository = shPostTypeRepository;
@@ -118,6 +123,7 @@ public class ShPageRenderService {
         this.composer = composer;
         this.renderModel = renderModel;
         this.objectMapper = objectMapper;
+        this.incidentLog = incidentLog;
     }
 
     /**
@@ -350,6 +356,17 @@ public class ShPageRenderService {
                 // of a page rendering with a layout nobody chose.
             }
         } catch (JacksonException e) {
+            // SH270 — degrade *and* report. With no bindings, every page of this site refuses with
+            // `render-no-layout-binding`, which names the post-type and reads like a missing binding
+            // rather than what it is: the site's own map is not JSON. Nothing said so anywhere.
+            incidentLog.record(ShAgentIncidentLog.Kind.CONTENT,
+                    ShAddress.site(site == null ? null : site.getName()).toString(),
+                    "The site's postTypeLayout is not valid JSON, so no post-type has a layout: "
+                            + e.getOriginalMessage(),
+                    "Rewrite it with site.upsert (postTypeLayout is a flat "
+                            + "{\"<post type>\": \"<layout title>\"} map). Until then every page of "
+                            + "this site refuses with render-no-layout-binding.",
+                    ShAgentIncidentFrames.of(e));
             return Map.of();
         }
         return bindings;

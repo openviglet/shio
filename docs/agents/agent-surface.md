@@ -248,8 +248,15 @@ the CDA + console services (law P10) and holds no business logic of its own.
   field now distinguishes "we failed" from "they refused". Guarded by a **source lint** in
   `ShAgentIncidentFramesTest` (a `record(...)` inside a `catch` that passes no frame fails the
   build), because the defect is an omission at a call site and reproducing three async failures
-  would be three fixtures asserting one line each. A `catch` that records *nothing* is still
-  invisible — **SH270**. Recorded by `ShAgentIncidentLog`; repeats fold into one
+  would be three fixtures asserting one line each. **A `catch` that records nothing is a declared
+  population now (SH270)** — `ShSilentCatchInventoryTest` asserts the count per package (63,
+  measured; it was 65), so adding one is a diff that asks the question instead of a habit. The two it
+  removed were the content degradations whose symptom is *silence*: an unparseable `postTypeLayout`
+  (every page then refuses with a message about the post-type) and a post whose `data` is not an
+  object (the page renders with none of its fields). Both now record the fifth kind, **`content`** —
+  the other four are operational ("something we were doing failed"), this one is "the content is
+  wrong and the page is quietly incomplete", and it stays narrow because recording every swallowed
+  exception is what SH103 refused for 4xx. Recorded by `ShAgentIncidentLog`; repeats fold into one
   row with a count. **Durable since SH144** (`sh_agent_incident`, written by
   `ShAgentIncidentStore`), so "was anything failing while I was away" is answerable and an empty
   report now means *nothing has failed* rather than *nothing is remembered* — `since` is where

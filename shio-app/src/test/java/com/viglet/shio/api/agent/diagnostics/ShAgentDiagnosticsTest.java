@@ -49,6 +49,8 @@ class ShAgentDiagnosticsTest {
     private ShAgentDiagnosticsService shAgentDiagnosticsService;
     @Autowired
     private ShAgentVerifyService shAgentVerifyService;
+    @Autowired
+    private com.viglet.shio.render.ShRenderModel renderModel;
 
     @BeforeEach
     void reset() {
@@ -70,6 +72,40 @@ class ShAgentDiagnosticsTest {
             assertThat(incident.fix()).isNotBlank();
         });
         assertThat(diagnostics.counts()).containsEntry("webhook", 1);
+    }
+
+    @Test
+    @DisplayName("SH270: malformed content leaves an incident instead of an empty page nobody can explain")
+    void malformedContentLeavesAnIncident() {
+        // Not persisted: `fieldsOf` reads the column and the id, and the degradation is the parse.
+        com.viglet.shio.persistence.model.post.unified.ShPostUnified broken =
+                new com.viglet.shio.persistence.model.post.unified.ShPostUnified();
+        broken.setId("11111111-2222-3333-4444-555555555555");
+        broken.setData("{\"TITLE\": not json");
+
+        assertThat(renderModel.fieldsOf(broken))
+                .as("""
+                        it still degrades rather than failing the page - that decision stands, and                         SH270 is about the silence around it, not about turning it into a 500""")
+                .isEmpty();
+
+        ShAgentDiagnostics diagnostics = shAgentDiagnosticsService.diagnostics(null);
+        assertThat(diagnostics.incidents()).singleElement().satisfies(incident -> {
+            assertThat(incident.kind())
+                    .as("a fifth kind, because the other four are operational and this one is the "
+                            + "content being wrong while the symptom is an empty page")
+                    .isEqualTo("content");
+            assertThat(incident.subject()).isEqualTo("id:" + broken.getId());
+            assertThat(incident.fix()).contains("post.upsert");
+        });
+
+        for (int render = 0; render < 20; render++) {
+            renderModel.fieldsOf(broken);
+        }
+        assertThat(shAgentDiagnosticsService.diagnostics(null).incidents())
+                .as("""
+                        folded by subject: a broken post renders on every page view, and twenty-one                         rows about one post would evict everything else in the window""")
+                .hasSize(1);
+        assertThat(shAgentDiagnosticsService.diagnostics(null).counts()).containsEntry("content", 21);
     }
 
     @Test

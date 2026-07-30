@@ -8,6 +8,9 @@
  */
 package com.viglet.shio.render;
 
+import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentFrames;
+import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -82,9 +85,11 @@ public class ShRenderModel {
     public static final Set<String> FRAMES = Set.of("post", "site", "theme", "render");
 
     private final ObjectMapper objectMapper;
+    private final ShAgentIncidentLog incidentLog;
 
-    public ShRenderModel(ObjectMapper objectMapper) {
+    public ShRenderModel(ObjectMapper objectMapper, ShAgentIncidentLog incidentLog) {
         this.objectMapper = objectMapper;
+        this.incidentLog = incidentLog;
     }
 
     /**
@@ -121,6 +126,18 @@ public class ShRenderModel {
             // A post whose data is not an object renders with no fields rather than
             // failing the page: the defect belongs to the content, and SH99's lint is
             // where it is reported. A blank page would hide it.
+            //
+            // SH270 — and it is reported *here* too, because "SH99's lint is where it is reported"
+            // was only true of a page somebody thought to lint. The symptom is a page that looks
+            // empty, which is the one shape nobody investigates, and the window folds by subject so
+            // a post renders a hundred times and leaves one entry.
+            incidentLog.record(ShAgentIncidentLog.Kind.CONTENT,
+                    "id:" + (post.getId() == null ? "?" : post.getId()),
+                    "This post's data is not a JSON object, so the page renders with none of its "
+                            + "fields: " + e.getOriginalMessage(),
+                    "Read the post with GET /api/v2/agent/read and rewrite its fields with a "
+                            + "post.upsert. The page will keep rendering empty until then.",
+                    ShAgentIncidentFrames.of(e));
             return fields;
         }
         return fields;

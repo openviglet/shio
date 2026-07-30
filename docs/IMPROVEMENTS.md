@@ -2323,33 +2323,6 @@ client is expected to lean on a companion CLI, this is documentation.
 >
 > The gap the lint cannot see is a `catch` that records nothing at all — **SH270**.
 
-### XVI.22 A swallowed exception leaves no frame, and no incident either (SH270)
-
-SH269's lint can only see the recorders that exist. The blind spot is a `catch` that records
-*nothing*, and there are several, most of them correct:
-
-- `ShAgentIncidentStore` swallows and logs — deliberately, because a diagnostics write must never
-  turn a webhook timeout into a 500 (SH144's rule).
-- `ShPageRenderService.bindingsOf` returns `Map.of()` for an unparseable `postTypeLayout` (SH183).
-- `ShRenderModel.fieldsOf` returns no fields for a post whose `data` is not an object.
-
-The last two are the interesting ones, because both mean *the content is wrong and the page looks
-empty* — the failure mode this whole block exists to make visible — and both are currently
-invisible everywhere. Neither is a bug: degrading rather than failing is right for a renderer, and
-SH99's lint is the stated place those defects get reported. The question is whether "the lint would
-catch it if anybody ran the lint" is good enough for a condition the renderer has already observed
-at request time.
-
-**What this must not become is more recording.** Logging every handled condition would fill the SH103
-window with things that are working as designed, which is exactly what that task refused when it
-declined to record 4xx. So the deliverable is a *decision* about which degradations are worth an
-incident, and the bar should probably be: the content is malformed in a way the model cannot express,
-and the request succeeded anyway.
-
-The lint shape is available if the answer is "some of them": a `catch` that neither records nor
-rethrows could be made to name a reason inline, the way `byte-stable-exempt` does for SH136. That
-turns a silent decision into a written one without adding a single log line.
-
 ### XVI.25 The scanner is a hand-written parser of somebody else's grammar (SH273)
 
 > ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth keeping.
