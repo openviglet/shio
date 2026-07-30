@@ -77,9 +77,11 @@ because it mixes those five and moves when the baseline does.
    hand-edit, and the hook denies it. `git log` and the changelog are the history; a follow-up
    that needs to name its shipped parent does so in its own `(deps: SH22)`, which is where a
    reader can resolve it (`roadkeep deps <id>`).
-2. **When you add a new task:** add the one-liner to `ROADMAP.md` (with `deps:` +
-   a `→ §x.y` pointer) and, if it needs design, add the rationale subsection to
-   `IMPROVEMENTS.md`. Status markers (✅/📋/💭/⏳/🛠) live **only** in `ROADMAP.md`.
+2. **When you add a new task: `add … --ref <x.y>` then `section add <x.y>`.** The anchor is
+   yours to choose because this project numbers by hand (`ref_scheme = "outline"`), which is
+   the one field `add` cannot derive — it refuses without it rather than inventing a number.
+   Between the two commands `lint` reports `ref.unresolved`, which is true and momentary.
+   Status markers (✅/📋/💭/⏳/🛠) live **only** in `ROADMAP.md`.
 3. **Status belongs to exactly one file.** If a marker in `IMPROVEMENTS.md`
    disagrees with `ROADMAP.md`/`CHANGELOG.md`, the roadmap files win — fix it.
 4. **Keep ROADMAP entries terse** (≈1 sentence: *what + why + pointer*).

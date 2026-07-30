@@ -82,10 +82,15 @@ real maximum block letter** — grep it to confirm before creating a block.
    one somebody hand-edits into a file the hook defends. A follow-up names its shipped parent
    in `(deps: SH22)`, which `roadkeep deps` resolves. **Then run the end-user-docs decision**
    (below).
-2. **When you add a new task:** `add --block <x> --symptom "…" --why "…"` writes the
-   line and `section add <id> --title "…"` the rationale. Add the one-liner to `ROADMAP.md` (with `deps:` + a
-   `→ §x.y` pointer) and, if it needs design, add the rationale subsection to
-   `IMPROVEMENTS.md`. Status markers (✅/📋/💭/⏳/🛠) live **only** in `ROADMAP.md`.
+2. **When you add a new task, two commands and the anchor is yours.** This project numbers
+   its rationale by hand (`ref_scheme = "outline"`), so the pointer is **not** derived and
+   `add` refuses without it:
+   `add --block <x> --symptom "…" --why "…" --ref <x.y>`, then
+   `section add <x.y> --title "…"` with the prose on stdin. Pick the next free number in the
+   family the task belongs to (`§VIII.20` under `## VIII.`), and expect `lint` to report
+   `ref.unresolved` between the two commands — that is the honest state, not a mistake.
+   The `deps:` group and the status marker are `add`'s own flags (`--dep`, `--status`);
+   markers live **only** in `ROADMAP.md`.
 3. **Status belongs to exactly one file.** If a marker in `IMPROVEMENTS.md` disagrees
    with `ROADMAP.md`/`CHANGELOG.md`, the roadmap files win — fix it.
 4. **Keep entries terse.** A ROADMAP entry is **one sentence: what + why + `→`
