@@ -3,6 +3,20 @@
 > Split out of the repo-root `agents.md` (see its routing table for the index).
 > Read this before touching the area it covers. Detail here is authoritative.
 
+## These three files are owned by `roadkeep`
+
+[`roadkeep.toml`](../../roadkeep.toml) declares this project's format — `SH` ids, `§x.y`
+outline anchors, the markers, the limits, and the two slots this ledger's lines never carried.
+The roadkeep plugin is enabled in `.claude/settings.json`, so a clone gets it: a hook that
+**denies a hand-edit** to any of the three and names the tool, the `mcp__roadkeep__*` tools
+whose input schema *is* this schema, and its own skill with the write path. `ship <id>` makes
+all three edits below in one transaction; `brief <id>` starts a task without reading a file;
+`lint` is the gate, and it reports **278 pre-existing findings** — so a *new* finding on a line
+you touched is yours, and the rest is a backlog, not this task's business.
+
+Everything below is why the rules are what they are. It is no longer a procedure to perform
+by hand.
+
 ## Roadmap & docs maintenance
 
 The roadmap lives in `docs/`, **split across three files that must be kept in
@@ -28,7 +42,12 @@ line carries **no pointer** — a pointer to nowhere reads as though the design 
 Blocks **H–L, M, N and O** have shipped (Block L except **SH110**, still blocked on SH45);
 the live backlog is the per-block follow-ups and Blocks A–G's remaining SH44–SH47 tenant work.
 
-**Counting the backlog is a script, not a grep.** `python scripts/status-roadmap.py`
+**Counting the backlog is `roadkeep stats` (or `--json`), and `roadkeep audit` names
+every marker-bearing line it could not read.** Both read the format from
+`roadkeep.toml`, so neither can disagree with the parser that writes the lines. The
+script below predates the tool and answers the same question — 32 📋 · 43 💭 · 4 ⏳ ·
+0 🛠 from both today — which is exactly when retiring one is cheap.
+`python scripts/status-roadmap.py`
 (or `status-roadmap.cmd` from the repo root) parses `ROADMAP.md` and reports the four
 markers per Block, with totals — the measurement SH341 made by hand. It counts list
 bullets carrying one of the four active markers **and** a bold `**SH<n>**`, so shipped
@@ -57,7 +76,10 @@ because it mixes those five and moves when the baseline does.
 
 **The cross-file update rules — follow these every time:**
 
-1. **When a task ships (mark it ✅):** move its full entry from `ROADMAP.md` →
+1. **When a task ships (mark it ✅): `ship <id>` does all of this**, validated first and
+   all-or-nothing. What follows is what it does, and the one thing it does not: it deletes
+   the roadmap line rather than leaving the `> ✅ … shipped` pointer, so an epic header is
+   still a hand-written line. Move its full entry from `ROADMAP.md` →
    `CHANGELOG.md` (under its Block heading; the detailed shipped report lives
    *there*, not in the roadmap), and replace it in `ROADMAP.md` with **nothing**
    (delete it) or, if siblings still reference it or it's an epic header, a single
