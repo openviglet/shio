@@ -208,7 +208,7 @@ public class ShAgentVerifyService {
         List<Unresolved> unproven = new ArrayList<>();
         ShFrontEndRoutes declared = declaredRoutes(site);
         if (requested.contains(ShAgentCheck.ROUTES)) {
-            routes(scan, findings, declared, proving ? unproven : null, notes);
+            routes(scan, findings, declared, proving ? unproven : null, notes, scope.partial());
         }
         if (proving) {
             delivery(scan, findings, notes, unproven, explicitlyAsked(checks));
@@ -1019,7 +1019,7 @@ public class ShAgentVerifyService {
      *                 about is how a declaration turns into a blind spot
      */
     private void routes(Scan scan, List<Finding> findings, ShFrontEndRoutes declared,
-                        List<Unresolved> unproven, List<String> notes) {
+                        List<Unresolved> unproven, List<String> notes, boolean partial) {
         String check = ShAgentCheck.ROUTES.wireName();
         // From the site index, not from the loaded rows: "does this link resolve" is a
         // question about the whole site, and a scoped run that answered it from its own
@@ -1043,6 +1043,69 @@ public class ShAgentVerifyService {
             notes.add(silenced + " unresolved link(s) matched routes declared as the front end's "
                     + "(memory key '" + ShFrontEndRoutes.MEMORY_KEY + "') and were not reported"
                     + (unproven == null ? "." : " as warnings — they are proved below instead."));
+        }
+        if (!partial) {
+            homePage(scan, findings, check);
+        }
+    }
+
+    /**
+     * A site that publishes pages and has nothing at {@code /} (SH334).
+     *
+     * <h2>Why this is a content finding and not a console feature</h2>
+     *
+     * <p>The symptom appeared in the Universal Editor — it opens {@code ShSiteFrontEnd}'s answer,
+     * which is the site <em>root</em>, so a site with no page there opens on a 404 and exactly one
+     * page of it is editable. The obvious fix is a page picker, and it is the wrong one to build
+     * first: <b>a page at furl {@code /} is a convention nothing enforces, defaults or reports.</b>
+     * The SH71 starter has one and the shipped fixtures have one, which is why this never surfaced;
+     * an agent following SH79 has no reason to create one, because nothing in the address scheme,
+     * the render model or this lint ever said a site needs a home. So the state is one the product
+     * now produces routinely, and naming it removes most of the occasions for a picker rather than
+     * decorating them.</p>
+     *
+     * <h2>A warning, and only for a site that publishes</h2>
+     *
+     * <p>Warning because SH99's rule is that {@code ok} is false only for what the CMS can prove is
+     * broken now, and a site addressed entirely from an external front end's own router is a
+     * legitimate design rather than a defect. Skipped entirely when the site has published nothing:
+     * there is no front door missing from a building with no rooms, and an agent halfway through a
+     * build would otherwise be told off for the state every build passes through.</p>
+     *
+     * <p>Read from {@code publishedByUrl}, which is the whole-site index rather than the run's own
+     * subjects — SH143's rule for every cross-cutting question. A scoped run that answered this
+     * from its scope would report a missing home page for any pass that did not happen to include
+     * it.</p>
+     *
+     * <h2>Not on a scoped run at all, and the benchmark is why</h2>
+     *
+     * <p>Every other routes rule is <em>about a subject the run looked at</em>; this one is about
+     * the site, so a narrowed pass would attach it to work that has nothing to do with it. That is
+     * not a style objection — it was measured. Firing it on scoped runs took SH164's
+     * {@code fix-broken-link} task from 400 tokens to **560**, a 40% regression on a canonical
+     * loop, because a `?verify=true` proof scoped to one repaired link carried a paragraph about
+     * the site's front door. P3 is a budget, and the fix is not a bigger budget: a finding an agent
+     * did not ask about and cannot act on inside its current task is the thing being paid for.
+     * A full pass still reports it, which is where somebody is looking at the site as a whole.</p>
+     */
+    private void homePage(Scan scan, List<Finding> findings, String check) {
+        for (Map.Entry<String, Map<String, List<String>>> entry : scan.publishedByUrl().entrySet()) {
+            Map<String, List<String>> byUrl = entry.getValue();
+            if (byUrl.isEmpty() || byUrl.containsKey("/")) {
+                continue;
+            }
+            ShSite site = scan.siteById().get(entry.getKey());
+            if (site == null) {
+                continue;
+            }
+            findings.add(Finding.warning(check, "no-home-page",
+                    ShAddress.site(site.getName()).toString(), null,
+                    "Site '" + site.getName() + "' publishes " + byUrl.size()
+                            + " page(s) and none of them is at '/', so its front door is a 404 — "
+                            + "which is also the only page the Universal Editor can open.",
+                    "Give one page the friendly URL '/' with a post.move op "
+                            + "(POST /api/v2/agent/batch): {\"op\":\"post.move\",\"address\":\"post:"
+                            + site.getName() + "/<url>\",\"to\":\"post:" + site.getName() + "/\"}."));
         }
     }
 

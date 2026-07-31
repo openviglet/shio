@@ -3170,54 +3170,6 @@ does not have. The alternative is a merge verb on the console surface, which is 
 missing rather than the thing being worked around. Cheaper: the read-modify-write. Righter: the merge
 verb. Pick before touching the client, not after.
 
-### XVI.39 The last mile is the human's, and it opened on a 404 (SH333, SH334)
-
-The site rendered, the digest was clean and the SH99 gate closed green — and when the curator opened
-the Universal Editor on it, the canvas showed this:
-
-```json
-{"detail":"Looked for a DRAFT post whose friendly URL is '/'.","status":404,
- "title":"No page at '/' in site 'Demo'",
- "fix":"GET /api/v2/agent/find?site=Demo lists the addresses this site holds."}
-```
-
-Three things are wrong in that one frame, and they are worth separating because only one of them is a
-console bug.
-
-**The teaching error reached the wrong reader.** SH80's contract is that every 4xx carries a `fix`,
-and this one is a good fix — for an API caller. A curator looking at an editor canvas cannot run a
-`GET`, so the most carefully designed part of the response is the least usable part of it. The rule
-this suggests is narrow and general: **a teaching error is addressed to whoever can act on it**, and a
-surface that renders a machine's error to a human has not reported the error, it has relocated it.
-That is SH189's argument (a refusal that teaches nothing) inverted — a refusal that teaches the wrong
-audience.
-
-**Nothing timed out.** The iframe has no `onLoad`/`onError`, and the SH185 handshake never completes
-because an error page carries no `editor.js`, so the badge read `Conectando…` indefinitely. "Still
-loading" and "this will never load" were indistinguishable. The honest instrument is the handshake
-timeout rather than inspecting the frame's document, for the same reason SH185 pins the origin instead
-of using `"*"`: the editor must work against an external front end it cannot read. **SH333.**
-
-**And the editor can only ever open one page.** `siteDestination` mirrors `ShSiteFrontEnd`, whose job
-is to answer "where can a person look at this site", and its answer is the site **root**. There is no
-picker, no address bar, no navigation — so the curator can edit a page at furl `/` and reach every
-other page only by hand-writing the `?url=` external-mode escape hatch. Of the three pages this run
-built, one was editable.
-
-The root cause is a model gap rather than a console one, and it is the part worth carrying forward:
-**a page at furl `/` is a convention that nothing enforces, defaults or reports.** The SH71 starter
-has one and the `Cafeteria` fixture has one, which is why this has never surfaced; an agent following
-SH79 has no reason to create one, because nothing in the address scheme, the render model or the lint
-says a site needs a home. So "this site has no home page" is a state the product now produces
-routinely — an agent-built site is the normal case — and never names.
-
-That ordering matters for **SH334**: a `verify` warning for a site with published pages and nothing at
-`/` is cheaper than a picker and removes most of the occasions for one. Build the warning first and
-find out whether the picker is still the thing needed, rather than assuming the fix belongs in the
-console because that is where the symptom appeared.
-
----
-
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA

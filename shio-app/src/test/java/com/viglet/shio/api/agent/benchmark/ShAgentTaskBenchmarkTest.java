@@ -202,6 +202,14 @@ class ShAgentTaskBenchmarkTest {
             attr(type, text, "headline", 1, true, true);
             attr(type, html, "body", 2, false, false);
 
+            // SH334 — a site with five published pages and no front door is a state the lint now
+            // reports, and a benchmark fixture that models it measures a paragraph of advice about
+            // the site on every task that verifies. That is not what these numbers are for: the
+            // ratios are about one task's cost, so the fixture has to be a *finished* site. This is
+            // SH324's lesson from the other side — there, a fixture modelled a shape the product
+            // cannot produce; here it modelled one the product now calls incomplete.
+            home(site, root, type, when);
+
             for (int i = 1; i <= 5; i++) {
                 // Post 3 links to a URL that does not exist; the rest link to post 1.
                 String href = i == 3 ? "/blog/does-not-exist" : "/blog/post-1";
@@ -247,6 +255,29 @@ class ShAgentTaskBenchmarkTest {
         attr.setShWidget(widget);
         attr.setShPostType(type);
         entityManager.persist(attr);
+    }
+
+    /**
+     * The site's front door (SH334). Deliberately outside {@code postIds}: the naive path walks
+     * that list to read the five candidates, and a sixth entry would change what the baseline is
+     * measured doing rather than what the site is.
+     */
+    private void home(ShSite site, ShFolder root, ShPostType type, Instant when) {
+        String id = UUID.randomUUID().toString();
+        for (ShPostState state : List.of(ShPostState.DRAFT, ShPostState.PUBLISHED)) {
+            ShPostUnified post = new ShPostUnified();
+            post.setId(id);
+            post.setState(state);
+            post.setShSite(site);
+            post.setShFolder(root);
+            post.setShPostType(type);
+            post.setTitle("Home");
+            post.setFurl("/");
+            post.setDate(when);
+            post.setPublished(state == ShPostState.PUBLISHED);
+            post.setData("{\"headline\":\"Home\",\"body\":\"<p>Welcome</p>\"}");
+            entityManager.persist(post);
+        }
     }
 
     private void article(ShSite site, ShFolder folder, ShPostType type, Instant when,

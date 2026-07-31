@@ -533,6 +533,11 @@ class ShAgentSourceAttributionTest {
             attr(type, widget("Text"), "headline", 1, true);
             attr(type, widget("HTML Editor"), "body", 2, false);
 
+            // SH334 — a finished site has a front door. Without it the lint reports `no-home-page`
+            // on every site-scoped verify here, which is a paragraph about the *site* landing in a
+            // measurement of what one idea saves on one task.
+            home(site, root, type);
+
             for (int i = 1; i <= POSTS; i++) {
                 String href = i == 3 ? "/blog/does-not-exist" : "/blog/post-1";
                 article(site, blog, type, i,
@@ -564,6 +569,8 @@ class ShAgentSourceAttributionTest {
             scaleBlog.setOwner("admin");
             entityManager.persist(scaleBlog);
             scaleFolderId = scaleBlog.getId();
+
+            home(scaleSite, scaleRoot, type);
 
             for (int i = 1; i <= SCALE_POSTS; i++) {
                 String href = i == 3 ? "/blog/does-not-exist" : "/blog/post-1";
@@ -610,6 +617,28 @@ class ShAgentSourceAttributionTest {
         attr.setShWidget(widget);
         attr.setShPostType(type);
         entityManager.persist(attr);
+    }
+
+    /**
+     * A site's front door (SH334), outside {@code postIds} so the baseline still walks exactly the
+     * posts these ratios are about.
+     */
+    private void home(ShSite site, ShFolder root, ShPostType type) {
+        String id = UUID.randomUUID().toString();
+        for (ShPostState state : List.of(ShPostState.DRAFT, ShPostState.PUBLISHED)) {
+            ShPostUnified post = new ShPostUnified();
+            post.setId(id);
+            post.setState(state);
+            post.setShSite(site);
+            post.setShFolder(root);
+            post.setShPostType(type);
+            post.setTitle("Home");
+            post.setFurl("/");
+            post.setDate(WHEN);
+            post.setPublished(state == ShPostState.PUBLISHED);
+            post.setData("{\"headline\":\"Home\",\"body\":\"<p>Welcome</p>\"}");
+            entityManager.persist(post);
+        }
     }
 
     private void article(ShSite site, ShFolder folder, ShPostType type, int index, String body) {

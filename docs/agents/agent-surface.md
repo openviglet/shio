@@ -160,6 +160,15 @@ the CDA + console services (law P10) and holds no business logic of its own.
   (SH171); the **single**-address form still 404s. The read path is
   `noRollbackFor = ShTeachingException.class` for that reason — catching a teaching exception
   inside a read transaction otherwise blows up at commit.
+- **`no-home-page` — a site that publishes and has no page at `/` (SH334)**, a `routes` **warning**
+  carrying the `site:` address. The symptom was the Universal Editor opening on a 404 (it frames
+  `ShSiteFrontEnd`'s answer, the site root), and the fix was deliberately *not* a page picker:
+  **a page at furl `/` is a convention nothing enforced, defaulted or reported.** The SH71 starter
+  and the fixtures have one, which is why it never surfaced; an agent following SH79 has no reason
+  to create one. Warning, because a site addressed entirely from an external router is a design and
+  not a defect. **Skipped when the site publishes nothing** (no front door is missing from a
+  building with no rooms) and **skipped on a scoped run** — every other `routes` rule is about a
+  subject the run looked at, and this one is about the site.
 - `GET /agent/verify` — the content-side `tsc` (SH99/SH100). `checks=content,routes,diagnostics`
   (all by default), `site=`, `limit=`. **`ok` is false only for an *error*** — a warning is
   something the CMS cannot prove from inside itself (an empty folder, a link that may be a

@@ -387,4 +387,57 @@ class ShAgentVerifyTest {
         assertThat(verify("content").findings())
                 .allSatisfy(finding -> assertThat(finding.check()).isEqualTo("content"));
     }
+
+    // --- SH334: a site's front door ---
+
+    /**
+     * This class's own fixture is the case: every page it publishes lives under
+     * {@code /verify-xxxx/…} and none is at {@code /}. That was true before SH334 and nothing
+     * said so — which is the whole finding, since an agent following SH79 has no reason to
+     * create a home page and the convention was never written down anywhere a machine reads.
+     */
+    @Test
+    @DisplayName("SH334: a site that publishes pages and has none at '/' is warned, with its address")
+    void aSiteWithNoHomePageIsWarned() {
+        List<Finding> found = findings("routes", "no-home-page");
+
+        assertThat(found).singleElement().satisfies(finding -> {
+            assertThat(finding.address()).isEqualTo("site:" + siteName);
+            assertThat(finding.severity())
+                    .as("a site addressed entirely from an external front end's router is a "
+                            + "legitimate design, so this cannot fail the gate (SH99)")
+                    .isEqualTo(ShAgentReport.WARNING);
+            assertThat(finding.fix()).contains("post.move").contains("\"to\":\"post:" + siteName + "/\"");
+        });
+    }
+
+    @Test
+    @DisplayName("SH334: a site with a page at '/' is not warned")
+    void aSiteWithAHomePageIsNotWarned() {
+        String home = "sh334-" + UUID.randomUUID().toString().substring(0, 8);
+        run(new Op(ShAgentBatchService.SITE_UPSERT, "site:" + home, null, null, null),
+                new Op(ShAgentBatchService.POST_UPSERT, "post:" + home + "/", postTypeName,
+                        "/", data(Map.of("headline", "Home"))),
+                new Op(ShAgentBatchService.POST_PUBLISH, "post:" + home + "/", null, null, null));
+
+        assertThat(shAgentVerifyService.verify(home, "routes", null).findings())
+                .filteredOn(finding -> "no-home-page".equals(finding.rule()))
+                .isEmpty();
+    }
+
+    /**
+     * The half that keeps the rule from firing at every agent halfway through a build: a site
+     * with nothing published has no front door missing, and being told off for the state every
+     * build passes through is how a warning becomes one people silence.
+     */
+    @Test
+    @DisplayName("SH334: a site that publishes nothing is not warned")
+    void aSiteThatPublishesNothingIsNotWarned() {
+        String quiet = "sh334-quiet-" + UUID.randomUUID().toString().substring(0, 8);
+        run(new Op(ShAgentBatchService.SITE_UPSERT, "site:" + quiet, null, null, null));
+
+        assertThat(shAgentVerifyService.verify(quiet, "routes", null).findings())
+                .filteredOn(finding -> "no-home-page".equals(finding.rule()))
+                .isEmpty();
+    }
 }
