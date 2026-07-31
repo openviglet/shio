@@ -1436,14 +1436,29 @@ public class ShAgentVerifyService {
      * not what the content says it is — so it belongs in the report an agent already
      * reads rather than in a second call it has to remember to make. The detailed view
      * (first/last seen, counts) stays on {@code GET /api/v2/agent/diagnostics}.</p>
+     *
+     * <h2>Always a warning, never an error (SH330)</h2>
+     *
+     * <p>These findings were {@code error} for every kind but {@code transform}, which made
+     * {@code shio verify} exit 1 <b>forever</b> on any instance that had ever returned a 5xx:
+     * SH144 made the record durable and there is no verb to resolve one, so a single past
+     * incident was a permanently red gate on content that is provably clean. That was observed
+     * directly — the SH325 500 held {@code ok:false} on a healthy site until
+     * {@code checks=content,routes} was named explicitly, which is a gate people bypass.</p>
+     *
+     * <p>The durability is right; the severity was not. SH99's rule decides it: {@code ok} is
+     * false only for what the CMS can prove from inside itself <em>now</em>, and an incident is
+     * by construction something that already happened — the instance cannot tell from the row
+     * whether the cause still exists. That is the definition of a warning, and {@code warnings}
+     * is on the payload for a caller that wants to gate on them anyway. SH142's baseline is not
+     * the escape hatch either: it keys on {@code (rule, address, field)} and these findings carry
+     * no address.</p>
      */
     private void diagnostics(List<Finding> findings) {
         String check = ShAgentCheck.DIAGNOSTICS.wireName();
         for (ShAgentIncidentLog.Incident incident : incidentLog.recent(0)) {
             String repeats = incident.count() > 1 ? " (x" + incident.count() + ")" : "";
-            findings.add(new Finding(check, incident.kind().wireName(),
-                    incident.kind() == ShAgentIncidentLog.Kind.TRANSFORM
-                            ? ShAgentReport.WARNING : ShAgentReport.ERROR,
+            findings.add(Finding.warning(check, incident.kind().wireName(),
                     null,
                     incident.subject(),
                     incident.message() + repeats,

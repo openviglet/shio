@@ -144,6 +144,11 @@ the CDA + console services (law P10) and holds no business logic of its own.
   something the CMS cannot prove from inside itself (an empty folder, a link that may be a
   front-end route), and a gate that failed on those is a gate people bypass. Every finding
   carries an SH79 address and a `fix`. `found` vs `findings` makes a cut visible (SH138's rule).
+  **A `diagnostics` finding is always a `warning` (SH330)** — never an error, whatever the kind.
+  SH144 made the incident record durable and nothing resolves one, so an *error* there made a
+  single past 5xx fail `shio verify` **forever** on content that is provably clean. `ok` is a
+  statement about what the CMS can prove from inside itself *now*, and an incident already
+  happened; a caller that wants to gate on them reads `warnings`.
   **`folder=` / `address=` / `since=` scope the run** (SH143) — a subtree, comma-separated
   `post:` addresses, or an SH88 cursor; they union rather than intersect. A scoped run sets
   `partial` and describes itself in `scope` (both **absent** on a full pass), because `ok` over a

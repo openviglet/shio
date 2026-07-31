@@ -2848,20 +2848,6 @@ on `POST /api/v2/agent/batch`. P6 says errors are instructions; this one instruc
 something that does not exist, which is worse than saying nothing, and it is what a shared resolver
 costs when only one of its callers was considered.
 
-### XVI.24 A content gate reporting operational history (SH330)
-
-`checks=diagnostics` is in the default set and turns an SH144 incident into a verify **error**. There
-is no verb to acknowledge or resolve one, so any instance that has ever returned a 5xx fails
-`shio verify` — which exits 1 on an error — **forever**, after the cause is fixed. This was observed
-directly: the SH325 500 kept `ok:false` on a site whose content was clean, and `checks=content,routes`
-had to be named explicitly to see the truth.
-
-The durability is right (SH144's promise is that an empty report means nothing has failed, not that
-nothing is remembered). What is wrong is the **severity**, and SH99's own rule settles it: `ok` is
-false only for what the CMS can prove from inside itself *now*. A past incident is not that — it is
-the definition of a warning. SH142's baseline is not the escape hatch either: it keys on
-`(rule, address, field)` and an `api-error` finding carries no address.
-
 ### XVI.29 One vocabulary, because the agent guessed wrong three times (SH331, SH332)
 
 Four wrong calls in this run, none of them a random guess — each was a rule the agent applied

@@ -172,12 +172,44 @@ class ShAgentDiagnosticsTest {
 
         ShAgentReport report = shAgentVerifyService.verify(null, "diagnostics", null);
 
-        assertThat(report.ok()).isFalse();
         assertThat(report.findings()).singleElement().satisfies(finding -> {
             assertThat(finding.check()).isEqualTo("diagnostics");
             assertThat(finding.rule()).isEqualTo("webhook");
-            assertThat(finding.severity()).isEqualTo(ShAgentReport.ERROR);
+            assertThat(finding.severity()).isEqualTo(ShAgentReport.WARNING);
         });
+    }
+
+    /**
+     * SH330 — the property is the exit code, not the row.
+     *
+     * <p>The record is durable (SH144) and there is no verb to resolve one, so an
+     * <em>error</em> here meant any instance that had ever answered a 5xx failed
+     * {@code shio verify} forever, on content that is provably clean. SH99's rule settles the
+     * severity: {@code ok} is false only for what the CMS can prove from inside itself
+     * <em>now</em>, and a past incident is not that.</p>
+     *
+     * <p>Asserted over <b>every</b> kind rather than the one that bit, because the previous
+     * shape singled {@code transform} out and the next kind added would have inherited
+     * {@code error} by default.</p>
+     */
+    @Test
+    @DisplayName("SH330: a past incident is a warning, so a fixed cause does not stay red forever")
+    void aPastIncidentNeverFailsTheGate() {
+        for (ShAgentIncidentLog.Kind kind : ShAgentIncidentLog.Kind.values()) {
+            incidentLog.record(kind, "subject-" + kind.wireName(), "it failed", null);
+        }
+
+        ShAgentReport report = shAgentVerifyService.verify(null, "diagnostics", null);
+
+        assertThat(report.ok())
+                .as("""
+                        the CI gate a curator would otherwise learn to bypass by naming \
+                        checks=content,routes explicitly""")
+                .isTrue();
+        assertThat(report.errors()).isZero();
+        assertThat(report.warnings()).isEqualTo(ShAgentIncidentLog.Kind.values().length);
+        assertThat(report.findings())
+                .allSatisfy(finding -> assertThat(finding.severity()).isEqualTo(ShAgentReport.WARNING));
     }
 
     @Test
