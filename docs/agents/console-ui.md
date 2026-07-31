@@ -326,4 +326,28 @@ cannot double as an identity.
 - Categories: common, content, admin, config, dialog, login, nav, sidebar
 - Key naming: `namespace.camelCaseKey` (e.g., `content.fieldLabel`, `content.noFields`)
 - Interpolation: `{{variable}}` syntax (e.g., `content.modelPostType: "Model your {{title}} Post Type"`)
-- Always add keys to both `en` and `pt` locale files simultaneously
+- Always add keys to both `en` and `pt` locale files simultaneously — **guarded since SH333** by
+  `shio-react/test/i18n-parity.test.mjs`, which asserts both locales carry the same namespaces and
+  the same keys, in both directions. It was a convention with no instrument, and the failure it
+  prevents is quiet: i18next falls back to the key itself, so a missing `pt` entry renders
+  `universalEditor.bridgeAbsent` to a Portuguese curator and is invisible to whoever added it.
+
+## Universal Editor — the iframe has three states, not two (SH333)
+
+`visual-editor.page.tsx` frames the page and waits for SH185's `sh:ready`. It had no `onLoad`, no
+`onError` and no deadline, so the badge read `Connecting…` **forever** when the handshake could
+never complete — a curator opening the editor on a site with no page at `/` got that badge over a
+canvas showing the renderer's teaching 404, a body written for an API caller (its `fix` is a `GET`
+the reader cannot run). "Still loading" and "this will never load" were the same word.
+
+- **`BridgeState` is one field** (`waiting` / `ready` / `absent`), not a `ready` boolean beside a
+  second flag: two fields that must agree about one handshake can disagree about it.
+- **A timeout, never inspecting the framed document.** Same reason SH185 pins the origin instead of
+  posting to `"*"`: the editor must work against an external front end whose DOM this window cannot
+  read, so anything learned by inspection works for Shio's renderer and silently fails the case the
+  protocol exists for. The clock starts on `onLoad`, not when `src` is set — starting early is how a
+  slow site gets told it is broken.
+- **`absent` is amber and is not an error.** No bridge has two causes that look identical from here:
+  an error page, or a front end that ignores `?editor=true` — which SH185 calls the wanted
+  behaviour, degrading to a plain iframe. The banner keeps the frame visible and says editing is
+  unavailable; it never claims the site is broken.

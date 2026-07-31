@@ -13,6 +13,7 @@
   "universalEditor.changes": "changes",
   "universalEditor.connected": "Connected",
   "universalEditor.connecting": "Connecting...",
+  "universalEditor.notConnected": "Not connected",
   "universalEditor.noSelection": "No element selected",
   "universalEditor.noSelectionDescription": "Click on an element in the page to select it and edit its properties.",
   "universalEditor.allFields": "All Fields",
@@ -32,5 +33,7 @@
   "universalEditor.saveError": "Could not save changes",
   "universalEditor.selectToken": "Save token (WRITE scope)",
   "universalEditor.noWriteToken": "No WRITE-scope API token found. Create one in Admin → API Tokens to enable saving.",
-  "universalEditor.siteNotFound": "No site resolved for '{{key}}'. Pick one from the list."
+  "universalEditor.siteNotFound": "No site resolved for '{{key}}'. Pick one from the list.",
+  "universalEditor.bridgeAbsent": "This page did not hand back the editor bridge.",
+  "universalEditor.bridgeAbsentHint": "You can still see it, but nothing on it is editable. Either the page failed to load, or its front end does not support inline editing yet."
 }

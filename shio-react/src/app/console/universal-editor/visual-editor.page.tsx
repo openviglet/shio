@@ -39,6 +39,39 @@ function withEditorFlag(url: string): string {
   return url + (url.includes("?") ? "&" : "?") + "editor=true"
 }
 
+/**
+ * How long to wait for `sh:ready` after the frame has loaded (SH333).
+ *
+ * Generous on purpose. Being wrong in this direction costs a curator a few seconds of a badge
+ * that already says "connecting"; being wrong in the other tells somebody their working page is
+ * broken, which is the failure this task exists to remove rather than to invert.
+ */
+const HANDSHAKE_TIMEOUT_MS = 8000
+
+/** Where the SH185 handshake has got to (SH333). */
+type BridgeState = "waiting" | "ready" | "absent"
+
+/** The badge, per handshake state (SH333). Amber, not red: see `BRIDGE_LABEL`. */
+const BRIDGE_BADGE: Record<BridgeState, string> = {
+  waiting: "",
+  ready: "border-green-400 text-green-600",
+  absent: "border-amber-400 text-amber-600",
+}
+
+/**
+ * What the badge says. `absent` is deliberately **not** an error.
+ *
+ * No bridge has two causes that look identical from here and want opposite words: the page is an
+ * error page, or it is a front end that has never heard of `?editor=true` — which SH185 calls the
+ * behaviour the protocol wants, degrading to a plain iframe rather than failing. Telling the
+ * second curator their site is broken would be a worse defect than the one being fixed.
+ */
+const BRIDGE_LABEL: Record<BridgeState, string> = {
+  waiting: "universalEditor.connecting",
+  ready: "universalEditor.connected",
+  absent: "universalEditor.notConnected",
+}
+
 export default function VisualEditorPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -47,7 +80,16 @@ export default function VisualEditorPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   const [src, setSrc] = useState<string>("")
-  const [ready, setReady] = useState(false)
+  // SH333 — the three states this used to collapse into two. The frame had no `onLoad` and no
+  // `onError`, and the SH185 handshake had no deadline, so "still loading" and "this will never
+  // load" were the same word: a curator opening the editor on a site with no page at `/` read
+  // `Conectando…` forever, over a canvas showing the renderer's 404 JSON.
+  //
+  // One state rather than a `ready` boolean beside it: two fields that must agree about the same
+  // handshake are two fields that can disagree about it.
+  const [bridge, setBridge] = useState<BridgeState>("waiting")
+  const [frameLoaded, setFrameLoaded] = useState(false)
+  const ready = bridge === "ready"
   const [editMode, setEditMode] = useState(true)
   const [mobile, setMobile] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -134,7 +176,7 @@ export default function VisualEditorPage() {
       if (!msg || typeof msg.type !== "string" || !msg.type.startsWith("sh:")) return
       switch (msg.type) {
         case "sh:ready":
-          setReady(true)
+          setBridge("ready")
           break
         case "sh:element-selected":
           setSelected(msg.data as SelectedElement)
@@ -154,6 +196,23 @@ export default function VisualEditorPage() {
     window.addEventListener("message", onMessage)
     return () => window.removeEventListener("message", onMessage)
   }, [frameOrigin])
+
+  /**
+   * SH333 — the handshake gets a deadline.
+   *
+   * Deliberately a timeout rather than reading the framed document, for the same reason SH185
+   * pins the origin instead of posting to `"*"`: the editor has to work against an external
+   * front end whose DOM this window cannot touch, so anything learned by inspection would work
+   * for Shio's own renderer and silently not for the case the protocol exists to serve.
+   *
+   * The deadline starts when the frame reports it loaded, not when `src` is set — the two differ
+   * by however long the page takes, and starting early is how a slow site gets told it is broken.
+   */
+  useEffect(() => {
+    if (bridge !== "waiting" || !frameLoaded) return
+    const timer = window.setTimeout(() => setBridge("absent"), HANDSHAKE_TIMEOUT_MS)
+    return () => window.clearTimeout(timer)
+  }, [bridge, frameLoaded])
 
   // Push the current mode to the iframe whenever it changes (once ready).
   useEffect(() => {
@@ -221,9 +280,17 @@ export default function VisualEditorPage() {
   }
 
   const refresh = () => {
-    setReady(false)
+    setBridge("waiting")
+    setFrameLoaded(false)
     if (iframeRef.current) iframeRef.current.src = src
   }
+
+  // A new destination is a new handshake: without this, navigating from a page that answered to
+  // one that does not would keep reporting `Connected` against a frame that never spoke.
+  useEffect(() => {
+    setBridge("waiting")
+    setFrameLoaded(false)
+  }, [src])
 
   return (
     <div className="flex flex-col h-screen">
@@ -243,8 +310,8 @@ export default function VisualEditorPage() {
           {changes.size > 0 && (
             <Badge variant="secondary">{changes.size} {t("universalEditor.changes")}</Badge>
           )}
-          <Badge variant="outline" className={ready ? "border-green-400 text-green-600" : ""}>
-            {ready ? t("universalEditor.connected") : t("universalEditor.connecting")}
+          <Badge variant="outline" className={BRIDGE_BADGE[bridge]}>
+            {t(BRIDGE_LABEL[bridge])}
           </Badge>
         </div>
         <div className="flex items-center gap-2">
@@ -272,7 +339,7 @@ export default function VisualEditorPage() {
 
       {/* Editor body: iframe + properties panel */}
       <div className="flex flex-1 min-h-0">
-        <div className="flex-1 flex items-stretch justify-center bg-muted/30 overflow-auto p-4">
+        <div className="relative flex-1 flex items-stretch justify-center bg-muted/30 overflow-auto p-4">
           {siteError && (
             <div className="flex flex-col items-center justify-center gap-3 text-center">
               <p className="max-w-md text-sm text-muted-foreground">{siteError}</p>
@@ -286,12 +353,39 @@ export default function VisualEditorPage() {
               ref={iframeRef}
               src={src}
               title={t("universalEditor.title")}
+              onLoad={() => setFrameLoaded(true)}
+              // A cross-origin error page still fires `load`, so this is the narrow case (the
+              // frame could not be navigated at all) rather than the common one. The timeout
+              // above is what catches a page that loaded and handed back no bridge.
+              onError={() => { setFrameLoaded(true); setBridge("absent") }}
               className={`bg-white shadow-sm border ${mobile ? "w-[390px]" : "w-full"} h-full`}
             />
           )}
           {!siteError && !src && (
             <div className="flex items-center justify-center text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin mr-2" /> {t("universalEditor.connecting")}
+            </div>
+          )}
+          {/*
+            SH333 — said in the curator's terms, over the page rather than instead of it. The frame
+            keeps whatever it is showing: if that is the renderer's teaching 404, it is at least no
+            longer the only thing on screen, and if it is a working page served by a front end with
+            no bridge, nothing has been hidden from somebody who came here to look at it.
+          */}
+          {!siteError && bridge === "absent" && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 max-w-xl rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/40 px-4 py-3 shadow-sm">
+              <p className="text-sm font-medium">{t("universalEditor.bridgeAbsent")}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t("universalEditor.bridgeAbsentHint")}
+              </p>
+              <div className="flex gap-2 mt-2">
+                <Button variant="outline" size="sm" onClick={refresh}>
+                  <RefreshCw className="h-4 w-4 mr-1" /> {t("universalEditor.refresh")}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.UNIVERSAL_EDITOR)}>
+                  {t("universalEditor.selectSite")}
+                </Button>
+              </div>
             </div>
           )}
         </div>
