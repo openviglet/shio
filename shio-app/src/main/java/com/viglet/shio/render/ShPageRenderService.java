@@ -183,7 +183,8 @@ public class ShPageRenderService {
                 layout.getTitle(),
                 slots,
                 state,
-                page.getId());
+                page.getId(),
+                site.getId());
     }
 
     /**
@@ -558,8 +559,14 @@ public class ShPageRenderService {
      * regions did this page actually use" is the question SH193 makes answerable and the
      * one a curator asks the moment a page looks wrong.
      */
+    /**
+     * @param siteId SH336 — the preview controller needs it to look up this site's own URLs, and
+     *               asking the render service for the site again would be a second resolution of
+     *               something this call already holds
+     */
     public record ShRenderedPage(String html, String site, String url, String layout,
-                                 List<String> regions, ShPostState state, String postId) {
+                                 List<String> regions, ShPostState state, String postId,
+                                 String siteId) {
     }
 
     // --- teaching errors (SH80) ---------------------------------------------

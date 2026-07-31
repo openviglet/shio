@@ -67,10 +67,15 @@ const CONSOLE_ORIGIN = "https://console.example";
  * - **Replace `window.parent` first.** The script exits in its first four lines if it is not framed,
  *   and a top-level jsdom window is its own parent.
  */
-async function pageWithBridge(bodyHtml, { origin = CONSOLE_ORIGIN, bodyAttrs = "", early = false } = {}) {
+async function pageWithBridge(bodyHtml, {
+  origin = CONSOLE_ORIGIN, bodyAttrs = "", early = false,
+  // SH336 — the page's own address decides whether click interception can run at all, and the
+  // path index is what lets it tell a page from a real server path.
+  url = "https://site.example/about", previewPaths = null,
+} = {}) {
   const dom = new JSDOM(
     `<!doctype html><html><head></head><body ${bodyAttrs}>${bodyHtml}</body></html>`,
-    { runScripts: "dangerously", url: "https://site.example/about" });
+    { runScripts: "dangerously", url });
 
   const posted = [];
   Object.defineProperty(dom.window, "parent", {
@@ -85,6 +90,9 @@ async function pageWithBridge(bodyHtml, { origin = CONSOLE_ORIGIN, bodyAttrs = "
   const append = () => {
     const script = dom.window.document.createElement("script");
     if (origin !== null) script.setAttribute("data-shio-editor-origin", origin);
+    if (previewPaths !== null) {
+      script.setAttribute("data-shio-preview-paths", previewPaths.join("\n"));
+    }
     script.textContent = SOURCE;
     dom.window.document.body.appendChild(script);
   };
@@ -299,4 +307,84 @@ test("the affordances are scoped so preview leaves no trace", async () => {
     assert.ok(rule.includes('[data-shio-editing="true"]'),
       `every rule is scoped under the editing flag, or preview would not restore the page: ${rule}`);
   }
+});
+
+// --- SH336: the links the server pass never saw ---
+
+const PREVIEW_URL = "https://shio.example/preview/Demo/about";
+const PREVIEW_PATHS = ["/", "/contato", "/blog/post-1"];
+
+/** Clicks an element the way a reader does, and reports whether the default was prevented. */
+function click(window, element, init = {}) {
+  const event = new window.MouseEvent("click", {
+    bubbles: true, cancelable: true, button: 0, ...init,
+  });
+  element.dispatchEvent(event);
+  return event.defaultPrevented;
+}
+
+test("SH336: a JS-built link to a page of this site is redirected into the preview", async () => {
+  const { window, document } = await pageWithBridge(PAGE, {
+    bodyAttrs: BODY_ATTRS, url: PREVIEW_URL, previewPaths: PREVIEW_PATHS,
+  });
+  // Built after attach(), which is the whole reason this mechanism exists: a region's own
+  // JAVASCRIPT (SH248) can write a nav the server never had a chance to rewrite.
+  const nav = document.createElement("a");
+  nav.setAttribute("href", "/contato");
+  document.body.appendChild(nav);
+
+  assert.equal(click(window, nav), true,
+    "the reader's click has to be taken over, or it leaves the preview and 404s");
+});
+
+test("SH336: a real server path is left alone, so a file link still works", async () => {
+  const { window, document } = await pageWithBridge(PAGE, {
+    bodyAttrs: BODY_ATTRS, url: PREVIEW_URL, previewPaths: PREVIEW_PATHS,
+  });
+  const file = document.createElement("a");
+  file.setAttribute("href", "/file_source/abc/logo.png");
+  document.body.appendChild(file);
+
+  assert.equal(click(window, file), false,
+    "prefixing this would break a working file link to fix a broken page link - which is why "
+    + "the browser half is handed the same index the server used");
+});
+
+test("SH336: a modified click is the reader asking for a new tab, and is never hijacked", async () => {
+  const { window, document } = await pageWithBridge(PAGE, {
+    bodyAttrs: BODY_ATTRS, url: PREVIEW_URL, previewPaths: PREVIEW_PATHS,
+  });
+  const nav = document.createElement("a");
+  nav.setAttribute("href", "/contato");
+  document.body.appendChild(nav);
+
+  for (const modifier of ["metaKey", "ctrlKey", "shiftKey", "altKey"]) {
+    assert.equal(click(window, nav, { [modifier]: true }), false,
+      `${modifier}+click is open-in-new-tab, and taking it over is what the server pass was `
+      + "chosen to avoid doing");
+  }
+});
+
+test("SH336: with no index shipped, nothing is intercepted at all", async () => {
+  const { window, document } = await pageWithBridge(PAGE, {
+    bodyAttrs: BODY_ATTRS, url: PREVIEW_URL,
+  });
+  const nav = document.createElement("a");
+  nav.setAttribute("href", "/contato");
+  document.body.appendChild(nav);
+
+  assert.equal(click(window, nav), false,
+    "a site too large to ship its index loses the JS-built links and keeps everything else");
+});
+
+test("SH336: outside a preview - an external front end - nothing is intercepted", async () => {
+  const { window, document } = await pageWithBridge(PAGE, {
+    bodyAttrs: BODY_ATTRS, url: "https://site.example/about", previewPaths: PREVIEW_PATHS,
+  });
+  const nav = document.createElement("a");
+  nav.setAttribute("href", "/contato");
+  document.body.appendChild(nav);
+
+  assert.equal(click(window, nav), false,
+    "the editor works against a front end Shio does not serve, where /preview means nothing");
 });

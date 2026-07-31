@@ -69,12 +69,14 @@ public class ShRenderAPI {
     private final ShPageRenderService shPageRenderService;
     private final ShPreviewBanner banner;
     private final ShEditorBridge editorBridge;
+    private final ShPreviewLinks previewLinks;
 
     public ShRenderAPI(ShPageRenderService shPageRenderService, ShPreviewBanner banner,
-                       ShEditorBridge editorBridge) {
+                       ShEditorBridge editorBridge, ShPreviewLinks previewLinks) {
         this.shPageRenderService = shPageRenderService;
         this.banner = banner;
         this.editorBridge = editorBridge;
+        this.previewLinks = previewLinks;
     }
 
     /**
@@ -97,9 +99,17 @@ public class ShRenderAPI {
         // editor code at all: a script that makes elements contenteditable is not something to
         // leave lying in a page somebody might screenshot, and "off unless asked" is cheaper
         // to reason about than "on unless the parent says no".
+        // SH336 — internal links into the preview's own address space, before the banner so the
+        // banner's own markup is never a subject of the rewrite. Preview only: `/agent/render`
+        // does not come through here, so the SH101 digest cannot move.
+        String walkable = previewLinks.rewrite(rendered.html(), siteKey, rendered);
+        ShRenderedPage page = new ShRenderedPage(walkable, rendered.site(), rendered.url(),
+                rendered.layout(), rendered.regions(), rendered.state(), rendered.postId(),
+                rendered.siteId());
         String body = editor
-                ? editorBridge.inject(banner.wrap(rendered), originOf(request))
-                : banner.wrap(rendered);
+                ? editorBridge.inject(banner.wrap(page), originOf(request),
+                        previewLinks.pathsForBridge(rendered))
+                : banner.wrap(page);
         return ResponseEntity.ok()
                 .contentType(MediaType.TEXT_HTML)
                 // Store nothing, anywhere. See the class note: a freshness lifetime is how

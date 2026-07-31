@@ -63,6 +63,8 @@ public class ShEditorBridge {
     public static final String SCRIPT_PATH = "/preview/_shio/editor.js";
 
     private static final String ORIGIN_ATTR = "data-shio-editor-origin";
+    /** SH336 — this site's URLs, newline-separated, for click interception. */
+    private static final String PATHS_ATTR = "data-shio-preview-paths";
 
     private final String script;
 
@@ -92,12 +94,28 @@ public class ShEditorBridge {
      *                     cross-origin. The server is the only party that knows who asked.
      */
     public String inject(String html, String parentOrigin) {
+        return inject(html, parentOrigin, java.util.Set.of());
+    }
+
+    /**
+     * @param previewPaths SH336 — this site's own URLs, so the browser half can tell a page from
+     *                     a real server path like {@code /file_source/…} and intercept a click on
+     *                     the first without breaking the second. Empty disables interception,
+     *                     which is what a site too large to ship the index gets
+     */
+    public String inject(String html, String parentOrigin, java.util.Set<String> previewPaths) {
         Document document = Jsoup.parse(html);
         document.outputSettings().prettyPrint(false);
         Element tag = document.createElement("script");
         tag.attr("src", SCRIPT_PATH);
         tag.attr("defer", "defer");
         tag.attr(ORIGIN_ATTR, parentOrigin == null ? "" : parentOrigin);
+        if (previewPaths != null && !previewPaths.isEmpty()) {
+            // A plain newline-separated list rather than JSON: every value is a URL path, the
+            // reader is three lines of `split`, and a JSON blob in an attribute is a quoting
+            // question nobody needs to answer twice.
+            tag.attr(PATHS_ATTR, String.join("\n", previewPaths));
+        }
         document.body().appendChild(tag);
         return document.html();
     }

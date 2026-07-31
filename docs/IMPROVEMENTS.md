@@ -2890,57 +2890,6 @@ and it costs a round trip exactly when the caller is already committed to writin
 Measure before choosing: the manifest's own numbers are known (298 tokens for `include=features,limits`
 against 2343 for the whole document), so the cost of a section is answerable rather than arguable.
 
-### XVI.34 The preview renders a site nobody can walk through (SH336, SH337)
-
-`{{link}}` is `post.getFurl()` — `/contato` — and the page is served at `/preview/Demo/contato`. So
-every internal link in a previewed page points outside the preview: `GET /contato` is a **404**.
-`ShRenderAPI.pathWithin` uses the `/preview/<site>` prefix to *parse* an incoming path and nothing
-anywhere rewrites an outgoing one.
-
-Two things make this worse than a broken link. It compounds SH334 — the editor is an iframe on the
-preview, so with no page picker *and* no working links, exactly one page of a site is reachable in the
-Universal Editor, by any means. And **the lint cannot see it**: `verify`'s `routes` check resolves a
-link against content friendly URLs, where `/contato` is correct, because from the content's point of
-view nothing is wrong. The breakage lives in the preview's own address space, which no check models.
-
-The inversion is active rather than merely absent, which is the detail worth keeping: a hand-written
-`/preview/Demo/home` link — one that *works* in the preview — is reported `link-unresolved`, while
-every link that is actually broken passes. The instrument built to find broken links is pointing the
-wrong way for a previewed site. That is the same class as SH330 (a check reporting the wrong thing
-confidently) and it argues the same way: **a check that is wrong is worse than a check that is
-missing.**
-
-**Three mechanisms, three jobs, and the mistake would be picking one.** The proposal that came out of
-this run was a server-side DOM pass; the objection raised against it — that it would move SH101's
-digest and make preview and delivery incomparable — turned out to be **wrong on the facts**, and
-checking that is what clarified the division. `ShPreviewBanner.wrap` and `ShEditorBridge.inject` are
-applied only in `ShRenderAPI.page`, while `/agent/render` calls `ShPageRenderService.render` directly,
-so nothing injected at that layer is ever hashed.
-
-So the **server pass carries the common case** (a): it fixes 2018 content with no author change, and it
-is the only one of the three under which middle-click, "copy link address", a screenshot and a
-JS-disabled browser all still work. It must rewrite a root-relative URL *only* when it resolves to a
-furl in this site — `{{file_url}}` emits `/file_source/<id>/<name>`, a real server path, and SH141's
-declared `frontend-routes` are real too — which means reusing the index `routes` already builds rather
-than inventing a rule.
-
-**Click interception in the browser is the complement** (b), and it earns its place on one argument
-the server pass cannot answer: a region's SH248 `JAVASCRIPT` can build a nav at runtime, and no
-server-side pass will ever see those links. It belongs in `shio-editor.js`, which already ships JS and
-already walks the DOM — and deliberately **not** as a new always-on preview script, because *"an
-ordinary preview must ship no editor code at all"* is a rule with a real reason (a page somebody
-screenshots should not be running our JavaScript), and weakening it to fix link navigation would be
-paying a permanent cost for an occasional one.
-
-**And a helper answers what neither rewrite can** (c) — **SH337**. A canonical tag, an `og:url`, a
-sitemap entry, an absolute link in an email: none of those is a click, so nothing can be intercepted
-and nothing can be rewritten after the fact. They need the site's real origin, the server already has
-exactly one answer for it (`ShSiteFrontEnd`, SH184), and no template can ask. That gap exists whether
-or not the preview is ever made navigable, which is why it is its own task.
-
-What is *not* an option is making `{{link}}` preview-aware. It is content-facing, so the same field
-would mean two different things in two renders — the coupling SH187 spent a task splitting apart.
-
 ## XVI.59 Reachability has no instrument, and that is why the same defects keep coming back (SH338–SH341)
 
 This section is a strategy change, not a defect. It comes from asking why SH325–SH337 exist at all,

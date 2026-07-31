@@ -98,6 +98,8 @@ class ShPageRenderTest {
     @Autowired
     private ShPageRenderService shPageRenderService;
     @Autowired
+    private ShPreviewLinks previewLinks;
+    @Autowired
     private ShAgentBatchService shAgentBatchService;
     @Autowired
     private tools.jackson.databind.ObjectMapper objectMapper;
@@ -808,5 +810,72 @@ class ShPageRenderTest {
     private String escape(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"")
                 .replace("\n", "\\n").replace("\r", "");
+    }
+
+    // --- SH336: the preview is walkable ---
+
+    /**
+     * The rule is narrow on purpose, so the cases that must be left alone are the assertion.
+     *
+     * <p>Rewriting every root-relative href would break the page: {@code {{file_url}}} emits a real
+     * server path, SH141's declared front-end routes are real, and a document-relative link already
+     * resolves under the preview prefix. Only a path this site actually publishes is ours to move.</p>
+     */
+    @Test
+    @DisplayName("SH336: an internal link enters the preview's address space and nothing else moves")
+    void internalLinksAreRewrittenAndNothingElseIs() {
+        ShRenderedPage page = renderedPageOfMainFixture();
+
+        String html = previewLinks.rewrite("""
+                <a href="/">home</a>\
+                <a href="/file_source/abc/logo.png">a real server path</a>\
+                <a href="https://example.com/">absolute</a>\
+                <a href="//cdn.example.com/x">protocol-relative</a>\
+                <a href="/preview/Other/x">already in a preview</a>\
+                <a href="contato">document-relative</a>\
+                <a href="/nope">not a page of this site</a>""", siteName, page);
+
+        assertThat(html).contains("href=\"/preview/" + siteName + "/\"");
+        assertThat(html)
+                .as("everything the site does not publish is left exactly as the author wrote it")
+                .contains("href=\"/file_source/abc/logo.png\"")
+                .contains("href=\"https://example.com/\"")
+                .contains("href=\"//cdn.example.com/x\"")
+                .contains("href=\"/preview/Other/x\"")
+                .contains("href=\"contato\"")
+                .contains("href=\"/nope\"");
+    }
+
+    @Test
+    @DisplayName("SH336: rewriting twice changes nothing, so the pass is idempotent")
+    void theRewriteIsIdempotent() {
+        ShRenderedPage page = renderedPageOfMainFixture();
+        String once = previewLinks.rewrite("<a href=\"/\">home</a>", siteName, page);
+
+        assertThat(previewLinks.rewrite(once, siteName, page)).isEqualTo(once);
+    }
+
+    @Test
+    @DisplayName("SH336: a query string and a fragment survive the rewrite")
+    void theTailOfAUrlIsPreserved() {
+        ShRenderedPage page = renderedPageOfMainFixture();
+
+        assertThat(previewLinks.rewrite("<a href=\"/?q=1#top\">home</a>", siteName, page))
+                .as("SH259 will need `?q=`, and a rewrite that ate it would be a defect nobody "
+                        + "looked for until then")
+                .contains("href=\"/preview/" + siteName + "/?q=1#top\"");
+    }
+
+    /**
+     * Built rather than rendered: the unit under test is the rewrite, and rendering first would
+     * make the assertion depend on the fixture's layout as well.
+     */
+    private ShRenderedPage renderedPageOfMainFixture() {
+        String siteId = entityManager
+                .createQuery("select s.id from ShSite s where s.name = :name", String.class)
+                .setParameter("name", siteName)
+                .getSingleResult();
+        return new ShRenderedPage("", siteName, "/", "layout", List.of(),
+                ShPostState.DRAFT, "post-id", siteId);
     }
 }

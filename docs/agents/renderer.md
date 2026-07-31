@@ -101,6 +101,23 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `JavaBeanValueResolver`, under which a template handed an entity walks the persistence model.
   (3) **A refusing `TemplateLoader`**: the default reads the classpath, so `{{> application}}`
   in a layout — which is content — is a file read.
+- **The preview is walkable, by two mechanisms with two jobs (SH336)** — `{{link}}` is a bare furl
+  while the page is served at `/preview/<site>/…`, so every internal link 404'd, and **the lint
+  could not see it**: `routes` resolves against content URLs where `/contato` is correct. The
+  inversion was active — a hand-written `/preview/Demo/home` that *works* was reported
+  `link-unresolved` while every really broken link passed.
+  **(a) `ShPreviewLinks`, a server DOM pass** in `ShRenderAPI.page` only — `/agent/render` calls
+  `ShPageRenderService.render` directly, so nothing here is ever hashed and the SH101 digest cannot
+  move. It rewrites a root-relative `href` **only when the path is a URL this site publishes**,
+  reusing the index `routes` builds: `{{file_url}}`'s `/file_source/…` is a real server path, SH141's
+  declared front-end routes are real, and a document-relative `contato` already resolves. Query
+  string and fragment survive; the pass is idempotent; DRAFT previews match against drafts too.
+  **(b) click interception in `shio-editor.js`** for the nav a region's SH248 `JAVASCRIPT` builds at
+  runtime, which no server pass can see. Handed the *same* index via `data-shio-preview-paths` —
+  without it the browser cannot tell a page from a file. Never on a modified or non-primary click,
+  never on `target=…`, never outside `/preview/…` (the editor also runs against external front ends).
+  **What is not an option is making `{{link}}` preview-aware**: it is content-facing, so one field
+  would mean two things in two renders — the coupling SH187 spent a task splitting apart.
 - **Both render-model verbs are ops, not just routes (SH186, SH326)** — `render.provision` is
   addressless and idempotent; **`data.reconcile:true`** on it reaches SH289's repair, which had
   stayed HTTP-only, so an MCP client could *diagnose* an old instance (`untitled-template`) and

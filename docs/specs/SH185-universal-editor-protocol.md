@@ -189,6 +189,7 @@ functional test can see.
 | `data-shio-prop` | any element | `ShRegionComposer` | this element renders that field of the nearest `data-shio-post` |
 | `data-shio-preview` | the banner element | `ShPreviewBanner` | this node is Shio's own preview banner and not the page |
 | `data-shio-editor-origin` | the injected `<script>` | `ShEditorBridge` | the console origin the bridge may talk to (never `"*"`) |
+| `data-shio-preview-paths` | the injected `<script>` | `ShEditorBridge` | this site's own URLs, newline-separated, so a click on a **JS-built** link can be sent into the preview's address space while `/file_source/…` is left alone (SH336). Absent above `ShPreviewLinks.BRIDGE_URL_CAP`, which disables interception rather than shipping an index the page should not carry |
 
 **Three are defect markers** — `region-missing`, `region-unpublished`, `theme-missing` — and they
 are listed once in code, as `ShRegionComposer.DEFECT_MARKERS`, which is what the SH299 digest counts.

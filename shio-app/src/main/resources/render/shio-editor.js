@@ -143,11 +143,60 @@
     });
   }
 
+  /**
+   * SH336's second mechanism — the links the server pass never saw.
+   *
+   * The server rewrites every internal href in the HTML it renders. What it cannot rewrite is a
+   * nav a region's own JAVASCRIPT builds at runtime (SH248), because that markup does not exist
+   * when the page leaves the server. So a click is intercepted instead.
+   *
+   * It consults the same URL index the server used, handed over on the script tag: without it the
+   * browser cannot tell a page from `/file_source/<id>/<name>`, and prefixing the second would
+   * break a working file link to fix a broken page link. No index — a site too large to ship one —
+   * means no interception, which loses only the JS-built links.
+   */
+  var PREVIEW_PATHS = (function () {
+    var raw = script && script.getAttribute("data-shio-preview-paths");
+    var known = {};
+    if (!raw) return null;
+    raw.split("\n").forEach(function (path) {
+      if (path) known[path] = true;
+    });
+    return known;
+  })();
+
+  /** `/preview/<site>`, or "" when this page is not being served under one (external mode). */
+  function previewBase() {
+    var parts = window.location.pathname.split("/");
+    return parts.length > 2 && parts[1] === "preview" ? "/preview/" + parts[2] : "";
+  }
+
+  function onDocumentClick(event) {
+    // A field click is the editor's own and is handled (and prevented) elsewhere; a modified or
+    // non-primary click is the reader asking for a new tab, a download or a menu, and hijacking
+    // those is exactly what the server pass was chosen to avoid doing.
+    if (!PREVIEW_PATHS || event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    var anchor = event.target && event.target.closest ? event.target.closest("a[href]") : null;
+    if (!anchor || anchor.getAttribute("target")) return;
+    var href = anchor.getAttribute("href");
+    if (!href || href.charAt(0) !== "/" || href.charAt(1) === "/") return;
+    if (href.indexOf("/preview/") === 0) return;
+    var cut = href.search(/[?#]/);
+    var path = cut < 0 ? href : href.slice(0, cut);
+    var base = previewBase();
+    if (!base || !PREVIEW_PATHS[path]) return;
+    event.preventDefault();
+    window.location.href = base + href;
+  }
+
   function attach() {
     document.querySelectorAll(FIELD).forEach(function (el) {
       el.addEventListener("input", onFieldInput);
       el.addEventListener("click", onFieldClick);
     });
+    // Delegated, and on the document: the whole point is links that do not exist yet.
+    document.addEventListener("click", onDocumentClick);
     injectStyles();
     setMode("edit");
     send("sh:ready", { postId: PAGE_POST, url: window.location.pathname });
