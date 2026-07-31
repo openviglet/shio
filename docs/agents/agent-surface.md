@@ -49,6 +49,15 @@ the CDA + console services (law P10) and holds no business logic of its own.
   than none). It carries **no allow-list branch**, because an empty readable list means both "a
   scoped token" and "a new instance", which want opposite advice; scope is `requireUnscopedCredential`'s
   message to give.
+  **`site.upsert` binds a post-type to a layout, per key (SH328)** — `data.postTypeLayout` is
+  `{"<post-type>": "<PageLayout title>"}`, and it is the **only** op that can write the one edge
+  that makes a site render. Two surfaces already instructed the write (SH272's conventions line,
+  SH298's `unused-layout` fix) while `ShSiteWriteService.FILLABLE` was three scalars, so an agent
+  could build theme, regions, layout and pages and then not connect them. SH184's rule, one
+  field-type wider: an unbound post-type is **filled**, a bound one is **kept and reported**, and
+  a key is never a whole-map replace — which is what the console's `PUT /api/v2/site/{id}` is,
+  nulling the map when the field is omitted. String values only, matching what the renderer
+  reads: the SH193 array form is skipped, so a binding cannot look written and render nothing.
   **`?digest=true` closes the *appearance* loop the same way (SH194)** — the two SH187 hashes for
   each page the run **affected**, which for a write to a shared layout or region is not the address
   written but every page that renders through it (SH193's graph; this is that graph's first consumer

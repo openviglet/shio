@@ -608,9 +608,11 @@ public class ShAgentBatchService {
                 requested.put(field, value);
             }
         }
+        // SH328 — the one edge that makes a site render, and the only op that can write it.
+        Map<String, String> bindings = bindingsOf(op.data());
         ShSiteWriteService.ShSiteFill fill = session.dryRun
-                ? shSiteWriteService.planFill(site, requested)
-                : shSiteWriteService.fillEmpty(site, requested, session.actor);
+                ? shSiteWriteService.planFill(site, requested, bindings)
+                : shSiteWriteService.fillEmpty(site, requested, bindings, session.actor);
         if (!fill.changed()) {
             // Naming what was kept matters: without it, "I asked for a new url and got noop"
             // reads as the op having ignored the request rather than having protected a value
@@ -625,6 +627,33 @@ public class ShAgentBatchService {
                 + (fill.kept().isEmpty() ? ""
                         : "; kept the existing " + String.join(", ", fill.kept()));
         return session.change(op, address, Change.UPDATE, detail, site.getId());
+    }
+
+    /**
+     * SH328 — {@code data.postTypeLayout} as post-type → layout title.
+     *
+     * <p>String values only, matching what the renderer reads: a non-string is the SH193 array
+     * form, and accepting it here would write a shape {@code ShPageRenderService} skips, which is
+     * a binding that looks written and renders nothing. A malformed value is simply not a
+     * binding — {@code unused-layout} still reports the layout nobody bound, so the defect stays
+     * visible where a caller already looks.</p>
+     */
+    private static Map<String, String> bindingsOf(JsonNode data) {
+        if (data == null || !data.isObject()) {
+            return Map.of();
+        }
+        JsonNode node = data.get(ShSiteWriteService.LAYOUT_FIELD);
+        if (node == null || !node.isObject()) {
+            return Map.of();
+        }
+        Map<String, String> bindings = new LinkedHashMap<>();
+        for (String key : node.propertyNames()) {
+            JsonNode value = node.get(key);
+            if (value != null && value.isString() && !value.stringValue().isBlank()) {
+                bindings.put(key, value.stringValue());
+            }
+        }
+        return bindings;
     }
 
     /** A single string field of an op's {@code data}, or {@code null}. */

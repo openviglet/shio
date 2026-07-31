@@ -11,6 +11,7 @@ package com.viglet.shio.api.site;
 import java.text.Normalizer;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +24,10 @@ import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Write-side logic for console site management. Creating a site also
@@ -37,12 +42,15 @@ public class ShSiteWriteService {
     private final ShSiteRepository shSiteRepository;
     private final ShFolderRepository shFolderRepository;
     private final ShBootstrapSiteProvider bootstrapSiteProvider;
+    private final ObjectMapper objectMapper;
 
     public ShSiteWriteService(ShSiteRepository shSiteRepository, ShFolderRepository shFolderRepository,
-                              ShBootstrapSiteProvider bootstrapSiteProvider) {
+                              ShBootstrapSiteProvider bootstrapSiteProvider,
+                              ObjectMapper objectMapper) {
         this.shSiteRepository = shSiteRepository;
         this.shFolderRepository = shFolderRepository;
         this.bootstrapSiteProvider = bootstrapSiteProvider;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -134,12 +142,45 @@ public class ShSiteWriteService {
      */
     @Transactional
     public ShSiteFill fillEmpty(ShSite site, Map<String, String> values, String modifier) {
-        ShSiteFill fill = planFill(site, values);
+        return applyFill(site, values, Map.of(), modifier);
+    }
+
+    /**
+     * As {@link #fillEmpty(ShSite, Map, String)}, also binding post-types to layouts (SH328).
+     *
+     * @param bindings post-type name → {@code PageLayout} title; entries only, never a
+     *                 replacement of the whole map
+     */
+    @Transactional
+    public ShSiteFill fillEmpty(ShSite site, Map<String, String> values,
+                                Map<String, String> bindings, String modifier) {
+        return applyFill(site, values, bindings, modifier);
+    }
+
+    // Not annotated, and both entry points above call it: a self-invocation would bypass the
+    // proxy, so an annotation here would be decoration rather than a transaction.
+    private ShSiteFill applyFill(ShSite site, Map<String, String> values,
+                                 Map<String, String> bindings, String modifier) {
+        ShSiteFill fill = plan(site, values, bindings);
         if (!fill.changed()) {
             return fill;
         }
+        Map<String, String> merged = layoutBindings(site);
+        boolean bound = false;
         for (String field : fill.filled()) {
-            write(site, field, values.get(field));
+            String key = layoutKeyOf(field);
+            if (key == null) {
+                write(site, field, values.get(field));
+            } else {
+                merged.put(key, bindings.get(key));
+                bound = true;
+            }
+        }
+        if (bound) {
+            // Serialized from the merged map rather than by editing the raw string: the column
+            // may hold the SH193 array form for another key, and a textual splice would make
+            // that unreadable while looking like it worked.
+            site.setPostTypeLayout(objectMapper.writeValueAsString(merged));
         }
         site.setModifier(modifier);
         site.setModifiedDate(Instant.now());
@@ -158,6 +199,18 @@ public class ShSiteWriteService {
      */
     @Transactional(readOnly = true)
     public ShSiteFill planFill(ShSite site, Map<String, String> values) {
+        return plan(site, values, Map.of());
+    }
+
+    /** What {@link #fillEmpty(ShSite, Map, Map, String)} would do, writing nothing (SH328). */
+    @Transactional(readOnly = true)
+    public ShSiteFill planFill(ShSite site, Map<String, String> values,
+                               Map<String, String> bindings) {
+        return plan(site, values, bindings);
+    }
+
+    private ShSiteFill plan(ShSite site, Map<String, String> values,
+                            Map<String, String> bindings) {
         List<String> filled = new ArrayList<>();
         List<String> kept = new ArrayList<>();
         for (String field : FILLABLE) {
@@ -172,7 +225,77 @@ public class ShSiteWriteService {
                 kept.add(field);
             }
         }
+        planBindings(site, bindings, filled, kept);
         return new ShSiteFill(List.copyOf(filled), List.copyOf(kept));
+    }
+
+    /**
+     * SH328 — the same rule one field-type wider: a post-type with no binding is filled, one that
+     * already names a layout is kept and reported.
+     *
+     * <p>Per key, so binding a second post-type never disturbs the first. The console's
+     * {@code PUT /api/v2/site/{id}} is a whole-object replace that nulls this map when the field
+     * is omitted, and that is exactly the hazard this op exists to avoid.</p>
+     */
+    private void planBindings(ShSite site, Map<String, String> bindings,
+                              List<String> filled, List<String> kept) {
+        Map<String, String> current = layoutBindings(site);
+        for (Map.Entry<String, String> entry : bindings.entrySet()) {
+            String requested = entry.getValue();
+            if (requested == null || requested.isBlank()) {
+                continue;
+            }
+            String existing = current.get(entry.getKey());
+            if (existing == null || existing.isBlank()) {
+                filled.add(LAYOUT_FIELD + "." + entry.getKey());
+            } else if (!existing.equals(requested)) {
+                kept.add(LAYOUT_FIELD + "." + entry.getKey());
+            }
+        }
+    }
+
+    /** The reported name of a binding, e.g. {@code postTypeLayout.Article}. */
+    public static final String LAYOUT_FIELD = "postTypeLayout";
+
+    /** The post-type behind a reported {@code postTypeLayout.<name>}, or {@code null}. */
+    private static String layoutKeyOf(String field) {
+        String prefix = LAYOUT_FIELD + ".";
+        return field.startsWith(prefix) ? field.substring(prefix.length()) : null;
+    }
+
+    /**
+     * The site's post-type → layout-title map, mutable and in file order.
+     *
+     * <p>Only string values, which is {@code ShPageRenderService.bindingsOf}'s rule and for its
+     * reason: a non-string value is the SH193 array form, built once and never used, and reading
+     * it half-way would bind a page to a layout nobody chose. A key skipped here is a key this op
+     * reports as fillable — honest, since the renderer does not see it either.</p>
+     */
+    private Map<String, String> layoutBindings(ShSite site) {
+        Map<String, String> bindings = new LinkedHashMap<>();
+        String raw = site.getPostTypeLayout();
+        if (raw == null || raw.isBlank()) {
+            return bindings;
+        }
+        try {
+            JsonNode node = objectMapper.readTree(raw);
+            if (node == null || !node.isObject()) {
+                return bindings;
+            }
+            for (String key : node.propertyNames()) {
+                JsonNode value = node.get(key);
+                if (value != null && value.isString()) {
+                    bindings.put(key, value.stringValue());
+                }
+            }
+        } catch (JacksonException unreadable) {
+            // An unreadable column reads as "no bindings", so every key plans as a fill. That is
+            // the renderer's own behaviour (SH270 records the incident there, on the path that
+            // actually renders); repairing it from the write side would replace a value somebody
+            // set, which is the one thing this method exists not to do.
+            return new LinkedHashMap<>();
+        }
+        return bindings;
     }
 
     /**

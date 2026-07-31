@@ -599,8 +599,77 @@ class ShAgentBatchTest {
                 .isEqualTo(Change.UPDATE);
     }
 
+    // --- SH328: the one edge that makes a site render ---
+
+    /**
+     * The gap this closes: an agent could build the theme, the regions, the layout and the pages,
+     * and then not bind them, so nothing rendered. Both surfaces that instruct the write
+     * (SH272's conventions line, SH298's `unused-layout` fix) named an op that did not exist.
+     */
+    @Test
+    @DisplayName("SH328: site.upsert binds a post-type to a layout")
+    void siteUpsertBindsAPostTypeToALayout() {
+        String name = "sh328-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, siteOp(name, null));
+
+        Change change = only(run(false, siteOp(name, bindings(Map.of("Article", "Article Layout")))));
+
+        assertThat(change.action()).isEqualTo(Change.UPDATE);
+        assertThat(change.detail()).contains("postTypeLayout.Article");
+    }
+
+    @Test
+    @DisplayName("SH328: a second binding does not disturb the first")
+    void bindingASecondPostTypeKeepsTheFirst() {
+        String name = "sh328-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, siteOp(name, null));
+        run(false, siteOp(name, bindings(Map.of("Article", "Article Layout"))));
+
+        run(false, siteOp(name, bindings(Map.of("Page", "Page Layout"))));
+
+        // Per key, which is the whole point: the console's PUT is a whole-object replace that
+        // nulls this map when the field is omitted, and that hazard is what this op avoids.
+        Change again = only(run(false, siteOp(name, bindings(Map.of("Article", "Article Layout")))));
+        assertThat(again.action())
+                .as("the first binding survived writing the second, so re-asserting it is a noop")
+                .isEqualTo(Change.NOOP);
+    }
+
+    @Test
+    @DisplayName("SH328: a binding somebody set is kept and reported, never replaced")
+    void anExistingBindingIsKept() {
+        String name = "sh328-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, siteOp(name, null));
+        run(false, siteOp(name, bindings(Map.of("Article", "Chosen Layout"))));
+
+        Change change = only(run(false, siteOp(name, bindings(Map.of("Article", "Other Layout")))));
+
+        assertThat(change.action()).isEqualTo(Change.NOOP);
+        assertThat(change.detail())
+                .as("SH184's rule, one field-type wider — and the caller is told why, or a noop "
+                        + "reads as the op having ignored the request")
+                .contains("postTypeLayout.Article");
+    }
+
+    @Test
+    @DisplayName("SH328: a dry run reports the binding and writes nothing")
+    void aDryRunReportsTheBindingWithoutWriting() {
+        String name = "sh328-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, siteOp(name, null));
+        Op bind = siteOp(name, bindings(Map.of("Article", "Article Layout")));
+
+        assertThat(only(run(true, bind)).action()).isEqualTo(Change.UPDATE);
+        assertThat(only(run(true, bind)).action())
+                .as("a dry run that had written would report noop the second time")
+                .isEqualTo(Change.UPDATE);
+    }
+
     private Op siteOp(String name, JsonNode data) {
         return new Op(ShAgentBatchService.SITE_UPSERT, "site:" + name, null, null, data);
+    }
+
+    private JsonNode bindings(Map<String, String> postTypeToLayout) {
+        return objectMapper.valueToTree(Map.of("postTypeLayout", postTypeToLayout));
     }
 
     private JsonNode siteData(String url, String description) {

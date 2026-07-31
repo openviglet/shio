@@ -71,7 +71,11 @@ class ShSilentCatchInventoryTest {
             // op that owns it raises the teaching error when it runs — and throwing from the
             // pre-pass would kill the whole dry run before it planned anything, which is the one
             // thing SH168 says a plan must not do.
-            "api", 51,
+            // 52 since SH328: `ShSiteWriteService.layoutBindings` reads an unparseable
+            // postTypeLayout as "no bindings", which is what the renderer already does with it
+            // (and where SH270 records the incident, on the path that actually renders). Repairing
+            // it from the write side would replace a value somebody set.
+            "api", 52,
             "tenant", 4,
             "blueprint", 2,
             "exchange", 2,

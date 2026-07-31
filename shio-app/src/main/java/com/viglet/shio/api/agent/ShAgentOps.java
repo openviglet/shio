@@ -90,7 +90,8 @@ public final class ShAgentOps {
             ShAgentBatchService.SITE_UPSERT, new OpSpec(ShAgentBatchService.SITE_UPSERT,
                     List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
                     "Create a blank site, or fill an empty url/description/furl on one that "
-                            + "exists. Never replaces a value somebody set."),
+                            + "exists. `data.postTypeLayout` binds a post-type to a PageLayout "
+                            + "title, per key. Never replaces a value somebody set."),
             ShAgentBatchService.FOLDER_UPSERT, new OpSpec(ShAgentBatchService.FOLDER_UPSERT,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Create a folder at that whole name chain, or confirm it is there."),
