@@ -32,9 +32,8 @@
  *   when a curator clicks — a moment that is already a human round trip — and **zero bytes** for
  *   every visitor who never opens the editor.
  *
- * The page keeps sending the page's type as the fallback, which is what answers when no WRITE token
- * has been chosen: the editor cannot save without one anyway, so labels degrade to SH303's behaviour
- * rather than the panel going blank.
+ * The page keeps sending the page's type as the fallback, which is what answers when the selection
+ * names no post at all: labels degrade to SH303's behaviour rather than the panel going blank.
  *
  * These two functions are the decision and the mapping, kept pure so they can be tested (SH306 gave
  * this package a test runner). The effect that calls them cannot be — there is no React harness here,
@@ -76,10 +75,12 @@ export function labelsFrom(fields: DeclaredField[] | null | undefined): Record<s
  * another type. The page's type is the fallback and never the first choice — being right about the
  * common case is what made this defect invisible.
  */
-export function labelSource(selection: Selection | null | undefined,
-                            hasToken: boolean): LabelSource {
+export function labelSource(selection: Selection | null | undefined): LabelSource {
+  // SH335 — no `hasToken` argument any more. The post was readable only with a WRITE token, so the
+  // right source was chosen for whoever had minted one and silently not for everyone else. The
+  // console reads its own post on the session, so the first choice is now always available.
   const postId = selection?.postId?.trim();
-  if (hasToken && postId) return { kind: "post", postId };
+  if (postId) return { kind: "post", postId };
   const postType = selection?.postType?.trim();
   if (postType) return { kind: "post-type", postType };
   return { kind: "none" };

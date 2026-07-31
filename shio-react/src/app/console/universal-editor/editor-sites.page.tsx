@@ -4,44 +4,29 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ROUTES } from "@/app/routes.const"
 import { useBreadcrumb } from "@/contexts/breadcrumb.context"
 import { IconLayersIntersect } from "@tabler/icons-react"
-import { ExternalLink, KeyRound, Pencil } from "lucide-react"
+import { ExternalLink, Pencil } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { ShSiteService } from "@/services/site/site.service"
-import { ShApiTokenService } from "@/services/token/api-token.service"
 import type { ShSite } from "@/models/site/site"
-import type { ShApiToken } from "@/models/token/api-token.model"
 
 const siteService = new ShSiteService()
-const tokenService = new ShApiTokenService()
-
-/** localStorage key for the WRITE token the editor uses to save back (SH10). */
-export const UE_TOKEN_KEY = "sh-ue-token"
 
 export default function EditorSitesPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { resetBreadcrumb } = useBreadcrumb()
   const [sites, setSites] = useState<ShSite[]>([])
-  const [writeTokens, setWriteTokens] = useState<ShApiToken[]>([])
-  const [token, setToken] = useState<string>(() => localStorage.getItem(UE_TOKEN_KEY) ?? "")
   const [externalUrl, setExternalUrl] = useState("")
 
   useEffect(() => {
     resetBreadcrumb([{ label: t("universalEditor.title") }])
     siteService.query().then(setSites)
-    tokenService.list().then((all) => setWriteTokens(all.filter((tok) => tok.scope === "WRITE")))
   }, [resetBreadcrumb, t])
-
-  const selectToken = (value: string) => {
-    setToken(value)
-    localStorage.setItem(UE_TOKEN_KEY, value)
-  }
 
   const openExternal = () => {
     if (!externalUrl.trim()) return
@@ -57,30 +42,6 @@ export default function EditorSitesPage() {
           <p className="text-sm text-muted-foreground">{t("universalEditor.description")}</p>
         </div>
 
-        {/* WRITE token selector — the editor saves back through the CDA write scope */}
-        <Card>
-          <CardContent className="p-4 space-y-2">
-            <Label className="flex items-center gap-2">
-              <KeyRound className="h-4 w-4" /> {t("universalEditor.selectToken")}
-            </Label>
-            {writeTokens.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("universalEditor.noWriteToken")}</p>
-            ) : (
-              <Select value={token} onValueChange={selectToken}>
-                <SelectTrigger className="max-w-md">
-                  <SelectValue placeholder={t("universalEditor.selectToken")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {writeTokens.map((tok) => (
-                    <SelectItem key={tok.id} value={tok.token}>
-                      {tok.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </CardContent>
-        </Card>
 
         {/* Sites */}
         <div>

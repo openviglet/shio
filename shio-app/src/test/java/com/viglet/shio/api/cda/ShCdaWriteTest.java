@@ -62,6 +62,8 @@ class ShCdaWriteTest {
     @Autowired
     private ShCdaWriteService shCdaWriteService;
     @Autowired
+    private com.viglet.shio.api.post.unified.ShPostDraftMergeService shPostDraftMergeService;
+    @Autowired
     private ShPostUnifiedRepository shPostUnifiedRepository;
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -237,5 +239,47 @@ class ShCdaWriteTest {
                 .contains("title", "body");
         assertThat(editable.get().fields()).filteredOn(f -> f.name().equals("title"))
                 .extracting(ShCdaField::isTitle).containsExactly(true);
+    }
+
+    // --- SH335: the merge is the console's too, and needs no token ---
+
+    /**
+     * The property that decided the design. The two candidate fixes were a client
+     * read-modify-write and a merge verb; the first reintroduces a lost update, and this is what
+     * that would have cost — a curator editing the headline would have written back the body they
+     * read a minute ago, over whatever a colleague changed in between.
+     */
+    @Test
+    void theMergeLeavesAFieldItWasNotGiven() {
+        useToken(ShApiTokenScope.WRITE, Set.of());
+        shCdaWriteService.patch(draftPostId, change("summary", "Only the summary"), false, "editor");
+
+        assertThat(shPostUnifiedRepository.findByIdAndState(draftPostId, ShPostState.DRAFT))
+                .get().extracting(ShPostUnified::getData).asString()
+                .contains("Only the summary")
+                .contains("title");
+    }
+
+    /**
+     * SH335 — the console path holds no API token at all, which is the whole point: the editor
+     * used to make a curator mint a WRITE key to save content their session already authorized.
+     * The guard moved out to each caller, so the merge itself must not depend on one being there.
+     */
+    @Test
+    void theSharedMergeRunsWithNoTokenInContext() {
+        SecurityContextHolder.clearContext();
+
+        var merged = shPostDraftMergeService.merge(draftPostId, change("title", "By a curator"),
+                false, "curator");
+
+        assertThat(merged).isPresent();
+        assertThat(shPostUnifiedRepository.findByIdAndState(draftPostId, ShPostState.DRAFT))
+                .get().extracting(ShPostUnified::getData).asString().contains("By a curator");
+    }
+
+    @Test
+    void mergingAPostThatDoesNotExistIsEmptyRatherThanAnError() {
+        assertThat(shPostDraftMergeService.merge("no-such-post", change("title", "x"), false, "c"))
+                .isEmpty();
     }
 }

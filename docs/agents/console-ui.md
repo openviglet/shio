@@ -332,6 +332,28 @@ cannot double as an identity.
   prevents is quiet: i18next falls back to the key itself, so a missing `pt` entry renders
   `universalEditor.bridgeAbsent` to a Portuguese curator and is invisible to whoever added it.
 
+## Universal Editor — it saves on the session, not on a token (SH335)
+
+The editor used to save through the **CDA** behind a `WRITE`-scope API token the curator had to mint
+in Admin and pick from a dropdown. That is **P10 read backwards** — a console feature reaching its
+own content through a third contract — and it cost three things: unusable on a fresh instance (no
+token exists yet, and "saves nothing" is how that presents), the most dangerous credential in the
+product sitting in `localStorage` to do what the session cookie already authorized, and
+`PATCH {publish:true}` carrying publish authority **SH107's gate never saw** (that gate is enforced
+in `ShAgentBatchService` on the premise that "a console caller has no token and is unaffected").
+
+- **`PATCH /api/v2/post-unified/{id}`** `{attrs, publish}` is the console's merge verb. `PUT` is
+  whole state (SH168 — an upsert declares everything) and the editor edits two or three fields.
+- **The decision that had to come first** was a client read-modify-write versus a merge verb. The
+  verb, because the first reintroduces a lost update on a product whose premise is several curators
+  on one site — `theMergeLeavesAFieldItWasNotGiven` is that property.
+- **`ShPostDraftMergeService` is the merge, once, with two guards over it**: the CDA checks its SH2
+  token allow-list, the console checks the SH176 content ACL. Authorization is what differs between
+  the surfaces; the merge never was.
+- The token picker, `UE_TOKEN_KEY` and `labelSource`'s `hasToken` argument are **gone**. Labels used
+  to resolve from the post only for whoever had minted a token and silently from the page's type for
+  everyone else — degrading by credential rather than by what the selection said.
+
 ## Universal Editor — the iframe has three states, not two (SH333)
 
 `visual-editor.page.tsx` frames the page and waits for SH185's `sh:ready`. It had no `onLoad`, no

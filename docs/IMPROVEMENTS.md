@@ -3074,51 +3074,6 @@ sentence; a task whose pointer is missing or thin needs its rationale *moved* fi
 fix is the usual one for this repository: a length assertion, so the rule stops depending on whoever
 is writing the entry noticing it.
 
-### XVI.38 The curator is already authenticated and the editor asks for a token anyway (SH335)
-
-Editing text inline and pressing *Salvar rascunho* answers:
-
-> Nenhum token de API com escopo WRITE encontrado. Crie um em Admin → Tokens de API para habilitar o
-> salvamento.
-
-The curator is sitting inside an authenticated console session, and the console is being asked for a
-bearer credential to write its own content. The save path is `PATCH /api/v2/cda/post/{id}` — the
-**CDA**, gated on `ROLE_CDA_WRITE` — with the token read out of `localStorage` under `sh-ue-token`,
-where it was pasted by hand on the editor-sites page.
-
-Meanwhile `ShPostUnifiedAPI` already exposes `GET /{id}`, `PUT /{id}` and `POST /{id}/publish`, all
-session-authenticated, and the post edit page has been using them the whole time. So the flagship
-console feature reaches its own content through a third contract, which is **P10 read backwards**:
-compose, don't fork — and this is the one place in the product that forked.
-
-Three consequences. The feature is **unusable on a fresh instance**, since no WRITE token exists until
-somebody creates one, and "the editor silently saves nothing" is how that presents.
-
-It is a **security downgrade**, and the argument against it is already written down in this
-repository: SH106 refused to alias the `AGENT` scope to `WRITE` precisely because a `WRITE` key
-"patches published content outside the agent protocol's guards". The editor now instructs the curator
-to mint that key and leave it in browser storage, reachable by any XSS on the console, to do something
-the session cookie already authorizes. A long-lived, exfiltratable credential replacing an
-ambient one is a strictly worse position.
-
-And it opens a hole in SH107. The publish gate is enforced in `ShAgentBatchService` on the stated
-premise that "a console caller has no token and is unaffected" — which was true when it was written
-and this path makes false. `PATCH {publish:true}` and `POST /post/{id}/publish` on the CDA check no
-`may_publish` at all, so a console gesture now carries a credential whose publish authority nothing
-gates. **This is the shape to watch for generally: a guard whose correctness rests on a sentence about
-what some *other* surface does not do.** SH167's blanket-CSRF lint exists for the same reason — a
-premise that expired when a cookie-bearing client arrived at the path — and SH234 turned that one into
-a build failure rather than a comment. This premise deserves the same treatment.
-
-**Why it is not a one-line swap**, and the decision that has to come first: the CDA offers a *merge*
-(`PATCH` these attrs into the draft) while the console offers *whole state* (`PUT` a `data` map, per
-SH168's rule that an upsert declares everything). The editor edits two or three fields of a page, so
-pointing it at `PUT` means read-modify-write on the client — which it is halfway to already, since
-`getEditable` reads the post for the properties panel — and that reintroduces a lost update the PATCH
-does not have. The alternative is a merge verb on the console surface, which is the thing genuinely
-missing rather than the thing being worked around. Cheaper: the read-modify-write. Righter: the merge
-verb. Pick before touching the client, not after.
-
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA

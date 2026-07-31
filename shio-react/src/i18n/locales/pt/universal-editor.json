@@ -31,8 +31,6 @@
   "universalEditor.draftSaved": "Rascunho salvo",
   "universalEditor.published": "Publicado",
   "universalEditor.saveError": "Não foi possível salvar as alterações",
-  "universalEditor.selectToken": "Token de gravação (escopo WRITE)",
-  "universalEditor.noWriteToken": "Nenhum token de API com escopo WRITE encontrado. Crie um em Admin → Tokens de API para habilitar o salvamento.",
   "universalEditor.siteNotFound": "Nenhum site encontrado para '{{key}}'. Escolha um na lista.",
   "universalEditor.bridgeAbsent": "Esta página não devolveu a ponte do editor.",
   "universalEditor.bridgeAbsentHint": "Você continua vendo a página, mas nada nela é editável. Ou a página não carregou, ou o front end dela ainda não suporta edição inline."

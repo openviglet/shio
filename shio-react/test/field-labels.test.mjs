@@ -42,38 +42,44 @@ test("labels come from declared fields, and a blank label is absent rather than 
 });
 
 test("a selected post is read from the post, not the page's type", () => {
-  const source = labelSource({ postId: "row-2", postType: "Page" }, true);
+  const source = labelSource({ postId: "row-2", postType: "Page" });
 
   assert.deepEqual(source, { kind: "post", postId: "row-2" },
-    "SH305: the post's own type is the only source that is right for a row of another type - "
-    + "GET /api/v2/cda/post/{id} answers with that post's declared fields");
+    "SH305: the post's own type is the only source that is right for a row of another type");
 });
 
-test("without a WRITE token it falls back to the page's type, which is SH303's behaviour", () => {
-  const source = labelSource({ postId: "row-2", postType: "Page" }, false);
+test("SH335: the post is the source for everyone, not only for whoever minted a token", () => {
+  // The old signature took `hasToken`, so the right source was chosen for a curator who had made a
+  // WRITE token and silently not for anyone else - labels degraded by credential rather than by
+  // what the selection actually said. The console reads its own post on the session.
+  assert.deepEqual(labelSource({ postId: "row-2", postType: "Page" }),
+    { kind: "post", postId: "row-2" });
+});
+
+test("with no post named at all it falls back to the page's type, which is SH303's behaviour", () => {
+  const source = labelSource({ postId: "  ", postType: "Page" });
 
   assert.deepEqual(source, { kind: "post-type", postType: "Page" },
-    "the CDA read needs the token the editor already requires to save, so no token means the "
-    + "fallback - degraded labels beat a blank panel, and the editor could not have saved anyway");
+    "degraded labels beat a blank panel");
 });
 
 test("nothing to load is a state, not a fetch", () => {
-  assert.deepEqual(labelSource({ postId: "row-2" }, false), { kind: "none" },
-    "no token and no page type: there is nothing to ask");
-  assert.deepEqual(labelSource(null, true), { kind: "none" });
-  assert.deepEqual(labelSource({ postId: "   ", postType: "  " }, true), { kind: "none" },
+  assert.deepEqual(labelSource({}), { kind: "none" },
+    "no post and no page type: there is nothing to ask");
+  assert.deepEqual(labelSource(null), { kind: "none" });
+  assert.deepEqual(labelSource({ postId: "   ", postType: "  " }), { kind: "none" },
     "blank is absent - a fetch for `/post/   ` is a 404 the panel would report as no labels");
 });
 
 test("the cache key distinguishes the two sources, so a row does not reuse the page's labels", () => {
-  const post = labelSourceKey(labelSource({ postId: "row-2", postType: "Page" }, true));
-  const type = labelSourceKey(labelSource({ postId: "row-2", postType: "Page" }, false));
+  const post = labelSourceKey(labelSource({ postId: "row-2", postType: "Page" }));
+  const type = labelSourceKey(labelSource({ postId: "  ", postType: "Page" }));
 
   assert.equal(post, "post:row-2");
   assert.equal(type, "type:Page");
   assert.notEqual(post, type,
     "keyed by name alone, selecting a row after a page field would have skipped the fetch - which "
     + "is the defect, cached");
-  assert.equal(labelSourceKey(labelSource({ postId: "row-2" }, true)), "post:row-2",
+  assert.equal(labelSourceKey(labelSource({ postId: "row-2" })), "post:row-2",
     "and selecting a second field of the same post refetches nothing");
 });

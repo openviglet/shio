@@ -1,55 +1,61 @@
 import axios from "@/lib/axios"
-import type { ShCdaEditablePost, ShCdaPost } from "@/models/universal-editor/universal-editor.model"
+import type { ShPostUnified } from "@/models/post-unified/post-unified"
 
 /**
- * Universal Editor (SH10) save-back service. Talks to the CDA write surface
- * (`/api/v2/cda`) authenticated by a WRITE-scope API token sent in the `Key` header.
+ * Universal Editor save-back service — on the console surface, on the curator's session.
  *
- * **SH233 — this used to dodge the session, and could not.** It built its own
- * credential-less axios instance on the premise that the CDA filter authenticates the token
- * only when nothing else has, so the console's session cookie must not be sent. The reasoning
- * was right and the mechanism did not implement it: `withCredentials` governs **cross-origin**
- * requests only, and the console is same-origin with the API both in dev (behind the Vite proxy)
- * and in production behind one host — so the cookie went anyway, the session was restored before
- * `ShApiTokenFilter` ran, the `Key` header was never read, and the PATCH authenticated as a
- * curator with no `ROLE_CDA_WRITE`. A 403 that looked like a permissions problem and was a
- * plumbing one.
+ * **SH335 — it used to talk to the CDA behind a WRITE-scope token.** A console feature reaching its
+ * own content through a third contract is P10 read backwards, and it cost three things: the editor
+ * was unusable on a fresh instance (no token exists yet, and "saves nothing silently" is how that
+ * presents), the most dangerous credential in the product sat in `localStorage` doing what the
+ * session cookie already authorized, and `PATCH {publish:true}` carried publish authority SH107's
+ * gate never saw — that gate is enforced in `ShAgentBatchService` on the premise that "a console
+ * caller has no token and is unaffected", which this path made false.
  *
- * Both halves are fixed on the honest side. The server lets an explicitly presented `Key` win
- * over an existing session, and this client uses the **shared** axios singleton so the request
- * carries the CSRF token: since SH167 a session-bearing caller on the CDA path is CSRF-checked,
- * and the cookie is going to be sent whatever this file asks for. The private instance also
- * silently opted out of the shared interceptors — CSRF, the 403 retry, the offline banner —
- * because `axios.create()` does not inherit them.
+ * SH233's lesson is why the fix is a verb and not a header: this file already learned that the
+ * session cookie goes on same-origin requests whatever the client asks for. The honest conclusion
+ * was that the session is the credential here, so the write belongs where the session already
+ * writes. `ShPostDraftMergeService` is the merge, once, with the CDA's allow-list and the console's
+ * ACL as two guards over it.
  */
-function keyHeader(token: string) {
-  return { headers: { Key: token } }
-}
-
 export class ShUniversalEditorService {
-  /** Draft values + post-type field schema for the properties panel. */
-  async getEditable(postId: string, token: string): Promise<ShCdaEditablePost> {
-    const response = await axios.get<ShCdaEditablePost>(
-      `/v2/cda/post/${postId}/editable`, keyHeader(token))
-    return response.data
+  /**
+   * The post-type name of one post, on the session (SH335).
+   *
+   * SH305 needs the *selected post's* type rather than the page's, or every row of a listing is
+   * labelled from the wrong schema. That used to mean `GET /v2/cda/post/{id}/editable` behind a
+   * WRITE token, which is why labels silently degraded for anyone who had not minted one. The
+   * console can already read its own post; the fields then come from the post-type API, which is
+   * where a label is declared and the one place it should be read from.
+   */
+  async postTypeOf(postId: string): Promise<string | null> {
+    const response = await axios.get<ShPostUnified>(`/v2/post-unified/${postId}`)
+    return response.data?.shPostType?.name ?? null
   }
 
-  /** Merge attribute changes into the post's draft (optionally publishing). */
+  /**
+   * Merge attribute changes into the post's draft (optionally publishing).
+   *
+   * **SH335 — the console's own verb, on the session.** This used to be the CDA's `PATCH` behind a
+   * `WRITE`-scope token the curator had to mint and paste, which is P10 read backwards: a console
+   * feature reaching its own content through a third contract. It made the editor unusable on a
+   * fresh instance, parked the most dangerous credential in `localStorage` to do what the session
+   * cookie already authorized, and carried publish authority SH107 never saw. The merge itself did
+   * not move — `ShPostDraftMergeService` is one implementation with two guards.
+   */
   async patch(
     postId: string,
     attrs: Record<string, unknown>,
-    token: string,
     publish = false,
-  ): Promise<ShCdaPost> {
-    const response = await axios.patch<ShCdaPost>(
-      `/v2/cda/post/${postId}`, { attrs, publish }, keyHeader(token))
+  ): Promise<ShPostUnified> {
+    const response = await axios.patch<ShPostUnified>(
+      `/v2/post-unified/${postId}`, { attrs, publish })
     return response.data
   }
 
   /** Promote the post's draft to published. */
-  async publish(postId: string, token: string): Promise<ShCdaPost> {
-    const response = await axios.post<ShCdaPost>(
-      `/v2/cda/post/${postId}/publish`, {}, keyHeader(token))
+  async publish(postId: string): Promise<ShPostUnified> {
+    const response = await axios.post<ShPostUnified>(`/v2/post-unified/${postId}/publish`, {})
     return response.data
   }
 }

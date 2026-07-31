@@ -11,10 +11,12 @@ package com.viglet.shio.api.post.unified;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -57,17 +59,20 @@ public class ShPostUnifiedAPI {
     private final ShTenantQuotaService shTenantQuotaService;
     private final ShContentAclService shContentAclService;
     private final ShPostTypeRepository shPostTypeRepository;
+    private final ShPostDraftMergeService shPostDraftMergeService;
 
     public ShPostUnifiedAPI(ShPostUnifiedWriteService shPostUnifiedWriteService,
                             ShConsolePostReadService shConsolePostReadService,
                             ShTenantQuotaService shTenantQuotaService,
                             ShContentAclService shContentAclService,
-                            ShPostTypeRepository shPostTypeRepository) {
+                            ShPostTypeRepository shPostTypeRepository,
+                            ShPostDraftMergeService shPostDraftMergeService) {
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shConsolePostReadService = shConsolePostReadService;
         this.shTenantQuotaService = shTenantQuotaService;
         this.shContentAclService = shContentAclService;
         this.shPostTypeRepository = shPostTypeRepository;
+        this.shPostDraftMergeService = shPostDraftMergeService;
     }
 
     @PostMapping
@@ -94,6 +99,39 @@ public class ShPostUnifiedAPI {
                 payload.data(),
                 payload.state() != null ? payload.state() : ShPostState.DRAFT,
                 principal != null ? principal.getName() : null)));
+    }
+
+    /**
+     * SH335 — merge a few fields into the draft, as a session-authenticated curator.
+     *
+     * <p>The Universal Editor edits two or three fields of a page and had no console verb for it:
+     * {@link #update} is whole state (SH168 — an upsert declares everything), so the editor was
+     * pointed at the CDA's {@code PATCH} and made a curator mint a {@code WRITE} token to save
+     * content the session cookie already authorizes. That is P10 read backwards, and the two ways
+     * out were a client read-modify-write or this. This, because the first reintroduces a lost
+     * update on a surface whose premise is several curators on one site.</p>
+     *
+     * <p>Same ACL as every other write here ({@link ShContentAclService#requireWrite}) and the same
+     * publish authority as {@link #publish} — no token, so nothing to leave in browser storage and
+     * nothing carrying publish rights that SH107 never saw.</p>
+     */
+    @PatchMapping("/{id}")
+    public ShConsolePost patch(@PathVariable String id,
+                               @RequestBody PatchPayload payload,
+                               Principal principal) {
+        shContentAclService.requireWrite(id);
+        return shConsolePostReadService.written(shPostDraftMergeService
+                .merge(id, payload.attrs() == null ? Map.of() : payload.attrs(),
+                        Boolean.TRUE.equals(payload.publish()),
+                        principal != null ? principal.getName() : null)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found: " + id)));
+    }
+
+    /**
+     * @param attrs   field name → new value; a field not named keeps the value it had
+     * @param publish promote the resulting draft in the same call
+     */
+    public record PatchPayload(Map<String, JsonNode> attrs, Boolean publish) {
     }
 
     @PostMapping("/{id}/publish")

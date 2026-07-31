@@ -19,7 +19,6 @@ import { toast } from "@viglet/viglet-design-system"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShSiteService } from "@/services/site/site.service"
 import { ShUniversalEditorService } from "@/services/universal-editor/universal-editor.service"
-import { UE_TOKEN_KEY } from "./editor-sites.page"
 import { labelSource, labelSourceKey, labelsFrom } from "./field-labels"
 import type { ContentChange, SelectedElement } from "@/models/universal-editor/universal-editor.model"
 import { siteDestination } from "@/lib/site-front-end"
@@ -105,7 +104,6 @@ export default function VisualEditorPage() {
   // nothing emitted, so every field in this panel was labelled `TEXT` or `HTML`.
   const [fieldLabels, setFieldLabels] = useState<Record<string, string>>({})
 
-  const token = useMemo(() => localStorage.getItem(UE_TOKEN_KEY) ?? "", [])
   const postTypeService = useMemo(() => new ShPostTypeService(), [])
   // Which label source is loaded (SH305 - a post id or a type name, so a row and the page
   // cannot collide), so selecting a second field of the same post re-fetches nothing.
@@ -228,29 +226,30 @@ export default function VisualEditorPage() {
   // an editor that cannot save yet. A failure is silent on purpose: the panel falls back to the
   // field name, so a labelling nicety can never break the editor.
   useEffect(() => {
-    const source = labelSource(selected, !!token)
+    const source = labelSource(selected)
     const key = labelSourceKey(source)
     if (source.kind === "none" || loadedLabelsRef.current === key) return
     loadedLabelsRef.current = key
 
-    const fields = source.kind === "post"
-      ? editorService.getEditable(source.postId, token).then((editable) => editable.fields)
-      : postTypeService.get(source.postType).then((def) => def.fields)
+    // SH335 — both branches end at the post-type API, because that is where a label is declared.
+    // What differs is only *which* type: the selected post's (SH305) or the page's (SH303).
+    const typeName = source.kind === "post"
+      ? editorService.postTypeOf(source.postId)
+      : Promise.resolve(source.postType)
 
-    fields
+    typeName
+      .then((name) => (name ? postTypeService.get(name).then((def) => def.fields) : null))
       .then((declared) => setFieldLabels(labelsFrom(declared)))
       .catch(() => setFieldLabels({}))
-  }, [selected, token, postTypeService])
+  }, [selected, postTypeService])
 
   // The declared label for a field name, or "" when the schema has not arrived (or has no
   // label for it) — the caller falls back to the name the bridge sent.
   const labelFor = (prop?: string | null) => (prop ? fieldLabels[prop] ?? "" : "")
 
   const persist = async (publish: boolean) => {
-    if (!token) {
-      toast.error(t("universalEditor.noWriteToken"))
-      return
-    }
+    // SH335 — no token check. Saving is a console write on the curator's own session now; the
+    // token that used to gate this authorized nothing the cookie did not already.
     if (changes.size === 0 && !publish) return
 
     // Group pending changes into one attr patch per post.
@@ -264,11 +263,11 @@ export default function VisualEditorPage() {
     setSaving(true)
     try {
       for (const [postId, attrs] of byPost) {
-        await editorService.patch(postId, attrs, token, publish)
+        await editorService.patch(postId, attrs, publish)
       }
       // Publish requested but nothing was edited in this session: publish the selected post.
       if (publish && byPost.size === 0 && selected?.postId) {
-        await editorService.publish(selected.postId, token)
+        await editorService.publish(selected.postId)
       }
       setChanges(new Map())
       toast.success(publish ? t("universalEditor.published") : t("universalEditor.draftSaved"))

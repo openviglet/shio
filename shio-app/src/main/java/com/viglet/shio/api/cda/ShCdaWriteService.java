@@ -16,8 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.cda.dto.ShCdaEditablePost;
 import com.viglet.shio.api.cda.dto.ShCdaPost;
+import com.viglet.shio.api.post.unified.ShPostDraftMergeService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
-import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.UpdateRequest;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
@@ -25,8 +25,6 @@ import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Content Delivery API (CDA) write service (SH10) — the save-back half of the
@@ -52,16 +50,17 @@ public class ShCdaWriteService {
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
     private final ShCdaMapper mapper;
-    private final ObjectMapper objectMapper;
+    // SH335 — the merge itself is not this surface's; only the allow-list that guards it is.
+    private final ShPostDraftMergeService draftMergeService;
 
     public ShCdaWriteService(ShPostUnifiedRepository shPostUnifiedRepository,
                              ShPostUnifiedWriteService shPostUnifiedWriteService,
                              ShCdaMapper mapper,
-                             ObjectMapper objectMapper) {
+                             ShPostDraftMergeService draftMergeService) {
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.mapper = mapper;
-        this.objectMapper = objectMapper;
+        this.draftMergeService = draftMergeService;
     }
 
     /**
@@ -70,7 +69,7 @@ public class ShCdaWriteService {
      */
     @Transactional(readOnly = true)
     public Optional<ShCdaEditablePost> getEditable(String postId) {
-        return resolveEditable(postId)
+        return draftMergeService.editable(postId)
                 .filter(post -> siteAllowed(siteIdOf(post)))
                 .map(post -> new ShCdaEditablePost(
                         mapper.toPost(post),
@@ -85,22 +84,15 @@ public class ShCdaWriteService {
      */
     public Optional<ShCdaPost> patch(String postId, Map<String, JsonNode> attrChanges,
                                      boolean publish, String actor) {
-        Optional<ShPostUnified> seed = resolveEditable(postId)
-                .filter(post -> siteAllowed(siteIdOf(post)));
-        if (seed.isEmpty()) {
+        // SH335 — the allow-list first, then the shared merge. The check stays here because it is
+        // this surface's; the merge left because it never was.
+        boolean allowed = draftMergeService.editable(postId)
+                .map(post -> siteAllowed(siteIdOf(post)))
+                .orElse(false);
+        if (!allowed) {
             return Optional.empty();
         }
-
-        ShPostUnified draft = ensureDraft(postId, seed.get());
-        JsonNode merged = mergeData(draft.getData(), attrChanges);
-
-        ShPostUnified updated = shPostUnifiedWriteService.update(postId,
-                new UpdateRequest(merged, ShPostState.DRAFT, actor));
-
-        if (publish) {
-            return Optional.of(mapper.toPost(shPostUnifiedWriteService.publish(postId, actor)));
-        }
-        return Optional.of(mapper.toPost(updated));
+        return draftMergeService.merge(postId, attrChanges, publish, actor).map(mapper::toPost);
     }
 
     /** Promote the post's draft to {@code PUBLISHED} (Universal Editor "publish"). */
@@ -114,61 +106,6 @@ public class ShCdaWriteService {
     }
 
     // --- helpers ---
-
-    /** Draft row if present, else the published row (the editor edits the draft). */
-    private Optional<ShPostUnified> resolveEditable(String postId) {
-        Optional<ShPostUnified> draft = shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT);
-        return draft.isPresent()
-                ? draft
-                : shPostUnifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED);
-    }
-
-    /**
-     * Return the existing draft, or seed one by copying the published row so an
-     * already-published post (which may carry no draft, e.g. after a migration)
-     * becomes editable without disturbing its live snapshot.
-     */
-    private ShPostUnified ensureDraft(String postId, ShPostUnified resolved) {
-        if (resolved.getState() == ShPostState.DRAFT) {
-            return resolved;
-        }
-        ShPostUnified draft = new ShPostUnified();
-        draft.setId(postId);
-        draft.setState(ShPostState.DRAFT);
-        draft.setShFolder(resolved.getShFolder());
-        draft.setShSite(resolved.getShSite());
-        draft.setShPostType(resolved.getShPostType());
-        draft.setTitle(resolved.getTitle());
-        draft.setSummary(resolved.getSummary());
-        draft.setFurl(resolved.getFurl());
-        draft.setOwner(resolved.getOwner());
-        draft.setDate(resolved.getDate());
-        draft.setData(resolved.getData());
-        return shPostUnifiedRepository.save(draft);
-    }
-
-    /** Merge the attribute changes into the existing {@code data} JSON object. */
-    private JsonNode mergeData(String currentData, Map<String, JsonNode> attrChanges) {
-        ObjectNode node;
-        JsonNode parsed = currentData == null || currentData.isBlank()
-                ? null
-                : safeRead(currentData);
-        node = (parsed != null && parsed.isObject())
-                ? (ObjectNode) parsed
-                : objectMapper.createObjectNode();
-        if (attrChanges != null) {
-            attrChanges.forEach(node::set);
-        }
-        return node;
-    }
-
-    private JsonNode safeRead(String data) {
-        try {
-            return objectMapper.readTree(data);
-        } catch (RuntimeException e) {
-            return null;
-        }
-    }
 
     /** SH2 per-site enforcement — mirrors {@code ShCdaService.siteAllowed}. */
     private boolean siteAllowed(String siteId) {
