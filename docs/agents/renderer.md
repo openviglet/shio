@@ -101,6 +101,18 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `JavaBeanValueResolver`, under which a template handed an entity walks the persistence model.
   (3) **A refusing `TemplateLoader`**: the default reads the classpath, so `{{> application}}`
   in a layout — which is content — is a file read.
+- **Two URLs per frame, and the pair is the point (SH337)** — the model carries
+  `post.url` / `site.url` (the fields as content spells them) *and* `post.canonical` /
+  `site.baseUrl` (the same two facts through `ShSiteFrontEnd`, SH184). The raw pair could not
+  answer a canonical tag, an `og:url` or a sitemap entry, because `site.url` is the **customer's
+  deployed front end** and is blank on a site an agent just built; the resolved pair is never
+  blank, falling back to `/preview/<site>`. Both stay because they answer different questions —
+  *"has this been deployed?"* is `site.url`, and writing a fallback into it would destroy that
+  question, which is the same argument `ShSiteFrontEnd` makes for resolving rather than storing.
+  `canonical` is **composed** by `pageUrl` rather than left to `{{site.baseUrl}}{{post.url}}`: a
+  furl is not guaranteed to lead with `/`, and that concatenation yields `/preview/Democontato`.
+  What is **not** an option is making `{{link}}` preview-aware — it is content-facing, so the same
+  field would mean two things in two renders (the coupling SH187 spent a task splitting apart).
 - **A template is refused when it is written (SH192)** — `ShTemplateValidator` compiles a
   `PageLayout`'s or `Region`'s `HTML` on `post.upsert`: a real run **400s** with the line, the
   column and a caret (FSP's `regionError` output, which this product had in 2019), a `dryRun`

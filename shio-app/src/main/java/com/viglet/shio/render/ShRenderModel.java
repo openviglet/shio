@@ -45,10 +45,20 @@ import tools.jackson.databind.ObjectMapper;
  *
  * <pre>
  * {  &lt;the post's own data fields, verbatim under their declared names&gt;,
- *    post:  { id, title, summary, url, type, folder },
- *    site:  { id, name, url },
+ *    post:  { id, title, summary, url, type, folder, canonical },
+ *    site:  { id, name, url, baseUrl },
  *    theme: { css, javascript }   }
  * </pre>
+ *
+ * <h2>Two URLs per frame, and the pair is the point (SH337)</h2>
+ *
+ * <p>{@code post.url} is the friendly URL and {@code site.url} is the customer's front end —
+ * the fields as content spells them, and {@code site.url} is <b>blank</b> on a site nobody has
+ * deployed, which is the normal state of one an agent just built. {@code post.canonical} and
+ * {@code site.baseUrl} are the same two facts resolved through {@link ShSiteFrontEnd} (SH184),
+ * so they are never blank: they fall back to {@code /preview/<site>}, the address at which the
+ * page really can be looked at. A canonical tag, an {@code og:url} and a sitemap entry are
+ * unbuildable from the first pair and buildable from the second.</p>
  *
  * <p>Fields go in <b>first</b> and the three reserved keys overwrite them, so a post-type
  * that happens to declare a field called {@code site} loses to the site — the reverse
@@ -98,9 +108,12 @@ public class ShRenderModel {
      * @return the view model
      */
     public Map<String, Object> of(ShPostUnified post, ShThemeAssets theme) {
+        // Resolved once: both frames need it now that SH337 projects the site's origin, and
+        // the folder walk below is not free.
+        ShSite site = siteOf(post);
         Map<String, Object> model = new LinkedHashMap<>(fieldsOf(post));
-        model.put("post", postFrame(post));
-        model.put("site", siteFrame(post));
+        model.put("post", postFrame(post, site));
+        model.put("site", siteFrame(site));
         model.put("theme", themeFrame(theme));
         return ShStableMap.copyOf(model);
     }
@@ -155,7 +168,24 @@ public class ShRenderModel {
                 : objectMapper.convertValue(value, Object.class);
     }
 
-    private Map<String, Object> postFrame(ShPostUnified post) {
+    /**
+     * The page's site.
+     *
+     * <p>Lifted out of {@code siteFrame} by SH337, which gave the {@code post} frame a reason to
+     * know it too — resolving it twice would have meant a second folder walk for a fact the
+     * model already had.</p>
+     */
+    private ShSite siteOf(ShPostUnified post) {
+        // ShFolderSite-exempt: a post carries its own site column (SH128's invariant is
+        // about folders), and the folder walk is the fallback for a row written before it.
+        ShSite site = post == null ? null : post.getShSite();
+        if (site == null && post != null) {
+            site = ShFolderSite.of(post.getShFolder());
+        }
+        return site;
+    }
+
+    private Map<String, Object> postFrame(ShPostUnified post, ShSite site) {
         Map<String, Object> frame = new LinkedHashMap<>();
         if (post == null) {
             return ShStableMap.copyOf(frame);
@@ -167,23 +197,30 @@ public class ShRenderModel {
         frame.put("type", post.getShPostType() == null ? null : post.getShPostType().getName());
         ShFolder folder = post.getShFolder();
         frame.put("folder", folder == null ? null : folder.getName());
+        // SH337 — `url` is the furl and stays the furl; this is the same page addressed at the
+        // site's front end. Composed here rather than left to `{{site.baseUrl}}{{post.url}}`
+        // because a furl is not guaranteed to lead with `/` and that concatenation silently
+        // yields `/preview/Democontato`; `pageUrl` is the one place that normalizes it.
+        frame.put("canonical", site == null ? null
+                : ShSiteFrontEnd.pageUrl(ShSiteFrontEnd.of(site), post.getFurl()));
         return ShStableMap.copyOf(frame);
     }
 
-    private Map<String, Object> siteFrame(ShPostUnified post) {
+    private Map<String, Object> siteFrame(ShSite site) {
         Map<String, Object> frame = new LinkedHashMap<>();
-        // ShFolderSite-exempt: a post carries its own site column (SH128's invariant is
-        // about folders), and the folder walk is the fallback for a row written before it.
-        ShSite site = post == null ? null : post.getShSite();
-        if (site == null && post != null) {
-            site = ShFolderSite.of(post.getShFolder());
-        }
         if (site == null) {
             return ShStableMap.copyOf(frame);
         }
         frame.put("id", site.getId());
         frame.put("name", site.getName());
         frame.put("url", site.getUrl());
+        // SH337 — `url` is the customer's front end and is *empty* on a site nobody has
+        // deployed, which is the normal state of a site an agent just built (SH184). A canonical
+        // tag, an `og:url` or a sitemap entry cannot be built from an empty string, so the model
+        // also carries the resolved origin, which is never blank: the external URL when there is
+        // one, `/preview/<site>` when there is not. Both are here because they answer different
+        // questions — "has this site been deployed?" is `url`, and it must stay answerable.
+        frame.put("baseUrl", ShSiteFrontEnd.of(site).baseUrl());
         return ShStableMap.copyOf(frame);
     }
 
