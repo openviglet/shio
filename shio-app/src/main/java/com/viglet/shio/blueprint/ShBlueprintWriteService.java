@@ -156,7 +156,7 @@ public class ShBlueprintWriteService {
         }
         // `site` is non-null only when this run would create it, which is exactly when the
         // planner has nothing live to resolve against.
-        return new ShAgentBatchService.Declared(site, types);
+        return ShAgentBatchService.Declared.of(site, types);
     }
 
     /** Every field name a def declares, nested ones included. */

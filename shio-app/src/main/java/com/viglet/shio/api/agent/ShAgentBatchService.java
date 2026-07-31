@@ -11,6 +11,7 @@ package com.viglet.shio.api.agent;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -238,20 +239,71 @@ public class ShAgentBatchService {
      * <p><b>It is honoured on a dry run only.</b> {@code apply} resolves everything live, so a
      * declaration can never stand in for a write that did not happen.</p>
      *
-     * @param site      the site this run would create, or {@code null}
+     * <h2>A batch declares its own sites, without being asked (SH329)</h2>
+     *
+     * <p>The declaration above is something a <em>caller</em> supplies, which was right for a
+     * blueprint and wrong for the case underneath it: {@code {site.upsert Demo},
+     * {folder.upsert Demo/pages}} with {@code dryRun} failed at {@code ops[1]}, because a plain
+     * batch declared nothing and there was no caller to ask. That is the bootstrap case — the
+     * first thing any agent does on a new instance — so "look before you write" was unavailable
+     * exactly where nothing else could stand in for it. {@link #withSitesFrom} reads the sites
+     * out of the run's own ops, so the plan describes its own first step.</p>
+     *
+     * @param sites     the sites this run would create; empty for the ordinary case
      * @param postTypes post-type name → the field names it would declare
      */
-    public record Declared(String site, Map<String, Set<String>> postTypes) {
+    public record Declared(Set<String> sites, Map<String, Set<String>> postTypes) {
 
         /** The ordinary case: everything an op names must already be there. */
-        public static final Declared NOTHING = new Declared(null, Map.of());
+        public static final Declared NOTHING = new Declared(Set.of(), Map.of());
 
         public Declared {
+            // Insertion-ordered rather than Set.copyOf: P5, and a hash set's order comes from a
+            // per-JVM salt. Membership is all this is read for today, and "today" is the part
+            // that changes.
+            sites = sites == null ? Set.of()
+                    : Collections.unmodifiableSet(new LinkedHashSet<>(sites));
             postTypes = postTypes == null ? Map.of() : ShStableMap.copyOf(postTypes);
         }
 
+        /** One site and the types beside it — the blueprint shape (SH153). */
+        public static Declared of(String site, Map<String, Set<String>> postTypes) {
+            return new Declared(site == null ? Set.of() : Set.of(site), postTypes);
+        }
+
+        /**
+         * This declaration, plus every site the run would create by its own {@code site.upsert}.
+         *
+         * <p>Additive for the same reason the record is (a declaration never makes a plan greener
+         * than the run it predicts): these sites <em>are</em> what the run creates, read off the
+         * ops rather than promised by a caller. A malformed address is left alone — the op that
+         * owns it raises the teaching error when it runs, and a second one raised from here would
+         * report the same defect twice with less context.</p>
+         */
+        Declared withSitesFrom(List<ShAgentBatch.Op> ops) {
+            Set<String> union = new LinkedHashSet<>(sites);
+            for (ShAgentBatch.Op op : ops) {
+                if (!SITE_UPSERT.equals(op.op()) || op.address() == null || op.address().isBlank()) {
+                    continue;
+                }
+                try {
+                    ShAddress address = ShAddress.parse(op.address());
+                    if (address.kind() == ShAddress.Kind.SITE && address.site() != null) {
+                        union.add(address.site());
+                    }
+                } catch (ShTeachingException unparseable) {
+                    // Deliberate: see above. The op itself teaches.
+                }
+            }
+            return union.size() == sites.size() ? this : new Declared(union, postTypes);
+        }
+
         private boolean declaresSite(String nameOrId) {
-            return site != null && nameOrId != null && site.equalsIgnoreCase(nameOrId.trim());
+            if (nameOrId == null) {
+                return false;
+            }
+            String wanted = nameOrId.trim();
+            return sites.stream().anyMatch(wanted::equalsIgnoreCase);
         }
 
         /** The fields this run would give {@code name}, empty when it declares no such type. */
@@ -309,8 +361,13 @@ public class ShAgentBatchService {
     // The entry points are annotated and none calls another: a self-invocation would
     // bypass the proxy, so the inner annotation would be decoration rather than a transaction.
     private ShAgentChangeSet runOps(ShAgentBatch batch, boolean ids, String actor, Source source,
-                                    Declared declared) {
+                                    Declared givenDeclared) {
         List<ShAgentBatch.Op> ops = validate(batch, source);
+        // SH329 — a plan must be able to describe its own first step. Applied here rather than at
+        // the three entry points so the blueprint path gets it too: a package may carry a
+        // `site.upsert` its manifest never declared, and that is the same plan failing the same way.
+        // Honoured on a dry run only, by `Session` — the record is a planning aid, never a write.
+        Declared declared = givenDeclared.withSitesFrom(ops);
         // SH107 — publishing is a capability, not a default. Checked before anything runs and
         // on a dryRun too: an agent that cannot publish should learn that while planning, not
         // after it has built twelve pages around the assumption.
@@ -1313,7 +1370,10 @@ public class ShAgentBatchService {
             session.planFolder(pending, "/");
             return pending;
         }
-        return siteAccess.require(nameOrId);
+        // SH329 — not `siteAccess.require`: that raises the read-scoping fix, and there is no
+        // `?site=` on this endpoint.
+        throw ShAgentContextService.UnknownSiteException.onWrite(nameOrId,
+                siteAccess.readable().stream().map(ShSite::getName).toList());
     }
 
     /** True for the SH153 stand-in: a site this run would create, which nothing lives in yet. */

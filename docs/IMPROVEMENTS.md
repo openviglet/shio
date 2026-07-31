@@ -2833,21 +2833,6 @@ the client reading it. The answer is *not* a twelfth tool (the cap is 12 with 11
 > exercised in the direction of a gap closing. Since SH339 the bodiless 403 is gone everywhere, so the
 > third path's symptom outlived its cause by one task.
 
-### XVI.59 A plan cannot describe its own first step (SH329)
-
-`{site.upsert site:Demo}, {folder.upsert folder:Demo/pages}` with `dryRun:true` fails at `ops[1]`
-with `No readable site 'Demo'`. SH153 built `ShAgentBatchService.Declared` for exactly this — a plan
-resolving against what the plan itself would create — and applied it to blueprint plans, where the
-declared resources are the site and its post-types. A plain batch declares pending **folders** and
-not a pending **site**, so "look before you write" is broken for precisely the bootstrap case: the
-first thing any agent does on a new instance.
-
-The message is the second defect and the worse one. `Fix: Pass ?site= with one of the listed names` /
-`Example: ?site=Bootstrap` is a **read-scoping** error surfacing on a write op — there is no `?site=`
-on `POST /api/v2/agent/batch`. P6 says errors are instructions; this one instructs the caller to do
-something that does not exist, which is worse than saying nothing, and it is what a shared resolver
-costs when only one of its callers was considered.
-
 ### XVI.29 One vocabulary, because the agent guessed wrong three times (SH331, SH332)
 
 Four wrong calls in this run, none of them a random guess — each was a rule the agent applied

@@ -574,19 +574,58 @@ public class ShAgentContextService {
         }
     }
 
-    /** A 404 that lists the site names this credential can actually see (SH80). */
+    /**
+     * A 404 that lists the site names this credential can actually see (SH80).
+     *
+     * <h2>Two callers, two fixes (SH329)</h2>
+     *
+     * <p>This resolver is shared by a read that is <em>scoped</em> by {@code ?site=} and a write
+     * op that <em>addresses</em> a site, and it used to teach the read's fix to both. A batch op
+     * naming a site that does not exist was answered with {@code Fix: Pass ?site= with one of the
+     * listed names} — and {@code POST /api/v2/agent/batch} has no {@code ?site=}. P6 says an error
+     * is an instruction; an instruction to do something that does not exist is worse than no
+     * instruction, because the caller spends a call finding that out. So the fix is chosen by the
+     * caller that raised it, and {@link #onWrite} is the write half.</p>
+     */
     public static class UnknownSiteException extends ShTeachingException {
 
         public UnknownSiteException(String sent, List<String> allowed) {
+            this(sent, allowed,
+                    allowed.isEmpty()
+                            ? "This credential can read no sites — check the token's site allow-list."
+                            : "Pass ?site= with one of the listed names, or omit it for every site.",
+                    "?site=" + (allowed.isEmpty() ? "<name>" : allowed.get(0)));
+        }
+
+        /**
+         * The same 404 for an op that names the site rather than scoping by it.
+         *
+         * <p>A batch can create the site it goes on to use, so the fix names that op — which is
+         * also what makes the dry run SH329 fixed reachable: plan the {@code site.upsert} first
+         * and the rest of the run resolves against it.</p>
+         */
+        public static UnknownSiteException onWrite(String sent, List<String> allowed) {
+            // No allow-list branch, deliberately. An empty `allowed` means "this credential reads
+            // no sites", which on the write path has two causes that read identically and want
+            // opposite advice: a scoped token, and a **brand new instance** — which is SH329's own
+            // case, where "check the token's site allow-list" is simply false. `site.upsert` is the
+            // answer under both, and a genuinely scoped credential is refused by
+            // `requireUnscopedCredential` with a message that knows it is about scope.
+            return new UnknownSiteException(sent, allowed,
+                    (allowed.isEmpty() ? "No site exists yet — add a `site.upsert` op for it "
+                            : "Address a site that exists, or add a `site.upsert` op for it ")
+                            + "earlier in the same batch.",
+                    "{\"op\":\"site.upsert\",\"address\":\"site:" + sent + "\"}");
+        }
+
+        private UnknownSiteException(String sent, List<String> allowed, String fix, String example) {
             super(ShProblem.of("unknown-site", org.springframework.http.HttpStatus.NOT_FOUND,
                             "No readable site '" + sent + "'")
                     .withDetail("No site with that id or name is visible to this credential.")
                     .withAllowed(allowed)
                     .withDidYouMeanFrom(sent)
-                    .withFix(allowed.isEmpty()
-                            ? "This credential can read no sites — check the token's site allow-list."
-                            : "Pass ?site= with one of the listed names, or omit it for every site.")
-                    .withExample("?site=" + (allowed.isEmpty() ? "<name>" : allowed.get(0))));
+                    .withFix(fix)
+                    .withExample(example));
         }
     }
 

@@ -37,6 +37,18 @@ the CDA + console services (law P10) and holds no business logic of its own.
   gets none** (linting a state the plan has not created reads as "the plan is clean"), and an
   op that wrote no fields has its address named, because a finding against it predates the
   run. Only `post:` addresses are linted today (SH228).
+  **A dry run resolves against the sites the same batch would create (SH329)** — `Declared`
+  (SH153) started as something a *blueprint* caller supplied, so a plain
+  `{site.upsert Demo}, {folder.upsert Demo/pages}` failed at `ops[1]`: the bootstrap case, where
+  nothing else could stand in for it. `Declared.withSitesFrom` now reads the sites off the run's
+  own ops, in `runOps` so every entry point including the blueprint path gets it. Still
+  **dry-run only** and still **additive** — a declaration never makes a plan greener than the run
+  it predicts. The refusal when the site really is absent is `UnknownSiteException.onWrite`,
+  which names a `site.upsert` op: the shared resolver used to teach `Pass ?site=`, and this
+  endpoint has no `?site=` (P6 — an instruction to do something that does not exist is worse
+  than none). It carries **no allow-list branch**, because an empty readable list means both "a
+  scoped token" and "a new instance", which want opposite advice; scope is `requireUnscopedCredential`'s
+  message to give.
   **`?digest=true` closes the *appearance* loop the same way (SH194)** — the two SH187 hashes for
   each page the run **affected**, which for a write to a shared layout or region is not the address
   written but every page that renders through it (SH193's graph; this is that graph's first consumer

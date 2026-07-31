@@ -67,7 +67,11 @@ class ShSilentCatchInventoryTest {
      * the mechanism defeated.</p>
      */
     private static final Map<String, Integer> DECLARED = Map.of(
-            "api", 50,
+            // 51 since SH329: `Declared.withSitesFrom` swallows an unparseable address, because the
+            // op that owns it raises the teaching error when it runs — and throwing from the
+            // pre-pass would kill the whole dry run before it planned anything, which is the one
+            // thing SH168 says a plan must not do.
+            "api", 51,
             "tenant", 4,
             "blueprint", 2,
             "exchange", 2,

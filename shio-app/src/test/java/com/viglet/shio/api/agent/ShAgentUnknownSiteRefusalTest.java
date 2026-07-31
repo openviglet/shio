@@ -11,6 +11,8 @@ package com.viglet.shio.api.agent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.List;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -18,6 +20,8 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import com.viglet.shio.api.agent.dto.ShAgentBatch;
+import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.verify.ShAgentVerifyService;
 import com.viglet.shio.api.error.ShTeachingException;
 
@@ -53,6 +57,8 @@ class ShAgentUnknownSiteRefusalTest {
     private ShAgentReadService shAgentReadService;
     @Autowired
     private ShAgentVerifyService shAgentVerifyService;
+    @Autowired
+    private ShAgentBatchService shAgentBatchService;
 
     @Test
     @DisplayName("SH345: find with an unknown site is the teaching 404, not a rollback failure")
@@ -83,5 +89,57 @@ class ShAgentUnknownSiteRefusalTest {
         // in the shared site resolver, so every caller of it had the same hole.
         assertThatThrownBy(() -> shAgentVerifyService.verify("no-such-site", null, null))
                 .isInstanceOf(ShTeachingException.class);
+    }
+
+    /**
+     * SH329 — the bootstrap case, which is the first thing any agent does on a new instance.
+     *
+     * <p>This class already boots an instance with no sites, which is the fixture the case needs
+     * and the reason the test lives here rather than beside the other batch tests.</p>
+     */
+    @Test
+    @DisplayName("SH329: a dry run plans into the site the same batch creates")
+    void aDryRunPlansIntoTheSiteItCreates() {
+        ShAgentBatch batch = new ShAgentBatch(true, List.of(
+                new ShAgentBatch.Op("site.upsert", "site:SH329Demo", null, null, null, null),
+                new ShAgentBatch.Op("folder.upsert", "folder:SH329Demo/pages", null, null, null,
+                        null)));
+
+        ShAgentChangeSet plan = shAgentBatchService.run(batch, false, "admin");
+
+        assertThat(plan.results())
+                .as("""
+                        ops[1] used to fail with `No readable site 'SH329Demo'`: the session planned \
+                        pending folders and not a pending site, so "look before you write" was \
+                        broken for precisely the run that has nothing to look at yet.""")
+                .hasSize(2);
+        assertThat(plan.ops()).isEqualTo(2);
+    }
+
+    /**
+     * SH329's second defect, and the worse one: the refusal instructed the caller to pass a
+     * parameter this endpoint does not have.
+     */
+    @Test
+    @DisplayName("SH329: a write op naming an absent site is not told to pass ?site=")
+    void aWriteRefusalDoesNotNameAReadParameter() {
+        ShAgentBatch batch = new ShAgentBatch(true, List.of(
+                new ShAgentBatch.Op("folder.upsert", "folder:SH329Absent/pages", null, null, null,
+                        null)));
+
+        assertThatThrownBy(() -> shAgentBatchService.run(batch, false, "admin"))
+                .isInstanceOf(ShTeachingException.class)
+                .satisfies(failure -> {
+                    var problem = ((ShTeachingException) failure).problem().toProblemDetail();
+                    assertThat(problem.getProperties().get("fix").toString())
+                            .as("""
+                                    P6: an instruction to do something that does not exist is worse \
+                                    than no instruction — POST /api/v2/agent/batch has no ?site=.""")
+                            .doesNotContain("?site=")
+                            .contains("site.upsert");
+                    assertThat(problem.getProperties().get("example").toString())
+                            .as("the example is the op that fixes it, not a query string")
+                            .doesNotContain("?site=");
+                });
     }
 }
