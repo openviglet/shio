@@ -23,6 +23,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.api.agent.ShAgentBatchService;
+import com.viglet.shio.api.agent.dto.ShAgentBatch;
+import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.verify.ShAgentVerifyService;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
 import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
@@ -71,6 +74,10 @@ class ShRenderModelReconcileTest {
     private ShWidgetRepository shWidgetRepository;
     @Autowired
     private PlatformTransactionManager transactionManager;
+    @Autowired
+    private ShAgentBatchService batchService;
+    @Autowired
+    private tools.jackson.databind.ObjectMapper objectMapper;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -301,6 +308,57 @@ class ShRenderModelReconcileTest {
                 shWidgetRepository.findAll().stream().map(ShWidget::getName).sorted().toList())
                 .isNotNull();
         return found;
+    }
+
+    // --- SH326: the repair verb, from the surface an MCP-only client actually has ---
+
+    /**
+     * SH186 made {@code ensure} reachable as {@code render.provision}; {@code reconcile} stayed
+     * HTTP-only, so an older instance could be <em>diagnosed</em> by an MCP-only client and not
+     * repaired by one. `untitled-template`'s own fix named the route — the SH328 shape again: a
+     * surface instructing a write no agent op could perform.
+     */
+    @Test
+    @DisplayName("SH326: reconcile is reachable as an op, and a dry run still writes nothing")
+    void reconcileIsReachableAsAnOp() {
+        oldRegionWithNoTitleField();
+
+        ShAgentChangeSet planned = batchService.run(
+                new ShAgentBatch(true, List.of(reconcileOp())), false, "tester");
+
+        assertThat(planned.results()).singleElement().satisfies(row ->
+                assertThat(row.detail()).contains("would add")
+                        .contains(ShSystemPostTypeAttr.TITLE));
+        assertThat(fieldNames(ShSystemPostType.REGION))
+                .as("the plan wrote nothing, which is the property every other op has")
+                .doesNotContain(ShSystemPostTypeAttr.TITLE);
+
+        batchService.run(new ShAgentBatch(false, List.of(reconcileOp())), false, "tester");
+
+        assertThat(fieldNames(ShSystemPostType.REGION)).contains(ShSystemPostTypeAttr.TITLE);
+    }
+
+    /**
+     * The division SH289 drew, held at the op: {@code ensure} is safe to call unattended and
+     * {@code reconcile} changes a type the instance already has, so the repair is opt-in and never
+     * implied. Without this, an agent provisioning on startup would silently reshape a curator's
+     * types.
+     */
+    @Test
+    @DisplayName("SH326: provisioning without the flag never repairs")
+    void provisioningAloneNeverRepairs() {
+        oldRegionWithNoTitleField();
+
+        batchService.run(new ShAgentBatch(false, List.of(new ShAgentBatch.Op(
+                ShAgentBatchService.RENDER_PROVISION, null, null, null, null))), false, "tester");
+
+        assertThat(fieldNames(ShSystemPostType.REGION))
+                .doesNotContain(ShSystemPostTypeAttr.TITLE);
+    }
+
+    private ShAgentBatch.Op reconcileOp() {
+        return new ShAgentBatch.Op(ShAgentBatchService.RENDER_PROVISION, null, null, null, null,
+                objectMapper.valueToTree(java.util.Map.of("reconcile", true)));
     }
 
     private List<ShPostTypeAttrDef> fields(String typeName) {

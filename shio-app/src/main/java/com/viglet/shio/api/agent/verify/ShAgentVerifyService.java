@@ -569,8 +569,9 @@ public class ShAgentVerifyService {
                     "Give it a title by writing the TITLE field (post.upsert on "
                             + "POST /api/v2/agent/batch). If the write is refused as an undeclared "
                             + "field, this instance's " + typeName + " predates the title field: "
-                            + "run POST /api/v2/render/post-types/reconcile to add it, which "
-                            + "changes nothing else."));
+                            + "add a `render.provision` op with `data.reconcile:true` to add it "
+                            + "(or POST /api/v2/render/post-types/reconcile), which changes "
+                            + "nothing else."));
         }
     }
 

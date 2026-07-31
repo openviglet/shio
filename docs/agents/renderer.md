@@ -101,6 +101,13 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `JavaBeanValueResolver`, under which a template handed an entity walks the persistence model.
   (3) **A refusing `TemplateLoader`**: the default reads the classpath, so `{{> application}}`
   in a layout — which is content — is a file read.
+- **Both render-model verbs are ops, not just routes (SH186, SH326)** — `render.provision` is
+  addressless and idempotent; **`data.reconcile:true`** on it reaches SH289's repair, which had
+  stayed HTTP-only, so an MCP client could *diagnose* an old instance (`untitled-template`) and
+  not fix it — and that finding's own `fix` named the route, the SH328 shape again. Opt-in and
+  never implied by `ensure`: SH289's division is that `ensure` creates what is absent and is safe
+  unattended, while reconcile **changes a type the instance already has**. One op rather than a
+  tenth name, because a vocabulary is paid for by every caller that reads it (P3).
 - **Two URLs per frame, and the pair is the point (SH337)** — the model carries
   `post.url` / `site.url` (the fields as content spells them) *and* `post.canonical` /
   `site.baseUrl` (the same two facts through `ShSiteFrontEnd`, SH184). The raw pair could not

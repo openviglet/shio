@@ -124,11 +124,12 @@ public final class ShAgentOps {
             // SH186 — the one addressless op. It acts on the instance's model rather than on a post, a
             // folder or a site, and `address` is optional only so a row can echo the site being built.
             ShAgentBatchService.RENDER_PROVISION, new OpSpec(ShAgentBatchService.RENDER_PROVISION,
-                    List.of(), List.of(), List.of(), List.of(ADDRESS),
+                    List.of(), List.of(), List.of(), List.of(ADDRESS, DATA),
                     "Create the PageLayout/Region/Theme post-types this instance renders with, "
                             + "idempotently. Do this once before writing a layout: post.upsert "
                             + "cannot create a system type, and until they exist /preview has "
-                            + "nothing to compose. Takes no address.")));
+                            + "nothing to compose. `data.reconcile:true` also adds fields an "
+                            + "older instance's render types are missing. Takes no address.")));
 
     private ShAgentOps() {
         // utility

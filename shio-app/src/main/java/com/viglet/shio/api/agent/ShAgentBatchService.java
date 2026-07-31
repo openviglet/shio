@@ -519,17 +519,63 @@ public class ShAgentBatchService {
         // is the subject and there is no SH79 form for it, so the field is absent rather than invented:
         // a plausible-looking `render:post-types` would be a fourth address kind for one op.
         String address = op.address() == null || op.address().isBlank() ? null : op.address().trim();
-        if (missing.isEmpty()) {
+        // SH326 — `data.reconcile:true` reaches SH289's repair verb, the half of the render model an
+        // agent could not touch. Opt-in and never implied by `ensure`, which is SH289's own division:
+        // `ensure` creates what is absent and is safe to call unattended, while this *changes* a type
+        // the instance already has. One op rather than a tenth name, because the cost of a vocabulary
+        // is paid by every caller that reads it (P3) and the two are one question — "make this
+        // instance able to render" — asked of a new instance and of an old one.
+        boolean alsoReconcile = flag(op.data(), "reconcile");
+        List<String> repairs = alsoReconcile ? shRenderPostTypes.reconcile(true) : List.of();
+        if (missing.isEmpty() && repairs.isEmpty()) {
             return new Change(op.op(), address, Change.NOOP,
-                    "all three render post-types exist", null);
+                    alsoReconcile ? "all three render post-types exist and none is missing a field"
+                            : "all three render post-types exist", null);
         }
         if (session.dryRun) {
-            return new Change(op.op(), address, Change.CREATE,
-                    "would create " + String.join(", ", missing), null);
+            return new Change(op.op(), address, Change.CREATE, planned(missing, repairs), null);
         }
-        shRenderPostTypes.ensure();
-        return new Change(op.op(), address, Change.CREATE,
-                "created " + String.join(", ", missing), null);
+        if (!missing.isEmpty()) {
+            shRenderPostTypes.ensure();
+        }
+        if (alsoReconcile) {
+            // Re-run for effect. The plan above was the dry pass, and reading it twice is what
+            // keeps the reported lines the ones that were actually applied — `ensure` may have
+            // just created a type that then needs nothing.
+            repairs = shRenderPostTypes.reconcile(false);
+        }
+        return new Change(op.op(), address, Change.CREATE, applied(missing, repairs), null);
+    }
+
+    private static String planned(List<String> missing, List<String> repairs) {
+        List<String> parts = new ArrayList<>();
+        if (!missing.isEmpty()) {
+            parts.add("would create " + String.join(", ", missing));
+        }
+        if (!repairs.isEmpty()) {
+            parts.add("would add " + String.join("; ", repairs));
+        }
+        return String.join("; ", parts);
+    }
+
+    private static String applied(List<String> missing, List<String> repairs) {
+        List<String> parts = new ArrayList<>();
+        if (!missing.isEmpty()) {
+            parts.add("created " + String.join(", ", missing));
+        }
+        if (!repairs.isEmpty()) {
+            parts.add("added " + String.join("; ", repairs));
+        }
+        return parts.isEmpty() ? "nothing to do" : String.join("; ", parts);
+    }
+
+    /** A boolean field of an op's {@code data}, false when absent or not a boolean. */
+    private static boolean flag(JsonNode data, String field) {
+        if (data == null || !data.isObject()) {
+            return false;
+        }
+        JsonNode node = data.get(field);
+        return node != null && node.isBoolean() && node.booleanValue();
     }
 
     // --- site ops ---
