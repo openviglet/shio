@@ -9,6 +9,10 @@
 package com.viglet.shio.render;
 
 import org.springframework.http.CacheControl;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -94,7 +98,8 @@ public class ShRenderAPI {
         ShRenderedPage rendered = shPageRenderService.render(siteKey, pathWithin(siteKey, request),
                 ShPostState.PUBLISHED.name().equalsIgnoreCase(state)
                         ? ShPostState.PUBLISHED
-                        : ShPostState.DRAFT);
+                        : ShPostState.DRAFT,
+                readerParams(request));
         // SH185 — the editor bridge is opt-in per request. An ordinary preview must ship no
         // editor code at all: a script that makes elements contenteditable is not something to
         // leave lying in a page somebody might screenshot, and "off unless asked" is cheaper
@@ -166,6 +171,34 @@ public class ShRenderAPI {
      * remainder is the site's root page, {@code "/"} — which is the URL a curator means by
      * "show me the site".</p>
      */
+    /**
+     * The reader's query string, as the SH259 {@code param} frame sees it.
+     *
+     * <p>Two exclusions, both deliberate. {@code state} and {@code editor} are the <b>renderer's
+     * own</b> parameters, so passing them through would let a page read the flags that control how
+     * it is being rendered — a template that branches on {@code param.editor} is a page that looks
+     * different in the editor from the way it looks to a reader, which is the whole thing the
+     * Universal Editor is trying not to be. And a repeated parameter is flattened to its
+     * <b>first</b> value rather than a list: the frame is strings, `?q=a&amp;q=b` is a caller
+     * mistake rather than a shape templates should have to handle, and picking the first is the
+     * only choice that is stable (P5).</p>
+     */
+    // Package-private: the two exclusions above are rules worth a test, and the alternative
+    // was a MockMvc harness for a method that reads a map.
+    static Map<String, String> readerParams(HttpServletRequest request) {
+        Map<String, String> params = new LinkedHashMap<>();
+        request.getParameterMap().forEach((name, values) -> {
+            if (RENDERER_PARAMS.contains(name) || values == null || values.length == 0) {
+                return;
+            }
+            params.put(name, values[0]);
+        });
+        return params;
+    }
+
+    /** The two the renderer reads itself — see {@link #readerParams}. */
+    private static final Set<String> RENDERER_PARAMS = Set.of("state", "editor");
+
     private String pathWithin(String siteKey, HttpServletRequest request) {
         Object attribute = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
         String full = attribute == null ? "" : attribute.toString();

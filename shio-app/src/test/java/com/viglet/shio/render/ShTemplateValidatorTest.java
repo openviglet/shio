@@ -202,4 +202,39 @@ class ShTemplateValidatorTest {
         assertThat(validator.validate(null)).isEmpty();
         assertThat(validator.validate("   ")).isEmpty();
     }
+
+    // --- SH259: the one frame that comes from the reader ---
+
+    /**
+     * Every other value a template reaches is content, written by somebody with an account through
+     * a surface that records who wrote it — rendering it unescaped is an author's decision about
+     * their own markup. `param` is the exception, and a reader is anybody with the URL.
+     */
+    @Test
+    @DisplayName("SH259: an unescaped param is refused at write time, both spellings")
+    void anUnescapedParamIsRefused() {
+        for (String template : List.of("<h1>{{{param.q}}}</h1>", "<h1>{{& param.q}}</h1>")) {
+            assertThat(validator.validate(template))
+                    .as(template)
+                    .singleElement()
+                    .satisfies(problem -> {
+                        assertThat(problem.rule()).isEqualTo("param-unescaped");
+                        assertThat(problem.message())
+                                .as("P6 — the fix is the two-brace form, spelled out")
+                                .contains("{{param.q}}");
+                    });
+        }
+    }
+
+    @Test
+    @DisplayName("SH259: the escaping default is not flagged, and content still opts out freely")
+    void theSafeDefaultAndOrdinaryContentAreLeftAlone() {
+        assertThat(validator.validate("<h1>{{param.q}}</h1>"))
+                .as("Handlebars escapes this already, so there is nothing to refuse")
+                .isEmpty();
+        assertThat(validator.validate("<article>{{{TEXT}}}</article>"))
+                .as("""
+                        an author rendering their own field unescaped is the rich-text case this                         product is for; the rule is about where the value came from, not about                         triple braces""")
+                .isEmpty();
+    }
 }

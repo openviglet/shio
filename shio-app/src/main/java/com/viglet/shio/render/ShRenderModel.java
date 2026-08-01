@@ -92,7 +92,7 @@ public class ShRenderModel {
      * an internal inconsistency, and `ShRenderConventionsTest` asserts the writers against it in both
      * directions.</p>
      */
-    public static final Set<String> FRAMES = Set.of("post", "site", "theme", "render");
+    public static final Set<String> FRAMES = Set.of("post", "site", "theme", "render", "param");
 
     private final ObjectMapper objectMapper;
     private final ShAgentIncidentLog incidentLog;

@@ -13,6 +13,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Component;
 
@@ -126,8 +128,47 @@ public class ShTemplateValidator {
             return problems;
         }
         problems.addAll(missingHelpers(template));
+        problems.addAll(unescapedParams(template));
         return problems;
     }
+
+    /**
+     * SH259 — {@code {{{param.q}}}} is refused at write time.
+     *
+     * <h2>Why this is a rule and {@code {{{TEXT}}}} is not</h2>
+     *
+     * <p>Every other value a template can reach is <b>content</b>: it was written by somebody with
+     * a console account, through a surface that records who wrote it, and rendering it unescaped is
+     * an author's decision about their own markup. The {@code param} frame is the one thing in the
+     * model that comes from the <b>reader</b>, and a reader is anybody with the URL. A results page
+     * echoing {@code {{{param.q}}}} is the reflected-XSS shape exactly.</p>
+     *
+     * <p>Handlebars escapes {@code {{param.q}}} by default, so the default is already safe and this
+     * only closes the deliberate opt-out. A front end would have no way to make that refusal; here
+     * SH192's machinery was already sitting on the write path, and a rule that fires when somebody
+     * writes the template beats one that fires when a reader visits the page.</p>
+     */
+    private List<ShTemplateProblem> unescapedParams(String template) {
+        List<ShTemplateProblem> found = new ArrayList<>();
+        Matcher matcher = UNESCAPED_PARAM.matcher(template);
+        while (matcher.find()) {
+            // One alternative or the other matched, never both: `{{{x}}}` and `{{& x}}`.
+            String expression = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
+            int[] at = positionOf(template, matcher.start());
+            found.add(new ShTemplateProblem("param-unescaped",
+                    "`" + matcher.group().trim() + "` renders a value from the reader's query "
+                            + "string without escaping it, which is a reflected-XSS hole: anybody "
+                            + "who can send somebody a link chooses that markup. Write `{{"
+                            + expression.trim() + "}}` — the two-brace form escapes, and it "
+                            + "is the only frame in the model that does not come from an author.",
+                    at[0], at[1], window(template, at[0], at[1])));
+        }
+        return found;
+    }
+
+    /** `{{{param.q}}}` and `{{& param.q}}` — Handlebars' two ways of saying "do not escape". */
+    private static final Pattern UNESCAPED_PARAM =
+            Pattern.compile("\\{\\{\\{\\s*(param\\.[^}]*)}}}|\\{\\{&\\s*(param\\.[^}]*)}}");
 
     /**
      * Classifies a compile failure.

@@ -144,6 +144,31 @@ public class ShPageRenderService {
     // twice is that the failure surfaces at commit, nowhere near the catch that caused it.
     @Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
     public ShRenderedPage render(String siteKey, String url, ShPostState state) {
+        return render(siteKey, url, state, Map.of());
+    }
+
+    /**
+     * As {@link #render(String, String, ShPostState)}, with the reader's query string (SH259).
+     *
+     * <h2>What a template is allowed to know about the request</h2>
+     *
+     * <p>SH247's {@code {{#search q="…"}}} takes a term the <em>template</em> supplies, which
+     * builds a tag page or a curated collection and is not what an author means by "search". A
+     * results page needs {@code ?q=}, and the model deliberately had no request in it: SH183's
+     * non-goal resolution was that a layout is content and must never have the raw
+     * {@code HttpServletRequest} in scope, which is exactly what made FSP's engine a sandboxing
+     * liability.</p>
+     *
+     * <p>So the question was never how to pass a parameter. It is what a template may know, and the
+     * answer is deliberately the smallest thing that serves search, pagination and a filter: one
+     * {@code param} frame of <b>query-string values as strings</b>. Read-only, never headers, never
+     * cookies, never the request object. That is nothing like handing a template the request, and
+     * it is the only frame whose content comes from the reader rather than from the content.</p>
+     *
+     * @param params query-string values, already flattened to one string per name
+     */
+    public ShRenderedPage render(String siteKey, String url, ShPostState state,
+                                 Map<String, String> params) {
         ShSite site = siteByKey(siteKey);
         ShPostUnified page = pageAt(site, url, state);
         // SH278 — the render's own state reaches every level: a preview shows the draft layout,
@@ -162,6 +187,11 @@ public class ShPageRenderService {
         // Reserved, like `post`/`site`/`theme`: it lets the helpers pick DRAFT vs PUBLISHED
         // and lets a layout render its own "you are looking at a draft" marker.
         model.put("render", ShStableMap.copyOf(Map.of("state", state.name())));
+        // SH259 — the reader's query, and nothing else of the request. Sorted rather than in
+        // arrival order: the model feeds markup SH101 hashes, and two readers sending the same
+        // parameters in a different order must not produce two digests.
+        model.put("param", ShStableMap.copyOf(new java.util.TreeMap<>(
+                params == null ? Map.<String, String>of() : params)));
         Map<String, Object> stable = ShStableMap.copyOf(model);
 
         String layoutHtml = engine.render(fieldOf(layout, ShSystemPostTypeAttr.HTML), stable);

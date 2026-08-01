@@ -101,6 +101,21 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `JavaBeanValueResolver`, under which a template handed an entity walks the persistence model.
   (3) **A refusing `TemplateLoader`**: the default reads the classpath, so `{{> application}}`
   in a layout — which is content — is a file read.
+- **`param` — the one frame that comes from the reader (SH259)** — query-string values as strings,
+  read-only, **never headers, never cookies, never the request object**. SH247's `{{#search q="…"}}`
+  takes a term the *template* supplies, which is a tag page, not a search results page; that needs
+  `?q=`. The question was never how to pass a parameter but **what a template may know about the
+  request**, because SH183's non-goal resolution is that a layout is content and must not have the
+  raw `HttpServletRequest` in scope — the thing that made the 2019 engine a sandboxing liability.
+  Sorted, so two readers sending the same parameters in a different order cannot produce two SH101
+  digests. `state` and `editor` are **excluded**: they are the renderer's own, and a template
+  branching on `param.editor` renders differently inside the Universal Editor than for a reader.
+  A repeated parameter flattens to its **first** value. **`{{{param.q}}}` is refused at write time**
+  (`param-unescaped`, SH192's machinery) — every other value a template reaches is content written
+  by somebody with an account, and this one is written by anybody with the URL, so the unescaped
+  form is reflected XSS. `{{param.q}}` escapes by default, so only the deliberate opt-out is closed;
+  `{{{TEXT}}}` stays free, because the rule is about **where the value came from**. Nothing is said
+  about caching: `/preview` is already `no-store`, and preview is not delivery.
 - **The preview is walkable, by two mechanisms with two jobs (SH336)** — `{{link}}` is a bare furl
   while the page is served at `/preview/<site>/…`, so every internal link 404'd, and **the lint
   could not see it**: `routes` resolves against content URLs where `/contato` is correct. The
