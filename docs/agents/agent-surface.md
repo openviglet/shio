@@ -529,8 +529,19 @@ production pays and is not what the claim is about.
 
 **A test that measures the whole instance may not share it, and `ShBenchmarkIsolationLintTest`
 enforces it (SH315).** Three source rules: a `@SpringBootTest` in the benchmark package declares its
-own `spring.datasource.url`; so does any test calling `verify(null, …)`, `context(null, …)` or
-`changes(null, …)`; and no two classes claim the same in-memory database. It exists because the
+own `spring.datasource.url`; so does any test making an **instance-wide read**; and no two classes
+claim the same in-memory database.
+**Since SH318 that middle list is derived, not remembered** — a `*Service` method whose first
+parameter is `String site` is instance-wide when that argument is `null`, *by construction*, so the
+scan finds `find` and the SH160 memory reads that the hand-written `verify`/`context`/`changes` never
+mentioned while its message implied the three were exhaustive (SH260's move for helpers and SH300's
+for DOM attributes, on the third hand-kept list). It caught two real ones on the way in —
+`ShAgentMemoryTest` and `ShRememberToolTest` both asserted on `notes(null)` from the shared context.
+The match requires a **`Service.` receiver**, which is load-bearing twice: without it
+`Declared.of(String site, …)` — a factory nested in a `*Service.java` — matched `List.of(null)` in an
+unrelated test, and a *test-local* `verify(String checks)` helper that scopes correctly was flagged as
+the opposite. Reads with no site parameter at all (`diagnostics`) stay declared, since there is no
+nullable argument to notice. It exists because the
 convention was documented on four classes and broken five times (SH239, SH272, SH289, SH314, and two
 incident tests found while writing the lint) — always caught by accident, because the code is right
 and only the *measurement* is wrong.

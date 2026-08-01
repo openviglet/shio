@@ -47,7 +47,12 @@ import jakarta.persistence.PersistenceContext;
  *
  * @author Alexandre Oliveira
  */
-@SpringBootTest
+// Its own database: `notes(null)` and `memory(null, …)` describe the whole instance's memory, and this class asserts
+// on what is in it — so on the shared context those assertions are statements about which other
+// test wrote a note first (SH318 derived this class; SH315 wrote the rule).
+@SpringBootTest(properties =
+        "spring.datasource.url=jdbc:h2:mem:shio-memory;DB_CLOSE_DELAY=-1;MODE=LEGACY;"
+                + "DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true")
 @TestInstance(Lifecycle.PER_CLASS)
 class ShAgentMemoryTest {
 

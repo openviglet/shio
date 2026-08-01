@@ -70,9 +70,70 @@ class ShBenchmarkIsolationLintTest {
             Pattern.compile("spring\\.datasource\\.url.{0,40}?jdbc:h2:mem:([a-z0-9-]+)",
                     Pattern.DOTALL);
 
-    /** An instance-wide read: what it answers depends on every other test's writes. */
-    private static final List<String> INSTANCE_WIDE =
-            List.of("verify(null,", "context(null,", "changes(null,");
+    private static final Path MAIN =
+            Path.of("src", "main", "java", "com", "viglet", "shio", "api", "agent");
+
+    /**
+     * A read whose first parameter is a site, which makes passing {@code null} instance-wide.
+     *
+     * <p>SH318 — this used to be {@code List.of("verify(null,", "context(null,", "changes(null,")},
+     * which was not the rule but the three that had already bitten. `find`, the SH160 memory reads
+     * and anything added next were the same latent order-dependence, and the failure message said
+     * "these three" as though the list were exhaustive.</p>
+     *
+     * <p>Derived instead, from the surface: a service method taking {@code String site} first is
+     * instance-wide when that argument is {@code null}, <b>by construction</b>. This is SH260's move
+     * for helpers and SH300's for DOM attributes, applied to the third hand-kept list — and the
+     * point is not tidiness, it is that the next such method is covered without anybody remembering.
+     * Restricted to {@code *Service}: {@code ShAddress.post(String site, …)} and
+     * {@code Declared.of(String site, …)} match the shape and are factories, not reads.</p>
+     */
+    private static final Pattern SITE_FIRST_READ =
+            Pattern.compile("public\\s+[A-Za-z0-9_<>,.\\[\\] ]+?\\s+([a-zA-Z0-9_]+)"
+                    + "\\(\\s*String\\s+(?:site|siteKey)\\s*[,)]");
+
+    /**
+     * Reads with no site parameter at all, so **every** call is instance-wide.
+     *
+     * <p>The derivation above cannot see these — there is no nullable site to notice — so they are
+     * declared, which is the honest half of the split rather than a hole in it.</p>
+     */
+    private static final Map<String, String> ALWAYS_INSTANCE_WIDE = Map.of(
+            "diagnostics(", "the SH103 incident log is per instance and has no site to scope to");
+
+    /** Every call shape that reads the whole instance, computed once. */
+    private static List<String> instanceWideCalls() {
+        Set<String> calls = new java.util.TreeSet<>(ALWAYS_INSTANCE_WIDE.keySet());
+        for (String body : mainSources().values()) {
+            Matcher matcher = SITE_FIRST_READ.matcher(body);
+            while (matcher.find()) {
+                // `Service.` before the name, and it is doing two jobs. It drops
+                // `Declared.of(String site, …)`, a factory nested in a *Service.java whose name is
+                // generic enough that a bare `of(null)` matched `List.of(null)` in an unrelated
+                // test. And it drops a *test-local* helper of the same name — `ShAgentVerifyTest`
+                // has its own `verify(String checks)` that scopes to the class's site, which the
+                // bare form flagged as instance-wide when it is the opposite.
+                //
+                // The limit this leaves, stated rather than discovered later: a local helper that
+                // *forwards* null is invisible to the scan. That is strictly better than the three
+                // hand-written names, which had the same blind spot and four fewer reads.
+                calls.add("Service." + matcher.group(1) + "(null,");
+                calls.add("Service." + matcher.group(1) + "(null)");
+            }
+        }
+        return List.copyOf(calls);
+    }
+
+    private static Map<String, String> mainSources() {
+        try (Stream<Path> files = Files.walk(MAIN)) {
+            Map<String, String> byName = new TreeMap<>();
+            files.filter(path -> path.toString().endsWith("Service.java"))
+                    .forEach(path -> byName.put(path.getFileName().toString(), read(path)));
+            return byName;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 
     /**
      * Classes that read instance-wide from a shared database <em>on purpose</em>, with the reason.
@@ -108,10 +169,11 @@ class ShBenchmarkIsolationLintTest {
     @DisplayName("a test that reads the whole instance boots its own database")
     void everyInstanceWideReaderIsolatesItsDatabase() {
         List<String> shared = new ArrayList<>();
+        List<String> instanceWide = instanceWideCalls();
         Set<String> declared = SHARED_ON_PURPOSE.keySet();
         for (Map.Entry<String, String> source : sources("").entrySet()) {
             String body = source.getValue();
-            boolean reads = INSTANCE_WIDE.stream().anyMatch(body::contains);
+            boolean reads = instanceWide.stream().anyMatch(body::contains);
             if (reads && body.contains("@SpringBootTest") && !DATASOURCE.matcher(body).find()
                     && !declared.contains(source.getKey())) {
                 shared.add(source.getKey());
@@ -120,11 +182,13 @@ class ShBenchmarkIsolationLintTest {
 
         assertThat(shared)
                 .as("""
-                        `verify(null, …)`, `context(null, …)` and `changes(null, …)` answer for the \
-                        whole instance, so on the shared context their answer includes every other \
+                        A read taking a site first answers for the whole instance when that \
+                        argument is null, so on the shared context its answer includes every other \
                         test's content. An assertion on a count or a single element is then a \
                         statement about suite order. Either scope the call to this test's own site, \
-                        or give the class a database of its own.""")
+                        or give the class a database of its own. The call shapes are derived from \
+                        the service surface (SH318) rather than listed, so this covers the next \
+                        one without anybody remembering: """ + instanceWideCalls())
                 .isEmpty();
     }
 

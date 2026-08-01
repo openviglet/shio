@@ -43,7 +43,12 @@ import tools.jackson.databind.node.ObjectNode;
  *
  * @author Alexandre Oliveira
  */
-@SpringBootTest
+// Its own database: `notes(null)` is instance-wide, and this class asserts a note it just wrote is present and a
+// forgotten one is absent — both readings include every other test's memory on a shared
+// datasource (SH318).
+@SpringBootTest(properties =
+        "spring.datasource.url=jdbc:h2:mem:shio-remember;DB_CLOSE_DELAY=-1;MODE=LEGACY;"
+                + "DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true")
 @TestInstance(Lifecycle.PER_CLASS)
 class ShRememberToolTest {
 
