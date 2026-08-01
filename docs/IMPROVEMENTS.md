@@ -2125,28 +2125,6 @@ the build going red the day somebody adds the fifth one.
 > message, which blamed the disagreement rather than the trim. So extending a guard is worth doing
 > for the reading it forces as much as for the assertions it adds, and the gap itself is §XVI.13.
 
-### XVI.13 A declared refusal is not checked for being the right refusal (SH258)
-
-SH255's property is "the value comes back exactly, or the loss is declared". A **throw** satisfies
-the second branch whatever it says, so all of these are indistinguishable to the guard:
-
-- the refusal the format intends, naming the value and what to do about it;
-- a refusal from three layers down that blames a symptom (`siteDir`'s trim, surfacing as
-  `parsePost` complaining that a file disagrees with its own path);
-- a `TypeError` from a bug in the check itself.
-
-That is not hypothetical — the second is exactly what happened during SH257, and it is why that
-defect had to be found by reading rather than by running.
-
-The fix is small: a `DECLARED` entry should carry the refusal it expects — a pattern the thrown
-message has to match — so "refused" stops being one outcome and becomes N. It is the same argument
-SH80 makes for the HTTP surface, that a 4xx has to carry a `fix` rather than just a status, applied
-to a test's own notion of an acceptable failure.
-
-Worth stating the boundary, because it is easy to over-build: this is not a demand that every
-error message be asserted verbatim. The entry only has to pin the part that identifies *which* rule
-fired, which is the part a reader would use to tell a good refusal from a confusing one.
-
 ### XVI.14 The helper catalogue is five hardcoded lists (SH260)
 
 > ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth keeping.

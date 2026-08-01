@@ -57,8 +57,17 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   exactly — which is how SH253 and SH254 both survived four blocks. **A value a format cannot
   hold must be named in `DECLARED` with the reason**, and a declared loss the format no longer has
   **fails the build** (SH142's rule, so the list cannot rot into a suppression). A refusal counts
-  as legitimate non-holding — it is the only one that cannot lose work silently. Three are
-  conversions (a body's CRLF and lone `\r`, an empty note) and the other sixteen are **refusals**,
+  as legitimate non-holding — it is the only one that cannot lose work silently.
+  **And since SH258 an entry names *which* refusal it expects**: `{ why, refuses: /pattern/ }` for a
+  throw whose message must match, `{ why }` for a lossy carry that must **not** throw. Before that a
+  `throw` satisfied "the loss is declared" whatever it said, so the intended refusal, a refusal from
+  three layers down blaming a symptom, and a `TypeError` in the check itself were indistinguishable
+  — and the middle one is what actually happened during SH257 (`siteDir` trimmed, `parsePost` then
+  complaining that a file disagreed with its own path), found by *reading* rather than by running.
+  The pattern pins only the part that identifies the rule; this is **not** verbatim message
+  assertion. The weak case is named in the table itself: `assetPathFor` answers `null` for two rules,
+  so those entries can pin the function and not which of the two fired.
+  Three are conversions (a body's CRLF and lone `\r`, an empty note) and the other sixteen are **refusals**,
   which is what a format whose output is a filesystem path should mostly do. If you add a
   normalization anywhere in `content-files.mjs`/`content-notes.mjs`/`content-assets.mjs`, this is
   the test that will tell you what it costs. **Its known limit is SH258**: a declared refusal is

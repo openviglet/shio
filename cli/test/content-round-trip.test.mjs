@@ -87,12 +87,30 @@ const ADVERSARIAL = [
 ];
 
 /**
- * Values a format may legitimately not hold verbatim, with the reason.
+ * Values a format may legitimately not hold verbatim, with the reason **and the refusal**.
  *
  * Keyed `<format>/<value name>`. **Adding an entry is a decision**: it says the value survives
  * somewhere else, or that carrying it is not worth what it would cost. It is never "this is
  * broken and we are moving on" — the whole point of the list is that the second kind has to be
  * argued in writing.
+ *
+ * ## SH258 — a declared refusal is checked for being the *right* refusal
+ *
+ * Until SH258 an entry was a sentence and the property was "the value comes back exactly, or the
+ * loss is declared". A **throw** satisfied the second branch whatever it said, so three outcomes
+ * were indistinguishable to the guard: the refusal the format intends, a refusal from three layers
+ * down blaming a symptom, and a `TypeError` from a bug in the check itself. That is not
+ * hypothetical — the middle one is exactly what happened during SH257 (`siteDir` trimmed, and
+ * `parsePost` then complained that a file disagreed with its own path), and it is why that defect
+ * had to be found by *reading* rather than by running.
+ *
+ * So an entry now declares which kind of loss it is:
+ *
+ * - `{ why, refuses: /pattern/ }` — the format **throws**, and the message must match. The pattern
+ *   pins the part that identifies which rule fired, and nothing more: this is not a demand that
+ *   every message be asserted verbatim.
+ * - `{ why }` — the format **carries** the value lossily and must not throw. Declaring a carry and
+ *   getting a refusal is now a failure too, which is the same blind spot facing the other way.
  */
 const DECLARED = {
   // Only two, and writing the list is what proved it. The body's framing has to be stripped on
@@ -100,40 +118,96 @@ const DECLARED = {
   // already keeps those in `fields:`, so they survive the document exactly and only *stop being
   // the body*. The body is presentation, not storage. What is genuinely lost is the pair the
   // format converts on purpose:
-  "body/CRLF": "normalized to LF by design; SH253 makes the comparison agree so it is not drift",
-  "body/lone CR": "normalized to LF by design, same as CRLF",
+  "body/CRLF": {
+    why: "normalized to LF by design; SH253 makes the comparison agree so it is not drift",
+  },
+  "body/lone CR": { why: "normalized to LF by design, same as CRLF" },
   // SH160's "forgetting is an empty note" is an *API* gesture — it deletes the row — so a read
   // never returns one, and in the file a forgotten note is an absent key. `parseNotes` refuses
   // an entry with no instruction rather than storing a note that says nothing.
-  "note/empty": "refused: a note is a key and an instruction, and a forget is an absent key",
+  "note/empty": {
+    why: "refused: a note is a key and an instruction, and a forget is an absent key",
+    refuses: /A note is a key and an instruction/,
+  },
 
   // --- asset paths (SH256): every entry here is a *refusal*, which is the point ---
   // An asset path is the only round trip whose output is used as a filesystem path, so the
   // format's job is to reject a value rather than to carry it cleverly.
-  "asset/empty": "refused: a file with no name is not an asset",
-  "asset/slash": "refused: a separator makes the name claim to be a path (SH256)",
-  "asset/backslash": "refused: a separator makes the name claim to be a path (SH256)",
-  "asset/backslash name": "refused: a separator makes the name claim to be a path (SH256)",
-  "asset/dot dot": "refused: navigates instead of naming — under shio/assets it leaves the tree",
-  "asset/single dot": "refused: two paths for one asset breaks idempotence (P5)",
+  //
+  // SH258's weakest case, and worth naming: `assetPathFor` answers `null` for two different rules
+  // (a traversal segment and a missing name), so the pattern can pin *where* the refusal came from
+  // and not *which* of the two fired. Pinning the function still separates a real refusal from a
+  // `TypeError` in the thunk, which is the third of the three outcomes this mechanism exists for.
+  "asset/empty": { why: "refused: a file with no name is not an asset", refuses: /assetPathFor/ },
+  "asset/slash": {
+    why: "refused: a separator makes the name claim to be a path (SH256)",
+    refuses: /assetPathFor/,
+  },
+  "asset/backslash": {
+    why: "refused: a separator makes the name claim to be a path (SH256)",
+    refuses: /assetPathFor/,
+  },
+  "asset/backslash name": {
+    why: "refused: a separator makes the name claim to be a path (SH256)",
+    refuses: /assetPathFor/,
+  },
+  "asset/dot dot": {
+    why: "refused: navigates instead of naming — under shio/assets it leaves the tree",
+    refuses: /assetPathFor/,
+  },
+  "asset/single dot": {
+    why: "refused: two paths for one asset breaks idempotence (P5)",
+    refuses: /assetPathFor/,
+  },
 
   // --- a site's own name (SH257) ---
   // The directory name has to *be* the site's name, because the whole format is built on the
   // path and the frontmatter agreeing. A name with no faithful directory is refused, naming the
   // site, rather than silently trimmed into a tree no later command can read.
-  "site/empty": "refused: a post must say which site it belongs to",
-  "site/trailing space": "refused: its directory name would not be its name (SH257)",
-  "site/leading space": "refused: its directory name would not be its name (SH257)",
-  "site/trailing newline": "refused: its directory name would not be its name (SH257)",
-  "site/BOM": "refused: a leading BOM is trimmed away, so the directory would not be the name",
-  "site/slash": "refused: a site name with a slash has no safe directory name",
-  "site/backslash": "refused: a site name with a separator has no safe directory name",
-  "site/backslash name": "refused: a site name with a separator has no safe directory name",
-  "site/dot dot": "refused: `..` is not a directory name",
-  "site/single dot": "refused: `.` is not a directory name",
+  //
+  // These are the entries SH258 was written for: three distinct rules live here, and before the
+  // patterns any of them could have fired for any of these values without the table noticing.
+  "site/empty": {
+    why: "refused: a post must say which site it belongs to",
+    refuses: /must say which site it belongs to/,
+  },
+  "site/trailing space": {
+    why: "refused: its directory name would not be its name (SH257)",
+    refuses: /starts or ends with whitespace/,
+  },
+  "site/leading space": {
+    why: "refused: its directory name would not be its name (SH257)",
+    refuses: /starts or ends with whitespace/,
+  },
+  "site/trailing newline": {
+    why: "refused: its directory name would not be its name (SH257)",
+    refuses: /starts or ends with whitespace/,
+  },
+  "site/BOM": {
+    why: "refused: a leading BOM is trimmed away, so the directory would not be the name",
+    refuses: /starts or ends with whitespace/,
+  },
+  "site/slash": {
+    why: "refused: a site name with a slash has no safe directory name",
+    refuses: /has no safe directory name/,
+  },
+  "site/backslash": {
+    why: "refused: a site name with a separator has no safe directory name",
+    refuses: /has no safe directory name/,
+  },
+  "site/backslash name": {
+    why: "refused: a site name with a separator has no safe directory name",
+    refuses: /has no safe directory name/,
+  },
+  "site/dot dot": {
+    why: "refused: `..` is not a directory name",
+    refuses: /has no safe directory name/,
+  },
+  "site/single dot": {
+    why: "refused: `.` is not a directory name",
+    refuses: /has no safe directory name/,
+  },
 };
-
-const declared = (format, name) => Object.hasOwn(DECLARED, `${format}/${name}`);
 
 /**
  * Asserts exactness, or that the loss is declared — and fails a declaration that is now wrong.
@@ -150,7 +224,8 @@ function assertRoundTrip(format, entry, read) {
     refused = error;
   }
   const exact = refused === null && actual === entry.value;
-  if (declared(format, entry.name)) {
+  const declaration = DECLARED[`${format}/${entry.name}`];
+  if (declaration) {
     // A declaration the format no longer needs is removed, not left to rot into a suppression
     // that hides the next defect at the same spot — SH142's rule for `shio verify --accept`.
     assert.equal(
@@ -158,6 +233,28 @@ function assertRoundTrip(format, entry, read) {
       false,
       `${format}/${entry.name} now round-trips exactly — delete its DECLARED entry.`,
     );
+    if (declaration.refuses) {
+      assert.ok(
+        refused,
+        `${format}/${entry.name} declares a refusal matching ${declaration.refuses}, and the ` +
+          `format did not refuse — it returned ${JSON.stringify(actual)}. A declared refusal ` +
+          "that stopped happening is a rule that quietly changed.",
+      );
+      assert.match(
+        refused.message,
+        declaration.refuses,
+        `${format}/${entry.name} refused, but not with the rule it declares. This is SH258's ` +
+          "whole point: a refusal from three layers down blaming a symptom satisfies " +
+          '"the loss is declared" exactly as well as the right one does.',
+      );
+    } else {
+      assert.equal(
+        refused,
+        null,
+        `${format}/${entry.name} declares a lossy carry, not a refusal, and it threw: ` +
+          `${refused?.message}. Either add a refuses pattern, or fix the format.`,
+      );
+    }
     return;
   }
   if (refused) throw refused;
@@ -221,7 +318,12 @@ describe("SH255: every format holds an adversarial value, or declares that it do
         const path = assetPathFor({ siteName: "Blog", fileName: entry.value }, "/media");
         // SH256 — null is the refusal, and a refusal is a legitimate way not to hold a value.
         // Surfaced as a throw so the DECLARED entry has to say so.
-        if (path === null) throw new Error(`refused: ${JSON.stringify(entry.value)}`);
+        // SH258 — name the function, so a real refusal is distinguishable from a TypeError
+        // in this thunk. `assetPathFor` collapses two rules into one null, which is as far
+        // as the pattern can pin this format; the DECLARED entries say so.
+        if (path === null) {
+          throw new Error(`assetPathFor refused ${JSON.stringify(entry.value)}`);
+        }
         return assetLocationOf(path).fileName;
       });
     });
