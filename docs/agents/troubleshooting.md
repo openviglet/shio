@@ -83,3 +83,37 @@ id-only form is also faster (no join). This is invisible until runtime — the
 mapping is valid JPQL — so it is a code-review item, not a compile error. Found
 while building the SH77 context pack; see `ShPostUnifiedRepository`'s note.
 
+
+### A test passes because a sibling test already fixed the fixture (SH296)
+
+**A mutating test must *force* its precondition, never assume the `@BeforeAll` one.**
+`Lifecycle.PER_CLASS` shares one fixture across a class, so a test that writes leaves
+state the next test reads — and the failure is not a red build, it is an assertion
+that quietly stops asserting anything.
+
+It has happened three times, each found by accident:
+
+- **SH239** — a benchmark pair wrote into the folder another pair measured, so one
+  ratio read 26.2× or 11.8× depending on order.
+- **SH272** — a test asserting "this instance has no templates" was really asserting
+  what ran first.
+- **SH289** — an additive-only assertion survived a mutation that made the code
+  overwrite *everything*, because a sibling had already repaired the fixture. It was
+  caught only because the fix was verified by mutation rather than by a green run.
+
+The rule in practice is `ShRenderModelReconcileTest.oldRegionWithNoTitleField()`: it
+**re-creates the broken state at the top of every test that needs it** rather than
+building it once. An early version returned when the type already existed, and the
+additive-only test then ran against an already-repaired type — where `reconcile` finds
+nothing to add and writes nothing, so the assertion passed whatever the code did.
+
+**Two instruments were weighed and rejected, and the reasons are the point.**
+`@TestMethodOrder(Random)` turns a silent order dependence into a *flake*, and SH250's
+rule is that a flake is worse than a break. A lint flagging any `PER_CLASS` class whose
+tests write through a shared service would flag most of the suite — the write is normal,
+the *vacuous assertion* is the defect, and no scan can tell them apart. Both cost more
+than the defect. What is cheap is the habit, which is why it is written here.
+
+Related and already enforced: `ShBenchmarkIsolationLintTest` covers the other half of
+this hazard — a class reading the whole **instance** from a shared database (SH315,
+widened by SH318). This entry is about one class sharing its fixture with itself.

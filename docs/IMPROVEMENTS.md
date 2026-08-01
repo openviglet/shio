@@ -2590,35 +2590,6 @@ Worth settling alongside: whether `GET /api/v2/render/post-types` should report 
 type. That call already answers "can this instance render", and the caller asking it is precisely the
 one who needs to know.
 
-### XVI.48 A PER_CLASS fixture has hidden three defects, and nothing warns (SH296)
-
-Three times now, a test class with `@TestInstance(PER_CLASS)` has had one test's writes make another
-test's assertion vacuous:
-
-- **SH239**: a benchmark pair wrote into the folder another pair measured, so one ratio read 26.2×
-  or 11.8× depending on order.
-- **SH272**: a test asserting "this instance has no templates" was really asserting what ran first,
-  because the render post-types are created on first use by anything in the JVM.
-- **SH289**: an additive-only assertion survived a mutation that made the code overwrite every field,
-  because a sibling test had already repaired the fixture, so `reconcile` found nothing to do and
-  wrote nothing.
-
-Each was found by accident. The third only surfaced because the fix was verified **by mutation**
-rather than by a green run — which is the strongest argument that the other two were not the last.
-
-Three instruments, and they are not equally good:
-
-- **A convention: a mutating test forces its precondition rather than creating it once.** That is
-  what SH289 ended up doing, it is cheap, and it makes the test independent of order without any
-  machinery. Its weakness is that it is a habit, not a check.
-- **`@TestMethodOrder(Random)`.** An order dependence would fail loudly — sometimes. A test that
-  fails on some runs is a flake, and SH250's lesson is that a flake is worse than a break because it
-  teaches people that red might mean nothing.
-- **A lint** flagging a `PER_CLASS` class whose tests write through a shared service. Precise in
-  principle, and "writes through a shared service" is most of this codebase's tests.
-
-The likely answer is the first plus writing it down — the other two cost more than the defect does.
-
 ### XVI.50 Every caller asks the graph to rebuild itself (SH316)
 
 SH314 confirms the walk is bounded by bindings; SH311 makes the queries behind it nearly free inside
