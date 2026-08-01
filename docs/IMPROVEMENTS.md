@@ -2196,28 +2196,6 @@ the build going red the day somebody adds the fifth one.
 > `PER_CLASS` fixture and broke two unrelated assertions in the same class. In a shared fixture every
 > mutating test is an input to the others — SH239's confound, one class along.
 
-### XVI.17 A transaction-bound cache is invisible outside a transaction (SH313)
-
-SH311 binds its resolved templates to `TransactionSynchronizationManager`, which is what makes
-staleness impossible: the cache cannot outlive the call, and a **writing** transaction is excluded by
-a condition rather than by a convention.
-
-The consequence nobody has looked at is the other side of that. A call path that renders outside a
-Spring transaction — or inside a writing one — gets no cache, no warning and no test saying so. Today
-`ShPageRenderService.render` is `@Transactional(readOnly = true)`, so the three real entry points are
-covered by accident of that annotation rather than by anything that checks.
-
-Two cheap instruments:
-
-- **A test per entry point** (`/preview`, `/agent/render`, `?digest=true`) asserting the cache is
-  actually active there, so a refactor that moves a transaction boundary fails rather than costing
-  three times as much silently.
-- **A signal when a render finds no cache** — a counter or a debug line — so the next path that
-  appears announces itself instead of quietly paying 19 queries a page.
-
-The second is the more valuable one, because the failure mode here is a performance regression that
-looks exactly like normal operation.
-
 ### XVI.19 The benchmark measures one site's shape, and a real site is not this shape (SH312)
 
 SH264's fixture is one layout, two regions, one theme, ten pages and **no helpers**. That was enough

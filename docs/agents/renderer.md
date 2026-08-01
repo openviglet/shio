@@ -101,6 +101,16 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `JavaBeanValueResolver`, under which a template handed an entity walks the persistence model.
   (3) **A refusing `TemplateLoader`**: the default reads the classpath, so `{{> application}}`
   in a layout — which is content — is a file read.
+- **Which render paths get SH311's cache is asserted, not assumed (SH313)** — the cache is taken
+  **only** when the current transaction is read-only, so a caller already holding a **writing** one
+  joins it under `REQUIRED`, `isCurrentTransactionReadOnly()` answers false, and the render silently
+  costs 19 queries a page instead of 6. That the cache *works* was already guarded by
+  `ShRenderSweepBenchmarkTest`'s marginal-cost number; what was missing was **which paths have it**,
+  and the answer was "both" only because there are two callers and neither writes. The expensive
+  case is a *future* caller, so `ShRenderCacheReachLintTest` fails the build on one:
+  no file holding a `ShPageRenderService` and calling `.render(` may carry a `@Transactional`
+  without `readOnly`. **A lint rather than the log line the task proposed** — SH103's own argument
+  is that nobody reads logs, and a build failure names the new path to the person adding it.
 - **`param` — the one frame that comes from the reader (SH259)** — query-string values as strings,
   read-only, **never headers, never cookies, never the request object**. SH247's `{{#search q="…"}}`
   takes a term the *template* supplies, which is a tag page, not a search results page; that needs
