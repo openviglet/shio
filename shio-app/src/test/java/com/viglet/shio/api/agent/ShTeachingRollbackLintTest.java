@@ -89,7 +89,7 @@ class ShTeachingRollbackLintTest {
      * scan, applied to a guard instead of a template).</p>
      */
     private static final Pattern READ_ONLY_TRANSACTION = Pattern.compile(
-            "(?m)^@Transactional\\s*\\(\\s*readOnly\\s*=\\s*true");
+            "(?m)^@Transactional\\s*\\(\\s*(readOnly\\s*=\\s*true[^)]*)\\)");
 
     @Test
     @DisplayName("SH345: a read-only transaction that can throw a teaching exception declares noRollbackFor")
@@ -99,7 +99,7 @@ class ShTeachingRollbackLintTest {
         List<String> offenders = new ArrayList<>();
 
         sources.forEach((name, body) -> {
-            if (!READ_ONLY_TRANSACTION.matcher(body).find() || body.contains("noRollbackFor")) {
+            if (!classLevelReadOnlyWithoutEscape(body)) {
                 return;
             }
             List<String> thrown = teaching.stream()
@@ -123,6 +123,32 @@ class ShTeachingRollbackLintTest {
                         Add `noRollbackFor = ShTeachingException.class` to the @Transactional. It \
                         changes nothing else on a read-only path.""")
                 .isEmpty();
+    }
+
+    /**
+     * Whether the file's <b>class-level</b> read-only transaction lacks {@code noRollbackFor}.
+     *
+     * <p>The escape used to be {@code body.contains("noRollbackFor")} — anywhere in the file — so
+     * one method carrying the attribute silenced the rule for the class annotation and for every
+     * other boundary beside it. {@code ShPageRenderService} was exactly that: a class-level
+     * {@code @Transactional(readOnly = true)} with no escape, exempted by a {@code noRollbackFor} on
+     * one of its two {@code render} overloads, and the second overload — added by SH259 and called
+     * straight from {@code /preview} — inherited the class annotation and therefore rolled back on a
+     * teaching 404. SH345's own failure, one file along, hidden by the guard written to prevent it.
+     *
+     * <p>Scoped to the annotation's own parentheses, so the deliberate column-0 restriction above is
+     * untouched: this closes a hole in the escape, not in the scope.</p>
+     */
+    private static boolean classLevelReadOnlyWithoutEscape(String body) {
+        Matcher matcher = READ_ONLY_TRANSACTION.matcher(body);
+        while (matcher.find()) {
+            String arguments = matcher.group(1);
+            if (arguments.contains("readOnly") && arguments.contains("true")
+                    && !arguments.contains("noRollbackFor")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Test

@@ -96,7 +96,13 @@ import tools.jackson.databind.ObjectMapper;
  * @since 2026.3
  */
 @Service
-@Transactional(readOnly = true)
+// SH345's rule, on the class rather than on one method: this renderer throws teaching exceptions
+// (no such site, no layout bound) from a read-only transaction, and marking that rollback-only can
+// only destroy the caller's ability to report the refusal. It was on the three-argument `render`
+// alone, which SH259's four-argument overload then bypassed — `/preview` calls the overload, so a
+// teaching 404 became an UnexpectedRollbackException at commit. The lint that exists to catch this
+// missed it because its escape searched the whole file rather than the annotation.
+@Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
 public class ShPageRenderService {
 
     private final ShSiteRepository shSiteRepository;
