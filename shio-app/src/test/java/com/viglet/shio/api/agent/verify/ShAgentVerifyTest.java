@@ -12,10 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -27,6 +31,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.api.agent.ShAddressResolver;
 import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentBatch.Op;
@@ -67,6 +72,8 @@ class ShAgentVerifyTest {
     private ShAgentVerifyService shAgentVerifyService;
     @Autowired
     private ShAgentBatchService shAgentBatchService;
+    @Autowired
+    private ShAddressResolver shAddressResolver;
     @Autowired
     private PlatformTransactionManager transactionManager;
     @Autowired
@@ -439,5 +446,84 @@ class ShAgentVerifyTest {
         assertThat(shAgentVerifyService.verify(quiet, "routes", null).findings())
                 .filteredOn(finding -> "no-home-page".equals(finding.rule()))
                 .isEmpty();
+    }
+
+    // --- SH309: an address inside a message has to resolve ---
+
+    /**
+     * SH309 — every teaching message in {@code verify} is assembled by string concatenation, and
+     * the only assertion any of them had was {@code contains("post:")}.
+     *
+     * <p>The failure mode is specific and has happened in this repository before: SH172's
+     * {@code id:} fallback exists because an address was built in three places and one of them was
+     * wrong. A message that names an address which does not resolve is trusted <em>less</em> than a
+     * message with no address at all — the reader pastes it, gets a 404, and stops believing the
+     * next one.</p>
+     *
+     * <p>Two things the extraction deliberately skips, and they are the interesting part:</p>
+     *
+     * <ul>
+     *   <li><b>Placeholders.</b> A fix that teaches the <em>shape</em> — {@code post:<site>/<url>}
+     *       — is not naming an object, and resolving it would be a category error.</li>
+     *   <li><b>Rules that name something absent on purpose.</b> A finding about a missing thing has
+     *       to be able to say which thing is missing. Those rules are declared below rather than
+     *       excluded by a pattern, so adding one is a decision somebody makes in writing.</li>
+     * </ul>
+     */
+    private static final Set<String> NAMES_SOMETHING_ABSENT = Set.of(
+            // SH334's fix ends `"to":"post:<site>/"` — the home page the site has not got, which is
+            // the whole finding. A move's destination is absent by construction, and naming the
+            // concrete one beats teaching a placeholder the curator then has to fill in.
+            //
+            // The cost of declaring the *rule* rather than the *position* is real and worth stating:
+            // a genuinely malformed address anywhere else in `no-home-page` would now pass. Pinning
+            // the `to` instead would mean parsing the fix's JSON out of a sentence, which is a
+            // second grammar to keep right — worse than the hole it closes.
+            "no-home-page");
+
+    private static final Pattern ADDRESS_IN_TEXT =
+            Pattern.compile("\\b(?:site|folder|post|id):[^\\s\"'`,;)\\]}]+");
+
+    @Test
+    @DisplayName("SH309: every SH79 address a finding names resolves, or its rule declares it absent")
+    void everyAddressInAMessageResolves() {
+        List<String> broken = new ArrayList<>();
+        for (Finding finding : verify(null).findings()) {
+            for (String text : List.of(
+                    finding.address() == null ? "" : finding.address(),
+                    finding.message() == null ? "" : finding.message(),
+                    finding.fix() == null ? "" : finding.fix())) {
+                Matcher matcher = ADDRESS_IN_TEXT.matcher(text);
+                while (matcher.find()) {
+                    String candidate = trimPunctuation(matcher.group());
+                    // A shape being taught, not an object being named.
+                    if (candidate.contains("<") || candidate.contains(">")) {
+                        continue;
+                    }
+                    if (NAMES_SOMETHING_ABSENT.contains(finding.rule())) {
+                        continue;
+                    }
+                    try {
+                        shAddressResolver.resolve(candidate);
+                    } catch (RuntimeException unresolved) {
+                        broken.add(finding.rule() + " -> " + candidate);
+                    }
+                }
+            }
+        }
+
+        assertThat(broken)
+                .as("""
+                        Each line is a finding whose text names an address that does not resolve.                         Either build the address from ShAddress rather than by concatenation, or                         add the rule to NAMES_SOMETHING_ABSENT with the reason it names a thing                         that is missing on purpose.""")
+                .isEmpty();
+    }
+
+    /** Trailing punctuation belongs to the sentence, not to the address. */
+    private static String trimPunctuation(String candidate) {
+        String trimmed = candidate;
+        while (!trimmed.isEmpty() && ".,;:!?".indexOf(trimmed.charAt(trimmed.length() - 1)) >= 0) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed;
     }
 }

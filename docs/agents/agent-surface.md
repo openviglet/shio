@@ -160,6 +160,16 @@ the CDA + console services (law P10) and holds no business logic of its own.
   (SH171); the **single**-address form still 404s. The read path is
   `noRollbackFor = ShTeachingException.class` for that reason — catching a teaching exception
   inside a read transaction otherwise blows up at commit.
+- **Every SH79 address a finding names must resolve (SH309)** — `ShAgentVerifyTest`'s
+  `everyAddressInAMessageResolves` walks a full report, extracts anything address-shaped from
+  `address`, `message` **and** `fix`, and puts it through `ShAddressResolver`. Every teaching message
+  here is assembled by string concatenation and the only assertion any of them had was
+  `contains("post:")`; SH172's `id:` fallback exists because an address was built in three places and
+  one was wrong. A message naming an address that 404s is trusted **less** than one with no address.
+  Two exclusions: a **placeholder** (`post:<site>/<url>`) teaches a shape rather than naming an
+  object, and a rule that names something **absent on purpose** must be declared in
+  `NAMES_SOMETHING_ABSENT` with the reason — one entry today, `no-home-page`, whose fix ends
+  `"to":"post:<site>/"`, the page the finding exists because the site has not got.
 - **`no-home-page` — a site that publishes and has no page at `/` (SH334)**, a `routes` **warning**
   carrying the `site:` address. The symptom was the Universal Editor opening on a 404 (it frames
   `ShSiteFrontEnd`'s answer, the site root), and the fix was deliberately *not* a page picker:

@@ -2641,25 +2641,6 @@ Three instruments, and they are not equally good:
 
 The likely answer is the first plus writing it down — the other two cost more than the defect does.
 
-### XVI.56 A finding's address is a string, and nothing checks it resolves (SH309)
-
-Every teaching message in `verify` is assembled by concatenation: SH308 puts `post:blog/l-article`
-into one, `dangling-reference` puts a URL into another, SH297 names a theme title, SH289 names an
-endpoint. Where they are asserted at all it is with `contains("post:")`.
-
-The failure mode is specific and this repository has already had it once: SH172's `id:` fallback
-lives in `ShAddressResolver.addressOf` precisely because an address was being built in three places
-and one of them was wrong. A finding that names an address which does not resolve is worse than one
-with no address, because the reader stops trusting the rest of the report.
-
-The instrument is cheap — walk a report's findings, extract anything matching the SH79 grammar from
-`message` and `fix`, resolve it — and the interesting part is the exception. `duplicate-url` names a
-URL two posts claim; `unpublished-template` names something that exists but not in the state
-required; SH297's `missing-theme` names a theme that **deliberately** does not exist. So the rule
-cannot be "every address resolves". It is probably: resolvable, unless the rule is in a declared list
-of ones that name an absent thing on purpose — SH255's `DECLARED` shape, where the declaration is
-the interesting artefact.
-
 ### XVI.50 Every caller asks the graph to rebuild itself (SH316)
 
 SH314 confirms the walk is bounded by bindings; SH311 makes the queries behind it nearly free inside
