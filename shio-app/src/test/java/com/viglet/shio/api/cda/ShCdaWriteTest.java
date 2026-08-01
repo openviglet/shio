@@ -282,4 +282,33 @@ class ShCdaWriteTest {
         assertThat(shPostDraftMergeService.merge("no-such-post", change("title", "x"), false, "c"))
                 .isEmpty();
     }
+
+    /**
+     * SH324 — the premise every hand-written fixture is modelling, and nothing asserted it.
+     *
+     * <p>{@code ShPostUnifiedWriteService.publish} gives the published row the <b>draft's id</b>, so
+     * a page is two rows sharing one id and one furl. A fixture that mints an id per row instead
+     * describes two posts claiming a URL, which is the SH321 defect rather than a published page —
+     * and {@code ShTemplateGraphTest} did exactly that for four blocks while the suite stayed
+     * green.</p>
+     *
+     * <p>This is the half of SH324 that is true whichever instrument wins: it pins what a fixture is
+     * supposed to look like, so "the fixture is wrong" becomes a claim with something behind it.</p>
+     */
+    @Test
+    void publishingKeepsTheDraftsIdSoOnePageIsOneId() {
+        useToken(ShApiTokenScope.WRITE, Set.of());
+        shCdaWriteService.patch(toPublishId, change("title", "Two rows, one page"), true, "editor");
+
+        assertThat(shPostUnifiedRepository.findByIdAndState(toPublishId, ShPostState.PUBLISHED))
+                .as("a published page is the draft's id in a second row, never a new id")
+                .isPresent();
+        assertThat(shPostUnifiedRepository.findAll().stream()
+                .filter(row -> toPublishId.equals(row.getId()))
+                .map(ShPostUnified::getFurl)
+                .distinct()
+                .toList())
+                .as("and both rows carry the one furl, which is what makes them one page")
+                .hasSize(1);
+    }
 }
