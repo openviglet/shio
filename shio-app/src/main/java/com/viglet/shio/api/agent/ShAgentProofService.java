@@ -264,6 +264,16 @@ public class ShAgentProofService {
             out.add(new ShAgentChangeSet.PageDigest(
                     "(more affected pages than the " + ceiling + "-page ceiling)", null,
                     null, null));
+        } else if (pages != null && pages > ceiling) {
+            // SH319 — the narrowing the caller could not otherwise see. The cut row above fires
+            // when the *pages* run out; this one when the *request* was reduced, and before it
+            // nothing distinguished "three is all there was" from "you asked for two hundred and
+            // this instance disagreed". Reported once rather than per row (SH146's shape), and only
+            // in the branch where the cut row is absent, so the two can never both claim the tail.
+            out.add(new ShAgentChangeSet.PageDigest(
+                    "(asked for " + pages + " pages; this instance's ceiling is " + ceiling
+                            + ", and all " + out.size() + " affected page(s) are here)",
+                    null, null, null));
         }
         return out;
     }

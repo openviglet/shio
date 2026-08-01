@@ -585,6 +585,41 @@ class ShTemplateGraphTest {
                 .hasSize(2);
     }
 
+    /**
+     * SH319 — the narrowing the caller could not see.
+     *
+     * <p>The cut row above fires when the <em>pages</em> run out. Nothing fired when the
+     * <em>request</em> was reduced: asking for 200 on an instance whose ceiling is 100 and getting
+     * three rows was indistinguishable from three being all there was. The caller asked for two
+     * hundred, got three, and could not tell whether the instance had disagreed with it.</p>
+     */
+    @Test
+    @DisplayName("SH319: a request above the ceiling says so, even when nothing was cut")
+    void aRequestAboveTheCeilingIsReported() {
+        ShAgentChangeSet written = proofService.attach(upsertOf("/r-nav"), false, true, 200);
+
+        assertThat(written.digests()).last()
+                .satisfies(row -> assertThat(row.address())
+                        .as("""
+                                reported once rather than per row (SH146's shape), and it names                                 both numbers: what was asked for and what the instance allows""")
+                        .contains("asked for 200")
+                        .contains("ceiling is 100"));
+        assertThat(written.digests()).filteredOn(row -> row.digest() != null)
+                .as("every affected page is still here — this row is a note, not a cut")
+                .isNotEmpty();
+    }
+
+    @Test
+    @DisplayName("SH319: a request within the ceiling stays silent")
+    void aRequestWithinTheCeilingSaysNothing() {
+        ShAgentChangeSet written = proofService.attach(upsertOf("/r-nav"), false, true, 50);
+
+        assertThat(written.digests()).allSatisfy(row -> assertThat(row.address())
+                .as("nothing was narrowed, so there is nothing to report — a note on every "
+                        + "response is the prose P3 says to stop paying for")
+                .doesNotContain("asked for"));
+    }
+
     @Test
     @DisplayName("SH266: `digest=yes` teaches instead of quietly meaning false")
     void aBadDigestValueTeaches() {

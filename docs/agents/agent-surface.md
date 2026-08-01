@@ -160,6 +160,12 @@ the CDA + console services (law P10) and holds no business logic of its own.
   (SH171); the **single**-address form still 404s. The read path is
   `noRollbackFor = ShTeachingException.class` for that reason — catching a teaching exception
   inside a read transaction otherwise blows up at commit.
+- **A clamped `?digest=<n>` says so (SH319)** — the cut row fires when the *pages* run out; nothing
+  fired when the *request* was reduced, so `?digest=200` on a ceiling of 100 that affected three
+  pages returned three rows and the caller could not tell that from three being all there was. One
+  row naming both numbers, in the branch where the cut row is absent so the two never both claim the
+  tail. Reported **once**, not per row (SH146), and **silent when nothing was narrowed** — a note on
+  every response is the prose P3 says to stop paying for.
 - **Every SH79 address a finding names must resolve (SH309)** — `ShAgentVerifyTest`'s
   `everyAddressInAMessageResolves` walks a full report, extracts anything address-shaped from
   `address`, `message` **and** `fix`, and puts it through `ShAddressResolver`. Every teaching message
