@@ -1879,29 +1879,6 @@ asserted at the level the agent surface is.
 > SH164/SH239 precedent, that a test asserting something about the whole instance has to boot
 > its own database.
 
-### XVI.1 No CI workflow runs on the branch the work happens on (SH241)
-
-Three workflows exist. `build.yml` (Maven build + Sonar) and `codeql-analysis.yml` are
-`workflow_dispatch:`-only — no `push`, no `pull_request`. `console-check.yml` has
-`push: branches: [main]` and `pull_request`, and the repository's default branch is **`2026.3`**;
-`main` is a stale branch. So on a push to the branch everything is actually developed on,
-**nothing runs**.
-
-That matters more here than it would elsewhere, because SH182 exists precisely to catch the
-class of defect nothing else can see. Block O's whole finding was that console defects answer
-`200` and are invisible to Java tests, CLI tests and the MCP golden; the answer was a browser
-walking the routes in CI. A gate that does not run on the branch is not a gate — it is a script
-in the repository, and the block's most durable output has been inert since it shipped.
-
-The evidence it is not hypothetical: picking up Block O's follow-ups meant building the console,
-and the build was **already red** (§XVI.2). Nothing had reported it, because nothing had run.
-
-The fix is a trigger, and the choice worth making deliberately is *which* jobs run on push
-versus pull request — the console check packages a jar and drives Chromium, so it is a
-pull-request and merge-queue gate rather than something to pay for on every push, while the
-Java suite is cheap enough to run on both. What must not survive is the current state, where
-the answer is "neither".
-
 ### XVI.2 An unmet peer range is not a build failure (SH242)
 
 `monaco-graphql@1.8.0` declares `peerDependencies: { "monaco-editor": ">= 0.20.0 < 0.53" }`.
@@ -2436,34 +2413,6 @@ codebase.
 > The fix is a command in `agents.md`, verified in both directions, sitting beside SH282's because they
 > are one shape: an artefact of an earlier command changing what a later one appears to say.
 
-### XVI.36 Nothing in CI would have caught either measurement defect (SH284)
-
-SH282 and SH283 are both artefacts of a **local working tree**: an IDE writing compiled classes into
-`target/classes`, and a reports directory accumulating across hand-run commands. Neither can happen in a
-job that starts from a clone.
-
-That is the strongest argument yet for **SH241** — the open task that no workflow triggers on the branch
-the work happens on — and it changes that task's *justification* rather than just adding weight to it.
-SH241 was filed as "the Java suite never runs automatically". The sharper form is:
-
-> **A clean-room build is the only thing that can tell a real green from a local one.**
-
-Filed separately because that reframing has consequences SH241 does not currently carry:
-
-- **The workflow should publish surefire's summary as the run's headline**, so a count is never
-  re-derived by hand. SH283 exists because a number was reconstructed; a CI job that prints the
-  authoritative line removes the reconstruction rather than making it more careful.
-- **SH282's local guard exists now** (`ShIdeCompiledClassLintTest`, ✅ shipped → [CHANGELOG.md](CHANGELOG.md)
-  Block P), which settles the half of this argument that said "CI will catch it" is not a resolution: CI
-  protects the *branch* and the lint protects the person about to commit. What CI still adds is the
-  clean-room build — the only thing that can tell a real green from a local one, since the guard catches a
-  broken class and not a stale-but-valid one.
-
-Worth stating the uncomfortable part plainly: this block has been verified almost entirely by
-hand-running Maven in a tree an IDE is also compiling into. The findings hold — they were reproduced
-deliberately — but the *confidence* they were reported with was higher than the instrument deserved
-until SH282 and SH283 were understood.
-
 ### XVI.46 "Imports and renders without a migration" is still only a comment (SH294)
 
 SH290 asserts that the render model matches its 2018 source — the half that was actually wrong. The
@@ -2500,6 +2449,30 @@ may be testing), or a **lint** asserting that no fixture persists two `ShPostUni
 furl and different ids (narrow, cheap, and it only catches this one shape). The narrow one is
 probably the right first move, on the same reasoning SH322 just wrote down: the pattern that finds
 the next occurrence is worth more than the fix to this one.
+
+### XVI.1 No CI workflow runs on the branch the work happens on (SH241)
+
+Three workflows exist. `build.yml` (Maven + Sonar) and `codeql-analysis.yml` are
+`workflow_dispatch:`-only. `console-check.yml` triggers on `push: branches: [main]`, and
+the default branch is **`2026.3`**. So on a push to the branch everything is developed
+on, **nothing runs**.
+
+That matters most for SH182, which exists to catch what nothing else can see: console
+defects answer `200` and are invisible to Java tests, the CLI suite and the MCP golden,
+so the answer was a browser walking the routes in CI. A gate that does not run is a
+script. Not hypothetical — picking up Block O's follow-ups meant building the console,
+and it was **already red** (§XVI.2), unreported.
+
+**The sharper justification is SH284's, folded in here:** SH282 and SH283 were artefacts of a *local
+working tree* — an IDE writing classes into `target/classes`, and a reports directory accumulating
+across hand-run commands. Neither can happen in a job that starts from a clone, so **a clean-room
+build is the only thing that can tell a real green from a local one.** SH282's lint protects the
+person about to commit; CI protects the branch, and only CI catches a *stale but valid* class.
+
+Two consequences that carries: the workflow should publish surefire's summary as the
+run's headline, so no count is re-derived by hand (SH283's defect, SH354's at the
+terminal); and which jobs run on push versus pull request is a deliberate choice — the
+console check drives Chromium, the Java suite is cheap enough for both.
 
 ## XVI.58 What an end-to-end MCP build of a site actually costs (SH325–SH332)
 
