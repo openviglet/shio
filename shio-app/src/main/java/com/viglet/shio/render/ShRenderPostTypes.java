@@ -269,7 +269,13 @@ public class ShRenderPostTypes {
                     titleField(),
                     field(ShSystemPostTypeAttr.CSS, "CSS", ShSystemWidget.ACE_CSS, 2, false),
                     field(ShSystemPostTypeAttr.JAVASCRIPT, "JavaScript",
-                            ShSystemWidget.ACE_JS, 3, false));
+                            ShSystemWidget.ACE_JS, 3, false),
+                    // SH195 — the JS editor for JSON, because the catalogue has no JSON widget and
+                    // JSON is valid JavaScript. Named here rather than shrugged at: SH252 seeded a
+                    // CSS widget for exactly this reason, and a `Ace Editor - JSON` is the same
+                    // one-line fix if this field turns out to be edited by hand often.
+                    field(ShSystemPostTypeAttr.TOKENS, "Design tokens",
+                            ShSystemWidget.ACE_JS, 4, false));
             default -> List.of();
         };
     }

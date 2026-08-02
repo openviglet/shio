@@ -30,6 +30,18 @@ public class ShSystemPostTypeAttr {
 	public static final String DESCRIPTION = "DESCRIPTION";
 	public static final String FILE = "FILE";
 	public static final String TEXT = "TEXT";
+	/**
+	 * SH195 — a Theme's design tokens, as W3C Design Tokens (DTCG) JSON.
+	 *
+	 * <p>Adopted rather than invented: {@code {"color":{"accent":{"$value":"#0b5","$type":"color"}}}}
+	 * is what Style Dictionary, Figma and Tokens Studio already export, so a vocabulary this project
+	 * made up would be one more dialect for an agent to learn and one fewer tool that can read it.
+	 * The runtime form is CSS custom properties on {@code :root} — {@code --color-accent} — which any
+	 * stylesheet consumes and which leaves raw {@code CSS} as the escape hatch rather than the
+	 * interface.</p>
+	 */
+	public static final String TOKENS = "TOKENS";
+
 	public static final String CSS = "CSS";
 	public static final String JAVASCRIPT = "JAVASCRIPT";
 	public static final String HTML = "HTML";

@@ -125,6 +125,41 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `ShTemplateGraphMemoBenchmarkTest` holds all four numbers and prints them every run. Because one
   `ShSiteTemplateGraph` now answers several callers, its maps are unmodifiable — the in-place edit
   that used to be a caller's own business would now change what the next rule sees.
+- **Three lessons this area paid for, kept when their sections went (SH191–SH194, SH251)** — they
+  left IMPROVEMENTS as SH356's stale-section triage and they are rules rather than history.
+  **(1) When a rule seems to need a per-instance sweep, check what it actually varies over.** SH251
+  was framed as "a lint over resolved pages"; the resolution does not depend on the page, because
+  `postTypeLayout` is keyed by post-type and a layout's slots are static — so walking the *bindings*
+  checks identical ground at a fraction of the cost and reports at the layout or region post, which
+  is the artefact somebody edits. **(2) Check the *shape* of what you are reusing, not just that it
+  exists.** SH193 was designed to store presentation edges in `ShReference`, "which already exists
+  and already survives a move" — and it cannot: `ShReference` joins to `ShObject`, and a post is not
+  an `ShObject`. The analogy was sound and the vehicle was not. **(3) Whatever an agent would call
+  next to find out whether its write worked belongs in the write's response** (SH157, generalised by
+  SH194) — lint, then digest, and the next instrument to appear should be asked that before it gets
+  an endpoint. Plus the one to protect on any change to the SH251 scanner: **the negative cases were
+  most of the work** — frames, `this`/`./`/`../`, data variables, subexpressions, literals, partials,
+  comments, a block's own name, an inline helper's name and every row value, with `{{~TEXT~}}` the
+  one its own test caught being dropped. A reference *not* reported is the quiet failure direction.
+- **A theme's tokens are declared data, and the vocabulary is adopted rather than invented (SH195)** —
+  a `Theme` now carries **`TOKENS`** beside `CSS` and `JAVASCRIPT`, in the **W3C Design Tokens
+  (DTCG)** shape (`{"color":{"accent":{"$value":"#0b5"}}}`), which is what Style Dictionary, Figma
+  and Tokens Studio already export — so a designer's file pastes in and no dialect is invented for an
+  agent to learn. `ShThemeTokens` compiles it to CSS custom properties on `:root`
+  (`color.accent` → `--color-accent`) and **prepends** the block to the theme's own CSS, so every
+  existing layout gets tokens without being edited; a separate `{{theme.tokens.css}}` handle would
+  have shipped the feature switched off. The same values are also a dotted map for a template
+  (`{{theme.tokens.color.accent}}`), for the places `var()` cannot reach. **Four decisions worth
+  keeping**: a theme with no tokens emits *nothing*, not an empty `:root{}`, because SH101's digest
+  is over exactly these bytes; a token whose `$value` is a DTCG composite is skipped while its
+  siblings compile; a name that cannot be a custom property is rewritten (`font size` →
+  `--font-size-…`) because such a declaration is dropped silently and can take the block with it;
+  and a `TOKENS` field that is not JSON **throws to the renderer**, which records a CONTENT incident
+  and renders on the CSS alone — the page must not fail, and the degradation must not be silent
+  (SH270). The field is the render model's one deliberate departure from the 2018 package, declared
+  in `ShRenderModelSourceTest.INVENTED`: it is optional, so an imported 2018 theme arrives without
+  it and renders exactly as it did. An instance created before this gets the field from
+  `POST /render/post-types/reconcile`, and `GET /render/post-types/drift` names it (SH295).
 - **The drift is a fact about the instance, and it is a GET (SH295)** —
   `GET /api/v2/render/post-types/drift` names each render type this instance has that is missing a
   field the shipped model declares. The comparison existed before, as

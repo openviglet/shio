@@ -1400,145 +1400,6 @@ is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that exis
 >
 > What is left is coverage — three of the four incident kinds still record no frame (**SH269**).
 
-### XV.13 The iteration loop — what SH183–SH190 does *not* buy (SH191–SH195)
-
-The target is a loop: change the layout, see the result, correct it, repeat — the Lovable
-experience, with the CMS as the accelerator rather than a code generator. SH183–SH190 get a site
-to *exist and be seen once*. They do nothing for the second iteration, and the gap is not one
-feature but five, each of which makes a cycle cost a round trip or a guess.
-
-This matters more here than in a code-generation tool, for a reason worth stating: a region is
-**shared**. Lovable edits one component in one app and the blast radius is the file. A CMS region
-appears on every page that slots it, so an iterative loop over shared presentation needs bounds
-and proof that a single-app loop can simply do without.
-
-#### XV.9 A template is code and must project as files (SH191)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Both open questions closed the way
-> the design guessed, and building it opened two tasks:
->
-> **The extension is the widget's, and the widget catalogue is short one entry.** A `Theme`'s
-> `CSS` field is declared `Ace Editor - HTML` because no CSS widget is seeded, so its sidecar
-> is `.html` — the honest consequence of letting the widget decide, and a one-line fix once
-> the widget exists (**SH252**).
->
-> **A projection that normalizes cannot be exact.** The body field's CRLF → LF exists so a
-> pull "cannot report a change nobody made", and it achieved the opposite: the base
-> fingerprint was taken from the *server's* document, so the normalized file read back
-> different from the base and every later pull reported a local change until somebody pushed.
-> Sidecars are verbatim so the question never arises for them; the body needed the comparison
-> moved into the projection's domain, which shipped as **SH253** (§XVI.8).
-
-#### XV.10 A template must fail at write time, not at view time (SH192)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P.
->
-> Building it settled the "unknown helper" question in a way the design did not anticipate:
-> **Handlebars already raises it, but only for a call with parameters**, because
-> `{{#search q="x"}}` cannot be a context iteration and `{{#search}}` can. So the compiler
-> covers the unambiguous half and a targeted scan covers the three helpers that are known
-> missing — and unknown sections *in general* are deliberately not flagged, since a rule with
-> false positives is one authors learn to ignore.
->
-> The half this could not deliver is the one §XV.10 wanted most: an unknown **field**
-> reference as an error "when the post-type is known". At write time it is not known — a
-> Region's post-type declares `HTML` and `JAVASCRIPT`, while the fields its template
-> interpolates belong to whatever page is later bound to the layout that slots it. That needs
-> a resolved page, so it is a lint over rendered pages: **SH251**.
-
-#### XV.17 A template referencing a field nothing declares renders empty (SH251)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three conclusions, one of which
-> contradicts how the task was framed.
->
-> **"A lint over resolved pages" was the wrong unit, and finding that out was the design work.**
-> The resolution does not depend on the page: `postTypeLayout` is keyed by post-type and a
-> layout's slots are static attributes, so every page of a type resolves to the same layout and
-> regions. Walking the *bindings* checks identical ground at a fraction of the cost and — the part
-> that matters more — addresses the finding at the layout or region post, which is the artefact
-> somebody edits. The general lesson: when a rule seems to need a per-instance sweep, check
-> whether what it actually varies over is the *type*.
->
-> **The two severities fall out of who owns the interpolation.** Top-level is the page's
-> post-type, which is known, so an undeclared name is an error. Inside a helper block the rows are
-> whatever posts the helper found, so the strongest honest claim is "no post-type in this instance
-> declares this name" — a warning. That is SH99's line held: `ok` is false only for what the CMS
-> can prove from inside itself, and the alternative (an error on something unknowable) is what
-> makes a gate people bypass.
->
-> **The negative cases were most of the work**, and they are what to protect in any change here:
-> frames, `this`/`./`/`../`, data variables, subexpressions, literals, partials, comments, a
-> block's own name, an inline helper's name, and every row value. `{{file_url HERO}}` reporting
-> `file_url` would have been a false positive on the one helper the shipped 2018 region used. And
-> the scanner's own test caught it dropping `{{~TEXT~}}` — Handlebars' whitespace-control form —
-> which is the failure direction that stays quiet: a reference not reported, not a wrong one.
-
-#### XV.11 The blast radius of a region change (SH193)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. This section proposed the wrong
-> mechanism, and the correction is the part worth keeping.
->
-> **`ShReference` cannot hold this edge.** The proposal was to extract slot references at write
-> time into it, "which already exists and already survives a move", by analogy with SH154. But
-> `ShReference` joins `object_from`/`object_to` to `ShObject`, and **a post is not an `ShObject`**
-> — `ShPostUnified` is its own table. The analogy to SH154 was sound and the vehicle was not, and
-> the general lesson is to check the *shape* of the thing being reused, not just that it exists:
-> "already exists" was true and did nothing to make it applicable.
->
-> **Computing beat extracting on the merits, not just on convenience.** SH251 had established
-> that presentation resolves from the post-type, so a site's forward index costs one resolution
-> per binding however many pages there are, and inverting it is a map. That buys two properties an
-> extracted index would have had to earn: it **cannot go stale** — and the interesting staleness is
-> not the post write anyone would remember to hook, it is `site.postTypeLayout` changing, which is
-> an `ShSite` write no post-level extraction would ever see — and it needs **no migration**, so it
-> is correct for an imported 2018 package immediately. A persisted graph buys a cheap reverse query
-> at scale; that is a real trade for a different day.
->
-> **The surface question answered itself through the MCP cap.** The tool count is capped at 12 with
-> 11 used and `tools/list` paid every turn, so a new tool was not available — which pushed the
-> answer onto `/agent/changes`, where this section had already suggested it belonged. Constraints
-> from P3 selecting the P2 design is a pattern worth noticing rather than resenting.
-
-#### XV.12 Appearance needs a before/after and a one-call loop (SH194)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P, in two halves that turned out to belong to
-> different tasks. The *before/after* came free with SH187's second hash; the *round trip* is
-> `?digest=true`.
->
-> **The reusable shape is SH157's, and it generalises further than it looked.** "A write returns its
-> own proof" was filed as a lint idea. It is really a rule about *closing turns*: whatever an agent
-> would call next to find out whether its write worked belongs in the write's response. Lint, then
-> digest — and the next instrument that appears should be asked the same question before it gets an
-> endpoint of its own.
->
-> **"Affected" is not "touched".** For a page they coincide; for a template they do not, and the
-> honest answer needs SH193's graph. Worth noting that this is the first consumer of that graph
-> which uses it to *do* something rather than to report — which is usually the sign a graph was
-> worth building.
->
-> **Only the hashes.** The caller is asking whether something moved, which is a comparison against a
-> value it already holds; the outline would be payload it discards. That is P3 applied to a response
-> nobody had thought of as a budget.
->
-> The ceiling is the open question — ten pages is a guess, not a measurement (**SH266**, waiting on
-> **SH264**).
-
-#### XV.13 Most layout changes are tokens, not structure (SH195)
-
-If the loop is going to be *constant* layout change, it is worth noticing what those changes
-actually are. Very few are "add a region". Most are spacing, type scale, colour role, radius,
-density — and `PT-THEME` holds `CSS` and `JAVASCRIPT` as opaque blobs, so every one of them is a
-stylesheet rewrite: nothing declares what may be changed, nothing verifies the result, nothing
-diffs meaningfully, and an agent editing raw CSS by string replacement is the least reliable thing
-in this whole picture.
-
-A declared token vocabulary turns the common change into a field edit — verifiable, diffable,
-reviewable by a human in the console, and safe for an agent to make. It also gives SH183's default
-stylesheet something to be built from instead of hardcoded values, and it gives the Universal
-Editor something to offer besides text. Raw CSS stays as the escape hatch; the point is that it
-stops being the interface. The open question is whose vocabulary — inventing one is a design
-project, and adopting an existing convention is cheaper and more portable.
-
 ### XV.14 What building the renderer found (SH247–SH249)
 
 Three edges, and they share a shape: each is somewhere the renderer is *nearly* the thing it
@@ -2308,6 +2169,28 @@ corruption rather than prose, and `lint --fix` does not touch it.
 SH341's order applies — instrument first — but a section gate cannot ratchet from 45 the
 way the line gate did, because dropping a section is destructive where shortening a line
 is not. So the honest first step is deciding what a *stale* section should become.
+
+### XVI.67 One diagnostics test reads an empty table once in several full runs (SH357)
+
+SH354 was filed because a full run went red and the command that produced it had thrown
+the evidence away. The instrument it shipped — tee the run — paid for itself
+immediately: the next occurrence has a **name**.
+`ShAgentDurableIncidentTest.diagnosticsReadsTheTable` expected `{"webhook": 1}` from the
+durable incident table and got `{}`, on a run where nothing else failed and no code
+between runs had changed. Four runs before and after it passed.
+
+Two hypotheses, and the first has form. **Context eviction**: SH347 documents this exact class
+failing this exact way when the Spring test-context cache overflows — an evicted context is rebuilt,
+the schema is recreated mid-run, and rows a later test asserts about are gone. The ceiling was raised
+to 64 and the counter reports 33 isolated databases, but SH347's own note says the counter is a
+**lower bound**, because a context key is the whole property set and two classes with the same URL
+and different properties are two contexts. **Or an ordering dependence inside the class**: the table
+is durable by design, so a sibling test that clears or reads it early would leave nothing to count.
+
+What would settle it is the count of context keys as Spring sees it rather than as a
+source scan guesses — `ContextCache` statistics at DEBUG print `size` and `missCount`,
+which is the number the lower-bound counter is approximating. Worth doing before adding
+a retry or a `@DirtiesContext`, both of which would hide whichever of the two it is.
 
 ## XVI.58 What an end-to-end MCP build of a site actually costs (SH325–SH332)
 

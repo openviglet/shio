@@ -82,6 +82,20 @@ class ShRenderModelSourceTest {
             "Region.CACHE_TAB", "the Tab that groups CACHED, and empty without it"));
 
     /**
+     * A field this renderer declares that the 2018 model does not, with why that is right.
+     *
+     * <p>The default is that inventing one is a defect — an imported 2018 package arrives without
+     * it, which is the migration {@code ShRenderPostTypes}' comment promises there is none of. It
+     * is allowed when the field is <b>optional</b> and its absence changes nothing, which is the
+     * condition that keeps the promise true.</p>
+     */
+    private static final Map<String, String> INVENTED = new TreeMap<>(Map.of(
+            "Theme.TOKENS", "SH195 — the 2018 model has no token vocabulary at all, which is the "
+                    + "defect that task exists to fix rather than a difference to reconcile. The "
+                    + "field is optional and empty means 'render on the CSS alone', so an imported "
+                    + "2018 theme arrives without it and renders exactly as it did."));
+
+    /**
      * A field both models declare with a different widget, with the reason.
      *
      * <p>These are the ones worth watching: a differing widget is a decision, while a differing
@@ -112,6 +126,9 @@ class ShRenderModelSourceTest {
                             + "meaningless rather than merely failing", def.name())
                     .isNotNull();
             for (ShPostTypeAttrDef field : def.fields()) {
+                if (INVENTED.containsKey(def.name() + "." + field.name())) {
+                    continue;
+                }
                 assertThat(declared)
                         .as("""
                                 %s.%s is not in the 2018 model. A field this renderer invents is \
@@ -130,6 +147,9 @@ class ShRenderModelSourceTest {
 
         for (ShPostTypeDef def : shRenderPostTypes.ensure()) {
             for (ShPostTypeAttrDef field : def.fields()) {
+                if (INVENTED.containsKey(def.name() + "." + field.name())) {
+                    continue;
+                }
                 Field source = reference.get(def.name()).get(field.name());
                 assertThat(field.isTitle())
                         .as("""
@@ -150,6 +170,7 @@ class ShRenderModelSourceTest {
         List<String> undeclared = new java.util.ArrayList<>();
         java.util.Set<String> unusedOmissions = new TreeSet<>(OMITTED.keySet());
         java.util.Set<String> unusedWidgets = new TreeSet<>(WIDGETS.keySet());
+        java.util.Set<String> unusedInventions = new TreeSet<>(INVENTED.keySet());
 
         for (ShPostTypeDef def : shRenderPostTypes.ensure()) {
             Map<String, Field> source = reference.get(def.name());
@@ -168,7 +189,15 @@ class ShRenderModelSourceTest {
             for (ShPostTypeAttrDef field : ours.values()) {
                 Field their = source.get(field.name());
                 String key = def.name() + "." + field.name();
-                if (their == null || their.widget().equals(field.widget())) {
+                if (their == null) {
+                    // Invented here: reported unless declared, and the declaration is spent so an
+                    // entry that stops being true fails below.
+                    if (!unusedInventions.remove(key)) {
+                        undeclared.add(key + " — this model declares it and the 2018 one does not");
+                    }
+                    continue;
+                }
+                if (their.widget().equals(field.widget())) {
                     continue;
                 }
                 if (!unusedWidgets.remove(key)) {
@@ -191,6 +220,10 @@ class ShRenderModelSourceTest {
                 .isEmpty();
         assertThat(unusedWidgets)
                 .as("a declared widget difference that no longer exists — same rule")
+                .isEmpty();
+        assertThat(unusedInventions)
+                .as("""
+                        a field declared as invented that the 2018 model turns out to have, or                         that this model no longer declares — same rule, and the more important                         direction here: an INVENTED entry is permission to skip two other                         assertions.""")
                 .isEmpty();
     }
 

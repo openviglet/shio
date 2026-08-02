@@ -382,7 +382,6 @@
 
 - 📋 **SH265** (deps: SH187 ✅) **A raster is still the only answer to most of "looks wrong"** — SH187 reads what the document declares, and overlap, contrast, truncation and anything responsive need a layout engine the server has so far refused to run. → §XV.22
 > ✅ **SH189 is complete (with SH267 and SH268)** → see [CHANGELOG.md](CHANGELOG.md) Block P: import teaches, is reachable by a stateless caller, classifies from a kind rather than from prose, and `shio import` accepts a package — the MCP half is CLI-shaped by construction and the P1 inventory says so.
-- 💭 **SH195** (deps: SH183 ✅) **Most layout changes are tokens, not structure** — A theme carries CSS as an opaque blob, so the commonest change — spacing, type scale, a colour role — is a stylesheet rewrite with nothing to diff and nothing to verify. → §XV.13
 
 > **Opened by building SH183 (SH247–SH251).** Four are the renderer's own unfinished edges;
 > SH250 was the test suite, found the way SH246 was — by running it. ✅ Shipped: Mockito is a
@@ -456,7 +455,8 @@
 - 💭 **SH294** (deps: SH290 ✅) **"Imports and renders without a migration" is still only a comment** — The class comment claims a real 2018 export imports and renders, and nothing exercises it — the bundled starter declares no layout, so it cannot. → §XVI.46
 - 💭 **SH276** (deps: SH275 ✅) **A premise about a dependency we *do not* have is unfalsifiable, and one is load-bearing** — It justifies ~1500 lines of hand-rolled protocol and cannot be asserted, because checking it means adding the dependency being evaluated. → §XVI.28
 - 💭 **SH355** (deps: —) **Half-shipped entries are invisible to the tool that owns the files** — Four lint findings and one refused retire all trace to a ledger id written as SH96 (local half), which roadkeep cannot parse. → §XVI.65
-- ⏳ **SH356** (deps: SH341 ✅) **The rationale file carries the debt the roadmap just shed** — The triage is decided and instrumented; 35 sections remain, each needing a reading to say whether it is a standing rule or history. → §XVI.66
+- ⏳ **SH356** (deps: SH341 ✅) **The rationale file carries the debt the roadmap just shed** — The triage is decided and instrumented; 31 sections remain, each needing a reading to say whether it is a standing rule or history. → §XVI.66
+- 💭 **SH357** (deps: SH354 ✅) **One diagnostics test reads an empty table once in several full runs** — ShAgentDurableIncidentTest.diagnosticsReadsTheTable expected a webhook incident and found none, on a run where nothing else failed and no code had changed. → §XVI.67
 
 ---
 

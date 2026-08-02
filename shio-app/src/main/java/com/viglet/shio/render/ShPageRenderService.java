@@ -452,10 +452,37 @@ public class ShPageRenderService {
             return null;
         }
         return postOfSystemType(site, ShSystemPostType.THEME, themeName, state)
-                .map(theme -> new ShThemeAssets(
-                        fieldOf(theme, ShSystemPostTypeAttr.CSS),
-                        fieldOf(theme, ShSystemPostTypeAttr.JAVASCRIPT)))
+                .map(this::themeAssets)
                 .orElse(null);
+    }
+
+    /**
+     * SH195 — a theme's tokens compiled into its stylesheet, degrading if they are not JSON.
+     *
+     * <p>The page renders either way; without this the operator would see an unstyled page and
+     * nothing anywhere would say why, which is exactly the silent degradation SH270 exists to
+     * refuse. The catch lives here rather than in {@code ShThemeTokens} because reporting needs the
+     * incident log and that class is a pure function — {@code ShSilentCatchInventoryTest} is what
+     * made the placement a decision instead of an accident.</p>
+     */
+    private ShThemeAssets themeAssets(ShPostUnified theme) {
+        String css = fieldOf(theme, ShSystemPostTypeAttr.CSS);
+        String javascript = fieldOf(theme, ShSystemPostTypeAttr.JAVASCRIPT);
+        try {
+            return ShThemeTokens.assets(fieldOf(theme, ShSystemPostTypeAttr.TOKENS), css,
+                    javascript);
+        } catch (JacksonException e) {
+            incidentLog.record(ShAgentIncidentLog.Kind.CONTENT,
+                    ShAddress.post(theme.getShSite() == null ? null : theme.getShSite().getName(),
+                            theme.getFurl()).toString(),
+                    "This Theme's TOKENS is not valid JSON, so the page rendered with no design "
+                            + "tokens at all: " + e.getOriginalMessage(),
+                    "Rewrite TOKENS as W3C Design Tokens JSON "
+                            + "({\"color\":{\"accent\":{\"$value\":\"#0b5\"}}}) with "
+                            + "post.upsert, or clear the field to render on the theme's CSS alone.",
+                    ShAgentIncidentFrames.of(e));
+            return ShThemeTokens.assets(null, css, javascript);
+        }
     }
 
     /**

@@ -228,6 +228,9 @@ public class ShRenderModel {
         Map<String, Object> frame = new LinkedHashMap<>();
         frame.put("css", theme == null ? null : theme.css());
         frame.put("javascript", theme == null ? null : theme.javascript());
+        // SH195 — the same values the `:root` block carries, dotted, for the places a custom
+        // property cannot reach: an inline style, an SVG fill, an email template.
+        frame.put("tokens", theme == null ? Map.of() : theme.tokens());
         return ShStableMap.copyOf(frame);
     }
 
@@ -237,6 +240,11 @@ public class ShRenderModel {
      * intent is clearer than the usage: one place for the stylesheet and script a whole
      * site shares, referenced by each layout's {@code THEME} field.
      */
-    public record ShThemeAssets(String css, String javascript) {
+    public record ShThemeAssets(String css, String javascript, Map<String, String> tokens) {
+
+        /** Two-field form, for a caller with no tokens to declare (they are SH195's). */
+        public ShThemeAssets(String css, String javascript) {
+            this(css, javascript, Map.of());
+        }
     }
 }
