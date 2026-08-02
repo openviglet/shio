@@ -2758,25 +2758,6 @@ this one.
 > source scan was tried first and is not faithful, because a handler reads `op.address()` through a
 > helper. It opened **SH346**.
 
-### XVI.62 The op vocabulary exists and only MCP can read it (SH346)
-
-SH332 published the write vocabulary as an MCP **resource**, which is the right shape for the client
-it serves and leaves an HTTP-only agent unable to read the one document that says which keys a write
-takes. That is the inverse of SH166 and the same class SH338's inventory is full of: a capability that
-exists, is internally consistent, and cannot be reached from where the product says its operator
-stands.
-
-What makes it a task rather than a line of code is that the rendering is trivially portable — it is a
-plain string — and **where** it goes is a real trade. A section on the manifest costs the SH113
-response budget on the one document every session reads first, for a vocabulary only a caller about to
-*write* needs. A section on the context pack is opt-in per SH272's precedent for helper signatures, and
-moves the SH116 digest, so every agent holding a cached pack re-reads. A third option is that the
-endpoint index entry for `/agent/batch` stops describing ops in prose and points at a URL — cheapest,
-and it costs a round trip exactly when the caller is already committed to writing.
-
-Measure before choosing: the manifest's own numbers are known (298 tokens for `include=features,limits`
-against 2343 for the whole document), so the cost of a section is answerable rather than arguable.
-
 ## XVI.59 Reachability has no instrument, and that is why the same defects keep coming back (SH338–SH341)
 
 This section is a strategy change, not a defect. It comes from asking why SH325–SH337 exist at all,

@@ -52,6 +52,12 @@ import com.viglet.shio.api.cda.dto.ShCdaSchemaField;
  *                    otherwise pay for it again, and the endpoint index — the expensive part
  *                    — deliberately stays on {@code /agent/manifest}, where it is worth an
  *                    ETag of its own because it changes only when the build does
+ * @param ops         SH346 — the write vocabulary, verbatim: every op {@code /agent/batch} accepts
+ *                    and the keys each one takes, the same bytes the {@code shio://ops} MCP
+ *                    resource serves. <b>Absent unless {@code include=ops} names it</b>, and, like
+ *                    {@code capabilities}, attached after the digest is taken — a session that is
+ *                    only reading must not pay for the document that explains writing, and asking
+ *                    for it must not invalidate a pack somebody else has cached
  * @param budget      what this response cost and whether anything was cut
  *
  * @author Alexandre Oliveira
@@ -67,6 +73,7 @@ public record ShAgentContext(
         List<Node> sitemap,
         List<String> conventions,
         ShAgentManifest capabilities,
+        String ops,
         String digest,
         Budget budget) {
 
@@ -74,13 +81,20 @@ public record ShAgentContext(
     public ShAgentContext(int protocol, String manifest, Instance instance, List<Site> sites,
                           List<Type> model, List<Node> sitemap, List<String> conventions,
                           String digest, Budget budget) {
-        this(protocol, manifest, instance, sites, model, sitemap, conventions, null, digest, budget);
+        this(protocol, manifest, instance, sites, model, sitemap, conventions, null, null,
+                digest, budget);
     }
 
     /** The same pack carrying capabilities — the one thing SH157 adds to this shape. */
     public ShAgentContext withCapabilities(ShAgentManifest value) {
         return new ShAgentContext(protocol, manifest, instance, sites, model, sitemap,
-                conventions, value, digest, budget);
+                conventions, value, ops, digest, budget);
+    }
+
+    /** The same pack carrying the write vocabulary (SH346). */
+    public ShAgentContext withOps(String value) {
+        return new ShAgentContext(protocol, manifest, instance, sites, model, sitemap,
+                conventions, capabilities, value, digest, budget);
     }
 
     /**

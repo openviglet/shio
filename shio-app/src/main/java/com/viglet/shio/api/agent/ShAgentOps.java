@@ -52,14 +52,30 @@ import com.viglet.shio.utils.ShStableMap;
  * would make a correct call look wrong, and flattening them into "optional" is what cost SH175 a
  * round trip on the most common write there is.</p>
  *
- * <h2>Known gap: this is MCP-only today</h2>
+ * <h2>Both surfaces hand over the same bytes (SH346)</h2>
  *
- * <p>{@code shio://ops} is a resource, so a caller with no MCP client cannot read it — the inverse of
- * SH166, and a P1 shape this repository normally refuses. It is recorded as <b>SH346</b> rather than
- * papered over: the rendering is a plain string and any REST surface can carry it, but which one is a
- * real decision (a manifest section costs the SH113 budget on a document every session reads, while a
- * context-pack section costs the SH116 digest), and guessing it here would be the kind of unmeasured
- * choice §"measure before you fix" exists to prevent.</p>
+ * <p>It was MCP-only for one block — {@code shio://ops} is a resource, so an HTTP-only agent could not
+ * read the one document that says which keys a write takes, which is the inverse of SH166 and the P1
+ * shape this repository refuses. It now also rides the context pack as {@code ?include=ops}, and what
+ * settled <em>which</em> REST surface is a measurement rather than a preference:</p>
+ *
+ * <ul>
+ *   <li>A <b>manifest</b> section charges {@link #terse()} — measured at <b>447 estimated tokens</b>
+ *       — to the one document every session reads first, whether or not that session ever writes.
+ *       Against a manifest of 2343 that is a 19% regression, which is what made this the option to
+ *       reject rather than the obvious home.</li>
+ *   <li>A <b>context-pack</b> section charges nothing to anybody who does not ask, because SH157
+ *       already established the shape for exactly this: a non-default section, attached
+ *       <em>after</em> the digest is taken. So it does not move the SH116 digest either, and an agent
+ *       holding a cached pack does not re-read.</li>
+ *   <li>The manifest still got <em>smaller</em>: the {@code /agent/batch} index entry used to
+ *       enumerate op names in prose, which is the guess this class exists to prevent, and now points
+ *       at the vocabulary instead.</li>
+ * </ul>
+ *
+ * <p>Every surface serves {@link #terse()} verbatim — the MCP resource, the pack's JSON and the
+ * pack's terse rendering are byte-identical — so the two cannot drift into disagreeing about what a
+ * write takes.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.3

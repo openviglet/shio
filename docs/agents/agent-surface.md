@@ -21,10 +21,17 @@ the CDA + console services (law P10) and holds no business logic of its own.
   manifest read into this one (SH157)** — it adds `capabilities` (features, limits,
   startHere) and deliberately *not* the endpoint index, which is ~87% of the manifest,
   changes only when the build does, and is what SH116's ETag already makes free. `manifest`
-  is **the one section you must name**: `include=all` still means all the sections of the
-  *pack*, so no session pays for a document it already holds. Capabilities are attached
+  and `ops` are **the two sections you must name**: `include=all` still means all the sections
+  of the *pack*, so no session pays for a document it already holds. Both are attached
   **after the digest is taken** — a build number must not move a content digest, or an
   upgrade sends every agent re-reading every sitemap.
+  **`include=ops` is the write vocabulary (SH346)** — the same bytes `shio://ops` serves, so an
+  HTTP-only agent can read which keys each op takes; on its own it is the vocabulary and almost
+  nothing else, which is what makes the `/agent/batch` index entry's pointer to it cheap to
+  follow. It went here rather than on the manifest because it **measures 447 tokens** against a
+  manifest of 2343 — a 19% regression on the first read of every session, for a document only a
+  caller about to write needs. The endpoint index used to enumerate op names in prose and now
+  points instead, so the manifest got smaller in the change that closed the gap.
 - `GET /agent/resolve?address=…` — an address → an object id, for id-keyed endpoints.
 - `POST /agent/batch` — **writes**: N addressed ops (`site.upsert`, `folder.upsert`,
   `folder.move`, `post.upsert`, `post.move`, `post.publish`, `post.unpublish`, `folder.delete`,

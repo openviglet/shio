@@ -177,15 +177,21 @@ public class ShAgentContextService {
         // content, and letting a build number move it would send every agent re-reading every
         // site's sitemap the first time this instance was upgraded.
         ShAgentContext digested = withDigest(pack, digest(ShAgentContextTerse.body(pack)));
-        return sections.contains(ShAgentContextSection.MANIFEST)
-                ? digested.withCapabilities(ShAgentManifestSection.project(
-                        shAgentManifestService.manifest(),
-                        // features + limits + startHere. Not the endpoint index: it is ~87% of
-                        // the manifest, it changes only when the build does, and it is exactly
-                        // the thing SH116's ETag makes free to keep. Folding it in here would
-                        // re-send it every time a post changed.
-                        EnumSet.of(ShAgentManifestSection.FEATURES, ShAgentManifestSection.LIMITS,
-                                ShAgentManifestSection.START_HERE)))
+        if (sections.contains(ShAgentContextSection.MANIFEST)) {
+            digested = digested.withCapabilities(ShAgentManifestSection.project(
+                    shAgentManifestService.manifest(),
+                    // features + limits + startHere. Not the endpoint index: it is ~87% of
+                    // the manifest, it changes only when the build does, and it is exactly
+                    // the thing SH116's ETag makes free to keep. Folding it in here would
+                    // re-send it every time a post changed.
+                    EnumSet.of(ShAgentManifestSection.FEATURES, ShAgentManifestSection.LIMITS,
+                            ShAgentManifestSection.START_HERE)));
+        }
+        // SH346 — the write vocabulary, on the same terms and for the same reason: it is not
+        // content, so it must not move the digest, and it is not something a reading session
+        // should be charged for. `ShAgentOps.terse()` verbatim, byte-identical to shio://ops.
+        return sections.contains(ShAgentContextSection.OPS)
+                ? digested.withOps(ShAgentOps.terse())
                 : digested;
     }
 

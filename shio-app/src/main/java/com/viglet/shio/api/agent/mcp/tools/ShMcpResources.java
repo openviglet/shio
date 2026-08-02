@@ -56,7 +56,7 @@ public class ShMcpResources {
         return resource("shio://manifest", "Shio capability manifest",
                 "What this instance can do: version, feature flags, limits, and the endpoint "
                         + "index. Read it before assuming a capability exists.",
-                JSON,
+                JSON, "/api/v2/agent/manifest",
                 uri -> objectMapper.writeValueAsString(manifestService.manifest()));
     }
 
@@ -82,7 +82,7 @@ public class ShMcpResources {
                         + "site.upsert, folder.upsert/move/delete, post.upsert/move/publish/"
                         + "unpublish/delete. Read it before a first write: an unrecognised key is "
                         + "refused, so the list is exhaustive rather than indicative.",
-                TEXT,
+                TEXT, "/api/v2/agent/context?include=ops",
                 uri -> ShAgentOps.terse());
     }
 
@@ -103,7 +103,7 @@ public class ShMcpResources {
                         + "model + folders + pages) per package, with the parameters each takes. "
                         + "Read it before building a blog, a docs tree or a marketing site by "
                         + "hand; apply one with shio_apply's `blueprint` argument.",
-                TEXT,
+                TEXT, "/api/v2/agent/blueprints",
                 uri -> ShBlueprintTerse.catalogue(registry.summaries()));
     }
 
@@ -146,7 +146,7 @@ public class ShMcpResources {
                         + "URI for their bodies — the server never writes those into a project "
                         + "and never substitutes them, so each is listed with the {{placeholder}}s "
                         + "you still have to fill in from the parameters above.",
-                TEXT,
+                TEXT, "/api/v2/agent/blueprints/{name}?include=files",
                 uri -> {
                     String path = uri.substring(BLUEPRINT_PREFIX.length());
                     boolean withFiles = path.endsWith(FILES_SUFFIX);
@@ -165,7 +165,7 @@ public class ShMcpResources {
         return resource("shio://context", "Shio context pack",
                 "The content model, the sitemap by path and this instance's conventions, in the "
                         + "terse encoding. The same payload shio_context returns.",
-                TEXT,
+                TEXT, "/api/v2/agent/context?format=terse",
                 uri -> ShAgentContextTerse.render(
                         contextService.context(null, null, null, null, null, false)));
     }
@@ -187,7 +187,7 @@ public class ShMcpResources {
         return resource(SCHEMA_PREFIX + "{postType}", "Post-type schema",
                 "The fields of one post-type — names, widgets, required and multi-valued flags. "
                         + "Read it before writing content of a type you have not used yet.",
-                JSON,
+                JSON, "/api/v2/cda/post-type/{name}",
                 uri -> {
                     String name = uri.substring(SCHEMA_PREFIX.length());
                     return objectMapper.writeValueAsString(shCdaService.getPostType(name)
@@ -200,12 +200,17 @@ public class ShMcpResources {
     }
 
     private static ShMcpResource resource(String uri, String name, String description,
-                                          String mimeType, Reader reader) {
+                                          String mimeType, String httpTwin, Reader reader) {
         return new ShMcpResource() {
 
             @Override
             public String uri() {
                 return uri;
+            }
+
+            @Override
+            public String httpTwin() {
+                return httpTwin;
             }
 
             @Override

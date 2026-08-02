@@ -253,8 +253,9 @@ public class ShAgentManifestService {
                 new ShAgentEndpoint("GET", "/agent/context",
                         "Start here: content model + sitemap by path + conventions in one call. "
                                 + "include=manifest adds this instance's capabilities so you need "
-                                + "no separate manifest read; format=terse compacts it; re-check "
-                                + "`digest` next session instead of re-reading.",
+                                + "no separate manifest read; include=ops adds the write "
+                                + "vocabulary; format=terse compacts it; re-check `digest` next "
+                                + "session instead of re-reading.",
                         "console",
                         "GET /api/v2/agent/context?format=terse&include=all,manifest"),
                 new ShAgentEndpoint("GET", "/agent/resolve",
@@ -262,16 +263,17 @@ public class ShAgentManifestService {
                                 + "folder:<site>/<path>, site:<name> or id:<uuid>. Build the "
                                 + "address from a context row; you never need to remember a UUID.",
                         "console", "GET /api/v2/agent/resolve?address=post:Blog/blog/hello-world"),
+                // SH346 — the op names and their keys used to be prose here, which is the guess
+                // ShAgentOps exists to prevent, spelled out on the document every session reads
+                // whether or not it writes. It points at the vocabulary instead: the pointer is
+                // cheaper than the list it replaced, and the list it points at is exhaustive.
                 new ShAgentEndpoint("POST", "/agent/batch",
-                        "Write: N addressed ops (site.upsert, folder.upsert, post.upsert, "
-                                + "post.move, post.publish, …) in one atomic call. Send dryRun to "
-                                + "see the plan first. site.upsert makes a blank site and fills "
-                                + "in an empty url/description/furl on one that exists (it never "
-                                + "replaces a value somebody set) — that is "
-                                + "step one and it is here, not on the console API. Rename or "
-                                + "relocate with post.move, a section with folder.move — "
-                                + "re-addressing an upsert creates a second post, and deleting the "
-                                + "old folder takes everything inside it.",
+                        "Write: N addressed ops in one atomic call — the whole vocabulary, with "
+                                + "the keys each op takes, is GET /agent/context?include=ops. Read "
+                                + "it before a first write: an unrecognised key is refused. Send "
+                                + "dryRun to see the plan first. site.upsert is step one and it is "
+                                + "here, not on the console API; re-addressing an upsert creates a "
+                                + "second post, so rename with post.move.",
                         "console", "POST /api/v2/agent/batch?verify=true"),
                 new ShAgentEndpoint("POST", "/agent/plan",
                         "Diff a desired-state content document against this instance. "

@@ -207,7 +207,8 @@ public class ShAgentAPI {
      * @param site    site id or name; omit for every readable site
      * @param depth   folder-tree depth to walk
      * @param budget  estimated-token ceiling; {@code 0} = unbounded
-     * @param include comma-separated sections ({@code instance,sites,model,sitemap,conventions})
+     * @param include comma-separated sections ({@code instance,sites,model,sitemap,conventions};
+     *                {@code manifest} and {@code ops} are the two that must be named)
      * @param from    resume cursor — the {@code budget.truncatedAfter} of a prior call
      * @param format  {@code json} (default), {@code terse} (SH78, ~⅓–½ fewer tokens),
      *                or {@code agents-md} (SH115 — the same pack rendered as project

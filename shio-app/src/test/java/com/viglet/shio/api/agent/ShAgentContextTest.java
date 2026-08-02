@@ -346,13 +346,15 @@ class ShAgentContextTest {
                     var properties = ((ShAgentContextSection.UnknownSectionException) thrown)
                             .toProblemDetail().getProperties();
                     assertThat(properties).containsEntry("didYouMean", "sitemap");
-                    // `manifest` (SH157) is in the allowed set even though it is not in the
-                    // default one. A caller reading this error is asking what it may name,
-                    // and the section it has to name explicitly is the one it most needs
-                    // told about.
+                    // `manifest` (SH157) and `ops` (SH346) are in the allowed set even though
+                    // neither is in the default one. A caller reading this error is asking what
+                    // it may name, and the sections it has to name explicitly are the ones it
+                    // most needs told about — for `ops` that is the whole point: it is the write
+                    // vocabulary, and a caller that never learns the section exists is back to
+                    // the MCP-only state SH346 closed.
                     assertThat(properties.get("allowed")).isEqualTo(
                             List.of("instance", "sites", "model", "sitemap", "conventions",
-                                    "manifest"));
+                                    "manifest", "ops"));
                 });
     }
 

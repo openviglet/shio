@@ -46,17 +46,28 @@ public enum ShAgentContextSection {
      * caller for a document most of them already hold, which is the exact cost this whole
      * block exists to remove.</p>
      */
-    MANIFEST;
+    MANIFEST,
+    /**
+     * SH346 — the write vocabulary ({@code ShAgentOps.terse()}), the same bytes
+     * {@code shio://ops} serves, so an agent with no MCP client can read which keys each op takes.
+     *
+     * <p><b>Asked for by name, for the same reason {@link #MANIFEST} is</b>, and the reason is
+     * sharper here: this section is about how to <em>write</em>, and the pack is what a session
+     * reads before it knows whether it will. Charging every reader for it would put the vocabulary
+     * on the same footing as the manifest section SH346 measured and rejected. Like the manifest it
+     * is attached after the digest is taken, so asking for it does not invalidate a cached pack.</p>
+     */
+    OPS;
 
     /**
      * What a bare {@code /agent/context} returns, and what {@code include=all} means.
      *
-     * <p>Everything except {@link #MANIFEST} — see its note. "All the sections of the context
-     * pack" and "the context pack plus a different document" are different requests, and only
-     * the first one should be reachable without saying so.</p>
+     * <p>Everything except {@link #MANIFEST} and {@link #OPS} — see their notes. "All the sections
+     * of the context pack" and "the context pack plus a different document" are different requests,
+     * and only the first one should be reachable without saying so.</p>
      */
     private static Set<ShAgentContextSection> defaults() {
-        return EnumSet.complementOf(EnumSet.of(MANIFEST));
+        return EnumSet.complementOf(EnumSet.of(MANIFEST, OPS));
     }
 
     /** Lower-case names, in declaration order — the {@code allowed} set of the 400. */

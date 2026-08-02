@@ -38,6 +38,19 @@ public interface ShMcpResource {
     /** {@code text/plain} for the terse encodings, {@code application/json} otherwise. */
     String mimeType();
 
+    /**
+     * Where a caller with no MCP client reads the same document (SH346).
+     *
+     * <p>Declared rather than inferred, and declared <em>here</em> rather than in a table a test
+     * owns, because it is a fact about the resource: publishing a document only over MCP is a P1
+     * break, and P1 breaks are the class this repository keeps rediscovering (SH338). SH346 was
+     * the second one — {@code shio://ops} had no twin for a block — and the instrument that finds
+     * the third is {@code ShMcpResourceHttpTwinLintTest}, which fails the build when a resource
+     * bean cannot answer this. Full path including {@code /api/v2}, and a query string when one
+     * selects the document ({@code /api/v2/agent/context?include=ops}).</p>
+     */
+    String httpTwin();
+
     /** Templates are advertised on {@code resources/templates/list}, not {@code resources/list}. */
     default boolean template() {
         return uri().indexOf('{') >= 0;

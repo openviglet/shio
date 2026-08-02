@@ -46,8 +46,14 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
   **a source scan is not faithful here**, because a handler reads `op.address()` through a helper
   (measured: the scan finds nothing on five of the nine). An op added to `OPS` with no spec **fails
   the build**. Three requirement kinds, because two are conditional (SH175): `type`/`folder` on
-  `post.upsert` only when creating, `to`|`folder` on `post.move`. **Known gap: MCP-only (SH346)** —
-  an HTTP-only agent cannot read it.
+  `post.upsert` only when creating, `to`|`folder` on `post.move`. **It is also
+  `GET /agent/context?include=ops` (SH346)** — same bytes, so an HTTP-only agent reads the same
+  document; see agent-surface.md for why that section and not a manifest one.
+- **Every resource declares its HTTP twin, and a build guard checks the route exists (SH346)** —
+  `ShMcpResource.httpTwin()`, asserted against the live handler mappings by
+  `ShMcpResourceHttpTwinLintTest`. Publishing a document over MCP alone is a P1 break;
+  `shio://ops` was one for a block, and the instrument is what answers the question for the other
+  five resources instead of one fix answering it for one.
 - **Prompts**: `new-site` · `add-section` · `translate-site` · `audit-content`.
 - **One name per concept, and an unrecognised argument refused once (SH331)** —
   `ShMcpVocabulary`, called from `ShMcpServer.toolsCall`, so there is a single place where arguments

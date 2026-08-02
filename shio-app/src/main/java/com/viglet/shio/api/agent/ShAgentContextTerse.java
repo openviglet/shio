@@ -46,16 +46,24 @@ public final class ShAgentContextTerse {
     }
 
     /**
-     * The full response: the canonical body plus the capabilities, digest and budget lines.
+     * The full response: the canonical body plus the capabilities, the op vocabulary, and the
+     * digest and budget lines.
      *
      * <p>SH157's capabilities sit here rather than in {@link #body(ShAgentContext)} for the
      * same reason the digest and budget do — the digest is taken over the body, and a build
-     * number moving it would send every agent re-reading every sitemap after an upgrade.</p>
+     * number moving it would send every agent re-reading every sitemap after an upgrade. SH346's
+     * ops block sits here on the same argument: it changes with the build, not with the content.</p>
      */
     public static String render(ShAgentContext pack) {
         StringBuilder out = new StringBuilder(body(pack));
         if (pack.capabilities() != null) {
             out.append(ShAgentManifestTerse.render(pack.capabilities()));
+        }
+        if (pack.ops() != null) {
+            // Verbatim (SH346). It is already a line format with its own `shio-ops` header and its
+            // own grammar legend, and re-encoding it here would give an agent two spellings of the
+            // one document whose whole purpose is that there is only one.
+            out.append(pack.ops());
         }
         out.append(ShTerse.line("digest").word(pack.digest()).build());
         ShAgentContext.Budget budget = pack.budget();
