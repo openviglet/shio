@@ -1187,67 +1187,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.1 A built-in HTML renderer for page layouts (SH183)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three conclusions from building
-> it are load-bearing for the rest of this section, so they stay here rather than going
-> with the design:
->
-> **The non-goal is now a classpath fact, not a policy.** Handlebars.java declares
-> `nashorn-core` at *compile* scope for its JS-helper integration, so the obvious cleanup —
-> delete the orphaned direct declaration, add the template engine — would have swapped an
-> unused script engine for a used one. It is excluded, and `ShRenderNoScriptEngineTest`
-> asserts that along with the two defaults that would undo the rest: the value resolver
-> (`MapValueResolver` only, or a template walks any object it is handed) and the template
-> loader (refusing, or `{{> application}}` in a layout reads the classpath). None of the
-> three changes the rendered output when it breaks, which is why each is a test rather than
-> a review item.
->
-> **Presentation as content paid off immediately.** Layouts, regions and themes are posts of
-> three system post-types, so everything the agent surface already does works on them with no
-> new code — and the 2018 `openviglet/bootstrap-site` export renders with no migration at
-> all, which is the strongest available evidence that the model was right and only its host
-> was wrong.
->
-> **What it deliberately left**: `search`, `form` and `getRelation` (**SH247**), the browser
-> JavaScript a region can author but nothing serves (**SH248**), and the fact that
-> `/agent/render` and `/preview` now compose the same page two different ways (**SH249**).
-
-### XV.2 A site's front-end URL is unreachable from the agent path (SH184)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two rules worth keeping, because
-> both were arrived at by rejecting a simpler version:
->
-> **Fill what is empty, never replace what somebody chose.** SH170 refused to update a site
-> at all and was right about a *decision* and wrong about a *blank* — the agent is the thing
-> that just deployed the front end and knows the address. The P7 line is not "may an upsert
-> write this field" but "was there anything there".
->
-> **The preview fallback is resolved, not stored.** Writing `/preview/<site>` into
-> `site.url` at creation is one line and destroys both other properties: the column stops
-> meaning "the customer's front end", and there is no longer an empty value to fill or a way
-> to tell a placeholder from a choice. `ShSiteFrontEnd` answers the question at the point of
-> use instead, and returns a *record* rather than a URL, because the two destinations differ
-> by whether a token is needed at all.
-
-### XV.3 Nothing implements the Universal Editor's iframe protocol (SH185)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P; the wire format is
-> [specs/SH185-universal-editor-protocol.md](specs/SH185-universal-editor-protocol.md).
->
-> The decision worth carrying forward is that **a template declares which post a field
-> belongs to, and the engine never infers it**. A region renders against the page's model,
-> so `{{TEXT}}` inside it is the page's — but inside a `{{#query}}` block `{{title}}` is the
-> listed post's, and the rendered HTML records neither. Inferring would mean the template
-> engine tracking provenance through every helper, and getting it wrong means editing the
-> wrong post's content. Every visual editor that works asks the author; the ones that guess
-> are the ones that edit the wrong thing.
->
-> The other half is that `universalEditor: true` was the first manifest flag to break its own
-> rule — an unshipped capability reports `false` and never overstates. It was fixed by
-> shipping the counterpart rather than by demoting the flag, which was the right way round
-> only because SH183 had already landed something for it to target.
-
 ### XV.4 The agent sees a page's structure, never its appearance (SH187)
 
 > ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth keeping.

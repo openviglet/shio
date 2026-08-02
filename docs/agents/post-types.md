@@ -49,6 +49,12 @@ idempotent, and it creates a **blank** site (`ShSiteWriteService.createBlank`), 
 SH71 bootstrap template. A token with an SH2 site allow-list is **refused** — inventing a site
 outside the list is the escalation §XII forbids. `POST /api/v2/site` still exists for the console
 (session + CSRF, and it keeps the starter clone).
+**And the general form of that rule, which outlives this endpoint (SH184, moved here by SH356):**
+the P7 question is not *"may an upsert write this field"* but *"was there anything there"*. Both of
+SH184's rules were reached by rejecting a simpler version — SH170 refused to update a site at all,
+which was right about a **decision** and wrong about a **blank**, since the agent is the thing that
+just deployed the front end and knows the address.
+
 **It fills what is empty and never replaces what somebody chose (SH184).** SH170 refused to update
 at all, reasoning that a site's URL and description are console concerns with a human looking at
 them — right about a *decision*, wrong about a *blank*, and it left an agent able to build a site,
