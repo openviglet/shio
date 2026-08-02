@@ -45,6 +45,8 @@ import tools.jackson.databind.node.ObjectNode;
  */
 @SpringBootTest(properties = "shio.schedule.enabled=false")
 @TestInstance(Lifecycle.PER_CLASS)
+@com.viglet.shio.ShFixtureShapeGuard.BuildsDuplicateUrls(
+        "SH348 locales — one page in two languages is two posts on one furl by design, and the locale is what tells them apart")
 class ShContentLocaleTest {
 
     @Autowired

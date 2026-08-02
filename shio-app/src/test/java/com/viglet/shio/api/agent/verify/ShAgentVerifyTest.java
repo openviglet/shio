@@ -66,6 +66,8 @@ import tools.jackson.databind.ObjectMapper;
  */
 @SpringBootTest
 @TestInstance(Lifecycle.PER_CLASS)
+@com.viglet.shio.ShFixtureShapeGuard.BuildsDuplicateUrls(
+        "as ShAgentVerifyScopeTest: the rule under test is the one that reports a shared URL")
 class ShAgentVerifyTest {
 
     @Autowired

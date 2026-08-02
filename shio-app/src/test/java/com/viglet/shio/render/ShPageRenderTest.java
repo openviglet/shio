@@ -242,9 +242,14 @@ class ShPageRenderTest {
                 row.setOwner("admin");
                 entityManager.persist(row);
             }
+            // SH324 — one id for both rows. Publishing keeps the draft's id, so a fixture that
+            // mints one per state is two posts on one URL: the duplicate-URL defect wearing a
+            // published page's clothes. Found by ShFixtureShapeGuard, in the class §XVI.31 had
+            // recorded as the one that got this right.
+            String homeId = UUID.randomUUID().toString();
             for (ShPostState state : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT)) {
                 ShPostUnified page = new ShPostUnified();
-                page.setId(UUID.randomUUID().toString());
+                page.setId(homeId);
                 page.setState(state);
                 page.setShSite(owner);
                 page.setShFolder(root);

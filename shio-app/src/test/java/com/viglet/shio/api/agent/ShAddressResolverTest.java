@@ -44,6 +44,8 @@ import jakarta.persistence.PersistenceContext;
  */
 @SpringBootTest
 @TestInstance(Lifecycle.PER_CLASS)
+@com.viglet.shio.ShFixtureShapeGuard.BuildsDuplicateUrls(
+        "SH321 is the contested-URL refusal itself: two posts on one furl is the fixture, not a defect")
 class ShAddressResolverTest {
 
     @Autowired

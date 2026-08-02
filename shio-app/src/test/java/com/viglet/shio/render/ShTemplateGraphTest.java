@@ -509,9 +509,10 @@ class ShTemplateGraphTest {
             String layoutData = json("HTML",
                     "<html><body><div sh-region=\"SH281V_NAV\"></div></body></html>",
                     "THEME", "SH281V_THEME");
-            for (ShPostState state : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT)) {
-                post(owner, root, layoutType, "SH281V_LAYOUT", "/l", layoutData, when, state);
-            }
+            // SH324 — one id across both rows: `post` mints one per call, so a two-state loop
+            // through it is two posts on one URL, which publishing cannot produce. Found by
+            // ShFixtureShapeGuard, in the class SH321's refusal first fired on.
+            bothStates(owner, root, layoutType, "SH281V_LAYOUT", "/l", layoutData, when);
             post(owner, root, regionType, "SH281V_NAV", "/r",
                     json("HTML", "<nav>x</nav>"), when, ShPostState.DRAFT);
             post(owner, root, themeType, "SH281V_THEME", "/t",
@@ -1054,6 +1055,32 @@ class ShTemplateGraphTest {
             row.setDate(when);
             row.setOwner("admin");
             entityManager.persist(row);
+        }
+    }
+
+    /**
+     * A published page: two rows, <b>one id</b> — the shape publishing actually produces (SH324).
+     *
+     * <p>Two {@code post(...)} calls give two ids, which is a duplicate URL rather than a published
+     * page, and is the fixture defect SH321's refusal exposed and {@code ShFixtureShapeGuard} now
+     * fails the build on.</p>
+     */
+    private void bothStates(ShSite owner, ShFolder folder, ShPostType type, String title,
+                            String furl, String data, Instant when) {
+        String id = UUID.randomUUID().toString();
+        for (ShPostState state : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT)) {
+            ShPostUnified post = new ShPostUnified();
+            post.setId(id);
+            post.setState(state);
+            post.setShSite(owner);
+            post.setShFolder(folder);
+            post.setShPostType(type);
+            post.setTitle(title);
+            post.setFurl(furl);
+            post.setData(data);
+            post.setDate(when);
+            post.setOwner("admin");
+            entityManager.persist(post);
         }
     }
 

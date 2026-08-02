@@ -75,6 +75,8 @@ import tools.jackson.databind.ObjectMapper;
 // The last two cases add content to the shared fixture, so the order is declared rather than
 // left to chance: a test whose result depends on which sibling ran first is not a test.
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@com.viglet.shio.ShFixtureShapeGuard.BuildsDuplicateUrls(
+        "the duplicate-url finding cannot be scoped without a duplicate to find (SH99/SH202)")
 class ShAgentVerifyScopeTest {
 
     @Autowired

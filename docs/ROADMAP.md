@@ -451,7 +451,6 @@
 > SH322's habit, applied.
 
 - ⏳ **SH247** (deps: SH183 ✅) **`form` is the last of the seven capabilities** — What remains is form, and the missing piece is not code but a decision about where a submission goes: storage, spam, notification, retention. → §XV.14
-- ⏳ **SH324** (deps: SH321 ✅) **A test fixture can model a shape the product never produces, and nothing says so** — The premise is asserted (publish keeps the draft's id, so one page is one id and one furl); what remains is the choice of instrument, since the cheap one is not cheap once it has to be sound. → §XVI.31
 - 💭 **SH294** (deps: SH290 ✅) **"Imports and renders without a migration" is still only a comment** — The class comment claims a real 2018 export imports and renders, and nothing exercises it — the bundled starter declares no layout, so it cannot. → §XVI.46
 - 💭 **SH276** (deps: SH275 ✅) **A premise about a dependency we *do not* have is unfalsifiable, and one is load-bearing** — It justifies ~1500 lines of hand-rolled protocol and cannot be asserted, because checking it means adding the dependency being evaluated. → §XVI.28
 - 💭 **SH355** (deps: —) **Half-shipped entries are invisible to the tool that owns the files** — Four lint findings and one refused retire all trace to a ledger id written as SH96 (local half), which roadkeep cannot parse. → §XVI.65

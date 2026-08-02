@@ -2003,22 +2003,6 @@ The reason this is an idea rather than a designed task is the fixture. Hand-writ
 agrees with the test's author rather than with the artefact. The honest source is a real export, so
 the first step is finding one, not writing one.
 
-### XVI.31 A follow-up from the URL sweep (SH324)
-
-**SH324 — a fixture can model a shape the product cannot produce.** SH321's refusal fired on
-`ShTemplateGraphTest`, which built a published post as two `post(...)` calls and therefore two ids —
-two posts sharing a URL, which is the defect rather than a published page. The suite was green for
-blocks with a fixture describing something `ShPostUnifiedWriteService` cannot create, and
-`ShPageRenderTest` had the correct helper the whole time.
-
-This is SH290's class one layer down: a hand-written artefact claiming to represent something it does
-not. Two instruments, and they cost very differently — build fixtures **through the writer** wherever
-the test is not about the persistence shape itself (right, and it makes a test depend on the code it
-may be testing), or a **lint** asserting that no fixture persists two `ShPostUnified` rows with one
-furl and different ids (narrow, cheap, and it only catches this one shape). The narrow one is
-probably the right first move, on the same reasoning SH322 just wrote down: the pattern that finds
-the next occurrence is worth more than the fix to this one.
-
 ### XVI.1 No CI workflow runs on the branch the work happens on (SH241)
 
 Three workflows exist. `build.yml` (Maven + Sonar) and `codeql-analysis.yml` are
