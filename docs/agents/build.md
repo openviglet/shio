@@ -102,6 +102,38 @@ during Block P, 974 on a clean run). So drop `-q` when the number matters, and k
 reason. Both traps are the same shape — *an artefact of an earlier command changing what a later one
 appears to say* — which is worth remembering as a class, since `target/` holds several.
 
+### Why the guards in this repository look the way they do (SH122/SH128/SH130/SH131/SH136)
+
+Moved here by SH356, because these are rules for the next guard rather than history of the last one.
+
+**When an invariant is violated for the first time, write the guard for that invariant — not a
+resolution to be careful.** The evidence is that both guards written this way found *more instances
+than the defect that motivated them, on the day they were written*: SH122's found three broken CDA
+paths, SH128's found four, including a scoped token that could not list the children of any folder
+below a site root. Every one of those paths already had a behavioural test, and every one passed,
+because the tests exercised the root case and the defect only appears below it.
+
+Four corollaries, each paid for:
+
+- **Prefer a textual lint to a behavioural test** when the invariant is about how code is *written*
+  rather than what it returns. A behavioural test proves the paths it exercises; the next instance
+  lands in the path nobody thought to add. A lint covers the paths that do not exist yet.
+- **Give the lint an escape hatch that costs a sentence.** `ShFolderSite-exempt`, the `nativeQuery`
+  carve-out: a guard with no exemption gets deleted the first time it is wrong, while a guard whose
+  exemption is a line of prose gets an argument in review instead.
+- **Some invariants cannot be tested behaviourally, and knowing which is the skill.** `Map.copyOf`'s
+  iteration order comes from a salt fixed once per *process*, so "build it twice and compare" passes
+  over broken code in every run there will ever be. Before writing a guard, ask what a broken
+  implementation would do differently **inside one JVM** — if the answer is nothing, the guard has to
+  be textual, or the code has to be restructured until the defect becomes observable. SH136 did both.
+- **Prove a guard by breaking the code**, not by watching it pass. And two shapes that look like
+  guards and are not: **a version assertion that compares a constant with itself** (SH130 replaced
+  one with a check against the *observable obligations* of the revision claimed — the tautology would
+  have kept passing after somebody bumped the constant past a breaking change, which is the only
+  moment it had a job), and **a golden that pins prose**: keep every key and the literal value of the
+  fields that are themselves contract, collapse free text to a type token, because a golden that
+  fails on a copy edit stops being read and the diff is the entire product.
+
 ### Premises about code we do not own (SH274, SH275)
 
 Six claims about third-party behaviour were load-bearing and lived in comments, where a version bump

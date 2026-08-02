@@ -175,39 +175,6 @@ AI the product contains.
 > reproduced every discovery and write cost it was meant to remove. Full protocol
 > design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
 
-### VIII.8 The agent tools (SH83) — ✅ shipped
-
-Shipped: eight tools, three resources, four prompts →
-[CHANGELOG.md](CHANGELOG.md) Block H. The original framing — *why nine and not
-forty: **tool schemas are context*** — held up and is now enforced by a test. Design
-records that bind what follows:
-
-- **A tool that cannot be a shape over REST is a design smell.** `find`/`read` had no
-  REST equivalent, and the tempting move was to put the query logic in the tool. Adding
-  `GET /agent/find` and `/read` first cost an hour and kept P10 true; it also means the
-  CLI and a plain HTTP caller got the capability for free.
-- **Eight, not nine, and the ninth is not a stub.** `shio_verify` waits for SH99 because
-  a verify that only pretends is *worse than absent*: the agent stops looking. The same
-  reasoning downgraded `shio_changes` to an explicitly-labelled window rather than a
-  fake cursor. Generalize: when a capability is partly available, the honest surface is
-  the part that works plus a manifest flag saying the rest is not here — never a
-  plausible-looking shim.
-- **Prompts are procedures, never content.** They encode the call order that avoids
-  mistakes (plan before write, publish as its own step) and say nothing about tone or
-  copy. §0.7 stands: there is no inference in Shio, and an MCP prompt is a protocol
-  object, not a system prompt.
-- **Read the drafts.** Composition said "route reads through the CDA"; the CDA only
-  sees `PUBLISHED`. An agent that cannot read back its own unpublished work is not
-  composing, it is blind — so these reads go to the unified model, DRAFT-preferred,
-  with the same SH2 allow-list applied. Compose with the *rule*, not necessarily the
-  code path.
-
-The two gaps these tools revealed — no `post.move`, and a prune that skipped folders —
-are shipped (SH134, SH135). Neither showed up while *building* a site, only when changing
-one, which is exactly the half of the north star that is harder to test by demo, and the
-reason §VIII.7 now treats "can this vocabulary change a site?" as a standing question
-rather than a finished one.
-
 ### VIII.9 Turing ecosystem wiring (SH84)
 
 The SH22 half is shipped: `ShAgentTenantIsolationIT` exercises every Block H surface
@@ -219,79 +186,6 @@ another tenant's sitemap would look exactly like a working context pack.
 
 What remains is the Turing integration (replaces old SH37) — the ecosystem half, which
 is a wiring question rather than an enforcement one.
-
-### VIII.10 The recurring defect class, and the rule it produced
-
-Two guards now exist for the same shape of bug: **code that compiles, passes review, and
-is wrong only when the data is queried along an axis the author was not thinking about.**
-SH122 covered the `@TenantId` JOINED-join hazard; SH128 covers site resolution, where only
-a root folder carries `shSite` and everything else has to walk up to find it.
-
-Both are shipped (→ [CHANGELOG.md](CHANGELOG.md) Block H), and what is worth keeping is
-not the implementations but the rule they establish:
-
-> **When an invariant is violated for the first time, write the guard for that invariant
-> — not a resolution to be careful.**
-
-The evidence is that both guards found more instances than the defect that motivated
-them, on the day they were written. SH122 found three broken CDA paths; SH128 found four,
-including a scoped CDA token that could not list the children of any folder below a site
-root. In both cases the paths were already covered by behavioural tests, which passed,
-because the tests exercised the root case and the defect only appears below it.
-
-Two corollaries that make the rule cheap to follow:
-
-- **Prefer a textual lint to a behavioural test** when the invariant is about how code is
-  written rather than what it returns. A behavioural test proves the paths it exercises;
-  the next instance lands in the path nobody thought to add. A lint covers the paths that
-  do not exist yet.
-- **Give the lint an escape hatch that costs a sentence.** Both guards accept an inline
-  exemption comment naming the reason (`ShFolderSite-exempt`, the `nativeQuery` carve-out).
-  A guard with no exemption gets deleted the first time it is wrong; a guard whose
-  exemption is a line of prose in a review gets an argument instead.
-
-### VIII.11 What the hand-rolled surfaces earned (SH130, SH131 — ✅ shipped)
-
-Both guards came from one observation: the failure mode of these surfaces is **silence**,
-not an exception. Shipped → [CHANGELOG.md](CHANGELOG.md) Block H. The findings that bind
-what follows:
-
-- **A version assertion that compares a constant with itself is not a test.** SH130
-  replaced `assertThat(version).isEqualTo(PROTOCOL_VERSION)` with a check against the
-  *observable obligations* of the revision claimed — batching refused, structured
-  capability objects, `content[]`+`isError`, plural `contents`. The tautology would have
-  kept passing after someone bumped the constant past a breaking change, which is the
-  only moment the assertion had a job to do.
-- **Pin shapes, not prose.** The goldens keep every key and the literal value of the
-  fields that are themselves contract, and collapse free text to a type token. A golden
-  that fails on a copy edit stops being read, and a golden nobody reads is worse than
-  none — the diff is the entire product.
-- **Determinism is not automatic just because the data is.** The transcript immediately
-  caught `tools/list` serializing differently on every boot, because `inputSchema()` is
-  built from `Map.of` and iteration order follows the JVM hash seed. Nothing about the
-  content changed; the bytes did, on the one payload re-sent every turn. This is the
-  first place P5 has been broken by the *language* rather than by a design choice, and
-  ✅ **SH136** → [CHANGELOG.md](CHANGELOG.md) shows it was not the last: four more live
-  instabilities, all the same shape. Two records that bind what follows.
-  - **Some invariants cannot be tested behaviourally, and knowing which is the skill.**
-    `Map.copyOf`'s order comes from a salt fixed once per *process*, so "build it twice
-    and compare" passes over broken code in every test run there will ever be. Before
-    writing a guard, ask what a broken implementation would do differently *inside one
-    JVM* — if the answer is nothing, the guard has to be textual or the code has to be
-    restructured until the defect becomes observable. SH136 did both: a lint, plus moving
-    the sort to the hash site so order-independence could be asserted with a deliberately
-    reversed input.
-  - **Prove a guard by breaking the code.** SH136's digest assertion was written, passed,
-    and was then *verified by reverting the fix* to confirm it failed. That step is cheap
-    and it is the only evidence that separates a guard from a decoration — the same
-    lesson as SH130's tautological version check, arrived at from the other direction.
-    A guard nobody has watched fail is a guard nobody should trust.
-- **A contract that can only be honoured by remembering belongs inside the method.**
-  SH131's bind requirement lived in a comment; SH83 read the comment and still got it
-  wrong, and the breach looked like an empty result set — valid data, not an error. The
-  test for "is this comment load-bearing?" is: *if someone ignores it, does the system
-  fail loudly?* If not, it is not a comment, it is a missing parameter or a missing
-  wrapper.
 
 ### VIII.12 Folders are absent from the change feed (SH196)
 

@@ -79,6 +79,19 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
   swallows. Getting this backwards throws away the teaching error. The generalisation,
   for the next protocol surface: **ask who has to change, and send the error where that
   party will see it.**
+- **Four rules the tool surface was designed against (SH83, moved here by SH356).** **A tool that
+  cannot be a shape over REST is a design smell** — `find`/`read` had none, and the tempting move was
+  to put the query logic in the tool; adding `GET /agent/find` and `/read` first cost an hour, kept
+  P10 true, and handed the same capability to the CLI and to any plain HTTP caller for free.
+  **A partly-available capability ships as the part that works plus a manifest flag** — never a
+  plausible-looking shim: `shio_verify` waited for SH99 because a verify that only pretends is
+  *worse than absent*, since the agent stops looking, and the same reasoning made `shio_changes` an
+  explicitly-labelled window rather than a fake cursor. **Prompts are procedures, never content** —
+  they encode the call order that avoids mistakes (plan before write, publish as its own step) and
+  say nothing about tone or copy; there is no inference in Shio, and an MCP prompt is a protocol
+  object rather than a system prompt. **Read the drafts** — the CDA only sees `PUBLISHED`, and an
+  agent that cannot read back its own unpublished work is not composing, it is blind, so these reads
+  go to the unified model, DRAFT-preferred.
 - **Attribution cannot be retrofitted (SH75, moved here from IMPROVEMENTS by SH356).** The
   session id is minted by the transport on the first `initialize`, because rows written
   before it existed simply do not have one — there is no backfill for a fact nobody
