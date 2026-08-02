@@ -2474,6 +2474,31 @@ run's headline, so no count is re-derived by hand (SH283's defect, SH354's at th
 terminal); and which jobs run on push versus pull request is a deliberate choice — the
 console check drives Chromium, the Java suite is cheap enough for both.
 
+### XVI.60 The roadmap became a history instead of a queue (SH341)
+
+Measured rather than asserted: **95 active task lines averaging 142 words**, against the
+rule that an entry is *one sentence: what + why + pointer*. Task bodies were **65%** of
+the document, the worst line 555 words — and six of the worst eight were written in the
+session that then noticed it. The drift comes from writing the analysis where it is
+freshest, not where it belongs.
+
+The structural cause is that a line and its `→ §` pointer are **redundant by design**:
+the pointer exists so the line need not carry the reasoning, so nothing pushes back when
+the line grows. Every other constraint here is enforced — response budgets, tool-schema
+ceilings, a DOM contract table. Entry length had only a sentence in `agents.md`. And
+when the roadmap carries the argument, IMPROVEMENTS stops being the single home for
+rationale.
+
+✅ **The length half is a ratchet now** (`ShRoadmapLineLengthRatchetTest`): 44 lines over
+roadkeep's 320-character limit, a count that may fall and may not rise. A hard limit
+could not land, because each fix is editorial. Writing it shortened SH341's own line and
+the ratchet asked for the lower number back at once — which is what makes it a ratchet
+and not a floor.
+
+What remains is those 44. Compression is lossless only where IMPROVEMENTS already holds
+the detail: a task whose `→ §` section covers it can be cut to a sentence, one whose
+pointer is thin needs its rationale **moved** first.
+
 ## XVI.58 What an end-to-end MCP build of a site actually costs (SH325–SH332)
 
 An agent connected over the `shio mcp` stdio bridge and built a working site from nothing — a
@@ -2718,35 +2743,6 @@ exactly, and every dropped field is declared with a reason, so the first step of
 without deleting a line from that table. Third instrument in this block found to have a blind spot,
 after SH338's stale check (catches the *predicted* fix) and SH339's (never asks what a widened path
 returns) — all three now written into the tests themselves.
-
-### XVI.60 The roadmap became a history instead of a queue (SH341)
-
-Measured rather than asserted, which is the point: **95 active task lines averaging 142 words each**,
-against this project's own rule that a roadmap entry is *"≈1 sentence: what + why + pointer"*. Task
-bodies are **65%** of the document. The worst single line is 555 words — and six of the worst eight
-were added in the session that then noticed the problem, which is the useful part of the finding: the
-drift is not caused by carelessness but by writing the analysis where the analysis is freshest
-instead of where it belongs.
-
-The structural cause is that a task line and its `→ §` pointer are **redundant by design** — the
-pointer exists precisely so the line does not have to carry the reasoning — so nothing pushes back
-when the line grows. Every constraint here is enforced somewhere except this one: response sizes have
-a budget test, tool schemas have a ceiling, and `ShRenderedDomContractTest` fails when a table drifts
-from the code. A roadmap entry's length has only a sentence in `agents.md`.
-
-Two consequences worth separating. The **cost to a reader** is that picking work now means paging
-through prose, which is the opposite of what a queue is for. The **cost to correctness** is subtler:
-when the roadmap carries the full argument, IMPROVEMENTS stops being the single home for design
-rationale, and the two can then disagree — the failure mode this three-file split exists to prevent.
-
-The compression is lossless where the detail is already in IMPROVEMENTS, which is true of SH325–SH340
-by construction (§XVI.58 and §XVI.59 were written first, then the lines cut). It is *not* verified for
-the other 79, which is why **SH341** is a task rather than something done in one sweep: some of those
-lines may be the only place their reasoning exists, and compressing them blind would destroy it. The
-check is mechanical — every task with a `→ §` pointer whose section actually covers it can be cut to a
-sentence; a task whose pointer is missing or thin needs its rationale *moved* first. And the durable
-fix is the usual one for this repository: a length assertion, so the rule stops depending on whoever
-is writing the entry noticing it.
 
 # Part 2 — pre-existing sections
 
