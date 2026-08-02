@@ -77,32 +77,29 @@ class ShTemplateValidatorTest {
     }
 
     @Test
-    @DisplayName("a call to the one still-missing helper is named as such")
-    void missingHelpersAreNamed() {
-        List<ShTemplateProblem> problems =
-                validator.validate("<div>\n{{#form id=\"contact\"}}<p>{{title}}</p>{{/form}}\n</div>");
-
-        assertThat(problems).hasSize(1);
-        assertThat(problems.get(0).rule()).isEqualTo("template-unknown-helper");
-        assertThat(problems.get(0).message())
+    @DisplayName("nothing is known to be missing any more, and the assertion had to invert")
+    void nothingIsKnownToBeMissing() {
+        // This used to assert `{{#form}}` was named as absent, carrying the SH247 message. All
+        // seven of shObject.js' capabilities are registered now, so `KNOWN_MISSING_HELPERS` is
+        // empty and a form call is simply a call. The assertion inverts rather than being deleted:
+        // a validator that still refused `form` while the renderer executed it is the same
+        // author-versus-engine disagreement this class exists to prevent, pointing the other way.
+        assertThat(validator.validate(
+                "<div>\n{{#form type=\"Contact\"}}<p>{{label}}</p>{{/form}}\n</div>"))
                 .as("""
-                        Handlebars treats {{#form}} as a section over a context value named \
-                        `form` and renders nothing at all — so without this the failure mode \
-                        is a silently missing block, which is the worst kind.""")
-                .contains("no `form` helper")
-                .contains("SH247");
-        assertThat(problems.get(0).line()).isEqualTo(2);
+                        the seventh capability is registered, so this is not an unknown helper. \
+                        What must never happen is a write-time refusal for a helper the render \
+                        then runs happily.""")
+                .isEmpty();
     }
 
     @Test
-    @DisplayName("form is the last of the seven, and the scan's list shrank with SH247")
-    void formIsTheLastMissingOne() {
-        // The paramless form is the half the compiler cannot catch — `{{#x}}` with no
-        // parameters is a valid section over a context value — so this is the assertion that
-        // the scan's list shrank when the helpers landed. Had it not, an author would be told a
-        // helper is missing while the renderer happily runs it, which is the same disagreement
-        // this class exists to prevent, pointing the other way.
-        assertThat(validator.validate("{{#form}}{{/form}}")).hasSize(1);
+    @DisplayName("all seven of shObject.js' capabilities are registered")
+    void allSevenAreRegistered() {
+        // The paramless call is the half the compiler cannot catch — `{{#x}}` with no parameters
+        // is a valid section over a context value — so this is the assertion that the scan's list
+        // emptied when the last of the seven landed.
+        assertThat(validator.validate("{{#form}}{{/form}}")).isEmpty();
         assertThat(validator.validate("{{#getRelation}}{{/getRelation}}")).isEmpty();
         assertThat(validator.validate("{{#search}}{{/search}}")).isEmpty();
     }
@@ -129,11 +126,11 @@ class ShTemplateValidatorTest {
         // as an unknown *field*, so the rule that catches typos would invent one.
         assertThat(engine.registeredNames())
                 .as("sorted and total, because this set is rendered into a message (SH136)")
-                .containsExactly("file_url", "getRelation", "navigation", "query", "search");
+                .containsExactly("file_url", "form", "getRelation", "navigation", "query", "search");
 
-        // A *parameterised* unknown helper, and not `{{#form}}`: that one is in
-        // KNOWN_MISSING_HELPERS and gets the SH247 message instead, so it would not exercise the
-        // engine-derived list at all. This is the branch that answers "what may I call".
+        // A *parameterised* unknown helper. `{{#form}}` used to serve here and cannot any more:
+        // it is registered, so it exercises nothing. This is the branch that answers "what may I
+        // call", and the answer grew by one when the seventh capability landed.
         ShTemplateProblem problem =
                 validator.validate("{{#totallyUnknown q=\"x\"}}y{{/totallyUnknown}}").get(0);
         assertThat(problem.message())
@@ -142,7 +139,7 @@ class ShTemplateValidatorTest {
                         + "used to show up as a message offering the wrong ones. Alphabetical and "
                         + "not registration order, which was the hand-written list's accident of "
                         + "history and is not a fact a reader needs")
-                .contains("file_url, getRelation, navigation, query, search");
+                .contains("file_url, form, getRelation, navigation, query, search");
     }
 
     @Test
@@ -156,7 +153,8 @@ class ShTemplateValidatorTest {
                 .containsEntry("navigation", ShHelperShape.BLOCK)
                 .containsEntry("search", ShHelperShape.BLOCK)
                 .containsEntry("getRelation", ShHelperShape.BLOCK_PATH_ARG)
-                .containsEntry("file_url", ShHelperShape.INLINE_PATH_ARG);
+                .containsEntry("file_url", ShHelperShape.INLINE_PATH_ARG)
+                .containsEntry("form", ShHelperShape.BLOCK);
         assertThat(engine.registeredHelpers()).hasSameSizeAs(engine.registeredNames());
     }
 

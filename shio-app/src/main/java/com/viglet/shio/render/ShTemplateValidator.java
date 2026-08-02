@@ -73,14 +73,16 @@ public class ShTemplateValidator {
      * derived from "everything not registered", because the general form has false positives and
      * this one has none.
      *
-     * <p>Down to one since SH247 shipped {@code getRelation} and {@code search}. {@code form} is
-     * the last of the seven, and it is the one whose absence is a <em>decision</em> rather than a
-     * gap: a form needs somewhere for a submission to go, which is a subsystem and not a helper.
-     * When it ships, this set becomes empty and the whole scan can go with it — the compiler
-     * already raises an unknown parameterised helper on its own, and that is the only half this
-     * exists to cover.</p>
+     * <p><b>Empty, which is the end of this story (SH247).</b> The set held {@code search},
+     * {@code form} and {@code getRelation}; all three are registered now, so all seven of
+     * {@code shObject.js}' capabilities exist and there is no helper a template can reasonably
+     * expect and not get. The comment above predicted this and said the scan could go with it —
+     * it stays because the <em>next</em> gap is what it is for: a capability withdrawn, or one
+     * somebody starts writing templates against before it lands. Keeping an empty set costs one
+     * scan that matches nothing; deleting it means the next author of a half-shipped helper
+     * rediscovers why Handlebars renders {@code {{#form}}} as silence.</p>
      */
-    private static final Set<String> KNOWN_MISSING_HELPERS = Set.of("form");
+    private static final Set<String> KNOWN_MISSING_HELPERS = Set.of();
 
     // SH260 — the registered names are asked for, not restated. This list used to be a copy that
     // SH247 had to edit in step with the registration, and whose drift showed up as a refusal

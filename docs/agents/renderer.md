@@ -572,16 +572,35 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   because the response budget test measures the pack *without* it. Measured: helpers 120 tokens,
   model 59.
   A helper registered with no signature is **absent** rather than listed bare, since a half-answer
-  about a capability is what sends somebody guessing. `form` stays unregistered and therefore
-  unadvertised — a list naming it would have the author write what SH192 then refuses.
-  **`form` is the last of the seven and is deliberately unregistered** (SH247): a helper that
-  silently renders nothing is worse than Handlebars' unknown-helper error, which carries a line
-  and a column — and its absence is a *decision*, since a form needs somewhere for a submission to
-  go. `ShTemplateValidator.KNOWN_MISSING_HELPERS` is down to `form`, and
-  `ShTemplateValidatorTest` asserts **both** directions: `{{#form}}` still refused,
-  `{{#getRelation}}`/`{{#search}}` now accepted. That pairing is why the validator test is
-  Spring-wired — it exists so the validator and the renderer cannot disagree about which helpers
-  exist, in either direction.
+  about a capability is what sends somebody guessing.
+  **All seven exist now, `form` last (SH247)** — `ShTemplateValidator.KNOWN_MISSING_HELPERS` is
+  **empty**, and the empty set stays for the *next* gap rather than being deleted. The validator
+  test is Spring-wired for the property that outlived the gap: the validator and the renderer must
+  never disagree about which helpers exist, in **either** direction, and its `{{#form}}` assertions
+  had to invert rather than be removed — a write-time refusal for a helper the render then runs is
+  the same defect pointing the other way.
+  **What unblocked it was reading the artefact, not a decision meeting.** The task was filed for a
+  block on "a form needs storage, spam, notification, retention — a subsystem, not a helper". FSP's
+  `ShFormComponent` is two files and stores nothing, and `ShFormConfiguration` carries exactly
+  `method`, `pageLayout`, `createPost` and `folder` — so **2018 had already answered it**, and its
+  answer was that a submission becomes a post in a named folder. No subsystem, because the CMS is
+  one. That is SH274's lesson from a new direction: an inherited premise about what a capability
+  *requires* is as checkable as one about a dependency, and this one was recoverable in `origin/FSP`.
+  **`{{#form type=}}` renders and never receives.** It yields one row per declared field
+  (`name`/`label`/`widget`/`input`/`required`/`ordinal`, `ShRenderHelpers.FORM_FIELD_KEYS`) in
+  ordinal order with a name tiebreak; the `<form>`, the `action` and every input are the author's
+  markup, for SH183's reason — a helper emitting `<input class="form-control">` would be the one
+  place in this engine where markup is a Java decision. The receiving half is deliberately absent:
+  it is a **public, unauthenticated endpoint that writes content**, which is a security decision
+  rather than a rendering one, and the renderer's scope is preview-grade (production delivery is
+  Next.js over the CDA, P10). An unknown post-type renders `{{else}}`, not a refusal — `getRelation`'s
+  rule, because SH99 already reports it with an address and a `fix`.
+  **The row shape is a second one, on purpose.** `FORM_FIELD_KEYS` is not merged into `ROW_KEYS`:
+  the five listing helpers are interchangeable because they yield the same row, and a field is
+  categorically not a post — a card body written for `{{#query}}` is meaningless over it. Two
+  honest shapes beat one that makes the shared shape mean less.
+  **P2 cost nothing here:** the context pack names `{{#form type=}}` because it is derived from the
+  engine (SH260/SH272), so registering the helper published it and no list needed editing.
 - **A region's `JAVASCRIPT` is never evaluated in the JVM, and is shipped to the browser
   (SH248)** — that split is the whole resolution of the Block D non-goal, and SH183 landed
   only the server half, so the field briefly accepted code with no effect. The composer now

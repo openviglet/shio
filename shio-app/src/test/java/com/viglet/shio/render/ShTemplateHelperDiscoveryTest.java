@@ -86,15 +86,18 @@ class ShTemplateHelperDiscoveryTest {
                         .contains("{{file_url FIELD}}")
                         .contains("sh-region"));
 
+        // SH247 — this used to assert the *opposite*: `form` was unregistered, and a capability
+        // list naming it would have sent an author to write a call SH192 then refused. The
+        // seventh capability shipped, and the line above needed no edit to say so — the pack is
+        // derived from the engine (SH260/SH272), so registering the helper published it. That is
+        // P2 costing nothing, which is the whole reason the set has one source.
         assertThat(conventions(site))
-                .as("`form` is deliberately unregistered (SH247) because a form needs somewhere "
-                        + "for a submission to go. A capability list that named it would be worse "
-                        + "than no list: the author would write it, and SH192 would refuse the "
-                        + "write the documentation had just recommended.")
-                .noneMatch(line -> line.contains("{{#form"));
+                .as("""
+                        all seven of shObject.js' capabilities are named now, and `form` arrived                         in this list by registration rather than by anybody editing it.""")
+                .anyMatch(line -> line.contains("{{#form type=}}"));
         assertThat(shTemplateEngine.registeredSignatures())
-                .as("and the engine is the one source — nothing downstream restates the set")
-                .noneMatch(signature -> signature.contains("form"));
+                .as("and the engine is still the one source — nothing downstream restates the set")
+                .contains("{{#form type=}}…{{/form}}");
     }
 
     private List<String> conventions(String site) {

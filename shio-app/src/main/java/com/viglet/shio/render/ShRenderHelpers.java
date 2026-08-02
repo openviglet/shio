@@ -26,6 +26,7 @@ import com.viglet.shio.api.agent.ShAddress;
 import com.viglet.shio.api.agent.ShAddressResolver;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
+import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
@@ -66,12 +67,17 @@ import com.viglet.shio.utils.ShStableMap;
  * <h2>What is here and what is not</h2>
  *
  * <p>{@code query}, {@code navigation} and {@code file_url} are the three the shipped sample
- * used. SH247 adds {@code getRelation} and {@code search}, which leaves {@code form} as the
- * only one of the seven still missing — and it is missing for a reason that is not
- * implementation effort: a form needs a decision about <em>where a submission goes</em>, and
- * that is a subsystem (storage, spam, notification, GDPR) rather than a helper. It stays
- * filed rather than stubbed, because a helper that silently renders nothing is worse than the
- * unknown-helper error Handlebars raises with a line and a column.</p>
+ * used. SH247 added {@code getRelation}, {@code search} and finally {@code form}, so
+ * <b>all seven exist</b> and {@code ShTemplateValidator}'s known-missing set is empty.</p>
+ *
+ * <p>{@code form} was filed rather than built for a block, on the argument that a form needs a
+ * decision about <em>where a submission goes</em> — a subsystem (storage, spam, notification,
+ * GDPR) rather than a helper. <b>The artefact contradicted it.</b> FSP's {@code ShFormComponent}
+ * is two files and stores nothing; its {@code ShFormConfiguration} carries {@code method},
+ * {@code pageLayout}, {@code createPost} and {@code folder}, so 2018 had answered the question
+ * and its answer was that a submission becomes a post in a named folder. What ships here is the
+ * rendering half only — see {@link #form} for why the receiving half is a security decision and
+ * not a rendering one.</p>
  *
  * <p><b>Every row the three listing helpers yield has the same shape</b> ({@link #row}), which
  * is the property that makes them interchangeable in a template: an author who has written a
@@ -134,6 +140,20 @@ public class ShRenderHelpers {
     public static final Set<String> ROW_KEYS =
             Set.of("id", "title", "summary", "url", "link", "type", "name");
 
+    /**
+     * What a {@code {{#form}}} row carries (SH247) — a <b>field</b>, not a post.
+     *
+     * <p>Kept apart from {@link #ROW_KEYS} rather than merged into it, and that is the whole
+     * design decision this helper makes. The five listing helpers are interchangeable because
+     * they yield the same row; a form yields something categorically different — a post-type's
+     * *declaration* rather than a post — and pretending otherwise would buy one shared set at the
+     * cost of the property the shared set exists for, since a card body written for
+     * {@code {{#query}}} is meaningless over a field. Two shapes, each honest, and SH251's lint
+     * reads both rather than warning on a correct template.</p>
+     */
+    public static final Set<String> FORM_FIELD_KEYS =
+            Set.of("name", "label", "widget", "input", "required", "ordinal");
+
     @PostConstruct
     void register() {
         // The shape is declared with the helper (SH260): the engine is the one place that knows
@@ -152,6 +172,8 @@ public class ShRenderHelpers {
                 "{{#getRelation FIELD}}…{{/getRelation}}", this::getRelation);
         engine.register("file_url", ShHelperShape.INLINE_PATH_ARG,
                 "{{file_url FIELD}}", this::fileUrl);
+        engine.register("form", ShHelperShape.BLOCK,
+                "{{#form type=}}…{{/form}}", this::form);
     }
 
     /**
@@ -462,6 +484,110 @@ public class ShRenderHelpers {
         Map<String, Object> fields = shRenderModel.fieldsOf(filePost);
         Object name = fields.get("FILE");
         return name == null ? "" : "/file_source/" + filePost.getId() + "/" + name;
+    }
+
+    /**
+     * {@code {{#form type="Contact"}}…{{/form}}} — a post-type's fields, in ordinal order
+     * (SH247). <b>The seventh capability, and the last.</b>
+     *
+     * <h3>What it renders, and what it deliberately does not</h3>
+     *
+     * <p>It yields one {@link #FORM_FIELD_KEYS} row per declared field and nothing else. The
+     * {@code <form>} element, the {@code action}, the inputs and the submit button are the
+     * <b>author's</b> markup. That is not a smaller version of the 2019 helper being cautious —
+     * it is SH183's rule applied: HTML is content, and a renderer that emitted
+     * {@code <input class="form-control">} from Java would be the one place in this engine where
+     * markup is a Java decision, un-themeable and un-overridable by the content that owns every
+     * other tag on the page.</p>
+     *
+     * <h3>Where the submission goes: nowhere, and that is the decision</h3>
+     *
+     * <p>This capability blocked for a block on "a form needs storage, spam handling,
+     * notification and retention — a subsystem, not a helper". <b>The artefact says otherwise.</b>
+     * FSP's {@code ShFormComponent} is two files and neither stores anything; its
+     * {@code ShFormConfiguration} carries exactly four settings — {@code method},
+     * {@code pageLayout}, {@code createPost} and {@code folder} — so 2018 <em>had</em> answered
+     * the question and its answer was that a submission becomes a <b>post in a named folder</b>.
+     * No subsystem, because the CMS already is one.</p>
+     *
+     * <p>Reproducing that half means a public, unauthenticated endpoint that writes content, which
+     * is a security decision rather than a rendering one and is deliberately not taken here: the
+     * renderer's declared scope is <b>preview-grade</b> (production delivery is Next.js over the
+     * CDA, P10), and a preview needs the form to <em>look</em> right, not to accept a stranger's
+     * data. So Shio renders the fields and never receives a submission. The receiving half is a
+     * task of its own, and it now has a design instead of an open question.</p>
+     *
+     * <h3>An unknown post-type renders {@code {{else}}}</h3>
+     *
+     * <p>Not a refusal, and for {@code getRelation}'s reason: an unknown type is already an SH99
+     * finding with an address and a {@code fix}, so failing the page would put one defect in two
+     * reports that can disagree. {@code {{else}}} means "there is no form here", which is what a
+     * visitor should see and what an author will notice.</p>
+     */
+    Object form(Object context, Options options) throws IOException {
+        String typeName = hash(options, "type", null);
+        if (typeName == null || typeName.isBlank()) {
+            return options.inverse();
+        }
+        ShPostType postType = shPostTypeRepository.findByName(typeName.trim());
+        if (postType == null || postType.getShPostTypeAttrs() == null) {
+            return options.inverse();
+        }
+        List<Map<String, Object>> fields = postType.getShPostTypeAttrs().stream()
+                // Ordinal, with the name as a tiebreak: the set is unordered, and two fields
+                // sharing an ordinal would otherwise swap between renders and move SH101's digest.
+                .sorted(Comparator.comparingInt(ShPostTypeAttr::getOrdinal)
+                        .thenComparing(ShPostTypeAttr::getName,
+                                Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(ShRenderHelpers::formField)
+                .toList();
+        if (fields.isEmpty()) {
+            return options.inverse();
+        }
+        StringBuilder out = new StringBuilder();
+        for (Map<String, Object> field : fields) {
+            out.append(options.fn(field));
+        }
+        return out;
+    }
+
+    /** One declared field, as a template sees it. */
+    private static Map<String, Object> formField(ShPostTypeAttr attr) {
+        String widget = attr.getShWidget() == null ? null : attr.getShWidget().getName();
+        Map<String, Object> field = new LinkedHashMap<>();
+        field.put("name", attr.getName());
+        field.put("label", attr.getLabel());
+        field.put("widget", widget);
+        // The widget is Shio's vocabulary; `input` is the browser's. Both are given because a
+        // template that branched on the widget name would hard-code this catalogue, and one that
+        // only had `input` could not tell a Date from a Text it happens to render the same way.
+        field.put("input", inputType(widget));
+        // `required` is a byte in the model, not a boolean; a template branches on truth.
+        field.put("required", attr.getRequired() == 1);
+        field.put("ordinal", attr.getOrdinal());
+        return ShStableMap.copyOf(field);
+    }
+
+    /**
+     * The HTML input a widget wants, or {@code text} when nothing better is known.
+     *
+     * <p>Deliberately a small, total mapping rather than a registry: an unknown widget is a
+     * {@code text} input, which is wrong in a way an author can see and fix in their own markup,
+     * where a refusal would make adding a widget a breaking change for every form template.</p>
+     */
+    private static String inputType(String widget) {
+        if (widget == null) {
+            return "text";
+        }
+        return switch (widget) {
+            case "Text Area", "Ace Editor - HTML", "Ace Editor - Javascript", "Ace Editor - CSS",
+                    "HTML Editor" -> "textarea";
+            case "Combo Box", "Multi Select", "Content Select", "Relator" -> "select";
+            case "Check Box" -> "checkbox";
+            case "Date" -> "date";
+            case "File" -> "file";
+            default -> "text";
+        };
     }
 
     // --- resolution -------------------------------------------------------------

@@ -1163,12 +1163,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.14 What building the renderer found (SH247–SH249)
-
-Three edges, and they share a shape: each is somewhere the renderer is *nearly* the thing it
-replaced, and where the remaining gap is invisible from the outside because the page still
-comes out.
-
 ### XV.14.1 `form` is the last of the seven capabilities (SH247)
 
 > ⏳ **`getRelation` and `search` shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. What §XV.14
