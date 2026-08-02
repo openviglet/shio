@@ -32,6 +32,38 @@ the CDA + console services (law P10) and holds no business logic of its own.
   manifest of 2343 — a 19% regression on the first read of every session, for a document only a
   caller about to write needs. The endpoint index used to enumerate op names in prose and now
   points instead, so the manifest got smaller in the change that closed the gap.
+
+**Four standing rules the context pack is built on (SH77, moved here from IMPROVEMENTS by SH356).**
+They are not history: each constrains a surface that has not been written yet. **(1) The digest is the
+product, not a nicety** — it is what turns "re-read the context" from a decision into a free default,
+so every ordering in the pack is explicit and the digest *excludes* the budget and measurement lines.
+SH116 wires the same value to `If-None-Match`; **do not start hashing measurements**, or a pack that
+did not change will look as if it did. **(2) Only unbounded sections may be truncated.** The model,
+sites and conventions are charged unconditionally and the sitemap gets the remainder, because a
+partial model is not a smaller answer but a *wrong* one — the agent invents what is missing. A caller
+that cannot afford the model drops it explicitly with `include=`. **(3) Charge every bounded section
+before the gate opens** — charging one afterwards (a bug that shipped and was caught in test) lets the
+walk admit rows a later charge pushes over the ceiling. **(4) Conventions are derived, not stored**,
+and only the derivable subset; SH114's author-written store sits on top and the two must stay
+distinguishable.
+
+**And two the CLI keeps deliberately different** (`shio context`, SH126): `terse` is its *default*,
+because its caller is an agent rather than a browser, and the body is passed through as text —
+never parsed and re-serialized — because the digest is computed over exactly those bytes.
+
+**Token-lean is a rule about round trips, not about bytes (SH78, same move).** An agent read **never
+includes authoring metadata by default** (`owner`, `date`, `publishStatus`, `modifier`) — the CDA DTOs
+settled that in SH1. The measurement that ordered the backlog behind it: the terse encoding saves
+**per row, not per payload** (~25–35% on a row, diluted to about a third overall on a small pack where
+fixed prose dominates), and what remains is dominated by the **36-character UUID** — which is why path
+addressing was the bigger lever and dropping ids (SH121) was worth as much again as the encoding.
+**The anti-goal is absolute: terseness must not cost a second round trip.** A response that omits
+something the caller must then ask for is a regression, which is why per-field projection waited for
+SH123 rather than being forced into SH78 — and why a projection naming a field the type does not have
+is a **teaching error** (an empty projection is indistinguishable from an empty post, and the agent's
+next move would be to overwrite real content with nothing), and why the response **echoes which fields
+came back**: a few tokens that remove an "is this all of it?" round trip.
+
 - `GET /agent/resolve?address=…` — an address → an object id, for id-keyed endpoints.
 - `POST /agent/batch` — **writes**: N addressed ops (`site.upsert`, `folder.upsert`,
   `folder.move`, `post.upsert`, `post.move`, `post.publish`, `post.unpublish`, `folder.delete`,

@@ -17,6 +17,30 @@ you touched is yours, and the rest is a backlog, not this task's business.
 Everything below is why the rules are what they are. It is no longer a procedure to perform
 by hand.
 
+### What a stale section becomes (SH356)
+
+A section whose task is already in the ledger is a `section.stale` finding: `ship` deletes the
+rationale as its third edit, so a survivor is one that was written or moved by hand before the tool
+owned the files. There were **43**, and the tempting answer — delete them, the CHANGELOG and `git
+log` hold the history — is **wrong for most of them.** Reading the first four settles it: they open
+with *"Design records that bind what follows"* and *"Standing rule that survives"*, and they carry
+sentences like "every future address-taking surface inherits this". That is not history. It is an
+**invariant filed under a shipped task's number**, and deleting it loses a rule that governs work
+nobody has started.
+
+So the triage is two-way, and it is a reading rather than a rule a script can apply:
+
+- **A standing rule** → move it into the area file under `docs/agents/`, which is the file somebody
+  working in that area actually opens, and *then* drop the section. Nothing is lost; it stops being
+  filed under a task number a reader has no reason to look up.
+- **History** — what we did, in what order, and which tasks it opened → drop it. The ledger entry
+  says what shipped and `git log` has the prose.
+
+The instrument is a ratchet on the count (`ShImprovementsStaleSectionRatchetTest`), for SH341's
+reason and with one difference that matters: a section gate **cannot** start at zero the way the line
+gate ended, because dropping a section is destructive where shortening a line is not. It may only
+fall, and it falls when somebody has read the section and decided which of the two kinds it is.
+
 ## Roadmap & docs maintenance
 
 The roadmap lives in `docs/`, **split across three files that must be kept in

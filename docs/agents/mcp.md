@@ -76,7 +76,15 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
 - **Error routing matters**: a fixable failure (bad address, unknown post-type) is a
   tool *result* with `isError:true` so the model reads the SH80 `fix`; a JSON-RPC
   `error` is only for an unusable message (unknown method/tool), which the client
-  swallows. Getting this backwards throws away the teaching error.
+  swallows. Getting this backwards throws away the teaching error. The generalisation,
+  for the next protocol surface: **ask who has to change, and send the error where that
+  party will see it.**
+- **Attribution cannot be retrofitted (SH75, moved here from IMPROVEMENTS by SH356).** The
+  session id is minted by the transport on the first `initialize`, because rows written
+  before it existed simply do not have one — there is no backfill for a fact nobody
+  recorded. It rides in the audit **actor string** (`alice (agent:7f3c…)`) rather than in a
+  column of its own: SH106 owns the credential model and should migrate the schema once,
+  and the human stays visible in every row because an agent acts *as* somebody.
 - A tool-count test fails the build past 12 — tool schemas are context paid every turn.
   The real ceilings are `mcp.tools.list.total` (**2360**, raised by SH160 for the eleventh
   tool, measured 2327) and `mcp.tools.list.max-per-tool` (460) in
