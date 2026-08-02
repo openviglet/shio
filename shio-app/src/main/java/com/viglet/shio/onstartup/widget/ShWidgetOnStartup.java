@@ -71,7 +71,6 @@ public class ShWidgetOnStartup {
 	private final ShWidgetRepository shWidgetRepository;
 
 	private static final String TEXT_TYPE = "TEXT,TEXTAREA";
-	private static final String ACE_EDITOR = "com.viglet.shio.widget.ShAceEditorWidget";
 	private static final String ACE_DESCRIPTION = "Ace Editor Widget";
 
 	public ShWidgetOnStartup(ShWidgetRepository shWidgetRepository) {
@@ -81,17 +80,13 @@ public class ShWidgetOnStartup {
 	/**
 	 * One row per widget this build knows about.
 	 *
-	 * @param name               the catalogue key — what a post-type field references, and what
-	 *                           {@code ShRenderPostTypes} resolves
-	 * @param description        shown in the console
-	 * @param className          the server-side widget class
-	 * @param implementationCode the legacy AngularJS template path (SH21 retires these; the React
-	 *                           console maps on {@code name}, so it is carried and not read)
-	 * @param settingPath        the legacy settings template, or {@code null}
-	 * @param type               the field types this widget can back
+	 * @param name        the catalogue key — what a post-type field references, what
+	 *                    {@code ShRenderPostTypes} resolves, and what the React console maps onto a
+	 *                    component. It is the whole contract
+	 * @param description shown in the console
+	 * @param type        the field types this widget can back
 	 */
-	private record Spec(String name, String description, String className,
-			String implementationCode, String settingPath, String type) {
+	private record Spec(String name, String description, String type) {
 	}
 
 	/**
@@ -101,68 +96,27 @@ public class ShWidgetOnStartup {
 	 */
 	private static List<Spec> specs() {
 		List<Spec> specs = new ArrayList<>();
-		specs.add(new Spec(ShSystemWidget.HIDDEN, "Hidden Widget",
-				"com.viglet.shio.widget.ShHiddenWidget",
-				"template/widget/hidden/hidden.html",
-				"template/widget/hidden/setting/hidden-setting.html", TEXT_TYPE));
-		specs.add(new Spec(ShSystemWidget.TEXT, "Text Widget",
-				"com.viglet.shio.widget.ShTextWidget",
-				"template/widget/text.html", null, TEXT_TYPE));
-		specs.add(new Spec(ShSystemWidget.TEXT_AREA, "Text Area Widget",
-				"com.viglet.shio.widget.ShTextAreaWidget",
-				"template/widget/textarea.html", null, TEXT_TYPE));
-		specs.add(new Spec(ShSystemWidget.FILE, "File Widget",
-				"com.viglet.shio.widget.ShFileWidget",
-				"template/widget/file.html",
-				"template/widget/file/setting/file-setting.html", TEXT_TYPE));
-		specs.add(new Spec(ShSystemWidget.ACE_JS, ACE_DESCRIPTION, ACE_EDITOR,
-				"template/widget/ace-editor-js.html", null, TEXT_TYPE));
-		specs.add(new Spec(ShSystemWidget.ACE_HTML, ACE_DESCRIPTION, ACE_EDITOR,
-				"template/widget/ace-editor-html.html", null, TEXT_TYPE));
+		specs.add(new Spec(ShSystemWidget.HIDDEN, "Hidden Widget", TEXT_TYPE));
+		specs.add(new Spec(ShSystemWidget.TEXT, "Text Widget", TEXT_TYPE));
+		specs.add(new Spec(ShSystemWidget.TEXT_AREA, "Text Area Widget", TEXT_TYPE));
+		specs.add(new Spec(ShSystemWidget.FILE, "File Widget", TEXT_TYPE));
+		specs.add(new Spec(ShSystemWidget.ACE_JS, ACE_DESCRIPTION, TEXT_TYPE));
+		specs.add(new Spec(ShSystemWidget.ACE_HTML, ACE_DESCRIPTION, TEXT_TYPE));
 		// SH252 — the row whose absence made SH183's render model uncreatable on every existing
 		// instance, and the reason this method is per-widget rather than per-catalogue.
-		specs.add(new Spec(ShSystemWidget.ACE_CSS, ACE_DESCRIPTION, ACE_EDITOR,
-				"template/widget/ace-editor-css.html", null, TEXT_TYPE));
-		specs.add(new Spec(ShSystemWidget.HTML_EDITOR, "HTML Editor Widget",
-				"com.viglet.shio.widget.ShHTMLWidget",
-				"template/widget/html-editor/html-editor.html",
-				"template/widget/html-editor/setting/html-editor-setting.html", TEXT_TYPE));
-		specs.add(new Spec(ShSystemWidget.CONTENT_SELECT, "Content Select Widget",
-				"com.viglet.shio.widget.ShContentSelectWidget",
-				"template/widget/content-select.html",
-				"template/widget/content-select/setting/content-select-setting.html", TEXT_TYPE));
-		specs.add(new Spec(ShSystemWidget.RELATOR, "Relator Widget",
-				"com.viglet.shio.widget.ShRelatorWidget",
-				"template/widget/relator/relator-list.html",
-				"template/widget/relator/setting/relator-setting.html", TEXT_TYPE));
-		specs.add(new Spec(ShSystemWidget.COMBO_BOX, "Combo Box Widget",
-				"com.viglet.shio.widget.ShComboBoxWidget",
-				"template/widget/combo-box/combo-box.html",
-				"template/widget/combo-box/setting/combo-box-setting.html", TEXT_TYPE));
+		specs.add(new Spec(ShSystemWidget.ACE_CSS, ACE_DESCRIPTION, TEXT_TYPE));
+		specs.add(new Spec(ShSystemWidget.HTML_EDITOR, "HTML Editor Widget", TEXT_TYPE));
+		specs.add(new Spec(ShSystemWidget.CONTENT_SELECT, "Content Select Widget", TEXT_TYPE));
+		specs.add(new Spec(ShSystemWidget.RELATOR, "Relator Widget", TEXT_TYPE));
+		specs.add(new Spec(ShSystemWidget.COMBO_BOX, "Combo Box Widget", TEXT_TYPE));
 		// SH60: the legacy reCAPTCHA widget is deprecated (not ported to React). Its server-side
-		// class (com.viglet.shio.widget.ShReCaptchaWidget) was removed in the nuclear refactor and
-		// form-spam protection is the consuming front-end app's concern in a headless-first
-		// product — so the orphaned seed is dropped. AngularJS templates go with SH21.
-		specs.add(new Spec(ShSystemWidget.FORM_CONFIGURATION, "Form Configuraion Widget",
-				"com.viglet.shio.widget.ShFormConfigurationWidget",
-				"template/widget/form/form-configuration.html",
-				"template/widget/form/setting/form-configuration-setting.html", TEXT_TYPE));
-		specs.add(new Spec(ShSystemWidget.DATE, "Date Widget",
-				"com.viglet.shio.widget.ShDateWidget",
-				"template/widget/date/date.html",
-				"template/widget/date/setting/date-setting.html", "DATE,".concat(TEXT_TYPE)));
-		specs.add(new Spec(ShSystemWidget.MULTI_SELECT, "Multi Select Widget",
-				"com.viglet.shio.widget.ShMultiSelectWidget",
-				"template/widget/multi-select/multi-select.html",
-				"template/widget/multi-select/setting/multi-select-setting.html", TEXT_TYPE));
-		specs.add(new Spec(ShSystemWidget.TAB, "Tab Widget",
-				"com.viglet.shio.widget.ShTabWidget",
-				"template/widget/tab/tab.html",
-				"template/widget/tab/setting/tab-setting.html", TEXT_TYPE));
-		specs.add(new Spec(ShSystemWidget.CHECK_BOX, "Check Box Widget",
-				"com.viglet.shio.widget.ShCheckBoxWidget",
-				"template/widget/check-box/check-box.html",
-				"template/widget/check-box/setting/check-box-setting.html", TEXT_TYPE));
+		// class was removed in the nuclear refactor and form-spam protection is the consuming
+		// front-end app's concern in a headless-first product — so the orphaned seed is dropped.
+		specs.add(new Spec(ShSystemWidget.FORM_CONFIGURATION, "Form Configuraion Widget", TEXT_TYPE));
+		specs.add(new Spec(ShSystemWidget.DATE, "Date Widget", "DATE,".concat(TEXT_TYPE)));
+		specs.add(new Spec(ShSystemWidget.MULTI_SELECT, "Multi Select Widget", TEXT_TYPE));
+		specs.add(new Spec(ShSystemWidget.TAB, "Tab Widget", TEXT_TYPE));
+		specs.add(new Spec(ShSystemWidget.CHECK_BOX, "Check Box Widget", TEXT_TYPE));
 		return specs;
 	}
 
@@ -183,9 +137,6 @@ public class ShWidgetOnStartup {
 			ShWidget widget = new ShWidget();
 			widget.setName(spec.name());
 			widget.setDescription(spec.description());
-			widget.setClassName(spec.className());
-			widget.setImplementationCode(spec.implementationCode());
-			widget.setSettingPath(spec.settingPath());
 			widget.setType(spec.type());
 			shWidgetRepository.save(widget);
 			created.add(spec.name());

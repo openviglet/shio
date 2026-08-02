@@ -1,0 +1,52 @@
+databaseChangeLog:
+  # SH285 — three columns on ShWidget that name artefacts this repository does not contain.
+  #
+  # `implementation_code` and `setting_path` hold `template/widget/**` paths: Thymeleaf/AngularJS
+  # templates from the UI Block E retired, and the directory is absent. `class_name` holds
+  # `com.viglet.shio.widget.Sh*Widget`, and that package contains exactly one file today —
+  # `ShSystemWidget`, a constants class. So all three point at nothing, and two of them were
+  # WRITABLE through `PUT /api/v2/widget/{id}`, which is worse than dead: a caller could set a
+  # template path and reasonably conclude a widget is extensible by pointing it at one.
+  #
+  # `description` and `type` stay. They are dormant rather than false — a Date widget really does
+  # back DATE and TEXT — and that is the line SH293 drew for a constant: delete what names something
+  # absent, keep what states something true.
+  #
+  # `preConditions: columnExists` per column rather than one guard for the set: an instance that
+  # has already lost one of them (or never had it) must not have the whole changeSet marked ran.
+  - changeSet:
+      id: sh285-widget-drop-implementation-code
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: ShWidget
+            columnName: implementation_code
+      changes:
+        - dropColumn:
+            tableName: ShWidget
+            columnName: implementation_code
+  - changeSet:
+      id: sh285-widget-drop-setting-path
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: ShWidget
+            columnName: setting_path
+      changes:
+        - dropColumn:
+            tableName: ShWidget
+            columnName: setting_path
+  - changeSet:
+      id: sh285-widget-drop-class-name
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: ShWidget
+            columnName: class_name
+      changes:
+        - dropColumn:
+            tableName: ShWidget
+            columnName: class_name

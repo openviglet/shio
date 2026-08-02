@@ -2464,31 +2464,6 @@ hand-running Maven in a tree an IDE is also compiling into. The findings hold �
 deliberately — but the *confidence* they were reported with was higher than the instrument deserved
 until SH282 and SH283 were understood.
 
-### XVI.37 `ShWidget` still carries fields from a UI that was deleted (SH285)
-
-Every seeded widget sets `implementationCode` to `template/widget/<name>.html`. **That directory does
-not exist in the repository** — the templates went with the Thymeleaf UI Block E retired — and nothing
-reads the column.
-
-It is nevertheless persisted, returned by `GET /api/v2/widget`, and **writable** through
-`ShWidgetAPI`. That is the part worth fixing rather than tolerating: a settable field that cannot
-affect anything invites the reasonable inference that a widget is extensible by pointing it at a
-template, which it is not. Dead data that is read-only is clutter; dead data that is *writable* is a
-false affordance.
-
-Noticed while seeding SH252's widget — where the choice was to match the existing inert pattern rather
-than invent a convention, since a lone widget with a different-looking value would read as meaningful.
-
-The task is deliberately **an audit rather than a drop**, because the neighbouring field asks the same
-question and may answer differently: `className` is set to `com.viglet.shio.widget.ShAceEditorWidget`,
-and whether those classes still exist — and whether anything dispatches on them — has not been
-checked. One of the two may be live. So: establish what `ShWidget` still carries that is read by
-something, remove the rest with a Liquibase drop, and narrow the API so the removed fields cannot be
-set.
-
-Worth pairing with SH275's habit: both are about claims a codebase keeps making after they stopped
-being true, and the cheap version of both is to look rather than to reason.
-
 ### XVI.40 The CLI cannot read a post (SH288)
 
 `shio` can resolve an address, digest a page, verify a site, list changes and print a context pack. It

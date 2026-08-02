@@ -71,9 +71,7 @@ public class ShWidgetAPI {
 			ShWidget shWidgetEdit = shWidgetOptional.get();
 			shWidgetEdit.setName(shWidgetRequest.name());
 			shWidgetEdit.setType(shWidgetRequest.type());
-			shWidgetEdit.setClassName(shWidgetRequest.className());
 			shWidgetEdit.setDescription(shWidgetRequest.description());
-			shWidgetEdit.setImplementationCode(shWidgetRequest.implementationCode());
 			shWidgetRepository.save(shWidgetEdit);
 			return shWidgetEdit;
 		}
@@ -93,9 +91,7 @@ public class ShWidgetAPI {
 		ShWidget shWidget = new ShWidget();
 		shWidget.setName(shWidgetRequest.name());
 		shWidget.setType(shWidgetRequest.type());
-		shWidget.setClassName(shWidgetRequest.className());
 		shWidget.setDescription(shWidgetRequest.description());
-		shWidget.setImplementationCode(shWidgetRequest.implementationCode());
 		shWidgetRepository.save(shWidget);
 		return shWidget;
 

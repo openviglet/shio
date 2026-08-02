@@ -20,8 +20,13 @@ package com.viglet.shio.api.widget.dto;
  * Request payload for creating/updating a {@link com.viglet.shio.persistence.model.widget.ShWidget}.
  * Component names mirror the entity's JSON field names so existing payloads bind unchanged.
  *
+ * <p>SH285 removed {@code className} and {@code implementationCode} from it. They were bindable and
+ * <em>storable</em> and could not affect anything: both named files this repository does not contain
+ * (a widget class package that holds only constants, and a {@code template/widget/**} directory that
+ * is gone with the AngularJS UI). An older payload carrying them still binds — an unknown property
+ * is ignored, so the surface narrows without breaking a caller that has not noticed yet.</p>
+ *
  * @author Alexandre Oliveira
  */
-public record ShWidgetRequest(String name, String type, String className, String description,
-		String implementationCode) {
+public record ShWidgetRequest(String name, String type, String description) {
 }

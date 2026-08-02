@@ -30,7 +30,27 @@ import java.util.List;
 
 /**
  * The persistent class for the ShWidget database table.
- * 
+ *
+ * <h2>What a widget is, and the three columns that left (SH285)</h2>
+ *
+ * <p>A widget is a <b>catalogue key</b>. {@code name} is the whole contract: a post-type field
+ * references it, {@code ShRenderPostTypes} resolves it, and the React console maps it onto a
+ * component ({@code WIDGET_MAP}). Nothing about the widget's behaviour lives here — the behaviour is
+ * in the console's code, keyed by that name.</p>
+ *
+ * <p>It used to carry three more: {@code class_name}
+ * ({@code com.viglet.shio.widget.ShTextWidget} and friends — a package that today holds exactly one
+ * file, the {@code ShSystemWidget} constants class), {@code implementation_code} and
+ * {@code setting_path} (both {@code template/widget/**}, Thymeleaf paths from the AngularJS UI
+ * Block E retired, into a directory this repository does not contain). Nothing read them, and two
+ * were <em>writable</em> through {@code PUT /api/v2/widget/{id}} — a field a caller can set that
+ * cannot affect anything, which invites the belief that a widget is extensible by pointing it at a
+ * template. It is not.</p>
+ *
+ * <p>{@code description} and {@code type} stayed, and the distinction is SH293's: those two state
+ * something <b>true</b> (a Date widget does back {@code DATE,TEXT}) and are merely unread, where the
+ * three that went named something <b>absent</b>. Dormant data is not a false capability.</p>
+ *
  * @author Alexandre Oliveira
  */
 @Getter
@@ -46,16 +66,7 @@ public class ShWidget implements Serializable {
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 
-	@Column(name = "class_name")
-	private String className;
-
 	private String description;
-
-	@Column(name = "implementation_code")
-	private String implementationCode;
-
-	@Column(name = "setting_path")
-	private String settingPath;
 
 	private String name;
 
@@ -69,16 +80,8 @@ public class ShWidget implements Serializable {
 		this.id = id;
 	}
 
-    public void setClassName(String className) {
-		this.className = className;
-	}
-
     public void setDescription(String description) {
 		this.description = description;
-	}
-
-    public void setImplementationCode(String implementationCode) {
-		this.implementationCode = implementationCode;
 	}
 
     public void setName(String name) {
@@ -109,10 +112,6 @@ public class ShWidget implements Serializable {
 		shPostTypeAttr.setShWidget(null);
 
 		return shPostTypeAttr;
-	}
-
-    public void setSettingPath(String settingPath) {
-		this.settingPath = settingPath;
 	}
 
 }

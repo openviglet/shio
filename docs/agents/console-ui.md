@@ -119,6 +119,19 @@ which is why creating a post worked and editing it did not.)
 Registry in `src/components/widgets/index.ts` maps widget names to components via `WIDGET_MAP`.
 `getWidget(name)` returns the component, defaulting to `TextWidget` for unknown names.
 
+**A widget is a name, and after SH285 the row says so.** `ShWidget` carried six columns; three named
+artefacts this repository does not contain — `class_name` (`com.viglet.shio.widget.Sh*Widget`, a
+package that today holds only the `ShSystemWidget` constants) and `implementation_code` /
+`setting_path` (`template/widget/**`, Thymeleaf paths that left with the AngularJS console). Nothing
+read them and **two were writable through `PUT /api/v2/widget/{id}`**, so a caller could set a
+template path, get a 200, and conclude widgets are extensible by pointing them at a file. They are
+dropped (`v2026.3.16.yaml`), out of `ShWidgetRequest`, out of the seed, and out of the console's
+`ShWidget` model. What remains is `id`, `name`, `description`, `type` — and `ShWidgetShapeLintTest`
+pins that set, so the next column has to name what reads it. `description` and `type` stayed on
+SH293's line: they state something **true** and merely unread, where the three that went named
+something **absent**. Extending the widget catalogue is still a React change plus a seed row — the
+name is the contract, and there is no server-side extension point to look for.
+
 ### Widget Names (from database)
 | Widget Name | Component | Data Field |
 |---|---|---|

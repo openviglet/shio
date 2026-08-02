@@ -85,8 +85,6 @@ class ShWidgetAPITest {
 
 		shWidget.setName(ShSystemWidget.TEXT);
 		shWidget.setDescription("Test Widget");
-		shWidget.setClassName("com.viglet.shio.widget.ShTestWidget");
-		shWidget.setImplementationCode("template/widget/test.html");
 		shWidget.setType("TEXT,TEXTAREA");
 
 		String requestBody = ShUtils.asJsonString(shWidget);
@@ -106,8 +104,6 @@ class ShWidgetAPITest {
 		shWidget.setId(newWidgetId);
 		shWidget.setName(ShSystemWidget.TEXT);
 		shWidget.setDescription("Changed Test Widget");
-		shWidget.setClassName("com.viglet.shio.widget.ShTestWidget");
-		shWidget.setImplementationCode("template/widget/test.html");
 		shWidget.setType("TEXT,TEXTAREA");
 
 		String requestBody = ShUtils.asJsonString(shWidget);
