@@ -2243,60 +2243,6 @@ the build going red the day somebody adds the fifth one.
 >
 > The same shape of unenforced claim exists for several other dependencies — **SH275**.
 
-### XVI.27 A dependency's premise is asserted for one library and assumed for the rest (SH275)
-
-SH274 converted one inherited belief about somebody else's code into four assertions with a version
-number, and the conversion paid twice: the reality was worse than the belief (deduplication, not just
-missing scope) and one API independently confirmed SH261's rule.
-
-The same kind of claim is load-bearing elsewhere and enforced nowhere. A partial list, from the
-comments they currently live in:
-
-| Claim | Where it matters | Enforced? |
-|---|---|---|
-| Nashorn's classes are not on the classpath | SH183's whole non-goal | **yes** — `ShRenderNoScriptEngineTest` |
-| the default `TemplateLoader` reads the classpath | why ours refuses everything | no |
-| the default resolver chain includes `JavaBeanValueResolver` | why the context is map-only | no |
-| Mockito self-attaches without a `-javaagent` | SH250's flake | no (and now false) |
-| `Map.copyOf` iterates from a per-JVM salt | SH136's whole lint | no |
-| the MCP Java SDK is Jackson-2 / Boot-3 | why SH75 is hand-rolled | no |
-
-Every row is a fact about code this project does not own, and a version bump can change any of them
-silently. The one that is enforced is enforced because SH183 judged it worth a test — which is exactly
-the judgement to make for the rest, rather than doing all of them.
-
-**The bar should be: does the premise expiring change behaviour, or only tidiness?** `Map.copyOf`
-becoming order-stable would make SH136's lint pedantic but harmless. The default resolver chain
-changing would silently put the persistence model back in template scope, which is the liability the
-whole of Block P was built to avoid — and nothing would fail. That one is the next candidate, and
-`ShRenderNoScriptEngineTest` is the model: it already asserts two of the three defaults, so the third
-is a method rather than a new file.
-
-Worth noting the entry that has already gone stale: SH250 made "Mockito self-attaches" false. Nothing
-noticed, because nothing was watching — which is the argument in miniature.
-
-> ⏳ **The two Handlebars rows are done** → [CHANGELOG.md](CHANGELOG.md) Block P. Three findings.
->
-> **The gap was the premise, not the behaviour.** The suite already proved *our* engine walks no bean
-> and refuses every partial. It never proved an *unconfigured* one does the dangerous thing — so a
-> library that became safe by default would turn both guards into dead weight and both comments into
-> lies, with nothing failing. That asymmetry is what "asserted for one library and assumed for the
-> rest" actually means in practice: the guard is tested, the reason for it is not.
->
-> **Measuring corrected an existing assertion's meaning.** `beanPropertiesAreNotResolved` asserts
-> `[{{secret.value}}][{{secret.class.name}}]` → `[][]`, which reads as both routes closed by
-> `MapValueResolver`. In fact `class` is blocked by the library itself, on a default engine. So half
-> that assertion is evidence for the guard and half is evidence for Handlebars. Pinned separately
-> now — and worth generalising: a compound assertion hides which half is load-bearing.
->
-> **The evidence for the loader premise is the error message, not the failure.** A default engine
-> fails `{{> application}}` with a message naming `/application.hbs` — it is not refusing to look, it
-> is failing to find. "It throws either way" would have been a false confirmation.
->
-> Two rows are deliberately not assertable and say so: `Map.copyOf` cannot be caught behaviourally at
-> all (SH136's own finding, which is why that guard is a lint), and the MCP SDK is a premise about a
-> dependency this project does not have — **SH276**.
-
 ### XVI.28 A premise about a dependency we do not have is unfalsifiable (SH276)
 
 SH75 is hand-rolled MCP — around fifteen hundred lines of JSON-RPC, tool dispatch, resource routing

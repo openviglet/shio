@@ -102,6 +102,30 @@ during Block P, 974 on a clean run). So drop `-q` when the number matters, and k
 reason. Both traps are the same shape — *an artefact of an earlier command changing what a later one
 appears to say* — which is worth remembering as a class, since `target/` holds several.
 
+### Premises about code we do not own (SH274, SH275)
+
+Six claims about third-party behaviour were load-bearing and lived in comments, where a version bump
+can falsify any of them silently. **The bar is not "can it be asserted" but "does it expiring change
+behaviour, or only tidiness?"** — asserting all six would be as wrong as asserting none, because a
+guard nobody needs is a guard nobody maintains. The judgement, one row at a time:
+
+| Premise | Verdict |
+|---|---|
+| Nashorn's classes are not on the classpath | **asserted** — `ShRenderNoScriptEngineTest`; SH183's whole non-goal |
+| the default `TemplateLoader` reads the classpath | **asserted** (SH274) — and the evidence is the *message* naming `/application.hbs`: it fails to find, it does not refuse to look. "It throws either way" would have been a false confirmation |
+| the default resolver chain includes `JavaBeanValueResolver` | **asserted** (SH274) — expiring silently puts the persistence model back in template scope, the liability Block P exists to avoid |
+| Mockito self-attaches without a `-javaagent` | **stale, and replaced** — SH250 made it false and nothing noticed. The live premise is its successor: the surefire `argLine` still carries the agent, now asserted by `ShBuildWarningLintTest` |
+| `Map.copyOf` iterates from a per-JVM salt | **not assertable, declared** — SH136's own finding, and why that guard is a lint rather than a test |
+| the MCP Java SDK is Jackson-2 / Boot-3 | **not assertable** — it is a premise about a dependency this project does not have, so checking it means adding the thing being evaluated (**SH276**) |
+
+Two durable lessons came out of measuring rather than reasoning. **The guard was tested and its reason
+was not:** the suite proved *our* engine walks no bean, never that an *unconfigured* one does — so a
+library that became safe by default would have turned both guards into dead weight and both comments
+into lies, with nothing failing. And **a compound assertion hides which half is load-bearing**:
+`[{{secret.value}}][{{secret.class.name}}]` → `[][]` read as two routes closed by `MapValueResolver`,
+when `class` is blocked by Handlebars itself. Half that assertion was evidence for the guard and half
+for the library; they are pinned separately now.
+
 **What test isolation costs, measured (SH317).** SH315's rule — a test that measures the whole
 instance may not share it — means a distinct `spring.datasource.url`, and the URL is part of the
 Spring test context cache **key**, so every such class boots an application context of its own.

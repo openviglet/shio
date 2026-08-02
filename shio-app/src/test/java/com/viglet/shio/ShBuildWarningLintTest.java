@@ -199,4 +199,21 @@ class ShBuildWarningLintTest {
                         Fix: keep <showDeprecation>true</showDeprecation> on maven-compiler-plugin.""")
                 .contains("<showDeprecation>true</showDeprecation>");
     }
+
+    @Test
+    @DisplayName("SH275: the Mockito agent is still an agent, not a self-attachment")
+    void mockitoIsStillLoadedAsAnAgent() {
+        String pom = withoutComments(read(repositoryRoot().resolve("shio-app").resolve("pom.xml")));
+
+        assertThat(pom)
+                .as("""
+                        SH275's judgement pass over the dependency-premise table found this row                         already stale and unwatched: the premise was "Mockito self-attaches without                         a -javaagent", which SH250 made false by adding the agent — and nothing                         noticed, because nothing was watching. The live premise is the successor,                         and it is load-bearing by the table's own bar (does it expiring change                         BEHAVIOUR?): remove this argLine and Mockito goes back to attaching to a                         running JVM, where instrumentation succeeds or fails depending on what has                         already been loaded. That is the SH250 flake — ShTenantSuspendedAccessTest                         failing six of six once and passing on every re-run — and a flake is worse                         than a break, because it teaches everybody that red might mean nothing.
+
+                        `@{argLine}` and not `${argLine}`: late replacement, so a future JaCoCo                         argLine is appended to rather than overwritten.""")
+                .contains("<argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>");
+        assertThat(pom)
+                .as("""
+                        and the plugin that resolves that path: `${org.mockito:mockito-core:jar}` is                         maven-dependency-plugin's `properties` goal output. Without the execution the                         property never resolves, the agent path is a literal string, and the JVM                         fails to start rather than falling back — which is at least loud, but the                         argLine above would still be present and this guard would still pass on it                         alone.""")
+                .contains("<id>resolve-agent-paths</id>");
+    }
 }

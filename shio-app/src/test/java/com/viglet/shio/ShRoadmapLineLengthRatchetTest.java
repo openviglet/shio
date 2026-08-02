@@ -60,8 +60,14 @@ class ShRoadmapLineLengthRatchetTest {
      *
      * <p>Lower it when you shorten one. Never raise it: a new line over the limit belongs in
      * IMPROVEMENTS.md, which is what the {@code →} pointer addresses.</p>
+     *
+     * <p><b>45 → 42 within an hour of being written</b>, and not by an editorial pass: roadkeep
+     * refuses to <em>ship</em> a task whose line — or whose dependents' lines, which shipping
+     * re-annotates — is over the limit, so SH341's own line, SH275's and SH276's each had to become
+     * one sentence before the work they described could be recorded. That is the ratchet working
+     * through the tool rather than through anybody's memory, which is what it was for.</p>
      */
-    private static final int OVER_LIMIT = 44;
+    private static final int OVER_LIMIT = 42;
 
     /** A task line: marker, bold id. The blockquote prose between them is not governed by this. */
     private static final Pattern TASK =
