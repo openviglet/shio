@@ -1189,6 +1189,122 @@ is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that exis
 > write-time refusal naming SH247, so the author is told the capability is absent rather than
 > shipping a page with a silently missing block.
 
+### XV.23 Incremental delivery is a practice with no representation
+
+The roadkeep adoption made the parenthetical id parse, and what surfaced is not a mess —
+it is a **habit the format has no slot for**. `SH348` appears four times (`the
+measurement`, `step 1 of 4`, `steps 2 and 3`, `step 4 — the sibling link`) and `SH347`,
+`SH279` and `SH275` twice each. Every one of those lines is true and was worth writing.
+
+Eight of the eighteen remaining lint findings are that one habit, which makes it the
+largest single item of debt in these files and the one most likely to hide a real
+finding — SH142's argument about a baseline, arriving where nobody expected it.
+
+**The upstream half is filed** (RK121: partial completion is not a state of the model;
+RK127: two entries under one id are not always one entry twice). This line is the
+Shio-side decision those cannot make: whether a task delivered in four steps is **one**
+ledger entry rewritten as it grows, or four entries under four ids with the first naming
+the others. The first keeps one id answering "is it done" and loses the dated record of
+each step; the second keeps the record and spends three ids on one piece of work.
+
+Not a cleanup. Deciding it wrongly costs more than leaving it, because whichever shape
+wins has to be what `ship` and `record add` write by default — otherwise the habit
+returns the next time somebody delivers something in halves.
+
+### XV.24 A guard is only as wide as its fixture (SH362)
+
+`ShTemplateFieldLintTest.thereAreNoFalsePositives` exists because a field lint that
+fires on a correct template is worse than none: an author who meets one false finding
+stops reading the true ones. It is a good guard, it was written for this, and **it did
+not fire when SH247 added a sixth helper** — because its fixture contains a `{{#query}}`
+block and nothing else, so the new helper's rows were never read.
+
+The proof is from the same run: reverting SH360's fix failed *both*
+`aFormBodyIsReadAgainstTheFormsOwnKeys` and `thereAreNoFalsePositives`. The second one
+was correct all along and simply never met the case. That is a sharper failure than a
+missing test — the guard was **present, passing and silent**, which is the state that
+reads as coverage.
+
+The instrument is small and is the deliverable: assert the fixture exercises every name
+in `engine.registeredNames()`, so registering a helper without teaching this test about
+it fails the build naming the helper. The engine is already the single source (SH260),
+so the list costs nothing to obtain; what is being added is the *question*, which is the
+half nobody asks — a fixture is written once against the world as it was, and no rule
+anywhere says it has to keep up.
+
+Worth generalising when it lands: this is the second guard in two blocks whose fixture
+was narrower than its claim, and the shape is always a set the code can enumerate and
+the test hard-codes.
+
+### XV.25 A security claim in prose, checked by nobody (SH363)
+
+SH359 was found by accident: SH265 needed to know whether `shio snapshot` would have to
+authenticate, so somebody read the config. Nothing was looking. The defect had been live
+since SH183 and its two halves each read correctly on their own — an allow-list entry
+naming a path that used to mean something else, and a controller comment naming the rule
+it believed it inherited.
+
+**The instrument is the deliverable (SH338), and the honest version is narrow.** "Every
+prose claim about authentication is true" is not checkable. Two things are:
+
+- **Every `permitAll()` entry names a route that still exists**, and carries a reason
+  beside it. `/preview/**` outlived its route by years; an entry pointing at nothing is
+  the exact shape that silently adopts the next controller mounted on the prefix.
+- **Every controller under a governed prefix is asserted from outside, anonymously.**
+  `ShPreviewIsNotPublicTest` is that test for one route. The general form is a table:
+  path → expected status with no credentials, with a new mapping failing the build until
+  somebody declares which side of the line it is on.
+
+The second is the one that would have caught SH359, and it is the SH354 habit applied to
+security: the question is not "is this safe" but "what does the allow-list already say
+about this prefix", and only a request can answer it. A test over the config restates
+the config.
+
+### XV.26 The form's receiving half, now that it has a design (SH364)
+
+SH247 shipped the rendering half and left this deliberately. What changed is that it is
+no longer an open question: FSP's `ShFormConfiguration` carries `createPost` and
+`folder`, so **a submission becomes a post in a named folder** — no storage subsystem,
+no retention policy of its own, because the trash, the export, the ACL and the agent
+surface already apply to a post.
+
+What is genuinely undecided is the door, and it is a security decision rather than a
+rendering one. A public endpoint that writes content needs, at minimum: the folder named
+by the **site** rather than by the form (a folder chosen in a template is a folder an
+attacker chooses), the post created `DRAFT` so SH7's review queue is the moderation
+step, a rate limit per subject, and a honeypot — the cheapest spam control that costs an
+author nothing.
+
+Three things worth settling before code. **Whether the CMS should accept this at all**,
+given the renderer is preview-grade and production delivery is Next.js over the CDA: the
+front end posting to its own handler and calling the CDA is a legitimate answer that
+leaves Shio's write surface closed. **What the post-type may be** — an allow-list on the
+site, or any type, which is the difference between a contact form and a
+content-injection endpoint. And **what a submission is worth keeping**: a post carries
+an owner, and an anonymous one has none.
+
+### XV.27 One flag, two meanings (SH365)
+
+`shio snapshot` reads the target as `flags.address ?? flags.url ?? positionals[0]`, and
+`resolveAdmin` reads `flags.url ?? env.SHIO_URL` as the **instance**. So `--url` names
+the page in one line and the server in the next.
+
+It does not bite today, and that is why it is an idea rather than a bug: the two
+readings only meet when a caller passes both an address and `--url`, which is the
+correct usage (`--address post:Blog/x --url http://localhost:2710`) and resolves the way
+anybody would expect. Every other path takes one or the other.
+
+SH265 made it load-bearing, though, because `--url` now also decides `previewBase` — the
+origin a front-endless site is photographed from. A flag that silently changes which
+*server* a picture came from is the kind that produces a plausible-looking artifact, which
+is the failure `resolveUrl`'s own comment refuses to risk when it declines to guess an
+origin.
+
+The fix is a rename with a deprecation, not a break: `--page` for the target, `--url`
+kept meaning the instance the way every other command reads it. Worth doing when
+something else touches this command, and worth writing down now because the next reader
+will assume the two `--url`s are one and be right nine times out of ten.
+
 ## XVI. The human half (Block O) — what reading the console next found
 
 Block O shipped, and its lesson was that **console defects answer `200`**: seven of them, none
