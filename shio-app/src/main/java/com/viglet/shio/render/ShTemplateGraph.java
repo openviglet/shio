@@ -10,6 +10,7 @@ package com.viglet.shio.render;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -85,11 +86,38 @@ public class ShTemplateGraph {
     }
 
     /**
+     * SH316 — one site's assembled graph, per read-only transaction.
+     *
+     * <p>Measured before it was written, and the measurement moved the subject: a second assembly
+     * inside one transaction costs <b>no queries</b>, because SH311's cache already holds every row
+     * it reads. What it costs is about a millisecond of maps, sorts and one HTML parse per binding,
+     * paid again for every question — an {@code /agent/changes} feed asks once per template entry.
+     * So this half of the task is a CPU saving and says so; the queries are the next field's.</p>
+     */
+    private static final ShReadOnlyTransactionCache ASSEMBLED = new ShReadOnlyTransactionCache();
+
+    /**
+     * SH316 — one site's rows in one state set, which is what the rules below actually re-read.
+     *
+     * <p>This is where the queries were. {@code pageCount}, {@code exists}, {@code isPublished},
+     * {@code templatesOfTitle} and {@code duplicateTitlesIn} each load <em>every post in the
+     * site</em> and filter it in memory, so a rule that asks per binding — {@code missingThemes},
+     * {@code unpublishedDependencies} — pays a full site read per binding, and {@code impactOf} pays
+     * two per call. Filtering in memory is right at this size; reading the same rows a dozen times
+     * to do it is not.</p>
+     */
+    private static final ShReadOnlyTransactionCache SITE_ROWS = new ShReadOnlyTransactionCache();
+
+    /**
      * One site's presentation graph, both directions.
      *
      * @param site the site whose {@code postTypeLayout} bindings define it
      */
     public ShSiteTemplateGraph of(ShSite site) {
+        return ASSEMBLED.get(site.getId(), () -> assemble(site));
+    }
+
+    private ShSiteTemplateGraph assemble(ShSite site) {
         Map<String, String> bindings = renderService.layoutBindings(site);
         // type -> layout title, and the two inversions a caller actually asks for.
         Map<String, Set<String>> typesByLayout = new TreeMap<>();
@@ -187,8 +215,7 @@ public class ShTemplateGraph {
             return 0;
         }
         int total = 0;
-        for (ShPostUnified post : shPostUnifiedRepository
-                .findByShSite_IdAndStateIn(site.getId(), List.of(state))) {
+        for (ShPostUnified post : rowsOf(site, List.of(state))) {
             String name = post.getShPostType() == null ? null : post.getShPostType().getName();
             if (name != null && typeNames.contains(name)) {
                 total++;
@@ -203,6 +230,29 @@ public class ShTemplateGraph {
                                       Map<String, Set<String>> layoutsByRegion,
                                       Map<String, Set<String>> layoutsByTheme,
                                       Set<String> boundLayouts) {
+
+        /**
+         * Unmodifiable throughout, because SH316 made one instance answer several callers.
+         *
+         * <p>Before the memo each caller got a graph of its own and a mutation would have been that
+         * caller's own business. Now a rule that sorted or trimmed one of these maps in place would
+         * change what the <em>next</em> rule in the same transaction sees — a shared-mutable-state
+         * defect with no error and no test, which is the class of thing this file already refuses in
+         * {@code slottedRegions}. Wrapping is O(bindings) once per assembly against a cost the
+         * benchmark measures in milliseconds.</p>
+         */
+        public ShSiteTemplateGraph {
+            typesByLayout = frozen(typesByLayout);
+            layoutsByRegion = frozen(layoutsByRegion);
+            layoutsByTheme = frozen(layoutsByTheme);
+            boundLayouts = Collections.unmodifiableSet(boundLayouts);
+        }
+
+        private static Map<String, Set<String>> frozen(Map<String, Set<String>> map) {
+            Map<String, Set<String>> out = new TreeMap<>();
+            map.forEach((key, value) -> out.put(key, Collections.unmodifiableSet(value)));
+            return Collections.unmodifiableMap(out);
+        }
 
         public Set<String> typesUsing(String layoutTitle) {
             return typesByLayout.getOrDefault(layoutTitle, Set.of());
@@ -325,8 +375,7 @@ public class ShTemplateGraph {
      */
     public Map<String, List<String>> duplicateTitlesIn(ShSite site) {
         Map<String, Map<String, String>> byTitle = new TreeMap<>();
-        for (ShPostUnified post : shPostUnifiedRepository.findByShSite_IdAndStateIn(
-                site.getId(), List.of(ShPostState.DRAFT, ShPostState.PUBLISHED))) {
+        for (ShPostUnified post : rowsOf(site, BOTH_STATES)) {
             String typeName = post.getShPostType() == null ? null : post.getShPostType().getName();
             if (typeName == null || !ShRenderPostTypes.NAMES.contains(typeName)
                     || post.getTitle() == null || post.getTitle().isBlank()) {
@@ -542,8 +591,7 @@ public class ShTemplateGraph {
      * well would be one defect in two reports that can disagree.</p>
      */
     private boolean exists(ShSite site, String typeName, String title) {
-        for (ShPostUnified post : shPostUnifiedRepository.findByShSite_IdAndStateIn(
-                site.getId(), List.of(ShPostState.DRAFT, ShPostState.PUBLISHED))) {
+        for (ShPostUnified post : rowsOf(site, BOTH_STATES)) {
             String name = post.getShPostType() == null ? null : post.getShPostType().getName();
             if (typeName.equals(name) && title.equals(post.getTitle())) {
                 return true;
@@ -554,8 +602,7 @@ public class ShTemplateGraph {
 
     /** Whether a render-type post with this title has a published row. */
     private boolean isPublished(ShSite site, String typeName, String title) {
-        for (ShPostUnified post : shPostUnifiedRepository.findByShSite_IdAndStateIn(
-                site.getId(), List.of(ShPostState.PUBLISHED))) {
+        for (ShPostUnified post : rowsOf(site, List.of(ShPostState.PUBLISHED))) {
             String name = post.getShPostType() == null ? null : post.getShPostType().getName();
             if (typeName.equals(name) && title.equals(post.getTitle())) {
                 return true;
@@ -564,11 +611,28 @@ public class ShTemplateGraph {
         return false;
     }
 
+    /** Both states, as one list: the key of the population five rules above read (SH316). */
+    private static final List<ShPostState> BOTH_STATES =
+            List.of(ShPostState.DRAFT, ShPostState.PUBLISHED);
+
+    /**
+     * The site's rows in these states, read once per read-only transaction (SH316).
+     *
+     * <p>The states are part of the key and not merged into one read: a caller asking for PUBLISHED
+     * only must not be handed drafts to filter, because the filtering is what these rules get wrong
+     * when they are wrong. Three keys per site at most, and a writing transaction gets none of
+     * them.</p>
+     */
+    private List<ShPostUnified> rowsOf(ShSite site, List<ShPostState> states) {
+        return SITE_ROWS.get(site.getId() + "|" + states,
+                () -> List.copyOf(shPostUnifiedRepository
+                        .findByShSite_IdAndStateIn(site.getId(), states)));
+    }
+
     /** Every render-type row in the site carrying this title, both states. */
     private List<ShPostUnified> templatesOfTitle(ShSite site, String title) {
         List<ShPostUnified> out = new ArrayList<>();
-        for (ShPostUnified post : shPostUnifiedRepository.findByShSite_IdAndStateIn(
-                site.getId(), List.of(ShPostState.DRAFT, ShPostState.PUBLISHED))) {
+        for (ShPostUnified post : rowsOf(site, BOTH_STATES)) {
             String typeName = post.getShPostType() == null ? null : post.getShPostType().getName();
             if (ShSystemPostType.PAGE_LAYOUT.equals(typeName) && title.equals(post.getTitle())) {
                 out.add(post);

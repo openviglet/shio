@@ -9,7 +9,6 @@
 package com.viglet.shio.render;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,8 +16,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -507,54 +504,18 @@ public class ShPageRenderService {
      *
      * <h2>Why the scope is a read-only transaction</h2>
      *
-     * <p>The lifetime was the whole design question. A longer-lived cache has to be invalidated when
-     * a layout, a region or a theme is written <em>and</em> when {@code site.postTypeLayout} changes
-     * — and that last one is an {@code ShSite} write no post-level listener would see, which is the
-     * trap SH193 avoided by computing its graph instead of storing it.</p>
-     *
-     * <p>So the cache lives exactly as long as one read-only transaction: a {@code ?digest=true}
-     * proof over ten affected pages, a preview render, an {@code /agent/render} call. Staleness
-     * cannot outlive the call, and <b>a writing transaction gets no cache at all</b> — which is not
-     * a convention but the condition on the next line, so a future writer that renders mid-write
-     * cannot silently read what it has just replaced.</p>
+     * <p>The lifetime was the whole design question, and it is now
+     * {@link ShReadOnlyTransactionCache}'s to state: a value lives exactly as long as one read-only
+     * transaction, and a writing transaction gets no cache at all. SH316 moved the mechanism there
+     * when {@link ShTemplateGraph} turned out to need the same lifetime for a different population
+     * — one implementation of a staleness rule rather than two that can drift.</p>
      */
     private List<ShPostUnified> postsOfSystemType(ShSite site, String typeName, ShPostState state) {
-        Map<String, List<ShPostUnified>> sweep = sweepCache();
-        if (sweep == null) {
-            return loadPostsOfSystemType(site, typeName, state);
-        }
-        return sweep.computeIfAbsent(site.getId() + "|" + typeName + "|" + state,
-                key -> loadPostsOfSystemType(site, typeName, state));
-    }
-
-    /**
-     * The map bound to the current read-only transaction, or {@code null} when there is none.
-     *
-     * <p>{@code isCurrentTransactionReadOnly} is the guard that makes the staleness question
-     * unaskable rather than answered by a comment (SH275's lesson about premises that stop being
-     * true). It unbinds itself on completion; a resource left bound would leak into whatever the
-     * thread does next, which is the one way a request-scoped cache turns into a shared one.</p>
-     */
-    private Map<String, List<ShPostUnified>> sweepCache() {
-        if (!TransactionSynchronizationManager.isSynchronizationActive()
-                || !TransactionSynchronizationManager.isCurrentTransactionReadOnly()) {
-            return null;
-        }
-        Object held = TransactionSynchronizationManager.getResource(SWEEP_CACHE);
-        if (held instanceof Map<?, ?> map) {
-            @SuppressWarnings("unchecked")
-            Map<String, List<ShPostUnified>> typed = (Map<String, List<ShPostUnified>>) map;
-            return typed;
-        }
-        Map<String, List<ShPostUnified>> fresh = new HashMap<>();
-        TransactionSynchronizationManager.bindResource(SWEEP_CACHE, fresh);
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCompletion(int status) {
-                TransactionSynchronizationManager.unbindResourceIfPossible(SWEEP_CACHE);
-            }
-        });
-        return fresh;
+        // SH316 — the mechanism moved to `ShReadOnlyTransactionCache` when a second population
+        // needed exactly this lifetime. The behaviour is unchanged: cached inside a read-only
+        // transaction, and not cached at all anywhere else.
+        return SWEEP_CACHE.get(site.getId() + "|" + typeName + "|" + state,
+                () -> loadPostsOfSystemType(site, typeName, state));
     }
 
     private List<ShPostUnified> loadPostsOfSystemType(ShSite site, String typeName,
@@ -582,8 +543,8 @@ public class ShPageRenderService {
         return fieldOf(layout, ShSystemPostTypeAttr.THEME);
     }
 
-    /** The transaction-bound key for SH311's cache — one per class, never per instance. */
-    private static final Object SWEEP_CACHE = new Object();
+    /** SH311's population: one site's templates of one system type, per read-only transaction. */
+    private static final ShReadOnlyTransactionCache SWEEP_CACHE = new ShReadOnlyTransactionCache();
 
     private String fieldOf(ShPostUnified post, String field) {
         Object value = renderModel.fieldsOf(post).get(field);

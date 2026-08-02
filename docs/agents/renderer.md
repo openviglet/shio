@@ -111,6 +111,20 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   no file holding a `ShPageRenderService` and calling `.render(` may carry a `@Transactional`
   without `readOnly`. **A lint rather than the log line the task proposed** — SH103's own argument
   is that nobody reads logs, and a build failure names the new path to the person adding it.
+- **One read-only-transaction cache, two populations (SH316)** — the mechanism lives in
+  `ShReadOnlyTransactionCache`: a value resolved once per **read-only** transaction, and not cached
+  at all in a writing one, which is what makes staleness unaskable rather than argued. SH311's
+  templates-per-system-type is one population; `ShTemplateGraph` is the other, and it took the
+  measurement to say **which** part of it. The task proposed memoizing the assembled graph; a second
+  assembly inside one transaction already cost **0 queries** (SH311's cache covers every row it
+  reads) — 1.13 ms of maps, sorts and an HTML parse per binding, real but not what a query ceiling
+  can guard. The queries were one layer sideways: `pageCount`, `exists`, `isPublished`,
+  `templatesOfTitle` and `duplicateTitlesIn` each read **every row in the site** and filter in
+  memory, so a per-binding rule paid a site read per binding. Memoizing the rows took `impactOf`
+  from 2 queries a call to 0 and a one-site `verify` from 95 to 60;
+  `ShTemplateGraphMemoBenchmarkTest` holds all four numbers and prints them every run. Because one
+  `ShSiteTemplateGraph` now answers several callers, its maps are unmodifiable — the in-place edit
+  that used to be a caller's own business would now change what the next rule sees.
 - **`param` — the one frame that comes from the reader (SH259)** — query-string values as strings,
   read-only, **never headers, never cookies, never the request object**. SH247's `{{#search q="…"}}`
   takes a term the *template* supplies, which is a tag page, not a search results page; that needs

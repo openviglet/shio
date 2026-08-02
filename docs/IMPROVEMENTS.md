@@ -2590,24 +2590,6 @@ Worth settling alongside: whether `GET /api/v2/render/post-types` should report 
 type. That call already answers "can this instance render", and the caller asking it is precisely the
 one who needs to know.
 
-### XVI.50 Every caller asks the graph to rebuild itself (SH316)
-
-SH314 confirms the walk is bounded by bindings; SH311 makes the queries behind it nearly free inside
-one read-only transaction. Neither touches the shape above them: `ShTemplateGraph.of(site)` is called
-**once per question**.
-
-In a single `verify` pass that is `unusedIn`, `duplicateTitlesIn`, `missingThemes`, one `impactOf`
-per template post, and one `usedElsewhere` per site per finding — each assembling the same map of the
-same site. Since SH311 they share the underlying template lists, so what is left is the assembly:
-maps, sorts and set unions rather than queries.
-
-The natural fix is SH311's, one layer up — memoize the assembled `ShSiteTemplateGraph` for the length
-of the transaction, with the same read-only condition making staleness unaskable. It is small.
-
-It is filed as an idea rather than a plan because it wants a measurement first: after SH311 the
-assembly may be cheap enough that this is optimisation for its own sake, and this block has just
-spent three tasks establishing that a cost is measured before it is fixed.
-
 ### XVI.57 Isolation has a price, and the list of what needs it is hand-kept (SH317, SH318)
 
 SH315's rule is right and it costs something. A distinct `spring.datasource.url` is a distinct
