@@ -57,7 +57,7 @@ class ShImprovementsStaleSectionRatchetTest {
     private static final Path CHANGELOG = Path.of("..", "docs", "CHANGELOG.md");
 
     /**
-     * Sections whose task is in the ledger, on 2026-08-02 — <b>43 at the start, 20 read</b>.
+     * Sections whose task is in the ledger, on 2026-08-02 — <b>43 at the start, 23 read</b>.
      *
      * <p>The reading is why this is not a deletion queue: most carried standing rules, which moved
      * into {@code agent-surface.md}, {@code mcp.md}, {@code build.md}, {@code renderer.md} and
@@ -67,7 +67,7 @@ class ShImprovementsStaleSectionRatchetTest {
      * <p>Lower it when you triage one. Raising it means a rationale section was written for work that
      * has already shipped, which is what this exists to stop.</p>
      */
-    private static final int STALE = 23;
+    private static final int STALE = 20;
 
     /** A section heading at either level, with the task ids it names in its title. */
     private static final Pattern HEADING =

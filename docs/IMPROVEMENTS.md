@@ -1270,62 +1270,6 @@ not choose it. And where the baseline lives: `shio/snapshots/` is a project dire
 be instance state, which is either a new store or an argument that the *client* stays the baseline's
 owner and the server only ever answers "here is the current one".
 
-#### XV.15 A region's browser JavaScript is authored and never served (SH248)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The two open questions were
-> answered as: **inline**, because the page is `no-store` so a cacheable route buys nothing
-> and adds a thing that can 404; and **once per region name**, because a layout may slot the
-> same region twice and the markup is wanted in both places while the initialisation is not.
-> One thing the implementation found: the script body has to be a jsoup `DataNode`, not text
-> — as text, `if (a && b)` is escaped to `&amp;&amp;` and the script becomes a syntax error.
-
-#### XV.16 The renderer and the digest compose the same page differently (SH249)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The decision is a document:
-> [specs/SH249-sections-and-regions.md](../specs/SH249-sections-and-regions.md). Three things to
-> carry.
->
-> **The prior question had a real answer and it was not "unify them".** Sections and regions differ
-> on every axis that matters — who names them, by what key, whether they vary with the page or with
-> the *type*, whether they are homogeneous. What joins them is that a region's template can iterate
-> a page's section field (SH247's `getRelation`), so a section-composed page renders through the
-> ordinary path and the renderer needs no knowledge of the section vocabulary. **Sections are
-> content a template reads, not a level of the render model** — which is SH185's "the engine never
-> infers ownership" one level out, and it is what stopped this from becoming a third path.
->
-> **A fallback that is labelled beats a fallback that is guessed at.** SH169's composition stays,
-> for a post with no layout binding or no friendly URL, and `source` says which question was
-> answered. The alternative — fail where the digest used to answer — would have broken the SH99 loop
-> for every site mid-build, which is every site until it is finished.
->
-> **SH171's hazard is a class, not an incident.** Catching a teaching exception thrown by an inner
-> `@Transactional` marks the caller's transaction rollback-only, and the failure surfaces at
-> *commit*, nowhere near the catch. It cost eleven unrelated test errors here. Any new
-> speculative call into a service that throws teaching exceptions needs `noRollbackFor`, and the
-> tell is that the caller means to *handle* the refusal rather than propagate it.
-
-#### XV.18 A stylesheet is not an HTML document, and the catalogue says it is (SH252)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth keeping.
->
-> **It was filed as cosmetic and was a defect.** This section described the wrong editor mode and the
-> `.html` sidecar. Reading the code before changing it found the third consequence: `ACE_HTML` is in
-> the verify service's `MARKUP_WIDGETS`, so a `Theme`'s stylesheet was being **parsed as HTML** by the
-> SH100 routes check and the SH101 digest. Worth generalising — a widget name is not decoration here,
-> it is a *type* that several subsystems dispatch on, so "the closest thing seeded" was a wrong type
-> declaration and behaved like one.
->
-> **One of the six places needed no edit, and that is the return on SH191's rule.**
-> `SIDECAR_WIDGETS` keys on the widget, so the projection started writing `.css` the moment the
-> field's widget changed. Second time in this block that a decision placed in one spot fixed an
-> untouched call site (SH279's `resolveReference` was the first) — which is the concrete form of the
-> argument SH245 usually makes in the abstract.
->
-> **The fix does not reach existing installs, and says so.** `ensure` never touches an existing
-> post-type (SH152), so an instance that already created its `Theme` keeps the old widget. The
-> alternative is a startup that rewrites somebody's model, which is worse; recording the limit is what
-> keeps the changelog honest about what shipped.
-
 ### XV.22 A raster is still the only answer to most of "looks wrong" (SH265)
 
 SH187 extracts the appearance surface the *document* carries — class inventory, unstyled

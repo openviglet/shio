@@ -160,6 +160,25 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   in `ShRenderModelSourceTest.INVENTED`: it is optional, so an imported 2018 theme arrives without
   it and renders exactly as it did. An instance created before this gets the field from
   `POST /render/post-types/reconcile`, and `GET /render/post-types/drift` names it (SH295).
+- **Three more kept when their sections went (SH248, SH249, SH252 — SH356's triage)** —
+  **(1) Sections are content a template reads, not a level of the render model.** Sections and
+  regions differ on every axis that matters (who names them, by what key, whether they vary with the
+  page or with the *type*, whether they are homogeneous); what joins them is that a region's template
+  can iterate a page's section field through SH247's `getRelation`, so a section-composed page
+  renders through the ordinary path and the renderer needs no knowledge of the section vocabulary.
+  That is SH185's "the engine never infers ownership" one level out, and it is what stopped this
+  becoming a third composition path. The decision is written up in
+  [specs/SH249-sections-and-regions.md](../specs/SH249-sections-and-regions.md).
+  **(2) A fallback that is labelled beats a fallback that is guessed at** — SH169's composition stays
+  for a post with no layout binding or no friendly URL, and `source` says which question was
+  answered; failing instead would break the digest for every site mid-build, which is every site
+  until it is finished. **(3) A region's browser JavaScript is emitted inline and once per region
+  name** — inline because the page is `no-store`, so a cacheable route buys nothing and adds a thing
+  that can 404; once per name because a layout may slot the same region twice and the markup is
+  wanted in both places while the initialisation is not. And SH252's lesson about all three:
+  **it was filed as cosmetic and was a defect** — a `Theme`'s `CSS` declared with the HTML editor is
+  not a console preference, it is the widget deciding the sidecar's extension, so the field projected
+  as `.html`.
 - **Two rules the appearance digest was designed against (SH187, moved here by SH356)** —
   **two hashes, because they answer different questions**: folding appearance into SH101's `digest`
   would make a restyle and a structural break indistinguishable, which is the one comparison an
