@@ -982,30 +982,6 @@ leaving to whoever next notices the poll is not free.
 > end to end). The other five (SH235–SH237, SH239, SH240) have shipped.
 > Concept spec §10 has the original table.
 
-### XIV.4 Build-time guard for the `@TenantId` JOINED-join hazard (SH122) — ✅ shipped
-
-Shipped → [CHANGELOG.md](CHANGELOG.md) Block H (with the three production bugs it
-uncovered). **The generalizable lesson, which is why this section survives:**
-
-*Characterize by execution, not by argument.* The hazard's boundary was guessed
-twice and wrong twice — first "projections only", then "not predicates" — each time
-from a plausible reading of the evidence (shipped `WHERE` queries with green tests).
-Executing each form settled it in minutes and produced a rule that is both correct
-and simpler than either guess. When a lint's scope depends on where a runtime
-boundary actually lies, spend the test rather than the reasoning: a lint built on the
-wrong boundary either fails on correct code or misses the defect it was written for.
-
-*A green test is not coverage.* The three broken paths had tests; none reached the
-finder. Where a defect class is invisible to compilation **and** easy for tests to
-miss, a cheap always-on textual guard is the right instrument — the same role
-`ShLiquibaseChangelogAgnosticTest` plays for schema portability. Worth applying to
-the next such class rather than waiting for it to bite.
-
-*Self-test the guard.* Both of this lint's regexes were initially inert on real
-input (word boundaries fail on both sides of a derived query name). A lint that
-matches nothing passes silently forever, so its patterns are asserted against the
-exact strings that broke production.
-
 ### XIV.15 The Universal Editor is driven by nothing (SH238)
 
 SH233's defect — a save-back that could not authenticate — lived behind a comment that described

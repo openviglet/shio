@@ -24,6 +24,13 @@ Hibernate (`globally_quoted_identifiers=true`) queries them **quoted**
 (`"ShPostTypeAttr"`, `"TENANT_ID"`). The params make the casing match — without
 them you get `Column "..." not found` at runtime.
 
+**Characterize by execution, not by argument (SH122, kept here by SH356).** The `@TenantId`
+JOINED-join hazard's boundary was guessed twice and wrong twice — first "projections only", then
+"not predicates" — each time from a plausible reading of the evidence, which was shipped `WHERE`
+queries with green tests. Running each form settled it in minutes and produced a rule both correct
+and simpler than either guess. Where a lint's scope depends on where a runtime failure actually
+falls, the cheapest way to find the line is to cross it on purpose.
+
 ### Adding a migration
 1. Hand-write a `vX.Y.Z.yaml` changeset (preferred for incremental changes — see
    Turing's `turing-app/.../db/changelog/vX.Y.Z.yaml` for the `addColumn` /
