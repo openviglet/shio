@@ -277,6 +277,16 @@ class ShAgentDurableIncidentTest {
 
         incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "https://c.example.com", "boom", null);
 
+        // SH357 — this line is a discriminator, not a second assertion. This test read an empty
+        // table once in roughly fifteen full runs, with nothing else failing and no code changed
+        // between runs, and "counts is empty" cannot say which half broke. `record` is synchronous
+        // and sets `unpersisted` when the durable write is refused, so: if this fails, the store
+        // rejected the row; if it passes and the count below still fails, the row was written and
+        // the read did not see it. One of those is a transaction problem and the other is not.
+        assertThat(incidentLog.unpersisted())
+                .as("the durable write was refused, so the empty read below is the store's doing")
+                .isZero();
+
         ShAgentDiagnostics after = shAgentDiagnosticsService.diagnostics(null);
         assertThat(after.since()).isNotBlank();
         assertThat(after.notes()).anySatisfy(note ->

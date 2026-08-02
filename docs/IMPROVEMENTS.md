@@ -2066,25 +2066,27 @@ is not. So the honest first step is deciding what a *stale* section should becom
 
 ### XVI.67 One diagnostics test reads an empty table once in several full runs (SH357)
 
-SH354 was filed because a full run went red and the command that produced it had thrown
-the evidence away. The instrument it shipped — tee the run — paid for itself
-immediately: the next occurrence has a **name**.
-`ShAgentDurableIncidentTest.diagnosticsReadsTheTable` expected `{"webhook": 1}` from the
-durable incident table and got `{}`, on a run where nothing else failed and no code
-between runs had changed. Four runs before and after it passed.
+SH354's instrument paid for itself: the next occurrence had a **name**.
+`ShAgentDurableIncidentTest.diagnosticsReadsTheTable` asserted the durable table was
+empty, recorded one WEBHOOK incident, and read back `{}` instead of `{"webhook": 1}` —
+on a run where nothing else failed and no code had changed. Roughly one run in fifteen.
 
-Two hypotheses, and the first has form. **Context eviction**: SH347 documents this exact class
-failing this exact way when the Spring test-context cache overflows — an evicted context is rebuilt,
-the schema is recreated mid-run, and rows a later test asserts about are gone. The ceiling was raised
-to 64 and the counter reports 33 isolated databases, but SH347's own note says the counter is a
-**lower bound**, because a context key is the whole property set and two classes with the same URL
-and different properties are two contexts. **Or an ordering dependence inside the class**: the table
-is durable by design, so a sibling test that clears or reads it early would leave nothing to count.
+**Three hypotheses eliminated, which is most of what an intermittent defect needs.** *Context-cache
+eviction* (SH347's shape, and the obvious suspect since that class was its first victim): the run
+boots **35** contexts against a ceiling of 64, so nothing is evicted — and that 35 is worth keeping,
+because the source counter reports 33 and calls itself a lower bound. *Configuration leak*: the
+sibling test that lowers `maxRows` restores it in a `finally`. *The SH88 lag*: this class sleeps for
+it in seven places, but the diagnostics read applies no lag at all.
 
-What would settle it is the count of context keys as Spring sees it rather than as a
-source scan guesses — `ContextCache` statistics at DEBUG print `size` and `missCount`,
-which is the number the lower-bound counter is approximating. Worth doing before adding
-a retry or a `@DirtiesContext`, both of which would hide whichever of the two it is.
+What is left is a two-way split, and `record` being **synchronous** is what makes it
+decidable: it sets `unpersisted` when the durable store refuses a row. The test now
+asserts that *first*, as a discriminator rather than as coverage — if it fails, the
+store rejected the write; if it passes and the count still comes back empty, the row was
+written and the read did not see it. One is a store problem, the other a transaction
+problem, and until now the failure could not tell them apart.
+
+Not fixed. The next occurrence names its own cause, which is the difference worth
+shipping.
 
 ## XVI.58 What an end-to-end MCP build of a site actually costs (SH325–SH332)
 
