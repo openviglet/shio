@@ -1608,58 +1608,6 @@ problem, and until now the failure could not tell them apart.
 Not fixed. The next occurrence names its own cause, which is the difference worth
 shipping.
 
-## XVI.58 What an end-to-end MCP build of a site actually costs (SH325–SH332)
-
-An agent connected over the `shio mcp` stdio bridge and built a working site from nothing — a
-`Theme`, two `Region`s, a `PageLayout` with `sh-region` slots and `sh-field` annotations, three
-`Page`s, published, rendering at `/preview/Demo/home` with `?editor=true` injecting the bridge. It
-worked, and the SH99 gate closed green (`report ok checks=content,routes checked=10`).
-
-Everything that made it *hard* is below. The pattern across all eight is worth stating first, because
-it is not "features are missing": **every capability existed, and the friction was in reaching it.**
-Three of the eight are a route that only a browser can take, three are a vocabulary the agent had to
-guess at, one is a plan that cannot describe its own first step, and one is a bootstrap that fails on
-every instance older than the feature.
-
-> ✅ **SH325 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The catalogue is seeded per widget
-> and outside `ShOnStartup`'s first-time gate — **there were two guards and this section named
-> one**, which is SH322's lesson a third time: fixing the reported line would have changed nothing.
-
-### XVI.58 Three routes only a browser can take (SH326, SH327, SH328)
-
-**SH328 is the one that matters most**, because it sits in the middle of the feature.
-`site.postTypeLayout` is the single edge that connects a layout to content, and
-`ShSiteWriteService.FILLABLE` is `["url", "description", "furl"]`. So an agent can create the theme,
-the regions, the layout and the pages — and then cannot bind them. Nothing renders.
-
-What makes it acute rather than merely missing is that the protocol *already tells the agent to do
-it*. SH272's conventions line ends "and binds to a post-type through the site's `postTypeLayout`
-map", and SH298's `unused-layout` fix says `Bind a post-type to it in the site's postTypeLayout map`.
-Two surfaces instruct the agent to perform a write that no agent op can perform. The only route is
-the console's id-keyed `PUT /api/v2/site/{id}` — a full replace that nulls `postTypeLayout` and
-`searchablePostTypes` when a field is omitted (the hazard `ShSiteWriteService`'s own comment warns
-about), behind session + CSRF.
-
-The shape should follow SH184 exactly, one field-type wider: **per-key fill, never a replace.** An
-entry for a post-type that has no binding is filled; one that already names a layout is kept and
-reported. That keeps "fills what is empty, never replaces what somebody chose" intact, keeps the op
-idempotent, and lets a `dryRun` answer from the same code that writes (`planFill`'s rule).
-
-**SH326** is the same class one level out: `POST /api/v2/render/post-types` and `/reconcile` have no
-MCP tool and no CLI command, so an MCP-only client — the operator this product is designed for —
-cannot create the render model at all. Meanwhile the manifest reports `serverRender: true`, which is
-the identical half-truth `instanceMemory: true` was before SH160: true of the instance, useless to
-the client reading it. The answer is *not* a twelfth tool (the cap is 12 with 11 used, and
-`tools/list` is paid every turn — P3); it is an **op on the existing write surface**, where
-`site.upsert` and `folder.upsert` already live.
-
-> ✅ **SH327 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P: `/api/v2/render/**` is narrowed with
-> `ShStatelessRequestMatcher` and `POST /render/post-types` is declared in the manifest index. Both
-> halves were needed — reachable *and* discoverable — and both of the instruments built two tasks
-> earlier failed until their entries were removed, which is the first time that mechanism has been
-> exercised in the direction of a gap closing. Since SH339 the bodiless 403 is gone everywhere, so the
-> third path's symptom outlived its cause by one task.
-
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA
