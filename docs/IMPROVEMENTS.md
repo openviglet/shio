@@ -2614,24 +2614,6 @@ furl and different ids (narrow, cheap, and it only catches this one shape). The 
 probably the right first move, on the same reasoning SH322 just wrote down: the pattern that finds
 the next occurrence is worth more than the fix to this one.
 
-### XVI.23 The habit the sweep taught (SH322)
-
-SH279's body named three call sites from a first read and added "whatever a grep turns up". The grep
-— written as a lint — found **nine**, one of which the *previous half of the same task* had created
-by adding a comparator inline. SH321, filed from the same sweep, then turned eight 500s into a
-refusal and a deterministic read.
-
-That is not a documentation failure. It is evidence that "find the other call sites" is a job for an
-executable pattern rather than a reading, and this repository already knows that in three places:
-`ShByteStabilityLintTest`, `ShFolderSiteInvariantTest`, `ShAgentIncidentFramesTest`. The habit is now
-written into `agents.md` beside the measure-first rule:
-
-> **When a task's body says "and whatever a grep turns up", the grep is the deliverable — and it
-> lands as a lint before the fixes do.**
-
-Writing the lint first would have found the ninth site before it was written rather than after, and
-it costs nothing extra: the lint was going to exist anyway.
-
 ## XVI.58 What an end-to-end MCP build of a site actually costs (SH325–SH332)
 
 An agent connected over the `shio mcp` stdio bridge and built a working site from nothing — a
