@@ -1491,53 +1491,6 @@ the build going red the day somebody adds the fifth one.
 > message, which blamed the disagreement rather than the trim. So extending a guard is worth doing
 > for the reading it forces as much as for the assertions it adds, and the gap itself is §XVI.13.
 
-### XVI.25 The scanner is a hand-written parser of somebody else's grammar (SH273)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth keeping.
->
-> **The table found a defect the moment it was written**, which is the argument for it in one line:
-> `{{& TEXT}}` — unescaped output, the same reference as a triple stash — was skipped as though it
-> were a directive, so a real field was silently uncovered by the lint. Nothing was failing. The
-> defect was found by *enumerating*, which is exactly what this section predicted and exactly why
-> "we would have noticed" is not a plan.
->
-> **Three dispositions, not two, and the third carries a reason.** `SKIPPED` means "not a field";
-> `UNREACHABLE` means "could be a field, and something else already stops it mattering" — three rows
-> rest on SH183's refusing `TemplateLoader` making partials fail to compile. That second kind is a
-> claim about another part of the system, so it rots when that part changes and has to be written
-> down rather than assumed. A test enforces that every such row says why.
->
-> **Verifying the fix corrected the fix.** It was made in two places — the directive skip-list and
-> `strip` — and reverting the first showed it had never mattered, because `strip` runs earlier and
-> the branch was already unreachable. The comment now says so. That is three changes in this stretch
-> whose halves were not both load-bearing, each caught by reverting one and watching the test rather
-> than by reading the code. Cheap habit, high yield.
->
-> The AST alternative is now cheap to evaluate and still unevaluated — **SH274**.
-
-### XVI.26 The AST question is answerable now, and was answered (SH274)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The premise holds; three things came out of
-> checking it that would not have come out of continuing to believe it.
->
-> **The reality was worse than the premise claimed.** The inherited belief was "flat, no scope".
-> `collect` is actually *deduplicated*: four references to `TEXT` at three different scopes return
-> `[TEXT]`. So the belief was directionally right and quantitatively wrong, which is the most common
-> way an inherited premise misleads — it stays true enough to keep, while nobody knows how much
-> margin there is.
->
-> **Checking a premise can validate an unrelated decision.** `collectReferenceParameters()` returns
-> the hash *path* and not the hash *literal* — the library drawing SH261's line in exactly the same
-> place, independently. That is stronger evidence for SH261 than its own tests, because it comes from
-> somewhere that had no knowledge of them. Worth expecting: reading a dependency properly tends to
-> settle more than the question you went in with.
->
-> **The answer is enforced, not recorded.** Four assertions, a version number, and a failure message
-> that says to reopen the task. A design note saying "we checked and it was fine" is a habit with a
-> date on it; an assertion is a tripwire. That difference is the whole deliverable.
->
-> The same shape of unenforced claim exists for several other dependencies — **SH275**.
-
 ### XVI.28 A premise about a dependency we do not have is unfalsifiable (SH276)
 
 SH75 is hand-rolled MCP — around fifteen hundred lines of JSON-RPC, tool dispatch, resource routing
@@ -1564,27 +1517,6 @@ Worth being clear about what this is not: not an argument to adopt the SDK, and 
 the premise is wrong. It is that a sentence in the present tense about somebody else's release train
 is the weakest form of a load-bearing claim, and this one carries more weight than any other in the
 codebase.
-
-### XVI.35 A stale `target/` misreports the suite in the other direction (SH283)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two things worth keeping, and the first is a
-> correction to this section as originally written.
->
-> **The accumulating directory was the second link, not the cause.** This section blamed
-> `target/surefire-reports/` for accumulating, which is true. The reason anybody was reading that
-> directory is that **`-q` suppresses surefire's `Results:` summary** — it is a Maven INFO line, so
-> quiet mode deletes the only authoritative total, and summing files is what you do next. Fixing the
-> visible link would have left the cause in place: a future measurement would have found some other way
-> to be wrong. Worth generalising — *when a workaround produces a wrong answer, the bug is usually in
-> whatever made the workaround necessary.*
->
-> **The inflated numbers were corrected rather than dropped.** 977 claimed, 974 real. Nothing was
-> failing, so the temptation is to treat it as cosmetic — and a test count is offered as **evidence**,
-> which makes "it was arithmetic over a directory" a defect in the evidence rather than in the tests.
-> The earlier commit messages carry the wrong figure and the changelog now says so.
->
-> The fix is a command in `agents.md`, verified in both directions, sitting beside SH282's because they
-> are one shape: an artefact of an earlier command changing what a later one appears to say.
 
 ### XVI.46 "Imports and renders without a migration" is still only a comment (SH294)
 
