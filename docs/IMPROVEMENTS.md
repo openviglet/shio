@@ -2567,28 +2567,6 @@ furl and different ids (narrow, cheap, and it only catches this one shape). The 
 probably the right first move, on the same reasoning SH322 just wrote down: the pattern that finds
 the next occurrence is worth more than the fix to this one.
 
-### XVI.66 A failure the command that produced it threw away (SH354)
-
-On 2026-08-02, shipping SH293, a full `clean test` reported **1186 tests, 1 failure**.
-Five identical runs before and after it passed. The failing class is unknown, because
-the command was `… clean test | grep -E "Tests run:.*Failures.*Errors|BUILD"` — the
-pattern the project documents for reading the total (SH283) — and the `<<< FAILURE!`
-line and stack trace went to a pipe nobody kept. `clean` on the next run then removed
-`target/surefire-reports`, which was the second copy.
-
-So there is a defect somewhere in the suite that is real (a run went red with no code
-changing between runs) and undiagnosable, and the reason is process rather than luck:
-**the documented way to read the suite's own number destroys the evidence of what went
-wrong in it.** SH283 established that the count must come from the run; this is the same
-lesson one step along — so must the diagnosis.
-
-The cheap shape is to write the run to a file and grep the file (`… clean test > run.log
-2>&1`), which is what the session fell back to and what found nothing to grep. Whether
-that belongs in `agents.md` beside the count command, in a Maven profile, or in a CI
-step is the question — SH241 is filed against the same absence and would make the
-archived log a build artefact rather than a habit. What must not happen is the next
-occurrence being equally unreadable.
-
 ## XVI.58 What an end-to-end MCP build of a site actually costs (SH325–SH332)
 
 An agent connected over the `shio mcp` stdio bridge and built a working site from nothing — a

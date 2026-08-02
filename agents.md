@@ -131,8 +131,15 @@ an earlier command changing what a later one appears to say*:
 - **Do not add `-q` when the number matters, and do not sum `target/surefire-reports/` (SH283).**
   `-q` suppresses surefire's `Results:` summary — the only authoritative total — and
   that directory *accumulates*, so a targeted `-Dtest=X` run's reports inflate the
-  next sum. Take the count from the run:
-  `… clean test -Dskip.npm=true 2>&1 | grep -E "Tests run:.*Failures.*Errors" | tail -1`
+  next sum.
+- **Tee the run, never pipe it straight into `grep` (SH354).** The filter that
+  reads the total discards the `<<< FAILURE!` lines in the same breath, and the
+  next `clean` removes `target/surefire-reports/` — so a red run leaves *no record
+  of which test failed*. It has happened: one run in six, never reproduced,
+  undiagnosable. Take the count from the run **and keep the run**:
+  `… clean test -Dskip.npm=true 2>&1 | tee shio-test.log | grep -E "Tests run:.*Failures.*Errors" | tail -1`
+  On red, the names are in `shio-test.log` (`grep -E "<<< (FAILURE|ERROR)"`) —
+  read it **before** the next `clean`.
 
 Run the **full** suite, not a single `-Dtest` class. JS workspace: `pnpm install`
 once at the repo root, **Node ≥26**. Detail — Maven/frontend-plugin wiring, Vite,

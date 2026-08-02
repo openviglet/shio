@@ -73,11 +73,26 @@ inherits from the same POM's `<build>`, which is how Maven merges them), no logb
 deprecated API instead of saying "recompile with `-Xlint:deprecation`". **So a second warning line in a
 build log is news** — which is the property SH250's verification depended on and got by luck.
 
-**Measure the suite from the run, not from `target/` (SH283).** The verified command:
+**Measure the suite from the run, not from `target/` (SH283) — and keep the run (SH354).**
+The verified command:
 
 ```
-./mvnw -pl shio-app -am clean test -Dskip.npm=true 2>&1 | grep -E "Tests run:.*Failures.*Errors" | tail -1
+./mvnw -pl shio-app -am clean test -Dskip.npm=true 2>&1 | tee shio-test.log | grep -E "Tests run:.*Failures.*Errors" | tail -1
 ```
+
+(One line, deliberately: `ShTestCommandDocLintTest` reads these commands a line at a time, so a
+backslash continuation would hide the `| grep` from the guard and the guard would pass on a command
+it can no longer see — which is how it caught its own author breaking it.)
+
+**The `tee` is not decoration.** Without it this pipeline answers "how many" and throws away
+"which": the `<<< FAILURE!` lines and the stack trace go into the pipe, and `target/surefire-reports/`
+— the only other copy — is removed by the `clean` that SH282 makes mandatory on the next run. That is
+not hypothetical: shipping SH293, one run in six reported 1186 tests and **1 failure**, five identical
+runs passed, and the failing class is still unknown. On red, read `shio-test.log`
+(`grep -E "<<< (FAILURE|ERROR)"`) **before** running anything else; the file is `.gitignore`d and
+lives outside `target/` for exactly that reason. `ShTestCommandDocLintTest` fails the build if a
+documented command filters a run without keeping it — it caught the second copy of this very command
+the moment it was written.
 
 Two traps, and the first causes the second. **`-q` suppresses surefire's `Results:` summary entirely**
 — it is a Maven INFO line, so quiet mode removes the only authoritative total. Without it the obvious

@@ -53,6 +53,12 @@ src/main/resources/js/client-side/build
 # === Mobile Tools for Java (J2ME) ===
 .mtj.tmp/
 
+# === Test runs (SH354) ===
+# The teed suite log. It lives outside `target/` on purpose: `clean` is mandatory
+# (SH282), and a record of a failure that the next mandatory step deletes is not a
+# record. Read it before the next run, not after.
+/shio-test.log
+
 # === SonarQube (local analysis) ===
 .sonar_lock
 /scripts/sonar/.sonar-token
