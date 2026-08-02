@@ -71,6 +71,30 @@ public class ShRenderPostTypesAPI {
     }
 
     /**
+     * SH295 — which render types this instance has that are missing a field the model declares.
+     *
+     * <p><b>A read, because it is a read.</b> The same comparison was already available as
+     * {@code POST /reconcile?dryRun=true}, which meant learning whether an instance needed repairing
+     * required issuing a write verb and trusting a flag not to write — so a read-only caller could
+     * not ask at all. Until now the drift surfaced only as SH289's {@code untitled-template}, a
+     * finding on a <em>post</em>, which fires after somebody has written a template that cannot be
+     * addressed; an instance that had run {@code ensure} and written nothing was indistinguishable
+     * from a sound one.</p>
+     *
+     * <p>It sits beside {@code GET} rather than in the SH77 context pack because this is the call
+     * that already answers "can this instance render", and drift is the other half of that question
+     * — where a line in the pack would be paid for by every session, on most instances for nothing
+     * (P3). And not as a {@code verify} finding: a post-type has no SH79 address, which is the
+     * constraint that shaped SH289.</p>
+     *
+     * @return one entry per drifted type, naming the fields; empty when the instance is sound
+     */
+    @GetMapping("/drift")
+    public List<ShRenderPostTypes.ShRenderDrift> drift() {
+        return shRenderPostTypes.drift();
+    }
+
+    /**
      * SH289 — adds fields an existing render type is missing.
      *
      * <p>A second verb rather than a smarter {@code ensure}, because the two answer different

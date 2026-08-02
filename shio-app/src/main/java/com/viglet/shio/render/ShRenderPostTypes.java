@@ -152,33 +152,90 @@ public class ShRenderPostTypes {
     @Transactional
     public List<String> reconcile(boolean dryRun) {
         List<String> report = new ArrayList<>();
+        // Self-invocation on purpose: it bypasses the proxy, so `drift`'s readOnly=true does NOT
+        // apply and the comparison runs inside this writing transaction — which is what a repair
+        // needs. Called from outside (the GET), the same method gets the read-only transaction its
+        // annotation asks for. Two regimes, one comparison.
+        for (ShRenderDrift drifted : drift()) {
+            report.add(drifted.postType() + ": " + String.join(", ", drifted.missingFields()));
+            if (dryRun) {
+                continue;
+            }
+            ShPostType live = shPostTypeRepository.findByName(drifted.postType());
+            if (live == null) {
+                continue;
+            }
+            Set<ShPostTypeAttr> attrs = live.getShPostTypeAttrs() == null
+                    ? new HashSet<>() : new HashSet<>(live.getShPostTypeAttrs());
+            specsFor(drifted.postType()).stream()
+                    .filter(spec -> drifted.missingFields().contains(spec.name()))
+                    .forEach(spec -> attrs.add(attr(spec, live)));
+            live.setShPostTypeAttrs(attrs);
+            shPostTypeRepository.save(live);
+        }
+        return List.copyOf(report);
+    }
+
+    /**
+     * SH295 — which render types this instance has that are missing a field the model declares.
+     *
+     * <h2>Why the read exists, when {@code reconcile(dryRun)} already computed it</h2>
+     *
+     * <p>Because that is a {@code POST}. Learning whether an instance needs repairing required
+     * issuing a <em>write</em> verb and trusting a flag not to write — so a read-only caller, which
+     * is most of them, could not ask at all. The drift is a <b>fact about the instance</b>, and
+     * SH289 left it visible only as {@code untitled-template}: a finding on a <em>post</em>, which
+     * fires once somebody has already written a template that cannot be addressed. An instance that
+     * has run {@code ensure} and written nothing looked exactly like a healthy one.</p>
+     *
+     * <h2>Why here and not in the context pack or a verify finding</h2>
+     *
+     * <p>Not a {@code verify} finding: a post-type has no SH79 address, which is the constraint that
+     * shaped SH289 in the first place and has not gone away. Not the SH77 context pack either —
+     * every session would pay for a line most instances do not need (P3), and the pack is read
+     * before writing rather than when somebody asks whether the instance is sound. This endpoint
+     * already answers "can this instance render"; drift is the other half of that same question,
+     * and it costs a caller who does not ask exactly nothing.</p>
+     *
+     * <p>One computation, two doors: {@link #reconcile} formats <em>this</em> rather than repeating
+     * the comparison, so a plan cannot describe a repair different from the one that runs (SH184's
+     * rule), and the pair cannot drift the way the creation and repair paths did before SH289.</p>
+     *
+     * @return one entry per type that is missing something, sorted; empty when the instance is sound
+     */
+    @Transactional(readOnly = true)
+    public List<ShRenderDrift> drift() {
+        List<ShRenderDrift> drifted = new ArrayList<>();
         for (String name : NAMES) {
             ShPostType live = shPostTypeRepository.findByName(name);
             if (live == null) {
+                // Absent, not drifted: `ensure` creates it, and reporting a type this instance has
+                // never had as "missing a field" would send the operator to the wrong verb.
                 continue;
             }
             Set<String> declared = new java.util.TreeSet<>();
             if (live.getShPostTypeAttrs() != null) {
                 live.getShPostTypeAttrs().forEach(attr -> declared.add(attr.getName()));
             }
-            List<FieldSpec> missing = specsFor(name).stream()
-                    .filter(spec -> !declared.contains(spec.name()))
+            List<String> missing = specsFor(name).stream()
+                    .map(FieldSpec::name)
+                    .filter(field -> !declared.contains(field))
                     .toList();
-            if (missing.isEmpty()) {
-                continue;
+            if (!missing.isEmpty()) {
+                drifted.add(new ShRenderDrift(name, missing));
             }
-            report.add(name + ": " + missing.stream().map(FieldSpec::name)
-                    .collect(java.util.stream.Collectors.joining(", ")));
-            if (dryRun) {
-                continue;
-            }
-            Set<ShPostTypeAttr> attrs = live.getShPostTypeAttrs() == null
-                    ? new HashSet<>() : new HashSet<>(live.getShPostTypeAttrs());
-            missing.forEach(spec -> attrs.add(attr(spec, live)));
-            live.setShPostTypeAttrs(attrs);
-            shPostTypeRepository.save(live);
         }
-        return List.copyOf(report);
+        return List.copyOf(drifted);
+    }
+
+    /**
+     * One render type that is missing fields the shipped model declares (SH295).
+     *
+     * @param postType     the type's name — not an SH79 address, because a post-type has none
+     * @param missingFields the field names, in the model's own order, which is the order
+     *                      {@code reconcile} would add them in
+     */
+    public record ShRenderDrift(String postType, List<String> missingFields) {
     }
 
     /**

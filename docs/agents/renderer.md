@@ -125,6 +125,21 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `ShTemplateGraphMemoBenchmarkTest` holds all four numbers and prints them every run. Because one
   `ShSiteTemplateGraph` now answers several callers, its maps are unmodifiable — the in-place edit
   that used to be a caller's own business would now change what the next rule sees.
+- **The drift is a fact about the instance, and it is a GET (SH295)** —
+  `GET /api/v2/render/post-types/drift` names each render type this instance has that is missing a
+  field the shipped model declares. The comparison existed before, as
+  `POST /reconcile?dryRun=true` — so learning whether an instance needed repairing meant issuing a
+  **write verb** and trusting a flag not to write, which a read-only caller cannot do at all. The
+  only other signal was SH289's `untitled-template`, a finding on a *post*: it fires after somebody
+  has written a template that cannot be addressed, so an instance that had run `ensure` and written
+  nothing was indistinguishable from a sound one. **Where it deliberately does not live:** not a
+  `verify` finding (a post-type has no SH79 address — the constraint that shaped SH289), and not the
+  SH77 context pack (every session would pay for a line most instances do not need, P3). This
+  endpoint already answers "can this instance render"; drift is the other half of that question.
+  `reconcile` now *formats* the read rather than repeating the comparison, so the plan and the repair
+  cannot describe different things — and the self-invocation is deliberate, since bypassing the proxy
+  is what lets one comparison run read-only for the GET and inside the writing transaction for the
+  repair.
 - **What a helper costs is per page, and one of the four shapes was not (SH312, SH353)** —
   `ShRenderHelperSweepBenchmarkTest` sweeps four page shapes: plain **5** queries a page,
   a `{{#query limit=10}}` listing region **7**, five sections by id **10**, five sections by

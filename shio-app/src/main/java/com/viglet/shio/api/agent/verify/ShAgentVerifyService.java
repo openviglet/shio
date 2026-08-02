@@ -571,7 +571,8 @@ public class ShAgentVerifyService {
                             + "field, this instance's " + typeName + " predates the title field: "
                             + "add a `render.provision` op with `data.reconcile:true` to add it "
                             + "(or POST /api/v2/render/post-types/reconcile), which changes "
-                            + "nothing else."));
+                            + "nothing else. GET /api/v2/render/post-types/drift answers the same "
+                            + "question without writing (SH295)."));
         }
     }
 

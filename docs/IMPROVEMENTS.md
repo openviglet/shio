@@ -2501,31 +2501,6 @@ The reason this is an idea rather than a designed task is the fixture. Hand-writ
 agrees with the test's author rather than with the artefact. The honest source is a real export, so
 the first step is finding one, not writing one.
 
-### XVI.47 Nothing announces the drift until a template is already broken (SH295)
-
-SH289 reports `untitled-template`, which is a finding on a **post**: it fires once somebody has
-already written a template that cannot be addressed. The drift itself — a render post-type missing a
-field the shipped model declares — is invisible until then, so an instance that has run `ensure` and
-written nothing looks exactly like a healthy one.
-
-The reason it is reported that way is a real constraint, not an oversight: a post-type has no SH79
-address, so it cannot carry a `verify` finding, and SH143's scoping has nowhere to put one. That
-constraint has not gone away, so the answer is not "add a finding".
-
-Two plausible homes, with the trade each carries:
-
-- **The context pack's `conventions`.** An agent reads it before writing anything, which is exactly
-  the moment this matters, and SH272 has just established the precedent for an instance-specific
-  render fact living there. The cost is P3: every session pays for a line that most instances do not
-  need — though the same conditional test SH272 uses (only when the instance has the render model)
-  would narrow it to those that could be affected.
-- **A startup log line.** Free, and nobody reads logs. That is SH103's own argument against a
-  log-tailing tool, applied to ourselves.
-
-Worth settling alongside: whether `GET /api/v2/render/post-types` should report the drift beside each
-type. That call already answers "can this instance render", and the caller asking it is precisely the
-one who needs to know.
-
 ### XVI.31 A follow-up from the URL sweep (SH324)
 
 **SH324 — a fixture can model a shape the product cannot produce.** SH321's refusal fired on

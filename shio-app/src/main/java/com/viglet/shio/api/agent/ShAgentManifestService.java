@@ -383,7 +383,8 @@ public class ShAgentManifestService {
                 new ShAgentEndpoint("POST", "/render/post-types",
                         "Create the PageLayout/Region/Theme types this instance renders with; "
                                 + "idempotent. Then /preview/{site}/{url} shows a page, no front "
-                                + "end needed.",
+                                + "end needed. GET .../drift names any field an older instance is "
+                                + "missing.",
                         "console", "POST /api/v2/render/post-types"),
                 // SH343 — the create and publish rows that stood here were pruned to fund the webhook
                 // row, on a sharper version of SH344's reasoning: they are the exact id-keyed twins of

@@ -114,6 +114,42 @@ class ShRenderModelReconcileTest {
     }
 
     @Test
+    @DisplayName("SH295: the drift is readable without a write verb, and says the same thing")
+    void driftIsReadableWithoutWriting() {
+        oldRegionWithNoTitleField();
+
+        assertThat(shRenderPostTypes.drift())
+                .as("""
+                        the fact an operator needs BEFORE a template is written. SH289 surfaced                         it only as untitled-template, a finding on a post, so an instance that had                         run ensure and written nothing looked exactly like a sound one.""")
+                .anySatisfy(drifted -> assertThat(drifted.postType())
+                        .isEqualTo(ShSystemPostType.REGION));
+        assertThat(shRenderPostTypes.drift())
+                .filteredOn(drifted -> ShSystemPostType.REGION.equals(drifted.postType()))
+                .singleElement()
+                .satisfies(drifted -> assertThat(drifted.missingFields())
+                        .contains(ShSystemPostTypeAttr.TITLE));
+
+        assertThat(shRenderPostTypes.drift().stream()
+                .map(drifted -> drifted.postType() + ": "
+                        + String.join(", ", drifted.missingFields()))
+                .toList())
+                .as("""
+                        one computation, two doors: reconcile FORMATS the read rather than                         repeating the comparison, so a plan cannot describe a repair different                         from the one that runs (SH184's rule) — and the creation and repair paths                         cannot drift apart the way they did before SH289.""")
+                .isEqualTo(shRenderPostTypes.reconcile(true));
+
+        assertThat(fieldNames(ShSystemPostType.REGION))
+                .as("and reading it wrote nothing")
+                .doesNotContain(ShSystemPostTypeAttr.TITLE);
+
+        shRenderPostTypes.reconcile(false);
+        assertThat(shRenderPostTypes.drift())
+                .as("a repaired instance reports nothing, which is what makes this answerable at "
+                        + "all: silence has to mean sound rather than unasked")
+                .noneSatisfy(drifted -> assertThat(drifted.postType())
+                        .isEqualTo(ShSystemPostType.REGION));
+    }
+
+    @Test
     @DisplayName("reconcile never changes a field the type already has")
     void reconcileIsAdditiveOnly() {
         // Deliberately not "the type is missing TITLE, so reconcile runs": the other test in this
