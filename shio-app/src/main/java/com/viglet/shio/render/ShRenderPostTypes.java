@@ -58,6 +58,17 @@ import com.viglet.shio.widget.ShSystemWidget;
  * in Java ever read it. The field names below are the 2018 package's, so a real
  * {@code openviglet/bootstrap-site} export imports and renders without a migration.</p>
  *
+ * <p><b>Both halves of that last sentence are asserted now, and its scope is narrower than it
+ * reads (SH294).</b> {@code ShRenderModelSourceTest} compares the model above with
+ * {@code /import/post-types.json}, the 2018 artefact itself, and declares every divergence;
+ * {@code ShImportRendersSourceTest} imports a package whose templates are keyed the 2018 way and
+ * fetches the page back, so composition, {@code sh-region} and theme resolution are evidence
+ * rather than a claim. What "no migration" means is the <b>content</b>: a 2018 template's
+ * {@code data} is keyed {@code TITLE}/{@code HTML}/{@code JAVASCRIPT}/{@code CSS} and this
+ * renderer reads those keys unchanged. It has never meant the <b>envelope</b> — SH189 records
+ * that bringing the real package forward cost seven manifest field renames inferred by reading
+ * the {@code ShExchange*} records, and that conversion is still a caller's job.</p>
+ *
  * <h2>The widgets say what each field is</h2>
  *
  * <p>{@code HTML} is {@code Ace Editor - HTML}, {@code JAVASCRIPT} is

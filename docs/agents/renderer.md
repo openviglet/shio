@@ -26,6 +26,20 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   reachable only by whoever can restart the JVM. Because they are posts, `post.upsert`, the SH68
   package, the file projection and `shio verify` all work on them for free; the 2018
   `openviglet/bootstrap-site` export renders with **no migration**.
+  **That is asserted end to end now, and it is narrower than it reads (SH294).**
+  `ShRenderModelSourceTest` compares the model with `/import/post-types.json` — the real 2018
+  artefact, whose `PageLayout`, `Region` and `Theme` entries carry their own 2018-06-14 and
+  2019-07-11 dates — and `ShImportRendersSourceTest` imports a package whose templates are keyed
+  the 2018 way and fetches the page back, so composition, `sh-region` and theme resolution are
+  evidence rather than a sentence. **"No migration" is about the content, never the envelope:** a
+  2018 template's `data` is keyed `TITLE`/`HTML`/`JAVASCRIPT`/`CSS` and the renderer reads those
+  keys unchanged, while SH189 records that the *manifest* cost seven field renames inferred by
+  reading the `ShExchange*` records. Two details the fixture had to be told, and both are the 2018
+  convention rather than this renderer's: a field is named at the **model root** (`{{TITLE}}`,
+  not `{{post.TITLE}}` — the `post` frame is the entity's properties), and a theme is **inlined by
+  the layout** through `{{theme.css}}` rather than linked. The fixture reads every post-type and
+  field name out of the artefact and refuses to write one it does not declare, which is what makes
+  the test evidence instead of a tautology — the objection that kept SH294 an idea for a block.
   **And it is reachable without a browser (SH327):** `/api/v2/render/**` is CSRF-narrowed and this
   endpoint is declared in the manifest's index, because `serverRender: true` was a half-truth while the
   one call that makes a site visible needed a session cookie and appeared in no document a caller

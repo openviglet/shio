@@ -1494,27 +1494,6 @@ the premise is wrong. It is that a sentence in the present tense about somebody 
 is the weakest form of a load-bearing claim, and this one carries more weight than any other in the
 codebase.
 
-### XVI.46 "Imports and renders without a migration" is still only a comment (SH294)
-
-SH290 asserts that the render model matches its 2018 source — the half that was actually wrong. The
-comment's full claim is larger: that a real `openviglet/bootstrap-site` export **imports and
-renders**.
-
-Nothing exercises that, and the export bundled here cannot: it declares one post-type (`Page`), no
-`postTypeLayout`, and no template posts. The SH71 starter is a content site, not a rendering one. So
-the strongest end-to-end evidence for Block P's central compatibility claim is a sentence.
-
-What it needs is a fixture that *is* a rendering site in the 2018 shape — a `PageLayout` with
-`sh-region` slots, a `Region`, a bound `postTypeLayout` — imported through `POST /api/v2/import` and
-then fetched from `/preview`. That test would also be the first to exercise SH189's import
-classification and SH280's unpublished-layout refusal together, which is where an imported package's
-own publication state starts to matter.
-
-The reason this is an idea rather than a designed task is the fixture. Hand-writing a package in the
-2018 format risks asserting against a shape the 2018 exporter never produced — proving the code
-agrees with the test's author rather than with the artefact. The honest source is a real export, so
-the first step is finding one, not writing one.
-
 ### XVI.1 No CI workflow runs on the branch the work happens on (SH241)
 
 Three workflows exist. `build.yml` (Maven + Sonar) and `codeql-analysis.yml` are
