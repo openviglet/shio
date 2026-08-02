@@ -31,13 +31,45 @@ import tools.jackson.databind.node.ObjectNode;
  * <h2>Why the protocol is implemented rather than imported</h2>
  *
  * <p>The roadmap's own constraint for this task is that the host be a <b>transport +
- * registry only</b>. Measured against that, an SDK is a poor trade here: the MCP Java
- * SDK is built on Jackson 2 and a Spring Boot 3 baseline, while this application runs
- * Boot 4 with Jackson 3 (<code>tools.jackson</code>) — so importing it buys a few
- * hundred lines of envelope handling in exchange for a second JSON stack and a
- * standing version-compatibility risk on the one surface that is supposed to be the
- * product's front door. The request/response subset below is small, fully specified,
- * and directly testable.</p>
+ * registry only</b>. Measured against that, an SDK was a poor trade: the MCP Java SDK was
+ * built on Jackson 2 and a Spring Boot 3 baseline, while this application runs Boot 4 with
+ * Jackson 3 (<code>tools.jackson</code>) — so importing it bought a few hundred lines of
+ * envelope handling in exchange for a second JSON stack and a standing version-compatibility
+ * risk on the one surface that is supposed to be the product's front door. The
+ * request/response subset below is small, fully specified, and directly testable.</p>
+ *
+ * <h3>What that sentence is worth, and when it was last true (SH276)</h3>
+ *
+ * <p>It is the largest inherited premise in this repository measured by the code it defends —
+ * about fifteen hundred lines — and it is the one kind SH274's tripwires cannot reach, because
+ * the artefact is <b>not on the classpath</b> and adding it to find out is the change being
+ * evaluated. So the instrument is a date rather than an assertion, and
+ * {@code ShMcpSdkPremiseTest} fails the build when this record goes stale. Move the date
+ * whichever way the next reading goes; not knowing is the failure.</p>
+ *
+ * <p>SDK-PREMISE-CHECKED: 2026-08-02<br>
+ * SDK-PREMISE-VERSION: io.modelcontextprotocol.sdk:mcp:2.0.0</p>
+ *
+ * <p><b>The finding: the Jackson half has moved, and the Boot half is gone.</b> Read from the
+ * published POMs on 2026-08-02 — {@code mcp:2.0.0} pulls {@code mcp-json-jackson3:2.0.0} and
+ * {@code mcp-core:2.0.0}; the JSON binding depends on
+ * {@code tools.jackson.core:jackson-databind:3.0.3}, which is <em>this application's own Jackson
+ * 3</em>, and the BOM offers {@code mcp-json-jackson2} and {@code mcp-json-jackson3} side by
+ * side. {@code mcp-core} depends on no Spring artefact at all (slf4j, reactor-core, and
+ * {@code jakarta.servlet-api} as <em>provided</em>), so "a Spring Boot 3 baseline" no longer
+ * describes it. What survives is smaller than the original claim and is not nothing:
+ * {@code mcp-core} still brings {@code com.fasterxml.jackson.core:jackson-annotations:2.20}
+ * transitively — a Jackson <b>2 annotations</b> jar, which is metadata rather than a second
+ * parser, and a much narrower cost than "a second JSON stack".</p>
+ *
+ * <p><b>This is not an argument to adopt the SDK, and the standing argument is now a different
+ * one.</b> The trade was never only about Jackson; it is that the host stays transport +
+ * registry, and that claim is carried by live evidence instead of by a claim about the
+ * alternative: {@code ShMcpToolBudgetTest} caps what {@code tools/list} costs on every turn of
+ * every session (P3), and {@code ShMcpWireConformanceTest} pins the wire against a golden. A
+ * hand-rolled surface that stays inside its budget and conformant is a better ongoing case than
+ * a sentence about somebody else's release train — and if either of those ever starts costing
+ * more than the SDK would, that is the signal to revisit, not this paragraph.</p>
  *
  * <h2>Two error channels, and the difference matters</h2>
  *

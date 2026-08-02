@@ -5,10 +5,24 @@
 
 ### MCP — `POST /mcp` (SH75/SH83)
 Same capabilities over the Model Context Protocol (JSON-RPC 2.0, revision `2025-06-18`),
-hand-rolled in `com.viglet.shio.api.agent.mcp` — **not** the MCP Java SDK, which is
+hand-rolled in `com.viglet.shio.api.agent.mcp` — **not** the MCP Java SDK, which *was*
 Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate `405`
 (this server sends nothing unprompted). `shio mcp` in the CLI is a stdio bridge:
 `claude mcp add shio -- shio mcp`.
+- **That premise is dated now, and looking once found it had moved (SH276).** It is the
+  repository's largest inherited claim by code defended (~1500 lines) and the one kind SH274's
+  tripwires cannot reach — the artefact is not on the classpath, and adding it to check is the
+  change being evaluated. So the instrument is a **date**: `ShMcpServer` carries
+  `SDK-PREMISE-CHECKED` / `SDK-PREMISE-VERSION` and **`ShMcpSdkPremiseTest`** fails the build
+  once the record passes an 18-month shelf life. Read on 2026-08-02 against
+  `io.modelcontextprotocol.sdk:mcp:2.0.0`: the SDK now publishes `mcp-json-jackson3`, which
+  depends on `tools.jackson.core:jackson-databind:3.0.3` — *this app's own Jackson 3* — and
+  `mcp-core` depends on no Spring artefact at all, so the Boot-3 half is gone. What survives is
+  `jackson-annotations:2.20` transitively: a Jackson **2 annotations** jar, metadata rather than
+  a second parser. **Not an argument to adopt the SDK** — the standing argument is now live
+  evidence rather than a claim about the alternative: `ShMcpToolBudgetTest` caps what
+  `tools/list` costs every turn and `ShMcpWireConformanceTest` pins the wire against a golden.
+  When either starts costing more than the SDK would, that is the signal to revisit.
 - **Tools** (`ShMcpTool` beans, auto-registered): `shio_context` · `shio_find` ·
   `shio_read` · `shio_write` · `shio_apply` · `shio_publish` · `shio_assets` ·
   `shio_changes` · `shio_verify` · `shio_digest` · `shio_remember`. Every tool is a *shape*
