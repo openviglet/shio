@@ -453,7 +453,7 @@
 - ⏳ **SH247** (deps: SH183 ✅) **`form` is the last of the seven capabilities** — What remains is form, and the missing piece is not code but a decision about where a submission goes: storage, spam, notification, retention. → §XV.14
 - 💭 **SH294** (deps: SH290 ✅) **"Imports and renders without a migration" is still only a comment** — The class comment claims a real 2018 export imports and renders, and nothing exercises it — the bundled starter declares no layout, so it cannot. → §XVI.46
 - 💭 **SH276** (deps: SH275 ✅) **A premise about a dependency we *do not* have is unfalsifiable, and one is load-bearing** — It justifies ~1500 lines of hand-rolled protocol and cannot be asserted, because checking it means adding the dependency being evaluated. → §XVI.28
-- 💭 **SH355** (deps: —) **Half-shipped entries are invisible to the tool that owns the files** — Four lint findings and one refused retire all trace to a ledger id written as SH96 (local half), which roadkeep cannot parse. → §XVI.65
+- ⏳ **SH355** (deps: —) **Half-shipped entries are invisible to the tool that owns the files** — Five of the seven parentheticals are already stale and the one honest half-shipped line is the only one lint reports; the grammar decision is filed upstream as RK121, RK122 and RK125. → §XVI.65
 - ⏳ **SH356** (deps: SH341 ✅) **The rationale file carries the debt the roadmap just shed** — The triage is decided and instrumented; three sections remain, and two of the three are the id-in-two-files defect rather than stale rationale. → §XVI.66
 - ⏳ **SH357** (deps: SH354 ✅) **One diagnostics test reads an empty table once in several full runs** — The class fails intermittently in a second method now, so the cause is the class or its context rather than one assertion. → §XVI.67
 
