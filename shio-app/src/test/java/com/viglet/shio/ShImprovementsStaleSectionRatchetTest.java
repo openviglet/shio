@@ -108,6 +108,43 @@ class ShImprovementsStaleSectionRatchetTest {
     }
 
     @Test
+    @DisplayName("SH356: no open task points at a section that is not there")
+    void everyOpenPointerResolves() {
+        Set<String> anchors = new TreeSet<>();
+        Matcher heading = HEADING.matcher(read(IMPROVEMENTS));
+        while (heading.find()) {
+            anchors.add(heading.group(1));
+        }
+
+        List<String> dangling = new ArrayList<>();
+        Matcher line = ROADMAP_POINTER.matcher(read(ROADMAP));
+        while (line.find()) {
+            if (!anchors.contains(line.group(2))) {
+                dangling.add(line.group(1) + " → §" + line.group(2));
+            }
+        }
+
+        assertThat(dangling)
+                .as("""
+                        This is the guard that was missing, and it is here because the triage \
+                        broke one: §VIII.11 was stale by the rule above — every task in its title \
+                        had shipped — and SH197, which is OPEN, pointed at it. Dropping it left a \
+                        live task pointing at nothing, which reads as a design that exists.
+
+                        So "every id in the title has shipped" is necessary and not sufficient. \
+                        Before dropping a section, check who points at it: an open task's \
+                        rationale has to be written somewhere else first, not deleted with the \
+                        history around it.""")
+                .isEmpty();
+    }
+
+    /** A task line's id and the anchor it points at. */
+    private static final Pattern ROADMAP_POINTER =
+            Pattern.compile("\\*\\*(SH\\d+)\\*\\*[^\\n]*→ §([IVXLC]+\\.\\d+)");
+
+    private static final Path ROADMAP = Path.of("..", "docs", "ROADMAP.md");
+
+    @Test
     @DisplayName("the guard is not vacuous: it reads both files and finds ids in each")
     void theScanReadsBothFiles() {
         assertThat(shippedIds())
