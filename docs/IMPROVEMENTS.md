@@ -2465,6 +2465,51 @@ run's headline, so no count is re-derived by hand (SH283's defect, SH354's at th
 terminal); and which jobs run on push versus pull request is a deliberate choice — the
 console check drives Chromium, the Java suite is cheap enough for both.
 
+### XVI.65 Half-shipped entries are invisible to the tool that owns the files (SH355)
+
+This corpus records a half-shipped task by writing the ledger id with a parenthetical:
+`- **SH96 (local half)** —`, `- **SH275 (partial)** —`, and two more. It is a good
+convention, it predates roadkeep, and the tool cannot read it: an id it cannot parse is
+an id that is **not in the changelog**, which is a different statement from "not done".
+
+Four findings and one refusal come from that one gap. `SH217` and `SH219` are reported
+as waiting on an unknown `SH96` when its local half shipped and the roadmap annotates it
+`✅`. `SH238` is reported as being in two files at once — open in the roadmap, recorded
+in the ledger — because its shipped half carries the bare id while its unfinished half
+is still a task. And `retire` refuses outright: this project sets `[ledger] marker =
+false` so its 234 pre-tool entries parse, and without a marker a retired line cannot be
+told from a shipped one.
+
+None of it is a *content* defect — every one of those lines says something true to a
+reader. What is wrong is that the file's conventions and the tool's grammar disagree,
+and the tool is the half that reports. Two directions, and the choice is roadkeep's
+rather than this repository's: teach the grammar the parenthetical, or give partial
+completion a first-class form. Until then the findings are noise that hides real ones,
+which is SH142's argument about a baseline.
+
+### XVI.66 The rationale file carries the debt the roadmap just shed (SH356)
+
+SH341 took the roadmap's 42 over-long lines to zero and `roadkeep lint` fell from 249
+findings to 107. What is left is almost entirely one file: **45 sections over the
+250-word budget, 42 whose task has already shipped, 9 that no line points at, and 3
+anchors claimed twice.**
+
+The three kinds are not one job. A **stale** section is the cheapest and most misleading: `ship`
+drops a section as its third edit, so 42 survivors mean 42 tasks whose rationale was moved by hand
+before the tool owned the files — and a reader meeting one cannot tell live design from history. An
+**orphan** is a section nothing can reach: either the last copy of an argument or dead weight, and
+only reading says which. **Over-long** is SH341's drift one file along, with the same fix — split, or
+move the remainder into the commit that made it true.
+
+Four line-level defects sit beside them and are not editorial at all: two `U+0008`
+control characters inside a ledger line, an entry with no `—` separator, a duplicate
+`SH347`, and an entry naming a file the repository no longer contains. That is
+corruption rather than prose, and `lint --fix` does not touch it.
+
+SH341's order applies — instrument first — but a section gate cannot ratchet from 45 the
+way the line gate did, because dropping a section is destructive where shortening a line
+is not. So the honest first step is deciding what a *stale* section should become.
+
 ## XVI.58 What an end-to-end MCP build of a site actually costs (SH325–SH332)
 
 An agent connected over the `shio mcp` stdio bridge and built a working site from nothing — a

@@ -210,7 +210,7 @@
 - 💭 **SH84** (deps: SH22 ✅, SH83 ✅) **Turing ecosystem wiring** — the SH22 tenant sweep and its test shipped; what remains is the Turing integration (replaces old SH37). → §VIII.9
 - 💭 **SH140** (deps: SH100 ✅, SH134 ✅) **Report inbound links when a post moves** — A URL typed into another post's rich text names the address rather than the object, so a move breaks it and nothing tells the agent which pages it just broke. → §VIII.13
 - 📋 **SH196** (deps: SH88 ✅, SH137 ✅) **No folder write is audited** — No folder create, rename, move or delete is recorded, so the feed shows posts appearing in folders it never saw created. → §VIII.12
-- 💭 **SH197** (deps: SH136 ✅) **Finish the byte-stability class** — the SH136 lint bans `Map.copyOf`/`Set.copyOf`; a hash-ordered `Map.of(…)` reaching a serialized map component is the same defect and is still unguarded. No live instance today, which is exactly when the guard is cheap. → §VIII.11
+- 💭 **SH197** (deps: SH136 ✅) **Finish the byte-stability class** — A hash-ordered Map.of reaching a serialized map component is the SH136 defect the lint does not ban, and no live instance is affected yet. → §VIII.11
 
 ## Block K — Perception & verification loop
 
@@ -264,7 +264,7 @@
 
 > ✅ **SH200 and SH201 shipped** → see [CHANGELOG.md](CHANGELOG.md) Block L.
 
-- 💭 **SH110** (deps: SH45, SH106 ✅) **Agent budget guards** — per-session call/write/storage ceilings, layered on SH45's per-tenant metering. Still blocked on SH45: building the ceiling first means a second metering mechanism to reconcile later. A runaway agent should hit a ceiling and report it, not a bill. → §XII.5
+- 💭 **SH110** (deps: SH45, SH106 ✅) **Agent budget guards** — A runaway agent should hit a per-session ceiling and report it rather than a bill, and the metering it must layer on is SH45's. → §XII.5
 - 📋 **SH222** (deps: SH55 ✅, SH200 ✅) **An agent can fill the trash and cannot read it** — Two delete ops promise a restorable trash, and no agent read, MCP tool or CLI command can list or restore it. → §XII.6
 - 📋 **SH223** (deps: SH38 ✅, SH51 ✅, SH200 ✅) **Deleting a site is SH200 one level up, and worse** — Deleting a site cascades through JPA, so every post in it skips the trash, the audit, the feed and the DELETE event. → §XII.7
 - 📋 **SH224** (deps: SH55 ✅, SH200 ✅) **A permanent deletion is the one write nobody records** — purge fires the lifecycle event and writes no audit row, so the irreversible half of the trash is the one nobody can attribute. → §XII.8
@@ -455,6 +455,8 @@
 - ⏳ **SH324** (deps: SH321 ✅) **A test fixture can model a shape the product never produces, and nothing says so** — The premise is asserted (publish keeps the draft's id, so one page is one id and one furl); what remains is the choice of instrument, since the cheap one is not cheap once it has to be sound. → §XVI.31
 - 💭 **SH294** (deps: SH290 ✅) **"Imports and renders without a migration" is still only a comment** — The class comment claims a real 2018 export imports and renders, and nothing exercises it — the bundled starter declares no layout, so it cannot. → §XVI.46
 - 💭 **SH276** (deps: SH275 ✅) **A premise about a dependency we *do not* have is unfalsifiable, and one is load-bearing** — It justifies ~1500 lines of hand-rolled protocol and cannot be asserted, because checking it means adding the dependency being evaluated. → §XVI.28
+- 💭 **SH355** (deps: —) **Half-shipped entries are invisible to the tool that owns the files** — Four lint findings and one refused retire all trace to a ledger id written as SH96 (local half), which roadkeep cannot parse. → §XVI.65
+- 💭 **SH356** (deps: SH341 ✅) **The rationale file carries the debt the roadmap just shed** — SH341 emptied the roadmap into IMPROVEMENTS, where 45 sections are over the word budget, 42 outlive the task they explain and 9 point at nothing. → §XVI.66
 
 ---
 

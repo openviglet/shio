@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.DisplayName;
@@ -86,6 +87,14 @@ class ShRoadmapLineLengthRatchetTest {
     private static final Pattern TASK =
             Pattern.compile("^\\s*-\\s+(📋|💭|⏳|🛠)\\s+\\*\\*SH\\d+\\*\\*.*");
 
+    /** roadkeep's `why` limit — the sentence between the bold symptom and the {@code →} pointer. */
+    private static final int WHY_LIMIT = 200;
+
+    /** The why, captured: id, optional deps group, bold symptom, {@code —}, the sentence, pointer. */
+    private static final Pattern WHY = Pattern.compile(
+            "^\\s*-\\s+(?:📋|💭|⏳|🛠)\\s+\\*\\*(SH\\d+)\\*\\*(?:\\s+\\([^)]*\\))?\\s+"
+                    + "\\*\\*.+?\\*\\*\\s+—\\s+(.*?)(?:\\s+→ §.*)?$");
+
     @Test
     @DisplayName("SH341: the number of over-long roadmap lines never grows")
     void theCountNeverGrows() {
@@ -107,6 +116,42 @@ class ShRoadmapLineLengthRatchetTest {
                         ceiling nobody lowers stops being a ratchet and becomes a floor.
                         %s""", over.size(), LIMIT, OVER_LIMIT, over.size(), String.join("\n", over))
                 .isLessThanOrEqualTo(OVER_LIMIT);
+    }
+
+    @Test
+    @DisplayName("SH341: and no why is longer than one sentence's worth, which the length missed")
+    void noWhyIsOverTheLimit() {
+        // The hole this closes was in the guard rather than in the file: a line under 320 characters
+        // can still carry a why over 200, because the symptom, the deps group and the pointer are
+        // most of a short line. Two lines were exactly that — SH197 at 218 and SH110 at 247 — and
+        // they survived the pass that took the count to zero, because the pass measured the line.
+        // A guard that measures one dimension of a two-dimensional rule reads as full coverage.
+        List<String> over = new ArrayList<>();
+        int parsed = 0;
+        for (String line : taskLines()) {
+            Matcher why = WHY.matcher(line);
+            if (!why.matches()) {
+                continue;
+            }
+            parsed++;
+            if (why.group(2).length() > WHY_LIMIT) {
+                over.add(why.group(1) + ": " + why.group(2).length() + " characters");
+            }
+        }
+
+        assertThat(parsed)
+                .as("""
+                        the second regex has to keep parsing the lines the first one finds, or this \
+                        passes by matching nothing — the failure every guard in this repository is \
+                        written against, and the easier one to introduce here because the shape it \
+                        parses (deps group optional, pointer optional) is roadkeep's to change""")
+                .isGreaterThan(taskLines().size() - 3);
+        assertThat(over)
+                .as("""
+                        roadkeep's own `why` limit, guarded here for the same reason the line \
+                        length is: the remainder belongs in the section the → pointer names, and \
+                        compressing it away instead of moving it is the one wrong answer.""")
+                .isEmpty();
     }
 
     @Test
