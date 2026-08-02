@@ -269,7 +269,8 @@ public class ShSecurityConfig {
                         mvc.matcher("/manifest.json"),
                         mvc.matcher("/browserconfig.xml"),
                         mvc.matcher("/content/**"),
-                        mvc.matcher("/preview/**"),
+                        // NOT /preview/** — see the note on the other chain. It was here from
+                        // before the renderer existed and made every draft anonymous-readable.
                         mvc.matcher("/sites/**"),
                         mvc.matcher(SETUP_PATH),
                         mvc.matcher(LOGIN_PATH)).permitAll();
@@ -321,7 +322,22 @@ public class ShSecurityConfig {
                                 mvc.matcher("/manifest.json"),
                                 mvc.matcher("/browserconfig.xml"),
                                 mvc.matcher("/content/**"),
-                                mvc.matcher("/preview/**"),
+                                // `/preview/**` is deliberately absent, and used to be here.
+                                //
+                                // The entry predates the renderer: it was written when `/preview`
+                                // meant something else on the legacy console, and SH183 then built
+                                // `GET /preview/{site}/{url}` on the same path — defaulting to
+                                // DRAFT. The first matching rule wins, so the preview never reached
+                                // the `anyRequest().authenticated()` its own class note says it
+                                // sits under, and every unpublished draft on the instance was
+                                // readable by anyone who could reach the port. Measured, not
+                                // reasoned: an anonymous GET answered 404 for an unknown site —
+                                // which means the request had already reached the renderer — and
+                                // 200 for `/preview/_shio/editor.js`.
+                                //
+                                // A curator's browser carries a session, so the console and the
+                                // Universal Editor are unaffected. `ShPreviewIsNotPublicTest`
+                                // refuses the next reopening.
                                 mvc.matcher("/console/**"),
                                 mvc.matcher("/*/console/**"),
                                 mvc.matcher("/graphiql/**"),

@@ -109,4 +109,21 @@ interceptor.
 - Filter order: `addFilterAfter(ShCsrfHeaderFilter, BasicAuthenticationFilter.class)` (NOT CsrfFilter.class)
 - Logout deletes cookies: `JSESSIONID`, `XSRF-TOKEN`
 - `/api/v2/csrf` must be in `permitAll()`
+- **`/preview/**` is NOT in `permitAll()`, and putting it back makes every draft public.**
+  It was there — from before the renderer existed, when `/preview` meant something else on the
+  legacy console. SH183 then built `GET /preview/{site}/{url}` on that path, defaulting to
+  `DRAFT`, and inherited the entry. The first matching rule wins, so the route never reached the
+  `anyRequest().authenticated()` that `ShRenderAPI`'s own class note says it sits under, and
+  **every unpublished draft was readable by anyone who could reach the port**. Measured rather
+  than reasoned: an anonymous GET answered **404** for an unknown site — meaning it had already
+  reached the renderer — and **200** for `/preview/_shio/editor.js`. A curator's browser carries a
+  session, so the console and the Universal Editor never noticed. `ShPreviewIsNotPublicTest`
+  refuses the next reopening, from the outside and with no credentials, because a test over the
+  config would only restate it.
+- **The general rule this is an instance of:** an allow-list entry outlives the route it was
+  written for. Both halves read correctly on their own — the entry names a path that once meant
+  something else, the new controller's comment names the rule it believes it inherits — and
+  nothing anywhere disagrees out loud. When you mount a controller on an existing path prefix,
+  the question is not "is this route safe" but **"what does the allow-list already say about this
+  prefix"**.
 
