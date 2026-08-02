@@ -134,6 +134,14 @@ Four corollaries, each paid for:
   fields that are themselves contract, collapse free text to a type token, because a golden that
   fails on a copy edit stops being read and the diff is the entire product.
 
+**When a design note hedges about a condition, check it before writing the hedge (SH250, kept by
+SH356).** That section's own last paragraph said the wiring "should be checked against the JaCoCo
+argLine, if that is ever added" — and JaCoCo sets it **today**. So surefire's late-replacement
+`@{argLine}` was load-bearing rather than defensive: `${argLine}` would have replaced JaCoCo's agent
+with Mockito's and coverage would have stopped being collected, silently. The other half of that
+task generalises further: **fixing a flake is worth more than its size suggests**, because a suite
+that goes red for no reason teaches everybody that red might mean nothing.
+
 ### Premises about code we do not own (SH274, SH275)
 
 Six claims about third-party behaviour were load-bearing and lived in comments, where a version bump

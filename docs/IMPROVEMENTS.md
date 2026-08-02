@@ -1422,50 +1422,6 @@ keys on needs deciding too, and the cheap version is likely the right one: a wri
 API class whose body touches a `*Repository.save`/`delete` directly. Precision matters less than
 the build going red the day somebody adds the fifth one.
 
-### XVI.7 The suite's mocks depend on dynamic agent attachment (SH250)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two things worth keeping.
->
-> **The hypothetical in this section's own last paragraph was already true.** It said the wiring
-> "should be checked against what Spring Boot's parent POM already sets on `argLine` (and against the
-> JaCoCo argLine, if that is ever added)". JaCoCo sets it *today* — the build prints `argLine set to
-> -javaagent:…org.jacoco.agent…` — so `@{argLine}`, surefire's late replacement, was load-bearing
-> rather than defensive: `${argLine}` would have silently replaced JaCoCo's agent with Mockito's and
-> coverage would have quietly stopped being collected. Worth generalising: when a design note hedges
-> about a condition, check whether it already holds before treating the hedge as future work.
->
-> **Fixing a flake is worth more than its size suggests.** The change is a dozen lines of POM. What
-> it buys is that a red run means something again — and the value was demonstrated immediately, since
-> SH250's own fix was verified by the *absence* of a warning, which is only a signal in a log clean
-> enough for an absence to be visible. That property was luck rather than design, and **SH271** ✅ made
-> it design → [CHANGELOG.md](CHANGELOG.md) Block P.
-
-### XVI.8 A normalization has to hold for the comparison, not just the file (SH253)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth keeping, because
-> the design got one of them wrong.
->
-> **The rule.** *Any* transformation a projection applies on the way out has to be applied to
-> the remote document on the way **in**, or the two sides are compared in different domains and
-> a value the projection cannot represent reads as an edit that never lands. The format now has
-> one boundary (`projectedPost`, called through `projectRemote` by both commands) instead of one
-> per normalization. SH145 had already reached this conclusion for `File` fields and stated it
-> in a comment; nothing generalized it, so the next normalization repeated the mistake.
->
-> **What the design got wrong.** It named "fingerprint the projected document rather than the
-> remote one" as the real answer and the alternative as what a hurry would pick. Measured, that
-> is half a fix: it turns a permanent `local-changed` into a permanent `remote-changed`. Worth
-> remembering as a *shape* — a repair that moves which side looks wrong, while leaving the
-> asymmetry that made either side look wrong, reads as a fix and passes the obvious test. The
-> regression test pulls a third time for exactly this reason.
->
-> **Why nothing caught it for four blocks.** No fixture in the suite had a CRLF in it, so every
-> round-trip assertion ran where the normalization is the identity function. A rule stated in a
-> comment, contradicted by a caller two files away, satisfied by every fixture: that combination
-> is invisible to a suite of any size, and it is the same class as SH136's byte-stability lint
-> (a defect twice-in-one-process comparison cannot see) and SH188's NULL column (a defect no
-> test that constructs the entity in Java can see).
-
 ### XVI.9 A comment claiming parity is not parity (SH254)
 
 > ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. `content-notes.mjs`' `scalar()` said it
@@ -1534,32 +1490,6 @@ the build going red the day somebody adds the fifth one.
 > declared" and a refusal was declared and a refusal happened; it was caught by reading the
 > message, which blamed the disagreement rather than the trim. So extending a guard is worth doing
 > for the reading it forces as much as for the assertions it adds, and the gap itself is §XVI.13.
-
-### XVI.14 The helper catalogue is five hardcoded lists (SH260)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth keeping.
->
-> **What got consolidated was not the names but the *shapes*.** The obvious fix — expose the
-> registered names and have the readers ask — solves the validator's list and nothing else, because
-> the scanner does not need to know *what* is registered, it needs to know how a call is written
-> (does the first token belong to the helper or is it a field?). So the registration declares a
-> shape, and that is the piece that could not have been derived: it lives in the author's head at
-> `register()` and was being reconstructed by two other classes from memory.
->
-> **The dangerous convenience was the one not to provide.** `referencesIn(template)` with no shapes
-> would be defaulting to "nothing is registered", which turns a forgotten argument into a false
-> positive from the rule that exists to catch typos. Removing the overload is what makes the omission
-> a compile error instead of a wrong finding — the same instinct as SH138 making a truncated change
-> set unrepresentable rather than merely avoided.
->
-> **Two of the new assertions were wrong before they were right**, and the reasons are worth
-> recording because both are about *order*: the engine's list is alphabetical rather than in
-> registration order (a total order per SH136, and registration order was the hand-written list's
-> accident of history), and the refusal that exercises it needs a *parameterised unknown* helper,
-> because `{{#form}}` is in `KNOWN_MISSING_HELPERS` and takes the SH247 branch instead.
->
-> What was left — the capability set being discoverable only by getting a 400 — is **SH272**, ✅ shipped
-> in turn: the signature travels with the registration and the context pack states it.
 
 ### XVI.15 A hash argument that is a field is not checked (SH261)
 

@@ -160,6 +160,13 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   in `ShRenderModelSourceTest.INVENTED`: it is optional, so an imported 2018 theme arrives without
   it and renders exactly as it did. An instance created before this gets the field from
   `POST /render/post-types/reconcile`, and `GET /render/post-types/drift` names it (SH295).
+- **What one source consolidates is the *shape*, not the names (SH260, kept by SH356)** — the
+  obvious fix for five hardcoded helper catalogues was to expose the registered names and have the
+  readers ask, and it solves the validator's list and nothing else: the SH251 scanner does not need
+  to know *what* is registered but **how a call is written** (does the first token belong to the
+  helper, or is it a field?). So `register(name, shape, helper)` declares the shape, which is the
+  piece nothing could have derived — it lived in the author's head at the registration and was being
+  reconstructed from memory by two other classes.
 - **Three more kept when their sections went (SH248, SH249, SH252 — SH356's triage)** —
   **(1) Sections are content a template reads, not a level of the render model.** Sections and
   regions differ on every axis that matters (who names them, by what key, whether they vary with the
