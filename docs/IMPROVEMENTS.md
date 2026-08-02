@@ -2572,32 +2572,6 @@ Worth settling alongside: whether `GET /api/v2/render/post-types` should report 
 type. That call already answers "can this instance render", and the caller asking it is precisely the
 one who needs to know.
 
-### XVI.57 Isolation has a price, and the list of what needs it is hand-kept (SH317, SH318)
-
-SH315's rule is right and it costs something. A distinct `spring.datasource.url` is a distinct
-**context cache key**, so every class that correctly isolates its database also boots its own Spring
-application context — twelve of them now, growing by one each time the rule is applied. That is the
-largest fixed cost in the Java suite and nobody has counted it. **SH317.**
-
-Two directions, and the first may not exist: *share a context but not a database* would need a
-per-test schema or a reset that does not dirty the context, since the URL is the cache key; *accept
-it and measure it* at least tells the next person whether the thirteenth class costs two seconds or
-twenty. Surefire already prints per-class elapsed time, so the measurement is nearly free — and it
-belongs beside SH283's lesson that the suite's own numbers must come from the run rather than from
-`target/`.
-
-**SH318** is the other half. The lint knows three instance-wide reads — `verify(null, …)`,
-`context(null, …)`, `changes(null, …)` — because those are the three that had already gone wrong.
-`find` with no site, the SH62 media listing, `GET /api/v2/site`, the SH16 post-type listing and
-`diagnostics` are instance-wide too, and a test asserting a count on any of them has the same latent
-order-dependence.
-
-That list is hand-kept, which is precisely the shape SH260 removed for helpers and SH300 for DOM
-attributes. The honest version derives it from the surface: **a read whose site parameter is nullable
-is instance-wide by construction.** Worth doing when the third or fourth name gets added by hand —
-and worth writing down now, because the lint's message reads as though the list were exhaustive when
-it is a list of the ones that have already bitten.
-
 ### XVI.31 A follow-up from the URL sweep (SH324)
 
 **SH324 — a fixture can model a shape the product cannot produce.** SH321's refusal fired on

@@ -48,6 +48,32 @@ import org.junit.jupiter.api.Test;
  * a line of this repository moving. And then the headroom: isolated contexts plus a margin must fit,
  * so the run that would have gone red announces itself while there is still room.</p>
  *
+ * <h2>What an isolated context costs, measured (SH317)</h2>
+ *
+ * <p>SH315's rule has a price and nobody had counted it. It is <b>~1.5 seconds</b> per isolated
+ * context — measured by adding a probe class that declared a datasource of its own and did nothing
+ * but boot: surefire reported <b>1.585 s</b> and <b>1.390 s</b> for it on two full runs, against
+ * 0.002 s for a class with no Spring context at all. At {@value #SECONDS_PER_CONTEXT} s each, the
+ * {@code isolatedDatabases()} count below is about <b>two fifths of a ~2 minute suite</b>.</p>
+ *
+ * <p><b>The probe was deleted rather than kept</b>, which is the whole finding in miniature: a class
+ * that exists only to measure the cost of a context would permanently consume the scarce thing this
+ * test guards, and crossing that ceiling costs correctness rather than seconds. So the number is a
+ * dated constant with its recipe beside it — SH276's shape for a premise that cannot be asserted
+ * cheaply — and it is <em>printed</em> beside the count, because a cost nobody sees is a cost nobody
+ * weighs.</p>
+ *
+ * <p><b>Do not read this from the suite's wall clock.</b> Two runs of the identical tree came in at
+ * 2:09 and 2:30, so the total is ±20 s of noise and the one-context delta is invisible in it. That is
+ * SH283's lesson one level along: the number has to come from the run <em>and</em> from the line that
+ * actually measures it.</p>
+ *
+ * <p>The other direction — share a context but not a database — stays closed: the datasource URL is
+ * part of the context cache key, so two URLs are two contexts by construction. Changing that means a
+ * schema per test class inside one URL, or a reset between classes, and both trade a 1.5 s boot for a
+ * cleanup that has to be exhaustive to be safe. At this price that trade is not worth making; the
+ * number above is what a future proposal has to beat.</p>
+ *
  * <h2>Declared limit: this counts a lower bound</h2>
  *
  * <p>A context key is the whole property set, not the datasource URL — two classes with the same URL
@@ -73,6 +99,15 @@ class ShContextCacheHeadroomTest {
      * margin that only covered "one more test" would let the real number cross while this passed.</p>
      */
     private static final int MARGIN = 8;
+
+    /**
+     * Seconds one isolated Spring context costs, measured 2026-08-02 (SH317).
+     *
+     * <p>To re-measure: add a {@code @SpringBootTest} class with a {@code jdbc:h2:mem:} URL of its
+     * own and a single trivial assertion, run the full suite, and read <em>its</em> surefire
+     * {@code Time elapsed} — not the suite total, which is ±20 s of noise. Then delete it.</p>
+     */
+    private static final double SECONDS_PER_CONTEXT = 1.5;
 
     /** Both spellings: the annotation literal and SH22's dynamic-property form. */
     private static final Pattern ISOLATED_DATASOURCE = Pattern.compile(
@@ -106,8 +141,14 @@ class ShContextCacheHeadroomTest {
         int ceiling = Integer.parseInt(properties.getProperty(MAX_SIZE, "32").trim());
         Set<String> isolated = isolatedDatabases();
 
-        System.out.printf("%n[SH347] %d isolated test databases, ceiling %d, margin %d%n  %s%n%n",
-                isolated.size(), ceiling, MARGIN, isolated);
+        // Locale.ROOT: a build log that reads "1,5 s" on one machine and "1.5 s" on another is the
+        // same defect as an unstable iteration order (P5), and it is the one printf inherits.
+        System.out.printf(java.util.Locale.ROOT,
+                "%n[SH347] %d isolated test databases, ceiling %d, margin %d%n"
+                        + "[SH317] about %.0f s of the run, at ~%.1f s a context (measured "
+                        + "2026-08-02)%n  %s%n%n",
+                isolated.size(), ceiling, MARGIN,
+                isolated.size() * SECONDS_PER_CONTEXT, SECONDS_PER_CONTEXT, isolated);
 
         assertThat(isolated.size() + MARGIN)
                 .as("""

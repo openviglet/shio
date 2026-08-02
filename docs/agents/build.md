@@ -87,6 +87,30 @@ during Block P, 974 on a clean run). So drop `-q` when the number matters, and k
 reason. Both traps are the same shape — *an artefact of an earlier command changing what a later one
 appears to say* — which is worth remembering as a class, since `target/` holds several.
 
+**What test isolation costs, measured (SH317).** SH315's rule — a test that measures the whole
+instance may not share it — means a distinct `spring.datasource.url`, and the URL is part of the
+Spring test context cache **key**, so every such class boots an application context of its own.
+The price is **~1.5 s per context**: a probe class declaring its own datasource and doing nothing but
+boot reported 1.585 s and 1.390 s on two full runs, against 0.002 s for a class with no context at
+all. At 33 isolated databases that is roughly **50 s of a ~124 s suite — about two fifths**, and it
+grows by a second and a half every time the rule is correctly applied. So the answer to "does the
+next one cost two seconds or twenty" is *about one and a half*, which is cheap enough that the rule
+stays as it is.
+
+Three things that measurement establishes, none of them obvious beforehand:
+
+- **The suite's wall clock cannot see it.** Two runs of an identical tree came in at 2:09 and 2:30,
+  so a ±20 s noise band swallows the one-context delta whole. The number has to come from the probe
+  class's own surefire line — SH283's lesson one level along.
+- **The probe must be deleted after measuring.** A class kept only to measure would permanently
+  consume the cache headroom `ShContextCacheHeadroomTest` (SH347) guards, and crossing *that* ceiling
+  evicts a context, recreates a schema mid-run and fails a later test with no defect behind it. The
+  recipe lives in that class beside the dated constant, and the count and cost print on every run.
+- **"Share a context but not a database" stays closed.** Two URLs are two contexts by construction;
+  changing that needs a schema per class inside one URL, or a reset between classes, and both trade a
+  1.5 s boot for a cleanup that has to be exhaustive to be *safe*. 1.5 s is the number such a
+  proposal now has to beat.
+
 **Skip the frontend build for backend-only work.** The three frontend executions
 bind to `generate-resources`, so a plain `mvn compile`/`test` triggers the
 (slow, Node-dependent) React build. For backend compile/test, always pass
