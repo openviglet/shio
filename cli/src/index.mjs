@@ -57,6 +57,7 @@ const COMMANDS = {
   context: () => import("./commands/context.mjs"),
   mcp: () => import("./commands/mcp.mjs"),
   resolve: () => import("./commands/resolve.mjs"),
+  impact: () => import("./commands/impact.mjs"),
   apply: () => import("./commands/apply.mjs"),
   import: () => import("./commands/import.mjs"),
   blueprints: () => import("./commands/blueprints.mjs"),
@@ -85,6 +86,7 @@ Commands:
   context        Print the agent context pack: model + sitemap + conventions (one call)
   mcp            Bridge stdio to this instance's MCP endpoint (claude mcp add shio -- shio mcp)
   resolve <addr> Resolve a content address (post:/folder:/site:/id:) to its object
+  impact <addr>  What a change to this template would affect: layouts, types, page counts
   apply [file]   Plan/apply a desired-state content document (--dry-run, --check, - for stdin)
                  or a ready-made package (--blueprint <name> --site <site>;
                   --create-site makes the site, --merge-post-types adds missing fields)

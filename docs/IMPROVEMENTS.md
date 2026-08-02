@@ -2464,22 +2464,6 @@ hand-running Maven in a tree an IDE is also compiling into. The findings hold �
 deliberately — but the *confidence* they were reported with was higher than the instrument deserved
 until SH282 and SH283 were understood.
 
-### XVI.40 The CLI cannot read a post (SH288)
-
-`shio` can resolve an address, digest a page, verify a site, list changes and print a context pack. It
-cannot show one post's content.
-
-For a *tree* that is correct and deliberate: `shio pull --content` puts every post on disk, where
-`Grep` and `Edit` are the cheapest tools an agent has (P4), and a `read` command would be a worse
-version of a file. The honest question is whether "show me this one address" is a real gap or a
-misapplied API habit — a human debugging an agent's work does type it, but they can also open the file.
-
-What that argument does **not** cover is SH262's `impact`, because the projected file holds none of it:
-the blast radius is computed from the site's bindings, not stored in the post, so there is no file to
-read it out of and a terminal user has no path to it at all. So the smaller and better-justified shape
-may be `shio impact <address>` — one question the files genuinely cannot answer — rather than a general
-`read` that duplicates the projection. Decide which before building either.
-
 ### XVI.46 "Imports and renders without a migration" is still only a comment (SH294)
 
 SH290 asserts that the render model matches its 2018 source — the half that was actually wrong. The

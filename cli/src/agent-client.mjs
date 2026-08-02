@@ -270,10 +270,14 @@ export class ShioAgentClient {
    * it exists to replace.
    *
    * @param {string[]} addresses
+   * @param {{ include?: string }} [options] SH288 — `include=impact` attaches each template's
+   *   blast radius (SH262). Absent by default: the projection asks for content, and a section
+   *   nobody requested is bytes every `pull --content` slice would pay for.
    */
-  async read(addresses) {
+  async read(addresses, options = {}) {
     const params = new URLSearchParams();
     for (const address of addresses) params.append("address", address);
+    if (options.include) params.set("include", options.include);
     const url = `${this.baseUrl}/api/v2/agent/read?${params.toString()}`;
     const res = await this.fetch(url, {
       method: "GET",
