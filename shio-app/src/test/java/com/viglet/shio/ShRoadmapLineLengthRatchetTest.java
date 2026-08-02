@@ -40,9 +40,10 @@ import org.junit.jupiter.api.Test;
  * may not rise. A new long line fails; shortening one and not updating the number here fails too,
  * which is what keeps the ceiling honest as SH341's editorial half proceeds.</p>
  *
- * <p><b>It is not `roadkeep lint`.</b> That tool owns the writes and reports all of this (249
- * findings today, 47 of them {@code why.too-long}), but it is a Python CLI a clean-room build has no
- * reason to have installed — so the gate here re-derives the one number it can from the file itself.
+ * <p><b>It is not `roadkeep lint`.</b> That tool owns the writes and reported all of this — 249
+ * findings when this was written, 130 after the pass below, since every {@code why.too-long} and
+ * {@code line.too-long} went with it — but it is a Python CLI a clean-room build has no reason to
+ * have installed, so the gate here re-derives the one number it can from the file itself.
  * Same reasoning as SH290 reading {@code import/post-types.json}: the artefact is in the repository,
  * so the assertion needs nothing that is not.</p>
  *
@@ -61,13 +62,21 @@ class ShRoadmapLineLengthRatchetTest {
      * <p>Lower it when you shorten one. Never raise it: a new line over the limit belongs in
      * IMPROVEMENTS.md, which is what the {@code →} pointer addresses.</p>
      *
-     * <p><b>45 → 42 within an hour of being written</b>, and not by an editorial pass: roadkeep
-     * refuses to <em>ship</em> a task whose line — or whose dependents' lines, which shipping
-     * re-annotates — is over the limit, so SH341's own line, SH275's and SH276's each had to become
-     * one sentence before the work they described could be recorded. That is the ratchet working
-     * through the tool rather than through anybody's memory, which is what it was for.</p>
+     * <p><b>45 → 42 → 4.</b> The first three came from the tool rather than from anybody's memory:
+     * roadkeep refuses to <em>ship</em> a task whose line — or whose dependents' lines, which
+     * shipping re-annotates — is over the limit, so SH341's own line, SH275's and SH276's each had
+     * to become one sentence before the work they described could be recorded. The rest was SH341's
+     * editorial pass, 38 lines cut to a sentence each after checking that the section at the other
+     * end of the {@code →} actually carried the reasoning.</p>
+     *
+     * <p><b>The four that remain are the hard cases, and they are hard for two different reasons.</b>
+     * SH140 and SH265 have no {@code → §} pointer at all, so their rationale has to be <em>moved</em>
+     * before the line can be cut — writing the section is the work, not shortening the line. SH213
+     * and SH220 point at sections of 129 and 145 words, thin enough that the line may be carrying
+     * something the section does not. Cutting either blind is how a compression loses an argument,
+     * which is the failure SH341 exists to avoid rather than commit faster.</p>
      */
-    private static final int OVER_LIMIT = 42;
+    private static final int OVER_LIMIT = 4;
 
     /** A task line: marker, bold id. The blockquote prose between them is not governed by this. */
     private static final Pattern TASK =
