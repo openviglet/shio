@@ -136,9 +136,37 @@ test("an address resolves against the site's configured URL; a URL is taken as g
   );
   assert.equal(resolveUrl("https://x.test/y", sites).url, "https://x.test/y");
   // Never a guessed origin: a screenshot of the wrong host is a plausible-looking artifact.
-  assert.match(resolveUrl("post:Docs/guide", sites).error, /no front-end URL configured/);
   assert.match(resolveUrl("post:Other/x", sites).error, /not one this instance reports/);
   assert.match(resolveUrl("folder:Blog/blog", sites).error, /is not a page/);
+});
+
+test("SH265: a site with no front end is photographed through the instance's own preview", () => {
+  const sites = new Map([["Blog", "https://blog.example.com/"], ["Docs", ""]]);
+  const at = { previewBase: "http://localhost:2710" };
+
+  // This used to be an error — "there is no page to photograph" — which Block P made false:
+  // SH183 renders the page out of content the instance already holds, and SH184 stopped the
+  // *server* saying the same thing. The refusal was that premise left standing one process on.
+  const docs = resolveUrl("post:Docs/guide", sites, at);
+  assert.equal(docs.url, "http://localhost:2710/preview/Docs/guide");
+  assert.equal(docs.preview, true);
+
+  // A site that has a front end still resolves against it, because the live page is what a
+  // reader means by "what the site looks like".
+  assert.equal(resolveUrl("post:Blog/blog/hello", sites, at).url, "https://blog.example.com/blog/hello");
+
+  // …unless asked for the draft, which is the only thing a live URL cannot serve.
+  const draft = resolveUrl("post:Blog/blog/hello", sites, { ...at, preview: true });
+  assert.equal(draft.url, "http://localhost:2710/preview/Blog/blog/hello");
+  assert.equal(draft.preview, true);
+
+  // A site name is a path segment here, so it is encoded — a name with a slash would otherwise
+  // photograph a different page and say nothing about it.
+  const spaced = resolveUrl("post:My Site/x", new Map([["My Site", ""]]), at);
+  assert.equal(spaced.url, "http://localhost:2710/preview/My%20Site/x");
+
+  // And with nowhere to fall back to, it still refuses rather than inventing an origin.
+  assert.match(resolveUrl("post:Docs/guide", sites, {}).error, /cannot fall back to its preview/);
 });
 
 // --- the command ---
@@ -164,6 +192,43 @@ test("a change keeps the displaced baseline as .prev.png and still exits 0", asy
   assert.equal(String(ctx.written["shio/snapshots/blog-blog-hello.png"]), "AFTER");
   assert.match(ctx.stdout.text, /CHANGED/);
   assert.match(ctx.stdout.text, /previous: /);
+});
+
+test("SH265: a front-endless site is captured from the preview, with credentials and a note", async () => {
+  const seen = [];
+  const ctx = ctxWith({
+    capture: async (url, _flags, credentials) => {
+      seen.push({ url, credentials });
+      return Buffer.from("AFTER");
+    },
+  });
+  const result = await snapshot.run({}, ["post:Docs/guide"], ctx);
+
+  assert.equal(result.url, "http://shio.test/preview/Docs/guide");
+  assert.equal(seen[0].url, "http://shio.test/preview/Docs/guide");
+  // SH359 closed the preview, so the browser has to authenticate like everything else the CLI
+  // does. Without this the capture would be a photograph of the login page — which compares
+  // stably against itself and would read as "unchanged" forever.
+  assert.deepEqual(seen[0].credentials, { user: "admin", password: "secret" });
+  // The reader is told the picture is a DRAFT with a banner on it, because the image cannot say
+  // so and a reviewer diffing it against production would otherwise blame the stripe on the site.
+  assert.match(ctx.stdout.text, /preview: http:\/\/shio\.test\/preview\/Docs\/guide \(DRAFT/);
+});
+
+test("SH265: a site with a front end is captured from it, and gets no credentials", async () => {
+  const seen = [];
+  const ctx = ctxWith({
+    capture: async (url, _flags, credentials) => {
+      seen.push({ url, credentials });
+      return Buffer.from("AFTER");
+    },
+  });
+  await snapshot.run({}, ["post:Blog/blog/hello"], ctx);
+
+  assert.equal(seen[0].url, "https://blog.example.com/blog/hello");
+  // The one that matters: a public host must never be handed the instance's admin password
+  // because one command happens to photograph both.
+  assert.equal(seen[0].credentials, null);
 });
 
 test("--fail-on-change is the opt-in gate", async () => {

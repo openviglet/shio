@@ -117,8 +117,26 @@ export function describe(result, { slug, path, diffPath } = {}) {
  * context pack carries — the same source `shio report` uses for preview links, and for the same
  * reason: the CLI must never guess an origin, because a screenshot of the wrong host is a
  * plausible-looking artifact that costs a reviewer their trust in the rest.
+ *
+ * ## A site with no front end is photographed by Shio itself (SH265)
+ *
+ * <p>This used to refuse: *"Site X has no front-end URL configured, so there is no page to
+ * photograph."* It was true when written, and Block P made it false — SH183 renders
+ * `/preview/{site}/{url}` out of content the instance already holds, and SH184 stopped the server
+ * answering `400 site has no url` for exactly this reason. The refusal is the same premise left
+ * standing one process along: an agent that had just built a site was told its work could not be
+ * seen, by the tool whose whole job is to show it.
+ *
+ * <p>So the instance's own preview is the fallback, and `--preview` forces it even for a site that
+ * *has* a front end — which is the only way to photograph a **draft**, since a live URL serves
+ * what is published. The picture carries the preview banner: it is inline-styled and deliberately
+ * unhideable (P7), and it is in the baseline as well as in the capture, so a diff still means
+ * what it says.
+ *
+ * @param sites   site name → public base URL, or `""` when none is configured
+ * @param options `previewBase` — the instance's own origin; `preview` — force the preview
  */
-export function resolveUrl(target, sites) {
+export function resolveUrl(target, sites, options = {}) {
   const raw = String(target ?? "").trim();
   if (/^https?:\/\//.test(raw)) {
     return { url: raw };
@@ -136,11 +154,21 @@ export function resolveUrl(target, sites) {
   if (origin === undefined) {
     return { error: `Site "${site}" is not one this instance reports. Check the name, or pass a URL.` };
   }
-  if (!origin) {
+  const previewBase = options.previewBase ? String(options.previewBase).replace(/\/+$/, "") : "";
+  if (options.preview || !origin) {
+    if (!previewBase) {
+      return {
+        error:
+          `Site "${site}" has no front-end URL configured, and this command was not told where\n` +
+          `the instance is, so it cannot fall back to its preview. Pass --url, set SHIO_URL, or\n` +
+          `pass the page URL directly: shio snapshot https://…${path}`,
+      };
+    }
+    // `/preview` renders DRAFT, which is the state the picture is usually wanted in: a curator
+    // asks "does my change look right", and the published page is by definition not the change.
     return {
-      error:
-        `Site "${site}" has no front-end URL configured, so there is no page to photograph.\n` +
-        `Set the site's URL in the console, or pass the URL directly: shio snapshot https://…${path}`,
+      url: `${previewBase}/preview/${encodeURIComponent(site)}${path}`,
+      preview: true,
     };
   }
   return { url: `${String(origin).replace(/\/+$/, "")}${path}` };

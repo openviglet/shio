@@ -65,6 +65,13 @@ open = ["📋", "💭", "⏳", "🛠"]
 shipped = "✅"
 retired = "🗑"
 
+# Declared at all means governed (SH265). The roadmap already carried eight non-goals as free
+# prose and `non-goal add` refused to write the ninth, so the list the project calls *binding* was
+# the one part of the file no schema and no lint reached — which is the argument for the table
+# rather than a reason to hand-edit around it. The two limits are left at their defaults: the
+# eight that exist already fit.
+[non_goals]
+
 [ledger]
 # The two slots Shio's ledger lines do not have: no marker, because the file itself is the
 # statement that the work shipped (RK43), and no bold symptom, because every entry is

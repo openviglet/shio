@@ -36,8 +36,12 @@ export async function run(flags, positionals, ctx) {
     );
   }
 
+  const admin = resolveAdmin(flags, ctx.env);
   const sites = /^https?:\/\//.test(String(target)) ? new Map() : await siteUrls(flags, ctx);
-  const resolved = resolveUrl(target, sites);
+  const resolved = resolveUrl(target, sites, {
+    previewBase: admin.baseUrl,
+    preview: flags.preview === true,
+  });
   if (resolved.error) {
     throw new Error(`shio snapshot: ${resolved.error}`);
   }
@@ -47,7 +51,12 @@ export async function run(flags, positionals, ctx) {
   const path = join(dir, `${slug}.png`);
   const diffPath = join(dir, `${slug}.diff.png`);
 
-  const shot = await capture(resolved.url, flags, ctx);
+  // The preview is authenticated (SH359 closed it), so the browser needs the same credentials the
+  // rest of the CLI uses. Passed only for the instance's own origin: handing a site's public host
+  // an admin password because one command happens to photograph both would be a credential leak
+  // nobody asked for.
+  const shot = await capture(resolved.url, flags, ctx,
+    resolved.preview ? { user: admin.user, password: admin.password } : null);
   const before = await readIfPresent(ctx, path);
   const result = compareSnapshots(before, shot, { compare: await comparator(ctx) });
 
@@ -59,6 +68,12 @@ export async function run(flags, positionals, ctx) {
   }
 
   ctx.stdout.write(`${describe(result, { slug, path, diffPath: wroteDiff })}\n`);
+  if (resolved.preview) {
+    // Said out loud, because the picture is not of the site a visitor sees: it is the DRAFT
+    // through Shio's own renderer, banner and all. A reader comparing it against production and
+    // finding a stripe across the top should learn that here rather than from the image.
+    ctx.stdout.write(`  preview: ${resolved.url} (DRAFT, with the preview banner)\n`);
+  }
   if (result.status === "changed" && !flags.accept) {
     // The previous image is kept beside the new one, because the artifact a human wants is
     // "before and after", not "after plus a percentage".
@@ -123,9 +138,9 @@ async function siteUrls(flags, ctx) {
  * Playwright, and the parts of this command worth pinning are the comparison, the baseline
  * rotation and the exit code.
  */
-async function capture(url, flags, ctx) {
+async function capture(url, flags, ctx, credentials) {
   if (typeof ctx.capture === "function") {
-    return ctx.capture(url, flags);
+    return ctx.capture(url, flags, credentials);
   }
   const playwright = await load("playwright", ctx);
   const width = Number(flags.width ?? 1280);
@@ -135,6 +150,11 @@ async function capture(url, flags, ctx) {
     const page = await browser.newPage({
       viewport: { width, height },
       deviceScaleFactor: 1,
+      // Basic, which is what the preview accepts and what `resolveAdmin` already holds. Absent
+      // for any other origin — see the call site.
+      ...(credentials?.user
+        ? { httpCredentials: { username: credentials.user, password: credentials.password ?? "" } }
+        : {}),
       // A caret blinking in a focused field, or a date rendered in the runner's timezone, are
       // both changes nobody made.
       reducedMotion: "reduce",

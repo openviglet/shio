@@ -380,7 +380,6 @@
 > over the CDA (P10), and what lands here is **preview-grade** until that is deliberately
 > revisited.
 
-- 📋 **SH265** (deps: SH187 ✅) **A raster is still the only answer to most of "looks wrong"** — SH187 reads what the document declares, and overlap, contrast, truncation and anything responsive need a layout engine the server has so far refused to run. → §XV.22
 > ✅ **SH189 is complete (with SH267 and SH268)** → see [CHANGELOG.md](CHANGELOG.md) Block P: import teaches, is reachable by a stateless caller, classifies from a kind rather than from prose, and `shio import` accepts a package — the MCP half is CLI-shaped by construction and the P1 inventory says so.
 
 > **Opened by building SH183 (SH247–SH251).** Four are the renderer's own unfinished edges;
@@ -530,3 +529,7 @@ rationale. Summary:
   base; React is one consumer.
 - **Don't optimize a benchmark by degrading correctness** — a terse response that
   omits something the agent must then ask for twice is a regression, not a win.
+- **The instance does not run a browser.** Raster stays in the CLI — SH102's shio
+  snapshot, Playwright an optional dynamic import — because that is where the agent
+  already has a shell (P4) and where the human opens the PNG. Chromium per request is a
+  different operational thing, and the diff ratio is a number the CLI already computes.

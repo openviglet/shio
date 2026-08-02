@@ -1189,29 +1189,6 @@ is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that exis
 > write-time refusal naming SH247, so the author is told the capability is absent rather than
 > shipping a page with a silently missing block.
 
-### XV.22 A raster is still the only answer to most of "looks wrong" (SH265)
-
-SH187 extracts the appearance surface the *document* carries — class inventory, unstyled
-classes, inline styles, images without size, external sheets — and hashes it separately,
-so a restyle and a structural break are distinguishable. The honest limit is everything
-that needs a layout engine to be true or false: overlap, contrast, truncation, a broken
-grid, anything responsive.
-
-The pieces for the rest exist. SH102's `shio snapshot` rasterizes, with Playwright as an
-*optional* import so `@viglet/shio` never pulls a browser, and SH249 made the input free
-by giving the renderer its own HTML. So the open question is not how to take the
-picture.
-
-**It is who reads it and where it lives.** An image on the agent surface is tokens an agent mostly
-cannot use; the pixel diff SH102 already computes is a *number* it can. That points at a shape —
-snapshot the rendered HTML server-side, return the diff ratio plus a signed URL a human can open —
-with two costs the design must accept first. It needs the SH25 signing path, so the URL is
-time-bounded rather than a permanent hole. And it needs a decision this product has avoided: **may an
-instance run a browser at all?** SH102 kept Playwright optional precisely to leave that open, because
-a server rendering pages in Chromium is a different operational thing from one that does not.
-
-Answer that first; the endpoint is small once it is answered.
-
 ## XVI. The human half (Block O) — what reading the console next found
 
 Block O shipped, and its lesson was that **console defects answer `200`**: seven of them, none
