@@ -2196,24 +2196,6 @@ the build going red the day somebody adds the fifth one.
 > `PER_CLASS` fixture and broke two unrelated assertions in the same class. In a shared fixture every
 > mutating test is an input to the others — SH239's confound, one class along.
 
-### XVI.19 The benchmark measures one site's shape, and a real site is not this shape (SH312)
-
-SH264's fixture is one layout, two regions, one theme, ten pages and **no helpers**. That was enough
-to answer "is anything reused" — it was not — and SH311 has since made a sweep cost 6 queries a page
-instead of 19.
-
-It is not enough to answer *what does a real sweep cost*, because helpers are the part that varies
-without bound: a listing region calls `{{#query limit=10}}`, which is a query per page **plus** the
-rows it reads, and a section-composed page reads a post per `{{#getRelation}}` entry. Those reads are
-per-*page* by nature — they depend on the page's own field values — so SH311's cache does not touch
-them, and the 6 is a floor for the simplest page there is.
-
-Worth extending the fixture with a listing region and a section-composed page, and recording both
-numbers beside the current ones. Worth doing **after** SH311 rather than with it, because the cache
-changed which number is the interesting one — and it will change again if anyone caches helper
-results, which is a much harder question (a listing's rows are content, so a cache there is a
-freshness decision rather than a resolution one).
-
 ### XVI.21 A frame is evidence for one incident kind and absent for three (SH269)
 
 > ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two things worth keeping, one of which is a
@@ -2649,6 +2631,27 @@ written into `agents.md` beside the measure-first rule:
 
 Writing the lint first would have found the ninth site before it was written rather than after, and
 it costs nothing extra: the lint was going to exist anyway.
+
+### XVI.65 A URL-keyed relation reads the whole site once per entry (SH353)
+
+SH312 set out to measure two things it had already reasoned about — a listing region
+reads per page, a relation reads a post per entry — and both held: `{{#query limit=10}}`
+costs +2 a page, and five sections stored as **ids** cost +5, exactly one lookup each.
+
+The row nobody had predicted is the same five sections stored as **friendly URLs**: +10,
+two queries an entry. `resolveReference` tries `findById` first (SH181's
+declared-key-wins order), and a URL is not an id, so every entry pays that miss and then
+a `findByShSite_IdAndStateIn` — the whole site's rows, read again per entry, to filter
+for one `furl` in memory.
+
+Both shapes are ordinary: a `Content Select` holds an id, an SH95 `Multi Select` of
+sections holds friendly URLs. So the page an author is most likely to build out of
+sections is the expensive one.
+
+What makes this cheap rather than the hard question SH312 deferred: this site-wide read is a
+**resolution** — which post does this URL name — and not a listing's rows, so SH316's
+`ShReadOnlyTransactionCache` applies unchanged, staleness unable to outlive the transaction. One site
+read per render instead of one per entry, and the benchmark that would show it already exists.
 
 ## XVI.58 What an end-to-end MCP build of a site actually costs (SH325–SH332)
 
