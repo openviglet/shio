@@ -148,11 +148,25 @@ public class ShRenderHelpers {
      * they yield the same row; a form yields something categorically different — a post-type's
      * *declaration* rather than a post — and pretending otherwise would buy one shared set at the
      * cost of the property the shared set exists for, since a card body written for
-     * {@code {{#query}}} is meaningless over a field. Two shapes, each honest, and SH251's lint
-     * reads both rather than warning on a correct template.</p>
+     * {@code {{#query}}} is meaningless over a field. Two shapes, each honest, and SH251's lint asks
+     * {@link #rowKeysFor} which one applies rather than warning on a correct template.</p>
      */
     public static final Set<String> FORM_FIELD_KEYS =
             Set.of("name", "label", "widget", "input", "required", "ordinal");
+
+    /**
+     * The row keys a block of this helper yields — the question SH251's lint has to ask.
+     *
+     * <p>Declared here for {@link #ROW_KEYS}' own reason, and it exists because the second row
+     * shape arrived without it: {@code FORM_FIELD_KEYS} was declared, documented as "the lint
+     * reads both", and read by nothing, so {@code {{label}}} in a correct {@code {{#form}}} body
+     * was reported as an undeclared field. Exactly the failure the row-keys comment above warns
+     * about — a restatement of the capability set whose drift shows up as a warning on a correct
+     * template — committed while adding the set that was meant to prevent it.</p>
+     */
+    public static Set<String> rowKeysFor(String scope) {
+        return "form".equals(scope) ? FORM_FIELD_KEYS : ROW_KEYS;
+    }
 
     @PostConstruct
     void register() {

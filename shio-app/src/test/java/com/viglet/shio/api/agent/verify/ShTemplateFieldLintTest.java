@@ -89,7 +89,10 @@ class ShTemplateFieldLintTest {
             <ul>{{#query type="%s" limit=5}}
               <li><a href="{{link}}">{{title}}</a> <span>{{summary}}</span> <em>{{BODY}}</em>
               <b>{{nosuchfieldanywhere}}</b></li>
-            {{else}}<li>none</li>{{/query}}</ul>""";
+            {{else}}<li>none</li>{{/query}}</ul>
+            <form>{{#form type="%s"}}<label for="{{name}}">{{label}}</label>
+              <input type="{{input}}" data-w="{{widget}}" data-o="{{ordinal}}"
+              {{#if required}}required{{/if}}>{{/form}}</form>""";
 
     @Autowired
     private ShAgentVerifyService verifyService;
@@ -129,7 +132,7 @@ class ShTemplateFieldLintTest {
 
             post(site, root, layoutType, LAYOUT, "/layout", json("HTML", LAYOUT_HTML), when);
             post(site, root, regionType, REGION, "/region",
-                    json("HTML", REGION_HTML.formatted(pageType)), when);
+                    json("HTML", REGION_HTML.formatted(pageType, pageType)), when);
             post(site, root, page, "Home", "/",
                     json("TITLE", "Home", "SUMMARY", "s", "BODY", "<p>b</p>", "HERO", ""), when);
         });
@@ -140,6 +143,20 @@ class ShTemplateFieldLintTest {
         return report.findings().stream()
                 .filter(finding -> "template-unknown-field".equals(finding.rule()))
                 .toList();
+    }
+
+    @Test
+    @DisplayName("SH247: a correct {{#form}} body is not a pile of undeclared fields")
+    void aFormBodyIsReadAgainstTheFormsOwnKeys() {
+        // `{{#form}}` yields a post-type's *declaration*, so its row keys are not a listing's.
+        // The set existed and was read by nothing, which meant `{{label}}`, `{{input}}`,
+        // `{{widget}}` and `{{ordinal}}` in a perfectly correct form were each reported as a
+        // field no post-type declares. That is the one failure a field lint cannot afford: an
+        // author who meets a false finding stops reading the true ones — and it is precisely the
+        // drift the row-keys comment warns about, committed while adding the second set.
+        assertThat(templateFindings())
+                .extracting(Finding::field)
+                .doesNotContain("label", "input", "widget", "ordinal", "required");
     }
 
     @Test
