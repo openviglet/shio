@@ -369,7 +369,11 @@ a scoped credential cannot use the error to prove a site exists.
   also the security argument** (SH190, kept here by SH356): arguments are *content*, and content in a
   diagnostics feed is how a log leaks what the ACL exists to protect — which is why the trimming is
   the design rather than an optimisation, and what makes a frame cheap enough to attach to every
-  incident. A **log-tailing tool
+  incident. **And the absence of a frame is itself signal (SH269, kept by SH356)**: four of the five
+  recorders pass one, and the webhook's give-up branch does not, because delivery completed and the
+  *subscriber* rejected it — there is no exception of ours and nothing in Shio to point at. SH190 set
+  that as a technicality about honesty; the field's presence now distinguishes "we failed" from "they
+  refused". A **log-tailing tool
   was rejected** for SH103's three reasons: it hands over every request's data to answer a question
   about one, it is a per-deployment path, and it cannot be scoped by the SH2 allow-list or the SH54
   ACL. `frames` is **absent, not empty**, when there is nothing of ours in the trace (a request
