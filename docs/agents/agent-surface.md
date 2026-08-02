@@ -64,6 +64,46 @@ is a **teaching error** (an empty projection is indistinguishable from an empty 
 next move would be to overwrite real content with nothing), and why the response **echoes which fields
 came back**: a few tokens that remove an "is this all of it?" round trip.
 
+**Five rules the write surface is built on (SH81/SH82, moved here from IMPROVEMENTS by SH356).**
+**(1) A dry run must not write.** The tempting implementation — apply, then roll back — is wrong for
+a reason that outlives this endpoint: by the time the rollback is decided, the audit rows, lifecycle
+events and quota counters have already happened. Anything calling itself a *plan* has to be
+**computed**, which means modelling what earlier steps in the same plan would have created. Every
+later `--dry-run`/`plan` surface inherits this — SH93's blueprints, SH108's confirm tokens.
+**(2) The plan and the apply are the same code path**, differing only in a flag: `plan` is literally
+`apply(dryRun=true)`. The one early version that let them diverge — a dry-run shortcut that also
+fired in real runs — silently skipped a publish, which is the failure that makes a plan worthless.
+**(3) Imperative and declarative are both needed, and one is built on the other.** A batch answers
+"do this now"; a document answers "this is the site", and only the second survives a context
+compaction, because it does not require the agent to remember what it already did. The document stays
+a **compiler over the ops** rather than a second engine (P10). **(4) Destructive scope is declared,
+never inferred**: `prune` deletes only inside the folders the document declares and declaring none is
+an error, because a blast radius depending on what the author forgot to mention is the definition of
+a surprise (P7). The tri-state `publish` follows the same rule — absent means *leave it alone*, since
+treating a trimmed field as `false` would unpublish live pages. **(5) When the console and the agent
+perform the same content verb, one of them delegates** — the rule SH245 is still trying to make a
+lint.
+
+**And the lesson those five were paid for three times.** A write vocabulary designed against *build
+a site* will be missing the verbs for *change a site*, which is the harder half. All three gaps this
+engine shipped with — no way to move a post (SH134), a prune that could not remove a folder (SH135),
+no way to move a folder (SH137) — were invisible while building and obvious the first time a section
+was renamed. The third shows it is not coincidence: building a site never needs it, and its absence
+pushed callers to `folder.upsert` + `folder.delete`, which takes the subtree. **When a vocabulary
+lacks a verb, callers do not stop — they compose the nearest destructive pair.**
+
+**Three rules every address-taking surface inherits (SH79, moved here by SH356).** **(1) A capability
+is not the same as a payload field.** Read naively, "path addressing everywhere" means putting an
+`address` on every row — which would have turned this block's biggest *token lever* into a token
+**regression**, since a row already carries the site, path and url the address is built from. The
+grammar is stated once in the conventions and the resolver makes it actionable; before adding a
+field, check whether the caller can already derive it. **(2) Folder paths and post URLs are two
+namespaces** — a folder path is a chain of folder names, a `furl` is arbitrary. The scheme says which
+is meant, and the lenient `site:` form **refuses to guess** when both are occupied, because an
+"upsert this path" write that guessed would create content in the wrong place silently.
+**(3) Absent, not forbidden**: an address outside the SH2 allow-list resolves **404, never 403**, so
+a scoped credential cannot use the error to prove a site exists.
+
 - `GET /agent/resolve?address=…` — an address → an object id, for id-keyed endpoints.
 - `POST /agent/batch` — **writes**: N addressed ops (`site.upsert`, `folder.upsert`,
   `folder.move`, `post.upsert`, `post.move`, `post.publish`, `post.unpublish`, `folder.delete`,
@@ -484,6 +524,16 @@ gaps, and **four had no task at all** before this ran: `locales` and `scheduledP
 id-keyed post verbs with no address-native form), `webhooks` (SH343) and `previewTokens` (SH344).
 That is the return on the instrument, and it is the argument for building one before working the
 thirteen known instances by hand.
+
+**Translate dialects first, correct spelling second (SH80, moved here by SH356).** Nearest-string
+matching is silent on exactly the guess an agent is most likely to make: `RichText` is four edits
+from `Text` and further from every other widget, because it is a **vocabulary** mismatch — the
+Contentful/Sanity/Strapi/Payload dialects — rather than a spelling one, so a `didYouMean` built only
+on edit distance answers nothing in the common case. The fix is a curated alias map consulted
+**before** the distance fallback (`ShWidgetAliases`), constrained to only ever suggest a target this
+instance has installed. The rule generalises wherever a closed vocabulary meets a caller who learned
+a different one; the surfaces that still have only the distance fallback are post-state names, locale
+codes and the blueprint parameter vocabulary.
 
 **And a benchmark over a correct script cannot see what an agent gets wrong (SH340).**
 `ShAgentTaskBenchmarkTest` measures call and token ratios over a canonical task, which means it

@@ -456,7 +456,7 @@
 - 💭 **SH294** (deps: SH290 ✅) **"Imports and renders without a migration" is still only a comment** — The class comment claims a real 2018 export imports and renders, and nothing exercises it — the bundled starter declares no layout, so it cannot. → §XVI.46
 - 💭 **SH276** (deps: SH275 ✅) **A premise about a dependency we *do not* have is unfalsifiable, and one is load-bearing** — It justifies ~1500 lines of hand-rolled protocol and cannot be asserted, because checking it means adding the dependency being evaluated. → §XVI.28
 - 💭 **SH355** (deps: —) **Half-shipped entries are invisible to the tool that owns the files** — Four lint findings and one refused retire all trace to a ledger id written as SH96 (local half), which roadkeep cannot parse. → §XVI.65
-- ⏳ **SH356** (deps: SH341 ✅) **The rationale file carries the debt the roadmap just shed** — The triage is decided and instrumented; 39 sections remain, each needing a reading to say whether it is a standing rule or history. → §XVI.66
+- ⏳ **SH356** (deps: SH341 ✅) **The rationale file carries the debt the roadmap just shed** — The triage is decided and instrumented; 35 sections remain, each needing a reading to say whether it is a standing rule or history. → §XVI.66
 
 ---
 
