@@ -41,6 +41,30 @@ reason and with one difference that matters: a section gate **cannot** start at 
 gate ended, because dropping a section is destructive where shortening a line is not. It may only
 fall, and it falls when somebody has read the section and decided which of the two kinds it is.
 
+### The four line-level defects, and the hole they exposed (SH356)
+
+Beside the sections sat four findings that are **corruption, not prose**, and three had exactly one
+correct reading: two `U+0008` control characters — in the entry *describing* a bug where `\b` in a
+Java string literal was a real backspace, which acquired the same bug while explaining it — a link to
+`ShAgentTokenHeaderFilter`, renamed to `ShEstTokensHeaderFilter` in `8b60084a`, and a note
+(`- **SH110** … is not in this block`) that was never an entry and is a `>` note now. All three are
+repaired. The fourth, a duplicate `SH347`, is **two deliveries under one id** — the unplanned raise
+of the context-cache ceiling, and the later work that made the ceiling visible — and it stays.
+
+**What is worth carrying forward is why they survived so long.** `lint --fix` does not touch them,
+and the reason is that *nothing can*: every write verb takes a whole entry, and the damage is a
+character inside one somebody wrote correctly. The guard's refusal names four commands — `ship`,
+`record add`, `record drop`, `retire` — and none of them opens. `record drop` even looks like the
+answer for the duplicate and is not: it removes the **later** entry, which here is the one that
+earned the id from a roadmap line. Filed upstream as **RK126** (no verb repairs an entry's interior)
+and **RK127** (two entries for one id are not always one entry twice).
+
+**And the guard has one side open — do not read this as permission.** It denies `Edit` and `Write` on
+a governed path and answers a `Bash` payload with silence, so `sed`, `python -c` or a heredoc
+rewrites the ledger with no refusal (**RK128**). The three repairs above went through that hole
+deliberately, once, with the user's decision on the record and `roadkeep lint` run afterwards to
+prove the file still parses. The rule is unchanged: if a verb exists, use the verb.
+
 ## Roadmap & docs maintenance
 
 The roadmap lives in `docs/`, **split across three files that must be kept in
