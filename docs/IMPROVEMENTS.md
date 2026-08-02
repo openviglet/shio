@@ -2632,27 +2632,6 @@ written into `agents.md` beside the measure-first rule:
 Writing the lint first would have found the ninth site before it was written rather than after, and
 it costs nothing extra: the lint was going to exist anyway.
 
-### XVI.65 A URL-keyed relation reads the whole site once per entry (SH353)
-
-SH312 set out to measure two things it had already reasoned about — a listing region
-reads per page, a relation reads a post per entry — and both held: `{{#query limit=10}}`
-costs +2 a page, and five sections stored as **ids** cost +5, exactly one lookup each.
-
-The row nobody had predicted is the same five sections stored as **friendly URLs**: +10,
-two queries an entry. `resolveReference` tries `findById` first (SH181's
-declared-key-wins order), and a URL is not an id, so every entry pays that miss and then
-a `findByShSite_IdAndStateIn` — the whole site's rows, read again per entry, to filter
-for one `furl` in memory.
-
-Both shapes are ordinary: a `Content Select` holds an id, an SH95 `Multi Select` of
-sections holds friendly URLs. So the page an author is most likely to build out of
-sections is the expensive one.
-
-What makes this cheap rather than the hard question SH312 deferred: this site-wide read is a
-**resolution** — which post does this URL name — and not a listing's rows, so SH316's
-`ShReadOnlyTransactionCache` applies unchanged, staleness unable to outlive the transaction. One site
-read per render instead of one per entry, and the benchmark that would show it already exists.
-
 ## XVI.58 What an end-to-end MCP build of a site actually costs (SH325–SH332)
 
 An agent connected over the `shio mcp` stdio bridge and built a working site from nothing — a

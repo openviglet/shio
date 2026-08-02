@@ -72,11 +72,15 @@ import jakarta.persistence.PersistenceContext;
  *   plain                        5
  *   listing  {{#query limit=10}} 7   +2 a page
  *   sections by id  (5 entries) 10   +5 — one lookup per entry, exactly as filed
- *   sections by url (5 entries) 15  +10 — TWO per entry
+ *   sections by url (5 entries) 15  +10 — TWO per entry, which nobody had predicted
  * </pre>
  *
  * <p>Both claims in SH312 hold and the per-entry cost is what it predicted. The fourth row is the
- * one nobody had predicted, and it opened SH353.</p>
+ * one nobody had predicted; it opened SH353, which fixed it, so that row now reads <b>10</b> — the
+ * site-wide read behind it is a resolution and SH316's read-only transaction cache reaches it. The
+ * two rows the assertions still separate are therefore "a helper reads per page" (true, and the
+ * point of this class) and "the storage shape of a relation does not change what it costs" (true
+ * since SH353, and the reason the second test is now a guard rather than a finding).</p>
  *
  * <p>{@code getRelation} is measured <b>twice</b> because SH247's resolution order — by id, then by
  * friendly URL within the site (SH181's rule) — makes the two forms cost different things, and both
@@ -173,21 +177,22 @@ class ShRenderHelperSweepBenchmarkTest {
     }
 
     @Test
-    @DisplayName("SH312: the same relation costs more by URL than by id")
-    void aUrlRelationCostsMoreThanAnIdRelation() {
+    @DisplayName("SH353: the same relation costs the same by URL as by id")
+    void aUrlRelationCostsNoMoreThanAnIdRelation() {
         long byId = sweep("sections-id");
         long byUrl = sweep("sections-url");
 
         assertThat(byUrl)
                 .as("""
                         SH247 resolves a reference by id and THEN by friendly URL (SH181's order), \
-                        so a URL entry pays the id lookup that misses and a site-wide read after \
-                        it — %d queries a page against %d for the same %d sections stored as ids. \
-                        Both shapes are real: a Content Select stores an id, an SH95 Multi Select \
-                        of sections stores URLs. Recorded rather than fixed — a cache here would \
-                        be over content, which is a freshness decision and not a resolution one.""",
-                        byUrl, byId, SECTIONS)
-                .isGreaterThan(byId);
+                        so a URL entry paid the id lookup that misses AND a site-wide read after \
+                        it — %d sections cost 15 queries a page against 10 for the same sections \
+                        stored as ids, which is what SH312 found and SH353 fixed. The site read is \
+                        a resolution rather than a listing's rows, so SH316's read-only \
+                        transaction cache applies: one read per transaction, and the two storage \
+                        shapes an author might use now cost the same. %d against %d here.""",
+                        SECTIONS, byUrl, byId)
+                .isLessThanOrEqualTo(byId);
     }
 
     @AfterAll

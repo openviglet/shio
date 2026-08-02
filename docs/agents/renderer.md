@@ -125,6 +125,19 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `ShTemplateGraphMemoBenchmarkTest` holds all four numbers and prints them every run. Because one
   `ShSiteTemplateGraph` now answers several callers, its maps are unmodifiable — the in-place edit
   that used to be a caller's own business would now change what the next rule sees.
+- **What a helper costs is per page, and one of the four shapes was not (SH312, SH353)** —
+  `ShRenderHelperSweepBenchmarkTest` sweeps four page shapes: plain **5** queries a page,
+  a `{{#query limit=10}}` listing region **7**, five sections by id **10**, five sections by
+  friendly URL **15**. The first three are the floor plus what the helper reads, and they cannot be
+  cached away — a helper's input is the page's own folder or its own field values, so the read is per
+  page by construction, which is why SH311's 6 is a floor and not an answer. The fourth was a defect:
+  `resolveReference` tries the id first (SH181's order), and a URL entry then read **every row in the
+  site** to filter one `furl`, once per entry. Memoized through `ShReadOnlyTransactionCache` it is
+  one read per transaction and the row now costs **10** — the same as the identical page stored as
+  ids, so the storage shape a `Content Select` or an SH95 `Multi Select` happens to use no longer
+  decides what the page costs. **Caching a listing's rows stays refused**: those rows *are* the
+  answer, so holding them is a freshness decision about content, where "which post does this URL
+  name" is a resolution.
 - **`param` — the one frame that comes from the reader (SH259)** — query-string values as strings,
   read-only, **never headers, never cookies, never the request object**. SH247's `{{#search q="…"}}`
   takes a term the *template* supplies, which is a tag page, not a search results page; that needs

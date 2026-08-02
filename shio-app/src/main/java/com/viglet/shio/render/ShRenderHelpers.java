@@ -315,12 +315,44 @@ public class ShRenderHelpers {
         // total order in SH278: this read is already deterministic through the shared writer, which
         // is the argument for having put the order there rather than at each call site.
         return preferDraft(
-                shPostUnifiedRepository.findByShSite_IdAndStateIn(siteId, states).stream()
+                rowsOf(siteId, states).stream()
                         .filter(post -> url.equals(normalizedFurl(post)))
                         .toList(),
                 state).stream()
                 .findFirst();
     }
+
+    /**
+     * SH353 — the site's rows in these states, read once per read-only transaction.
+     *
+     * <h3>What it costs when it is not shared</h3>
+     *
+     * <p>SH312 measured it: five sections stored as friendly URLs cost <b>10</b> queries a page
+     * against 5 for the same five stored as ids — two an entry, because the {@code findById} above
+     * misses and this read runs after it. Every entry read the whole site to filter one {@code furl}
+     * in memory, and a page composed of sections is the page most likely to be built that way (a
+     * {@code Content Select} holds an id, an SH95 {@code Multi Select} holds URLs). It is now one
+     * read per transaction: 15 queries a page became 11.</p>
+     *
+     * <h3>Why caching this is allowed where caching a listing's rows is not</h3>
+     *
+     * <p>SH312 deferred caching helper results and that still stands — a {@code {{#query}}} listing's
+     * rows <em>are</em> the answer, so holding them is a freshness decision about content. This is
+     * not that. "Which post does this URL name" is a <b>resolution</b>, the same kind of question
+     * SH311 caches for templates, and the lifetime does the rest:
+     * {@link ShReadOnlyTransactionCache} is read-only-transaction scoped, so nothing can be stale
+     * longer than the call that asked, and a writing transaction gets no cache at all. The filter
+     * still runs per entry against the rows, so an entry that resolves to nothing still resolves to
+     * nothing.</p>
+     */
+    private List<ShPostUnified> rowsOf(String siteId, List<ShPostState> states) {
+        return SITE_ROWS.get(siteId + "|" + states,
+                () -> List.copyOf(
+                        shPostUnifiedRepository.findByShSite_IdAndStateIn(siteId, states)));
+    }
+
+    /** SH353's population: one site's rows in one state set, per read-only transaction. */
+    private static final ShReadOnlyTransactionCache SITE_ROWS = new ShReadOnlyTransactionCache();
 
     private String normalizedFurl(ShPostUnified post) {
         String furl = post.getFurl();
