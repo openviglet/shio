@@ -522,6 +522,28 @@ Two design points worth settling before the code:
   action per subject. That is the same "one dimension per column" argument that kept
   `agent_session_id` separate from `owner` (§XII).
 
+### VIII.13 Report inbound links when a post moves (SH140)
+
+`ShReference` is id-keyed, so a reference stored *as a reference* survives a move: the
+row points at the post, whatever its address becomes. A URL typed into another post's
+rich text is not that. It is a string in a field, it names the address rather than the
+object, and a move rewrites the address underneath it.
+
+So a move can break pages nowhere near the one being moved, and the agent that moved it
+is told nothing. That is the shape SH79 addresses were meant to remove and cannot,
+because the broken thing is authored prose rather than a modelled relationship — it will
+always be possible to write a link this system does not know about.
+
+**Two versions, and the cheap one is not the useful one.** A count in the change detail — "this move
+may affect N posts mentioning the old URL" — is a text scan that would ship in an afternoon and
+answers with a number the caller cannot act on. The useful version is a *finding per affected post*,
+with its address, and that belongs where route claims already live: SH100's verification, which SH141
+extended into a delivery-side proof. A broken inbound link is therefore **checkable** now rather than
+only reportable, which changes the design: the question is not how to detect one but whether
+detection belongs in the write's response or in the lint that already fetches routes.
+
+Worth settling before building either, because the two answers are different features.
+
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
 > The agent cannot see. Two of the three human round trips in a typical build existed only
@@ -1860,6 +1882,29 @@ owner and the server only ever answers "here is the current one".
 > alternative is a startup that rewrites somebody's model, which is worse; recording the limit is what
 > keeps the changelog honest about what shipped.
 
+### XV.22 A raster is still the only answer to most of "looks wrong" (SH265)
+
+SH187 extracts the appearance surface the *document* carries — class inventory, unstyled
+classes, inline styles, images without size, external sheets — and hashes it separately,
+so a restyle and a structural break are distinguishable. The honest limit is everything
+that needs a layout engine to be true or false: overlap, contrast, truncation, a broken
+grid, anything responsive.
+
+The pieces for the rest exist. SH102's `shio snapshot` rasterizes, with Playwright as an
+*optional* import so `@viglet/shio` never pulls a browser, and SH249 made the input free
+by giving the renderer its own HTML. So the open question is not how to take the
+picture.
+
+**It is who reads it and where it lives.** An image on the agent surface is tokens an agent mostly
+cannot use; the pixel diff SH102 already computes is a *number* it can. That points at a shape —
+snapshot the rendered HTML server-side, return the diff ratio plus a signed URL a human can open —
+with two costs the design must accept first. It needs the SH25 signing path, so the URL is
+time-bounded rather than a permanent hole. And it needs a decision this product has avoided: **may an
+instance run a browser at all?** SH102 kept Playwright optional precisely to leave that open, because
+a server rendering pages in Chromium is a different operational thing from one that does not.
+
+Answer that first; the endpoint is small once it is answered.
+
 ## XVI. The human half (Block O) — what reading the console next found
 
 Block O shipped, and its lesson was that **console defects answer `200`**: seven of them, none
@@ -2419,31 +2464,6 @@ Two consequences that carries: the workflow should publish surefire's summary as
 run's headline, so no count is re-derived by hand (SH283's defect, SH354's at the
 terminal); and which jobs run on push versus pull request is a deliberate choice — the
 console check drives Chromium, the Java suite is cheap enough for both.
-
-### XVI.60 The roadmap became a history instead of a queue (SH341)
-
-Measured rather than asserted: **95 active task lines averaging 142 words**, against the
-rule that an entry is *one sentence: what + why + pointer*. Task bodies were **65%** of
-the document, the worst line 555 words — and six of the worst eight were written in the
-session that then noticed it. The drift comes from writing the analysis where it is
-freshest, not where it belongs.
-
-The structural cause is that a line and its `→ §` pointer are **redundant by design**:
-the pointer exists so the line need not carry the reasoning, so nothing pushes back when
-the line grows. Every other constraint here is enforced — response budgets, tool-schema
-ceilings, a DOM contract table. Entry length had only a sentence in `agents.md`. And
-when the roadmap carries the argument, IMPROVEMENTS stops being the single home for
-rationale.
-
-✅ **The length half is a ratchet now** (`ShRoadmapLineLengthRatchetTest`): 44 lines over
-roadkeep's 320-character limit, a count that may fall and may not rise. A hard limit
-could not land, because each fix is editorial. Writing it shortened SH341's own line and
-the ratchet asked for the lower number back at once — which is what makes it a ratchet
-and not a floor.
-
-What remains is those 44. Compression is lossless only where IMPROVEMENTS already holds
-the detail: a task whose `→ §` section covers it can be cut to a sentence, one whose
-pointer is thin needs its rationale **moved** first.
 
 ## XVI.58 What an end-to-end MCP build of a site actually costs (SH325–SH332)
 

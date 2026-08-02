@@ -33,12 +33,13 @@ import org.junit.jupiter.api.Test;
  * drift the process invites, not a lapse, which is precisely the kind of rule that has to stop
  * depending on the writer noticing it.</p>
  *
- * <p>A hard limit cannot land: {@value #LIMIT} characters would fail the build on
- * {@value #OVER_LIMIT} existing lines today, and the fix for each is editorial — some of those lines
- * are the only home their reasoning has, so cutting them without checking their {@code → §} coverage
- * would destroy the argument rather than move it. So this is a <b>ratchet</b>: the count may fall and
- * may not rise. A new long line fails; shortening one and not updating the number here fails too,
- * which is what keeps the ceiling honest as SH341's editorial half proceeds.</p>
+ * <p><b>It began as a ratchet because a hard limit could not land</b>: 45 lines were over
+ * {@value #LIMIT} characters when this was written, and the fix for each was editorial — some of
+ * them were the only home their reasoning had, so cutting one without checking its {@code → §}
+ * coverage would have destroyed the argument rather than moved it. A count that may fall and may not
+ * rise bought the time to do that properly. The count is {@value #OVER_LIMIT} now, so the ratchet has
+ * arrived where a limit would have started, having paid for the trip: every line it passed was read
+ * against its section first.</p>
  *
  * <p><b>It is not `roadkeep lint`.</b> That tool owns the writes and reported all of this — 249
  * findings when this was written, 130 after the pass below, since every {@code why.too-long} and
@@ -59,24 +60,27 @@ class ShRoadmapLineLengthRatchetTest {
     /**
      * Lines over {@value #LIMIT} characters on 2026-08-02, after Block P's ten ships.
      *
-     * <p>Lower it when you shorten one. Never raise it: a new line over the limit belongs in
-     * IMPROVEMENTS.md, which is what the {@code →} pointer addresses.</p>
+     * <p><b>Zero, and it stays zero.</b> Never raise it: a new line over the limit belongs in
+     * IMPROVEMENTS.md, which is what the {@code →} pointer addresses. The field survives as a
+     * number rather than becoming an {@code isEmpty()} so the history below stays attached to it —
+     * and so a future bulk import has one honest way to land, which is to raise this and lower it
+     * again rather than to delete the guard.</p>
      *
-     * <p><b>45 → 42 → 4.</b> The first three came from the tool rather than from anybody's memory:
-     * roadkeep refuses to <em>ship</em> a task whose line — or whose dependents' lines, which
-     * shipping re-annotates — is over the limit, so SH341's own line, SH275's and SH276's each had
-     * to become one sentence before the work they described could be recorded. The rest was SH341's
-     * editorial pass, 38 lines cut to a sentence each after checking that the section at the other
-     * end of the {@code →} actually carried the reasoning.</p>
+     * <p><b>45 → 42 → 4 → 0.</b> The first three came from the tool rather than from anybody's
+     * memory: roadkeep refuses to <em>ship</em> a task whose line — or whose dependents' lines,
+     * which shipping re-annotates — is over the limit, so SH341's own line, SH275's and SH276's each
+     * had to become one sentence before the work they described could be recorded. Then 38 lines
+     * were cut after checking that the section at the other end of the {@code →} carried the
+     * reasoning, and finally the four hard ones: SH140 and SH265 had no pointer at all, so their
+     * rationale was <b>written</b> into §VIII.13 and §XV.22 before their lines could be cut, and
+     * SH213 and SH220 pointed at sections thin enough to need reading rather than counting — both
+     * turned out to cover their line, which is why the check is a reading and not a word count.</p>
      *
-     * <p><b>The four that remain are the hard cases, and they are hard for two different reasons.</b>
-     * SH140 and SH265 have no {@code → §} pointer at all, so their rationale has to be <em>moved</em>
-     * before the line can be cut — writing the section is the work, not shortening the line. SH213
-     * and SH220 point at sections of 129 and 145 words, thin enough that the line may be carrying
-     * something the section does not. Cutting either blind is how a compression loses an argument,
-     * which is the failure SH341 exists to avoid rather than commit faster.</p>
+     * <p><b>At zero this stops being a ratchet and becomes a gate</b>, which is the end state the
+     * task wanted: the next over-long line fails the build on the commit that writes it, with the
+     * pointer's own file named as where the paragraph belongs.</p>
      */
-    private static final int OVER_LIMIT = 4;
+    private static final int OVER_LIMIT = 0;
 
     /** A task line: marker, bold id. The blockquote prose between them is not governed by this. */
     private static final Pattern TASK =

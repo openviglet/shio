@@ -208,7 +208,7 @@
 > ✅ **Block H shipped, follow-up pass included (SH75–SH84, SH121–SH135)** → see [CHANGELOG.md](CHANGELOG.md) Block H.
 
 - 💭 **SH84** (deps: SH22 ✅, SH83 ✅) **Turing ecosystem wiring** — the SH22 tenant sweep and its test shipped; what remains is the Turing integration (replaces old SH37). → §VIII.9
-- 💭 **SH140** (deps: SH100 ✅, SH134 ✅) **Report inbound links when a post moves** — `ShReference` is id-keyed and survives a move, but a URL typed into another post's rich text does not, and nothing tells the agent which pages it just broke. The cheap version is a count in the change detail; the real one belongs with SH100's route verification, which SH141 has since extended to a delivery-side proof — so a broken inbound link is now checkable rather than only reportable.
+- 💭 **SH140** (deps: SH100 ✅, SH134 ✅) **Report inbound links when a post moves** — A URL typed into another post's rich text names the address rather than the object, so a move breaks it and nothing tells the agent which pages it just broke. → §VIII.13
 - 📋 **SH196** (deps: SH88 ✅, SH137 ✅) **No folder write is audited** — No folder create, rename, move or delete is recorded, so the feed shows posts appearing in folders it never saw created. → §VIII.12
 - 💭 **SH197** (deps: SH136 ✅) **Finish the byte-stability class** — the SH136 lint bans `Map.copyOf`/`Set.copyOf`; a hash-ordered `Map.of(…)` reaching a serialized map component is the same defect and is still unguarded. No live instance today, which is exactly when the guard is cheap. → §VIII.11
 
@@ -239,7 +239,7 @@
 - 📋 **SH210** (deps: SH145 ✅) **Editing an asset's bytes in place does nothing** — push --content reuses a File id when the path already exists, so replacing an asset's bytes uploads nothing and reports success — the projection's one silent no-op. → §X.13
 - 📋 **SH211** (deps: SH137 ✅, SH149 ✅) **Renaming a folder marker's directory is a delete plus a create, and the delete takes the posts** — reconcileFolders reads a renamed marker as one folder gone and another arrived, and --prune deletes the old one, cascading to every post beneath it. → §X.14
 - 📋 **SH212** (deps: SH99 ✅, SH145 ✅) **`shio verify` cannot see a broken asset path** — An asset path a File field names is checked by push, the last gate, when the tree makes it checkable by verify, the first. → §X.15
-- 💭 **SH213** (deps: SH145 ✅) **Every push reads the whole media inventory** — `readRemoteAssets` lists every file in each site and joins the sitemap to it, on every push that declares any `File` field, even when no asset changed. A media-heavy site pays for its whole library to resolve one reference. The listing has filters (`q`, `folderId`) that a per-path lookup could use instead, and a missing folder currently re-reads the entire inventory a second time. → §X.16
+- 💭 **SH213** (deps: SH145 ✅) **Every push reads the whole media inventory** — readRemoteAssets lists every File post in a site to resolve one reference, on any push that declares a File field. → §X.16
 - 💭 **SH214** (deps: SH150 ✅) **A probable-move warning cannot be accepted** — A legitimate delete-plus-create prints an unprovable-rename warning on every run, and there is no way to accept it the way a verify finding can be. → §X.17
 - 💭 **SH215** (deps: SH148 ✅) **A fingerprint collision is undetectable and unreported** — The merge base compares 64-bit hashes, so a collision reads as an unchanged field and the edit is dropped with nothing said. → §X.18
 
@@ -255,7 +255,7 @@
 - 📋 **SH216** (deps: SH156 ✅) **`blog`, `docs` and `product-catalog` carry an index page** — Three starters ship an index page and no listing over their own content, which is what a reader needs and what the section overlay deliberately does not give them. → §XI.11
 - 📋 **SH218** (deps: SH119 ✅, SH156 ✅) **A release leaves the generated packages stale, and the next CI run finds out** — The release workflow rewrites the template's dependency ranges without re-running emit, so the generated packages keep the old range and the next push finds out. → §XI.12
 - 📋 **SH219** (deps: SH96 ✅) **The local package directory needs a reload that is not a restart** — ShBlueprintRegistry caches on first access, so a package dropped into the configured directory is invisible until the process restarts. → §XI.13
-- 📋 **SH220** (deps: SH155 ✅) **A re-apply defaults to the parameters the site was built with** — SH155 records name, version and parameters as an SH114 note, which makes "which blueprint is this site" answerable; it does not yet make the next apply cheaper. Re-applying still means re-supplying every `--param`, and a value the operator misremembers silently rebuilds the site differently. The record is already there and already parseable; what is missing is `shio apply --blueprint <name> --site <site>` reading it and saying which values it defaulted. → §XI.14
+- 📋 **SH220** (deps: SH155 ✅) **A re-apply defaults to the parameters the site was built with** — The record of a site's blueprint parameters exists and no re-apply reads it, so a value the operator misremembers rebuilds the site differently and reports ordinary work. → §XI.14
 - 💭 **SH221** (deps: SH153 ✅) **The rest of the write surface should be plannable read-only too** — The plan and dryRun paths are write-free and nothing enforces it, so the next feature needing to resolve what it would create can reintroduce a write. → §XI.15
 
 ## Block L — Agent safety & human-in-the-loop
@@ -380,7 +380,7 @@
 > over the CDA (P10), and what lands here is **preview-grade** until that is deliberately
 > revisited.
 
-- 📋 **SH265** (deps: SH187 ✅) **A raster is still the only answer to most of "looks wrong"** — SH187 extracts the appearance surface the *document* carries, and the honest limit is that overlap, contrast, truncation, a broken grid and anything responsive need a layout engine. SH102's `shio snapshot` already rasterizes with an optional Playwright import, and SH249 made the input free (the renderer's own HTML), so the remaining question is not how but **who reads it and where it lives**: an image on the agent surface is tokens an agent mostly cannot use, and the pixel diff SH102 already computes is a *number* an agent can. So the shape to design is probably "snapshot the rendered HTML server-side and return the diff ratio plus a signed URL", which needs the SH25 signing path and a decision about whether an instance may run a browser at all — the reason SH102 kept Playwright an optional dependency of the CLI.
+- 📋 **SH265** (deps: SH187 ✅) **A raster is still the only answer to most of "looks wrong"** — SH187 reads what the document declares, and overlap, contrast, truncation and anything responsive need a layout engine the server has so far refused to run. → §XV.22
 > ✅ **SH189 is complete (with SH267 and SH268)** → see [CHANGELOG.md](CHANGELOG.md) Block P: import teaches, is reachable by a stateless caller, classifies from a kind rather than from prose, and `shio import` accepts a package — the MCP half is CLI-shaped by construction and the P1 inventory says so.
 - 💭 **SH195** (deps: SH183 ✅) **Most layout changes are tokens, not structure** — A theme carries CSS as an opaque blob, so the commonest change — spacing, type scale, a colour role — is a stylesheet rewrite with nothing to diff and nothing to verify. → §XV.13
 
@@ -454,7 +454,6 @@
 - ⏳ **SH247** (deps: SH183 ✅) **`form` is the last of the seven capabilities** — What remains is form, and the missing piece is not code but a decision about where a submission goes: storage, spam, notification, retention. → §XV.14
 - ⏳ **SH324** (deps: SH321 ✅) **A test fixture can model a shape the product never produces, and nothing says so** — The premise is asserted (publish keeps the draft's id, so one page is one id and one furl); what remains is the choice of instrument, since the cheap one is not cheap once it has to be sound. → §XVI.31
 - 💭 **SH294** (deps: SH290 ✅) **"Imports and renders without a migration" is still only a comment** — The class comment claims a real 2018 export imports and renders, and nothing exercises it — the bundled starter declares no layout, so it cannot. → §XVI.46
-- ⏳ **SH341** (deps: —) **The roadmap carries prose it is not the home for** — The ratchet holds the line length now; what remains is four lines whose rationale must be moved or thickened before they can be cut. → §XVI.60
 - 💭 **SH276** (deps: SH275 ✅) **A premise about a dependency we *do not* have is unfalsifiable, and one is load-bearing** — It justifies ~1500 lines of hand-rolled protocol and cannot be asserted, because checking it means adding the dependency being evaluated. → §XVI.28
 
 ---
