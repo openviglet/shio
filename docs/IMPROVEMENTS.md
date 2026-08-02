@@ -1660,44 +1660,6 @@ the client reading it. The answer is *not* a twelfth tool (the cap is 12 with 11
 > exercised in the direction of a gap closing. Since SH339 the bodiless 403 is gone everywhere, so the
 > third path's symptom outlived its cause by one task.
 
-### XVI.29 One vocabulary, because the agent guessed wrong three times (SH331, SH332)
-
-Four wrong calls in this run, none of them a random guess — each was a rule the agent applied
-consistently and Shio breaks in one of its surfaces:
-
-| sent | wanted | the inconsistency |
-|---|---|---|
-| `postType` | `type` | the concept has four names: `postTypeId` (REST), `shPostType` (console), `type` (batch + document), `postType` (`POST /api/v2/post-unified`) |
-| `address` + `folder:"folder:Demo/templates"` | `url` + `folder:"/pages"` | `shio_write` names a subject `address` and takes SH79 addresses; `shio_apply` names it `url` and takes bare paths — so `folder` means two different things |
-| `addresses:[…]` | `address:[…]` | a plural-valued field with a singular name |
-| `scope:"Demo"` | `site:"Demo"` | `PUT /api/v2/agent/memory` takes `scope`, `shio remember` takes `--site`, `shio_remember` takes `site` |
-
-**The fourth is the serious one, because it did not fail.** `shio_remember` ignored the unknown key
-and wrote the note instance-wide; the response said `(instance-wide)` and never mentioned dropping an
-argument, so the note landed where no session working on that site will read it and the call looked
-like a success. Finding out why took reading the tool's Java.
-
-That is a direct violation of the rule SH320 settled one task earlier — **a parameter that selects or
-bounds work teaches; one that only adds a section does not** — and `site`/`scope` plainly selects,
-since it decides which memory the note joins and therefore which sessions ever see it. The lesson is
-not that the rule needs restating but that it needs an **instrument**: SH320 established a principle,
-and here is a tool written before it that nobody audited against it. A lint over MCP argument handling
-— every declared property read, every unrecognised key refused — is the shape, and it is the argument
-SH322 just made about greps: the pattern that finds the next occurrence is worth more than the fix to
-this one.
-
-> ✅ **SH331 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The measurement changed the design:
-> four of six read tools ignored an unrecognised key, so the answer was **one refusal where
-> arguments are read**, not four renames. Synonyms are accepted and reported, the recursion reaches
-> an op's arguments (where the real mistake was) and stops structurally at `data`. After: **0 silent
-> drops, 6/6 naive calls landing first try**. **SH332** is still open and is the half that would
-> have prevented the guessing rather than repairing it.
-
-> ✅ **SH332 shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The op vocabulary is
-> `shio://ops`, declared once in `ShAgentOps` and asserted against the planner's own refusals — a
-> source scan was tried first and is not faithful, because a handler reads `op.address()` through a
-> helper. It opened **SH346**.
-
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA

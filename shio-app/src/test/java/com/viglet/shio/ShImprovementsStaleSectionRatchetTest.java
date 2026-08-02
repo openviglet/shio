@@ -67,7 +67,7 @@ class ShImprovementsStaleSectionRatchetTest {
      * <p>Lower it when you triage one. Raising it means a rationale section was written for work that
      * has already shipped, which is what this exists to stop.</p>
      */
-    private static final int STALE = 5;
+    private static final int STALE = 4;
 
     /** A section heading at either level, with the task ids it names in its title. */
     private static final Pattern HEADING =
