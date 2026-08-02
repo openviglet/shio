@@ -1187,29 +1187,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.4 The agent sees a page's structure, never its appearance (SH187)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth keeping.
->
-> **The honest scope was the whole design.** There is no layout engine, so overlap, contrast,
-> truncation and anything responsive are out of reach — and saying that plainly is what made the
-> rest possible. What *is* in the document: the class inventory, the classes no stylesheet the page
-> carries defines, inline styles, images with no declared size. It covers the appearance failure an
-> **agent** creates (markup written against class names the theme lacks) rather than the ones a
-> human notices, and that turned out to be the useful trade.
->
-> **Two hashes, because they answer different questions.** Folding appearance into SH101's `digest`
-> would have made a restyle and a structural break indistinguishable — the one comparison an
-> iterative loop most needs to make. `d:` and `a:` prefixes so they cannot be confused in a report.
->
-> **A capability flag is added, not repurposed.** `visualSnapshot` stays `false` because there is
-> still no raster on this surface; `appearanceDigest: true` joins it. An agent that read
-> `visualSnapshot: true` would hunt for a PNG — which is the same rule that flag's own comment set
-> and SH185 broke once with `universalEditor`.
->
-> The remaining raster question is **SH265**, and the reason it is not a footnote: most of what
-> "looks wrong" means still needs pixels.
-
 ### XV.7 Importing an exchange package teaches nothing and is not on the agent surface (SH189)
 
 > ⏳ **The teaching half shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two things it settled and
@@ -1233,29 +1210,6 @@ is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that exis
 > that an SH68 package is a *zip*: a client with no filesystem cannot produce one, so "add a tool"
 > is not the answer and the honest option may be for the manifest to say this capability is
 > CLI-shaped.
-
-### XV.8 Diagnostics name a failure but never carry the evidence (SH190)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth carrying.
->
-> **"Go and read the log" is not a protocol.** The old `fix` was accurate and useless: it named a
-> file the caller has no access to, and in the session that found this the running instance was not
-> even writing to the log the repository contains. Worth generalising — an error whose remedy is
-> outside the caller's reach is an error that has not been reported, however precise it is.
->
-> **The trimming is the design, not an optimisation.** Only `com.viglet.shio` frames, at most three,
-> no arguments, no locals, proxy frames skipped. That is what makes the evidence a *line*, which is
-> what makes it affordable to attach to every incident — and the exclusions are also the security
-> argument, because arguments are content and content in a diagnostics feed is how a log leaks what
-> the ACL exists to protect.
->
-> **Absent beats empty, again.** A malformed request rejected by Tomcat has no frame of ours; a 5xx
-> the framework rendered has no trace at all. `null` (omitted, `NON_NULL`) rather than `""`, so a
-> reader is never sent looking for a location that does not exist — the same rule SH121 set for ids,
-> SH193 for `affects` and SH187 for `appearance`. It is becoming the house style, and the reason is
-> consistent: a field that is always present is a field nobody reads.
->
-> What is left is coverage — three of the four incident kinds still record no frame (**SH269**).
 
 ### XV.14 What building the renderer found (SH247–SH249)
 
@@ -1292,33 +1246,6 @@ comes out.
 > state is the one that now exists: `{{#form}}` is a write-time refusal naming SH247, so the
 > author is told the capability is absent rather than shipping a page with a silently missing
 > block.
-
-#### XV.19 A search results page needs the reader's query (SH259)
-
-`{{#search q="handbook"}}` is a tag page, a curated collection, a "more about this" listing —
-genuinely several of the things the 2018 regions did by hand. It is not what an author means by
-*search*, because the term comes from the template and a results page's term comes from `?q=`.
-
-The render model has no request in it, and that is not an oversight to correct casually. SH183's
-entire resolution of the Block D non-goal turned on a layout being **content**: FSP's failure was
-`getScriptEngine(String[])` without a `ClassFilter`, which put `Java.type()` and the raw
-`HttpServletRequest` in scope of a template somebody could edit through the console. So the
-question this task has to answer is not "how do I pass a parameter" but **what a template is
-allowed to know about the request**.
-
-The narrow answer is a `param` frame holding query-string values as strings — read-only, no
-headers, no cookies, no request object — which covers search, pagination and a filter, and is
-nothing like what was withdrawn. Naming it `param` and not `query` matters only because `query`
-is already a helper.
-
-Two things to settle before it lands. **Caching**: this would be the first render whose output
-depends on something other than content, and while the preview route is `no-store` so nothing is
-stored today, the answer wants writing down before preview is ever reconsidered as delivery.
-**Escaping**: Handlebars escapes `{{param.q}}` by default, so the reflected-XSS risk is an
-author's `{{{param.q}}}` — and unlike a front end, this codebase has SH192's write-time machinery
-available, so a triple-stash over a request value can be *refused when the template is written*
-rather than found in production. That is a better answer than a front end can give, and it is
-worth doing as part of the same task rather than after it.
 
 #### XV.21 A raster is still the only answer to most of "looks wrong" (SH265)
 

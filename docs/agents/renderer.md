@@ -160,6 +160,16 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   in `ShRenderModelSourceTest.INVENTED`: it is optional, so an imported 2018 theme arrives without
   it and renders exactly as it did. An instance created before this gets the field from
   `POST /render/post-types/reconcile`, and `GET /render/post-types/drift` names it (SH295).
+- **Two rules the appearance digest was designed against (SH187, moved here by SH356)** —
+  **two hashes, because they answer different questions**: folding appearance into SH101's `digest`
+  would make a restyle and a structural break indistinguishable, which is the one comparison an
+  iterative loop most needs, so they are prefixed `d:` and `a:` and cannot be confused in a report.
+  And **a capability flag is added, never repurposed**: `visualSnapshot` stays `false` because there
+  is still no raster here and `appearanceDigest: true` joins it — an agent reading
+  `visualSnapshot: true` would hunt for a PNG that does not exist, which is what `universalEditor`
+  did once. The honest scope is also the design: there is no layout engine, so the digest covers the
+  appearance failure an **agent** creates (markup written against class names the theme lacks) and
+  not the ones a human notices (SH265).
 - **The drift is a fact about the instance, and it is a GET (SH295)** —
   `GET /api/v2/render/post-types/drift` names each render type this instance has that is missing a
   field the shipped model declares. The comparison existed before, as

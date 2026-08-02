@@ -365,7 +365,11 @@ a scoped credential cannot use the error to prove a site exists.
   `Class.method:line`, innermost first, **at most three** and **only `com.viglet.shio`** frames, no
   arguments and no locals, Spring proxy frames skipped. The old `fix` ended "the instance log has the
   stack trace (the body never will)", which named a file the caller cannot open — an error whose
-  remedy is out of the caller's reach is an error that has not been reported. A **log-tailing tool
+  remedy is out of the caller's reach is an error that has not been reported. **The exclusions are
+  also the security argument** (SH190, kept here by SH356): arguments are *content*, and content in a
+  diagnostics feed is how a log leaks what the ACL exists to protect — which is why the trimming is
+  the design rather than an optimisation, and what makes a frame cheap enough to attach to every
+  incident. A **log-tailing tool
   was rejected** for SH103's three reasons: it hands over every request's data to answer a question
   about one, it is a per-deployment path, and it cannot be scoped by the SH2 allow-list or the SH54
   ACL. `frames` is **absent, not empty**, when there is nothing of ours in the trace (a request
