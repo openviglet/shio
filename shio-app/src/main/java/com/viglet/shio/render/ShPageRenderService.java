@@ -170,6 +170,13 @@ public class ShPageRenderService {
      *
      * @param params query-string values, already flattened to one string per name
      */
+    // SH357 — the same annotation, deliberately repeated rather than inherited from the overload
+    // above. That overload's delegation to this one is a self-invocation, so it never crosses the
+    // proxy: a caller entering *here* — which is every `/preview/**` request carrying a query
+    // string — would otherwise get neither the read-only transaction nor the `noRollbackFor` the
+    // comment above explains at length. Which of the two a caller picked decided whether a caught
+    // teaching 4xx blew up at commit. `ShAgentTransactionalOverloadLintTest` refuses the next pair.
+    @Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
     public ShRenderedPage render(String siteKey, String url, ShPostState state,
                                  Map<String, String> params) {
         ShSite site = siteByKey(siteKey);

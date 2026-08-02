@@ -178,6 +178,10 @@ public class ShStaticFileService {
      *
      * @see #listFiles(String, String, String, String)
      */
+    // @Transactional-overload-exempt: the delegation goes through the injected self-reference, not
+    // through `this`, so it does cross the proxy and the readOnly transaction below is the one this
+    // read actually runs in. SH357's lint cannot see that from the text, and the pair it exists to
+    // catch is the one where the annotation is silently skipped — see ShAgentIncidentStore.
     public List<ShStaticFileItem> listFiles() {
         return self.getObject().listFiles(null, null, null, null);
     }

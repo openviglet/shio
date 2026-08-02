@@ -70,16 +70,21 @@ public class ShAgentIncidentStore {
      * Records one failure durably, folding it into an existing row when it has happened
      * before.
      *
+     * <p>SH357 — <b>one overload, deliberately.</b> This used to be a pair: a five-argument
+     * method carrying {@code REQUIRES_NEW} and delegating to a six-argument one that carried
+     * nothing. Nothing ever called the five-argument one, so the annotation the class note
+     * calls "the feature" was on dead code and every real write ran with <em>no</em>
+     * demarcation at all — which is the failure this class exists to prevent, since a
+     * {@code save} with no transaction of its own joins the caller's and rolls back with it.
+     * Adding the annotation to the second overload would not have fixed it either: the
+     * delegation is a self-invocation, so it never crosses the proxy. The pair is the defect;
+     * {@link ShAgentTransactionalOverloadLintTest} refuses the next one.</p>
+     *
+     * @param frames SH190 — the throwing location, or {@code null} when there is none
      * @return {@code true} when the row was written or updated; {@code false} when it could
      *         not be, so the caller can keep its in-memory copy honest
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public boolean record(ShAgentIncidentLog.Kind kind, String subject, String message,
-                          String fix, Instant now) {
-        return record(kind, subject, message, fix, null, now);
-    }
-
-    /** @param frames SH190 — the throwing location, or {@code null} when there is none */
     public boolean record(ShAgentIncidentLog.Kind kind, String subject, String message,
                           String fix, String frames, Instant now) {
         try {
@@ -141,28 +146,38 @@ public class ShAgentIncidentStore {
         repository.deleteAll(oldest);
     }
 
-    /** Distinct incidents held, for the payload's own account of what it can see. */
-    @Transactional(readOnly = true)
-    public long count() {
-        return repository.count();
-    }
-
-    /**
-     * When the record starts.
-     *
-     * <p>Empty means the table is empty, which is now genuinely "nothing has ever failed"
-     * rather than "nothing is remembered" — the distinction SH103 could report but not
-     * make.</p>
-     */
-    @Transactional(readOnly = true)
-    public Optional<Instant> earliest() {
-        return repository.earliest();
-    }
-
     /** Most recent first, for the diagnostics view. */
     @Transactional(readOnly = true)
     public List<ShAgentIncident> recent(int limit, Instant ceiling) {
         return repository.findWindow(ceiling, PageRequest.of(0, Math.max(1, limit)));
+    }
+
+    /**
+     * Everything one diagnostics payload says about the table, from <b>one</b> snapshot.
+     *
+     * <p>SH357 — the count, the window and the earliest row used to be three separate
+     * {@code readOnly} methods, so a payload was assembled from three different states of the
+     * table. That is not hypothetical: the one shape the intermittent failure had was an empty
+     * {@code counts} beside a populated {@code since}, and a row landing between the first read
+     * and the third produces exactly that. Reading them together does not make a concurrent
+     * write impossible — it makes it impossible for <em>one answer</em> to disagree with
+     * itself, which is what left the failure undiagnosable.</p>
+     */
+    @Transactional(readOnly = true)
+    public Snapshot snapshot(int limit, Instant ceiling) {
+        return new Snapshot(repository.count(),
+                repository.findWindow(ceiling, PageRequest.of(0, Math.max(1, limit))),
+                repository.earliest().orElse(null));
+    }
+
+    /**
+     * @param retained rows in the table
+     * @param window   the most recent of them, newest first
+     * @param earliest when the record starts, or {@code null} when the table is empty — which
+     *                 is genuinely "nothing has ever failed" rather than "nothing is
+     *                 remembered", the distinction SH103 could report but not make
+     */
+    public record Snapshot(long retained, List<ShAgentIncident> window, Instant earliest) {
     }
 
     /** Oldest first, strictly after a position — the SH88-shaped read the feed merges. */

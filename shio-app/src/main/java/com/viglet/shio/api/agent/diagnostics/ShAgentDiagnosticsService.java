@@ -66,11 +66,17 @@ public class ShAgentDiagnosticsService {
                 ? config.getDefaultLimit()
                 : Math.min(limit, config.getMaxLimit());
 
-        long retained = store.count();
         // Read from the durable store, not the buffer (SH144): the answer must not depend on
         // how long this process happens to have been running. The buffer is still consulted
         // below, but only to report what it holds that the store does not.
-        List<ShAgentIncident> all = store.recent(Math.max(cap, 1), Instant.now());
+        //
+        // SH357 — one snapshot, not three reads. `retained`, the window and `earliest` used to
+        // come from three separate read-only transactions, which is how a response could carry
+        // an empty `counts` beside a populated `since` and leave nobody able to say whether the
+        // row had been written.
+        ShAgentIncidentStore.Snapshot snapshot = store.snapshot(Math.max(cap, 1), Instant.now());
+        long retained = snapshot.retained();
+        List<ShAgentIncident> all = snapshot.window();
 
         Map<String, Integer> counts = new TreeMap<>();
         for (ShAgentIncident incident : all) {
@@ -80,7 +86,7 @@ public class ShAgentDiagnosticsService {
                 .limit(cap)
                 .map(ShAgentDiagnosticsService::row)
                 .toList();
-        Instant earliest = store.earliest().orElse(null);
+        Instant earliest = snapshot.earliest();
         return new ShAgentDiagnostics(earliest == null ? null : earliest.toString(),
                 // Not the buffer's eviction count any more (SH144): an evicted row is still in
                 // the table, so it is not dropped. What is genuinely lost is what could not be

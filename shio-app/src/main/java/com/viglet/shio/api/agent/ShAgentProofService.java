@@ -137,6 +137,13 @@ public class ShAgentProofService {
      * @param changes the committed change set
      * @param verify  whether the caller asked for proof
      */
+    // SH357 — the annotation the two longer overloads carry, repeated here rather than reached by
+    // delegation. This method's call to the next one is a self-invocation and never crosses the
+    // proxy, so a caller entering *here* got no transaction at all — and what that costs is spelled
+    // out three lines down: SH193's graph walks LAZY associations, and a post read with no session
+    // open throws the moment the graph asks what type it is. The reason nobody saw it is that the
+    // annotation is plainly there, one overload along. `ShAgentTransactionalOverloadLintTest`.
+    @Transactional(readOnly = true)
     public ShAgentChangeSet attach(ShAgentChangeSet changes, boolean verify) {
         return attach(changes, verify, false);
     }

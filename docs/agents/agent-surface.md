@@ -407,6 +407,23 @@ a scoped credential cannot use the error to prove a site exists.
   occurrence, which is what makes the table grow with the number of *problems*; and the feed
   position is **`lastSeen`**, so an incident that is still happening is re-delivered with a
   higher count rather than being reported once, ever.
+  **`REQUIRES_NEW` was on an overload nobody called, for two blocks (SH358).** `record` was a
+  pair — a five-argument method carrying the annotation and delegating to a six-argument one
+  carrying nothing — and the only caller took the second, so every incident this product ever
+  wrote had *no* demarcation and joined whatever transaction was about to roll back. Nothing
+  can see that by reading: the annotation is present, spelled right, on a method called
+  `record`, with the javadoc explaining it three lines up. Only *which overload does the caller
+  resolve to* finds it. The rule is now all-or-nothing per method name, guarded by
+  **`ShAgentTransactionalOverloadLintTest`** over `src/main/java` — public and protected only,
+  since a private overload can never be entered through the proxy, and the hatch is
+  `@Transactional-overload-exempt:` for the one honest case (delegating through an injected
+  self-reference, as `ShStaticFileService.listFiles()` does). It found two more on its first
+  run: `ShPageRenderService.render` (every `/preview/**` with a query string lost the
+  `noRollbackFor` that keeps a caught teaching 4xx from blowing up at commit) and
+  `ShAgentProofService.attach` (SH193's graph walks LAZY associations, so the two-argument
+  overload read them with no session open). And **one diagnostics response is one snapshot
+  now (SH357)** — the count, the window and `earliest` were three read-only transactions, which
+  is the only way the intermittent `{}`-beside-a-populated-`since` could be produced.
   **Incidents also ride `/agent/changes` (SH144)** in their own `incidents` array, so one
   `since=` answers what changed *and* what broke. Not a `Change` with an invented `action` —
   every existing caller branches on `action` and would file a failure as content. The
