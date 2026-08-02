@@ -17,26 +17,53 @@
 package com.viglet.shio.post.type;
 
 /**
+ * The post-type names this system provisions — <b>every one of them has a creator</b> (SH293).
+ *
+ * <h2>Why eight names left this class</h2>
+ *
+ * <p>It used to declare thirteen, transcribed from the 2018 model in {@code import/post-types.json}.
+ * Eight of them — {@code Photo}, {@code Video}, {@code Quote}, {@code Link}, {@code TextArea},
+ * {@code Article}, {@code FolderIndex}, {@code Alias} — were referenced <b>nowhere but here</b>:
+ * nothing created them, nothing looked them up, nothing shipped them. A constant like that is not
+ * harmless, because it reads as a capability: {@code ShSystemPostType.ARTICLE} in an IDE's
+ * completion list says this system knows what an Article is, and it does not. One of them was
+ * already wrong and could not have been noticed — the 2018 model declares {@code Links} and the
+ * constant said {@code Link}.</p>
+ *
+ * <p>Deleting them is the honest half of SH293's audit; the other half is that {@code File} is now
+ * compared against the 2018 model the way the render three already were
+ * ({@code ShFilePostTypeSourceTest}), because {@code ShStaticFileService} really does create it and
+ * a field-name drift there breaks uploads rather than rendering. What is <em>not</em> claimed is
+ * that this file lists the only post-types an instance holds: everything else is a user's, or an
+ * import's, and named by data rather than by a constant.</p>
+ *
+ * <p>{@code ShSystemPostTypeInventoryTest} keeps it that way — a constant with no creator fails the
+ * build, and the one exception is declared there with its reason.</p>
+ *
  * @author Alexandre Oliveira
  */
 public class ShSystemPostType {
-	
+
 	private ShSystemPostType() {
 		throw new IllegalStateException("System Post Type Constants class");
 	}
-	
+
+	/**
+	 * Looked up, never created — the console's "last post type used" default.
+	 *
+	 * <p>{@code ShUserOnStartup} reads it to seed {@code ShUser.lastPostType} and tolerates its
+	 * absence, which on a fresh install is what happens. Kept rather than deleted because the
+	 * lookup is live code; declared in the inventory test rather than left to look like the
+	 * others.</p>
+	 */
 	public static final String TEXT = "Text";
-	public static final String PHOTO = "Photo";
-	public static final String VIDEO = "Video";
-	public static final String QUOTE = "Quote";
-	public static final String LINK = "Link";
+
+	/** Created on first upload by {@code ShStaticFileService.resolveOrCreateFilePostType} (SH38). */
 	public static final String FILE = "File";
-	public static final String TEXT_AREA = "TextArea";
-	public static final String ARTICLE = "Article";
+
+	/** The three the renderer provisions on demand — {@code ShRenderPostTypes.ensure} (SH183). */
 	public static final String REGION = "Region";
 	public static final String THEME = "Theme";
 	public static final String PAGE_LAYOUT = "PageLayout";
-	public static final String FOLDER_INDEX = "FolderIndex";
-	public static final String ALIAS = "Alias";
 
 }

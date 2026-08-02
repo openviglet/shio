@@ -2505,27 +2505,6 @@ read it out of and a terminal user has no path to it at all. So the smaller and 
 may be `shio impact <address>` — one question the files genuinely cannot answer — rather than a general
 `read` that duplicates the projection. Decide which before building either.
 
-### XVI.45 The reference model has thirteen types and three are checked (SH293)
-
-`ShRenderModelSourceTest` compares `PageLayout`, `Region` and `Theme` against
-`import/post-types.json`, because those are the three SH183 transcribed and the three SH277 found a
-defect in.
-
-That file declares ten more: `Text`, `Photo`, `Video`, `Quote`, `Links`, `File`, `TextArea`,
-`Article`, `Alias`, `FolderIndex`. The question the new test answers for three of them is unanswered
-for the rest, and it is really two questions:
-
-- **Which are still provisioned by this system?** `File` is (SH38 creates it on first upload), so it
-  can and should be compared the same way — its `FILE` field is what the static-file subsystem writes
-  into, and a name drift there breaks uploads rather than rendering.
-- **Which are names in `ShSystemPostType` with no creator at all?** `Alias`, `FolderIndex`, `Quote`
-  and others are declared as constants and nothing builds them. That is `ShWidget`'s problem (SH285)
-  one class along: dead declarations that read as capabilities.
-
-So the task is an **audit that produces either a comparison or a deletion for each**, not an
-extension of the test's type list. Extending it blindly would pin ten types this codebase does not
-create, which is a test asserting that a file matches itself.
-
 ### XVI.46 "Imports and renders without a migration" is still only a comment (SH294)
 
 SH290 asserts that the render model matches its 2018 source — the half that was actually wrong. The
@@ -2587,6 +2566,28 @@ may be testing), or a **lint** asserting that no fixture persists two `ShPostUni
 furl and different ids (narrow, cheap, and it only catches this one shape). The narrow one is
 probably the right first move, on the same reasoning SH322 just wrote down: the pattern that finds
 the next occurrence is worth more than the fix to this one.
+
+### XVI.66 A failure the command that produced it threw away (SH354)
+
+On 2026-08-02, shipping SH293, a full `clean test` reported **1186 tests, 1 failure**.
+Five identical runs before and after it passed. The failing class is unknown, because
+the command was `… clean test | grep -E "Tests run:.*Failures.*Errors|BUILD"` — the
+pattern the project documents for reading the total (SH283) — and the `<<< FAILURE!`
+line and stack trace went to a pipe nobody kept. `clean` on the next run then removed
+`target/surefire-reports`, which was the second copy.
+
+So there is a defect somewhere in the suite that is real (a run went red with no code
+changing between runs) and undiagnosable, and the reason is process rather than luck:
+**the documented way to read the suite's own number destroys the evidence of what went
+wrong in it.** SH283 established that the count must come from the run; this is the same
+lesson one step along — so must the diagnosis.
+
+The cheap shape is to write the run to a file and grep the file (`… clean test > run.log
+2>&1`), which is what the session fell back to and what found nothing to grep. Whether
+that belongs in `agents.md` beside the count command, in a Maven profile, or in a CI
+step is the question — SH241 is filed against the same absence and would make the
+archived log a build artefact rather than a habit. What must not happen is the next
+occurrence being equally unreadable.
 
 ## XVI.58 What an end-to-end MCP build of a site actually costs (SH325–SH332)
 

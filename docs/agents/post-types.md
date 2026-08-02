@@ -24,6 +24,26 @@ stale; there is no console post-type controller.)
   named separately**: a trashed row still holds the reference, so a refusal saying "0 posts"
   followed by a 500 would be the worst of both.
 
+**A name in `ShSystemPostType` is a type this system creates (SH293).** The class held thirteen
+names transcribed from the 2018 model in `import/post-types.json`; eight of them — `Photo`, `Video`,
+`Quote`, `Link`, `TextArea`, `Article`, `FolderIndex`, `Alias` — appeared **nowhere but in that
+file**. Nothing created them, nothing looked them up, and one had been wrong since it was written:
+the 2018 model declares `Links` and the constant said `Link`, which no reader could catch because a
+constant nobody reads is a string nobody compares. They are deleted. What remains is five, each with
+a creator named in its javadoc: `PageLayout`/`Region`/`Theme` (`ShRenderPostTypes.ensure`, SH183),
+`File` (`ShStaticFileService.resolveOrCreateFilePostType`, SH38), and `Text` — **looked up, never
+created**, which is declared in `ShSystemPostTypeInventoryTest.LOOKED_UP_ONLY` rather than left
+looking like the others. That test is the guard: a constant with no creator fails the build, and a
+declared exception that gains one fails too. Note what the class does *not* claim — it is not an
+inventory of an instance's post-types, only of the ones this code provisions; everything else is a
+user's or an import's, named by data.
+
+**And `File` is now compared with the 2018 model, like the render three** (`ShFilePostTypeSourceTest`)
+— name, plural, title, description, system flag, and the `FILE` field's label, ordinal, `required`,
+`isTitle`, `isSummary` and widget. Same shape as SH290's comparison and a different blast radius: a
+drift here breaks **uploads** rather than rendering, and would surface as a 404 on bytes that exist.
+One mapping is stated rather than silent — the export's `label` is this model's `title`.
+
 **Creating a site is `site.upsert` on the batch surface (SH170)** — addressed `site:<name>`,
 idempotent, and it creates a **blank** site (`ShSiteWriteService.createBlank`), not a clone of the
 SH71 bootstrap template. A token with an SH2 site allow-list is **refused** — inventing a site
