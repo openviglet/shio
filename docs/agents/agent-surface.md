@@ -422,8 +422,22 @@ a scoped credential cannot use the error to prove a site exists.
   `noRollbackFor` that keeps a caught teaching 4xx from blowing up at commit) and
   `ShAgentProofService.attach` (SH193's graph walks LAZY associations, so the two-argument
   overload read them with no session open). And **one diagnostics response is one snapshot
-  now (SH357)** — the count, the window and `earliest` were three read-only transactions, which
+  now (SH358)** — the count, the window and `earliest` were three read-only transactions, which
   is the only way the intermittent `{}`-beside-a-populated-`since` could be produced.
+  **The flake was `counts`, and it was never a race (SH357).** They were summed over the *page*,
+  while this payload's contract has always been that a cap **narrows the detail and never the
+  diagnosis**. `default-limit` is 25 against `max-rows` 500, so the 26th-newest kind simply
+  vanished — and *which* kinds survived depended on what else happened to be newer, which on a
+  shared test context moves with run order. That is what "fails once in fifteen full runs and
+  never reproduces" was. Counts now come from an aggregate over the whole table
+  (`countsByKind`), one row per kind however large it gets, and `ShAgentDiagnosticsCeilingTest`
+  fails on the old code every time. **The lesson worth keeping is about the search, not the
+  bug:** two nanosecond-timing hypotheses were eliminated by 600 rounds that reproduced nothing,
+  and the cause was a documented contract the code had stopped keeping — order-dependence reads
+  exactly like a race from the outside, and is cheap to test for. The same pass removed the
+  feed's `ceiling` from this read on its own merits: `/agent/changes` computes `now - lagMillis`
+  so a **cursor** cannot skip a late commit, and diagnostics resumes nothing, so the argument
+  could only ever hide a row somebody had just recorded.
   **Incidents also ride `/agent/changes` (SH144)** in their own `incidents` array, so one
   `since=` answers what changed *and* what broke. Not a `Change` with an invented `action` —
   every existing caller branches on `action` and would file a failure as content. The

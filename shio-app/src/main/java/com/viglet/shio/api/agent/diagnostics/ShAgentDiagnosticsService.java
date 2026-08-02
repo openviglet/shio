@@ -70,18 +70,27 @@ public class ShAgentDiagnosticsService {
         // how long this process happens to have been running. The buffer is still consulted
         // below, but only to report what it holds that the store does not.
         //
-        // SH357 — one snapshot, not three reads. `retained`, the window and `earliest` used to
+        // SH358 — one snapshot, not three reads. `retained`, the window and `earliest` used to
         // come from three separate read-only transactions, which is how a response could carry
         // an empty `counts` beside a populated `since` and leave nobody able to say whether the
         // row had been written.
-        ShAgentIncidentStore.Snapshot snapshot = store.snapshot(Math.max(cap, 1), Instant.now());
+        //
+        // SH357 — and no ceiling. This used to pass `Instant.now()`, borrowed from the feed's
+        // read, where a ceiling holds a cursor back from a row that commits late. Nothing here
+        // resumes, so the argument could only hide a row somebody had just recorded.
+        ShAgentIncidentStore.Snapshot snapshot = store.snapshot(Math.max(cap, 1));
         long retained = snapshot.retained();
         List<ShAgentIncident> all = snapshot.window();
 
+        // SH357 — over the whole table, not over `all`. The javadoc above has always promised
+        // that a cap "narrows the detail without changing the diagnosis", and summing the page
+        // made that false the moment an instance held more distinct problems than one page:
+        // `default-limit` is 25 and `max-rows` is 500, so the 26th-newest kind simply vanished
+        // from `counts`. Which incidents made the cut then depended on what else happened to be
+        // newer — the order-dependence that reads as an intermittent empty count rather than as
+        // a contract nobody was keeping.
         Map<String, Integer> counts = new TreeMap<>();
-        for (ShAgentIncident incident : all) {
-            counts.merge(wireName(incident.getKind()), incident.getOccurrences(), Integer::sum);
-        }
+        snapshot.counts().forEach((kind, total) -> counts.merge(wireName(kind), total, Integer::sum));
         List<ShAgentDiagnostics.Incident> rows = all.stream()
                 .limit(cap)
                 .map(ShAgentDiagnosticsService::row)

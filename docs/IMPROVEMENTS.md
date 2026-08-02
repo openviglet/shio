@@ -1436,30 +1436,6 @@ SH341's order applies — instrument first — but a section gate cannot ratchet
 way the line gate did, because dropping a section is destructive where shortening a line
 is not. So the honest first step is deciding what a *stale* section should become.
 
-### XVI.67 One diagnostics test reads an empty table once in several full runs (SH357)
-
-SH354's instrument paid for itself: the next occurrence had a **name**.
-`ShAgentDurableIncidentTest.diagnosticsReadsTheTable` asserted the durable table was
-empty, recorded one WEBHOOK incident, and read back `{}` instead of `{"webhook": 1}` —
-on a run where nothing else failed and no code had changed. Roughly one run in fifteen.
-
-**Three hypotheses eliminated, which is most of what an intermittent defect needs.** *Context-cache
-eviction* (SH347's shape, and the obvious suspect since that class was its first victim): the run
-boots **35** contexts against a ceiling of 64, so nothing is evicted — and that 35 is worth keeping,
-because the source counter reports 33 and calls itself a lower bound. *Configuration leak*: the
-sibling test that lowers `maxRows` restores it in a `finally`. *The SH88 lag*: this class sleeps for
-it in seven places, but the diagnostics read applies no lag at all.
-
-What is left is a two-way split, and `record` being **synchronous** is what makes it
-decidable: it sets `unpersisted` when the durable store refuses a row. The test now
-asserts that *first*, as a discriminator rather than as coverage — if it fails, the
-store rejected the write; if it passes and the count still comes back empty, the row was
-written and the read did not see it. One is a store problem, the other a transaction
-problem, and until now the failure could not tell them apart.
-
-Not fixed. The next occurrence names its own cause, which is the difference worth
-shipping.
-
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA

@@ -57,9 +57,36 @@ public interface ShAgentIncidentRepository extends JpaRepository<ShAgentIncident
             + "order by i.lastSeen desc, i.id desc")
     List<ShAgentIncident> findWindow(Instant ceiling, Pageable pageable);
 
+    /**
+     * The same window with <b>no ceiling</b> — the diagnostics read (SH357).
+     *
+     * <p>Every other query here takes a ceiling because it serves a <b>cursor</b>: SH88's lag keeps
+     * {@code /agent/changes} from reading past a row that commits a millisecond late, and a row a
+     * cursor skips is lost for good. Diagnostics answers "what is broken right now" and resumes
+     * nothing, so a ceiling there protects no one and can only hide a row that has just been
+     * written — which it did, roughly once in fifteen full runs, in three different tests.</p>
+     */
+    @Query("select i from ShAgentIncident i order by i.lastSeen desc, i.id desc")
+    List<ShAgentIncident> findRecent(Pageable pageable);
+
     /** Oldest first, for the cap: what gets dropped is the least recently seen. */
     @Query("select i from ShAgentIncident i order by i.lastSeen asc, i.id asc")
     List<ShAgentIncident> findOldest(Pageable pageable);
+
+    /**
+     * Occurrences per kind over the <b>whole table</b> — the diagnostics counts (SH357).
+     *
+     * <p>The counts used to be summed over the page {@code findRecent} returns, while the payload's
+     * own contract says a cap "narrows the detail without changing the diagnosis". With
+     * {@code default-limit} at 25 and {@code max-rows} at 500, an instance holding more than 25
+     * distinct problems reported counts for the newest 25 and silently omitted the rest — so
+     * whether a given incident appeared depended on how many others happened to be newer.</p>
+     *
+     * <p>An aggregate rather than a wider page: the answer is one row per kind however large the
+     * table gets, which is the shape a count wants and is cheaper than the read it replaces.</p>
+     */
+    @Query("select i.kind, sum(i.occurrences) from ShAgentIncident i group by i.kind")
+    List<Object[]> countsByKind();
 
     /** When this instance's record actually starts — the honest bound on "nothing failed". */
     @Query("select min(i.firstSeen) from ShAgentIncident i")

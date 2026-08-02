@@ -10,7 +10,9 @@ package com.viglet.shio.api.agent.diagnostics;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -155,29 +157,47 @@ public class ShAgentIncidentStore {
     /**
      * Everything one diagnostics payload says about the table, from <b>one</b> snapshot.
      *
-     * <p>SH357 — the count, the window and the earliest row used to be three separate
+     * <p>SH358 — the count, the window and the earliest row used to be three separate
      * {@code readOnly} methods, so a payload was assembled from three different states of the
      * table. That is not hypothetical: the one shape the intermittent failure had was an empty
      * {@code counts} beside a populated {@code since}, and a row landing between the first read
      * and the third produces exactly that. Reading them together does not make a concurrent
      * write impossible — it makes it impossible for <em>one answer</em> to disagree with
      * itself, which is what left the failure undiagnosable.</p>
+     *
+     * <p><b>And it takes no ceiling, which is the rest of SH357.</b> It used to be handed
+     * {@code Instant.now()}, copied from {@link #recent(int, Instant)} where the argument means
+     * something: that read serves a <em>cursor</em>, and SH88's lag stops it reading past a row
+     * that commits late, because a row a cursor skips is never delivered again. Diagnostics
+     * resumes nothing. A ceiling there had nothing to protect and one thing it could do, which
+     * was hide a row somebody had just recorded — the whole flake, in one argument nobody had a
+     * reason to pass.</p>
      */
     @Transactional(readOnly = true)
-    public Snapshot snapshot(int limit, Instant ceiling) {
+    public Snapshot snapshot(int limit) {
+        Map<String, Integer> counts = new TreeMap<>();
+        for (Object[] row : repository.countsByKind()) {
+            counts.merge((String) row[0], ((Number) row[1]).intValue(), Integer::sum);
+        }
         return new Snapshot(repository.count(),
-                repository.findWindow(ceiling, PageRequest.of(0, Math.max(1, limit))),
+                repository.findRecent(PageRequest.of(0, Math.max(1, limit))),
+                counts,
                 repository.earliest().orElse(null));
     }
 
     /**
      * @param retained rows in the table
-     * @param window   the most recent of them, newest first
+     * @param window   the most recent of them, newest first — narrowed by the caller's limit
+     * @param counts   occurrences per kind over the <b>whole</b> table, which is why they are read
+     *                 here rather than summed from {@code window}: the payload promises a cap
+     *                 narrows the detail without changing the diagnosis, and summing the page made
+     *                 that false the moment an instance held more distinct problems than one page
      * @param earliest when the record starts, or {@code null} when the table is empty — which
      *                 is genuinely "nothing has ever failed" rather than "nothing is
      *                 remembered", the distinction SH103 could report but not make
      */
-    public record Snapshot(long retained, List<ShAgentIncident> window, Instant earliest) {
+    public record Snapshot(long retained, List<ShAgentIncident> window,
+                           Map<String, Integer> counts, Instant earliest) {
     }
 
     /** Oldest first, strictly after a position — the SH88-shaped read the feed merges. */

@@ -454,7 +454,6 @@
 - 💭 **SH276** (deps: SH275 ✅) **A premise about a dependency we *do not* have is unfalsifiable, and one is load-bearing** — It justifies ~1500 lines of hand-rolled protocol and cannot be asserted, because checking it means adding the dependency being evaluated. → §XVI.28
 - ⏳ **SH355** (deps: —) **Half-shipped entries are invisible to the tool that owns the files** — Five of the seven parentheticals are already stale and the one honest half-shipped line is the only one lint reports; the grammar decision is filed upstream as RK121, RK122 and RK125. → §XVI.65
 - ⏳ **SH356** (deps: SH341 ✅) **The rationale file carries the debt the roadmap just shed** — Three of the four line-level defects had one correct reading and are repaired; what is left is a duplicate SH347 that is two deliveries under one id, waiting on the ledger renumber RK127 asks for. → §XVI.66
-- ⏳ **SH357** (deps: SH354 ✅) **One diagnostics test reads an empty table once in several full runs** — The class fails intermittently in a second method now, so the cause is the class or its context rather than one assertion. → §XVI.67
 
 ---
 
