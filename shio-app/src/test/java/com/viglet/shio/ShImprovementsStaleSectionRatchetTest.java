@@ -155,8 +155,15 @@ class ShImprovementsStaleSectionRatchetTest {
                 .hasSizeGreaterThan(100)
                 .contains("SH183", "SH290");
         assertThat(HEADING.matcher(read(IMPROVEMENTS)).results().count())
-                .as("and a heading scan that matched nothing would make every section invisible")
-                .isGreaterThan(50);
+                .as("""
+                        and a heading scan that matched nothing would make every section invisible. \
+                        The floor is deliberately far below the live count: this asserts the regex \
+                        still matches *something*, and it was written at 50 against a file holding \
+                        59 — so the first legitimate cleanup that dropped nine orphans failed the \
+                        build for a reason that had nothing to do with the change. A vacuity check \
+                        pinned near the value it watches is a ratchet nobody asked for, and it \
+                        fires on exactly the work the ratchet above exists to encourage.""")
+                .isGreaterThan(10);
     }
 
     private static Set<String> shippedIds() {

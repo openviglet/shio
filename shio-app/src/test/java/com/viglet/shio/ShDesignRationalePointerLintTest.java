@@ -94,9 +94,22 @@ class ShDesignRationalePointerLintTest {
     private static final Path ROADMAP = Path.of("..", "docs", "ROADMAP.md");
 
     /** {@code ### XVI.12 Some title (SH123)} — the number is what a pointer names. */
-    private static final Pattern SECTION = Pattern.compile("^### (?:([IVXL0-9]+\\.\\d+)\\s+)?(.*)$");
-    /** {@code → §XVI.12} in a roadmap line. */
-    private static final Pattern POINTER = Pattern.compile("→ §([IVXL0-9]+\\.\\d+)");
+    /**
+     * A numbered rationale heading.
+     *
+     * <p>The trailing {@code (?:\.\d+)*} is a <b>subsection</b> — {@code §XV.0.3}, {@code §X.3.1}.
+     * roadkeep's model has them (its {@code ship} reports what it found {@code nested}, and a
+     * subsection is owned by its parent rather than by a task line of its own), and this lint
+     * predates that: it read a third level as <em>no number at all</em> and reported ten perfectly
+     * addressable headings as unaddressable. A pointer can name {@code §XV.0.3} exactly as well as
+     * {@code §XV.14}, which is the property SH351 is about.</p>
+     */
+    private static final String ANCHOR = "(?:[IVXL]+|\\d+)(?:\\.\\d+)+";
+
+    private static final Pattern SECTION =
+            Pattern.compile("^### (?:(" + ANCHOR + ")\\s+)?(.*)$");
+    /** {@code → §XVI.12} in a roadmap line, or {@code → §XV.0.3} at a subsection. */
+    private static final Pattern POINTER = Pattern.compile("→ §(" + ANCHOR + ")");
     /** A status-marked roadmap task line: the active backlog. */
     private static final Pattern TASK_LINE = Pattern.compile("^- [📋💭⏳🛠] \\*\\*(SH\\d+)\\*\\*");
     private static final Pattern TASK_ID = Pattern.compile("SH\\d+");

@@ -1,0 +1,24 @@
+# The gate the write path already runs locally, called through the action roadkeep
+# publishes rather than a copied `run:` block. `roadkeep lint` exits 1 on a governed file
+# that drifted, and that exit code is the whole contract.
+#
+# `baseline: origin/main` is deliberate and not a permanent state. Nine sections still
+# exceed the 250-word budget and three findings are roadkeep's own open defects (RK121's
+# `SH96 (local half)` id shape, RK122's half-shipped SH238), so a bare run would be red for
+# standing debt and nobody would read it. With the baseline the job fails on what a branch
+# *adds*, which is the drift a gate exists to stop. Drop the line once `lint` is clean.
+name: roadkeep
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    name: roadkeep lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: alegauss/roadkeep@main
+        with:
+          baseline: origin/main

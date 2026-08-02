@@ -192,23 +192,21 @@ is a wiring question rather than an enforcement one.
 `ShFolderWriteService` records no audit row on create, rename, move or delete. Post writes
 all do, so `/agent/changes` describes a site's *contents* and never its *shape*.
 
-The consequence is specific and it falls on the one workflow the feed exists for. A session
-resuming with `since=<cursor>` is told a post now lives at `folder:Blog/archive/2025` and is
-never told that folder appeared, was renamed from `2024`, or moved. It cannot distinguish
-"someone filed this post into an existing section" from "someone restructured the site", and
-those call for different next actions. The SH109 review queue has the same hole from the
-other side: it groups audit rows by session, so a run whose whole purpose was structural
-shows up empty or half-present, and there is nothing for **revert** to act on.
+The consequence falls on the one workflow the feed exists for. A session resuming with
+`since=<cursor>` is told a post now lives at `folder:Blog/archive/2025` and never that the
+folder appeared, was renamed from `2024`, or moved — so it cannot tell "someone filed this post
+into an existing section" from "someone restructured the site", and those call for different
+next actions. The SH109 review queue has the same hole from the other side: it groups audit
+rows by session, so a structural run shows up empty or half-present and **revert** has nothing
+to act on.
 
 Two design points worth settling before the code:
 
 - **A folder change is not a post change, and flattening it into one would lie.** The
-  temptation is to emit an `UPDATE` per affected post when a folder moves, because that is
-  what the feed already knows how to carry. But no post changed — SH137 is explicit that a
-  folder move leaves every URL and every field alone — and a feed that reported a hundred
-  post updates for one rename would make a cheap operation look like a rewrite, which is
-  exactly the misreading that makes a consumer stop trusting the feed. The entry is about
-  the folder.
+  temptation is an `UPDATE` per affected post when a folder moves, because that is what the
+  feed already carries. But no post changed — SH137 is explicit that a folder move leaves every
+  URL and every field alone — and a hundred post updates for one rename makes a cheap operation
+  look like a rewrite, which is what makes a consumer stop trusting the feed.
 - **`ShContentAction` has no vocabulary for it yet.** `CREATE`/`UPDATE`/`DELETE` are about
   the right shape, but a consumer needs to know the subject is a folder to interpret the
   address (`folder:` vs `post:` per SH79) — so the audit row needs a subject kind, not a new
@@ -424,43 +422,41 @@ outrun it.
 Closing it properly means changing how the row is *written*, not how it is read. That is why
 it is a separate task — SH88 is the read shape, and the read shape is right.
 
-**What a pass at it in July 2026 established, before stopping.** The two phrasings this
-section used to offer — "a sequence assigned at commit, or an outbox the reader drains in
-commit order" — are not two designs of equal weight, and neither is as cheap as it sounds:
+### X.3.1 What a pass at SH147 established, before stopping
 
-* **"Assigned at commit" is not available.** There is no JPA hook that runs *at* commit; the
-  latest one is `TransactionSynchronization.beforeCommit`, and two transactions can still
-  interleave between their `beforeCommit` and their actual commit. It narrows the window
-  exactly the way the lag already does, so it buys nothing and costs a column.
-* **A sequence assigned *inside* the transaction does work, but only with gap detection.** Rows
-  get a monotonic `seq`, the cursor becomes a `seq`, and the reader **stops at the first hole**
-  rather than reading past it — a hole is either a transaction still in flight (wait) or one
-  that rolled back (skip after a timeout). This is the real shape, and it turns the existing
-  `lag-millis` from "hope the commit is fast" into "how long to wait for a gap", which is a far
-  better justification for the same knob.
+The two phrasings §X.3 used to offer — "a sequence assigned at commit, or an outbox the reader
+drains in commit order" — are not two designs of equal weight, and neither is as cheap as it
+sounds:
+
+* **"Assigned at commit" is not available.** No JPA hook runs *at* commit; the latest is
+  `TransactionSynchronization.beforeCommit`, and two transactions can still interleave between
+  their `beforeCommit` and their actual commit. It narrows the window the way the lag already
+  does, so it buys nothing and costs a column.
+* **A sequence assigned *inside* the transaction works, but only with gap detection.** Rows get
+  a monotonic `seq`, the cursor becomes a `seq`, and the reader **stops at the first hole** — a
+  hole is a transaction still in flight (wait) or one that rolled back (skip after a timeout).
+  This is the real shape, and it turns `lag-millis` from "hope the commit is fast" into "how
+  long to wait for a gap", a far better justification for the same knob.
 * **The blocker is portability, not design.** A monotonic non-PK column has to work on H2,
-  MariaDB *and* PostgreSQL: identity/auto-increment on a non-PK column differs across all
-  three, Hibernate will not drive a sequence generator for a non-id field, and `nextval` vs
-  `NEXT VALUE FOR` is engine-specific SQL. Whatever is chosen, the **only** proof it applies is
-  the SH26 Testcontainers ITs (`ShMariaDbSchemaIT` / `ShPostgresSchemaIT`), which need Docker
-  and auto-skip without it. Landing a changeset for a portable-sequence column without running
-  them would repeat the SH2/SH5 drift exactly: a column that works on the dev H2 and leaves a
-  clean Liquibase database broken.
+  MariaDB *and* PostgreSQL: identity on a non-PK column differs across all three, Hibernate
+  will not drive a sequence generator for a non-id field, and `nextval` vs `NEXT VALUE FOR` is
+  engine-specific. The **only** proof of whatever is chosen is the SH26 Testcontainers ITs,
+  which need Docker and auto-skip without it — and landing the changeset without running them
+  repeats the SH2/SH5 drift: a column that works on dev H2 and leaves a clean Liquibase
+  database broken.
 
 So the task is: pick the portable mechanism, add `ShHistory.seq` with a changeset, make the
-cursor a `seq` (accepting the old `<instant>|<id>` form and translating, since it is a
-published contract), teach the reader to stop at a gap, and **run the cross-DB ITs**. It is
-schema work that must not be done blind, and that is the whole reason it is still open.
+cursor a `seq` (accepting and translating the old `<instant>|<id>` form, a published contract),
+teach the reader to stop at a gap, and **run the cross-DB ITs**.
 
 ### X.13 Editing an asset's bytes in place does nothing (SH210)
 
-SH145 made a `File` field hold an asset path and made `push --content` resolve that path back
-to an id — idempotently, by looking the path up in the server's inventory and reusing the id
-when it is already there. That is the right rule for the case it was designed for (a second
-push must not upload a second copy) and it is the wrong rule for the case nobody separated
-from it: **replacing the bytes at a path that already exists uploads nothing and reports
-success.** Editing an image is the most ordinary thing anyone does to an asset, and it is now
-the one silent no-op left in the projection.
+SH145 made a `File` field hold an asset path and made `push --content` resolve it back to an id
+idempotently, reusing the id when the path is already in the server's inventory. That is right
+for the case it was designed for (a second push must not upload a second copy) and wrong for
+the case nobody separated from it: **replacing the bytes at a path that already exists uploads
+nothing and reports success** — the one silent no-op left in the projection, on the most
+ordinary thing anyone does to an asset.
 
 Noticing it is cheap and already half-built: the base snapshot fingerprints every projected
 field (SH148), and the same treatment applied to an asset's bytes would make "this file
@@ -565,29 +561,27 @@ not to make collisions less likely; it is to make the remaining ones loud.
 
 ### XI.5 The community half of the registry (SH217)
 
-SH96 shipped the local half: the classpath, plus one directory an operator names. That is a
-real trust model — whoever can set `shio.blueprint.path` can already put a jar on the
-classpath, so it grants no new authority, and the person who set it is the person vouching
-for what is in it. Collisions refuse rather than shadow, an unreadable path fails rather
-than yielding fewer packages, and every package reports where it came from.
+SH96 shipped the local half: the classpath, plus one directory an operator names. That is a real
+trust model — whoever can set `shio.blueprint.path` can already put a jar on the classpath, so it
+grants no new authority, and whoever set it is vouching for what is in it. Collisions refuse
+rather than shadow, an unreadable path fails rather than yielding fewer packages, and every
+package reports its source.
 
-What that answer does *not* cover is a package a stranger wrote. "An operator put it there"
-is a subject for a sentence about trust; "it resolved from npm" is not, and the difference
-is the whole remaining task. A blueprint provisions post-types and writes pages under the
-caller's credentials, so fetch-by-URL or registry resolution moves the decision from a
-person to a network — which is the shape of every supply-chain incident anyone has had.
+What that does *not* cover is a package a stranger wrote. "An operator put it there" is a subject
+for a sentence about trust; "it resolved from npm" is not, and that difference is the remaining
+task. A blueprint provisions post-types and writes pages under the caller's credentials, so
+fetch-by-URL moves the decision from a person to a network — the shape of every supply-chain
+incident anyone has had.
 
-What this task owns, then: the `shio-blueprint-*` naming convention (absorbs old
-SH28/SH29/SH31); a validation pass a publisher can run *before* publishing — the load-time
-checks SH92 already implements, exposed as a command, so an author's mistake is caught by
-the author; a written statement of what an applied package is allowed to do, which SH151/SH152
-made answerable by making the dangerous parts opt-in; a curated index; and some provenance
-signal stronger than a directory listing.
+What this task owns: the `shio-blueprint-*` naming convention (absorbs old SH28/SH29/SH31); a
+validation pass a publisher can run *before* publishing — SH92's load-time checks exposed as a
+command, so an author's mistake is caught by the author; a written statement of what an applied
+package may do, which SH151/SH152 made answerable by making the dangerous parts opt-in; a
+curated index; and a provenance signal stronger than a directory listing.
 
-The format itself still needs nothing. A package is a directory whose contents are validated
-on load, `formatVersion` refuses one written for a newer instance rather than mis-reading it,
-and SH96 proved the validation is source-independent: a local package is held to exactly the
-same checks, so "it loaded" already means the same thing wherever it came from.
+The format needs nothing. A package is a directory validated on load, `formatVersion` refuses
+one written for a newer instance rather than mis-reading it, and SH96 proved the validation is
+source-independent: "it loaded" already means the same thing wherever it came from.
 
 ### XI.11 The remaining packages carry an index page (SH216)
 
@@ -707,22 +701,20 @@ is the *only* place the trash appears on the agent surface. There is no `/agent`
 lists it, no MCP tool, and no `shio` command; `GET /api/v2/post-unified/trash`,
 `POST .../untrash`, `GET /api/v2/folder/trash` and `POST .../untrash` are console endpoints.
 
-So the protocol tells the caller an undo exists and gives it no way to reach it. That inverts
-P1 on the capability an agent needs *most* immediately after a mistake, and it is the one
-inversion where "the console can do it" is least comforting: the mistake is usually noticed by
-the agent, in the same run, seconds later.
+So the protocol tells the caller an undo exists and gives it no way to reach it. That inverts P1
+on the capability an agent needs most immediately after a mistake, and it is where "the console
+can do it" is least comforting: the mistake is usually noticed by the agent, seconds later.
 
 Two design questions, neither settled:
 
 - **How much surface does it cost?** A read plus a restore is two more operations, and the MCP
-  tool budget is measured per turn (SH132). The cheap shape is not a new tool but a verb on an
-  existing one — `shio_write` already carries the addressed write vocabulary, and `post.restore`
-  / `folder.restore` are ops in exactly that shape. The listing is the harder half: it is a read
-  of things that have no address any more, which is what SH172's `id:` fallback exists for.
+  tool budget is per turn (SH132). The cheap shape is a verb on an existing tool, not a new one
+  — `shio_write` already carries the addressed write vocabulary. The listing is the harder half:
+  a read of things with no address any more, which is what SH172's `id:` fallback exists for.
 - **Does a restore need a confirm token?** SH108's rule is that a *destructive* op needs the
-  plan it was shown. A restore is not destructive, but it is not free either — restoring a
-  section can bring back content a human deliberately removed. The honest answer is probably no
-  token and a change-set entry naming what came back, since SH200's restore is already audited.
+  plan it was shown. A restore is not destructive but not free — it can bring back content a
+  human deliberately removed. Probably no token and a change-set entry naming what came back,
+  since SH200's restore is already audited.
 
 ### XII.7 Deleting a site is SH200 one level up, and worse (SH223)
 
@@ -732,23 +724,21 @@ leaves the same way a folder's posts used to before SH200: past the SH55 trash, 
 audit row, invisible to the SH88 feed, unrevertable by the SH109 queue, and with no `DELETE`
 lifecycle event — so no webhook and no SH38 byte cleanup.
 
-It is the same defect with the largest blast radius on the surface, and the argument for fixing
-it is the one SH200 made: **the most destructive operation must not be the least recoverable and
-the least observable.** A site is the whole thing.
+Same defect, largest blast radius; the argument for fixing it is SH200's: **the most
+destructive operation must not be the least recoverable and the least observable.**
 
 The fix is a delegation, not a third cascade — the site's root folders go through
-`ShFolderWriteService`, which is now the one place that knows what deleting a subtree means. Two
-things to decide while doing it:
+`ShFolderWriteService`, the one place that knows what deleting a subtree means. Two things to
+decide while doing it:
 
 - **Is a deleted site trashed too, or only its content?** Trashing the content and removing the
-  site row cannot work, for the same reason it could not work for a folder: the posts keep their
-  `folder_id` and the root folders keep their `site_id`. So either the site gets a
-  `deleted_date` of its own — consistent, and it means a site can be restored whole — or the
-  delete stays a purge and must fire the events and write the audit itself. SH200 chose the
-  first shape one level down, which is an argument for symmetry.
+  site row cannot work, for the reason it could not for a folder: the posts keep their
+  `folder_id` and the root folders their `site_id`. So either the site gets a `deleted_date` of
+  its own — consistent, and a site can then be restored whole — or the delete stays a purge and
+  must fire the events and write the audit itself. SH200 chose the first one level down.
 - **What does the site listing owe the curator?** A trashed site still occupies its name and
-  friendly URL, so re-creating it will collide, and "that name is taken by something you
-  deleted" is a teaching error somebody has to write.
+  friendly URL, so re-creating it collides, and "that name is taken by something you deleted"
+  is a teaching error somebody must write.
 
 ### XII.8 A permanent deletion is the one write nobody records (SH224)
 
@@ -900,30 +890,26 @@ SH174 measured it and the number is worth keeping in view:
 | `format=terse` | 2088 (**1.1×**) |
 | `include=features,limits` | 298 (**7.9×**) |
 
-Everywhere else on the surface the terse encoding is worth a third to a half, because
-everywhere else the payload is *rows* and JSON's cost is the key names repeated per row.
-The manifest is not rows. It is twenty-nine endpoint entries whose weight is a purpose
-sentence and a runnable example, both kept verbatim on purpose — an abbreviated example is
-a call the instance would reject.
+Everywhere else the terse encoding is worth a third to a half, because everywhere else the
+payload is *rows* and JSON's cost is the key names repeated per row. The manifest is not rows:
+twenty-nine endpoint entries whose weight is a purpose sentence and a runnable example, both
+verbatim on purpose — an abbreviated example is a call the instance would reject.
 
-So the index is the target, and `include` only helps a caller that already knows what it
-wants. Two candidates, and both have a real objection:
+So the index is the target, and `include` only helps a caller that already knows what it wants.
+Two candidates, both with a real objection:
 
 - **Elide a derivable example.** Most entries' examples are `METHOD {apiBase}{path}` with no
-  parameters, so the string adds nothing a reader cannot reconstruct. Against it:
-  `ShAgentManifestTest` asserts every indexed endpoint carries a runnable example, and that
-  assertion exists because a missing example is what sends an agent guessing. A rule the
-  reader has to know in order to reconstruct is not obviously better than the bytes.
-- **Put the index behind its own `include`, and default it off.** Honest about what the
-  document is for — a capability check — and it moves the cost to the session that actually
-  wants the index. Against it: the first read of a *first* session is exactly when the index
-  is worth having, and defaulting it off means that session pays two calls instead of one,
-  which is the opposite of SH157.
+  parameters. Against it: `ShAgentManifestTest` asserts every indexed endpoint carries a
+  runnable example, because a missing example is what sends an agent guessing, and a rule the
+  reader must know in order to reconstruct is not obviously better than the bytes.
+- **Put the index behind its own `include`, defaulted off.** Honest about what the document is
+  for — a capability check — and it moves the cost to the session that wants the index. Against
+  it: a *first* session is exactly when the index is worth having, and it would then pay two
+  calls instead of one, which is the opposite of SH157.
 
-There may be a third: the index is the most cacheable document on the surface and the only
-part of the manifest that never changes between builds. A separate `/agent/endpoints` with
-its own long-lived tag would make the manifest small permanently, at the cost of one more
-endpoint on a surface whose whole pitch is that it has few.
+A third may exist: the index is the most cacheable document on the surface and the only part
+that never changes between builds, so a separate `/agent/endpoints` with a long-lived tag would
+make the manifest small permanently — at the cost of one more endpoint.
 
 ### XIII.11 An instance's own notes travel nowhere (SH231)
 
@@ -932,18 +918,16 @@ behind. That reasoning holds for a *site* import — importing another installat
 rules alongside somebody's blog is a P7 surprise, and nobody asked for them — and it does
 not hold for the case where those notes matter most: moving a whole instance.
 
-An instance-wide note is the accumulated answer to "how is this deployment driven" — copy
-is authored in files here, this front end owns `/docs/**`, publishing happens on Fridays.
-It is the least reproducible thing in the system and the only one with no export path at
-all.
+An instance-wide note is the accumulated answer to "how is this deployment driven" — copy is
+authored in files here, this front end owns `/docs/**`, publishing happens on Fridays. It is
+the least reproducible thing in the system and the only one with no export path at all.
 
-The tenant package (`buildTenantPackage`) is the obvious home, since it already means
-"everything this installation is". The decision is what an import does with them, and the
-options are not equal: merging them into the target's memory is the surprise SH161 refused;
-importing them **scoped to nothing and marked as imported** would need a provenance field
-the note shape does not have; and writing them to a *file* for a human to review is the
-option that fits P7 and does not need a schema change at all. That last one is probably
-right, and it makes this a CLI task rather than a server one.
+The tenant package (`buildTenantPackage`) is the obvious home. The decision is what an import
+does with them, and the options are not equal: merging them into the target's memory is the
+surprise SH161 refused; importing them **scoped to nothing and marked as imported** needs a
+provenance field the note shape does not have; and writing them to a *file* for a human to
+review fits P7 and needs no schema change. That last is probably right, which makes this a CLI
+task rather than a server one.
 
 ### XIII.12 `/agent/changes` cannot revalidate the way it is most often called (SH232)
 
@@ -1031,7 +1015,9 @@ URL → ShSitesContextURL                        parse object id + `format`
 
 Four things follow, and they reverse the conclusion I would otherwise have reached.
 
-**The template language was Handlebars, not JavaScript.** `ShCacheJavascript.shObjectJSFactory()`
+### XV.0.1 The template language was Handlebars, not JavaScript
+
+`ShCacheJavascript.shObjectJSFactory()`
 concatenates `classpath:/js/server-side/shObject.js` and `handlebars.min.js` and evaluates them
 once per thread. Authors wrote Handlebars — logic-less, declarative, no code execution. Nashorn
 was the *host* that ran Handlebars and bridged to Java; it was never the authoring surface.
@@ -1043,7 +1029,9 @@ nothing else — `formComponent`, `searchComponent`, `navigation`, `navigationFo
 `shFormComponent`, `shGetRelationComponent`, plus three `*Utils`). That is an allow-list
 expressed as a convention.
 
-**The liability was the host, and it was real.** `ShNashornEngineConfiguration` calls
+### XV.0.2 The liability was the host, and it was real
+
+`ShNashornEngineConfiguration` calls
 `getScriptEngine(String[])` — Nashorn's `getScriptEngine(ClassFilter)` overload exists precisely
 to bound what a script may reach, and it is not used. So a layout's JavaScript had `Java.type()`
 over the entire classpath: `Runtime.exec`, file I/O, the `DataSource`. The raw
@@ -1059,7 +1047,9 @@ feedback than most template engines ship, and exactly the shape law P6 asks for.
 across requests, which is a state-leak between visitors; a template evaluator with no mutable
 global scope does not have that problem to solve.
 
-**What the model handled that a fixed section vocabulary does not.** This is the question that
+### XV.0.3 What the model handled that a fixed section vocabulary does not
+
+This is the question that
 matters for SH183, and the answer is unambiguous. Navigation, queries and listings, search
 results and forms are all *dynamic* — none is expressible as a static section post, and all four
 were first-class in the old engine. A closed vocabulary of eight section types cannot render a
@@ -1073,7 +1063,9 @@ presentation held as managed content rather than as files in a build. That is wh
 up the way they do, and it is worth knowing when weighing the design: this is a shape with
 twenty years of enterprise use behind it, not an invention.
 
-**"But V7 rendered with a script engine too, and it worked."** It did, and that precedent is
+### XV.0.4 The objection: V7 rendered with a script engine too
+
+It did, and that precedent is
 real — the objection deserves an answer rather than a restatement of the non-goal. Two things
 changed, and neither is about capability.
 
@@ -1095,7 +1087,9 @@ So the conclusion is not "V7 was wrong". It is that the part of V7 worth keeping
 **model** — page → template → component, presentation as managed content — and the part that
 has to be replaced is the host that ran it.
 
-**What a real template looked like.** `openviglet/bootstrap-site` is not a project — it is an
+### XV.0.5 What a real template looked like: regions are slotted by an HTML attribute
+
+`openviglet/bootstrap-site` is not a project — it is an
 `export.json`, an SH68 exchange package, and its ten posts are `PT-FOLDER-INDEX` ×1,
 `PT-ARTICLE` ×3, `PT-PAGE-LAYOUT` ×2, `PT-REGION` ×2, `PT-THEME` ×1, `PT-FILE` ×1. The
 presentation *is* content, and it travels the same way content does. Four things in it settle
@@ -1114,7 +1108,9 @@ with named holes:
 annotation contract the Universal Editor needs (§XV.3). A rendered page that keeps these
 attributes tells the editor what each part of the DOM is and which post to save it to.
 
-**2. The layout's JavaScript is ceremony, not capability.** Both layouts carry the same four
+### XV.0.6 The layout's JavaScript is ceremony, not capability
+
+Both layouts carry the same four
 lines:
 
 ```js
@@ -1131,7 +1127,9 @@ not logic.) Note also `load('https://cdnjs.cloudflare.com/...')`: the engine fet
 template library **from a CDN at render time**, so the render path depended on remote code
 being both reachable and unmodified.
 
-**3. A region's JavaScript is a view-model builder — and every part of it is a helper.** The
+### XV.0.7 A region's JavaScript is a view-model builder, and every part of it is a helper
+
+The
 navigation region registers a helper, calls a component, and reshapes the result:
 
 ```js
@@ -1155,7 +1153,9 @@ So migrating to registered helpers is not a loss of expressiveness — it is the
 boilerplate that exists only because the loop had nowhere else to live. The templates themselves
 (`{{#each}}`, `{{#if}}`, `{{{text}}}`, custom helpers) are ordinary Handlebars and port as-is.
 
-**4. A theme carries site-wide assets.** `PT-THEME` has `CSS` and `JAVASCRIPT` fields — both
+### XV.0.8 A theme carries site-wide assets
+
+`PT-THEME` has `CSS` and `JAVASCRIPT` fields — both
 `null` in this sample, so the intent is clearer than the usage: one place for the stylesheet and
 script a whole site shares, referenced by each layout's `THEME` field.
 
@@ -1163,88 +1163,37 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.7 Importing an exchange package teaches nothing and is not on the agent surface (SH189)
-
-> ⏳ **The teaching half shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two things it settled and
-> two it split off.
->
-> **The bodiless 400 is gone, and classification was worth more than the message.** Passing the
-> exception's text through would have been most of the value; it would not have told the caller what
-> *kind* of thing to look at, and the four causes need four different next actions. The slug is the
-> kind, the `fix` is the action. The cause's message is carried as well as the wrapper's, because
-> Jackson names the offending property in the cause — reporting only the wrapper would have
-> reproduced this defect one level in.
->
-> **The second decision this section asked for answers itself.** "Whether the agent-side verb is a
-> `batch` op, its own endpoint, or `shio import`" — the endpoint already exists and was
-> console-only for a mundane reason: a stateless caller could not satisfy CSRF. SH167's matcher
-> fixes that in one line, and nothing new needed inventing. The general lesson: before designing a
-> new surface for a capability, check whether the existing one is unreachable rather than absent.
->
-> **What split off.** The string-matching classifier was **SH267**, ✅ shipped in turn → see
-> [CHANGELOG.md](CHANGELOG.md) Block P. What remains is the CLI/MCP reach, **SH268**, where the interesting part is
-> that an SH68 package is a *zip*: a client with no filesystem cannot produce one, so "add a tool"
-> is not the answer and the honest option may be for the manifest to say this capability is
-> CLI-shaped.
-
 ### XV.14 What building the renderer found (SH247–SH249)
 
 Three edges, and they share a shape: each is somewhere the renderer is *nearly* the thing it
 replaced, and where the remaining gap is invisible from the outside because the page still
 comes out.
 
-#### XV.14 `form` is the last of the seven capabilities (SH247)
+### XV.14.1 `form` is the last of the seven capabilities (SH247)
 
 > ⏳ **`getRelation` and `search` shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. What §XV.14
 > predicted held: they were not equally hard and treating them as one thing would have been the
 > mistake. Two conclusions from building them, plus what is left.
 >
 > **The row shape is the interface, not the helper name.** All five listing helpers yield the
-> same row, so a card body written for `{{#query}}` works for a relation or a search result.
-> That was not in the original design and it is the thing that makes a *closed* capability set
-> feel small rather than arbitrary: five helpers over one vocabulary, instead of five
-> vocabularies. The corollary is that the DRAFT-preference and the total order had to be
-> extracted and shared — a second copy of the preference is a second chance to get it backwards,
-> and that failure mode is a preview showing the live page while the curator hunts for the
-> unpublished change they came to look at.
+> same row, so a card body written for `{{#query}}` works for a relation or a search result. That
+> was not in the original design and it is what makes a *closed* capability set feel small rather
+> than arbitrary. The corollary is that the DRAFT-preference and the total order had to be
+> extracted and shared: a second copy of the preference is a second chance to get it backwards,
+> and that failure shows the live page while the curator hunts for the unpublished change.
 >
 > **A missing reference and a missing region are different mistakes with different owners.**
-> SH183 marks an unfilled region slot in the page; `getRelation` skips a dangling reference. That
-> looks inconsistent and is not: a region slot is named inside a layout's HTML, where before
-> SH193 nothing but the renderer could see it, while a dangling post reference is already an
-> SH154 `dangling-reference` finding with an address and a `fix`. The rule to carry: **mark what
-> only the renderer can see; leave to the lint what the lint already reports.** One defect in two
-> reports is two reports that can disagree.
+> SH183 marks an unfilled region slot; `getRelation` skips a dangling reference. That looks
+> inconsistent and is not: a region slot is named inside a layout's HTML, where before SH193
+> nothing but the renderer could see it, while a dangling post reference is already an SH154
+> `dangling-reference` finding with an address and a `fix`. The rule to carry: **mark what only
+> the renderer can see; leave to the lint what the lint already reports.**
 >
 > **What is left is `form`, and its absence is a decision.** A form needs somewhere for a
-> submission to go — storage, spam handling, notification, retention — which is a subsystem, not a
-> helper. Writing it before that is answered is writing half a feature, and the honest interim
-> state is the one that now exists: `{{#form}}` is a write-time refusal naming SH247, so the
-> author is told the capability is absent rather than shipping a page with a silently missing
-> block.
-
-#### XV.21 A raster is still the only answer to most of "looks wrong" (SH265)
-
-SH187 extracts the appearance surface a document carries and stops exactly where a layout engine
-would begin. Overlap, contrast, truncation, a broken grid, anything responsive: none of it is in the
-markup, and no amount of parsing invents it.
-
-The pieces exist. SH102 rasterizes already, through an **optional** Playwright import with a
-teaching error naming the install — deliberately optional so `@viglet/shio` never pulls a browser.
-SH249 made the input free: the renderer's own HTML, in-process, no outbound fetch. So the open
-question is not how to take the picture.
-
-It is **who reads it and where it lives.** An image on the agent surface is tokens an agent mostly
-cannot use — SH102's own framing, and still true. But the pixel diff SH102 computes is a *number*,
-and a number is exactly what an agent can act on. So the shape to design is probably: snapshot the
-rendered HTML server-side, return the **diff ratio** against a stored baseline plus a signed URL for
-the human who wants to look. That reuses the SH25 signing path rather than inventing a second one.
-
-Two decisions in front of it. Whether an instance may run a browser at all — the reason SH102 kept
-Playwright out of the CLI's dependencies applies with more force server-side, where the operator did
-not choose it. And where the baseline lives: `shio/snapshots/` is a project directory and this would
-be instance state, which is either a new store or an argument that the *client* stays the baseline's
-owner and the server only ever answers "here is the current one".
+> submission to go — storage, spam handling, notification, retention — which is a subsystem, not
+> a helper, and writing it before that is answered is writing half a feature. `{{#form}}` is a
+> write-time refusal naming SH247, so the author is told the capability is absent rather than
+> shipping a page with a silently missing block.
 
 ### XV.22 A raster is still the only answer to most of "looks wrong" (SH265)
 
@@ -1301,20 +1250,18 @@ and resolves to nothing — and 0.56 had also *removed* files monaco-graphql imp
 (`esm/vs/editor/edcore.main.js`). `pnpm run compile:build` therefore failed, which is
 `mvn package`, which is the release jar and the SH182 check.
 
-The fix was a pin, not a shim: `@graphiql/react` already depends on `monaco-editor@0.52.2`
-exactly, so the console's `0.56.0` was the outlier and aligning on 0.52.2 both satisfies the
-peer range and collapses three copies of Monaco to one. The first attempt was a Vite `resolve`
-alias remapping the broken prefix, and it is worth recording why that was wrong: it made the
-first two specifiers resolve and then failed on a third, because the packages are genuinely
-incompatible and an alias only hides the *symptom* at whichever import the bundler reaches
-first. A build error that moves when you patch it is telling you the version is wrong.
+The fix was a pin, not a shim: `@graphiql/react` already pins `monaco-editor@0.52.2`, so the
+console's `0.56.0` was the outlier, and aligning on it satisfies the peer range and collapses
+three Monaco copies to one. The first attempt was a Vite `resolve` alias
+remapping the broken prefix, and why it was wrong is worth recording: it made two specifiers
+resolve and failed on a third, because the packages are genuinely incompatible and an alias
+hides the symptom at whichever import the bundler reaches first. **A build error that moves
+when you patch it is telling you the version is wrong.**
 
 The generalizable half is the guard. This is a **resolution** fact — true the moment the
-lockfile is written, invisible to every runtime test — so the instrument has to be the
-installer: `strict-peer-dependencies` (pnpm's default is off) turns "resolved a version the
-dependent does not support" into a refusal. That is cheap and it is the only thing that would
-have caught this at the bump rather than three commits later. It depends on SH241 only in the
-sense that a guard nothing runs is the same as no guard.
+lockfile is written, invisible to every runtime test — so the instrument is the installer:
+`strict-peer-dependencies` (pnpm defaults it off) turns "resolved a version the dependent does
+not support" into a refusal, and it is the only thing that would have caught this at the bump.
 
 ### XVI.3 A trashed post still holds its friendly URL, and nothing knows it (SH243)
 
@@ -1330,41 +1277,38 @@ instance now has exactly the duplicate SH202 was filed to remove, produced by tw
 that are each individually correct.
 
 SH236 met this blind spot from the post-type side — a trashed post still holds its
-`post_type_id`, so a delete refusal that counted only live rows would have said "0 posts" and
-then failed with a constraint violation — and its answer is the one to copy: **count the trashed
-rows too and name them separately**, because the caller's next move differs (restore it, or
-purge it). Applied here that is two changes rather than one: the free-URL search should see the
-trash so a copy skips a URL that is only sleeping, and `restoreFromTrash` should refuse a
-restore onto an occupied URL with a teaching error instead of creating the duplicate silently.
+`post_type_id`, so a refusal counting only live rows said "0 posts" and then failed on a
+constraint — and its answer is the one to copy: **count the trashed rows too and name them
+separately**, because the caller's next move differs. That is two changes here: the free-URL
+search should see the trash so a copy skips a URL that is only sleeping, and `restoreFromTrash`
+should refuse a restore onto an occupied URL instead of creating the duplicate silently.
 
-The second is the important one and it is not obviously a refusal — an alternative is to restore
-under a numbered URL the way a copy does. That would be wrong here: a restore is a request to
-get *the thing that was there* back, and quietly returning it at a different address is the
-class of surprise P7 exists to prevent. Refuse, name the occupant, and let the human choose.
+The second is the important one, and it is not obviously a refusal — the alternative is to
+restore under a numbered URL the way a copy does. That would be wrong: a restore asks for *the
+thing that was there*, and quietly returning it at a different address is the surprise P7 exists
+to prevent. Refuse, name the occupant, let the human choose.
 
 ### XVI.4 Duplicating content is console-only (SH244)
 
 Copy lives at `PUT /api/v2/object/copyto/{dest}` and nowhere else: no `batch` op, no MCP verb,
 no CLI path. That is law P1's "no feature whose only interface is the console".
 
-For a **post** this is close to harmless, and worth saying so rather than overstating the gap:
-an agent duplicates a page by reading it and upserting the fields at a new address, which is two
-calls and loses nothing, because a copy of a post is genuinely just its field values somewhere
-else. The honest gap is the **folder**. The one thing a folder copy buys is the whole subtree in
-a single call, and reproducing it over the agent surface means walking the tree, reading every
-post and emitting an upsert each — the exact discovery-and-write loop Block H exists to remove,
-in the one case where the server can do it in one traversal.
+For a **post** this is close to harmless, worth saying rather than overstating the gap: an agent
+duplicates a page by reading it and upserting the fields at a new address, which loses nothing,
+because a copy of a post is just its field values somewhere else. The honest gap is the
+**folder**. A folder copy buys the whole subtree in one call, and reproducing that over the
+agent surface means walking the tree and emitting an upsert per post — the discovery-and-write
+loop Block H exists to remove, in the one case where the server can do it in one traversal.
 
-If it lands, it is a `folder.copy` op on the batch surface rather than a new endpoint, and it
-composes rather than forks: SH202's naming and SH203's cycle guard already live on the shared
-writers, so the op is an address pair and a call. Two things it must inherit rather than
-reinvent — the copy is **draft** (`copyPost` sets `published(false)`, and a batch that published
-a hundred pages by copying a folder would need SH107's gate for a reason nobody intended) and it
-is **not** destructive, so it needs no SH108 confirm.
+If it lands it is a `folder.copy` op on the batch surface, not a new endpoint, and it composes:
+SH202's naming and SH203's cycle guard already live on the shared writers, so the op is an
+address pair and a call. Two things it must inherit — the copy is **draft** (`copyPost` sets
+`published(false)`, and a batch that published a hundred pages would need SH107's gate for a
+reason nobody intended) and it is **not** destructive, so it needs no SH108 confirm.
 
-It stays 💭 rather than 📋 because the demand is unproven: no blueprint, no CLI command and no
-recorded session has wanted it. Filed so that the next one does not have to rediscover that the
-capability is reachable but expensive.
+It stays 💭 because the demand is unproven: no blueprint, no CLI command and no recorded session
+has wanted it. Filed so the next one need not rediscover that the capability is reachable but
+expensive.
 
 ### XVI.5 Make "one writer per verb" a lint, not an expectation (SH245)
 
@@ -1379,93 +1323,22 @@ meant reading the console's, and the console's was the careless one:
 | copy a folder | duplicate URLs, and non-termination on its own subtree | SH202/SH203 |
 
 The rule that would have prevented all four is already written down — a content mutation goes
-through the writer service, and the two surfaces cannot diverge on what a verb means — and it is
-enforced nowhere. Every instance was caught by a person happening to read the neighbouring file
-while fixing something else, which is not a method that scales and has already missed three of
-these for at least a release each.
+through the writer service — and it is enforced nowhere. Every instance was caught by somebody
+happening to read the neighbouring file while fixing something else, which does not scale and
+has already missed three of these for a release each.
 
-This repository has the right instrument for invariants that no functional test can watch:
-`ShByteStabilityLintTest` fails the build on `Map.copyOf` where iteration order is observable,
-`ShFolderSiteInvariantTest` on a direct `folder.getShSite()`, and `ShCsrfExemptionLintTest` on a
-new blanket CSRF exemption. Each exists because the failure mode is a *future* caller rather than
-a current request. This is the same shape: a controller method that writes content without
-delegating to the writer that owns the verb.
+This repository has the right instrument for invariants no functional test can watch:
+`ShByteStabilityLintTest`, `ShFolderSiteInvariantTest` and `ShCsrfExemptionLintTest` each fail
+the build because the failure mode is a *future* caller rather than a current request. This is
+the same shape: a controller method that writes content without delegating to the writer that
+owns the verb.
 
 The design work is the exemption hatch, not the check. The precedent is
-`ShFolderSite-exempt: <reason>` and `byte-stable-exempt: <reason>` — a named comment carrying the
-argument, so the rare legitimate case is *stated* rather than silently permitted. What the lint
-keys on needs deciding too, and the cheap version is likely the right one: a write mapping on an
-API class whose body touches a `*Repository.save`/`delete` directly. Precision matters less than
-the build going red the day somebody adds the fifth one.
-
-### XVI.9 A comment claiming parity is not parity (SH254)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. `content-notes.mjs`' `scalar()` said it
-> used "the same rule `content-files` uses" and was missing that rule's `value !== value.trim()`
-> clause, so a note with a trailing space could not survive the file — and with an empty base
-> that was a **conflict** on every pull, not a phantom write.
->
-> The durable point is the shape, and it is SH245's ("one writer per verb") in miniature: an
-> invariant asserted in prose is an invariant enforced nowhere, and a comment claiming parity is
-> *worse* than no comment, because it stops the next reader from checking. The repair was not to
-> merge the two functions — they are deliberately separate readers with different parsers and
-> therefore different charsets — but to assert the property they actually have to share, which
-> is §XVI.10.
-
-### XVI.10 The round trip is a property, and it is asserted as one (SH255)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Three things worth carrying.
->
-> **The gap was in *kind*, not in coverage.** `parse(serialize(x)) === x` is universally
-> quantified and every test was an example, with fixtures that all happened to be values their
-> format represents exactly. Two real defects (SH253, SH254) lived in that gap across four
-> blocks. A suite of any size has this blind spot; only a table closes it.
->
-> **A declared exemption is a decision, and it expires.** A format may legitimately not hold
-> something, so the property is "exact, or named with a reason" — plus SH142's rule, that a
-> declared loss the format no longer has *fails*, or the list rots into a suppression hiding the
-> next defect at the same spot. A refusal counts as legitimate non-holding: it is the only one
-> that cannot lose work silently.
->
-> **Writing the list is where the thinking happened.** The first draft declared nine losses; the
-> real number is three. The reflex — stripping the body's framing must cost every whitespace-ish
-> value — is wrong, because `bodySafe` keeps those in `fields:`, so they survive the *document*
-> and merely stop being the body. The guard failed its own author's declarations on the first
-> run, which is the strongest evidence that the exemption list has to be checked rather than
-> trusted.
-
-### XVI.11 An asset path accepts traversal (SH256)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. Two things worth carrying.
->
-> **The convention existed and one file had not heard of it.** `siteDir`, `sidecarNameFor` and
-> `ShBlueprintRegistry` all refuse a separator or a `..` in a name, each with its own reasoning
-> written down; `content-assets.mjs` was written before the rule was stated anywhere and never
-> revisited. Worth noticing as a *review* lesson rather than a coding one: the defect is invisible
-> to anyone reading that file on its own, and obvious to anyone who has just read one of the other
-> three.
->
-> **The two ends refuse differently, on purpose.** `assetLocationOf` throws because its input
-> comes from the tree — hand-editable, and writable by a blueprint or a generated document — and
-> `null` there already means "this is an id, leave it alone" (SH145), so a silent null would send
-> a traversal to the server as a dangling reference and never mention it. `assetPathFor` returns
-> null because its input is the server's own listing, where SH173's rule applies: one
-> unprojectable row must not take down a pull. Same defect, two inputs, two correct answers —
-> which is the thing to check when adding a refusal anywhere here.
-
-### XVI.12 Finishing the round-trip table found the defect the table could not (SH257)
-
-> ✅ **Shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. The table now covers six round trips and
-> the sixteen new declarations are all refusals, which is what a format whose output is a
-> filesystem path should mostly do.
->
-> The lesson is the third defect it turned up: `siteDir` trimmed a site's name for the directory
-> while `serializePost` wrote the untrimmed name into the frontmatter, so a pull emitted a file
-> whose `site:` disagreed with its own path and every later command refused it — the projection
-> writing a tree it cannot read. **The table did not catch it**, because it asserts "exact, or
-> declared" and a refusal was declared and a refusal happened; it was caught by reading the
-> message, which blamed the disagreement rather than the trim. So extending a guard is worth doing
-> for the reading it forces as much as for the assertions it adds, and the gap itself is §XVI.13.
+`ShFolderSite-exempt: <reason>` — a named comment carrying the argument, so the rare legitimate
+case is *stated* rather than silently permitted. What the lint keys on needs deciding too, and
+the cheap version is likely right: a write mapping on an API class whose body touches a
+`*Repository.save`/`delete` directly. Precision matters less than the build going red the day
+somebody adds the fifth one.
 
 ### XVI.28 A premise about a dependency we do not have is unfalsifiable (SH276)
 
@@ -1635,7 +1508,7 @@ shipping.
 
 ## VI. Market positioning
 
-### VI.1 Multi-tenancy / SaaS (SH22) — core shipped, follow-ups open
+### VI.1 Multi-tenancy / SaaS (SH44, SH45, SH46, SH47) — SH22's core shipped, follow-ups open
 
 Core DB isolation, the tenant catalog, delivery-path token→tenant resolution,
 per-tenant provisioning, tenant-keyed CDA cache and the console Tenants page all
@@ -1654,30 +1527,6 @@ existing `workspace_id`-claim/username resolution (`ShTenantFilter`). Open:
 - **SH47 — Per-tenant file storage**: prefix `tenantId` into the id-keyed
   `ShFileStorageService` layout (`file_source/{tenantId}/<postId>/...`) from
   `ShTenantContext` (SH38 shipped, so this is now unblocked).
-
-### VI.2 Starter marketplace (SH23 epic) — superseded
-
-> ⛔ **Superseded by Block J** (§XI). A human-browsable template catalog becomes an
-> agent-appliable **blueprint registry**: same goal (accelerate a new site), correct
-> unit (appliable package, not readable template). SH27→SH93, SH30→SH94,
-> SH28/SH29/SH31→SH96.
-
-### VI.3 AI authoring via Turing / MCP (SH24 epic) — superseded
-
-> ⛔ **Superseded by Block H** (§VIII). The original decomposition (SH32 skeleton,
-> SH33 read tools, SH34 schema tool, SH35 write tools, SH36 high-level ops, SH37
-> Turing/tenant) was **CRUD-over-MCP** — a faithful wrapper around human-shaped
-> endpoints, which would have reproduced every discovery, write-loop and
-> verification cost it was meant to remove. Block H keeps the ambition and replaces
-> the design: manifest + context pack + terse reads + teaching errors + batch +
-> plan/apply **first**, then a deliberately small intent-named tool set on top.
-> SH32→SH75, SH33/SH34/SH35/SH36→SH83, SH37→SH84.
-
-### VI.4 Image/asset transformation API (SH25 epic)
-
-> ✅ **Fully shipped (SH38–SH43)** → [CHANGELOG.md](CHANGELOG.md) Block F. The
-> `shio_assets` tool (§VIII.8) is a shape over this; SH47 (§VI.1) remains the open
-> per-tenant isolation follow-up.
 
 ## VII. Content portability
 
