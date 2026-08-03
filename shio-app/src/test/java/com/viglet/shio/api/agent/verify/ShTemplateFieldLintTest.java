@@ -34,6 +34,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.model.widget.ShWidget;
 import com.viglet.shio.post.type.ShSystemPostType;
+import com.viglet.shio.render.ShTemplateEngine;
 import com.viglet.shio.widget.ShSystemWidget;
 
 import jakarta.persistence.EntityManager;
@@ -76,6 +77,7 @@ class ShTemplateFieldLintTest {
               {{#if SUMMARY}}<p class="lede">{{SUMMARY}}</p>{{/if}}
               <div>{{{BODY}}}</div>
               <img src="{{file_url HERO}}">
+              {{#getRelation HERO}}<i>{{title}}</i>{{/getRelation}}
               <p class="byline">{{headline}}</p>
               <div sh-region="SH251_LIST_REGION"></div>
               <footer>{{site.name}} — {{render.state}}</footer>
@@ -90,6 +92,8 @@ class ShTemplateFieldLintTest {
               <li><a href="{{link}}">{{title}}</a> <span>{{summary}}</span> <em>{{BODY}}</em>
               <b>{{nosuchfieldanywhere}}</b></li>
             {{else}}<li>none</li>{{/query}}</ul>
+            <nav>{{#navigation folder="/"}}<a href="{{url}}">{{name}}</a>{{/navigation}}</nav>
+            <div>{{#search q="x" type="%s" limit=3}}<span>{{summary}}</span>{{/search}}</div>
             <form>{{#form type="%s"}}<label for="{{name}}">{{label}}</label>
               <input type="{{input}}" data-w="{{widget}}" data-o="{{ordinal}}"
               {{#if required}}required{{/if}}>{{/form}}</form>""";
@@ -98,6 +102,8 @@ class ShTemplateFieldLintTest {
     private ShAgentVerifyService verifyService;
     @Autowired
     private PlatformTransactionManager transactionManager;
+    @Autowired
+    private ShTemplateEngine engine;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -132,7 +138,7 @@ class ShTemplateFieldLintTest {
 
             post(site, root, layoutType, LAYOUT, "/layout", json("HTML", LAYOUT_HTML), when);
             post(site, root, regionType, REGION, "/region",
-                    json("HTML", REGION_HTML.formatted(pageType, pageType)), when);
+                    json("HTML", REGION_HTML.formatted(pageType, pageType, pageType)), when);
             post(site, root, page, "Home", "/",
                     json("TITLE", "Home", "SUMMARY", "s", "BODY", "<p>b</p>", "HERO", ""), when);
         });
@@ -201,6 +207,34 @@ class ShTemplateFieldLintTest {
                         on correct templates.""")
                 .extracting(Finding::field)
                 .containsExactlyInAnyOrder("headline", "nosuchfieldanywhere");
+    }
+
+    @Test
+    @DisplayName("SH362: the fixture calls every helper the engine registers")
+    void theFixtureExercisesEveryRegisteredHelper() {
+        // The question nobody asks about a fixture. `thereAreNoFalsePositives` was present,
+        // passing and silent when SH247 registered `form`, because the fixture it judges held a
+        // `{{#query}}` block and nothing else — so the sixth helper's row keys were never read
+        // and SH360's defect reached a release under a green guard. A fixture is written once
+        // against the world as it was, and nothing made it keep up.
+        //
+        // The engine is the single source of the capability set (SH260), so the list costs a
+        // call. What is added here is only the comparison — and it fails naming the helper,
+        // because "extend the fixture" is not actionable without knowing which one arrived.
+        String fixture = LAYOUT_HTML + REGION_HTML;
+        assertThat(engine.registeredNames())
+                .as("""
+                        an empty capability set would make the comparison below vacuous, which is \
+                        this task's own defect one level up: a guard that passes because it read \
+                        nothing.""")
+                .isNotEmpty()
+                .allSatisfy(name -> assertThat(fixture)
+                        .as("""
+                                `%s` is registered and no template in this fixture calls it, so \
+                                every negative assertion in this class is silent about its rows. \
+                                Add a block that uses it to LAYOUT_HTML or REGION_HTML — a \
+                                correct one — and let thereAreNoFalsePositives judge it.""", name)
+                        .contains(name));
     }
 
     @Test

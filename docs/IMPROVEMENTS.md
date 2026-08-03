@@ -1163,31 +1163,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.24 A guard is only as wide as its fixture (SH362)
-
-`ShTemplateFieldLintTest.thereAreNoFalsePositives` exists because a field lint that
-fires on a correct template is worse than none: an author who meets one false finding
-stops reading the true ones. It is a good guard, it was written for this, and **it did
-not fire when SH247 added a sixth helper** — because its fixture contains a `{{#query}}`
-block and nothing else, so the new helper's rows were never read.
-
-The proof is from the same run: reverting SH360's fix failed *both*
-`aFormBodyIsReadAgainstTheFormsOwnKeys` and `thereAreNoFalsePositives`. The second one
-was correct all along and simply never met the case. That is a sharper failure than a
-missing test — the guard was **present, passing and silent**, which is the state that
-reads as coverage.
-
-The instrument is small and is the deliverable: assert the fixture exercises every name
-in `engine.registeredNames()`, so registering a helper without teaching this test about
-it fails the build naming the helper. The engine is already the single source (SH260),
-so the list costs nothing to obtain; what is being added is the *question*, which is the
-half nobody asks — a fixture is written once against the world as it was, and no rule
-anywhere says it has to keep up.
-
-Worth generalising when it lands: this is the second guard in two blocks whose fixture
-was narrower than its claim, and the shape is always a set the code can enumerate and
-the test hard-codes.
-
 ### XV.25 A security claim in prose, checked by nobody (SH363)
 
 SH359 was found by accident: SH265 needed to know whether `shio snapshot` would have to
