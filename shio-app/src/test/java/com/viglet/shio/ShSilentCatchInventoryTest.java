@@ -81,7 +81,15 @@ class ShSilentCatchInventoryTest {
             "exchange", 2,
             "render", 2,
             "utils", 2,
-            "migration", 1);
+            "migration", 1,
+            // 1 since SH84: `ShTuringDocumentMapper.readData` reads a post whose `data` is not JSON
+            // as "no text", and does not record it. The render path already reports that exact post
+            // as a CONTENT degradation, which is the branch of SH270's own rule this falls under —
+            // recording it a second time would put one broken post in the diagnostics window once
+            // per publish, and folding by subject would then hide whichever of the two arrived
+            // second. Not indexing its body is also the correct outcome, not a degradation: there is
+            // no prose in a malformed payload to index.
+            "turing", 1);
 
     private static final Pattern CATCH = Pattern.compile("catch\\s*\\(([^)]*)\\)\\s*\\{");
 

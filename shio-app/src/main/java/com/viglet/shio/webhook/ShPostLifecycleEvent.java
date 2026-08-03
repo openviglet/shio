@@ -16,15 +16,21 @@ import com.viglet.shio.persistence.model.webhook.ShWebhookEventType;
  * the snapshot is captured <b>inside</b> the write transaction, before any
  * unpublish/delete removes the post.
  *
+ * <p>SH84 added {@link #locale}, and for exactly the reason the snapshot exists at all: a
+ * de-index has to name the locale the document was indexed under, and by the time a
+ * {@code DELETE} listener runs the row has been purged, so it cannot be asked. A field the
+ * snapshot does not carry is a field no {@code AFTER_COMMIT} listener can ever recover.
+ *
  * @param type       the transition (publish / unpublish / delete)
  * @param postId     the post id
  * @param siteId     the post's site id (may be {@code null} if unresolved)
  * @param url        the friendly URL, leading-slash normalised (may be {@code null})
+ * @param locale     the post's locale tag, e.g. {@code en} (may be {@code null})
  * @param occurredAt when the transition committed
  *
  * @author Alexandre Oliveira
  * @since 2026.2
  */
 public record ShPostLifecycleEvent(ShWebhookEventType type, String postId, String siteId,
-                                   String url, Instant occurredAt) {
+                                   String url, String locale, Instant occurredAt) {
 }

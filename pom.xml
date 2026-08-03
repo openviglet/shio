@@ -18,6 +18,10 @@
         <!-- Shared backend platform — external project (github.com/openviglet/viglet-core),
              published to GitHub Packages and versioned independently. -->
         <viglet-core.version>2026.3.10</viglet-core.version>
+        <!-- turing-java-sdk — Turing's indexing client (SH84). The same artifact Dumont's
+             DumTuringIndexingPlugin indexes through, so Shio speaks the ecosystem's existing
+             contract (TurSNJobItems → POST /api/sn/import) rather than a second one. -->
+        <turing.version>2026.3.4</turing.version>
         <sonar.organization>viglet</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
@@ -163,6 +167,11 @@
                 <version>${viglet-core.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.viglet.turing</groupId>
+                <artifactId>turing-java-sdk</artifactId>
+                <version>${turing.version}</version>
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>

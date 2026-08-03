@@ -48,6 +48,13 @@
             <groupId>com.viglet.core</groupId>
             <artifactId>viglet-core-jpa</artifactId>
         </dependency>
+        <!-- SH84 — Turing's indexing client. Optional at runtime (shio.turing.enabled=false by
+             default), but a compile dependency: the job-item vocabulary is Turing's contract and
+             re-declaring it here would be the second copy that drifts. -->
+        <dependency>
+            <groupId>com.viglet.turing</groupId>
+            <artifactId>turing-java-sdk</artifactId>
+        </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>

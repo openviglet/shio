@@ -75,6 +75,7 @@ describes. The per-area detail below is **authoritative** — do not restate it 
 | Console UI: React patterns, widgets, editors, data model, i18n, theme | [docs/agents/console-ui.md](docs/agents/console-ui.md) | `shio-console-ui` |
 | Security: CSRF, auth, CORS | [docs/agents/security.md](docs/agents/security.md) | `shio-console-ui` |
 | Liquibase, migrations, cross-DB ITs, multi-tenancy (SH22) | [docs/agents/database.md](docs/agents/database.md) | `shio-database` |
+| Turing indexing — published content becomes searchable, off by default | [docs/agents/turing.md](docs/agents/turing.md) | `shio-database` |
 | Build, Maven/pnpm wiring, publishing | [docs/agents/build.md](docs/agents/build.md) | `shio-build-test` |
 | Common issues and solutions | [docs/agents/troubleshooting.md](docs/agents/troubleshooting.md) | `shio-build-test` |
 | ROADMAP / CHANGELOG / IMPROVEMENTS upkeep rules — those three are **owned by `roadkeep`** ([roadkeep.toml](roadkeep.toml)), never hand-edited | [docs/agents/docs-process.md](docs/agents/docs-process.md) | `shio-roadmap-docs` |

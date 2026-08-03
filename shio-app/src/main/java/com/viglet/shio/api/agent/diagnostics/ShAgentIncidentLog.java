@@ -81,6 +81,17 @@ public class ShAgentIncidentLog {
         SCHEDULE,
 
         /**
+         * SH84 — a Turing index push did not land, so the page is published but not findable.
+         *
+         * <p>Its own kind rather than a {@code WEBHOOK}, because the remedy differs and a caller
+         * branching on {@code kind} is the reason kinds are a closed set: a webhook failure means a
+         * front end may be serving a stale page, and this one means search will not return the page
+         * at all. Same shape as {@code WEBHOOK} otherwise — an outbound delivery to another system,
+         * failing where nothing in Shio looks wrong.</p>
+         */
+        INDEX,
+
+        /**
          * SH270 — a page rendered <em>incomplete</em> because the content itself is malformed.
          *
          * <p>The four kinds above are operational: something the instance was doing failed. This one

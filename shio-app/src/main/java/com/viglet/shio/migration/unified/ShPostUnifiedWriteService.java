@@ -583,7 +583,7 @@ public class ShPostUnifiedWriteService {
     private ShPostLifecycleEvent lifecycleEvent(ShWebhookEventType type, ShPostUnified row) {
         String siteId = row.getShSite() != null ? row.getShSite().getId() : null;
         return new ShPostLifecycleEvent(type, row.getId(), siteId,
-                normalizeUrl(row.getFurl()), Instant.now());
+                normalizeUrl(row.getFurl()), row.getLocale(), Instant.now());
     }
 
     /** Friendly URL normalised to a leading slash; {@code null}/blank stays null. */
