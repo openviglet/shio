@@ -1163,32 +1163,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.14.1 `form` is the last of the seven capabilities (SH247)
-
-> ⏳ **`getRelation` and `search` shipped** → [CHANGELOG.md](CHANGELOG.md) Block P. What §XV.14
-> predicted held: they were not equally hard and treating them as one thing would have been the
-> mistake. Two conclusions from building them, plus what is left.
->
-> **The row shape is the interface, not the helper name.** All five listing helpers yield the
-> same row, so a card body written for `{{#query}}` works for a relation or a search result. That
-> was not in the original design and it is what makes a *closed* capability set feel small rather
-> than arbitrary. The corollary is that the DRAFT-preference and the total order had to be
-> extracted and shared: a second copy of the preference is a second chance to get it backwards,
-> and that failure shows the live page while the curator hunts for the unpublished change.
->
-> **A missing reference and a missing region are different mistakes with different owners.**
-> SH183 marks an unfilled region slot; `getRelation` skips a dangling reference. That looks
-> inconsistent and is not: a region slot is named inside a layout's HTML, where before SH193
-> nothing but the renderer could see it, while a dangling post reference is already an SH154
-> `dangling-reference` finding with an address and a `fix`. The rule to carry: **mark what only
-> the renderer can see; leave to the lint what the lint already reports.**
->
-> **What is left is `form`, and its absence is a decision.** A form needs somewhere for a
-> submission to go — storage, spam handling, notification, retention — which is a subsystem, not
-> a helper, and writing it before that is answered is writing half a feature. `{{#form}}` is a
-> write-time refusal naming SH247, so the author is told the capability is absent rather than
-> shipping a page with a silently missing block.
-
 ### XV.23 Incremental delivery is a practice with no representation
 
 The roadkeep adoption made the parenthetical id parse, and what surfaced is not a mess —
