@@ -449,7 +449,6 @@
 > carries no locale), and `ShFurlReaderLintTest` refuses the next derived `Optional` over a `furl` —
 > SH322's habit, applied.
 
-- 💭 **SH276** (deps: SH275 ✅) **A premise about a dependency we *do not* have is unfalsifiable, and one is load-bearing** — It justifies ~1500 lines of hand-rolled protocol and cannot be asserted, because checking it means adding the dependency being evaluated. → §XVI.28
 - ⏳ **SH355** (deps: —) **Half-shipped entries are invisible to the tool that owns the files** — Five of the seven parentheticals are already stale and the one honest half-shipped line is the only one lint reports; the grammar decision is filed upstream as RK121, RK122 and RK125. → §XVI.65
 - ⏳ **SH356** (deps: SH341 ✅) **The rationale file carries the debt the roadmap just shed** — Three of the four line-level defects had one correct reading and are repaired; what is left is a duplicate SH347 that is two deliveries under one id, waiting on the ledger renumber RK127 asks for. → §XVI.66
 - 📋 **SH361** (deps: —) **Work delivered in steps is recorded per step, and the ledger now says so eight times** — SH348 is written four times and SH347, SH279 and SH275 twice each, so six id.duplicate and two id.two-files findings are one practice the format cannot express. → §XV.23

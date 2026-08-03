@@ -1427,33 +1427,6 @@ the cheap version is likely right: a write mapping on an API class whose body to
 `*Repository.save`/`delete` directly. Precision matters less than the build going red the day
 somebody adds the fifth one.
 
-### XVI.28 A premise about a dependency we do not have is unfalsifiable (SH276)
-
-SH75 is hand-rolled MCP — around fifteen hundred lines of JSON-RPC, tool dispatch, resource routing
-and a wire-conformance golden — and the justification is one sentence: *"not the MCP Java SDK, which
-is Jackson-2/Boot-3 while this app is Jackson-3/Boot-4."*
-
-That is the largest inherited premise in the repository measured by code it defends, and it is the one
-kind SH274's method cannot touch. The artefact is **not on the classpath**, so a test cannot ask it
-anything; checking would mean adding the dependency, which is the change being evaluated. Asserting
-the absence of a conflict you have avoided by not depending on something is not a test, it is a
-tautology.
-
-So the instrument has to be different, and there are two honest ones:
-
-- **A dated note** recording the SDK version examined, the conflicting coordinates, and who looked.
-  Weaker than an assertion and much stronger than a sentence in the present tense, because it makes
-  staleness visible: a reader can see the check is three years old and decide.
-- **The budget tests as the standing argument.** SH132 caps the tool count and pins
-  `mcp.tools.list.total`; `ShMcpWireConformanceTest` pins the wire against a golden. A hand-rolled
-  surface that stays inside its budget and conformant is live evidence that the trade is still paying
-  — which is a better ongoing case than a claim about the alternative.
-
-Worth being clear about what this is not: not an argument to adopt the SDK, and not a suspicion that
-the premise is wrong. It is that a sentence in the present tense about somebody else's release train
-is the weakest form of a load-bearing claim, and this one carries more weight than any other in the
-codebase.
-
 ### XVI.1 No CI workflow runs on the branch the work happens on (SH241)
 
 Three workflows exist. `build.yml` (Maven + Sonar) and `codeql-analysis.yml` are
