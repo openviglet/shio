@@ -38,11 +38,11 @@ jobs:
           distribution: 'zulu'
           cache: maven
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 11.8.0
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 26
           cache: pnpm
@@ -82,7 +82,7 @@ jobs:
 
       - name: Upload the report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: console-check-report
           path: shio-react/e2e/report
