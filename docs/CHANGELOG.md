@@ -861,6 +861,7 @@
 - **SH276** — The premise defending ~1500 lines of hand-rolled MCP cannot be asserted, because checking it means adding the dependency being evaluated, so the instrument is a date: ShMcpServer carries SDK-PREMISE-CHECKED and SDK-PREMISE-VERSION, ShMcpSdkPremiseTest fails the build eighteen months after the last look, and looking once already found the sentence stale — the SDK is 2.0.0 and publishes mcp-json-jackson3 against the same Jackson 3 this application runs.
 - **SH355** — RK121 shipped and the plugin here was 100 commits behind it, so the parenthetical parses now, SH96 resolves for SH217 and SH219, and what is left under it is SH361's duplicates and RK122's two-files.
 - **SH361** — Decided as one id per step rather than one entry rewritten, so SH366-SH371 now carry the six and each qualifier names its parent; the two id.two-files left are RK122's.
+- **SH372** — The store hands out a strictly increasing instant now, so the order has a total tail with no new column, and a frozen-clock test pins it — it failed three runs in three before.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

@@ -317,6 +317,39 @@ class ShAgentDurableIncidentTest {
     }
 
     @Test
+    @DisplayName("SH372: the cap still drops the oldest when the clock does not move")
+    void theCapDoesNotBreakTiesByRandomId() {
+        // The defect this closes was found by an unrelated fixture growing (SH362) and reads as
+        // a flake: `enforceCap` deletes by `order by lastSeen asc, id asc`, and `id` is a random
+        // UUID, so two rows sharing an instant are ranked by a random string. The schema's own
+        // note says ties "can and do" happen — harmless for the SH88 cursor, which needs any
+        // total order, and wrong for a deletion, which needs this one.
+        //
+        // theCapDropsTheOldest cannot assert it, because whether Instant.now() ties across two
+        // adjacent writes depends on the clock's granularity and on how busy the machine is.
+        // Here the tie is the input: one instant, five records, so every row collides and the
+        // old ordering had nothing left but the UUID. It fails on the previous code.
+        int max = properties.getDiagnostics().getMaxRows();
+        properties.getDiagnostics().setMaxRows(3);
+        Instant frozen = Instant.parse("2026-01-01T00:00:00Z");
+        try {
+            for (int i = 0; i < 5; i++) {
+                store.record(ShAgentIncidentLog.Kind.API_ERROR, "/tie/" + i,
+                        "500 on GET " + i, null, null, frozen);
+            }
+
+            assertThat(repository.findAll())
+                    .as("""
+                            the cap's one claim is that the survivors are the most recent, and a \
+                            clock that has not moved must not turn that into a lottery.""")
+                    .extracting(ShAgentIncident::getSubject)
+                    .containsExactlyInAnyOrder("/tie/2", "/tie/3", "/tie/4");
+        } finally {
+            properties.getDiagnostics().setMaxRows(max);
+        }
+    }
+
+    @Test
     @DisplayName("later() compares positions, not strings")
     void laterComparesPositions() {
         String early = new ShAgentChangeCursor(Instant.parse("2026-01-01T00:00:00Z"), "b").toString();

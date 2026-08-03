@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,13 +60,48 @@ public class ShAgentIncidentStore {
 
     private static final Logger logger = LoggerFactory.getLogger(ShAgentIncidentStore.class);
 
+    /**
+     * One microsecond — the smallest step {@code TIMESTAMP} keeps (SH372).
+     *
+     * <p>The column is declared with no explicit precision, which is 6 on both H2 and
+     * PostgreSQL. Stepping by a nanosecond would be arithmetic the database rounds away, and a
+     * uniqueness that survives only in memory is the same defect wearing a fix.</p>
+     */
+    private static final long TICK_NANOS = 1_000L;
+
     private final ShAgentIncidentRepository repository;
     private final ShAgentProperties properties;
+
+    /**
+     * The last instant handed to a row, so no two writes share one (SH372).
+     *
+     * <p>{@code enforceCap} deletes by {@code order by lastSeen asc, id asc}, and {@code id} is
+     * a random UUID — so on a tie the row that dies was chosen by a random string, and the cap's
+     * only claim is that the survivors are the <em>most recent</em>. The schema's own note says
+     * ties "can and do" happen; that is harmless for the SH88 cursor, which needs any total
+     * order, and wrong for a deletion, which needs <em>this</em> one.</p>
+     *
+     * <p>Fixed here rather than in the query because no tie-break the row carries is insertion
+     * -ordered — {@code firstSeen} ties in the same burst and the id is noise. Making the
+     * instant strictly increasing gives the existing order a total tail, costs no column and no
+     * changeset, and repairs {@code findRecent} in the same stroke.</p>
+     */
+    private final AtomicReference<Instant> issued = new AtomicReference<>(Instant.EPOCH);
 
     public ShAgentIncidentStore(ShAgentIncidentRepository repository,
                                ShAgentProperties properties) {
         this.repository = repository;
         this.properties = properties;
+    }
+
+    /**
+     * The caller's instant, or the next one after the last issued when the clock has not moved.
+     *
+     * <p>Drift is bounded by how many incidents arrive inside one clock tick and is given back
+     * as soon as the clock catches up, because the wall clock wins whenever it is ahead.</p>
+     */
+    private Instant stamp(Instant now) {
+        return issued.updateAndGet(last -> now.isAfter(last) ? now : last.plusNanos(TICK_NANOS));
     }
 
     /**
@@ -90,6 +126,9 @@ public class ShAgentIncidentStore {
     public boolean record(ShAgentIncidentLog.Kind kind, String subject, String message,
                           String fix, String frames, Instant now) {
         try {
+            // SH372 — every row's position comes from here, so the feed's order and the cap's
+            // deletion order are the same total order and neither ends in a random id.
+            Instant when = stamp(now);
             Optional<ShAgentIncident> existing = subject == null
                     ? repository.findByKindAndSubjectIsNullAndMessage(kind.name(), message)
                     : repository.findByKindAndSubjectAndMessage(kind.name(), subject, message);
@@ -98,7 +137,7 @@ public class ShAgentIncidentStore {
                 row.setOccurrences(row.getOccurrences() + 1);
                 // Moves the row forward in the feed, so a cursor that already passed it
                 // delivers it again with the higher count — see the entity's class note.
-                row.setLastSeen(now);
+                row.setLastSeen(when);
                 // A `fix` learned later is worth keeping; one lost later is not worth erasing
                 // the earlier advice for.
                 if (row.getFix() == null && fix != null) {
@@ -119,8 +158,8 @@ public class ShAgentIncidentStore {
             row.setMessage(message);
             row.setFix(fix);
             row.setFrames(frames);
-            row.setFirstSeen(now);
-            row.setLastSeen(now);
+            row.setFirstSeen(when);
+            row.setLastSeen(when);
             row.setOccurrences(1);
             repository.save(row);
             return true;
