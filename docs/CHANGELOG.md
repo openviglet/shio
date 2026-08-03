@@ -858,7 +858,8 @@
 - **SH359** — /preview/** sat in permitAll() from before the renderer existed, so SH183's GET /preview/{site}/{url} — which defaults to DRAFT — never reached the anyRequest().authenticated() its own class note claims, and an anonymous GET answered 404 for an unknown site and 200 for the editor script; ShPreviewIsNotPublicTest asserts the refusal from outside.
 - **SH265** — The answer is that an instance does not run a browser: raster stays in the CLI, where the agent has a shell and the human opens a local PNG, and shio snapshot now photographs a front-endless site through the instance's own preview instead of refusing.
 - **SH360** — SH247 declared FORM_FIELD_KEYS, documented it as read by SH251's lint, and wired it to nothing, so the lint checked a form's rows against a listing's keys; ShRenderHelpers.rowKeysFor asks the helper which shape applies, and the false-positive guard that already existed caught it the moment its fixture grew a form.
-- **SH276** — It justifies ~1500 lines of hand-rolled protocol and cannot be asserted, because checking it means adding the dependency being evaluated.
+- **SH276** — The premise defending ~1500 lines of hand-rolled MCP cannot be asserted, because checking it means adding the dependency being evaluated, so the instrument is a date: ShMcpServer carries SDK-PREMISE-CHECKED and SDK-PREMISE-VERSION, ShMcpSdkPremiseTest fails the build eighteen months after the last look, and looking once already found the sentence stale — the SDK is 2.0.0 and publishes mcp-json-jackson3 against the same Jackson 3 this application runs.
+- **SH355** — RK121 shipped and the plugin here was 100 commits behind it, so the parenthetical parses now, SH96 resolves for SH217 and SH219, and what is left under it is SH361's duplicates and RK122's two-files.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

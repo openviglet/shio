@@ -1425,28 +1425,6 @@ run's headline, so no count is re-derived by hand (SH283's defect, SH354's at th
 terminal); and which jobs run on push versus pull request is a deliberate choice — the
 console check drives Chromium, the Java suite is cheap enough for both.
 
-### XVI.65 Half-shipped entries are invisible to the tool that owns the files (SH355)
-
-This corpus records a half-shipped task by writing the ledger id with a parenthetical:
-`- **SH96 (local half)** —`, `- **SH275 (partial)** —`, and two more. It is a good
-convention, it predates roadkeep, and the tool cannot read it: an id it cannot parse is
-an id that is **not in the changelog**, which is a different statement from "not done".
-
-Four findings and one refusal come from that one gap. `SH217` and `SH219` are reported
-as waiting on an unknown `SH96` when its local half shipped and the roadmap annotates it
-`✅`. `SH238` is reported as being in two files at once — open in the roadmap, recorded
-in the ledger — because its shipped half carries the bare id while its unfinished half
-is still a task. And `retire` refuses outright: this project sets `[ledger] marker =
-false` so its 234 pre-tool entries parse, and without a marker a retired line cannot be
-told from a shipped one.
-
-None of it is a *content* defect — every one of those lines says something true to a
-reader. What is wrong is that the file's conventions and the tool's grammar disagree,
-and the tool is the half that reports. Two directions, and the choice is roadkeep's
-rather than this repository's: teach the grammar the parenthetical, or give partial
-completion a first-class form. Until then the findings are noise that hides real ones,
-which is SH142's argument about a baseline.
-
 ### XVI.66 The rationale file carries the debt the roadmap just shed (SH356)
 
 SH341 took the roadmap's 42 over-long lines to zero and `roadkeep lint` fell from 249
