@@ -65,11 +65,17 @@ open = ["📋", "💭", "⏳", "🛠"]
 shipped = "✅"
 retired = "🗑"
 
-# The non-goals are *not* declared here. `[non_goals]` is not a key any published roadkeep
-# accepts — it was written speculatively and made every invocation, including the CI lint gate,
-# exit non-zero on the config before it read a single line of the backlog. The eight non-goals
-# stay where the tool reads them from: free prose under the roadmap's own heading, which
-# `brief` already gathers. Re-declaring them is a roadkeep change, not a Shio one.
+# Declared at all means governed (SH265). The roadmap already carried eight non-goals as free
+# prose and `non-goal add` refused to write the ninth, so the list the project calls *binding* was
+# the one part of the file no schema and no lint reached — which is the argument for the table
+# rather than a reason to hand-edit around it. The two limits are left at their defaults: the
+# eight that exist already fit.
+#
+# This key needs a roadkeep newer than the plugin that was installed here on 2026-07-30 (0847dc0):
+# an older reader refuses the *config* before it reads a line of the backlog, so every command,
+# the MCP tools and the CI gate all exit non-zero and say nothing about the corpus. If that is
+# what you are looking at, update the plugin — the key is not the defect.
+[non_goals]
 
 [ledger]
 # The two slots Shio's ledger lines do not have: no marker, because the file itself is the
