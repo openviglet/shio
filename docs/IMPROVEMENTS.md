@@ -1163,28 +1163,6 @@ So the honest conclusion is that the old engine's *architecture* was better than
 it for the specific job of "make something a human can see" — and the only part that has to go
 is one line, `scriptEngine.eval(javascript, sc)`, plus the boilerplate that existed to feed it.
 
-### XV.23 Incremental delivery is a practice with no representation
-
-The roadkeep adoption made the parenthetical id parse, and what surfaced is not a mess —
-it is a **habit the format has no slot for**. `SH348` appears four times (`the
-measurement`, `step 1 of 4`, `steps 2 and 3`, `step 4 — the sibling link`) and `SH347`,
-`SH279` and `SH275` twice each. Every one of those lines is true and was worth writing.
-
-Eight of the eighteen remaining lint findings are that one habit, which makes it the
-largest single item of debt in these files and the one most likely to hide a real
-finding — SH142's argument about a baseline, arriving where nobody expected it.
-
-**The upstream half is filed** (RK121: partial completion is not a state of the model;
-RK127: two entries under one id are not always one entry twice). This line is the
-Shio-side decision those cannot make: whether a task delivered in four steps is **one**
-ledger entry rewritten as it grows, or four entries under four ids with the first naming
-the others. The first keeps one id answering "is it done" and loses the dated record of
-each step; the second keeps the record and spends three ids on one piece of work.
-
-Not a cleanup. Deciding it wrongly costs more than leaving it, because whichever shape
-wins has to be what `ship` and `record add` write by default — otherwise the habit
-returns the next time somebody delivers something in halves.
-
 ### XV.24 A guard is only as wide as its fixture (SH362)
 
 `ShTemplateFieldLintTest.thereAreNoFalsePositives` exists because a field lint that

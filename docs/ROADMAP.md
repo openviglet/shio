@@ -450,7 +450,6 @@
 > SH322's habit, applied.
 
 - ⏳ **SH356** (deps: SH341 ✅) **The rationale file carries the debt the roadmap just shed** — Three of the four line-level defects had one correct reading and are repaired; what is left is a duplicate SH347 that is two deliveries under one id, waiting on the ledger renumber RK127 asks for. → §XVI.66
-- 📋 **SH361** (deps: —) **Work delivered in steps is recorded per step, and the ledger now says so eight times** — SH348 is written four times and SH347, SH279 and SH275 twice each, so six id.duplicate and two id.two-files findings are one practice the format cannot express. → §XV.23
 - 📋 **SH362** (deps: —) **The false-positive guard is only as wide as its fixture, and a new helper escapes it** — SH360 shipped a helper whose legitimate row keys the content lint reported as defects, and the guard written to catch exactly that passed because its fixture had no form in it. → §XV.24
 - 📋 **SH363** (deps: —) **A class comment can claim its route is authenticated and nothing checks** — ShRenderAPI said it sits under anyRequest().authenticated() while /preview/** was in permitAll, and SH359 fixed that one instance without adding anything that would find the next. → §XV.25
 - 💭 **SH364** (deps: SH247 ✅) **A rendered form posts nowhere, and the design for where it should post is written** — 2018's createPost plus folder says a submission becomes a post in a named folder, and the only thing between that and shipping is a public unauthenticated write nobody has scoped. → §XV.26
