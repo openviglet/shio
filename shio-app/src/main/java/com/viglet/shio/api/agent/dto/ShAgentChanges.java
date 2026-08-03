@@ -114,10 +114,25 @@ public record ShAgentChanges(int found, boolean window, String since, String cur
     /**
      * One content transition.
      *
+     * <h2>Why {@code subject} is absent on a post row (SH196)</h2>
+     *
+     * <p>A site's <em>shape</em> changes as well as its contents: a section can be created,
+     * renamed, moved or deleted, and a feed that reported only posts told a resuming session that
+     * a page now lives at {@code folder:Blog/archive/2025} without ever saying the section had
+     * appeared. Those changes now arrive here, carrying the same actions a post does — a rename is
+     * an {@code UPDATE}, with the previous name in {@code what}.</p>
+     *
+     * <p>{@code subject} is emitted only when it is {@code folder}, so every existing post row is
+     * byte-identical to what it was before (P3: a field that is always there is a field every row
+     * pays for). Absent means {@code post}. It is not merely a shorter spelling of the
+     * {@code address} prefix: an entry whose object is gone has no address, and that is the normal
+     * state of a {@code DELETE} — the one row where knowing what was deleted matters most.</p>
+     *
      * @param action  {@code CREATE} / {@code UPDATE} / {@code PUBLISH} / {@code UNPUBLISH}
      *                / {@code DELETE} / {@code RESTORE}
-     * @param address the SH79 {@code post:} address, so the next call can be a read —
-     *                absent when the object no longer exists, which is the normal state
+     * @param subject {@code folder} when this row is about a section; absent for a post (SH196)
+     * @param address the SH79 {@code post:} or {@code folder:} address, so the next call can be a
+     *                read — absent when the object no longer exists, which is the normal state
      *                of a {@code DELETE} row and the reason {@code what} carries the title
      * @param at      ISO-8601 instant of the transition
      * @param by      who did it. SH75 stamps the agent session into this string, so a
@@ -132,8 +147,8 @@ public record ShAgentChanges(int found, boolean window, String since, String cur
      *                post-types can raise
      */
     @JsonInclude(Include.NON_NULL)
-    public record Change(String action, String address, String at, String by, String what,
-                         String site, String id, Affects affects) {
+    public record Change(String action, String subject, String address, String at, String by,
+                         String what, String site, String id, Affects affects) {
     }
 
     /**

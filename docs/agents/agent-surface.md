@@ -359,7 +359,13 @@ a scoped credential cannot use the error to prove a site exists.
   than `shio.agent.changes.lag-millis` (1s) is **held back**: SH51 stamps the audit row
   inside the writer's transaction, so a slow commit could otherwise land behind a cursor
   that already passed it — the `notes` say so, and SH147 is the real fix. Site-scoped by
-  the SH2 allow-list.
+  the SH2 allow-list. **A row carries `subject: "folder"` when the change is structural
+  (SH196)** — a section created, renamed, moved, deleted or restored, one row per write and
+  never one per post beneath it. Emitted only when it is `folder`, so every post row is the
+  bytes it always was (P3); absent means `post`. It is not a shorter spelling of the
+  `folder:` address prefix: a row whose object is gone has no address at all, which is the
+  normal state of a `DELETE` and the one row where knowing *what* was destroyed matters most.
+  A rename arrives as an `UPDATE` with the previous name in `what`.
 - `GET /agent/diagnostics` — asynchronous failures (SH103): webhook deliveries, image
   transforms, scheduled publishes, 5xx. **A row carries `frames` — where in Shio it threw (SH190)**:
   `Class.method:line`, innermost first, **at most three** and **only `com.viglet.shio`** frames, no

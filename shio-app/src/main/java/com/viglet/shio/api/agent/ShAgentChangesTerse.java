@@ -38,6 +38,10 @@ public final class ShAgentChangesTerse {
             out.append(ShTerse.line("event")
                     .word(change.action())
                     .word(change.address())
+                    // SH196 — present only on a folder row, the same rule the JSON uses. On a row
+                    // that still has an address it repeats the `folder:` prefix; on a DELETE, whose
+                    // object is normally gone, it is the only thing that says what was deleted.
+                    .attr("subject", change.subject())
                     .attr("at", change.at())
                     .attr("by", change.by())
                     .attr("site", change.site())

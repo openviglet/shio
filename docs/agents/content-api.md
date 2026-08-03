@@ -252,6 +252,35 @@ sections and posts together.
   resolves a folder address for such an entry (through the trash, since the folder is deleted by
   then): an entry nobody can address is a change nobody can act on.
 
+**Every folder write is audited, and one row is one write (SH196).** SH200 recorded `delete` and
+`restore`; `create`, `update` and `move` stayed silent, so the feed described a site's *contents*
+and never its *shape* — a session resuming with `since=<cursor>` was told a post now lives at
+`folder:Blog/archive/2025` and never that the section had appeared, been renamed from `2024`, or
+moved, and those call for different next actions. Three decisions, each of which was the tempting
+wrong answer:
+- **One row per folder write, never one per post beneath it.** The obvious shape is an `UPDATE`
+  per affected post, because that is what the feed already carried — but no post changed (SH137:
+  a folder move leaves every URL and every field alone), and a hundred updates for one rename is
+  what makes a consumer stop trusting the feed.
+- **The subject is a column, not a new action.** `ShHistory.subject_kind` (`POST` / `FOLDER`,
+  `ShContentSubject`) — a rename is an `UPDATE` whose subject is a folder, with the previous name
+  in the description (`Updated "2025" (renamed from "2024")`). An action per kind of object would
+  double the enum each time something else becomes auditable and break every consumer that
+  switches on `action`. `null` means `POST`, which is what every pre-SH196 row was.
+- **It is stored, not derived.** The subject *was* derived — ask the folder repository whether the
+  audited id is a folder — and that stops working exactly where it matters: after a purge there is
+  no row to ask, so a section's own deletion entry was reclassified as a post and the queue
+  answered "the post no longer exists" about a section it had just watched being destroyed.
+  `ShReviewService` reads the column and falls back to the probe only for rows that predate it.
+
+The undo follows: a folder `CREATE` is reverted by trashing the section (SH55, recoverable), a
+`DELETE` by restoring it, and a rename or move is **skipped with the reason** — the description
+records what the change was, but the previous parent is a name and not an id, and re-deriving a
+folder from a name is how a subtree lands under the wrong section. `ShFolderWriteAuditLintTest`
+is why the next mutating method here cannot forget: it fails the build unless every
+non-`readOnly` `@Transactional` method reaches the audit helper, `purge` excepted (the `DELETE`
+that had to precede it is the audited row, matching `ShPostUnifiedWriteService#purge`).
+
 **Backend ownership (rebuilt 2026.2 after the nuclear refactor wiped them):**
 - `ShFolderAPI` + `ShFolderWriteService` (`com.viglet.shio.api.folder`)
 - `ShObjectAPI` + `ShObjectNavigationService` + `ShObjectWriteService` (`...api.object`)

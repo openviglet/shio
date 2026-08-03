@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.agent.ShAddressResolver;
 import com.viglet.shio.api.history.ShContentAction;
+import com.viglet.shio.api.history.ShContentSubject;
 import com.viglet.shio.api.review.dto.ShReviewDetail;
 import com.viglet.shio.api.review.dto.ShReviewOutcome;
 import com.viglet.shio.api.review.dto.ShReviewSession;
@@ -194,9 +195,14 @@ public class ShReviewService {
         if (action == null) {
             return Optional.of("unknown action '" + entry.getAction() + "'");
         }
-        Optional<ShFolder> folder = shFolderRepository.findAnyById(postId);
-        if (folder.isPresent()) {
-            return revertFolder(folder.get(), action, actor);
+        if (subjectOf(entry) == ShContentSubject.FOLDER) {
+            // The row says it is a folder, so a missing folder is a purge and is reported as one.
+            // Falling through to the post branch here is what the derived subject used to do, and
+            // it answered "the post no longer exists" about a section.
+            return shFolderRepository.findAnyById(postId)
+                    .map(folder -> revertFolder(folder, action, actor))
+                    .orElseGet(() -> Optional.of(
+                            "the section no longer exists — it was purged, not deleted"));
         }
         boolean hasDraft = state(postId, ShPostState.DRAFT).isPresent();
         boolean hasPublished = state(postId, ShPostState.PUBLISHED).isPresent();
@@ -263,16 +269,32 @@ public class ShReviewService {
     }
 
     /**
-     * Undoes a folder entry (SH200). A folder delete is now audited, so the queue sees
-     * entries whose object is a section rather than a post — and restoring that one entry
-     * brings the whole subtree back, which is the gesture a human means by "undo that".
+     * Undoes a folder entry (SH200, extended by SH196). Every folder write is now audited, so the
+     * queue sees a run's structural changes as well as its content ones — and restoring one
+     * {@code DELETE} entry brings the whole subtree back, which is the gesture a human means by
+     * "undo that".
      *
-     * <p>Only {@code DELETE} has an undo here. A folder create/rename is not recorded (the
-     * audit trail is content-shaped), and a {@code RESTORE} is already one.</p>
+     * <h2>Why a rename has no undo, and is not approximated into one</h2>
+     *
+     * <p>A {@code CREATE} is undone by trashing the section (SH55 — recoverable, not purged), the
+     * same shape as undoing a post's creation. A rename or a move is <b>not</b> undone here: the
+     * audit row records what the change <em>was</em>, in its description, but the previous parent
+     * is a name and not an id, and re-deriving a folder from a name is how you attach a subtree to
+     * the wrong section. So it is reported as skipped, with the description named as the place the
+     * old value is — the SH109 rule that a revert which guessed would be a second surprise on top
+     * of the one the human came here to fix.</p>
      */
     private Optional<String> revertFolder(ShFolder folder, ShContentAction action, String actor) {
         shContentAclService.requireWrite(folder.getId());
         return switch (action) {
+            case CREATE -> {
+                if (folder.isTrashed()) {
+                    yield Optional.of("already in the trash");
+                }
+                yield shFolderWriteService.delete(folder.getId(), actor)
+                        ? Optional.empty()
+                        : Optional.of("could not be trashed");
+            }
             case DELETE -> {
                 if (shFolderWriteService.restore(folder.getId(), actor)) {
                     yield Optional.empty();
@@ -282,16 +304,23 @@ public class ShReviewService {
                         : "not in the trash — it was purged, not deleted");
             }
             case RESTORE -> Optional.of("a restore is already an undo");
+            case UPDATE -> Optional.of("a section's rename or move has no undo the queue can "
+                    + "perform — the previous name is in this entry's description");
             default -> Optional.of("no undo for a folder " + action.name().toLowerCase());
         };
     }
 
     private ShReviewDetail.Entry entry(ShHistory history) {
         String postId = history.getShObject();
-        Optional<ShFolder> folder = postId == null ? Optional.empty()
-                : shFolderRepository.findAnyById(postId);
-        if (folder.isPresent()) {
-            return folderEntry(history, folder.get());
+        if (subjectOf(history) == ShContentSubject.FOLDER) {
+            return shFolderRepository.findAnyById(postId)
+                    .map(folder -> folderEntry(history, folder))
+                    // Purged: no address and nothing to undo, but the row still says what it was
+                    // and when. Reporting it as a post that vanished is the reading SH196's column
+                    // exists to stop.
+                    .orElseGet(() -> new ShReviewDetail.Entry(history.getAction(), postId, null,
+                            history.getDescription(), history.getShSite(), history.getDate(),
+                            false, false, false, false));
         }
         Optional<ShPostUnified> draft = postId == null ? Optional.empty()
                 : state(postId, ShPostState.DRAFT);
@@ -333,7 +362,40 @@ public class ShReviewService {
                 false,
                 false,
                 trashed,
-                action == ShContentAction.DELETE && canRestore);
+                folderRevertable(action, trashed, canRestore));
+    }
+
+    /**
+     * Whether the queue can honestly undo a folder entry — the rules {@link #revertFolder}
+     * applies, so a button is offered only where it works (SH196).
+     */
+    private static boolean folderRevertable(ShContentAction action, boolean trashed,
+                                            boolean canRestore) {
+        if (action == null) {
+            return false;
+        }
+        return switch (action) {
+            case CREATE -> !trashed;
+            case DELETE -> canRestore;
+            default -> false;
+        };
+    }
+
+    /**
+     * What an audit row is about (SH196).
+     *
+     * <p>Read off the row when it is there. A row written before the column existed is asked
+     * about instead — the query this column exists to remove, kept for exactly the rows that
+     * predate it and no others.</p>
+     */
+    private ShContentSubject subjectOf(ShHistory history) {
+        if (history.getSubjectKind() != null) {
+            return ShContentSubject.of(history.getSubjectKind());
+        }
+        return history.getShObject() != null
+                && shFolderRepository.findAnyById(history.getShObject()).isPresent()
+                        ? ShContentSubject.FOLDER
+                        : ShContentSubject.POST;
     }
 
     /**
@@ -365,8 +427,7 @@ public class ShReviewService {
     private List<String> touchedPosts(String session) {
         Set<String> ids = new LinkedHashSet<>();
         for (ShHistory entry : shHistoryRepository.findByAgentSession(session)) {
-            if (entry.getShObject() != null
-                    && shFolderRepository.findAnyById(entry.getShObject()).isEmpty()) {
+            if (entry.getShObject() != null && subjectOf(entry) == ShContentSubject.POST) {
                 ids.add(entry.getShObject());
             }
         }

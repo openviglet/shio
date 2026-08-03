@@ -209,7 +209,6 @@
 
 - 💭 **SH84** (deps: SH22 ✅, SH83 ✅) **Turing ecosystem wiring** — the SH22 tenant sweep and its test shipped; what remains is the Turing integration (replaces old SH37). → §VIII.9
 - 💭 **SH140** (deps: SH100 ✅, SH134 ✅) **Report inbound links when a post moves** — A URL typed into another post's rich text names the address rather than the object, so a move breaks it and nothing tells the agent which pages it just broke. → §VIII.13
-- 📋 **SH196** (deps: SH88 ✅, SH137 ✅) **No folder write is audited** — No folder create, rename, move or delete is recorded, so the feed shows posts appearing in folders it never saw created. → §VIII.12
 - 💭 **SH197** (deps: SH136 ✅) **Finish the byte-stability class** — A hash-ordered Map.of reaching a serialized map component is the SH136 defect the lint does not ban, and no live instance is affected yet. → §VIII.14
 
 ## Block K — Perception & verification loop

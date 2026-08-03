@@ -187,32 +187,6 @@ another tenant's sitemap would look exactly like a working context pack.
 What remains is the Turing integration (replaces old SH37) — the ecosystem half, which
 is a wiring question rather than an enforcement one.
 
-### VIII.12 Folders are absent from the change feed (SH196)
-
-`ShFolderWriteService` records no audit row on create, rename, move or delete. Post writes
-all do, so `/agent/changes` describes a site's *contents* and never its *shape*.
-
-The consequence falls on the one workflow the feed exists for. A session resuming with
-`since=<cursor>` is told a post now lives at `folder:Blog/archive/2025` and never that the
-folder appeared, was renamed from `2024`, or moved — so it cannot tell "someone filed this post
-into an existing section" from "someone restructured the site", and those call for different
-next actions. The SH109 review queue has the same hole from the other side: it groups audit
-rows by session, so a structural run shows up empty or half-present and **revert** has nothing
-to act on.
-
-Two design points worth settling before the code:
-
-- **A folder change is not a post change, and flattening it into one would lie.** The
-  temptation is an `UPDATE` per affected post when a folder moves, because that is what the
-  feed already carries. But no post changed — SH137 is explicit that a folder move leaves every
-  URL and every field alone — and a hundred post updates for one rename makes a cheap operation
-  look like a rewrite, which is what makes a consumer stop trusting the feed.
-- **`ShContentAction` has no vocabulary for it yet.** `CREATE`/`UPDATE`/`DELETE` are about
-  the right shape, but a consumer needs to know the subject is a folder to interpret the
-  address (`folder:` vs `post:` per SH79) — so the audit row needs a subject kind, not a new
-  action per subject. That is the same "one dimension per column" argument that kept
-  `agent_session_id` separate from `owner` (§XII).
-
 ### VIII.13 Report inbound links when a post moves (SH140)
 
 `ShReference` is id-keyed, so a reference stored *as a reference* survives a move: the

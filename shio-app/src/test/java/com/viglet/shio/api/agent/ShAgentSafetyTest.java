@@ -390,8 +390,16 @@ class ShAgentSafetyTest {
                 .isTrue();
     }
 
+    /**
+     * Both of them, which is the point: the run created a section <em>and</em> a page.
+     *
+     * <p>It used to undo one. Folder writes were unaudited (SH196), so a run that restructured a
+     * site showed up in the queue half-present and the leftover section stayed behind after the
+     * human had said "undo that" — the failure SH109 exists to prevent, arriving through the one
+     * gesture meant to fix it.</p>
+     */
     @Test
-    @DisplayName("reverting a run undoes what it created")
+    @DisplayName("reverting a run undoes what it created — the page and the section")
     void revertingARunUndoesIt() {
         String base = base();
         String session = "run-" + UUID.randomUUID().toString().substring(0, 8);
@@ -401,7 +409,7 @@ class ShAgentSafetyTest {
 
         ShReviewOutcome outcome = shReviewService.revert(session, "reviewer");
 
-        assertThat(outcome.changed()).isEqualTo(1);
+        assertThat(outcome.changed()).isEqualTo(2);
         assertThat(shPostUnifiedRepository.findByState(ShPostState.DRAFT).stream()
                 .anyMatch(row -> (base + "/regret").equals(row.getFurl())))
                 .as("a reverted creation is trashed (SH55), which is recoverable — not purged")

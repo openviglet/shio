@@ -1,0 +1,38 @@
+databaseChangeLog:
+  # SH196 — `ShHistory.subject_kind`: what the audited object is, POST or FOLDER.
+  #
+  # Folder writes are now recorded (create, rename, move, delete, restore), and a consumer has
+  # to know the subject to interpret the address — `folder:<site>/<name-chain>` and
+  # `post:<site>/<furl>` are different namespaces (SH79). A subject *column* rather than a new
+  # action per subject: a rename is an UPDATE, and an action per kind of object would double the
+  # enum every time something else becomes auditable while breaking every consumer that switches
+  # on `action`. One dimension per column — the same argument that kept `agent_session_id`
+  # separate from `owner` (§XII).
+  #
+  # Stored rather than derived, which is the whole point: SH200 asked the folder repository
+  # whether an audited id is a folder, and that answer disappears exactly when it matters most —
+  # after a purge the folder row is gone, so its own DELETE entry was silently reclassified as a
+  # post and the review queue reported "the post no longer exists".
+  #
+  # Nullable forever and read as POST when absent: rows written before this changeset were all
+  # posts, so the null reading is not a guess. Not a tenant discriminator, so no
+  # ShTenantBackfillRunner entry. VARCHAR rather than an inline ENUM, per
+  # ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on PostgreSQL (it does not
+  # propagate through `include`).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh196-history-subject-kind
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShHistory
+                columnName: subject_kind
+      changes:
+        - addColumn:
+            tableName: ShHistory
+            columns:
+              - column:
+                  name: subject_kind
+                  type: VARCHAR(16)

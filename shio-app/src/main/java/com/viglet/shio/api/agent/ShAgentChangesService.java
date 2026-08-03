@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentStore;
 import com.viglet.shio.api.agent.dto.ShAgentChanges;
+import com.viglet.shio.api.history.ShContentSubject;
 import com.viglet.shio.persistence.model.agent.ShAgentIncident;
 import com.viglet.shio.persistence.model.history.ShHistory;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -290,14 +291,20 @@ public class ShAgentChangesService {
         List<ShAgentChanges.Change> changes = new ArrayList<>(entries.size());
         for (ShHistory entry : entries) {
             String objectId = entry.getShObject();
+            ShContentSubject subject = ShContentSubject.of(entry.getSubjectKind());
             Optional<String> address = objectId == null
                     ? Optional.empty()
-                    : addresses.computeIfAbsent(objectId, this::addressOf);
+                    : addresses.computeIfAbsent(objectId, id -> addressOf(id, subject));
+            // A folder has no template graph, so the SH193 read is skipped rather than run and
+            // discarded — a folder-heavy feed would otherwise pay a post lookup per row for a
+            // question folders cannot raise.
             Optional<ShAgentChanges.Affects> affects = objectId == null
+                    || subject == ShContentSubject.FOLDER
                     ? Optional.empty()
                     : impacts.computeIfAbsent(objectId, this::affectsOf);
             changes.add(new ShAgentChanges.Change(
                     entry.getAction(),
+                    subject == ShContentSubject.POST ? null : subject.wire(),
                     address.orElse(null),
                     entry.getDate() == null ? null : entry.getDate().toString(),
                     entry.getOwner(),
@@ -333,18 +340,25 @@ public class ShAgentChangesService {
      * DRAFT-preferred, like every other agent read, so the address matches what a read
      * returns — and a {@code folder:} address when the audited object is a folder (SH200).
      *
-     * <p>A folder delete is now recorded, so the feed carries entries whose object is a
-     * folder rather than a post. The folder lookup is the one that may see a trashed row on
-     * purpose: the entry the caller most needs to address is the deletion, and a deletion
-     * that arrived without an address would be a change nobody can act on.</p>
+     * <p>The row says which it is (SH196), so this asks one repository rather than both: before
+     * the subject was stored, every folder entry paid for a post lookup that could only miss.
+     * The folder lookup is the one that may see a trashed row on purpose: the entry the caller
+     * most needs to address is the deletion, and a deletion that arrived without an address would
+     * be a change nobody can act on.</p>
      */
-    private Optional<String> addressOf(String objectId) {
+    private Optional<String> addressOf(String objectId, ShContentSubject subject) {
+        if (subject == ShContentSubject.FOLDER) {
+            return shFolderRepository.findAnyById(objectId)
+                    .map(folder -> shAddressResolver.addressOf(folder).toString());
+        }
         List<ShPostUnified> rows = shPostUnifiedRepository.findById(objectId);
         return rows.stream()
                 .filter(row -> row.getState() == ShPostState.DRAFT)
                 .findFirst()
                 .or(() -> rows.stream().findFirst())
                 .map(row -> shAddressResolver.addressOf(row).toString())
+                // Kept as a fallback for a row written before the subject column existed: those
+                // are POST by default, and a folder delete audited by SH200 is one of them.
                 .or(() -> shFolderRepository.findAnyById(objectId)
                         .map(folder -> shAddressResolver.addressOf(folder).toString()));
     }

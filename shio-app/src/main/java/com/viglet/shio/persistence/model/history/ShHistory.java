@@ -58,6 +58,18 @@ public class ShHistory implements Serializable {
 	/** Structured transition kind (SH51): CREATE / UPDATE / PUBLISH / UNPUBLISH / DELETE / RESTORE. */
 	private String action;
 
+	/**
+	 * What {@link #shObject} is — {@code POST} or {@code FOLDER} (SH196), {@code null} on a row
+	 * written before the column existed and read as {@code POST} then.
+	 *
+	 * <p>It is the second dimension of "what happened", and it is stored rather than derived
+	 * because the derivation stops working exactly when it matters: a purged folder cannot be
+	 * looked up, so its own deletion entry would be reclassified as a post. See
+	 * {@link com.viglet.shio.api.history.ShContentSubject}.</p>
+	 */
+	@Column(name = "subject_kind", length = 16)
+	private String subjectKind;
+
 	private String description;
 
 	private String shObject;
@@ -91,6 +103,11 @@ public class ShHistory implements Serializable {
 
     public void setAction(String action) {
 		this.action = action;
+	}
+
+    /** What the audited object is (SH196); {@code null} means a post. */
+    public void setSubjectKind(String subjectKind) {
+		this.subjectKind = subjectKind;
 	}
 
     public void setDate(Instant date) {

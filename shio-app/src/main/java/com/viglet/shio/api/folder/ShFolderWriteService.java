@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentAuditService;
+import com.viglet.shio.api.history.ShContentSubject;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -81,6 +82,11 @@ public class ShFolderWriteService {
     /**
      * Create a folder under the given parent object (a {@link ShSite} root or a
      * {@link ShFolder}). Returns {@code empty} when the parent does not exist.
+     *
+     * <p>Audited (SH196), like every other write here. Without this the change feed described a
+     * site's contents and never its shape: a resuming session was told a post now lives at
+     * {@code folder:Blog/archive/2025} and never that the section had just appeared, so it could
+     * not tell "filed into an existing section" from "the site was restructured".</p>
      */
     @Transactional
     public Optional<ShFolder> create(String parentObjectId, ShFolder payload, String owner) {
@@ -102,18 +108,33 @@ public class ShFolderWriteService {
                 folder.setRootFolder((byte) 1);
                 folder.setShSite(site);
             }
-            return shFolderRepository.save(folder);
+            ShFolder saved = shFolderRepository.save(folder);
+            recordFolder(ShContentAction.CREATE, saved, owner, "in " + nameOf(parent));
+            return saved;
         });
     }
 
+    /**
+     * Renames a folder in place — the console's rename, audited (SH196).
+     *
+     * <p>The audit row is an {@code UPDATE} with the old name in its description, not a
+     * {@code FOLDER_RENAME}: the subject is a column, so the action vocabulary does not grow per
+     * kind of object. And it is <b>one</b> row, not one per post beneath it — SH137 is explicit
+     * that a rename leaves every URL and every field alone, so a hundred post updates for one
+     * rename would make a cheap operation look like a rewrite, which is how a consumer learns to
+     * stop trusting the feed.</p>
+     */
     @Transactional
     public Optional<ShFolder> update(String id, ShFolder payload, String modifier) {
         return shFolderRepository.findById(id).map(folder -> {
+            String previousName = folder.getName();
             folder.setName(payload.getName());
             folder.setFurl(ShURLFormatter.format(payload.getName()));
             folder.setModifier(modifier);
             folder.setModifiedDate(Instant.now());
-            return shFolderRepository.save(folder);
+            ShFolder saved = shFolderRepository.save(folder);
+            recordFolder(ShContentAction.UPDATE, saved, modifier, renamed(previousName, saved.getName()));
+            return saved;
         });
     }
 
@@ -158,6 +179,10 @@ public class ShFolderWriteService {
     public Optional<ShFolder> move(String folderId, ShObject newParent, String newName, String modifier) {
         return shFolderRepository.findById(folderId).map(folder -> {
             requireMovable(folder, newParent);
+            String previousName = folder.getName();
+            String previousParent = nameOf(folder.getParentFolder() != null
+                    ? folder.getParentFolder()
+                    : ShFolderSite.of(folder));
             if (newParent instanceof ShFolder destFolder) {
                 folder.setParentFolder(destFolder);
                 folder.setRootFolder((byte) 0);
@@ -174,7 +199,11 @@ public class ShFolderWriteService {
             }
             folder.setModifier(modifier);
             folder.setModifiedDate(Instant.now());
-            return shFolderRepository.save(folder);
+            ShFolder saved = shFolderRepository.save(folder);
+            recordFolder(ShContentAction.UPDATE, saved, modifier,
+                    detail(renamed(previousName, saved.getName()),
+                            moved(previousParent, nameOf(newParent))));
+            return saved;
         });
     }
 
@@ -296,8 +325,7 @@ public class ShFolderWriteService {
                 node.setDeletedDate(trashedAt);
                 shFolderRepository.save(node);
             }
-            shContentAuditService.record(ShContentAction.DELETE, folder.getId(),
-                    siteIdOf(folder), folder.getName(), actor);
+            recordFolder(ShContentAction.DELETE, folder, actor, null);
             return true;
         }).orElse(false);
     }
@@ -346,8 +374,7 @@ public class ShFolderWriteService {
                 shPostUnifiedWriteService.restoreFromTrash(post.getId(), actor);
             }
         }
-        shContentAuditService.record(ShContentAction.RESTORE, folder.getId(),
-                siteIdOf(folder), folder.getName(), actor);
+        recordFolder(ShContentAction.RESTORE, folder, actor, null);
         return true;
     }
 
@@ -470,6 +497,58 @@ public class ShFolderWriteService {
             }
         }
         return posts;
+    }
+
+    /**
+     * One audit row per folder write (SH196) — the single call site, so a new write here cannot
+     * be the one that forgets. {@code ShFolderWriteAuditLintTest} asserts every mutating method
+     * reaches this.
+     */
+    private void recordFolder(ShContentAction action, ShFolder folder, String actor, String detail) {
+        shContentAuditService.record(action, ShContentSubject.FOLDER, folder.getId(),
+                siteIdOf(folder), folder.getName(), actor, detail);
+    }
+
+    /** {@code renamed from "2024"}, or {@code null} when the name did not change. */
+    private static String renamed(String previousName, String currentName) {
+        return previousName == null || previousName.equals(currentName)
+                ? null
+                : "renamed from \"" + previousName + "\"";
+    }
+
+    /** {@code moved from "Blog" to "News"}, or {@code null} when the parent did not change. */
+    private static String moved(String previousParent, String currentParent) {
+        return previousParent == null || previousParent.equals(currentParent)
+                ? null
+                : "moved from \"" + previousParent + "\" to \"" + currentParent + "\"";
+    }
+
+    /**
+     * Joins the parts of a change that happened, dropping the ones that did not.
+     *
+     * <p>A move that only renames says only that. Reporting "moved from X to X" alongside it
+     * would describe a write nobody made, which is the same defect as a hundred post updates for
+     * one rename, one order of magnitude smaller.</p>
+     */
+    private static String detail(String... parts) {
+        List<String> present = new ArrayList<>();
+        for (String part : parts) {
+            if (part != null && !part.isBlank()) {
+                present.add(part);
+            }
+        }
+        return present.isEmpty() ? null : String.join("; ", present);
+    }
+
+    /** A parent's name for the audit description — a folder's, a site's, or {@code "?"}. */
+    private static String nameOf(ShObject parent) {
+        if (parent instanceof ShFolder folder) {
+            return folder.getName();
+        }
+        if (parent instanceof ShSite site) {
+            return site.getName();
+        }
+        return "?";
     }
 
     private static String siteIdOf(ShFolder folder) {
