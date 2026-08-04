@@ -16,9 +16,10 @@ the CDA + console services (law P10) and holds no business logic of its own.
   call. `format=terse` saves only 11%, and that is the finding rather than a defect: this
   document's weight is prose (a purpose sentence and a runnable example, twenty-nine times),
   kept verbatim because an abbreviated example is a call the instance would reject (SH230).
-  **`elsewhere` says where a capability lives when it does not live here (SH393)** — ten
+  **`elsewhere` says where a capability lives when it does not live here (SH393)** — eleven
   entries, capability → the command or route to use instead (`exchange` → `shio import <file>`,
-  `visualSnapshot` → `shio snapshot <page>`, `pageAudit` → `shio audit <page>`, `trash` →
+  `visualSnapshot` → `shio snapshot <page>`, `pageAudit` → `shio audit <page>`,
+  `siteCapture` → `shio clone <url>`, `trash` →
   `console`). It is the third answer
   `features` could not give: `visualSnapshot: false` is the only honest thing this surface can
   say about a PNG and reads as *not possible*, when the truth is *possible, from the CLI*. Its

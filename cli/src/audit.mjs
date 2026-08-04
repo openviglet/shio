@@ -213,7 +213,7 @@ export function classify(observed, options = {}) {
   const capped = {};
 
   const merge = (rule, selector, width, payload, worse) => {
-    const key = `${rule} ${selector}`;
+    const key = `${rule}\u0000${selector}`;
     const existing = found.get(key);
     if (!existing) {
       found.set(key, {

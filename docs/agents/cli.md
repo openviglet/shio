@@ -43,6 +43,40 @@ message *is* the finding, so its line had a dangling ` — `. The probe runs **i
 is therefore one long self-contained function on purpose — a complexity warning on it is a false
 positive, and `audit.test.mjs` lints from the other side that it closes over nothing.
 
+**`shio clone <url>` is replication's capture phase, and it writes no content (SH377).** A
+replication is capture → convert → prove, and the first phase did not exist, so the work could not
+be scoped. `clone` walks **one origin** and writes exactly two things: the inventory at
+`shio/.shio/source-inventory.json` and a report — the pages with titles and paths, the assets they
+reference, the locales *and how each shows up in a URL*, the forms and their fields, the navigation
+as the source spells it, and the third-party scripts. **Writing no content is the promise every
+later phase rests on** (`clone.test.mjs` asserts the file count): the thing a conversion is supposed
+to let you review would otherwise already exist. Four rules the walk keeps. **One origin** — every
+off-host link is recorded and never followed. **A seed that redirects off-host is refused**, naming
+the host it actually served, because `example.com → www.example.com` followed silently files every
+path under an origin nobody named; a *page* redirecting off-host mid-crawl is just an outbound link.
+**robots.txt bounds it** — an exact agent group beats `*` outright rather than merging with it, the
+longest rule wins, `Allow` wins a tie, and `--ignore-robots` is recorded *in the inventory* so a
+capture taken without permission cannot later look like one taken with it. **Sequential over a
+sorted frontier**, which is what makes `--max-pages 50` cut the same fifty pages every run — the
+inventory exists to be diffed against the next crawl, and a set that moves on its own makes every
+diff noise. For the same reason there is **no timestamp in the file**; when the crawl ran is in
+`git log`. `--render` drives the browser for a page whose markup arrives after hydration, and it
+adds **no second extractor** — only a different source of markup for the same scanner, since two
+implementations of "what does this page contain" would diverge into a fidelity gap nobody could
+locate; the inventory records which one it got, and a page with almost no text and scripts present
+is a **note pointing at `--render`** rather than a silent miss. A sitemap named in robots is
+reported as *not walked*, and a ceiling marks the inventory PARTIAL — no silent caps, because a
+bounded capture read as a complete one is the failure the whole file exists to prevent.
+**The tag scanner is deliberately linear, and that is a security property, not a style choice**:
+this is the only module in the repository that parses bytes fetched from a stranger's server, so the
+obvious precise regex — a repeated `name(=value)?` group over overlapping classes — is exponential
+backtracking, and on a hostile page the crawl would **hang** rather than fail. `[^>]*` plus a
+lookahead after the tag name removes both the exponential and the quadratic case; the price is one
+bounded limitation (a `>` inside a quoted value ends that tag early), and a test feeds it 20k of
+exactly the pathological shape with a timeout as the assertion. It is CLI-shaped for SH268's
+settled reason and the manifest says so: `siteCapture: false` with
+`elsewhere.siteCapture = "shio clone <url>"`.
+
 **`shio impact <address>` exists and `shio read` deliberately does not (SH288).** The task was
 filed as "the CLI cannot show one post", and only half of that is a gap. A post's **content** is on
 disk after `pull --content`, where `Grep` and `Edit` are the cheapest tools an agent has (P4), so a

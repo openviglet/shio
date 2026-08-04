@@ -46,6 +46,40 @@ test("every registered command is documented in help", async () => {
   }
 });
 
+/**
+ * SH377 — the failure this file's own header describes, in the form it actually takes.
+ *
+ * The header says a single backtick in a new help paragraph "makes the whole CLI fail to parse".
+ * That is the *lucky* case. A paragraph that quotes a shell idiom introduces backticks in **pairs**,
+ * and a pair does not fail to parse: `HELP = \`…\` || true \`…\`` is a valid expression whose value
+ * is the first fragment. The help text is then silently cut at that point — measured when it
+ * happened, 149 lines instead of 200, with `Common options` and every flag after the cut simply
+ * gone. Nothing failed, and the existing guard passed because the Commands section it checks sits
+ * above the cut.
+ *
+ * So the guard is on both ends: the literal must contain no raw backtick at all, and the *printed*
+ * output must still reach its last line, which catches a truncation from any other cause.
+ */
+test("the help literal is whole: no raw backtick, and the last line still prints", async () => {
+  const source = await readFile(ENTRY, "utf8");
+  const opening = source.indexOf("const HELP = `");
+  assert.ok(opening > 0, "the help literal moved — this guard needs to move with it");
+  const body = source.slice(opening + "const HELP = `".length);
+  const closing = body.indexOf("\n`;");
+  assert.ok(closing > 0, "the help literal has no closing backtick on its own line");
+
+  assert.equal(
+    (body.slice(0, closing).match(/`/g) ?? []).length,
+    0,
+    "a raw backtick inside HELP ends the template there and silently truncates the help — " +
+      "write the shell idiom without backticks, or escape it",
+  );
+
+  const { stdout } = await run(process.execPath, [ENTRY, "--help"]);
+  assert.match(stdout, /^ {2}-h, --help {11}Show help$/m, "the help output does not reach its last line");
+  assert.match(stdout, /^Common options:$/m);
+});
+
 test("an unknown command exits non-zero and shows help", async () => {
   await assert.rejects(
     () => run(process.execPath, [ENTRY, "nonesuch"]),

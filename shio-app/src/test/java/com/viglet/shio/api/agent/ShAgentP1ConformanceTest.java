@@ -320,6 +320,11 @@ class ShAgentP1ConformanceTest {
                 "reported `false`, which is the honest answer (SH102): `shio snapshot` rasterizes "
                 + "and this surface has no endpoint and no tool. Classified rather than omitted so "
                 + "flipping it to `true` has to pass through this table"));
+        byFeature.put("siteCapture", new Delivery(Reach.CLI_ONLY, "shio_clone",
+                "SH377 — the same two reasons as pageAudit, and one more that is decisive on its own: "
+                + "the input is a URL somebody else controls, so an endpoint that fetched it is "
+                + "SH101's request-forgery surface with a crawler attached. SH268 settled the boundary "
+                + "and this is the case it was settled for"));
         byFeature.put("pageAudit", new Delivery(Reach.CLI_ONLY, "shio_audit",
                 "SH391 — and the one exception on this list that is a decision rather than a gap in "
                 + "the same sense `reviewQueue` is. `shio audit` returns text an agent can act on, "
@@ -443,6 +448,7 @@ class ShAgentP1ConformanceTest {
                         "pageAudit",
                         "postTypeMerge",
                         "reviewQueue",
+                        "siteCapture",
                         "trash",
                         "universalEditor",
                         "visualSnapshot");

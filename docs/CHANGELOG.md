@@ -900,6 +900,8 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
+- **SH377** — shio clone walks one origin and writes an inventory plus a report and no content: pages with titles, assets, locales with the URL shape each uses, forms with fields, the navigation in source order and the third-party scripts, bounded by depth, a page ceiling and the site's own robots rules
+
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 
 These shipped before this roadmap was written and are the foundation the

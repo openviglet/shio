@@ -243,13 +243,19 @@ public class ShAgentManifestService {
         // standing non-goal, so this flag saying `true` would advertise a Chromium process inside
         // the JVM. The pointer beside it is how a client learns the capability exists at all.
         features.put("pageAudit", false);
+        // SH377's capture pass — `shio clone <url>` walks a site that already exists and writes an
+        // inventory. `false` here is not modesty: a URL the *server* fetches is SH101's
+        // request-forgery surface argued a second time, which SH268 already settled, and a page whose
+        // markup arrives after hydration needs the browser this surface must not have. Both reasons
+        // are the same reason the flag beside it is false.
+        features.put("siteCapture", false);
         return features;
     }
 
     /**
      * Where a capability lives when it does not live on this surface (SH393).
      *
-     * <h2>Why this is ten entries and not fifty-four</h2>
+     * <h2>Why this is eleven entries and not fifty-five</h2>
      *
      * <p>A caller does not need to be told where {@code post.move} lives — {@code tools/list} and
      * the endpoint index say so, and saying it a third time is the repetition P3 exists to stop.
@@ -292,6 +298,7 @@ public class ShAgentManifestService {
         elsewhere.put("contentAsFiles", "shio pull --content");
         elsewhere.put("exchange", "shio import <file>");
         elsewhere.put("pageAudit", "shio audit <page>");
+        elsewhere.put("siteCapture", "shio clone <url>");
         elsewhere.put("visualSnapshot", "shio snapshot <page>");
         // Console-shaped: a human is the point, or a browser protocol is.
         elsewhere.put("reviewQueue", "console");

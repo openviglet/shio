@@ -1405,19 +1405,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.1 The capture pass, and why it is the CLI's half (SH377)
-
-A replication is three phases — capture, convert, prove — and the first one does not
-exist. `shio clone <url>` walks one origin (depth and page ceilings, the site's own
-robots rules, a refusal on a redirect off the host) and writes **no content**: one
-inventory under `shio/.shio/source-inventory.json` plus a report naming what it found —
-the pages with their titles and paths, the referenced assets, the locales and their URL
-shape, the forms and their fields, the navigation as the source spells it, and the
-third-party scripts. Everything downstream is scoped off that file, which is also what
-makes the conversion reviewable before it writes anything.
-
-**It is CLI-shaped for the reason SH268 already settled**: a URL the *server* fetches is SH101's request-forgery surface argued a second time, and "the instance does not run a browser" is a standing non-goal — while a page whose markup arrives only after hydration needs one. The CLI already imports Playwright as an optional dynamic import for SH102, so the browser lives where a browser already lives, and the artefact is a file, which is the cheapest thing an agent owns (P4).
-
 ### XVII.2 The bytes are the half a crawl cannot skip (SH378)
 
 SH145 made an asset a path in the tree, and a push uploads what a `File` field names. So

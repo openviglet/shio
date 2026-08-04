@@ -48,6 +48,10 @@ const BOOLEANS = [
   // SH102/SH391: force the instance's own preview even for a site that has a front end — the only
   // way to look at a draft.
   "preview",
+  // SH377: `--render` drives a browser so a client-rendered page is captured as it renders, and
+  // `--ignore-robots` is for your own site — it is recorded in the inventory, so a capture taken
+  // without permission cannot later be mistaken for one taken with it.
+  "render", "ignore-robots",
 ];
 
 // Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would
@@ -71,6 +75,7 @@ const COMMANDS = {
   digest: () => import("./commands/digest.mjs"),
   snapshot: () => import("./commands/snapshot.mjs"),
   audit: () => import("./commands/audit.mjs"),
+  clone: () => import("./commands/clone.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),
   build: () => import("./commands/build.mjs"),
@@ -104,6 +109,7 @@ Commands:
   digest <page>  Structural digest of one page: outline, landmarks, links, images
   snapshot <page> PNG of a page + whether it looks different (needs playwright)
   audit <page>   What is wrong with a rendered page, as text with a selector each
+  clone <url>    Capture a site that already exists: an inventory, and no content
   pull           Pull post-types into ./shio/post-types/*.json (--content for pages)
   push           Apply local post-types back to Shio (--dry-run, --prune, --content)
   build          Compile local DSL/JSON post-types to canonical JSON (--out)
@@ -226,7 +232,7 @@ Auditing a rendered page (shio audit):
   and diff, and say what to change. Needs playwright (the same optional install as snapshot).
   Errors — a request that 404'd, a console error — exit 1. Warnings — overflow, contrast, a
   collapsed box, a fallback font — are printed and exit 0, because each of those is design intent
-  often enough that a gate on them is the exit code people wrap in `|| true`.
+  often enough that a gate on them is the exit code people learn to ignore.
   shio audit post:Blog/blog/hello-world
   --page <page>        The page to audit (or a bare positional, or --address).
                        NOT --url: that is the instance, here as in every other command
@@ -237,6 +243,30 @@ Auditing a rendered page (shio audit):
   --limit <n>          Findings to print (the counts always cover the whole run)
   --strict             Exit 1 on warnings too
   --json               The findings as data
+
+Capturing a site that exists (shio clone):
+  The first of replication's three phases — capture, convert, prove. It walks ONE origin and
+  writes NO content: one inventory at shio/.shio/source-inventory.json plus a report naming
+  what it found — the pages with their titles and paths, the assets they reference, the locales
+  and how each shows up in a URL, the forms and their fields, the navigation as the source
+  spells it, and the third-party scripts. Everything downstream is scoped off that file, which
+  is what makes a conversion reviewable before it writes anything.
+  Four rules it keeps: every link off the host is recorded and never followed; a seed that
+  redirects off-host is refused, naming the host it actually got; the site's own robots.txt
+  bounds it; and the walk is sequential over a sorted frontier, so a ceiling cuts the same
+  pages every run and the inventory can be diffed against the next crawl.
+  shio clone https://example.com --depth 3 --max-pages 200
+  --depth <n>          How many link levels to follow    (default 3)
+  --max-pages <n>      Page ceiling; hitting it marks the inventory PARTIAL (default 200)
+  --render             Drive a browser, for a page whose markup arrives only after hydration
+                       (needs playwright). Without it the crawl reads what the server sent,
+                       and the report warns when a page looks like it renders itself
+  --ignore-robots      Skip robots.txt — for your own site. Recorded in the inventory, so a
+                       capture taken without permission cannot later look like one taken with it
+  --delay <seconds>    Wait between requests (default: the site's own Crawl-delay)
+  --out <file>         Inventory path       (default shio/.shio/source-inventory.json)
+  --limit <n>          Rows per report section (the inventory always holds everything)
+  --json               Print the inventory instead of the report
 
 Content as files (shio pull/push --content, shio dev --content):
   Content projects to shio/content/<site>/<url>.md — YAML frontmatter is the fields,
