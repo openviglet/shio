@@ -15,6 +15,7 @@ import { test } from "node:test";
 
 import * as verify from "../src/commands/verify.mjs";
 import * as digest from "../src/commands/digest.mjs";
+import { readLocal } from "../src/content-store.mjs";
 
 function sink() {
   const out = { text: "" };
@@ -477,4 +478,59 @@ test("SH374: a dangling translationOf is an error unscoped and a warning scoped"
   const lenient = await verify.run({ checks: "projection", site: "Blog" }, [], scoped);
   assert.equal(lenient.exitCode, undefined);
   assert.match(scoped.stdout.text, /! translation-target-missing/);
+});
+
+test("SH400: two files claiming one address reach the report, and the tree alone proves it", async () => {
+  // `pathToUrl` drops a trailing `index` segment, so these two name one post. Before this the
+  // map `readLocal` builds kept the second and never mentioned the first — a push then wrote one
+  // body under that URL and reported success, which is the shape P7 exists to forbid.
+  const fetchImpl = scriptedFetch(CLEAN);
+  const ctx = projectCtx(fetchImpl, projectFs({
+    assets: ["Blog/media/logo.png"],
+    extra: {
+      "/repo/shio/content/Blog/blog/hello/index.md": [
+        "---",
+        "site: Blog",
+        "url: /blog/hello",
+        "type: Article",
+        "folder: /blog",
+        "fields:",
+        "  headline: The other one",
+        "  hero: Blog/media/logo.png",
+        "---",
+        "",
+      ].join("\n"),
+    },
+  }));
+
+  const result = await verify.run({ checks: "projection" }, [], ctx);
+
+  assert.equal(result.exitCode, 1);
+  assert.deepEqual(fetchImpl.calls, [], "and it needed no instance to say so");
+  assert.match(ctx.stdout.text, /duplicate-address post:Blog\/blog\/hello/);
+  assert.match(ctx.stdout.text, /hello\.md and shio\/content\/Blog\/blog\/hello\/index\.md/);
+});
+
+test("SH400: the write side refuses, naming both paths", async () => {
+  // Same argument as the missing sidecar one file over: `post.upsert` declares *whole* state, so
+  // delivering one of two files replaces the other's copy on the server. Half a description is
+  // not a state anyone meant, and stopping is the better of the two readings.
+  const ctx = projectCtx(scriptedFetch(CLEAN), projectFs({
+    extra: {
+      "/repo/shio/content/Blog/blog/hello/index.md":
+        "---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Other\n---\n",
+    },
+  }));
+
+  await assert.rejects(
+    readLocal(ctx, { dir: "shio/content" }),
+    (error) => {
+      assert.match(error.message, /both project to `post:Blog\/blog\/hello`/);
+      assert.match(error.message, /shio\/content\/Blog\/blog\/hello\.md/);
+      assert.match(error.message, /shio\/content\/Blog\/blog\/hello\/index\.md/);
+      // Teaching, not just refusing: the fix is a choice between two files (P6).
+      assert.match(error.message, /Keep one of them/);
+      return true;
+    },
+  );
 });

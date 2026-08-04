@@ -261,3 +261,43 @@ test("findings are ordered by address, then rule, so two runs read the same", ()
     ["post:Blog/z", "translation-target-missing"],
   ]);
 });
+
+test("SH400: two files projecting to one address are an error the tree alone proves", () => {
+  // The pair cannot come from `posts` — by the time this runs the map `readLocal` keys by address
+  // has already dropped one of them — so it arrives from the read, and that is the whole rule.
+  const { findings } = lintProjection({
+    posts: [post({ hero: "Blog/media/logo.png" })],
+    defs: DEFS,
+    assets: ["Blog/media/logo.png"],
+    duplicates: [{
+      address: "post:Blog/blog/hello",
+      site: "Blog",
+      url: "/blog/hello",
+      paths: ["shio/content/Blog/blog/hello.md", "shio/content/Blog/blog/hello/index.md"],
+    }],
+  });
+
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].rule, "duplicate-address");
+  assert.equal(findings[0].severity, "error");
+  assert.equal(findings[0].address, "post:Blog/blog/hello");
+  assert.equal(findings[0].source, PROJECTION_CHECK);
+  // Both paths, because the fix is a choice between them and nothing else can make it.
+  assert.match(findings[0].message, /hello\.md and shio\/content\/Blog\/blog\/hello\/index\.md/);
+  assert.match(findings[0].fix, /index` segment is dropped/);
+});
+
+test("SH400: the severity does not depend on the scope", () => {
+  // Unlike `translation-target-missing`: both files are in the part of the tree that was read,
+  // or there would be no pair to report, so a scoped run has the same evidence as a full one.
+  const duplicates = [{
+    address: "post:Blog/blog/hello",
+    site: "Blog",
+    url: "/blog/hello",
+    paths: ["shio/content/Blog/blog/hello.md", "shio/content/Blog/blog/hello/index.md"],
+  }];
+  for (const scoped of [false, true]) {
+    const { findings } = lintProjection({ posts: [], defs: DEFS, assets: [], duplicates, scoped });
+    assert.equal(findings[0].severity, "error", `scoped=${scoped}`);
+  }
+});

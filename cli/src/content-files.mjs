@@ -789,6 +789,6 @@ function splitDocument(relPath, text) {
   return { meta, fields, files, body };
 }
 
-function fault(relPath, why) {
+export function fault(relPath, why) {
   return new Error(`shio content: ${relPath ? `${relPath}: ` : ""}${why}.`);
 }

@@ -16,6 +16,7 @@ import { join } from "node:path";
 import {
   FOLDER_MARKER,
   bodyFieldFor,
+  fault,
   filePathFor,
   folderMarkerPathFor,
   normalizeUrl,
@@ -176,6 +177,7 @@ export async function readLocal(ctx, { dir = CONTENT_DIR, site = null, sidecars 
   const files = await walk(ctx, root, "");
   const docs = {};
   const missingSidecars = [];
+  const paths = new Map();
   for (const relPath of files.sort()) {
     if (!relPath.toLowerCase().endsWith(".md")) continue;
     if (site && !relPath.startsWith(`${site}/`)) continue;
@@ -190,9 +192,56 @@ export async function readLocal(ctx, { dir = CONTENT_DIR, site = null, sidecars 
     } else {
       await loadSidecars(ctx, root, relPath, doc);
     }
-    docs[addressOf(doc)] = doc;
+    const address = addressOf(doc);
+    // SH400 — the assignment below is a silent drop when two files agree on an address, so
+    // record every path that reached it before one of them stops being reachable.
+    if (paths.has(address)) paths.get(address).push(relPath);
+    else paths.set(address, [relPath]);
+    docs[address] = doc;
   }
-  return sidecars === "report" ? { docs, missingSidecars } : docs;
+  const duplicates = duplicatesFrom(paths, dir);
+  if (sidecars === "report") return { docs, missingSidecars, duplicates };
+  if (duplicates.length) throw duplicateFault(duplicates[0]);
+  return docs;
+}
+
+/**
+ * Which addresses more than one file claims (SH400) — `[{ address, site, url, paths }]`, sorted.
+ *
+ * `pathToUrl` drops a trailing `index` segment, so `blog/index.md` and `blog.md` project to one
+ * URL, and the map `readLocal` builds keeps whichever it read last. A pull never writes the
+ * collision — `urlToPath` emits `index.md` only for the site root — which is exactly why nothing
+ * catches it: the tree is the authoring surface (P4), and an agent reaching for the `index.md`
+ * convention is not told it has spelled a name it already used a second way.
+ */
+function duplicatesFrom(paths, dir) {
+  const out = [];
+  for (const [address, relPaths] of paths) {
+    if (relPaths.length < 2) continue;
+    const { site, url } = splitAddress(address);
+    out.push({ address, site, url, paths: relPaths.map((relPath) => `${dir}/${relPath}`) });
+  }
+  return out.sort((a, b) => a.address.localeCompare(b.address));
+}
+
+function splitAddress(address) {
+  const rest = address.slice("post:".length);
+  const cut = rest.indexOf("/");
+  return cut < 0 ? { site: rest, url: "/" } : { site: rest.slice(0, cut), url: rest.slice(cut) };
+}
+
+/**
+ * The refusal a write gets (SH400), on the argument that already governs a missing sidecar.
+ *
+ * Delivering one of two files is worse than stopping: `post.upsert` declares *whole* state, so the
+ * survivor's body replaces the other's on the server, from a command that reported success. The
+ * message names both paths because the fix is a choice between them and nothing else can make it.
+ */
+function duplicateFault(duplicate) {
+  return fault(duplicate.paths[0],
+    `it and ${duplicate.paths.slice(1).join(", ")} both project to \`${duplicate.address}\`. `
+      + "A trailing `index` segment is dropped from a path's URL, so `<name>/index.md` and "
+      + "`<name>.md` name one post. Keep one of them — `shio verify` lists every such pair");
 }
 
 /** Which of a post's `files:` entries name nothing (SH374) — reported, never thrown. */

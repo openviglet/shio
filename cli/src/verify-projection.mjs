@@ -38,6 +38,7 @@ export const PROJECTION_CHECK = "projection";
  * @param {Iterable<string>} tree.assets asset paths on disk (`readLocalAssets`)
  * @param {string} [tree.assetsDir] named in the fix, so the message points at a real directory
  * @param {object[]} [tree.missingSidecars] `files:` entries naming nothing (SH374)
+ * @param {object[]} [tree.duplicates] addresses more than one file claims (SH400)
  * @param {boolean} [tree.scoped] whether the run covers only part of the tree (SH374)
  * @returns {{ findings: object[], checked: number }}
  */
@@ -47,6 +48,7 @@ export function lintProjection({
   assets = [],
   assetsDir = "shio/assets",
   missingSidecars = [],
+  duplicates = [],
   scoped = false,
 }) {
   const fields = fileFields(defs);
@@ -90,9 +92,32 @@ export function lintProjection({
     }
   }
 
+  findings.push(...duplicateFindings(duplicates));
   findings.push(...sidecarFindings(missingSidecars));
   findings.push(...translationFindings(posts, scoped));
   return { findings: sortFindings(findings), checked };
+}
+
+/**
+ * Two files projecting to one address (SH400) — an **error**, and the same defect the push refuses.
+ *
+ * It cannot be found from `posts`, because by the time this runs the map `readLocal` keys by
+ * address has already kept one of them; the pair arrives from the read itself. Unlike
+ * `translation-target-missing` the severity does not depend on the scope: both files are in the
+ * part of the tree that was read, or there would be no pair to report.
+ */
+function duplicateFindings(duplicates) {
+  return duplicates.map((duplicate) => ({
+    rule: "duplicate-address",
+    severity: "error",
+    address: duplicate.address,
+    field: undefined,
+    message: `${duplicate.paths.join(" and ")} both project to it`,
+    fix: "A trailing `index` segment is dropped from a path's URL, so `<name>/index.md` and "
+      + "`<name>.md` name one post. Keep one of them. Pushing this would publish one file's "
+      + "body under that URL and drop the other with no report.",
+    source: PROJECTION_CHECK,
+  }));
 }
 
 /**

@@ -358,6 +358,20 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
         distinction `asset-check-skipped` makes one line above.
       - **Findings sort by address, then rule, then field.** With three rules now able to fire on
         one post, an order that followed whichever rule ran first is a report nobody can diff (P5).
+    - **`duplicate-address` — two files, one post (SH400).** `pathToUrl` drops a trailing `index`
+      segment, so `blog/index.md` and `blog.md` both project to `post:<site>/blog`. `readLocal`
+      accumulates into a map keyed by address, so the loser was parsed, its sidecars loaded, and
+      then dropped with no finding and no refusal; a push wrote the survivor's body under that URL
+      and reported success. A **pull never creates it** — `urlToPath` emits `index.md` only for the
+      site root — which is exactly why nothing caught it: the tree is the authoring surface (P4),
+      and an agent reaching for the `index.md` convention is not told it has spelled a name it
+      already used. Same two answers as SH374, for the same reasons: the write side **refuses,
+      naming both paths** (delivering one of two files is worse than stopping, because
+      `post.upsert` declares whole state), and the lint reports **every** pair. The pair has to be
+      carried out of `readLocal` beside `missingSidecars` — by the time `lintProjection` sees
+      `posts` the map has already collapsed. Unlike `translation-target-missing` the severity does
+      **not** depend on the scope: both files are in the part of the tree that was read, or there
+      would be no pair.
     - **And the bytes are in the SH89 merge now (SH373).** SH210 fixed one direction and opened
       another: a server-side asset edit never reached the tree, and — newer and worse — a push
       *replaced* the server's bytes whenever they differed from the tree's, which reverts a
