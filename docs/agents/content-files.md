@@ -342,6 +342,22 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
       baseline can hold one (it needed nothing new — the entries are `(rule, address, field)`
       triples); and a post whose **type the tree lacks** is a `asset-check-skipped` *warning*
       rather than silence, because an unchecked post must not read as a clean one (SH302's rule).
+    - **Two more rules of the same class (SH374).** `sidecar-missing` — a `files:` entry naming
+      nothing — and `translation-target-missing`, a `translationOf` naming a URL the tree does not
+      hold. Both were provable from the tree and reported only by a gate that needs the server: the
+      first as an *exception* out of `readLocal`, the second as the server's teaching 400 (SH348).
+      Three things they needed:
+      - **`readLocal` grew a `sidecars: "report"` mode.** Its default *refuses* on the first missing
+        sidecar, which is right for a write — read as an empty value it publishes a layout with no
+        HTML from a push that reported success, and read as an absent field it makes `post.upsert`
+        clear the server's copy, because an upsert declares whole state. For a lint that refusal is
+        the very shape SH212 replaced: one offender at a time instead of a report of all of them.
+      - **`translation-target-missing` is an error unscoped and a warning when scoped to a site**,
+        because a scoped projection legitimately holds a translation whose original lives somewhere
+        it did not read. "Not checked" and "wrong" are different claims — SH143's rule, and the same
+        distinction `asset-check-skipped` makes one line above.
+      - **Findings sort by address, then rule, then field.** With three rules now able to fire on
+        one post, an order that followed whichever rule ran first is a report nobody can diff (P5).
     - **And the bytes are in the SH89 merge now (SH373).** SH210 fixed one direction and opened
       another: a server-side asset edit never reached the tree, and — newer and worse — a push
       *replaced* the server's bytes whenever they differed from the tree's, which reverts a

@@ -29,8 +29,6 @@
 
 ## Block I — Content as files (local-first authoring)
 
-- 📋 **SH374** (deps: SH212 ✅) **A missing sidecar and a dangling translationOf still wait for a gate that needs the server** — SH212 showed both are provable from the tree alone, yet the projection group has one rule and the cheapest gate misses the two defects beside it. → §X.20
-
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 
 - 💭 **SH217** (deps: SH96 ✅) **The community half of the registry** — The local trust model is shipped, and nothing says how a package a stranger wrote earns a place in it. → §XI.5

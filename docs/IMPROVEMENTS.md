@@ -437,29 +437,6 @@ the content — and it is CLI-shaped, because half the inputs are files.
 > ✅ **SH86, SH87, SH88, SH89 and SH90 shipped** → [CHANGELOG.md](CHANGELOG.md) Block I.
 > What follows is the design rationale for what the projection **still owes**.
 
-### X.20 The projection group has one rule and room for two more (SH374)
-
-SH212 established the shape and settled the design question: a defect the files alone
-prove belongs in a group that needs no instance, reported as a finding rather than
-thrown as an exception. It shipped with one rule. Two more defects of exactly that class
-are still caught only by a gate that needs the server.
-
-A **sidecar file a post names and does not have** (SH191's `files:` block) is refused by
-`push --content` — the same inverted order SH212 fixed for assets: local, checkable with
-nothing running, and reported by a gate that needs credentials. A **`translationOf`
-naming a URL the tree does not hold** (SH348) is worse: the refusal is the *server's*
-teaching 400, so it costs a round trip to learn something the tree knew.
-
-Both are one `readLocal` and a set lookup, which is why they are one task and not two.
-What is worth deciding rather than drifting into is the severity of the second: a
-`translationOf` may legitimately name a post the tree does not carry when the projection
-is scoped with `--site`, so it is a warning there and an error only when the run covers
-the whole tree — the same distinction `asset-check-skipped` already makes for a
-post-type the tree lacks.
-
-The push refusals stay. They are the last net, and SH212's rule is that reaching one
-means the cheap check was never run.
-
 ## XI. Blueprints + Claude Code plugin (Block J)
 
 > *"Skip steps with things that are already done"* only works if the ready-made

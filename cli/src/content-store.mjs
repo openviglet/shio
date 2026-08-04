@@ -171,19 +171,43 @@ function normalizeSnapshot(doc) {
  * @param {{ dir?: string, site?: string }} [options]
  * @returns {Promise<Record<string, object>>} address → doc
  */
-export async function readLocal(ctx, { dir = CONTENT_DIR, site = null } = {}) {
+export async function readLocal(ctx, { dir = CONTENT_DIR, site = null, sidecars = "load" } = {}) {
   const root = join(ctx.cwd, dir);
   const files = await walk(ctx, root, "");
   const docs = {};
+  const missingSidecars = [];
   for (const relPath of files.sort()) {
     if (!relPath.toLowerCase().endsWith(".md")) continue;
     if (site && !relPath.startsWith(`${site}/`)) continue;
     const text = await ctx.fs.readFile(join(root, relPath), "utf8");
     const doc = parsePost(relPath, text);
-    await loadSidecars(ctx, root, relPath, doc);
+    if (sidecars === "report") {
+      // SH374 — `report` exists for the one caller that must not stop at the first offender.
+      // `loadSidecars` refuses, which is right for a *write* (publishing a layout with no HTML
+      // from a push that reported success is the worse reading) and wrong for a *lint*: an
+      // exception on the first missing file is exactly the shape SH212 replaced with findings.
+      missingSidecars.push(...await reportMissingSidecars(ctx, root, relPath, doc));
+    } else {
+      await loadSidecars(ctx, root, relPath, doc);
+    }
     docs[addressOf(doc)] = doc;
   }
-  return docs;
+  return sidecars === "report" ? { docs, missingSidecars } : docs;
+}
+
+/** Which of a post's `files:` entries name nothing (SH374) — reported, never thrown. */
+async function reportMissingSidecars(ctx, root, relPath, doc) {
+  const dir = relPath.slice(0, relPath.lastIndexOf("/") + 1);
+  const missing = [];
+  for (const [field, name] of Object.entries(doc.sidecarFiles ?? {})) {
+    try {
+      doc.data[field] = await ctx.fs.readFile(join(root, `${dir}${name}`), "utf8");
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+      missing.push({ doc, field, name, expected: `${dir}${name}` });
+    }
+  }
+  return missing;
 }
 
 /**

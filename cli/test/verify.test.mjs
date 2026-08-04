@@ -284,18 +284,21 @@ test("digest with no target explains what to pass", async () => {
  * A project on disk: post-types, one post and whichever assets the test wants. The keys are what
  * `readLocalDefs`, `readLocal` and `readLocalAssets` walk, so this is the real read path.
  */
-function projectFs({ assets = [], hero = "Blog/media/logo.png" } = {}) {
+function projectFs({ assets = [], hero = "Blog/media/logo.png", extra = {} } = {}) {
   const files = new Map([
     ["/repo/shio/post-types/Article.json", JSON.stringify({
       name: "Article",
       fields: [
         { name: "headline", widget: "Text", ordinal: 1 },
         { name: "hero", widget: "File", ordinal: 2 },
+        // SH374 — a code field, so a `files:` block in one of these fixtures is a real sidecar.
+        { name: "HTML", widget: "Ace Editor - HTML", ordinal: 3 },
       ],
     })],
     ["/repo/shio/content/Blog/blog/hello.md",
       `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Hello\n  hero: ${hero}\n---\n`],
     ...assets.map((path) => [`/repo/shio/assets/${path}`, "bytes"]),
+    ...Object.entries(extra),
   ]);
   const norm = (path) => String(path).replaceAll("\\", "/");
   return {
@@ -411,4 +414,67 @@ test("SH212: --delivery and the tree-only gate are refused together", async () =
     () => verify.run({ checks: "projection", delivery: true }, [], ctx),
     /cannot be combined/,
   );
+});
+
+test("SH374: a missing sidecar reaches the report instead of stopping the run", async () => {
+  // `readLocal` refuses on the first `files:` entry naming nothing, which is right for a write and
+  // wrong for a lint — an exception on one offender is what SH212 replaced with findings, and this
+  // is the second half of that argument.
+  const fetchImpl = scriptedFetch(CLEAN);
+  const ctx = projectCtx(fetchImpl, projectFs({
+    assets: ["Blog/media/logo.png"],
+    extra: {
+      "/repo/shio/content/Blog/blog/layout.md": [
+        "---",
+        "site: Blog",
+        "url: /blog/layout",
+        "type: Article",
+        "folder: /blog",
+        "files:",
+        "  HTML: layout.html",
+        "fields:",
+        "  headline: Layout",
+        "---",
+        "",
+      ].join("\n"),
+    },
+  }));
+
+  const result = await verify.run({ checks: "projection" }, [], ctx);
+
+  assert.equal(result.exitCode, 1);
+  assert.deepEqual(fetchImpl.calls, [], "and it needed no instance to say so");
+  assert.match(ctx.stdout.text, /sidecar-missing post:Blog\/blog\/layout · HTML/);
+  assert.match(ctx.stdout.text, /layout\.html/);
+});
+
+test("SH374: a dangling translationOf is an error unscoped and a warning scoped", async () => {
+  const tree = {
+    assets: ["Blog/media/logo.png"],
+    extra: {
+      "/repo/shio/content/Blog/pt/ola.md": [
+        "---",
+        "site: Blog",
+        "url: /pt/ola",
+        "type: Article",
+        "folder: /pt",
+        "translationOf: /en/gone",
+        "fields:",
+        "  headline: Ola",
+        "---",
+        "",
+      ].join("\n"),
+    },
+  };
+
+  const unscoped = projectCtx(scriptedFetch(CLEAN), projectFs(tree));
+  const strict = await verify.run({ checks: "projection" }, [], unscoped);
+  assert.equal(strict.exitCode, 1);
+  assert.match(unscoped.stdout.text, /translation-target-missing/);
+
+  // Scoped to a site, the same tree is not a statement about where the original lives (SH143).
+  const scoped = projectCtx(scriptedFetch(CLEAN), projectFs(tree));
+  const lenient = await verify.run({ checks: "projection", site: "Blog" }, [], scoped);
+  assert.equal(lenient.exitCode, undefined);
+  assert.match(scoped.stdout.text, /! translation-target-missing/);
 });

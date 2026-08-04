@@ -36,7 +36,8 @@ running it twice would answer "nothing changed", and for a review artifact an em
 as approval.
 
 **CI gates, in the order they should run:** `shio verify --checks projection` (tree defects — **no
-instance**, SH212) → `shio push --check` (model drift) → `shio push --content --check`
+instance**, SH212/SH374: a broken asset path, a `files:` entry naming nothing, a dangling
+`translationOf`) → `shio push --check` (model drift) → `shio push --content --check`
 (content-tree drift) → `shio apply --check` (document drift) → `shio verify` (content defects).
 The first one is new and is first for a reason: it needs no credentials, no network and nothing
 stood up, so a defect the files alone prove should never wait for a gate that does. **`projection`

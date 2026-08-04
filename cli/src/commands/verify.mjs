@@ -118,10 +118,15 @@ async function lintTree(flags, ctx, site) {
   // right for a command whose whole job is the post-types and wrong here: a tree with no local
   // model is a tree this group cannot check, not a tree that is broken.
   const defs = await readLocalDefs(ctx, flags.dir ?? DEFS_DIR).catch(noDefs);
-  const posts = Object.values(await readLocal(ctx, {
+  // SH374 — `sidecars: "report"` rather than the default `load`: the default *refuses* on the
+  // first `files:` entry naming nothing, which is right for a write and wrong for a lint. This
+  // group's whole point is that the tree's defects arrive as findings, all of them, at once.
+  const read = await readLocal(ctx, {
     dir: flags.contentDir ?? CONTENT_DIR,
     site,
-  }).catch(absentMap));
+    sidecars: "report",
+  }).catch(absentRead);
+  const posts = Object.values(read.docs);
   const assetsDir = flags.assetsDir ?? ASSETS_DIR;
   const assets = await readLocalAssets(ctx, { dir: assetsDir, site }).catch(absent);
 
@@ -133,7 +138,19 @@ async function lintTree(flags, ctx, site) {
         + `${posts.length} post(s) and ${defs?.length ?? 0} post-type(s)`,
     };
   }
-  return { ...lintProjection({ posts, defs, assets, assetsDir }), note: null };
+  return {
+    ...lintProjection({
+      posts,
+      defs,
+      assets,
+      assetsDir,
+      missingSidecars: read.missingSidecars,
+      // A scoped run is not a statement about the whole tree, so a `translationOf` it could not
+      // have seen is a warning rather than an error (SH143's rule).
+      scoped: Boolean(site),
+    }),
+    note: null,
+  };
 }
 
 /** A directory the tree does not have is not an error here — it is an empty list. */
@@ -151,8 +168,8 @@ function noDefs(error) {
   throw error;
 }
 
-function absentMap(error) {
-  if (error?.code === "ENOENT") return {};
+function absentRead(error) {
+  if (error?.code === "ENOENT") return { docs: {}, missingSidecars: [] };
   throw error;
 }
 

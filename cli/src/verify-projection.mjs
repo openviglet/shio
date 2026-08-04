@@ -37,9 +37,18 @@ export const PROJECTION_CHECK = "projection";
  * @param {object[]} tree.defs    local post-type defs (`readLocalDefs`)
  * @param {Iterable<string>} tree.assets asset paths on disk (`readLocalAssets`)
  * @param {string} [tree.assetsDir] named in the fix, so the message points at a real directory
+ * @param {object[]} [tree.missingSidecars] `files:` entries naming nothing (SH374)
+ * @param {boolean} [tree.scoped] whether the run covers only part of the tree (SH374)
  * @returns {{ findings: object[], checked: number }}
  */
-export function lintProjection({ posts = [], defs = [], assets = [], assetsDir = "shio/assets" }) {
+export function lintProjection({
+  posts = [],
+  defs = [],
+  assets = [],
+  assetsDir = "shio/assets",
+  missingSidecars = [],
+  scoped = false,
+}) {
   const fields = fileFields(defs);
   const present = new Set(assets);
   const findings = [];
@@ -81,7 +90,69 @@ export function lintProjection({ posts = [], defs = [], assets = [], assetsDir =
     }
   }
 
-  return { findings, checked };
+  findings.push(...sidecarFindings(missingSidecars));
+  findings.push(...translationFindings(posts, scoped));
+  return { findings: sortFindings(findings), checked };
+}
+
+/**
+ * A `files:` entry naming nothing (SH374) — an **error**, and the same defect the push refuses.
+ *
+ * The refusal on the write side is right and stays: treating a missing sidecar as an empty value
+ * publishes a layout with no HTML from a push that reported success, and treating it as an absent
+ * field makes `post.upsert` clear the server's copy, because an upsert declares whole state. What
+ * was wrong is that it was the *only* place the defect surfaced — an exception on the first
+ * offender rather than a report of every one, in a gate that needs an instance to reach.
+ */
+function sidecarFindings(missing) {
+  return missing.map((entry) => finding(entry.doc, entry.field, "sidecar-missing",
+    `its \`files: ${entry.field}: ${entry.name}\` names a file that is not there ` +
+      `(expected ${entry.expected})`,
+    "Restore the file, or delete the `files:` line and put the value back in `fields:`."));
+}
+
+/**
+ * A `translationOf` naming a URL the tree does not hold (SH374).
+ *
+ * <h3>Why the severity depends on the scope</h3>
+ *
+ * The server refuses this with a teaching 400 (SH348), because creating an unlinked post and
+ * reporting success is a silent drop. So it is a real defect — but only when the tree is supposed
+ * to be the whole description of the site. A run scoped with `--site` legitimately holds a
+ * translation whose original lives in a site it did not read, so there it is a **warning**: the
+ * same distinction `asset-check-skipped` makes for a post-type the tree lacks, and for the same
+ * reason — "not checked" and "wrong" are different claims and must not be spelled the same.
+ */
+function translationFindings(posts, scoped) {
+  const held = new Set(posts.map((post) => addressOf(post)));
+  const out = [];
+  for (const post of posts) {
+    const target = post?.translationOf;
+    if (typeof target !== "string" || !target) continue;
+    const address = `post:${post.site ?? ""}${target}`;
+    if (held.has(address)) continue;
+    out.push({
+      ...finding(post, "translationOf", "translation-target-missing",
+        `its \`translationOf: ${target}\` names a post this tree does not hold (${address})`,
+        scoped
+          ? "Widen the run, or check that the original is in a site this projection covers — the "
+            + "server refuses a translation whose target it cannot resolve."
+          : "Point it at a post the tree holds, or drop the line. The server refuses a "
+            + "translation whose target it cannot resolve, so pushing this fails."),
+      // A scoped run is not a statement about the site (SH143's rule), so a target it could not
+      // have seen is not evidence of a defect.
+      severity: scoped ? "warning" : "error",
+    });
+  }
+  return out;
+}
+
+/** By address, then rule, then field — so two runs over one tree read the same (P5). */
+function sortFindings(findings) {
+  return [...findings].sort((a, b) =>
+    (a.address ?? "").localeCompare(b.address ?? "")
+    || (a.rule ?? "").localeCompare(b.rule ?? "")
+    || (a.field ?? "").localeCompare(b.field ?? ""));
 }
 
 /**

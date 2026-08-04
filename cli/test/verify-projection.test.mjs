@@ -177,3 +177,87 @@ test("a caller naming only server groups gets no tree lint", () => {
 test("`all` includes the tree's group and still reaches the server", () => {
   assert.deepEqual(splitChecks("all"), { remote: "all", projection: true, callRemote: true });
 });
+
+// --- the two more defects the tree alone proves (SH374) ---
+
+test("a `files:` entry naming nothing is an error, and every one is reported", () => {
+  // The defect the push already refuses — rightly, because a missing sidecar read as an empty
+  // value publishes a layout with no HTML from a push that reported success. What was wrong is
+  // that the refusal was the *only* place it surfaced: an exception on the first offender rather
+  // than a report of all of them, in a gate that needs an instance to reach.
+  const { findings } = lintProjection({
+    posts: [post({ headline: "Hello" })],
+    defs: DEFS,
+    missingSidecars: [
+      { doc: post({}), field: "HTML", name: "hello.html", expected: "Blog/blog/hello.html" },
+      { doc: post({}), field: "JAVASCRIPT", name: "hello.js", expected: "Blog/blog/hello.js" },
+    ],
+  });
+
+  assert.deepEqual(findings.map((f) => [f.rule, f.field, f.severity]), [
+    ["sidecar-missing", "HTML", "error"],
+    ["sidecar-missing", "JAVASCRIPT", "error"],
+  ]);
+  assert.match(findings[0].message, /files: HTML: hello\.html/);
+  assert.match(findings[0].fix, /put the value back in `fields:`/);
+});
+
+test("a translationOf naming a post the tree holds is not a finding", () => {
+  const { findings } = lintProjection({
+    posts: [
+      post({ headline: "Hello" }, { url: "/en/hello" }),
+      post({ headline: "Ola" }, { url: "/pt/ola", translationOf: "/en/hello" }),
+    ],
+    defs: DEFS,
+  });
+
+  assert.deepEqual(findings, []);
+});
+
+test("a dangling translationOf is an error on a whole-tree run", () => {
+  // The server refuses it with a teaching 400 (SH348), because creating an unlinked post and
+  // reporting success is a silent drop — so learning it here costs no round trip.
+  const { findings } = lintProjection({
+    posts: [post({ headline: "Ola" }, { url: "/pt/ola", translationOf: "/en/gone" })],
+    defs: DEFS,
+  });
+
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].rule, "translation-target-missing");
+  assert.equal(findings[0].severity, "error");
+  assert.equal(findings[0].field, "translationOf");
+  assert.match(findings[0].message, /post:Blog\/en\/gone/);
+});
+
+test("the same dangling translationOf is a warning on a scoped run", () => {
+  // A run scoped with --site legitimately holds a translation whose original is in a site it did
+  // not read. "Not checked" and "wrong" are different claims and must not be spelled the same —
+  // the distinction `asset-check-skipped` already makes, for the same reason.
+  const { findings } = lintProjection({
+    posts: [post({ headline: "Ola" }, { url: "/pt/ola", translationOf: "/en/gone" })],
+    defs: DEFS,
+    scoped: true,
+  });
+
+  assert.equal(findings[0].severity, "warning");
+  assert.match(findings[0].fix, /Widen the run/);
+});
+
+test("findings are ordered by address, then rule, so two runs read the same", () => {
+  // P5, and it matters more now that three rules can fire on one post: a report whose order moves
+  // with which rule ran first is a report you cannot diff.
+  const { findings } = lintProjection({
+    posts: [
+      post({ hero: "Blog/media/gone.png" }, { url: "/z", translationOf: "/nope" }),
+      post({ hero: "Blog/media/gone.png" }, { url: "/a" }),
+    ],
+    defs: DEFS,
+    assets: [],
+  });
+
+  assert.deepEqual(findings.map((f) => [f.address, f.rule]), [
+    ["post:Blog/a", "asset-missing"],
+    ["post:Blog/z", "asset-missing"],
+    ["post:Blog/z", "translation-target-missing"],
+  ]);
+});
