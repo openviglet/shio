@@ -437,10 +437,43 @@ public class ShRenderHelpers {
 
     /**
      * {@code {{#navigation}}…{{/navigation}}} — the site's top-level folders, in the
-     * position order the console shows, each row {@code {name, url, id}}.
+     * position order the console shows, each row {@code {id, name, title, url, link}}.
      *
      * <p>{@code folder="/docs"} narrows it to that folder's children, which is FSP's
      * {@code navigationFolder} without a second helper name to remember.</p>
+     *
+     * <h2>The {@code url} this promised for two releases and did not carry (SH381)</h2>
+     *
+     * <p>This docstring said {@code {name, url, id}} while the body built {@code {id, name, title}}.
+     * The one helper a site's primary menu exists for therefore rendered labels nobody could click,
+     * and the comment is the tell that the field was intended and dropped — a fixture in
+     * {@code ShTemplateFieldLintTest} had been writing {@code <a href="{{url}}">{{name}}</a>}
+     * against it the whole time.
+     *
+     * <p>It was not a one-line fix because <b>a folder has no URL</b>. SH79 keeps the two namespaces
+     * apart deliberately: only a post has a friendly URL, and a folder chain is a different kind of
+     * name. So the row's {@code url} had to be a decision, and it is the folder's <b>index post</b>
+     * — the post inside it whose friendly URL is the folder's own chain, which is what a reader means
+     * by "the Solutions section". Absent where there is none, and <b>never a fabricated path</b>: a
+     * menu whose links 404 is worse than one whose entries are plain text, because the second is
+     * visibly unfinished and the first is not.
+     *
+     * <p><b>An absent {@code url} beside a present {@code name} is a legitimate row</b>, not a
+     * defect — it is a group heading, which is exactly what a nested menu needs, so a template
+     * branches on it: {@code {{#if url}}<a href="{{url}}">{{name}}</a>{{else}}<span>{{name}}</span>{{/if}}}.
+     * Reporting a folder that has no index post is therefore <em>nobody's</em> job here; if it ever
+     * becomes one it is {@code verify}'s, by the rule that a defect belongs in one report.
+     *
+     * <p><b>The match is case-insensitive</b>, and that follows from SH79 rather than being a
+     * convenience: a folder name is a human label ("Solutions") and a friendly URL is a slug
+     * ("/solutions"), so demanding byte equality between two namespaces that are deliberately
+     * different would make the field almost never resolve. Two posts in one folder matching
+     * case-insensitively is ambiguous, and an ambiguous row is emitted <b>without</b> a url —
+     * guessing between them is the fabricated path under another name.
+     *
+     * <p>{@code link} carries the same value, following {@link #row}'s own precedent: a card body
+     * written for {@code {{#query}}} then iterates a menu unchanged, which is the one-vocabulary
+     * property this class's header claims.
      */
     Object navigation(Object context, Options options) throws IOException {
         String siteId = string(options.context.get(SITE_ID));
@@ -459,15 +492,59 @@ public class ShRenderHelpers {
         if (children.isEmpty()) {
             return options.inverse();
         }
+        ShPostState state = state(options);
         StringBuilder out = new StringBuilder();
         for (ShFolder child : children) {
+            String url = indexUrlOf(child, state);
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("id", child.getId());
             row.put("name", child.getName());
             row.put("title", child.getName());
+            row.put("url", url);
+            row.put("link", url);
             out.append(options.fn(ShStableMap.copyOf(row)));
         }
         return out;
+    }
+
+    /**
+     * The friendly URL of a folder's index post, or {@code null} when it has none (SH381).
+     *
+     * <p>The chain comes from {@link ShAddressResolver#addressOf(ShFolder)} rather than from a
+     * second parent walk written here: that method already knows the one thing this gets wrong
+     * silently — the owning site lives on the <em>root</em> folder, so a nested folder read directly
+     * yields a site-less address (SH128).
+     *
+     * <p>Only the posts <em>in</em> the folder are considered. A post elsewhere whose URL happens to
+     * equal this chain is not this section's landing page, and treating it as one would let a page in
+     * an unrelated folder capture a menu entry.
+     */
+    private String indexUrlOf(ShFolder folder, ShPostState state) {
+        String chain = normalizePath(shAddressResolver.addressOf(folder).path());
+        if (chain == null) {
+            return null;
+        }
+        List<ShPostUnified> matches = preferDraft(
+                shPostUnifiedRepository.findByShFolderAndStateIn(folder, statesFor(state)), state)
+                .stream()
+                .filter(post -> chain.equalsIgnoreCase(normalizePath(post.getFurl())))
+                .toList();
+        // Exactly one, or none. Two posts whose URLs differ only in case is an ambiguity, and
+        // choosing between them by sort order would be a fabricated path wearing a deterministic hat.
+        return matches.size() == 1 ? matches.get(0).getFurl() : null;
+    }
+
+    /** A leading slash, no trailing one, so `/solutions/` and `solutions` compare as one path. */
+    private String normalizePath(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String trimmed = value.trim();
+        String withLeading = trimmed.startsWith("/") ? trimmed : "/" + trimmed;
+        String withoutTrailing = withLeading.length() > 1 && withLeading.endsWith("/")
+                ? withLeading.substring(0, withLeading.length() - 1)
+                : withLeading;
+        return "/".equals(withoutTrailing) ? null : withoutTrailing;
     }
 
     /**

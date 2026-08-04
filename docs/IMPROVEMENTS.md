@@ -1440,22 +1440,6 @@ somebody else's origin. **A token the capture is unsure about is reported, not
 written**: SH195 already established that a `TOKENS` field which is not JSON degrades
 the render, and inventing a name here would put that risk in a file nobody reviewed.
 
-### XVII.5 The navigation helper's row is missing the field its own comment promises (SH381)
-
-`ShRenderHelpers.navigation` documents each row as `{name, url, id}` and builds `{id,
-name, title}`. There is no `url`, so the one helper a site's primary menu would use
-renders labels that cannot be clicked, and every shipped template works around it or
-does not use it. The comment is the tell that this was intended and dropped.
-
-The reason it is not a one-line fix is that a **folder has no URL** — SH79 keeps the two
-namespaces apart on purpose, and only a post has a friendly URL. So the row's `url` has
-to be a decision: the folder's *index* post where one exists (the post whose furl
-matches the chain, which is what a reader means by "the Solutions section"), absent
-where none does, and never a fabricated path. An absent `url` beside a present `name` is
-then a legitimate row a template can branch on — a group heading — which is exactly what
-a nested menu needs. Reporting the folder with no index post is `verify`'s job, not the
-renderer's, by the rule that a defect belongs in one report.
-
 ### XVII.6 A curated menu is content, and the folder tree is not one (SH382)
 
 Even with SH381's `url`, the folder tree is the wrong source for a menu. A real site's

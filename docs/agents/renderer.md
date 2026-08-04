@@ -522,6 +522,25 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `{{#getRelation FIELD}}` and `{{#search q= type= limit=}}`. Every listing is sorted by a
   **total** order (date *plus* an id tiebreak) and the model is built with `ShStableMap` — a
   render that reorders itself moves SH101's digest for a change nobody made.
+  **`{{#navigation}}` yields the `url` its own docstring promised from SH183 to SH381**, and the
+  two-release gap is the interesting part: the comment said `{name, url, id}` and the body built
+  `{id, name, title}`, so the one helper a primary menu exists for rendered labels nobody could
+  click, and a fixture in `ShTemplateFieldLintTest` had been writing `<a href="{{url}}">` against a
+  field that was never there. It was not a one-line fix because **a folder has no URL** — SH79 keeps
+  chains and friendly URLs in separate namespaces on purpose — so the value is a *decision*: the
+  folder's **index post**, meaning the post **inside that folder** whose friendly URL is the folder's
+  own chain (`ShAddressResolver.addressOf`, never a second parent walk: that method knows SH128's
+  site-lives-on-the-root invariant). Three properties, each a test in
+  `ShRenderNavigationUrlTest`. The match is **case-insensitive**, which follows from SH79 rather than
+  being a convenience — a folder name is a label (`Solutions`) and a furl is a slug (`/solutions`), so
+  byte equality between two deliberately-different namespaces would make the field almost never
+  resolve. Only the folder's **own** posts are candidates, or a page in an unrelated folder captures
+  a menu entry it does not own. And **an absent `url` beside a present `name` is a legitimate row**,
+  not a defect: it is a group heading, which is what a nested menu is made of, so a template branches
+  on `{{#if url}}`. A path is **never fabricated** — two candidates differing only in case yield no
+  url rather than a guess, because choosing by sort order is a fabricated path wearing a
+  deterministic hat, and a menu whose links 404 is worse than one whose entries are plain text since
+  the second is visibly unfinished. `link` mirrors `url` following `row()`'s own precedent.
   **Every listing helper yields the same row shape** (`ShRenderHelpers#row`), which is what makes
   a card body written for `{{#query}}` work for a relation or a search result; the DRAFT-preference
   dedup and the comparator are shared for the same reason — a second copy of the preference is a
