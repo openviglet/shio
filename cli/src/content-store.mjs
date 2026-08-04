@@ -354,36 +354,89 @@ export async function readRemoteFolders(client, { sites = [], maxPages = 200, id
  * @returns {Promise<{ byId: Map<string,string>, byPath: Map<string,object>,
  *                     folderIds: Map<string,string>, truncated: boolean }>}
  */
-export async function readRemoteAssets(agent, admin, { sites = [] } = {}) {
+export async function readRemoteAssets(agent, admin, {
+  sites = [],
+  folders = null,
+  maxFolderReads = MAX_FOLDER_READS,
+} = {}) {
   const { folderIds, truncated } = await readRemoteFolders(agent, { sites, ids: true });
   const chains = new Map();
   for (const [key, id] of folderIds) chains.set(id, key.slice(key.indexOf("|") + 1));
 
+  const scope = scopeOf(folders, folderIds, maxFolderReads);
   const byId = new Map();
   const byPath = new Map();
   const unprojectable = [];
   for (const site of sites) {
     // Site-scoped by name: the listing takes an id, and the sitemap read above already proved
-    // the site is readable, so resolving it is one call and not a guess.
-    const listed = await admin.listStaticFiles({ siteId: site });
-    // An instance without the media listing answers something that is not a list; that is a
-    // site with no projectable assets, not a crash halfway through a pull.
-    for (const item of Array.isArray(listed) ? listed : []) {
-      if (!item?.id || !item.fileName) continue;
-      const chain = chains.get(item.folderId) ?? "/";
-      const path = assetPathFor({ ...item, siteName: item.siteName ?? site }, chain);
-      if (path === null) {
-        // SH256 — a name that contains a separator or navigates has no safe file on disk. Skipped
-        // rather than fatal (SH173's rule), and named, because the `File` field pointing at it
-        // stays an id and the operator would otherwise have no idea which asset went missing.
-        unprojectable.push({ id: item.id, site, folder: chain, fileName: item.fileName });
-        continue;
+    // the site is readable, so resolving it is one call and not a guess. Since SH213 a caller
+    // that knows which folders it needs is answered per folder instead.
+    const requests = scope
+      ? (scope.get(site) ?? []).map((folderId) => ({ folderId }))
+      : [{ siteId: site }];
+    for (const request of requests) {
+      const listed = await admin.listStaticFiles(request);
+      // An instance without the media listing answers something that is not a list; that is a
+      // site with no projectable assets, not a crash halfway through a pull.
+      for (const item of Array.isArray(listed) ? listed : []) {
+        if (!item?.id || !item.fileName) continue;
+        const chain = chains.get(item.folderId) ?? "/";
+        const path = assetPathFor({ ...item, siteName: item.siteName ?? site }, chain);
+        if (path === null) {
+          // SH256 — a name that contains a separator or navigates has no safe file on disk.
+          // Skipped rather than fatal (SH173's rule), and named, because the `File` field
+          // pointing at it stays an id and the operator would otherwise have no idea which
+          // asset went missing.
+          unprojectable.push({ id: item.id, site, folder: chain, fileName: item.fileName });
+          continue;
+        }
+        byId.set(item.id, path);
+        byPath.set(path, item);
       }
-      byId.set(item.id, path);
-      byPath.set(path, item);
     }
   }
-  return { byId, byPath, folderIds, truncated, unprojectable };
+  return { byId, byPath, folderIds, truncated, unprojectable, scoped: Boolean(scope) };
+}
+
+/**
+ * How many per-folder listings are worth doing instead of one per site (SH213).
+ *
+ * The trade is **requests against rows**, and only one side of it is knowable before asking: the
+ * caller knows how many folders it references and cannot know how large the library is. So the
+ * decision is made on the number it has, and the number is small on purpose — eight requests is a
+ * bounded, uninteresting cost, and above that one listing is the cheaper shape whatever the
+ * library holds. This is the threshold §X.16 asked for rather than a replacement: resolving N
+ * paths individually is N requests against one, and that is only a win while N is small.
+ */
+const MAX_FOLDER_READS = 8;
+
+/**
+ * `site` → the folder ids to list, or **null** for "list whole sites" (SH213).
+ *
+ * A referenced folder the server does not have contributes nothing: its assets cannot exist, so
+ * there is nothing to resolve and the push will upload. That is why an empty scope is still a
+ * scope — it means *no listing at all*, which is the correct answer for a tree whose asset folders
+ * are all new, and it is not the same as `null`.
+ */
+function scopeOf(folders, folderIds, maxFolderReads) {
+  if (!Array.isArray(folders)) return null;
+  const wanted = new Map();
+  const seen = new Set();
+  for (const entry of folders) {
+    if (!entry?.site) continue;
+    const key = `${entry.site}|${normalizeUrl(entry.folder ?? "/")}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const id = folderIds.get(key);
+    if (!id) continue;
+    if (!wanted.has(entry.site)) wanted.set(entry.site, []);
+    wanted.get(entry.site).push(id);
+  }
+  const reads = [...wanted.values()].reduce((sum, ids) => sum + ids.length, 0);
+  if (reads > maxFolderReads) return null;
+  // Sorted, so two runs over one tree send the same requests in the same order (P5).
+  for (const ids of wanted.values()) ids.sort((a, b) => a.localeCompare(b));
+  return wanted;
 }
 
 /** Every asset file on disk, as tree-relative paths (SH145). */

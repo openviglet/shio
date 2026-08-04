@@ -42,6 +42,7 @@ import {
   readRemote,
   readRemoteNotes,
   readRemoteAssets,
+  readRemoteFolders,
   sitesOf,
   writeBase,
 } from "../content-store.mjs";
@@ -477,7 +478,13 @@ async function resolveAssets(ctx, { client, admin, defs, posts, sites, assetsDir
   }
   if (!needed.size) return { posts, uploaded: [], replaced: [] };
 
-  const { byPath, folderIds } = await readRemoteAssets(client, admin, { sites });
+  // SH213 — the inventory is read for the folders these references name, not for the whole site.
+  // A push declaring one `File` field used to pay for a site's entire media library; the listing
+  // has taken a `folderId` since SH62, and the tree says which folders it needs before asking.
+  const { byPath, folderIds } = await readRemoteAssets(client, admin, {
+    sites,
+    folders: [...needed].map((path) => assetLocationOf(path)).filter(Boolean),
+  });
   const uploaded = [];
   const replaced = [];
   const missing = [];
@@ -524,7 +531,10 @@ async function resolveAssets(ctx, { client, admin, defs, posts, sites, assetsDir
         folders: [{ path: at.folder }],
         posts: [],
       });
-      const refreshed = await readRemoteAssets(client, admin, { sites });
+      // The folders, not the inventory: this look-up wants one new folder id, and re-reading the
+      // media library to find it was the other half of SH213 — a second full listing per site,
+      // for a question the sitemap answers on its own.
+      const refreshed = await readRemoteFolders(client, { sites, ids: true });
       folderId = refreshed.folderIds.get(`${at.site}|${at.folder}`);
     }
     if (!folderId) {

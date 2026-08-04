@@ -81,8 +81,13 @@ export class ShioAdminClient {
    * Each item carries the id, the file name and the containing folder's id, which is
    * exactly what an asset path is built from.
    */
-  listStaticFiles({ siteId } = {}) {
-    const query = siteId ? `?siteId=${encodeURIComponent(siteId)}` : "";
+  listStaticFiles({ siteId, folderId } = {}) {
+    // SH213 — `folderId` is the server's own filter (SH62), and it is what turns "read the whole
+    // media library to resolve one reference" into "read the folder the reference names".
+    const params = new URLSearchParams();
+    if (folderId) params.set("folderId", folderId);
+    else if (siteId) params.set("siteId", siteId);
+    const query = params.size ? `?${params}` : "";
     return this.#at(`/api/v2/staticfile${query}`, "GET");
   }
 

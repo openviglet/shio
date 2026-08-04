@@ -379,19 +379,6 @@ unchanged page must never be the same row.
 > ✅ **SH86, SH87, SH88, SH89 and SH90 shipped** → [CHANGELOG.md](CHANGELOG.md) Block I.
 > What follows is the design rationale for what the projection **still owes**.
 
-### X.16 Every push reads the whole media inventory (SH213)
-
-`readRemoteAssets` lists every `File` post in each site and joins the sitemap's folder chains
-to it, on any push that declares a single `File` field. A site with a large media library pays
-for the whole library to resolve one reference — and when an upload's folder is missing, the
-inventory is read a **second** time to pick up the new folder id.
-
-The listing already takes `folderId` and `q` filters (SH62), so a per-path lookup is
-available; the reason SH145 did not use it is that resolving N paths individually is N requests
-against one, and the inventory read was the cheaper shape for the small case. The fix is
-therefore a threshold rather than a replacement, and the second read is a straightforward
-fix on its own.
-
 ### X.17 A probable-move warning cannot be accepted (SH214)
 
 SH150 prints a warning when a vanished post and a new one *might* be the same rename but the

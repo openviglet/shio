@@ -299,6 +299,26 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
       because `pull` skips a path already on disk and asset bytes are outside the SH89 three-way
       merge — overwriting a locally-edited asset would be data loss, so it needs the merge story
       first (**SH373**).
+  - **A push reads the folders it references, not the library (SH213).** Measured first, because a
+    cost that is argued rather than measured fails in somebody else's environment:
+    `cli/test/asset-inventory-cost.test.mjs` prints request, inventory-read and **row** counts over
+    a 200-file library in 20 folders on every run, and asserts the ceilings. It was **200 rows to
+    resolve one reference** and **400 when the upload's folder was missing** — the whole library,
+    twice, because the second look-up wanted one new folder id and re-read the inventory to find
+    it. Now: **10 rows** for one reference, **0** for the upload case (the referenced folder does
+    not exist yet, so there is nothing to list), and the second look-up asks
+    `readRemoteFolders` — the sitemap answers it alone. Two rules the numbers argued for:
+    - **It is a threshold, not a replacement.** The listing's `folderId` filter is the server's own
+      (SH62); what SH145 could not know is how many folders a tree references. Up to
+      **8** referenced folders it lists per folder; past that one whole-site listing is the cheaper
+      shape whatever the library holds, and the benchmark asserts both branches (10 folders → 1
+      read of 200 rows; 3 folders → 3 reads of 30). The trade is requests against rows and only one
+      side is knowable before asking, which is why the decision is made on the number the caller
+      has.
+    - **A pull is deliberately still the whole library.** It rewrites every `File` field id → path,
+      so it needs every id the site has; narrowing it would leave UUIDs in the tree, which is the
+      defect SH145 exists to remove. The benchmark asserts that too, so the two directions cannot
+      drift into each other.
   - Deleting an asset is **not** projected: bytes go when their post goes (SH38's cleanup
     listener), and a File post can be referenced by content this tree does not own.
 
