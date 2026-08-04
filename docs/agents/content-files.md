@@ -387,6 +387,9 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
         bytes restores the silent no-op SH210 removed, by its own cache; and the existence check
         stays in front of the stamp, because a stamp cannot know somebody removed the bytes
         underneath the CMS and reporting it there would turn SH62's `size: -1` into a confident lie.
+        The digest is read back from the **file just written**, never from a copy in memory: SH62
+        buffered *images only* because buffering an upload allocates the size of the upload, and a
+        digest that needed every byte must not be what widens that to a video.
       - **An agreement is recorded even when nothing moved**, or a tree that only ever *reads* its
         assets stays at "never agreed" for ever and the first server-side edit arrives as a conflict
         instead of a change.
