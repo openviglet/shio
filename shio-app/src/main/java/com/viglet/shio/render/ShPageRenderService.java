@@ -196,7 +196,9 @@ public class ShPageRenderService {
         Map<String, Object> model = new LinkedHashMap<>(renderModel.of(page, theme));
         // Reserved, like `post`/`site`/`theme`: it lets the helpers pick DRAFT vs PUBLISHED
         // and lets a layout render its own "you are looking at a draft" marker.
-        model.put("render", ShStableMap.copyOf(Map.of("state", state.name())));
+        // One entry, so there is no order to keep and the stability helper would only promise one
+        // (SH197). The `param` map below is the case that genuinely needs it: a caller's query.
+        model.put("render", Map.of("state", state.name()));
         // SH259 — the reader's query, and nothing else of the request. Sorted rather than in
         // arrival order: the model feeds markup SH101 hashes, and two readers sending the same
         // parameters in a different order must not produce two digests.

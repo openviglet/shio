@@ -566,6 +566,32 @@ and **you cannot catch this class with a behavioural test** — twice-in-one-pro
 passes over broken code, which is why the guard is a lint and why the digest was restructured
 until order-independence became assertable.
 
+**SH197 finished the class, and the open question is settled by counting.** SH136 left the
+question of whether to ban a hash-ordered `Map.of` too, either everywhere in the model or only
+where it reaches a serialized component. **Neither**, and the population is the argument: `main`
+holds 112 `Map.of`/`Set.of` sites, of which **48 take no arguments and 21 hold one entry** — those
+have no order to lose. Of the 43 multi-entry ones, **27 are MCP schema builders** whose
+serialization point is already proved key-sorted by `mcpPayloadsAreCanonicalized`, and the rest
+are JSON response bodies, where object key order is not observable to a parser. So a
+ban-the-construction rule would need ~40 exemptions to restate what two other rules already say,
+and a guard that noisy is one somebody deletes. The invariant is **not** "never build a
+hash-ordered map" — it is *no hash-ordered iteration reaches bytes that get compared*, guarded
+where the bytes are made.
+
+What SH197 *did* add is the one shape nothing else can catch: **`ShStableMap.copyOf` may never be
+handed a `Map.of`/`Set.of` literal.** The helper keeps the order its source had, so a literal with
+two or more entries freezes a per-JVM salt behind the name of the fix — worse than the raw defect,
+because the next reader sees `ShStableMap` and stops looking. It was live in `ShAgentOps.SPECS`
+(ten entries), where `all()` was safe because it projects the source-ordered `OPS` list but
+`specified()` returned `keySet()`; it is a `LinkedHashMap` keyed off each spec's own `op` now,
+which also removed the op name being typed twice per entry. A literal with one entry or none is
+banned by the same rule for the same reading reason, not because it can move.
+Two smaller repairs in the same pass: the canonical rule **walks the whole `mcp` package** instead
+of naming `ShMcpServer.java` (a rule pinned to a filename is a rule a rename switches off, and
+"the scan found something" is asserted), and each pattern is now proved to **match the defect and
+spare the fix** — the lookbehind that keeps `ShStableMap` from flagging itself has a test rather
+than a comment.
+
 **Conditional reads (SH116).** `manifest`, `context` and `blueprints` carry strong ETags;
 `If-None-Match` on an unchanged instance answers `304`, which measures as **0** on
 `X-Shio-Est-Tokens`. A tag names a **representation**, not a state — the SH77 digest covers

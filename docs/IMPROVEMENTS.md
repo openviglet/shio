@@ -175,30 +175,6 @@ AI the product contains.
 > reproduced every discovery and write cost it was meant to remove. Full protocol
 > design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
 
-### VIII.14 Finish the byte-stability class (SH197)
-
-SH136 made four live instabilities fail the build and left one shape unguarded. Its lint
-bans `Map.copyOf` and `Set.copyOf`, whose iteration order comes from a per-JVM salt; a
-hash-ordered `Map.of(…)` reaching a serialized map component is the **same defect** and
-is not banned, because the lint was written against the two forms the sweep actually
-found.
-
-No live instance today, which is exactly when the guard is cheap: a rule that fires on
-nothing costs an argument in review, while adding it after the first defect costs the
-defect too. That is `build.md`'s rule — write the guard for the invariant, not a
-resolution to be careful.
-
-**Why it must be a lint and not a test**, restated because it keeps being re-derived: the salt is
-fixed once per *process*, so building the same map twice inside one JVM gives the same order however
-broken the code is. A behavioural guard would pass in every run there will ever be; the only
-observable difference is between JVMs, which no harness can arrange. So the check reads source, and
-the escape hatch stays a sentence.
-
-The narrower question to settle first: whether to ban `Map.of` reaching a *serialized*
-component specifically, or `Map.of` in the model at all. The first needs the lint to
-know what is serialized, which it cannot; the second is broad enough to need the
-exemption often, which is how a guard gets deleted.
-
 ### VIII.15 The surface assignment is a decision, so it should be a declared fact (SH393)
 
 SH268 argued a zip cannot be a JSON-RPC message, SH186 that a JSON-shaped verb becomes

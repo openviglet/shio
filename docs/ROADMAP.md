@@ -11,7 +11,6 @@
 
 ## Block H — The Agent Gateway (MCP + agent-shaped protocol)
 
-- 💭 **SH197** (deps: SH136 ✅) **Finish the byte-stability class** — A hash-ordered Map.of reaching a serialized map component is the SH136 defect the lint does not ban, and no live instance is affected yet. → §VIII.14
 - 📋 **SH393** (deps: SH338 ✅, SH268 ✅) **Which surface owns a capability is re-argued per task** — Six shipped tasks each re-derived the MCP-or-CLI boundary from scratch, and the P1 conformance test records reachability without recording which surface was chosen. → §VIII.15
 - 📋 **SH413** (deps: SH84 ✅) **Turning indexing on leaves the content that is already published unfindable** — SH84 indexes on publish, so an instance that switches Turing on indexes nothing until every post happens to be republished, and nothing says so. → §VIII.16
 

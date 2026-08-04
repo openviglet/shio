@@ -8,10 +8,10 @@
  */
 package com.viglet.shio.api.agent;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.viglet.shio.utils.ShStableMap;
 
 /**
  * The op vocabulary, published (SH332).
@@ -102,53 +102,85 @@ public final class ShAgentOps {
     private static final String DATA = "data";
     private static final String WHEN = "when";
 
-    private static final Map<String, OpSpec> SPECS = ShStableMap.copyOf(Map.of(
-            ShAgentBatchService.SITE_UPSERT, new OpSpec(ShAgentBatchService.SITE_UPSERT,
+    /**
+     * SH197 — a {@code LinkedHashMap}, not the stability helper wrapped around a {@code Map.of}.
+     *
+     * <p>That was the shape this task exists to ban: the stability helper keeps whatever order its
+     * source had, and a {@code Map.of} with ten entries has the order of a per-JVM salt. It froze a
+     * random order and read like the fix. Nothing rendered from it — {@link #all()} projects
+     * {@link ShAgentBatchService#OPS}, which is a source-ordered list — but {@link #specified()}
+     * returned {@code keySet()}, so the one order a caller could observe was the salt's.</p>
+     */
+    private static final Map<String, OpSpec> SPECS = specs(
+            new OpSpec(ShAgentBatchService.SITE_UPSERT,
                     List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
                     "Create a blank site, or fill an empty url/description/furl on one that "
                             + "exists. `data.postTypeLayout` binds a post-type to a PageLayout "
                             + "title, per key. Never replaces a value somebody set."),
-            ShAgentBatchService.FOLDER_UPSERT, new OpSpec(ShAgentBatchService.FOLDER_UPSERT,
+            new OpSpec(ShAgentBatchService.FOLDER_UPSERT,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Create a folder at that whole name chain, or confirm it is there."),
-            ShAgentBatchService.FOLDER_MOVE, new OpSpec(ShAgentBatchService.FOLDER_MOVE,
+            new OpSpec(ShAgentBatchService.FOLDER_MOVE,
                     List.of(ADDRESS, TO), List.of(), List.of(), List.of(),
                     "Rename or relocate a section. `to` is the whole new name chain, so its last "
                             + "segment is the new name. No post's URL changes."),
-            ShAgentBatchService.FOLDER_DELETE, new OpSpec(ShAgentBatchService.FOLDER_DELETE,
+            new OpSpec(ShAgentBatchService.FOLDER_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Trash a folder and everything beneath it. Needs `confirm` from its own dry "
                             + "run; use folder.move to rename."),
-            ShAgentBatchService.POST_UPSERT, new OpSpec(ShAgentBatchService.POST_UPSERT,
+            new OpSpec(ShAgentBatchService.POST_UPSERT,
                     List.of(ADDRESS), List.of(TYPE, FOLDER), List.of(), List.of(DATA),
                     "Declare a post's whole state at that address. `data` keys the post-type does "
                             + "not declare are refused; use post.move to change the address."),
-            ShAgentBatchService.POST_MOVE, new OpSpec(ShAgentBatchService.POST_MOVE,
+            new OpSpec(ShAgentBatchService.POST_MOVE,
                     List.of(ADDRESS), List.of(), List.of(TO, FOLDER), List.of(),
                     "Change a post's URL, its folder, or both, keeping its id and history. A "
                             + "published post's live URL changes immediately."),
-            ShAgentBatchService.POST_PUBLISH, new OpSpec(ShAgentBatchService.POST_PUBLISH,
+            new OpSpec(ShAgentBatchService.POST_PUBLISH,
                     List.of(ADDRESS), List.of(), List.of(), List.of(WHEN),
                     "Publish the draft at that address, or schedule it with an ISO-8601 `when` "
                             + "(SH342). Needs a credential with mayPublish."),
-            ShAgentBatchService.POST_UNPUBLISH, new OpSpec(ShAgentBatchService.POST_UNPUBLISH,
+            new OpSpec(ShAgentBatchService.POST_UNPUBLISH,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Withdraw the published row; the draft stays."),
-            ShAgentBatchService.POST_DELETE, new OpSpec(ShAgentBatchService.POST_DELETE,
+            new OpSpec(ShAgentBatchService.POST_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Trash a post. Needs `confirm` from its own dry run."),
             // SH186 — the one addressless op. It acts on the instance's model rather than on a post, a
             // folder or a site, and `address` is optional only so a row can echo the site being built.
-            ShAgentBatchService.RENDER_PROVISION, new OpSpec(ShAgentBatchService.RENDER_PROVISION,
+            new OpSpec(ShAgentBatchService.RENDER_PROVISION,
                     List.of(), List.of(), List.of(), List.of(ADDRESS, DATA),
                     "Create the PageLayout/Region/Theme post-types this instance renders with, "
                             + "idempotently. Do this once before writing a layout: post.upsert "
                             + "cannot create a system type, and until they exist /preview has "
                             + "nothing to compose. `data.reconcile:true` also adds fields an "
-                            + "older instance's render types are missing. Takes no address.")));
+                            + "older instance's render types are missing. Takes no address."));
 
     private ShAgentOps() {
         // utility
+    }
+
+    /**
+     * The specs, keyed by their own {@code op} and in the order written (SH197).
+     *
+     * <p>Two defects in one line, and they were the same defect: the key was typed beside a record
+     * that already carries it — "nine literals is a typo waiting to be published as a contract", as
+     * the comment above says about the argument names — and the {@code Map.of} that needed the pair
+     * is what made the order a per-JVM salt's. Keying off {@code spec.op()} removes both: there is
+     * one name per op, and the map iterates as this file reads.</p>
+     *
+     * <p>A duplicate is a programming error and fails here rather than silently keeping the last
+     * one, which is the {@code Map.of} behaviour this replaces — {@code Map.of} throws on a
+     * duplicate key, and losing that would be a step back.</p>
+     */
+    private static Map<String, OpSpec> specs(OpSpec... specs) {
+        Map<String, OpSpec> byOp = new LinkedHashMap<>();
+        for (OpSpec spec : specs) {
+            if (byOp.put(spec.op(), spec) != null) {
+                throw new IllegalStateException("Two specs for " + spec.op());
+            }
+        }
+        return Collections.unmodifiableMap(byOp);
     }
 
     /** Every op, in {@link ShAgentBatchService#OPS} order — the one list of names. */

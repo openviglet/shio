@@ -92,7 +92,9 @@ public final class ShThemeTokens {
             // Not even an empty `:root{}`: a theme with no tokens must render byte-identically to
             // how it rendered before this existed, or every digest in the instance moves for a
             // feature nobody used (SH101's hash is over exactly these bytes).
-            return new ShThemeAssets(css, javascript, ShStableMap.copyOf(Map.of()));
+            // Empty, so there is nothing to keep in order and the stability helper would be a
+            // guarantee about no elements (SH197).
+            return new ShThemeAssets(css, javascript, Map.of());
         }
         StringBuilder out = new StringBuilder(":root{");
         tokens.forEach((name, value) -> out.append("--").append(customProperty(name))
