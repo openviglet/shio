@@ -379,20 +379,6 @@ unchanged page must never be the same row.
 > ✅ **SH86, SH87, SH88, SH89 and SH90 shipped** → [CHANGELOG.md](CHANGELOG.md) Block I.
 > What follows is the design rationale for what the projection **still owes**.
 
-### X.18 A fingerprint collision is undetectable (SH215)
-
-SH148 replaced the merge base's field values with 64-bit fingerprints, and the trade was
-deliberate: every question the merge asks is an equality test, so a hash answers it, and the
-collision risk over one post's field list is far below what every hash-based sync (git
-included) already accepts at much wider scope.
-
-What was *not* deliberate is the asymmetry in how a collision fails. Two different values that
-hash the same read as "this field did not change", so the edit is dropped — silently, with the
-sync reporting success. A sync that loses an edit should at minimum be able to say so. Storing
-the value's **length** beside the hash, or a second short hash with a different seed, makes a
-collision a reported conflict instead of a silent skip, at a few bytes per field. The point is
-not to make collisions less likely; it is to make the remaining ones loud.
-
 ### X.19 A server-side asset edit never reaches the tree (SH373)
 
 SH210 made the push direction work: a path the server already holds is compared against

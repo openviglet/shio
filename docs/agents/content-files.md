@@ -122,7 +122,29 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   merged, same field → **conflict**, which writes nothing, exits 1, and offers
   `--ours`/`--theirs`/`--show-remote`. **There are no conflict markers on purpose** —
   `<<<<<<<` in a field value is content the next push would publish.
-- **The base is per-field fingerprints, not values (SH148, snapshot `version: 2`).** It is only
+- **A fingerprint collision is a reported conflict, not a dropped edit (SH215, snapshot
+  `version: 3`).** A fingerprint is `<16 hex>.<canonical byte length>`, and the length is **not**
+  there to make a collision rarer — SH148's risk was accepted deliberately and is the one every
+  hash-based sync takes. What was not deliberate is *how* a collision failed: two values hashing
+  the same read as "this field did not change", so the edit was dropped and the run reported
+  success. Compared as one string the length would be sixteen more bits; compared **part by part**
+  it is a proof — equal hashes with unequal lengths cannot be one value, so
+  `compareFingerprints` answers **`"collision"`** and the merge turns it into a conflict that names
+  itself. Three rules:
+  - **`collisions` travels beside `conflicts`, not instead of it.** Everything a conflict causes is
+    what should happen (nothing is written, the run stops); the collision is the *reason*, and it
+    gets its own line because the remedy is different — the base cannot describe the value it
+    indexes, so the base is what has to be rebuilt, not a side that has to be picked.
+  - **`same()` compares field by field now.** A whole-digest string comparison answered "not the
+    same" for a collision by accident, and it would read a v2 base's length-free fingerprints as
+    different from every new one.
+  - **A missing length means unknown, never different.** A `version: 2` snapshot compares by hash
+    alone — exactly what SH148 shipped — because a version that refused would make an upgrade read
+    every field of every project as changed, which is the drift the merge exists to prevent.
+  - The defect is pinned as a test in both directions (`content-sync.test.mjs`): the collision is a
+    conflict, and with the lengths stripped the *same* state is silently read as `remote-changed`
+    with the local edit gone.
+- **The base is per-field fingerprints, not values (SH148).** It is only
   ever *compared*: `equal(a, b)` is `stable(a) === stable(b)`, the merged output always takes the
   remote or local value, and a conflict names fields and writes nothing — so the values were
   being stored in order to be compared and then discarded, one extra copy of the site on disk

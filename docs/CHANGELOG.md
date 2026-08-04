@@ -220,6 +220,7 @@
 - **SH212** — A broken asset path is a verify finding in a projection group that reads the tree, so --checks projection is a gate with no instance and reports the whole tree at once.
 - **SH213** — A push lists only the folders its File fields name — measured at 200 rows for one reference, now 10 — and an upload no longer re-reads the inventory to find one folder id.
 - **SH214** — A legitimate delete-plus-create can be accepted once with push --content --accept, keyed on both addresses, and the acceptance is spent by the run that uses it.
+- **SH215** — A fingerprint carries its canonical byte length, so equal hashes with unequal lengths prove a collision and the merge reports it instead of dropping the edit.
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 

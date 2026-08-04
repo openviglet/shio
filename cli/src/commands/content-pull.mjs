@@ -215,7 +215,13 @@ export async function run(flags, _positionals, ctx) {
         nextPosts[address] = baseEntryFor(result.doc);
         break;
       case "conflict":
-        report.conflicts.push({ address, fields: result.conflicts });
+        report.conflicts.push({
+          address,
+          fields: result.conflicts,
+          // SH215 — a collision is a conflict with a different cause, and the remedy is different
+          // too: the base cannot describe the value it indexes, so it has to be rebuilt.
+          ...(result.collisions ? { collisions: result.collisions } : {}),
+        });
         if (flags.showRemote && versions.remote && !dryRun) {
           await writeRemoteSidecar(ctx, versions.remote, fieldFor(bodyField, versions.remote), { dir });
         }
@@ -326,6 +332,23 @@ export async function run(flags, _positionals, ctx) {
         "it on the server, then pull again.\n",
     );
   }
+  // SH215 — named before the ordinary conflicts, because it is the one whose cause is not "you
+  // both edited this" and whose remedy is not "pick a side": the base's fingerprint for that field
+  // hashes the same as the value and cannot be describing it, so the base is what has to be
+  // rebuilt. Before this the hash match alone read as *unchanged* and the edit was dropped in
+  // silence, which is the only outcome a sync must never have.
+  const collided = report.conflicts.filter((conflict) => conflict.collisions?.length);
+  if (collided.length) {
+    ctx.stderr.write(
+      `shio pull --content: ${collided.length} post(s) hit a base-fingerprint collision — two ` +
+        "different values hash the same, so this run cannot tell whether the field changed:\n" +
+        collided
+          .map((conflict) => `  ! ${conflict.address} · ${conflict.collisions.join(", ")}\n`)
+          .join("") +
+        "Nothing was written for them. Delete shio/.shio/content-base.json and pull again to " +
+        "rebuild the base from the server, or settle the field with --theirs / --ours.\n",
+    );
+  }
   if (report.conflicts.length) {
     ctx.stderr.write(
       `shio pull --content: ${report.conflicts.length} post(s) in conflict — nothing was written ` +
@@ -333,7 +356,7 @@ export async function run(flags, _positionals, ctx) {
         "values) or --ours (keep the file's). --show-remote writes the server's copy beside " +
         "each conflicted file as <file>.remote.\n",
     );
-    return { ...report, cursor, exitCode: 1 };
+    return { ...report, cursor, collisions: collided, exitCode: 1 };
   }
   return { ...report, cursor };
 }

@@ -36,8 +36,15 @@ export const CONTENT_DIR = "shio/content";
 /** Folder markers (SH149) — a root of their own; see `FOLDERS_SUBDIR` for why. */
 export const FOLDERS_DIR = "shio/folders";
 export const BASE_FILE = "shio/.shio/content-base.json";
-/** 2 since SH148: entries hold per-field fingerprints instead of a copy of every value. */
-export const BASE_VERSION = 2;
+/**
+ * 3 since SH215: a fingerprint carries the canonical form's byte length beside its hash.
+ *
+ * Older snapshots are read forward rather than rejected — 2's length-free fingerprints compare by
+ * hash alone (`compareFingerprints`), which is exactly what SH148 shipped, and 1's full values are
+ * digested on the way in. A version that refused would make an upgrade read every field of every
+ * project as changed, which is the drift the whole merge exists to avoid.
+ */
+export const BASE_VERSION = 3;
 
 /**
  * The base snapshot: what the file tree and the server last agreed on, plus the change

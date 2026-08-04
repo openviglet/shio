@@ -18,7 +18,9 @@ import {
   addressOf,
   ancestorsOf,
   baseEntryFor,
+  compareFingerprints,
   detectFolderMoves,
+  digestsOf,
   documentsFor,
   fingerprint,
   opsOf,
@@ -752,4 +754,92 @@ test("a document with no rename carries no movedFrom anywhere", () => {
   const documents = documentsFor([], { markers: [{ site: "Blog", folder: "/updates" }] });
 
   assert.deepEqual(documents[0].folders, [{ path: "/" }, { path: "/updates" }]);
+});
+
+// --- a fingerprint collision is reported, not dropped (SH215) ---
+
+/**
+ * A base whose fingerprint for `headline` hashes the same as the local value and cannot be
+ * describing it — which is exactly the observable state a real 64-bit collision produces, and the
+ * only way to test one without finding one.
+ */
+const collidingBase = (value, digestOf) => ({
+  site: "Blog",
+  url: "/blog/hello",
+  digest: { ...digestOf, ".headline": forge(digestOf[".headline"]) },
+});
+
+/** The same hash, a length that cannot belong to it. */
+function forge(fingerprintValue) {
+  const [hash] = String(fingerprintValue).split(".");
+  return `${hash}.9999`;
+}
+
+test("a fingerprint carries the canonical form's byte length beside its hash", () => {
+  assert.match(fingerprint("hello"), /^[0-9a-f]{16}\.\d+$/);
+  // `stable` quotes a string, so the length is the canonical form's and not the value's — which is
+  // the form the hash is taken over, so the two halves describe the same bytes.
+  assert.equal(fingerprint("hello").split(".")[1], "7");
+});
+
+test("equal hashes with equal lengths are the same field", () => {
+  assert.equal(compareFingerprints(fingerprint("a"), fingerprint("a")), "same");
+  assert.equal(compareFingerprints(fingerprint("a"), fingerprint("b")), "different");
+});
+
+test("equal hashes with different lengths are a collision, not an unchanged field", () => {
+  // The whole of SH215: before this the hash match alone said "unchanged", so the edit was
+  // dropped and the run reported success. Two different lengths *prove* two different values.
+  const real = fingerprint("hello");
+  assert.equal(compareFingerprints(real, forge(real)), "collision");
+});
+
+test("a length-free fingerprint compares by hash alone, so an old base still merges", () => {
+  // A v2 snapshot carries no length. Reading it as "different" would make every field of every
+  // existing project look changed on the first sync after an upgrade.
+  const [hash] = fingerprint("hello").split(".");
+  assert.equal(compareFingerprints(hash, fingerprint("hello")), "same");
+  assert.equal(compareFingerprints(hash, fingerprint("other")), "different");
+  assert.equal(compareFingerprints(hash, forge(fingerprint("hello"))), "same");
+});
+
+test("a collision is a conflict that names itself, and nothing is written", () => {
+  const local = post({ headline: "Mine", body: "<p>Same</p>" });
+  const remote = post({ headline: "Theirs", body: "<p>Same</p>" });
+  const base = collidingBase("Mine", digestsOf(local));
+
+  const result = reconcile({ base, remote, local });
+
+  assert.equal(result.kind, "conflict");
+  assert.deepEqual(result.collisions, ["fields.headline"]);
+  // Also an ordinary conflict, because everything a conflict causes is what should happen: the
+  // file is left alone and the run stops. `collisions` is the *reason*, not a different outcome.
+  assert.ok(result.conflicts.includes("fields.headline"));
+});
+
+test("without the length that same state is silently read as unchanged", () => {
+  // The defect, stated as a test rather than as a comment: strip the lengths and the base's
+  // forged fingerprint matches, so the merge takes the remote value and the local edit is gone
+  // with nothing said. This is what SH148 shipped and what SH215 makes impossible to miss.
+  const local = post({ headline: "Mine", body: "<p>Same</p>" });
+  const remote = post({ headline: "Theirs", body: "<p>Same</p>" });
+  const hashOnly = Object.fromEntries(
+    Object.entries(collidingBase("Mine", digestsOf(local)).digest)
+      .map(([key, value]) => [key, String(value).split(".")[0]]),
+  );
+
+  const result = reconcile({ base: { site: "Blog", url: "/blog/hello", digest: hashOnly }, remote, local });
+
+  assert.equal(result.kind, "remote-changed");
+  assert.equal(result.doc.data.headline, "Theirs", "the local edit is gone, and nothing said so");
+});
+
+test("a whole-document comparison cannot hide a collision either", () => {
+  // `same()` used to compare one serialized digest against another, which answers "not the same"
+  // for a collision — right by accident. Field by field it is right on purpose, and it is also
+  // what lets a v2 base compare at all.
+  const local = post({ headline: "Mine" });
+  const base = collidingBase("Mine", digestsOf(local));
+
+  assert.equal(same(base, local), false);
 });

@@ -98,9 +98,12 @@ export function reconcile({ base = null, remote = null, local = null }) {
   if (base && same(base, local)) return { kind: "remote-changed", doc: remote, conflicts: [] };
   if (base && same(base, remote)) return { kind: "local-changed", doc: local, conflicts: [] };
 
-  const { doc, conflicts } = mergeFields(base, remote, local);
+  const { doc, conflicts, collisions } = mergeFields(base, remote, local);
+  // SH215 — `collisions` travels beside `conflicts` rather than replacing them: it is a conflict
+  // for every purpose (nothing is written, the run stops), and it is a *different fact* about why,
+  // so a caller can say "the base cannot describe this value" instead of "you both edited it".
   return conflicts.length
-    ? { kind: "conflict", doc, conflicts }
+    ? { kind: "conflict", doc, conflicts, ...(collisions.length ? { collisions } : {}) }
     : { kind: "merged", doc, conflicts: [] };
 }
 
@@ -121,6 +124,7 @@ function mergeFields(base, remote, local) {
 
   const merged = {};
   const conflicts = [];
+  const collisions = [];
   for (const key of keys) {
     // A key absent from the base fingerprints has to compare equal to a key absent from the
     // side being tested — `equal(undefined, undefined)` was true, and without this a field the
@@ -128,11 +132,21 @@ function mergeFields(base, remote, local) {
     const b = baseDigest[key] ?? ABSENT;
     const r = flat.remote[key];
     const l = flat.local[key];
+    const againstLocal = compareFingerprints(b, fingerprint(l));
+    const againstRemote = compareFingerprints(b, fingerprint(r));
     if (equal(r, l)) {
       merged[key] = r;
-    } else if (b === fingerprint(l)) {
+    } else if (againstLocal === "collision" || againstRemote === "collision") {
+      // SH215 — the base's fingerprint hashes the same as this value and cannot be describing it.
+      // Before this the hash match alone read as "unchanged" and the edit was dropped in silence;
+      // a collision is now the loudest thing the sync has, because the one thing it must not do
+      // is lose an edit quietly.
+      collisions.push(label(key));
+      conflicts.push(label(key));
+      merged[key] = l;
+    } else if (againstLocal === "same") {
       merged[key] = r;
-    } else if (b === fingerprint(r)) {
+    } else if (againstRemote === "same") {
       merged[key] = l;
     } else {
       conflicts.push(label(key));
@@ -141,7 +155,7 @@ function mergeFields(base, remote, local) {
       merged[key] = l;
     }
   }
-  return { doc: unflatten(merged, local), conflicts };
+  return { doc: unflatten(merged, local), conflicts, collisions };
 }
 
 /** Resolves a conflict in one direction (`--ours` / `--theirs`), field by field. */
@@ -182,7 +196,13 @@ export function planPushContent({ base = {}, remote = {}, local = {} }, { force 
       local: local[address],
     });
     if (result.kind === "conflict" && !force) {
-      conflicts.push({ address, fields: result.conflicts });
+      conflicts.push({
+        address,
+        fields: result.conflicts,
+        // SH215 — carried through so the caller can name the one conflict that is not "you both
+        // edited this": a base fingerprint that collides cannot describe the value it indexes.
+        ...(result.collisions ? { collisions: result.collisions } : {}),
+      });
       continue;
     }
     if (result.kind === "remote-changed") {
@@ -838,7 +858,17 @@ export function ancestorsOf(path) {
  */
 export function same(a, b) {
   if (!a || !b) return false;
-  return stable(digestsOf(a)) === stable(digestsOf(b));
+  const left = digestsOf(a);
+  const right = digestsOf(b);
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+  // Field by field since SH215, not one string against another: a whole-digest comparison cannot
+  // tell a collision from a match, and it would also read a v2 base's length-free fingerprints as
+  // different from every new one. A collision answers `false` here on purpose — that routes into
+  // `mergeFields`, which is where the finding is produced.
+  for (const key of keys) {
+    if (compareFingerprints(left[key] ?? ABSENT, right[key] ?? ABSENT) !== "same") return false;
+  }
+  return true;
 }
 
 /**
@@ -886,9 +916,66 @@ export function baseEntryFor(doc) {
   };
 }
 
-/** One field's fingerprint — a hash of the canonical form `equal` already compares. */
+/**
+ * One field's fingerprint — a hash of the canonical form `equal` already compares, and since
+ * SH215 the canonical form's **byte length** beside it: `<16 hex>.<bytes>`.
+ *
+ * <h3>The length is not there to make collisions rarer</h3>
+ *
+ * It would, incidentally, and that is not the point. SH148's trade was deliberate and the risk it
+ * accepted is one every hash-based sync accepts. What was not deliberate is *how* a collision
+ * fails: two different values hashing the same read as "this field did not change", so the edit is
+ * dropped and the sync reports success. A sync that loses an edit must at minimum be able to say
+ * so.
+ *
+ * The length is what makes it **sayable**. Compared as a whole string it would merely be sixteen
+ * more bits; compared *part by part* it is a proof: hashes equal and lengths different means the
+ * two values cannot be the same value, so this is a collision rather than an unchanged field —
+ * which is a finding, not a silent skip. See {@link compareFingerprints}.
+ */
 export function fingerprint(value) {
-  return createHash("sha256").update(stable(value)).digest("hex").slice(0, 16);
+  const canonical = stable(value);
+  const hash = createHash("sha256").update(canonical).digest("hex").slice(0, 16);
+  return `${hash}.${Buffer.byteLength(canonical, "utf8")}`;
+}
+
+/**
+ * Two fingerprints: `"same"`, `"different"`, or **`"collision"`** (SH215).
+ *
+ * <h3>Why three answers and not two</h3>
+ *
+ * `same` and `different` are what the merge has always asked for. `collision` is the third state
+ * that used to be indistinguishable from `same`: the hashes agree, so the old comparison called
+ * the field unchanged and dropped the edit, and the run said nothing. Equal hashes with unequal
+ * lengths *prove* two different values, so the answer is neither — and the caller turns it into a
+ * conflict, which is the loudest thing a sync has.
+ *
+ * <h3>A base written before this still compares by hash alone</h3>
+ *
+ * A v2 snapshot's fingerprints carry no length. Comparing the whole string against a new one
+ * would read every field of every existing project as changed on the first sync after an upgrade,
+ * so a missing length means "unknown" and never "different" — the comparison degrades to exactly
+ * what SH148 shipped, which is the honest behaviour for a base that cannot answer.
+ */
+export function compareFingerprints(a, b) {
+  const left = partsOf(a);
+  const right = partsOf(b);
+  if (left.hash !== right.hash) return "different";
+  if (left.length !== undefined && right.length !== undefined && left.length !== right.length) {
+    return "collision";
+  }
+  return "same";
+}
+
+function partsOf(value) {
+  const text = typeof value === "string" ? value : "";
+  const cut = text.indexOf(".");
+  if (cut < 0) return { hash: text, length: undefined };
+  const length = Number(text.slice(cut + 1));
+  return {
+    hash: text.slice(0, cut),
+    length: Number.isFinite(length) ? length : undefined,
+  };
 }
 
 /** The fingerprint of "this field is not here", so absence compares like a value. */

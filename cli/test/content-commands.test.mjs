@@ -16,6 +16,7 @@ import * as changes from "../src/commands/changes.mjs";
 import * as contentPull from "../src/commands/content-pull.mjs";
 import * as contentPush from "../src/commands/content-push.mjs";
 import * as watch from "../src/commands/content-watch.mjs";
+import { digestsOf } from "../src/content-sync.mjs";
 import { sha256Of } from "../src/content-assets.mjs";
 import { norm } from "./support/paths.mjs";
 
@@ -872,14 +873,80 @@ test("the base snapshot keeps no copy of any field value", async () => {
   assert.doesNotMatch(raw, /First/, "the body must not be in the snapshot");
   assert.doesNotMatch(raw, /Hello/, "nor any other field value");
   const base = JSON.parse(raw);
-  assert.equal(base.version, 2);
+  // 3 since SH215: a fingerprint carries the canonical form's byte length beside its hash, which
+  // is what turns a collision from a silently-dropped edit into a reported one.
+  assert.equal(base.version, 3);
   const entry = base.posts["post:Blog/blog/hello"];
   // The identity stays verbatim, because it is *used* rather than compared: a pull deletes a
   // file by the address the base remembers, and a digest would leave nothing to delete.
   assert.deepEqual(Object.keys(entry).sort(), ["digest", "site", "url"]);
   // `.field` for a data key, `@name` for metadata — the same flattening the merge compares on.
   assert.deepEqual(Object.keys(entry.digest).sort(), [".body", ".headline", "@folder", "@type"]);
-  assert.ok(Object.values(entry.digest).every((hash) => /^[0-9a-f]{16}$/.test(hash)));
+  // SH215 — `<16 hex>.<byte length>`. The length is not there to make a collision rarer: compared
+  // part by part it *proves* one, which is what turns a dropped edit into a reported conflict.
+  assert.ok(Object.values(entry.digest).every((hash) => /^[0-9a-f]{16}\.\d+$/.test(hash)));
+  // And still no value anywhere: a length is not a copy of the content.
+  assert.doesNotMatch(raw, /Server|First|Hello/);
+});
+
+test("SH215: a base-fingerprint collision is reported by name, not dropped", async () => {
+  // Forged rather than found: the fixture is the observable state a real 64-bit collision
+  // produces — the base's hash for `headline` matches the local value and its length cannot. The
+  // old comparison read that as "unchanged" and took the server's value, losing the local edit
+  // with nothing said, which is the one outcome a sync must never have.
+  const local = {
+    site: "Blog",
+    url: "/blog/hello",
+    type: "Article",
+    folder: "/blog",
+    data: { headline: "Mine", body: "<p>First</p>" },
+  };
+  const digest = digestsOf(local);
+  const forged = {
+    version: 3,
+    cursor: null,
+    partial: false,
+    posts: {
+      "post:Blog/blog/hello": {
+        site: "Blog",
+        url: "/blog/hello",
+        digest: {
+          ...digest,
+          ".headline": `${String(digest[".headline"]).split(".")[0]}.9999`,
+        },
+      },
+    },
+    folders: [],
+    notes: {},
+  };
+  const ctx = ctxWith(
+    server({ remote: { "post:Blog/blog/hello": { ...REMOTE_DOC, data: { headline: "Theirs", body: "<p>First</p>" } } } }),
+    {
+      [FILE]: `---
+site: Blog
+url: /blog/hello
+type: Article
+folder: /blog
+body: body
+fields:
+  headline: Mine
+---
+<p>First</p>
+`,
+      [BASE_PATH]: JSON.stringify(forged),
+    },
+  );
+
+  const result = await contentPull.run({}, [], ctx);
+
+  assert.equal(result.exitCode, 1);
+  assert.match(ctx.stderr.text, /base-fingerprint collision/);
+  assert.match(ctx.stderr.text, /post:Blog\/blog\/hello · fields\.headline/);
+  // The remedy is not "pick a side": the base cannot describe the value it indexes, so the base
+  // is what has to be rebuilt.
+  assert.match(ctx.stderr.text, /content-base\.json/);
+  // And the local edit is still there, because nothing was written.
+  assert.match(ctx.fs.files.get(FILE), /headline: Mine/);
 });
 
 test("a v1 snapshot full of values is read forward, and still merges", async () => {
@@ -904,7 +971,7 @@ test("a v1 snapshot full of values is read forward, and still merges", async () 
   assert.deepEqual(result.written, ["post:Blog/blog/hello (merged)"]);
   assert.match(ctx.fs.files.get(FILE), /headline: Mine/);
   assert.match(ctx.fs.files.get(FILE), /<p>Server<\/p>/);
-  assert.equal(JSON.parse(ctx.fs.files.get(BASE_PATH)).version, 2);
+  assert.equal(JSON.parse(ctx.fs.files.get(BASE_PATH)).version, 3);
 });
 
 // --- a rename is a move (SH150) ---

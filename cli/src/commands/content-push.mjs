@@ -241,6 +241,22 @@ export async function run(flags, _positionals, ctx) {
     for (const conflict of conflicts) {
       ctx.stdout.write(`  ! ${conflict.address} (${conflict.fields.join(", ")})\n`);
     }
+    // SH215 — the collision is named apart from the ordinary conflicts because its cause and its
+    // remedy are both different: the base's fingerprint for that field hashes the same as the
+    // value and cannot be describing it, so the base is what has to be rebuilt. It used to read
+    // as "unchanged" and drop the edit in silence.
+    const collided = conflicts.filter((conflict) => conflict.collisions?.length);
+    if (collided.length) {
+      ctx.stdout.write(
+        `shio push --content: ${collided.length} of them hit a base-fingerprint collision — two ` +
+          "different values hash the same, so this run cannot tell whether the field changed:\n" +
+          collided
+            .map((conflict) => `  ! ${conflict.address} · ${conflict.collisions.join(", ")}\n`)
+            .join("") +
+          "Delete shio/.shio/content-base.json and run `shio pull --content` to rebuild the base " +
+          "from the server.\n",
+      );
+    }
     throw new Error(
       `shio push --content: ${conflicts.length} post(s) changed both here and on the server — ` +
         "pushing would overwrite someone. Run `shio pull --content` to merge (it resolves " +
