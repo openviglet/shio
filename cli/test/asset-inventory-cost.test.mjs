@@ -319,3 +319,31 @@ test("SH213: a handful of folders is answered per folder", async () => {
   assert.equal(cost.reads, 3, "one listing per referenced folder");
   assert.equal(cost.rows, 30, "and only those folders' contents");
 });
+
+test("SH373: a pull over a tree that already holds its assets costs one digest each", async () => {
+  // What the merge added, measured. A *first* pull is unchanged — bytes it just downloaded are
+  // hashed in this process, not sent back to the server to be hashed. What it cannot avoid is the
+  // asset already on disk: nothing but the server's own hash can say whether its copy moved, and
+  // guessing from `size` is the silent no-op SH210 removed on the push side.
+  const fetchImpl = instance({ withPost: true });
+  const seed = { [POST]: tree()[POST] };
+  for (let index = 0; index < LIBRARY; index += 1) {
+    seed[`/repo/shio/assets/Blog/media${index % FOLDERS}/asset${index}.png`] = "bytes";
+  }
+  const ctx = ctxWith(fetchImpl, seed);
+
+  await contentPull.run({ theirs: true }, [], ctx);
+
+  const cost = report("pull, every asset already on disk", fetchImpl);
+  // One digest per asset and no downloads: the whole library was compared and nothing was moved.
+  assert.ok(cost.requests <= LIBRARY + 10, `a settled pull took ${cost.requests} request(s)`);
+  assert.ok(
+    fetchImpl.calls.filter((url) => /\/digest$/.test(url)).length === LIBRARY,
+    "one digest per asset on disk",
+  );
+  assert.equal(
+    fetchImpl.calls.filter((url) => /\/api\/v2\/staticfile\/[^/?]+$/.test(url)).length,
+    0,
+    "and nothing was downloaded",
+  );
+});

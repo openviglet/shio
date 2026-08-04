@@ -16,13 +16,24 @@
  * survive: a post only one side changed takes that side, a post both sides changed merges
  * per field, and a field both sides changed is a **conflict** — reported, with nothing
  * written for that post, until a human picks `--ours` or `--theirs`.
+ *
+ * Since SH373 that includes an **asset's bytes**, which were the last thing outside the rule: a
+ * path already on disk used to be skipped, so a curator swapping an image produced a change no
+ * pull would ever project. Bytes have no field-level merge, so a conflict is left on disk and
+ * named — see `pullAssets`.
  */
 import { join } from "node:path";
 
 import { ShioAdminClient } from "../admin-client.mjs";
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
-import { ASSETS_DIR, fileFields, idsToPaths } from "../content-assets.mjs";
+import {
+  ASSETS_DIR,
+  fileFields,
+  idsToPaths,
+  reconcileBytes,
+  sha256Of,
+} from "../content-assets.mjs";
 import {
   BASE_FILE,
   CONTENT_DIR,
@@ -100,6 +111,10 @@ export async function run(flags, _positionals, ctx) {
     );
   }
 
+  // SH373 — read before the assets, because the asset merge needs the agreed hashes. It used to
+  // sit below them, which was fine while a pull only ever *added* an asset it did not have.
+  const base = await readBase(ctx, flags.baseFile ?? BASE_FILE);
+
   const defs = await admin.getPostTypeDefs();
   const bodyField = bodyFields(defs);
   // SH191 — a layout's HTML and a region's JavaScript are programs, and a program in escaped
@@ -112,7 +127,9 @@ export async function run(flags, _positionals, ctx) {
   // a File field does not read as changed on every sync.
   const assetsDir = flags.assetsDir ?? ASSETS_DIR;
   const fileFieldMap = fileFields(defs);
-  const assets = await pullAssets(ctx, { agent, admin, local, localFolders, assetsDir, dryRun });
+  const assets = await pullAssets(ctx, {
+    agent, admin, local, localFolders, assetsDir, dryRun, base: base.assets ?? {},
+  });
   const unresolvedAssets = new Set();
   for (const [address, doc] of Object.entries(remote)) {
     const { doc: mapped, unresolved } = idsToPaths(doc, fileFieldMap, assets.byId);
@@ -148,8 +165,6 @@ export async function run(flags, _positionals, ctx) {
     );
   }
 
-  const base = await readBase(ctx, flags.baseFile ?? BASE_FILE);
-
   const report = {
     written: [],
     deleted: [],
@@ -158,6 +173,10 @@ export async function run(flags, _positionals, ctx) {
     kept: [],
     folders: { written: [], deleted: [], kept: [] },
     assets: assets.written,
+    // SH373 — asset bytes are in the merge now, so they have the same three outcomes everything
+    // else does, and a conflict has to be reported rather than resolved.
+    assetConflicts: assets.conflicts ?? [],
+    assetsKept: assets.kept ?? [],
     notes: { written: [], deleted: [], conflicts: [] },
   };
   const nextPosts = { ...base.posts };
@@ -315,6 +334,10 @@ export async function run(flags, _positionals, ctx) {
         posts: nextPosts,
         folders: folderPlan.agreed,
         notes: nextNotes,
+        // SH373 — the assets the two sides now agree on. Merged over what the base already held,
+        // so a path this run did not look at (another site, a scoped run) keeps its agreement
+        // instead of being forgotten into "never agreed".
+        assets: { ...(base.assets ?? {}), ...assets.agreed },
       },
       flags.baseFile ?? BASE_FILE,
     );
@@ -330,6 +353,18 @@ export async function run(flags, _positionals, ctx) {
         `sides and were not written (${report.notes.conflicts.join(", ")}). Edit the note in ` +
         "shio/content/<site>/.memory.yaml, or run `shio remember <key> \"<note>\"` to settle " +
         "it on the server, then pull again.\n",
+    );
+  }
+  if (report.assetConflicts.length) {
+    // There is no merging two images, so the only honest outcome is to write nothing and name
+    // them. Unlike a field, the remedy cannot be `--theirs` on the value — the operator has to
+    // decide which copy survives, and deleting the local file is how they say "the server's".
+    ctx.stderr.write(
+      `shio pull --content: ${report.assetConflicts.length} asset(s) changed both here and on the ` +
+        "server — nothing was written for them:\n" +
+        report.assetConflicts.map((path) => `  ! ${path}\n`).join("") +
+        "Delete the local file and pull again to take the server's copy, or push yours with " +
+        "`shio push --content --force`.\n",
     );
   }
   // SH215 — named before the ordinary conflicts, because it is the one whose cause is not "you
@@ -364,38 +399,83 @@ export async function run(flags, _positionals, ctx) {
 /**
  * Downloads the assets this tree does not have yet, and returns the id → path index (SH145).
  *
- * **A path that already exists on disk is not re-downloaded**, and since SH210 that is a *gap*
- * rather than a rule. It rested on a premise that has stopped being true: a `File` post's bytes
- * used to be immutable, because an upload always created a new id-keyed post, so the same path was
- * necessarily the same asset and re-fetching was pure cost. SH210 gave the server a replace
- * operation for exactly the case that reasoning missed, so a curator swapping an image in the
- * Media Library now produces a change no pull will ever project.
+ * **A path on disk is merged three ways now, not skipped (SH373).** SH145 could skip it because a
+ * `File` post's bytes were immutable — an upload always created a new id-keyed post, so the same
+ * path was necessarily the same asset. SH210 removed that premise, and a curator swapping an image
+ * in the Media Library then produced a change no pull would ever project.
  *
- * It is still skipped here, deliberately, because the obvious fix is data loss: asset bytes sit
- * outside the SH89 three-way merge, so "fetch it when the digest differs" cannot tell a server
- * edit from a local one and would overwrite the local file whenever both moved. **SH373** is the
- * merge story that has to come first. Do not "fix" this line by adding the download.
+ * Downloading whenever the hashes differ would have been the wrong fix and the reason this waited:
+ * it cannot tell a server edit from a local one, so it overwrites the tree's copy whenever both
+ * moved. So the bytes join the SH89 merge on the same three values every other field uses — the
+ * base's agreed hash, the server's and the tree's — and `reconcileBytes` decides. A conflict is
+ * left **on disk**: there is no merging two images, so the honest outcome is to write nothing and
+ * name the asset.
+ *
+ * <h3>What it costs, since the digest is a request</h3>
+ *
+ * One `GET /staticfile/{id}/digest` per asset **already on disk**. A path the tree does not have
+ * needs no comparison — there is nothing to lose — so it is downloaded on the strength of the
+ * listing alone, which keeps a first pull exactly as cheap as it was. The number is asserted in
+ * `asset-inventory-cost.test.mjs` rather than argued, and it is what a stamped digest on the SH62
+ * listing would remove (SH210 deferred that on purpose; it is still the obvious optimisation).
  */
-async function pullAssets(ctx, { agent, admin, local, localFolders, assetsDir, dryRun }) {
+async function pullAssets(ctx, {
+  agent, admin, local, localFolders, assetsDir, dryRun, base = {},
+}) {
   const sites = sitesOf(local, localFolders);
   const assets = await readRemoteAssets(agent, admin, {
     sites: sites.length ? sites : [],
   });
   const written = [];
+  const conflicts = [];
+  const kept = [];
+  const agreed = {};
   for (const [path, item] of assets.byPath) {
-    if (await hasAsset(ctx, path, assetsDir)) continue;
-    if (!dryRun) await writeAssetBytes(ctx, path, await admin.downloadStaticFile(item.id), { dir: assetsDir });
-    written.push(path);
+    const localBytes = await readAssetOrNull(ctx, path, assetsDir);
+    if (localBytes === null) {
+      // Nothing on disk: no comparison can lose anything, and no digest request is needed to know
+      // it. The agreed hash comes from the bytes that were just downloaded rather than from
+      // `/digest` — asking the server to hash what this process is holding doubled a first pull's
+      // request count, which the SH213 benchmark caught the moment it was measured.
+      if (!dryRun) {
+        const bytes = await admin.downloadStaticFile(item.id);
+        await writeAssetBytes(ctx, path, bytes, { dir: assetsDir });
+        agreed[path] = sha256Of(bytes);
+      }
+      written.push(path);
+      continue;
+    }
+    const localHash = sha256Of(localBytes);
+    const remoteHash = (await admin.staticFileDigest(item.id))?.sha256 ?? null;
+    const verdict = reconcileBytes({ base: base[path] ?? null, remote: remoteHash, local: localHash });
+    if (verdict === "remote-changed" || verdict === "remote-added") {
+      if (!dryRun) {
+        await writeAssetBytes(ctx, path, await admin.downloadStaticFile(item.id), { dir: assetsDir });
+      }
+      written.push(path);
+      if (remoteHash) agreed[path] = remoteHash;
+      continue;
+    }
+    if (verdict === "conflict") {
+      conflicts.push(path);
+      // Deliberately not agreed: recording a hash here would make the next pull read the conflict
+      // as settled, which is how a sync forgets that it never resolved anything.
+      continue;
+    }
+    if (verdict === "unchanged" && remoteHash) agreed[path] = remoteHash;
+    // `local-changed` / `local-added` keep the tree's copy and stay unagreed until a push sends
+    // them, which is what makes `push --content` the thing that settles them.
+    if (verdict === "local-changed") kept.push(path);
   }
-  return { ...assets, written };
+  return { ...assets, written, conflicts, kept, agreed };
 }
 
-async function hasAsset(ctx, path, dir) {
+/** An asset's bytes, or `null` when the tree does not have that path. */
+async function readAssetOrNull(ctx, path, dir) {
   try {
-    await ctx.fs.readFile(join(ctx.cwd, dir, path));
-    return true;
+    return await ctx.fs.readFile(join(ctx.cwd, dir, path));
   } catch (error) {
-    if (error?.code === "ENOENT") return false;
+    if (error?.code === "ENOENT") return null;
     throw error;
   }
 }

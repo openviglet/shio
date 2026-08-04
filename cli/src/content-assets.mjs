@@ -173,6 +173,51 @@ export function sha256Of(value) {
 }
 
 /**
+ * The SH89 merge, for one asset's bytes (SH373).
+ *
+ * <h3>Why bytes needed their own reconciliation at all</h3>
+ *
+ * SH145 could treat a path as immutable, so `pull` skipped a path already on disk and `push`
+ * skipped one the server already had. SH210 removed the premise from the push side and gave the
+ * server a replace operation; that left **two** asymmetries, and only one of them was obvious.
+ * A server-side asset edit never reached the tree — and, worse and newer, a push would *replace*
+ * the server's bytes whenever they differed from the tree's, which reverts a curator's edit. The
+ * rule SH89 exists for is that neither side silently overwrites the other, and asset bytes were
+ * the one field type outside it.
+ *
+ * <h3>Three hashes, and no bytes</h3>
+ *
+ * Everything here is a sha-256: the base's agreed hash, the server's (from SH210's digest
+ * endpoint) and the tree's. Opaque values compared for equality, which is all the merge ever asks
+ * — the same argument SH148 made for turning the post base into fingerprints, one field type
+ * along. A conflict is left **on disk**: a byte-level merge is not a thing, so the only honest
+ * outcome is to write nothing and say which asset.
+ *
+ * @param {{base?: string|null, remote?: string|null, local?: string|null}} hashes
+ * @returns {"unchanged"|"remote-changed"|"local-changed"|"remote-added"|"local-added"
+ *           |"remote-deleted"|"local-deleted"|"both-deleted"|"conflict"}
+ */
+export function reconcileBytes({ base = null, remote = null, local = null }) {
+  if (!remote && !local) return "both-deleted";
+  if (!remote) {
+    if (!base) return "local-added";
+    return base === local ? "remote-deleted" : "conflict";
+  }
+  if (!local) {
+    if (!base) return "remote-added";
+    return base === remote ? "local-deleted" : "conflict";
+  }
+  if (remote === local) return "unchanged";
+  // With no base the two sides differ and nothing says which moved. `conflict` is the only honest
+  // answer, and it is also the one that cannot lose work: a first sync on a fresh clone whose
+  // bytes happen to differ writes nothing and names the asset, instead of picking a side.
+  if (!base) return "conflict";
+  if (base === local) return "remote-changed";
+  if (base === remote) return "local-changed";
+  return "conflict";
+}
+
+/**
  * A length in **bytes**, whatever the value arrived as.
  *
  * `ctx.fs` is an injected seam: node's `readFile` with no encoding hands back a `Buffer`, an

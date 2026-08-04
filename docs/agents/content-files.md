@@ -342,10 +342,30 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
       baseline can hold one (it needed nothing new — the entries are `(rule, address, field)`
       triples); and a post whose **type the tree lacks** is a `asset-check-skipped` *warning*
       rather than silence, because an unchecked post must not read as a clean one (SH302's rule).
-    - Still open in the other direction: a **server-side** asset edit never reaches the tree,
-      because `pull` skips a path already on disk and asset bytes are outside the SH89 three-way
-      merge — overwriting a locally-edited asset would be data loss, so it needs the merge story
-      first (**SH373**).
+    - **And the bytes are in the SH89 merge now (SH373).** SH210 fixed one direction and opened
+      another: a server-side asset edit never reached the tree, and — newer and worse — a push
+      *replaced* the server's bytes whenever they differed from the tree's, which reverts a
+      curator's edit. Asset bytes were the last field type outside the rule that neither side
+      silently overwrites the other. The base snapshot gained `assets: {path: sha256}`, and
+      `reconcileBytes` gives the bytes the same outcomes every other field has. Four rules:
+      - **A conflict is left on disk.** There is no merging two images, so the honest outcome is to
+        write nothing and name the asset. `pull` says so and `push` refuses.
+      - **A push and a pull are not symmetrical about missing evidence**, deliberately. With no
+        agreed hash the *tree* is authoritative: it is the artifact under version control and the
+        server's copy is reproducible from it, so a pull that guesses can destroy the only copy of
+        something and a push that guesses cannot. Refusing on a push would also be a false positive
+        on the one push that most needs to work — the first, before any pull has written a base.
+        Both size branches follow that rule, which is the wart the first cut had: without a base a
+        differing *length* replaced while differing *bytes of the same length* refused.
+      - **Cost is measured, and one measurement changed the code.** A first pull is unchanged: bytes
+        it just downloaded are hashed in this process, not sent back to be hashed — the benchmark
+        caught that doubling a first pull's requests (407 against 207) the moment it ran. What
+        remains is **one digest per asset already on disk**, which nothing but the server's own hash
+        can answer, and guessing from `size` is the silent no-op SH210 removed on the push side.
+        A stamped digest on the SH62 listing would remove it (**SH375**'s neighbour, still deferred).
+      - **An agreement is recorded even when nothing moved**, or a tree that only ever *reads* its
+        assets stays at "never agreed" for ever and the first server-side edit arrives as a conflict
+        instead of a change.
   - **A push reads the folders it references, not the library (SH213).** Measured first, because a
     cost that is argued rather than measured fails in somebody else's environment:
     `cli/test/asset-inventory-cost.test.mjs` prints request, inventory-read and **row** counts over

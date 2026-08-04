@@ -16,6 +16,7 @@ import {
   fileFields,
   idsToPaths,
   pathsToIds,
+  reconcileBytes,
   sha256Of,
 } from "../src/content-assets.mjs";
 
@@ -176,4 +177,46 @@ test("the digest is over the bytes, however the tree handed them over", () => {
   assert.equal(sha256Of(text), sha256Of(new TextEncoder().encode(text)));
   assert.match(sha256Of(text), /^[0-9a-f]{64}$/);
   assert.notEqual(sha256Of(text), sha256Of("hero images"));
+});
+
+// --- the SH89 merge, for one asset's bytes (SH373) ---
+
+const A = "hash-of-a";
+const B = "hash-of-b";
+
+test("one side moving takes that side, with no conflict", () => {
+  // The defect this closes on the pull side: a server-side asset edit never reached the tree,
+  // because a path already on disk was skipped. And on the push side, the newer one: replacing
+  // whenever the bytes differ reverts a curator's edit whenever the tree did not touch it.
+  assert.equal(reconcileBytes({ base: A, remote: B, local: A }), "remote-changed");
+  assert.equal(reconcileBytes({ base: A, remote: A, local: B }), "local-changed");
+  assert.equal(reconcileBytes({ base: A, remote: A, local: A }), "unchanged");
+  assert.equal(reconcileBytes({ base: B, remote: A, local: A }), "unchanged");
+});
+
+test("both sides moving is a conflict, because there is no merging two images", () => {
+  assert.equal(reconcileBytes({ base: A, remote: B, local: "hash-of-c" }), "conflict");
+});
+
+test("with no base and two different values, nothing says which moved", () => {
+  // `conflict` is the only honest answer and the only one that cannot lose work. The *push* treats
+  // a missing agreement as "the tree is authoritative" before it gets here, deliberately: a pull
+  // that guesses can destroy the only copy of something, and a push that guesses cannot.
+  assert.equal(reconcileBytes({ base: null, remote: A, local: B }), "conflict");
+  assert.equal(reconcileBytes({ base: null, remote: A, local: A }), "unchanged");
+});
+
+test("an absence on one side is an addition or a deletion, never a silent overwrite", () => {
+  assert.equal(reconcileBytes({ base: null, remote: A, local: null }), "remote-added");
+  assert.equal(reconcileBytes({ base: null, remote: null, local: A }), "local-added");
+  assert.equal(reconcileBytes({ base: A, remote: A, local: null }), "local-deleted");
+  assert.equal(reconcileBytes({ base: A, remote: null, local: A }), "remote-deleted");
+  assert.equal(reconcileBytes({ base: null, remote: null, local: null }), "both-deleted");
+});
+
+test("an absence on one side and an edit on the other is a conflict", () => {
+  // Deleted there, edited here: deleting the file throws away an edit, keeping it resurrects
+  // something somebody removed. The same rule a post follows (SH89).
+  assert.equal(reconcileBytes({ base: A, remote: null, local: B }), "conflict");
+  assert.equal(reconcileBytes({ base: A, remote: B, local: null }), "conflict");
 });

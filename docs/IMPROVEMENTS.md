@@ -369,6 +369,22 @@ unchanged page must never be the same row.
 
 ---
 
+### IX.11 A browser as a measuring instrument, not as a camera (SH391)
+
+Playwright is already a dependency twice: `shio-react/e2e/console-check.mjs` drives the
+console, and `snapshot` (SH102) captures a PNG. Both are right and neither is
+agent-shaped — one tests the console, the other hands a human a picture. So the gap
+SH265 named honestly (the digest covers the failure an *agent* creates, not the one a
+human sees) is still closed by a human round trip, which is what P9 exists to remove.
+
+`shio audit <address>` renders the page in the browser that is already installed and
+returns **text**: elements overflowing the viewport at each `--width`, a computed style
+that collapsed, requests that 404'd, a font that fell back, text under a contrast floor,
+a zero-size box, console errors. Each finding carries a selector, so the next edit is
+targeted rather than exploratory.
+
+**The measurement is the first deliverable** (P3): a full-page screenshot costs roughly 1.6k tokens after downscaling and is unreadable at page height, cannot be diffed across turns, and asks the reader to *judge*; twenty findings cost a few hundred, grep and diff, and ask the reader to *fix*. **CLI-shaped, not a tool**: `tools/list` is capped at 12 with 11 used and is paid every turn, while a Bash call is paid when it is made — and the JVM stays browserless, which is a standing non-goal.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -378,28 +394,6 @@ unchanged page must never be the same row.
 
 > ✅ **SH86, SH87, SH88, SH89 and SH90 shipped** → [CHANGELOG.md](CHANGELOG.md) Block I.
 > What follows is the design rationale for what the projection **still owes**.
-
-### X.19 A server-side asset edit never reaches the tree (SH373)
-
-SH210 made the push direction work: a path the server already holds is compared against
-the tree's bytes and replaced when they differ. The pull direction is still the
-pre-SH210 assumption — `pull --content` skips a path already on disk, because a `File`
-post's bytes used to be immutable and re-fetching was pure cost.
-
-They are not immutable any more, and the console can replace them, so a curator swapping
-an image in the Media Library produces a change no pull will ever project — and the tree
-stops being the complete description of a site that Block I promises.
-
-The reason this is not SH210's second half is that the obvious fix is data loss. Asset
-bytes sit outside the SH89 three-way merge: the base snapshot fingerprints projected
-*fields*, and an asset is neither a field nor a document, so "fetch it when the digest
-differs" cannot tell a server edit from a local one and would overwrite the local file
-whenever both moved. The merge has to learn about bytes first — a fingerprint in the
-base (SH148's treatment applied to an asset), then the same three outcomes the content
-merge already has, with a conflict left on disk rather than resolved.
-
-SH210's digest endpoint is the cheap half of the detection and needs nothing new. What
-it does not answer is *which side* changed, which is the whole question.
 
 ### X.20 The projection group has one rule and room for two more (SH374)
 
@@ -1156,6 +1150,28 @@ kept meaning the instance the way every other command reads it. Worth doing when
 something else touches this command, and worth writing down now because the next reader
 will assume the two `--url`s are one and be right nine times out of ten.
 
+### XV.28 The field whose value is a program is the one nothing runs (SH392)
+
+SH248 settled that a `Region`'s `JAVASCRIPT` is never evaluated in the JVM and is
+shipped to the browser instead — the resolution of the Block D non-goal, and correct.
+The consequence nobody has picked up is that **this repository never executes it**.
+`ShRenderNoScriptEngineTest` asserts the opposite property (that the server *cannot* run
+it), the composer's test asserts the emission, and SH336's click interception is
+asserted as a script string. A region whose nav never opens, whose accordion throws on
+load, or whose selector matches nothing renders, hashes, lints and verifies clean.
+
+So the honest state is that the render model's one code-valued field is guaranteed to be
+*delivered* and not to *work*. SH391's harness is what changes that at a marginal cost:
+the page is already being loaded in a browser, so a console error, an uncaught
+rejection, and a declared behaviour that did not happen are findings beside the visual
+ones rather than a second mechanism.
+
+Two boundaries to keep. This is **not** a general test framework for content — an
+author's script is theirs, and the claim is only that it loads without erroring and that
+what the region declares it does happens. And it stays a **CLI gate**, never a `verify`
+finding: the server cannot see it, and one defect reported by two subsystems is two
+reports that disagree.
+
 ## XVI. The human half (Block O) — what reading the console next found
 
 Block O shipped, and its lesson was that **console defects answer `200`**: seven of them, none
@@ -1405,3 +1421,273 @@ existing `workspace_id`-claim/username resolution (`ShTenantFilter`). Open:
 > **Non-goal (do not re-add):** the legacy `ShSitesNodeJS` "export site as a
 > runnable Node app" is superseded by `create-shio-app` (SH8) and, going forward, by
 > blueprints (§XI.1).
+
+## XVII Replication (Block Q) — a site that already exists becomes one an agent can author
+
+The question this block answers is one a customer asks in one sentence: *take the site
+we have and make it a Shio site the agent maintains.* Nothing in Blocks A–P is wrong for
+it, and none of it is aimed at it — every capability assumes the site is being
+**built**, from a blueprint or from nothing. A replication inverts the direction: the
+target already exists, somebody else's markup is the specification, and "done" is not
+"it renders" but "it renders the same".
+
+That inversion splits into three phases, and each has a different owner. **Capture** is
+the CLI's, because the instance fetches no URL (SH268) and runs no browser (a standing
+non-goal). **Convert** is the file tree's, because a proposal a human corrects before it
+is applied is a diff, not an API call (P4, P7). **Prove** is the perception loop's, and
+it is the phase Block P left honest about its limits — the appearance digest covers the
+failure an *agent* creates and not the one a human sees (SH265), which is precisely the
+failure a replica has.
+
+Two gaps in the middle are not about replication at all: they are ordinary site features
+nobody has needed yet because no first-party blueprint has a menu, a second page of a
+listing, or six languages. They surface here because a real site has all three.
+
+### XVII.1 The capture pass, and why it is the CLI's half (SH377)
+
+A replication is three phases — capture, convert, prove — and the first one does not
+exist. `shio clone <url>` walks one origin (depth and page ceilings, the site's own
+robots rules, a refusal on a redirect off the host) and writes **no content**: one
+inventory under `shio/.shio/source-inventory.json` plus a report naming what it found —
+the pages with their titles and paths, the referenced assets, the locales and their URL
+shape, the forms and their fields, the navigation as the source spells it, and the
+third-party scripts. Everything downstream is scoped off that file, which is also what
+makes the conversion reviewable before it writes anything.
+
+**It is CLI-shaped for the reason SH268 already settled**: a URL the *server* fetches is SH101's request-forgery surface argued a second time, and "the instance does not run a browser" is a standing non-goal — while a page whose markup arrives only after hydration needs one. The CLI already imports Playwright as an optional dynamic import for SH102, so the browser lives where a browser already lives, and the artefact is a file, which is the cheapest thing an agent owns (P4).
+
+### XVII.2 The bytes are the half a crawl cannot skip (SH378)
+
+SH145 made an asset a path in the tree, and a push uploads what a `File` field names. So
+the capture's job is narrow and entirely mechanical: download every referenced image,
+font, icon and stylesheet into `shio/assets/<site>/<folder-chain>/<name>` and rewrite
+the source's URL to that path, which is the currency every later command already speaks.
+
+Four rules the capture has to keep, all of them consequences of rules that exist.
+**Same-origin only**, with a report of what was left behind — silently mirroring a CDN's
+bytes into a customer's media library is a licensing decision, not a fetch. **Dedupe by
+digest**, because a source that serves one logo from three URLs must not become three
+assets whose path stops naming one thing (SH210's argument). **The folder chain comes
+from the source's own path**, so the tree reads like the site rather than like a dump.
+And a name a path cannot hold is **refused, never trimmed** — SH256 and SH257 are
+already the law here, and a crawl is the largest source of hostile names the projection
+will ever see.
+
+### XVII.3 Two modes, and the proposal between them is the deliverable (SH379)
+
+The conversion has two honest answers and the temptation is to ship one. **Fidelity
+mode** writes the source's markup as a `Theme` plus a `PageLayout` and its `Region`s,
+verbatim, as SH191 sidecars — the page renders identically and *nothing about it is
+authorable*: a curator editing "the hero headline" is editing an HTML file. **Authorable
+mode** maps repeated markup onto the SH95 section vocabulary, at which point the page is
+content and the pixels have moved.
+
+What must ship is neither by itself but the **proposal**: a report that names each
+candidate block, the pages it recurs on, the section type it looks like, the fields it
+would carry, and the markup it would lose. A human or an agent accepts entries one at a
+time; an unaccepted block stays in fidelity mode. That is P7 and P8 in the same artefact
+— the appliable unit is the accepted mapping, and a guess that silently restructured
+somebody's homepage would be the worst surprise this product could produce. A block the
+vocabulary has no type for is a **new post-type the conversion emits**, authored through
+`@viglet/shio-model`, never a section forced into the nearest wrong shape.
+
+### XVII.4 A captured theme should arrive as tokens plus CSS, not as CSS (SH380)
+
+SH195 gave a `Theme` a `TOKENS` field in the W3C DTCG shape because that is what a
+designer's tool already exports. A capture is the other direction and the same argument:
+the source's stylesheet *contains* the palette, the type scale and the spacing rhythm,
+and a conversion that concatenates it into `CSS` throws that away — the replica then
+looks right and cannot be changed, which is the outcome this block exists to avoid.
+
+So the capture emits both: the CSS it could not interpret, and the tokens it could — the
+declared custom properties first (a modern site hands them over), then the values that
+recur past a threshold, each with the count that argued for it, because a token nobody
+can trace back to the source is a guess. `url()` references are rewritten to SH378's
+asset paths, which is what makes the theme portable rather than a set of links to
+somebody else's origin. **A token the capture is unsure about is reported, not
+written**: SH195 already established that a `TOKENS` field which is not JSON degrades
+the render, and inventing a name here would put that risk in a file nobody reviewed.
+
+### XVII.5 The navigation helper's row is missing the field its own comment promises (SH381)
+
+`ShRenderHelpers.navigation` documents each row as `{name, url, id}` and builds `{id,
+name, title}`. There is no `url`, so the one helper a site's primary menu would use
+renders labels that cannot be clicked, and every shipped template works around it or
+does not use it. The comment is the tell that this was intended and dropped.
+
+The reason it is not a one-line fix is that a **folder has no URL** — SH79 keeps the two
+namespaces apart on purpose, and only a post has a friendly URL. So the row's `url` has
+to be a decision: the folder's *index* post where one exists (the post whose furl
+matches the chain, which is what a reader means by "the Solutions section"), absent
+where none does, and never a fabricated path. An absent `url` beside a present `name` is
+then a legitimate row a template can branch on — a group heading — which is exactly what
+a nested menu needs. Reporting the folder with no index post is `verify`'s job, not the
+renderer's, by the rule that a defect belongs in one report.
+
+### XVII.6 A curated menu is content, and the folder tree is not one (SH382)
+
+Even with SH381's `url`, the folder tree is the wrong source for a menu. A real site's
+navigation is *curated*: a label that differs from the page title, groups that are not
+folders, an ordering that is editorial, entries that leave the site, an item
+deliberately omitted, and — on a multi-language site — one menu per locale. The
+vilt-group menu is four groups of four with two of them not resolving to folders at all.
+
+The vocabulary is the answer already in the tree: a `Menu` post-type whose items are
+addresses in an ordered `Multi Select` declaring `references: post` (SH95's shape, so
+SH154's `dangling-reference` covers a menu entry pointing at a deleted page **for
+free**), plus label and external-URL overrides. A `{{#menu title="Primary"}}` helper
+reads it, and a nested level is a menu naming a menu. **Not a new render post-type** and
+not a system type: a menu is ordinary content, so `post.upsert`, the file projection,
+`verify` and the section overlay all work on it with no new mechanism — which is the
+test SH249 set for whether something belongs in the render model or beside it.
+
+### XVII.7 The tree can say pt-br and the page cannot (SH383)
+
+SH348 gave a file `locale:` and `translationOf:`, and stopped at the projection. The
+render model has no locale at all: `ShRenderModel` exposes no `post.locale`, nothing
+puts the sibling translations in scope, and `/preview/{site}/{url}` has no notion of a
+language segment. So a six-language site can be *stored* and cannot render `<html
+lang>`, a `hreflang` pair, or the switcher that is the one control every page of it
+carries.
+
+Three things, and the third is the one to argue about. **`post.locale` and
+`site.defaultLocale` on the model**, which cost nothing and are read from what the post
+already holds. **`{{#translations}}`**, one row per sibling — locale, label, url —
+resolved through SH348's anchor rule, which is where a switcher comes from and also
+`hreflang`. And **no locale-prefixed route**: SH323 already forces a friendly URL to be
+site-unique, so `/en/about` and `/pt/sobre` are ordinary distinct URLs and the preview
+needs no new addressing — adding a locale segment to the route would put a second
+addressing scheme beside SH79 for no capability. The missing translation is a `verify`
+warning, not a refusal: a half-translated site is normal work in progress.
+
+### XVII.8 A listing helper with no offset is a homepage teaser, not an archive (SH384)
+
+`{{#query}}` accepts `folder`, `type` and `limit`, and `limit` exists because a listing
+with no ceiling gets slower as the site grows. Both are right and together they mean the
+helper can only render *the first page* of anything. An insights hub with two hundred
+articles, or the same hub filtered to one industry, is not expressible — and that is the
+single most common page shape on a real site after the homepage.
+
+What it needs is small and each part has a precedent. **`offset=` / `page=`**, read from
+`param.page` since SH259 put the query string in scope, with the row count and the page
+count in the model so a template can draw the pager. **A field filter** (`tag=`, or a
+field/value pair) resolved the way SH154 already knows which fields hold references.
+**`sort=`** over the existing total order, because "oldest first" is a legitimate
+archive and the comparator is already shared. The costs are measured before the fix, per
+P3 and `ShRenderHelperSweepBenchmarkTest`: a filter that reads every row in the site to
+keep ten is exactly the defect SH312 found and fixed one layer sideways.
+
+### XVII.9 The URL space is part of the site being replicated (SH385)
+
+A replication that changes a path breaks every link into it — search results, other
+people's pages, a decade of email. The capture already knows the source's full URL list
+(SH377), and the conversion already knows where each page landed, so the map exists at
+exactly one moment and is currently discarded.
+
+It should become content, for the reason SH382 gives about menus: a `Redirect` post-type
+(`from`, `to` as an address, permanent or temporary) projects to the tree, diffs in a
+review, and needs no new contract. The renderer honours it on `/preview` so the *proof*
+covers it, and the delivery layer reads it the way it reads anything else — P10 holds,
+and this is not a rewrite engine: one exact path in, one address out, no patterns and no
+regular expressions, which is the version whose behaviour can be verified from the tree
+alone.
+
+Two findings come with it: a `from` that a published post already claims (the redirect
+would shadow a real page), and a `to` that resolves to nothing — the second being
+SH154's rule applied to a field that happens to hold an address.
+
+### XVII.10 The baseline a replication needs is somebody else's site (SH386)
+
+SH102's comparison answers *"did this page change since I last looked"*, and SH187
+records why the appearance digest cannot answer this one: there is no layout engine, so
+it covers the failure an agent creates and not the one a human sees (SH265). A replica's
+whole risk is the second kind.
+
+`shio snapshot --against <url>` captures both sides in the same run, at each `--width`,
+and reports one number per page plus the diff image. The source capture is the baseline
+and is **kept**, so the number is reproducible and reviewable in a pull request, which
+is what makes it a gate somebody trusts. It is a **CLI capability with no endpoint**,
+for SH268's reason and because the manifest still says `visualSnapshot: false` correctly
+— an agent reading `true` would hunt for a call that does not exist.
+
+SH365 is a hard dependency rather than a courtesy: `--url` is already two arguments
+wearing one name (the instance and the page), and adding a third meaning to it would
+make the flag that says where Shio is also decide what it is compared to. **A difference
+exits non-zero here**, unlike SH102 — a replica that does not match is the defect, not
+the change you just made.
+
+### XVII.11 The coverage gate is the one that says when a replication is done (SH387)
+
+SH386 answers *"does this page look right"* one page at a time. The other half of "done"
+is arithmetic: of the pages, links, assets, forms and locales the source had, which ones
+exist here. Nothing reports it, so a replication currently ends when somebody stops
+looking.
+
+It belongs in `verify` as a **`replication` check group**, beside SH212's `projection`,
+and for the same reason: the inventory is a file and the content is a file, so every
+finding is provable with **no instance and no credentials** — the cheapest gate in the
+pipeline, and the one a CI run can afford on every push. The rules are
+`source-page-missing`, `source-link-unresolved` (a link the source served that resolves
+to nothing here, which is SH336's route index asked from the other side),
+`source-asset-missing` (SH212 already owns the mechanics), `source-form-field-lost`, and
+`source-locale-missing`.
+
+One rule to keep from SH302: a page the group could **not** check — a type the tree
+lacks, a source URL the crawl truncated — is a warning naming itself, never silence. An
+unchecked page reading as a clean one is how a coverage report starts lying.
+
+### XVII.12 The head is the part of a replica a human notices last and a crawler notices first (SH388)
+
+SH337 supplied the two facts a head needs that a template cannot compose —
+`post.canonical` and `site.baseUrl` — and everything else is left to the layout,
+correctly: a `<meta>` tag is markup, and markup is content. What is missing is not a
+feature but an **instrument**. A replica is where this bites, because the conversion
+writes the head once and repeats it across every page, so one copied description or a
+missing `og:image` becomes a site-wide defect that renders perfectly.
+
+The cheap version is `verify` rules over the rendered page the instance can already
+produce: a duplicate `<title>` or description within a site, an absent canonical, an
+`og:image` that is a relative path (which is the one that silently fails off-origin),
+and a `robots` `noindex` on a published page — the last being the mistake a
+preview-shaped conversion is most likely to carry over.
+
+Filed as an idea rather than designed, because the honest first question is whether
+these are `verify` findings at all or belong to the delivery layer that owns the head in
+production (P10). The `og:image` case argues for `verify`: it is provable from content.
+
+### XVII.13 Consent before analytics is an ordering no per-layout copy can guarantee (SH389)
+
+Every real site carries three or four scripts that belong to the *site*: a consent
+banner, an analytics tag, a chat widget, a tag manager. Shio has two places to put
+browser JavaScript — a `Theme`'s `JAVASCRIPT` and a `Region`'s (SH248) — and both are
+per-layout or per-region, so a site with four layouts holds four copies whose order is a
+property of each copy. Consent has to load *before* what it gates, which makes that a
+compliance defect rather than duplication.
+
+The shape is probably a site-level ordered list of script declarations (`src` or inline,
+`defer`, a position, and the consent category it belongs to), emitted once by the
+renderer and read by the delivery layer as content. What keeps it an idea is a genuine
+question about ownership: the renderer is preview-grade and `no-store`, production
+delivery is Next.js (P10), and a consent implementation that behaves differently in the
+two is worse than one that exists only in delivery. The replication angle is what makes
+it a task at all — a capture *finds* these scripts (SH377 inventories them) and today
+has nowhere to put them, so they are silently dropped and the replica is subtly not the
+site.
+
+### XVII.14 A responsive image is a fidelity question, not an optimisation (SH390)
+
+`{{file_url FIELD}}` resolves a `File` field to the one path SH38 serves its bytes on.
+There is no derivative, no width parameter and no `srcset`, so a template can only ever
+emit one image at one size. On a replica that is a fidelity failure rather than a
+performance note: SH386 compares the replica to a source that *does* ship a small image
+to a small viewport, so the comparison it is graded against is one the model cannot
+express.
+
+Three candidate answers, and the choice is the task. A **build-time** pass that writes
+derivatives into the tree as ordinary assets is the one that fits every existing rule —
+bytes on disk, uploaded by a push, no new endpoint, and SH210 already made bytes
+replaceable in place. An on-demand resizing endpoint puts image processing in the JVM,
+which is a new subsystem and a cache-invalidation question. Doing nothing and delegating
+to the delivery layer's own image pipeline is legitimate too, and is probably right for
+production — in which case what this task actually owes is the *helper shape* that lets
+a template hand a front end the widths, rather than the bytes.

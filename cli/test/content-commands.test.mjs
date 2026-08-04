@@ -825,6 +825,188 @@ test("an asset the server has and the tree does not is not a refusal", async () 
   assert.equal(applied.body.posts[0].data.hero, "file-1");
 });
 
+// --- asset bytes join the three-way merge (SH373) ---
+
+/** A base snapshot whose only content is the asset agreements. */
+const assetBase = (assets) => JSON.stringify(
+  { version: 3, cursor: null, partial: false, posts: {}, folders: [], notes: {}, assets },
+);
+
+/** sha-256 of "bytes", which is what these fixtures put on disk. */
+const SHA_BYTES = "277089d91c0bdf4f2e6862ba7e4a07605119431f5d13f726dd352b06f1b206a9";
+
+const ASSET_ITEM = {
+  id: "file-1", fileName: "logo.png", folderId: "Blog:/media", siteName: "Blog", size: 5,
+};
+
+const POST_WITH_HERO = `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Hello\n  hero: Blog/media/logo.png\n---\n`;
+
+test("SH373: a server-side asset edit reaches the tree", async () => {
+  // The symptom: `pull` skipped a path already on disk, because a File post's bytes used to be
+  // immutable. SH210 removed that premise and a curator swapping an image produced a change no
+  // pull would ever project.
+  const fetchImpl = assetServer({
+    remote: { "post:Blog/blog/hello": { ...REMOTE_DOC, data: { headline: "Hello", hero: "file-1" } } },
+    serverFolders: { Blog: ["/", "/media"] },
+    serverAssets: [ASSET_ITEM],
+    serverBytes: { "file-1": "newer" },
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: POST_WITH_HERO,
+    "/repo/shio/assets/Blog/media/logo.png": "bytes",
+    [BASE_PATH]: assetBase({ "Blog/media/logo.png": SHA_BYTES }),
+  });
+
+  const result = await contentPull.run({ theirs: true }, [], ctx);
+
+  assert.deepEqual(result.assets, ["Blog/media/logo.png"]);
+  assert.equal(
+    new TextDecoder().decode(ctx.fs.files.get("/repo/shio/assets/Blog/media/logo.png")),
+    "newer",
+  );
+});
+
+test("SH373: a locally-edited asset is not overwritten by a pull", async () => {
+  // The reason this waited for a merge instead of shipping with SH210: downloading whenever the
+  // hashes differ cannot tell a server edit from a local one, so it overwrites the tree's copy.
+  const fetchImpl = assetServer({
+    remote: { "post:Blog/blog/hello": { ...REMOTE_DOC, data: { headline: "Hello", hero: "file-1" } } },
+    serverFolders: { Blog: ["/", "/media"] },
+    serverAssets: [ASSET_ITEM],
+    serverBytes: { "file-1": "bytes" },
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: POST_WITH_HERO,
+    "/repo/shio/assets/Blog/media/logo.png": "edited here",
+    [BASE_PATH]: assetBase({ "Blog/media/logo.png": SHA_BYTES }),
+  });
+
+  const result = await contentPull.run({ theirs: true }, [], ctx);
+
+  assert.deepEqual(result.assets, []);
+  assert.equal(ctx.fs.files.get("/repo/shio/assets/Blog/media/logo.png"), "edited here");
+});
+
+test("SH373: both sides editing one asset is a conflict, and the file is left alone", async () => {
+  const fetchImpl = assetServer({
+    remote: { "post:Blog/blog/hello": { ...REMOTE_DOC, data: { headline: "Hello", hero: "file-1" } } },
+    serverFolders: { Blog: ["/", "/media"] },
+    serverAssets: [ASSET_ITEM],
+    serverBytes: { "file-1": "newer" },
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: POST_WITH_HERO,
+    "/repo/shio/assets/Blog/media/logo.png": "edited here",
+    [BASE_PATH]: assetBase({ "Blog/media/logo.png": SHA_BYTES }),
+  });
+
+  const result = await contentPull.run({ theirs: true }, [], ctx);
+
+  assert.deepEqual(result.assetConflicts, ["Blog/media/logo.png"]);
+  assert.equal(ctx.fs.files.get("/repo/shio/assets/Blog/media/logo.png"), "edited here");
+  assert.match(ctx.stderr.text, /asset\(s\) changed both here and on the server/);
+});
+
+test("SH373: a push does not revert a server-side asset edit", async () => {
+  // The defect SH210 introduced and this closes: replacing whenever the bytes differ reverts a
+  // curator's edit whenever the tree did not touch it, and "a push never silently reverts a
+  // console edit" is the rule SH89 exists for.
+  const fetchImpl = assetServer({
+    remote: {},
+    serverFolders: { Blog: ["/", "/blog", "/media"] },
+    serverAssets: [ASSET_ITEM],
+    serverBytes: { "file-1": "newer" },
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: POST_WITH_HERO,
+    "/repo/shio/assets/Blog/media/logo.png": "bytes",
+    [BASE_PATH]: assetBase({ "Blog/media/logo.png": SHA_BYTES }),
+  });
+
+  const result = await contentPush.run({}, [], ctx);
+
+  assert.deepEqual(fetchImpl.replacements, []);
+  assert.deepEqual(result.behindAssets, ["Blog/media/logo.png"]);
+  assert.match(ctx.stdout.text, /changed on the server and not here/);
+});
+
+test("SH373: a push still replaces the asset the tree edited", async () => {
+  const fetchImpl = assetServer({
+    remote: {},
+    serverFolders: { Blog: ["/", "/blog", "/media"] },
+    serverAssets: [ASSET_ITEM],
+    serverBytes: { "file-1": "bytes" },
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: POST_WITH_HERO,
+    "/repo/shio/assets/Blog/media/logo.png": "edited here",
+    [BASE_PATH]: assetBase({ "Blog/media/logo.png": SHA_BYTES }),
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  assert.deepEqual(fetchImpl.replacements.map((row) => row.id), ["file-1"]);
+});
+
+test("SH373: a push refuses an asset both sides edited", async () => {
+  const fetchImpl = assetServer({
+    remote: {},
+    serverFolders: { Blog: ["/", "/blog", "/media"] },
+    serverAssets: [ASSET_ITEM],
+    serverBytes: { "file-1": "newer" },
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: POST_WITH_HERO,
+    "/repo/shio/assets/Blog/media/logo.png": "edited here too",
+    [BASE_PATH]: assetBase({ "Blog/media/logo.png": SHA_BYTES }),
+  });
+
+  await assert.rejects(
+    () => contentPush.run({}, [], ctx),
+    /asset\(s\) changed both here and on the server/,
+  );
+  assert.deepEqual(fetchImpl.replacements, []);
+});
+
+test("SH373: with no agreed hash the tree is authoritative, both branches alike", async () => {
+  // A push and a pull are not symmetrical about missing evidence, and the two size branches must
+  // not disagree either: a differing *length* and differing *bytes of the same length* both mean
+  // "the tree is what the server should hold" when nothing has ever been agreed.
+  const fetchImpl = assetServer({
+    remote: {},
+    serverFolders: { Blog: ["/", "/blog", "/media"] },
+    serverAssets: [ASSET_ITEM],
+    serverBytes: { "file-1": "other" },
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: POST_WITH_HERO,
+    "/repo/shio/assets/Blog/media/logo.png": "bytes",
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  assert.deepEqual(fetchImpl.replacements.map((row) => row.id), ["file-1"]);
+});
+
+test("SH373: the agreed hash is recorded, so the next server edit is a change not a conflict", async () => {
+  const fetchImpl = assetServer({
+    remote: { "post:Blog/blog/hello": { ...REMOTE_DOC, data: { headline: "Hello", hero: "file-1" } } },
+    serverFolders: { Blog: ["/", "/media"] },
+    serverAssets: [ASSET_ITEM],
+    serverBytes: { "file-1": "bytes" },
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: POST_WITH_HERO,
+    "/repo/shio/assets/Blog/media/logo.png": "bytes",
+  });
+
+  await contentPull.run({ theirs: true }, [], ctx);
+
+  assert.deepEqual(JSON.parse(ctx.fs.files.get(BASE_PATH)).assets, {
+    "Blog/media/logo.png": SHA_BYTES,
+  });
+});
+
 test("push --content refuses a File reference whose bytes are not in the tree", async () => {
   // The alternative is a post published with a File field pointing at nothing.
   const fetchImpl = assetServer({

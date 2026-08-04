@@ -221,6 +221,7 @@
 - **SH213** — A push lists only the folders its File fields name — measured at 200 rows for one reference, now 10 — and an upload no longer re-reads the inventory to find one folder id.
 - **SH214** — A legitimate delete-plus-create can be accepted once with push --content --accept, keyed on both addresses, and the acceptance is spent by the run that uses it.
 - **SH215** — A fingerprint carries its canonical byte length, so equal hashes with unequal lengths prove a collision and the merge reports it instead of dropping the edit.
+- **SH373** — Asset bytes join the SH89 merge: a server-side edit reaches the tree, a push no longer reverts one, and both sides editing is a conflict left on disk.
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
@@ -871,6 +872,8 @@
 - **SH361** — Decided as one id per step rather than one entry rewritten, so SH366-SH371 now carry the six and each qualifier names its parent; the two id.two-files left are RK122's.
 - **SH372** — The store hands out a strictly increasing instant now, so the order has a total tail with no new column, and a frozen-clock test pins it — it failed three runs in three before.
 - **SH362** — The fixture now calls all six registered helpers and asserts it does, failing by name when a seventh arrives; widening it found SH372, a defect the old fixture's timing had been hiding.
+
+## Block Q — Replication (an existing site becomes an authorable Shio site)
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

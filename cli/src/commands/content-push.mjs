@@ -29,6 +29,7 @@ import {
   assetSizeDiffers,
   fileFields,
   pathsToIds,
+  reconcileBytes,
   sha256Of,
 } from "../content-assets.mjs";
 import {
@@ -277,7 +278,20 @@ export async function run(flags, _positionals, ctx) {
     assetsDir: flags.assetsDir ?? ASSETS_DIR,
     planOnly,
     stdout: ctx.stdout,
+    // SH373 — the agreed hashes, so a push can tell "the tree edited this" from "the server did".
+    assetBase: base.assets ?? {},
   });
+  if (declared.assetConflicts.length) {
+    // Both sides moved the same bytes and there is no merging two images, so the only honest
+    // outcome is to write nothing and name them. The same rule a conflicted post follows.
+    throw new Error(
+      `shio push --content: ${declared.assetConflicts.length} asset(s) changed both here and on ` +
+        "the server — pushing would overwrite someone:\n" +
+        declared.assetConflicts.map((path) => `  ! ${path}\n`).join("") +
+        "Take the server's copy by deleting the local file and running `shio pull --content`, or " +
+        "keep yours by re-running with --force.",
+    );
+  }
 
   const maxOps = Number(flags.maxOps ?? 1500);
   const whole = documentsFor(declared.posts, {
@@ -397,11 +411,19 @@ export async function run(flags, _positionals, ctx) {
         posts: nextPosts,
         folders: base.folders,
         notes: notes.agreed,
+        // SH373 — merged over what the base held, so an asset this run did not look at keeps its
+        // agreement. Without recording anything here a tree that only ever *reads* its assets
+        // would stay at "never agreed" for ever, and the first server-side edit would arrive as a
+        // conflict instead of a change.
+        assets: { ...(base.assets ?? {}), ...declared.agreed },
       },
       flags.baseFile ?? BASE_FILE,
     );
   }
-  return { changed, ops, documents, behind, removed, moves, notes };
+  return {
+    changed, ops, documents, behind, removed, moves, notes,
+    behindAssets: declared.behindAssets,
+  };
 }
 
 /**
@@ -559,26 +581,56 @@ async function pushNotes(client, ctx, { base, sites, dir, planOnly }) {
  * it as a refusal would turn every such tree's next push into an error, which is a worse defect
  * than the one being fixed.
  */
-async function replacementFor(ctx, { admin, path, item, assetsDir }) {
+async function replacementFor(ctx, { admin, path, item, assetsDir, base = {} }) {
   let bytes;
   try {
     bytes = await readAssetBytes(ctx, path, { dir: assetsDir });
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
-    return null;
+    return { verdict: "absent", bytes: null, hash: null };
   }
-  if (assetSizeDiffers(bytes, item?.size) === true) return bytes;
-  // Same length, so only content can decide — and the server hashes its own copy rather than
-  // shipping it here, because the length matching is the *common* case and downloading on it
-  // would mean fetching every referenced asset on every push.
+  const agreed = base[path] ?? null;
+
+  // With no agreed hash the tree is authoritative, and that is a decision rather than a leftover.
+  // A push and a pull are not symmetrical about missing evidence: the tree is the artifact under
+  // version control and the server's copy is reproducible from it, so a pull that guesses can
+  // destroy the only copy of something while a push that guesses cannot. Refusing here would also
+  // be a false positive on the one push that most needs to work — the first one, before any pull
+  // has written a base. So the cheap size branch and the digest branch agree, which is the wart
+  // this replaced: without a base, a differing *length* used to replace while differing *bytes* of
+  // the same length refused.
+  if (!agreed) {
+    if (assetSizeDiffers(bytes, item?.size) === true) {
+      return { verdict: "local-changed", bytes, hash: sha256Of(bytes) };
+    }
+    const unknown = await admin.staticFileDigest(item.id);
+    const localHash = sha256Of(bytes);
+    if (unknown?.sha256 === localHash) return { verdict: "unchanged", bytes: null, hash: localHash };
+    return { verdict: "local-changed", bytes, hash: localHash };
+  }
+
+  // The server hashes its own copy rather than shipping it here, because a length that matches is
+  // the *common* case and downloading on it would mean fetching every referenced asset on every
+  // push (SH210's cost argument, unchanged).
   const remote = await admin.staticFileDigest(item.id);
-  // A server that cannot say what it holds gets the tree's copy: the tree is the declared state,
-  // and the outcome this task exists to remove is the one where nothing happens and it looks fine.
-  if (!remote?.sha256) return bytes;
-  return remote.sha256 === sha256Of(bytes) ? null : bytes;
+  const localHash = sha256Of(bytes);
+  if (!remote?.sha256) {
+    // A server that cannot say what it holds gets the tree's copy: the tree is the declared
+    // state, and the outcome SH210 exists to remove is the one where nothing happens and it
+    // looks fine.
+    return { verdict: "local-changed", bytes, hash: localHash };
+  }
+  // SH373 — the three-way merge, which SH210 did not have. Replacing whenever the bytes differ
+  // reverts a curator's asset edit whenever the tree did not touch it, and "a push never silently
+  // reverts a console edit" is the rule SH89 exists for.
+  const verdict = reconcileBytes({ base: agreed, remote: remote.sha256, local: localHash });
+  const sends = verdict === "local-changed" || verdict === "local-added";
+  return { verdict, bytes: sends ? bytes : null, hash: localHash };
 }
 
-async function resolveAssets(ctx, { client, admin, defs, posts, sites, assetsDir, planOnly, stdout }) {
+async function resolveAssets(ctx, {
+  client, admin, defs, posts, sites, assetsDir, planOnly, stdout, assetBase = {},
+}) {
   const fileFieldMap = fileFields(defs);
   const needed = new Set();
   for (const post of posts) {
@@ -589,7 +641,9 @@ async function resolveAssets(ctx, { client, admin, defs, posts, sites, assetsDir
       if (typeof value === "string" && value && assetLocationOf(value)) needed.add(value);
     }
   }
-  if (!needed.size) return { posts, uploaded: [], replaced: [] };
+  if (!needed.size) {
+    return { posts, uploaded: [], replaced: [], behindAssets: [], assetConflicts: [], agreed: {} };
+  }
 
   // SH213 — the inventory is read for the folders these references name, not for the whole site.
   // A push declaring one `File` field used to pay for a site's entire media library; the listing
@@ -601,22 +655,42 @@ async function resolveAssets(ctx, { client, admin, defs, posts, sites, assetsDir
   const uploaded = [];
   const replaced = [];
   const missing = [];
+  // SH373 — the two outcomes SH210 could not express, because it had no base to compare against.
+  const behindAssets = [];
+  const assetConflicts = [];
+  const agreed = {};
 
   for (const path of [...needed].sort((a, b) => a.localeCompare(b))) {
     const known = byPath.get(path);
     if (known) {
-      const change = await replacementFor(ctx, { admin, path, item: known, assetsDir });
-      if (change) {
+      const change = await replacementFor(ctx, {
+        admin, path, item: known, assetsDir, base: assetBase,
+      });
+      if (change.verdict === "remote-changed" || change.verdict === "remote-added") {
+        // SH373 — the server's bytes moved and the tree's did not. Replacing would revert it, so
+        // it is reported the way a post the server changed is: the pull is what brings it down.
+        behindAssets.push(path);
+      } else if (change.verdict === "conflict") {
+        assetConflicts.push(path);
+      } else if (change.verdict === "unchanged") {
+        // Agreed, and worth recording: without it a tree that never edits an asset stays at "never
+        // agreed" for ever, and the first server-side edit reads as a conflict instead of a change.
+        agreed[path] = change.hash;
+      } else if (change.bytes) {
         if (planOnly) {
           replaced.push(`${path} (would replace)`);
         } else {
           await admin.replaceStaticFile({
             id: known.id,
             fileName: known.fileName,
-            bytes: change,
+            bytes: change.bytes,
             contentType: contentTypeFor(known.fileName),
           });
           replaced.push(path);
+          // After the replace the server holds exactly these bytes, so this is what the two sides
+          // agree on — recorded here rather than derived from the report, which would mean reading
+          // a hash back out of a line written for a human.
+          agreed[path] = change.hash;
         }
       }
       continue;
@@ -692,7 +766,18 @@ async function resolveAssets(ctx, { client, admin, defs, posts, sites, assetsDir
         replaced.map((path) => `  ~ ${path}\n`).join(""),
     );
   }
-  return { posts: mapped, uploaded, replaced };
+  if (behindAssets.length) {
+    // SH373 — the asset half of the rule that keeps a push from reverting a console edit: the
+    // server's bytes moved and the tree's did not, so they are reported rather than replaced, and
+    // named so the operator knows a pull is what settles it.
+    stdout.write(
+      `shio push --content: ${behindAssets.length} asset(s) changed on the server and not here, ` +
+        "so they were left alone:\n" +
+        behindAssets.map((path) => `  ← ${path}\n`).join("") +
+        "Run `shio pull --content` to bring them down.\n",
+    );
+  }
+  return { posts: mapped, uploaded, replaced, behindAssets, assetConflicts, agreed };
 }
 
 /** Enough of a content type for the server to record; it re-sniffs images itself. */

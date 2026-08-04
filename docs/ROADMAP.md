@@ -23,10 +23,10 @@
 - 📋 **SH207** (deps: SH104 ✅) **The handoff has no console banner** — The handoff exists only as a PR-body artifact, so a curator who never opens a terminal cannot see what an agent did since they last looked. → §IX.8
 - 📋 **SH208** (deps: —) **A backtick in the CLI's help text breaks the whole binary** — HELP is a template literal, so a backtick in the prose is a syntax error that stops the binary loading, and only the three tests that spawn it notice. → §IX.9
 - 💭 **SH209** (deps: SH102 ✅) **`shio snapshot` photographs one page per run** — The useful artifact for a handoff is the set of a site's pages, and the command captures one page per run. → §IX.10
+- 📋 **SH391** (deps: SH102 ✅, SH265 ✅) **A browser runs in this repo twice and neither output is for the agent** — The console e2e drives the console and snapshot draws a PNG for a human, so the one failure class no digest reaches is still checked by asking somebody to look at it. → §IX.11
 
 ## Block I — Content as files (local-first authoring)
 
-- 📋 **SH373** (deps: SH210 ✅) **A server-side asset edit never reaches the tree** — pull skips a path already on disk and asset bytes sit outside the SH89 merge, so a curator's replaced image cannot be projected without risking a local edit. → §X.19
 - 📋 **SH374** (deps: SH212 ✅) **A missing sidecar and a dangling translationOf still wait for a gate that needs the server** — SH212 showed both are provable from the tree alone, yet the projection group has one rule and the cheapest gate misses the two defects beside it. → §X.20
 - 💭 **SH375** (deps: SH213 ✅) **The per-folder inventory threshold is a number nobody measured** — SH213 asserts both branches of an eight-folder cutoff, but the crossover depends on per-request against per-row cost and its benchmark measures neither. → §X.21
 - 💭 **SH376** (deps: SH147 ✅) **The change feed's ordering guard is silently weaker on a second application node** — SH147's watermark is exact for one JVM and lag-millis now defaults to 0, so a two-node install can lose an edit and nothing tells the operator which install it is. → §X.22
@@ -76,6 +76,24 @@
 - 📋 **SH363** (deps: —) **A class comment can claim its route is authenticated and nothing checks** — ShRenderAPI said it sits under anyRequest().authenticated() while /preview/** was in permitAll, and SH359 fixed that one instance without adding anything that would find the next. → §XV.25
 - 💭 **SH364** (deps: SH247 ✅) **A rendered form posts nowhere, and the design for where it should post is written** — 2018's createPost plus folder says a submission becomes a post in a named folder, and the only thing between that and shipping is a public unauthenticated write nobody has scoped. → §XV.26
 - 💭 **SH365** (deps: SH265 ✅) **shio snapshot's --url is two arguments wearing one name** — It is read as the page to photograph and as the instance base URL, so the flag that says where Shio is also decides what gets photographed. → §XV.27
+- 📋 **SH392** (deps: SH248 ✅, SH391) **A region's JavaScript reaches the browser and nothing ever runs it** — SH248 ships a region's script to the reader on purpose, and no test, lint or gate executes it, so the one field whose value is code has no proof path at all. → §XV.28
+
+## Block Q — Replication (an existing site becomes an authorable Shio site)
+
+- 📋 **SH377** (deps: SH268 ✅) **Nothing captures a site that already exists** — Replicating a live site starts with an inventory of its pages, assets, locales and forms, and no command crawls one, so the work cannot even be scoped. → §XVII.1
+- 📋 **SH378** (deps: SH145 ✅, SH377) **A captured page references bytes nothing downloads** — The projection reads assets off disk, and nothing fetches the original's images, fonts and stylesheets into the tree or rewrites their URLs to asset paths. → §XVII.2
+- 📋 **SH379** (deps: SH95 ✅, SH191 ✅, SH377) **Captured markup can only become a frozen copy** — Fidelity wants the original's HTML verbatim and authorability wants sections, and nothing proposes the mapping between them, so a replica is one or the other. → §XVII.3
+- 📋 **SH380** (deps: SH195 ✅, SH378) **An imported stylesheet lands as one opaque blob** — A Theme carries CSS and DTCG tokens, and a capture that writes only the CSS yields a replica nobody can restyle, though the source's own values are what a token set is. → §XVII.4
+- 📋 **SH381** (deps: SH183 ✅) **A navigation row carries no URL, so a menu cannot link** — The navigation helper yields id, name and title over the folder tree while its own docstring promises a url, so the helper a site's menu needs cannot emit an href. → §XVII.5
+- 📋 **SH382** (deps: SH381) **A site's menu is the folder tree or nothing** — Ordered labels, nested groups and external links are what a real menu is and no folder chain expresses any of them, so the nav gets hand-written into every layout. → §XVII.6
+- 📋 **SH383** (deps: SH348 ✅, SH323 ✅) **The renderer knows nothing about locale** — SH348 made the tree locale-aware and the render model stayed monolingual: no sibling translations in scope, no locale in the route and no switcher a six-language site needs. → §XVII.7
+- 📋 **SH384** (deps: SH247 ✅, SH259 ✅) **A listing has a ceiling and no second page** — query takes folder, type and limit only, so an archive past its limit has no page two and a hub filtered by industry or tag cannot be written at all. → §XVII.8
+- 📋 **SH385** (deps: SH377) **A replica silently abandons the original's URL space** — The capture knows every source URL and nothing records the source-to-replica map or serves a redirect, so every inbound link to a path the replica renamed is lost. → §XVII.9
+- 📋 **SH386** (deps: SH102 ✅, SH265 ✅, SH365) **Nothing proves the replica looks like the original** — snapshot compares a page against its own earlier capture, so the comparison a replication needs — the source as the baseline, at several widths — cannot be asked for. → §XVII.10
+- 📋 **SH387** (deps: SH212 ✅, SH377) **Fidelity has no report, so coverage is a feeling** — Which source pages, links, assets and form fields never arrived is the question a replication asks, and it is provable from the tree and the inventory with no instance. → §XVII.11
+- 💭 **SH388** (deps: SH337 ✅) **A page's head is markup nobody checks** — Title, description, og and canonical tags are template freedom with no convention and no lint, so sixty replica pages can share one description and verify stays green. → §XVII.12
+- 💭 **SH389** (deps: SH183 ✅, SH248 ✅) **A site-wide script is copied into every layout** — Consent, analytics and chat belong to the site and the only slots are a layout's or a theme's own fields, so a replica repeats them per layout and their order is per copy. → §XVII.13
+- 💭 **SH390** (deps: SH145 ✅, SH210 ✅) **One asset, one size** — file_url yields a single path, so no template can emit a srcset and a replica ships the desktop image to a phone where the original it is being compared against does not. → §XVII.14
 
 ## Block F — Market positioning
 

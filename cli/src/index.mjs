@@ -221,7 +221,10 @@ Content as files (shio pull/push --content, shio dev --content):
   changed is a conflict, and a conflict writes nothing and exits non-zero.
   Binaries project to shio/assets/<site>/<folder>/<name>, and a File field reads as
   that path instead of a UUID — so the tree is a complete, movable, reviewable
-  description of the site. A push uploads what the server lacks, once per path.
+  description of the site. A push uploads what the server lacks, once per path, and an
+  asset's bytes are merged three ways like everything else: whichever side edited them
+  wins, both sides editing is a conflict that writes nothing, and neither direction
+  overwrites the other silently.
   An empty folder is a file too: shio/folders/<site>/<chain>/_folder.md declares a
   folder nothing else does, so you can scaffold the structure before filling it. It is
   a separate root because a folder chain and a friendly URL are separate namespaces.

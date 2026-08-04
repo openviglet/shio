@@ -76,10 +76,18 @@ export async function readBase(ctx, path = BASE_FILE) {
       // snapshot, which reads as "we have never agreed about any note": every server note
       // is an addition and every local one is kept. Both are the safe reading.
       notes: parsed.notes && typeof parsed.notes === "object" ? parsed.notes : {},
+      // SH373 — asset path → the sha-256 both sides last agreed on. Absent in a snapshot written
+      // before this, which reads as "we have never agreed about any asset": every difference is
+      // then an addition on whichever side has it, which is the safe reading in both directions —
+      // nothing is downloaded over a local edit and nothing is uploaded over a server one.
+      assets: parsed.assets && typeof parsed.assets === "object" ? parsed.assets : {},
     };
   } catch (error) {
     if (error?.code === "ENOENT") {
-      return { version: BASE_VERSION, cursor: null, partial: false, posts: {}, folders: [], notes: {} };
+      return {
+        version: BASE_VERSION, cursor: null, partial: false,
+        posts: {}, folders: [], notes: {}, assets: {},
+      };
     }
     throw error;
   }
@@ -102,10 +110,21 @@ export async function writeBase(ctx, base, path = BASE_FILE) {
       .map((marker) => ({ site: marker.site, folder: marker.folder }))
       .sort((a, b) => a.site.localeCompare(b.site) || a.folder.localeCompare(b.folder)),
     notes: sortedNotes(base.notes),
+    // SH373 — sorted by path, so committing the snapshot shows one asset changing and nothing else.
+    assets: sortedAssets(base.assets),
   };
   const target = join(ctx.cwd, path);
   await ctx.fs.mkdir(dirOf(target), { recursive: true });
   await ctx.fs.writeFile(target, `${JSON.stringify(body, null, 2)}\n`, "utf8");
+}
+
+/** Asset path → agreed sha-256, sorted (P5). */
+function sortedAssets(assets) {
+  const out = {};
+  for (const path of Object.keys(assets ?? {}).sort((a, b) => a.localeCompare(b))) {
+    out[path] = assets[path];
+  }
+  return out;
 }
 
 /** Site → key → note, both levels sorted, so the committed diff shows an edit (P5). */
