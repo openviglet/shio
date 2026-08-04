@@ -30,7 +30,6 @@
 ## Block I — Content as files (local-first authoring)
 
 - 📋 **SH374** (deps: SH212 ✅) **A missing sidecar and a dangling translationOf still wait for a gate that needs the server** — SH212 showed both are provable from the tree alone, yet the projection group has one rule and the cheapest gate misses the two defects beside it. → §X.20
-- 💭 **SH376** (deps: SH147 ✅) **The change feed's ordering guard is silently weaker on a second application node** — SH147's watermark is exact for one JVM and lag-millis now defaults to 0, so a two-node install can lose an edit and nothing tells the operator which install it is. → §X.22
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 

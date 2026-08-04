@@ -120,6 +120,9 @@ class ShAgentCommitOrderTest {
     @AfterEach
     void leaveTheSharedContextAsItWasFound() {
         properties.getChanges().setLagMillis(0);
+        // SH376 — the observation is sticky and the bean is a singleton, so a test that sets it in a
+        // shared context would put the disclosure on every later test's feed.
+        watermark.forgetForeignWrite();
         if (heldPosition != null) {
             watermark.release(heldPosition);
             heldPosition = null;
@@ -207,6 +210,60 @@ class ShAgentCommitOrderTest {
 
         assertThat(shAgentChangesService.changes(siteName, null, 50, false).notes())
                 .anyMatch(note -> note.contains("250ms are also held back"));
+    }
+
+    /**
+     * SH376 — the guard is exact for one JVM and degrades against a second application node, and
+     * the defect was that nothing said so. A row stamped above the highest position this JVM has
+     * issued cannot have come from it, which is proof of another writer and needs no new state.
+     */
+    @Test
+    @DisplayName("a row this node never stamped is noticed and disclosed")
+    void aForeignWriteIsDisclosed() {
+        watermark.forgetForeignWrite();
+        // A position this node issued, so the detector is armed: before the first reserve every row
+        // already in the table sits above the epoch and would read as foreign.
+        Instant mine = watermark.reserve();
+        assertThat(shAgentChangesService.changes(siteName, null, 50, false).notes())
+                .as("nothing to disclose on a single instance, so nothing is said (P3)")
+                .noneMatch(note -> note.contains("another application node"));
+
+        // Stamped a millisecond above anything this node handed out — which is what a second node
+        // writing to the same database looks like from here. Then wait for the clock to pass it, so
+        // it is under the feed's ceiling and actually gets reported: a row the feed never returns is
+        // a row the feed never observes, and that ordering is the point of the wiring.
+        Instant foreign = mine.plusMillis(1);
+        inTransaction(() -> {
+            record(ShContentAction.UPDATE, foreign, "eeee", "Updated \"Early page\" elsewhere");
+            return null;
+        });
+        while (!Instant.now().isAfter(foreign)) {
+            Thread.onSpinWait();
+        }
+
+        ShAgentChanges seen = shAgentChangesService.changes(siteName, null, 50, false);
+
+        assertThat(descriptions(seen))
+                .as("the row is reported — observing it is not the same as hiding it")
+                .contains("Updated \"Early page\" elsewhere");
+        assertThat(seen.notes())
+                .anyMatch(note -> note.contains("another application node")
+                        && note.contains("lag-millis"));
+        // And it stays said, because an installation does not stop having two nodes.
+        assertThat(shAgentChangesService.changes(siteName, null, 50, false).notes())
+                .anyMatch(note -> note.contains("another application node"));
+    }
+
+    /** A configured margin means the operator already knows, so the advice is not repeated. */
+    @Test
+    @DisplayName("the disclosure is silent once a margin is set")
+    void aConfiguredMarginSilencesTheAdvice() {
+        watermark.forgetForeignWrite();
+        watermark.observe(watermark.reserve().plusSeconds(1));
+        properties.getChanges().setLagMillis(1000);
+
+        assertThat(shAgentChangesService.changes(siteName, null, 50, false).notes())
+                .noneMatch(note -> note.contains("another application node"));
     }
 
     // --- fixture ---

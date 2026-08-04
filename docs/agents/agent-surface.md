@@ -374,7 +374,21 @@ a scoped credential cannot use the error to prove a site exists.
   registered as in flight** and released when it completes either way — so the ceiling is the
   *oldest unfinished write*, exclusive, and a row is reportable only once everything stamped
   before it has finished. `lag-millis` survives at **0**, meaning only what an in-process
-  registry cannot see: a second app node against the same database. Four things worth knowing
+  registry cannot see: a second app node against the same database — **and the feed says so when it
+  meets one (SH376)**. Positions are monotonic and never below the clock, so a row stamped above the
+  highest position this JVM has issued cannot have come from it, which is proof of another writer
+  and needs no column, no heartbeat and no second registry. The disclosure is a `notes` line, said
+  only once such a row is seen and only while `lag-millis` is 0, so a single instance pays no prose
+  for a case it does not have (P3). Three things settled while building it: the observation is
+  **sticky**, because an installation does not stop having two nodes when the next page happens not
+  to contain a foreign row and a note that flickered would stop this endpoint revalidating (SH159);
+  it is **skipped until this JVM has issued a position**, or every single-node instance would report
+  a second writer for one read after each restart; and it reports **the fact and deliberately not a
+  number** — the obvious "set the lag to the excess we saw" is wrong, because the excess measures
+  how long ago *this* node last wrote rather than how far ahead the other one's clock runs, so an
+  idle instance would advise a ten-minute lag. It is also **retrospective**, which is the honest
+  limit: the proof arrives with the row, so this converts a permanent silent weakness into a
+  reported one rather than into a guarantee. Four things worth knowing
   before touching it. **A `seq` column with gap detection — §X.3.1's shape — does not close the
   hole**: a gap is either a live transaction or a rolled-back one, nothing in the row says
   which, so the reader skips after a timeout and a slower transaction loses its edit exactly as

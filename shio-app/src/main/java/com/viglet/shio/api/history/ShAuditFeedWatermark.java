@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.springframework.stereotype.Component;
@@ -76,6 +77,16 @@ public class ShAuditFeedWatermark {
     private final Map<Object, Instant> inFlight = new ConcurrentHashMap<>();
 
     private final AtomicReference<Instant> lastReserved = new AtomicReference<>(Instant.EPOCH);
+
+    /**
+     * Whether a position this JVM never issued has been seen (SH376).
+     *
+     * <p>Sticky, because it records something about the installation rather than about a page: an
+     * instance does not stop having a second writer because the next page happens not to contain
+     * one of its rows, and a disclosure that flickered would stop the one endpoint whose job is to
+     * be polled from ever answering {@code 304} (SH159).</p>
+     */
+    private final AtomicBoolean foreignWriteSeen = new AtomicBoolean();
 
     /**
      * The position to stamp an audit row with, and a promise to the feed that it will not report
@@ -207,11 +218,69 @@ public class ShAuditFeedWatermark {
     }
 
     /**
-     * The next position: the caller's clock, or a microsecond past the last one when that clock
-     * has not moved. Truncated to the microsecond because that is the precision a column keeps
-     * — a position finer than the store is one that comes back changed, and the order these are
-     * handed out in is only useful if it survives being written down.
+     * Notices a position this JVM did not issue, which is proof of a second writer (SH376).
+     *
+     * <h2>Why the guard needed to be able to say it was weaker</h2>
+     *
+     * <p>Everything above is exact for one JVM and degrades to SH88's guessed lag against a second
+     * application node writing to the same database — the registry is in memory, so it is a fact
+     * about <em>this</em> process. With {@code lag-millis} defaulting to 0 that degradation is
+     * silent, and a two-node install reads as exact while losing an edit: SH147's own failure,
+     * relocated rather than removed. What was missing was never the guarantee. It was that
+     * <b>nothing told an operator which case they were in.</b></p>
+     *
+     * <h2>Why it needs no new state</h2>
+     *
+     * <p>Positions are monotonic and never below {@code now}, so a row stamped <em>above</em> the
+     * highest position this JVM has handed out cannot have come from it. That is the whole
+     * detector: no column, no heartbeat, no second registry — the one number `reserve()` already
+     * keeps.</p>
+     *
+     * <p><b>The fact, and deliberately not a number.</b> The obvious next step is to report the
+     * excess as the lag the operator should set, and it is wrong: the excess measures how long ago
+     * <em>this</em> node last wrote, not how far ahead the other node's clock runs. On an instance
+     * that has been idle for ten minutes every foreign row is ten minutes "ahead", which would
+     * suggest a ten-minute lag. A derived number nobody can act on is worse than no number, and it
+     * would also make the note's bytes move on every page (SH159's defect on this very
+     * endpoint).</p>
+     *
+     * <h2>Two honest limits</h2>
+     *
+     * <p>It is <b>retrospective</b>: the proof arrives with the row, so a feed can in principle
+     * skip one before it can say so. It converts a permanent silent weakness into a reported one,
+     * which is the whole claim — not into a guarantee. And it is <b>skipped until this JVM has
+     * issued a position at all</b>, because before that {@code lastReserved} is the epoch and every
+     * row already in the table sits above it, which would report a second writer on every
+     * single-node instance that had just restarted.</p>
      */
+    public void observe(Instant at) {
+        if (at == null) {
+            return;
+        }
+        Instant last = lastReserved.get();
+        if (last.equals(Instant.EPOCH) || !at.isAfter(last)) {
+            return;
+        }
+        foreignWriteSeen.set(true);
+    }
+
+    /** Whether this instance has seen a write it did not make (SH376). */
+    public boolean foreignWriteSeen() {
+        return foreignWriteSeen.get();
+    }
+
+    /**
+     * Forgets the observation — a test seam, and it has to exist.
+     *
+     * <p>The flag is sticky and the bean is a singleton, so a test that sets it in a shared Spring
+     * context would put the disclosure on every later test's feed. That is the SH289 shape (a
+     * fixture mutating state the whole JVM shares) and the cheapest defence against it is a way to
+     * put it back.</p>
+     */
+    public void forgetForeignWrite() {
+        foreignWriteSeen.set(false);
+    }
+
     private Instant next(Instant from) {
         Instant now = from.truncatedTo(ChronoUnit.MICROS);
         while (true) {

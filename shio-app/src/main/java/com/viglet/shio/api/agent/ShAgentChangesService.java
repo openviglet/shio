@@ -299,6 +299,10 @@ public class ShAgentChangesService {
         Map<String, Optional<ShAgentChanges.Affects>> impacts = new LinkedHashMap<>();
         List<ShAgentChanges.Change> changes = new ArrayList<>(entries.size());
         for (ShHistory entry : entries) {
+            // SH376 — a position this JVM never issued is proof of a second application node, and
+            // the one thing SH147 could not say. Observed here rather than in the query because
+            // this is where every row the feed actually reports passes through.
+            watermark.observe(entry.getDate());
             String objectId = entry.getShObject();
             ShContentSubject subject = ShContentSubject.of(entry.getSubjectKind());
             Optional<String> address = objectId == null
@@ -392,6 +396,15 @@ public class ShAgentChangesService {
         if (window) {
             notes.add("window: the most recent " + cap + " entries at most, not a delta — pass "
                     + "since=<cursor> to get everything after this position");
+        }
+        // SH376 — said only once a foreign write has been seen, so a single-instance feed pays no
+        // prose for a case it does not have (P3), and said whatever `lag-millis` is: a margin
+        // smaller than the excess observed is not covering it.
+        if (watermark.foreignWriteSeen() && config.getLagMillis() <= 0) {
+            notes.add("this feed carries rows written by another application node, and this node's "
+                    + "ordering guard covers only its own writes — set "
+                    + "shio.agent.changes.lag-millis above that node's slowest write transaction, "
+                    + "or an entry it commits late can land behind a cursor");
         }
         if (config.getLagMillis() > 0) {
             // SH159: the note names the lag, not the ceiling instant it produces. The instant

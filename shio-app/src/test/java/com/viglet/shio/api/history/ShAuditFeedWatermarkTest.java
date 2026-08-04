@@ -238,6 +238,63 @@ class ShAuditFeedWatermarkTest {
         assertThat(watermark.ceiling()).isAfterOrEqualTo(at);
     }
 
+// --- noticing a second writer (SH376) ---
+
+    /**
+     * The detector, and the reason it needs no new state: positions are monotonic and never below
+     * the clock, so a row above the highest one this JVM issued cannot have come from it.
+     */
+    @Test
+    @DisplayName("a position above the last one issued is proof of another writer")
+    void aForeignPositionIsNoticed() {
+        Instant mine = watermark.reserve();
+        assertThat(watermark.foreignWriteSeen()).isFalse();
+
+        watermark.observe(mine.plusMillis(2500));
+
+        assertThat(watermark.foreignWriteSeen()).isTrue();
+    }
+
+    @Test
+    @DisplayName("this node's own rows are never mistaken for another writer's")
+    void ownPositionsAreNotForeign() {
+        Instant first = watermark.reserve();
+        Instant second = watermark.reserve();
+
+        watermark.observe(first);
+        watermark.observe(second);
+
+        assertThat(watermark.foreignWriteSeen()).isFalse();
+    }
+
+    /**
+     * Before this JVM has issued anything, `lastReserved` is the epoch and every row already in the
+     * table sits above it — reporting a second writer there would fire on every single-node
+     * instance that had just restarted.
+     */
+    @Test
+    @DisplayName("a fresh process reports nothing until it has issued a position")
+    void nothingIsForeignBeforeTheFirstReserve() {
+        watermark.observe(Instant.parse("2026-08-01T00:00:00Z"));
+
+        assertThat(watermark.foreignWriteSeen()).isFalse();
+    }
+
+    @Test
+    @DisplayName("the observation is sticky, so the disclosure cannot flicker")
+    void theObservationIsSticky() {
+        Instant mine = watermark.reserve();
+
+        watermark.observe(mine.plusMillis(4000));
+        // A fact about the installation does not stop being true because the next page happens not
+        // to contain a foreign row — and a note that flickered would stop the one endpoint whose
+        // job is to be polled from ever answering 304 (SH159).
+        watermark.observe(mine);
+        watermark.observe(null);
+
+        assertThat(watermark.foreignWriteSeen()).isTrue();
+    }
+
     private static void beginTransaction() {
         TransactionSynchronizationManager.initSynchronization();
         TransactionSynchronizationManager.setActualTransactionActive(true);

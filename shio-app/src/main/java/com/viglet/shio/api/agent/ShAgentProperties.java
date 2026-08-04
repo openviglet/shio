@@ -135,7 +135,9 @@ public class ShAgentProperties {
          * <p>What is left for this knob is the one thing an in-process registry cannot see: a
          * <b>second application node</b> writing to the same database, whose in-flight writes
          * this JVM knows nothing about. Set it there, to something above that node's slowest
-         * write transaction. The feed discloses it in {@code notes} whenever it is non-zero.</p>
+         * write transaction. The feed discloses it in {@code notes} whenever it is non-zero — and
+         * since SH376 it also says when it has <em>met</em> such a node while this is still 0, so
+         * the case no longer has to be noticed by reading the source.</p>
          */
         private long lagMillis = 0;
     }
