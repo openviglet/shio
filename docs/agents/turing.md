@@ -139,12 +139,30 @@ Every failure lands as an **`ShAgentIncidentLog.Kind.INDEX`** incident, so
 surface an agent has). Its own kind rather than `WEBHOOK` because the remedy differs: a webhook
 failure means a front end may serve a stale page, this one means search will not return the
 page at all. Three distinct messages — the queue was full, Turing did not accept the job, the
-call errored — and a `frames` value **only** on the last, because the other two completed and
-there is no exception of ours to point at (SH190: absent beats empty).
+call errored — and the middle one is the only one with **no** `frames`, because there the SDK
+completed and Turing refused: nothing of ours threw, so there is no stack to point at
+(SH190: absent beats empty). The other two each have a real exception.
+
+## What an agent can see: `searchIndexing` in the manifest
+
+The one thing about this subsystem that is *not* a deployment detail is **whether it is on**,
+and that is P1's question rather than an operator's: an agent that publishes a page and is
+asked whether the site's search works has no call to make here — indexing has none, by
+design — so the fact has to arrive in the manifest with the other instance facts.
+`GET /api/v2/agent/manifest` reports `searchIndexing`, read from
+`ShTuringIndexService.active()` and not from `shio.turing.enabled`, because "does this
+instance index" is the property **and** a URL together; copying that rule into the manifest
+would report `true` on an instance that indexes nothing.
+
+**It is not the same claim as `search`.** That flag is SH52's in-DB `LIKE` predicate, which is
+always compiled in — reading it as "search works" is exactly the wrong conclusion for a
+Turing-backed site, and the two flags sitting next to each other is what stops an agent
+drawing it. `ShAgentP1ConformanceTest` classifies the new key as an `INSTANCE_FACT`, so the
+day somebody gives indexing an operation, that classification has to change with it.
 
 ## Not done here
 
 - **No reindex-on-demand.** Turning indexing on for an instance with existing content indexes
-  nothing until each post is next published. → **SH362**
+  nothing until each post is next published. → **SH413**
 - **No `TurSNJobAttributeSpec`**, so facets over post-type fields are not expressible. → the
   spec-per-post-type task, once somebody needs one.

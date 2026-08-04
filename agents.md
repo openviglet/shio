@@ -162,9 +162,10 @@ site (SH338):** when a review finds a design law is being broken, the instrument
 that finds every *other* break lands before the fixes. Eleven lints here guarded
 internal consistency and none guarded reachability, which is why P1 — the law the
 product is named after — was the only one of the ten with no instrument. It has one
-now — two, in fact: **`ShAgentP1ConformanceTest`** classifies all 52 manifest
-`features` keys and holds the **14** the agent cannot reach as an asserted list
-(four of which no task had named), and **`ShStatelessReachabilityLintTest`** asks
+now — two, in fact: **`ShAgentP1ConformanceTest`** classifies **every** manifest
+`features` key and holds the ones the agent cannot reach as an asserted list (four
+of which no task had named when it shipped; the run prints both counts, which is why
+neither is written here), and **`ShStatelessReachabilityLintTest`** asks
 the narrower question — of 25 mutating paths, which 8 an agent can write to without
 a cookie. Before "fix the thirteen instances", ask what would have failed.
 

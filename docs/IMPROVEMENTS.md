@@ -175,18 +175,6 @@ AI the product contains.
 > reproduced every discovery and write cost it was meant to remove. Full protocol
 > design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
 
-### VIII.9 Turing ecosystem wiring (SH84)
-
-The SH22 half is shipped: `ShAgentTenantIsolationIT` exercises every Block H surface
-from a second tenant and proves the standing invariant — the agent path is **never** a
-privilege escalation (§XII). It needed to be its own test rather than a corollary of the
-storage isolation one, because this surface resolves content by *address* rather than by
-id and its purpose is to describe a whole instance in one call: a context pack carrying
-another tenant's sitemap would look exactly like a working context pack.
-
-What remains is the Turing integration (replaces old SH37) — the ecosystem half, which
-is a wiring question rather than an enforcement one.
-
 ### VIII.13 Report inbound links when a post moves (SH140)
 
 `ShReference` is id-keyed, so a reference stored *as a reference* survives a move: the
@@ -253,6 +241,26 @@ The rule the six tasks converge on, worth writing where it can be checked: **MCP
 address-in, small-JSON-out verbs a session repeats**, because a client may have no
 shell; **the CLI owns whatever has a file, a byte stream, a browser or a human on one
 end**, because none of those fit a JSON-RPC frame. Nothing is owned by neither.
+
+### VIII.16 Reindex an instance that was already full (SH413)
+
+SH84's seam is `AFTER_COMMIT` on a lifecycle event, which is the right seam and covers
+exactly one case: content published *after* indexing was switched on. The operator who
+turns it on is normally doing so for a site that already exists, and for them the index
+stays empty with no error anywhere — the honest failure of SH84's own design, and the
+one that reads as "the integration does not work".
+
+What it needs is a backfill over the `PUBLISHED` rows of one site, built through the
+same `ShTuringIndexService.indexItem` the listener uses so there is one mapping and not
+two, and reporting what it sent rather than returning silently (P9). It is an operation
+an agent invokes, unlike the routing, which is deployment configuration — so P1 puts it
+on the agent surface as a batch op rather than in the console, and the `searchIndexing`
+manifest flag is what tells a caller whether invoking it would do anything at all.
+
+The bound matters more than the shape: a site with ten thousand posts must not become
+ten thousand queued jobs on the single-threaded sender, which is the queue-full incident
+SH84 already reports arriving in bulk. A page size, and a report that says how far it
+got, are the difference between a backfill and an outage of the publish path.
 
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 

@@ -252,6 +252,14 @@ class ShAgentP1ConformanceTest {
                 + "(SH25); the URL shape, not an operation"));
         byFeature.put("mcp", instanceFact("that this instance speaks the protocol at all — the flag "
                 + "an HTTP-only caller reads to learn a bridge exists"));
+        // SH84. An instance fact and not a gap: indexing has no call of its own on any surface —
+        // it is what a publish *means* on this deployment, and the SN routing is a deployment
+        // fact rather than content (turning it into an operation would put one environment's
+        // index names in the database). What an agent needs is to know it happens, which is this
+        // flag, and to be told when it fails, which rides /agent/diagnostics as an INDEX incident.
+        byFeature.put("searchIndexing", instanceFact("whether publishing also makes the page "
+                + "findable in Turing (SH84); off by default, and failures arrive as INDEX "
+                + "incidents on the change feed rather than as a call an agent makes"));
 
         byFeature.putAll(p1Exceptions());
         return byFeature;

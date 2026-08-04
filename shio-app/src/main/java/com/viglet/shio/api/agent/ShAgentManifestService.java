@@ -22,6 +22,7 @@ import com.viglet.shio.api.cda.ShCdaProperties;
 import com.viglet.shio.property.ShAppProperties;
 import com.viglet.shio.property.ShImageTransformProperties;
 import com.viglet.shio.schedule.ShScheduleProperties;
+import com.viglet.shio.turing.ShTuringIndexService;
 import com.viglet.shio.webhook.ShWebhookProperties;
 
 /**
@@ -59,19 +60,22 @@ public class ShAgentManifestService {
     private final ShScheduleProperties shScheduleProperties;
     private final ShImageTransformProperties shImageTransformProperties;
     private final ShAgentProperties shAgentProperties;
+    private final ShTuringIndexService shTuringIndexService;
 
     public ShAgentManifestService(ShAppProperties shAppProperties,
                                  ShCdaProperties shCdaProperties,
                                  ShWebhookProperties shWebhookProperties,
                                  ShScheduleProperties shScheduleProperties,
                                  ShImageTransformProperties shImageTransformProperties,
-                                 ShAgentProperties shAgentProperties) {
+                                 ShAgentProperties shAgentProperties,
+                                 ShTuringIndexService shTuringIndexService) {
         this.shAppProperties = shAppProperties;
         this.shCdaProperties = shCdaProperties;
         this.shWebhookProperties = shWebhookProperties;
         this.shScheduleProperties = shScheduleProperties;
         this.shImageTransformProperties = shImageTransformProperties;
         this.shAgentProperties = shAgentProperties;
+        this.shTuringIndexService = shTuringIndexService;
     }
 
     public ShAgentManifest manifest() {
@@ -98,6 +102,13 @@ public class ShAgentManifestService {
         features.put("previewTokens", shCdaProperties.getPreview().isEnabled());
         features.put("rateLimit", shCdaProperties.getRateLimit().isEnabled());
         features.put("signedImageUrls", shImageTransformProperties.getSigning().isEnabled());
+        // SH84: whether publishing makes a page *findable*. Configured, and read from the
+        // service rather than from the property, because "does this instance index" is
+        // `enabled` and a URL together — a second copy of that rule here would report true
+        // on an instance that indexes nothing. `search: true` above is the in-DB SH52
+        // predicate and says nothing about this one; an agent that read only that flag
+        // would take a published-but-unindexed page for a working search.
+        features.put("searchIndexing", shTuringIndexService.active());
 
         // Build capabilities — compiled into this artifact.
         features.put("graphql", true);

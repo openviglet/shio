@@ -72,6 +72,17 @@ class ShAgentManifestTest {
     }
 
     @Test
+    void searchIndexingIsReportedAndIsOffOnAnInstanceNobodyConfigured() {
+        // SH84. Two claims, and the second is the one worth a test: the flag is *present*
+        // (an absent one sends the agent probing, which is what this document exists to
+        // stop) and it is `false` here, because the test instance has no Turing. Publishing
+        // and expecting search to work is the mistake it prevents — `search: true` next to
+        // it is the SH52 in-DB predicate and answers a different question.
+        assertThat(shAgentManifestService.manifest().features())
+                .containsEntry("searchIndexing", false);
+    }
+
+    @Test
     void blueprintsAreReportedShipped() {
         // False through Blocks H, K and I, so the flag flipping means a real package format
         // with a real registry behind it rather than a documented intention (SH92/SH93).

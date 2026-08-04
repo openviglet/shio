@@ -87,6 +87,17 @@ ShRelatorItem/ShWorkflowTask/ShHistory). **Gotchas:**
    (`validateExistingCurrentSessions()=false`), so tests that switch tenants must use a **new
    transaction per tenant** — see `ShTenantIsolationIT` (the proof that A can't see B; no Docker).
 
+**The agent surface needed its own proof (SH84).** `ShAgentTenantIsolationIT` runs every Block H
+surface from a second tenant — context pack, `find` including full-text, `read`, the address
+resolver **with its `id:` escape hatch**, the batch engine, desired-state plan/apply — and each
+one fails *absent* rather than *forbidden* (the SH2 rule), with alpha's content intact
+afterwards. Not a corollary of `ShTenantIsolationIT`: storage isolation is about rows, and this
+surface resolves content by **address** and exists to describe a whole instance in one call, so
+a context pack carrying another tenant's sitemap would look exactly like a working context pack.
+The invariant is standing, not per-task — *the agent path is never a privilege escalation*. Each
+expected failure runs in **its own transaction**, because a failed `@Transactional` call marks
+the current one rollback-only and every assertion after it would silently never execute.
+
 **SaaS follow-ups (shipped on top of the core):** a tenant **catalog** — `ShTenant`
 (`sh_tenant`, deliberately **not** `@TenantId`, the global catalog) + admin CRUD on
 `ShTenantAPI` (`ROLE_ADMIN`-gated writes; reserved `shio` tenant seeded by `ShTenantOnStartup`,
