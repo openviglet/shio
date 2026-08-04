@@ -401,6 +401,76 @@ merge already has, with a conflict left on disk rather than resolved.
 SH210's digest endpoint is the cheap half of the detection and needs nothing new. What
 it does not answer is *which side* changed, which is the whole question.
 
+### X.20 The projection group has one rule and room for two more (SH374)
+
+SH212 established the shape and settled the design question: a defect the files alone
+prove belongs in a group that needs no instance, reported as a finding rather than
+thrown as an exception. It shipped with one rule. Two more defects of exactly that class
+are still caught only by a gate that needs the server.
+
+A **sidecar file a post names and does not have** (SH191's `files:` block) is refused by
+`push --content` — the same inverted order SH212 fixed for assets: local, checkable with
+nothing running, and reported by a gate that needs credentials. A **`translationOf`
+naming a URL the tree does not hold** (SH348) is worse: the refusal is the *server's*
+teaching 400, so it costs a round trip to learn something the tree knew.
+
+Both are one `readLocal` and a set lookup, which is why they are one task and not two.
+What is worth deciding rather than drifting into is the severity of the second: a
+`translationOf` may legitimately name a post the tree does not carry when the projection
+is scoped with `--site`, so it is a warning there and an error only when the run covers
+the whole tree — the same distinction `asset-check-skipped` already makes for a
+post-type the tree lacks.
+
+The push refusals stay. They are the last net, and SH212's rule is that reaching one
+means the cheap check was never run.
+
+### X.21 The per-folder inventory threshold is a number nobody measured (SH375)
+
+SH213 measured the thing that mattered and fixed it: one asset reference cost 200
+inventory rows and now costs 10. What it did not measure is the constant it introduced.
+Up to eight referenced folders a push lists per folder; past that it lists whole sites.
+Eight is argued — a bounded, uninteresting number of requests — and the argument is the
+shape agents.md names as a defect in its own right, one step removed from the one the
+task fixed.
+
+The honest position is that only one side of the trade is knowable before asking. The
+caller knows how many folders it references and cannot know how large the library is, so
+the decision has to be made on the number it has. That justifies deciding on the folder
+count; it does not justify *eight*.
+
+What would settle it is a benchmark that puts a cost on a request against a cost on a
+row — the same instrument SH264 built for the render sweep, which counts statements
+rather than milliseconds for the reason a timing ceiling on a shared machine is a flake.
+Until something measures both, the alternative worth considering is making the ceiling a
+flag with the measured default, so an instance with a slow round trip and a small
+library can move it without a code change.
+
+Filed because the number is in a comment claiming to be reasoned, and a cost that is
+argued rather than measured fails quietly and in somebody else's environment.
+
+### X.22 The feed's ordering guard cannot see a second node (SH376)
+
+SH147 replaced SH88's guessed lag with a fact: the feed will not report past the oldest
+write that has stamped and not finished. The registry holding that fact is in memory, so
+the fact is about *this* JVM. Against a second application node writing to the same
+database the guarantee degrades to the one SH88 had, and `lag-millis` — which now
+defaults to **0** — is all that stands in for it.
+
+That default is right: a single instance should not pay a second of staleness for a hole
+it does not have. What is missing is that **nothing tells an operator which case they
+are in.** A two-node install with the default reads as exact and loses an edit silently,
+which is the failure SH147 exists to remove, relocated rather than fixed.
+
+Three shapes, cheapest first. The feed could **say** which guarantee it is giving, so
+the disclosure is in the payload and not only in a source comment. The instance could
+**detect** a second writer — an audit row whose position this JVM never issued is proof
+of one, and `lastReserved` already knows every position it handed out. Or the registry
+moves into the database, which closes it properly at the cost of a schema change and the
+cross-DB ITs that stalled SH147's first pass.
+
+The middle one is worth weighing first because it needs no new state: a reader meeting a
+position it did not issue could report the lag it would need.
+
 ## XI. Blueprints + Claude Code plugin (Block J)
 
 > *"Skip steps with things that are already done"* only works if the ready-made

@@ -631,7 +631,10 @@ test("pull --content downloads the bytes and projects a File field as a path", a
 });
 
 test("an asset already on disk is not downloaded again", async () => {
-  // A `File` post's bytes are immutable — an upload always creates a new id-keyed post — so the
+  // Still true of `pull`, and since SH210 a gap rather than a rule: bytes used to be immutable
+  // because an upload always created a new id-keyed post, and a replace operation exists now. It
+  // stays skipped until SH373 teaches the merge about bytes — fetching on a digest mismatch cannot
+  // tell a server edit from a local one and would overwrite the local file. Until then the
   // same path is the same asset, and re-fetching would spend a request per image on every pull.
   const fetchImpl = assetServer({
     remote: { "post:Blog/blog/hello": { ...REMOTE_DOC, data: { headline: "Hello", hero: "file-1" } } },

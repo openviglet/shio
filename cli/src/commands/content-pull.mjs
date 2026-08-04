@@ -364,10 +364,17 @@ export async function run(flags, _positionals, ctx) {
 /**
  * Downloads the assets this tree does not have yet, and returns the id → path index (SH145).
  *
- * **A path that already exists on disk is not re-downloaded.** A `File` post's bytes are
- * immutable — there is no replace-the-bytes operation, an upload always creates a new
- * id-keyed post — so the same path is the same asset, and re-fetching it would spend a
- * request per image on every pull to rewrite identical bytes.
+ * **A path that already exists on disk is not re-downloaded**, and since SH210 that is a *gap*
+ * rather than a rule. It rested on a premise that has stopped being true: a `File` post's bytes
+ * used to be immutable, because an upload always created a new id-keyed post, so the same path was
+ * necessarily the same asset and re-fetching was pure cost. SH210 gave the server a replace
+ * operation for exactly the case that reasoning missed, so a curator swapping an image in the
+ * Media Library now produces a change no pull will ever project.
+ *
+ * It is still skipped here, deliberately, because the obvious fix is data loss: asset bytes sit
+ * outside the SH89 three-way merge, so "fetch it when the digest differs" cannot tell a server
+ * edit from a local one and would overwrite the local file whenever both moved. **SH373** is the
+ * merge story that has to come first. Do not "fix" this line by adding the download.
  */
 async function pullAssets(ctx, { agent, admin, local, localFolders, assetsDir, dryRun }) {
   const sites = sitesOf(local, localFolders);

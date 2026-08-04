@@ -27,6 +27,9 @@
 ## Block I — Content as files (local-first authoring)
 
 - 📋 **SH373** (deps: SH210 ✅) **A server-side asset edit never reaches the tree** — pull skips a path already on disk and asset bytes sit outside the SH89 merge, so a curator's replaced image cannot be projected without risking a local edit. → §X.19
+- 📋 **SH374** (deps: SH212 ✅) **A missing sidecar and a dangling translationOf still wait for a gate that needs the server** — SH212 showed both are provable from the tree alone, yet the projection group has one rule and the cheapest gate misses the two defects beside it. → §X.20
+- 💭 **SH375** (deps: SH213 ✅) **The per-folder inventory threshold is a number nobody measured** — SH213 asserts both branches of an eight-folder cutoff, but the crossover depends on per-request against per-row cost and its benchmark measures neither. → §X.21
+- 💭 **SH376** (deps: SH147 ✅) **The change feed's ordering guard is silently weaker on a second application node** — SH147's watermark is exact for one JVM and lag-millis now defaults to 0, so a two-node install can lose an edit and nothing tells the operator which install it is. → §X.22
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 
