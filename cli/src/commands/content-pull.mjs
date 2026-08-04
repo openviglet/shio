@@ -446,7 +446,10 @@ async function pullAssets(ctx, {
       continue;
     }
     const localHash = sha256Of(localBytes);
-    const remoteHash = (await admin.staticFileDigest(item.id))?.sha256 ?? null;
+    // SH398 — the listing carries the digest for anything written since it shipped, so the common
+    // case costs no request at all. The endpoint is the fallback for rows stamped before it, which
+    // is why it still exists: a stamp covers only what was written after it.
+    const remoteHash = item.sha256 ?? (await admin.staticFileDigest(item.id))?.sha256 ?? null;
     const verdict = reconcileBytes({ base: base[path] ?? null, remote: remoteHash, local: localHash });
     if (verdict === "remote-changed" || verdict === "remote-added") {
       if (!dryRun) {

@@ -18,6 +18,9 @@ import java.util.List;
  *
  * <p>{@code width}/{@code height} are the image pixel dimensions stamped at upload
  * time (SH62); {@code null} for non-images or files uploaded before SH62.
+ * {@code sha256} is the bytes' digest, stamped the same way (SH398) and {@code null} for
+ * anything written before it — which is why it is a <em>cache</em> in front of
+ * {@code GET /{id}/digest} and never a replacement for it.
  * {@code alt}/{@code caption}/{@code tags} are editable Media Library metadata
  * (SH62), stored on the post's {@code data}.</p>
  *
@@ -39,5 +42,15 @@ public record ShStaticFileItem(
         Integer height,
         String alt,
         String caption,
-        List<String> tags) {
+        List<String> tags,
+        String sha256) {
+
+    /** The pre-SH398 shape, for a caller that has no digest to report. */
+    public ShStaticFileItem(String id, String fileName, String contentType, long size, String owner,
+                            Instant date, String folderId, String folderName, String siteId,
+                            String siteName, Integer width, Integer height, String alt,
+                            String caption, List<String> tags) {
+        this(id, fileName, contentType, size, owner, date, folderId, folderName, siteId, siteName,
+                width, height, alt, caption, tags, null);
+    }
 }

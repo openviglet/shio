@@ -471,6 +471,76 @@ class ShStaticFileAPITest {
                 .andExpect(jsonPath("$.height").doesNotExist());
     }
 
+    /**
+     * SH398 — the digest is stamped at write time and rides the listing, which is what removes one
+     * HTTP request per asset from every `shio pull --content` over a settled tree.
+     */
+    @Test
+    void stage06fTheDigestIsStampedAtUploadAndRidesTheListing() throws Exception {
+        String id = uploadTextPost("stamped.txt", "stamped bytes");
+        String expected = sha256Hex("stamped bytes");
+
+        mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
+                .andExpect(jsonPath("$[?(@.id == '" + id + "')].sha256").value(expected));
+        // And the endpoint agrees, because it prefers the stamp rather than keeping a second
+        // opinion: two answers to one question is how a cache starts disagreeing with its source.
+        mockMvc.perform(get("/api/v2/staticfile/" + id + "/digest").principal(mockPrincipal))
+                .andExpect(jsonPath("$.sha256").value(expected));
+    }
+
+    /** A stamp that outlived its bytes would restore the silent no-op SH210 removed. */
+    @Test
+    void stage06gReplacingTheBytesRestampsTheDigest() throws Exception {
+        String id = uploadTextPost("restamp.txt", "before");
+        MockMultipartFile replacement = new MockMultipartFile(
+                "file", "restamp.txt", "text/plain", "after".getBytes(StandardCharsets.UTF_8));
+
+        mockMvc.perform(multipart("/api/v2/staticfile/" + id + "/replace")
+                        .file(replacement)
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sha256").value(sha256Hex("after")));
+        mockMvc.perform(get("/api/v2/staticfile/" + id + "/digest").principal(mockPrincipal))
+                .andExpect(jsonPath("$.sha256").value(sha256Hex("after")));
+    }
+
+    /**
+     * A stamp covers only rows written after it ships, so the on-demand hash is not an alternative
+     * to it — it is what every asset already in an instance keeps using.
+     */
+    @Test
+    void stage06hARowWithNoStampIsStillHashedOnDemand() throws Exception {
+        String id = uploadTextPost("legacy.txt", "legacy bytes");
+        // Strip the stamp, which is exactly the state of every File post written before SH398.
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> entityManager
+                .createQuery("update ShPostUnified p set p.data = :data where p.id = :id")
+                .setParameter("data", "{\"FILE\":\"legacy.txt\"}")
+                .setParameter("id", id)
+                .executeUpdate());
+
+        mockMvc.perform(get("/api/v2/staticfile/" + id + "/digest").principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sha256").value(sha256Hex("legacy bytes")));
+    }
+
+    /**
+     * SH398 collapsed `isRegularFile` + `size` into one `readAttributes`, and SH62's convention has
+     * to survive it: `size: -1` means the post is there and its bytes are not. Stamping the size
+     * instead would have made this branch report a number for a file nobody can serve.
+     */
+    @Test
+    void stage06iBytesRemovedUnderneathStillReportMinusOne() throws Exception {
+        String id = uploadTextPost("vanishing.txt", "here for now");
+        Files.delete(storage.resolve(id, "vanishing.txt"));
+
+        mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
+                .andExpect(jsonPath("$[?(@.id == '" + id + "')].size").value(-1));
+        mockMvc.perform(get("/api/v2/staticfile/" + id + "/digest").principal(mockPrincipal))
+                .andExpect(jsonPath("$.size").value(-1))
+                .andExpect(jsonPath("$.sha256").doesNotExist());
+    }
+
     private String uploadTextPost(String name, String body) throws Exception {
         MockMultipartFile file = new MockMultipartFile(
                 "file", name, "text/plain", body.getBytes(StandardCharsets.UTF_8));

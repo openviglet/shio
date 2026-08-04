@@ -378,7 +378,15 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
         caught that doubling a first pull's requests (407 against 207) the moment it ran. What
         remains is **one digest per asset already on disk**, which nothing but the server's own hash
         can answer, and guessing from `size` is the silent no-op SH210 removed on the push side.
-        A stamped digest on the SH62 listing would remove it (**SH398**).
+        **SH398 removed it**: the digest is stamped into the `File` post's `data` at upload and
+        replace (SH62's treatment of `WIDTH`/`HEIGHT`, for a bigger saving) and rides the listing,
+        so a settled pull went from **208 requests to 8** over a 200-file library. Three rules:
+        the endpoint stays, because a stamp covers only rows written after it and every asset
+        already in an instance still uses it (measured: an unstamped library is 208 again, and the
+        benchmark asserts both branches); `replace` **re-stamps**, since a digest outliving its
+        bytes restores the silent no-op SH210 removed, by its own cache; and the existence check
+        stays in front of the stamp, because a stamp cannot know somebody removed the bytes
+        underneath the CMS and reporting it there would turn SH62's `size: -1` into a confident lie.
       - **An agreement is recorded even when nothing moved**, or a tree that only ever *reads* its
         assets stays at "never agreed" for ever and the first server-side edit arrives as a conflict
         instead of a change.

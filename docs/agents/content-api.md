@@ -186,6 +186,21 @@ disk, **keyed by the file post's id** (not the folder tree), under
   the system `File` post type on first use (system post types are **not** seeded).
 - `GET /api/v2/staticfile/{id}` — streams the bytes; `GET /pre-upload/{folderId}/{fileName}`
   is a legacy-parity existence check (never blocks upload).
+- `POST /api/v2/staticfile/{id}/replace` (multipart: `file`) — **new bytes for an existing asset
+  (SH210)**, keeping the id, the folder, the name and the SH62 usage list, re-stamping size and
+  dimensions, and auditing an `UPDATE`. `POST` rather than `PUT` because servlet multipart
+  resolution is specified for `POST` and a container-dependent extra for anything else; the name
+  the multipart carries is **ignored**, since it is half the asset's address and a replace must
+  not move the asset. An empty body is a teaching 400 — it would truncate the asset and answer 200.
+- `GET /api/v2/staticfile/{id}/digest` — `{id, fileName, size, sha256}`, so a caller can tell an
+  edited asset from an untouched one without transferring either copy (SH210). **Since SH398 the
+  digest is stamped into the post's `data` at upload and replace and rides the listing**, so this
+  endpoint is the fallback for rows written before that rather than the common path — measured, it
+  took `shio pull --content` over a settled 200-asset tree from 208 requests to 8. Two rules that
+  keep the cache honest: `replace` **re-stamps** (a digest outliving its bytes restores the silent
+  no-op SH210 removed), and the **existence check runs in front of the stamp**, because a stamp
+  cannot know somebody deleted the bytes underneath and reporting it would turn SH62's `size: -1`
+  into a confident lie.
 - Bytes are also public at `/file_source/<postId>/<fileName>` via
   `ShStaticResourceConfiguration` (a purely-additive `WebMvcConfigurer`; only
   `/file_source/**` is exposed — **not** `/store/**`, which holds the H2 DB/logs).

@@ -58,16 +58,19 @@ const folderChains = () => [
 ];
 
 /** 200 files, ten to a folder. The one the tree references is `media0/asset0.png`. */
-const library = () =>
+const library = (stamped = true) =>
   Array.from({ length: LIBRARY }, (_, index) => ({
     id: `file-${index}`,
     fileName: `asset${index}.png`,
     folderId: `Blog:/media${index % FOLDERS}`,
     siteName: "Blog",
     size: 5,
+    // SH398 — a listing carries the digest now, which is what removes a request per asset. A row
+    // written before the stamp has none, which is the fallback case.
+    ...(stamped ? { sha256: SHA_OF_BYTES } : {}),
   }));
 
-function instance({ withPost = false } = {}) {
+function instance({ withPost = false, stamped = true } = {}) {
   const calls = [];
   const listings = [];
   /** Folders an `apply` created, so the second look-up can find one — SH213's other half. */
@@ -102,8 +105,8 @@ function instance({ withPost = false } = {}) {
       // that knows which folders it needs can be answered with those rows and no others.
       const folderId = new URL(target).searchParams.get("folderId");
       const rows = folderId
-        ? library().filter((item) => item.folderId === folderId)
-        : library();
+        ? library(stamped).filter((item) => item.folderId === folderId)
+        : library(stamped);
       listings.push({ folderId, rows: rows.length });
       return json(rows);
     }
@@ -320,11 +323,11 @@ test("SH213: a handful of folders is answered per folder", async () => {
   assert.equal(cost.rows, 30, "and only those folders' contents");
 });
 
-test("SH373: a pull over a tree that already holds its assets costs one digest each", async () => {
-  // What the merge added, measured. A *first* pull is unchanged — bytes it just downloaded are
-  // hashed in this process, not sent back to the server to be hashed. What it cannot avoid is the
-  // asset already on disk: nothing but the server's own hash can say whether its copy moved, and
-  // guessing from `size` is the silent no-op SH210 removed on the push side.
+test("SH398: a settled pull asks for no digest at all", async () => {
+  // What SH373 cost and SH398 removed, measured. It was one `GET /staticfile/{id}/digest` per
+  // asset already on disk — 208 requests over a 200-file library, because nothing but the server's
+  // own hash could say whether its copy had moved. The listing carries the hash now, so the whole
+  // comparison rides the read the pull was making anyway.
   const fetchImpl = instance({ withPost: true });
   const seed = { [POST]: tree()[POST] };
   for (let index = 0; index < LIBRARY; index += 1) {
@@ -335,15 +338,41 @@ test("SH373: a pull over a tree that already holds its assets costs one digest e
   await contentPull.run({ theirs: true }, [], ctx);
 
   const cost = report("pull, every asset already on disk", fetchImpl);
-  // One digest per asset and no downloads: the whole library was compared and nothing was moved.
-  assert.ok(cost.requests <= LIBRARY + 10, `a settled pull took ${cost.requests} request(s)`);
-  assert.ok(
-    fetchImpl.calls.filter((url) => /\/digest$/.test(url)).length === LIBRARY,
-    "one digest per asset on disk",
+  assert.ok(cost.requests <= 12, `a settled pull took ${cost.requests} request(s)`);
+  assert.equal(
+    fetchImpl.calls.filter((url) => /\/digest$/.test(url)).length,
+    0,
+    "the listing answered it, so nothing was asked",
   );
   assert.equal(
     fetchImpl.calls.filter((url) => /\/api\/v2\/staticfile\/[^/?]+$/.test(url)).length,
     0,
     "and nothing was downloaded",
+  );
+});
+
+test("SH398: a row written before the stamp still falls back to the endpoint", async () => {
+  // A stamp covers only what was written after it, so the on-demand path is not an alternative to
+  // it — it is what every pre-existing asset in every existing instance still uses. Dropping the
+  // endpoint would make this tree re-download its whole library instead.
+  const fetchImpl = instance({ withPost: true, stamped: false });
+  const seed = { [POST]: tree()[POST] };
+  for (let index = 0; index < LIBRARY; index += 1) {
+    seed[`/repo/shio/assets/Blog/media${index % FOLDERS}/asset${index}.png`] = "bytes";
+  }
+  const ctx = ctxWith(fetchImpl, seed);
+
+  await contentPull.run({ theirs: true }, [], ctx);
+
+  const cost = report("pull, legacy rows with no stamp", fetchImpl);
+  assert.equal(
+    fetchImpl.calls.filter((url) => /\/digest$/.test(url)).length,
+    LIBRARY,
+    "one digest per unstamped asset, exactly as before SH398",
+  );
+  assert.equal(
+    fetchImpl.calls.filter((url) => /\/api\/v2\/staticfile\/[^/?]+$/.test(url)).length,
+    0,
+    "and it still concludes they are unchanged, so nothing is downloaded",
   );
 });

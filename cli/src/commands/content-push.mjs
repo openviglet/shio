@@ -606,7 +606,7 @@ async function replacementFor(ctx, { admin, path, item, assetsDir, base = {} }) 
     if (assetSizeDiffers(bytes, item?.size) === true) {
       return { verdict: "local-changed", bytes, hash: sha256Of(bytes) };
     }
-    const unknown = await admin.staticFileDigest(item.id);
+    const unknown = item.sha256 ? item : await admin.staticFileDigest(item.id);
     const localHash = sha256Of(bytes);
     if (unknown?.sha256 === localHash) return { verdict: "unchanged", bytes: null, hash: localHash };
     return { verdict: "local-changed", bytes, hash: localHash };
@@ -615,7 +615,9 @@ async function replacementFor(ctx, { admin, path, item, assetsDir, base = {} }) 
   // The server hashes its own copy rather than shipping it here, because a length that matches is
   // the *common* case and downloading on it would mean fetching every referenced asset on every
   // push (SH210's cost argument, unchanged).
-  const remote = await admin.staticFileDigest(item.id);
+  // SH398 — the listing carries it for anything written since that shipped; the request below is
+  // the fallback for older rows.
+  const remote = item.sha256 ? item : await admin.staticFileDigest(item.id);
   const localHash = sha256Of(bytes);
   if (!remote?.sha256) {
     // A server that cannot say what it holds gets the tree's copy: the tree is the declared

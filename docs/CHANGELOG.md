@@ -225,6 +225,7 @@
 - **SH375** — Measured: the folderId filter ran in memory, so a folder listing read the whole library. It is a query predicate now, and the ceiling is a documented, movable latency budget.
 - **SH376** — The feed says when it has met a write this node never stamped, so a two-node install stops reading as exact — proof from the position counter, with no new state.
 - **SH374** — The projection group gained sidecar-missing and translation-target-missing, so two defects the tree alone proves no longer wait for a gate that needs the server.
+- **SH398** — The digest is stamped at write time and rides the listing, so a settled pull went from 208 requests to 8, and a listing asks the filesystem once per row instead of twice.
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 

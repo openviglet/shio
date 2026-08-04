@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -86,6 +87,15 @@ public class ShStaticFileService {
     /** {@code data} keys for image pixel dimensions stamped at upload (SH62). */
     static final String DATA_WIDTH = "WIDTH";
     static final String DATA_HEIGHT = "HEIGHT";
+    /**
+     * The bytes' sha-256, stamped at write time (SH398).
+     *
+     * <p>Same treatment SH62 gave {@code WIDTH}/{@code HEIGHT}, for the same reason and a bigger
+     * saving: a fact about bytes that cannot change without a write, re-derived on every read. It
+     * cost {@code shio pull --content} one HTTP request per asset already on disk (SH373's
+     * comparison), which on a settled tree is the whole library.</p>
+     */
+    static final String DATA_SHA256 = "SHA256";
     /** {@code data} keys for editable Media Library metadata (SH62). */
     static final String DATA_ALT = "ALT";
     static final String DATA_CAPTION = "CAPTION";
@@ -136,14 +146,18 @@ public class ShStaticFileService {
         // Library shows them without re-reading the bytes on every listing. The
         // upload is buffered once and replayed to both the dimension reader (header
         // only) and disk storage, so the multipart stream is consumed exactly once.
-        byte[] buffered = null;
+        // SH398 buffers unconditionally where SH62 buffered only images: the digest needs every
+        // byte, and reading the stream twice is not an option — a multipart stream is consumable
+        // once, which is why SH62 buffered and replayed in the first place.
+        byte[] buffered;
+        try {
+            buffered = file.getBytes();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read upload " + fileName, e);
+        }
+        data.put(DATA_SHA256, hex(sha256(buffered)));
         String contentType = file.getContentType();
         if (contentType != null && contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
-            try {
-                buffered = file.getBytes();
-            } catch (IOException e) {
-                throw new UncheckedIOException("Failed to read upload " + fileName, e);
-            }
             int[] dims = dimensionReader.read(new ByteArrayInputStream(buffered));
             if (dims != null) {
                 data.put(DATA_WIDTH, dims[0]);
@@ -154,8 +168,7 @@ public class ShStaticFileService {
         ShPostUnified post = shPostUnifiedWriteService.create(new CreateRequest(
                 folderId, fileType.getId(), data, ShPostState.PUBLISHED, owner, null, null));
 
-        try (InputStream bytes = buffered != null
-                ? new ByteArrayInputStream(buffered) : file.getInputStream()) {
+        try (InputStream bytes = new ByteArrayInputStream(buffered)) {
             storage.store(post.getId(), fileName, bytes);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read upload " + fileName, e);
@@ -250,6 +263,10 @@ public class ShStaticFileService {
         // Buffered once and replayed, the same as `upload`: the dimension reader needs a header
         // and storage needs the whole thing, and a multipart stream is consumable once.
         ObjectNode data = dataOf(post);
+        // SH398 — re-stamped, not left: a digest that outlived the bytes it describes would make
+        // every reader believe an asset it just replaced is unchanged, which is the silent no-op
+        // SH210 removed, restored by its own cache.
+        data.put(DATA_SHA256, hex(sha256(bytes)));
         int[] dims = dimensionReader.read(new ByteArrayInputStream(bytes));
         if (dims != null) {
             data.put(DATA_WIDTH, dims[0]);
@@ -305,8 +322,17 @@ public class ShStaticFileService {
 
         String fileName = fileNameOf(post);
         Path path = storage.resolve(post.getId(), fileName);
-        if (!Files.isRegularFile(path)) {
+        // SH398 — the stamp answers when there is one, and the read below is what covers every row
+        // written before it existed. The existence check stays either way: a stamp cannot know that
+        // somebody removed the bytes underneath the CMS, and reporting it there would turn SH62's
+        // `size: -1` into a confident lie.
+        Attributes attributes = attributesOf(path);
+        if (attributes == null) {
             return new ShStaticFileDigest(post.getId(), fileName, -1L, null);
+        }
+        String stamped = stringFromData(post, DATA_SHA256);
+        if (stamped != null && !stamped.isBlank()) {
+            return new ShStaticFileDigest(post.getId(), fileName, attributes.size(), stamped);
         }
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -325,6 +351,30 @@ public class ShStaticFileService {
         } catch (NoSuchAlgorithmException e) {
             // SHA-256 is required of every JRE, so this branch is unreachable rather than
             // unhandled — and rethrowing keeps it from being a `catch` that records nothing.
+            throw new IllegalStateException("SHA-256 is unavailable", e);
+        }
+    }
+
+    /** What one stat says: the file is there, and how big it is. `null` when it is not. */
+    private record Attributes(long size) {
+    }
+
+    private static Attributes attributesOf(Path path) {
+        try {
+            BasicFileAttributes attributes = Files.readAttributes(path, BasicFileAttributes.class);
+            return attributes.isRegularFile() ? new Attributes(attributes.size()) : null;
+        } catch (IOException e) {
+            // Absent, or unreadable — the caller's answer is the same either way, and it is the
+            // one SH62 defined: `size: -1` means the post is there and its bytes are not.
+            return null;
+        }
+    }
+
+    private static byte[] sha256(byte[] bytes) {
+        try {
+            return MessageDigest.getInstance("SHA-256").digest(bytes);
+        } catch (NoSuchAlgorithmException e) {
+            // Required of every JRE, so this branch is unreachable rather than unhandled.
             throw new IllegalStateException("SHA-256 is unavailable", e);
         }
     }
@@ -469,13 +519,15 @@ public class ShStaticFileService {
         String contentType = null;
         if (fileName != null) {
             Path path = storage.resolve(post.getId(), fileName);
-            if (Files.isRegularFile(path)) {
+            // SH398 — one `readAttributes` where this was `isRegularFile` then `size`, which is two
+            // syscalls asking the filesystem the same question twice. Stamping the size was the
+            // obvious alternative and is worth less: the existence check has to happen anyway to
+            // keep `size: -1` honest, so a stamp would remove one stat of two and buy a `data` key
+            // that can disagree with the disk. One call removes the same stat and cannot go stale.
+            Attributes attributes = attributesOf(path);
+            if (attributes != null) {
                 contentType = storage.probeContentType(path);
-                try {
-                    size = Files.size(path);
-                } catch (IOException e) {
-                    log.debug("Could not stat file {} for post {}", fileName, post.getId(), e);
-                }
+                size = attributes.size();
             }
         }
         Integer width = intFromData(post, DATA_WIDTH);
@@ -488,7 +540,7 @@ public class ShStaticFileService {
                 post.getShSite() != null ? post.getShSite().getName() : null,
                 width, height,
                 stringFromData(post, DATA_ALT), stringFromData(post, DATA_CAPTION),
-                tagsFromData(post));
+                tagsFromData(post), stringFromData(post, DATA_SHA256));
     }
 
     /**

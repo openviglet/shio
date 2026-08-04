@@ -437,31 +437,6 @@ the content — and it is CLI-shaped, because half the inputs are files.
 > ✅ **SH86, SH87, SH88, SH89 and SH90 shipped** → [CHANGELOG.md](CHANGELOG.md) Block I.
 > What follows is the design rationale for what the projection **still owes**.
 
-### X.1 The three facts a listing re-derives on every read (SH398)
-
-`listFiles` fills each row's `size` and `contentType` by stat-ing the file on disk, so a
-whole-site listing is one query plus a stat per row — and SH375's benchmark shows the
-query is no longer the interesting part. SH210's digest endpoint reads the bytes again
-to hash them, and SH373 needs one such call per asset the tree already holds, which is
-what a settled pull now pays.
-
-All three are facts about bytes that cannot change without a write, and the write path
-already stamps exactly this kind of thing: SH62 puts `WIDTH`/`HEIGHT` into a `File`
-post's `data` at upload so the Media Library does not re-read the image on every
-listing. The same treatment for size, content type and sha-256 makes a listing pure
-database and a pull's comparison free.
-
-Two things to get right. **A stamp covers only rows written after it ships**, so the
-on-demand paths stay and the stamped value is a cache in front of them — which is why
-SH210 deferred this rather than doing it instead of the endpoint. And **the listing must
-not lie**: a row whose stamped size disagrees with the file on disk is one somebody
-changed underneath the CMS, and reporting the stamp there would turn SH62's `size: -1`
-into silence.
-
-The measurement exists: `ShStaticFileListingBenchmarkTest` counts rows fetched and
-`asset-inventory-cost.test.mjs` counts a pull's requests. Both should move, and both are
-asserted.
-
 ## XI. Blueprints + Claude Code plugin (Block J)
 
 > *"Skip steps with things that are already done"* only works if the ready-made
