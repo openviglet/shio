@@ -382,7 +382,16 @@ export async function run(flags, _positionals, ctx) {
         // for the same reason, and it covers SH173's rows too: a post that could not be read is
         // missing from the tree exactly like one that could not be written, and a later `--prune`
         // read that gap as a deletion. Reported since SH173, but only to the screen.
-        partial: base.partial || truncated || foldersTruncated
+        //
+        // SH404 — **inherited only when this run was scoped**. `base.partial ||` made the flag a
+        // latch: once set, nothing but deleting the snapshot cleared it, so the push's own advice
+        // ("take a complete projection first") could not resolve what the push refused, and the
+        // only branch left was `--force` — delete everything this tree does not declare, the
+        // opposite of what that message steers toward. A `--site` run still inherits, because it
+        // proves nothing about the sites it did not read; an unscoped run already covers every
+        // site the tree holds (SH173), which is the scope `--prune` acts on, so its own facts are
+        // the whole answer.
+        partial: (site ? base.partial : false) || truncated || foldersTruncated
           || sharedPaths.size > 0 || skipped.length > 0,
         posts: nextPosts,
         folders: folderPlan.agreed,

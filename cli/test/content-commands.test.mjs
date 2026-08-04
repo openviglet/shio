@@ -2042,3 +2042,78 @@ test("SH403: a folder chain that navigates is skipped and named, and the pull co
   assert.ok(result.folders.written.some((entry) => entry.endsWith("/news")));
   assert.deepEqual(result.written, ["post:Blog/blog/hello"]);
 });
+
+test("SH404: a clean pull clears partial, so the remedy the push names actually works", async () => {
+  // The push refuses `--prune` on a partial base and says "Take a complete projection first
+  // (`shio pull --content`)". Measured before the fix: `partial: base.partial || ...` never goes
+  // back to false, so that instruction could not resolve the condition it named — one transient
+  // skipped row disabled `--prune` for the life of the project.
+  const bad = ctxWith(server({
+    remote: {
+      "post:Blog/blog/hello": REMOTE_DOC,
+      "post:Blog/../../escaped": {
+        address: "post:Blog/../../escaped",
+        type: "Article",
+        state: "DRAFT",
+        folder: "/blog",
+        data: { headline: "Escaped" },
+      },
+    },
+  }));
+  await contentPull.run({}, [], bad);
+  assert.match(bad.fs.files.get(BASE_PATH), /"partial": true/, "the skip marks it");
+
+  // The offending post is gone from the server; the tree and base are carried over verbatim.
+  const seed = {};
+  for (const [key, value] of bad.fs.files) seed[key] = value;
+  const good = ctxWith(server({ remote: { "post:Blog/blog/hello": REMOTE_DOC } }), seed);
+
+  await contentPull.run({}, [], good);
+
+  assert.match(good.fs.files.get(BASE_PATH), /"partial": false/);
+});
+
+test("SH404: a scoped pull still inherits partial, because it proves nothing about the rest", async () => {
+  // The other half, and the reason the fix is not simply "recompute". A `--site` run reads one
+  // site; clearing the flag there would tell `--prune` the tree describes an instance it never
+  // looked at, which is the deletion the flag exists to prevent.
+  const seed = {
+    [BASE_PATH]: `${JSON.stringify({
+      version: 3,
+      cursor: "2026-07-26T09:00:00Z|aaa",
+      partial: true,
+      posts: {},
+      folders: [],
+      notes: {},
+      assets: {},
+    })}
+`,
+  };
+  const ctx = ctxWith(server({ remote: { "post:Blog/blog/hello": REMOTE_DOC } }), seed);
+
+  await contentPull.run({ site: "Blog" }, [], ctx);
+
+  assert.match(ctx.fs.files.get(BASE_PATH), /"partial": true/);
+});
+
+test("SH404: an unscoped pull over a clean instance clears an inherited partial", async () => {
+  // The pair: same seed, no --site. The run covers every site the tree holds, which is the scope
+  // `--prune` acts on, so it is entitled to answer for the snapshot.
+  const seed = {
+    [BASE_PATH]: `${JSON.stringify({
+      version: 3,
+      cursor: "2026-07-26T09:00:00Z|aaa",
+      partial: true,
+      posts: {},
+      folders: [],
+      notes: {},
+      assets: {},
+    })}
+`,
+  };
+  const ctx = ctxWith(server({ remote: { "post:Blog/blog/hello": REMOTE_DOC } }), seed);
+
+  await contentPull.run({}, [], ctx);
+
+  assert.match(ctx.fs.files.get(BASE_PATH), /"partial": false/);
+});

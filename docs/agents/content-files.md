@@ -441,6 +441,25 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
         before the folder rows existed, so it reported the posts and hid the folders. Notes need no
         filter — a post whose `site` navigates is already removed by SH402's filter, which is what
         the fallback list is built from — and saying so is why there is no third loop here.
+    - **`partial` was a latch, and the push's advice could not clear it (SH404).** `push --content
+      --prune` refuses on a partial base and says "take a complete projection first
+      (`shio pull --content`)". Every pull wrote `partial: base.partial || …`, so once set only
+      deleting `shio/.shio/content-base.json` cleared it — and nothing said so. The remedy the
+      error named did not resolve the condition the error refused, which is a **P6** defect before
+      it is a correctness one: an error naming a remedy the product does not implement is worse
+      than one naming none, because it spends the reader's time proving it. What was left was
+      `--force`, meaning "delete everything this tree does not declare" — the opposite of what the
+      message steers toward. SH402 is what made it urgent rather than theoretical: until then only
+      a *truncated* read set the flag, which needs a site bigger than `max-limit`; now one
+      unprojectable row does, so an ordinary instance reaches the latch and stays there.
+      - **Inherit when scoped, recompute when not.** A `--site` run proves nothing about the sites
+        it did not read and must inherit. An unscoped run already covers every site the tree holds
+        (SH173) — which is the scope `--prune` acts on, since the push scopes its own read the same
+        way — so its own facts are the whole answer.
+      - **The push still inherits, deliberately.** A pull may clear the flag because it rebuilds
+        the projection and knows what it covered; a push only writes what the tree already
+        declared, so it has no standing to claim the snapshot now describes the whole server. The
+        asymmetry is recorded at the call site so it does not read as an oversight.
     - **And the bytes are in the SH89 merge now (SH373).** SH210 fixed one direction and opened
       another: a server-side asset edit never reached the tree, and — newer and worse — a push
       *replaced* the server's bytes whenever they differed from the tree's, which reverts a

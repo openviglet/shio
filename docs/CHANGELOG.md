@@ -231,6 +231,7 @@
 - **SH401** — The pull writes neither and names both, the snapshot goes partial so `--prune` cannot act, and `path-collision` catches the pair in a tree authored where the filesystem allows it.
 - **SH402** — `filePathFor` refuses a URL that navigates, the pull skips and names the post instead of dying, and `skipped` now marks the snapshot partial so `--prune` cannot read a gap as a deletion.
 - **SH403** — A discovery lint classifies all six path producers and lands before the fixes; it found six where three were predicted, four already guarded, and the two that were not are now skipped and named.
+- **SH404** — An unscoped pull recomputes the flag from its own facts and a scoped one still inherits, so the complete projection the push tells you to take now clears what it refuses.
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 

@@ -96,9 +96,10 @@ export async function run(flags, _positionals, ctx) {
   if (prune && base.partial && !flags.force) {
     throw new Error(
       "shio push --content --prune: the base snapshot is marked partial — it was taken from a " +
-        "truncated read, so posts exist on the server that this tree never saw and prune would " +
-        "delete them. Take a complete projection first (`shio pull --content`), or pass --force " +
-        "if you really mean to delete everything this tree does not declare.",
+        "read that did not see everything, so posts exist on the server that this tree never saw " +
+        "and prune would delete them. Take a complete projection first: `shio pull --content` " +
+        "with no --site, which clears the flag when nothing is truncated or skipped (SH404). Or " +
+        "pass --force if you really mean to delete everything this tree does not declare.",
     );
   }
 
@@ -410,6 +411,10 @@ export async function run(flags, _positionals, ctx) {
       ctx,
       {
         cursor: base.cursor,
+        // SH404 deliberately does **not** apply here, and the asymmetry is the point: a pull can
+        // clear this flag because it rebuilds the projection and knows what it covered; a push
+        // only writes what the tree already declared, so it has no standing to say the snapshot
+        // now describes everything the server holds. Inheriting is the honest answer.
         partial: base.partial || truncated,
         posts: nextPosts,
         folders: base.folders,
