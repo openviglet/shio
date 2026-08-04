@@ -472,6 +472,24 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
       SH404: a symptom reported, a cause known and withheld, a remedy that cannot resolve it. It is
       reported before the unresolved-reference line, because when both fire this one is their
       cause, and it names what to raise (`shio.agent.read.max-limit`) rather than only what broke.
+    - **A first pull fetched no assets at all (SH406).** `readRemote` scopes to the sites the tree
+      holds and falls back to the whole instance when there are none — `sites.length ? sites :
+      [null]`, and its comment says why: a first pull has nothing to scope to, and that is the one
+      case where reading everything is the intent. `pullAssets` wrote the same shape and meant
+      nothing by it: `sites.length ? sites : []`, **whose branches are the same value**. So a first
+      pull walked no sites for assets, downloaded no bytes, and left every `File` field holding the
+      raw id it arrived as — from a run that reported success (P7).
+      - **Why it stayed invisible.** A second pull repairs it, because by then the tree names a
+        site; the workaround was "pull twice" and nobody had to know that was what they were doing.
+        `verify` does not catch it either, defensibly: an unresolved reference stays an id, and
+        SH145's rule is that a non-path-shaped value was never projected, so `asset-missing` skips
+        it. Every gate agreed the tree was describing ids.
+      - **One binding, not three.** The fallback was written out three times — the folder read, the
+        note list, and the asset read — and the asset copy was the one that drifted. They now share
+        `siteScope`, because three copies of a fallback is how one of them gets lost.
+      - **Found while testing SH405.** The truncation report could not fire in an empty-tree
+        fixture, and the reason it could not was this. Worth recording as a habit: a test that
+        cannot reach the condition it was written for is evidence about the code, not the test.
     - **And the bytes are in the SH89 merge now (SH373).** SH210 fixed one direction and opened
       another: a server-side asset edit never reached the tree, and — newer and worse — a push
       *replaced* the server's bytes whenever they differed from the tree's, which reverts a

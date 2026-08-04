@@ -26,6 +26,9 @@ const DEFS = [
     fields: [
       { name: "headline", widget: "Text", ordinal: 1 },
       { name: "body", widget: "HTML Editor", ordinal: 2 },
+      // SH406 — a File field, so a fixture can show an id becoming an asset path (SH145). Additive:
+      // a post that does not set it serializes exactly as before.
+      { name: "hero", widget: "File", ordinal: 3 },
     ],
   },
   // SH183's render model, as SH191 needs to see it: two code fields, no body field at all.
@@ -2143,3 +2146,28 @@ test("SH405: a truncated sitemap says so, instead of leaving the symptom unexpla
   assert.match(ctx.stdout.text, /max-limit/);
 });
 
+test("SH406: a first pull into an empty tree fetches the assets too", async () => {
+  // The measurement. The post read falls back to the whole instance when the tree names no sites;
+  // the asset read passed the empty list through and walked nothing, so a clone got posts, no
+  // bytes, and File fields still holding ids — from a run that reported success.
+  const ctx = ctxWith(server({
+    remote: {
+      "post:Blog/blog/hello": {
+        ...REMOTE_DOC,
+        data: { headline: "Hello", body: "<p>First</p>", hero: "a1" },
+      },
+    },
+    serverFolders: { Blog: ["/", "/media"] },
+    serverAssets: [
+      { id: "a1", fileName: "logo.png", folderId: "Blog:/media", siteName: "Blog", size: 4 },
+    ],
+    serverBytes: { a1: "AAAA" },
+  }));
+
+  const result = await contentPull.run({}, [], ctx);
+
+  assert.deepEqual(result.assets, ["Blog/media/logo.png"], "the bytes came down");
+  assert.ok(ctx.fs.files.has("/repo/shio/assets/Blog/media/logo.png"));
+  // And the reference is a path, not the id it arrived as (SH145).
+  assert.match(ctx.fs.files.get(FILE), /hero: Blog\/media\/logo\.png/);
+});

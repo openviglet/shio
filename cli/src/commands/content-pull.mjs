@@ -130,8 +130,18 @@ export async function run(flags, _positionals, ctx) {
   // a File field does not read as changed on every sync.
   const assetsDir = flags.assetsDir ?? ASSETS_DIR;
   const fileFieldMap = fileFields(defs);
+  // SH406 — the sites every per-site read scopes to, computed once. The tree names them, and when
+  // it names none the posts just read do: a first pull has nothing to scope to yet, which is the
+  // one case where reading everything is the intent (SH173's own argument). This was written out
+  // three times — the folder read, the note list, and the asset read — and the asset copy said
+  // `sites.length ? sites : []`, whose branches are the same value. So a first pull walked no
+  // sites for assets, downloaded nothing, left every `File` field as the id it arrived as, and
+  // reported success. One binding now, because three copies of a fallback is how one loses it.
+  const siteScope = sitesOf(local, localFolders).length
+    ? sitesOf(local, localFolders)
+    : [...new Set(Object.values(remote).map((doc) => doc.site).filter(Boolean))];
   const assets = await pullAssets(ctx, {
-    agent, admin, local, localFolders, assetsDir, dryRun, base: base.assets ?? {},
+    agent, admin, sites: siteScope, assetsDir, dryRun, base: base.assets ?? {},
   });
   const unresolvedAssets = new Set();
   for (const [address, doc] of Object.entries(remote)) {
@@ -291,9 +301,7 @@ export async function run(flags, _positionals, ctx) {
   // SH149 — the folder half. It runs after the posts because "which folders does a post
   // already declare" is the input that keeps the marker set minimal.
   const { folders: remoteFolders, truncated: foldersTruncated } = await readRemoteFolders(agent, {
-    sites: sitesOf(local, localFolders).length
-      ? sitesOf(local, localFolders)
-      : [...new Set(Object.values(remote).map((doc) => doc.site).filter(Boolean))],
+    sites: siteScope,
   });
   // SH403 — the same filter the posts get one screen up, for the same reason: a chain that
   // navigates cannot become a marker, and one bad row in the sitemap must not take the run down.
@@ -339,9 +347,7 @@ export async function run(flags, _positionals, ctx) {
   // SH161 — the site memory. Last, because it is per-site and the site list is only settled
   // once the posts and folders have been walked. A note is not content: it is never a
   // desired-state document and `--prune` can never act on it.
-  const noteSites = sitesOf(local, localFolders).length
-    ? sitesOf(local, localFolders)
-    : [...new Set(Object.values(remote).map((doc) => doc.site).filter(Boolean))];
+  const noteSites = siteScope;
   const nextNotes = { ...(base.notes ?? {}) };
   for (const noteSite of noteSites) {
     const localNotes = await readLocalNotes(ctx, noteSite, { dir });
@@ -512,12 +518,11 @@ export async function run(flags, _positionals, ctx) {
  * listing would remove (SH210 deferred that on purpose; it is still the obvious optimisation).
  */
 async function pullAssets(ctx, {
-  agent, admin, local, localFolders, assetsDir, dryRun, base = {},
+  agent, admin, sites = [], assetsDir, dryRun, base = {},
 }) {
-  const sites = sitesOf(local, localFolders);
-  const assets = await readRemoteAssets(agent, admin, {
-    sites: sites.length ? sites : [],
-  });
+  // SH406 — the scope arrives resolved. It used to be recomputed here from the *tree* alone, which
+  // is empty on a first pull, so the walk covered no sites at all.
+  const assets = await readRemoteAssets(agent, admin, { sites });
   const written = [];
   const conflicts = [];
   const kept = [];
