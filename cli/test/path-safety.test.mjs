@@ -77,6 +77,7 @@ const DECLARED = {
     collides: {
       values: ["Blog/media/Logo.png", "Blog/media/logo.png"],
       detector: assetPathCollisions,
+      writtenBy: "commands/content-pull.mjs",
     },
   },
   filePathFor: {
@@ -85,12 +86,17 @@ const DECLARED = {
     collides: {
       values: ["post:Blog/blog/hello", "post:Blog/blog/Hello"],
       detector: postPathCollisions,
+      writtenBy: "commands/content-pull.mjs",
     },
   },
   siteDir: {
     guarded: "SH257 — throws on a site name that is dots or holds a separator",
     probe: () => siteDir(".."),
-    collides: { values: ["Blog", "blog"], detector: siteDirCollisions },
+    collides: {
+      values: ["Blog", "blog"],
+      detector: siteDirCollisions,
+      writtenBy: "commands/content-pull.mjs",
+    },
   },
   folderMarkerPathFor: {
     guarded: "SH403 — throws on a chain segment that navigates; the value is the sitemap's",
@@ -98,6 +104,7 @@ const DECLARED = {
     collides: {
       values: ["folder:Blog/news", "folder:Blog/News"],
       detector: markerPathCollisions,
+      writtenBy: "commands/content-pull.mjs",
     },
   },
   notesPathFor: {
@@ -106,7 +113,11 @@ const DECLARED = {
     // A notes file is `<siteDir>/.memory.yaml`, so its pair is a *site* pair and `siteDir`
     // above owns it. Named here rather than exempted, because the reader should not have to
     // rediscover that the two roots share one cause.
-    collides: { values: ["Blog", "blog"], detector: siteDirCollisions },
+    collides: {
+      values: ["Blog", "blog"],
+      detector: siteDirCollisions,
+      writtenBy: "commands/content-pull.mjs",
+    },
   },
   sidecarsOf: {
     guarded: "throws on a field name holding a separator; a dotted name stays inside the post's "
@@ -123,7 +134,13 @@ const DECLARED = {
     guarded: "SH408 — throws on a separator or a dots-only name. The prose here first claimed the "
       + "server refused it; the lint declined to take that on trust, which is the point of a probe",
     probe: () => fileNameFor({ name: ".." }),
-    collides: { values: ["Article", "article"], detector: defFileCollisions },
+    collides: {
+      values: ["Article", "article"],
+      detector: defFileCollisions,
+      // The command whose loop is `writeFile(join(target, fileNameFor(def)), …)` — *not*
+      // `content-pull.mjs`, which reads defs to map File fields and writes none (SH409).
+      writtenBy: "commands/pull.mjs",
+    },
   },
 };
 
@@ -208,34 +225,32 @@ for (const [name, entry] of Object.entries(DECLARED)) {
 }
 
 /**
- * And that each detector is actually *called* somewhere (SH408).
+ * And that the module which **writes** each root calls its detector (SH408, corrected by SH409).
  *
- * The test above proves a detector exists and reports the pair. It cannot prove production runs
- * it, and a detector nobody calls is exactly the state assets and post-types were in — a function
- * that would have caught the defect, sitting unused. This is the greppable half: the name has to
- * appear in a module that is not the one defining it.
+ * SH408's version greped for the detector's name in any module but the defining one. That proves
+ * *a* caller exists — and `defFileCollisions` had one, in `content-pull.mjs`, which reads
+ * post-type defs to map `File` fields and writes none. The command that writes them, `pull.mjs`,
+ * still folded `Article.json` and `article.json` in silence. The lint was green.
+ *
+ * That was the third draft of this assertion to check a proxy: the first demanded the producer not
+ * fold, the second ran a detector the test built itself, the third greped for a name anywhere. The
+ * claim worth asserting is narrower and is the one that matters — *this root's writer consults
+ * this detector* — so each entry names the module whose write it guards, and that file is the only
+ * one searched.
  */
-test("SH408: every declared detector is wired into a command", async () => {
-  const named = new Set(
-    Object.values(DECLARED)
-      .filter((entry) => entry.collides)
-      .map((entry) => entry.collides.detector.name),
-  );
-  const callers = new Map([...named].map((name) => [name, []]));
-  for (const dir of ["", "commands/"]) {
-    const entries = await readdir(join(SRC, dir), { withFileTypes: true });
-    for (const file of entries) {
-      if (!file.isFile() || !file.name.endsWith(".mjs")) continue;
-      if (file.name === "content-files.mjs") continue; // where they are defined
-      const text = await readFile(join(SRC, dir, file.name), "utf8");
-      for (const name of named) if (text.includes(name)) callers.get(name).push(dir + file.name);
-    }
+test("SH408: the module that writes each root consults its detector", async () => {
+  const missing = [];
+  for (const [name, entry] of Object.entries(DECLARED)) {
+    if (!entry.collides) continue;
+    const { detector, writtenBy } = entry.collides;
+    const text = await readFile(join(SRC, writtenBy), "utf8").catch(() => null);
+    assert.ok(text !== null, `${name} names ${writtenBy}, which does not exist`);
+    if (!text.includes(detector.name)) missing.push(`${name} → ${writtenBy}`);
   }
-  const unwired = [...callers].filter(([, files]) => !files.length).map(([name]) => name);
   assert.deepEqual(
-    unwired,
+    missing,
     [],
-    "these detectors exist and nothing calls them, which is the state that let the defect "
-      + "through: a check that would have caught it, sitting unused",
+    "the module that writes this root does not call its detector, which is the state that let "
+      + "SH409 through: a check wired to a command that could not cause the condition",
   );
 });

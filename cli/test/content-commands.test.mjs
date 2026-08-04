@@ -14,6 +14,7 @@ import { test } from "node:test";
 
 import * as changes from "../src/commands/changes.mjs";
 import * as contentPull from "../src/commands/content-pull.mjs";
+import * as pull from "../src/commands/pull.mjs";
 import * as contentPush from "../src/commands/content-push.mjs";
 import * as watch from "../src/commands/content-watch.mjs";
 import { digestsOf } from "../src/content-sync.mjs";
@@ -2212,17 +2213,22 @@ test("SH408: two assets differing only in case are named, and neither is written
   assert.deepEqual(result.assets, []);
 });
 
-test("SH408: two post types differing only in case are named before --prune can delete one", async () => {
-  // The severe one: `Article.json` and `article.json` are one file, `diffDefs` then reports the
-  // loser as removed, and `push --prune` deletes the post type every post of it is validated by.
+test("SH409: two post types differing only in case are named by the command that writes them", async () => {
+  // The severe one, and it moved: SH408 wired this into `pull --content`, which reads defs to map
+  // File fields and writes none. `shio pull` is the loop that writes `<name>.json`, and it folded
+  // the pair in silence — `diffDefs` then reports the loser as removed and `push --prune` deletes
+  // the post type every post of it is validated against.
   const ctx = ctxWith(server({
-    remote: { "post:Blog/blog/hello": REMOTE_DOC },
     defs: [...DEFS, { name: "article", fields: [{ name: "headline", widget: "Text", ordinal: 1 }] }],
   }));
 
-  await contentPull.run({}, [], ctx);
+  const written = await pull.run({}, [], ctx);
 
   // Ordered by `localeCompare`, which puts the lowercase name first (P5, as in SH401).
-  assert.match(ctx.stdout.text, /post-type:article and post-type:Article/);
-  assert.match(ctx.stdout.text, /would delete the other's type/);
+  assert.match(ctx.stdout.text, /post-type article and Article project to one file/);
+  assert.match(ctx.stdout.text, /would then delete the other's type/);
+  // Neither is on disk: there is no merging two models into one file.
+  const files = [...ctx.fs.files.keys()].filter((key) => /[Aa]rticle\.json$/.test(key));
+  assert.deepEqual(files, []);
+  assert.deepEqual(written.map((def) => def.name), ["Region"]);
 });

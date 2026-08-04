@@ -534,6 +534,24 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
         that each root names a detector exported from `src/`, that the detector reports the pair,
         **and** that some module other than the one defining it actually calls it. That last check
         is what caught the real state of things: five detectors, none of them wired.
+    - **And the fourth draft of that assertion, because the third was a proxy too (SH409).** SH408
+      wired `defFileCollisions` into `content-pull.mjs`, which reads post-type defs to map `File`
+      fields and **writes none**. The command that writes them is `pull.mjs`, whose loop is
+      `writeFile(join(target, fileNameFor(def)), …)` — and it still folded `Article.json` and
+      `article.json` in silence. **The lint was green**, because "wired into a command" greps for
+      the detector's name in any module but the defining one: that proves *a* caller exists, not
+      that the caller is the one at risk.
+      - **Each entry now names the module whose write it guards** (`writtenBy`), and only that file
+        is searched. The corrected lint named exactly one root and nothing else, which is what a
+        good instrument looks like when it fires.
+      - **Four drafts, each measuring something adjacent.** Producer-must-not-fold described
+        neither the design nor the defect; a self-built detector passes whatever production does; a
+        name-anywhere grep passes a check wired to the wrong command. Only the fourth states the
+        claim that matters — *this root's writer consults this detector*. Worth keeping as the
+        cautionary case: an instrument can be wrong three times and green every time.
+      - **The check moved to the write and left nothing behind.** A warning in a command that
+        cannot cause the condition is noise that reads as coverage, so `content-pull.mjs` carries
+        only a comment saying where the check went and why.
     - **And the bytes are in the SH89 merge now (SH373).** SH210 fixed one direction and opened
       another: a server-side asset edit never reached the tree, and — newer and worse — a push
       *replaced* the server's bytes whenever they differed from the tree's, which reverts a

@@ -17,6 +17,7 @@ import { join } from "node:path";
 import { ShioAdminClient } from "../admin-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { fileNameFor, serializeDef } from "../post-types-io.mjs";
+import { defFileCollisions } from "../content-files.mjs";
 
 export async function run(flags, positionals, ctx) {
   if (flags.content) {
@@ -35,9 +36,25 @@ async function pullPostTypes(flags, ctx) {
 
   const target = join(ctx.cwd, dir);
   await ctx.fs.mkdir(target, { recursive: true });
-  for (const def of defs) {
+
+  // SH409 — here, because this is the loop that writes. `Article` and `article` are two types and
+  // one `.json` on Windows and macOS; the disk keeps the last write, `diffDefs` then reports the
+  // other as removed, and `push --prune` deletes the post type every post of it is validated
+  // against. Neither is written — there is no merging two models into one file.
+  const clashes = defFileCollisions(defs.map((def) => def.name));
+  for (const group of new Set(clashes.values())) {
+    ctx.stdout.write(
+      `shio pull: post-type ${group.addresses.join(" and ")} project to one file `
+        + `(${group.paths.join(", ")}) — neither was written. A checkout on Windows or macOS keeps `
+        + "one of them, and `push --prune` would then delete the other's type. Rename one of them "
+        + "on the server.\n",
+    );
+  }
+
+  const written = defs.filter((def) => !clashes.has(def.name));
+  for (const def of written) {
     await ctx.fs.writeFile(join(target, fileNameFor(def)), serializeDef(def), "utf8");
   }
-  ctx.stdout.write(`shio pull: wrote ${defs.length} post-type(s) to ${dir}\n`);
-  return defs;
+  ctx.stdout.write(`shio pull: wrote ${written.length} post-type(s) to ${dir}\n`);
+  return written;
 }

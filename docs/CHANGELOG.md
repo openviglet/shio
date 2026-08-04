@@ -236,6 +236,7 @@
 - **SH406** — A first pull now scopes its asset read to the sites the posts name, so the bytes come down and the File fields become paths; the fallback is one binding shared by all three per-site reads.
 - **SH407** — One collision detector now serves both roots, the pull writes neither marker and names the pair, and `verify` reads `shio/folders/` for the first time to report it with no instance.
 - **SH408** — The lint now asks every root whether its outputs collide and whether a detector is wired; it named assets, post-types and site names, plus a fourth traversal gap in a module SH403 never listed.
+- **SH409** — Each root now names the module whose write it guards and only that file is searched; the corrected lint named one root, and the def check moved to the loop that writes `<name>.json`.
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 

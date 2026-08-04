@@ -62,7 +62,6 @@ import {
 } from "../content-store.mjs";
 import {
   assetPathCollisions,
-  defFileCollisions,
   filePathFor,
   folderMarkerPathFor,
   markerPathCollisions,
@@ -126,16 +125,9 @@ export async function run(flags, _positionals, ctx) {
   // sit below them, which was fine while a pull only ever *added* an asset it did not have.
   const base = await readBase(ctx, flags.baseFile ?? BASE_FILE);
 
+  // Read to map `File` fields and pick the body field — this command writes no def file, which is
+  // why the post-type collision check lives in `pull.mjs` and not here (SH409).
   const defs = await admin.getPostTypeDefs();
-  // SH408 — `Article.json` and `article.json` are one file, and `push --prune` then reports the
-  // loser as removed and deletes the post type. Named here rather than left to the disk.
-  for (const group of new Set(defFileCollisions(defs.map((def) => def.name)).values())) {
-    skipped.push({
-      address: `post-type:${group.addresses.join(" and post-type:")}`,
-      reason: `they project to one file (${group.paths.join(", ")}), so a checkout keeps one and `
-        + "`push --prune` would delete the other's type. Rename one of them on the server",
-    });
-  }
   const bodyField = bodyFields(defs);
   // SH191 — a layout's HTML and a region's JavaScript are programs, and a program in escaped
   // JSON inside YAML frontmatter is the one place law P4 fails on the artifact an iterative
