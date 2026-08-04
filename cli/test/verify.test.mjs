@@ -46,14 +46,26 @@ function scriptedFetch(body, { status = 200 } = {}) {
 }
 
 /** No baseline on disk — the default state, and what these cases are about (SH142). */
+/**
+ * An empty project: no baseline, and — since SH212 made `verify` read the tree — no post-types,
+ * no content and no assets either. Every one of these is a legitimate state, and the projection
+ * group's answer to all of them is "nothing to check".
+ */
 function noFiles() {
   return {
     async readFile(path) {
-      const error = new Error(`ENOENT: ${path}`);
-      error.code = "ENOENT";
-      throw error;
+      throw enoent(path);
+    },
+    async readdir(path) {
+      throw enoent(path);
     },
   };
+}
+
+function enoent(path) {
+  const error = new Error(`ENOENT: ${path}`);
+  error.code = "ENOENT";
+  return error;
 }
 
 function ctxWith(fetchImpl) {
@@ -119,7 +131,12 @@ test("a clean report exits zero and says what it checked", async () => {
 
   assert.equal(result.exitCode, undefined);
   assert.match(ctx.stdout.text, /ok — 0 error\(s\), 0 warning\(s\) over 12 object\(s\)/);
-  assert.match(ctx.stdout.text, /\[content, routes\]/);
+  // SH212 — the tree's own group runs by default and is named first, because its findings are
+  // the ones a reader can act on without leaving the machine.
+  assert.match(ctx.stdout.text, /\[projection, content, routes\]/);
+  // And it says it checked nothing rather than passing quietly: "0 findings" and "not run" have
+  // to be distinguishable (SH302's lesson, one command along).
+  assert.match(ctx.stdout.text, /projection: nothing to check in this tree/);
   assert.equal(fetchImpl.calls[0].url, "http://shio.test/api/v2/agent/verify");
 });
 
@@ -258,5 +275,140 @@ test("digest with no target explains what to pass", async () => {
   await assert.rejects(
     () => digest.run({}, [], ctxWith(scriptedFetch(DIGEST))),
     /pass a page/,
+  );
+});
+
+// --- the tree's own findings, and the gate that needs no instance (SH212) ---
+
+/**
+ * A project on disk: post-types, one post and whichever assets the test wants. The keys are what
+ * `readLocalDefs`, `readLocal` and `readLocalAssets` walk, so this is the real read path.
+ */
+function projectFs({ assets = [], hero = "Blog/media/logo.png" } = {}) {
+  const files = new Map([
+    ["/repo/shio/post-types/Article.json", JSON.stringify({
+      name: "Article",
+      fields: [
+        { name: "headline", widget: "Text", ordinal: 1 },
+        { name: "hero", widget: "File", ordinal: 2 },
+      ],
+    })],
+    ["/repo/shio/content/Blog/blog/hello.md",
+      `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Hello\n  hero: ${hero}\n---\n`],
+    ...assets.map((path) => [`/repo/shio/assets/${path}`, "bytes"]),
+  ]);
+  const norm = (path) => String(path).replaceAll("\\", "/");
+  return {
+    async readFile(path) {
+      const key = norm(path);
+      if (!files.has(key)) {
+        const error = new Error(`ENOENT: ${key}`);
+        error.code = "ENOENT";
+        throw error;
+      }
+      return files.get(key);
+    },
+    /**
+     * Honours `withFileTypes`, which node's does and a fake that ignored it would hide: the
+     * content walk asks for entries and `readLocalDefs` asks for plain names, so a stub that
+     * always returned one shape would pass here and fail on a real disk.
+     */
+    async readdir(path, options) {
+      const prefix = `${norm(path)}/`;
+      const names = new Set();
+      for (const key of files.keys()) {
+        if (!key.startsWith(prefix)) continue;
+        const rest = key.slice(prefix.length);
+        const cut = rest.indexOf("/");
+        names.add(cut < 0 ? rest : `${rest.slice(0, cut)}/`);
+      }
+      if (!names.size) {
+        const error = new Error(`ENOENT: ${prefix}`);
+        error.code = "ENOENT";
+        throw error;
+      }
+      const sorted = [...names].sort();
+      if (!options?.withFileTypes) return sorted.map((name) => name.replace(/\/$/, ""));
+      return sorted.map((name) => ({
+        name: name.replace(/\/$/, ""),
+        isDirectory: () => name.endsWith("/"),
+      }));
+    },
+    async writeFile() {},
+    async mkdir() {},
+  };
+}
+
+function projectCtx(fetchImpl, fsImpl) {
+  return { ...ctxWith(fetchImpl), fs: fsImpl };
+}
+
+test("SH212: a broken asset path is a finding, and the tree alone proves it", async () => {
+  // No fetch at all — the assertion is that the command never reaches for one. `--checks
+  // projection` is the gate that runs with no credentials and no instance, which is the whole
+  // point of moving a check this cheap out of `push --content`.
+  const fetchImpl = scriptedFetch(CLEAN);
+  const ctx = projectCtx(fetchImpl, projectFs({ assets: [] }));
+
+  const result = await verify.run({ checks: "projection" }, [], ctx);
+
+  assert.equal(result.exitCode, 1);
+  assert.deepEqual(fetchImpl.calls, [], "the server was never asked");
+  assert.match(ctx.stdout.text, /asset-missing post:Blog\/blog\/hello · hero/);
+  assert.match(ctx.stdout.text, /Blog\/media\/logo\.png/);
+  // A run over one tree and no instance is not a statement about the site (SH143's rule).
+  assert.match(ctx.stdout.text, /covered a subset/);
+});
+
+test("SH212: the asset being there is a clean projection run", async () => {
+  const ctx = projectCtx(scriptedFetch(CLEAN), projectFs({ assets: ["Blog/media/logo.png"] }));
+
+  const result = await verify.run({ checks: "projection" }, [], ctx);
+
+  assert.equal(result.exitCode, undefined);
+  assert.match(ctx.stdout.text, /ok — 0 error\(s\)/);
+});
+
+test("SH212: the tree's findings and the server's arrive in one report", async () => {
+  const ctx = projectCtx(scriptedFetch(WARNED), projectFs({ assets: [] }));
+
+  const result = await verify.run({}, [], ctx);
+
+  assert.equal(result.exitCode, 1);
+  // One error from the tree, one warning from the server, counted together — `ok` has to keep
+  // meaning "nothing an error" across both halves.
+  assert.match(ctx.stdout.text, /failed — 1 error\(s\), 1 warning\(s\)/);
+  assert.match(ctx.stdout.text, /asset-missing/);
+});
+
+test("SH212: an accepted asset finding is subtracted like any other", async () => {
+  // The reason this is a `verify` finding rather than a second command: SH142's baseline works on
+  // `(rule, address, field)` triples and needed nothing new to hold a client-side one.
+  const fsImpl = projectFs({ assets: [] });
+  const baseline = JSON.stringify({
+    version: 1,
+    accepted: [{ rule: "asset-missing", address: "post:Blog/blog/hello", field: "hero" }],
+  });
+  const original = fsImpl.readFile;
+  fsImpl.readFile = async (path) =>
+    String(path).replaceAll("\\", "/").endsWith("verify-baseline.json")
+      ? baseline
+      : original(path);
+  const ctx = projectCtx(scriptedFetch(CLEAN), fsImpl);
+
+  const result = await verify.run({ checks: "projection" }, [], ctx);
+
+  assert.equal(result.exitCode, undefined);
+  assert.match(ctx.stdout.text, /1 accepted/);
+});
+
+test("SH212: --delivery and the tree-only gate are refused together", async () => {
+  // One asks for a proof that leaves the process and the other for the group that cannot.
+  // Dropping either silently is how a flag that requested a proof and got none reads as a pass.
+  const ctx = projectCtx(scriptedFetch(CLEAN), projectFs());
+
+  await assert.rejects(
+    () => verify.run({ checks: "projection", delivery: true }, [], ctx),
+    /cannot be combined/,
   );
 });

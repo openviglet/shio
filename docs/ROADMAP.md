@@ -26,7 +26,6 @@
 
 ## Block I — Content as files (local-first authoring)
 
-- 📋 **SH212** (deps: SH99 ✅, SH145 ✅) **`shio verify` cannot see a broken asset path** — An asset path a File field names is checked by push, the last gate, when the tree makes it checkable by verify, the first. → §X.15
 - 💭 **SH213** (deps: SH145 ✅) **Every push reads the whole media inventory** — readRemoteAssets lists every File post in a site to resolve one reference, on any push that declares a File field. → §X.16
 - 💭 **SH214** (deps: SH150 ✅) **A probable-move warning cannot be accepted** — A legitimate delete-plus-create prints an unprovable-rename warning on every run, and there is no way to accept it the way a verify finding can be. → §X.17
 - 💭 **SH215** (deps: SH148 ✅) **A fingerprint collision is undetectable and unreported** — The merge base compares 64-bit hashes, so a collision reads as an unchanged field and the edit is dropped with nothing said. → §X.18

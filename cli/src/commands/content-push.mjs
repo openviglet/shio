@@ -546,7 +546,10 @@ async function resolveAssets(ctx, { client, admin, defs, posts, sites, assetsDir
       `shio push --content: ${missing.length} File reference(s) name an asset that is not in ` +
         `${assetsDir}:\n${missing.map((path) => `  ! ${path}\n`).join("")}` +
         "Pushing would publish a post whose File field points at nothing. Run `shio pull " +
-        "--content` to fetch the assets, or fix the reference in the file.",
+        "--content` to fetch the assets, or fix the reference in the file.\n" +
+        // SH212 — the same defect is a finding, in the gate that needs no instance. This refusal
+        // stays as the last net, but reaching it means the cheap check was never run.
+        "`shio verify --checks projection` finds all of them at once, with no server.",
     );
   }
 

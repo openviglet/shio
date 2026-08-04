@@ -1,0 +1,153 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * Licensed under GPL-3.0.
+ *
+ * SH212 — the first `shio verify` rules that read the **project's own files**.
+ *
+ * WHY THIS IS A NEW KIND OF FINDING, AND WHY IT IS STILL `verify`
+ * Every rule until now was a server-side lint whose findings this CLI merely printed. An
+ * asset path a `File` field names is the opposite: it is checkable with no instance at all,
+ * because the post-types, the posts and the bytes are all on disk. It used to be caught by
+ * `push --content`, which threw — so the whole class had no *report*, only an exception on the
+ * first offender, and nothing the SH142 baseline could hold.
+ *
+ * The decision §X.15 asked for: these are findings in the same report, in their own `checks`
+ * group, and **naming `projection` alone skips the server entirely**. That is what actually
+ * moves the check earlier — a gate that needs no credentials and no network can run before
+ * anything else in the chain, which is where a defect this cheap to find belongs (P9). Keeping
+ * it apart in a second command would mean a second report shape and a second baseline for one
+ * rule, and an agent would have to learn which command finds which class of defect.
+ *
+ * WHAT IS DELIBERATELY NOT HERE
+ * Anything that needs the server's own state. This module answers questions about the tree
+ * alone, and a rule that quietly needed an instance would make the group's whole promise —
+ * "this runs with nothing" — a half-truth of the kind SH338 exists to catch.
+ */
+import { assetLocationOf, fileFields } from "./content-assets.mjs";
+
+/** The group name, in `--checks` and in the report's own `checks` list. */
+export const PROJECTION_CHECK = "projection";
+
+/**
+ * Lints the file tree's asset references.
+ *
+ * @param {object} tree
+ * @param {object[]} tree.posts   the projected posts (`readLocal`'s values)
+ * @param {object[]} tree.defs    local post-type defs (`readLocalDefs`)
+ * @param {Iterable<string>} tree.assets asset paths on disk (`readLocalAssets`)
+ * @param {string} [tree.assetsDir] named in the fix, so the message points at a real directory
+ * @returns {{ findings: object[], checked: number }}
+ */
+export function lintProjection({ posts = [], defs = [], assets = [], assetsDir = "shio/assets" }) {
+  const fields = fileFields(defs);
+  const present = new Set(assets);
+  const findings = [];
+  let checked = 0;
+
+  for (const post of [...posts].sort((a, b) => addressOf(a).localeCompare(addressOf(b)))) {
+    const names = fields.get(post?.type);
+    // A post whose type this tree does not hold is not a clean post — it is an unchecked one,
+    // and saying so is the difference between "no findings" and "nothing was looked at".
+    if (!names) {
+      if (post?.type) findings.push(unknownType(post, assetsDir));
+      continue;
+    }
+    checked += 1;
+    for (const name of [...names].sort((a, b) => a.localeCompare(b))) {
+      const value = post.data?.[name];
+      if (typeof value !== "string" || !value) continue;
+      let at;
+      try {
+        at = assetLocationOf(value);
+      } catch (error) {
+        // SH256 throws on a path that navigates. Reported rather than propagated: a lint that
+        // dies on the first hostile value cannot report the rest of the tree, and this is the
+        // one place that reads every asset reference a project has.
+        findings.push(finding(post, name, "asset-path-unsafe", error.message,
+          "An asset path is `<site>/<folder chain>/<file name>` — no `.` or `..` segments. "
+            + "Fix the value in the file."));
+        continue;
+      }
+      // Not path-shaped is an id already (SH145): a reference this tree never projected, which
+      // the push sends as it is and the server resolves or reports.
+      if (!at) continue;
+      if (present.has(value)) continue;
+      findings.push(finding(post, name, "asset-missing",
+        `the asset \`${value}\` is not in ${assetsDir}`,
+        `Fetch it with \`shio pull --content\`, put the file at ${assetsDir}/${value}, or point `
+          + "the field at an asset the tree holds. Pushing this would publish a post whose File "
+          + "field references nothing."));
+    }
+  }
+
+  return { findings, checked };
+}
+
+/**
+ * A post whose type is not in `shio/post-types/` — a **warning**, not an error.
+ *
+ * The tree may legitimately hold posts of a type it does not own: a projection scoped with
+ * `--site` still carries whatever those posts are, and the model lives on the server. So this
+ * says "not checked" rather than "wrong", which is the honest claim — and it exists at all
+ * because silence here would count an unchecked post as a clean one.
+ */
+function unknownType(post) {
+  return {
+    ...finding(post, null, "asset-check-skipped",
+      `its type \`${post.type}\` is not in this tree, so its File fields were not checked`,
+      "Run `shio pull` to project the post-types, or scope the run to a site whose model the "
+        + "tree holds."),
+    severity: "warning",
+  };
+}
+
+function finding(post, field, rule, message, fix) {
+  return {
+    rule,
+    severity: "error",
+    address: addressOf(post),
+    field: field ?? undefined,
+    message,
+    fix,
+    source: PROJECTION_CHECK,
+  };
+}
+
+function addressOf(post) {
+  return `post:${post?.site ?? ""}${post?.url ?? ""}`;
+}
+
+/**
+ * Which groups the server should be asked for, and whether it should be asked at all.
+ *
+ * <h3>Two decisions live here</h3>
+ *
+ * **`projection` is in the default set.** The check is the cheapest one this tool has and it
+ * already fails CI one gate later, as an exception out of `push --content` — so running it by
+ * default reports a defect earlier that was going to stop the pipeline anyway, and never fails a
+ * tree that was passing. That is the opposite trade from SH141's `delivery`, which joins the
+ * default set only when the instance allows it: `delivery` can cover *nothing* and still answer
+ * `ok`, while this group either checks the tree or says it could not.
+ *
+ * **It is never sent to the server.** A vocabulary that does not contain it would answer a
+ * teaching 400, correctly (SH320: an unrecognised `checks` value is one that would silently
+ * cover nothing). Naming it *alone* is therefore the server-free gate — no credentials, no
+ * network, nothing to stand up in CI.
+ *
+ * @param {string|undefined} checks the caller's `--checks`
+ * @returns {{ remote: string|undefined, projection: boolean, callRemote: boolean }}
+ */
+export function splitChecks(checks) {
+  if (checks == null || String(checks).trim() === "") {
+    return { remote: undefined, projection: true, callRemote: true };
+  }
+  const named = String(checks).split(",").map((each) => each.trim()).filter(Boolean);
+  const projection = named.includes(PROJECTION_CHECK) || named.includes("all");
+  const rest = named.filter((each) => each !== PROJECTION_CHECK);
+  return {
+    remote: rest.length ? rest.join(",") : undefined,
+    projection,
+    callRemote: rest.length > 0,
+  };
+}

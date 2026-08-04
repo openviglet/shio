@@ -35,7 +35,18 @@ range the report could not cover whole** — a read must not move a position as 
 running it twice would answer "nothing changed", and for a review artifact an empty report reads
 as approval.
 
-**CI gates, in the order they should run:** `shio push --check` (model drift) → `shio push --content --check` (content-tree drift) → `shio apply --check` (document drift) → `shio verify` (content defects).
+**CI gates, in the order they should run:** `shio verify --checks projection` (tree defects — **no
+instance**, SH212) → `shio push --check` (model drift) → `shio push --content --check`
+(content-tree drift) → `shio apply --check` (document drift) → `shio verify` (content defects).
+The first one is new and is first for a reason: it needs no credentials, no network and nothing
+stood up, so a defect the files alone prove should never wait for a gate that does. **`projection`
+is in `verify`'s default set** and is stripped from what the server is asked for (its vocabulary
+does not contain it, and SH320 makes an unrecognised `checks` value a teaching 400) — so the last
+gate runs it too, and naming it *alone* is the server-free one. It cannot newly fail a tree that
+was passing: the same defect already stopped the pipeline at `push --content`, as an exception on
+the first offender rather than a report of all of them. `--delivery` with `projection` alone is
+refused, because one asks for a proof that leaves the process and the other for the group that
+cannot.
 **Accepted findings (SH142) live in `shio/verify-baseline.json`** — `(rule, address, field)` triples that `shio verify` subtracts, written by `--accept` (`--reason` optional) and merged, never replaced. The half that matters: **an accepted finding the run no longer produces fails the run**, so the file cannot rot into a blanket suppression that hides the next defect at the same address; a *truncated* report reports the unmatched entries without failing, because a finding that did not fit is not a finding that is gone. It is deliberately a project file and **not** an instance setting — `GET /agent/verify` keeps reporting everything, and only the gate subtracts. The content gates read **only the sites the tree holds** (SH173, derived from `shio/content/<site>/**`), a post they cannot read by address is a named finding rather than a fatal 404, and a remote failure prints the SH80 body — the request URL is behind `SHIO_DEBUG`. The CLI test suite needs `@viglet/shio-client` built first (`pnpm -C shio-client run build`), or every command test fails on a missing module rather than on its own logic; `shio-sections`' suite needs `@viglet/shio-model` built (`pnpm -C shio-model run build`) for the same reason.
 
 **Two rules the CLI suite earned the hard way (SH198).** A fake filesystem **normalizes its

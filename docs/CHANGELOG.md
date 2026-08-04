@@ -217,6 +217,7 @@
 - **SH147** — The change feed is commit-ordered: positions are reserved, not read off the clock, and a write in flight holds the feed behind it, so a slow commit cannot land past a cursor.
 - **SH210** — Editing an asset's bytes now lands: push compares a path the server already has and replaces it in place, keeping the id, the folder, the name and the usage list.
 - **SH211** — Renaming a folder's directory is a folder.move now: the document carries movedFrom on the folder entry, and --prune no longer deletes the section with its posts.
+- **SH212** — A broken asset path is a verify finding in a projection group that reads the tree, so --checks projection is a gate with no instance and reports the whole tree at once.
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 

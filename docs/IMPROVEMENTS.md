@@ -379,20 +379,6 @@ unchanged page must never be the same row.
 > ✅ **SH86, SH87, SH88, SH89 and SH90 shipped** → [CHANGELOG.md](CHANGELOG.md) Block I.
 > What follows is the design rationale for what the projection **still owes**.
 
-### X.15 `shio verify` cannot see a broken asset path (SH212)
-
-The documented CI chain is `push --check` → `push --content --check` → `apply --check` →
-`verify`, in that order because each gate is cheaper than the next. A `File` field naming an
-asset that is not in the tree currently fails at `push --content`, which inverts it: the
-defect is local, checkable with no server at all, and reported by the most expensive gate.
-
-The rule itself is trivial (`assetLocationOf` the value, look for the file). What makes it a
-task is that it would be the **first `verify` rule that reads the project's own files** — every
-existing rule is a server-side lint whose findings the CLI merely prints. That is either a new
-kind of finding on the client (a projection lint, with its own reporting and its own place in
-the SH142 baseline) or a reason to keep the two apart deliberately. Worth deciding rather than
-drifting into.
-
 ### X.16 Every push reads the whole media inventory (SH213)
 
 `readRemoteAssets` lists every `File` post in each site and joins the sitemap's folder chains

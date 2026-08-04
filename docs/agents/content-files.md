@@ -285,6 +285,16 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
       missing-bytes refusal exists so a push cannot publish a `File` field pointing at nothing, and
       a path in the inventory points at something; a hand-written document naming an existing asset
       it never pulled is legitimate, and refusing it would be a worse defect than the one fixed.
+    - **And a dangling reference is a `verify` finding now, not only a push refusal (SH212)** —
+      `asset-missing`, in the `projection` check group, which is the first `verify` rule that reads
+      the project's own files. The post-types, the posts and the bytes are all on disk, so it is
+      provable with no instance: `shio verify --checks projection` is the server-free gate, and the
+      group is in the default set so the full run reports it too. The push keeps refusing — it is
+      the last net — and its message now names the cheaper gate. Two decisions behind it: it is a
+      **finding rather than an exception**, so the whole tree is reported at once and SH142's
+      baseline can hold one (it needed nothing new — the entries are `(rule, address, field)`
+      triples); and a post whose **type the tree lacks** is a `asset-check-skipped` *warning*
+      rather than silence, because an unchecked post must not read as a clean one (SH302's rule).
     - Still open in the other direction: a **server-side** asset edit never reaches the tree,
       because `pull` skips a path already on disk and asset bytes are outside the SH89 three-way
       merge — overwriting a locally-edited asset would be data loss, so it needs the merge story

@@ -25,6 +25,10 @@ import { join } from "node:path";
 
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
+import { ASSETS_DIR } from "../content-assets.mjs";
+import { CONTENT_DIR, readLocal, readLocalAssets } from "../content-store.mjs";
+import { readLocalDefs } from "../post-types-compile.mjs";
+import { PROJECTION_CHECK, lintProjection, splitChecks } from "../verify-projection.mjs";
 import {
   BASELINE_FILE,
   acceptedFrom,
@@ -34,18 +38,40 @@ import {
   serializeBaseline,
 } from "../verify-baseline.mjs";
 
-export async function run(flags, positionals, ctx) {
-  const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
-  const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
+/** Where the projected post-types live — the same default every other command uses. */
+const DEFS_DIR = "shio/post-types";
 
-  const raw = await client.verify({
-    site: flags.site ?? positionals[0],
-    checks: withDelivery(flags.checks, flags.delivery),
-    limit: flags.limit,
-    folder: flags.folder,
-    address: flags.address,
-    since: flags.since,
-  });
+export async function run(flags, positionals, ctx) {
+  const site = flags.site ?? positionals[0];
+  // SH212 — the tree's own rules run first, and `--checks projection` runs *only* them: no
+  // credentials, no network. A defect the files alone prove has no business waiting for a gate
+  // that needs an instance.
+  const groups = splitChecks(flags.checks);
+  const projection = groups.projection ? await lintTree(flags, ctx, site) : null;
+
+  let raw;
+  if (groups.callRemote) {
+    const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
+    const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
+    raw = await client.verify({
+      site,
+      checks: withDelivery(groups.remote, flags.delivery),
+      limit: flags.limit,
+      folder: flags.folder,
+      address: flags.address,
+      since: flags.since,
+    });
+  } else if (flags.delivery) {
+    // A caller who asked for the strongest proof there is and named the one group that cannot
+    // leave the process has asked for two different things. Silently dropping one is SH320's
+    // failure: a flag that requested a proof and got none reads as a pass.
+    throw new Error(
+      "shio verify: --delivery proves routes by fetching them, which needs the instance — it "
+        + `cannot be combined with \`--checks ${PROJECTION_CHECK}\` alone. Name a server-side `
+        + `group too (\`--checks ${PROJECTION_CHECK},routes\`), or drop --delivery.`,
+    );
+  }
+  raw = merge(raw, projection, groups);
 
   const path = typeof flags.baseline === "string" ? flags.baseline : BASELINE_FILE;
   // An explicit `--baseline` that is not there is a mistake worth reporting: a CI job
@@ -79,6 +105,96 @@ export async function run(flags, positionals, ctx) {
     return { ...report, exitCode: 1 };
   }
   return report;
+}
+
+/**
+ * The tree's own findings (SH212) — post-types, posts and asset bytes, all from disk.
+ *
+ * A tree with no post-types cannot check anything, and saying so is the honest answer: without
+ * this the group would report a warning per post and read as noise rather than as "not run".
+ */
+async function lintTree(flags, ctx, site) {
+  // `readLocalDefs` turns a missing directory into a teaching error naming `shio pull`, which is
+  // right for a command whose whole job is the post-types and wrong here: a tree with no local
+  // model is a tree this group cannot check, not a tree that is broken.
+  const defs = await readLocalDefs(ctx, flags.dir ?? DEFS_DIR).catch(noDefs);
+  const posts = Object.values(await readLocal(ctx, {
+    dir: flags.contentDir ?? CONTENT_DIR,
+    site,
+  }).catch(absentMap));
+  const assetsDir = flags.assetsDir ?? ASSETS_DIR;
+  const assets = await readLocalAssets(ctx, { dir: assetsDir, site }).catch(absent);
+
+  if (!defs?.length || !posts.length) {
+    return {
+      findings: [],
+      checked: 0,
+      note: `${PROJECTION_CHECK}: nothing to check in this tree — it holds `
+        + `${posts.length} post(s) and ${defs?.length ?? 0} post-type(s)`,
+    };
+  }
+  return { ...lintProjection({ posts, defs, assets, assetsDir }), note: null };
+}
+
+/** A directory the tree does not have is not an error here — it is an empty list. */
+function absent(error) {
+  if (error?.code === "ENOENT") return [];
+  throw error;
+}
+
+/**
+ * No post-types on disk. Narrow on purpose: a directory that is *there* and holds a duplicate
+ * name or a broken JSON file still throws, because that is a defect this run should not hide.
+ */
+function noDefs(error) {
+  if (/no post-type directory at/.test(error?.message ?? "")) return [];
+  throw error;
+}
+
+function absentMap(error) {
+  if (error?.code === "ENOENT") return {};
+  throw error;
+}
+
+/**
+ * One report out of two halves.
+ *
+ * The client's findings go **first**, because they are the ones a reader can act on without
+ * leaving the machine. Counts are recomputed rather than added: `ok` is the server's own word
+ * for "nothing an error", and a merged report has to mean the same thing.
+ */
+function merge(remote, projection, groups) {
+  const base = remote ?? {
+    ok: true,
+    checked: 0,
+    found: 0,
+    findings: [],
+    errors: 0,
+    warnings: 0,
+    checks: [],
+    notes: [],
+  };
+  if (!projection) return base;
+
+  const findings = [...projection.findings, ...(base.findings ?? [])];
+  const errors = findings.filter((finding) => finding.severity === "error").length;
+  const warnings = findings.filter((finding) => finding.severity !== "error").length;
+  const notes = [...(base.notes ?? [])];
+  if (projection.note) notes.push(projection.note);
+  return {
+    ...base,
+    ok: errors === 0,
+    checks: [PROJECTION_CHECK, ...(base.checks ?? [])],
+    checked: (base.checked ?? 0) + projection.checked,
+    found: (base.found ?? 0) + projection.findings.length,
+    findings,
+    errors,
+    warnings,
+    notes,
+    // A projection-only run looked at one tree and no instance, so it is not a statement about
+    // the site — the same rule a scoped server run follows (SH143).
+    partial: base.partial || !groups.callRemote,
+  };
 }
 
 async function readBaseline(ctx, path, explicit) {

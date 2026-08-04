@@ -72,6 +72,16 @@ function memFs(files = {}) {
       store.set(norm(path), contents);
     },
     async mkdir() {},
+    /**
+     * SH212 — `verify` reads the tree now, and these fixtures hold a baseline and nothing else.
+     * A directory the project does not have is the projection group's "nothing to check", which
+     * is exactly the state every test here is in.
+     */
+    async readdir(path) {
+      const error = new Error(`ENOENT: ${norm(path)}`);
+      error.code = "ENOENT";
+      throw error;
+    },
   };
 }
 
