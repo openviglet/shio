@@ -29,6 +29,8 @@
 
 ## Block I — Content as files (local-first authoring)
 
+- 📋 **SH399** (deps: SH398 ✅) **A stamped digest cannot tell that somebody changed the bytes underneath the CMS** — SH398 made the digest a cache with one invalidation — a replace — so bytes edited outside the CMS leave the listing confidently reporting a hash that is no longer theirs. → §X.1
+
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 
 - 💭 **SH217** (deps: SH96 ✅) **The community half of the registry** — The local trust model is shipped, and nothing says how a package a stranger wrote earns a place in it. → §XI.5

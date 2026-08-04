@@ -389,7 +389,9 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
         underneath the CMS and reporting it there would turn SH62's `size: -1` into a confident lie.
         The digest is read back from the **file just written**, never from a copy in memory: SH62
         buffered *images only* because buffering an upload allocates the size of the upload, and a
-        digest that needed every byte must not be what widens that to a video.
+        digest that needed every byte must not be what widens that to a video. **Its one blind
+        spot is bytes changed outside the CMS** — the cache's only invalidation is `replace`, so a
+        restored backup or a synced volume leaves a hash that is no longer the file's (**SH399**).
       - **An agreement is recorded even when nothing moved**, or a tree that only ever *reads* its
         assets stays at "never agreed" for ever and the first server-side edit arrives as a conflict
         instead of a change.
