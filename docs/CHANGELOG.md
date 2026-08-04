@@ -237,6 +237,7 @@
 - **SH407** — One collision detector now serves both roots, the pull writes neither marker and names the pair, and `verify` reads `shio/folders/` for the first time to report it with no instance.
 - **SH408** — The lint now asks every root whether its outputs collide and whether a detector is wired; it named assets, post-types and site names, plus a fourth traversal gap in a module SH403 never listed.
 - **SH409** — Each root now names the module whose write it guards and only that file is searched; the corrected lint named one root, and the def check moved to the loop that writes `<name>.json`.
+- **SH410** — `applyBaseline` now judges staleness against what the run covered, so the server-free gate stops condemning server acceptances, and an unproven entry is `staleUnknown` rather than a build failure.
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 

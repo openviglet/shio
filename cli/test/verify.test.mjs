@@ -605,3 +605,50 @@ test("SH407: two folder markers differing only in case are a finding too", async
   assert.match(ctx.stdout.text, /path-collision/);
   assert.match(ctx.stdout.text, /_folder\.md/);
 });
+
+test("SH410: the server-free gate does not call server acceptances stale", async () => {
+  // The measurement. `--checks projection` sets `callRemote: false`, so the report holds tree
+  // findings only. Before the fix every acceptance for a server rule matched nothing, was called
+  // stale, and the run exited 1 — breaking the exact gate SH212 built to run without an instance.
+  const fetchImpl = scriptedFetch(CLEAN);
+  const ctx = projectCtx(fetchImpl, projectFs({
+    assets: ["Blog/media/logo.png"],
+    extra: {
+      "/repo/shio/verify-baseline.json": JSON.stringify({
+        version: 1,
+        accepted: [
+          { rule: "required-field-empty", address: "post:Blog/blog/hello", field: "headline",
+            reason: "tracked in SH-000" },
+        ],
+      }),
+    },
+  }));
+
+  const result = await verify.run({ checks: "projection" }, [], ctx);
+
+  assert.deepEqual(fetchImpl.calls, [], "it still needs no instance");
+  assert.equal(result.exitCode, undefined, "a run that could not produce the finding must not "
+    + "claim the finding is gone");
+  assert.doesNotMatch(ctx.stdout.text, /no longer exist/);
+});
+
+test("SH410: a full run still reports an acceptance nothing matched", async () => {
+  // The property that must survive the fix: a baseline quietly forgiving a defect nobody has is
+  // how a gate rots, so where the run *could* have produced the finding, staleness still fails.
+  const ctx = projectCtx(scriptedFetch(CLEAN), projectFs({
+    assets: ["Blog/media/logo.png"],
+    extra: {
+      "/repo/shio/verify-baseline.json": JSON.stringify({
+        version: 1,
+        accepted: [
+          { rule: "required-field-empty", address: "post:Blog/blog/hello", field: "headline" },
+        ],
+      }),
+    },
+  }));
+
+  const result = await verify.run({}, [], ctx);
+
+  assert.equal(result.exitCode, 1);
+  assert.match(ctx.stderr.text, /no longer exist/);
+});

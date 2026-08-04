@@ -308,3 +308,36 @@ test("the scoping flags reach the query string and the subset is reported", asyn
   assert.match(ctx.stdout.text, /scope: folder:Blog\/news/);
   assert.match(ctx.stdout.text, /covered a subset/);
 });
+
+test("SH410: a scoped run does not condemn another site's acceptances", () => {
+  // The same category error as the group one: a `--site Blog` run could never have produced a
+  // finding about News, so its silence about News is not evidence (SH143's rule).
+  const baseline = {
+    accepted: [
+      { rule: "required-field-empty", address: "post:News/blog/hello", field: "headline" },
+    ],
+  };
+  const report = { findings: [], truncated: false };
+
+  const scoped = applyBaseline(report, baseline, { groups: ["projection", "remote"], site: "Blog" });
+  assert.deepEqual(scoped.stale, []);
+  assert.equal(scoped.staleUnknown, true, "unproven, and it says so rather than passing quietly");
+
+  // Unscoped, the same entry is judged and found spent — the property that must survive.
+  const full = applyBaseline(report, baseline, { groups: ["projection", "remote"] });
+  assert.equal(full.stale.length, 1);
+  assert.equal(full.staleUnknown, false);
+});
+
+test("SH410: every rule this CLI does not own belongs to the server, not to an unknown bucket", () => {
+  // An "unknown counts as covered" third bucket would reinstate the defect exactly:
+  // `required-field-empty` is not a projection rule, and treating it as unclassified is how a
+  // tree-only run came to judge it in the first place.
+  const baseline = { accepted: [{ rule: "some-future-server-rule", address: "post:Blog/a" }] };
+  const treeOnly = applyBaseline({ findings: [], truncated: false }, baseline, {
+    groups: ["projection"],
+  });
+
+  assert.deepEqual(treeOnly.stale, []);
+  assert.equal(treeOnly.staleUnknown, true);
+});

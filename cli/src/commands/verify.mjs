@@ -88,7 +88,16 @@ export async function run(flags, positionals, ctx) {
     return accept(raw, baseline, path, flags, ctx);
   }
 
-  const report = applyBaseline(raw, baseline);
+  // SH410 — what this run could have produced, so staleness is judged against coverage rather
+  // than against findings. A group that did not run cannot be evidence that its acceptances are
+  // spent, and a `--site` run says nothing about the other sites.
+  const report = applyBaseline(raw, baseline, {
+    groups: [
+      ...(groups.projection ? ["projection"] : []),
+      ...(groups.callRemote ? ["remote"] : []),
+    ],
+    site,
+  });
   ctx.stdout.write(render(report, path));
 
   const stale = report.staleUnknown ? [] : report.stale;
