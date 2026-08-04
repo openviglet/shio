@@ -120,6 +120,39 @@ export class ShioAdminClient {
   }
 
   /**
+   * GET /api/v2/staticfile/{id}/digest — `{ id, fileName, size, sha256 }` (SH210).
+   *
+   * How `push --content` tells an edited asset from an untouched one. The server hashes its own
+   * copy, so the answer is 64 characters rather than the file: comparing bytes here would mean
+   * downloading every referenced asset on every push, because an *unchanged* asset is exactly the
+   * one whose length matches.
+   */
+  staticFileDigest(id) {
+    return this.#at(`/api/v2/staticfile/${encodeURIComponent(id)}/digest`, "GET");
+  }
+
+  /**
+   * POST /api/v2/staticfile/{id}/replace — new bytes for an existing asset (SH210).
+   *
+   * The one operation `push --content` was missing: an upload always creates a post, so a path
+   * the server already had was skipped and editing an asset's bytes did nothing. Identity stays
+   * the server's — id, folder and file name are not arguments, because the last two *are* the
+   * asset's address and a replace must not move it.
+   */
+  async replaceStaticFile({ id, fileName, bytes, contentType }) {
+    const form = new FormData();
+    form.append("file", new Blob([bytes], { type: contentType || "application/octet-stream" }), fileName);
+    const url = `${this.baseUrl}/api/v2/staticfile/${encodeURIComponent(id)}/replace`;
+    const res = await this.fetch(url, {
+      method: "POST",
+      headers: { Authorization: this.#authHeader(), Accept: "application/json" },
+      body: form,
+    });
+    if (!res.ok) throw new ShioHttpError(res.status, url, await bodyOf(res));
+    return res.json();
+  }
+
+  /**
    * POST /api/v2/import — clone an SH68 exchange package into this instance (SH268).
    *
    * Multipart for `uploadStaticFile`'s reason (P10: the endpoint the console uses is the endpoint),

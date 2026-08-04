@@ -16,6 +16,7 @@ import * as changes from "../src/commands/changes.mjs";
 import * as contentPull from "../src/commands/content-pull.mjs";
 import * as contentPush from "../src/commands/content-push.mjs";
 import * as watch from "../src/commands/content-watch.mjs";
+import { sha256Of } from "../src/content-assets.mjs";
 import { norm } from "./support/paths.mjs";
 
 const DEFS = [
@@ -108,11 +109,14 @@ function server({
   pageSize = 0,
   // SH149 — the folders each site holds, as the sitemap reports them: `{ Blog: ["/", "/news"] }`.
   serverFolders = null,
-  // SH145 — the media inventory: `[{ id, fileName, folderId, siteName }]`, plus the bytes.
+  // SH145 — the media inventory: `[{ id, fileName, folderId, siteName, size }]`, plus the bytes.
   serverAssets = [],
+  // SH210 — what the server holds for an id, so a test can make the bytes match or differ.
+  serverBytes = {},
 } = {}) {
   const calls = [];
   const uploads = [];
+  const replacements = [];
   const fetchImpl = async (url, init = {}) => {
     const target = String(url);
     const jsonBody = init.body && typeof init.body === "string" ? JSON.parse(init.body) : null;
@@ -137,9 +141,19 @@ function server({
       uploads.push({ body: init.body, created });
       return json(created);
     }
+    if (/\/api\/v2\/staticfile\/[^/?]+\/digest$/.test(target)) {
+      const id = target.split("/").at(-2);
+      const bytes = serverBytes[id] ?? `bytes-of-${id}`;
+      return json({ id, size: Buffer.byteLength(bytes), sha256: sha256Of(bytes) });
+    }
+    if (/\/api\/v2\/staticfile\/[^/?]+\/replace$/.test(target)) {
+      const id = target.split("/").at(-2);
+      replacements.push({ id, body: init.body });
+      return json({ id });
+    }
     if (/\/api\/v2\/staticfile\/[^/?]+$/.test(target)) {
       const id = target.split("/").pop();
-      return bytesResponse(new TextEncoder().encode(`bytes-of-${id}`));
+      return bytesResponse(new TextEncoder().encode(serverBytes[id] ?? `bytes-of-${id}`));
     }
     if (target.includes("/api/v2/staticfile")) {
       return json(serverAssets);
@@ -175,6 +189,7 @@ function server({
   };
   fetchImpl.calls = calls;
   fetchImpl.uploads = uploads;
+  fetchImpl.replacements = replacements;
   return fetchImpl;
 }
 
@@ -560,8 +575,8 @@ const ASSET_DEFS = [
   },
 ];
 
-function assetServer({ remote = {}, serverAssets = [], serverFolders = {} } = {}) {
-  const base = server({ remote, serverAssets, serverFolders });
+function assetServer({ remote = {}, serverAssets = [], serverFolders = {}, serverBytes = {} } = {}) {
+  const base = server({ remote, serverAssets, serverFolders, serverBytes });
   const wrapped = async (url, init) => {
     // The post-type list has to carry the File field for this group, and `server()`'s DEFS
     // deliberately does not — every other test would then pay for a field it never uses.
@@ -582,6 +597,7 @@ function assetServer({ remote = {}, serverAssets = [], serverFolders = {} } = {}
   };
   wrapped.calls = base.calls;
   wrapped.uploads = base.uploads;
+  wrapped.replacements = base.replacements;
   return wrapped;
 }
 
@@ -658,7 +674,10 @@ test("push --content reuses an asset the server already has, so a second push up
   const fetchImpl = assetServer({
     remote: {},
     serverFolders: { Blog: ["/", "/blog", "/media"] },
-    serverAssets: [{ id: "file-1", fileName: "logo.png", folderId: "Blog:/media", siteName: "Blog" }],
+    serverAssets: [
+      { id: "file-1", fileName: "logo.png", folderId: "Blog:/media", siteName: "Blog", size: 9 },
+    ],
+    serverBytes: { "file-1": "the bytes" },
   });
   const ctx = ctxWith(fetchImpl, {
     [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Hello\n  hero: Blog/media/logo.png\n---\n`,
@@ -668,6 +687,136 @@ test("push --content reuses an asset the server already has, so a second push up
   await contentPush.run({}, [], ctx);
 
   assert.equal(fetchImpl.uploads.length, 0);
+  // SH210: unchanged is now a *comparison* that came out equal, not a path that was skipped. It
+  // cost one digest and no bytes — which is the point, because an unchanged asset is exactly the
+  // one whose length matches, so it is exactly the one a byte comparison would have downloaded.
+  assert.equal(fetchImpl.replacements.length, 0);
+  assert.ok(fetchImpl.calls.every((call) => !/staticfile\/file-1$/.test(call.url)));
+  const applied = fetchImpl.calls.find((call) => call.url.includes("/agent/apply"));
+  assert.equal(applied.body.posts[0].data.hero, "file-1");
+});
+
+// --- editing an asset's bytes in place (SH210) ---
+
+test("push --content replaces the bytes of an asset whose length changed", async () => {
+  // The projection's one silent no-op: idempotence by path used to mean *skip*, so editing the
+  // bytes at a path the server already had uploaded nothing and reported success.
+  const fetchImpl = assetServer({
+    remote: {},
+    serverFolders: { Blog: ["/", "/blog", "/media"] },
+    serverAssets: [
+      { id: "file-1", fileName: "logo.png", folderId: "Blog:/media", siteName: "Blog", size: 4 },
+    ],
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Hello\n  hero: Blog/media/logo.png\n---\n`,
+    "/repo/shio/assets/Blog/media/logo.png": "the edited bytes",
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  assert.deepEqual(
+    fetchImpl.replacements.map((row) => row.id),
+    ["file-1"],
+  );
+  // Replaced, not re-uploaded: a second post at the same (folder, file name) would make the
+  // asset path stop naming one asset, and the field still resolves to the same id.
+  assert.equal(fetchImpl.uploads.length, 0);
+  const applied = fetchImpl.calls.find((call) => call.url.includes("/agent/apply"));
+  assert.equal(applied.body.posts[0].data.hero, "file-1");
+  assert.match(ctx.stdout.text, /1 asset\(s\) replaced/);
+  // The cheap branch decided it: the length differed, so no digest was needed to find out.
+  assert.ok(fetchImpl.calls.every((call) => !/staticfile\/file-1\/digest$/.test(call.url)));
+});
+
+test("push --content asks for a digest when the length is unchanged", async () => {
+  // The case size alone cannot see, and the one that made a detector built on size alone
+  // unacceptable: re-saving a text asset without changing its length is ordinary.
+  const fetchImpl = assetServer({
+    remote: {},
+    serverFolders: { Blog: ["/", "/blog", "/media"] },
+    serverAssets: [
+      { id: "file-1", fileName: "logo.svg", folderId: "Blog:/media", siteName: "Blog", size: 5 },
+    ],
+    serverBytes: { "file-1": "aaaaa" },
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Hello\n  hero: Blog/media/logo.svg\n---\n`,
+    "/repo/shio/assets/Blog/media/logo.svg": "aaaab",
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  assert.deepEqual(
+    fetchImpl.replacements.map((row) => row.id),
+    ["file-1"],
+  );
+  // It asked for exactly one digest, and downloaded nothing.
+  assert.equal(
+    fetchImpl.calls.filter((call) => /staticfile\/file-1\/digest$/.test(call.url)).length,
+    1,
+  );
+  assert.ok(fetchImpl.calls.every((call) => !/staticfile\/file-1$/.test(call.url)));
+});
+
+test("push --content leaves an asset alone when the same-length bytes are identical", async () => {
+  const fetchImpl = assetServer({
+    remote: {},
+    serverFolders: { Blog: ["/", "/blog", "/media"] },
+    serverAssets: [
+      { id: "file-1", fileName: "logo.svg", folderId: "Blog:/media", siteName: "Blog", size: 5 },
+    ],
+    serverBytes: { "file-1": "aaaaa" },
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Hello\n  hero: Blog/media/logo.svg\n---\n`,
+    "/repo/shio/assets/Blog/media/logo.svg": "aaaaa",
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  assert.equal(fetchImpl.replacements.length, 0);
+  assert.doesNotMatch(ctx.stdout.text, /replaced/);
+});
+
+test("a plan reports a replacement and performs none", async () => {
+  const fetchImpl = assetServer({
+    remote: {},
+    serverFolders: { Blog: ["/", "/blog", "/media"] },
+    serverAssets: [
+      { id: "file-1", fileName: "logo.png", folderId: "Blog:/media", siteName: "Blog", size: 4 },
+    ],
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Hello\n  hero: Blog/media/logo.png\n---\n`,
+    "/repo/shio/assets/Blog/media/logo.png": "the edited bytes",
+  });
+
+  await contentPush.run({ dryRun: true }, [], ctx);
+
+  assert.equal(fetchImpl.replacements.length, 0);
+  assert.match(ctx.stdout.text, /1 asset\(s\) to replace/);
+  assert.match(ctx.stdout.text, /Blog\/media\/logo\.png \(would replace\)/);
+});
+
+test("an asset the server has and the tree does not is not a refusal", async () => {
+  // The missing-bytes refusal exists so a push cannot publish a File field pointing at nothing,
+  // and a path the server already holds points at something. A hand-written document naming an
+  // existing asset it never pulled is legitimate, so ENOENT here means unchanged.
+  const fetchImpl = assetServer({
+    remote: {},
+    serverFolders: { Blog: ["/", "/blog", "/media"] },
+    serverAssets: [
+      { id: "file-1", fileName: "logo.png", folderId: "Blog:/media", siteName: "Blog", size: 4 },
+    ],
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [FILE]: `---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Hello\n  hero: Blog/media/logo.png\n---\n`,
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  assert.equal(fetchImpl.replacements.length, 0);
   const applied = fetchImpl.calls.find((call) => call.url.includes("/agent/apply"));
   assert.equal(applied.body.posts[0].data.hero, "file-1");
 });

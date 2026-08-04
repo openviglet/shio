@@ -224,9 +224,37 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   - **Two refusals and one assumption.** A declared path with no bytes on disk stops the push (the
     alternative is publishing a post whose File field points at nothing); an upload's missing
     folder is created with the same `folder.upsert` the document would have used, never redirected
-    to the site root. And **a path already on disk is not re-downloaded**, because a File post's
-    bytes are immutable — an upload always creates a new id-keyed post, so the same path is the
-    same asset. An id that resolves to no known asset stays an id and is reported.
+    to the site root. And **a path already on disk is not re-downloaded** on `pull`, because a
+    File post's bytes were immutable. An id that resolves to no known asset stays an id and is
+    reported.
+  - **A path the server already has is compared on push, not skipped (SH210).** That immutability
+    was the projection's one silent no-op: `push --content` skipped a known path, so **editing an
+    asset's bytes uploaded nothing and reported success**, on the most ordinary thing anyone does
+    to an asset. Bytes are now replaceable in place — `ShStaticFileService.replace` behind
+    `POST /api/v2/staticfile/{id}/replace`, which keeps the id, the folder, the name and the SH62
+    usage list, re-stamps size and dimensions, and audits an `UPDATE` so the SH88 feed carries it.
+    Four decisions worth keeping:
+    - **Replace, never upload-and-repoint.** The cheap alternative would put two `File` posts at
+      one (folder, file name) pair — and that pair *is* the asset's address, so the path would stop
+      naming one asset. It also strands the old post, which may be referenced by content this tree
+      does not own (the same reason deleting an asset is not projected).
+    - **Detection is `size`, then a digest — never a byte comparison.** `GET /staticfile/{id}/digest`
+      returns `{id, fileName, size, sha256}`, hashed from the server's own disk. Comparing bytes
+      would have the cost profile *inverted*: an **unchanged** asset is exactly the one whose length
+      matches, so the common case would download every referenced asset on every push. A differing
+      length, and SH62's `size: -1` (the post exists, its bytes do not), are decided for free.
+    - **The digest is computed on demand, not stamped at write time.** Stamping is the obvious
+      optimisation and a different task: it covers only assets written after it ships, so the
+      on-demand path has to exist anyway, and one mechanism beats two that disagree about which
+      rows they cover.
+    - **`ENOENT` on a path the server already holds means unchanged, not broken.** The
+      missing-bytes refusal exists so a push cannot publish a `File` field pointing at nothing, and
+      a path in the inventory points at something; a hand-written document naming an existing asset
+      it never pulled is legitimate, and refusing it would be a worse defect than the one fixed.
+    - Still open in the other direction: a **server-side** asset edit never reaches the tree,
+      because `pull` skips a path already on disk and asset bytes are outside the SH89 three-way
+      merge — overwriting a locally-edited asset would be data loss, so it needs the merge story
+      first (**SH373**).
   - Deleting an asset is **not** projected: bytes go when their post goes (SH38's cleanup
     listener), and a File post can be referenced by content this tree does not own.
 

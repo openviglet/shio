@@ -24,8 +24,10 @@ import { resolveAdmin } from "../context.mjs";
 import {
   ASSETS_DIR,
   assetLocationOf,
+  assetSizeDiffers,
   fileFields,
   pathsToIds,
+  sha256Of,
 } from "../content-assets.mjs";
 import {
   BASE_FILE,
@@ -296,6 +298,19 @@ export async function run(flags, _positionals, ctx) {
  * simple in both directions: a push carries what the content refers to, so there is no question
  * about what an unreferenced file means and no way for a stale one to resurrect itself.
  *
+ * <h3>An asset already on the server is compared, not skipped (SH210)</h3>
+ *
+ * Idempotence by path used to mean *skip*, which answered the wrong question: it is right that a
+ * second push must not upload a second copy, and it is wrong that **editing the bytes at a path
+ * the server already has did nothing and reported success** — the projection's one silent no-op,
+ * on the most ordinary thing anyone does to an asset. A path in the inventory now has its bytes
+ * compared and, if they differ, replaced in place through `POST /staticfile/{id}/replace`.
+ *
+ * Replaced, not re-uploaded: uploading and repointing the field would put two `File` posts at one
+ * (folder, file name) pair, and that pair *is* the asset's address, so the path would stop naming
+ * one asset. It would also strand the old post, which SH62's usage list may show as referenced by
+ * content this tree does not own.
+ *
  * <h3>Two refusals</h3>
  *
  * A declared path whose **bytes are not on disk** stops the push: the alternative is a post
@@ -359,6 +374,38 @@ async function pushNotes(client, ctx, { base, sites, dir, planOnly }) {
   return { written, forgotten, agreed };
 }
 
+/**
+ * The local bytes when they differ from the server's, or `null` when nothing needs replacing
+ * (SH210).
+ *
+ * <h3>No bytes on disk is not a refusal here</h3>
+ *
+ * The missing-asset refusal exists so a push cannot publish a post whose `File` field points at
+ * nothing — and a path the server already holds points at something. A tree that names an
+ * existing asset it never pulled is legitimate (nothing obliges a hand-written document to carry
+ * bytes it does not change), so `ENOENT` on this branch means "unchanged", not "broken". Reading
+ * it as a refusal would turn every such tree's next push into an error, which is a worse defect
+ * than the one being fixed.
+ */
+async function replacementFor(ctx, { admin, path, item, assetsDir }) {
+  let bytes;
+  try {
+    bytes = await readAssetBytes(ctx, path, { dir: assetsDir });
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+    return null;
+  }
+  if (assetSizeDiffers(bytes, item?.size) === true) return bytes;
+  // Same length, so only content can decide — and the server hashes its own copy rather than
+  // shipping it here, because the length matching is the *common* case and downloading on it
+  // would mean fetching every referenced asset on every push.
+  const remote = await admin.staticFileDigest(item.id);
+  // A server that cannot say what it holds gets the tree's copy: the tree is the declared state,
+  // and the outcome this task exists to remove is the one where nothing happens and it looks fine.
+  if (!remote?.sha256) return bytes;
+  return remote.sha256 === sha256Of(bytes) ? null : bytes;
+}
+
 async function resolveAssets(ctx, { client, admin, defs, posts, sites, assetsDir, planOnly, stdout }) {
   const fileFieldMap = fileFields(defs);
   const needed = new Set();
@@ -370,14 +417,32 @@ async function resolveAssets(ctx, { client, admin, defs, posts, sites, assetsDir
       if (typeof value === "string" && value && assetLocationOf(value)) needed.add(value);
     }
   }
-  if (!needed.size) return { posts, uploaded: [] };
+  if (!needed.size) return { posts, uploaded: [], replaced: [] };
 
   const { byPath, folderIds } = await readRemoteAssets(client, admin, { sites });
   const uploaded = [];
+  const replaced = [];
   const missing = [];
 
   for (const path of [...needed].sort((a, b) => a.localeCompare(b))) {
-    if (byPath.has(path)) continue;
+    const known = byPath.get(path);
+    if (known) {
+      const change = await replacementFor(ctx, { admin, path, item: known, assetsDir });
+      if (change) {
+        if (planOnly) {
+          replaced.push(`${path} (would replace)`);
+        } else {
+          await admin.replaceStaticFile({
+            id: known.id,
+            fileName: known.fileName,
+            bytes: change,
+            contentType: contentTypeFor(known.fileName),
+          });
+          replaced.push(path);
+        }
+      }
+      continue;
+    }
     const at = assetLocationOf(path);
     let bytes;
     try {
@@ -437,7 +502,13 @@ async function resolveAssets(ctx, { client, admin, defs, posts, sites, assetsDir
         uploaded.map((path) => `  + ${path}\n`).join(""),
     );
   }
-  return { posts: mapped, uploaded };
+  if (replaced.length) {
+    stdout.write(
+      `shio push --content: ${replaced.length} asset(s)${planOnly ? " to replace" : " replaced"}:\n` +
+        replaced.map((path) => `  ~ ${path}\n`).join(""),
+    );
+  }
+  return { posts: mapped, uploaded, replaced };
 }
 
 /** Enough of a content type for the server to record; it re-sniffs images itself. */

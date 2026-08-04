@@ -8,6 +8,7 @@
  */
 package com.viglet.shio.api.staticfile;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -376,6 +377,120 @@ class ShStaticFileAPITest {
         mockMvc.perform(get("/api/v2/staticfile/" + fileId + "/usage").principal(mockPrincipal))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.postId == '" + referrerId + "')]").exists());
+    }
+
+    /**
+     * SH210 — the digest is what lets {@code push --content} tell an edited asset from an
+     * untouched one without moving either copy. It reports the name too, so a caller can check
+     * it is reconciling what it thinks it is.
+     */
+    @Test
+    void stage06aDigestReportsSizeAndSha256() throws Exception {
+        String id = uploadTextPost("digestable.txt", "the original bytes");
+        String expected = sha256Hex("the original bytes");
+
+        mockMvc.perform(get("/api/v2/staticfile/" + id + "/digest").principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fileName").value("digestable.txt"))
+                .andExpect(jsonPath("$.size").value(18))
+                .andExpect(jsonPath("$.sha256").value(expected));
+    }
+
+    /**
+     * The point of the whole task: the bytes at a path can be edited. Before this, an upload was
+     * the only write, so {@code push --content} skipped a path the server already had and editing
+     * an asset uploaded nothing while reporting success.
+     */
+    @Test
+    void stage06bReplaceSwapsTheBytesAndKeepsTheIdentity() throws Exception {
+        String id = uploadTextPost("swappable.txt", "before");
+        MockMultipartFile replacement = new MockMultipartFile(
+                // A different name on purpose: the name is half the asset's address, so a replace
+                // must not be able to move the asset by accident.
+                "file", "ignored-name.txt", "text/plain", "after, and longer".getBytes(StandardCharsets.UTF_8));
+
+        mockMvc.perform(multipart("/api/v2/staticfile/" + id + "/replace")
+                        .file(replacement)
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.fileName").value("swappable.txt"))
+                .andExpect(jsonPath("$.size").value(17));
+
+        assertEquals("after, and longer",
+                Files.readString(storage.resolve(id, "swappable.txt")),
+                "the bytes on disk are the new ones, under the same id and name");
+        mockMvc.perform(get("/api/v2/staticfile/" + id + "/digest").principal(mockPrincipal))
+                .andExpect(jsonPath("$.sha256").value(sha256Hex("after, and longer")));
+    }
+
+    /** An empty body would truncate the asset and answer 200 (P7: never surprise the human). */
+    @Test
+    void stage06cReplaceRefusesAnEmptyBody() throws Exception {
+        String id = uploadTextPost("keepme.txt", "keep me");
+        MockMultipartFile empty = new MockMultipartFile("file", "keepme.txt", "text/plain", new byte[0]);
+
+        mockMvc.perform(multipart("/api/v2/staticfile/" + id + "/replace")
+                        .file(empty)
+                        .principal(mockPrincipal))
+                .andExpect(status().isBadRequest());
+
+        assertEquals("keep me", Files.readString(storage.resolve(id, "keepme.txt")));
+    }
+
+    @Test
+    void stage06dReplaceAndDigestRefuseAnIdThatIsNotAFilePost() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "x.txt", "text/plain", "x".getBytes(StandardCharsets.UTF_8));
+
+        mockMvc.perform(get("/api/v2/staticfile/not-a-file-post/digest").principal(mockPrincipal))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(multipart("/api/v2/staticfile/not-a-file-post/replace")
+                        .file(file)
+                        .principal(mockPrincipal))
+                .andExpect(status().isNotFound());
+    }
+
+    /**
+     * Stale dimensions are worse than none: the Media Library renders them, so an image replaced
+     * by something that is not one would keep the old picture's shape for ever.
+     */
+    @Test
+    void stage06eReplacingAnImageWithATextFileClearsTheDimensions() throws Exception {
+        String id = uploadImagePost();
+        mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
+                .andExpect(jsonPath("$[?(@.id == '" + id + "')].width").value(120));
+
+        MockMultipartFile notAnImage = new MockMultipartFile(
+                "file", "pic.png", "text/plain", "not a picture".getBytes(StandardCharsets.UTF_8));
+        mockMvc.perform(multipart("/api/v2/staticfile/" + id + "/replace")
+                        .file(notAnImage)
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.width").doesNotExist())
+                .andExpect(jsonPath("$.height").doesNotExist());
+    }
+
+    private String uploadTextPost(String name, String body) throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", name, "text/plain", body.getBytes(StandardCharsets.UTF_8));
+        String response = mockMvc.perform(multipart("/api/v2/staticfile/upload")
+                        .file(file)
+                        .param("folderId", folderId)
+                        .principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return com.jayway.jsonpath.JsonPath.read(response, "$.id");
+    }
+
+    private static String sha256Hex(String body) throws Exception {
+        byte[] digest = java.security.MessageDigest.getInstance("SHA-256")
+                .digest(body.getBytes(StandardCharsets.UTF_8));
+        StringBuilder out = new StringBuilder();
+        for (byte b : digest) {
+            out.append(String.format("%02x", b));
+        }
+        return out.toString();
     }
 
     /** Upload a small PNG and return its File-post id. */

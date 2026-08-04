@@ -379,27 +379,6 @@ unchanged page must never be the same row.
 > ✅ **SH86, SH87, SH88, SH89 and SH90 shipped** → [CHANGELOG.md](CHANGELOG.md) Block I.
 > What follows is the design rationale for what the projection **still owes**.
 
-### X.13 Editing an asset's bytes in place does nothing (SH210)
-
-SH145 made a `File` field hold an asset path and made `push --content` resolve it back to an id
-idempotently, reusing the id when the path is already in the server's inventory. That is right
-for the case it was designed for (a second push must not upload a second copy) and wrong for
-the case nobody separated from it: **replacing the bytes at a path that already exists uploads
-nothing and reports success** — the one silent no-op left in the projection, on the most
-ordinary thing anyone does to an asset.
-
-Noticing it is cheap and already half-built: the base snapshot fingerprints every projected
-field (SH148), and the same treatment applied to an asset's bytes would make "this file
-changed" a fact rather than an inference from its path.
-
-Landing it is the harder half, because the server has no replace-the-bytes operation — an
-upload always creates a new id-keyed `File` post (which is exactly why SH145 could treat a
-path as immutable). Two candidates, and they are not equivalent: **repoint the reference** —
-upload the new bytes as a new post and rewrite the field — which is cheap, keeps history, and
-leaves the old bytes and post behind as garbage; or **give SH38 a replace path**, which keeps
-one post per asset and its usage list (SH62) intact, at the cost of a mutation the storage
-layer currently does not have. The first is a CLI change, the second is a protocol change.
-
 ### X.14 Renaming a folder marker is a delete plus a create (SH211)
 
 This is SH150's defect, one level up, and the level matters: a post re-created under a new
@@ -476,6 +455,28 @@ sync reporting success. A sync that loses an edit should at minimum be able to s
 the value's **length** beside the hash, or a second short hash with a different seed, makes a
 collision a reported conflict instead of a silent skip, at a few bytes per field. The point is
 not to make collisions less likely; it is to make the remaining ones loud.
+
+### X.19 A server-side asset edit never reaches the tree (SH373)
+
+SH210 made the push direction work: a path the server already holds is compared against
+the tree's bytes and replaced when they differ. The pull direction is still the
+pre-SH210 assumption — `pull --content` skips a path already on disk, because a `File`
+post's bytes used to be immutable and re-fetching was pure cost.
+
+They are not immutable any more, and the console can replace them, so a curator swapping
+an image in the Media Library produces a change no pull will ever project — and the tree
+stops being the complete description of a site that Block I promises.
+
+The reason this is not SH210's second half is that the obvious fix is data loss. Asset
+bytes sit outside the SH89 three-way merge: the base snapshot fingerprints projected
+*fields*, and an asset is neither a field nor a document, so "fetch it when the digest
+differs" cannot tell a server edit from a local one and would overwrite the local file
+whenever both moved. The merge has to learn about bytes first — a fingerprint in the
+base (SH148's treatment applied to an asset), then the same three outcomes the content
+merge already has, with a conflict left on disk rather than resolved.
+
+SH210's digest endpoint is the cheap half of the detection and needs nothing new. What
+it does not answer is *which side* changed, which is the whole question.
 
 ## XI. Blueprints + Claude Code plugin (Block J)
 

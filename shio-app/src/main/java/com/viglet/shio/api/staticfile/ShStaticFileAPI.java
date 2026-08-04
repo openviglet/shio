@@ -149,6 +149,50 @@ public class ShStaticFileAPI {
     }
 
     /**
+     * What an asset's stored bytes hash to (SH210), so {@code shio push --content} can tell an
+     * edited asset from an untouched one without transferring either copy. 404 if the id is not a
+     * published {@code File} post.
+     */
+    @GetMapping("/{id}/digest")
+    public ShStaticFileService.ShStaticFileDigest digest(@PathVariable String id) {
+        try {
+            return shStaticFileService.digestOf(id);
+        } catch (java.util.NoSuchElementException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        }
+    }
+
+    /**
+     * Replace the bytes of an existing {@code File} post, keeping its id, folder and name
+     * (SH210). Returns the refreshed {@link ShStaticFileItem}; 404 if the id is not a published
+     * {@code File} post.
+     *
+     * <p><b>{@code POST}, not {@code PUT}, and that is not a REST slip.</b> Servlet multipart
+     * resolution is specified for {@code POST} and is a container-dependent extra for anything
+     * else, so a {@code PUT} here would parse the body on one server and hand the controller an
+     * empty file on another — a failure that looks like the caller's. The sibling that takes no
+     * bytes ({@code PUT /{id}/meta}) is a {@code PUT} for the same reason: it can be.</p>
+     */
+    @PostMapping("/{id}/replace")
+    public ShStaticFileItem replace(@PathVariable String id,
+                                    @RequestParam("file") MultipartFile file,
+                                    Principal principal) {
+        if (file == null || file.isEmpty()) {
+            // An empty replacement would truncate the asset and answer 200. A caller that meant
+            // to delete it has `/v2/post-unified/{id}`, which also cleans up the bytes.
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Replacement is empty. Sending no bytes would truncate the asset; delete the "
+                            + "File post with DELETE /api/v2/post-unified/{id} instead.");
+        }
+        try {
+            return shStaticFileService.replace(file, id,
+                    principal != null ? principal.getName() : null);
+        } catch (java.util.NoSuchElementException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        }
+    }
+
+    /**
      * Pre-upload informational check: reports whether a {@code File} post with
      * {@code fileName} already exists in {@code folderId}. Kept for legacy
      * client parity — uploads are never blocked, since each upload is a distinct

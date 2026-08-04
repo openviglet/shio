@@ -12,9 +12,11 @@ import { test } from "node:test";
 import {
   assetLocationOf,
   assetPathFor,
+  assetSizeDiffers,
   fileFields,
   idsToPaths,
   pathsToIds,
+  sha256Of,
 } from "../src/content-assets.mjs";
 
 const DEFS = [
@@ -136,4 +138,42 @@ test("a post whose type declares no File field is returned untouched", () => {
   const { doc } = idsToPaths(tag, fileFields(DEFS), new Map());
 
   assert.equal(doc, tag, "the same object, so a no-op costs nothing");
+});
+
+// --- telling an edited asset from an untouched one (SH210) ---
+
+test("a length that differs is an answer, and a length that matches is not", () => {
+  // The whole point of the two-valued return: `true` is decided for free, `null` costs one digest.
+  // A boolean here would have forced the caller to guess which, and the cheap guess ("same length,
+  // same bytes") is the silent no-op SH210 is about.
+  assert.equal(assetSizeDiffers(new Uint8Array(4), 7), true);
+  assert.equal(assetSizeDiffers(new Uint8Array(4), 4), null);
+});
+
+test("a size of -1 is the server saying its bytes are gone, and the tree has them", () => {
+  assert.equal(assetSizeDiffers(new Uint8Array(4), -1), true);
+});
+
+test("a size the inventory did not report is undecided, never a replacement", () => {
+  // `true` here would upload every referenced asset on every push against an instance that
+  // reported one field differently — a silent no-op traded for a silent stampede.
+  assert.equal(assetSizeDiffers(new Uint8Array(4), undefined), null);
+  assert.equal(assetSizeDiffers(new Uint8Array(4), "4"), null);
+});
+
+test("length is counted in bytes, not in code units", () => {
+  // An accented character in an svg is two bytes and one code unit, so a `String#length`
+  // comparison against a server-side byte count reads as changed on every push, for ever.
+  const accented = "é";
+  assert.equal(assetSizeDiffers(accented, 2), null, "two bytes, and the server said two");
+  assert.equal(assetSizeDiffers(accented, 1), true);
+});
+
+test("the digest is over the bytes, however the tree handed them over", () => {
+  // `ctx.fs` is a seam: node hands back a Buffer, an in-memory fs hands back a string. A digest
+  // that differed between the two would report every asset as edited in exactly one of them.
+  const text = "hero image";
+  assert.equal(sha256Of(text), sha256Of(new TextEncoder().encode(text)));
+  assert.match(sha256Of(text), /^[0-9a-f]{64}$/);
+  assert.notEqual(sha256Of(text), sha256Of("hero images"));
 });

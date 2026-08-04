@@ -34,6 +34,8 @@
  * The inverse happens only when a document is compiled. Nothing in between ever sees a UUID.
  */
 
+import { createHash } from "node:crypto";
+
 /** The widget whose value is a `File` post's id. The catalogue is closed, so this is exact. */
 const FILE_WIDGET = "File";
 
@@ -135,6 +137,55 @@ export function assetLocationOf(path) {
   const fileName = parts[parts.length - 1];
   const chain = parts.slice(1, -1);
   return { site, folder: chain.length ? `/${chain.join("/")}` : "/", fileName };
+}
+
+/**
+ * Whether the bytes at a path differ from the server's, from the inventory alone (SH210).
+ *
+ * `true` is an answer; **`null` means "size cannot tell" and the caller must ask for a digest.**
+ * Only two things make it `true` without one: a length that differs, and SH62's `size: -1`, which
+ * says the post exists and its bytes do not — the tree has them, so replacing is right.
+ *
+ * <h3>Why this is only a pre-filter, and why comparing bytes is not the fallback</h3>
+ *
+ * The obvious cheap design — same length, so download and compare — has its cost profile exactly
+ * inverted: an **unchanged** asset always has the same length, so the common case would be the
+ * expensive one and every push would download every referenced asset. Size decides only the case
+ * it can decide for free, and the rest is one `GET /staticfile/{id}/digest`: a hash the server
+ * computes from its own disk, so nothing crosses the wire but 64 characters.
+ *
+ * @param {Uint8Array|string} localBytes
+ * @param {number|undefined} remoteSize the inventory item's `size`
+ * @returns {boolean|null}
+ */
+export function assetSizeDiffers(localBytes, remoteSize) {
+  if (typeof remoteSize !== "number" || Number.isNaN(remoteSize)) return null;
+  if (remoteSize < 0) return true;
+  return remoteSize === byteLengthOf(localBytes) ? null : true;
+}
+
+/**
+ * The SHA-256 of an asset's local bytes, lowercase hex — the same value
+ * `GET /api/v2/staticfile/{id}/digest` reports for the server's copy (SH210).
+ */
+export function sha256Of(value) {
+  return createHash("sha256").update(asBuffer(value)).digest("hex");
+}
+
+/**
+ * A length in **bytes**, whatever the value arrived as.
+ *
+ * `ctx.fs` is an injected seam: node's `readFile` with no encoding hands back a `Buffer`, an
+ * in-memory one hands back whatever it was given, and `String#length` counts UTF-16 code units.
+ * Comparing that against a server-side byte count is a comparison that is right for ASCII and
+ * silently wrong for the first accented character in an svg.
+ */
+function byteLengthOf(value) {
+  return asBuffer(value).length;
+}
+
+function asBuffer(value) {
+  return value instanceof Uint8Array ? value : Buffer.from(String(value), "utf8");
 }
 
 /**

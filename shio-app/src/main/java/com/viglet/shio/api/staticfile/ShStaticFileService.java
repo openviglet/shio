@@ -14,6 +14,8 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -26,6 +28,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.viglet.shio.api.history.ShContentAction;
+import com.viglet.shio.api.history.ShContentAuditService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -73,6 +77,8 @@ public class ShStaticFileService {
     private final ShFileStorageService storage;
     private final ShImageDimensionReader dimensionReader;
     private final ObjectMapper objectMapper;
+    /** SH210 — a replaced asset is a content change, so it reaches the feed and the queue. */
+    private final ShContentAuditService shContentAuditService;
     /** Self-reference so upload() bootstraps the File post type through the
      *  transactional proxy instead of a bare {@code this} call (S6809). */
     private final ObjectProvider<ShStaticFileService> self;
@@ -93,6 +99,7 @@ public class ShStaticFileService {
                                ShFileStorageService storage,
                                ShImageDimensionReader dimensionReader,
                                ObjectMapper objectMapper,
+                               ShContentAuditService shContentAuditService,
                                ObjectProvider<ShStaticFileService> self) {
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -102,6 +109,7 @@ public class ShStaticFileService {
         this.storage = storage;
         this.dimensionReader = dimensionReader;
         this.objectMapper = objectMapper;
+        this.shContentAuditService = shContentAuditService;
         this.self = self;
     }
 
@@ -153,6 +161,154 @@ public class ShStaticFileService {
             throw new UncheckedIOException("Failed to read upload " + fileName, e);
         }
         return post;
+    }
+
+    /**
+     * Replace the bytes of an existing {@code File} post, keeping its identity (SH210).
+     *
+     * <h2>Why this operation had to exist</h2>
+     *
+     * <p>An upload always <em>creates</em> an id-keyed post, which is what let SH145 treat an
+     * asset path — folder chain plus file name — as immutable and resolve it idempotently. The
+     * cost showed up on the most ordinary thing anyone does to an asset: {@code push --content}
+     * skipped a path the server already had, so <b>editing an asset's bytes uploaded nothing and
+     * reported success</b>. The projection's one silent no-op.</p>
+     *
+     * <p>The alternative — upload the new bytes as a second post and repoint the field — is
+     * cheaper and <b>unsound here</b>: it would put two {@code File} posts at one (folder, file
+     * name) pair, which is precisely the pair an asset path <em>is</em>, so the path would no
+     * longer name one asset. It also strands the old post, and a {@code File} post may be
+     * referenced by content this tree does not own (which is why deleting one is not projected).
+     * One post per asset, with replaceable bytes, keeps the path stable, the id stable and the
+     * SH62 usage list intact.</p>
+     *
+     * <h2>The file name is the post's, not the upload's</h2>
+     *
+     * <p>Whatever name the multipart carries is ignored. The name is half the asset's address, so
+     * changing it here would silently move the asset — a rename is a different gesture, the way
+     * {@code post.move} is for a post, and there is no reason for a caller replacing bytes to be
+     * able to perform one by accident.</p>
+     *
+     * @param file     the new bytes
+     * @param id       the {@code File} post whose bytes are replaced
+     * @param modifier who did it (may be {@code null})
+     * @return the refreshed item
+     * @throws java.util.NoSuchElementException the id is not a published {@code File} post
+     */
+    @Transactional
+    public ShStaticFileItem replace(MultipartFile file, String id, String modifier) {
+        ShPostUnified post = shPostUnifiedRepository.findByIdAndState(id, ShPostState.PUBLISHED)
+                .filter(p -> p.getShPostType() != null
+                        && ShSystemPostType.FILE.equals(p.getShPostType().getName()))
+                .orElseThrow(() -> new java.util.NoSuchElementException("File post not found: " + id));
+
+        String fileName = fileNameOf(post);
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read replacement for " + fileName, e);
+        }
+
+        // Buffered once and replayed, the same as `upload`: the dimension reader needs a header
+        // and storage needs the whole thing, and a multipart stream is consumable once.
+        ObjectNode data = dataOf(post);
+        int[] dims = dimensionReader.read(new ByteArrayInputStream(bytes));
+        if (dims != null) {
+            data.put(DATA_WIDTH, dims[0]);
+            data.put(DATA_HEIGHT, dims[1]);
+        } else {
+            // Stale dimensions are worse than none: the Media Library renders them, and an
+            // image replaced by a document would keep the old picture's shape for ever.
+            data.remove(DATA_WIDTH);
+            data.remove(DATA_HEIGHT);
+        }
+        post.setData(objectMapper.writeValueAsString(data));
+        post.setModifier(modifier);
+        post.setModifiedDate(Instant.now());
+
+        storage.store(post.getId(), fileName, new ByteArrayInputStream(bytes));
+        ShPostUnified saved = shPostUnifiedRepository.save(post);
+        // The change feed and the SH109 queue both read the audit trail, and a replaced asset is
+        // a content change like any other — a reviewer told nothing would see the field unchanged
+        // (it is: the path did not move) and no reason for the page to look different.
+        shContentAuditService.record(ShContentAction.UPDATE, saved.getId(),
+                saved.getShSite() != null ? saved.getShSite().getId() : null,
+                fileName, modifier);
+        return toItem(saved);
+    }
+
+    /**
+     * What an asset's stored bytes hash to, so a caller can tell "unchanged" from "changed"
+     * without transferring them (SH210).
+     *
+     * <h2>Why the hash is here and not in the listing</h2>
+     *
+     * <p>{@code listFiles} stats every file in the tenant on every call; hashing there would read
+     * every byte of every asset to answer a question about the handful a push declares. One id at
+     * a time is proportional to what the caller is actually reconciling, and the response is 64
+     * characters instead of a file.</p>
+     *
+     * <p>Computed on demand rather than stamped at upload time, which is the obvious optimisation
+     * and a different task: stamping helps only assets written after it ships, so the on-demand
+     * path has to exist anyway for everything already in an instance, and one mechanism that
+     * always works beats two that disagree about which rows are covered.</p>
+     *
+     * @return the digest, or a {@code sha256} of {@code null} when the post exists and its bytes
+     *         do not — the caller must be able to tell that from a mismatch, because the remedy is
+     *         the same (send the bytes) and the diagnosis is not
+     * @throws java.util.NoSuchElementException the id is not a published {@code File} post
+     */
+    @Transactional(readOnly = true)
+    public ShStaticFileDigest digestOf(String id) {
+        ShPostUnified post = shPostUnifiedRepository.findByIdAndState(id, ShPostState.PUBLISHED)
+                .filter(p -> p.getShPostType() != null
+                        && ShSystemPostType.FILE.equals(p.getShPostType().getName()))
+                .orElseThrow(() -> new java.util.NoSuchElementException("File post not found: " + id));
+
+        String fileName = fileNameOf(post);
+        Path path = storage.resolve(post.getId(), fileName);
+        if (!Files.isRegularFile(path)) {
+            return new ShStaticFileDigest(post.getId(), fileName, -1L, null);
+        }
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] buffer = new byte[8192];
+            long size = 0;
+            try (InputStream in = Files.newInputStream(path)) {
+                int read;
+                while ((read = in.read(buffer)) > 0) {
+                    digest.update(buffer, 0, read);
+                    size += read;
+                }
+            }
+            return new ShStaticFileDigest(post.getId(), fileName, size, hex(digest.digest()));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read " + fileName + " for " + id, e);
+        } catch (NoSuchAlgorithmException e) {
+            // SHA-256 is required of every JRE, so this branch is unreachable rather than
+            // unhandled — and rethrowing keeps it from being a `catch` that records nothing.
+            throw new IllegalStateException("SHA-256 is unavailable", e);
+        }
+    }
+
+    private static String hex(byte[] bytes) {
+        StringBuilder out = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            out.append(Character.forDigit((b >> 4) & 0xF, 16)).append(Character.forDigit(b & 0xF, 16));
+        }
+        return out.toString();
+    }
+
+    /**
+     * What an asset's stored bytes are (SH210).
+     *
+     * @param id       the {@code File} post
+     * @param fileName its name, so a caller can check it is reconciling what it thinks
+     * @param size     bytes on disk, or {@code -1} when they are missing (SH62's convention)
+     * @param sha256   lowercase hex, or {@code null} when there are no bytes to hash
+     */
+    public record ShStaticFileDigest(String id, String fileName, long size, String sha256) {
     }
 
     /**
@@ -312,9 +468,7 @@ public class ShStaticFileService {
                         && ShSystemPostType.FILE.equals(p.getShPostType().getName()))
                 .orElseThrow(() -> new java.util.NoSuchElementException("File post not found: " + id));
 
-        ObjectNode data;
-        var existing = post.getData() != null ? objectMapper.readTree(post.getData()) : null;
-        data = existing instanceof ObjectNode node ? node : objectMapper.createObjectNode();
+        ObjectNode data = dataOf(post);
 
         putOrRemove(data, DATA_ALT, alt);
         putOrRemove(data, DATA_CAPTION, caption);
@@ -350,6 +504,19 @@ public class ShStaticFileService {
             }
         }
         return List.copyOf(byId.values());
+    }
+
+    /**
+     * A {@code File} post's {@code data} as a mutable object, or an empty one.
+     *
+     * <p>The guard is the agents.md invariant in Java: the column can hold the literal string
+     * {@code "null"}, and a parse of that is a {@code NullNode} rather than an {@code ObjectNode}
+     * — so every caller that means "the fields" has to say which, or a replaced asset silently
+     * loses the {@code FILE} key that names its own bytes.</p>
+     */
+    private ObjectNode dataOf(ShPostUnified post) {
+        var existing = post.getData() != null ? objectMapper.readTree(post.getData()) : null;
+        return existing instanceof ObjectNode node ? node : objectMapper.createObjectNode();
     }
 
     private static void putOrRemove(ObjectNode data, String key, String value) {
