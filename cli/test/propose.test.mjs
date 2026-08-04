@@ -30,6 +30,7 @@ import {
   repeatedUnits,
   signature,
 } from "../src/propose.mjs";
+import { flatten } from "../src/theme.mjs";
 import * as propose from "../src/commands/propose.mjs";
 import { norm } from "./support/paths.mjs";
 
@@ -395,17 +396,6 @@ test("no capture at all is a teaching error naming the flag that fixes it", asyn
   await assert.rejects(() => propose.run({}, [], ctx), /there is no capture[\s\S]*shio clone .* --markup/);
 });
 
-test("a capture taken without --markup is refused by name, not by an empty proposal", async () => {
-  // The failure this message exists for: an empty candidate list reads as "this site has no
-  // convertible blocks", which is a statement about the site rather than about the capture.
-  const ctx = ctxWith({
-    inventory: { ...inventoryFor(), pages: [{ path: "/", title: "Home" }] },
-    site: {},
-  });
-
-  await assert.rejects(() => propose.run({}, [], ctx), /none of them has markup[\s\S]*--markup/);
-});
-
 test("a page whose cached markup is gone is a counted note, not a failed run", async () => {
   const ctx = ctxWith({ inventory: inventoryFor(["/", "/about", "/pricing"]) });
   const { proposal, exitCode } = await propose.run({}, [], ctx);
@@ -434,6 +424,92 @@ test("the report declares its cut, so a truncated one cannot read as complete", 
   const report = describeProposal(proposal, { limit: 1 });
 
   assert.match(report, /more candidate\(s\) in shio\/\.shio\/conversion-proposal\.json/);
+});
+
+// --- SH380: the theme half of the same artefact ---
+
+const STYLESHEET = `
+  :root{--brand-primary:#0b5533;--space-4:16px}
+  body{background:url(/img/bg.png)}
+  h1{color:#0b5533}h2{color:#0b5533}h3{color:#0b5533}
+`;
+
+function withStyles(inventory = inventoryFor()) {
+  return {
+    ...inventory,
+    assets: [
+      { path: "/css/site.css", kind: "stylesheet", refs: 2, file: "Acme/css/site.css" },
+      { path: "/img/bg.png", kind: "image", refs: 1, file: "Acme/img/bg.png" },
+      { path: "https://cdn.test/f.woff2", kind: "font", refs: 1, external: true },
+    ],
+  };
+}
+
+function ctxWithStyles(inventory = withStyles()) {
+  const ctx = ctxWith({ inventory });
+  const readFile = ctx.fs.readFile;
+  ctx.fs.readFile = async (path, encoding) => {
+    if (norm(path).endsWith("shio/assets/Acme/css/site.css")) return STYLESHEET;
+    return readFile(path, encoding);
+  };
+  return ctx;
+}
+
+test("the proposal carries the theme beside the candidates, in one artefact", async () => {
+  const ctx = ctxWithStyles();
+  const { proposal } = await propose.run({}, [], ctx);
+
+  assert.ok(proposal.candidates.length, "the block half is still there");
+  assert.deepEqual(proposal.theme.tokens.brand.primary, { $value: "#0b5533", $type: "color" });
+  assert.ok(proposal.theme.rows.some((row) => row.source === "recurring" && row.value === "#0b5533"));
+  assert.match(ctx.stdout.text, /^theme: 1 stylesheet\(s\)/m);
+});
+
+test("the TOKENS field is JSON ShThemeTokens can flatten, which is what SH195 requires of it", async () => {
+  const ctx = ctxWithStyles();
+  const { proposal } = await propose.run({}, [], ctx);
+
+  // SH195's rule is load-bearing rather than tidy: a TOKENS field that is not JSON degrades the
+  // render. Round-tripping it through the serializer is the cheapest proof that what lands in the
+  // file is what a reader will parse.
+  const written = JSON.parse(ctx.written[norm(`/repo/${PROPOSAL_FILE}`)]);
+  assert.deepEqual(written.theme.tokens, proposal.theme.tokens);
+  assert.ok(Object.keys(flatten(written.theme.tokens)).includes("brand.primary"));
+});
+
+test("a capture with stylesheets and no markup still yields a theme, not a refusal", async () => {
+  // The state a caller lands in after `clone --assets --site X` without `--markup`. Refusing it would
+  // withhold the theme over a flag that has nothing to do with the theme.
+  const ctx = ctxWithStyles({ ...withStyles(), pages: [{ path: "/", title: "Home" }] });
+  const { proposal, exitCode } = await propose.run({}, [], ctx);
+
+  assert.equal(exitCode, 0);
+  assert.deepEqual(proposal.candidates, []);
+  assert.ok(proposal.theme.rows.length);
+});
+
+test("neither markup nor a stylesheet is what the refusal is about, and it names both flags", async () => {
+  // The failure this message exists for: an empty proposal reads as "this site has no convertible
+  // blocks and no theme", which is a statement about the *site* rather than about the capture.
+  const ctx = ctxWith({ inventory: { ...inventoryFor(), pages: [{ path: "/", title: "Home" }] }, site: {} });
+
+  await assert.rejects(() => propose.run({}, [], ctx), /neither[\s\S]*--markup --assets --site/);
+});
+
+test("an off-origin stylesheet has no bytes in the tree, so it is not read", async () => {
+  const ctx = ctxWithStyles({
+    ...withStyles(),
+    assets: [{ path: "https://cdn.test/site.css", kind: "stylesheet", refs: 1, external: true }],
+  });
+  const { proposal } = await propose.run({}, [], ctx);
+
+  assert.equal(proposal.theme, undefined);
+});
+
+test("--min-refs is validated before anything is read, and says what it is for", async () => {
+  const ctx = ctxWithStyles();
+
+  await assert.rejects(() => propose.run({ minRefs: "1" }, [], ctx), /--min-refs takes a whole number of 2 or more/);
 });
 
 // --- the markup cache the proposal reads ---

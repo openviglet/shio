@@ -326,6 +326,18 @@ Proposing a conversion (shio propose):
                        post-type it needs instead, because forcing it into the nearest shape
                        is how a conversion loses content nobody notices
   --reason <text>      Why, recorded with the acceptance
+  It reads the captured stylesheets too, and emits a Theme as TOKENS plus CSS rather than as one
+  opaque blob — because a replica that looks right and cannot be restyled is the outcome this
+  whole block exists to avoid. Two kinds of token, and they are NOT equally powerful, which the
+  report says out loud: a DECLARED custom property is editable (the source's own CSS already says
+  var() on it, so changing it changes the replica), while a RECURRING literal only names the
+  palette and changes nothing until the CSS is rewired. Substitution is deliberately not done —
+  search-and-replacing a colour across a stranger's stylesheet breaks a replica in a way no digest
+  catches. Every url() is rewritten to its SH378 tree path, which is what makes the theme portable
+  instead of a set of links to somebody else's origin; one the asset map does not hold is left
+  alone and named. A token whose name would not survive the DTCG round trip is reported, never
+  written: SH195 drops such a declaration silently and can take the whole :root block with it.
+  --min-refs <n>       How often a literal must recur to be a palette value (default 3)
   --inventory <file>   The capture to read (default shio/.shio/source-inventory.json)
   --out <file>         Proposal path        (default shio/.shio/conversion-proposal.json)
   --limit <n>          Candidates to print (the proposal always holds every one)

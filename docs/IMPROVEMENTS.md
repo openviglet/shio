@@ -1383,23 +1383,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.4 A captured theme should arrive as tokens plus CSS, not as CSS (SH380)
-
-SH195 gave a `Theme` a `TOKENS` field in the W3C DTCG shape because that is what a
-designer's tool already exports. A capture is the other direction and the same argument:
-the source's stylesheet *contains* the palette, the type scale and the spacing rhythm,
-and a conversion that concatenates it into `CSS` throws that away — the replica then
-looks right and cannot be changed, which is the outcome this block exists to avoid.
-
-So the capture emits both: the CSS it could not interpret, and the tokens it could — the
-declared custom properties first (a modern site hands them over), then the values that
-recur past a threshold, each with the count that argued for it, because a token nobody
-can trace back to the source is a guess. `url()` references are rewritten to SH378's
-asset paths, which is what makes the theme portable rather than a set of links to
-somebody else's origin. **A token the capture is unsure about is reported, not
-written**: SH195 already established that a `TOKENS` field which is not JSON degrades
-the render, and inventing a name here would put that risk in a file nobody reviewed.
-
 ### XVII.6 A curated menu is content, and the folder tree is not one (SH382)
 
 Even with SH381's `url`, the folder tree is the wrong source for a menu. A real site's

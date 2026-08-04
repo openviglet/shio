@@ -905,6 +905,7 @@
 - **SH378** — shio clone --assets downloads the referenced images, stylesheets, fonts, icons and media into shio/assets/<site>/<the source's folder chain>/<name> and records the URL-to-path map back into the inventory: same-origin only with the hosts left behind named, deduped by sha-256 keeping the most-referenced name, and a name no path can hold refused rather than trimmed
 - **SH381** — the navigation row carries the url its docstring promised since SH183: the folder's index post — the post inside it whose friendly URL is the folder's own chain, matched case-insensitively because a label and a slug are different namespaces — absent where there is none so a template branches on it for a group heading, and never fabricated
 - **SH379** — shio propose reports each captured block's section type, fields and the markup it would lose; --accept records one, unaccepted stays verbatim.
+- **SH380** — A captured stylesheet arrives as DTCG tokens plus CSS, url() rewritten to tree paths, and a token that fails the name round trip is reported not written.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

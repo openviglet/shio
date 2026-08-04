@@ -1,0 +1,728 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * Licensed under GPL-3.0.
+ *
+ * SH380 — a captured stylesheet arrives as tokens **plus** CSS, never as CSS.
+ *
+ * ## The failure this closes
+ *
+ * SH195 gave a `Theme` a `TOKENS` field in the W3C DTCG shape, because that is what a designer's tool
+ * already exports, and the argument was that the commonest change to a site — the accent colour, the
+ * type scale, the density — should be a *field edit* rather than a stylesheet rewrite. A capture runs
+ * the other direction and the same argument holds: the source's stylesheet **contains** its palette,
+ * its type scale and its spacing rhythm, so a conversion that concatenates the file into `CSS` throws
+ * all of it away. The replica then looks right and cannot be changed, which is the exact outcome
+ * Block Q exists to avoid.
+ *
+ * ## Two kinds of token, and they are not equally powerful — which the report has to say
+ *
+ * **Declared** custom properties (`--brand-primary: #0b5`) are the strong case: the source's own CSS
+ * already says `var(--brand-primary)`, so lifting one into `TOKENS` makes it genuinely editable, and
+ * changing it changes the replica. A modern site hands its whole palette over this way.
+ *
+ * **Recurring** literals are the weaker case and are still worth having: `#0b5` written out
+ * twenty-three times *is* the accent colour, and naming it is how a curator learns the palette exists.
+ * But nothing references the name, so editing it changes nothing until somebody rewires the CSS. That
+ * asymmetry is printed, because a token list that implied both were editable would be a promise the
+ * file cannot keep.
+ *
+ * ## What is deliberately *not* done: substitution
+ *
+ * The obvious next step — rewrite `#0b5` to `var(--color-accent)` across the stylesheet — is refused.
+ * This module **scans** CSS; it does not parse it into a model it could safely rewrite, and a
+ * search-and-replace over a stranger's bytes is the "silently restructured somebody's homepage"
+ * hazard from SH379 wearing a different hat. Twenty-three replacements, one of them inside a
+ * `content:` string or a data URI, and the replica is broken in a way no digest catches. The CSS is
+ * kept verbatim apart from `url()` (see below); the tokens are additive.
+ *
+ * ## A token the capture is unsure about is reported, not written
+ *
+ * SH195's own rule makes this load-bearing rather than tidy: a `TOKENS` field that is not JSON
+ * degrades the render, and a *name* that cannot be a custom property emits a declaration the browser
+ * drops — taking the rest of the `:root` block with it in some parsers. So there is one hard test, and
+ * it is a **round trip**: a candidate's DTCG path is compiled back through the mapping
+ * `ShThemeTokens` documents (`color.accent` → `--color-accent`), and unless that yields the property
+ * name the source actually wrote, the token is reported instead of written. Nothing is guessed into a
+ * file nobody reviewed.
+ */
+
+/** How many times a literal must appear before it is a palette rather than a coincidence. */
+export const DEFAULT_MIN_REFS = 3;
+
+/**
+ * The selectors whose custom properties are the site's own tokens.
+ *
+ * <p>And the reason this is a list rather than "any selector": a custom property declared under
+ * `.dark` or inside a media query is a **variant**, so the same name legitimately has two values and
+ * neither is the token. Writing one of them would silently pick a theme.
+ */
+const ROOT_SELECTORS = new Set([":root", "html", ":where(:root)", ":root,html", "html,:root"]);
+
+/** Properties whose value is a colour, grouped by the role the property implies. */
+const COLOR_ROLES = {
+  color: "text",
+  "background-color": "background",
+  background: "background",
+  "border-color": "border",
+  "border-top-color": "border",
+  "border-right-color": "border",
+  "border-bottom-color": "border",
+  "border-left-color": "border",
+  "outline-color": "border",
+  fill: "accent",
+  stroke: "accent",
+  "caret-color": "accent",
+  "text-decoration-color": "accent",
+};
+
+/**
+ * The non-colour groups, in the order they are tested.
+ *
+ * <p>Each entry is a DTCG group, the properties that feed it, and the DTCG `$type` its values carry.
+ * `spacing` is last on purpose: `padding` and `margin` are the commonest length declarations on any
+ * page, so a group tested before `font.size` or `radius` would swallow their values.
+ */
+const LENGTH_GROUPS = [
+  { group: "font.size", type: "dimension", properties: ["font-size"] },
+  {
+    group: "radius",
+    type: "dimension",
+    properties: ["border-radius", "border-top-left-radius", "border-top-right-radius",
+      "border-bottom-left-radius", "border-bottom-right-radius"],
+  },
+  {
+    group: "border.width",
+    type: "dimension",
+    properties: ["border-width", "border-top-width", "border-right-width", "border-bottom-width",
+      "border-left-width"],
+  },
+  {
+    group: "spacing",
+    type: "dimension",
+    properties: ["margin", "margin-top", "margin-right", "margin-bottom", "margin-left", "padding",
+      "padding-top", "padding-right", "padding-bottom", "padding-left", "gap", "row-gap",
+      "column-gap"],
+  },
+];
+
+const OTHER_GROUPS = [
+  { group: "font.family", type: "fontFamily", properties: ["font-family"] },
+  { group: "font.weight", type: "fontWeight", properties: ["font-weight"] },
+  { group: "shadow", type: "shadow", properties: ["box-shadow", "text-shadow"] },
+];
+
+// ---------------------------------------------------------------------------------------------
+// Reading the stylesheet
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Removes comments, which is the whole of the preprocessing.
+ *
+ * <p>Deliberately not a `/\*[\s\S]*?\*\/` over the raw file and then trust: a `/*` inside a quoted
+ * value or a data URI would swallow real declarations. The scan below is a single pass that knows
+ * about quotes, so comment handling lives there and this only exists to say why it does not live
+ * here.
+ */
+
+/**
+ * One linear pass over a stylesheet: the declarations, in source order, and where each one sits.
+ *
+ * <p>A **scanner, not a parser** — SH377's rule, and this file is the second module in the repository
+ * reading a stranger's bytes. It tracks quotes, comments, brace depth and the current selector text,
+ * and nothing else. No tree, no specificity, no cascade: every question below is answered from a flat
+ * list of `(selector, property, value)`, and a question that needed the cascade would be a question
+ * this module should refuse rather than approximate.
+ *
+ * <p>Single-pass and character-driven rather than regex-driven, so there is no backtracking to be
+ * pathological about: the cost is linear in the file's length, full stop.
+ *
+ * @returns {{declarations: Array<{selector: string, property: string, value: string, atRule: string|null}>,
+ *            rules: number, bytes: number}}
+ */
+export function scanCss(css) {
+  const text = String(css ?? "");
+  const declarations = [];
+  const stack = [];
+  let buffer = "";
+  let selector = "";
+  let rules = 0;
+  let index = 0;
+
+  const flush = () => {
+    const raw = buffer.trim();
+    buffer = "";
+    if (!raw) return;
+    const colon = splitDeclaration(raw);
+    if (!colon) return;
+    const atRule = stack.find((each) => each.startsWith("@")) ?? null;
+    declarations.push({ selector, property: colon.property, value: colon.value, atRule });
+  };
+
+  while (index < text.length) {
+    const char = text[index];
+    if (char === "/" && text[index + 1] === "*") {
+      const end = text.indexOf("*/", index + 2);
+      index = end === -1 ? text.length : end + 2;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      const end = closingQuote(text, index);
+      buffer += text.slice(index, end);
+      index = end;
+      continue;
+    }
+    if (char === "{") {
+      const head = buffer.trim();
+      buffer = "";
+      stack.push(head);
+      selector = head.startsWith("@") ? selector : head;
+      if (!head.startsWith("@")) rules += 1;
+      index += 1;
+      continue;
+    }
+    if (char === "}") {
+      flush();
+      stack.pop();
+      // The enclosing selector, which is what a declaration inside `@media` belongs to once the
+      // media block closes. Without this, everything after a media query is attributed to its last
+      // rule — the defect that would put a dark-mode override's properties on `:root`.
+      selector = [...stack].reverse().find((each) => each && !each.startsWith("@")) ?? "";
+      index += 1;
+      continue;
+    }
+    if (char === ";") {
+      flush();
+      index += 1;
+      continue;
+    }
+    buffer += char;
+    index += 1;
+  }
+  flush();
+  return { declarations, rules, bytes: text.length };
+}
+
+/** The end of a quoted run, quote included. An unterminated quote ends at the file, not in a loop. */
+function closingQuote(text, start) {
+  const quote = text[start];
+  let index = start + 1;
+  while (index < text.length) {
+    if (text[index] === "\\") {
+      index += 2;
+      continue;
+    }
+    if (text[index] === quote) return index + 1;
+    index += 1;
+  }
+  return text.length;
+}
+
+/**
+ * `prop: value` → its two halves, or null when the text is not a declaration.
+ *
+ * <p>Split on the **first** colon only: `background: url(http://x/y.png)` has three, and splitting on
+ * the last would produce a property called `background: url(http` — which is not a property, is
+ * silently dropped by every group test below, and takes the site's whole background with it.
+ */
+function splitDeclaration(raw) {
+  const at = raw.indexOf(":");
+  if (at <= 0) return null;
+  const name = raw.slice(0, at).trim();
+  // A **custom property keeps its case**, and an ordinary one does not. CSS folds `COLOR` to `color`
+  // and treats `--Foo` and `--foo` as two different properties — so lowercasing everything both merges
+  // two distinct declarations and, much worse, defeats the round trip that is this module's only hard
+  // rule: `--brandPrimary` lowercased is `--brandprimary`, which *does* survive the round trip, so the
+  // token would be written under a name the source's CSS never references. Silently, and only in the
+  // replica. The smoke run against a real stylesheet is what found this.
+  const property = name.startsWith("--") ? name : name.toLowerCase();
+  const value = raw.slice(at + 1).trim();
+  if (!property || !value || /[{}]/.test(property)) return null;
+  return { property, value };
+}
+
+// ---------------------------------------------------------------------------------------------
+// The name round trip, which is the only hard rule here
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * A DTCG path → the custom property `ShThemeTokens` will emit for it.
+ *
+ * <p>A deliberate mirror of `ShThemeTokens.customProperty`, and `theme.test.mjs` asserts the two stay
+ * the same by reading the Java. Mirroring is the lesser evil: the alternative is for this module to
+ * write a name whose *runtime* spelling it cannot predict, and the failure mode there is a `:root`
+ * block the browser drops — silently, taking its siblings with it in some parsers.
+ */
+export function customPropertyFor(path) {
+  return `--${String(path).replace(/[^A-Za-z0-9-]+/g, "-")}`;
+}
+
+/**
+ * The DTCG path a source's own custom property becomes, or null when nothing safe round-trips.
+ *
+ * <p>`--brand-primary` → `brand.primary`, which compiles back to `--brand-primary`. That is not a
+ * guess about the source's hierarchy, it is the **inverse of a documented mapping**, and it is what
+ * keeps the captured CSS working: the stylesheet says `var(--brand-primary)`, so a token that
+ * compiled to any other name would leave every rule referencing it unstyled.
+ *
+ * <p>Anything that does not survive the round trip returns null and is reported. `--Brand_Primary` is
+ * the ordinary case: the underscore is legal in a custom property and is not legal in the mapping, so
+ * writing it would rename the property out from under the CSS that uses it.
+ */
+export function pathForCustomProperty(name) {
+  const raw = String(name ?? "").trim();
+  if (!raw.startsWith("--") || raw.length < 3) return null;
+  const segments = raw.slice(2).split("-");
+  if (segments.some((segment) => !segment)) return null;
+  const path = segments.join(".");
+  return customPropertyFor(path) === raw ? path : null;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Values
+// ---------------------------------------------------------------------------------------------
+
+const HEX = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+const COLOR_FUNCTION = /^(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color|color-mix)\(/i;
+/**
+ * A single length.
+ *
+ * <p>`\d+(?:\.\d+)?` and **not** `\d+\.?\d*`, which is the same class of defect SH377's tag regex was
+ * written to avoid and the reason it is worth a comment on a five-token pattern: two quantifiers over
+ * the same class with an optional separator between them means the engine explores every split of a
+ * digit run before failing, which is quadratic. This is called once per declaration value on bytes
+ * fetched from a stranger's server, so a value of 20k digits would make the scan hang rather than
+ * return — and a hang is the failure mode nobody can diagnose from a report.
+ */
+const LENGTH = /^-?(?:\d+(?:\.\d+)?|\.\d+)(px|rem|em|%|vh|vw|vmin|vmax|ch|ex|pt|cm|mm|in|q)$/i;
+
+/** Whether a value is a colour this reader is willing to call one. A keyword is not enough. */
+export function isColor(value) {
+  const raw = String(value).trim();
+  return HEX.test(raw) || COLOR_FUNCTION.test(raw);
+}
+
+/** A single length. A shorthand (`8px 16px`) is deliberately not one — it is two tokens or none. */
+export function isLength(value) {
+  return LENGTH.test(String(value).trim());
+}
+
+/** DTCG's `$type` for a value, or null when this reader will not claim one. */
+export function typeOf(value) {
+  const raw = String(value).trim();
+  if (isColor(raw)) return "color";
+  if (isLength(raw)) return "dimension";
+  return null;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Declared tokens
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The custom properties the source declares, split into the ones that can be written and the ones
+ * that cannot.
+ *
+ * <p>Three ways to be unsure, and each one is a real stylesheet rather than a hypothetical.
+ * **Variant**: the same name declared under two selectors — a light and a dark palette — where
+ * writing either value picks a theme nobody asked for. **Conflict**: declared twice under the *same*
+ * root with different values, which is a cascade question and this is a scanner. **Name**: a name
+ * that does not survive the round trip above.
+ */
+export function declaredTokens(declarations) {
+  const roots = new Map();
+  const variants = new Map();
+  for (const declaration of declarations) {
+    if (!declaration.property.startsWith("--")) continue;
+    const inRoot = ROOT_SELECTORS.has(normalizeSelector(declaration.selector)) && !declaration.atRule;
+    const into = inRoot ? roots : variants;
+    const seen = into.get(declaration.property);
+    if (seen) seen.push(declaration);
+    else into.set(declaration.property, [declaration]);
+  }
+
+  const tokens = [];
+  const unsure = [];
+  for (const [name, group] of [...roots.entries()].sort(byKey)) {
+    const values = new Set(group.map((each) => each.value));
+    if (values.size > 1) {
+      unsure.push({ name, reason: "conflict", detail: `declared ${values.size} times with different values` });
+      continue;
+    }
+    if (variants.has(name)) {
+      unsure.push({
+        name,
+        reason: "variant",
+        detail: `also declared under ${variants.get(name).map((each) => each.atRule ?? each.selector).join(" ")}`,
+      });
+      continue;
+    }
+    const path = pathForCustomProperty(name);
+    if (!path) {
+      unsure.push({ name, reason: "name", detail: `${name} does not survive the DTCG round trip` });
+      continue;
+    }
+    tokens.push({ path, name, value: group[0].value, type: typeOf(group[0].value), source: "declared" });
+  }
+  // A variant with no root declaration at all: the palette lives entirely under `.dark`, and there is
+  // no default to lift. Reported, because silence here reads as "this site declares no tokens".
+  for (const [name, group] of [...variants.entries()].sort(byKey)) {
+    if (roots.has(name)) continue;
+    unsure.push({
+      name,
+      reason: "variant-only",
+      detail: `declared only under ${group.map((each) => each.atRule ?? each.selector).join(" ")}`,
+    });
+  }
+  return { tokens, unsure };
+}
+
+function normalizeSelector(selector) {
+  return String(selector ?? "").replace(/\s+/g, "").toLowerCase();
+}
+
+const byKey = (a, b) => (a[0] === b[0] ? 0 : a[0] < b[0] ? -1 : 1);
+
+// ---------------------------------------------------------------------------------------------
+// Recurring tokens
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The literals a stylesheet repeats often enough to be its palette.
+ *
+ * <p>Named by **group plus role plus rank**, and ranked by how often the value occurs — because the
+ * rank is the one part of the name that traces back to the source, and every row carries the count
+ * that argued for it. A name invented from nothing (`color.brand`, `spacing.comfortable`) reads
+ * better and is a guess; SH380's rule is that a token nobody can trace back to the source is exactly
+ * that.
+ *
+ * <p>Ties break on the value, never on encounter order, or two runs over one file disagree about
+ * which colour is `color.text-1` (P5).
+ */
+export function recurringTokens(declarations, { minRefs = DEFAULT_MIN_REFS } = {}) {
+  const buckets = new Map();
+  for (const declaration of declarations) {
+    if (declaration.property.startsWith("--")) continue;
+    const slot = bucketFor(declaration);
+    if (!slot) continue;
+    const key = `${slot.group} ${slot.role ?? ""} ${declaration.value}`;
+    const existing = buckets.get(key);
+    if (existing) {
+      existing.refs += 1;
+      existing.properties.add(declaration.property);
+    } else {
+      buckets.set(key, {
+        group: slot.group,
+        role: slot.role ?? null,
+        type: slot.type,
+        value: declaration.value,
+        refs: 1,
+        properties: new Set([declaration.property]),
+      });
+    }
+  }
+
+  const kept = [...buckets.values()]
+    .filter((row) => row.refs >= minRefs)
+    .sort((a, b) => {
+      if (a.group !== b.group) return a.group < b.group ? -1 : 1;
+      if ((a.role ?? "") !== (b.role ?? "")) return (a.role ?? "") < (b.role ?? "") ? -1 : 1;
+      if (a.refs !== b.refs) return b.refs - a.refs;
+      return a.value < b.value ? -1 : 1;
+    });
+
+  const ranks = new Map();
+  const tokens = [];
+  const unsure = [];
+  for (const row of kept) {
+    const stem = row.role ? `${row.group}.${row.role}` : row.group;
+    const rank = (ranks.get(stem) ?? 0) + 1;
+    ranks.set(stem, rank);
+    // A rank joins its stem with `.` where the stem is a group (`radius` → `radius.1`) and with `-`
+    // where it is a role (`color.text` → `color.text-1`). Both compile to the same custom property —
+    // `--radius-1`, `--color-text-1` — so this is purely about the DTCG file being coherent: with `-`
+    // throughout, `radius-1` sat at the top level as a *sibling* of the `radius` group holding the
+    // source's own `--radius-md`, which reads as two unrelated things.
+    const path = row.role ? `${stem}-${rank}` : `${stem}.${rank}`;
+    // The round trip again, and it can genuinely fail here: a group is this module's own string, but a
+    // role is not, and a future entry with a dot or a space in it would rename itself at compile time.
+    if (customPropertyFor(path) !== `--${path.replace(/\./g, "-")}`) {
+      unsure.push({ name: path, reason: "name", detail: "the generated path does not round-trip" });
+      continue;
+    }
+    tokens.push({
+      path,
+      value: row.value,
+      type: row.type ?? typeOf(row.value),
+      source: "recurring",
+      refs: row.refs,
+      properties: [...row.properties].sort(),
+    });
+  }
+  return { tokens, unsure };
+}
+
+function bucketFor(declaration) {
+  const { property, value } = declaration;
+  if (COLOR_ROLES[property] && isColor(value)) {
+    return { group: "color", role: COLOR_ROLES[property], type: "color" };
+  }
+  for (const entry of LENGTH_GROUPS) {
+    if (entry.properties.includes(property) && isLength(value)) {
+      return { group: entry.group, role: null, type: entry.type };
+    }
+  }
+  for (const entry of OTHER_GROUPS) {
+    // No value test: a font stack and a shadow have no single canonical form worth asserting, and
+    // recurrence is the whole evidence anyway — a `box-shadow` written eight times identically is a
+    // decision somebody made once.
+    if (entry.properties.includes(property)) {
+      return { group: entry.group, role: null, type: entry.type };
+    }
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------------------------
+// The DTCG tree
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The token rows → the `TOKENS` field's JSON.
+ *
+ * <p>Nested by the dotted path, `$type` omitted where this reader would not claim one, and every
+ * object key sorted so two runs over one stylesheet serialize identically (P5). A path that would
+ * have to overwrite a *group* with a token, or a token with a group, is dropped and named: DTCG has
+ * no representation for both, and picking one would make the other silently disappear.
+ */
+export function dtcgFor(rows) {
+  const root = {};
+  const dropped = [];
+  for (const row of rows) {
+    const segments = String(row.path).split(".");
+    let node = root;
+    let ok = true;
+    for (const segment of segments.slice(0, -1)) {
+      const next = node[segment];
+      if (next && typeof next === "object" && !("$value" in next)) {
+        node = next;
+        continue;
+      }
+      if (next) {
+        ok = false;
+        break;
+      }
+      node[segment] = {};
+      node = node[segment];
+    }
+    const leaf = segments.at(-1);
+    if (!ok || (node[leaf] && !("$value" in node[leaf]))) {
+      dropped.push({ name: row.path, reason: "collision", detail: "a group and a token cannot share one path" });
+      continue;
+    }
+    node[leaf] = { $value: row.value, ...(row.type ? { $type: row.type } : {}) };
+  }
+  return { tokens: sortKeys(root), dropped };
+}
+
+function sortKeys(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const out = {};
+  // Code-unit order, deliberately. A linter will suggest `localeCompare` here and it is the one
+  // change to refuse: locale-aware collation makes the byte order depend on the machine's locale, so
+  // the same capture would serialize differently on two developers' laptops — the exact property P5
+  // asks for, undone by a suggestion that reads like a fix.
+  for (const key of Object.keys(value).sort()) out[key] = sortKeys(value[key]);
+  return out;
+}
+
+// ---------------------------------------------------------------------------------------------
+// url() — what makes the theme portable rather than a set of links to somebody else's origin
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * A `url()` call.
+ *
+ * <p>The bare branch is `+` rather than `*` for the same reason as `LENGTH` above: an alternative that
+ * can match **empty** sits between two `\s*`, so on a `url(` with no closing paren the engine tries
+ * every position in the whitespace run. `url()` with nothing in it then does not match, which is the
+ * correct outcome anyway — there is no reference to rewrite.
+ */
+const URL_CALL = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)'"\s]+))\s*\)/gi;
+
+/**
+ * Rewrites every `url()` in a stylesheet to the tree path SH378 downloaded it to.
+ *
+ * <p>Which is the difference between a portable theme and one that renders by fetching from the site
+ * it was copied from — including the case where that site is taken down, and the case where it starts
+ * serving something else. A reference the asset map does not hold is **left exactly as it was and
+ * reported**: an off-origin webfont is the common one, and SH378's rule is that mirroring somebody
+ * else's bytes is a licensing decision this tool does not make. Rewriting it to a path with no bytes
+ * behind it would turn that into a broken replica instead of a named gap.
+ *
+ * <p>`data:` is skipped rather than looked up — it is already portable, and a 40 KB base64 sprite in
+ * the "unresolved" list would bury the three references somebody has to act on.
+ */
+export function rewriteUrls(css, { base, assets = new Map(), prefix = "" } = {}) {
+  const unresolved = [];
+  let rewritten = 0;
+  const out = String(css ?? "").replace(URL_CALL, (match, dq, sq, bare) => {
+    const raw = (dq ?? sq ?? bare ?? "").trim();
+    if (!raw || /^(?:data|about):/i.test(raw) || raw.startsWith("#")) return match;
+    const key = resolveAgainst(raw, base);
+    const file = key === null ? undefined : (assets.get(key) ?? assets.get(raw));
+    if (!file) {
+      unresolved.push(raw);
+      return match;
+    }
+    rewritten += 1;
+    return `url("${prefix}${file}")`;
+  });
+  return { css: out, rewritten, unresolved: [...new Set(unresolved)].sort() };
+}
+
+/**
+ * A `url()`'s key in the asset map: the path the inventory recorded, resolved against the stylesheet.
+ *
+ * <p>Relative to the **stylesheet**, not to the page — `url(../fonts/x.woff2)` in
+ * `/assets/css/site.css` is `/assets/fonts/x.woff2`, and resolving it against the page that linked
+ * the stylesheet would name a file that does not exist. The most common single defect in anything
+ * that touches CSS urls, and the reason `base` is required rather than optional.
+ */
+function resolveAgainst(raw, base) {
+  if (!base) return raw;
+  try {
+    const url = new URL(raw, base);
+    const origin = new URL(base);
+    if (url.host.toLowerCase() !== origin.host.toLowerCase()) return url.href;
+    return `${url.pathname}${url.search}`;
+  } catch {
+    return raw;
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// The theme proposal
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Folds the captured stylesheets into one theme proposal.
+ *
+ * <p>Concatenated in inventory order — which is sorted by path, so two runs produce the same bytes —
+ * with each file's own name in a comment, because the first question anybody asks of a 200 KB blob is
+ * which file a rule came from. The declarations are pooled across files before the recurrence count
+ * is taken: a palette split over `reset.css` and `theme.css` is one palette, and counting per file
+ * would put every value below the threshold.
+ *
+ * @param {Array<{path: string, file: string, url: string, css: string}>} styles the downloaded CSS
+ * @param {Map<string, string>} assets source path → tree path, from the SH378 download
+ */
+export function buildTheme({ styles = [], assets = new Map(), minRefs = DEFAULT_MIN_REFS } = {}) {
+  const declarations = [];
+  const sheets = [];
+  const unresolved = new Map();
+  let css = "";
+  let rewritten = 0;
+
+  for (const style of styles) {
+    const scan = scanCss(style.css);
+    declarations.push(...scan.declarations);
+    const rewrite = rewriteUrls(style.css, { base: style.url, assets, prefix: "/" });
+    rewritten += rewrite.rewritten;
+    for (const each of rewrite.unresolved) {
+      unresolved.set(each, (unresolved.get(each) ?? 0) + 1);
+    }
+    css += `${css ? "\n" : ""}/* ${style.path} */\n${rewrite.css.trim()}\n`;
+    sheets.push({ path: style.path, file: style.file, rules: scan.rules, bytes: scan.bytes });
+  }
+
+  const declared = declaredTokens(declarations);
+  const recurring = recurringTokens(declarations, { minRefs });
+  const rows = [...declared.tokens, ...recurring.tokens];
+  const { tokens, dropped } = dtcgFor(rows);
+  const written = new Set(Object.keys(flatten(tokens)));
+
+  const notes = [];
+  if (declared.tokens.length) {
+    notes.push(
+      `${declared.tokens.length} declared token(s) are the editable half: the source's own CSS says ` +
+        `var() on each, so changing one changes the replica`,
+    );
+  }
+  if (recurring.tokens.length) {
+    notes.push(
+      `${recurring.tokens.length} recurring token(s) name the palette and change nothing on their ` +
+        `own — no rule references them until the CSS is rewired, which this does NOT do: a ` +
+        `search-and-replace over a stranger's stylesheet breaks a replica in a way no digest catches`,
+    );
+  }
+  if (unresolved.size) {
+    notes.push(
+      `${unresolved.size} url() reference(s) are not in the asset map and were left as they are — ` +
+        `the theme still fetches them from the source's origin ` +
+        `(first: ${[...unresolved.keys()].sort().slice(0, 3).join(" ")})`,
+    );
+  }
+
+  return {
+    sheets,
+    css,
+    tokens,
+    rows: rows.filter((row) => written.has(row.path)),
+    unsure: [...declared.unsure, ...recurring.unsure, ...dropped].sort((a, b) =>
+      (a.name === b.name ? 0 : a.name < b.name ? -1 : 1)),
+    urls: { rewritten, unresolved: [...unresolved.keys()].sort() },
+    notes,
+  };
+}
+
+/** The DTCG tree → dotted path to value, which is what `ShThemeTokens.parse` will produce. */
+export function flatten(node, prefix = "", into = {}) {
+  if (!node || typeof node !== "object") return into;
+  if ("$value" in node) {
+    into[prefix] = node.$value;
+    return into;
+  }
+  for (const [key, child] of Object.entries(node)) {
+    if (key.startsWith("$")) continue;
+    flatten(child, prefix ? `${prefix}.${key}` : key, into);
+  }
+  return into;
+}
+
+/**
+ * What the caller reads about the theme.
+ *
+ * <p>Bounded like every other report here, and the counts always cover the whole run. The two token
+ * kinds are printed **separately** rather than in one list, because their power is different and a
+ * merged list would imply otherwise — which is the only way this artefact can mislead somebody.
+ */
+export function describeTheme(theme, options = {}) {
+  const limit = Number.isFinite(Number(options.limit)) ? Math.max(Number(options.limit), 0) : 20;
+  const lines = [];
+  const declared = theme.rows.filter((row) => row.source === "declared");
+  const recurring = theme.rows.filter((row) => row.source === "recurring");
+  lines.push(
+    `theme: ${theme.sheets.length} stylesheet(s), ${theme.css.length} bytes of CSS kept — ` +
+      `${declared.length} declared token(s), ${recurring.length} recurring, ` +
+      `${theme.unsure.length} reported and not written`,
+  );
+  const section = (title, rows, render) => {
+    if (!rows.length) return;
+    lines.push(`  ${title} (${rows.length})`);
+    for (const row of rows.slice(0, limit)) lines.push(`    ${render(row)}`);
+    if (rows.length > limit) lines.push(`    … ${rows.length - limit} more in the proposal`);
+  };
+  section("declared", declared, (row) => `${row.path} = ${row.value}${row.type ? `  [${row.type}]` : ""}  (${row.name})`);
+  section("recurring", recurring, (row) =>
+    `${row.path} = ${row.value}${row.type ? `  [${row.type}]` : ""}  ${row.refs}×  on ${row.properties.slice(0, 3).join(", ")}`);
+  section("not written", theme.unsure, (row) => `${row.name}  ${row.reason}: ${row.detail}`);
+  if (theme.urls.rewritten || theme.urls.unresolved.length) {
+    lines.push(
+      `  url(): ${theme.urls.rewritten} rewritten to tree paths, ${theme.urls.unresolved.length} left ` +
+        `pointing at the source`,
+    );
+  }
+  for (const note of theme.notes) lines.push(`  note: ${note}`);
+  return `${lines.join("\n")}\n`;
+}

@@ -19,6 +19,16 @@
  * them here would make review and mutation the same command, which is the surprise P7 forbids. The
  * plan is the reviewed half of the work; an unaccepted block stays in fidelity mode, which is a
  * decision and not an omission.
+ *
+ * ## Two halves, one artefact (SH380)
+ *
+ * The blocks are one question and the **theme** is the other, and they are read together: a
+ * candidate's loss line says "3 class names — all styling", and the theme is where that styling went.
+ * So the stylesheets the SH378 download put in the tree are scanned here too, and the proposal carries
+ * the DTCG token set beside the candidates rather than in a second file nobody would think to open.
+ * Either half alone is a proposal worth having, which is why the refusal below is about having
+ * **neither** — a capture taken with `--assets` and without `--markup` is a real state, and withholding
+ * the theme over a flag that has nothing to do with the theme would be the wrong answer to it.
  */
 import { dirname, join } from "node:path";
 
@@ -29,6 +39,7 @@ import {
   stripNonMarkup,
   tokenize,
 } from "../clone.mjs";
+import { ASSETS_DIR } from "../content-assets.mjs";
 import {
   PLAN_FILE,
   PROPOSAL_FILE,
@@ -37,6 +48,7 @@ import {
   serializePlan,
   serializeProposal,
 } from "../propose.mjs";
+import { DEFAULT_MIN_REFS, buildTheme } from "../theme.mjs";
 
 export async function run(flags, positionals, ctx) {
   const inventoryPath = typeof flags.inventory === "string" ? flags.inventory : INVENTORY_FILE;
@@ -51,21 +63,29 @@ export async function run(flags, positionals, ctx) {
 
   const plan = (await readJson(join(ctx.cwd, PLAN_FILE), ctx)) ?? { accepted: [] };
   const markup = await readMarkup(inventory, ctx);
-  if (!markup.size) {
+  const styles = await readStyles(inventory, ctx);
+  // Either half is a proposal worth having, so the refusal is about having *neither*. A capture with
+  // stylesheets and no markup is a real state — `--assets --site X` without `--markup` — and refusing
+  // it would withhold the theme over a flag that has nothing to do with the theme.
+  if (!markup.size && !styles.length) {
     throw new Error(
-      `shio propose: ${inventoryPath} holds ${inventory.pages?.length ?? 0} page(s) and none of ` +
-        `them has markup in ${MARKUP_DIR}/.\n` +
-        "The capture was taken without --markup, which is the flag that keeps the HTML a mapping is\n" +
-        "derived from. Re-run the capture; it costs the same requests:\n" +
-        `  shio clone ${inventory.source?.seed ?? "https://example.com"} --markup`,
+      `shio propose: ${inventoryPath} holds ${inventory.pages?.length ?? 0} page(s), and neither ` +
+        `their markup (${MARKUP_DIR}/) nor their stylesheets (${ASSETS_DIR}/) are in the tree.\n` +
+        "The capture was taken without the flags that keep them. Re-run it; the markup costs the same\n" +
+        "requests it already made, and the bytes are what a theme is:\n" +
+        `  shio clone ${inventory.source?.seed ?? "https://example.com"} --markup --assets --site <name>`,
     );
   }
 
+  const theme = styles.length
+    ? buildTheme({ styles, assets: assetMap(inventory), minRefs: minRefs(flags) })
+    : null;
   const proposal = buildProposal({
     inventory,
     markup,
     html: { tokenize, parseAttrs, stripNonMarkup },
     plan,
+    theme,
   });
 
   const accepting = acceptIds(flags, positionals);
@@ -75,7 +95,13 @@ export async function run(flags, positionals, ctx) {
     // Recomputed rather than patched, so what the report says is what the file now holds — a
     // summary written from the pre-accept proposal would be one review out of date at the moment it
     // was most likely to be believed.
-    const after = buildProposal({ inventory, markup, html: { tokenize, parseAttrs, stripNonMarkup }, plan: next });
+    const after = buildProposal({
+      inventory,
+      markup,
+      html: { tokenize, parseAttrs, stripNonMarkup },
+      plan: next,
+      theme,
+    });
     return finish(after, flags, ctx, {
       accepted: accepting,
       out: typeof flags.out === "string" ? flags.out : PROPOSAL_FILE,
@@ -188,6 +214,70 @@ async function readMarkup(inventory, ctx) {
     }
   }
   return out;
+}
+
+/**
+ * The stylesheets SH378 downloaded, in inventory order (SH380).
+ *
+ * <p>Only the ones with a `file`: an inventory row without one is a stylesheet the download skipped
+ * or never ran for, and there are no bytes to read. `url` is carried through because a `url()` inside
+ * the file resolves against the **stylesheet**, not against the page that linked it — the single
+ * commonest defect in anything that touches CSS urls.
+ */
+async function readStyles(inventory, ctx) {
+  const styles = [];
+  for (const asset of inventory.assets ?? []) {
+    if (asset.kind !== "stylesheet" || !asset.file || asset.external) continue;
+    try {
+      styles.push({
+        path: asset.path,
+        file: asset.file,
+        url: absolute(asset.path, inventory.source?.origin),
+        css: await ctx.fs.readFile(join(ctx.cwd, ASSETS_DIR, asset.file), "utf8"),
+      });
+    } catch {
+      // Named by the theme's own sheet count against the inventory's, the way a missing markup file
+      // is. A run refused for one deleted derived file would be hostage to the cheapest thing to lose.
+    }
+  }
+  return styles;
+}
+
+/**
+ * Source path → tree path, for the `url()` rewrite.
+ *
+ * <p>Keyed on `path` — the field the inventory records and the field a resolved `url()` produces —
+ * and it must be **one** map shared with whatever else reads it, per SH378's own rule: a second copy
+ * would rewrite a reference to a path holding somebody else's bytes.
+ */
+function assetMap(inventory) {
+  const map = new Map();
+  for (const asset of inventory.assets ?? []) {
+    if (asset.file) map.set(asset.path, asset.file);
+  }
+  return map;
+}
+
+function absolute(path, origin) {
+  if (!origin) return null;
+  try {
+    return new URL(path, origin).href;
+  } catch {
+    return null;
+  }
+}
+
+function minRefs(flags) {
+  if (flags.minRefs === undefined || flags.minRefs === true) return DEFAULT_MIN_REFS;
+  const parsed = Number(flags.minRefs);
+  if (!Number.isInteger(parsed) || parsed < 2) {
+    throw new Error(
+      `shio propose: --min-refs takes a whole number of 2 or more, not "${flags.minRefs}".\n` +
+        "It is how many times a literal must appear before the capture calls it a palette value; at 1\n" +
+        "every colour on the site becomes a token and the list stops meaning anything.",
+    );
+  }
+  return parsed;
 }
 
 async function readJson(path, ctx) {

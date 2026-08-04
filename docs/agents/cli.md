@@ -187,6 +187,62 @@ under its own key: `conversionProposal: false` with
 since `--assets` is a phase of the same act while a conversion is a different act on a different
 artefact.
 
+**The same command emits the theme as tokens *plus* CSS, never as CSS (SH380).** SH195 gave a `Theme`
+a `TOKENS` field so the commonest change — the accent colour, the type scale, the density — is a field
+edit rather than a stylesheet rewrite; a capture runs the other direction on the same argument, so
+concatenating the source's stylesheet into `CSS` throws away the palette it *contains* and the replica
+then looks right and cannot be changed. It reads the stylesheets `clone --assets` already put in the
+tree (no new request), and lands in the **same** proposal file: a candidate's loss line says "3 class
+names — all styling", and this is where that styling went. Six decisions:
+- **Two kinds of token, and they are not equally powerful — which the report says out loud.** A
+  **declared** custom property is the strong case: the source's own CSS already says
+  `var(--brand-primary)`, so lifting it makes it genuinely editable. A **recurring** literal (`#0b5533`
+  written twenty-three times *is* the accent colour) only names the palette and changes nothing until
+  the CSS is rewired. A merged list implying both were editable is the only way this artefact can
+  mislead somebody, so the two are printed separately with a note each.
+- **Substitution is refused, deliberately.** Rewriting `#0b5533` → `var(--color-text-1)` across the
+  stylesheet is the obvious next step and is SH379's "silently restructured somebody's homepage" hazard
+  in a different hat: this module *scans* CSS, so a search-and-replace over a stranger's bytes — one hit
+  inside a `content:` string or a data URI — breaks a replica in a way no digest catches.
+- **The DTCG path is the inverse of a documented mapping, not a guess.** `--brand-primary` →
+  `brand.primary`, because `ShThemeTokens` compiles `brand.primary` back to `--brand-primary` and the
+  captured CSS references that name. **The round trip is the only hard rule here**: a candidate whose
+  path does not compile back to the property the source wrote is *reported, not written* — SH195 drops
+  such a declaration silently and can take the whole `:root` block with it. `customPropertyFor` mirrors
+  the Java and `theme.test.mjs` reads `ShThemeTokens.java` to assert the two stay the same, because the
+  alternative is this module writing a name whose runtime spelling it cannot predict.
+- **A token the capture is unsure about is reported.** Three real cases, each a real stylesheet: a
+  **variant** (`--bg` under `:root` and again under `@media (prefers-color-scheme: dark)` — writing
+  either picks a theme nobody asked for), a **conflict** (declared twice under one root, which is a
+  cascade question and this is a scanner), and a **name** that fails the round trip. Plus
+  *variant-only*, where the palette lives entirely under `.dark` and there is no default to lift —
+  reported because silence there reads as "this site declares no tokens".
+- **A recurring token carries the count that argued for it**, and is named group + role + rank ranked
+  by frequency, ties broken on the value. An invented name (`color.brand`, `spacing.comfortable`) reads
+  better and is exactly the "token nobody can trace back to the source" the rule forbids. `--min-refs`
+  (default 3) is what stops every colour on the site becoming a token; a **shorthand is not a length**,
+  so `padding: 8px 16px` becomes two tokens or none, and none is the answer a scanner is entitled to.
+- **Every `url()` is rewritten to its SH378 tree path**, resolved against the **stylesheet** and not
+  the page — `url(../fonts/x.woff2)` in `/assets/css/site.css` is `/assets/fonts/x.woff2`, and the
+  page-relative reading names a file the download never wrote. That is what makes the theme portable
+  instead of a set of links to somebody else's origin. One the asset map does not hold is left exactly
+  as it was and named: rewriting it to a path with no bytes turns SH378's named licensing gap into a
+  broken replica.
+Three things a smoke run against a real stylesheet found that the unit tests had not asked:
+**a custom property keeps its case and an ordinary property does not** — CSS folds `COLOR` and treats
+`--Foo`/`--foo` as two properties, so lowercasing everything both merges two declarations and *defeats
+the round trip*, since `--brandPrimary` lowercased is `--brandprimary`, which survives it and would be
+written under a name the source never references; **two quantifiers over one digit class**
+(`\d+\.?\d*`) is the SH377 backtracking defect one module along, and this reader is also fed a
+stranger's bytes, so a 20k-digit value would hang the scan (pinned with a timeout as the assertion);
+and a role-less rank now joins its stem with `.` (`radius.1`, not `radius-1`) so it nests *inside* the
+group holding the source's own `--radius-md` instead of sitting beside it — free, because both compile
+to `--radius-1`. One suggestion to refuse if a linter offers it: `localeCompare` in `sortKeys` would
+make the serialized bytes depend on the machine's locale, which is P5 undone by something that reads
+like a fix. And `propose` now refuses only when there is **neither** markup nor a stylesheet: a capture
+taken with `--assets` and without `--markup` is a real state, and withholding the theme over a flag
+that has nothing to do with the theme would be the wrong answer to it.
+
 **`shio impact <address>` exists and `shio read` deliberately does not (SH288).** The task was
 filed as "the CLI cannot show one post", and only half of that is a gap. A post's **content** is on
 disk after `pull --content`, where `Grep` and `Edit` are the cheapest tools an agent has (P4), so a

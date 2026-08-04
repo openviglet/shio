@@ -38,6 +38,7 @@
  * command that re-fetched would produce a different proposal depending on what the source served
  * this morning, which is the one thing an artefact meant to be reviewed cannot do.
  */
+import { describeTheme } from "./theme.mjs";
 
 /** The proposal's shape version. Bumped when a consumer would read an old file wrongly. */
 export const PROPOSAL_VERSION = 1;
@@ -572,8 +573,9 @@ function postTypeName(block, index) {
  * @param {Map<string, string>} markup path → the page's HTML, read from the cache
  * @param {{tokenize: Function, parseAttrs: Function, stripNonMarkup: Function}} html the shared reader
  * @param {{accepted?: Array<{block: string, type: string}>}} [plan] the review decisions so far
+ * @param {ReturnType<import("./theme.mjs").buildTheme>|null} [theme] SH380's theme half, or null
  */
-export function buildProposal({ inventory, markup, html, plan = {} }) {
+export function buildProposal({ inventory, markup, html, plan = {}, theme = null }) {
   const accepted = new Map((plan.accepted ?? []).map((entry) => [entry.block, entry]));
   const candidates = new Map();
   const notes = [];
@@ -637,7 +639,11 @@ export function buildProposal({ inventory, markup, html, plan = {} }) {
     read: read.toSorted(byText),
     candidates: rows,
     accepted: rows.filter((row) => row.mode === "authorable").length,
-    notes,
+    // SH380 — the theme is the same artefact's other half. A separate file would be a second thing to
+    // find, and the two are read together: a block's loss report says "3 class names — all styling",
+    // and the theme is where that styling went.
+    ...(theme ? { theme } : {}),
+    notes: [...notes, ...(theme?.notes ?? [])],
   };
 }
 
@@ -740,8 +746,16 @@ export function describeProposal(proposal, options = {}) {
     lines.push(`  loses: ${loss}`);
   }
   if (total > limit) lines.push("", `… ${total - limit} more candidate(s) in ${options.out ?? PROPOSAL_FILE}`);
+  if (proposal.theme) {
+    lines.push("");
+    lines.push(describeTheme(proposal.theme, options).trimEnd());
+  }
   lines.push("", `proposal: ${options.out ?? PROPOSAL_FILE} (nothing was applied)`);
-  for (const note of proposal.notes) lines.push(`  note: ${note}`);
+  // The theme's own notes are already in `proposal.notes`, which is what `describeTheme` prints too —
+  // so they are dropped here rather than printed twice. One list, one place.
+  for (const note of proposal.notes.filter((note) => !(proposal.theme?.notes ?? []).includes(note))) {
+    lines.push(`  note: ${note}`);
+  }
   return `${lines.join("\n")}\n`;
 }
 
