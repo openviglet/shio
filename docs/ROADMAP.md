@@ -76,7 +76,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH383** (deps: SH348 ✅, SH323 ✅) **The renderer knows nothing about locale** — SH348 made the tree locale-aware and the render model stayed monolingual: no sibling translations in scope, no locale in the route and no switcher a six-language site needs. → §XVII.7
 - 📋 **SH384** (deps: SH247 ✅, SH259 ✅) **A listing has a ceiling and no second page** — query takes folder, type and limit only, so an archive past its limit has no page two and a hub filtered by industry or tag cannot be written at all. → §XVII.8
 - 📋 **SH385** (deps: SH377 ✅) **A replica silently abandons the original's URL space** — The capture knows every source URL and nothing records the source-to-replica map or serves a redirect, so every inbound link to a path the replica renamed is lost. → §XVII.9
 - 📋 **SH386** (deps: SH265 ✅, SH365 ✅, SH391 ✅) **Nothing proves the replica looks like the original** — snapshot compares a page against its own earlier capture, so the comparison a replication needs — the source as the baseline, at several widths — cannot be asked for. → §XVII.10

@@ -96,6 +96,8 @@ class ShTemplateFieldLintTest {
             <nav>{{#menu title="Primary"}}{{#if url}}<a href="{{url}}">{{name}}</a>
               {{else}}<span>{{name}}</span>{{#menu title=title}}<a href="{{url}}">{{name}}</a>
               {{/menu}}{{/if}}{{/menu}}</nav>
+            <ul>{{#translations}}<li><a href="{{url}}" hreflang="{{locale}}">{{title}}</a></li>
+              {{else}}<li>only one language</li>{{/translations}}</ul>
             <div>{{#search q="x" type="%s" limit=3}}<span>{{summary}}</span>{{/search}}</div>
             <form>{{#form type="%s"}}<label for="{{name}}">{{label}}</label>
               <input type="{{input}}" data-w="{{widget}}" data-o="{{ordinal}}"

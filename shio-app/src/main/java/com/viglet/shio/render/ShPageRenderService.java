@@ -24,6 +24,7 @@ import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentFrames;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
@@ -196,9 +197,20 @@ public class ShPageRenderService {
         Map<String, Object> model = new LinkedHashMap<>(renderModel.of(page, theme));
         // Reserved, like `post`/`site`/`theme`: it lets the helpers pick DRAFT vs PUBLISHED
         // and lets a layout render its own "you are looking at a draft" marker.
-        // One entry, so there is no order to keep and the stability helper would only promise one
-        // (SH197). The `param` map below is the case that genuinely needs it: a caller's query.
-        model.put("render", Map.of("state", state.name()));
+        //
+        // SH383 added `defaultLocale`, and it is here rather than on `site` — which is what the
+        // design asked for — because there **is** no per-site default locale in this model. The
+        // value is `ShPostUnifiedWriteService.DEFAULT_LOCALE`, instance-wide, the same one the
+        // context pack publishes; calling it `site.defaultLocale` would promise a setting nobody can
+        // set, and a template built on that promise would break the day one arrives. When a per-site
+        // default lands it can appear on `site` beside this without moving it.
+        //
+        // It exists because `{{#if}}` on a locale needs something to compare against: emitting
+        // `hreflang` on the default-language page, or picking the `x-default` of a set, is a
+        // comparison a template cannot make from `post.locale` alone.
+        model.put("render", ShStableMap.copyOf(new LinkedHashMap<>(Map.of(
+                "state", state.name(),
+                "defaultLocale", ShPostUnifiedWriteService.DEFAULT_LOCALE))));
         // SH259 — the reader's query, and nothing else of the request. Sorted rather than in
         // arrival order: the model feeds markup SH101 hashes, and two readers sending the same
         // parameters in a different order must not produce two digests.

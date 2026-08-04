@@ -1383,25 +1383,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.7 The tree can say pt-br and the page cannot (SH383)
-
-SH348 gave a file `locale:` and `translationOf:`, and stopped at the projection. The
-render model has no locale at all: `ShRenderModel` exposes no `post.locale`, nothing
-puts the sibling translations in scope, and `/preview/{site}/{url}` has no notion of a
-language segment. So a six-language site can be *stored* and cannot render `<html
-lang>`, a `hreflang` pair, or the switcher that is the one control every page of it
-carries.
-
-Three things, and the third is the one to argue about. **`post.locale` and
-`site.defaultLocale` on the model**, which cost nothing and are read from what the post
-already holds. **`{{#translations}}`**, one row per sibling — locale, label, url —
-resolved through SH348's anchor rule, which is where a switcher comes from and also
-`hreflang`. And **no locale-prefixed route**: SH323 already forces a friendly URL to be
-site-unique, so `/en/about` and `/pt/sobre` are ordinary distinct URLs and the preview
-needs no new addressing — adding a locale segment to the route would put a second
-addressing scheme beside SH79 for no capability. The missing translation is a `verify`
-warning, not a refusal: a half-translated site is normal work in progress.
-
 ### XVII.8 A listing helper with no offset is a homepage teaser, not an archive (SH384)
 
 `{{#query}}` accepts `folder`, `type` and `limit`, and `limit` exists because a listing

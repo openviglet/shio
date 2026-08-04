@@ -48,6 +48,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.post.type.ShSystemPostTypeAttr;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.render.ShRenderPostTypes;
 import com.viglet.shio.render.ShTemplateGraph;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
@@ -203,6 +204,7 @@ public class ShAgentVerifyService {
 
         if (requested.contains(ShAgentCheck.CONTENT)) {
             content(scan, findings);
+            untranslated(scan, scope, findings);
         }
         // Routes runs before delivery because it decides what delivery has to adjudicate:
         // a link that resolves against the content graph needs no request at all, and the
@@ -533,6 +535,111 @@ public class ShAgentVerifyService {
         untitledTemplates(check, scan, findings);
         missingThemes(check, scan, findings);
         unpublishedTemplates(check, scan, findings);
+    }
+
+    /**
+     * SH383 — a translated page missing one of the site's languages.
+     *
+     * <h2>A warning, and never a refusal</h2>
+     *
+     * <p>A half-translated site is normal work in progress, so nothing here may block anything: the
+     * write side already refuses only a {@code translationOf} that resolves to <b>nothing</b> (SH348),
+     * which is a different claim — that is a broken link, this is unfinished work.</p>
+     *
+     * <h2>The site's languages are what its own content says, and there is no setting</h2>
+     *
+     * <p>Deliberately derived rather than configured. A per-site locale list would be a new setting for
+     * every site to get wrong, and the union of the locales its posts already carry is the same answer
+     * with nothing to maintain — a monolingual site has one locale and this rule is silent on it by
+     * construction rather than by a flag somebody has to remember to leave off.</p>
+     *
+     * <h2>Only a group that is already translated, which is the difference between useful and unusable</h2>
+     *
+     * <p>The naive rule — warn for every post missing any of the site's locales — is the one to avoid,
+     * and it is not a matter of taste: on a site with 500 English pages and one Portuguese page it
+     * emits 499 findings and the report is worthless. A page nobody has ever translated is not a
+     * <i>missing translation</i>, it is an untranslated page, and no evidence exists that anyone
+     * intended otherwise. A group with <b>two or more</b> locales is that evidence: somebody declared
+     * this content translated, so a language the rest of the site has and this group does not is a real
+     * gap.</p>
+     *
+     * <h2>Silent on a scoped run, rather than a warning</h2>
+     *
+     * <p>The finding is an <b>absence</b>, and SH143's rule bites harder for those than for anything
+     * else here: a run scoped to one folder cannot see the site's locale set, so every group in it
+     * would look like it was missing whatever the scope excluded. {@code translation-target-missing}
+     * downgrades to a warning in that case because its evidence is still a present thing; there is no
+     * equivalent downgrade for this one, so it does not run.</p>
+     */
+    private void untranslated(Scan scan, ShAgentVerifyScope scope, List<Finding> findings) {
+        if (scope.partial()) {
+            return;
+        }
+        String check = ShAgentCheck.CONTENT.wireName();
+        Map<String, Set<String>> localesBySite = new LinkedHashMap<>();
+        Map<String, Map<String, ShPostUnified>> byGroup = new LinkedHashMap<>();
+        for (ShPostUnified post : scan.posts()) {
+            ShSite site = post.getShSite();
+            if (site == null) {
+                continue;
+            }
+            String locale = ShPostUnifiedWriteService.localeOf(post);
+            localesBySite.computeIfAbsent(site.getId(), ignored -> new java.util.TreeSet<>()).add(locale);
+            String group = post.getTranslationGroupId();
+            if (group == null || group.isBlank()) {
+                continue;
+            }
+            // First writer wins per locale, and `scan.posts()` is already id-ordered, so which post
+            // represents a locale is stable across runs (P5) — the address is in the finding.
+            byGroup.computeIfAbsent(group, ignored -> new LinkedHashMap<>()).putIfAbsent(locale, post);
+        }
+
+        for (Map.Entry<String, Map<String, ShPostUnified>> entry : byGroup.entrySet()) {
+            Map<String, ShPostUnified> group = entry.getValue();
+            if (group.size() < 2) {
+                continue;
+            }
+            ShPostUnified anchor = anchorOf(entry.getKey(), group);
+            Set<String> siteLocales = localesBySite.getOrDefault(anchor.getShSite().getId(), Set.of());
+            Set<String> missing = new java.util.TreeSet<>(siteLocales);
+            missing.removeAll(group.keySet());
+            if (missing.isEmpty()) {
+                continue;
+            }
+            findings.add(Finding.warning(check, "translation-missing", address(anchor), null,
+                    "This content is translated into " + String.join(", ", new java.util.TreeSet<>(group.keySet()))
+                            + " but not into " + String.join(", ", missing)
+                            + ", which the rest of this site has.",
+                    "Create the missing translation with a post.upsert op naming this page in "
+                            + "`translationOf` and the locale in `locale` (POST /api/v2/agent/batch). "
+                            + "A warning rather than an error: a half-translated site is work in "
+                            + "progress, not a defect."));
+        }
+    }
+
+    /**
+     * The post a translation finding is hung on: the group's <b>anchor</b> (SH383).
+     *
+     * <h2>Why this is not "whichever we saw first"</h2>
+     *
+     * <p>It was, and a test caught it: the first draft took the head of a locale-keyed map filled in
+     * {@code scan.posts()} order, which is id order — deterministic, and arbitrary. The finding then
+     * landed on {@code /pt/sobre} rather than on {@code /about}, which reads as "the Portuguese page is
+     * missing German" and points a reader at the wrong file to fix.</p>
+     *
+     * <p>SH53's column is the answer and needs no extra read: a standalone or master post carries its
+     * <b>own id</b> as the translation group, and every translation inherits it — so the anchor is the
+     * member whose id is the group id, which is the same "the anchor names nothing" rule SH348 relies
+     * on. A group whose anchor has been deleted falls back to the lowest id: still deterministic, and
+     * still a member of the group rather than nothing.</p>
+     */
+    private ShPostUnified anchorOf(String group, Map<String, ShPostUnified> members) {
+        return members.values().stream()
+                .filter(post -> group.equals(post.getId()))
+                .findFirst()
+                .orElseGet(() -> members.values().stream()
+                        .min(Comparator.comparing(ShPostUnified::getId))
+                        .orElseThrow());
     }
 
     /**

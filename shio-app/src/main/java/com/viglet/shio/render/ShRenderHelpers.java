@@ -139,7 +139,7 @@ public class ShRenderHelpers {
      * correct template.</p>
      */
     public static final Set<String> ROW_KEYS =
-            Set.of("id", "title", "summary", "url", "link", "type", "name");
+            Set.of("id", "title", "summary", "url", "link", "type", "name", "locale");
 
     /**
      * What a {@code {{#form}}} row carries (SH247) — a <b>field</b>, not a post.
@@ -191,6 +191,98 @@ public class ShRenderHelpers {
                 "{{#form type=}}…{{/form}}", this::form);
         engine.register("menu", ShHelperShape.BLOCK,
                 "{{#menu title=}}…{{/menu}}", this::menu);
+        engine.register("translations", ShHelperShape.BLOCK,
+                "{{#translations}}…{{/translations}}", this::translations);
+    }
+
+    /**
+     * {@code {{#translations}}…{{/translations}}} — this page's siblings in the other languages (SH383).
+     *
+     * <h3>The gap it closes</h3>
+     *
+     * <p>SH348 gave a file {@code locale:} and {@code translationOf:} and stopped at the projection.
+     * Nothing put the siblings in template scope, so a six-language site could be <b>stored</b> and
+     * could not render the one control every page of it carries — the switcher — or the {@code
+     * hreflang} pair that tells a search engine the same thing. Both come from these rows.
+     *
+     * <h3>It takes no arguments, which is the whole shape</h3>
+     *
+     * <p>The subject is always the page being rendered: a translation set is a property of <i>this</i>
+     * post, not something a template selects. So there is no hash to get wrong, and it is the only
+     * block helper here with an empty signature — {@code {{#navigation}}} defaults its {@code folder=}
+     * and could still be pointed elsewhere, and that difference is real rather than an omission.
+     *
+     * <h3>The group is SH348's, and the anchor rule is what makes it a set</h3>
+     *
+     * <p>Siblings share {@code translationGroupId} (SH53's column, which SH348's {@code translationOf}
+     * resolves into). Every translation names the group's <b>anchor</b> and the anchor names nothing,
+     * so the group is a forest rather than a chain — which means "the siblings" is one equality test
+     * and not a walk. A post whose group is blank, or which is alone in its group, yields
+     * {@code {{else}}}: a monolingual page is not a defect and must not render an empty switcher.
+     *
+     * <h3>Same site only, like every reference here</h3>
+     *
+     * <p>{@code getRelation}'s rule, for its reason: a relation that reached another site's content
+     * would make a shared region's output depend on which page slotted it. That does bound what this
+     * supports — a locale-per-<i>site</i> layout gets nothing — and the bound is the design's own:
+     * SH323 makes a friendly URL site-unique, so {@code /en/about} and {@code /pt/sobre} are ordinary
+     * distinct URLs in <b>one</b> site, which is why SH383 adds no locale-prefixed route. A second
+     * addressing scheme beside SH79 for no new capability is what that would be.
+     *
+     * <h3>Ordered by locale, not by date</h3>
+     *
+     * <p>Every other listing here sorts newest-first, and for a switcher that is wrong twice: the order
+     * would change when somebody edited one translation, and a language picker whose items move is a
+     * control people misclick. Alphabetical by locale tag is stable, and it is the order a reader can
+     * predict.
+     *
+     * <h3>The current page is not in its own list</h3>
+     *
+     * <p>Which is the decision a caller would otherwise have to undo with {@code {{#unless}}} on every
+     * template. A switcher marking the current language is doing something else — comparing
+     * {@code post.locale} — and that is available without spending a row on it.
+     */
+    Object translations(Object context, Options options) throws IOException {
+        String siteId = string(options.context.get(SITE_ID));
+        String self = string(options.context.get("post.id"));
+        if (siteId == null || self == null) {
+            return options.inverse();
+        }
+        ShPostState state = state(options);
+        List<ShPostUnified> rows = rowsOf(siteId, statesFor(state));
+        // The group is read off the row rather than from the model, and deliberately: putting
+        // `translationGroup` on the `post` frame would publish a **UUID** to every template for a
+        // value no template can use — SH79's rule is that an address a human writes is never a UUID,
+        // and the model is what a human writes against. `rowsOf` is the SH353 per-transaction read
+        // that is already in hand, so finding self in it costs nothing.
+        String group = rows.stream()
+                .filter(post -> self.equals(post.getId()))
+                .map(ShPostUnified::getTranslationGroupId)
+                .filter(each -> each != null && !each.isBlank())
+                .findFirst()
+                .orElse(null);
+        if (group == null) {
+            return options.inverse();
+        }
+        List<Map<String, Object>> siblings = preferDraft(
+                rows.stream().filter(post -> group.equals(post.getTranslationGroupId())).toList(),
+                state).stream()
+                // Excluded after the draft/published fold, not before: publishing keeps the draft's
+                // id (SH321), so the pair is one id either way — but folding first is what makes the
+                // *sibling* rows prefer the draft, which is the whole point of the shared writer.
+                .filter(post -> !self.equals(post.getId()))
+                .sorted(Comparator.comparing(ShRenderModel::locale)
+                        .thenComparing(ShPostUnified::getId))
+                .map(this::row)
+                .toList();
+        if (siblings.isEmpty()) {
+            return options.inverse();
+        }
+        StringBuilder out = new StringBuilder();
+        for (Map<String, Object> row : siblings) {
+            out.append(options.fn(row));
+        }
+        return out;
     }
 
     /**
@@ -967,6 +1059,13 @@ public class ShRenderHelpers {
         // page. The preview route rewrites nothing.
         row.put("link", post.getFurl());
         row.put("type", typeNameOf(post));
+        // SH383 — on **every** row, not only a translation's. It is a property of every post, it is
+        // already loaded, and a multilingual site wants it on a listing too: a card that renders
+        // `lang` on a quoted excerpt is the ordinary case, and so is a `{{#query}}` that has to skip
+        // rows in the wrong language. Adding it to `{{#translations}}` alone would have been a second
+        // row shape for one field, which is the trade `FORM_FIELD_KEYS` is documented as *worth* and
+        // this one plainly is not.
+        row.put("locale", ShRenderModel.locale(post));
         return ShStableMap.copyOf(row);
     }
 

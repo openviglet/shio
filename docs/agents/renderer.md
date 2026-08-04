@@ -595,6 +595,57 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   one of these" and a required field would make the other case impossible. *Neither* is the one that
   hides (a label with no link is indistinguishable from a deliberate heading); *both* is a silent
   precedence, since `target` wins and nothing said so.
+  **`{{#translations}}` and `post.locale` — SH348 stored a locale and nothing could read one (SH383).**
+  The tree got `locale:` and `translationOf:` and the render model got nothing, so a six-language site
+  could be *stored* and could not render `<html lang>`, an `hreflang` pair, or the switcher that is the
+  one control every page of it carries. Three parts, and the interesting decisions are all in what was
+  *not* done:
+  **`post.locale` is never blank.** The column is nullable, so `post.getLocale()` would emit
+  `<html lang="">` on any row predating SH348 — and an empty `lang` is not "unspecified" to a browser or
+  a screen reader, it *asserts the language is unknown*, which is worse than a defaulted-but-valid tag.
+  The defaulting is `ShPostUnifiedWriteService.localeOf`, and it moved there rather than being written
+  inline: the *constant* had one owner and the fallback did not, so the read projection, the model and
+  the new verify rule were each about to grow their own copy — three chances to disagree with what the
+  context pack published, which is the drift `DEFAULT_LOCALE`'s own comment describes.
+  **`render.defaultLocale`, not `site.defaultLocale`** — which is what the design asked for and does not
+  exist: there is no per-site default locale in this model, so that name would promise a setting nobody
+  can set and a template built on it would break the day one arrives. It goes on `render` beside `state`,
+  the frame that already holds render-time facts, and can be joined later rather than moved.
+  **`locale` is on *every* row**, not only a translation's: it is a property of every post, already
+  loaded, and a multilingual listing wants it too. A second row shape for one field is the trade
+  `FORM_FIELD_KEYS` is documented as *worth* and this one plainly is not.
+  **The helper takes no arguments**, the only one here with an empty signature — a translation set is a
+  property of *this* page, not something a template selects — and **excludes the current page**, which a
+  switcher would otherwise undo with `{{#unless}}` on every template (marking the current language is a
+  comparison against `post.locale`, available without spending a row).
+  **Ordered by locale tag, not newest-first**, because a language picker whose items move when somebody
+  edits one translation is a control people misclick.
+  **The switcher's label is the sibling's own `title`**, which is already in the target language by
+  construction. A JDK CLDR display name would read better and would move SH101's digest on every
+  multilingual page the day the JDK is upgraded — the same reason SH377 keeps no timestamp in its
+  inventory.
+  **The group is read off the row, never put on the model**: `translationGroup` is a UUID, and SH79's
+  rule is that an address a human writes is never one — the model is what a human writes against.
+  `rowsOf` is the SH353 per-transaction read already in hand, so finding self in it costs nothing.
+  **And no locale-prefixed route**, deliberately: SH323 makes a friendly URL site-unique, so `/en/about`
+  and `/pt/sobre` are ordinary distinct URLs in one site and the preview needs no new addressing. A
+  locale segment would be a second scheme beside SH79 for no capability. The bound that buys is real and
+  named: a locale-per-*site* layout gets nothing from `{{#translations}}`, because it is scoped to the
+  site like every other reference here (`getRelation`'s reason — a relation reaching another site would
+  make a shared region's output depend on which page slotted it).
+  The `verify` half is **`translation-missing`, a warning**, and most of its test file is the cases where
+  it stays *silent* — because the naive rule is the useless one: "warn for every post missing any of the
+  site's locales" emits 499 findings on a site with 500 English pages and one Portuguese page. A group of
+  **two or more** locales is the evidence somebody meant this content translated; a page nobody
+  translated is an untranslated page, not a missing translation. The site's languages are the **union of
+  what its posts carry**, so a monolingual site is silent by construction rather than by a flag, and
+  there is no locale list for anybody to maintain. It does not run at all on a **scoped** run: the
+  finding is an *absence*, so unlike `translation-target-missing` there is no honest downgrade — scoped
+  to one address, every group looks like it is missing whatever the scope excluded. One defect a test
+  caught: the finding was landing on an arbitrary sibling (the head of a locale-keyed map filled in id
+  order — deterministic and meaningless), reading as "the Portuguese page is missing German". It hangs on
+  the group's **anchor** now, which SH53's column already identifies for free: a master post carries its
+  own id as the group.
   **The engine is the one source of the capability set (SH260)**: `register(name, ShHelperShape,
   helper)` records the name *and the call shape* (`BLOCK` / `BLOCK_PATH_ARG` / `INLINE_PATH_ARG`),
   and every reader asks — the unknown-helper refusal lists `engine.registeredNames()` (alphabetical,
@@ -615,6 +666,8 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   string literal — a sixth restatement of the capability set, in the one test whose subject is that
   none are left, two assertions below the one that reads the engine. It derives them now. Expect all
   four when you add the ninth, and treat a green run after touching only one as the tell.
+  **Confirmed on the ninth (SH383's `translations`): exactly three, and the fourth held** — the derived
+  assertion did not need touching, which is what "the instrument, not the patch" buys the next task.
   **The signature is checked against the body now, both ways (SH291)** — `ShHelperSignatureLintTest`
   fails if a helper reads a hash key its signature omits (an incomplete call in the served context
   pack) *or* declares one nothing reads (a parameter that is silently ignored, which is not an error

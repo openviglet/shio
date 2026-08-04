@@ -64,6 +64,25 @@ public class ShPostUnifiedWriteService {
      */
     public static final String DEFAULT_LOCALE = "en";
 
+    /**
+     * A post's locale, never blank (SH383).
+     *
+     * <p>Here rather than at each caller for the reason above, one step further: the constant had one
+     * owner and the <b>defaulting</b> did not, so SH348's read projection, the render model and
+     * {@code verify}'s translation rule were each about to write their own two-line fallback. Three
+     * copies of "absent means the default" is three chances to disagree with what the context pack
+     * published, which is the same drift this constant's own comment describes.</p>
+     *
+     * <p>The column is nullable and a row written before it existed has none, so the reason this is not
+     * merely tidy is what an empty value <em>means</em> downstream: {@code <html lang="">} is not
+     * "unspecified" to a browser or a screen reader, it asserts that the language is <b>unknown</b>,
+     * which is worse than a defaulted-but-valid tag.</p>
+     */
+    public static String localeOf(ShPostUnified post) {
+        String locale = post == null ? null : post.getLocale();
+        return locale == null || locale.isBlank() ? DEFAULT_LOCALE : locale.trim();
+    }
+
 
     /** Recorded as the {@code publisher} for transitions fired by the SH15 sweep. */
     private static final String SCHEDULER_ACTOR = "scheduler";

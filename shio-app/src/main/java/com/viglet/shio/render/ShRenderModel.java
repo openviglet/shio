@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.utils.ShStableMap;
@@ -203,7 +204,30 @@ public class ShRenderModel {
         // yields `/preview/Democontato`; `pageUrl` is the one place that normalizes it.
         frame.put("canonical", site == null ? null
                 : ShSiteFrontEnd.pageUrl(ShSiteFrontEnd.of(site), post.getFurl()));
+        // SH383 — the fact the whole render model was missing. SH348 gave a file `locale:` and
+        // stopped at the projection, so a six-language site could be *stored* and could not render
+        // `<html lang>`.
+        //
+        // **Never blank**, which is the one decision here. The column is nullable and a row written
+        // before it existed has no value, so the obvious `post.getLocale()` would emit
+        // `<html lang="">` — and an empty `lang` is not "unspecified" to a browser or a screen
+        // reader, it is an assertion that the language is *unknown*, which is worse than a
+        // defaulted-but-valid tag. The fallback is the writer's own default, named once
+        // (SH348's rule: the writer owns it, everything else reads it) — and since SH383 the
+        // *defaulting* is named once there too, not just the constant.
+        frame.put("locale", locale(post));
         return ShStableMap.copyOf(frame);
+    }
+
+    /**
+     * A post's locale, defaulted.
+     *
+     * <p>Delegated to {@link ShPostUnifiedWriteService#localeOf}, which is where the defaulting lives
+     * because the writer owns the default (SH348). This exists as a name in this package only so the
+     * helpers can pass it as a method reference; it deliberately holds no rule of its own.</p>
+     */
+    static String locale(ShPostUnified post) {
+        return ShPostUnifiedWriteService.localeOf(post);
     }
 
     private Map<String, Object> siteFrame(ShSite site) {
