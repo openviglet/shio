@@ -43,6 +43,28 @@ message *is* the finding, so its line had a dangling ` — `. The probe runs **i
 is therefore one long self-contained function on purpose — a complexity warning on it is a false
 positive, and `audit.test.mjs` lints from the other side that it closes over nothing.
 
+**One flag, one meaning: the page is `--page` and `--url` is the instance (SH365).** `snapshot` read
+its target as `flags.address ?? flags.url ?? positionals[0]` while `resolveAdmin` two lines up read
+`flags.url` as the **instance** — one flag naming the page in one line and the server in the next. It
+never bit, because the two readings only meet when a caller passes both and that is the *correct*
+usage, which resolves as anybody would expect. What made it worth fixing is **SH265**: `--url` also
+decides `previewBase`, the origin a front-endless site is photographed from, so the flag could
+silently change which *server* an artifact came from — the one failure `resolveUrl` refuses to risk
+when it declines to guess an origin. **A rename with a deprecation, not a break**: `--page` (or
+`--address`, or a positional) is the target, and `--url` still names the page when nothing else does,
+printing on **stderr** which flag to use instead — stdout stays the artifact's own report.
+**And SH365 named one command while a grep found two** — `digest` had the identical expression and
+the identical collision, and nothing had said so. So per SH322 the instrument landed first:
+`flag-meaning.test.mjs` asserts that **no command reads `flags.url` and resolves an instance**
+(the colliding set must be empty) and that every command giving `--url` a private meaning is declared
+with a reason (exactly one: `clone`, the only command that never talks to an instance at all). The
+shared reader is `pageTarget` in `snapshot.mjs`, and **passing its `warn` callback is how a command
+opts into the legacy reading** — that is the mechanism rather than a convenience. Only `snapshot` and
+`digest` ever documented `--url` as a page, so only they owe backward compatibility; `audit` calls it
+without `warn` and gets the strict read, because accepting `--url` as a page in a command that never
+did would *create* the hazard for free — `shio audit --url http://localhost:2710` would quietly audit
+the instance root instead of saying no page was named.
+
 **`shio clone <url>` is replication's capture phase, and it writes no content (SH377).** A
 replication is capture → convert → prove, and the first phase did not exist, so the work could not
 be scoped. `clone` walks **one origin** and writes exactly two things: the inventory at

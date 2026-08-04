@@ -25,10 +25,13 @@ import { dirname, join } from "node:path";
 
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
-import { SNAPSHOT_DIR, compareSnapshots, describe, resolveUrl, slugFor } from "../snapshot.mjs";
+import { SNAPSHOT_DIR, compareSnapshots, describe, pageTarget, resolveUrl, slugFor } from "../snapshot.mjs";
 
 export async function run(flags, positionals, ctx) {
-  const target = flags.address ?? flags.url ?? positionals[0];
+  // SH365 — `--page`, not `--url`. `--url` is the instance here as everywhere else, and reading it
+  // as the page as well is what let one flag decide which *server* a picture came from.
+  const target = pageTarget(flags, positionals, (message) =>
+    ctx.stderr.write(`shio snapshot: ${message}\n`));
   if (!target) {
     throw new Error(
       "shio snapshot: pass a page — post:<site>/<url>, or an absolute URL.\n" +

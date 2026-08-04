@@ -202,7 +202,9 @@ Verification (shio verify / shio digest):
   A baseline entry whose finding no longer exists fails the run — remove it when you fix
   the defect, or the file rots into a suppression that hides the next one.
   shio digest <page>   post:<site>/<url>, or a delivery URL when fetching is enabled
-  --address / --url    Same, as explicit flags
+  --page / --address   Same, as explicit flags. NOT --url: that is the instance, here as in
+                       every other command (SH365). --url still names the page when nothing
+                       else does, and says to use --page instead
 
 The handoff (shio report):
   shio report renders the summary a *human* reads: what changed, a preview link per page,
@@ -218,6 +220,11 @@ The handoff (shio report):
                        usually the change you just made — use --fail-on-change for a gate.
                        Optional deps: playwright (required), pixelmatch + pngjs for a
                        per-pixel diff; without them it answers changed/unchanged by bytes.
+  --page <page>        The page to photograph (or a bare positional, or --address).
+                       NOT --url: that is the instance, and since SH265 it also decides which
+                       server a front-endless site is previewed from — one flag that picked
+                       both would decide which server the picture came from (SH365). --url
+                       still names the page when nothing else does, and says to use --page
   --accept             Replace the baseline without reporting a change
   --fail-on-change     Exit 1 when the page looks different
   --width / --height   Viewport (default 1280x800)  --viewport-only  Skip the full page

@@ -20,17 +20,21 @@
  *
  * ## The target flag is `--page`, and `--url` is the instance
  *
- * `shio snapshot` reads `flags.url` as *both* the page and the instance, which SH365 filed. This
- * command does not inherit that: `--page` (or a positional, or `--address`) is what to audit, and
- * `--url` means the same thing here as it does in every other command.
+ * `shio snapshot` read `flags.url` as *both* the page and the instance, which SH365 filed and then
+ * fixed for both commands that had it. This one never inherited it: `--page` (or a positional, or
+ * `--address`) is what to audit, and `--url` means the same thing here as it does everywhere else.
+ * `flag-meaning.test.mjs` is what keeps that true of the next command as well.
  */
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { PER_RULE_CAP, classify, describe, parseWidths, probe } from "../audit.mjs";
-import { resolveUrl } from "../snapshot.mjs";
+import { pageTarget, resolveUrl } from "../snapshot.mjs";
 
 export async function run(flags, positionals, ctx) {
-  const target = flags.page ?? flags.address ?? positionals[0];
+  // No `warn` argument, which is how SH365's helper is told to refuse the legacy `--url`-as-page
+  // reading: this command never documented it, so accepting it would create the hazard rather than
+  // carry it — `--url http://localhost:2710` would audit the instance root instead of refusing.
+  const target = pageTarget(flags, positionals);
   if (!target) {
     throw new Error(
       "shio audit: pass a page — post:<site>/<url>, or an absolute URL.\n" +

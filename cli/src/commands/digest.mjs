@@ -16,12 +16,16 @@
  */
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
+import { pageTarget } from "../snapshot.mjs";
 
 export async function run(flags, positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
   const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
 
-  const target = flags.address ?? flags.url ?? positionals[0];
+  // SH365 named `snapshot` and a grep found this one too: the same expression, the same collision
+  // with `resolveAdmin` two lines up, and nothing had said so.
+  const target = pageTarget(flags, positionals, (message) =>
+    ctx.stderr.write(`shio digest: ${message}\n`));
   if (!target) {
     throw new Error(
       "shio digest: pass a page. Example: shio digest post:Blog/blog/hello-world " +

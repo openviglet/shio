@@ -1088,28 +1088,6 @@ site, or any type, which is the difference between a contact form and a
 content-injection endpoint. And **what a submission is worth keeping**: a post carries
 an owner, and an anonymous one has none.
 
-### XV.27 One flag, two meanings (SH365)
-
-`shio snapshot` reads the target as `flags.address ?? flags.url ?? positionals[0]`, and
-`resolveAdmin` reads `flags.url ?? env.SHIO_URL` as the **instance**. So `--url` names
-the page in one line and the server in the next.
-
-It does not bite today, and that is why it is an idea rather than a bug: the two
-readings only meet when a caller passes both an address and `--url`, which is the
-correct usage (`--address post:Blog/x --url http://localhost:2710`) and resolves the way
-anybody would expect. Every other path takes one or the other.
-
-SH265 made it load-bearing, though, because `--url` now also decides `previewBase` — the
-origin a front-endless site is photographed from. A flag that silently changes which
-*server* a picture came from is the kind that produces a plausible-looking artifact, which
-is the failure `resolveUrl`'s own comment refuses to risk when it declines to guess an
-origin.
-
-The fix is a rename with a deprecation, not a break: `--page` for the target, `--url`
-kept meaning the instance the way every other command reads it. Worth doing when
-something else touches this command, and worth writing down now because the next reader
-will assume the two `--url`s are one and be right nine times out of ten.
-
 ### XV.28 The field whose value is a program is the one nothing runs (SH392)
 
 SH248 settled that a `Region`'s `JAVASCRIPT` is never evaluated in the JVM and is

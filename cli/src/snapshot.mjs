@@ -33,6 +33,54 @@
 export const SNAPSHOT_DIR = "shio/snapshots";
 
 /**
+ * The page a command was asked about — from `--page`, `--address`, or a bare positional (SH365).
+ *
+ * <h2>What `--url` used to also mean, and why the rename is a deprecation</h2>
+ *
+ * <p>`snapshot` and `digest` both read the target as `flags.address ?? flags.url ?? positionals[0]`
+ * while `resolveAdmin` reads `flags.url` as the **instance**. One flag named the page in one line and
+ * the server in the next. It did not bite — the two readings only meet when a caller passes both, and
+ * that is the correct usage (`--address post:Blog/x --url http://localhost:2710`), which resolves the
+ * way anybody would expect. What made it worth fixing is SH265: `--url` now also decides
+ * `previewBase`, the origin a front-endless site is photographed from, so a flag that silently changes
+ * which *server* an artifact came from is the failure `resolveUrl` refuses to risk when it declines to
+ * guess an origin.
+ *
+ * <p><b>A rename with a deprecation, not a break.</b> `shio snapshot --url https://site/page` was a
+ * documented way to name a page and is somebody's script, so it still works: when nothing else names
+ * a target, `--url` is read as one and the caller is told which flag to use instead (P6). When a
+ * target *is* named some other way, `--url` is the instance and only the instance — which is what it
+ * means in every other command.
+ *
+ * <p><b>Passing `warn` is how a command opts into the legacy reading</b>, and that is the whole
+ * mechanism rather than a convenience: only `snapshot` and `digest` ever documented `--url` as a page,
+ * so only they owe anybody backward compatibility. A command with no history there — `audit`, or the
+ * next one — calls this with no `warn` and gets the strict read, because accepting `--url` as a page in
+ * a command that never did would *create* the hazard for free: `shio audit --url http://localhost:2710`
+ * would quietly audit the instance root instead of saying no page was named.
+ *
+ * @param flags the parsed flags
+ * @param positionals the bare arguments
+ * @param warn called with a deprecation message when `--url` was read as the page; omit it to refuse
+ *             that reading entirely
+ */
+export function pageTarget(flags, positionals = [], warn) {
+  const named = flags.page ?? flags.address ?? positionals[0];
+  if (named !== undefined && named !== null && named !== "" && named !== true) {
+    return named;
+  }
+  if (warn && typeof flags.url === "string" && flags.url) {
+    warn?.(
+      `--url named the page here, which is deprecated: --url means the instance in every other\n` +
+        `  command, and since SH265 it also decides which server a preview is rendered by. Pass\n` +
+        `  --page ${flags.url} instead (or the page as a bare argument).`,
+    );
+    return flags.url;
+  }
+  return undefined;
+}
+
+/**
  * A stable file name for a page.
  *
  * <p>Derived from the address or URL rather than from a counter, so re-running the command

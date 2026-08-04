@@ -15,7 +15,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { compareSnapshots, describe as describeResult, resolveUrl, slugFor } from "../src/snapshot.mjs";
+import {
+  compareSnapshots,
+  describe as describeResult,
+  pageTarget,
+  resolveUrl,
+  slugFor,
+} from "../src/snapshot.mjs";
 import * as snapshot from "../src/commands/snapshot.mjs";
 
 function sink() {
@@ -277,4 +283,49 @@ test("--out redirects the whole set", async () => {
 
 test("no page named explains what to pass", async () => {
   await assert.rejects(() => snapshot.run({}, [], ctxWith()), /pass a page/);
+});
+
+// --- SH365: one flag, one meaning ---
+
+test("SH365: --page names the page and --url stays the instance", () => {
+  const warnings = [];
+  const warn = (message) => warnings.push(message);
+
+  assert.equal(pageTarget({ page: "post:Blog/x" }, [], warn), "post:Blog/x");
+  assert.equal(pageTarget({ address: "post:Blog/x" }, [], warn), "post:Blog/x");
+  assert.equal(pageTarget({}, ["post:Blog/x"], warn), "post:Blog/x");
+  // The case the defect was about: both given, which is the *correct* usage. `--url` must be read
+  // only as the instance, and since SH265 it also decides which server a preview comes from.
+  assert.equal(pageTarget({ page: "post:Blog/x", url: "http://localhost:2710" }, [], warn), "post:Blog/x");
+  assert.deepEqual(warnings, [], "nothing was deprecated — no caller named the page with --url");
+});
+
+test("SH365: --url as the page still works, and says which flag to use", () => {
+  const warnings = [];
+  const target = pageTarget({ url: "https://site.test/page" }, [], (message) => warnings.push(message));
+
+  // A rename with a deprecation, not a break: `snapshot --url <page>` was documented and is
+  // somebody's script.
+  assert.equal(target, "https://site.test/page");
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /--page https:\/\/site\.test\/page/);
+  assert.match(warnings[0], /means the instance in every other/);
+});
+
+test("SH365: a command with no legacy reading refuses --url as the page", () => {
+  // No `warn` is how the helper is told there is nothing to deprecate. Accepting it in `audit` —
+  // which never documented it — would mean `--url http://localhost:2710` audits the instance root
+  // instead of refusing, which is the plausible-artifact failure the task is about.
+  assert.equal(pageTarget({ url: "http://localhost:2710" }, []), undefined);
+  assert.equal(pageTarget({}, []), undefined);
+});
+
+test("SH365: snapshot warns on stderr and still photographs the page", async () => {
+  const ctx = ctxWith();
+  const result = await snapshot.run({ url: "https://x.test/page" }, [], ctx);
+
+  assert.equal(result.url, "https://x.test/page");
+  assert.match(ctx.stderr.text, /shio snapshot: --url named the page here, which is deprecated/);
+  // stdout stays the artifact's own report — a deprecation is not part of what the command produces.
+  assert.doesNotMatch(ctx.stdout.text, /deprecated/);
 });

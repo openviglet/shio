@@ -897,6 +897,7 @@
 - **SH414** — Four surefire forks cut the test phase from 91.8s to 68.4s and, more usefully, its spread from 9s to 0.5s; eight forks is slower, and lazy-init cost 26 failures for nothing.
 - **SH415** — The ITs are opt-in now: `skipITs` defaults true and `-DskipITs=false` runs them, on the finding that no workflow ran the Java suite at all and failsafe ignored its own failures.
 - **SH416** — A `@Container` read from `@DynamicPropertySource` starts eagerly now, so 26 ITs pass with none skipped; a lint names the next one and failsafe stops ignoring its own failures.
+- **SH365** — the page is --page and --url is the instance in snapshot and digest both, with --url still naming the page when nothing else does and saying which flag to use; the grep landed first as flag-meaning.test.mjs, which found digest carrying the identical collision the task had not named and keeps the colliding set empty
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
