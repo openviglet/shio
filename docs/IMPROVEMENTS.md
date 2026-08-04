@@ -794,7 +794,7 @@ right). The alternative — make `ShAgentBodyEtag` the only way to build a tag o
 
 ### XIII.10 The manifest's weight is prose, and terse barely touches it (SH230)
 
-SH174 measured it and the number is worth keeping in view:
+SH174 measured it:
 
 | Reading of `/agent/manifest` | `X-Shio-Est-Tokens` |
 |---|---|
@@ -802,26 +802,27 @@ SH174 measured it and the number is worth keeping in view:
 | `format=terse` | 2088 (**1.1×**) |
 | `include=features,limits` | 298 (**7.9×**) |
 
-Everywhere else the terse encoding is worth a third to a half, because everywhere else the
-payload is *rows* and JSON's cost is the key names repeated per row. The manifest is not rows:
-twenty-nine endpoint entries whose weight is a purpose sentence and a runnable example, both
-verbatim on purpose — an abbreviated example is a call the instance would reject.
+Everywhere else the terse encoding is worth a third to a half, because everywhere else
+the payload is *rows* and JSON's cost is the key names repeated per row. The manifest is
+not rows: twenty-nine endpoint entries whose weight is a purpose sentence and a runnable
+example, both verbatim on purpose — an abbreviated example is a call the instance would
+reject.
 
-So the index is the target, and `include` only helps a caller that already knows what it wants.
-Two candidates, both with a real objection:
+So the index is the target, and `include` only helps a caller that already knows what it
+wants. Two candidates, both with a real objection:
 
 - **Elide a derivable example.** Most entries' examples are `METHOD {apiBase}{path}` with no
   parameters. Against it: `ShAgentManifestTest` asserts every indexed endpoint carries a
   runnable example, because a missing example is what sends an agent guessing, and a rule the
-  reader must know in order to reconstruct is not obviously better than the bytes.
+  reader must reconstruct is not obviously better than the bytes.
 - **Put the index behind its own `include`, defaulted off.** Honest about what the document is
   for — a capability check — and it moves the cost to the session that wants the index. Against
   it: a *first* session is exactly when the index is worth having, and it would then pay two
   calls instead of one, which is the opposite of SH157.
 
-A third may exist: the index is the most cacheable document on the surface and the only part
-that never changes between builds, so a separate `/agent/endpoints` with a long-lived tag would
-make the manifest small permanently — at the cost of one more endpoint.
+A third: the index is the most cacheable document on the surface and never changes
+between builds, so a separate `/agent/endpoints` with a long-lived tag would make the
+manifest small permanently — at the cost of one more endpoint.
 
 ### XIII.11 An instance's own notes travel nowhere (SH231)
 
@@ -844,26 +845,24 @@ task rather than a server one.
 ### XIII.12 `/agent/changes` cannot revalidate the way it is most often called (SH232)
 
 After SH159, the change feed answers `304` in cursor mode: an unchanged range is
-byte-identical and free, which is the SH88 walk working exactly as designed. In **window**
-mode it never will, because the response's own cursor is `now - lagMillis` — the moving edge
-of the feed — so two calls a second apart genuinely are different answers.
+byte-identical and free, the SH88 walk as designed. In **window** mode it never will,
+because the response's own cursor is `now - lagMillis` — the moving edge of the feed —
+so two calls a second apart differ.
 
-That is correct behaviour, and it is also the read most likely to be repeated by a client
-that has not kept a cursor: the window is what a session opens with, and "has anything
-changed since I got here" is asked more often than it is answered yes.
+That is correct, and also the read most repeated by a client that kept no cursor: the
+window is what a session opens with, and "has anything changed since I got here" is
+asked more often than it is answered yes.
 
 Three shapes, in increasing order of how much they concede:
 
 - **Quantise the window cursor** to the second or the configured lag, so consecutive polls
-  inside one tick agree. Cheap, and it makes the cursor slightly less precise than the
-  position it names — which is the one property SH88 spent a whole task getting right.
+  inside one tick agree. Cheap, and it makes the cursor less precise than the position it
+  names — the one property SH88 spent a task getting right.
 - **Tag the window response over its `changes` array only**, excluding the cursor. Honest
-  about what the caller is asking (*did anything happen*), and it means a `304` withholds a
-  cursor the caller might have wanted — tolerable, since a caller that wanted the cursor is
-  the caller who should be in cursor mode.
-- **Say nothing and document it**, which is the current state. Defensible: the fix for a
-  client that polls the window is to keep the cursor it was already given, and that is one
-  line in the endpoint's own description.
+  about what the caller is asking (*did anything happen*); a `304` then withholds a cursor —
+  tolerable, since a caller that wanted one should be in cursor mode.
+- **Say nothing and document it**, the current state. Defensible: a client polling the
+  window should keep the cursor it was given, one line in the endpoint's description.
 
 The third is the default and the first is probably wrong. Worth deciding rather than
 leaving to whoever next notices the poll is not free.
@@ -1229,54 +1228,56 @@ asserted at the level the agent surface is.
 
 ### XVI.2 An unmet peer range is not a build failure (SH242)
 
-`monaco-graphql@1.8.0` declares `peerDependencies: { "monaco-editor": ">= 0.20.0 < 0.53" }`.
-A Dependabot bump set the console's direct dependency to `monaco-editor: 0.56.0`. pnpm resolved
-it, and nothing failed.
+`monaco-graphql@1.8.0` declares `peerDependencies: { "monaco-editor": ">= 0.20.0 < 0.53"
+}`. A Dependabot bump set the console's direct dependency to `monaco-editor: 0.56.0`;
+pnpm resolved it, and nothing failed.
 
-What made it fatal rather than merely unsupported is that 0.56 introduced an `exports` map
-(`"."`, `"./*.js"`, `"./*"`) whose patterns re-prefix `esm/vs/`, so the deep specifier
-`monaco-editor/esm/vs/editor/editor.worker` expands to `esm/vs/esm/vs/editor/editor.worker.js`
-and resolves to nothing — and 0.56 had also *removed* files monaco-graphql imports outright
-(`esm/vs/editor/edcore.main.js`). `pnpm run compile:build` therefore failed, which is
-`mvn package`, which is the release jar and the SH182 check.
+What made it fatal rather than unsupported is that 0.56 introduced an `exports` map
+(`"."`, `"./*.js"`, `"./*"`) whose patterns re-prefix `esm/vs/`, so
+`monaco-editor/esm/vs/editor/editor.worker` expands to
+`esm/vs/esm/vs/editor/editor.worker.js` and resolves to nothing — and 0.56 had also
+*removed* files monaco-graphql imports outright (`esm/vs/editor/edcore.main.js`). `pnpm
+run compile:build` therefore failed, which is `mvn package`, the release jar and the
+SH182 check.
 
-The fix was a pin, not a shim: `@graphiql/react` already pins `monaco-editor@0.52.2`, so the
-console's `0.56.0` was the outlier, and aligning on it satisfies the peer range and collapses
-three Monaco copies to one. The first attempt was a Vite `resolve` alias
-remapping the broken prefix, and why it was wrong is worth recording: it made two specifiers
-resolve and failed on a third, because the packages are genuinely incompatible and an alias
-hides the symptom at whichever import the bundler reaches first. **A build error that moves
-when you patch it is telling you the version is wrong.**
+The fix was a pin, not a shim: `@graphiql/react` already pins `monaco-editor@0.52.2`, so
+the console's `0.56.0` was the outlier; aligning on it satisfies the peer range and
+collapses three Monaco copies to one. The first attempt was a Vite `resolve` alias
+remapping the broken prefix, and why it was wrong is worth recording: it made two
+specifiers resolve and failed on a third, because the packages are incompatible and an
+alias hides the symptom at whichever import the bundler reaches first. **A build error
+that moves when you patch it is telling you the version is wrong.**
 
 The generalizable half is the guard. This is a **resolution** fact — true the moment the
-lockfile is written, invisible to every runtime test — so the instrument is the installer:
-`strict-peer-dependencies` (pnpm defaults it off) turns "resolved a version the dependent does
-not support" into a refusal, and it is the only thing that would have caught this at the bump.
+lockfile is written, invisible to every runtime test — so the instrument is the
+installer: `strict-peer-dependencies` (pnpm defaults it off) turns "resolved a version
+the dependent does not support" into a refusal, the only thing that would have caught
+this at the bump.
 
 ### XVI.3 A trashed post still holds its friendly URL, and nothing knows it (SH243)
 
-`ShPostUnified` carries `@SQLRestriction("deleted_date is null")`, which is what makes the SH55
-trash invisible to every normal read. The cost is that every question of the form "is this URL
-free" is answered *only about live posts*: SH202's new check, SH139's move refusal, and the
-`duplicate-url` lint all inherit the restriction from the finders they use.
+`ShPostUnified` carries `@SQLRestriction("deleted_date is null")`, which makes the SH55 trash
+invisible to every normal read. The cost is that every "is this URL free" question is answered
+*only about live posts*: SH202's check, SH139's move refusal and the `duplicate-url` lint all
+inherit the restriction from their finders.
 
-The failure is short: clone a page (`home` → `home-2`), delete the copy, clone again — the
-second copy takes `home-2`, because as far as the query is concerned nothing holds it. Then
-untrash the first. `restoreFromTrash` clears `deleted_date` with **no check at all**, and the
-instance now has exactly the duplicate SH202 was filed to remove, produced by two operations
-that are each individually correct.
+The failure is short: clone a page (`home` → `home-2`), delete the copy, clone again —
+the second copy takes `home-2`, because the query sees nothing holding it. Then untrash
+the first: `restoreFromTrash` clears `deleted_date` with **no check at all**, and the
+instance has the duplicate SH202 was filed to remove, produced by two individually
+correct operations.
 
 SH236 met this blind spot from the post-type side — a trashed post still holds its
-`post_type_id`, so a refusal counting only live rows said "0 posts" and then failed on a
-constraint — and its answer is the one to copy: **count the trashed rows too and name them
-separately**, because the caller's next move differs. That is two changes here: the free-URL
-search should see the trash so a copy skips a URL that is only sleeping, and `restoreFromTrash`
-should refuse a restore onto an occupied URL instead of creating the duplicate silently.
+`post_type_id`, so a refusal counting only live rows said "0 posts" and failed on a
+constraint — and its answer is the one to copy: **count the trashed rows too and name
+them separately**. Two changes here: the free-URL search should see the trash so a copy
+skips a URL that is only sleeping, and `restoreFromTrash` should refuse a restore onto
+an occupied URL rather than duplicate silently.
 
-The second is the important one, and it is not obviously a refusal — the alternative is to
-restore under a numbered URL the way a copy does. That would be wrong: a restore asks for *the
-thing that was there*, and quietly returning it at a different address is the surprise P7 exists
-to prevent. Refuse, name the occupant, let the human choose.
+The second is the important one, and not obviously a refusal — the alternative is a
+numbered URL, the way a copy does. That would be wrong: a restore asks for *the thing
+that was there*, and quietly returning it at a different address is the surprise P7
+exists to prevent. Refuse, name the occupant, let the human choose.
 
 ### XVI.4 Duplicating content is console-only (SH244)
 

@@ -465,3 +465,32 @@ test("text in a folder marker is refused rather than dropped", () => {
   );
 });
 
+// --- SH402: a URL that navigates instead of naming ---
+
+test("SH402: a post URL with a traversal segment is refused, not projected", () => {
+  // The measurement: `path.join` normalizes the result, so `Blog/../outside.md` under
+  // `shio/content` is `shio/outside.md`, and more segments leave the repository. The value is
+  // the server's furl, which makes this remote data choosing where a local command writes.
+  for (const url of ["/../outside", "/blog/../../etc/passwd", "/blog/./here"]) {
+    assert.throws(
+      () => filePathFor({ site: "Blog", url }),
+      /navigates the filesystem instead of naming a post/,
+      `filePathFor should refuse ${url}`,
+    );
+  }
+});
+
+test("SH402: the site half was already guarded, and still is", () => {
+  // Why this defect survived: a path is built from two values, `siteDir` has refused `.` and `..`
+  // since SH257, and the URL beside it was never asked the same question. Asserted here so the
+  // pair stays covered by one rule each rather than one rule and a gap.
+  assert.throws(() => filePathFor({ site: "..", url: "/hello" }), /has no safe directory name/);
+});
+
+test("SH402: an ordinary URL still projects, including dots inside a segment", () => {
+  // The refusal is about a segment that *is* `.` or `..`, not about the character — a post at
+  // `/blog/v1.2` is an ordinary post and a file name may hold dots.
+  assert.equal(filePathFor({ site: "Blog", url: "/blog/v1.2" }), "Blog/blog/v1.2.md");
+  assert.equal(filePathFor({ site: "Blog", url: "/blog/hello" }), "Blog/blog/hello.md");
+  assert.equal(filePathFor({ site: "Blog", url: "/" }), "Blog/index.md");
+});

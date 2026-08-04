@@ -1977,3 +1977,50 @@ test("SH401: a case difference between different sites is not a collision", asyn
   assert.deepEqual(result.conflicts, []);
   assert.equal(result.written.length, 2);
 });
+
+test("SH402: a post whose URL navigates is skipped and named, not written and not fatal", async () => {
+  // The pull keeps going: the projection is short by exactly this post, and the rest is fine.
+  const ctx = ctxWith(server({
+    remote: {
+      "post:Blog/blog/hello": REMOTE_DOC,
+      "post:Blog/../../escaped": {
+        address: "post:Blog/../../escaped",
+        type: "Article",
+        state: "DRAFT",
+        folder: "/blog",
+        data: { headline: "Escaped", body: "<p>Nope</p>" },
+      },
+    },
+  }));
+
+  const result = await contentPull.run({}, [], ctx);
+
+  // The good post still lands.
+  assert.match(ctx.fs.files.get(FILE), /url: \/blog\/hello/);
+  assert.deepEqual(result.written, ["post:Blog/blog/hello"]);
+  // Nothing was written anywhere near the escape.
+  const written = [...ctx.fs.files.keys()].filter((key) => key.endsWith("escaped.md"));
+  assert.deepEqual(written, [], "no file outside the content root");
+  assert.match(ctx.stdout.text, /navigates the filesystem instead of naming a post/);
+});
+
+test("SH402: a skipped post makes the snapshot partial, so --prune cannot read it as a deletion", async () => {
+  // True of SH173's rows as much as SH402's: a post missing from the tree because it could not be
+  // read looks exactly like one a curator deleted, and `--prune` acted on the difference.
+  const ctx = ctxWith(server({
+    remote: {
+      "post:Blog/blog/hello": REMOTE_DOC,
+      "post:Blog/../../escaped": {
+        address: "post:Blog/../../escaped",
+        type: "Article",
+        state: "DRAFT",
+        folder: "/blog",
+        data: { headline: "Escaped" },
+      },
+    },
+  }));
+
+  await contentPull.run({}, [], ctx);
+
+  assert.match(ctx.fs.files.get(BASE_PATH), /"partial": true/);
+});

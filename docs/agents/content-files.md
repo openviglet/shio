@@ -396,6 +396,29 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
         tree hand-authored on Linux where every other gate passes. Distinct from SH400's
         `duplicate-address`: that is two files reaching one address, this is two addresses reaching
         one file, and the fix differs — rename a post rather than delete a file.
+    - **A post URL is a path too, and only the asset one was guarded (SH402).** SH256 refuses an
+      asset path holding `.` or `..` because "under `shio/assets` it can resolve outside the
+      project entirely". A post URL builds a path the same way and had no such check:
+      `filePathFor({site: "Blog", url: "/../outside"})` is `Blog/../outside.md`, `path.join`
+      normalizes it, and the pull writes to `shio/outside.md` — more segments leave the repository.
+      The value is the **server's furl**, so this is remote data choosing where a local command
+      writes, and it needs no malice to reach: an import, a `post.move` an agent composed, or a
+      site whose furls were never constrained. Three things worth keeping:
+      - **`filePathFor` is the choke point, and the read side needs nothing.** A hand-authored file
+        cannot carry it — the path implies a URL and `parsePost` refuses a `url:` that disagrees
+        with its path, and a walk never descends into a `..` entry. The one direction that reaches
+        it is server → pull, and every write goes through that one function.
+      - **Why it survived: a path is built from two values and only one was asked.** `siteDir` has
+        refused a traversing `site` since SH257, and SH255's table declares that refusal — so the
+        pair was half-covered, and the comment above the asset entries read "the *only* round trip
+        whose output is used as a filesystem path". That premise is what made the gap invisible;
+        it is corrected in place rather than deleted, because the sentence is the finding.
+      - **It skips rather than throws**, into SH173's `skipped` channel: the projection is short by
+        exactly that post and the rest of the pull is fine, which is what SH212 and SH374 both
+        settled on. And `skipped` now marks the snapshot **partial** — SH173's rows too, not just
+        SH402's. A post missing because it could not be *read* looks exactly like one a curator
+        deleted, and `push --prune` acted on the difference; it had been reported to the screen
+        since SH173 and never to the flag that stops the deletion.
     - **And the bytes are in the SH89 merge now (SH373).** SH210 fixed one direction and opened
       another: a server-side asset edit never reached the tree, and — newer and worse — a push
       *replaced* the server's bytes whenever they differed from the tree's, which reverts a

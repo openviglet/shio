@@ -229,6 +229,7 @@
 - **SH399** — The size is stamped beside the digest as its validator, so bytes changed outside the CMS make the listing report no hash and recompute instead of a stale one.
 - **SH400** — The write side refuses naming both paths and `verify` reports every pair as `duplicate-address`, so the `index.md` convention no longer drops a post in silence.
 - **SH401** — The pull writes neither and names both, the snapshot goes partial so `--prune` cannot act, and `path-collision` catches the pair in a tree authored where the filesystem allows it.
+- **SH402** — `filePathFor` refuses a URL that navigates, the pull skips and names the post instead of dying, and `skipped` now marks the snapshot partial so `--prune` cannot read a gap as a deletion.
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 

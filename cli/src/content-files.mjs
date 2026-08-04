@@ -155,13 +155,41 @@ export function sidecarNameFor(postFileName, { name, ext }) {
   return `${stem}.${name}.${ext}`;
 }
 
+/** A segment that navigates rather than names (SH402) — the same set SH256 refuses for assets. */
+const TRAVERSAL = new Set([".", ".."]);
+
 /**
  * The file path a post projects to, relative to the content root.
+ *
+ * <h3>Why it can refuse (SH402)</h3>
+ *
+ * SH256 already refuses an asset path holding `.` or `..`, because "under `shio/assets` it can
+ * resolve outside the project entirely". A post URL builds a path the same way and had no such
+ * guard: `{site: "Blog", url: "/../outside"}` is `Blog/../outside.md`, `path.join` normalizes it,
+ * and the pull writes to `shio/outside.md` — more segments leave the repository. The value is the
+ * server's furl, so this is remote data choosing where a local command writes.
+ *
+ * This is the choke point rather than the read side on purpose: a hand-authored file cannot carry
+ * it, because the path implies a URL and `parsePost` refuses a `url:` that disagrees with its
+ * path. The one direction that reaches it is server → pull, and every write goes through here.
+ *
+ * Only the URL is checked here. The **site** half was already guarded — `siteDir` refuses `.` and
+ * `..` with its own message, and SH255's table has declared that refusal since SH257 — which is
+ * how one of the two values a path is built from came to be covered and the other not.
  *
  * @param {{ site: string, url: string }} doc
  * @returns {string} e.g. `Blog/blog/hello.md`
  */
 export function filePathFor({ site, url }) {
+  // Dots *inside* a segment are an ordinary name: `/blog/v1.2` is a post, `..` is a direction.
+  const escaping = normalizeUrl(url).split("/").find((segment) => TRAVERSAL.has(segment));
+  if (escaping) {
+    throw new Error(
+      `shio content: post URL "${url}" contains "${escaping}", which navigates the filesystem ` +
+        "instead of naming a post — under `shio/content` it can resolve outside the project " +
+        "entirely. Rename the post on the server (`post.move`) so its URL names a location.",
+    );
+  }
   return `${siteDir(site)}/${urlToPath(url)}`;
 }
 

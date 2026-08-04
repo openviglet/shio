@@ -131,8 +131,10 @@ const DECLARED = {
   },
 
   // --- asset paths (SH256): every entry here is a *refusal*, which is the point ---
-  // An asset path is the only round trip whose output is used as a filesystem path, so the
-  // format's job is to reject a value rather than to carry it cleverly.
+  // An asset path is one of the round trips whose output is used as a filesystem path, so the
+  // format's job is to reject a value rather than to carry it cleverly. It read "the only" until
+  // SH402, and that premise is why the defect stood: a post's `site` and `url` build a path the
+  // same way, `siteDir` refused a traversing site, and nothing asked the URL beside it.
   //
   // SH258's weakest case, and worth naming: `assetPathFor` answers `null` for two different rules
   // (a traversal segment and a missing name), so the pattern can pin *where* the refusal came from

@@ -102,6 +102,18 @@ export async function run(flags, _positionals, ctx) {
     );
   }
 
+  // SH402 — a URL that navigates instead of naming cannot become a file, and `filePathFor` says
+  // so. Dropped into SH173's channel rather than thrown: the projection is short by exactly this
+  // post and the rest of the pull is fine, which is the shape SH212 and SH374 both settled on.
+  for (const [address, doc] of Object.entries(remote)) {
+    try {
+      filePathFor(doc);
+    } catch (error) {
+      skipped.push({ address, reason: error.message });
+      delete remote[address];
+    }
+  }
+
   if (skipped.length) {
     // SH173: what could not be read by address, named — the projection is short by exactly
     // these and saying so beats letting a later diff look like a deletion.
@@ -353,8 +365,12 @@ export async function run(flags, _positionals, ctx) {
       {
         cursor,
         // SH401 — a refused write leaves the server holding a post the tree does not, which is
-        // exactly what this flag exists to stop `push --prune` acting on.
-        partial: base.partial || truncated || foldersTruncated || sharedPaths.size > 0,
+        // exactly what this flag exists to stop `push --prune` acting on. SH402 adds `skipped`
+        // for the same reason, and it covers SH173's rows too: a post that could not be read is
+        // missing from the tree exactly like one that could not be written, and a later `--prune`
+        // read that gap as a deletion. Reported since SH173, but only to the screen.
+        partial: base.partial || truncated || foldersTruncated
+          || sharedPaths.size > 0 || skipped.length > 0,
         posts: nextPosts,
         folders: folderPlan.agreed,
         notes: nextNotes,
