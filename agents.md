@@ -197,6 +197,14 @@ a docs commit's prose about already-shipped work gets misread as
 Never duplicate between them; **status markers live only in ROADMAP.md**. Tasks are
 `SH<n>`; per-task specs are `docs/specs/SH<n>-<slug>.md`.
 
+**ROADMAP.md holds three things and nothing else: block headings, open task lines, and
+the non-goals.** No `> ✅ … shipped` note, no block description, no priority essay, no
+numbering history — every one of those is a sentence roadkeep has no verb for, which is
+the tell that it belongs elsewhere: shipped work in the ledger, design at the `→ §`
+pointer, the queue in `roadkeep.toml`'s `priority`, and a missing id in `roadkeep gaps`.
+It had drifted to **535 lines carrying 48 tasks**; asking rather than reading is what
+keeps it at 118, so reach for `roadkeep brief`/`stats` and never open the file to count.
+
 **A ROADMAP entry is one sentence: what + why + `→` pointer.** The reasoning belongs
 in IMPROVEMENTS.md, which is what the pointer addresses; a line that restates it
 makes the roadmap a history instead of a queue. Measured at SH341: 95 active task

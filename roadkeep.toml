@@ -20,6 +20,23 @@ prefix = "SH"
 # file rather than the file following the scheme.
 ref_scheme = "outline"
 
+# What the roadmap used to say in prose, and no longer does: the agent-native blocks come
+# before the pre-existing backlog (Block F's SH44–SH47 tenant work), Block P is the current
+# focus, and after it the suggested order is H → K → I → J → O → L → M. A queue stated as a
+# heading ("Part 1 — current focus") is one `pick` cannot read and one nobody updates; stated
+# here it is what `pick` and `brief` answer with, and every token is validated.
+priority = [
+  "Block P",
+  "Block H",
+  "Block K",
+  "Block I",
+  "Block J",
+  "Block O",
+  "Block L",
+  "Block M",
+  "Block N",
+]
+
 [files]
 roadmap = "docs/ROADMAP.md"
 changelog = "docs/CHANGELOG.md"

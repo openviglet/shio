@@ -11,8 +11,16 @@ The roadkeep plugin is enabled in `.claude/settings.json`, so a clone gets it: a
 **denies a hand-edit** to any of the three and names the tool, the `mcp__roadkeep__*` tools
 whose input schema *is* this schema, and its own skill with the write path. `ship <id>` makes
 all three edits below in one transaction; `brief <id>` starts a task without reading a file;
-`lint` is the gate, and it reports **278 pre-existing findings** — so a *new* finding on a line
-you touched is yours, and the rest is a backlog, not this task's business.
+`lint` is the gate, and what it reports is now **5 findings, all `section.too-long` in
+IMPROVEMENTS.md** — the residue SH356 tracks, down from the 278 the adoption inherited. At that
+count a *new* finding is nobody's backlog: it is yours, and the CI workflow's baseline line goes
+away the day `lint` exits 0.
+
+**Keep the installed copies in step: `roadkeep install`.** The plugin's skill, the hook matcher
+and `.mcp.json` are vendored into `.claude/`, so a session can load a skill several versions
+behind the checkout that is answering its commands and trust it like the original. `install
+--check` is the question and `SessionStart` asks it for you; the answer arrives in the notice
+before the first read.
 
 Everything below is why the rules are what they are. It is no longer a procedure to perform
 by hand.
@@ -59,11 +67,14 @@ answer for the duplicate and is not: it removes the **later** entry, which here 
 earned the id from a roadmap line. Filed upstream as **RK126** (no verb repairs an entry's interior)
 and **RK127** (two entries for one id are not always one entry twice).
 
-**And the guard has one side open — do not read this as permission.** It denies `Edit` and `Write` on
-a governed path and answers a `Bash` payload with silence, so `sed`, `python -c` or a heredoc
-rewrites the ledger with no refusal (**RK128**). The three repairs above went through that hole
-deliberately, once, with the user's decision on the record and `roadkeep lint` run afterwards to
-prove the file still parses. The rule is unchanged: if a verb exists, use the verb.
+**The side that used to be open is now asked about, not silent.** The guard denied `Edit` and
+`Write` on a governed path and said nothing about a `Bash` payload, so `sed`, `python -c` or a
+heredoc rewrote the ledger with no refusal (**RK128**). That is closed upstream: the hook matcher
+includes `Bash` and answers `ask` — it cannot answer `allow` without widening what an agent may
+write, and `deny` would refuse `git add docs/ROADMAP.md` — and **RK175** digests every governed
+file after each verb, so an approved shell write is *reported once* at the end of the turn
+instead of passing as though a verb made it. The rule is unchanged and the mechanism now states
+it: if a verb exists, use the verb. Where none does, the approval is the record.
 
 ## Roadmap & docs maintenance
 
@@ -87,8 +98,38 @@ without saying why it is still there. Measured when it landed: 121 sections, 82 
 them dead** and 14 more landing on somebody else's design. If a task has no rationale section, the
 line carries **no pointer** — a pointer to nowhere reads as though the design exists. Per-task implementable specs live in
 `docs/specs/SH<n>-<slug>.md`; the product concept is `docs/specs/SH74-agent-native-cms.md`.
-Blocks **H–L, M, N and O** have shipped (Block L except **SH110**, still blocked on SH45);
-the live backlog is the per-block follow-ups and Blocks A–G's remaining SH44–SH47 tenant work.
+Which blocks are finished is **`roadkeep stats`** and not a sentence here: a block with no line
+left is done, and a heading that says so is a fact with a shelf life sitting in a file resident
+every turn.
+
+### The roadmap holds three things (and what it took to get back to them)
+
+**Block headings, open task lines, the non-goals. Nothing else.** The file had reached **535
+lines to carry 48 tasks** — eight of them describing what a Block *is*, thirty-plus `> ✅ SHxxx
+shipped` notes narrating the ledger a second time, a 20-line numbering history, a marker legend,
+a `Part 1 / Part 2` split, and a 66-line **priority queue every one of whose ids had already
+shipped**. It is now 118 lines with the same 48 lines byte-for-byte.
+
+The test for whether a sentence belongs is mechanical, and it is the same one that keeps this
+file honest: **roadkeep has a verb for every kind of content the roadmap is allowed to hold.**
+`add` writes a line, `block add` a heading, `non-goal add` a bullet. There is no verb that writes
+a block description or a shipped announcement, and that absence is the answer — not a gap to
+route around with an `Edit` the hook denies anyway. Where each removed kind actually lives:
+
+| What the file was carrying | Where it belongs | What answers it now |
+|---|---|---|
+| `> ✅ **SHxxx** shipped → CHANGELOG` | the ledger entry `ship` already wrote | `roadkeep show <id>` |
+| Block descriptions, lineage, the design behind a block | IMPROVEMENTS.md at the `→ §` pointer | `roadkeep brief <id>` |
+| Priority queue, "current focus", suggested block order | `priority` in [`roadkeep.toml`](../../roadkeep.toml) | `roadkeep pick` / `brief`, which name the tier that fired |
+| Numbering history, reserved slots, what happened to a retired id | `git log` | `roadkeep gaps` — 36 gaps, 27 resolved against the commit that removed them |
+| Marker legend, per-block counts | `[markers]` in `roadkeep.toml` | `roadkeep stats` |
+
+**The lesson is the one SH341 measured, one level up.** SH341 found the *lines* were 142 words
+against a one-sentence rule; the prose *between* them was four times the file and no gate saw it,
+because `lint` reads task lines and prose-file sections and a blockquote is neither. So the
+discipline cannot come from the linter here — it comes from never writing a sentence into the
+file that a verb would not have written, and from **asking instead of reading**: every count in
+this section came from `stats`, `gaps` and `show`, and not one of them needed the file open.
 
 **Counting the backlog is `roadkeep stats` (or `--json`), and `roadkeep audit` names every
 marker-bearing line it could not read.** Both read the format from `roadkeep.toml`, so neither

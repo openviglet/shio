@@ -98,6 +98,16 @@ real maximum block letter** — grep it to confirm before creating a block.
    addresses; a line that restates it makes the roadmap a history instead of a queue,
    and lets two files disagree about one design. Never put multi-paragraph release
    notes in a table cell or a task line.
+   **And the same rule about the file, not the line: `ROADMAP.md` holds block headings,
+   open task lines and the non-goals — nothing else.** No `> ✅ … shipped` note (rule 1),
+   no block description, no priority prose, no numbering history, no marker legend. The
+   test is that **roadkeep has a verb for every kind of content the file may hold** —
+   `add`, `block add`, `non-goal add` — so a sentence no verb writes is one that belongs
+   in the ledger, at the `→ §` pointer, in `priority` in `roadkeep.toml`, or in `git log`
+   (`show`, `brief`, `pick`, `gaps` are what read them back). `lint` cannot see this: it
+   reads task lines and prose sections, and a blockquote is neither, which is how the file
+   reached 535 lines carrying 48 tasks. Detail and the removal table:
+   [`docs/agents/docs-process.md`](../../../docs/agents/docs-process.md).
 5. **A finished task's *decision* goes in its area file under
    [`docs/agents/`](../../../docs/agents/), not in `agents.md`.** The root `agents.md`
    is the routing index, loaded every turn, and it grows only when a **new area**
