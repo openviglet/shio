@@ -49,6 +49,25 @@ export const SECTION_TYPES = {
 export const PAGE_TYPE = "Page";
 
 /**
+ * A curated menu, and the item it is made of (SH382).
+ *
+ * Why these are here rather than in the render model. A menu *looks* like renderer machinery,
+ * and SH249's test for that is whether it needs a new mechanism: this one needs none. It is
+ * ordinary content, so `post.upsert`, the file projection, `shio verify` and the section
+ * overlay all work on it the day it exists — and the composition rule is the one `Page` already
+ * uses, which is why `references: "post"` gives SH154's `dangling-reference` coverage of a menu
+ * entry pointing at a deleted page **for free**, with no lint written for it.
+ *
+ * Why the folder tree could not be the source, even after SH381 gave `{{#navigation}}` a `url`.
+ * A real site's navigation is **curated**: a label that differs from the page title, groups that
+ * are not folders, an ordering that is editorial, entries that leave the site, a page
+ * deliberately left out, and one menu per locale on a translated tree. A folder chain expresses
+ * none of those, so every site was hand-writing its nav into every layout.
+ */
+export const MENU_TYPE = "Menu";
+export const MENU_ITEM_TYPE = "MenuItem";
+
+/**
  * A page: metadata plus an ordered list of section URLs.
  *
  * `sections` is a Multi Select scoped to no single post-type on purpose — the values are
@@ -79,6 +98,73 @@ export const page = (): ShPostTypeDef =>
         // open on purpose: the values resolve to posts that carry their own type, and the front
         // end dispatches on it.
         references: "post",
+      }),
+    ],
+  });
+
+/**
+ * A menu: a title the template asks for, and an ordered list of addresses.
+ *
+ * The same composition rule as `Page.sections`, deliberately — one shape to learn. Each address
+ * resolves to a post that carries its own type, and three are meaningful: a `MenuItem` (a label
+ * and/or an external link), another `Menu` (a nested group), or **any page at all**, which is the
+ * cheap case and takes its label from the page's own title. `postType` stays open for exactly that
+ * reason.
+ */
+export const menu = (): ShPostTypeDef =>
+  postType(MENU_TYPE, {
+    title: "Menu",
+    namePlural: "Menus",
+    description:
+      "A curated menu. `items` lists addresses in render order: a MenuItem, a nested Menu, or a page.",
+    fields: [
+      text("title", { label: "Title", required: true, isTitle: true }),
+      multiSelect("items", {
+        label: "Items",
+        description:
+          "Friendly URLs in render order — a MenuItem, a nested Menu, or a page (which uses its own title).",
+        // SH154/SH169, and here it is what makes the whole post-type free: without it, a menu
+        // entry naming a deleted page is invisible to `shio verify` and SH101's digest reads the
+        // menu as the hash of nothing.
+        references: "post",
+      }),
+    ],
+  });
+
+/**
+ * One entry: the label override, the link override, and where it points.
+ *
+ * `target` is a Multi Select holding **one** address, which looks like the wrong field kind and is
+ * the right one: `references: "post"` is declared on Multi Select alone, so it is the only shape the
+ * lint and the digest already understand — and a `Content Select` stores a post **id**, which would
+ * put a UUID in a content file and break SH79's rule that no address a human writes is a UUID.
+ *
+ * An item needs `target` or `href`, never both, and that is a `shio verify` rule rather than a
+ * schema one: the model has no way to express "exactly one of these", and a required field would
+ * make an external link impossible.
+ */
+export const menuItem = (): ShPostTypeDef =>
+  postType(MENU_ITEM_TYPE, {
+    title: "Menu Item",
+    namePlural: "Menu Items",
+    description:
+      "One menu entry: a label, and either a target page or an external URL. Not both.",
+    fields: [
+      text("label", { label: "Label", required: true, isTitle: true }),
+      multiSelect("target", {
+        label: "Target page",
+        description: "The friendly URL of the page this points at. Leave empty for an external link.",
+        references: "post",
+      }),
+      text("href", {
+        label: "External URL",
+        description: "An absolute URL, for an entry that leaves the site. Ignored when a target is set.",
+      }),
+      comboBox("rel", {
+        label: "Link relationship",
+        description: "Emitted as rel= — what an external entry needs and an internal one does not.",
+        choices: { "noopener noreferrer": "External (noopener noreferrer)", nofollow: "Nofollow" },
+        allowNull: true,
       }),
     ],
   });
@@ -223,6 +309,8 @@ export const sectionRichText = (): ShPostTypeDef =>
  * produce different bytes from the same source (P5).
  */
 export const sectionPostTypes = (): ShPostTypeDef[] => [
+  menu(),
+  menuItem(),
   page(),
   sectionCta(),
   sectionFaq(),

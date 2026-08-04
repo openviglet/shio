@@ -6,8 +6,12 @@
 
 // The content model half (SH95) — post-type definitions, authored with @viglet/shio-model.
 export {
+  MENU_ITEM_TYPE,
+  MENU_TYPE,
   PAGE_TYPE,
   SECTION_TYPES,
+  menu,
+  menuItem,
   page,
   sectionCta,
   sectionFaq,

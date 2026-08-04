@@ -126,7 +126,7 @@ class ShTemplateValidatorTest {
         // as an unknown *field*, so the rule that catches typos would invent one.
         assertThat(engine.registeredNames())
                 .as("sorted and total, because this set is rendered into a message (SH136)")
-                .containsExactly("file_url", "form", "getRelation", "navigation", "query", "search");
+                .containsExactly("file_url", "form", "getRelation", "menu", "navigation", "query", "search");
 
         // A *parameterised* unknown helper. `{{#form}}` used to serve here and cannot any more:
         // it is registered, so it exercises nothing. This is the branch that answers "what may I
@@ -134,12 +134,19 @@ class ShTemplateValidatorTest {
         ShTemplateProblem problem =
                 validator.validate("{{#totallyUnknown q=\"x\"}}y{{/totallyUnknown}}").get(0);
         assertThat(problem.message())
-                .as("the refusal now *asks* the engine rather than restating it, so a helper added "
-                        + "without touching this class still appears in the choices — the drift that "
-                        + "used to show up as a message offering the wrong ones. Alphabetical and "
-                        + "not registration order, which was the hand-written list's accident of "
-                        + "history and is not a fact a reader needs")
-                .contains("file_url, form, getRelation, navigation, query, search");
+                .as("""
+                        the refusal now *asks* the engine rather than restating it, so a helper \
+                        added without touching this class still appears in the choices — the drift \
+                        that used to show up as a message offering the wrong ones. Alphabetical and \
+                        not registration order, which was the hand-written list's accident of \
+                        history and is not a fact a reader needs.
+
+                        **And the expectation is derived, not written** (SH382). This assertion used \
+                        to hold the joined names as a literal, which made it a sixth restatement of \
+                        the capability set — in the one test whose whole subject is that there are \
+                        no restatements left. Registering `menu` failed here for exactly that \
+                        reason, two assertions after the one above had already been updated.""")
+                .contains(String.join(", ", engine.registeredNames()));
     }
 
     @Test

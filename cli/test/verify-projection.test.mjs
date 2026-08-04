@@ -301,3 +301,85 @@ test("SH400: the severity does not depend on the scope", () => {
     assert.equal(findings[0].severity, "error", `scoped=${scoped}`);
   }
 });
+
+// --- SH382: the MenuItem convention, checked where the convention ships ---
+
+const MENU_DEFS = [
+  ...DEFS,
+  {
+    name: "MenuItem",
+    fields: [
+      { name: "label", widget: "Text", ordinal: 1 },
+      { name: "target", widget: "Multi Select", ordinal: 2 },
+      { name: "href", widget: "Text", ordinal: 3 },
+    ],
+  },
+];
+
+const item = (data, url = "/menu/about") => ({
+  site: "Blog",
+  url,
+  type: "MenuItem",
+  data,
+});
+
+test("SH382: a MenuItem with neither a target nor an href is an error", () => {
+  // The one that hides: it renders as a label with no link, which is indistinguishable from a
+  // deliberate group heading — so nothing at render time can tell it is unfinished.
+  const { findings } = lintProjection({
+    posts: [item({ label: "About" })],
+    defs: MENU_DEFS,
+    assets: [],
+  });
+
+  assert.deepEqual(findings.map((each) => each.rule), ["menu-item-no-link"]);
+  assert.equal(findings[0].severity, "error");
+  assert.equal(findings[0].source, PROJECTION_CHECK);
+  assert.match(findings[0].fix, /absolute URL/);
+});
+
+test("SH382: a MenuItem setting both is an error, because the href silently does nothing", () => {
+  const { findings } = lintProjection({
+    posts: [item({ label: "About", target: ["/about"], href: "https://x.test" })],
+    defs: MENU_DEFS,
+    assets: [],
+  });
+
+  assert.deepEqual(findings.map((each) => each.rule), ["menu-item-ambiguous-link"]);
+  // Reported rather than resolved: `target` wins in `{{#menu}}`, so picking one here would make the
+  // lint agree with the renderer about a precedence nobody asked for.
+  assert.match(findings[0].message, /only `target` is used/);
+});
+
+test("SH382: either one alone is a clean item, and both spellings of a target count", () => {
+  for (const data of [
+    { label: "About", target: ["/about"] },
+    { label: "About", target: "/about" },
+    { label: "Status", href: "https://status.x.test" },
+  ]) {
+    const { findings } = lintProjection({ posts: [item(data)], defs: MENU_DEFS, assets: [] });
+    assert.deepEqual(findings, [], JSON.stringify(data));
+  }
+});
+
+test("SH382: a blank href is not an href, so whitespace does not satisfy the rule", () => {
+  const { findings } = lintProjection({
+    posts: [item({ label: "About", href: "   " })],
+    defs: MENU_DEFS,
+    assets: [],
+  });
+
+  assert.deepEqual(findings.map((each) => each.rule), ["menu-item-no-link"]);
+});
+
+test("SH382: a post of any other type is not subject to the rule", () => {
+  // The boundary this rule respects: `MenuItem` is a *JS package's* convention, so a project using
+  // its own post-type names is simply not covered — which is also why the server does not know it.
+  const { findings } = lintProjection({
+    posts: [{ site: "Blog", url: "/menu/own", type: "Article", data: { headline: "x" } }],
+    defs: MENU_DEFS,
+    assets: [],
+  });
+
+  assert.deepEqual(findings, []);
+});

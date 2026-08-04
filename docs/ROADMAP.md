@@ -76,7 +76,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH382** (deps: SH381 ✅) **A site's menu is the folder tree or nothing** — Ordered labels, nested groups and external links are what a real menu is and no folder chain expresses any of them, so the nav gets hand-written into every layout. → §XVII.6
 - 📋 **SH383** (deps: SH348 ✅, SH323 ✅) **The renderer knows nothing about locale** — SH348 made the tree locale-aware and the render model stayed monolingual: no sibling translations in scope, no locale in the route and no switcher a six-language site needs. → §XVII.7
 - 📋 **SH384** (deps: SH247 ✅, SH259 ✅) **A listing has a ceiling and no second page** — query takes folder, type and limit only, so an archive past its limit has no page two and a hub filtered by industry or tag cannot be written at all. → §XVII.8
 - 📋 **SH385** (deps: SH377 ✅) **A replica silently abandons the original's URL space** — The capture knows every source URL and nothing records the source-to-replica map or serves a redirect, so every inbound link to a path the replica renamed is lost. → §XVII.9

@@ -555,6 +555,46 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   **id** before the query — `p.shPostType.name` in JPQL trips the SH22 tenant join hazard — and an
   unknown type yields nothing rather than the whole site. It is **not** a `?q=` results page: the
   model holds no request, on purpose (SH183), and that is **SH259**.
+  **`{{#menu title="Primary"}}` is the curated menu, and the folder tree was never going to be one
+  (SH382)** — which is the sentence SH381 left standing: giving a folder row its `url` made
+  `{{#navigation}}` usable and did not make it a *menu*. Navigation is **curated** — a label that
+  differs from the page title, groups that are not folders, an editorial ordering, entries that leave
+  the site, a page deliberately left out, one menu per locale — and a folder chain expresses none of
+  them, so every site hand-wrote its nav into every layout and each copy drifted. The vocabulary is
+  **content**: `Menu` (a title plus `items`, a `references: post` Multi Select) and `MenuItem` (a
+  `label`, a `target`, an `href`, a `rel`) live in `@viglet/shio-sections`, which is SH249's test
+  applied — it needs no new mechanism, so `post.upsert`, the file projection, the section overlay and
+  SH154's `dangling-reference` all work on it the day it exists, and that last one is why a menu entry
+  naming a deleted page is reported with **no lint written for it**. Five decisions:
+  **the helper knows no post-type name** — the server knowing a JS package's vocabulary by string
+  would make the renderer opinionated about a convention instead of a model, so the contract is
+  *structural* (a post whose `items` lists addresses) and anybody's post-type qualifies; the fixture
+  deliberately uses its own names, or it could not tell a structural match from a hardcoded one.
+  **A page listed directly is a link with its own title**, so the smallest useful menu is one post
+  rather than six — the cheap case has to stay cheap or nobody adopts the vocabulary and the
+  hand-written nav survives. **A nested menu is a row with a `name` and no `url`**, which is SH381's
+  own convention reused rather than re-invented: a template branches on `{{#if url}}` and recurses
+  with `{{#menu title=title}}`, so nesting needs no new row key, no new helper and no depth limit —
+  and `ROW_KEYS` already carried `name`, so nothing had to be declared. **Two candidates yield
+  nothing**, SH381's rule again (a title is not unique the way a furl is): an empty menu is visibly
+  unfinished, somebody else's menu is not. **A `target` that resolves to nothing yields no url** and
+  does *not* fall through to the item's own address — the fallback would send a visitor to the wrapper
+  post, a page with a label and no content — and it is not marked either, per this file's standing
+  split. No default ceiling, unlike every other helper here: a listing's length is the site's and
+  grows on its own, a menu's is *authored*, so cutting it at 50 would silently drop the end of
+  something somebody wrote by hand. **One claim that turned out to be false, kept because the
+  correction is the interesting part**: the first draft argued the cycle guard prevented a hang. It
+  cannot — `ShTemplateEngine` refuses partials outright, so a template cannot include itself and the
+  recursion is bounded by the layout's own nesting depth whatever the content says. What the guard
+  (the menus open on this thread, not a depth cap) actually buys is that a two-menu cycle nested three
+  deep renders `{{else}}` instead of *the cycle* — wrong output that looks like a real menu, at a site
+  scan per level. The test nests three deep for the same reason: two levels never reach the cycle, so
+  a shallower fixture would have passed with no guard at all. The `target`-xor-`href` rule is the
+  **CLI's** `menu-item-no-link` / `menu-item-ambiguous-link`, not the server's, for the boundary
+  above — and it is a lint rather than a schema constraint because the model cannot express "exactly
+  one of these" and a required field would make the other case impossible. *Neither* is the one that
+  hides (a label with no link is indistinguishable from a deliberate heading); *both* is a silent
+  precedence, since `target` wins and nothing said so.
   **The engine is the one source of the capability set (SH260)**: `register(name, ShHelperShape,
   helper)` records the name *and the call shape* (`BLOCK` / `BLOCK_PATH_ARG` / `INLINE_PATH_ARG`),
   and every reader asks — the unknown-helper refusal lists `engine.registeredNames()` (alphabetical,
@@ -566,6 +606,15 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   `ShHelperShapes.none()` and mean it. Adding a helper is one line plus its shape and its
   **signature** — SH272 added the third, because a hash parameter's name (`folder=`, `q=`) exists
   nowhere but inside the helper's body, so no reader could derive it from the registry.
+  **What registering the eighth one actually costs, measured by doing it (SH382):** four test edits,
+  and the fact that it is four rather than one is the guards working — `ShHelperSignatureLintTest`'s
+  anchor list, `ShTemplateValidatorTest`'s `registeredNames()` assertion, and
+  `ShTemplateFieldLintTest`'s fixture, which **refuses** a registered helper no template in it calls,
+  since every negative assertion in that class would otherwise be silent about the new helper's rows.
+  The fourth was a defect: a second assertion in `ShTemplateValidatorTest` held the joined names as a
+  string literal — a sixth restatement of the capability set, in the one test whose subject is that
+  none are left, two assertions below the one that reads the engine. It derives them now. Expect all
+  four when you add the ninth, and treat a green run after touching only one as the tell.
   **The signature is checked against the body now, both ways (SH291)** — `ShHelperSignatureLintTest`
   fails if a helper reads a hash key its signature omits (an incomplete call in the served context
   pack) *or* declares one nothing reads (a parameter that is silently ignored, which is not an error

@@ -317,7 +317,7 @@ class ShHelperSignatureLintTest {
                         The closed helper set (SH260 — the engine is its single source). A parser that \
                         silently matched nothing would make every assertion above vacuously true, \
                         which is the failure mode of a text lint nobody anchored.""")
-                .containsExactly("query", "navigation", "search", "getRelation", "file_url", "form");
+                .containsExactly("query", "navigation", "search", "getRelation", "file_url", "form", "menu");
 
         Helper query = helpers.stream().filter(h -> h.name().equals("query")).findFirst().orElseThrow();
         assertThat(keysRead(query, methods(source)))

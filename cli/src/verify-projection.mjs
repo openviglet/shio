@@ -98,7 +98,73 @@ export function lintProjection({
   findings.push(...unportableFindings(unportable));
   findings.push(...sidecarFindings(missingSidecars));
   findings.push(...translationFindings(posts, scoped));
+  findings.push(...menuItemFindings(posts));
   return { findings: sortFindings(findings), checked };
+}
+
+/**
+ * A `MenuItem` that points nowhere, or at two places at once (SH382).
+ *
+ * <h3>Why this rule lives here and not on the server</h3>
+ *
+ * `Menu` and `MenuItem` are the SH95 vocabulary's, which is a **JS package's** convention — the
+ * server does not know one section post-type name by string, and teaching it these two would make
+ * the render model opinionated about a package instead of a model. The `{{#menu}}` helper is
+ * deliberately structural for the same reason. So the convention is checked where the convention
+ * ships, in the gate that needs no instance, and a project using its own post-type names is simply
+ * not subject to it.
+ *
+ * <h3>Why it is not a schema rule</h3>
+ *
+ * The model has no way to express "exactly one of these two", and making either field required
+ * would make the other case impossible: a required `target` forbids an external link, a required
+ * `href` forbids an internal one. So the constraint has to be a lint, which also means it can
+ * explain itself (P6) rather than rejecting a write with "required field empty".
+ *
+ * <h3>Both is an error and neither is an error, and they are two different mistakes</h3>
+ *
+ * **Neither** renders as a group heading — a label with no link — which looks exactly like a
+ * deliberate nested-menu heading and is therefore the one that hides. **Both** is a silent
+ * precedence: `target` wins in the helper, so the `href` somebody typed does nothing and nothing
+ * says so. Two messages, because a caller fixes them differently.
+ */
+function menuItemFindings(posts) {
+  const out = [];
+  for (const post of posts) {
+    if (post?.type !== "MenuItem") continue;
+    const target = entriesOf(post.data?.target);
+    const href = typeof post.data?.href === "string" ? post.data.href.trim() : "";
+    if (target.length && href) {
+      out.push({
+        ...finding(post, "href", "menu-item-ambiguous-link",
+          `it sets both \`target\` (${target[0]}) and \`href\` (${href}), and only \`target\` is used`,
+          "Clear whichever one is not meant. `target` wins in `{{#menu}}`, so the `href` here is "
+            + "silently doing nothing — which is why this is reported rather than resolved."),
+        severity: "error",
+      });
+      continue;
+    }
+    if (!target.length && !href) {
+      out.push({
+        ...finding(post, "target", "menu-item-no-link",
+          "it has neither a `target` page nor an `href`, so it renders as a label with no link",
+          "Set `target` to the friendly URL of the page it points at, or `href` to an absolute "
+            + "URL for an entry that leaves the site. A label with no link is indistinguishable "
+            + "from a deliberate group heading, which is why nothing else can report this."),
+        severity: "error",
+      });
+    }
+  }
+  return out;
+}
+
+/** A `references: post` field's entries: a list, or one address, or nothing. */
+function entriesOf(value) {
+  if (Array.isArray(value)) {
+    return value.map((each) => String(each ?? "").trim()).filter(Boolean);
+  }
+  const single = typeof value === "string" ? value.trim() : "";
+  return single ? [single] : [];
 }
 
 /**

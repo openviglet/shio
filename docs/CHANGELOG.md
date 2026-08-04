@@ -906,6 +906,7 @@
 - **SH381** — the navigation row carries the url its docstring promised since SH183: the folder's index post — the post inside it whose friendly URL is the folder's own chain, matched case-insensitively because a label and a slug are different namespaces — absent where there is none so a template branches on it for a group heading, and never fabricated
 - **SH379** — shio propose reports each captured block's section type, fields and the markup it would lose; --accept records one, unaccepted stays verbatim.
 - **SH380** — A captured stylesheet arrives as DTCG tokens plus CSS, url() rewritten to tree paths, and a token that fails the name round trip is reported not written.
+- **SH382** — Menu and MenuItem are ordinary content and {{#menu title=}} renders them: label and href overrides, nesting by SH381's no-url row, ambiguity refused.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

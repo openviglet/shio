@@ -1383,23 +1383,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.6 A curated menu is content, and the folder tree is not one (SH382)
-
-Even with SH381's `url`, the folder tree is the wrong source for a menu. A real site's
-navigation is *curated*: a label that differs from the page title, groups that are not
-folders, an ordering that is editorial, entries that leave the site, an item
-deliberately omitted, and — on a multi-language site — one menu per locale. The
-vilt-group menu is four groups of four with two of them not resolving to folders at all.
-
-The vocabulary is the answer already in the tree: a `Menu` post-type whose items are
-addresses in an ordered `Multi Select` declaring `references: post` (SH95's shape, so
-SH154's `dangling-reference` covers a menu entry pointing at a deleted page **for
-free**), plus label and external-URL overrides. A `{{#menu title="Primary"}}` helper
-reads it, and a nested level is a menu naming a menu. **Not a new render post-type** and
-not a system type: a menu is ordinary content, so `post.upsert`, the file projection,
-`verify` and the section overlay all work on it with no new mechanism — which is the
-test SH249 set for whether something belongs in the render model or beside it.
-
 ### XVII.7 The tree can say pt-br and the page cannot (SH383)
 
 SH348 gave a file `locale:` and `translationOf:`, and stopped at the projection. The

@@ -15,8 +15,12 @@ import { test } from "node:test";
 import { serializeDef } from "@viglet/shio-model";
 
 import {
+  MENU_ITEM_TYPE,
+  MENU_TYPE,
   PAGE_TYPE,
   SECTION_TYPES,
+  menu,
+  menuItem,
   page,
   sectionFeatureGrid,
   sectionHero,
@@ -29,6 +33,8 @@ test("the vocabulary is a fixed, ordered set", () => {
   assert.deepEqual(
     sectionPostTypes().map((def) => def.name),
     [
+      "Menu",
+      "MenuItem",
       "Page",
       "SectionCta",
       "SectionFaq",
@@ -43,6 +49,8 @@ test("the vocabulary is a fixed, ordered set", () => {
   // packages, and an iteration order that varied would produce different bytes from the
   // same source (P5).
   assert.deepEqual(sectionPostTypes().map((def) => def.name), Object.values({
+    menu: MENU_TYPE,
+    menuItem: MENU_ITEM_TYPE,
     page: PAGE_TYPE,
     cta: SECTION_TYPES.cta,
     faq: SECTION_TYPES.faq,
@@ -64,6 +72,30 @@ test("a Page composes sections by address, in order", () => {
   assert.match(sections.description, /friendly URLs/i);
   assert.equal(page().fields.find((field) => field.name === "title").isTitle, true);
   assert.equal(page().fields.find((field) => field.name === "title").required, true);
+});
+
+test("a Menu composes items by address, the same way a Page composes sections (SH382)", () => {
+  const items = menu().fields.find((field) => field.name === "items");
+
+  // One shape to learn. And `references: post` is what makes the whole post-type free: without it a
+  // menu entry naming a deleted page is invisible to `shio verify`, and SH101's digest reads the
+  // menu as the hash of nothing.
+  assert.equal(items.widget, "Multi Select");
+  assert.equal(JSON.parse(items.widgetSettings).multiselect.references, "post");
+  // `postType` stays open on purpose: an item is a MenuItem, a nested Menu, or any page at all.
+  assert.equal(JSON.parse(items.widgetSettings).multiselect.postType, undefined);
+});
+
+test("a MenuItem's target is a Multi Select, because a Content Select would store a UUID (SH382)", () => {
+  const target = menuItem().fields.find((field) => field.name === "target");
+
+  // It holds one address, which looks like the wrong field kind. It is the right one: `references`
+  // is declared on Multi Select alone, so this is the only shape the lint and the digest already
+  // understand — and a Content Select stores a post *id*, which would put a UUID in a content file
+  // and break SH79's rule that no address a human writes is a UUID.
+  assert.equal(target.widget, "Multi Select");
+  assert.equal(JSON.parse(target.widgetSettings).multiselect.references, "post");
+  assert.equal(menuItem().fields.find((field) => field.name === "href").widget, "Text");
 });
 
 test("every section has exactly one title field, so the console shows something useful", () => {

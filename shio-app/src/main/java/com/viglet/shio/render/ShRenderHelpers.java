@@ -11,6 +11,7 @@ package com.viglet.shio.render;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -188,6 +189,175 @@ public class ShRenderHelpers {
                 "{{file_url FIELD}}", this::fileUrl);
         engine.register("form", ShHelperShape.BLOCK,
                 "{{#form type=}}…{{/form}}", this::form);
+        engine.register("menu", ShHelperShape.BLOCK,
+                "{{#menu title=}}…{{/menu}}", this::menu);
+    }
+
+    /**
+     * {@code {{#menu title="Primary"}}…{{/menu}}} — a curated menu (SH382).
+     *
+     * <h3>Why this exists when {@code {{#navigation}}} already walks folders</h3>
+     *
+     * <p>SH381 gave a folder row its {@code url}, and the folder tree is still the wrong source for a
+     * menu. A real site's navigation is <b>curated</b>: a label that differs from the page title,
+     * groups that are not folders, an ordering that is editorial, entries that leave the site, a page
+     * deliberately left out, and one menu per locale on a translated tree. A folder chain expresses
+     * none of those, so every site hand-wrote its nav into every layout — which is the thing this
+     * whole file exists to stop.</p>
+     *
+     * <h3>It knows no post-type name, and that is a boundary rather than a shortcut</h3>
+     *
+     * <p>The {@code Menu} and {@code MenuItem} post-types live in {@code @viglet/shio-sections}: they
+     * are ordinary <b>content</b>, so {@code post.upsert}, the file projection and SH154's
+     * {@code dangling-reference} all work on them with no new mechanism, which is SH249's test for
+     * whether something belongs in the render model or beside it. This helper must therefore not
+     * hardcode their names — the server knowing a JS package's vocabulary by string would make the
+     * renderer opinionated about a convention instead of a model. So the contract is <b>structural</b>:
+     * a menu is a post whose {@code items} field lists addresses, and anybody's post-type qualifies.</p>
+     *
+     * <h3>Two candidates yield nothing, never a guess</h3>
+     *
+     * <p>A title is not unique the way a friendly URL is, so two posts can answer. SH381 settled this
+     * exact shape for a folder's {@code url}: a fabricated answer wearing a deterministic hat is worse
+     * than none, because none is visibly unfinished. {@code {{else}}} renders, and the template author
+     * sees an empty menu rather than somebody else's.</p>
+     *
+     * <h3>A nested menu is a row with a name and no url — SH381's convention, reused</h3>
+     *
+     * <p>Which is why nesting needs no new row key and no new helper. An item that is itself a menu
+     * yields {@code name} with no {@code url}, and SH381 already established that as a <b>group
+     * heading</b>: a template branches on {@code {{#if url}}} and recurses with
+     * {@code {{#menu title=title}}}. One shape, one convention, arbitrary depth.</p>
+     *
+     * <h3>A cycle stops at the repeat, and it was never able to hang</h3>
+     *
+     * <p>The obvious claim here is that a menu naming itself would loop until the request died, and it
+     * is <b>false</b> — worth writing down, because it is what the first draft of this comment said.
+     * {@link ShTemplateEngine} refuses partials outright, so a template cannot include itself and
+     * every {@code {{#menu}}} nesting is expanded from finite template text. Recursion is bounded by
+     * the layout's own nesting depth whatever the content says.</p>
+     *
+     * <p>What the guard actually buys is therefore smaller and still worth having. Without it, a
+     * layout nesting the helper three deep over a two-menu cycle renders <i>the cycle</i> —
+     * {@code Loop → Loop Inner → Loop} — which is wrong output that looks like a real menu, and pays a
+     * site scan per level for it. With it, the second entry into a menu already open renders
+     * {@code {{else}}}: the author sees an empty branch, which is what they meant and is visibly
+     * unfinished. The set of menus <b>open on this thread</b> rather than a depth cap, because a cap
+     * has to pick a number that both permits a short cycle to repeat and refuses a legitimate deep
+     * menu. Reporting it is {@code shio verify}'s job, per this file's standing rule: mark what only
+     * the renderer can see, leave to the lint what the lint reports.</p>
+     */
+    Object menu(Object context, Options options) throws IOException {
+        String siteId = string(options.context.get(SITE_ID));
+        String title = hash(options, "title", null);
+        if (siteId == null || title == null) {
+            return options.inverse();
+        }
+        ShPostState state = state(options);
+        Optional<ShPostUnified> found = menuByTitle(siteId, title, state);
+        if (found.isEmpty()) {
+            return options.inverse();
+        }
+        ShPostUnified menu = found.get();
+        if (!OPEN_MENUS.get().add(menu.getId())) {
+            return options.inverse();
+        }
+        try {
+            List<Map<String, Object>> rows = new ArrayList<>();
+            for (String reference : referencesOf(shRenderModel.fieldsOf(menu).get(ITEMS))) {
+                resolveReference(siteId, reference, state)
+                        .map(post -> menuRow(siteId, post, state))
+                        .ifPresent(rows::add);
+            }
+            if (rows.isEmpty()) {
+                return options.inverse();
+            }
+            StringBuilder out = new StringBuilder();
+            // No default ceiling, unlike every other helper here: a listing's length is the site's and
+            // grows on its own, while a menu's length is *authored*. Cutting it at 50 would silently
+            // drop the last entries of a menu somebody wrote by hand, which is the one place a
+            // truncation is certain to be wrong. `MAX_LIMIT` is still the backstop.
+            for (Map<String, Object> row : rows.subList(0, Math.min(rows.size(), MAX_LIMIT))) {
+                out.append(options.fn(row));
+            }
+            return out;
+        } finally {
+            OPEN_MENUS.get().remove(menu.getId());
+        }
+    }
+
+    /** The field a menu's entries live in — the one name this helper does depend on. */
+    private static final String ITEMS = "items";
+
+    /**
+     * The menus open on this thread, which is what makes a content-authored cycle terminate.
+     *
+     * <p>A {@code ThreadLocal} rather than something threaded through the context, and the reason is
+     * that it is correct here for a specific fact rather than by convenience: a Handlebars render is
+     * synchronous on the calling thread, so "open on this thread" is exactly "open in this render".
+     * The {@code finally} above is what keeps it from leaking into the next request on a pooled
+     * thread.</p>
+     */
+    private static final ThreadLocal<Set<String>> OPEN_MENUS = ThreadLocal.withInitial(HashSet::new);
+
+    /**
+     * The one post in this site whose title is this, and which looks like a menu.
+     *
+     * <p>Case-insensitive, following {@code {{#navigation}}}'s index-post match for SH79's reason: a
+     * title is a label and matching two labels byte-for-byte makes the field almost never resolve.
+     * "Looks like a menu" is the structural test above — it has a non-empty {@code items} — so a page
+     * that happens to share the title is not a candidate and the helper stays free of a type name.</p>
+     */
+    private Optional<ShPostUnified> menuByTitle(String siteId, String title, ShPostState state) {
+        List<ShPostUnified> candidates = preferDraft(
+                rowsOf(siteId, statesFor(state)).stream()
+                        .filter(post -> title.equalsIgnoreCase(
+                                post.getTitle() == null ? null : post.getTitle().trim()))
+                        .filter(post -> !referencesOf(shRenderModel.fieldsOf(post).get(ITEMS)).isEmpty())
+                        .toList(),
+                state);
+        return candidates.size() == 1 ? Optional.of(candidates.getFirst()) : Optional.empty();
+    }
+
+    /**
+     * One entry: the base row, with the label and the link the menu vocabulary lets an author override.
+     *
+     * <h3>The link, in the order the overrides are meant to win</h3>
+     *
+     * <p>An explicit {@code target} first — that is the entry that points at a page and says so. Then
+     * {@code href}, the entry that leaves the site. Then the post's <b>own</b> friendly URL, which is
+     * the cheap case: a page listed directly in a menu needs no wrapper post at all. And last,
+     * nothing — a post that is itself a menu is a group heading, and an absent {@code url} beside a
+     * present {@code name} is SH381's legitimate row rather than a defect.</p>
+     *
+     * <p>A {@code target} that resolves to nothing yields no url rather than falling through to the
+     * item's own address: the fallback would send a visitor to the wrapper post, which is a page with
+     * a label and no content. SH154's {@code dangling-reference} is what reports it, and this is the
+     * "leave to the lint what the lint reports" half of the same rule.</p>
+     */
+    private Map<String, Object> menuRow(String siteId, ShPostUnified post, ShPostState state) {
+        Map<String, Object> fields = shRenderModel.fieldsOf(post);
+        Map<String, Object> row = new LinkedHashMap<>(row(post));
+        String label = string(fields.get("label"));
+        row.put("name", label == null || label.isBlank() ? post.getTitle() : label.trim());
+
+        List<String> target = referencesOf(fields.get("target"));
+        String href = string(fields.get("href"));
+        String url;
+        if (!target.isEmpty()) {
+            url = resolveReference(siteId, target.getFirst(), state)
+                    .map(ShPostUnified::getFurl)
+                    .orElse(null);
+        } else if (href != null && !href.isBlank()) {
+            url = href.trim();
+        } else if (referencesOf(fields.get(ITEMS)).isEmpty()) {
+            url = post.getFurl();
+        } else {
+            url = null;
+        }
+        row.put("url", url);
+        row.put("link", url);
+        return ShStableMap.copyOf(row);
     }
 
     /**
