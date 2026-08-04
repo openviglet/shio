@@ -460,6 +460,18 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
         the projection and knows what it covered; a push only writes what the tree already
         declared, so it has no standing to claim the snapshot now describes the whole server. The
         asymmetry is recorded at the call site so it does not read as an oversight.
+    - **The asset inventory's truncation was computed and discarded (SH405).** The post list treats
+      a truncated read as fatal; the asset inventory derives from the same sitemap walk, gets the
+      same `truncated` back from `readRemoteFolders`, returns it — and no command read it. Nothing
+      was lost by that: `pullAssets` iterates only what it found, so a short inventory means assets
+      simply were not downloaded, and the *dangerous* half was already covered because the pull's
+      own folder read sees the same truncation and marks the snapshot partial. What was missing was
+      the **cause**. The run said "N File reference(s) name no asset this run could see" — true,
+      with "could see" doing quiet work — while `shio verify` offered `asset-missing` with the fix
+      "Fetch it with `shio pull --content`", which the operator had just run. Same P6 shape as
+      SH404: a symptom reported, a cause known and withheld, a remedy that cannot resolve it. It is
+      reported before the unresolved-reference line, because when both fire this one is their
+      cause, and it names what to raise (`shio.agent.read.max-limit`) rather than only what broke.
     - **And the bytes are in the SH89 merge now (SH373).** SH210 fixed one direction and opened
       another: a server-side asset edit never reached the tree, and — newer and worse — a push
       *replaced* the server's bytes whenever they differed from the tree's, which reverts a

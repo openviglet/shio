@@ -158,6 +158,20 @@ export async function run(flags, _positionals, ctx) {
           .join(""),
     );
   }
+  if (assets.truncated) {
+    // SH405 — the same sitemap walk the post list treats as fatal, and the same `truncated` back
+    // from it. It was computed, returned, and read by nothing: the dangerous half of a short
+    // inventory was already handled (the pull's own folder read marks the snapshot partial), so
+    // what was left was a run that knew why it came up short and did not say. Reported before the
+    // unresolved references below, because when both fire this one is their cause.
+    ctx.stdout.write(
+      "shio pull --content: the asset inventory is short — the server's sitemap walk came back " +
+        "truncated, so assets in the folders it did not reach were not downloaded. Raise " +
+        "shio.agent.read.max-limit on the server or scope the run with --site, then pull again. " +
+        "Any dangling File reference reported below or by `shio verify` may be this rather than " +
+        "a defect in the tree.\n",
+    );
+  }
   if (unresolvedAssets.size) {
     // Left as ids on purpose: the File post is in a site this run did not read, or it is gone.
     // Inventing a path would put a broken one in the tree, which pushes back as a failed

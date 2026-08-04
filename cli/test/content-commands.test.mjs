@@ -114,6 +114,9 @@ function server({
   serverAssets = [],
   // SH210 — what the server holds for an id, so a test can make the bytes match or differ.
   serverBytes = {},
+  // SH405 — the sitemap walk reports it could not finish. Nothing fits after the first page, so
+  // there is no `truncatedAfter` to resume from, which is the shape that ends the walk short.
+  sitemapTruncated = false,
 } = {}) {
   const calls = [];
   const uploads = [];
@@ -134,7 +137,7 @@ function server({
           path,
           ...(wantIds ? { id: `${site}:${path}` } : {}),
         })),
-        budget: { estTokens: 10, limitTokens: 0, truncated: false },
+        budget: { estTokens: 10, limitTokens: 0, truncated: sitemapTruncated },
       });
     }
     if (target.includes("/api/v2/staticfile/upload")) {
@@ -2117,3 +2120,26 @@ test("SH404: an unscoped pull over a clean instance clears an inherited partial"
 
   assert.match(ctx.fs.files.get(BASE_PATH), /"partial": false/);
 });
+
+test("SH405: a truncated sitemap says so, instead of leaving the symptom unexplained", async () => {
+  // Measured before the fix: `readRemoteAssets` gets `truncated` from the same sitemap walk the
+  // post list treats as fatal, returns it, and no command reads it. The run then says a File
+  // reference names "no asset this run could see" and never says why it could not see it.
+  // Seeded, because the asset inventory reads the sites the *tree* names: an empty tree reads no
+  // sites and so cannot truncate, which is a separate defect (SH406) and not this one.
+  const ctx = ctxWith(server({
+    remote: { "post:Blog/blog/hello": REMOTE_DOC },
+    serverFolders: { Blog: ["/", "/media"] },
+    sitemapTruncated: true,
+  }), {
+    [FILE]: "---\nsite: Blog\nurl: /blog/hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Hello\n---\n",
+  });
+
+  await contentPull.run({}, [], ctx);
+
+  assert.match(ctx.stdout.text, /asset inventory/);
+  // The cause and the remedy, not just the symptom (P9, P6).
+  assert.match(ctx.stdout.text, /truncated/);
+  assert.match(ctx.stdout.text, /max-limit/);
+});
+
