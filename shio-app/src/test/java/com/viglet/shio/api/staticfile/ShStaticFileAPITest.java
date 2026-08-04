@@ -584,6 +584,43 @@ class ShStaticFileAPITest {
                 .andExpect(jsonPath("$.sha256").value(sha256Hex("aaaaaa")));
     }
 
+    /**
+     * SH399 — the stamped size is read as a {@code long}. Read as an {@code int} it truncates past
+     * two gigabytes, the validator never matches, and the fast path is lost for exactly the files
+     * whose hash costs the most: safe, and silently degraded.
+     */
+    @Test
+    void stage06mAStampedSizePastIntegerRangeStillValidates() throws Exception {
+        String id = uploadTextPost("huge.txt", "small file, huge claim");
+        long huge = 5_000_000_000L;
+        // The file cannot really be 5 GB in a test, so the *stamp* is set to one and the file's own
+        // size is what disagrees — which proves the comparison happens in long arithmetic rather
+        // than after a truncation that would make any two large numbers look equally wrong.
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> entityManager
+                .createQuery("update ShPostUnified p set p.data = :data where p.id = :id")
+                .setParameter("data", "{\"FILE\":\"huge.txt\",\"SHA256\":\"deadbeef\",\"SIZE\":"
+                        + huge + "}")
+                .setParameter("id", id)
+                .executeUpdate());
+
+        mockMvc.perform(get("/api/v2/staticfile/" + id + "/digest").principal(mockPrincipal))
+                .andExpect(jsonPath("$.sha256").value(sha256Hex("small file, huge claim")));
+
+        // And the matching case: a stamp whose size is the file's own is trusted, whatever its
+        // magnitude — asserted through the value `intFromData` would have mangled.
+        long real = Files.size(storage.resolve(id, "huge.txt"));
+        tx.executeWithoutResult(status -> entityManager
+                .createQuery("update ShPostUnified p set p.data = :data where p.id = :id")
+                .setParameter("data", "{\"FILE\":\"huge.txt\",\"SHA256\":\"deadbeef\",\"SIZE\":"
+                        + real + "}")
+                .setParameter("id", id)
+                .executeUpdate());
+
+        mockMvc.perform(get("/api/v2/staticfile/" + id + "/digest").principal(mockPrincipal))
+                .andExpect(jsonPath("$.sha256").value("deadbeef"));
+    }
+
     private String uploadTextPost(String name, String body) throws Exception {
         MockMultipartFile file = new MockMultipartFile(
                 "file", name, "text/plain", body.getBytes(StandardCharsets.UTF_8));

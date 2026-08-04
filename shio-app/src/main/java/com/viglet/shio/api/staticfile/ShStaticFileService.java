@@ -392,8 +392,8 @@ public class ShStaticFileService {
         if (stamped == null || stamped.isBlank()) {
             return null;
         }
-        Integer size = intFromData(post, DATA_SIZE);
-        return size != null && size.longValue() == attributes.size() ? stamped : null;
+        Long size = longFromData(post, DATA_SIZE);
+        return size != null && size == attributes.size() ? stamped : null;
     }
 
     /** A stream's sha-256, read in bounded memory whatever the file's size. */
@@ -668,18 +668,45 @@ public class ShStaticFileService {
     }
 
     /** Read an integer {@code data} key (e.g. SH62 {@code WIDTH}/{@code HEIGHT}); null if absent/non-numeric. */
-    private Integer intFromData(ShPostUnified post, String key) {
+    /**
+     * One number out of a post's {@code data}, or {@code null}.
+     *
+     * <p>The two typed readers share this rather than each carrying a parse and a {@code catch}:
+     * `ShSilentCatchInventoryTest` counts a catch that neither records nor rethrows as a declared
+     * population, and a second copy of one that means the same thing is a number to raise for no
+     * new information. It is also the only place that has to know a `data` column can be
+     * unparseable.</p>
+     */
+    private tools.jackson.databind.JsonNode numberFromData(ShPostUnified post, String key) {
         if (post == null || post.getData() == null) {
             return null;
         }
         try {
             var node = objectMapper.readTree(post.getData());
             var value = node != null ? node.get(key) : null;
-            return value != null && value.isNumber() ? value.asInt() : null;
+            return value != null && value.isNumber() ? value : null;
         } catch (RuntimeException e) {
             log.debug("Could not read {} from post {} data", key, post.getId(), e);
             return null;
         }
+    }
+
+    /**
+     * A {@code long} {@code data} key (SH399's {@code SIZE}).
+     *
+     * <p>Separate from {@link #intFromData} because {@code asInt()} truncates: a file over two
+     * gigabytes would have its stamped size read back as some other number, the validator would
+     * never match, and the fast path would be lost for exactly the files whose hash costs the most
+     * to recompute. Safe, and silently degraded — the failure this area keeps producing.</p>
+     */
+    private Long longFromData(ShPostUnified post, String key) {
+        var value = numberFromData(post, key);
+        return value == null ? null : value.asLong();
+    }
+
+    private Integer intFromData(ShPostUnified post, String key) {
+        var value = numberFromData(post, key);
+        return value == null ? null : value.asInt();
     }
 
     /** Read a string {@code data} key (e.g. SH62 {@code ALT}/{@code CAPTION}); null if absent/blank. */
