@@ -102,6 +102,52 @@ during Block P, 974 on a clean run). So drop `-q` when the number matters, and k
 reason. Both traps are the same shape — *an artefact of an earlier command changing what a later one
 appears to say* — which is worth remembering as a class, since `target/` holds several.
 
+**The suite runs in four JVMs, and eight is slower than four (SH414).** `maven-surefire-plugin` sets
+`forkCount=4`/`reuseForks=true`. This is the other half of SH317's bill: SH317 priced the *count* of
+isolated Spring contexts (~1.5 s each, 36 of them, about two fifths of the run) and closed the
+obvious remedy — the datasource URL is part of the context cache key, so two URLs are two contexts by
+construction and "share a context but not a database" cannot be had. What was left was not to remove
+a boot but to stop the boots waiting for each other.
+
+Measured on the **surefire phase**, isolated from the ~18 s of compile in the Maven total, because
+SH317 recorded ±20 s of noise in that total and the whole win fits inside it — SH283's lesson one
+level along, and the reason the numbers below are worth writing down at all:
+
+| `forkCount` | surefire phase | runs |
+|---|---|---|
+| 1 | **91.8 s** (87.4–96.1) | 2 |
+| 4 | **68.4 s** (68.1–68.6) | 3 |
+| 8 | 77.4 s | 1 |
+
+Two findings, and the second one matters more than the 23 s. **The curve turns back up well before
+the core count** — that machine has 28 — because what is being parallelised is 36 Spring boots
+contending for one H2 process image and one CPU cache, not 176 independent test classes. So
+`forkCount` here is a measured number, not a fraction of the hardware; do not "improve" it to `1C`.
+And **the forked run is the stable one**: three runs at four forks landed within 0.5 s of each other
+against a 9 s spread at one fork. By SH250's rule that is the larger gain, since a suite whose wall
+clock is stable is a suite whose regressions are visible.
+
+`reuseForks=true` caps it at four JVMs rather than one per class. Each fork keeps its **own** context
+cache, so a configuration used by classes that land in different forks boots more than once — which
+is why the win is 25% rather than 75%, and why the ceiling `ShContextCacheHeadroomTest` guards is
+per-fork and still comfortable. It is also why the run stays correct rather than merely faster: a
+fork's `jdbc:h2:mem:shio-test` is private to that JVM, so classes on the shared datasource get *more*
+isolation than they had, never less. Validated on four green full runs (1298 tests) before it landed.
+
+**Failsafe is deliberately left at one fork.** Its ten ITs start Postgres and MariaDB containers, so
+their cost is container startup, not context boot, and parallelising them is a different measurement
+that has not been taken.
+
+**Two things that look like the same idea and are not.** `spring.main.lazy-initialization=true` was
+tried and rejected on measurement: **26 failures and no time win** (2:17 against a 2:21 baseline,
+i.e. inside the noise). The template helpers are registered from beans discovered at refresh, so
+deferring bean creation makes `ShPageRenderTest`, `ShRenderFormTest`, `ShTemplateValidatorTest` and
+four others fail with `could not find helper` — a real incompatibility, not a test that needs fixing.
+And JUnit-level parallelism (`junit.jupiter.execution.parallel.enabled`) is a *different* proposition
+from forking: it runs classes concurrently **inside one context against one datasource**, which is
+precisely the cross-class contamination SH246/SH314/SH315 spent three tasks isolating. Forking gives
+the concurrency without touching that, which is the only reason it is safe here.
+
 ### Why the guards in this repository look the way they do (SH122/SH128/SH130/SH131/SH136)
 
 Moved here by SH356, because these are rules for the next guard rather than history of the last one.

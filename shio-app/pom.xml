@@ -517,6 +517,45 @@
                          `@{argLine}` (late replacement) rather than `${argLine}` so a future
                          JaCoCo argLine is appended to, not overwritten. -->
                     <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
+                    <!-- SH414 — four JVMs, because SH317 priced the *count* of isolated contexts and this
+                         is the other half of the same bill: it does not remove a boot, it stops the
+                         boots waiting for each other. SH317 measured ~1.5 s per isolated context and
+                         36 of them, and closed "share a context but not a database" — the datasource
+                         URL is part of the cache key, so two URLs are two contexts by construction.
+                         What was left was to run them concurrently.
+
+                         Measured on the surefire phase, not the Maven total, for SH283's reason one
+                         level along — the total carries ~18 s of compile and SH317 recorded ±20 s of
+                         noise in it, which is wide enough to hide the whole win:
+
+                           forkCount=1   91.8 s  (n=2, 87.4–96.1)
+                           forkCount=4   68.4 s  (n=3, 68.1–68.6)   <- here
+                           forkCount=8   77.4 s  (n=1)
+
+                         Eight is *slower* than four on a 28-core machine, which is the finding worth
+                         keeping: the work being parallelised is 36 Spring boots contending for one
+                         H2 process image and one CPU cache, not 176 independent test classes, so the
+                         curve turns back up well before the core count. Do not raise this to `1C`
+                         and assume it scales.
+
+                         Also less noisy, not just faster: three runs at four forks landed inside
+                         0.5 s of each other against a 9 s spread at one. That matters more than the
+                         23 s — SH250's rule is that a flake costs more than a break, and a suite
+                         whose wall clock is stable is one whose regressions are visible.
+
+                         reuseForks=true keeps it at four JVMs total rather than one per class; each
+                         fork carries its own context cache, so the same configuration can boot twice
+                         across forks. That is why the win is 25% and not 75%, and it is also why the
+                         run stays correct: a fork's `jdbc:h2:mem:shio-test` is private to that JVM,
+                         so classes sharing the default datasource get *more* isolation than before,
+                         never less. Four green full runs before this landed.
+
+                         Surefire only — failsafe is deliberately left at one fork. Its ten ITs start
+                         Postgres and MariaDB containers, so their cost is container startup rather
+                         than context boot, and parallelising them is a different measurement that
+                         has not been taken. -->
+                    <forkCount>4</forkCount>
+                    <reuseForks>true</reuseForks>
                 </configuration>
             </plugin>
             <plugin>

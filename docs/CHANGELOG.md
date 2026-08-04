@@ -893,6 +893,7 @@
 - **SH361** — Decided as one id per step rather than one entry rewritten, so SH366-SH371 now carry the six and each qualifier names its parent; the two id.two-files left are RK122's.
 - **SH372** — The store hands out a strictly increasing instant now, so the order has a total tail with no new column, and a frozen-clock test pins it — it failed three runs in three before.
 - **SH362** — The fixture now calls all six registered helpers and asserts it does, failing by name when a seventh arrives; widening it found SH372, a defect the old fixture's timing had been hiding.
+- **SH414** — Four surefire forks cut the test phase from 91.8s to 68.4s and, more usefully, its spread from 9s to 0.5s; eight forks is slower, and lazy-init cost 26 failures for nothing.
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
