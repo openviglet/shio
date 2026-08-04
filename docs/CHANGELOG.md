@@ -228,6 +228,7 @@
 - **SH398** — The digest is stamped at write time and rides the listing, so a settled pull went from 208 requests to 8, and a listing asks the filesystem once per row instead of twice.
 - **SH399** — The size is stamped beside the digest as its validator, so bytes changed outside the CMS make the listing report no hash and recompute instead of a stale one.
 - **SH400** — The write side refuses naming both paths and `verify` reports every pair as `duplicate-address`, so the `index.md` convention no longer drops a post in silence.
+- **SH401** — The pull writes neither and names both, the snapshot goes partial so `--prune` cannot act, and `path-collision` catches the pair in a tree authored where the filesystem allows it.
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 

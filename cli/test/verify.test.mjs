@@ -534,3 +534,54 @@ test("SH400: the write side refuses, naming both paths", async () => {
     },
   );
 });
+
+test("SH401: two files differing only in case are a finding, not a clean tree", async () => {
+  // The local half. These are two valid posts at two valid addresses — nothing here is a
+  // duplicate — and the tree is still one that only exists on Linux. Authored by hand, since a
+  // pull now refuses to write the pair in the first place.
+  const fetchImpl = scriptedFetch(CLEAN);
+  const ctx = projectCtx(fetchImpl, projectFs({
+    assets: ["Blog/media/logo.png"],
+    extra: {
+      "/repo/shio/content/Blog/blog/Hello.md": [
+        "---",
+        "site: Blog",
+        "url: /blog/Hello",
+        "type: Article",
+        "folder: /blog",
+        "fields:",
+        "  headline: The other one",
+        "  hero: Blog/media/logo.png",
+        "---",
+        "",
+      ].join("\n"),
+    },
+  }));
+
+  const result = await verify.run({ checks: "projection" }, [], ctx);
+
+  assert.equal(result.exitCode, 1);
+  assert.deepEqual(fetchImpl.calls, [], "and it needed no instance to say so");
+  assert.match(ctx.stdout.text, /path-collision/);
+  assert.match(ctx.stdout.text, /differ only in case/);
+});
+
+test("SH401: the write side refuses an unportable pair too", async () => {
+  const ctx = projectCtx(scriptedFetch(CLEAN), projectFs({
+    extra: {
+      "/repo/shio/content/Blog/blog/Hello.md":
+        "---\nsite: Blog\nurl: /blog/Hello\ntype: Article\nfolder: /blog\nfields:\n  headline: Other\n---\n",
+    },
+  }));
+
+  await assert.rejects(
+    readLocal(ctx, { dir: "shio/content" }),
+    (error) => {
+      assert.match(error.message, /differ only in case/);
+      assert.match(error.message, /Windows or macOS checkout/);
+      // Not SH400's finding: these are two posts, not one claimed twice.
+      assert.doesNotMatch(error.message, /both project to/);
+      return true;
+    },
+  );
+});

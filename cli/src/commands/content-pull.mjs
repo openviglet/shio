@@ -60,6 +60,7 @@ import {
   writeLocalNotes,
   writeRemoteSidecar,
 } from "../content-store.mjs";
+import { filePathFor } from "../content-files.mjs";
 import { reconcileNotes } from "../content-notes.mjs";
 import {
   ancestorsOf,
@@ -186,7 +187,28 @@ export async function run(flags, _positionals, ctx) {
   // redundant `_folder.md` for a folder a post already declares.
   const declaredFolders = new Set();
 
-  for (const address of addresses(base.posts, remote, local)) {
+  const planned = addresses(base.posts, remote, local);
+  // SH401 — computed before the first write, because after it one of the two is already gone.
+  const collisions = pathCollisions(planned);
+  const sharedPaths = new Set();
+
+  for (const address of planned) {
+    const collision = collisions.get(address);
+    if (collision) {
+      // Neither is written: there is no merging two posts into one file, and picking by
+      // whichever the walk reached last is how the loss became silent. Same outcome as an
+      // asset conflict, for the same reason — name it and let a human settle it.
+      if (!sharedPaths.has(collision.key)) {
+        sharedPaths.add(collision.key);
+        report.conflicts.push({
+          address: collision.addresses[0],
+          addresses: collision.addresses,
+          paths: collision.paths.map((path) => `${dir}/${path}`),
+          fields: [],
+        });
+      }
+      continue;
+    }
     const versions = {
       base: base.posts[address] ?? null,
       remote: remote[address] ?? null,
@@ -330,7 +352,9 @@ export async function run(flags, _positionals, ctx) {
       ctx,
       {
         cursor,
-        partial: base.partial || truncated || foldersTruncated,
+        // SH401 — a refused write leaves the server holding a post the tree does not, which is
+        // exactly what this flag exists to stop `push --prune` acting on.
+        partial: base.partial || truncated || foldersTruncated || sharedPaths.size > 0,
         posts: nextPosts,
         folders: folderPlan.agreed,
         notes: nextNotes,
@@ -382,6 +406,22 @@ export async function run(flags, _positionals, ctx) {
           .join("") +
         "Nothing was written for them. Delete shio/.shio/content-base.json and pull again to " +
         "rebuild the base from the server, or settle the field with --theirs / --ours.\n",
+    );
+  }
+  // SH401 — named before the ordinary conflicts, because neither its cause nor its remedy is
+  // "you both edited this": nobody edited anything, two posts simply cannot share one file, and
+  // no local edit settles it. The rename has to happen on the server.
+  const shared = report.conflicts.filter((conflict) => conflict.paths);
+  if (shared.length) {
+    ctx.stderr.write(
+      `shio pull --content: ${shared.length} pair(s) of posts project to one file — nothing was ` +
+        "written for them:\n" +
+        shared
+          .map((c) => `  ! ${c.addresses.join(" and ")} → ${c.paths.join(", ")}\n`)
+          .join("") +
+        "Two URLs differing only in case are one file on Windows and macOS. Rename one of the " +
+        "posts on the server (`post.move`) and pull again. The snapshot is marked partial, so " +
+        "`push --prune` will not delete the one this run could not write.\n",
     );
   }
   if (report.conflicts.length) {
@@ -483,6 +523,58 @@ async function readAssetOrNull(ctx, path, dir) {
   }
 }
 
+/**
+ * Which addresses land on one file (SH401) — address → `{ key, addresses, paths }`.
+ *
+ * `post:Blog/blog/hello` and `post:Blog/blog/Hello` are two posts: the furls differ, so the
+ * server's `duplicate-url` never fires and `ShAddressResolver` resolves each to exactly one row.
+ * `filePathFor` still sends them to paths that differ only in case, and Windows and macOS hold
+ * one file for the pair — so the pull wrote both, the disk kept the second, and one post
+ * vanished from the projection with the run reporting success.
+ *
+ * <h3>Why it is refused on Linux too</h3>
+ *
+ * A case-sensitive filesystem holds the pair happily, so this could have been a platform check.
+ * It is not, because the projection is committed and shared (P4): a tree that only exists on one
+ * kind of filesystem is not one an agent on another machine can pull, and a repository holding
+ * `hello.md` beside `Hello.md` already breaks a checkout on the platform this is developed on.
+ * One tree, the same everywhere, is worth more than the pair of files (P5).
+ */
+function pathCollisions(addressList) {
+  const byPath = new Map();
+  for (const address of addressList) {
+    const at = locationOfAddress(address);
+    if (!at) continue;
+    const path = filePathFor(at);
+    // Lower-casing is what a case-insensitive filesystem does, near enough: it over-reports only
+    // where a folding rule differs, and over-reporting here costs a message nobody had to act on.
+    const key = path.toLowerCase();
+    if (byPath.has(key)) byPath.get(key).push({ address, path });
+    else byPath.set(key, [{ address, path }]);
+  }
+  const collisions = new Map();
+  for (const [key, entries] of byPath) {
+    if (entries.length < 2) continue;
+    const sorted = [...entries].sort((a, b) => a.address.localeCompare(b.address));
+    const group = {
+      key,
+      addresses: sorted.map((entry) => entry.address),
+      paths: sorted.map((entry) => entry.path),
+    };
+    for (const entry of sorted) collisions.set(entry.address, group);
+  }
+  return collisions;
+}
+
+/** `post:Blog/blog/hello` → `{ site, url }`; anything else → null. */
+function locationOfAddress(address) {
+  if (typeof address !== "string" || !address.startsWith("post:")) return null;
+  const rest = address.slice("post:".length);
+  const slash = rest.indexOf("/");
+  return slash < 0 ? null : { site: rest.slice(0, slash), url: rest.slice(slash) };
+}
+
+
 /** Every address any of the three versions knows about, in a stable order. */
 function addresses(base, remote, local) {
   return [...new Set([...Object.keys(base), ...Object.keys(remote), ...Object.keys(local)])].sort();
@@ -541,7 +633,10 @@ function render(report, { dir, dryRun, truncated }) {
   for (const address of report.kept) lines.push(`  = ${address}`);
   for (const address of folders.kept) lines.push(`  = ${address}`);
   for (const conflict of report.conflicts) {
-    lines.push(`  ! ${conflict.address} (${conflict.fields.join(", ")})`);
+    // SH401 — a collision has no conflicted fields to name; the pair of paths is the finding.
+    lines.push(conflict.paths
+      ? `  ! ${conflict.addresses.join(" and ")} → one file (${conflict.paths.join(", ")})`
+      : `  ! ${conflict.address} (${conflict.fields.join(", ")})`);
   }
   if (truncated) {
     lines.push("  (partial projection — the server's post list was truncated)");

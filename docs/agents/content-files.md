@@ -372,6 +372,30 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
       `posts` the map has already collapsed. Unlike `translation-target-missing` the severity does
       **not** depend on the scope: both files are in the part of the tree that was read, or there
       would be no pair.
+    - **`path-collision` — two addresses, one file (SH401).** SH400 closed the tree's non-injective
+      mapping; this is the wire's. `post:Blog/blog/hello` and `post:Blog/blog/Hello` are two posts
+      — the furls differ, so `duplicate-url` never fires and `ShAddressResolver` resolves each to
+      exactly one row — and `filePathFor` sends them to paths that differ only in case. Windows and
+      macOS hold **one file** for the pair, so the pull wrote both, the disk kept the second, and a
+      post vanished from the projection with the run reporting success. Holding both rows needs a
+      case-sensitive collation, which H2's default comparison and PostgreSQL both are: reachable on
+      this project's own dev configuration, from the platform it is developed on. **The loss does
+      not stop at an invisible post** — the base records both, the tree holds one, and the next
+      `push --prune` reads the difference as a local deletion and removes the survivor's twin from
+      the server. Two existing mechanisms, composed rather than a third invented: the **asset
+      conflict** is the precedent for the outcome (there is no merging two posts into one path, so
+      write **neither** and name both), and **`partial`** is the precedent for the consequence — it
+      exists so `push --prune` refuses to delete what was never projected, which is exactly the
+      state a refused write leaves. Two things worth keeping straight:
+      - **It is refused on Linux too**, where the pair coexists happily. The projection is
+        committed and shared (P4), so a tree that only exists on one kind of filesystem is not one
+        another machine can pull — and a repository holding `hello.md` beside `Hello.md` already
+        breaks a checkout on the platform this is developed on. One tree, the same everywhere (P5).
+      - **Both directions, because the tree is authored too.** The pull refuses to *write* the
+        pair; `readLocal` refuses to *read* one, and `verify` reports it as `path-collision`, for a
+        tree hand-authored on Linux where every other gate passes. Distinct from SH400's
+        `duplicate-address`: that is two files reaching one address, this is two addresses reaching
+        one file, and the fix differs — rename a post rather than delete a file.
     - **And the bytes are in the SH89 merge now (SH373).** SH210 fixed one direction and opened
       another: a server-side asset edit never reached the tree, and — newer and worse — a push
       *replaced* the server's bytes whenever they differed from the tree's, which reverts a

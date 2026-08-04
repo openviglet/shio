@@ -146,6 +146,7 @@ async function lintTree(flags, ctx, site) {
       assetsDir,
       missingSidecars: read.missingSidecars,
       duplicates: read.duplicates,
+      unportable: read.unportable,
       // A scoped run is not a statement about the whole tree, so a `translationOf` it could not
       // have seen is a warning rather than an error (SH143's rule).
       scoped: Boolean(site),
@@ -170,7 +171,7 @@ function noDefs(error) {
 }
 
 function absentRead(error) {
-  if (error?.code === "ENOENT") return { docs: {}, missingSidecars: [], duplicates: [] };
+  if (error?.code === "ENOENT") return { docs: {}, missingSidecars: [], duplicates: [], unportable: [] };
   throw error;
 }
 

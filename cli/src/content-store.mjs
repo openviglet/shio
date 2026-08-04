@@ -200,8 +200,10 @@ export async function readLocal(ctx, { dir = CONTENT_DIR, site = null, sidecars 
     docs[address] = doc;
   }
   const duplicates = duplicatesFrom(paths, dir);
-  if (sidecars === "report") return { docs, missingSidecars, duplicates };
+  const unportable = unportableFrom(paths, dir);
+  if (sidecars === "report") return { docs, missingSidecars, duplicates, unportable };
   if (duplicates.length) throw duplicateFault(duplicates[0]);
+  if (unportable.length) throw unportableFault(unportable[0]);
   return docs;
 }
 
@@ -222,6 +224,49 @@ function duplicatesFrom(paths, dir) {
     out.push({ address, site, url, paths: relPaths.map((relPath) => `${dir}/${relPath}`) });
   }
   return out.sort((a, b) => a.address.localeCompare(b.address));
+}
+
+/**
+ * Which files a case-insensitive filesystem would hold as one (SH401) — the local half.
+ *
+ * SH401's other half stops a *pull* from writing `hello.md` and `Hello.md`, because Windows and
+ * macOS keep one of them and the run reports both. This is the same pair arriving the other way:
+ * authored by hand on Linux, where they coexist happily and every gate passes. It is still a tree
+ * nobody on another machine can check out, and the projection is committed and shared (P4) — so
+ * the rule is the same in both directions, and a tree that is only valid on one filesystem is not
+ * one this command calls clean.
+ *
+ * Two files reaching **one address** is SH400's finding and not this one; these are two addresses.
+ */
+function unportableFrom(paths, dir) {
+  const folded = new Map();
+  for (const [address, relPaths] of paths) {
+    for (const relPath of relPaths) {
+      const key = relPath.toLowerCase();
+      if (folded.has(key)) folded.get(key).push({ address, relPath });
+      else folded.set(key, [{ address, relPath }]);
+    }
+  }
+  const out = [];
+  for (const entries of folded.values()) {
+    // One address with two spellings cannot happen — a path decides the address — so anything
+    // here is genuinely two posts, which is what makes it SH400's finding and not a duplicate.
+    if (entries.length < 2) continue;
+    const sorted = [...entries].sort((a, b) => a.relPath.localeCompare(b.relPath));
+    out.push({
+      addresses: sorted.map((entry) => entry.address),
+      paths: sorted.map((entry) => `${dir}/${entry.relPath}`),
+    });
+  }
+  return out.sort((a, b) => a.paths[0].localeCompare(b.paths[0]));
+}
+
+/** The refusal a write gets for an unportable pair (SH401), naming both files. */
+function unportableFault(entry) {
+  return fault(entry.paths[0],
+    `it and ${entry.paths.slice(1).join(", ")} differ only in case, so a Windows or macOS `
+      + "checkout of this tree holds one of them and loses the other. Rename one of the posts "
+      + "(`url:` and the file together) — `shio verify` lists every such pair");
 }
 
 function splitAddress(address) {

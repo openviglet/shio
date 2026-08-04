@@ -1884,3 +1884,96 @@ test("--since last resumes from the position the last content pull reached", asy
 
   assert.match(seen[0], /since=2026-07-26T09%3A00%3A00Z%7Caaa/);
 });
+
+// --- SH401: two addresses, one file path ---
+
+/**
+ * `fakeFs` with the one behaviour Windows and macOS have and Linux does not: a path is stored
+ * and found case-insensitively. The first write's spelling is the one that survives, which is
+ * what makes the loss silent — the second write reports success and overwrites.
+ */
+function caseInsensitiveCtx(fetchImpl, seed = {}) {
+  const ctx = ctxWith(fetchImpl, seed);
+  const real = ctx.fs.files;
+  const keys = new Map([...real.keys()].map((key) => [key.toLowerCase(), key]));
+  const resolve = (key) => keys.get(key.toLowerCase()) ?? key;
+  ctx.fs.files = new Proxy(real, {
+    get(target, prop) {
+      if (prop === "get" || prop === "has" || prop === "delete") {
+        return (key) => target[prop](resolve(key));
+      }
+      if (prop === "set") {
+        return (key, value) => {
+          const existing = resolve(key);
+          keys.set(key.toLowerCase(), existing);
+          return target.set(existing, value);
+        };
+      }
+      const value = Reflect.get(target, prop);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
+  return ctx;
+}
+
+const CASED_DOCS = {
+  "post:Blog/blog/hello": REMOTE_DOC,
+  "post:Blog/blog/Hello": {
+    address: "post:Blog/blog/Hello",
+    type: "Article",
+    state: "DRAFT",
+    folder: "/blog",
+    data: { headline: "The other one", body: "<p>Second</p>" },
+  },
+};
+
+test("SH401: two URLs differing only in case are two posts and one file", async () => {
+  // The measurement, before the fix. Both addresses are legitimate — the furls differ, so the
+  // server's `duplicate-url` never fires and `ShAddressResolver` resolves each to one post —
+  // and `filePathFor` still sends them to paths that differ only in case.
+  const ctx = caseInsensitiveCtx(server({ remote: CASED_DOCS }));
+
+  const result = await contentPull.run({}, [], ctx);
+
+  // Neither is written, and the collision is named rather than resolved by the filesystem.
+  assert.equal(ctx.fs.files.get(FILE), undefined);
+  assert.deepEqual(result.written, []);
+  const collision = result.conflicts.find((entry) => entry.paths);
+  assert.ok(collision, "the pull reports the pair");
+  // Ordered, so two runs over one instance produce the same message (P5).
+  assert.deepEqual(collision.addresses, ["post:Blog/blog/hello", "post:Blog/blog/Hello"]);
+  assert.match(ctx.stdout.text, /Blog\/blog\/hello\.md/);
+});
+
+test("SH401: the snapshot a collision leaves is partial, so --prune cannot act on it", async () => {
+  // The consequence is what makes this destructive rather than merely invisible: the base would
+  // record both, the tree hold one, and the next `push --prune` read the difference as a local
+  // deletion. `partial` is the flag that already exists to refuse exactly that.
+  const ctx = caseInsensitiveCtx(server({ remote: CASED_DOCS }));
+
+  await contentPull.run({}, [], ctx);
+
+  assert.match(ctx.fs.files.get(BASE_PATH), /"partial": true/);
+});
+
+test("SH401: a case difference between different sites is not a collision", async () => {
+  // The paths have to collide, not the URLs — `Blog` and `blog` are separate directories only
+  // when the filesystem says so, and two sites that differ by case are one directory too.
+  const ctx = caseInsensitiveCtx(server({
+    remote: {
+      "post:Blog/blog/hello": REMOTE_DOC,
+      "post:News/blog/other": {
+        address: "post:News/blog/other",
+        type: "Article",
+        state: "DRAFT",
+        folder: "/blog",
+        data: { headline: "Elsewhere", body: "<p>Other</p>" },
+      },
+    },
+  }));
+
+  const result = await contentPull.run({}, [], ctx);
+
+  assert.deepEqual(result.conflicts, []);
+  assert.equal(result.written.length, 2);
+});

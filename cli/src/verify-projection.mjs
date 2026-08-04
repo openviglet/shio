@@ -39,6 +39,7 @@ export const PROJECTION_CHECK = "projection";
  * @param {string} [tree.assetsDir] named in the fix, so the message points at a real directory
  * @param {object[]} [tree.missingSidecars] `files:` entries naming nothing (SH374)
  * @param {object[]} [tree.duplicates] addresses more than one file claims (SH400)
+ * @param {object[]} [tree.unportable] files a case-insensitive filesystem holds as one (SH401)
  * @param {boolean} [tree.scoped] whether the run covers only part of the tree (SH374)
  * @returns {{ findings: object[], checked: number }}
  */
@@ -49,6 +50,7 @@ export function lintProjection({
   assetsDir = "shio/assets",
   missingSidecars = [],
   duplicates = [],
+  unportable = [],
   scoped = false,
 }) {
   const fields = fileFields(defs);
@@ -93,6 +95,7 @@ export function lintProjection({
   }
 
   findings.push(...duplicateFindings(duplicates));
+  findings.push(...unportableFindings(unportable));
   findings.push(...sidecarFindings(missingSidecars));
   findings.push(...translationFindings(posts, scoped));
   return { findings: sortFindings(findings), checked };
@@ -116,6 +119,28 @@ function duplicateFindings(duplicates) {
     fix: "A trailing `index` segment is dropped from a path's URL, so `<name>/index.md` and "
       + "`<name>.md` name one post. Keep one of them. Pushing this would publish one file's "
       + "body under that URL and drop the other with no report.",
+    source: PROJECTION_CHECK,
+  }));
+}
+
+/**
+ * Two files a case-insensitive filesystem holds as one (SH401) — an **error**.
+ *
+ * The local half of the rule the pull enforces on the way down. These are two valid posts and two
+ * valid addresses; what is wrong is the *tree*, which only exists on Linux. The finding is filed
+ * against the first path rather than either address, because neither post is at fault and the fix
+ * is a rename of one of them.
+ */
+function unportableFindings(unportable) {
+  return unportable.map((entry) => ({
+    rule: "path-collision",
+    severity: "error",
+    address: entry.addresses[0],
+    field: undefined,
+    message: `${entry.paths.join(" and ")} differ only in case, so they are one file on Windows `
+      + `and macOS (${entry.addresses.join(" and ")})`,
+    fix: "Rename one of the posts — its `url:` and its file together. A checkout of this tree on "
+      + "a case-insensitive filesystem keeps one of the two and loses the other.",
     source: PROJECTION_CHECK,
   }));
 }
