@@ -60,7 +60,15 @@ import {
   writeLocalNotes,
   writeRemoteSidecar,
 } from "../content-store.mjs";
-import { filePathFor, folderMarkerPathFor } from "../content-files.mjs";
+import {
+  assetPathCollisions,
+  defFileCollisions,
+  filePathFor,
+  folderMarkerPathFor,
+  markerPathCollisions,
+  postPathCollisions,
+  siteDirCollisions,
+} from "../content-files.mjs";
 import { reconcileNotes } from "../content-notes.mjs";
 import {
   ancestorsOf,
@@ -119,6 +127,15 @@ export async function run(flags, _positionals, ctx) {
   const base = await readBase(ctx, flags.baseFile ?? BASE_FILE);
 
   const defs = await admin.getPostTypeDefs();
+  // SH408 — `Article.json` and `article.json` are one file, and `push --prune` then reports the
+  // loser as removed and deletes the post type. Named here rather than left to the disk.
+  for (const group of new Set(defFileCollisions(defs.map((def) => def.name)).values())) {
+    skipped.push({
+      address: `post-type:${group.addresses.join(" and post-type:")}`,
+      reason: `they project to one file (${group.paths.join(", ")}), so a checkout keeps one and `
+        + "`push --prune` would delete the other's type. Rename one of them on the server",
+    });
+  }
   const bodyField = bodyFields(defs);
   // SH191 — a layout's HTML and a region's JavaScript are programs, and a program in escaped
   // JSON inside YAML frontmatter is the one place law P4 fails on the artifact an iterative
@@ -140,8 +157,20 @@ export async function run(flags, _positionals, ctx) {
   const siteScope = sitesOf(local, localFolders).length
     ? sitesOf(local, localFolders)
     : [...new Set(Object.values(remote).map((doc) => doc.site).filter(Boolean))];
+  // SH408 — `Blog` and `blog` are one content directory, one folder directory and one memory
+  // file. Detected before any of the three is written, because the first write is what loses it.
+  const siteClashes = siteDirCollisions(siteScope);
+  const clashingSites = new Set(siteClashes.keys());
+  for (const group of new Set(siteClashes.values())) {
+    skipped.push({
+      address: `site:${group.addresses.join(" and site:")}`,
+      reason: `they project to one directory (${group.paths.join(", ")}), so a Windows or macOS `
+        + "checkout holds one of them. Rename one of the sites on the server",
+    });
+  }
   const assets = await pullAssets(ctx, {
-    agent, admin, sites: siteScope, assetsDir, dryRun, base: base.assets ?? {},
+    agent, admin, sites: siteScope.filter((name) => !clashingSites.has(name)),
+    assetsDir, dryRun, base: base.assets ?? {},
   });
   const unresolvedAssets = new Set();
   for (const [address, doc] of Object.entries(remote)) {
@@ -215,7 +244,7 @@ export async function run(flags, _positionals, ctx) {
 
   const planned = addresses(base.posts, remote, local);
   // SH401 — computed before the first write, because after it one of the two is already gone.
-  const collisions = pathCollisions(planned);
+  const collisions = postPathCollisions(planned);
   const sharedPaths = new Set();
 
   for (const address of planned) {
@@ -316,7 +345,9 @@ export async function run(flags, _positionals, ctx) {
   }
   // SH407 — and then the pair that *can* both be built and still cannot both exist. Computed on
   // the projectable set, so a chain skipped above is not also reported as half a collision.
-  const markerClashes = markerCollisions(projectableFolders);
+  const markerClashes = markerPathCollisions(
+    projectableFolders.map((marker) => `folder:${marker.site}${marker.folder}`),
+  );
   const clashed = new Set();
   const writableFolders = projectableFolders.filter((marker) => {
     const collision = markerClashes.get(`folder:${marker.site}${marker.folder}`);
@@ -558,7 +589,16 @@ async function pullAssets(ctx, {
   const conflicts = [];
   const kept = [];
   const agreed = {};
+  // SH408 — two assets in one folder differing only in case are one file on Windows and macOS,
+  // and the byte merge would then compare the survivor against both rows. Neither is written.
+  const assetClashes = assetPathCollisions([...assets.byPath.keys()]);
+  const assetPairs = new Map();
   for (const [path, item] of assets.byPath) {
+    if (assetClashes.has(path)) {
+      const group = assetClashes.get(path);
+      if (!assetPairs.has(group.key)) assetPairs.set(group.key, group.addresses);
+      continue;
+    }
     const localBytes = await readAssetOrNull(ctx, path, assetsDir);
     if (localBytes === null) {
       // Nothing on disk: no comparison can lose anything, and no digest request is needed to know
@@ -598,7 +638,7 @@ async function pullAssets(ctx, {
     // them, which is what makes `push --content` the thing that settles them.
     if (verdict === "local-changed") kept.push(path);
   }
-  return { ...assets, written, conflicts, kept, agreed };
+  return { ...assets, written, conflicts, kept, agreed, pairs: [...assetPairs.values()] };
 }
 
 /** An asset's bytes, or `null` when the tree does not have that path. */
@@ -611,102 +651,9 @@ async function readAssetOrNull(ctx, path, dir) {
   }
 }
 
-/**
- * Which addresses land on one file (SH401) — address → `{ key, addresses, paths }`.
- *
- * `post:Blog/blog/hello` and `post:Blog/blog/Hello` are two posts: the furls differ, so the
- * server's `duplicate-url` never fires and `ShAddressResolver` resolves each to exactly one row.
- * `filePathFor` still sends them to paths that differ only in case, and Windows and macOS hold
- * one file for the pair — so the pull wrote both, the disk kept the second, and one post
- * vanished from the projection with the run reporting success.
- *
- * <h3>Why it is refused on Linux too</h3>
- *
- * A case-sensitive filesystem holds the pair happily, so this could have been a platform check.
- * It is not, because the projection is committed and shared (P4): a tree that only exists on one
- * kind of filesystem is not one an agent on another machine can pull, and a repository holding
- * `hello.md` beside `Hello.md` already breaks a checkout on the platform this is developed on.
- * One tree, the same everywhere, is worth more than the pair of files (P5).
- */
-function pathCollisions(addressList) {
-  return collisionsAmong(addressList, (address) => {
-    const at = locationOfAddress(address);
-    return at ? filePathFor(at) : null;
-  });
-}
 
-/**
- * The same rule for folder markers (SH407).
- *
- * `folder:Blog/news` and `folder:Blog/News` are two folders on the server and one `_folder.md` on
- * a case-insensitive disk. SH401 fixed the root its investigation started from, and the SH403 lint
- * would not have caught this: it asks every path producer whether it refuses a value that
- * *navigates*, and nothing asked whether two of its outputs can *collide*.
- *
- * The consequence differs from a post's and is worth stating exactly. A folder holding posts is
- * implied by those posts, so `reconcileFolders` keeps it and `--prune` cannot touch it. What is
- * exposed is the **empty** folder — the one a `_folder.md` exists to declare — whose marker was
- * the only evidence it should survive; losing it makes the folder undeclared, and SH211's prune
- * deletes what the tree does not declare.
- */
-function markerCollisions(markers) {
-  return collisionsAmong(
-    markers.map((marker) => `folder:${marker.site}${marker.folder}`),
-    (address) => {
-      const at = folderLocationOfAddress(address);
-      return at ? folderMarkerPathFor(at) : null;
-    },
-  );
-}
 
-/** Group addresses whose paths a case-insensitive filesystem cannot tell apart (SH401, SH407). */
-function collisionsAmong(addressList, pathOf) {
-  const byPath = new Map();
-  for (const address of addressList) {
-    let path;
-    try {
-      path = pathOf(address);
-    } catch {
-      // A path this cannot even build is somebody else's finding — SH402's skip for a post, and
-      // SH403's for a chain. Both run before this, so silence here is not a swallow.
-      continue;
-    }
-    if (!path) continue;
-    // Lower-casing is what a case-insensitive filesystem does, near enough: it over-reports only
-    // where a folding rule differs, and over-reporting here costs a message nobody had to act on.
-    const key = path.toLowerCase();
-    if (byPath.has(key)) byPath.get(key).push({ address, path });
-    else byPath.set(key, [{ address, path }]);
-  }
-  const collisions = new Map();
-  for (const [key, entries] of byPath) {
-    if (entries.length < 2) continue;
-    const sorted = [...entries].sort((a, b) => a.address.localeCompare(b.address));
-    const group = {
-      key,
-      addresses: sorted.map((entry) => entry.address),
-      paths: sorted.map((entry) => entry.path),
-    };
-    for (const entry of sorted) collisions.set(entry.address, group);
-  }
-  return collisions;
-}
 
-/** `folder:Blog/news` → `{ site, folder }`; anything else → null. */
-function folderLocationOfAddress(address) {
-  if (typeof address !== "string" || !address.startsWith("folder:")) return null;
-  const rest = address.slice("folder:".length);
-  const slash = rest.indexOf("/");
-  return slash < 0 ? null : { site: rest.slice(0, slash), folder: rest.slice(slash) };
-}
-
-/** `post:Blog/blog/hello` → `{ site, url }`; anything else → null. */
-function locationOfAddress(address) {
-  if (typeof address !== "string" || !address.startsWith("post:")) return null;
-  const rest = address.slice("post:".length);
-  const slash = rest.indexOf("/");
-  return slash < 0 ? null : { site: rest.slice(0, slash), url: rest.slice(slash) };
-}
 
 
 /** Every address any of the three versions knows about, in a stable order. */

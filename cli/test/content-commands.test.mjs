@@ -120,6 +120,8 @@ function server({
   // SH405 — the sitemap walk reports it could not finish. Nothing fits after the first page, so
   // there is no `truncatedAfter` to resume from, which is the shape that ends the walk short.
   sitemapTruncated = false,
+  // SH408 — so a test can put two post-type names differing only in case on the instance.
+  defs = DEFS,
 } = {}) {
   const calls = [];
   const uploads = [];
@@ -185,7 +187,7 @@ function server({
       const wanted = [...new URL(target).searchParams.getAll("address")];
       return json(wanted.map((address) => remote[address]).filter(Boolean));
     }
-    if (target.includes("/api/v2/post-type")) return json(DEFS);
+    if (target.includes("/api/v2/post-type")) return json(defs);
     if (target.includes("/agent/changes")) {
       return json({ found: 0, window: true, cursor: "2026-07-26T10:00:00Z|abc", more: false, changes: [], notes: [] });
     }
@@ -2190,4 +2192,37 @@ test("SH407: two folder chains differing only in case are two folders and one ma
   assert.ok(collision, "the pull reports the pair");
   assert.deepEqual(collision.addresses, ["folder:Blog/news", "folder:Blog/News"]);
   assert.match(ctx.stdout.text, /one file/);
+});
+
+test("SH408: two assets differing only in case are named, and neither is written", async () => {
+  const ctx = ctxWith(server({
+    remote: { "post:Blog/blog/hello": REMOTE_DOC },
+    serverFolders: { Blog: ["/", "/media"] },
+    serverAssets: [
+      { id: "a1", fileName: "Logo.png", folderId: "Blog:/media", siteName: "Blog", size: 4 },
+      { id: "a2", fileName: "logo.png", folderId: "Blog:/media", siteName: "Blog", size: 4 },
+    ],
+    serverBytes: { a1: "AAAA", a2: "BBBB" },
+  }));
+
+  const result = await contentPull.run({}, [], ctx);
+
+  const written = [...ctx.fs.files.keys()].filter((key) => key.includes("/assets/"));
+  assert.deepEqual(written, [], "the byte merge never compares a survivor against both rows");
+  assert.deepEqual(result.assets, []);
+});
+
+test("SH408: two post types differing only in case are named before --prune can delete one", async () => {
+  // The severe one: `Article.json` and `article.json` are one file, `diffDefs` then reports the
+  // loser as removed, and `push --prune` deletes the post type every post of it is validated by.
+  const ctx = ctxWith(server({
+    remote: { "post:Blog/blog/hello": REMOTE_DOC },
+    defs: [...DEFS, { name: "article", fields: [{ name: "headline", widget: "Text", ordinal: 1 }] }],
+  }));
+
+  await contentPull.run({}, [], ctx);
+
+  // Ordered by `localeCompare`, which puts the lowercase name first (P5, as in SH401).
+  assert.match(ctx.stdout.text, /post-type:article and post-type:Article/);
+  assert.match(ctx.stdout.text, /would delete the other's type/);
 });

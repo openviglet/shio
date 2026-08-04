@@ -57,9 +57,26 @@ export function serializeDef(def) {
   return `${JSON.stringify(normalizeDef(def), null, 2)}\n`;
 }
 
-/** A def's on-disk filename. */
+/**
+ * A def's on-disk filename.
+ *
+ * <h3>Why it can refuse (SH408)</h3>
+ *
+ * A post-type name is the server's, and it was interpolated straight into a path: `../evil` gave
+ * `../evil.json`, which `path.join` resolves outside `shio/post-types/`. This is SH402's defect a
+ * fourth time, and it stood because SH403's lint — built to find exactly this — enumerated
+ * `content-files.mjs`, `content-assets.mjs` and `content-notes.mjs`, and this module was not on
+ * the list. Widening that list is what found it, before any of it was written by hand.
+ */
 export function fileNameFor(def) {
-  return `${def.name}.json`;
+  const name = String(def?.name ?? "");
+  if (/[\\/]/.test(name) || /^\.+$/.test(name)) {
+    throw new Error(
+      `shio content: post-type name "${name}" cannot be a file name — a separator or a name that `
+        + "is dots alone resolves outside `shio/post-types`. Rename the type on the server.",
+    );
+  }
+  return `${name}.json`;
 }
 
 /**

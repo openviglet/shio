@@ -835,3 +835,91 @@ function splitDocument(relPath, text) {
 export function fault(relPath, why) {
   return new Error(`shio content: ${relPath ? `${relPath}: ` : ""}${why}.`);
 }
+
+/**
+ * Group values whose projected paths a case-insensitive filesystem cannot tell apart (SH408).
+ *
+ * Shared, because three roots have now needed it and two of them found out the hard way. SH401
+ * wrote it for posts, SH407 generalized it for folder markers, and SH408 asked the question of
+ * every root at once — assets, post-type files and site directories all fold, and none of them had
+ * a caller checking. A producer is allowed to fold; what is not allowed is folding with nobody
+ * looking, and `path-safety.test.mjs` is what holds each root to naming its detector.
+ *
+ * @param {string[]} addressList the things being projected, in their own address vocabulary
+ * @param {(address: string) => string|null} pathOf the projection under test
+ * @returns {Map<string, {key: string, addresses: string[], paths: string[]}>} address → its group
+ */
+export function collisionsAmong(addressList, pathOf) {
+  const byPath = new Map();
+  for (const address of addressList) {
+    let path;
+    try {
+      path = pathOf(address);
+    } catch {
+      // A path this cannot even build is somebody else's finding — SH402's skip for a post, and
+      // SH403's for a chain. Both run before this, so silence here is not a swallow.
+      continue;
+    }
+    if (!path) continue;
+    // Lower-casing is what a case-insensitive filesystem does, near enough: it over-reports only
+    // where a folding rule differs, and over-reporting here costs a message nobody had to act on.
+    const key = path.toLowerCase();
+    if (byPath.has(key)) byPath.get(key).push({ address, path });
+    else byPath.set(key, [{ address, path }]);
+  }
+  const collisions = new Map();
+  for (const [key, entries] of byPath) {
+    if (entries.length < 2) continue;
+    const sorted = [...entries].sort((a, b) => a.address.localeCompare(b.address));
+    const group = {
+      key,
+      addresses: sorted.map((entry) => entry.address),
+      paths: sorted.map((entry) => entry.path),
+    };
+    for (const entry of sorted) collisions.set(entry.address, group);
+  }
+  return collisions;
+}
+
+/**
+ * The per-root detectors (SH408) — one per thing the projection writes.
+ *
+ * They exist as named exports rather than as inline logic in each command because
+ * `path-safety.test.mjs` calls them. A lint that built its own detector would pass whatever
+ * production did, which is the vacuous version of this test and was its first draft.
+ */
+export function postPathCollisions(addresses) {
+  return collisionsAmong(addresses, (address) => {
+    const at = addressParts(address, "post:");
+    return at ? filePathFor({ site: at.site, url: at.rest }) : null;
+  });
+}
+
+export function markerPathCollisions(addresses) {
+  return collisionsAmong(addresses, (address) => {
+    const at = addressParts(address, "folder:");
+    return at ? folderMarkerPathFor({ site: at.site, folder: at.rest }) : null;
+  });
+}
+
+/** Asset paths are already tree-relative, so they are their own projection. */
+export function assetPathCollisions(paths) {
+  return collisionsAmong(paths, (path) => path);
+}
+
+/** Post-type def files — `<name>.json`, and the root `push --prune` deletes from. */
+export function defFileCollisions(names) {
+  return collisionsAmong(names, (name) => `${name}.json`);
+}
+
+/** Site directories — one name, three roots: content, folders and the memory file. */
+export function siteDirCollisions(sites) {
+  return collisionsAmong(sites, (site) => siteDir(site));
+}
+
+function addressParts(address, prefix) {
+  if (typeof address !== "string" || !address.startsWith(prefix)) return null;
+  const rest = address.slice(prefix.length);
+  const slash = rest.indexOf("/");
+  return slash < 0 ? null : { site: rest.slice(0, slash), rest: rest.slice(slash) };
+}

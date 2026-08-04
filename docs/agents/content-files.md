@@ -510,6 +510,30 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
       - **`verify` had never opened `shio/folders/` at all.** The tree-only gate read posts,
         post-types and assets; the folder root was outside every one of them. It reads markers now,
         in `mode: "report"`, the same load-versus-report split SH374 gave sidecars.
+    - **The second question, asked of every root (SH408).** SH403's lint asks whether a producer
+      refuses a value that *navigates*; SH407 was a defect it could not catch, and was then fixed
+      by hand — leaving the instrument as unable to find the next one as before. Third repetition,
+      so the question landed first this time, and it named three roots nobody had checked:
+      `assetPathFor` folds `Logo.png` with `logo.png`, `fileNameFor` folds `Article.json` with
+      `article.json`, and `siteDir` folds `Blog/` with `blog/` — one content directory, one folder
+      directory and one memory file. **Post-types are the severe one**: `readLocalDefs` refuses a
+      name defined *twice*, but two names differing only in case are two names, so the disk keeps
+      one, `diffDefs` reports the other as removed, and `push --prune` deletes the post type every
+      post of that type is validated against.
+      - **The lint found a fourth traversal gap on its own.** SH403 enumerated three modules and
+        `post-types-io.mjs` was not among them, so `fileNameFor` had never been classified for
+        *either* question — `../evil` gave `../evil.json`, outside `shio/post-types/`. It is
+        SH402's defect a fourth time, found by widening a list rather than by reading code.
+      - **It also refused to take my word for something.** The declaration for `fileNameFor` first
+        claimed the server rejected such names; the probe disagreed within seconds. A declared
+        exemption that is not executed is a comment, and this is why each entry carries a thunk.
+      - **Two drafts of the assertion were wrong, and both are recorded in the file.** The first
+        demanded the *producer* not fold, which would have condemned posts and folder markers,
+        where the design deliberately puts detection in the caller. The second ran a detector the
+        test built itself, which passes whatever production does — vacuous. What it asserts now is
+        that each root names a detector exported from `src/`, that the detector reports the pair,
+        **and** that some module other than the one defining it actually calls it. That last check
+        is what caught the real state of things: five detectors, none of them wired.
     - **And the bytes are in the SH89 merge now (SH373).** SH210 fixed one direction and opened
       another: a server-side asset edit never reached the tree, and — newer and worse — a push
       *replaced* the server's bytes whenever they differed from the tree's, which reverts a
