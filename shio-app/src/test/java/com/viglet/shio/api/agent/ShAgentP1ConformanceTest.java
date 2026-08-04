@@ -444,6 +444,50 @@ class ShAgentP1ConformanceTest {
                 .isSubsetOf(unreachable);
     }
 
+    /**
+     * SH393 — every exception on that list is <b>published</b>, and nothing else is.
+     *
+     * <h2>What this closes</h2>
+     *
+     * <p>The list above is the inventory, and until now it lived only here: an MCP client had no way
+     * to learn that {@code exchange} is a zip and therefore CLI-shaped except by not finding a tool
+     * and guessing why. SH268 argued that boundary, SH186 argued it, SH104, SH288, SH262 and SH391
+     * each argued it — six tasks, one rule, derived six times from memory, which is the shape SH338
+     * named: a law with no instrument.</p>
+     *
+     * <p>So the manifest carries {@code elsewhere}, and this asserts <b>set equality both ways</b>.
+     * A new gap must be closed or published — it cannot be quietly classified. And a capability that
+     * gains a real surface has to be deleted from two places, which is the failure the other
+     * direction protects: an {@code elsewhere} entry outliving its exception would send a caller to
+     * the CLI for something a tool now does, and nothing about the tool's arrival would say so.</p>
+     */
+    @Test
+    @DisplayName("the P1 exception list is published in the manifest, and nothing else is")
+    void everyExceptionSaysWhereTheCapabilityLives() {
+        Map<String, String> elsewhere = shAgentManifestService.manifest().elsewhere();
+        Set<String> exceptions = classification().entrySet().stream()
+                .filter(entry -> entry.getValue().reach().isException())
+                .map(Map.Entry::getKey)
+                .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
+
+        assertThat(elsewhere.keySet())
+                .as("""
+                        `elsewhere` is the exception list made readable by the client that needs \
+                        it. Equality both ways: a capability this surface does not carry and does \
+                        not point at is one an agent learns about by failing (which is what SH268 \
+                        did for eight of the nine), and a pointer that outlives its exception \
+                        sends the next caller to a CLI for something a tool now does.""")
+                .containsExactlyInAnyOrderElementsOf(exceptions);
+
+        assertThat(elsewhere.values())
+                .as("a pointer is a command or a route, never an apology — the value is what the "
+                        + "caller runs instead")
+                .allSatisfy(where -> assertThat(where).isNotBlank());
+        assertThat(List.copyOf(elsewhere.keySet()))
+                .as("sorted, like features, because the manifest is byte-stable (P5/SH136)")
+                .isSorted();
+    }
+
     @Test
     @DisplayName("the guard is not vacuous: the two reachability checks can fail")
     void theGuardCanFail() {

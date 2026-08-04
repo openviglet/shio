@@ -45,6 +45,16 @@ public enum ShAgentManifestSection {
 
     IDENTITY,
     FEATURES,
+    /**
+     * SH393 — where the capabilities this surface does not carry do live.
+     *
+     * <p>Its own section rather than part of {@code features}, and that is the opposite of the
+     * first design: bundled, it took {@code ?include=features,limits} — the cheap capability check
+     * an agent repeats every session — from 326 tokens to 469, which P3 makes a build failure and
+     * {@code ShAgentResponseBudgetTest} duly failed. Nine pointers are noise beside the full
+     * document's endpoint index and a 44% tax on the smallest read on the surface.</p>
+     */
+    ELSEWHERE,
     LIMITS,
     ENDPOINTS,
     START_HERE;
@@ -100,6 +110,7 @@ public enum ShAgentManifestSection {
                 manifest.protocol(),
                 manifest.apiBase(),
                 sections.contains(FEATURES) ? manifest.features() : null,
+                sections.contains(ELSEWHERE) ? manifest.elsewhere() : null,
                 sections.contains(LIMITS) ? manifest.limits() : null,
                 sections.contains(ENDPOINTS) ? manifest.endpoints() : null,
                 sections.contains(START_HERE) ? manifest.startHere() : null);

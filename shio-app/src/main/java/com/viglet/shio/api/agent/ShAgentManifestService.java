@@ -85,6 +85,7 @@ public class ShAgentManifestService {
                 PROTOCOL,
                 API_BASE,
                 features(),
+                elsewhere(),
                 limits(),
                 endpoints(),
                 startHere());
@@ -235,6 +236,63 @@ public class ShAgentManifestService {
         // `visualSnapshot: true` would go looking for a PNG. Two capabilities, two answers.
         features.put("appearanceDigest", true);
         return features;
+    }
+
+    /**
+     * Where a capability lives when it does not live on this surface (SH393).
+     *
+     * <h2>Why this is nine entries and not fifty-three</h2>
+     *
+     * <p>A caller does not need to be told where {@code post.move} lives — {@code tools/list} and
+     * the endpoint index say so, and saying it a third time is the repetition P3 exists to stop.
+     * What it cannot derive is the <b>absence</b>: nothing in a JSON-RPC session says "this one is
+     * a zip, so it is CLI-shaped", and an agent has no way to learn that except by failing. So this
+     * map holds exactly the capabilities the protocol does not carry, and its keys are asserted
+     * equal to {@code ShAgentP1ConformanceTest}'s exception list — a new gap must either be closed
+     * or published here.</p>
+     *
+     * <h2>The rule the entries follow, so the tenth does not have to be argued</h2>
+     *
+     * <p><b>MCP owns address-in, small-JSON-out verbs a session repeats</b>, because a client may
+     * have no shell. <b>The CLI owns whatever has a file, a byte stream, a browser or a human on
+     * one end</b>, because none of those fits a JSON-RPC frame. <b>The console owns the human's
+     * veto.</b> Nothing is owned by neither — an unowned capability is the gap, not the answer.
+     * Six shipped tasks each derived that boundary from scratch and each got it right (§VIII.15);
+     * this is the derivation written down where it can be checked.</p>
+     *
+     * <p>Sorted, like {@code features}, so the payload is byte-stable (P5).</p>
+     *
+     * <h2>Pointers, never prose — and this one was measured, not asserted</h2>
+     *
+     * <p>The first draft explained each entry ("console — the human's veto over the agent's work
+     * (SH109)") and cost <b>138 tokens</b> on the full manifest. The reason belongs in
+     * {@code ShAgentP1ConformanceTest}, which is where a decision is reviewed; what a caller needs
+     * is the command. Trimmed to bare pointers it is a third of that.</p>
+     *
+     * <p><b>And it is its own {@code include=} section rather than part of {@code features}</b>,
+     * which is the opposite of the first design and for a measured reason: bundled, it put
+     * {@code ?include=features,limits} — the cheap capability check an agent makes every session —
+     * from 326 to 469 tokens, a 44% regression on the most-repeated read on the surface. P3 makes
+     * that a build failure, and {@code ShAgentResponseBudgetTest} duly failed it. The full document
+     * carries it (there, beside a 2000-token endpoint index, it is noise), and a client that wants
+     * only the pointers asks for {@code include=elsewhere}.</p>
+     */
+    private Map<String, String> elsewhere() {
+        Map<String, String> elsewhere = new TreeMap<>();
+        // CLI-shaped: a file, a byte stream or a rasteriser on one end (SH268's rule).
+        elsewhere.put("agentsMd", "shio context --format agents-md");
+        elsewhere.put("contentAsFiles", "shio pull --content");
+        elsewhere.put("exchange", "shio import <file>");
+        elsewhere.put("visualSnapshot", "shio snapshot <page>");
+        // Console-shaped: a human is the point, or a browser protocol is.
+        elsewhere.put("reviewQueue", "console");
+        elsewhere.put("trash", "console");
+        elsewhere.put("universalEditor", "console");
+        // REST-only, and deliberately: the delivery surface a front end queries, and a body field
+        // that would cost more on tools/list than it saves.
+        elsewhere.put("graphql", "POST /graphql");
+        elsewhere.put("postTypeMerge", "POST /agent/apply mergePostTypes:true");
+        return elsewhere;
     }
 
     private ShAgentLimits limits() {

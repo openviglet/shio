@@ -32,6 +32,17 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  *                  capabilities, including the ones that are {@code false}** — an
  *                  absent flag would send the caller probing, which is the cost
  *                  this field exists to remove
+ * @param elsewhere capability name → <b>where it lives, when that is not this surface</b>
+ *                  (SH393). Only the capabilities this protocol does not carry appear here:
+ *                  for everything else {@code endpoints} and {@code tools/list} already say
+ *                  where to go, and repeating them would be the cost this document exists to
+ *                  remove. A flat map of pointers rather than prose — one is a lookup, the
+ *                  other is a paragraph re-sent every session (P3). It is the third answer
+ *                  {@code features} could not give: {@code visualSnapshot:false} is honest and
+ *                  useless on its own, because the capability *exists*, as
+ *                  {@code shio snapshot}. Which surface owns what is a **decision** the six
+ *                  tasks in §VIII.15 each re-derived; published here, the next caller looks it
+ *                  up instead of discovering it by failing
  * @param limits    operating limits (rate limit, paging, cache)
  * @param endpoints curated index of the endpoints an agent actually needs, each
  *                  with a runnable example — deliberately *not* the full API
@@ -52,7 +63,15 @@ public record ShAgentManifest(
         int protocol,
         String apiBase,
         Map<String, Boolean> features,
+        Map<String, String> elsewhere,
         ShAgentLimits limits,
         List<ShAgentEndpoint> endpoints,
         List<String> startHere) {
+
+    /** Every caller from before SH393, for whom no capability lived anywhere else. */
+    public ShAgentManifest(String product, String version, int protocol, String apiBase,
+                           Map<String, Boolean> features, ShAgentLimits limits,
+                           List<ShAgentEndpoint> endpoints, List<String> startHere) {
+        this(product, version, protocol, apiBase, features, null, limits, endpoints, startHere);
+    }
 }

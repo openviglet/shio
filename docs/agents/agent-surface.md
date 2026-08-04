@@ -8,13 +8,28 @@ The namespace shaped for a coding agent rather than a browser. It is a **shape o
 the CDA + console services (law P10) and holds no business logic of its own.
 - `GET /agent/manifest` — capabilities, limits, a curated endpoint index. **Read this
   first**; unshipped capabilities are reported `false`, never omitted. **Projectable since
-  SH174**: `?include=identity,features,limits,endpoints,start-here` and `?format=json|terse`,
+  SH174**: `?include=identity,features,limits,elsewhere,endpoints,start-here` and
+  `?format=json|terse`,
   with an unknown `format` a teaching 400 the way `/agent/context` has always answered.
   `include=features,limits` is the capability check and measures **298** against the full
   document's **2343** — the read this exists for, since no `304` helps on a session's first
   call. `format=terse` saves only 11%, and that is the finding rather than a defect: this
   document's weight is prose (a purpose sentence and a runnable example, twenty-nine times),
   kept verbatim because an abbreviated example is a call the instance would reject (SH230).
+  **`elsewhere` says where a capability lives when it does not live here (SH393)** — nine
+  entries, capability → the command or route to use instead (`exchange` → `shio import <file>`,
+  `visualSnapshot` → `shio snapshot <page>`, `trash` → `console`). It is the third answer
+  `features` could not give: `visualSnapshot: false` is the only honest thing this surface can
+  say about a PNG and reads as *not possible*, when the truth is *possible, from the CLI*. Its
+  keys are asserted **equal both ways** to `ShAgentP1ConformanceTest`'s exception list, so a new
+  gap must be closed or published, and a pointer cannot outlive the gap it describes.
+  **Its own `include=` section, and that is a measurement rather than taste**: bundled into
+  `features` — the obvious home, since both are about capabilities — it took the capability check
+  from 326 to **469** tokens, a 44% regression on the cheapest, most repeated read on the surface,
+  and `ShAgentResponseBudgetTest` failed the build for it. The first draft also explained each
+  entry in prose and cost 138 tokens against 81; the reason belongs in the conformance test, where
+  it is reviewed, and the wire carries the command. `response.manifest` is 2650 for it — the raise
+  is on that one line, deliberately.
 - `GET /agent/context` — model + sitemap + conventions in one call. `?format=terse`,
   `?include=`, `?budget=`, `?from=`, `?ids=true` (rows are **id-free by default**, SH121).
   The `digest` is how a later session skips re-reading. **`include=all,manifest` folds the
@@ -676,6 +691,25 @@ gaps, and **four had no task at all** before this ran: `locales` and `scheduledP
 id-keyed post verbs with no address-native form), `webhooks` (SH343) and `previewTokens` (SH344).
 That is the return on the instrument, and it is the argument for building one before working the
 thirteen known instances by hand.
+
+**Which surface owns a capability is a decision, and it is written down now (SH393).** SH268
+argued a zip cannot be a JSON-RPC message, SH186 that a JSON-shaped verb becomes an op rather than
+a thirteenth tool, SH104 that a human artifact has no server surface, SH288 that a file beats a
+read command, SH262 that a projection beats a new endpoint, SH391 that a browser lives where a
+browser lives. **Six tasks, one boundary, derived six times — each correctly, and each from
+memory**: exactly the shape SH338 named one level up. The rule they converge on:
+
+> **MCP owns address-in, small-JSON-out verbs a session repeats**, because a client may have no
+> shell. **The CLI owns whatever has a file, a byte stream, a browser or a human on one end**,
+> because none of those fits a JSON-RPC frame. **The console owns the human's veto.** Nothing is
+> owned by neither — an unowned capability is the gap, not the answer.
+
+Two things make it checkable rather than another paragraph to remember. The classification already
+records the owning surface (`MCP_TOOL` · `AGENT_ROUTE` · `REST_ONLY` · `CONSOLE_ONLY` · `CLI_ONLY`)
+with a reason per entry; SH393 publishes the exceptions as the manifest's **`elsewhere`** map and
+asserts **set equality both ways**, so a capability this surface does not carry either gets closed
+or gets a pointer, and a pointer cannot outlive the gap. The boundary is now a lookup for the
+seventh task instead of a derivation — and the client that used to learn it by failing reads it.
 
 **Translate dialects first, correct spelling second (SH80, moved here by SH356).** Nearest-string
 matching is silent on exactly the guess an agent is most likely to make: `RichText` is four edits

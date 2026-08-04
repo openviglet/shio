@@ -66,6 +66,7 @@ public final class ShAgentManifestTerse {
                 .build());
 
         appendFeatures(out, manifest.features());
+        appendElsewhere(out, manifest.elsewhere());
         appendLimits(out, manifest.limits());
 
         for (String step : nullSafe(manifest.startHere())) {
@@ -102,6 +103,23 @@ public final class ShAgentManifestTerse {
             }
         });
         out.append(on.build()).append(off.build());
+    }
+
+    /**
+     * One line per capability that lives somewhere else (SH393).
+     *
+     * <p>A line each rather than one long line, unlike {@code features}: the value is a command a
+     * caller is meant to run, and the rule the endpoint examples follow is that <b>a runnable
+     * string is never abbreviated</b> — an agent handed a mangled command would run it. Nothing is
+     * emitted when the map is empty or absent, which is the honest terse form of "everything this
+     * instance advertises is reachable from here".</p>
+     */
+    private static void appendElsewhere(StringBuilder out, Map<String, String> elsewhere) {
+        if (elsewhere == null) {
+            return;
+        }
+        elsewhere.forEach((name, where) ->
+                out.append(ShTerse.line("elsewhere").word(name).attr("use", where).build()));
     }
 
     private static void appendLimits(StringBuilder out, ShAgentLimits limits) {

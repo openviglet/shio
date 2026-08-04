@@ -88,6 +88,36 @@ class ShAgentManifestProjectionTest {
                 .isLessThan(tokens(full) / 2);
     }
 
+    /**
+     * SH393 — the capability check must not pay for the pointers, and asking for them must be
+     * cheap.
+     *
+     * <p>Both halves of a measurement that changed the design. Bundling {@code elsewhere} into
+     * {@code features} took this check from 326 tokens to 469 — a 44% regression on the most
+     * repeated read on the surface, which is what P3 calls a build failure. Split, the check is
+     * unchanged and a client that wants the pointers asks for nine of them and nothing else.</p>
+     */
+    @Test
+    @DisplayName("SH393: the capability check does not carry `elsewhere`, and asking for it is cheap")
+    void elsewhereIsItsOwnSection() throws Exception {
+        MvcResult check = manifest("?include=features,limits");
+        MvcResult pointers = manifest("?include=elsewhere");
+
+        assertThat(check.getResponse().getContentAsString())
+                .as("a caller checking flags every session must not pay for the pointers")
+                .doesNotContain("\"elsewhere\"");
+
+        String body = pointers.getResponse().getContentAsString();
+        assertThat(body)
+                .contains("\"elsewhere\"")
+                .contains("shio import")
+                .as("the flags are the other section, and this caller did not ask for them")
+                .doesNotContain("\"features\"", "\"endpoints\"");
+        assertThat(tokens(pointers))
+                .as("nine pointers, and nothing else — if this is not tiny it is not a projection")
+                .isLessThan(tokens(check));
+    }
+
     @Test
     @DisplayName("SH174: format=terse compacts the whole document")
     void terseIsCheaperThanJson() throws Exception {

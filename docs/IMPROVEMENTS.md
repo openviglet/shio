@@ -175,27 +175,6 @@ AI the product contains.
 > reproduced every discovery and write cost it was meant to remove. Full protocol
 > design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
 
-### VIII.15 The surface assignment is a decision, so it should be a declared fact (SH393)
-
-SH268 argued a zip cannot be a JSON-RPC message, SH186 that a JSON-shaped verb becomes
-an op rather than a thirteenth tool, SH104 that a human artifact has no server surface,
-SH288 that a file beats a read command, SH262 that a projection beats a new endpoint,
-and SH391 that a browser lives where a browser lives. Six tasks, one boundary, derived
-six times — each correctly, and each from memory. That is the shape SH338 named: a law
-with no instrument.
-
-`ShAgentP1ConformanceTest` already classifies all 52 manifest `features` keys by
-*reachability*. What it does not record is the **surface**: MCP, CLI, REST-only, or
-console-only, with the reason. Adding that column makes the next argument a lookup,
-makes a capability that quietly gained a second surface visible, and makes "CLI-shaped"
-a declared decision an MCP client can read in the manifest instead of discovering by
-failing — which SH268 does for exactly one capability today.
-
-The rule the six tasks converge on, worth writing where it can be checked: **MCP owns
-address-in, small-JSON-out verbs a session repeats**, because a client may have no
-shell; **the CLI owns whatever has a file, a byte stream, a browser or a human on one
-end**, because none of those fit a JSON-RPC frame. Nothing is owned by neither.
-
 ### VIII.16 Reindex an instance that was already full (SH413)
 
 SH84's seam is `AFTER_COMMIT` on a lifecycle event, which is the right seam and covers

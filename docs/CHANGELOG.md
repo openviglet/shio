@@ -66,6 +66,7 @@
 - **SH196** — Every folder write records one audit row — create, rename and move joined delete and restore — and `ShHistory.subject_kind` says whether a row is about a post or a section, so the change feed reports a site's shape and not only its contents, a purged section's own entry still reads as a section, and reverting a run undoes the folders it created as well as the pages.
 - **SH140** — A move that changes a live URL now names the published pages whose authored markup still links to the old one, with their addresses and one fix, on the move's own row.
 - **SH197** — The stability helper can no longer be handed a hash-ordered literal, which it was in ShAgentOps; banning Map.of outright is refused by a count, not an argument.
+- **SH393** — The manifest ships an `elsewhere` map naming where each unreachable capability does live, asserted equal to the P1 exception list, so the boundary is a lookup and not a seventh derivation.
 
 ## Block K — Perception & verification loop (SH74)
 

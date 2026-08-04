@@ -83,6 +83,21 @@ class ShAgentManifestTest {
     }
 
     @Test
+    void aFalseFlagSaysWhereTheCapabilityDoesLive() {
+        // SH393 — the pair `features` alone could not express. `visualSnapshot: false` is the only
+        // honest answer this surface can give about a PNG, and on its own it reads as "not
+        // possible" when the truth is "possible, from the CLI". The flag stays false; the pointer
+        // is what stops the agent concluding the wrong thing from it.
+        ShAgentManifest manifest = shAgentManifestService.manifest();
+
+        assertThat(manifest.features()).containsEntry("visualSnapshot", false);
+        assertThat(manifest.elsewhere())
+                .containsKey("visualSnapshot")
+                .extractingByKey("visualSnapshot", org.assertj.core.api.InstanceOfAssertFactories.STRING)
+                .contains("shio snapshot");
+    }
+
+    @Test
     void blueprintsAreReportedShipped() {
         // False through Blocks H, K and I, so the flag flipping means a real package format
         // with a real registry behind it rather than a documented intention (SH92/SH93).
