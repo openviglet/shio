@@ -31,6 +31,7 @@ import com.viglet.shio.api.site.ShSiteWriteService;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
+import com.viglet.shio.api.agent.verify.ShPostLinks;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.render.ShTemplateTitles;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
@@ -144,6 +145,13 @@ public class ShAgentBatchService {
     private static final List<ShPostState> BOTH_STATES =
             List.of(ShPostState.DRAFT, ShPostState.PUBLISHED);
 
+    /**
+     * How many broken inbound links a move lists (SH140). Ten is enough to act on and small
+     * enough that the report of a one-post move cannot outgrow the move; the total is always
+     * stated, so the cap is visible rather than silent (SH138).
+     */
+    private static final int INBOUND_LINK_CAP = 10;
+
     private final ShAgentSiteAccess siteAccess;
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
@@ -158,6 +166,7 @@ public class ShAgentBatchService {
     private final ShTemplateValidator shTemplateValidator;
     private final ShTemplateTitles shTemplateTitles;
     private final ShRenderPostTypes shRenderPostTypes;
+    private final ShPostLinks shPostLinks;
 
     public ShAgentBatchService(ShAgentSiteAccess siteAccess,
                                ShFolderRepository shFolderRepository,
@@ -172,7 +181,8 @@ public class ShAgentBatchService {
                                ShAgentProperties properties,
                                ShTemplateValidator shTemplateValidator,
                                ShTemplateTitles shTemplateTitles,
-                               ShRenderPostTypes shRenderPostTypes) {
+                               ShRenderPostTypes shRenderPostTypes,
+                               ShPostLinks shPostLinks) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -187,6 +197,7 @@ public class ShAgentBatchService {
         this.shTemplateValidator = shTemplateValidator;
         this.shTemplateTitles = shTemplateTitles;
         this.shRenderPostTypes = shRenderPostTypes;
+        this.shPostLinks = shPostLinks;
     }
 
     /**
@@ -1227,6 +1238,13 @@ public class ShAgentBatchService {
             throw new MoveTargetOccupiedException(from, to);
         }
 
+        // SH140 — asked before the write, for the same reason `live` is: afterwards the old path
+        // is nobody's address and the scan cannot tell a link this move broke from one that was
+        // always a front-end route. A dry run asks it too, because "which pages will this break"
+        // is exactly what a plan is for (P7).
+        ShAgentChangeSet.InboundLinks inbound = sameUrl || !live
+                ? null : inboundLinks(site, from, to, post.getId());
+
         if (!session.dryRun) {
             shContentAclService.requireWrite(post.getId());
             if (targetFolder != null) {
@@ -1238,7 +1256,32 @@ public class ShAgentBatchService {
         // Both state rows move together, so a published post changes its live URL here
         // and now. Said out loud rather than discovered later (P7).
         return session.change(op, to, Change.MOVE,
-                live ? "the live URL changes immediately" : null, post.getId());
+                live ? "the live URL changes immediately" : null, post.getId(), inbound);
+    }
+
+    /**
+     * The pages this move is about to break, or {@code null} when there are none (SH140).
+     *
+     * <p>Capped at {@link #INBOUND_LINK_CAP}: an agent that has just moved a page needs the
+     * addresses, and a site where two hundred pages link to one URL needs the count plus enough
+     * addresses to start — the whole list would be a response bigger than the write that caused
+     * it (P3), and the run that follows the fix reports whatever is left.</p>
+     */
+    private ShAgentChangeSet.InboundLinks inboundLinks(ShSite site, ShAddress from, ShAddress to,
+                                                       String postId) {
+        ShPostLinks.Inbound inbound =
+                shPostLinks.linkingTo(site, from.path(), postId, INBOUND_LINK_CAP);
+        if (!inbound.any()) {
+            return null;
+        }
+        String fix = "Repoint those links at " + to + ", or move this post back. "
+                + "They are authored URLs, not references, so nothing rewrote them.";
+        return new ShAgentChangeSet.InboundLinks(from.path(), inbound.addresses(), inbound.found(),
+                inbound.truncated()
+                        ? fix + " " + inbound.found() + " pages link to it; "
+                                + inbound.addresses().size() + " are listed — re-run the move's "
+                                + "verify (or GET /agent/verify?checks=routes) for the rest."
+                        : fix);
     }
 
     /**
@@ -1717,6 +1760,16 @@ public class ShAgentBatchService {
         private Change change(ShAgentBatch.Op op, ShAddress address, String action,
                               String detail, String id) {
             return new Change(op.op(), address.toString(), action, detail, ids ? id : null);
+        }
+
+        /**
+         * The same row carrying what the op broke elsewhere (SH140). Not gated on {@code ids}:
+         * that flag is about whether the caller wants UUIDs, and these are addresses.
+         */
+        private Change change(ShAgentBatch.Op op, ShAddress address, String action, String detail,
+                              String id, ShAgentChangeSet.InboundLinks inboundLinks) {
+            return new Change(op.op(), address.toString(), action, detail, ids ? id : null,
+                    inboundLinks);
         }
     }
 

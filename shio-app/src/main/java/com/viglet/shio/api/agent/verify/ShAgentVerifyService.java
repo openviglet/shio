@@ -54,7 +54,6 @@ import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.widget.ShSystemWidget;
 
-import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -116,8 +115,11 @@ public class ShAgentVerifyService {
             Set.of(ShSystemWidget.CONTENT_SELECT, ShSystemWidget.FILE);
 
     /** Widgets whose stored value is markup worth scanning for links and images. */
-    private static final Set<String> MARKUP_WIDGETS =
-            Set.of(ShSystemWidget.HTML_EDITOR, ShSystemWidget.ACE_HTML);
+    /**
+     * SH140 gave this set a second reader, so it lives in {@link ShPostLinks} — one definition of
+     * "a field that can hold a link", or the write and the lint disagree about what they scanned.
+     */
+    private static final Set<String> MARKUP_WIDGETS = ShPostLinks.MARKUP_WIDGETS;
 
     /** Widgets that hold no value of their own — never "required". */
     private static final Set<String> CONTAINER_WIDGETS =
@@ -1162,7 +1164,7 @@ public class ShAgentVerifyService {
         if (!isInternal(href)) {
             return 0;
         }
-        String path = ShAddress.normalizePath(stripQuery(href)).toLowerCase(java.util.Locale.ROOT);
+        String path = ShPostLinks.normalizedPath(href);
         if (path.startsWith(FILE_SOURCE_PREFIX) || siteUrls.contains(path) || "/".equals(path)) {
             return 0;
         }
@@ -1697,17 +1699,13 @@ public class ShAgentVerifyService {
                 ? "" : attr.getShWidget().getName();
     }
 
+    /**
+     * SH140 — the lenient parse lives in {@link ShPostLinks} now, so the tolerance of a malformed
+     * payload is decided once. Two copies would also have been two entries in SH270's silent-catch
+     * inventory for one decision, which is the population read as twice its size.
+     */
     private JsonNode data(ShPostUnified post) {
-        String json = post.getData();
-        if (json == null || json.isBlank()) {
-            return objectMapper.createObjectNode();
-        }
-        try {
-            JsonNode parsed = objectMapper.readTree(json);
-            return parsed.isObject() ? parsed : objectMapper.createObjectNode();
-        } catch (JacksonException e) {
-            return objectMapper.createObjectNode();
-        }
+        return ShPostLinks.data(objectMapper, post);
     }
 
     private String fileNameOf(ShPostUnified file) {
@@ -1738,21 +1736,9 @@ public class ShAgentVerifyService {
     }
 
     /** Site-relative: a path this instance could plausibly own. Not {@code //host}. */
+    /** SH140 — the same two rules the inbound scan applies, so the two cannot drift apart. */
     private static boolean isInternal(String href) {
-        return href != null && href.startsWith("/") && !href.startsWith("//");
-    }
-
-    private static String stripQuery(String href) {
-        int cut = href.length();
-        int query = href.indexOf('?');
-        int fragment = href.indexOf('#');
-        if (query >= 0) {
-            cut = query;
-        }
-        if (fragment >= 0 && fragment < cut) {
-            cut = fragment;
-        }
-        return href.substring(0, cut);
+        return ShPostLinks.isInternal(href);
     }
 
     /** A stored file name arrives percent-encoded in markup but not on disk. */

@@ -175,28 +175,6 @@ AI the product contains.
 > reproduced every discovery and write cost it was meant to remove. Full protocol
 > design: [specs/SH74-agent-native-cms.md](specs/SH74-agent-native-cms.md) §4.
 
-### VIII.13 Report inbound links when a post moves (SH140)
-
-`ShReference` is id-keyed, so a reference stored *as a reference* survives a move: the
-row points at the post, whatever its address becomes. A URL typed into another post's
-rich text is not that. It is a string in a field, it names the address rather than the
-object, and a move rewrites the address underneath it.
-
-So a move can break pages nowhere near the one being moved, and the agent that moved it
-is told nothing. That is the shape SH79 addresses were meant to remove and cannot,
-because the broken thing is authored prose rather than a modelled relationship — it will
-always be possible to write a link this system does not know about.
-
-**Two versions, and the cheap one is not the useful one.** A count in the change detail — "this move
-may affect N posts mentioning the old URL" — is a text scan that would ship in an afternoon and
-answers with a number the caller cannot act on. The useful version is a *finding per affected post*,
-with its address, and that belongs where route claims already live: SH100's verification, which SH141
-extended into a delivery-side proof. A broken inbound link is therefore **checkable** now rather than
-only reportable, which changes the design: the question is not how to detect one but whether
-detection belongs in the write's response or in the lint that already fetches routes.
-
-Worth settling before building either, because the two answers are different features.
-
 ### VIII.14 Finish the byte-stability class (SH197)
 
 SH136 made four live instabilities fail the build and left one shape unguarded. Its lint

@@ -128,15 +128,32 @@ function render(result, planOnly) {
   const verb = planOnly ? "plan" : "apply";
   const lines = (result.results ?? [])
     .filter((change) => change.action !== "noop")
-    .map((change) => {
+    .flatMap((change) => {
       const detail = change.detail ? ` (${change.detail})` : "";
       const id = change.id ? ` ${change.id}` : "";
-      return `  ${change.action} ${change.address}${id}${detail}`;
+      return [`  ${change.action} ${change.address}${id}${detail}`, ...broken(change)];
     });
   const header =
     `shio ${verb}: ${result.changed} change(s) of ${result.ops} op(s)` +
     (planOnly ? " — nothing written" : "");
   return lines.length ? `${header}\n${lines.join("\n")}\n` : `${header}\n`;
+}
+
+/**
+ * The pages a move broke (SH140), indented under the move that broke them.
+ *
+ * A row nobody prints is a row that does not exist: the whole point of reporting inbound links
+ * on the write is that the caller learns without asking, and a caller in a terminal is a caller.
+ * Absent on every other row and on a clean move, so a converged apply is unchanged.
+ */
+function broken(change) {
+  const inbound = change.inboundLinks;
+  if (!inbound?.addresses?.length) return [];
+  const more = inbound.found > inbound.addresses.length ? ` of ${inbound.found}` : "";
+  return [
+    `    links to ${inbound.from} still in ${inbound.addresses.length}${more} page(s):`,
+    ...inbound.addresses.map((address) => `      ${address}`),
+  ];
 }
 
 /* -------------------------------------------------------------------------- *
@@ -313,6 +330,7 @@ function renderApplied(result) {
   for (const change of content.results ?? []) {
     if (change.action === "noop") continue;
     lines.push(`    ${change.action} ${change.address}${change.detail ? ` (${change.detail})` : ""}`);
+    lines.push(...broken(change).map((line) => `  ${line}`));
   }
   if (result.verify) {
     lines.push(

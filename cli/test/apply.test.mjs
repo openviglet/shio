@@ -130,6 +130,35 @@ test("no-ops are counted but not listed — on a converged document they are eve
   assert.equal(ctx.stdout.text, "shio plan: 0 change(s) of 1 op(s) — nothing written\n");
 });
 
+test("a move's broken inbound links are printed under it (SH140)", async () => {
+  // A row nobody prints is a row that does not exist. The server reports which pages a move
+  // broke on the move's own row; a caller in a terminal has to be told the same thing.
+  const moved = {
+    dryRun: false,
+    ops: 1,
+    changed: 1,
+    results: [{
+      op: "post.move",
+      address: "post:Blog/blog/new",
+      action: "move",
+      detail: "the live URL changes immediately",
+      inboundLinks: {
+        from: "/blog/old",
+        addresses: ["post:Blog/blog/a", "post:Blog/blog/b"],
+        found: 5,
+        fix: "Repoint those links at post:Blog/blog/new.",
+      },
+    }],
+  };
+  const ctx = ctxWith(scriptedFetch(moved));
+
+  await apply.run({}, ["site.json"], ctx);
+
+  assert.match(ctx.stdout.text, /links to \/blog\/old still in 2 of 5 page\(s\):/);
+  assert.match(ctx.stdout.text, /post:Blog\/blog\/a/);
+  assert.match(ctx.stdout.text, /post:Blog\/blog\/b/);
+});
+
 test("--ids asks for object ids and prints them", async () => {
   const withIds = {
     dryRun: false,

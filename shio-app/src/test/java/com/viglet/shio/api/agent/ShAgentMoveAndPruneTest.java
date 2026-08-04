@@ -39,6 +39,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.model.widget.ShWidget;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.widget.ShSystemWidget;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -122,6 +123,29 @@ class ShAgentMoveAndPruneTest {
             attr.setShWidget(widget);
             attr.setShPostType(postType);
             entityManager.persist(attr);
+
+            // SH140 needs a field that can hold a link. Only the markup widgets are scanned —
+            // a `Text` field containing something path-shaped is not a link.
+            ShWidget html = entityManager
+                    .createQuery("select w from ShWidget w where w.name = :n", ShWidget.class)
+                    .setParameter("n", ShSystemWidget.HTML_EDITOR)
+                    .getResultStream().findFirst().orElseGet(() -> {
+                        ShWidget created = new ShWidget();
+                        created.setName(ShSystemWidget.HTML_EDITOR);
+                        created.setDescription(ShSystemWidget.HTML_EDITOR);
+                        entityManager.persist(created);
+                        return created;
+                    });
+
+            ShPostTypeAttr body = new ShPostTypeAttr();
+            body.setName("body");
+            body.setLabel("Body");
+            body.setOrdinal(2);
+            body.setIsTitle((byte) 0);
+            body.setRequired((byte) 0);
+            body.setShWidget(html);
+            body.setShPostType(postType);
+            entityManager.persist(body);
         });
     }
 
@@ -163,6 +187,23 @@ class ShAgentMoveAndPruneTest {
     private Op post(String url, String folder, String headline) {
         return new Op(ShAgentBatchService.POST_UPSERT, "post:" + siteName + url,
                 postTypeName, folder, data(headline));
+    }
+
+    /** A post whose markup links somewhere — the SH140 fixture. */
+    private Op linkingPost(String url, String folder, String headline, String... hrefs) {
+        StringBuilder body = new StringBuilder("<p>See ");
+        for (String href : hrefs) {
+            body.append("<a href=\"").append(href).append("\">this</a> ");
+        }
+        body.append("</p>");
+        return new Op(ShAgentBatchService.POST_UPSERT, "post:" + siteName + url, postTypeName,
+                folder, objectMapper.valueToTree(
+                        Map.of("headline", headline, "body", body.toString())));
+    }
+
+    private Op publish(String url) {
+        return new Op(ShAgentBatchService.POST_PUBLISH, "post:" + siteName + url,
+                null, null, null);
     }
 
     private Op move(String from, String to, String folder) {
@@ -322,6 +363,134 @@ class ShAgentMoveAndPruneTest {
         assertThat(reload(change.id(), ShPostState.PUBLISHED).getFurl())
                 .as("the draft and the published row must not disagree about the address")
                 .isEqualTo(base + "/relocated");
+    }
+
+    // --- SH140: which pages the move just broke ------------------------------------
+
+    /**
+     * The whole feature in one property: the pages that link to the old URL are named, by
+     * address, on the row of the op that broke them.
+     *
+     * <p>Nothing else on this surface can answer it afterwards. Once the post has moved, the old
+     * path matches no published URL and is indistinguishable from a route the front end owns —
+     * which is exactly why {@code verify}'s {@code link-unresolved} is a warning offering four
+     * possible fixes. Here it is a fact with one.</p>
+     */
+    @Test
+    @DisplayName("a move names the published pages whose links it broke")
+    void aMoveReportsItsBrokenInboundLinks() {
+        String base = "/in-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), post(base + "/target", base, "Target"),
+                linkingPost(base + "/one", base, "One", base + "/target"),
+                linkingPost(base + "/two", base, "Two", base + "/target?utm=x"),
+                publish(base + "/target"), publish(base + "/one"), publish(base + "/two"));
+
+        Change change = only(run(false, move(base + "/target", base + "/moved", null)));
+
+        assertThat(change.inboundLinks()).isNotNull();
+        assertThat(change.inboundLinks().from()).isEqualTo(base + "/target");
+        assertThat(change.inboundLinks().addresses())
+                .as("the query string is not part of the address, so ?utm= counts (P5)")
+                .containsExactly("post:" + siteName + base + "/one",
+                        "post:" + siteName + base + "/two");
+        assertThat(change.inboundLinks().found()).isEqualTo(2);
+        assertThat(change.inboundLinks().fix())
+                .as("P6 — a finding an agent can act on names where the post went")
+                .contains("post:" + siteName + base + "/moved");
+    }
+
+    /**
+     * The substring trap, which is why the SQL candidate set is re-read with the link scanner
+     * rather than trusted: a {@code LIKE} over the attribute {@code data} matches
+     * {@code /target-2} for {@code /target}, and matches prose that merely mentions the path.
+     */
+    @Test
+    @DisplayName("a longer path and a mention in prose are not inbound links")
+    void onlyRealHrefsCount() {
+        String base = "/pr-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), post(base + "/target", base, "Target"),
+                linkingPost(base + "/longer", base, "Longer", base + "/target-2"),
+                new Op(ShAgentBatchService.POST_UPSERT, "post:" + siteName + base + "/prose",
+                        postTypeName, base, objectMapper.valueToTree(Map.of(
+                                "headline", "Prose",
+                                "body", "<p>The page lives at " + base + "/target now.</p>"))),
+                publish(base + "/target"), publish(base + "/longer"), publish(base + "/prose"));
+
+        Change change = only(run(false, move(base + "/target", base + "/moved", null)));
+
+        assertThat(change.inboundLinks())
+                .as("absent, not an empty list — a clean move stays byte-identical to "
+                        + "its pre-SH140 response (SH190)")
+                .isNull();
+    }
+
+    /** A draft's link is work in progress, which is the rule {@code verify} already applies. */
+    @Test
+    @DisplayName("an unpublished page's link is not reported")
+    void draftLinksAreNotReported() {
+        String base = "/df-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), post(base + "/target", base, "Target"),
+                linkingPost(base + "/draft", base, "Draft", base + "/target"),
+                publish(base + "/target"));
+
+        Change change = only(run(false, move(base + "/target", base + "/moved", null)));
+
+        assertThat(change.inboundLinks()).isNull();
+    }
+
+    /**
+     * A dry run asks the same question. This is the one that makes the feature P7-shaped: "which
+     * pages will this break" belongs in the plan a human reads, not in the report of a move that
+     * already happened.
+     */
+    @Test
+    @DisplayName("a dry run reports the breakage it would cause, and moves nothing")
+    void aDryRunReportsWhatItWouldBreak() {
+        String base = "/dr-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), post(base + "/target", base, "Target"),
+                linkingPost(base + "/one", base, "One", base + "/target"),
+                publish(base + "/target"), publish(base + "/one"));
+
+        Change planned = only(run(true, move(base + "/target", base + "/moved", null)));
+
+        assertThat(planned.inboundLinks()).isNotNull();
+        assertThat(planned.inboundLinks().addresses())
+                .containsExactly("post:" + siteName + base + "/one");
+        assertThat(reload(planned.id(), ShPostState.PUBLISHED).getFurl())
+                .as("a plan that perturbs the instance is not a plan")
+                .isEqualTo(base + "/target");
+    }
+
+    /**
+     * A post that was never live had no working URL, so links to it were already broken and the
+     * {@code link-unresolved} warning is where they belong. Attributing them to this move would be
+     * blaming the wrong op.
+     */
+    @Test
+    @DisplayName("moving a draft-only post reports nothing")
+    void movingAnUnpublishedPostReportsNoBreakage() {
+        String base = "/np-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), post(base + "/target", base, "Target"),
+                linkingPost(base + "/one", base, "One", base + "/target"),
+                publish(base + "/one"));
+
+        Change change = only(run(false, move(base + "/target", base + "/moved", null)));
+
+        assertThat(change.inboundLinks()).isNull();
+    }
+
+    /** A move that only changes the folder keeps the URL, so nothing can break (SH137's rule). */
+    @Test
+    @DisplayName("a folder-only move reports no broken links")
+    void aFolderOnlyMoveBreaksNothing() {
+        String base = "/fo-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), folder(base + "/sub"), post(base + "/target", base, "Target"),
+                linkingPost(base + "/one", base, "One", base + "/target"),
+                publish(base + "/target"), publish(base + "/one"));
+
+        Change change = only(run(false, move(base + "/target", null, base + "/sub")));
+
+        assertThat(change.inboundLinks()).isNull();
     }
 
     @Test

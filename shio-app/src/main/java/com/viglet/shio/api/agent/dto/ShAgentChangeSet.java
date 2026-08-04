@@ -165,9 +165,22 @@ public record ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change
      * @param detail  a short human/agent-readable note, only when it adds something the
      *                action does not already say (e.g. which parent folders were created)
      * @param id      the object id — omitted unless the caller asked for ids (SH121)
+     * @param inboundLinks SH140 — the published pages whose authored markup still links to the URL
+     *                this op moved <em>away</em> from, as SH79 addresses. Present on a
+     *                {@code move} that changed a live URL and found some, absent otherwise: a
+     *                move breaks pages nowhere near the one that moved, and nothing else on this
+     *                surface can tell the caller which. It cannot be asked later — once the post
+     *                has moved, the old path is indistinguishable from a route the front end owns,
+     *                which is why {@code verify}'s {@code link-unresolved} is only a warning
      */
     @JsonInclude(Include.NON_NULL)
-    public record Change(String op, String address, String action, String detail, String id) {
+    public record Change(String op, String address, String action, String detail, String id,
+                         InboundLinks inboundLinks) {
+
+        /** Every caller from before SH140: a change that breaks no inbound link. */
+        public Change(String op, String address, String action, String detail, String id) {
+            this(op, address, action, detail, id, null);
+        }
 
         /** The no-change outcome, which is the common one on a second run (P5). */
         public static final String NOOP = "noop";
@@ -181,5 +194,30 @@ public record ShAgentChangeSet(boolean dryRun, int ops, int changed, List<Change
         public boolean isChange() {
             return !NOOP.equals(action);
         }
+    }
+
+    /**
+     * The pages a move just broke (SH140).
+     *
+     * <p><b>Addresses and not a count.</b> The cheap version of this feature is "N posts mention
+     * the old URL", and a number is the one answer the caller cannot act on: fixing them needs to
+     * know which. So the list is the payload, `found` exists only so a cap can never read as the
+     * whole answer (SH138), and the whole object is absent when nothing links to the old URL —
+     * absent beats empty (SH190), and a clean move stays byte-identical to its pre-SH140
+     * response.</p>
+     *
+     * <p>Its own type rather than a bare list on the row, because a bare list would have to choose
+     * between being capped-and-silent or uncapped-and-unbounded; and rather than a
+     * {@code ShAgentReport} finding, because a finding claims the *linking* post is defective and
+     * it is not — it was correct until this op ran, and the fix belongs to the caller of the move.
+     * </p>
+     *
+     * @param from      the URL the post moved away from — the string these pages still contain
+     * @param addresses the linking pages, sorted, capped
+     * @param found     how many there are in total
+     * @param fix       what to do about it, in the P6 shape the rest of the surface uses
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record InboundLinks(String from, List<String> addresses, int found, String fix) {
     }
 }

@@ -64,6 +64,7 @@
   <br>The response says so once, at the top (`notes`), rather than marking every row: a File-heavy site would otherwise pay for the same sentence on every row, and the `id:` prefix is already visible where it applies.
 - **SH175** — **A conditional requirement is stated on the argument** (`shio_write`'s schema). `type` said it was needed only when creating; `folder`, needed on exactly the same op, described itself as a hint — so the most common write on the surface, an agent's first create, paid a round trip to learn it from the error. The schema is the one document a model reads *before* calling. Deliberately a sentence rather than JSON Schema's `if`/`then`: a conditional keyword an MCP client may or may not surface is a worse deal than a description the model definitely reads.
 - **SH196** — Every folder write records one audit row — create, rename and move joined delete and restore — and `ShHistory.subject_kind` says whether a row is about a post or a section, so the change feed reports a site's shape and not only its contents, a purged section's own entry still reads as a section, and reverting a run undoes the folders it created as well as the pages.
+- **SH140** — A move that changes a live URL now names the published pages whose authored markup still links to the old one, with their addresses and one fix, on the move's own row.
 
 ## Block K — Perception & verification loop (SH74)
 

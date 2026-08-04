@@ -169,6 +169,24 @@ a scoped credential cannot use the error to prove a site exists.
   (new address) and/or `folder`, moves the DRAFT *and* PUBLISHED rows together (so a
   published post's live URL changes immediately, and the change set says so), refuses an
   occupied target and refuses to cross sites.
+  **A move that changes a live URL reports the pages it broke (SH140)** — `inboundLinks` on the
+  move's own row: `{from, addresses, found, fix}`, where `addresses` are the published posts whose
+  authored markup still links to the old path. `ShReference` is id-keyed and survives a move; **a
+  URL typed into rich text is a string in a field** and cannot, so a move breaks pages nowhere near
+  the one that moved. **The open design question was write-vs-lint, and only the write can answer
+  it:** by the time `verify` runs, the old path matches no published URL and is indistinguishable
+  from a route the front end owns — which is precisely why `link-unresolved` is a *warning* whose
+  fix offers four possibilities. The move holds the old path, knows a live page served it and knows
+  where that page went, so here it is a fact with one fix. `ShPostLinks` narrows with the SH52
+  full-text predicate and then **re-reads each candidate with `ShHtmlOutline`**, because a `LIKE`
+  over `data` matches `/target-2` for `/target` and matches prose that merely mentions the path;
+  that scanner is the lint's own, so the two surfaces cannot disagree about what a link is.
+  **Published rows only** (a draft's broken link is work in progress), the moved post itself is
+  excluded, a **dry run answers the same question** (which is what makes it a plan a human can read
+  — P7), a move that changes only the folder reports nothing, and a post that was never live
+  reports nothing either: links to it were already broken and belong to `link-unresolved`, not to
+  this op. Capped at ten with `found` always stated (SH138), and **absent rather than empty** when
+  a move breaks nothing, so a clean move stays byte-identical to its pre-SH140 response.
   **`folder.move` (SH137) is the same rule one level up, and the more important one** — the
   workaround it replaces is `folder.upsert` + `folder.delete`, and that delete takes every post
   beneath it. `to` is the folder's **whole name chain** (that is what addresses a folder), so
