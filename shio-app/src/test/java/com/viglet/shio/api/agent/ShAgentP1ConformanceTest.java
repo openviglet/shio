@@ -320,6 +320,14 @@ class ShAgentP1ConformanceTest {
                 "reported `false`, which is the honest answer (SH102): `shio snapshot` rasterizes "
                 + "and this surface has no endpoint and no tool. Classified rather than omitted so "
                 + "flipping it to `true` has to pass through this table"));
+        byFeature.put("pageAudit", new Delivery(Reach.CLI_ONLY, "shio_audit",
+                "SH391 — and the one exception on this list that is a decision rather than a gap in "
+                + "the same sense `reviewQueue` is. `shio audit` returns text an agent can act on, "
+                + "so P1 would ordinarily demand a tool; two things refuse it. `tools/list` is "
+                + "capped at 12 with 11 used and is paid every turn, while a Bash call is paid when "
+                + "it is made. And it needs a *browser*: an endpoint would put Chromium in the JVM, "
+                + "which is a standing non-goal — so unlike `contentAsFiles`, closing this one "
+                + "would break something rather than fix it"));
         return byFeature;
     }
 
@@ -432,6 +440,7 @@ class ShAgentP1ConformanceTest {
                         "contentAsFiles",
                         "exchange",
                         "graphql",
+                        "pageAudit",
                         "postTypeMerge",
                         "reviewQueue",
                         "trash",
@@ -475,7 +484,7 @@ class ShAgentP1ConformanceTest {
                         `elsewhere` is the exception list made readable by the client that needs \
                         it. Equality both ways: a capability this surface does not carry and does \
                         not point at is one an agent learns about by failing (which is what SH268 \
-                        did for eight of the nine), and a pointer that outlives its exception \
+                        did for eight of the first nine), and a pointer that outlives its exception \
                         sends the next caller to a CLI for something a tool now does.""")
                 .containsExactlyInAnyOrderElementsOf(exceptions);
 

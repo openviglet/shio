@@ -6,6 +6,43 @@
 ### `shio` CLI (`@viglet/shio`, in `cli/`)
 The "JS dev, zero Java" command-line tool: `init` (scaffold via `create-shio-app`; **`--blueprint <name>` takes the starter from the instance instead, and with `--site` applies its content half in the same command** — SH119), `types` (SH11 codegen), `pull`/`push` (post-types as code → `shio/post-types/*.json`, `--dry-run`/`--prune`; **`--content` switches both verbs to content**, see below), `context` (`--as agents-md` renders the pack as project agent instructions — SH115),
 `resolve`, `apply` (SH129 — a desired-state content document; `--check` is the CI drift guard, `-` reads stdin; **`--blueprint <name>` applies a package instead**, with `--param k=v` repeatable, `--params <file>`, `--site`, `--force`), `blueprints` (SH92 — the catalogue; `blueprints <name>` for one package's parameters), `verify` (SH99/SH100 — the content lint; **exits 1 on an error**, `--strict` also on warnings, `--folder`/`--address`/`--since` scope it per SH143, `--baseline`/`--accept` subtract accepted findings per SH142, **`--delivery` adds SH141's route proof** — it appends the group rather than replacing `--checks`, since a caller wanting the stronger proof still wants the lint — and the report's `notes` are printed, because an unreported cut reads as a clean pass), `digest` (SH101 — one page's structure), `snapshot` (SH102 — **a PNG for a human**, plus whether the page looks different; baselines in `shio/snapshots/`, `--accept`/`--fail-on-change`/`--width`. `playwright` is an **optional** dynamic import with a teaching error naming the install, so `@viglet/shio` never pulls a browser; with `pixelmatch` + `pngjs` the diff is per-pixel, without them it is byte-level and the output says which. **A change exits 0** — a page looking different is usually the change you just made, and a gate here would be the one people wrap in `|| true`. The manifest still reports `visualSnapshot: false`, correctly: there is no endpoint and no MCP tool, and an agent that read `true` would hunt for a call that does not exist. **A site with no front end is photographed through the instance's own preview (SH265)** — `resolveUrl` used to refuse with "there is no page to photograph", which Block P made false: SH183 renders the page out of content the instance already holds and SH184 stopped the *server* saying the same thing, so the CLI was the same premise left standing one process along. `--preview` forces it even for a site that has a front end, which is the only way to photograph a **draft**. The capture carries the instance's Basic credentials **only for that origin** — the preview is authenticated since SH359, and handing a site's public host an admin password because one command photographs both would be a leak nobody asked for — and the output says the picture is a DRAFT with the banner on it, because the image cannot say so itself), `changes` (SH88 — the feed; `--since last` reads the last content pull's position, `--cursor` prints only the position), `report` (SH104 — **the human handoff**: what changed with a preview link each, plus the warnings as open questions, as Markdown for a PR body; `--since last`/`content`, `--mark`, `--out`, `--title`, `--no-verify`, `--json`), `remember` (SH114 — the instance memory; bare lists it, `<key> "<note>"` writes one, `--forget` drops one, `--site` scopes it), `mcp`, `dev` (`--content` runs the SH90 sync loop instead of the site's dev server), `deploy`. `pull`/`push` use console Basic auth (`SHIO_USER`/`SHIO_PASSWORD`); `types` uses a CDA token (`SHIO_CDA_TOKEN`).
+**`shio audit <page>` is the browser used as an instrument rather than as a camera (SH391).**
+Playwright was already a dependency twice and neither output was for the agent — `shio-react/e2e`
+drives the console, `snapshot` hands a *human* a PNG — so the failure class no digest reaches was
+still closed by asking somebody to look at a picture, which is the round trip P9 exists to remove.
+`audit` renders the page at each `--width` (default `1280,375`) and prints **text**: one line per
+finding, each naming the **element**, so the next edit is targeted rather than exploratory. Seven
+rules — `overflow`, `contrast`, `zero-size`, `collapsed`, `font-fallback`, `request-failed`,
+`console-error` — and each definition is a decision, all of them in `cli/src/audit.mjs`'s header.
+The three that matter most: **overflow is horizontal and is reported where it is *introduced*** (the
+element past both its own parent's box and the viewport — reporting every ancestor it drags would
+name `html` and bury the cause); **a hidden element is not a defect** while an element the CSS calls
+visible whose box has no size is, which is why `display:none` and `0×0` are separate tests; and **the
+preview banner is excluded** — `snapshot` deliberately keeps it so a baseline and a capture agree,
+but a finding is an instruction to fix, and nobody can fix Shio's injected banner from their content.
+**Errors are what a machine observed and they exit 1** (a 404, a thrown exception); **overflow,
+contrast, a collapsed box and a fallback font are warnings that exit 0**, because each is design
+intent often enough — a 0×0 tracking pixel, a signed-off brand colour — that gating on them makes
+this the exit code people wrap in `|| true`, which is the trap `--fail-on-change` was kept opt-in to
+avoid. `--strict` is there for a project that decided otherwise. Same optional `playwright` import
+and the same teaching error as `snapshot`; **no endpoint and no MCP tool** (`tools/list` is capped at
+12 with 11 used and is paid every turn, and an endpoint would put Chromium in the JVM, which is a
+standing non-goal) — so the manifest reports `pageAudit: false` with `elsewhere.pageAudit = "shio
+audit <page>"`, which is SH393's convention and the only way a client learns the capability exists.
+**The target flag is `--page`, and `--url` is the instance** — SH365's defect, not inherited.
+**The cost is the argument and it is measured, not asserted** (`audit-cost.test.mjs`, printing on
+every run): a clean page ≈57 tokens, ~20 findings ≈643 against a full-page PNG's ~1600, marginal
+≈29 per finding — most of which is the *selector*, whose length is the audited page's choice. It is
+honest about the other end too: a page with 200 findings costs ~5900 tokens unbounded, which is
+genuinely more than a photograph, and `--limit` is the answer while the header's count still covers
+the whole run. **Two defects that only running the probe against a real browser found**, and both
+are now pinned: Chromium logs its own console error for every failed response, so two broken
+references produced five error findings for three defects (`NETWORK_ECHO` drops the echo — the two
+listeners are on the same page, so it is deduplication, not suppression); and a `console-error`'s
+message *is* the finding, so its line had a dangling ` — `. The probe runs **inside** the page and
+is therefore one long self-contained function on purpose — a complexity warning on it is a false
+positive, and `audit.test.mjs` lints from the other side that it closes over nothing.
+
 **`shio impact <address>` exists and `shio read` deliberately does not (SH288).** The task was
 filed as "the CLI cannot show one post", and only half of that is a gap. A post's **content** is on
 disk after `pull --content`, where `Grep` and `Edit` are the cheapest tools an agent has (P4), so a

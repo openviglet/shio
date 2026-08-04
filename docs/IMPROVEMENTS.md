@@ -331,22 +331,6 @@ unchanged page must never be the same row.
 
 ---
 
-### IX.11 A browser as a measuring instrument, not as a camera (SH391)
-
-Playwright is already a dependency twice: `shio-react/e2e/console-check.mjs` drives the
-console, and `snapshot` (SH102) captures a PNG. Both are right and neither is
-agent-shaped — one tests the console, the other hands a human a picture. So the gap
-SH265 named honestly (the digest covers the failure an *agent* creates, not the one a
-human sees) is still closed by a human round trip, which is what P9 exists to remove.
-
-`shio audit <address>` renders the page in the browser that is already installed and
-returns **text**: elements overflowing the viewport at each `--width`, a computed style
-that collapsed, requests that 404'd, a font that fell back, text under a contrast floor,
-a zero-size box, console errors. Each finding carries a selector, so the next edit is
-targeted rather than exploratory.
-
-**The measurement is the first deliverable** (P3): a full-page screenshot costs roughly 1.6k tokens after downscaling and is unreadable at page height, cannot be diffed across turns, and asks the reader to *judge*; twenty findings cost a few hundred, grep and diff, and ask the reader to *fix*. **CLI-shaped, not a tool**: `tools/list` is capped at 12 with 11 used and is paid every turn, while a Bash call is paid when it is made — and the JVM stays browserless, which is a standing non-goal.
-
 ### IX.12 Can I work here — one call, and the fact it needs is missing in dev (SH397)
 
 The manifest's `version` reads `getPackage().getImplementationVersion()`, which the POM

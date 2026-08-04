@@ -235,13 +235,21 @@ public class ShAgentManifestService {
         // stated reason: there is still no raster on this surface, and an agent that read
         // `visualSnapshot: true` would go looking for a PNG. Two capabilities, two answers.
         features.put("appearanceDigest", true);
+        // SH391's page audit — the third browser command, and the first one shaped for an agent:
+        // `shio audit <page>` renders the page and returns the overflowing boxes, the failed
+        // requests, the console errors, the contrast floor and the fallback fonts as *text*, each
+        // with a selector. Reported `false` for `visualSnapshot`'s reason and one of its own: there
+        // is no endpoint, and there must not be — "the instance does not run a browser" is a
+        // standing non-goal, so this flag saying `true` would advertise a Chromium process inside
+        // the JVM. The pointer beside it is how a client learns the capability exists at all.
+        features.put("pageAudit", false);
         return features;
     }
 
     /**
      * Where a capability lives when it does not live on this surface (SH393).
      *
-     * <h2>Why this is nine entries and not fifty-three</h2>
+     * <h2>Why this is ten entries and not fifty-four</h2>
      *
      * <p>A caller does not need to be told where {@code post.move} lives — {@code tools/list} and
      * the endpoint index say so, and saying it a third time is the repetition P3 exists to stop.
@@ -283,6 +291,7 @@ public class ShAgentManifestService {
         elsewhere.put("agentsMd", "shio context --format agents-md");
         elsewhere.put("contentAsFiles", "shio pull --content");
         elsewhere.put("exchange", "shio import <file>");
+        elsewhere.put("pageAudit", "shio audit <page>");
         elsewhere.put("visualSnapshot", "shio snapshot <page>");
         // Console-shaped: a human is the point, or a browser protocol is.
         elsewhere.put("reviewQueue", "console");

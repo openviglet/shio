@@ -45,6 +45,9 @@ const BOOLEANS = [
   // SH102: a visual change is not a failure, so the gate is opt-in — and `--accept` moves the
   // baseline deliberately rather than as a side effect of looking.
   "fail-on-change", "viewport-only",
+  // SH102/SH391: force the instance's own preview even for a site that has a front end — the only
+  // way to look at a draft.
+  "preview",
 ];
 
 // Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would
@@ -67,6 +70,7 @@ const COMMANDS = {
   remember: () => import("./commands/remember.mjs"),
   digest: () => import("./commands/digest.mjs"),
   snapshot: () => import("./commands/snapshot.mjs"),
+  audit: () => import("./commands/audit.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),
   build: () => import("./commands/build.mjs"),
@@ -99,6 +103,7 @@ Commands:
   remember       Write down a decision the next session should not re-derive
   digest <page>  Structural digest of one page: outline, landmarks, links, images
   snapshot <page> PNG of a page + whether it looks different (needs playwright)
+  audit <page>   What is wrong with a rendered page, as text with a selector each
   pull           Pull post-types into ./shio/post-types/*.json (--content for pages)
   push           Apply local post-types back to Shio (--dry-run, --prune, --content)
   build          Compile local DSL/JSON post-types to canonical JSON (--out)
@@ -213,6 +218,25 @@ The handoff (shio report):
   --no-verify          Skip the open-questions section (change list only)
   --json               The report as data (markdown, cursor, changed, caveats)
   shio report --since last --mark --out HANDOFF.md
+
+Auditing a rendered page (shio audit):
+  The other browser command, and the one for the agent: it renders the page and prints what is
+  wrong with it as **text**, one line per finding with the selector to fix. A screenshot costs
+  ~1.6k tokens, cannot be diffed and asks you to judge; twenty findings cost a few hundred, grep
+  and diff, and say what to change. Needs playwright (the same optional install as snapshot).
+  Errors — a request that 404'd, a console error — exit 1. Warnings — overflow, contrast, a
+  collapsed box, a fallback font — are printed and exit 0, because each of those is design intent
+  often enough that a gate on them is the exit code people wrap in `|| true`.
+  shio audit post:Blog/blog/hello-world
+  --page <page>        The page to audit (or a bare positional, or --address).
+                       NOT --url: that is the instance, here as in every other command
+  --width <list>       Viewport widths, comma-separated  (default 1280,375)
+  --height <px>        Viewport height                   (default 800)
+  --contrast <ratio>   Contrast floor                    (default 4.5, WCAG AA; large text 3)
+  --preview            Audit the DRAFT through this instance's renderer
+  --limit <n>          Findings to print (the counts always cover the whole run)
+  --strict             Exit 1 on warnings too
+  --json               The findings as data
 
 Content as files (shio pull/push --content, shio dev --content):
   Content projects to shio/content/<site>/<url>.md — YAML frontmatter is the fields,
