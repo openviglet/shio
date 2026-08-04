@@ -239,6 +239,7 @@
 - **SH409** — Each root now names the module whose write it guards and only that file is searched; the corrected lint named one root, and the def check moved to the loop that writes `<name>.json`.
 - **SH410** — `applyBaseline` now judges staleness against what the run covered, so the server-free gate stops condemning server acceptances, and an unproven entry is `staleUnknown` rather than a build failure.
 - **SH411** — `unproven` is its own list that never fails the build, `stale` still does, and `PROJECTION_RULES` is now derived from the rule literals rather than hand-kept.
+- **SH412** — Both sides forgetting a note now reads as agreement and the key leaves the base, so a site's memory sync no longer freezes on a conflict that could not decay.
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 

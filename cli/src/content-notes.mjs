@@ -187,8 +187,18 @@ export function reconcileNotes({ base = {}, remote = [], local = [] }) {
     }
     // Both moved. Identical edits are not a conflict — they are the same conclusion reached
     // twice, which is exactly what a shared convention looks like.
-    if (there && here && there.note === here.note) {
-      agreed[key] = there.note;
+    //
+    // SH412 — **including when the conclusion is absence.** The test used to require both sides to
+    // *hold* the note, which excluded the one case where they agreed by deleting: SH160 makes
+    // absence the representation of a forgotten note, so two sides forgetting one left both values
+    // null, both `moved` true, and the key in `conflicts`. The pull's notes loop skips a site with
+    // any conflict, so none of its notes were written — and a conflicted key never reaches
+    // `agreed`, so the base kept it and every later run recomputed the same conflict from the same
+    // inputs. It did not decay, and the remedy a reader would try was what caused it.
+    if ((there?.note ?? null) === (here?.note ?? null)) {
+      // Only a value is worth remembering; agreeing on absence means the key leaves the base,
+      // which is what makes the resolution stick rather than recur.
+      if (there) agreed[key] = there.note;
       continue;
     }
     conflicts.push({ key, remote: there?.note ?? null, local: here?.note ?? null });

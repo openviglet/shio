@@ -182,3 +182,37 @@ describe("content-notes: the three-way merge", () => {
     assert.equal(plan.agreed.tone, "Sentence case.");
   });
 });
+
+describe("SH412: absence is a conclusion both sides can reach", () => {
+  it("treats both sides forgetting a note as agreement, not a permanent conflict", () => {
+  // SH160 makes absence the representation of a forgotten note, so both sides forgetting one is
+  // the same conclusion reached twice — the rule the both-moved branch already states. Its test
+  // required both sides to *hold* the note, which excluded exactly that case.
+  const plan = reconcileNotes({
+    base: { tone: "formal", stale: "old advice" },
+    remote: [{ key: "tone", note: "formal" }],
+    local: [{ key: "tone", note: "formal" }],
+  });
+
+  assert.deepEqual(plan.conflicts, []);
+  // Dropped from the base, which is what makes the resolution stick: a conflicted key never
+  // reaches `agreed`, so the base kept it and every later run recomputed the same conflict.
+  assert.deepEqual(Object.keys(plan.agreed), ["tone"]);
+  assert.deepEqual(plan.write, []);
+  assert.deepEqual(plan.deleteLocal, []);
+    assert.deepEqual(plan.forgetRemote, []);
+  });
+
+  it("still reports a genuine disagreement as a conflict", () => {
+  // The property that must survive: one side forgetting while the other rewrites is a real
+  // disagreement, and nothing about SH412 may quietly resolve it.
+  const plan = reconcileNotes({
+    base: { tone: "formal" },
+    remote: [{ key: "tone", note: "playful" }],
+    local: [],
+  });
+
+    assert.deepEqual(plan.conflicts.map((entry) => entry.key), ["tone"]);
+    assert.deepEqual(plan.agreed, {});
+  });
+});

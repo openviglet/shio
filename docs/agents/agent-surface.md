@@ -524,6 +524,18 @@ a scoped credential cannot use the error to prove a site exists.
   file at all means "never projected", never "forget everything", so a first push from a
   fresh clone cannot wipe a site's memory; and notes are applied **outside** the desired-state
   document, because a note is not content and `--prune` must never reach it.
+  **And absence is a conclusion both sides can reach (SH412).** `reconcileNotes` treats identical
+  edits as agreement — "the same conclusion reached twice" — but its test required both sides to
+  *hold* the note, which excluded the one case where they agreed by **deleting**. SH160 makes
+  absence the representation of a forgotten note, so two sides forgetting one left both values
+  null, both sides "moved", and the key in `conflicts`. The pull skips a site with any conflict, so
+  **none** of its notes were written; and because a conflicted key never reaches `agreed`, the base
+  kept it and every later run recomputed the same conflict from the same inputs. It did not decay,
+  and the remedy a reader would try — forget it on both sides — was what caused it. Comparing both
+  sides *including* their absence fixes it, and recording `agreed` only for a value is what makes
+  the resolution stick: the key leaves the base instead of recurring. Found by probing the notes
+  merge on the four axes the post merge had already passed — it agreed on three and differed on the
+  one where agreement is silent.
 
 **Byte stability (SH136).** `Map.copyOf`/`Set.copyOf` iterate in an order derived from a salt
 set **once per JVM**, so they are a silent re-ordering wearing a defensive copy's clothes: the
