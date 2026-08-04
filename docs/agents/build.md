@@ -151,27 +151,52 @@ fail the build** even when one runs. So nothing that was catching something has 
 what changed is that a run now *says* the ITs did not run, instead of `verify` letting a developer
 assume they did.
 
-Two facts that follow, and neither argues for putting the default back. **The cross-DB classes were
-already not running, in both directions**, which flipping the default merely made legible.
-`ShPostgresSchemaIT` and `ShMariaDbSchemaIT` carry `@Testcontainers(disabledWithoutDocker = true)`,
-so without a daemon they **skip** — `0.00 s`, counted as `Skipped: 6` — and "`verify` proves the
-schema on PostgreSQL" was false on any machine without one, the same absence-you-cannot-grep-for
-that SH322 is about. **And with a daemon up they error (SH416).** Measured the same afternoon on
-Docker Desktop 29.6.2: `Skipped: 6` became `Errors: 6`, each class burning 16.5 s in the full run and
-4 s alone. Docker connects — Testcontainers logs the npipe strategy and the server version — and then
-the context fails **before any container is created** (no `Creating container` line), so it is not
-image pull, not the daemon and not the port. The first exception is lost to
-`ApplicationContext failure threshold (1) exceeded`, which is what all three methods report, so the
-cause is still unknown and is SH416's job. The reason this is written here rather than fixed in the
-same breath: two runs of the same command four minutes apart disagreed about whether these tests
-pass, and the difference was a daemon starting — which makes "is it green" a question about the
-machine, exactly the failure mode SH250 calls worse than a break. And the honest repair for the coverage is to wire
-the suite to push and PR, which this split makes *easier* rather than harder: a 68 s unit gate that
-runs on every push and a deliberate second gate for tenancy and schema, instead of one blob no
-workflow can afford. **When to spend the flag is in `agents.md`** — tenancy, Liquibase, anything that
-reads differently on PostgreSQL/MariaDB, or the CDA/static-file delivery paths — and the rule there is
-to reach for it on a schema or tenancy change *even when the unit suite is green*, that being exactly
-the case where green means least.
+**Flipping the default is what found SH416**, and that is the argument for the split rather than
+against it: the cross-DB classes had never run in either state of the machine, and asking them to run
+explicitly is what made it visible. Without a Docker daemon they **skip** — `@Testcontainers(disabledWithoutDocker = true)`,
+`0.00 s`, counted as `Skipped: 6` — so "`verify` proves the schema on PostgreSQL" was false on any
+machine without one, the same absence-you-cannot-grep-for that SH322 is about. With a daemon up they
+**errored**, 6 of them. Both fixed under SH416 below. The honest repair for the coverage is still to
+wire the suite to push and PR, which this split makes *easier* rather than harder: a 68 s unit gate on
+every push and a deliberate second gate for tenancy and schema, instead of one blob no workflow can
+afford. **When to spend the flag is in `agents.md`** — tenancy, Liquibase, anything that reads
+differently on PostgreSQL/MariaDB, or the CDA/static-file delivery paths — with the rule that a schema
+or tenancy change takes the flag *even when the unit suite is green*, that being exactly the case
+where green means least.
+
+**A `@Container` field read from `@DynamicPropertySource` must be started eagerly (SH416).** Both
+cross-DB ITs now carry `static { CONTAINER.start(); }` beside the field, and 26 ITs pass with
+`Errors: 0, Skipped: 0` for the first time. The cause: `@Container` starts the container in
+`TestcontainersExtension.beforeAll`, and Spring makes its first context-load attempt **before** that
+runs, so the `registry.add("spring.datasource.url", POSTGRES::getJdbcUrl)` supplier is invoked against
+a container with no mapped port.
+
+**The symptom names none of that**, which is the part worth keeping. All three methods report
+`ApplicationContext failure threshold (1) exceeded` — Spring declining a *second* attempt, saying
+nothing about why the first failed — and it took three runs to separate from a cold image pull
+(`postgres:16` turned out to be two weeks old in the local cache):
+
+| setup | result |
+|---|---|
+| `@Container` only, default threshold | fails, 3.9 s, no container |
+| `@Container` only, `failure.threshold=5` | **passes**, 18.7 s, zero errors |
+| eager `static` start, default threshold | **passes**, 17.1 s |
+
+The middle row is the diagnosis: a second attempt succeeding where the first failed means the
+configuration was right and only the timing was wrong. Raising the threshold is **not** the fix —
+it makes a green run depend on Spring retrying, which is a race left in place. A class initializer is
+deterministic (P5): the JVM completes it before any member is read, so it does not depend on
+extension ordering — swapping `@Testcontainers` ahead of `@SpringBootTest` was measured and changed
+nothing. `@Container` stays for teardown, and `start()` on a running container is a no-op.
+
+**Two guards, because one fix would have been the smaller half.**
+`ShTestcontainersEagerStartLintTest` fails the build naming any `@Container` field a
+`@DynamicPropertySource` reads without an eager start — verified by planting the defect and watching
+it name `ShMariaDbSchemaIT.java: MARIADB`. And **failsafe's `testFailureIgnore` is now `false`**: it
+was `true`, inherited from the repository's first Maven commit rather than chosen, and it is the other
+half of why this survived a release. With no daemon these classes skip and read as a pass; with one
+they errored but the build stayed green. *Neither* state told anybody — and now that the ITs are
+opt-in, the only person who runs them is one who asked for an answer.
 
 Parallelising failsafe was **not** measured and the SH414 numbers argue against bothering: at one
 fork the phase is 31 s of which 16 s is a single cold start, so a second fork buys concurrency and

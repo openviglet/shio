@@ -62,6 +62,17 @@ class ShMariaDbSchemaIT {
             .withUsername("shio")
             .withPassword("shio");
 
+    /**
+     * SH416 — started here, not left to {@code @Container}. The extension starts the container after
+     * Spring's first context-load attempt, and {@link #datasource} resolves {@code getJdbcUrl()}
+     * during that attempt; the full reasoning and the three measurements are on
+     * {@code ShPostgresSchemaIT}'s copy, which failed and was diagnosed first.
+     * {@code ShTestcontainersEagerStartLintTest} is what keeps both honest.
+     */
+    static {
+        MARIADB.start();
+    }
+
     @DynamicPropertySource
     static void datasource(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", MARIADB::getJdbcUrl);

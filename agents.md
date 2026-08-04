@@ -155,16 +155,13 @@ quota, membership, suspension), **the Liquibase schema** or anything that would 
 differently on PostgreSQL/MariaDB, or the **CDA/static-file delivery** paths those ITs
 drive. Reach for it on a schema or tenancy change even when the unit suite is green —
 that is the case the ITs exist for and the one where `clean test` passing means least.
-Three things before you read a green `verify` as proof. Failsafe runs with
-`testFailureIgnore=true`, so **a red IT does not fail the build** — read the IT counts,
-never infer them from the exit code. `ShPostgresSchemaIT` and `ShMariaDbSchemaIT` carry
-`@Testcontainers(disabledWithoutDocker = true)`, so **without a daemon they skip**
-(`0.00 s`, reported as `Skipped`) — which is the shape of an absence you cannot grep for,
-since "verify proved the schema on PostgreSQL" is then simply false. And **with a daemon
-up they currently error: SH416, 6 errors, cause not yet found** — the context fails in
-~4 s before any container is created and Spring's failure threshold swallows the first
-exception. So today `-DskipITs=false` buys you the tenancy ITs; the two cross-DB classes
-are known-red and are not a signal about your change.
+One thing before you read a green `verify` as proof: `ShPostgresSchemaIT` and
+`ShMariaDbSchemaIT` carry `@Testcontainers(disabledWithoutDocker = true)`, so **without a
+Docker daemon they skip** — `0.00 s`, counted as `Skipped`, and "verify proved the schema
+on PostgreSQL" is then simply false. **Start Docker before spending the flag on a schema
+change**, or the one check you wanted is the one that did not run. A failure *is* now red
+(SH416 set `testFailureIgnore=false`), so the exit code is trustworthy in every state
+except that one.
 
 **Measure before you fix, and the measurement is the first deliverable.** P3 makes
 this binding for tokens and `ShAgentResponseBudgetTest` for response sizes; the same

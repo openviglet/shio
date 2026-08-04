@@ -54,6 +54,34 @@ class ShPostgresSchemaIT {
             .withUsername("shio")
             .withPassword("shio");
 
+    /**
+     * SH416 — started here rather than left to {@code @Container}, because the extension starts it
+     * <em>after</em> Spring's first context-load attempt and {@link #datasource} resolves
+     * {@code getJdbcUrl()} during that attempt, against a container with no mapped port.
+     *
+     * <p>Measured three ways, since the symptom names neither Testcontainers nor ordering — all
+     * three tests report {@code ApplicationContext failure threshold (1) exceeded}, which is Spring
+     * declining a <em>second</em> attempt and says nothing about why the first failed. With
+     * {@code @Container} alone the class fails in 3.9 s; with the threshold raised to 5 it
+     * <b>passes</b> in 18.7 s and reports zero errors, the retry landing after the container is up;
+     * with this initializer it passes in 17.1 s at the default threshold. The middle row is the one
+     * that identifies the bug — a second attempt succeeding where the first failed means the
+     * configuration is right and only the timing was wrong.
+     *
+     * <p>A class initializer rather than a swapped annotation order: swapping
+     * {@code @Testcontainers} ahead of {@code @SpringBootTest} was tried and changed nothing, and
+     * the JVM guarantees class initialization completes before any member is read, so this does not
+     * depend on extension ordering at all (P5). {@code @Container} stays for teardown, and
+     * {@code start()} on a running container is a no-op.
+     *
+     * <p>{@code ShTestcontainersEagerStartLintTest} fails the build for the next class written
+     * without this, which is the deliverable rather than the two fixes: a container resolved lazily
+     * from {@code @DynamicPropertySource} is the pattern, not these two files.
+     */
+    static {
+        POSTGRES.start();
+    }
+
     @DynamicPropertySource
     static void datasource(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);

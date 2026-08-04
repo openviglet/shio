@@ -601,7 +601,16 @@
                 </executions>
                 <configuration>
                     <classesDirectory>${project.build.outputDirectory}</classesDirectory>
-                    <testFailureIgnore>true</testFailureIgnore>
+                    <!-- SH416 — was `true`, inherited from 81d65633 ("Using Maven") rather than
+                         chosen, and it is half of why the cross-DB ITs were broken through a
+                         release. The other half is `@Testcontainers(disabledWithoutDocker = true)`:
+                         with no daemon these classes skip and read as a pass, and with one they
+                         errored — but `testFailureIgnore` meant the error state was not red either,
+                         so *neither* state of the machine told anybody. Now that SH415 makes the ITs
+                         opt-in, the only person who sees them is one who typed `-DskipITs=false` to
+                         get an answer, and returning green to that person is the one behaviour with
+                         no defensible reading. -->
+                    <testFailureIgnore>false</testFailureIgnore>
                     <!-- SH250 — the SH26 cross-database ITs boot the full context and mock
                          alongside it, so they need the same agent for the same reason surefire
                          does. Merged into the existing block rather than added as a second one:
