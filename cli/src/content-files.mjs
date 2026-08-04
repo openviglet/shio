@@ -181,16 +181,26 @@ const TRAVERSAL = new Set([".", ".."]);
  * @returns {string} e.g. `Blog/blog/hello.md`
  */
 export function filePathFor({ site, url }) {
-  // Dots *inside* a segment are an ordinary name: `/blog/v1.2` is a post, `..` is a direction.
-  const escaping = normalizeUrl(url).split("/").find((segment) => TRAVERSAL.has(segment));
-  if (escaping) {
-    throw new Error(
-      `shio content: post URL "${url}" contains "${escaping}", which navigates the filesystem ` +
-        "instead of naming a post — under `shio/content` it can resolve outside the project " +
-        "entirely. Rename the post on the server (`post.move`) so its URL names a location.",
-    );
-  }
+  assertLocates(url, "post URL", "naming a post", "Rename the post on the server (`post.move`)");
   return `${siteDir(site)}/${urlToPath(url)}`;
+}
+
+/**
+ * Refuses a `/`-joined value whose segments navigate instead of naming (SH402, SH403).
+ *
+ * Shared rather than repeated, because the repeat is what SH403 is: SH402 wrote this check inline
+ * for one caller, and the identical question went unasked of the folder chain beside it. Dots
+ * *inside* a segment are an ordinary name — `/blog/v1.2` is a post — so the test is on the whole
+ * segment, which is also SH256's rule for an asset path.
+ */
+function assertLocates(value, what, instead, remedy) {
+  const escaping = normalizeUrl(value).split("/").find((segment) => TRAVERSAL.has(segment));
+  if (!escaping) return;
+  throw new Error(
+    `shio content: ${what} "${value}" contains "${escaping}", which navigates the filesystem ` +
+      `instead of ${instead} — under \`shio/\` it can resolve outside the project entirely. ` +
+      `${remedy} so it names a location.`,
+  );
 }
 
 /**
@@ -409,6 +419,11 @@ export const FOLDERS_SUBDIR = "folders";
  * @returns {string} e.g. `Blog/news/_folder.md`; a site root → `Blog/_folder.md`
  */
 export function folderMarkerPathFor({ site, folder }) {
+  // SH403 — the chain is the sitemap's `node.path`, so this is server data deciding where a
+  // marker is written. `normalizeUrl` drops empty segments and keeps `..`, which is why the
+  // value arrives here looking clean.
+  assertLocates(folder, "folder chain", "naming a folder",
+    "Rename the folder on the server (`folder.move`)");
   const chain = normalizeUrl(folder);
   const dir = chain === "/" ? siteDir(site) : `${siteDir(site)}${chain}`;
   return `${dir}/${FOLDER_MARKER}`;

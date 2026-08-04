@@ -419,6 +419,28 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
         SH402's. A post missing because it could not be *read* looks exactly like one a curator
         deleted, and `push --prune` acted on the difference; it had been reported to the screen
         since SH173 and never to the flag that stops the deletion.
+    - **And the class, which SH402 did not close (SH403).** Two more producers took server data and
+      had never been asked the same question: `folderMarkerPathFor` interpolates the sitemap's
+      `node.path` after a `normalizeUrl` that keeps `..`, and `notesPathFor` interpolated the site
+      name raw instead of through `siteDir` — and on a first pull into an empty tree the site list
+      falls back to the **server's** names. SH402 fixed the value its investigation started from
+      and read as complete; SH322 and SH338 both say the instrument lands first, and it did not.
+      - **[path-safety.test.mjs](../../cli/test/path-safety.test.mjs) is the deliverable**, and it
+        landed before either fix. It *discovers* every exported `*PathFor`/`*Dir` plus a declared
+        `EXTRA`, and asserts the set equals a declared inventory — the
+        `ShSilentCatchInventoryTest` shape. A new builder fails the build until somebody classifies
+        it. A hand-written list of the three builders known that day would have passed forever.
+      - **The measurement corrected the estimate twice, which is why it ran first.** The task
+        predicted three producers with one guarded; there are **six**, and **four** were already
+        right. `assetPathFor` guards by answering `null` rather than throwing (SH256's deliberate
+        choice), so the lint accepts either — one that demanded a throw would have reported the
+        builder that was already correct. `sidecarsOf` is safe for a reason worth recording: its
+        names derive from the post stem and a field name, never from a stored value.
+      - **A skip, not a throw, and one notice.** The folder filter mirrors SH402's post filter into
+        the same `skipped` channel. That moved the notice: it used to print at the read, which ran
+        before the folder rows existed, so it reported the posts and hid the folders. Notes need no
+        filter — a post whose `site` navigates is already removed by SH402's filter, which is what
+        the fallback list is built from — and saying so is why there is no third loop here.
     - **And the bytes are in the SH89 merge now (SH373).** SH210 fixed one direction and opened
       another: a server-side asset edit never reached the tree, and — newer and worse — a push
       *replaced* the server's bytes whenever they differed from the tree's, which reverts a

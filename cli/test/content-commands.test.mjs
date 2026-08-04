@@ -2024,3 +2024,21 @@ test("SH402: a skipped post makes the snapshot partial, so --prune cannot read i
 
   assert.match(ctx.fs.files.get(BASE_PATH), /"partial": true/);
 });
+
+test("SH403: a folder chain that navigates is skipped and named, and the pull continues", async () => {
+  // The sitemap's `node.path` is server data, exactly like a post's furl, and it becomes a marker
+  // path the same way. One bad row must not take the run down.
+  const ctx = ctxWith(server({
+    remote: { "post:Blog/blog/hello": REMOTE_DOC },
+    serverFolders: { Blog: ["/", "/news", "/../../escaped"] },
+  }));
+
+  const result = await contentPull.run({}, [], ctx);
+
+  const escaped = [...ctx.fs.files.keys()].filter((key) => key.includes("escaped"));
+  assert.deepEqual(escaped, [], "no marker outside the folders root");
+  assert.match(ctx.stdout.text, /navigates the filesystem instead of naming a folder/);
+  // The good folders still land, and so does the post.
+  assert.ok(result.folders.written.some((entry) => entry.endsWith("/news")));
+  assert.deepEqual(result.written, ["post:Blog/blog/hello"]);
+});

@@ -60,7 +60,7 @@ import {
   writeLocalNotes,
   writeRemoteSidecar,
 } from "../content-store.mjs";
-import { filePathFor } from "../content-files.mjs";
+import { filePathFor, folderMarkerPathFor } from "../content-files.mjs";
 import { reconcileNotes } from "../content-notes.mjs";
 import {
   ancestorsOf,
@@ -112,16 +112,6 @@ export async function run(flags, _positionals, ctx) {
       skipped.push({ address, reason: error.message });
       delete remote[address];
     }
-  }
-
-  if (skipped.length) {
-    // SH173: what could not be read by address, named — the projection is short by exactly
-    // these and saying so beats letting a later diff look like a deletion.
-    ctx.stdout.write(
-      `shio pull --content: ${skipped.length} post(s) could not be read by address and are not ` +
-        "in this projection (run `shio verify` for the full report):\n" +
-        skipped.slice(0, 5).map((row) => `  ! ${row.address} — ${row.reason}\n`).join(""),
-    );
   }
 
   // SH373 — read before the assets, because the asset merge needs the agreed hashes. It used to
@@ -291,9 +281,32 @@ export async function run(flags, _positionals, ctx) {
       ? sitesOf(local, localFolders)
       : [...new Set(Object.values(remote).map((doc) => doc.site).filter(Boolean))],
   });
+  // SH403 — the same filter the posts get one screen up, for the same reason: a chain that
+  // navigates cannot become a marker, and one bad row in the sitemap must not take the run down.
+  const projectableFolders = [];
+  for (const marker of remoteFolders) {
+    try {
+      folderMarkerPathFor(marker);
+      projectableFolders.push(marker);
+    } catch (error) {
+      skipped.push({ address: `folder:${marker.site}${marker.folder}`, reason: error.message });
+    }
+  }
+  if (skipped.length) {
+    // SH173: what could not be read by address, named — the projection is short by exactly
+    // these and saying so beats letting a later diff look like a deletion. Printed here rather
+    // than at the read (SH403): the folder filter above adds to the same channel, and a notice
+    // that ran before half its rows existed reported the posts and hid the folders.
+    ctx.stdout.write(
+      `shio pull --content: ${skipped.length} row(s) could not be projected and are not in this ` +
+        "projection (run `shio verify` for the full report):\n" +
+        skipped.slice(0, 5).map((row) => `  ! ${row.address} — ${row.reason}\n`).join(""),
+    );
+  }
+
   const folderPlan = reconcileFolders({
     base: base.folders,
-    remote: remoteFolders,
+    remote: projectableFolders,
     local: localFolders,
     implied: declaredFolders,
   });

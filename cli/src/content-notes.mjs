@@ -12,6 +12,7 @@
  *
  * Pure — format and merge only. The IO lives in `content-store.mjs` beside the rest.
  */
+import { siteDir } from "./content-files.mjs";
 
 /** Where a site's notes project to, inside that site's content directory. */
 export const NOTES_FILE = ".memory.yaml";
@@ -25,9 +26,14 @@ export const NOTES_FILE = ".memory.yaml";
  * be claiming a URL prefix is a folder chain. A notes file makes no such claim: it is one
  * file per site, named for what it is, sitting at the site's own root. The leading dot keeps
  * it out of the `**\/*.md` glob that finds posts.
+ *
+ * The site name goes through `siteDir` (SH403). It had been interpolated raw, which read as safe
+ * because every *other* caller went through that function — but on a first pull into an empty
+ * tree the site list falls back to the names the **server** reports, so `..` reached here and
+ * `../.memory.yaml` left the content root.
  */
 export function notesPathFor(site) {
-  return `${site}/${NOTES_FILE}`;
+  return `${siteDir(site)}/${NOTES_FILE}`;
 }
 
 /** `Blog/.memory.yaml` → `Blog`. The inverse; null for anything else. */
