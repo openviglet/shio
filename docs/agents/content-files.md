@@ -223,6 +223,31 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
     being preserved. **Not available to a blueprint** (`CONTENT_KEYS`) or to `shio_apply`: a
     package renaming the caller's live pages is not its business, and MCP renames with
     `shio_write`'s `post.move`, which costs no extra schema.
+- **An unprovable rename can be accepted once (SH214).** SH150 warns when a vanished post and a
+  new one *might* be the same rename but the content differs, because the alternative — a delete
+  plus a create that destroys history in silence — is worse than a false positive. For a
+  legitimate delete-plus-create that printed on every run for ever, and a warning that is always
+  there is a warning nobody reads, which costs the *unaccepted* ones their audience.
+  `shio push --content --accept` records the pair in **`shio/verify-baseline.json`** — SH142's
+  file, under a second key, `acceptedMoves`. Four rules:
+  - **Both addresses are the key.** Accepting "this deletion is fine" alone would silence the
+    warning for a *different* new post arriving next week, which is the case the warning exists
+    for — a one-sided key turns the acceptance into the blanket suppression SH142 prevents.
+  - **Spent, not stale — the one place this diverges from SH142.** A `verify` finding persists
+    until the defect is fixed, so an accepted entry the run no longer produces means the file has
+    rotted and failing is right. A probable move is **transient**: after the push, the new post is
+    on the server and the old one is deleted or declared, so the pair can never be produced again.
+    SH142's rule would fail the next run for doing exactly what was asked. So the entry is
+    **consumed** by the push that honours it, which keeps SH142's actual goal by a stronger
+    mechanism than a check — an acceptance cannot outlive its event. A plan consumes nothing.
+  - **One file, two producers, neither erasing the other.** `verify` reads `accepted` and never
+    `acceptedMoves`; `push --content` reads only `acceptedMoves`. Both write the whole document,
+    so both carry the other's list through untouched — without that, `verify --accept` would
+    silently un-accept every rename somebody had reviewed. `acceptedMoves` is omitted when empty,
+    so a project that never accepted one has a file byte-identical to SH142's.
+  - **`--accept` pushes nothing.** Accepting is a judgement about a destructive operation, and
+    folding it into the run that performs it would mean the judgement and its consequence were
+    never separately reviewable. Silenced pairs are **counted on stdout**, never quietly dropped.
 - **A large tree splits, except when it prunes (SH199).** `push --content` compiles one document
   per site and a tree past the SH138 document ceiling used to dead-end there; `splitDocuments`
   now cuts it into parts that each fit (`--max-ops`, default 1500), and the union converges

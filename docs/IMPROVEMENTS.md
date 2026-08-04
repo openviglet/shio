@@ -379,21 +379,6 @@ unchanged page must never be the same row.
 > ✅ **SH86, SH87, SH88, SH89 and SH90 shipped** → [CHANGELOG.md](CHANGELOG.md) Block I.
 > What follows is the design rationale for what the projection **still owes**.
 
-### X.17 A probable-move warning cannot be accepted (SH214)
-
-SH150 prints a warning when a vanished post and a new one *might* be the same rename but the
-content differs, because the alternative — a delete plus a create that destroys history in
-silence — is worse than a false positive. That is right, and it has the failure mode every
-un-silenceable warning has: for a legitimate delete-plus-create it prints on every run
-forever, and a warning that is always there is a warning nobody reads.
-
-SH142 solved exactly this shape for `verify`: a project file of accepted `(rule, address,
-field)` triples, merged rather than replaced, where **an accepted finding the run no longer
-produces fails the run** so the file cannot rot into a blanket suppression. The same mechanism
-fits a `(from, to)` pair. The one thing to get right is that the accepted entry must be keyed
-on both addresses — accepting "this deletion is fine" alone would silence the warning for a
-*different* new post arriving later, which is the case the warning exists for.
-
 ### X.18 A fingerprint collision is undetectable (SH215)
 
 SH148 replaced the merge base's field values with 64-bit fingerprints, and the trade was

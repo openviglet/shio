@@ -18,6 +18,8 @@
  * changed only on the server is declared **as the server has it**, so a push can never
  * silently revert a console edit it did not know about.
  */
+import { join } from "node:path";
+
 import { ShioAdminClient } from "../admin-client.mjs";
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
@@ -56,6 +58,14 @@ import {
   splitDocuments,
 } from "../content-sync.mjs";
 import { reconcileNotes } from "../content-notes.mjs";
+import {
+  BASELINE_FILE,
+  acceptedMovesFrom,
+  applyMoveBaseline,
+  describeMove,
+  parseBaseline,
+  serializeBaseline,
+} from "../verify-baseline.mjs";
 
 export async function run(flags, _positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
@@ -137,14 +147,39 @@ export async function run(flags, _positionals, ctx) {
         "is the rename.",
     );
   }
-  for (const row of probableMoves) {
+  // SH214 — an accepted delete-plus-create is not warned about again. A warning that is always
+  // there is a warning nobody reads, which costs the *unaccepted* ones their audience.
+  const baselinePath = typeof flags.baseline === "string" ? flags.baseline : BASELINE_FILE;
+  const moveBaseline = await readMoveBaseline(ctx, baselinePath, typeof flags.baseline === "string");
+  const reviewed = applyMoveBaseline(probableMoves, moveBaseline);
+  if (flags.accept) {
+    return acceptMoves(ctx, {
+      probable: probableMoves,
+      baseline: moveBaseline,
+      path: baselinePath,
+      reason: flags.reason,
+    });
+  }
+  for (const row of reviewed.report) {
     // Not provable, and that is exactly why it is said out loud: what happens otherwise is a
     // delete plus a create, which destroys the post's history without mentioning it.
     ctx.stdout.write(
       `shio push --content: ${row.to} looks like it could be ${row.from} renamed, but its ` +
         "content differs so this push cannot prove it. As written, this deletes one post and " +
         `creates another — the id, audit trail and version history do not survive.\n` +
-        `  If it is a rename, add \`movedFrom: ${row.from.slice(row.from.indexOf("/"))}\` to the file.\n`,
+        `  If it is a rename, add \`movedFrom: ${row.from.slice(row.from.indexOf("/"))}\` to the file.\n` +
+        "  If it is not a rename, accept it once with `shio push --content --accept`.\n",
+    );
+  }
+  if (reviewed.silenced.length) {
+    // Counted, never silent: "no warnings" and "warnings somebody forgave" must not read the same
+    // (SH302's rule), and the accepted pair is what a reviewer would want named in the log.
+    ctx.stdout.write(
+      `shio push --content: ${reviewed.silenced.length} delete-plus-create(s) accepted in ` +
+        `${baselinePath}:\n` +
+        reviewed.silenced
+          .map((row) => `  ~ ${describeMove(row)}${row.reason ? ` — ${row.reason}` : ""}\n`)
+          .join(""),
     );
   }
   // SH211 — the folder half, and the more dangerous one: a folder deleted by --prune takes every
@@ -282,6 +317,18 @@ export async function run(flags, _positionals, ctx) {
     planOnly,
   });
 
+  // SH214 — an acceptance is spent by the push that used it. The event it forgives cannot recur
+  // (after this run the new post is on the server and the old one is deleted or declared), so an
+  // entry left behind is dead weight, which is the rot SH142's staleness rule exists to prevent.
+  // Consuming it is the stronger form of that rule: nothing can outlive its event.
+  if (!planOnly && reviewed.silenced.length) {
+    await writeMoveBaseline(ctx, baselinePath, moveBaseline, reviewed.keep);
+    ctx.stdout.write(
+      `shio push --content: ${reviewed.silenced.length} acceptance(s) spent and removed from ` +
+        `${baselinePath} — the delete-plus-create has happened and cannot happen again.\n`,
+    );
+  }
+
   const changed = results.reduce((total, result) => total + (result.changed ?? 0), 0);
   const ops = results.reduce((total, result) => total + (result.ops ?? 0), 0);
   ctx.stdout.write(
@@ -397,6 +444,56 @@ export async function run(flags, _positionals, ctx) {
  * push from a checkout. A note is only forgotten when it was in the **base** — the two sides
  * agreed on it once — and the file has since dropped it. That is a deletion somebody made.
  */
+/**
+ * The accepted delete-plus-creates, from the same project file `shio verify` uses (SH214).
+ *
+ * An explicit `--baseline` that is not there is a mistake worth reporting, exactly as it is for
+ * `verify`: a CI job pointing at the wrong path would otherwise pass by accepting nothing.
+ */
+async function readMoveBaseline(ctx, path, explicit) {
+  try {
+    return parseBaseline(await ctx.fs.readFile(join(ctx.cwd, path), "utf8"));
+  } catch (error) {
+    if (error?.code === "ENOENT" && !explicit) return parseBaseline(null);
+    if (error?.code === "ENOENT") {
+      throw new Error(`shio push --content: no baseline at ${path}. Create it with --accept.`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * `--accept` — record this run's unprovable renames as reviewed, and push nothing.
+ *
+ * Accept-and-stop, the way `verify --accept` works: accepting is a judgement somebody is making
+ * about a destructive operation, and folding it into the same invocation that performs it would
+ * mean the judgement and its consequence were never separately reviewable.
+ */
+async function acceptMoves(ctx, { probable, baseline, path, reason }) {
+  const { entries, added } = acceptedMovesFrom(probable, baseline, reason);
+  await writeMoveBaseline(ctx, path, baseline, entries);
+  ctx.stdout.write(
+    `shio push --content: accepted ${added.length} delete-plus-create(s) into ${path} ` +
+      `(${entries.length} total)\n` +
+      added.map((entry) => `  + ${describeMove(entry)}\n`).join("") +
+      "Nothing was pushed. Run the push again to apply it — each acceptance is spent by the " +
+      "run that uses it.\n",
+  );
+  return { accepted: added, baseline: path, written: entries.length };
+}
+
+/** The file, with this command's list replaced and `verify`'s carried through untouched. */
+async function writeMoveBaseline(ctx, path, baseline, moves) {
+  const target = join(ctx.cwd, path);
+  await ctx.fs.mkdir(dirOfPath(target), { recursive: true });
+  await ctx.fs.writeFile(target, serializeBaseline(baseline.accepted ?? [], moves), "utf8");
+}
+
+function dirOfPath(path) {
+  const cut = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+  return cut <= 0 ? path : path.slice(0, cut);
+}
+
 async function pushNotes(client, ctx, { base, sites, dir, planOnly }) {
   const written = [];
   const forgotten = [];

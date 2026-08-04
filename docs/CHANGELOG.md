@@ -219,6 +219,7 @@
 - **SH211** — Renaming a folder's directory is a folder.move now: the document carries movedFrom on the folder entry, and --prune no longer deletes the section with its posts.
 - **SH212** — A broken asset path is a verify finding in a projection group that reads the tree, so --checks projection is a gate with no instance and reports the whole tree at once.
 - **SH213** — A push lists only the folders its File fields name — measured at 200 rows for one reference, now 10 — and an upload no longer re-reads the inventory to find one folder id.
+- **SH214** — A legitimate delete-plus-create can be accepted once with push --content --accept, keyed on both addresses, and the acceptance is spent by the run that uses it.
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 

@@ -961,6 +961,128 @@ test("push --content warns about a rename it cannot prove", async () => {
   assert.match(ctx.stdout.text, /movedFrom: \/blog\/hello/);
 });
 
+// --- accepting a delete-plus-create (SH214) ---
+
+/** The tree that produces one unprovable rename: a vanished post and a rewritten new one. */
+const UNPROVABLE = {
+  "/repo/shio/content/Blog/blog/greeting.md":
+    `---
+site: Blog
+url: /blog/greeting
+type: Article
+folder: /blog
+body: body
+fields:
+  headline: Rewritten
+---
+<p>All new</p>
+`,
+  [BASE_PATH]: baseSnapshot({ headline: "Hello", body: "<p>First</p>" }),
+};
+
+const BASELINE_PATH = "/repo/shio/verify-baseline.json";
+
+const acceptedMoves = (moves) =>
+  JSON.stringify({ version: 1, accepted: [], acceptedMoves: moves });
+
+test("--accept records the unprovable rename and pushes nothing", async () => {
+  // Accept-and-stop, the way `verify --accept` works: accepting is a judgement about a
+  // destructive operation, and folding it into the run that performs it would mean the judgement
+  // and its consequence were never separately reviewable.
+  const fetchImpl = server({ remote: { "post:Blog/blog/hello": REMOTE_DOC } });
+  const ctx = ctxWith(fetchImpl, { ...UNPROVABLE });
+
+  const result = await contentPush.run({ accept: true, reason: "the old page was retired" }, [], ctx);
+
+  assert.equal(result.written, 1);
+  assert.ok(fetchImpl.calls.every((call) => !call.url.includes("/agent/apply")));
+  const written = JSON.parse(ctx.fs.files.get(BASELINE_PATH));
+  assert.deepEqual(written.acceptedMoves, [
+    { from: "post:Blog/blog/hello", to: "post:Blog/blog/greeting", reason: "the old page was retired" },
+  ]);
+  // `verify`'s own list is untouched — one file, two producers, neither erasing the other.
+  assert.deepEqual(written.accepted, []);
+  assert.match(ctx.stdout.text, /Nothing was pushed/);
+});
+
+test("an accepted delete-plus-create is not warned about, and is counted", async () => {
+  const fetchImpl = server({ remote: { "post:Blog/blog/hello": REMOTE_DOC } });
+  const ctx = ctxWith(fetchImpl, {
+    ...UNPROVABLE,
+    [BASELINE_PATH]: acceptedMoves([
+      { from: "post:Blog/blog/hello", to: "post:Blog/blog/greeting", reason: "retired" },
+    ]),
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  assert.doesNotMatch(ctx.stdout.text, /looks like it could be/);
+  // Counted, never silent: "no warnings" and "warnings somebody forgave" must not read the same.
+  assert.match(ctx.stdout.text, /1 delete-plus-create\(s\) accepted/);
+  assert.match(ctx.stdout.text, /retired/);
+});
+
+test("an acceptance is spent by the push that uses it", async () => {
+  // Not SH142's staleness rule, and the difference is the whole design: a probable move is
+  // transient, so an entry would be stale immediately after the push that honoured it and the
+  // next run would fail for doing exactly what was asked. Consuming it is the stronger form —
+  // nothing can outlive its event, so there is nothing left to rot.
+  const fetchImpl = server({ remote: { "post:Blog/blog/hello": REMOTE_DOC } });
+  const ctx = ctxWith(fetchImpl, {
+    ...UNPROVABLE,
+    [BASELINE_PATH]: acceptedMoves([
+      { from: "post:Blog/blog/hello", to: "post:Blog/blog/greeting" },
+      { from: "post:Blog/other", to: "post:Blog/another" },
+    ]),
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  const written = JSON.parse(ctx.fs.files.get(BASELINE_PATH));
+  assert.deepEqual(written.acceptedMoves, [{ from: "post:Blog/other", to: "post:Blog/another" }]);
+  assert.match(ctx.stdout.text, /1 acceptance\(s\) spent and removed/);
+});
+
+test("a plan spends nothing, because a plan writes nothing", async () => {
+  const fetchImpl = server({ remote: { "post:Blog/blog/hello": REMOTE_DOC } });
+  const before = acceptedMoves([
+    { from: "post:Blog/blog/hello", to: "post:Blog/blog/greeting" },
+  ]);
+  const ctx = ctxWith(fetchImpl, { ...UNPROVABLE, [BASELINE_PATH]: before });
+
+  await contentPush.run({ check: true }, [], ctx);
+
+  assert.equal(ctx.fs.files.get(BASELINE_PATH), before);
+  assert.doesNotMatch(ctx.stdout.text, /spent and removed/);
+});
+
+test("an acceptance is keyed on both addresses, so a different arrival is still warned about", async () => {
+  // The one thing §X.17 said to get right: accepting "this deletion is fine" alone would silence
+  // the warning for a different new post arriving later, which is the case the warning exists for.
+  const fetchImpl = server({ remote: { "post:Blog/blog/hello": REMOTE_DOC } });
+  const ctx = ctxWith(fetchImpl, {
+    ...UNPROVABLE,
+    [BASELINE_PATH]: acceptedMoves([
+      { from: "post:Blog/blog/hello", to: "post:Blog/blog/something-else" },
+    ]),
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  assert.match(ctx.stdout.text, /looks like it could be post:Blog\/blog\/hello renamed/);
+  assert.doesNotMatch(ctx.stdout.text, /accepted in/);
+});
+
+test("an explicit --baseline that is not there is a mistake, not an empty acceptance", async () => {
+  const fetchImpl = server({ remote: { "post:Blog/blog/hello": REMOTE_DOC } });
+  const ctx = ctxWith(fetchImpl, { ...UNPROVABLE });
+
+  await assert.rejects(
+    () => contentPush.run({ baseline: "shio/nope.json" }, [], ctx),
+    /no baseline at shio\/nope\.json/,
+  );
+});
+
 test("push --content moves a post whose folder changed, which used to do nothing", async () => {
   const fetchImpl = server({ remote: { "post:Blog/blog/hello": REMOTE_DOC } });
   const ctx = ctxWith(fetchImpl, {

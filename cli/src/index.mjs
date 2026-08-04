@@ -228,6 +228,16 @@ Content as files (shio pull/push --content, shio dev --content):
   Renaming a file is a move, so the post keeps its id, history and references: push
   pairs it up by content, or by movedFrom: <old url> when you rewrote it as well.
   It refuses to guess between two candidates, and warns when it cannot prove a pair.
+  Renaming a folder's directory is a move too, so the section keeps its posts: push
+  pairs it by subtree shape, or by movedFrom: <old path> in the _folder.md.
+  --accept             push: record this run's unprovable renames as reviewed and push
+                       nothing. They stop being warned about, and each acceptance is
+                       spent by the run that uses it — a delete-plus-create cannot
+                       happen twice, so there is nothing left to go stale. Both
+                       addresses are the key: accepting one deletion never silences a
+                       different arrival. --reason "why" travels with the entry, and
+                       --baseline picks the file (default shio/verify-baseline.json,
+                       shared with shio verify, which never touches this list).
   --site <name>        Only this site
   --content-dir <dir>  Content root            (default shio/content)
   --folders-dir <dir>  Folder-marker root      (default shio/folders)

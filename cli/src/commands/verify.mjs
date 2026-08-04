@@ -224,7 +224,10 @@ async function accept(report, baseline, path, flags, ctx) {
   const { entries, added } = acceptedFrom(report, baseline, flags.reason);
   const target = join(ctx.cwd, path);
   await ctx.fs.mkdir(dirOf(target), { recursive: true });
-  await ctx.fs.writeFile(target, serializeBaseline(entries), "utf8");
+  // SH214 — the moves list travels through untouched. This command has no opinion about it, and
+  // writing the file without it would make `verify --accept` silently un-accept every rename
+  // somebody had reviewed: one command's write erasing another's record.
+  await ctx.fs.writeFile(target, serializeBaseline(entries, baseline.acceptedMoves), "utf8");
 
   const lines = added.map((entry) => `  + ${describeEntry(entry)}`);
   ctx.stdout.write(
