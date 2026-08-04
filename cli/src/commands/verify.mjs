@@ -358,6 +358,15 @@ function render(report, path) {
     tail.push(`    ${path} accepts this finding, but the run did not produce it.`);
     tail.push(`    → Remove the entry: the defect is gone, and a baseline that outlives it hides the next one.`);
   }
+  // SH411 — its own line, and not a failure. "Spent" and "not checked" are different statements,
+  // and folding the second into the first is what silenced the first for every scoped run.
+  if (report.unproven?.length) {
+    tail.push(
+      `… ${report.unproven.length} accepted finding(s) were not checked by this run — their `
+        + "rules belong to a group it did not run, or their sites are outside --site. Run "
+        + "`shio verify` with no --checks and no --site to judge the whole baseline",
+    );
+  }
   if (report.staleUnknown && report.stale?.length) {
     tail.push(
       `… ${report.stale.length} accepted finding(s) were not seen, but the report is ` +

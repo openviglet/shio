@@ -652,3 +652,30 @@ test("SH410: a full run still reports an acceptance nothing matched", async () =
   assert.equal(result.exitCode, 1);
   assert.match(ctx.stderr.text, /no longer exist/);
 });
+
+test("SH411: the tree-only gate still fails on a projection acceptance it proved spent", async () => {
+  // What SH410's regression had switched off. The baseline holds one projection entry (covered by
+  // this run, and the tree no longer produces it) and one server entry (which this run cannot
+  // judge). Before SH411 the second silenced the first and the run passed.
+  const fetchImpl = scriptedFetch(CLEAN);
+  const ctx = projectCtx(fetchImpl, projectFs({
+    assets: ["Blog/media/logo.png"],
+    extra: {
+      "/repo/shio/verify-baseline.json": JSON.stringify({
+        version: 1,
+        accepted: [
+          { rule: "asset-missing", address: "post:Blog/blog/hello", field: "hero" },
+          { rule: "required-field-empty", address: "post:Blog/blog/hello", field: "headline" },
+        ],
+      }),
+    },
+  }));
+
+  const result = await verify.run({ checks: "projection" }, [], ctx);
+
+  assert.deepEqual(fetchImpl.calls, [], "and still with no instance");
+  assert.equal(result.exitCode, 1);
+  assert.match(ctx.stderr.text, /1 accepted finding\(s\)/);
+  // The server entry is reported as unchecked rather than condemned or ignored.
+  assert.match(ctx.stdout.text, /1 accepted finding\(s\) were not checked by this run/);
+});

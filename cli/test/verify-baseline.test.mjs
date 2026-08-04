@@ -16,12 +16,16 @@
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { readFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import * as verify from "../src/commands/verify.mjs";
 import {
   acceptedFrom,
   applyBaseline,
   parseBaseline,
+  projectionRules,
   serializeBaseline,
 } from "../src/verify-baseline.mjs";
 import { norm } from "./support/paths.mjs";
@@ -321,12 +325,15 @@ test("SH410: a scoped run does not condemn another site's acceptances", () => {
 
   const scoped = applyBaseline(report, baseline, { groups: ["projection", "remote"], site: "Blog" });
   assert.deepEqual(scoped.stale, []);
-  assert.equal(scoped.staleUnknown, true, "unproven, and it says so rather than passing quietly");
+  // SH411 — its own list, not `staleUnknown`. That flag is truncation's, and folding coverage into
+  // it silenced every *proven* stale entry in the same run.
+  assert.deepEqual(scoped.unproven.map((entry) => entry.rule), ["required-field-empty"]);
+  assert.equal(scoped.staleUnknown, false);
 
   // Unscoped, the same entry is judged and found spent — the property that must survive.
   const full = applyBaseline(report, baseline, { groups: ["projection", "remote"] });
   assert.equal(full.stale.length, 1);
-  assert.equal(full.staleUnknown, false);
+  assert.deepEqual(full.unproven, []);
 });
 
 test("SH410: every rule this CLI does not own belongs to the server, not to an unknown bucket", () => {
@@ -339,5 +346,57 @@ test("SH410: every rule this CLI does not own belongs to the server, not to an u
   });
 
   assert.deepEqual(treeOnly.stale, []);
-  assert.equal(treeOnly.staleUnknown, true);
+  assert.deepEqual(treeOnly.unproven.map((entry) => entry.rule), ["some-future-server-rule"]);
+});
+
+test("SH411: an unproven entry does not silence a proven one in the same run", () => {
+  // The regression SH410 shipped: `staleUnknown` became true whenever *any* entry fell outside
+  // coverage, and `verify` reads that flag all-or-nothing — so a tree-only run over a baseline
+  // holding one server rule reported no stale entry at all, and the file could rot untouched.
+  const baseline = {
+    accepted: [
+      { rule: "asset-missing", address: "post:Blog/a", field: "hero" },
+      { rule: "required-field-empty", address: "post:Blog/a", field: "headline" },
+    ],
+  };
+
+  const out = applyBaseline({ findings: [], truncated: false }, baseline, {
+    groups: ["projection"],
+  });
+
+  assert.deepEqual(out.stale.map((entry) => entry.rule), ["asset-missing"]);
+  assert.deepEqual(out.unproven.map((entry) => entry.rule), ["required-field-empty"]);
+  // Not suppressed: the run proved this one spent and must still fail for it.
+  assert.equal(out.staleUnknown, false);
+});
+
+/**
+ * The rule list is derived, not trusted (SH411).
+ *
+ * `PROJECTION_RULES` decides which group an accepted entry belongs to, and it was hand-kept —
+ * seven rules, every one of them added by a task in this same run. A rule added without touching
+ * it is classified as the server's, so a tree-only run treats its acceptances as unproven and
+ * never reports them spent. That is the enumeration-instead-of-discovery mistake `path-safety`
+ * was built to stop, made in the same session by the person who wrote that lint.
+ */
+test("SH411: every rule lintProjection emits is classified as a projection rule", async () => {
+  const source = await readFile(
+    join(dirname(fileURLToPath(import.meta.url)), "..", "src", "verify-projection.mjs"),
+    "utf8",
+  );
+  const emitted = new Set(
+    [...source.matchAll(/rule:\s*"([a-z-]+)"/g)].map((match) => match[1]),
+  );
+  // The literals the rule builders pass positionally, which `finding(post, field, rule, …)` takes.
+  for (const match of source.matchAll(/finding\([^,]+,[^,]+,\s*"([a-z-]+)"/g)) {
+    emitted.add(match[1]);
+  }
+
+  assert.ok(emitted.size >= 5, `found only ${emitted.size} rule literals — the scan stopped working`);
+  assert.deepEqual(
+    [...emitted].sort().filter((rule) => !projectionRules().has(rule)),
+    [],
+    "a rule this tree emits is not in PROJECTION_RULES, so a baseline entry accepting it would be "
+      + "classified as the server's and never judged by the gate that produces it",
+  );
 });
