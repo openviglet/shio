@@ -541,6 +541,49 @@ class ShStaticFileAPITest {
                 .andExpect(jsonPath("$.sha256").doesNotExist());
     }
 
+    /**
+     * SH399 — the digest is a cache, and its only invalidation is a `replace`. Bytes changed under
+     * the CMS would otherwise leave every reader confidently holding a hash that is not theirs.
+     */
+    @Test
+    void stage06jAStampIsDroppedWhenTheBytesChangedUnderneath() throws Exception {
+        String id = uploadTextPost("meddled.txt", "original");
+        Files.writeString(storage.resolve(id, "meddled.txt"), "tampered with, and longer");
+
+        // The listing reports no digest rather than the stale one: a caller that gets none falls
+        // back and is right, a caller that gets a stale one is wrong and does not know it.
+        mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
+                .andExpect(jsonPath("$[?(@.id == '" + id + "')].sha256")
+                        .value(org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.nullValue())));
+        // And the endpoint recomputes, so the answer is right at the old cost.
+        mockMvc.perform(get("/api/v2/staticfile/" + id + "/digest").principal(mockPrincipal))
+                .andExpect(jsonPath("$.sha256").value(sha256Hex("tampered with, and longer")));
+    }
+
+    /** The fast path is still fast: an untouched file answers from the stamp. */
+    @Test
+    void stage06kAnUntouchedFileStillAnswersFromTheStamp() throws Exception {
+        String id = uploadTextPost("untouched.txt", "steady");
+
+        mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
+                .andExpect(jsonPath("$[?(@.id == '" + id + "')].sha256").value(sha256Hex("steady")));
+    }
+
+    /**
+     * The limit of the guarantee, asserted rather than assumed. A length-preserving edit is
+     * invisible to a size check, and nothing short of hashing on every read would see it — which
+     * is exactly the cost SH398 exists to remove. Written down here so a reader learns how far it
+     * goes from a test rather than from a surprise.
+     */
+    @Test
+    void stage06lALengthPreservingEditIsNotDetected() throws Exception {
+        String id = uploadTextPost("samesize.txt", "aaaaaa");
+        Files.writeString(storage.resolve(id, "samesize.txt"), "bbbbbb");
+
+        mockMvc.perform(get("/api/v2/staticfile/" + id + "/digest").principal(mockPrincipal))
+                .andExpect(jsonPath("$.sha256").value(sha256Hex("aaaaaa")));
+    }
+
     private String uploadTextPost(String name, String body) throws Exception {
         MockMultipartFile file = new MockMultipartFile(
                 "file", name, "text/plain", body.getBytes(StandardCharsets.UTF_8));

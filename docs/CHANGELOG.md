@@ -226,6 +226,7 @@
 - **SH376** — The feed says when it has met a write this node never stamped, so a two-node install stops reading as exact — proof from the position counter, with no new state.
 - **SH374** — The projection group gained sidecar-missing and translation-target-missing, so two defects the tree alone proves no longer wait for a gate that needs the server.
 - **SH398** — The digest is stamped at write time and rides the listing, so a settled pull went from 208 requests to 8, and a listing asks the filesystem once per row instead of twice.
+- **SH399** — The size is stamped beside the digest as its validator, so bytes changed outside the CMS make the listing report no hash and recompute instead of a stale one.
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 

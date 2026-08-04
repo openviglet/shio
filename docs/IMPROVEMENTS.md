@@ -437,30 +437,6 @@ the content — and it is CLI-shaped, because half the inputs are files.
 > ✅ **SH86, SH87, SH88, SH89 and SH90 shipped** → [CHANGELOG.md](CHANGELOG.md) Block I.
 > What follows is the design rationale for what the projection **still owes**.
 
-### X.1 The size is a poor saving and a good validator (SH399)
-
-SH398 weighed stamping the file's `size` and rejected it: the existence check has to run
-anyway to keep SH62's `size: -1` honest, so a stamp would remove one stat of two and buy
-a `data` key that can disagree with the disk. That reasoning is about `size` as a
-**saving**, and it holds.
-
-What it missed is `size` as a **validator**. The digest is now a cache whose only
-invalidation is `replace`, so bytes changed under the CMS — a restored backup, a synced
-volume, somebody editing `store/file_source/` — leave every reader confidently holding a
-hash that is not theirs. Before SH398 nothing was cached and the question could not
-arise: `size` was read from disk every time.
-
-Stamping the size beside the digest closes it for one integer. The listing already knows
-the file's real size, so a stamped size that disagrees is proof the stamp is stale, and
-the answer is to drop it and recompute. It catches every external edit that changes the
-length, which is nearly all of them, and it costs no extra stat because the stat already
-happens.
-
-The residual is an edit that preserves the length exactly, and nothing short of hashing
-on every read catches that — which is the cost SH398 exists to remove. Worth stating in
-the field's own documentation rather than leaving a reader to work out how far the
-guarantee goes.
-
 ## XI. Blueprints + Claude Code plugin (Block J)
 
 > *"Skip steps with things that are already done"* only works if the ready-made

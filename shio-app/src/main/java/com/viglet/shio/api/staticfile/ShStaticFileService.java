@@ -96,6 +96,17 @@ public class ShStaticFileService {
      * comparison), which on a settled tree is the whole library.</p>
      */
     static final String DATA_SHA256 = "SHA256";
+    /**
+     * The size the bytes had when {@link #DATA_SHA256} was taken (SH399) — the stamp's validator.
+     *
+     * <p>Not here to save a stat: SH398 weighed that and the existence check has to happen anyway,
+     * so a stamped size would remove one syscall of two and buy a key that can disagree with the
+     * disk. It is here because the digest <em>is</em> a cache now, and its only invalidation is a
+     * `replace` — so bytes changed under the CMS (a restored backup, a synced volume) would leave
+     * every reader confidently holding a hash that is not theirs. The listing already knows the
+     * file's real size, so a stamped size that disagrees is proof the stamp is stale.</p>
+     */
+    static final String DATA_SIZE = "SIZE";
     /** {@code data} keys for editable Media Library metadata (SH62). */
     static final String DATA_ALT = "ALT";
     static final String DATA_CAPTION = "CAPTION";
@@ -298,8 +309,8 @@ public class ShStaticFileService {
         if (attributes == null) {
             return new ShStaticFileDigest(post.getId(), fileName, -1L, null);
         }
-        String stamped = stringFromData(post, DATA_SHA256);
-        if (stamped != null && !stamped.isBlank()) {
+        String stamped = trustedStamp(post, attributes);
+        if (stamped != null) {
             return new ShStaticFileDigest(post.getId(), fileName, attributes.size(), stamped);
         }
         try (InputStream in = Files.newInputStream(path)) {
@@ -331,6 +342,14 @@ public class ShStaticFileService {
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read back " + fileName, e);
         }
+        // SH399 — the size the hash was taken over, so a later read can tell whether the hash is
+        // still describing these bytes. Written after the digest and from the same file.
+        Attributes stamped = attributesOf(path);
+        if (stamped != null) {
+            data.put(DATA_SIZE, stamped.size());
+        } else {
+            data.remove(DATA_SIZE);
+        }
         int[] dims;
         try (InputStream bytes = Files.newInputStream(path)) {
             dims = dimensionReader.read(bytes);
@@ -345,6 +364,36 @@ public class ShStaticFileService {
             data.remove(DATA_HEIGHT);
         }
         post.setData(objectMapper.writeValueAsString(data));
+    }
+
+    /**
+     * The stamped digest, but only while it can still be describing these bytes (SH399).
+     *
+     * <p>{@code null} when there is no stamp, when the file is gone, or when the size it was taken
+     * over is not the size on disk — which is proof somebody changed the bytes outside the CMS,
+     * since every path that writes them re-stamps. A caller that gets {@code null} falls back to
+     * hashing, and gets the right answer at the old cost; the fast path is for bytes the CMS
+     * itself wrote, which is all of them in a healthy instance.</p>
+     *
+     * <p><b>It detects a length change and nothing else.</b> An external edit that preserves the
+     * size exactly is invisible here, and nothing short of hashing on every read would see it —
+     * which is the cost SH398 exists to remove. That is the limit of the guarantee, stated rather
+     * than left for a reader to work out.</p>
+     *
+     * <p>Detect, never repair: re-stamping here would make a {@code GET} write, and a read that
+     * mutates is the surprise P7 is about. The recompute is correct every time; only its cost
+     * persists, and only for a file somebody edited behind the CMS's back.</p>
+     */
+    private String trustedStamp(ShPostUnified post, Attributes attributes) {
+        if (attributes == null) {
+            return null;
+        }
+        String stamped = stringFromData(post, DATA_SHA256);
+        if (stamped == null || stamped.isBlank()) {
+            return null;
+        }
+        Integer size = intFromData(post, DATA_SIZE);
+        return size != null && size.longValue() == attributes.size() ? stamped : null;
     }
 
     /** A stream's sha-256, read in bounded memory whatever the file's size. */
@@ -517,6 +566,7 @@ public class ShStaticFileService {
         String fileName = fileNameOf(post);
         long size = -1;
         String contentType = null;
+        Attributes attributes = null;
         if (fileName != null) {
             Path path = storage.resolve(post.getId(), fileName);
             // SH398 — one `readAttributes` where this was `isRegularFile` then `size`, which is two
@@ -524,7 +574,9 @@ public class ShStaticFileService {
             // obvious alternative and is worth less: the existence check has to happen anyway to
             // keep `size: -1` honest, so a stamp would remove one stat of two and buy a `data` key
             // that can disagree with the disk. One call removes the same stat and cannot go stale.
-            Attributes attributes = attributesOf(path);
+            // SH399 stamps the size anyway, for the other reason: not to skip this call but to
+            // check the *digest* against it — see `trustedStamp`.
+            attributes = attributesOf(path);
             if (attributes != null) {
                 contentType = storage.probeContentType(path);
                 size = attributes.size();
@@ -540,7 +592,7 @@ public class ShStaticFileService {
                 post.getShSite() != null ? post.getShSite().getName() : null,
                 width, height,
                 stringFromData(post, DATA_ALT), stringFromData(post, DATA_CAPTION),
-                tagsFromData(post), stringFromData(post, DATA_SHA256));
+                tagsFromData(post), trustedStamp(post, attributes));
     }
 
     /**

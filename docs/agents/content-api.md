@@ -200,7 +200,10 @@ disk, **keyed by the file post's id** (not the folder tree), under
   keep the cache honest: `replace` **re-stamps** (a digest outliving its bytes restores the silent
   no-op SH210 removed), and the **existence check runs in front of the stamp**, because a stamp
   cannot know somebody deleted the bytes underneath and reporting it would turn SH62's `size: -1`
-  into a confident lie.
+  into a confident lie. **SH399 stamps the size beside the digest as the cache's validator** — a
+  stamped size that disagrees with the file's is proof the hash is stale, and both the listing and
+  this endpoint then report no stamp and recompute instead. It detects a length change and nothing
+  else, and it never repairs: re-stamping on a read would make a `GET` write.
 - Bytes are also public at `/file_source/<postId>/<fileName>` via
   `ShStaticResourceConfiguration` (a purely-additive `WebMvcConfigurer`; only
   `/file_source/**` is exposed — **not** `/store/**`, which holds the H2 DB/logs).

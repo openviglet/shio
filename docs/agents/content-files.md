@@ -389,9 +389,18 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
         underneath the CMS and reporting it there would turn SH62's `size: -1` into a confident lie.
         The digest is read back from the **file just written**, never from a copy in memory: SH62
         buffered *images only* because buffering an upload allocates the size of the upload, and a
-        digest that needed every byte must not be what widens that to a video. **Its one blind
-        spot is bytes changed outside the CMS** — the cache's only invalidation is `replace`, so a
-        restored backup or a synced volume leaves a hash that is no longer the file's (**SH399**).
+        digest that needed every byte must not be what widens that to a video. **And the size is stamped
+        beside it as the cache's validator (SH399)** — not as a saving, which SH398 weighed and
+        rejected, but because the digest's only invalidation was a `replace`: bytes changed under
+        the CMS (a restored backup, a synced volume) left every reader confidently holding a hash
+        that was not theirs. The listing already knows the real size, so a stamped size that
+        disagrees is proof the stamp is stale, and the row reports **no** digest rather than the
+        wrong one — a caller that gets none falls back and is right. Three rules: it **detects, never
+        repairs**, since re-stamping on a read would make a `GET` write; the recompute is correct
+        every time, so only the *cost* persists and only for a file somebody edited behind the
+        CMS's back; and it catches a **length change and nothing else** — a length-preserving
+        external edit is invisible, nothing short of hashing on every read would see it, and that
+        limit is asserted in a test rather than left to be discovered.
       - **An agreement is recorded even when nothing moved**, or a tree that only ever *reads* its
         assets stays at "never agreed" for ever and the first server-side edit arrives as a conflict
         instead of a change.
