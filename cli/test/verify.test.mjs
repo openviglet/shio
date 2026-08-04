@@ -585,3 +585,23 @@ test("SH401: the write side refuses an unportable pair too", async () => {
     },
   );
 });
+
+test("SH407: two folder markers differing only in case are a finding too", async () => {
+  // The folder root is the second place a name becomes a path, and until now no tree-only gate
+  // read it at all — `verify` never opened `shio/folders/`.
+  const fetchImpl = scriptedFetch(CLEAN);
+  const ctx = projectCtx(fetchImpl, projectFs({
+    assets: ["Blog/media/logo.png"],
+    extra: {
+      "/repo/shio/folders/Blog/news/_folder.md": "---\nsite: Blog\nfolder: /news\n---\n",
+      "/repo/shio/folders/Blog/News/_folder.md": "---\nsite: Blog\nfolder: /News\n---\n",
+    },
+  }));
+
+  const result = await verify.run({ checks: "projection" }, [], ctx);
+
+  assert.equal(result.exitCode, 1);
+  assert.deepEqual(fetchImpl.calls, [], "and it needed no instance to say so");
+  assert.match(ctx.stdout.text, /path-collision/);
+  assert.match(ctx.stdout.text, /_folder\.md/);
+});

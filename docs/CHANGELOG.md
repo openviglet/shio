@@ -234,6 +234,7 @@
 - **SH404** — An unscoped pull recomputes the flag from its own facts and a scoped one still inherits, so the complete projection the push tells you to take now clears what it refuses.
 - **SH405** — The pull now names the truncated sitemap as the cause of a short asset inventory, says what to raise, and warns that the dangling references below may be its artefact.
 - **SH406** — A first pull now scopes its asset read to the sites the posts name, so the bytes come down and the File fields become paths; the fallback is one binding shared by all three per-site reads.
+- **SH407** — One collision detector now serves both roots, the pull writes neither marker and names the pair, and `verify` reads `shio/folders/` for the first time to report it with no instance.
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 

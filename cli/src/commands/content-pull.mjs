@@ -198,7 +198,7 @@ export async function run(flags, _positionals, ctx) {
     unchanged: [],
     conflicts: [],
     kept: [],
-    folders: { written: [], deleted: [], kept: [] },
+    folders: { written: [], deleted: [], kept: [], conflicts: [] },
     assets: assets.written,
     // SH373 — asset bytes are in the merge now, so they have the same three outcomes everything
     // else does, and a conflict has to be reported rather than resolved.
@@ -314,6 +314,22 @@ export async function run(flags, _positionals, ctx) {
       skipped.push({ address: `folder:${marker.site}${marker.folder}`, reason: error.message });
     }
   }
+  // SH407 — and then the pair that *can* both be built and still cannot both exist. Computed on
+  // the projectable set, so a chain skipped above is not also reported as half a collision.
+  const markerClashes = markerCollisions(projectableFolders);
+  const clashed = new Set();
+  const writableFolders = projectableFolders.filter((marker) => {
+    const collision = markerClashes.get(`folder:${marker.site}${marker.folder}`);
+    if (!collision) return true;
+    if (!clashed.has(collision.key)) {
+      clashed.add(collision.key);
+      report.folders.conflicts.push({
+        addresses: collision.addresses,
+        paths: collision.paths.map((path) => `${foldersDir}/${path}`),
+      });
+    }
+    return false;
+  });
   if (skipped.length) {
     // SH173: what could not be read by address, named — the projection is short by exactly
     // these and saying so beats letting a later diff look like a deletion. Printed here rather
@@ -328,7 +344,7 @@ export async function run(flags, _positionals, ctx) {
 
   const folderPlan = reconcileFolders({
     base: base.folders,
-    remote: projectableFolders,
+    remote: writableFolders,
     local: localFolders,
     implied: declaredFolders,
   });
@@ -466,6 +482,21 @@ export async function run(flags, _positionals, ctx) {
         "rebuild the base from the server, or settle the field with --theirs / --ours.\n",
     );
   }
+  // SH407 — the folder half of SH401's collision, with the same outcome for the same reason: two
+  // markers cannot share one file, and picking by whichever the walk wrote last is how the loss
+  // became silent. Named separately because the remedy is a folder rename, not a post one.
+  if (report.folders.conflicts.length) {
+    ctx.stderr.write(
+      `shio pull --content: ${report.folders.conflicts.length} pair(s) of folders project to one `
+        + "file — no marker was written for them:\n"
+        + report.folders.conflicts
+            .map((c) => `  ! ${c.addresses.join(" and ")} → ${c.paths.join(", ")}\n`)
+            .join("")
+        + "Two folder chains differing only in case are one file on Windows and macOS. Rename one "
+        + "of them on the server (`folder.move`) and pull again. An empty folder whose marker this "
+        + "run could not write is undeclared, so `push --prune` would delete it.\n",
+    );
+  }
   // SH401 — named before the ordinary conflicts, because neither its cause nor its remedy is
   // "you both edited this": nobody edited anything, two posts simply cannot share one file, and
   // no local edit settles it. The rename has to happen on the server.
@@ -598,11 +629,49 @@ async function readAssetOrNull(ctx, path, dir) {
  * One tree, the same everywhere, is worth more than the pair of files (P5).
  */
 function pathCollisions(addressList) {
+  return collisionsAmong(addressList, (address) => {
+    const at = locationOfAddress(address);
+    return at ? filePathFor(at) : null;
+  });
+}
+
+/**
+ * The same rule for folder markers (SH407).
+ *
+ * `folder:Blog/news` and `folder:Blog/News` are two folders on the server and one `_folder.md` on
+ * a case-insensitive disk. SH401 fixed the root its investigation started from, and the SH403 lint
+ * would not have caught this: it asks every path producer whether it refuses a value that
+ * *navigates*, and nothing asked whether two of its outputs can *collide*.
+ *
+ * The consequence differs from a post's and is worth stating exactly. A folder holding posts is
+ * implied by those posts, so `reconcileFolders` keeps it and `--prune` cannot touch it. What is
+ * exposed is the **empty** folder — the one a `_folder.md` exists to declare — whose marker was
+ * the only evidence it should survive; losing it makes the folder undeclared, and SH211's prune
+ * deletes what the tree does not declare.
+ */
+function markerCollisions(markers) {
+  return collisionsAmong(
+    markers.map((marker) => `folder:${marker.site}${marker.folder}`),
+    (address) => {
+      const at = folderLocationOfAddress(address);
+      return at ? folderMarkerPathFor(at) : null;
+    },
+  );
+}
+
+/** Group addresses whose paths a case-insensitive filesystem cannot tell apart (SH401, SH407). */
+function collisionsAmong(addressList, pathOf) {
   const byPath = new Map();
   for (const address of addressList) {
-    const at = locationOfAddress(address);
-    if (!at) continue;
-    const path = filePathFor(at);
+    let path;
+    try {
+      path = pathOf(address);
+    } catch {
+      // A path this cannot even build is somebody else's finding — SH402's skip for a post, and
+      // SH403's for a chain. Both run before this, so silence here is not a swallow.
+      continue;
+    }
+    if (!path) continue;
     // Lower-casing is what a case-insensitive filesystem does, near enough: it over-reports only
     // where a folding rule differs, and over-reporting here costs a message nobody had to act on.
     const key = path.toLowerCase();
@@ -621,6 +690,14 @@ function pathCollisions(addressList) {
     for (const entry of sorted) collisions.set(entry.address, group);
   }
   return collisions;
+}
+
+/** `folder:Blog/news` → `{ site, folder }`; anything else → null. */
+function folderLocationOfAddress(address) {
+  if (typeof address !== "string" || !address.startsWith("folder:")) return null;
+  const rest = address.slice("folder:".length);
+  const slash = rest.indexOf("/");
+  return slash < 0 ? null : { site: rest.slice(0, slash), folder: rest.slice(slash) };
 }
 
 /** `post:Blog/blog/hello` → `{ site, url }`; anything else → null. */
@@ -694,6 +771,10 @@ function render(report, { dir, dryRun, truncated }) {
     lines.push(conflict.paths
       ? `  ! ${conflict.addresses.join(" and ")} → one file (${conflict.paths.join(", ")})`
       : `  ! ${conflict.address} (${conflict.fields.join(", ")})`);
+  }
+  // SH407 — the folder pair reads the same way, in the summary as well as on stderr.
+  for (const conflict of folders.conflicts ?? []) {
+    lines.push(`  ! ${conflict.addresses.join(" and ")} → one file (${conflict.paths.join(", ")})`);
   }
   if (truncated) {
     lines.push("  (partial projection — the server's post list was truncated)");

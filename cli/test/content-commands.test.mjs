@@ -1595,7 +1595,8 @@ test("pull --content leaves an agreed marker byte-identical", async () => {
 
   const result = await contentPull.run({}, [], ctx);
 
-  assert.deepEqual(result.folders, { written: [], deleted: [], kept: [] });
+  // `conflicts` since SH407 — a pair of chains a case-insensitive disk cannot tell apart.
+  assert.deepEqual(result.folders, { written: [], deleted: [], kept: [], conflicts: [] });
   assert.equal(ctx.fs.files.get(markerPath("Blog", "/news")), markerFile("Blog", "/news"));
 });
 
@@ -2170,4 +2171,23 @@ test("SH406: a first pull into an empty tree fetches the assets too", async () =
   assert.ok(ctx.fs.files.has("/repo/shio/assets/Blog/media/logo.png"));
   // And the reference is a path, not the id it arrived as (SH145).
   assert.match(ctx.fs.files.get(FILE), /hero: Blog\/media\/logo\.png/);
+});
+
+test("SH407: two folder chains differing only in case are two folders and one marker", async () => {
+  // The measurement. SH401 proved this for posts and fixed the post root; markers are the same
+  // kind of path from the same server data, one directory over.
+  const ctx = caseInsensitiveCtx(server({
+    remote: { "post:Blog/blog/hello": REMOTE_DOC },
+    serverFolders: { Blog: ["/", "/news", "/News"] },
+  }));
+
+  const result = await contentPull.run({}, [], ctx);
+
+  const markers = [...ctx.fs.files.keys()].filter((key) => key.endsWith("_folder.md"));
+  // Neither is written, and the pair is named rather than settled by the filesystem.
+  assert.equal(markers.filter((key) => key.toLowerCase().includes("/news/")).length, 0);
+  const collision = result.folders.conflicts?.find((entry) => entry.paths);
+  assert.ok(collision, "the pull reports the pair");
+  assert.deepEqual(collision.addresses, ["folder:Blog/news", "folder:Blog/News"]);
+  assert.match(ctx.stdout.text, /one file/);
 });

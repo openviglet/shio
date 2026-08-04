@@ -490,6 +490,26 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
       - **Found while testing SH405.** The truncation report could not fire in an empty-tree
         fixture, and the reason it could not was this. Worth recording as a habit: a test that
         cannot reach the condition it was written for is evidence about the code, not the test.
+    - **The same collision, one root over (SH407).** SH401 refused two posts whose paths differ only
+      in case and fixed the **post** root; folder markers are the same kind of path from the same
+      server data. `folder:Blog/news` and `folder:Blog/News` give `Blog/news/_folder.md` and
+      `Blog/News/_folder.md` — one file on Windows and macOS. **Third time this shape has
+      appeared** (SH402→SH403, SH401→SH407), and the tell is that SH403's lint would not have
+      caught it: it asks every producer whether it refuses a value that *navigates*, and nothing
+      asked whether two of its outputs can *collide*.
+      - **The consequence is narrower than a post's, and worth stating precisely rather than
+        inflating.** A folder holding posts is implied by those posts, so `reconcileFolders` keeps
+        it and `--prune` cannot touch it. What is exposed is the **empty** folder — the one a
+        `_folder.md` exists to declare — whose marker was the only evidence it should survive.
+        Losing it makes the folder undeclared, and SH211's prune deletes what the tree does not
+        declare.
+      - **One detector, two roots.** SH401's `pathCollisions` became `collisionsAmong(addresses,
+        pathOf)`, and the folder caller passes `folderMarkerPathFor`. `unportableFindings` was
+        already generic over `{addresses, paths}`, so `path-collision` covers both with no second
+        rule — which is what "fix the class" should look like when it works.
+      - **`verify` had never opened `shio/folders/` at all.** The tree-only gate read posts,
+        post-types and assets; the folder root was outside every one of them. It reads markers now,
+        in `mode: "report"`, the same load-versus-report split SH374 gave sidecars.
     - **And the bytes are in the SH89 merge now (SH373).** SH210 fixed one direction and opened
       another: a server-side asset edit never reached the tree, and — newer and worse — a push
       *replaced* the server's bytes whenever they differed from the tree's, which reverts a

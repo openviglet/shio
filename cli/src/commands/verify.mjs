@@ -26,7 +26,13 @@ import { join } from "node:path";
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { ASSETS_DIR } from "../content-assets.mjs";
-import { CONTENT_DIR, readLocal, readLocalAssets } from "../content-store.mjs";
+import {
+  CONTENT_DIR,
+  FOLDERS_DIR,
+  readLocal,
+  readLocalAssets,
+  readLocalFolders,
+} from "../content-store.mjs";
 import { readLocalDefs } from "../post-types-compile.mjs";
 import { PROJECTION_CHECK, lintProjection, splitChecks } from "../verify-projection.mjs";
 import {
@@ -129,6 +135,13 @@ async function lintTree(flags, ctx, site) {
   const posts = Object.values(read.docs);
   const assetsDir = flags.assetsDir ?? ASSETS_DIR;
   const assets = await readLocalAssets(ctx, { dir: assetsDir, site }).catch(absent);
+  // SH407 — the folder root is the second place a projection turns a name into a path, and it was
+  // outside every tree-only gate: `verify` had never read it at all.
+  const folders = await readLocalFolders(ctx, {
+    dir: flags.foldersDir ?? FOLDERS_DIR,
+    site,
+    mode: "report",
+  }).catch(absentFolders);
 
   if (!defs?.length || !posts.length) {
     return {
@@ -146,7 +159,8 @@ async function lintTree(flags, ctx, site) {
       assetsDir,
       missingSidecars: read.missingSidecars,
       duplicates: read.duplicates,
-      unportable: read.unportable,
+      // One rule, both roots: the finding is a pair of addresses and a pair of paths either way.
+      unportable: [...read.unportable, ...folders.unportable],
       // A scoped run is not a statement about the whole tree, so a `translationOf` it could not
       // have seen is a warning rather than an error (SH143's rule).
       scoped: Boolean(site),
@@ -167,6 +181,11 @@ function absent(error) {
  */
 function noDefs(error) {
   if (/no post-type directory at/.test(error?.message ?? "")) return [];
+  throw error;
+}
+
+function absentFolders(error) {
+  if (error?.code === "ENOENT") return { markers: [], unportable: [] };
   throw error;
 }
 

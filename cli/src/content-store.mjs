@@ -340,19 +340,27 @@ async function loadSidecars(ctx, root, relPath, doc) {
  * @returns {Promise<{site: string, folder: string}[]>} sorted, so a document built from
  *   this is byte-stable whatever order the filesystem hands the entries back (P5)
  */
-export async function readLocalFolders(ctx, { dir = FOLDERS_DIR, site = null } = {}) {
+export async function readLocalFolders(ctx, { dir = FOLDERS_DIR, site = null, mode = "load" } = {}) {
   const root = join(ctx.cwd, dir);
   const files = await walk(ctx, root, "");
   const markers = [];
+  const paths = new Map();
   for (const relPath of files.sort()) {
     const name = relPath.split("/").pop() ?? "";
     // Only the marker name counts. A stray file here is the author's, not ours to
     // interpret — reading it as a folder would invent one from a typo.
     if (name.toLowerCase() !== FOLDER_MARKER) continue;
     if (site && !relPath.startsWith(`${site}/`)) continue;
-    markers.push(parseFolderMarker(relPath, await ctx.fs.readFile(join(root, relPath), "utf8")));
+    const marker = parseFolderMarker(relPath, await ctx.fs.readFile(join(root, relPath), "utf8"));
+    markers.push(marker);
+    // SH407 — the local half, exactly as SH400/SH401 do it for posts one root over.
+    paths.set(`folder:${marker.site}${marker.folder}`, [relPath]);
   }
-  return markers.sort((a, b) => a.site.localeCompare(b.site) || a.folder.localeCompare(b.folder));
+  markers.sort((a, b) => a.site.localeCompare(b.site) || a.folder.localeCompare(b.folder));
+  const unportable = unportableFrom(paths, dir);
+  if (mode === "report") return { markers, unportable };
+  if (unportable.length) throw unportableFault(unportable[0]);
+  return markers;
 }
 
 /** Writes one folder marker, creating the directories on the way. */
