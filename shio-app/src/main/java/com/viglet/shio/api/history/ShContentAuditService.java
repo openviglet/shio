@@ -8,8 +8,6 @@
  */
 package com.viglet.shio.api.history;
 
-import java.time.Instant;
-
 import org.springframework.stereotype.Service;
 
 import com.viglet.shio.api.agent.ShAgentSessionContext;
@@ -28,6 +26,12 @@ import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
  * request-thread {@code ShTenantContext} that an async listener could lose. A
  * record is therefore never written for a transaction that rolls back.
  *
+ * <p>That is also what makes the row's timestamp a <em>stamp</em> order rather than
+ * a commit order, which is the whole of SH147: the position comes from
+ * {@link ShAuditFeedWatermark#reserve()} and not from {@code Instant.now()}, so it is
+ * unique, monotonic, and held back from the SH88 feed until this transaction finishes.
+ * Read that class before changing this line.
+ *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
@@ -35,9 +39,12 @@ import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 public class ShContentAuditService {
 
     private final ShHistoryRepository shHistoryRepository;
+    private final ShAuditFeedWatermark watermark;
 
-    public ShContentAuditService(ShHistoryRepository shHistoryRepository) {
+    public ShContentAuditService(ShHistoryRepository shHistoryRepository,
+                                 ShAuditFeedWatermark watermark) {
         this.shHistoryRepository = shHistoryRepository;
+        this.watermark = watermark;
     }
 
     /**
@@ -81,7 +88,9 @@ public class ShContentAuditService {
         history.setShObject(objectId);
         history.setShSite(siteId);
         history.setOwner(actor != null && !actor.isBlank() ? actor : "system");
-        history.setDate(Instant.now());
+        // SH147 — a reserved position, not the wall clock: unique, monotonic, and the feed will
+        // not report past it until this transaction commits or rolls back.
+        history.setDate(watermark.reserve());
         history.setDescription(describe(action, title, detail));
         // SH106 — which agent run this was, read from the request thread. Safe precisely
         // because recording is inline with the write: an AFTER_COMMIT listener would run

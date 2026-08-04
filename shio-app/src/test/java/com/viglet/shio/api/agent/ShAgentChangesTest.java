@@ -47,9 +47,12 @@ import tools.jackson.databind.ObjectMapper;
  * <p>The properties under test are the ones that decide whether a caller can trust the
  * feed to <b>catch up without losing anything</b>: entries that share a timestamp are not
  * skipped (the reason the cursor carries an id at all), a re-read from the returned cursor
- * is empty rather than a repeat of the same page, an entry younger than the lag is held
+ * is empty rather than a repeat of the same page, an entry beyond the ceiling is held
  * back, an entry whose object is gone still travels with its title, and a site-scoped read
  * cannot see another site's trail. Everything else about the payload is presentation.</p>
+ *
+ * <p>What the ceiling <em>is</em> — the oldest write that has stamped and not finished — is
+ * SH147's, and {@code ShAgentCommitOrderTest} owns it.</p>
  *
  * @author Alexandre Oliveira
  */
@@ -57,7 +60,7 @@ import tools.jackson.databind.ObjectMapper;
 @TestInstance(Lifecycle.PER_CLASS)
 class ShAgentChangesTest {
 
-    /** Old enough to clear the lag window in every mode under test. */
+    /** Old enough to be under the ceiling in every mode under test. */
     private static final Instant T1 = Instant.parse("2026-03-01T10:00:00Z");
     private static final Instant T2 = Instant.parse("2026-03-01T11:00:00Z");
 
@@ -136,10 +139,10 @@ class ShAgentChangesTest {
         });
 
         // The audit rows are written by hand rather than by exercising a write, because
-        // every property here is about *positions* — ties, ordering and the lag — and a
-        // real write stamps Instant.now(), which sits inside the lag window at first and
-        // outside it a second later. The rows the setup's own batch recorded are removed
-        // for the same reason: a feed test whose fixture ages is a flake, not a test.
+        // every property here is about *positions* — ties, ordering and the ceiling — and a
+        // real write reserves a position at the moment it runs, which moves with the clock.
+        // The rows the setup's own batch recorded are removed for the same reason: a feed
+        // test whose fixture ages is a flake, not a test.
         tx.executeWithoutResult(status -> {
             shHistoryRepository.findAll().stream()
                     .filter(entry -> siteId.equals(entry.getShSite())
@@ -158,8 +161,8 @@ class ShAgentChangesTest {
             // is a folder. Written by hand for the same reason as the rest.
             record(ShContentAction.DELETE, liveFolderId, siteId, T2, "ddee",
                     "Deleted \"changes-folder\"");
-            // Inside the lag window, and stamped ahead of it so the assertion cannot age
-            // out mid-run: the feed must not report it yet.
+            // Stamped an hour ahead of the reader's clock, so the assertion cannot age out
+            // mid-run: the feed must not report anything past its ceiling.
             record(ShContentAction.UPDATE, livePostId, siteId, Instant.now().plusSeconds(3600),
                     "ffff", "Updated \"Live page\" just now");
         });
@@ -218,14 +221,15 @@ class ShAgentChangesTest {
     }
 
     @Test
-    void theWindowHoldsBackAnEntryYoungerThanTheLag() {
-        // Not a nicety: SH51 stamps the audit row inside the writer's transaction, so a
-        // slow commit can land an older timestamp after the cursor has passed it. The lag
-        // is what keeps that from being a silent loss.
+    void theWindowStopsAtTheCeilingAndDiscloseNothingItDoesNotHaveTo() {
+        // The ceiling is the SH147 watermark now, not a lag: it is `now` on an idle instance,
+        // so an entry stamped ahead of the reader's clock is still excluded — and the note that
+        // used to disclose the lag is gone, because a single instance no longer has a hole to
+        // disclose. What the watermark does hold back is asserted in ShAgentCommitOrderTest.
         ShAgentChanges changes = shAgentChangesService.changes(siteName, null, 50, false);
 
         assertThat(descriptions(changes)).noneMatch(what -> what.contains("just now"));
-        assertThat(changes.notes()).anyMatch(note -> note.contains("held back"));
+        assertThat(changes.notes()).noneMatch(note -> note.contains("held back"));
     }
 
     /**

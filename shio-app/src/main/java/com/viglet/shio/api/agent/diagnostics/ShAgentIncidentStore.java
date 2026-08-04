@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +22,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.ShAgentProperties;
+import com.viglet.shio.api.history.ShAuditFeedWatermark;
 import com.viglet.shio.persistence.model.agent.ShAgentIncident;
 import com.viglet.shio.persistence.repository.agent.ShAgentIncidentRepository;
 
@@ -43,6 +43,14 @@ import com.viglet.shio.persistence.repository.agent.ShAgentIncidentRepository;
  * raises is caught and logged, because a diagnostics store that turned a webhook timeout into
  * a 500 would be a strictly worse outcome than forgetting the incident.</p>
  *
+ * <p><b>And its rows are positioned by {@link ShAuditFeedWatermark}, not by the clock (SH147).</b>
+ * SH372 already needed them strictly increasing, so the cap would stop choosing which row dies by
+ * random uuid, and kept a counter here to do it. That is half of one mechanism: the other half is
+ * that a position must be <em>held back from the feed</em> until this transaction completes,
+ * because incidents and audit rows are merged under one SH88 cursor and a cursor cannot be
+ * commit-ordered on only one of its streams. Two counters would also drift apart, and the feed's
+ * ceiling can only be derived from one.</p>
+ *
  * <h2>The cap, and why it is reported</h2>
  *
  * <p>Folding bounds the table by the number of <em>distinct</em> problems, which is usually
@@ -60,48 +68,16 @@ public class ShAgentIncidentStore {
 
     private static final Logger logger = LoggerFactory.getLogger(ShAgentIncidentStore.class);
 
-    /**
-     * One microsecond — the smallest step {@code TIMESTAMP} keeps (SH372).
-     *
-     * <p>The column is declared with no explicit precision, which is 6 on both H2 and
-     * PostgreSQL. Stepping by a nanosecond would be arithmetic the database rounds away, and a
-     * uniqueness that survives only in memory is the same defect wearing a fix.</p>
-     */
-    private static final long TICK_NANOS = 1_000L;
-
     private final ShAgentIncidentRepository repository;
     private final ShAgentProperties properties;
-
-    /**
-     * The last instant handed to a row, so no two writes share one (SH372).
-     *
-     * <p>{@code enforceCap} deletes by {@code order by lastSeen asc, id asc}, and {@code id} is
-     * a random UUID — so on a tie the row that dies was chosen by a random string, and the cap's
-     * only claim is that the survivors are the <em>most recent</em>. The schema's own note says
-     * ties "can and do" happen; that is harmless for the SH88 cursor, which needs any total
-     * order, and wrong for a deletion, which needs <em>this</em> one.</p>
-     *
-     * <p>Fixed here rather than in the query because no tie-break the row carries is insertion
-     * -ordered — {@code firstSeen} ties in the same burst and the id is noise. Making the
-     * instant strictly increasing gives the existing order a total tail, costs no column and no
-     * changeset, and repairs {@code findRecent} in the same stroke.</p>
-     */
-    private final AtomicReference<Instant> issued = new AtomicReference<>(Instant.EPOCH);
+    private final ShAuditFeedWatermark watermark;
 
     public ShAgentIncidentStore(ShAgentIncidentRepository repository,
-                               ShAgentProperties properties) {
+                               ShAgentProperties properties,
+                               ShAuditFeedWatermark watermark) {
         this.repository = repository;
         this.properties = properties;
-    }
-
-    /**
-     * The caller's instant, or the next one after the last issued when the clock has not moved.
-     *
-     * <p>Drift is bounded by how many incidents arrive inside one clock tick and is given back
-     * as soon as the clock catches up, because the wall clock wins whenever it is ahead.</p>
-     */
-    private Instant stamp(Instant now) {
-        return issued.updateAndGet(last -> now.isAfter(last) ? now : last.plusNanos(TICK_NANOS));
+        this.watermark = watermark;
     }
 
     /**
@@ -126,9 +102,14 @@ public class ShAgentIncidentStore {
     public boolean record(ShAgentIncidentLog.Kind kind, String subject, String message,
                           String fix, String frames, Instant now) {
         try {
-            // SH372 — every row's position comes from here, so the feed's order and the cap's
-            // deletion order are the same total order and neither ends in a random id.
-            Instant when = stamp(now);
+            // SH372 — every row's position is strictly increasing, so the feed's order and the
+            // cap's deletion order are the same total order and neither ends in a random id.
+            // SH147 moved the counter to ShAuditFeedWatermark rather than keeping a second one
+            // here: both streams are merged under one SH88 cursor, so a position that is not
+            // held until this transaction completes can commit behind a cursor already handed
+            // out, and that is the same defect the audit trail had. `now` still leads, so a
+            // caller with its own clock keeps it.
+            Instant when = watermark.reserve(now);
             Optional<ShAgentIncident> existing = subject == null
                     ? repository.findByKindAndSubjectIsNullAndMessage(kind.name(), message)
                     : repository.findByKindAndSubjectAndMessage(kind.name(), subject, message);

@@ -379,50 +379,6 @@ unchanged page must never be the same row.
 > ✅ **SH86, SH87, SH88, SH89 and SH90 shipped** → [CHANGELOG.md](CHANGELOG.md) Block I.
 > What follows is the design rationale for what the projection **still owes**.
 
-### X.3 Commit-ordered change feed (SH147)
-
-The feed's cursor is exact about ties (it is an `(instant, id)` pair) and inexact about
-one thing it cannot fix from the read side: SH51 assigns the audit row's timestamp
-**inside the writer's transaction**, so a slow transaction can commit an older timestamp
-after a faster one has already been read and the cursor has moved past it. That entry is
-then invisible for ever, which for a *sync* feed means a lost edit rather than a late one.
-
-The shipped mitigation is a lag — the feed will not report an entry younger than
-`now - lag` (1s), which gives any transaction that already stamped an earlier timestamp
-that long to commit — and the response states the rule rather than implying exactness. It
-narrows the window; it does not close it, and a bulk apply of hundreds of posts can still
-outrun it.
-
-Closing it properly means changing how the row is *written*, not how it is read. That is why
-it is a separate task — SH88 is the read shape, and the read shape is right.
-
-### X.3.1 What a pass at SH147 established, before stopping
-
-The two phrasings §X.3 used to offer — "a sequence assigned at commit, or an outbox the reader
-drains in commit order" — are not two designs of equal weight, and neither is as cheap as it
-sounds:
-
-* **"Assigned at commit" is not available.** No JPA hook runs *at* commit; the latest is
-  `TransactionSynchronization.beforeCommit`, and two transactions can still interleave between
-  their `beforeCommit` and their actual commit. It narrows the window the way the lag already
-  does, so it buys nothing and costs a column.
-* **A sequence assigned *inside* the transaction works, but only with gap detection.** Rows get
-  a monotonic `seq`, the cursor becomes a `seq`, and the reader **stops at the first hole** — a
-  hole is a transaction still in flight (wait) or one that rolled back (skip after a timeout).
-  This is the real shape, and it turns `lag-millis` from "hope the commit is fast" into "how
-  long to wait for a gap", a far better justification for the same knob.
-* **The blocker is portability, not design.** A monotonic non-PK column has to work on H2,
-  MariaDB *and* PostgreSQL: identity on a non-PK column differs across all three, Hibernate
-  will not drive a sequence generator for a non-id field, and `nextval` vs `NEXT VALUE FOR` is
-  engine-specific. The **only** proof of whatever is chosen is the SH26 Testcontainers ITs,
-  which need Docker and auto-skip without it — and landing the changeset without running them
-  repeats the SH2/SH5 drift: a column that works on dev H2 and leaves a clean Liquibase
-  database broken.
-
-So the task is: pick the portable mechanism, add `ShHistory.seq` with a changeset, make the
-cursor a `seq` (accepting and translating the old `<instant>|<id>` form, a published contract),
-teach the reader to stop at a gap, and **run the cross-DB ITs**.
-
 ### X.13 Editing an asset's bytes in place does nothing (SH210)
 
 SH145 made a `File` field hold an asset path and made `push --content` resolve it back to an id

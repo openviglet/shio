@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentStore;
 import com.viglet.shio.api.agent.dto.ShAgentChanges;
+import com.viglet.shio.api.history.ShAuditFeedWatermark;
 import com.viglet.shio.api.history.ShContentSubject;
 import com.viglet.shio.persistence.model.agent.ShAgentIncident;
 import com.viglet.shio.persistence.model.history.ShHistory;
@@ -47,21 +48,23 @@ import com.viglet.shio.spring.security.auth.ShApiTokenContext;
  * see {@link com.viglet.shio.api.agent.dto.ShAgentChanges} for why a timestamp alone is
  * not one.</p>
  *
- * <h2>The lag rule, and what it does not fix</h2>
+ * <h2>The ceiling, and why it is not a lag any more (SH147)</h2>
  *
  * <p>Audit rows are written <b>inside</b> the writer's transaction (SH51 chose that
- * deliberately, so an audit row commits with the change it describes). The timestamp is
- * therefore assigned before the commit, and a slow transaction can commit an <em>older</em>
- * timestamp after a faster one has already been read — a reader whose cursor moved past it
- * would never see it. So the feed refuses to report anything younger than
- * {@code now - lagMillis}: by the time an entry is eligible, any transaction that had
- * already stamped an earlier timestamp has had that long to commit.</p>
+ * deliberately, so an audit row commits with the change it describes), so their timestamps
+ * are a <em>stamp</em> order and not a commit order: a transaction that stamped earlier can
+ * commit after a faster one has already been read, and a cursor that moved past the faster
+ * one would never see it. SH88 shipped a lag as the mitigation — hold back anything younger
+ * than {@code now - lagMillis} — which is a guess about how long a commit takes, and a bulk
+ * apply of hundreds of posts outran it.</p>
  *
- * <p>This narrows the hole to transactions that take longer than the lag between
- * stamping and committing — a bulk apply of hundreds of posts can. It is stated in the
- * response {@code notes} rather than hidden, and the real fix (commit-ordered sequencing)
- * is its own task, because it changes how the audit row is written and not how it is
- * read.</p>
+ * <p>The ceiling is now {@link ShAuditFeedWatermark#ceiling()}: the position of the oldest
+ * write that has stamped and not finished, exclusive. A row is reportable only once every
+ * write stamped before it has committed or rolled back, which is a fact the registry holds
+ * rather than a duration anybody estimated. {@code lagMillis} stays, defaults to <b>0</b>,
+ * and means the one thing an in-process registry cannot see: another application node
+ * writing to the same database. See {@link ShAuditFeedWatermark} for why a {@code seq}
+ * column with gap detection was rejected — it relocates the guess rather than removing it.</p>
  *
  * <h2>Scope</h2>
  *
@@ -85,6 +88,7 @@ public class ShAgentChangesService {
     private final ShAgentProperties properties;
     private final ShAgentIncidentStore incidentStore;
     private final ShTemplateGraph templateGraph;
+    private final ShAuditFeedWatermark watermark;
 
     public ShAgentChangesService(ShHistoryRepository shHistoryRepository,
                                  ShPostUnifiedRepository shPostUnifiedRepository,
@@ -93,7 +97,8 @@ public class ShAgentChangesService {
                                  ShAddressResolver shAddressResolver,
                                  ShAgentProperties properties,
                                  ShAgentIncidentStore incidentStore,
-                                 ShTemplateGraph templateGraph) {
+                                 ShTemplateGraph templateGraph,
+                                 ShAuditFeedWatermark watermark) {
         this.shHistoryRepository = shHistoryRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shFolderRepository = shFolderRepository;
@@ -102,6 +107,7 @@ public class ShAgentChangesService {
         this.properties = properties;
         this.incidentStore = incidentStore;
         this.templateGraph = templateGraph;
+        this.watermark = watermark;
     }
 
     /**
@@ -118,7 +124,10 @@ public class ShAgentChangesService {
         int cap = limit == null || limit <= 0
                 ? config.getDefaultLimit()
                 : Math.min(limit, config.getMaxLimit());
-        Instant ceiling = Instant.now().minusMillis(Math.max(0, config.getLagMillis()));
+        // SH147 — the oldest write that has stamped and not finished, minus whatever margin an
+        // operator configured for a node this registry cannot see. Not `now - lag`: that was a
+        // guess about commit duration, and a bulk apply outran it.
+        Instant ceiling = watermark.ceiling().minusMillis(Math.max(0, config.getLagMillis()));
 
         Scope scope = scope(site);
         ShAgentChangeCursor from = since == null || since.isBlank()
@@ -391,9 +400,14 @@ public class ShAgentChangesService {
             // on the endpoint whose whole job is being polled. It also told the caller nothing
             // it could act on: the actionable number is how far behind the edge of the feed is,
             // and that is a constant.
-            notes.add("entries younger than " + config.getLagMillis() + "ms are held back so a "
-                    + "transaction still committing cannot land behind the cursor; a write that "
-                    + "takes longer than that can still be reported late");
+            //
+            // SH147 turned it into a disclosure about *another node*, and made it conditional in
+            // practice as well as in code: the default is 0 now, so a single-instance feed pays
+            // no prose for a hole it does not have.
+            notes.add("entries younger than " + config.getLagMillis() + "ms are also held back, "
+                    + "a margin for a write this instance cannot see (another node against the "
+                    + "same database); a write in flight on this instance holds the feed back on "
+                    + "its own, for exactly as long as it runs");
         }
         if (!scope.unrestricted()) {
             notes.add("scoped to " + scope.siteIds().size() + " readable site(s); entries for "

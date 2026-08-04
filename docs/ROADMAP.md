@@ -26,7 +26,6 @@
 
 ## Block I — Content as files (local-first authoring)
 
-- 🛠 **SH147** (deps: SH88 ✅) **Commit-ordered change feed** — SH51 stamps the audit row inside the writer's transaction, so a slow commit can land behind a cursor that already passed it, which for a sync feed is a lost edit. → §X.3
 - 📋 **SH210** (deps: SH145 ✅) **Editing an asset's bytes in place does nothing** — push --content reuses a File id when the path already exists, so replacing an asset's bytes uploads nothing and reports success — the projection's one silent no-op. → §X.13
 - 📋 **SH211** (deps: SH137 ✅, SH149 ✅) **Renaming a folder marker's directory is a delete plus a create, and the delete takes the posts** — reconcileFolders reads a renamed marker as one folder gone and another arrived, and --prune deletes the old one, cascading to every post beneath it. → §X.14
 - 📋 **SH212** (deps: SH99 ✅, SH145 ✅) **`shio verify` cannot see a broken asset path** — An asset path a File field names is checked by push, the last gate, when the tree makes it checkable by verify, the first. → §X.15

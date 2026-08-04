@@ -355,11 +355,32 @@ a scoped credential cannot use the error to prove a site exists.
   address each, and a `cursor` to pass back as `since=`. The cursor is `<instant>|<id>`,
   never a bare timestamp — audit rows share timestamps, so a timestamp cursor would drop
   the entries that tie (a bare one is a teaching 400, not an interpretation). Both modes
-  are ordered **oldest → newest** so the cursor is always the last row. An entry younger
-  than `shio.agent.changes.lag-millis` (1s) is **held back**: SH51 stamps the audit row
-  inside the writer's transaction, so a slow commit could otherwise land behind a cursor
-  that already passed it — the `notes` say so, and SH147 is the real fix. Site-scoped by
-  the SH2 allow-list. **A row carries `subject: "folder"` when the change is structural
+  are ordered **oldest → newest** so the cursor is always the last row.
+  **The feed is commit-ordered, and the guard is a watermark rather than a lag (SH147).**
+  SH51 stamps the audit row inside the writer's transaction, so timestamps are a *stamp* order:
+  a transaction that stamped earlier can commit after a faster one has been read, and a cursor
+  past the faster one never sees it — a **lost edit** on the one surface that exists to be the
+  delta. `ShAuditFeedWatermark` closes it with two facts instead of a duration. **Positions are
+  reserved, not read off the clock** (`reserve()`, monotonic and unique, so ties vanish and the
+  SH88 keyset tie-break becomes belt-and-braces), and **every reserve inside a transaction is
+  registered as in flight** and released when it completes either way — so the ceiling is the
+  *oldest unfinished write*, exclusive, and a row is reportable only once everything stamped
+  before it has finished. `lag-millis` survives at **0**, meaning only what an in-process
+  registry cannot see: a second app node against the same database. Four things worth knowing
+  before touching it. **A `seq` column with gap detection — §X.3.1's shape — does not close the
+  hole**: a gap is either a live transaction or a rolled-back one, nothing in the row says
+  which, so the reader skips after a timeout and a slower transaction loses its edit exactly as
+  the lag did; the registry has the fact the database does not. **The hold is per row, not per
+  transaction**: holding only the transaction's first position is arithmetically enough and needs
+  a thread-bound `TransactionSynchronizationManager` resource to record it, which leaked both
+  ways in one suite — a stale binding makes later reserves skip their hold (feed reports a write
+  in flight) *and* strands the hold it came with (feed reports nothing, ever). **The exclusive
+  margin is a millisecond, not a nanosecond**, because it is compared against a value that has
+  been through a timestamp column: microsecond storage hands back a slightly smaller instant and
+  `oldest - 1ns` re-admits the row it exists to hold. Reserved positions are microsecond-aligned
+  for the same reason. **And the idle ceiling is `max(now, lastReserved)`, never `now`** — a burst
+  reserves faster than the clock ticks, so positions run ahead of it, and capping at `now` hid
+  every row a fixture had just written. Site-scoped by the SH2 allow-list. **A row carries `subject: "folder"` when the change is structural
   (SH196)** — a section created, renamed, moved, deleted or restored, one row per write and
   never one per post beneath it. Emitted only when it is `folder`, so every post row is the
   bytes it always was (P3); absent means `post`. It is not a shorter spelling of the
@@ -441,8 +462,8 @@ a scoped credential cannot use the error to prove a site exists.
   bug:** two nanosecond-timing hypotheses were eliminated by 600 rounds that reproduced nothing,
   and the cause was a documented contract the code had stopped keeping — order-dependence reads
   exactly like a race from the outside, and is cheap to test for. The same pass removed the
-  feed's `ceiling` from this read on its own merits: `/agent/changes` computes `now - lagMillis`
-  so a **cursor** cannot skip a late commit, and diagnostics resumes nothing, so the argument
+  feed's `ceiling` from this read on its own merits: `/agent/changes` has a ceiling of its own
+  (SH147's watermark) so a **cursor** cannot skip a late commit, and diagnostics resumes nothing, so the argument
   could only ever hide a row somebody had just recorded.
   **Incidents also ride `/agent/changes` (SH144)** in their own `incidents` array, so one
   `since=` answers what changed *and* what broke. Not a `Change` with an invented `action` —
@@ -454,6 +475,14 @@ a scoped credential cannot use the error to prove a site exists.
   stream reports no `more`; until then it stays the audit's and those incidents are read again,
   which costs nothing because rows are folded. Incidents carry **no site**, so `site=` does not
   narrow them and the `notes` say so.
+  **And an incident's position comes from the same watermark as an audit row's (SH147).**
+  `ShAgentIncidentStore` kept a monotonic counter of its own (SH372, so the cap would stop
+  choosing which row dies by random uuid) and that is half the mechanism — the other half is being
+  held back from the feed until the writing transaction completes. **One cursor cannot be
+  commit-ordered on only one of its two streams**: once the lag went, the window cursor sat at the
+  edge of the feed and an incident stamped from an unsynchronised clock could commit *behind* a
+  cursor a reader already held. It failed once in two full suite runs, which is the shape of every
+  bug in this paragraph.
 - `GET/PUT/DELETE /agent/memory` — **the instance memory (SH114)**: keyed notes that come
   back in the context pack's `conventions`, attributed to whoever wrote them. Upsert by
   `(tenant, scope, key)`, so re-stating a convention rewrites one row; `scope` is a site name

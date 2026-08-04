@@ -67,9 +67,10 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 	/**
 	 * The change feed's window (SH88): the newest entries up to {@code ceiling}.
 	 *
-	 * <p>The ceiling is the lag rule — an entry younger than it is held back so a
-	 * transaction that is still committing cannot land <em>behind</em> a cursor that has
-	 * already moved past its timestamp. See {@code ShAgentChangesService}.</p>
+	 * <p>The ceiling is the SH147 watermark — the oldest write that has stamped and not
+	 * finished, so an entry cannot be reported while a transaction that stamped before it is
+	 * still committing and could land <em>behind</em> a cursor that has already moved past it.
+	 * See {@code ShAuditFeedWatermark}.</p>
 	 *
 	 * <p>Two shapes of each query rather than one with an {@code or} on a flag: an
 	 * unrestricted credential reads the whole trail (including entries whose site could

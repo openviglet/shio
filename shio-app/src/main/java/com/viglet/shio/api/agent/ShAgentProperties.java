@@ -122,20 +122,22 @@ public class ShAgentProperties {
         private int maxLimit = 500;
 
         /**
-         * How long an entry is held back before the feed will report it.
+         * An <b>extra</b> margin, on top of the SH147 watermark, before the feed will report
+         * an entry.
          *
-         * <p>SH51 writes the audit row inside the writer's transaction, so its timestamp
-         * is assigned before the commit: a slow transaction can commit an older timestamp
-         * after a reader has already moved its cursor past it. Waiting this long before
-         * reporting an entry gives any transaction that already stamped an earlier one
-         * that much time to commit. One second covers ordinary writes; a bulk apply that
-         * runs longer can still be reported late, which the response says out loud.</p>
+         * <p>It used to be the ordering guard itself and a guess: SH51 stamps the audit row
+         * inside the writer's transaction, so holding entries back for a second gave any
+         * transaction that had stamped an earlier one that long to commit. A bulk apply of
+         * hundreds of posts outran it, which is why the default is now <b>0</b> — the ceiling
+         * is {@code ShAuditFeedWatermark.ceiling()}, the oldest write that has stamped and not
+         * finished, and that is a fact rather than an estimate.</p>
          *
-         * <p>Set to {@code 0} to disable — appropriate only where writes are serialized
-         * (a single-writer import) and never for the console-plus-agent case this feed
-         * exists to reconcile.</p>
+         * <p>What is left for this knob is the one thing an in-process registry cannot see: a
+         * <b>second application node</b> writing to the same database, whose in-flight writes
+         * this JVM knows nothing about. Set it there, to something above that node's slowest
+         * write transaction. The feed discloses it in {@code notes} whenever it is non-zero.</p>
          */
-        private long lagMillis = 1000;
+        private long lagMillis = 0;
     }
 
     /** Verification-report limits (SH99, SH100). */
