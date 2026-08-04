@@ -1148,6 +1148,30 @@ what the region declares it does happens. And it stays a **CLI gate**, never a `
 finding: the server cannot see it, and one defect reported by two subsystems is two
 reports that disagree.
 
+### XV.29 The cross-DB ITs are red in the one state that could prove anything
+
+Measured 2026-08-04 on Docker Desktop 29.6.2, found while shipping SH415.
+`ShPostgresSchemaIT` and `ShMariaDbSchemaIT` report `Skipped: 6` with no daemon and
+`Errors: 6` with one — two runs of the same command four minutes apart disagreeing about
+whether the schema is proven, with a daemon starting as the only difference.
+
+Docker connects: Testcontainers logs the npipe strategy and the server version. Then the
+context fails before any container is created — no `Creating container` line — burning
+16.5 s in the full run and 4 s alone. So it is not the image pull, not the daemon and
+not a port. All three methods report `ApplicationContext failure threshold (1)
+exceeded`, which is Spring declining a second attempt, so the first exception — the only
+one that names the cause — is never printed. Getting it is the first step:
+`-Dspring.test.context.failure.threshold=2`, or a listener that logs the initial load
+failure.
+
+Why it matters more than six tests. These are the only proof that the Liquibase
+changelogs apply on anything but H2, and `agents.md` names a schema change as the case
+where the unit suite passing means least — `ddl-auto=create-drop` builds the test schema
+from entity metadata, so the changelogs are never exercised there at all. And it fails
+as an absence: `@Testcontainers(disabledWithoutDocker = true)` is correct behaviour that
+reads as a pass, which is SH322's shape, and `testFailureIgnore=true` means the error
+state does not go red either. Neither state of the machine tells you.
+
 ## XVI. The human half (Block O) — what reading the console next found
 
 Block O shipped, and its lesson was that **console defects answer `200`**: seven of them, none

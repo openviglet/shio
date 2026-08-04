@@ -146,6 +146,26 @@ Run the **full** suite, not a single `-Dtest` class. JS workspace: `pnpm install
 once at the repo root, **Node ≥26**. Detail — Maven/frontend-plugin wiring, Vite,
 publishing — is in [docs/agents/build.md](docs/agents/build.md).
 
+**`clean test` is the command; the ITs are opt-in and you ask for them (SH415).** The
+line above is the whole validation for almost every task — it never invoked failsafe,
+and since SH415 `verify` does not either (`skipITs` defaults to true). Add
+`-DskipITs=false` when, and only when, the change touches what the ten `*IT.java`
+classes actually cover: **multi-tenancy** (`@TenantId`, `ShTenantContext`, provisioning,
+quota, membership, suspension), **the Liquibase schema** or anything that would read
+differently on PostgreSQL/MariaDB, or the **CDA/static-file delivery** paths those ITs
+drive. Reach for it on a schema or tenancy change even when the unit suite is green —
+that is the case the ITs exist for and the one where `clean test` passing means least.
+Three things before you read a green `verify` as proof. Failsafe runs with
+`testFailureIgnore=true`, so **a red IT does not fail the build** — read the IT counts,
+never infer them from the exit code. `ShPostgresSchemaIT` and `ShMariaDbSchemaIT` carry
+`@Testcontainers(disabledWithoutDocker = true)`, so **without a daemon they skip**
+(`0.00 s`, reported as `Skipped`) — which is the shape of an absence you cannot grep for,
+since "verify proved the schema on PostgreSQL" is then simply false. And **with a daemon
+up they currently error: SH416, 6 errors, cause not yet found** — the context fails in
+~4 s before any container is created and Spring's failure threshold swallows the first
+exception. So today `-DskipITs=false` buys you the tenancy ITs; the two cross-DB classes
+are known-red and are not a signal about your change.
+
 **Measure before you fix, and the measurement is the first deliverable.** P3 makes
 this binding for tokens and `ShAgentResponseBudgetTest` for response sizes; the same
 rule applies to **any** cost — queries, renders, suite time. A performance change

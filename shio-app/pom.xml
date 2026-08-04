@@ -25,6 +25,35 @@
              wants the JVM's command line (JaCoCo is the likely one) sets `argLine` and both agents
              end up on it, which is the part the task note said would actually take care. -->
         <argLine></argLine>
+        <!-- SH415 — the ITs are opt-in: `verify` skips them, `-DskipITs=false` runs them.
+             Failsafe reads this property itself (`@Parameter(property = "skipITs")`), so the
+             default lives here and needs no plugin config to enforce.
+
+             Measured before flipping it: the failsafe phase is 31.1 s of a 120 s `verify`, and
+             16.2 s of that is ShAgentTenantIsolationIT — *one test* — because the first context
+             boot in a JVM costs 13–35 s where every later one costs ~1.5 s (SH414). So the phase
+             is mostly a cold start, and it is paid by whoever types `verify` for a reason
+             unrelated to tenancy.
+
+             The reason this is safe is not the 31 s, and it is worth writing down because it is
+             the opposite of what it looks like. **These ITs were never a gate.** No workflow runs
+             the Java suite at all: `build.yml` is the only one that calls Maven `verify`, it is
+             `workflow_dispatch` (manual), and it passes `-Dmaven.test.skip=true`. Failsafe also
+             carries `testFailureIgnore=true`, so a red IT does not fail the build even when one
+             runs. Nothing is being switched off here that was catching anything; what changes is
+             that the run now *says* the ITs did not run, instead of the developer assuming from
+             `verify` that they did.
+
+             Two things that follow, and neither is a reason to leave the default at false.
+             Six of the 26 IT tests (ShPostgresSchemaIT, ShMariaDbSchemaIT) were not running in
+             either direction: without a Docker daemon they skip, by their own
+             @Testcontainers(disabledWithoutDocker = true), and *with* one they error — SH416,
+             measured, cause not yet found. So "verify runs the cross-DB checks" was already false
+             on any machine without a daemon and is false with one. And the honest fix is to wire
+             and PR, which this makes *easier* to reason about: the unit suite is the fast gate
+             (68 s, four forks, SH414) and the ITs are the deliberate second one, rather than one
+             41 s blob that no workflow can afford to run on every push. -->
+        <skipITs>true</skipITs>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>21</maven.compiler.source>

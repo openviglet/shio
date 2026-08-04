@@ -75,6 +75,7 @@
 - 💭 **SH364** (deps: SH247 ✅) **A rendered form posts nowhere, and the design for where it should post is written** — 2018's createPost plus folder says a submission becomes a post in a named folder, and the only thing between that and shipping is a public unauthenticated write nobody has scoped. → §XV.26
 - 💭 **SH365** (deps: SH265 ✅) **shio snapshot's --url is two arguments wearing one name** — It is read as the page to photograph and as the instance base URL, so the flag that says where Shio is also decides what gets photographed. → §XV.27
 - 📋 **SH392** (deps: SH248 ✅, SH391) **A region's JavaScript reaches the browser and nothing ever runs it** — SH248 ships a region's script to the reader on purpose, and no test, lint or gate executes it, so the one field whose value is code has no proof path at all. → §XV.28
+- 📋 **SH416** (deps: —) **The two cross-DB schema ITs error whenever Docker is actually running** — Whether they pass depends on whether a daemon is up, so the PostgreSQL and MariaDB schema has no working proof in either state. → §XV.29
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 

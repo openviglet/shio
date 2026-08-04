@@ -134,9 +134,48 @@ per-fork and still comfortable. It is also why the run stays correct rather than
 fork's `jdbc:h2:mem:shio-test` is private to that JVM, so classes on the shared datasource get *more*
 isolation than they had, never less. Validated on four green full runs (1298 tests) before it landed.
 
-**Failsafe is deliberately left at one fork.** Its ten ITs start Postgres and MariaDB containers, so
-their cost is container startup, not context boot, and parallelising them is a different measurement
-that has not been taken.
+**Failsafe is deliberately left at one fork**, and since SH415 it does not run at all unless asked.
+
+**The ITs are opt-in (SH415): `verify` skips them, `-DskipITs=false` runs them.** `skipITs` is a
+property in `shio-app/pom.xml`; failsafe reads it itself, so the default needs no plugin config.
+Measured first: the failsafe phase is **31.1 s of a 120 s `verify`**, and **16.2 s of it is
+`ShAgentTenantIsolationIT` — one test** — because SH414's cold start applies here too, at one fork,
+with nothing to amortise it over.
+
+**The reason it is safe is the opposite of how it looks, and this is the part to know.** These ITs
+were never a gate. **No workflow in this repository runs the Java suite** — `build.yml` is the only
+one that calls Maven `verify`, it is `workflow_dispatch` (manual), and it passes
+`-Dmaven.test.skip=true`; `console-check.yml` runs on push and PR but with `-DskipTests package`, and
+the rest are manual or docs. Failsafe also carries `testFailureIgnore=true`, so **a red IT does not
+fail the build** even when one runs. So nothing that was catching something has been switched off;
+what changed is that a run now *says* the ITs did not run, instead of `verify` letting a developer
+assume they did.
+
+Two facts that follow, and neither argues for putting the default back. **The cross-DB classes were
+already not running, in both directions**, which flipping the default merely made legible.
+`ShPostgresSchemaIT` and `ShMariaDbSchemaIT` carry `@Testcontainers(disabledWithoutDocker = true)`,
+so without a daemon they **skip** — `0.00 s`, counted as `Skipped: 6` — and "`verify` proves the
+schema on PostgreSQL" was false on any machine without one, the same absence-you-cannot-grep-for
+that SH322 is about. **And with a daemon up they error (SH416).** Measured the same afternoon on
+Docker Desktop 29.6.2: `Skipped: 6` became `Errors: 6`, each class burning 16.5 s in the full run and
+4 s alone. Docker connects — Testcontainers logs the npipe strategy and the server version — and then
+the context fails **before any container is created** (no `Creating container` line), so it is not
+image pull, not the daemon and not the port. The first exception is lost to
+`ApplicationContext failure threshold (1) exceeded`, which is what all three methods report, so the
+cause is still unknown and is SH416's job. The reason this is written here rather than fixed in the
+same breath: two runs of the same command four minutes apart disagreed about whether these tests
+pass, and the difference was a daemon starting — which makes "is it green" a question about the
+machine, exactly the failure mode SH250 calls worse than a break. And the honest repair for the coverage is to wire
+the suite to push and PR, which this split makes *easier* rather than harder: a 68 s unit gate that
+runs on every push and a deliberate second gate for tenancy and schema, instead of one blob no
+workflow can afford. **When to spend the flag is in `agents.md`** — tenancy, Liquibase, anything that
+reads differently on PostgreSQL/MariaDB, or the CDA/static-file delivery paths — and the rule there is
+to reach for it on a schema or tenancy change *even when the unit suite is green*, that being exactly
+the case where green means least.
+
+Parallelising failsafe was **not** measured and the SH414 numbers argue against bothering: at one
+fork the phase is 31 s of which 16 s is a single cold start, so a second fork buys concurrency and
+pays a second cold start — and under contention that start grew from 13 s to 24 s.
 
 **Two things that look like the same idea and are not.** `spring.main.lazy-initialization=true` was
 tried and rejected on measurement: **26 failures and no time win** (2:17 against a 2:21 baseline,
