@@ -1383,23 +1383,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.8 A listing helper with no offset is a homepage teaser, not an archive (SH384)
-
-`{{#query}}` accepts `folder`, `type` and `limit`, and `limit` exists because a listing
-with no ceiling gets slower as the site grows. Both are right and together they mean the
-helper can only render *the first page* of anything. An insights hub with two hundred
-articles, or the same hub filtered to one industry, is not expressible — and that is the
-single most common page shape on a real site after the homepage.
-
-What it needs is small and each part has a precedent. **`offset=` / `page=`**, read from
-`param.page` since SH259 put the query string in scope, with the row count and the page
-count in the model so a template can draw the pager. **A field filter** (`tag=`, or a
-field/value pair) resolved the way SH154 already knows which fields hold references.
-**`sort=`** over the existing total order, because "oldest first" is a legitimate
-archive and the comparator is already shared. The costs are measured before the fix, per
-P3 and `ShRenderHelperSweepBenchmarkTest`: a filter that reads every row in the site to
-keep ten is exactly the defect SH312 found and fixed one layer sideways.
-
 ### XVII.9 The URL space is part of the site being replicated (SH385)
 
 A replication that changes a path breaks every link into it — search results, other

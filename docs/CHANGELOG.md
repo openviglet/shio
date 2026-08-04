@@ -908,6 +908,7 @@
 - **SH380** — A captured stylesheet arrives as DTCG tokens plus CSS, url() rewritten to tree paths, and a token that fails the name round trip is reported not written.
 - **SH382** — Menu and MenuItem are ordinary content and {{#menu title=}} renders them: label and href overrides, nesting by SH381's no-url row, ambiguity refused.
 - **SH383** — post.locale and render.defaultLocale reach templates, {{#translations}} yields the siblings for a switcher and hreflang, and a half-translated group is a warning.
+- **SH384** — query takes page, sort and a field filter with exact pager counts; a benchmark measured 213 rows loaded per 10 rendered first, which is what made them free.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

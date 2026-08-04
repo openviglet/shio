@@ -79,7 +79,11 @@ class ShSilentCatchInventoryTest {
             "tenant", 4,
             "blueprint", 2,
             "exchange", 2,
-            "render", 2,
+            // 3 since SH384: a bad `page=` falls back to page one, beside the bad `limit=` that
+            // falls back to the default. Deliberately not recorded — that value comes off a URL a
+            // *reader* types, so a diagnostics entry per `?page=abc` would fill the window with
+            // somebody else's typos, which is the trade SH103 refused for 4xx.
+            "render", 3,
             "utils", 2,
             "migration", 1,
             // 1 since SH84: `ShTuringDocumentMapper.readData` reads a post whose `data` is not JSON
@@ -197,10 +201,18 @@ class ShSilentCatchInventoryTest {
                         whose data is not a JSON object (the page renders with none of its fields). \
                         Both symptoms are silence, which is the one shape nobody investigates.
 
-                        The two that remain are deliberate and are named here so they are not \
-                        re-filed: a bad `limit=` falls back to the default, and the template \
-                        validator collects the compile failure into a report.""")
-                .hasSize(2)
+                        The three that remain are deliberate and are named here so they are not \
+                        re-filed: a bad `limit=` falls back to the default, a bad `page=` falls back \
+                        to page one (SH384), and the template validator collects the compile failure \
+                        into a report.
+
+                        `page=` is the one worth arguing about, and the argument is *where the value \
+                        comes from*: a reader types `?page=` into a URL bar, so recording it would \
+                        put one diagnostics entry per stranger's typo into a window folded by \
+                        subject — which is exactly the trade SH103 refused for 4xx. A bad `limit=` \
+                        is a template author's mistake and could be argued the other way; it is \
+                        left as it was rather than changed in passing.""")
+                .hasSize(3)
                 .allSatisfy(where -> assertThat(where)
                         .matches(".*(ShRenderHelpers|ShTemplateValidator).*"));
     }

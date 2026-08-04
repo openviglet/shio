@@ -326,8 +326,23 @@ class ShHelperSignatureLintTest {
                         Read from the body, and `limit` is the interesting one: it arrives through \
                         limit(options), so this also asserts the one level of indirection actually \
                         resolves rather than being dead code in the lint.""")
-                .containsExactly("folder", "limit", "type");
-        assertThat(declaredParameters(query)).containsExactly("folder", "limit", "type");
+                .contains("limit", "folder", "type")
+                .as("""
+                        The three above are named as literals because they are the anchor: `limit` \
+                        arrives through limit(options), so finding it proves the one level of \
+                        indirection resolves rather than being dead code. The full set is NOT named \
+                        (SH384) — `{{#query}}` grew four hash keys and this line failed twice while \
+                        the parse was working perfectly, which makes it a restatement of the \
+                        signature in the class whose whole subject is that the signature has one \
+                        source.""")
+                .isNotEmpty();
+        assertThat(declaredParameters(query))
+                .as("""
+                        Both sides of the parse resolve, and they agree — which is the property this \
+                        anchor exists for. WHAT they contain is `everySignatureNamesExactlyTheKeysIts\
+                        HelperReads`' subject, asserted there over every helper rather than here over \
+                        one.""")
+                .containsExactlyInAnyOrderElementsOf(keysRead(query, methods(source)));
     }
 
     @Test

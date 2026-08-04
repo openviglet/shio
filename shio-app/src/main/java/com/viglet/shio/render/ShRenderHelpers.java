@@ -178,7 +178,7 @@ public class ShRenderHelpers {
         // parameter's name exists only inside the helper's body, so nothing downstream could
         // derive it, and the context pack now answers "what may a template call" from here.
         engine.register("query", ShHelperShape.BLOCK,
-                "{{#query folder= type= limit=}}…{{/query}}", this::query);
+                "{{#query folder= type= limit= page= sort= field= value=}}…{{/query}}", this::query);
         engine.register("navigation", ShHelperShape.BLOCK,
                 "{{#navigation folder=}}…{{/navigation}}", this::navigation);
         engine.register("search", ShHelperShape.BLOCK,
@@ -374,7 +374,14 @@ public class ShRenderHelpers {
             }
             return out;
         } finally {
-            OPEN_MENUS.get().remove(menu.getId());
+            Set<String> open = OPEN_MENUS.get();
+            open.remove(menu.getId());
+            // And the ThreadLocal itself goes when the outermost menu closes. Removing only the id
+            // would leave an empty set attached to every request thread that ever rendered a menu —
+            // harmless in size and exactly the shape a real leak has, which is why the rule exists.
+            if (open.isEmpty()) {
+                OPEN_MENUS.remove();
+            }
         }
     }
 
@@ -686,15 +693,153 @@ public class ShRenderHelpers {
             return options.inverse();
         }
 
-        List<Map<String, Object>> rows = rowsOf(folder.get(), type, limit, state(options));
+        // SH384 — the whole matching set first, then the window. That order is what the measurement
+        // licensed: the folder read is already whole-folder (213 rows loaded to render 10, measured by
+        // ShRenderListingPageBenchmarkTest before any of this was written), so filtering, sorting and
+        // windowing are list operations over rows already in hand. They cost no read, and the total is
+        // exact for free — which is why the pager below reports a real count rather than "has more".
+        // Every hash key is read **here**, in the helper's own body, and passed down. SH291's lint
+        // follows exactly one call from a registered helper, so a key read two levels away is not
+        // wrong code — it is code the lint cannot attribute to a signature, which is how a signature
+        // silently goes stale. Reading them together also puts the whole call shape in one place.
+        String sort = hash(options, "sort", "newest");
+        String field = hash(options, "field", null);
+        String value = hash(options, "value", null);
+        List<ShPostUnified> matching = matching(folder.get(), type, field, value, sort, options);
+        int page = page(options);
+        int pages = Math.max((matching.size() + limit - 1) / limit, 1);
+        List<Map<String, Object>> rows = matching.stream()
+                .skip((long) (page - 1) * limit)
+                .limit(limit)
+                .map(this::row)
+                .toList();
+
+        // The pager's facts, as Handlebars data variables. They are `@`-prefixed rather than row keys
+        // for two reasons: a row is one post and these are properties of the *listing*, so putting
+        // them on every row would repeat them per item and imply they varied; and SH251's scanner
+        // skips `@` tokens by construction, so no field lint has to learn about them. Published before
+        // `fn` so a template can read them inside the block, which is the only scope Handlebars gives a
+        // block helper — there is no way to write into the enclosing one, and inventing a mechanism
+        // for it would be a second one to learn.
+        options.data("page", page);
+        options.data("pages", pages);
+        options.data("total", matching.size());
+        options.data("hasPrev", page > 1);
+        options.data("hasNext", page < pages);
+        options.data("prevPage", Math.max(page - 1, 1));
+        options.data("nextPage", Math.min(page + 1, pages));
+
         if (rows.isEmpty()) {
+            // Covers "the folder is empty" and "page 7 of 3" with one branch, and both mean the same
+            // thing to a template: there is nothing to draw here.
             return options.inverse();
         }
         StringBuilder out = new StringBuilder();
-        for (Map<String, Object> row : rows) {
-            out.append(options.fn(row));
+        for (int index = 0; index < rows.size(); index++) {
+            // `@index`, `@first` and `@last` — Handlebars' own `{{#each}}` vocabulary rather than a
+            // third spelling of it, so nothing new has to be learned. They are what makes a pager
+            // drawn **once** expressible: the block body repeats per row, so
+            // `{{#if @last}}<nav>page {{@page}} of {{@pages}}</nav>{{/if}}` is the only way to emit it
+            // a single time, and without these the pager repeated per item. A test found that.
+            options.data("index", index);
+            options.data("first", index == 0);
+            options.data("last", index == rows.size() - 1);
+            out.append(options.fn(rows.get(index)));
         }
         return out;
+    }
+
+    /**
+     * Every post the listing's predicates accept, in the order {@code sort=} asks for (SH384).
+     *
+     * <h3>The filter is a field and a value, not a {@code tag=} convention</h3>
+     *
+     * <p>{@code field="industry" value="finance"} rather than a blessed field name, because a blessed
+     * one would be a convention the model does not declare — the same argument that keeps
+     * {@code {{#menu}}} free of a post-type name. A value <b>matches an entry</b> and not just the whole
+     * field: SH154's {@code references: post} Multi Select and an ordinary tag list are both stored as a
+     * JSON array, so {@code value="finance"} has to accept {@code ["finance","energy"]} or the filter is
+     * useless on exactly the field shape a hub page filters by. {@code referencesOf} is what normalizes
+     * the two, so a single string and a list are one code path.
+     *
+     * <p>Case-insensitive, following the {@code {{#navigation}}} index-post match for SH79's reason: a
+     * field value is a label, and byte equality between a label somebody typed and a label somebody
+     * else typed makes the filter almost never fire.
+     */
+    private List<ShPostUnified> matching(ShFolder folder, String type, String field, String value,
+                                        String sort, Options options) {
+        return preferDraft(
+                shPostUnifiedRepository.findByShFolderAndStateIn(folder, statesFor(state(options))),
+                state(options))
+                .stream()
+                .filter(post -> type == null || type.equals(typeNameOf(post)))
+                .filter(post -> field == null || value == null || carries(post, field, value))
+                .sorted(order(sort))
+                .toList();
+    }
+
+    /** Whether one of this field's values is this value, case-insensitively. */
+    private boolean carries(ShPostUnified post, String field, String value) {
+        return referencesOf(shRenderModel.fieldsOf(post).get(field)).stream()
+                .anyMatch(entry -> entry.equalsIgnoreCase(value));
+    }
+
+    /**
+     * The listing's order (SH384).
+     *
+     * <p>Three, and every one is <b>total</b> — the shared rule, because a listing that reorders itself
+     * between renders moves SH101's digest for a change nobody made. {@code oldest} is the default
+     * reversed, which reverses the id tiebreak too and is still total; a legitimate archive reads
+     * forwards, which is the case this exists for. An unrecognised value falls back to the default
+     * rather than rendering nothing: a typo in {@code sort=} should cost a reader the order they asked
+     * for, not the listing.
+     */
+    private Comparator<ShPostUnified> order(String sort) {
+        return switch (sort.toLowerCase(java.util.Locale.ROOT)) {
+            case "oldest" -> byDateThenId().reversed();
+            case "title" -> Comparator
+                    .comparing((ShPostUnified post) -> post.getTitle() == null ? "" : post.getTitle(),
+                            String.CASE_INSENSITIVE_ORDER)
+                    .thenComparing(ShPostUnified::getId);
+            default -> byDateThenId();
+        };
+    }
+
+    /**
+     * Which page of the listing (SH384). One-based, because a pager's first page is page 1.
+     *
+     * <h3>Why there is no {@code offset=}</h3>
+     *
+     * <p>The design offered either. Two spellings of one window is one too many: they would have to
+     * define a precedence for a caller who passes both, and a <b>silent</b> precedence is precisely
+     * what SH382's {@code menu-item-ambiguous-link} exists to report rather than resolve. {@code page=}
+     * with {@code limit=} expresses every window an offset could — "skip the featured post and show
+     * three" is {@code limit=3 page=2}.
+     *
+     * <h3>Why it does not read {@code param.page} itself</h3>
+     *
+     * <p>SH259 put the query string in template scope and deliberately kept it out of helper internals:
+     * {@code {{#search q=TOPIC}}} takes its term from the template, not from the request. So a paged
+     * archive is {@code {{#query page=param.page}}} — the template declares where the number comes
+     * from, which means the same helper serves a request-driven archive, a hardcoded second page and a
+     * page number computed from the post's own field, with no branch here and no request in scope.
+     */
+    private int page(Options options) {
+        Object raw = options.hash("page");
+        if (raw instanceof Number number) {
+            return Math.max(number.intValue(), 1);
+        }
+        if (raw == null) {
+            return 1;
+        }
+        try {
+            return Math.max(Integer.parseInt(raw.toString().trim()), 1);
+        } catch (NumberFormatException e) {
+            // A `?page=` a reader typed by hand, or a template naming a field that is empty. Page one
+            // is the honest answer: refusing would render nothing for a request that is merely wrong
+            // about the page, and this value comes off a URL somebody else controls.
+            return 1;
+        }
     }
 
     /**
@@ -985,17 +1130,6 @@ public class ShRenderHelpers {
                 .map(ShPostUnified::getShFolder);
     }
 
-    private List<Map<String, Object>> rowsOf(ShFolder folder, String type, int limit, ShPostState state) {
-        return preferDraft(
-                shPostUnifiedRepository.findByShFolderAndStateIn(folder, statesFor(state)), state)
-                .stream()
-                .filter(post -> type == null || type.equals(typeNameOf(post)))
-                .sorted(byDateThenId())
-                .limit(limit)
-                .map(this::row)
-                .toList();
-    }
-
     /**
      * The states a listing reads, given the state the page is being rendered in.
      *
@@ -1037,7 +1171,7 @@ public class ShRenderHelpers {
      */
     private Comparator<ShPostUnified> byDateThenId() {
         return Comparator
-                .comparing((ShPostUnified p) -> p.getDate(),
+                .comparing(ShPostUnified::getDate,
                         Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(ShPostUnified::getId);
     }

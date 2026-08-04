@@ -74,17 +74,27 @@ class ShTemplateHelperDiscoveryTest {
                         + "job of documentation, one name per attempt, which is the opposite of "
                         + "P2. SH260 had already made the engine the one source; every reader of "
                         + "it was internal.")
-                .anySatisfy(line -> assertThat(line)
-                        .contains("{{#query folder= type= limit=}}")
-                        .contains("{{#navigation folder=}}")
-                        .contains("{{#search q= type= limit=}}")
-                        .contains("{{#getRelation FIELD}}")
-                        .as("a signature and not a bare list: the call shape is the part an author "
-                                + "gets wrong, and a hash parameter's name exists nowhere but "
-                                + "inside the helper's own body, so no reader could have derived "
-                                + "it from the registry alone")
-                        .contains("{{file_url FIELD}}")
-                        .contains("sh-region"));
+                .anySatisfy(line -> {
+                    // **Derived, not restated** (SH384). This block used to name four signatures as
+                    // literals, so adding one hash parameter to `{{#query}}` failed here — in the one
+                    // test whose subject is that the pack is derived from the engine. It is the same
+                    // defect SH382 found two assertions into `ShTemplateValidatorTest`, and the same
+                    // fix: ask the engine, and the test then proves the *plumbing* rather than
+                    // re-declaring the payload.
+                    assertThat(shTemplateEngine.registeredSignatures())
+                            .as("an empty registry would make the loop below vacuous")
+                            .isNotEmpty();
+                    for (String signature : shTemplateEngine.registeredSignatures()) {
+                        assertThat(line)
+                                .as("""
+                                        a signature and not a bare list: the call shape is the part \
+                                        an author gets wrong, and a hash parameter's name exists \
+                                        nowhere but inside the helper's own body, so no reader could \
+                                        have derived it from the registry alone. %s""", signature)
+                                .contains(signature);
+                    }
+                    assertThat(line).contains("sh-region");
+                });
 
         // SH247 — this used to assert the *opposite*: `form` was unregistered, and a capability
         // list naming it would have sent an author to write a call SH192 then refused. The

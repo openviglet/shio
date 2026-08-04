@@ -595,6 +595,51 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   one of these" and a required field would make the other case impossible. *Neither* is the one that
   hides (a label with no link is indistinguishable from a deliberate heading); *both* is a silent
   precedence, since `target` wins and nothing said so.
+  **`{{#query}}` gets a second page, an order and a filter — and the measurement came first (SH384).**
+  `folder`/`type`/`limit` meant the helper could render only *the first page* of anything, so an
+  insights hub with two hundred articles — the commonest page shape after a homepage — was not
+  expressible. **The first deliverable was `ShRenderListingPageBenchmarkTest`, not the feature**, and it
+  is the reason the feature looks the way it does. `ShRenderHelperSweepBenchmarkTest` counts *prepared
+  statements* and by that measure a listing is flat; counting **entity loads** shows something else
+  entirely: `findByShFolderAndStateIn` reads the **whole folder** and `limit` is an in-memory window
+  over it, so **213 rows load to render 10** and page 19 costs what page 1 costs. That decided three
+  things at once — a window, a comparator and a predicate are list operations over rows already in
+  hand, so they cost **no read**; the sweep's query ceilings do not move; and an **exact total is
+  free**, which is why the pager reports a real `@total`/`@pages` instead of a "has more" flag. The
+  honest design and the cheap one were the same one, which is not something you can know without
+  measuring. The ceiling in `token-budgets.properties` is on the **ratio**, not the count, so enlarging
+  a fixture cannot absorb the finding — and the finding it preserves is the *pre-existing* one: rows
+  loaded grow with the folder, so 5000 posts pay 5000 rows for page one. Pushing the window into the
+  query is a follow-up and is **not** free, because the DRAFT-preference fold and the exact total both
+  need rows a windowed query would exclude.
+  Four decisions in the API: **`page=` and no `offset=`**, though the design offered either — two
+  spellings of one window would need a precedence for a caller passing both, and a *silent* precedence
+  is what SH382's `menu-item-ambiguous-link` exists to report rather than resolve (`limit=3 page=2` is
+  every offset anybody needs). **It does not read `param.page` itself**: SH259 put the query string in
+  template scope and kept it out of helper internals, so a paged archive is `{{#query page=param.page}}`
+  — the template declares where the number comes from, and the same helper then serves a
+  request-driven archive, a hardcoded second page and a number computed from a field, with no branch
+  and no request in scope. **The pager's facts are `@`-prefixed data variables**, not row keys: a row
+  is one post and these are properties of the *listing*, and SH251's scanner skips `@` by construction
+  so no field lint had to learn about them. **`field=`/`value=` rather than a `tag=` convention**, and
+  the value matches **an entry** — a `references: post` Multi Select and a tag list are both a JSON
+  array, so `value="finance"` has to accept `["finance","energy"]` or the filter is useless on the one
+  field shape a hub filters by; `referencesOf` makes a string and a list one code path, and the match
+  is case-insensitive for SH79's reason.
+  Three things tests caught, each a shape worth recognising. **`@first`/`@last` were missing and the
+  pager repeated per row** — the block body runs per item and Handlebars gives a block helper no way to
+  write into the enclosing scope, so `{{#if @last}}` is the only way to draw a pager once; using
+  `{{#each}}`'s own names means nothing new is learned. **The benchmark's `isEqualTo` was flaky**: it
+  failed once at 214 against 213 and passed on the next run of the same code, because each shape is its
+  own post with its own layout and how much of the frame is already resolved depends on test order. A
+  benchmark that fails one run in two is the assertion people re-run (SH250), so the claim is now the
+  one the fixture supports — no second folder read. And **SH291's lint follows exactly one call from a
+  registered helper**, so reading `sort=` inside a method called *by* a method called by the helper is
+  not wrong code but code no signature can be checked against; every hash key is read in `query`'s own
+  body and passed down. Registering hash params also cost **two more restatements** on top of the four
+  SH382 predicted: `ShTemplateHelperDiscoveryTest` named four signatures as literals and
+  `ShHelperSignatureLintTest` named `{{#query}}`'s parameter list twice. Both derive now — the pattern
+  is that a test asserting *the plumbing is derived* must not itself restate the payload.
   **`{{#translations}}` and `post.locale` — SH348 stored a locale and nothing could read one (SH383).**
   The tree got `locale:` and `translationOf:` and the render model got nothing, so a six-language site
   could be *stored* and could not render `<html lang>`, an `hreflang` pair, or the switcher that is the
@@ -668,6 +713,12 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   four when you add the ninth, and treat a green run after touching only one as the tell.
   **Confirmed on the ninth (SH383's `translations`): exactly three, and the fourth held** — the derived
   assertion did not need touching, which is what "the instrument, not the patch" buys the next task.
+  **And the count is about the helper's *name*, not its parameters — SH384 found two more.** Adding four
+  hash keys to an existing helper touched no registration list and still failed twice, in
+  `ShTemplateHelperDiscoveryTest` (four signatures as literals) and `ShHelperSignatureLintTest`
+  (`{{#query}}`'s parameter list, asserted twice in one method). So the tally is: **three tests per new
+  helper name, two per changed signature**, and every one of the five is a restatement that could
+  derive. Three of them now do.
   **The signature is checked against the body now, both ways (SH291)** — `ShHelperSignatureLintTest`
   fails if a helper reads a hash key its signature omits (an incomplete call in the served context
   pack) *or* declares one nothing reads (a parameter that is silently ignored, which is not an error
