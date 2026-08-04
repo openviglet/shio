@@ -378,7 +378,7 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
         caught that doubling a first pull's requests (407 against 207) the moment it ran. What
         remains is **one digest per asset already on disk**, which nothing but the server's own hash
         can answer, and guessing from `size` is the silent no-op SH210 removed on the push side.
-        A stamped digest on the SH62 listing would remove it (**SH375**'s neighbour, still deferred).
+        A stamped digest on the SH62 listing would remove it (**SH398**).
       - **An agreement is recorded even when nothing moved**, or a tree that only ever *reads* its
         assets stays at "never agreed" for ever and the first server-side edit arrives as a conflict
         instead of a change.

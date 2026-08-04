@@ -29,6 +29,8 @@
 
 ## Block I — Content as files (local-first authoring)
 
+- 📋 **SH398** (deps: SH375 ✅) **A media listing stats every file it lists, and a settled pull asks for a digest per asset** — Size, content type and sha-256 are read from disk on every listing and every comparison, though each is fixed the moment the bytes are written. → §X.1
+
 ## Block J — Blueprints (appliable units) + Claude Code plugin
 
 - 💭 **SH217** (deps: SH96 ✅) **The community half of the registry** — The local trust model is shipped, and nothing says how a package a stranger wrote earns a place in it. → §XI.5
