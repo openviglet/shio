@@ -15,6 +15,7 @@ import { test } from "node:test";
 
 import {
   INVENTORY_FILE,
+  MARKUP_DIR,
   buildInventory,
   describeInventory,
   localeShape,
@@ -302,6 +303,35 @@ test("the capture writes exactly one file, and it is not content", async () => {
   assert.deepEqual(Object.keys(ctx.written), [`/repo/${INVENTORY_FILE}`.replace(/\\/g, "/")]);
   assert.equal(result.exitCode, 0);
   assert.ok(result.inventory.pages.length > 3);
+});
+
+test("--markup caches the HTML beside the inventory, and still writes no content (SH379)", async () => {
+  const ctx = ctxWith();
+  const { inventory } = await clone.run({ markup: true }, ["https://x.test"], ctx);
+
+  const paths = Object.keys(ctx.written);
+  assert.ok(paths.includes(`/repo/${INVENTORY_FILE}`.replace(/\\/g, "/")));
+  // Every other file is under `.shio/`, which is the derived-snapshot root — not `shio/content/`,
+  // not `shio/assets/`. That is what keeps SH377's promise true with the flag on: the conversion is
+  // still reviewable before anything reaches somebody's instance.
+  const cached = paths.filter((path) => path !== `/repo/${INVENTORY_FILE}`.replace(/\\/g, "/"));
+  assert.ok(cached.length > 3, `expected a file per page, got ${cached.length}`);
+  for (const path of cached) assert.ok(path.startsWith(`/repo/${MARKUP_DIR}/`), path);
+
+  // The row names its own file, so `shio propose` never has to re-derive a slug the crawl chose.
+  const home = inventory.pages.find((page) => page.path === "/");
+  assert.match(home.markup, /\.html$/);
+  assert.equal(ctx.written[`/repo/${MARKUP_DIR}/${home.markup}`], SITE["/"].body);
+  assert.equal(inventory.crawl.markup, true);
+});
+
+test("without --markup the crawl carries no HTML at all, and the report says how to get it", async () => {
+  const ctx = ctxWith();
+  const { inventory } = await clone.run({}, ["https://x.test"], ctx);
+
+  assert.equal(inventory.crawl.markup, false);
+  assert.ok(inventory.pages.every((page) => page.markup === undefined));
+  assert.match(ctx.stdout.text, /markup:\s+not cached — add --markup/);
 });
 
 test("the walk stays on one origin, and records what it did not follow", async () => {

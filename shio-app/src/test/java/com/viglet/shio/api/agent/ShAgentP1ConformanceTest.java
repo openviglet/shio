@@ -325,6 +325,12 @@ class ShAgentP1ConformanceTest {
                 + "the input is a URL somebody else controls, so an endpoint that fetched it is "
                 + "SH101's request-forgery surface with a crawler attached. SH268 settled the boundary "
                 + "and this is the case it was settled for"));
+        byFeature.put("conversionProposal", new Delivery(Reach.CLI_ONLY, "shio_propose",
+                "SH379 — CLI-shaped for the reason its input is: the markup it maps lives in the file "
+                + "tree, and reading it over an endpoint would mean either uploading a stranger's HTML "
+                + "or having the instance fetch it, which SH268 settled. The artefact is also a *file* "
+                + "a reviewer argues with and partially accepts, which is P4's case rather than a "
+                + "JSON-RPC one"));
         byFeature.put("pageAudit", new Delivery(Reach.CLI_ONLY, "shio_audit",
                 "SH391 — and the one exception on this list that is a decision rather than a gap in "
                 + "the same sense `reviewQueue` is. `shio audit` returns text an agent can act on, "
@@ -443,6 +449,7 @@ class ShAgentP1ConformanceTest {
                 .containsExactly(
                         "agentsMd",
                         "contentAsFiles",
+                        "conversionProposal",
                         "exchange",
                         "graphql",
                         "pageAudit",

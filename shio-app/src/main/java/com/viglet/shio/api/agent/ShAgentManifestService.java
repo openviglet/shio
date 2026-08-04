@@ -251,13 +251,21 @@ public class ShAgentManifestService {
         // One flag rather than two for the capture and the download: they are one capability with a
         // second pass, and a caller who has the command has both.
         features.put("siteCapture", false);
+        // SH379's convert pass — `shio propose` reads the capture and says which blocks could become
+        // SH95 sections, what fields each would carry and what accepting it would lose. Its own key
+        // rather than folded into `siteCapture`, and the rule is the one that made the download a
+        // second pass of the same capability: `--assets` is a *phase of the same act*, and a caller
+        // who has `clone` has it. A conversion proposal is a different act on a different artefact,
+        // and nothing in a session tells a client it exists — which is exactly the absence SH393
+        // says must be published rather than left to be discovered by not finding a tool.
+        features.put("conversionProposal", false);
         return features;
     }
 
     /**
      * Where a capability lives when it does not live on this surface (SH393).
      *
-     * <h2>Why this is eleven entries and not fifty-five</h2>
+     * <h2>Why this is twelve entries and not fifty-five</h2>
      *
      * <p>A caller does not need to be told where {@code post.move} lives — {@code tools/list} and
      * the endpoint index say so, and saying it a third time is the repetition P3 exists to stop.
@@ -298,6 +306,7 @@ public class ShAgentManifestService {
         // CLI-shaped: a file, a byte stream or a rasteriser on one end (SH268's rule).
         elsewhere.put("agentsMd", "shio context --format agents-md");
         elsewhere.put("contentAsFiles", "shio pull --content");
+        elsewhere.put("conversionProposal", "shio propose");
         elsewhere.put("exchange", "shio import <file>");
         elsewhere.put("pageAudit", "shio audit <page>");
         elsewhere.put("siteCapture", "shio clone <url>");

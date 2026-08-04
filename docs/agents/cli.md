@@ -129,6 +129,64 @@ land in the media library under a `.png` name that every later check reads as a 
 against what actually arrived, since a server that under-declares would otherwise walk straight past
 the ceiling whose whole job is not filling a disk.
 
+**`shio propose` is the convert phase, and what it ships is the *proposal* (SH379).** A captured
+block has two honest futures — verbatim markup in a `PageLayout` (renders identically, **nothing is
+authorable**: a curator editing "the hero headline" is editing an HTML file) or an SH95 section
+(authorable, and the pixels have moved) — so the deliverable is neither, it is the artefact between
+them. Per candidate: the pages it recurs on, the section type it looks like **and why**, the fields it
+would carry, and **what accepting it would lose**. `--accept <ids…>` writes one entry into
+`shio/conversion-plan.json` and **applies nothing** — no post, no post-type, no layout; an unaccepted
+block stays in fidelity mode, which is a decision rather than an omission (P7, P8). Six decisions,
+each of which a test pins:
+- **A candidate is a *signature*, not a block**, and that is what makes the report affordable rather
+  than a nicety: the same hero on sixty pages is **one** decision. Measured, and it prints on every
+  run (`propose-cost.test.mjs`): 4 pages of four blocks ≈294 tokens, **60 pages ≈295** — the growth is
+  a path per page, not a candidate per page, where the per-block implementation an author naturally
+  writes would be 240 candidates. ≈74 tokens per candidate, loss report included.
+- **The loss is the complement of what the fields consumed**, never a list of known-lossy cases —
+  that is the only definition that cannot *under*-report, and under-reporting is the one failure this
+  artefact must not have. Three categories because they are three conversations: **elements** the
+  section cannot hold (an `<iframe>`, a `<video>`), **behaviour** (an `onclick`, a `data-*`, an `id` an
+  anchor targets — the page still looks right and stops working), and **styling** as a count, because
+  the section renders with the vocabulary's own markup so *all* of it goes.
+- **A candidate's id is a hash of its structure.** A positional id renumbers the moment the source
+  adds a block, and every entry in the plan then names a candidate nobody reviewed — silently, since
+  a plan file cannot tell. An id from an older run is *gone*, and the refusal says why.
+- **A block the vocabulary has no type for is classified as `null`, and that is a real answer**: the
+  proposal names the post-type it needs instead (fields derived from what it contains, named from its
+  own strongest signal). Accepting one *as a section* is refused — forcing a block into the nearest
+  wrong shape is how a conversion loses content nobody notices.
+- **It reads only the tree** — no instance, no network, no browser — which is why `clone --markup` had
+  to exist: the captured HTML lands in `shio/.shio/source-markup/`, so `--render`'s choice is made
+  once at capture and every proposal is reproducible from the tree. A command that re-fetched would
+  change under the reviewer depending on what the source served this morning, and for an artefact
+  whose whole job is to be argued with that is disqualifying. `--markup` costs **no extra request**
+  (the bytes were already in hand) and stays opt-in anyway, because keeping a stranger's markup in the
+  tree is a decision; the file name carries an unconditional digest suffix, so it never depends on
+  which *other* pages were captured, and a collision is reported rather than resolved by renaming.
+- **`--accept` stays the boolean it is in `shio verify`, with the ids as positionals.** One flag whose
+  arity differs per command is SH365's defect in miniature: a caller who learned `verify --accept`
+  takes nothing would write `propose --accept --reason "x" b1a2` and, with a value-taking flag,
+  silently accept a candidate called `--reason`.
+Four things the implementation got wrong first and a test caught, all of the same shape — **a rule
+that is right in one direction and silently wrong in the other**: descending through single-child
+wrappers is necessary for `<div class=container><div class=row>` and **catastrophic for a page whose
+content root holds one `<section>`** (the candidate list still looks plausible, it is just a list of
+headings), so only *generic* containers are walked past; a **hero is positional and structurally
+identical to a CTA**, so it is tested first and only when the caller says the block opened the page,
+or every homepage's hero files as a call to action; **three consecutive `<p>`s are three children
+with one signature**, so a repeated unit must be a *container* or an About page becomes a feature grid
+whose features are its sentences; and the **block's own class list** is the styling a reviewer is
+agreeing to lose (`class="hero dark"` on the wrapper, nothing on the children) — every draft walked
+only the descendants. This is also the one place a **real parser** earns its keep: `scanPage` is a
+scanner and structure is the question here, so the tree is built over `tokenize`'s stream rather than
+a second tokenizer — one answer to "what is a tag on this page", and SH377's linear-scan property
+over a stranger's bytes is inherited rather than re-argued. It is CLI-shaped and the manifest says so
+under its own key: `conversionProposal: false` with
+`elsewhere.conversionProposal = "shio propose"` — folded into `siteCapture` it would be invisible,
+since `--assets` is a phase of the same act while a conversion is a different act on a different
+artefact.
+
 **`shio impact <address>` exists and `shio read` deliberately does not (SH288).** The task was
 filed as "the CLI cannot show one post", and only half of that is a gap. A post's **content** is on
 disk after `pull --content`, where `Grep` and `Edit` are the cheapest tools an agent has (P4), so a

@@ -13,6 +13,11 @@
  * SH385's redirect map, SH387's fidelity report) is scoped off this one file, which is what makes a
  * conversion reviewable *before* it writes anything into somebody's instance.
  *
+ * <p>`--markup` (SH379) is the one addition, and it does not weaken that: the captured HTML lands in
+ * `.shio/`, beside the other derived snapshot, and no post, folder or asset is written. It is opt-in
+ * because keeping a stranger's markup in the tree is a decision, and because a default that wrote
+ * 200 files would make the sentence above stop being true at a glance.
+ *
  * ## Why it is the CLI's half
  *
  * SH268 already settled the rule: a URL the **server** fetches is SH101's request-forgery surface
@@ -43,6 +48,17 @@ export const INVENTORY_VERSION = 1;
 
 /** Where the inventory lives: beside `content-base.json`, which is the other derived snapshot. */
 export const INVENTORY_FILE = "shio/.shio/source-inventory.json";
+
+/**
+ * Where `--markup` puts the captured HTML (SH379).
+ *
+ * <p>Under `.shio/` and not under `shio/content/`, which is the whole reason it is allowed to exist:
+ * this is a **derived snapshot of somebody else's site**, the same category as `content-base.json`,
+ * and SH377's promise is about *content*. `shio propose` reads only from here, never from the
+ * network — so the choice `--render` made is made once, at capture, and every later proposal is
+ * reproducible from the tree (P4, P5) instead of depending on what the source served this morning.
+ */
+export const MARKUP_DIR = "shio/.shio/source-markup";
 
 /** Ceilings. A crawl with no bound is a crawl that finds a calendar and never returns. */
 export const DEFAULT_DEPTH = 3;
@@ -242,7 +258,7 @@ export function stripNonMarkup(html) {
 const TAG = /<(\/?)([a-zA-Z][-\w:]*)(?=[\s/>])([^>]*)>/g;
 const ATTR = /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]*)))?/g;
 
-function parseAttrs(raw) {
+export function parseAttrs(raw) {
   const out = {};
   if (!raw) return out;
   ATTR.lastIndex = 0;
@@ -439,7 +455,76 @@ function collapse(text) {
   return String(text ?? "").replace(/\s+/g, " ").trim();
 }
 
-function* tokenize(html) {
+/**
+ * The file one page's captured markup goes in (SH379).
+ *
+ * <p>Derived from the path, never from a counter: the point of the cache is that a second crawl
+ * overwrites the same file, so the diff is what the *source* changed. The digest suffix is
+ * unconditional rather than added on collision — a name that depends on whether some other page
+ * happened to be captured too would make the bytes depend on crawl order, which is the property P5
+ * asks for and the reason `--max-pages` cuts a sorted frontier.
+ */
+export function markupFileFor(path) {
+  const raw = String(path ?? "/");
+  const slug = raw
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+  return `${slug || "index"}.${digest8(raw)}.html`;
+}
+
+/**
+ * A short, stable hash. Not a cryptographic claim — it exists so two paths that slugify alike get
+ * two files, and it is FNV-1a because this module must not grow a dependency and `node:crypto` in a
+ * pure function makes the whole file async for one 32-bit number.
+ */
+function digest8(text) {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
+}
+
+/**
+ * Which captured pages get a markup file, and which two would land on one (SH379).
+ *
+ * <p>The collision is *reported*, never resolved by renaming: 32 bits over a bounded crawl makes it
+ * astronomically unlikely, and the failure it would cause if it happened silently — a proposal built
+ * from a page's markup under another page's path — is exactly the class of defect this block exists
+ * to avoid. Sorted by file so the writes happen in the same order every run.
+ */
+export function planMarkup(visited = []) {
+  const files = [];
+  const byFile = new Map();
+  for (const entry of visited) {
+    if (typeof entry?.html !== "string" || !entry.doc) continue;
+    const path = pathOf(entry.url);
+    const file = markupFileFor(path);
+    const item = { url: entry.url, path, file, html: entry.html };
+    const existing = byFile.get(file);
+    if (existing) existing.push(item);
+    else byFile.set(file, [item]);
+  }
+  const collisions = [];
+  for (const [file, group] of [...byFile.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+    if (group.length === 1) files.push(group[0]);
+    else collisions.push({ file, paths: group.map((item) => item.path).sort() });
+  }
+  return { files, collisions };
+}
+
+/**
+ * The token stream, shared rather than reimplemented.
+ *
+ * <p>Exported for SH379, which builds a **tree** over exactly these tokens. Two tokenizers would be
+ * two answers to "what is a tag on this page", and the divergence would land as a fidelity gap
+ * nobody could locate — the same argument `--render` settles by changing only where the HTML came
+ * from. It also means the linear-scan property above is a property of *both* readers, and this is
+ * still the only module in the repository reading a stranger's bytes.
+ */
+export function* tokenize(html) {
   TAG.lastIndex = 0;
   let last = 0;
   let match;
@@ -517,6 +602,9 @@ export function localeShape(hreflang, url, origin) {
  */
 export function buildInventory({ origin, seed, visited = [], robots, options = {}, notes = [] }) {
   const originUrl = new URL(origin);
+  // SH379 — which page rows carry a markup file. Keyed by path, because that is what the row is
+  // keyed by and the crawl may have reached one path through a redirect from another.
+  const markup = new Map((options.markup?.files ?? []).map((item) => [item.path, item.file]));
   const pages = [];
   const assets = new Map();
   const scripts = new Map();
@@ -617,6 +705,7 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
       textChars: doc.textChars,
       ...(doc.baseHref ? { baseHref: doc.baseHref } : {}),
       ...(entry.rendered ? { rendered: true } : {}),
+      ...(markup.has(path) ? { markup: markup.get(path) } : {}),
     });
   }
 
@@ -638,6 +727,16 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
         `contain their content (first: ${thin.slice(0, 3).map((page) => page.path).join(" ")})`,
     );
   }
+  for (const collision of options.markup?.collisions ?? []) {
+    collected.push(
+      `${collision.paths.join(" and ")} both name the markup file ${collision.file}, so none of ` +
+        `them was written — a proposal built from one page's markup under another page's path is ` +
+        `the one defect a cache must not have`,
+    );
+  }
+  if (options.markup && !markup.size && pages.length) {
+    collected.push("--markup was passed but no page's markup could be cached, so shio propose has nothing to read");
+  }
   const withBase = pages.filter((page) => page.baseHref);
   if (withBase.length) {
     collected.push(
@@ -653,6 +752,10 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
       depth: options.depth ?? DEFAULT_DEPTH,
       maxPages: options.maxPages ?? DEFAULT_MAX_PAGES,
       rendered: Boolean(options.rendered),
+      // SH379 — whether the markup a conversion proposal reads is on disk. A reader that had to
+      // infer this from "does any page row carry a markup field" would read a crawl that cached
+      // nothing and one that was never asked to as the same crawl.
+      markup: Boolean(options.markup),
       pages: pages.length,
       truncated: Boolean(options.truncated),
       robots: {
@@ -715,6 +818,12 @@ export function describeInventory(inventory, options = {}) {
       `[depth ${crawl.depth}, max ${crawl.maxPages}, ${crawl.rendered ? "rendered" : "fetched"}]`,
   );
   lines.push(`  inventory: ${options.out ?? INVENTORY_FILE} (no content was written)`);
+  const cached = inventory.pages.filter((page) => page.markup).length;
+  if (cached) {
+    lines.push(`  markup:    ${MARKUP_DIR}/ — ${cached} page(s), which is what shio propose reads`);
+  } else if (crawl.markup === false) {
+    lines.push(`  markup:    not cached — add --markup if the next phase is shio propose`);
+  }
 
   const section = (title, rows, render) => {
     if (!rows.length) return;

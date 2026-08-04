@@ -55,6 +55,9 @@ const BOOLEANS = [
   // SH378: download the bytes the inventory names. Opt-in, because SH377's default promise is that
   // a capture writes nothing you have not read the inventory for first.
   "assets",
+  // SH379: keep the captured HTML, which is what `shio propose` computes a mapping from. Opt-in for
+  // the same reason, and it costs no extra request — the bytes were already in hand.
+  "markup",
 ];
 
 // Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would
@@ -79,6 +82,7 @@ const COMMANDS = {
   snapshot: () => import("./commands/snapshot.mjs"),
   audit: () => import("./commands/audit.mjs"),
   clone: () => import("./commands/clone.mjs"),
+  propose: () => import("./commands/propose.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),
   build: () => import("./commands/build.mjs"),
@@ -113,6 +117,7 @@ Commands:
   snapshot <page> PNG of a page + whether it looks different (needs playwright)
   audit <page>   What is wrong with a rendered page, as text with a selector each
   clone <url>    Capture a site that already exists: an inventory, and no content
+  propose        Which captured blocks could become sections, and what each would lose
   pull           Pull post-types into ./shio/post-types/*.json (--content for pages)
   push           Apply local post-types back to Shio (--dry-run, --prune, --content)
   build          Compile local DSL/JSON post-types to canonical JSON (--out)
@@ -292,6 +297,39 @@ Capturing a site that exists (shio clone):
   --max-assets <n>     Ceiling on how many to download   (default 500)
   --max-asset-bytes <n>
                        Ceiling per asset, in bytes       (default 26214400)
+
+  The markup is a third opt-in, and it costs no extra request — the bytes were already read:
+  --markup             Keep each captured page's HTML in shio/.shio/source-markup/ and name
+                       the file on its inventory row. This is what shio propose reads, and
+                       caching it is what makes a proposal reproducible from the tree instead
+                       of from whatever the source serves today
+
+Proposing a conversion (shio propose):
+  The second of replication's three phases, and it writes no content either. A captured block
+  can become two things: verbatim markup in a PageLayout (renders identically, nothing is
+  authorable) or a section from the SH95 vocabulary (authorable, and the pixels have moved).
+  Both are defensible, so this command ships neither — it proposes. For every candidate block
+  it prints the pages it recurs on, the section type it looks like and why, the fields it would
+  carry, and what accepting it would LOSE: the elements the section cannot hold, the behaviour
+  (an onclick, a data- attribute, an anchor target), and every class name in it.
+  Reads only the tree — no instance, no network, no browser — so it is free to re-run and its
+  diff is what the source changed. A candidate's id is a hash of its structure, so an
+  acceptance survives a re-run; an id from an older run is gone because the markup moved.
+  shio clone https://example.com --markup && shio propose
+  shio propose --accept b1a2c3d4 --reason "hero is the same on every page"
+  --accept <ids…>      Record these candidates as authorable in shio/conversion-plan.json,
+                       or "all" for every one the vocabulary matched. It writes no post, no
+                       post-type and no layout — the plan is the reviewed unit, and applying
+                       it is a separate act. An unaccepted block stays verbatim markup, which
+                       is a decision and not an omission. A candidate the vocabulary has no
+                       type for cannot be accepted as a section: the proposal names the
+                       post-type it needs instead, because forcing it into the nearest shape
+                       is how a conversion loses content nobody notices
+  --reason <text>      Why, recorded with the acceptance
+  --inventory <file>   The capture to read (default shio/.shio/source-inventory.json)
+  --out <file>         Proposal path        (default shio/.shio/conversion-proposal.json)
+  --limit <n>          Candidates to print (the proposal always holds every one)
+  --json               The proposal as data
 
 Content as files (shio pull/push --content, shio dev --content):
   Content projects to shio/content/<site>/<url>.md — YAML frontmatter is the fields,

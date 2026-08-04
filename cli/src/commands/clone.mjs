@@ -40,11 +40,13 @@ import {
   DEFAULT_DEPTH,
   DEFAULT_MAX_PAGES,
   INVENTORY_FILE,
+  MARKUP_DIR,
   ROBOTS_AGENT,
   buildInventory,
   describeInventory,
   parseRobots,
   pathOf,
+  planMarkup,
   resolveHref,
   robotsAllows,
   sameOrigin,
@@ -96,16 +98,24 @@ export async function run(flags, positionals, ctx) {
     notes.push("--ignore-robots was passed: this capture did not read the site's robots.txt at all");
   }
 
+  // SH379 — the markup cache. Opt-in like `--assets`, and for the same reason: SH377's default is
+  // that a capture writes one file you can read before anything else happens. Unlike `--assets` it
+  // costs no extra request — the bytes were already in hand — so the flag buys a *decision* about
+  // keeping a stranger's HTML in the tree, not a second pass over their server.
+  const keepMarkup = flags.markup === true;
+
   const page = rendered ? await renderer(flags, ctx) : null;
   try {
-    const walk = await crawl({ origin, depth, maxPages, robots, page, flags }, ctx);
+    const walk = await crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup }, ctx);
     notes.push(...walk.notes);
+    const markup = keepMarkup ? planMarkup(walk.visited) : null;
+    if (markup) await writeMarkup(markup, ctx);
     let inventory = buildInventory({
       origin: origin.origin,
       seed: String(seed),
       visited: walk.visited,
       robots,
-      options: { depth, maxPages, rendered, truncated: walk.truncated },
+      options: { depth, maxPages, rendered, truncated: walk.truncated, markup },
       notes,
     });
     if (site) {
@@ -149,6 +159,23 @@ function assetSite(flags) {
     );
   }
   return siteDir(name);
+}
+
+/**
+ * Writes the markup cache (SH379).
+ *
+ * <p>One file per page, named from the path so the next crawl overwrites the same file and the diff
+ * is what the source changed. A collision is not written at all — `planMarkup` reports it and the
+ * inventory carries the note, because a page's markup filed under another page's path is worse than
+ * a missing one: everything downstream would read it as that page's own.
+ */
+async function writeMarkup(markup, ctx) {
+  const dir = join(ctx.cwd, MARKUP_DIR);
+  if (!markup.files.length) return;
+  await ctx.fs.mkdir(dir, { recursive: true });
+  for (const item of markup.files) {
+    await ctx.fs.writeFile(join(dir, item.file), item.html, "utf8");
+  }
 }
 
 /**
@@ -276,7 +303,7 @@ async function readRobots(origin, ctx) {
  * every run against an unchanged site. Without that, `--max-pages 50` would capture a different
  * fifty each time and the inventory could not be compared with itself.
  */
-async function crawl({ origin, depth, maxPages, robots, page, flags }, ctx) {
+async function crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup = false }, ctx) {
   const visited = [];
   const seen = new Set();
   const notes = [];
@@ -301,7 +328,11 @@ async function crawl({ origin, depth, maxPages, robots, page, flags }, ctx) {
         notes.push(`robots.txt disallows ${path}, so it was not fetched`);
         continue;
       }
-      const fetched = await visit(url, { page, flags, isSeed: level === 0 && visited.length === 0 }, ctx);
+      const fetched = await visit(
+        url,
+        { page, flags, keepMarkup, isSeed: level === 0 && visited.length === 0 },
+        ctx,
+      );
       visited.push({ ...fetched, depth: level, url: url.href });
       if (fetched.doc && level < depth) {
         for (const link of fetched.doc.links) {
@@ -336,9 +367,9 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * <p>Only `text/html` is scanned. A link to a PDF is already recorded as an asset by whichever page
  * referenced it, and running an HTML scanner over a binary would invent findings.
  */
-async function visit(url, { page, flags, isSeed }, ctx) {
+async function visit(url, { page, flags, keepMarkup, isSeed }, ctx) {
   if (page) {
-    return renderOne(url, page, flags);
+    return renderOne(url, page, flags, keepMarkup);
   }
   let response;
   try {
@@ -367,7 +398,7 @@ async function visit(url, { page, flags, isSeed }, ctx) {
     // One hop, followed by hand so the redirect is visible in the inventory rather than erased by
     // the fetch layer.
     return {
-      ...(await visit(target, { page: null, flags, isSeed: false }, ctx)),
+      ...(await visit(target, { page: null, flags, keepMarkup, isSeed: false }, ctx)),
       redirectedTo: pathOf(target),
     };
   }
@@ -379,15 +410,22 @@ async function visit(url, { page, flags, isSeed }, ctx) {
     return { status, contentType, error: `not html (${contentType.split(";")[0]})` };
   }
   const html = await response.text();
-  return { status, contentType, doc: scanPage(html, url.href) };
+  // `html` is carried only when `--markup` asked for it: holding 200 pages of somebody else's HTML
+  // in memory for a run that will not write it is a cost nobody bought.
+  return { status, contentType, doc: scanPage(html, url.href), ...(keepMarkup ? { html } : {}) };
 }
 
 /** The `--render` path: the same scanner, over the DOM the page's own JavaScript produced. */
-async function renderOne(url, page, flags) {
+async function renderOne(url, page, flags, keepMarkup) {
   try {
     await page.goto(url.href, { waitUntil: "networkidle", timeout: Number(flags.timeout ?? 30000) });
     const html = await page.content();
-    return { status: 200, doc: scanPage(html, url.href), rendered: true };
+    return {
+      status: 200,
+      doc: scanPage(html, url.href),
+      rendered: true,
+      ...(keepMarkup ? { html } : {}),
+    };
   } catch (error) {
     return { status: 0, error: `render failed: ${error?.message ?? error}` };
   }

@@ -1383,24 +1383,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.3 Two modes, and the proposal between them is the deliverable (SH379)
-
-The conversion has two honest answers and the temptation is to ship one. **Fidelity
-mode** writes the source's markup as a `Theme` plus a `PageLayout` and its `Region`s,
-verbatim, as SH191 sidecars — the page renders identically and *nothing about it is
-authorable*: a curator editing "the hero headline" is editing an HTML file. **Authorable
-mode** maps repeated markup onto the SH95 section vocabulary, at which point the page is
-content and the pixels have moved.
-
-What must ship is neither by itself but the **proposal**: a report that names each
-candidate block, the pages it recurs on, the section type it looks like, the fields it
-would carry, and the markup it would lose. A human or an agent accepts entries one at a
-time; an unaccepted block stays in fidelity mode. That is P7 and P8 in the same artefact
-— the appliable unit is the accepted mapping, and a guess that silently restructured
-somebody's homepage would be the worst surprise this product could produce. A block the
-vocabulary has no type for is a **new post-type the conversion emits**, authored through
-`@viglet/shio-model`, never a section forced into the nearest wrong shape.
-
 ### XVII.4 A captured theme should arrive as tokens plus CSS, not as CSS (SH380)
 
 SH195 gave a `Theme` a `TOKENS` field in the W3C DTCG shape because that is what a
