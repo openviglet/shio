@@ -379,27 +379,6 @@ unchanged page must never be the same row.
 > ✅ **SH86, SH87, SH88, SH89 and SH90 shipped** → [CHANGELOG.md](CHANGELOG.md) Block I.
 > What follows is the design rationale for what the projection **still owes**.
 
-### X.14 Renaming a folder marker is a delete plus a create (SH211)
-
-This is SH150's defect, one level up, and the level matters: a post re-created under a new
-URL loses its history, while a **folder** deleted by `--prune` takes every post beneath it
-(`ShFolderWriteService` cascades). SH149 gave folders a marker file; it did not give them a
-move. So renaming `shio/folders/Blog/news/_folder.md` to `.../updates/_folder.md` reads as one
-marker gone and one arrived — the push declares `/updates`, and the prune deletes `/news` with
-its contents.
-
-Everything needed already exists on both sides: `folder.move` (SH137) is the op, with its four
-refusals living on the one folder-move writer, and the desired-state document grew a `moves`
-section for SH150. What is missing is the pairing rule, and the folder side is *easier* than
-the post side because a folder has no field values to compare: a marker gone and a marker
-arrived in the same site, with no other candidate, is a rename. The ambiguity that forced
-SH150 to refuse — two files that could each be the same rename — is the same here and should
-be refused the same way.
-
-Note the interaction with the friendly-URL rule: a folder move changes **no post's URL**
-(SH137's whole point), so this is a structural rename with no delivery consequence, which is
-what makes it safe to detect automatically rather than requiring a `movedFrom:`.
-
 ### X.15 `shio verify` cannot see a broken asset path (SH212)
 
 The documented CI chain is `push --check` → `push --content --check` → `apply --check` →

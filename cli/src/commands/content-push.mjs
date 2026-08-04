@@ -46,7 +46,9 @@ import {
   writeBase,
 } from "../content-store.mjs";
 import {
+  ancestorsOf,
   baseEntryFor,
+  detectFolderMoves,
   documentsFor,
   opsOf,
   planPushContent,
@@ -144,6 +146,61 @@ export async function run(flags, _positionals, ctx) {
         `  If it is a rename, add \`movedFrom: ${row.from.slice(row.from.indexOf("/"))}\` to the file.\n`,
     );
   }
+  // SH211 — the folder half, and the more dangerous one: a folder deleted by --prune takes every
+  // post beneath it, where a deleted post loses only its own history. Declared folders are the
+  // markers plus every ancestor a projected post names, because a folder a post lives in is
+  // declared whether or not it has a marker of its own.
+  const declaredFolders = new Set();
+  for (const marker of markers) {
+    for (const ancestor of ancestorsOf(marker.folder ?? "/")) {
+      declaredFolders.add(`${marker.site}|${ancestor}`);
+    }
+  }
+  for (const post of posts) {
+    for (const ancestor of ancestorsOf(post.folder ?? "/")) {
+      declaredFolders.add(`${post.site}|${ancestor}`);
+    }
+  }
+  const folderPlan = detectFolderMoves({
+    base: base.folders,
+    local: markers,
+    declared: declaredFolders,
+  });
+  if (folderPlan.ambiguous.length) {
+    const listed = folderPlan.ambiguous
+      .map((row) => `  ! ${row.site}${row.from ?? row.to ?? ""} — ${row.reason}\n`
+        + `      candidates: ${row.candidates.join(", ")}\n`)
+      .join("");
+    const remedy = "Say which is which with `movedFrom: <the old folder path>` in the "
+      + "`_folder.md` of the directory that is the rename.\n";
+    // The **contradiction** is always a refusal: a marker naming a folder the tree still
+    // declares is a tree that cannot be read at all. Everything else is only dangerous when
+    // something is about to be deleted, which is exactly `--prune` — without it an unpaired
+    // folder is left alone, and refusing a push that destroys nothing would block the
+    // legitimate case (one section removed, two added) with no way to say "neither is a rename".
+    const contradictory = folderPlan.ambiguous.filter((row) => row.contradictory);
+    if (contradictory.length || (prune && !flags.force)) {
+      throw new Error(
+        `shio push --content: ${folderPlan.ambiguous.length} folder rename(s) cannot be told ` +
+          "apart, and moving the wrong section would move the wrong pages:\n" + listed + remedy +
+          (contradictory.length
+            ? ""
+            : "If none of them is a rename, pass --force — with --prune the folders that left " +
+              "this tree are deleted, and a folder delete takes every post beneath it.\n"),
+      );
+    }
+    ctx.stdout.write(
+      `shio push --content: ${folderPlan.ambiguous.length} folder(s) could be a rename and ` +
+        "cannot be proved from the tree, so nothing is being moved:\n" + listed + remedy,
+    );
+  }
+  for (const move of folderPlan.moves) {
+    ctx.stdout.write(
+      `shio push --content: ${move.site}${move.from} moves to ${move.to}`
+        + `${move.explicit ? "" : " (inferred from the tree)"} — the pages inside keep their URLs\n`,
+    );
+  }
+
   if (conflicts.length) {
     for (const conflict of conflicts) {
       ctx.stdout.write(`  ! ${conflict.address} (${conflict.fields.join(", ")})\n`);
@@ -175,6 +232,7 @@ export async function run(flags, _positionals, ctx) {
     prune,
     markers,
     moves,
+    folderMoves: folderPlan.moves,
     sites: sitesOf(local, markers),
   });
   // SH199 — a tree past the server's document ceiling is several documents, not a dead end.

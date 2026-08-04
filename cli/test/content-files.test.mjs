@@ -429,6 +429,33 @@ test("a folder marker whose path disagrees with its frontmatter is refused", () 
   );
 });
 
+test("a folder marker can declare the folder it moved from, and round-trips with it (SH211)", () => {
+  const doc = { site: "Blog", folder: "/updates", movedFrom: "/news" };
+  const text = serializeFolder(doc);
+
+  assert.match(text, /movedFrom: \/news/);
+  assert.deepEqual(parseFolderMarker(folderMarkerPathFor(doc), text), doc);
+  // Absent, not empty, when there is no rename — so a marker without one is byte-identical to
+  // what SH149 wrote and the key never appears in a tree that is not renaming anything.
+  assert.equal(serializeFolder({ site: "Blog", folder: "/news" }), marker("Blog", "/news"));
+  assert.deepEqual(parseFolderMarker("Blog/news/_folder.md", marker("Blog", "/news")), {
+    site: "Blog",
+    folder: "/news",
+  });
+});
+
+test("a folder marker that says it moved from itself is refused", () => {
+  // The likeliest way to get here is renaming the directory and then setting `movedFrom` to the
+  // *new* path, which asks for nothing and reads exactly like a rename that already happened.
+  assert.throws(
+    () => parseFolderMarker(
+      "Blog/updates/_folder.md",
+      "---\nsite: Blog\nfolder: /updates\nmovedFrom: /updates\n---\n",
+    ),
+    /is its own folder/,
+  );
+});
+
 test("text in a folder marker is refused rather than dropped", () => {
   // A folder holds posts, not prose. Silently discarding it loses something somebody wrote
   // expecting it to appear on the site.

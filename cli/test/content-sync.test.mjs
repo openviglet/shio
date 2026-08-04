@@ -18,6 +18,7 @@ import {
   addressOf,
   ancestorsOf,
   baseEntryFor,
+  detectFolderMoves,
   documentsFor,
   fingerprint,
   opsOf,
@@ -564,4 +565,191 @@ test("a marker gone from the server is a deletion; one never agreed is a local c
   assert.deepEqual(plan.keep.map((m) => m.folder), ["/brand-new"]);
   // The kept one stays agreed, so the next pull does not read it as a server deletion.
   assert.deepEqual(plan.agreed.map((m) => m.folder), ["/brand-new"]);
+});
+
+// --- renaming a folder is a move, not a delete plus a create (SH211) ---
+
+const declaring = (...keys) => new Set(keys);
+
+test("one folder gone and one arrived in the same site is a rename", () => {
+  // The defect: `--prune` would delete /news, and a folder delete takes every post beneath it.
+  const { moves, ambiguous } = detectFolderMoves({
+    base: [{ site: "Blog", folder: "/news" }],
+    local: [{ site: "Blog", folder: "/updates" }],
+    declared: declaring("Blog|/", "Blog|/updates"),
+  });
+
+  assert.deepEqual(ambiguous, []);
+  assert.deepEqual(moves, [{ site: "Blog", from: "/news", to: "/updates", explicit: false }]);
+});
+
+test("a renamed section with subfolders is one move, not one per folder", () => {
+  // `folder.move` takes the subtree with it, so the descendants are explained by the root pair.
+  // Emitting a move per folder would try to move /news/2026 after its parent had already gone.
+  const { moves, ambiguous } = detectFolderMoves({
+    base: [
+      { site: "Blog", folder: "/news" },
+      { site: "Blog", folder: "/news/2026" },
+      { site: "Blog", folder: "/news/2026/q1" },
+    ],
+    local: [
+      { site: "Blog", folder: "/updates" },
+      { site: "Blog", folder: "/updates/2026" },
+      { site: "Blog", folder: "/updates/2026/q1" },
+    ],
+    declared: declaring("Blog|/", "Blog|/updates", "Blog|/updates/2026", "Blog|/updates/2026/q1"),
+  });
+
+  assert.deepEqual(ambiguous, []);
+  assert.deepEqual(moves, [{ site: "Blog", from: "/news", to: "/updates", explicit: false }]);
+});
+
+test("two folders gone and two arrived is refused, not guessed", () => {
+  // Either pairing is plausible and moving the wrong section moves the wrong pages. The
+  // remedy is one line of `movedFrom:`, which is why this is a refusal rather than a warning.
+  const { moves, ambiguous } = detectFolderMoves({
+    base: [
+      { site: "Blog", folder: "/news" },
+      { site: "Blog", folder: "/press" },
+    ],
+    local: [
+      { site: "Blog", folder: "/updates" },
+      { site: "Blog", folder: "/releases" },
+    ],
+    declared: declaring("Blog|/", "Blog|/updates", "Blog|/releases"),
+  });
+
+  assert.deepEqual(moves, []);
+  // One row per source that cannot be resolved, naming it — more actionable than one aggregate
+  // row, because `movedFrom:` is written on a directory and the message says which.
+  assert.deepEqual(ambiguous.map((row) => row.from), ["/news", "/press"]);
+  for (const row of ambiguous) {
+    assert.deepEqual(row.candidates, ["/releases", "/updates"]);
+  }
+});
+
+test("`movedFrom:` decides an ambiguity the shapes cannot", () => {
+  const { moves, ambiguous } = detectFolderMoves({
+    base: [
+      { site: "Blog", folder: "/news" },
+      { site: "Blog", folder: "/press" },
+    ],
+    local: [
+      { site: "Blog", folder: "/updates", movedFrom: "/news" },
+      { site: "Blog", folder: "/releases", movedFrom: "/press" },
+    ],
+    declared: declaring("Blog|/", "Blog|/updates", "Blog|/releases"),
+  });
+
+  assert.deepEqual(ambiguous, []);
+  assert.deepEqual(moves.map((move) => [move.from, move.to, move.explicit]), [
+    ["/news", "/updates", true],
+    ["/press", "/releases", true],
+  ]);
+});
+
+test("a shape that matches picks the right pair out of several", () => {
+  // Stronger than one-of-each: /news has a child and /press does not, so only one of the two
+  // arrivals can be /news — and that is decided without asking the author for anything.
+  const { moves, ambiguous } = detectFolderMoves({
+    base: [
+      { site: "Blog", folder: "/news" },
+      { site: "Blog", folder: "/news/2026" },
+      { site: "Blog", folder: "/press" },
+    ],
+    local: [
+      { site: "Blog", folder: "/updates" },
+      { site: "Blog", folder: "/updates/2026" },
+      { site: "Blog", folder: "/releases" },
+    ],
+    declared: declaring("Blog|/", "Blog|/updates", "Blog|/updates/2026", "Blog|/releases"),
+  });
+
+  assert.deepEqual(ambiguous, []);
+  assert.deepEqual(moves.map((move) => [move.from, move.to]), [
+    ["/news", "/updates"],
+    ["/press", "/releases"],
+  ]);
+});
+
+test("a `movedFrom:` naming a folder the tree still declares is refused", () => {
+  // Two markers, one claiming to be the new home of a folder the other still declares. One of
+  // them is wrong and no reading of the pair is safe.
+  const { moves, ambiguous } = detectFolderMoves({
+    base: [{ site: "Blog", folder: "/news" }],
+    local: [
+      { site: "Blog", folder: "/news" },
+      { site: "Blog", folder: "/updates", movedFrom: "/news" },
+    ],
+    declared: declaring("Blog|/", "Blog|/news", "Blog|/updates"),
+  });
+
+  assert.deepEqual(moves, []);
+  assert.equal(ambiguous.length, 1);
+  assert.match(ambiguous[0].reason, /still declares/);
+});
+
+test("a folder a post declares is not gone, even with no marker", () => {
+  // A marker declares a folder *nothing else does*, so the declared set has to include every
+  // ancestor a projected post names — otherwise a post's own folder reads as a rename source.
+  const { moves, ambiguous } = detectFolderMoves({
+    base: [{ site: "Blog", folder: "/blog" }],
+    local: [],
+    declared: declaring("Blog|/", "Blog|/blog"),
+  });
+
+  assert.deepEqual(moves, []);
+  assert.deepEqual(ambiguous, []);
+});
+
+test("nothing arrived, so a folder that left is a deletion and not a move", () => {
+  const { moves, ambiguous } = detectFolderMoves({
+    base: [{ site: "Blog", folder: "/gone" }],
+    local: [],
+    declared: declaring("Blog|/"),
+  });
+
+  assert.deepEqual(moves, []);
+  assert.deepEqual(ambiguous, []);
+});
+
+test("the site root is never a move source or target", () => {
+  // Every folder address resolves from it, and the server refuses a move onto or off it.
+  const { moves } = detectFolderMoves({
+    base: [{ site: "Blog", folder: "/" }],
+    local: [{ site: "Blog", folder: "/" }],
+    declared: declaring("Blog|/"),
+  });
+
+  assert.deepEqual(moves, []);
+});
+
+test("a rename never pairs across sites", () => {
+  const { moves, ambiguous } = detectFolderMoves({
+    base: [{ site: "Blog", folder: "/news" }],
+    local: [{ site: "Docs", folder: "/updates" }],
+    declared: declaring("Blog|/", "Docs|/", "Docs|/updates"),
+  });
+
+  assert.deepEqual(moves, []);
+  assert.deepEqual(ambiguous, []);
+});
+
+test("a document carries the rename on the folder entry that is its destination", () => {
+  const documents = documentsFor([], {
+    markers: [{ site: "Blog", folder: "/updates" }],
+    folderMoves: [{ site: "Blog", from: "/news", to: "/updates" }],
+  });
+
+  assert.deepEqual(documents[0].folders, [
+    { path: "/" },
+    { path: "/updates", movedFrom: "/news" },
+  ]);
+});
+
+test("a document with no rename carries no movedFrom anywhere", () => {
+  // P5/P3: the same tree serializes exactly as it did before this existed.
+  const documents = documentsFor([], { markers: [{ site: "Blog", folder: "/updates" }] });
+
+  assert.deepEqual(documents[0].folders, [{ path: "/" }, { path: "/updates" }]);
 });

@@ -159,6 +159,40 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   naming `/archive` already did exactly the same thing. `--folders-dir` moves the root.
   `reconcileFolders` is the pure half; the folder list comes from the context pack's sitemap
   (no new endpoint — P10), walked to the end for SH146's reason.
+- **Renaming a folder's directory is a move (SH211), and it is SH150's defect one level up.**
+  SH149 gave a folder a marker; it did not give it a move, so renaming
+  `shio/folders/Blog/news/_folder.md` to `.../updates/_folder.md` read as one folder gone and one
+  arrived — `--prune` deleted `/news`, and **a folder delete takes every post beneath it**
+  (`ShFolderWriteService` cascades), where the post case lost one post's history. The document
+  now carries it on the folder entry itself: `folders: [{path, movedFrom}]`, compiled to
+  `folder.move`. Five things to know before touching it:
+  - **`movedFrom` is on `Folder`, not in `moves`.** A folder's whole name chain *is* its address,
+    so its last segment is the new name and rename and relocate are one op (SH137) — the
+    destination is the entry's own `path` and there is nothing for a second field to say.
+  - **The compile order splits in three, and has to**: plain folder upserts, then the folder
+    moves, then the upserts of the folders that moved. Upserting a move's destination first
+    *creates* it and `folder.move` refuses an occupied target, so the rename would fail on the one
+    path it was asked to produce. The destination's **parent** must still exist first (a move
+    never creates one) and does — it is an ancestor, so it is a plain entry. The third phase is
+    not redundant: after a **noop** move, where a previous run already did it, it is what makes
+    the folder exist at all.
+  - **The source is protected from `--prune`** for SH150's reason with a worse outcome: the sweep
+    reads the database before any op runs, so the renamed section is still at its old path and
+    nothing declares it. Unprotected, the *plan* would say "deleting folder:Blog/news" and SH108's
+    confirm digest is taken over exactly that list — a rename would ask the operator to confirm
+    destroying the section it is preserving.
+  - **Detection is by subtree shape, not by content**, because a folder has no field values to
+    compare. `detectFolderMoves` pairs one gone root with one appeared root when their relative
+    descendants match, which makes a section rename with subfolders **one** move rather than one
+    per folder; failing that, one of each left over is still unambiguous. `movedFrom:` in the
+    marker is the explicit signal and wins.
+  - **The ambiguity refusal is scoped to `--prune`, and that scoping is the design.** More than
+    one candidate on either side is reported and nothing is moved; whether it *stops* the push
+    depends on whether anything is about to be deleted, because refusing a push that destroys
+    nothing would block the legitimate case — one section removed and two added — with no way for
+    the author to declare that neither is a rename. `--force` is the way past it with `--prune` on.
+    The one ambiguity that is always fatal is a `movedFrom` naming a folder the tree **still
+    declares**: that is a contradiction, not an unproved guess.
 - **A renamed file is a move (SH150), and the document has a `moves` section for it.** A rename
   is two file edits (the path and `url:`, which the format refuses to let disagree), and to a
   pure state document that reads as one undeclared post at the old URL plus a new one at the new

@@ -74,8 +74,39 @@ public record ShAgentDesiredState(String site, List<Folder> folders, List<Post> 
         this(site, folders, posts, null, prune, confirm);
     }
 
-    /** @param path folder path from the site root, e.g. {@code /blog/2026} */
-    public record Folder(String path) {
+    /**
+     * A folder that must exist, and optionally the one it used to be (SH211).
+     *
+     * <p>{@code movedFrom} is the folder half of the {@code moves} channel above, and it exists
+     * for a worse version of the same defect. A renamed section declared as state alone is an
+     * undeclared folder at the old path plus a declared one at the new, and a {@code prune}
+     * deletes the first — which for a <b>folder</b> takes <em>every post beneath it</em>
+     * (`ShFolderWriteService` cascades), where the post case only lost one post's history.</p>
+     *
+     * <p>It is on {@code Folder} rather than in {@code moves} because a folder move is not a
+     * from/to pair with two independent axes: a folder's whole name chain <em>is</em> its
+     * address, so its last segment is the new name and rename and relocate are one op (SH137).
+     * The destination is therefore the entry's own {@code path}, and there is nothing left for a
+     * second field to say.</p>
+     *
+     * @param path      folder path from the site root, e.g. {@code /blog/2026}
+     * @param movedFrom the path this folder is at <em>now</em>, when it is moving; absent for
+     *                  every folder that is merely being declared. A {@code movedFrom} whose
+     *                  folder no longer exists while {@code path} does is a <b>noop</b>, which is
+     *                  what keeps a document re-runnable (SH82) — the second apply of the same
+     *                  document does nothing
+     */
+    public record Folder(String path, String movedFrom) {
+
+        /** The one-field form: every folder that is only being declared, and every pre-SH211 caller. */
+        public Folder(String path) {
+            this(path, null);
+        }
+
+        /** Whether this entry asks for a move rather than only declaring a folder. */
+        public boolean moves() {
+            return movedFrom != null && !movedFrom.isBlank();
+        }
     }
 
     /**

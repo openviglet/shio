@@ -404,11 +404,17 @@ export function folderLocationOf(relPath) {
  * able to say what it is, and the path/frontmatter pair is what lets a half-done rename be
  * *caught* rather than guessed at (the same trade `parsePost` makes).
  *
- * @param {{ site: string, folder: string }} marker
+ * Since SH211 it may also carry `movedFrom:` — the path the folder has on the server, which
+ * turns a renamed directory from a delete-plus-create into a `folder.move`. It is an instruction
+ * and not state, like a post's own `movedFrom`, so it is written only when one is present and a
+ * marker without one serializes exactly as it did before.
+ *
+ * @param {{ site: string, folder: string, movedFrom?: string }} marker
  * @returns {string}
  */
-export function serializeFolder({ site, folder }) {
-  return `${FENCE}\nsite: ${encodeScalar(site)}\nfolder: ${encodeScalar(normalizeUrl(folder))}\n${FENCE}\n`;
+export function serializeFolder({ site, folder, movedFrom }) {
+  const moved = movedFrom ? `movedFrom: ${encodeScalar(normalizeUrl(movedFrom))}\n` : "";
+  return `${FENCE}\nsite: ${encodeScalar(site)}\nfolder: ${encodeScalar(normalizeUrl(folder))}\n${moved}${FENCE}\n`;
 }
 
 /**
@@ -416,7 +422,7 @@ export function serializeFolder({ site, folder }) {
  *
  * @param {string} relPath path relative to the folders root, e.g. `Blog/news/_folder.md`
  * @param {string} text    file contents
- * @returns {{ site: string, folder: string }}
+ * @returns {{ site: string, folder: string, movedFrom?: string }}
  */
 export function parseFolderMarker(relPath, text) {
   const { meta, body } = splitDocument(relPath, text);
@@ -449,7 +455,18 @@ export function parseFolderMarker(relPath, text) {
         "a post in this folder",
     );
   }
-  return { site, folder };
+  const movedFrom = meta.movedFrom == null ? undefined : normalizeUrl(meta.movedFrom);
+  if (movedFrom != null && movedFrom === folder) {
+    // The same refusal a post's `movedFrom` makes, for the same reason: the likeliest way to get
+    // here is renaming the directory and then setting `movedFrom` to the *new* path, which asks
+    // for nothing and reads exactly like a rename that already happened.
+    throw fault(
+      relPath,
+      `its \`movedFrom: ${movedFrom}\` is its own folder — \`movedFrom\` is the path this ` +
+        "folder has on the server, the one that is no longer in this tree",
+    );
+  }
+  return movedFrom == null ? { site, folder } : { site, folder, movedFrom };
 }
 
 /**

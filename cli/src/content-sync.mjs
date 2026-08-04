@@ -403,7 +403,13 @@ function urlOf(address) {
  *   without it a site holding only folders produces nothing, which is the "scaffold the
  *   structure before any content exists" case SH149 is for
  */
-export function documentsFor(posts, { prune = false, markers = [], sites = [], moves = [] } = {}) {
+export function documentsFor(posts, {
+  prune = false,
+  markers = [],
+  sites = [],
+  moves = [],
+  folderMoves = [],
+} = {}) {
   const bySite = new Map();
   for (const post of posts) {
     if (!bySite.has(post.site)) bySite.set(post.site, []);
@@ -424,6 +430,18 @@ export function documentsFor(posts, { prune = false, markers = [], sites = [], m
     if (!markersBySite.has(marker.site)) markersBySite.set(marker.site, []);
     markersBySite.get(marker.site).push(marker.folder ?? "/");
   }
+  // SH211 — a folder rename, keyed by `site|<destination>` so the folder entry that declares the
+  // destination is the one that carries it. A folder move has no second axis: its whole name
+  // chain is its address, so the destination *is* the entry (SH137).
+  const folderMovesBySite = new Map();
+  for (const move of folderMoves) {
+    if (!move?.site || !move.from || !move.to) continue;
+    folderMovesBySite.set(`${move.site}|${normalizeFolder(move.to)}`, normalizeFolder(move.from));
+    if (!markersBySite.has(move.site)) markersBySite.set(move.site, []);
+    // A renamed section whose folder no post names still has to be declared, or the document
+    // would ask for a move to a path it never mentions.
+    markersBySite.get(move.site).push(normalizeFolder(move.to));
+  }
   for (const site of [...markersBySite.keys(), ...sites]) {
     if (!bySite.has(site)) bySite.set(site, []);
   }
@@ -438,7 +456,12 @@ export function documentsFor(posts, { prune = false, markers = [], sites = [], m
     }
     return {
       site,
-      folders: [...folders].sort().map((path) => ({ path })),
+      // SH211 — `movedFrom` only on the entry that is the destination of a rename, and omitted
+      // everywhere else, so a document without one serializes exactly as it did before.
+      folders: [...folders].sort().map((path) => {
+        const movedFrom = folderMovesBySite.get(`${site}|${normalizeFolder(path)}`);
+        return movedFrom ? { path, movedFrom } : { path };
+      }),
       // SH150 — sorted, and omitted entirely when there are none, so a document without
       // renames serializes exactly as it did before this existed.
       moves: (movesBySite.get(site) ?? [])
@@ -618,6 +641,178 @@ export function reconcileFolders({ base = [], remote = [], local = [], implied =
     out.agreed.push(marker);
   }
   return out;
+}
+
+/**
+ * Which folders were renamed rather than deleted and re-created (SH211).
+ *
+ * <h3>The defect, and why it is worse than SH150's</h3>
+ *
+ * SH149 gave a folder a marker file; it did not give it a move. So renaming
+ * `shio/folders/Blog/news/_folder.md` to `.../updates/_folder.md` reads as one folder gone and
+ * one arrived: the push declares `/updates`, and `--prune` deletes `/news`. A post deleted that
+ * way loses one post's history; a **folder** deleted that way takes **every post beneath it**,
+ * because `ShFolderWriteService` cascades.
+ *
+ * <h3>The signals, in order of how much they prove</h3>
+ *
+ * 1. **`movedFrom:` in the marker** — explicit, exact, and the only signal that survives a
+ *    rename the shape of the subtree does not explain.
+ * 2. **A subtree that matches** — one gone root and one appeared root whose descendants have the
+ *    same relative shape. This is the common case (`git mv`, push) and needs nothing from the
+ *    author. It is what makes a section rename work: `/news` + `/news/2026` disappearing while
+ *    `/updates` + `/updates/2026` appear is **one** move, not two, because `folder.move` takes
+ *    the subtree with it.
+ * 3. **One of each** — exactly one unexplained gone root and one unexplained appeared root, with
+ *    shapes that do not match. Still unambiguous; the content changed as well as the name.
+ *
+ * <h3>What it reports, and when that is a refusal</h3>
+ *
+ * More than one candidate on either side is an **ambiguity**, not a coin flip: pairing wrongly
+ * moves the wrong section, and the alternative to guessing is one line of `movedFrom:` in the
+ * marker. It is reported and nothing is moved.
+ *
+ * Whether that stops the push is the **caller's** decision and depends on `--prune`, because
+ * that is the only thing an unpaired folder is in danger from: without it the old folder is left
+ * alone and refusing would block the legitimate case — one section removed and two added — with
+ * no way for the author to say "neither of these is a rename". The one ambiguity that is always
+ * a refusal carries `contradictory: true`: a marker whose `movedFrom` names a folder the tree
+ * *still declares* is a tree that cannot be read at all, whatever the push is doing.
+ *
+ * <p>Note the interaction with the friendly-URL rule: a folder move changes **no post's URL**
+ * (SH137's whole point), so this is a structural rename with no delivery consequence — which is
+ * what makes it safe to infer rather than requiring a declaration.</p>
+ *
+ * @param {object} sides
+ * @param {{site: string, folder: string}[]} sides.base   the folders both sides last agreed on
+ * @param {{site: string, folder: string, movedFrom?: string}[]} sides.local markers on disk
+ * @param {Set<string>} [sides.declared] every `site|folder` the tree declares, markers and the
+ *   ancestors of every projected post — a folder a post names is declared even with no marker
+ * @returns {{ moves: {site: string, from: string, to: string, explicit: boolean}[],
+ *             ambiguous: {site: string, from?: string, to?: string, reason: string,
+ *                         candidates: string[]}[] }}
+ */
+export function detectFolderMoves({ base = [], local = [], declared = null }) {
+  const key = (site, folder) => `${site}|${normalizeFolder(folder)}`;
+  const declaredKeys = declared ?? new Set(local.map((marker) => key(marker.site, marker.folder)));
+  const moves = [];
+  const ambiguous = [];
+
+  const bySite = new Map();
+  const site = (name) => {
+    if (!bySite.has(name)) bySite.set(name, { gone: [], appeared: [] });
+    return bySite.get(name);
+  };
+  for (const marker of base) {
+    if (!marker?.site) continue;
+    const folder = normalizeFolder(marker.folder);
+    // The site root is never a move: it is where every folder address resolves from, and the
+    // server refuses a move onto or off it.
+    if (folder === "/") continue;
+    if (!declaredKeys.has(key(marker.site, folder))) site(marker.site).gone.push(folder);
+  }
+  const baseKeys = new Set(base.map((marker) => key(marker.site, marker.folder)));
+  for (const marker of local) {
+    if (!marker?.site) continue;
+    const folder = normalizeFolder(marker.folder);
+    if (folder === "/") continue;
+    if (!baseKeys.has(key(marker.site, folder))) site(marker.site).appeared.push(folder);
+  }
+
+  const sites = [...bySite.keys()].sort((a, b) => a.localeCompare(b));
+  for (const name of sites) {
+    const { gone, appeared } = bySite.get(name);
+    // 1. `movedFrom:` — explicit, and it consumes both ends before anything is inferred.
+    const explicitTargets = new Set();
+    const explicitSources = new Set();
+    for (const marker of local.filter((row) => row.site === name && row.movedFrom)) {
+      const from = normalizeFolder(marker.movedFrom);
+      const to = normalizeFolder(marker.folder);
+      if (declaredKeys.has(key(name, from))) {
+        // Two markers, one claiming to be the new home of a folder the other still declares.
+        ambiguous.push({
+          site: name,
+          to,
+          // Flagged: this one is a *contradiction* rather than an unproved guess, so it is
+          // refused whatever the push is doing. The others only matter when something is
+          // about to be deleted.
+          contradictory: true,
+          reason: `its \`movedFrom: ${from}\` names a folder the tree still declares`,
+          candidates: [from],
+        });
+        continue;
+      }
+      moves.push({ site: name, from, to, explicit: true });
+      explicitTargets.add(to);
+      explicitSources.add(from);
+    }
+
+    const goneRoots = rootsOf(gone).filter((path) => !explicitSources.has(path));
+    const appearedRoots = rootsOf(appeared).filter((path) => !explicitTargets.has(path));
+    const unpairedGone = [];
+    const takenTargets = new Set();
+
+    // 2. A subtree whose shape matches — the rename nobody had to declare.
+    for (const from of goneRoots) {
+      const shape = shapeUnder(from, gone);
+      const matches = appearedRoots.filter(
+        (to) => !takenTargets.has(to) && sameShape(shape, shapeUnder(to, appeared)),
+      );
+      if (matches.length > 1) {
+        ambiguous.push({
+          site: name,
+          from,
+          reason: "more than one folder in the tree has exactly this shape, so which one is the "
+            + "rename cannot be told from the files",
+          candidates: matches,
+        });
+        continue;
+      }
+      if (!matches.length) {
+        unpairedGone.push(from);
+        continue;
+      }
+      takenTargets.add(matches[0]);
+      moves.push({ site: name, from, to: matches[0], explicit: false });
+    }
+
+    // 3. One of each left over: unambiguous even though the shapes differ, because the section
+    //    was edited as well as renamed. More than one on either side is a guess, and a guess here
+    //    moves the wrong section.
+    const unpairedAppeared = appearedRoots.filter((to) => !takenTargets.has(to));
+    if (!unpairedGone.length || !unpairedAppeared.length) continue;
+    if (unpairedGone.length === 1 && unpairedAppeared.length === 1) {
+      moves.push({ site: name, from: unpairedGone[0], to: unpairedAppeared[0], explicit: false });
+      continue;
+    }
+    ambiguous.push({
+      site: name,
+      reason: `${unpairedGone.length} folder(s) left the tree and ${unpairedAppeared.length} `
+        + "arrived, so which is a rename of which cannot be told from the files",
+      candidates: [...unpairedGone, ...unpairedAppeared],
+    });
+  }
+
+  return { moves, ambiguous };
+}
+
+/** The paths in `all` that no other path in `all` contains — the tops of the subtrees. */
+function rootsOf(all) {
+  return [...new Set(all)]
+    .sort()
+    .filter((path) => !all.some((other) => other !== path && path.startsWith(`${other}/`)));
+}
+
+/** The descendants of `root` in `all`, as paths relative to it. */
+function shapeUnder(root, all) {
+  return all
+    .filter((path) => path.startsWith(`${root}/`))
+    .map((path) => path.slice(root.length))
+    .sort();
+}
+
+function sameShape(a, b) {
+  return a.length === b.length && a.every((path, index) => path === b[index]);
 }
 
 /** `/a/b` → `["/", "/a", "/a/b"]`. */

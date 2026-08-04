@@ -996,6 +996,150 @@ test("push --content declares an empty folder from its marker alone", async () =
   assert.deepEqual(applied.body.posts, []);
 });
 
+// --- renaming a folder's directory is a move, not a delete plus a create (SH211) ---
+
+/** A base snapshot holding folders and no posts — enough for the folder half of the merge. */
+const folderBase = (folders) =>
+  JSON.stringify({ version: 1, cursor: null, partial: false, posts: {}, folders, notes: {} });
+
+test("push --content sends a renamed folder as a move, not a delete plus a create", async () => {
+  // The defect: `--prune` deleted the old folder, and a folder delete takes every post beneath
+  // it — SH150's failure one level up, where the loss is a section rather than one post.
+  const fetchImpl = server({ remote: {} });
+  const ctx = ctxWith(fetchImpl, {
+    [BASE_PATH]: folderBase([{ site: "Blog", folder: "/news" }]),
+    [markerPath("Blog", "/updates")]: markerFile("Blog", "/updates"),
+  });
+
+  await contentPush.run({ prune: true }, [], ctx);
+
+  const applied = fetchImpl.calls.find((call) => call.url.includes("/agent/apply"));
+  assert.deepEqual(applied.body.folders, [
+    { path: "/" },
+    { path: "/updates", movedFrom: "/news" },
+  ]);
+  assert.match(ctx.stdout.text, /Blog\/news moves to \/updates/);
+  assert.match(ctx.stdout.text, /the pages inside keep their URLs/);
+});
+
+test("a folder rename that cannot be told apart stops a pruning push", async () => {
+  // Two sections gone and two arrived: either pairing is plausible and moving the wrong one
+  // moves the wrong pages. With --prune the folders that left are deleted and a folder delete
+  // takes every post beneath it, so this is the case worth stopping.
+  const fetchImpl = server({ remote: {} });
+  const ctx = ctxWith(fetchImpl, {
+    [BASE_PATH]: folderBase([
+      { site: "Blog", folder: "/news" },
+      { site: "Blog", folder: "/press" },
+    ]),
+    [markerPath("Blog", "/updates")]: markerFile("Blog", "/updates"),
+    [markerPath("Blog", "/releases")]: markerFile("Blog", "/releases"),
+  });
+
+  await assert.rejects(
+    () => contentPush.run({ prune: true }, [], ctx),
+    /folder rename\(s\) cannot be told apart/,
+  );
+  assert.ok(fetchImpl.calls.every((call) => !call.url.includes("/agent/apply")));
+});
+
+test("the same ambiguity without --prune is said out loud and pushed anyway", async () => {
+  // Nothing is being deleted, so there is nothing to protect the author from — and refusing
+  // would block the legitimate case (a section removed, two added) with no way to declare that
+  // neither is a rename.
+  const fetchImpl = server({ remote: {} });
+  const ctx = ctxWith(fetchImpl, {
+    [BASE_PATH]: folderBase([
+      { site: "Blog", folder: "/news" },
+      { site: "Blog", folder: "/press" },
+    ]),
+    [markerPath("Blog", "/updates")]: markerFile("Blog", "/updates"),
+    [markerPath("Blog", "/releases")]: markerFile("Blog", "/releases"),
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  assert.match(ctx.stdout.text, /could be a rename and cannot be proved/);
+  assert.match(ctx.stdout.text, /movedFrom: <the old folder path>/);
+  const applied = fetchImpl.calls.find((call) => call.url.includes("/agent/apply"));
+  assert.deepEqual(applied.body.folders.filter((folder) => folder.movedFrom), []);
+});
+
+test("a marker naming a folder the tree still declares is refused whatever the flags", async () => {
+  // A contradiction rather than an unproved guess: two markers, one claiming to be the new home
+  // of a folder the other still declares. No reading of the pair is safe, so --force is not an
+  // answer and --prune is not the trigger.
+  const fetchImpl = server({ remote: {} });
+  const ctx = ctxWith(fetchImpl, {
+    [BASE_PATH]: folderBase([{ site: "Blog", folder: "/news" }]),
+    [markerPath("Blog", "/news")]: markerFile("Blog", "/news"),
+    [markerPath("Blog", "/updates")]:
+      "---\nsite: Blog\nfolder: /updates\nmovedFrom: /news\n---\n",
+  });
+
+  await assert.rejects(
+    () => contentPush.run({ force: true }, [], ctx),
+    /still declares/,
+  );
+});
+
+test("`movedFrom:` in a marker decides a rename the tree cannot prove", async () => {
+  const fetchImpl = server({ remote: {} });
+  const ctx = ctxWith(fetchImpl, {
+    [BASE_PATH]: folderBase([
+      { site: "Blog", folder: "/news" },
+      { site: "Blog", folder: "/press" },
+    ]),
+    [markerPath("Blog", "/updates")]:
+      "---\nsite: Blog\nfolder: /updates\nmovedFrom: /news\n---\n",
+    [markerPath("Blog", "/releases")]:
+      "---\nsite: Blog\nfolder: /releases\nmovedFrom: /press\n---\n",
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  const applied = fetchImpl.calls.find((call) => call.url.includes("/agent/apply"));
+  assert.deepEqual(applied.body.folders, [
+    { path: "/" },
+    { path: "/releases", movedFrom: "/press" },
+    { path: "/updates", movedFrom: "/news" },
+  ]);
+});
+
+test("a folder that only left the tree is still a deletion", async () => {
+  // The rename inference must not turn every removal into a move: with nothing arriving there
+  // is no pair at all, so --prune does what it has always done and nothing is reported.
+  const fetchImpl = server({ remote: {} });
+  const ctx = ctxWith(fetchImpl, {
+    [BASE_PATH]: folderBase([{ site: "Blog", folder: "/gone" }]),
+    [markerPath("Blog", "/gone")]: markerFile("Blog", "/gone"),
+  });
+
+  await contentPush.run({ prune: true }, [], ctx);
+
+  const applied = fetchImpl.calls.find((call) => call.url.includes("/agent/apply"));
+  assert.deepEqual(applied.body.folders, [{ path: "/" }, { path: "/gone" }]);
+  assert.doesNotMatch(ctx.stdout.text, /moves to/);
+});
+
+test("--force pushes past an unprovable folder rename, and moves nothing", async () => {
+  const fetchImpl = server({ remote: {} });
+  const ctx = ctxWith(fetchImpl, {
+    [BASE_PATH]: folderBase([
+      { site: "Blog", folder: "/news" },
+      { site: "Blog", folder: "/press" },
+    ]),
+    [markerPath("Blog", "/updates")]: markerFile("Blog", "/updates"),
+    [markerPath("Blog", "/releases")]: markerFile("Blog", "/releases"),
+  });
+
+  await contentPush.run({ prune: true, force: true }, [], ctx);
+
+  const applied = fetchImpl.calls.find((call) => call.url.includes("/agent/apply"));
+  assert.ok(applied, "the push went through");
+  assert.deepEqual(applied.body.folders.filter((folder) => folder.movedFrom), []);
+});
+
 test("push --content refuses a tree with neither posts nor markers", async () => {
   // The refusal is unchanged; what changed is what counts as content. An empty directory is
   // far more often the wrong --content-dir than a deliberate wipe, and with --prune it would

@@ -110,6 +110,17 @@ public class ShAgentDesiredStateService {
      * post's new address instead of creating a second post there (SH150). Publishes after
      * all upserts so a page never goes live referencing a sibling that does not exist yet;
      * prunes last so a deletion can never race the creation of its replacement.</p>
+     *
+     * <p><b>A folder move splits that first step in two (SH211), and it has to.</b> The folder
+     * upserts run first, then the folder moves, then the upserts of the folders that moved.
+     * Upserting a move's destination before the move would <em>create</em> it, and
+     * {@code folder.move} then refuses an occupied target — the rename would fail on the one
+     * path it was asked to produce. The destination's <b>parent</b> still has to exist first,
+     * because a move never creates one (a typo in a path must be reported rather than quietly
+     * building a new branch), and it does: it is an ancestor, so it is one of the plain entries.
+     * The third phase is not redundant — after a successful move the upsert is a noop, and after
+     * a <em>noop</em> move (the source is gone because a previous run already did it) it is what
+     * makes the folder exist at all.</p>
      */
     List<ShAgentBatch.Op> compile(ShAgentDesiredState desired) {
         if (desired == null || desired.site() == null || desired.site().isBlank()) {
@@ -117,13 +128,21 @@ public class ShAgentDesiredStateService {
         }
         String site = desired.site().trim();
         List<ShAgentBatch.Op> folders = new ArrayList<>();
+        List<ShAgentBatch.Op> folderMoves = new ArrayList<>();
+        List<ShAgentBatch.Op> movedFolders = new ArrayList<>();
         List<ShAgentBatch.Op> moves = new ArrayList<>();
         List<ShAgentBatch.Op> upserts = new ArrayList<>();
         List<ShAgentBatch.Op> publishes = new ArrayList<>();
 
         for (ShAgentDesiredState.Folder folder : nullSafe(desired.folders())) {
-            folders.add(op(ShAgentBatchService.FOLDER_UPSERT,
-                    ShAddress.folder(site, folder.path()).toString(), null, null, null));
+            ShAgentBatch.Op upsert = op(ShAgentBatchService.FOLDER_UPSERT,
+                    ShAddress.folder(site, folder.path()).toString(), null, null, null);
+            if (folder.moves()) {
+                folderMoves.add(folderMoveOp(site, folder));
+                movedFolders.add(upsert);
+            } else {
+                folders.add(upsert);
+            }
         }
         for (ShAgentDesiredState.Move move : nullSafe(desired.moves())) {
             moves.add(moveOp(site, move));
@@ -155,6 +174,8 @@ public class ShAgentDesiredStateService {
         }
 
         List<ShAgentBatch.Op> ops = new ArrayList<>(folders);
+        ops.addAll(folderMoves);
+        ops.addAll(movedFolders);
         ops.addAll(moves);
         ops.addAll(upserts);
         ops.addAll(publishes);
@@ -173,6 +194,35 @@ public class ShAgentDesiredStateService {
      * rather than restating its rules here (P10): an occupied target, a cross-site move and a
      * missing source all fail the same way they do for a hand-written batch.</p>
      */
+    /**
+     * One declared folder rename as a {@code folder.move} op (SH211).
+     *
+     * <p>The destination is the entry's own {@code path}, because a folder's name chain is its
+     * address — so unlike a post's move there is no second axis and nothing to refuse for being
+     * empty. A {@code movedFrom} equal to the path is refused rather than compiled: it is either
+     * half of an edit (the path was changed and {@code movedFrom} was set to the new value) or a
+     * copy-paste, and a noop is how a caller comes to believe a rename happened.</p>
+     *
+     * <p>Every other refusal is the writer's, which is the point of compiling to an existing op
+     * (P10): a cross-site move, an occupied target, a site root, a destination inside the
+     * folder's own subtree and a missing destination parent all fail exactly as they do for a
+     * hand-written batch. The one case that is <em>not</em> a refusal is a source that is already
+     * gone while the destination exists — {@code folderMove} answers that with a noop, which is
+     * what makes a document with a rename in it safe to apply twice.</p>
+     */
+    private static ShAgentBatch.Op folderMoveOp(String site, ShAgentDesiredState.Folder folder) {
+        String from = folder.movedFrom().trim();
+        if (ShAddress.normalizePath(from).equalsIgnoreCase(ShAddress.normalizePath(folder.path()))) {
+            throw new CircularFolderMoveException(folder.path());
+        }
+        return new ShAgentBatch.Op(ShAgentBatchService.FOLDER_MOVE,
+                ShAddress.folder(site, from).toString(),
+                null,
+                null,
+                ShAddress.folder(site, folder.path()).toString(),
+                null);
+    }
+
     private static ShAgentBatch.Op moveOp(String site, ShAgentDesiredState.Move move) {
         if (move == null || move.from() == null || move.from().isBlank()) {
             throw new MissingMoveFromException();
@@ -237,6 +287,17 @@ public class ShAgentDesiredStateService {
         Set<String> protectedFolders = new LinkedHashSet<>();
         for (ShAgentDesiredState.Folder folder : folders) {
             protect(protectedFolders, folder.path());
+            // SH211 — and its *source* too, for the same reason a post move's is protected below,
+            // one level up and with a much worse outcome. The sweep reads the database before any
+            // op has run, so a renamed section is still at its old path and nothing declares that
+            // path: it would be swept, and a folder delete takes every post beneath it. At apply
+            // time the move runs first and the delete would find nothing — but the *plan* would
+            // say "deleting folder:Blog/news", and SH108's confirm digest is taken over exactly
+            // that list, so a rename would ask the operator to confirm destroying the section it
+            // is preserving.
+            if (folder.moves()) {
+                protect(protectedFolders, folder.movedFrom());
+            }
         }
         for (ShAgentDesiredState.Post post : nullSafe(desired.posts())) {
             declaredPosts.add(ShAddress.normalizePath(post.url()).toLowerCase(Locale.ROOT));
@@ -384,6 +445,24 @@ public class ShAgentDesiredStateService {
     }
 
     /** A 400: a declared move that would move nothing (SH150). */
+    /** A 400: a folder declaring itself as the folder it moved from (SH211). */
+    public static class CircularFolderMoveException extends ShTeachingException {
+
+        public CircularFolderMoveException(String path) {
+            super(ShProblem.badRequest("circular-folder-move",
+                            "The folder '" + path + "' says it moved from itself")
+                    // The likeliest mistake by far, and the reason this is a 400 rather than a
+                    // noop: an author who renamed the path and then set `movedFrom` to the *new*
+                    // value has written a document that reports success and moves nothing.
+                    .withDetail("`movedFrom` is the path this folder is at now — the one that is "
+                            + "no longer in the tree. Equal to `path`, it asks for nothing, and a "
+                            + "silent no-op reads exactly like a rename that already succeeded.")
+                    .withFix("Set `movedFrom` to the folder's previous path, or drop it if the "
+                            + "folder is only being declared.")
+                    .withExample("{\"path\":\"" + path + "\",\"movedFrom\":\"/the-old-name\"}"));
+        }
+    }
+
     public static class EmptyMoveException extends ShTeachingException {
 
         public EmptyMoveException(String from) {

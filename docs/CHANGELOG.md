@@ -216,6 +216,7 @@
   <br>**Not everywhere, deliberately.** A blueprint may not declare `moves` (`CONTENT_KEYS` already refuses it): a package is an appliable *starting point*, so everything it declares is content it brings, and renaming the caller's live pages is not its business. `shio_apply` does not take it either — it is the largest tool on the surface at 437 of a 460 ceiling, and `shio_write` already carries `post.move` as one value in an op enum that exists. Same reasoning as SH151/SH152, and here the budget and the design agree.
 - **SH147** — The change feed is commit-ordered: positions are reserved, not read off the clock, and a write in flight holds the feed behind it, so a slow commit cannot land past a cursor.
 - **SH210** — Editing an asset's bytes now lands: push compares a path the server already has and replaces it in place, keeping the id, the folder, the name and the usage list.
+- **SH211** — Renaming a folder's directory is a folder.move now: the document carries movedFrom on the folder entry, and --prune no longer deletes the section with its posts.
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 

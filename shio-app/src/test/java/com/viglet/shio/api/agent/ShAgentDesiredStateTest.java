@@ -25,6 +25,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
 import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
@@ -312,6 +313,117 @@ class ShAgentDesiredStateTest {
 
         assertThat(shAddressResolver.resolve("post:" + siteName + kept + "/p0").kind())
                 .isEqualTo("post");
+    }
+
+    // --- a renamed folder keeps its posts (SH211) ---
+
+    /**
+     * The defect SH211 closes, end to end. Declared as state alone, a renamed section is an
+     * undeclared folder at the old path plus a declared one at the new — and a {@code prune}
+     * deletes the first, which for a folder takes <em>every post beneath it</em>. This is
+     * SH150's failure one level up, where the loss is a section rather than one post.
+     */
+    @Test
+    void aDeclaredFolderMoveRenamesTheSectionAndKeepsItsPosts() {
+        String from = base();
+        apply(document(from, false, "Kept"));
+        String to = from + "-renamed";
+
+        ShAgentChangeSet applied = apply(new ShAgentDesiredState(siteName,
+                List.of(new ShAgentDesiredState.Folder(to, from)),
+                List.of(new ShAgentDesiredState.Post(from + "/p0", postTypeName, to,
+                        data("Kept"), null)),
+                true));
+
+        assertThat(applied.results()).anySatisfy(change ->
+                assertThat(change.action()).isEqualTo(Change.MOVE));
+        assertThat(shAddressResolver.resolve("folder:" + siteName + to).kind()).isEqualTo("folder");
+        // SH137's whole point, and what makes the rename safe to infer from a file tree: the
+        // pages inside keep their URLs, so a folder move has no delivery consequence.
+        assertThat(shAddressResolver.resolve("post:" + siteName + from + "/p0").kind())
+                .isEqualTo("post");
+    }
+
+    /**
+     * The ordering the compiler exists to get right. Upserting the destination first would
+     * <em>create</em> it, and {@code folder.move} then refuses an occupied target — so the
+     * rename would fail on the one path it was asked to produce.
+     */
+    @Test
+    void theDestinationIsNotCreatedBeforeTheMove() {
+        String from = base();
+        apply(document(from, false, "Kept"));
+        String to = from + "-moved";
+
+        List<ShAgentBatch.Op> ops = shAgentDesiredStateService.compile(new ShAgentDesiredState(
+                siteName,
+                List.of(new ShAgentDesiredState.Folder("/"),
+                        new ShAgentDesiredState.Folder(to, from)),
+                List.of(), false));
+
+        List<String> order = ops.stream().map(ShAgentBatch.Op::op).toList();
+        assertThat(order).containsExactly(ShAgentBatchService.FOLDER_UPSERT,
+                ShAgentBatchService.FOLDER_MOVE, ShAgentBatchService.FOLDER_UPSERT);
+        // The third phase is not redundant: after a *noop* move — the source is gone because a
+        // previous run already did it — it is what makes the folder exist at all.
+        assertThat(ops.get(2).address()).isEqualTo("folder:" + siteName + to);
+    }
+
+    /** Applying the same rename twice is applying it once — the property the shape exists for. */
+    @Test
+    void aRenameIsRerunnable() {
+        String from = base();
+        apply(document(from, false, "Kept"));
+        String to = from + "-twice";
+        ShAgentDesiredState renamed = new ShAgentDesiredState(siteName,
+                List.of(new ShAgentDesiredState.Folder(to, from)),
+                List.of(new ShAgentDesiredState.Post(from + "/p0", postTypeName, to,
+                        data("Kept"), null)),
+                false);
+        apply(renamed);
+
+        ShAgentChangeSet again = apply(renamed);
+
+        assertThat(again.results()).allSatisfy(change ->
+                assertThat(change.action()).isEqualTo(Change.NOOP));
+        assertThat(shAddressResolver.resolve("folder:" + siteName + to).kind()).isEqualTo("folder");
+    }
+
+    /**
+     * The source of a move is protected from the sweep, for SH150's reason with a worse
+     * outcome. The sweep reads the database before any op has run, so the renamed section is
+     * still at its old path and nothing declares it: it would be swept, and SH108's confirm
+     * digest is taken over exactly that list — a rename would ask the operator to confirm
+     * destroying the section it is preserving.
+     */
+    @Test
+    void aMoveSourceIsNotPlannedForDeletion() {
+        String from = base();
+        apply(document(from, false, "Kept"));
+        String to = from + "-safe";
+
+        ShAgentChangeSet planned = plan(new ShAgentDesiredState(siteName,
+                List.of(new ShAgentDesiredState.Folder(to, from)),
+                List.of(new ShAgentDesiredState.Post(from + "/p0", postTypeName, to,
+                        data("Kept"), null)),
+                true));
+
+        assertThat(planned.results()).noneSatisfy(change -> {
+            assertThat(change.action()).isEqualTo(Change.DELETE);
+            assertThat(change.address()).isEqualTo("folder:" + siteName + from);
+        });
+    }
+
+    @Test
+    void aFolderThatMovedFromItselfIsATeachingError() {
+        ShAgentDesiredState circular = new ShAgentDesiredState(siteName,
+                List.of(new ShAgentDesiredState.Folder("/loop", "/loop")), List.of(), false);
+
+        assertThatThrownBy(() -> plan(circular))
+                .isInstanceOf(ShAgentDesiredStateService.CircularFolderMoveException.class)
+                .satisfies(thrown -> assertThat(
+                        ((ShAgentDesiredStateService.CircularFolderMoveException) thrown)
+                                .toProblemDetail().getProperties()).containsKey("fix"));
     }
 
     // --- teaching errors ---

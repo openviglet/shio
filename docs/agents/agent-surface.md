@@ -189,8 +189,16 @@ a scoped credential cannot use the error to prove a site exists.
   posts first and folders deepest-first; declared folders, their ancestors, any folder
   a declared post calls home, **and the source of every declared move (SH150)** are protected.
   Also `shio apply <file>` in the CLI (`--dry-run` / `--check` / `-` for stdin).
-  **`moves` is the document's one intent channel (SH150)** — `{from, to?, folder?}`, compiled to
-  `post.move` after folders and before upserts. Everything else here is state, which is what
+  **`moves` is the document's one intent channel for a *post* (SH150)** — `{from, to?, folder?}`,
+  compiled to `post.move` after folders and before upserts. **A folder's is `movedFrom` on its own
+  `folders` entry (SH211)**, since a folder's name chain is its address and the destination is
+  therefore the entry's own `path` — nothing is left for a second field to say. It compiles to
+  `folder.move` **between two halves of the folder step**: plain upserts, then the moves, then the
+  upserts of the folders that moved, because upserting a destination first *creates* it and
+  `folder.move` refuses an occupied target. Its source is protected from `prune` for the same
+  reason a post move's is and with a worse outcome — a folder delete cascades to every post
+  beneath it, so an unprotected source puts "deleting a section" into the very plan SH108's
+  confirm digest is taken over. Everything else here is state, which is what
   makes an apply re-runnable; a rename is *not* state, so declaring one as state alone is a
   delete plus a create that loses the post's id and history. A move naming neither `to` nor
   `folder` is a teaching **400**, not a noop — `changed:0` reads as "already in the right
