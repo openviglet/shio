@@ -52,6 +52,9 @@ const BOOLEANS = [
   // `--ignore-robots` is for your own site — it is recorded in the inventory, so a capture taken
   // without permission cannot later be mistaken for one taken with it.
   "render", "ignore-robots",
+  // SH378: download the bytes the inventory names. Opt-in, because SH377's default promise is that
+  // a capture writes nothing you have not read the inventory for first.
+  "assets",
 ];
 
 // Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would
@@ -267,6 +270,21 @@ Capturing a site that exists (shio clone):
   --out <file>         Inventory path       (default shio/.shio/source-inventory.json)
   --limit <n>          Rows per report section (the inventory always holds everything)
   --json               Print the inventory instead of the report
+
+  The bytes are a second, opt-in pass, so the default capture still writes nothing you have
+  not read the inventory for first:
+  --assets             Download the images, stylesheets, fonts, icons and media the inventory
+                       names into shio/assets/<site>/<source folder chain>/<name>, and record
+                       the source-URL-to-tree-path map back into the inventory. Same-origin
+                       only — mirroring another host's bytes is a licensing decision, and the
+                       hosts left behind are named so somebody can make it. Deduped by
+                       sha-256, so one logo served from three URLs is one asset. A name a path
+                       cannot hold is refused and reported, never trimmed.
+  --site <name>        Required with --assets: an asset's tree path starts with the site name,
+                       and a crawl cannot know what the replica will be called
+  --max-assets <n>     Ceiling on how many to download   (default 500)
+  --max-asset-bytes <n>
+                       Ceiling per asset, in bytes       (default 26214400)
 
 Content as files (shio pull/push --content, shio dev --content):
   Content projects to shio/content/<site>/<url>.md — YAML frontmatter is the fields,

@@ -40,6 +40,7 @@ import {
   siteDir,
 } from "../src/content-files.mjs";
 import { assetPathFor } from "../src/content-assets.mjs";
+import { capturedAssetPathFor } from "../src/clone-assets.mjs";
 import { notesPathFor } from "../src/content-notes.mjs";
 import { fileNameFor } from "../src/post-types-io.mjs";
 import {
@@ -60,6 +61,10 @@ const MODULES = [
   // SH408 — the post-type root. It was outside this list, so `fileNameFor` was never classified
   // for either question, and it is the one whose collision `push --prune` turns into a deletion.
   "post-types-io.mjs",
+  // SH378 — the newest producer, and the only one in the tree whose input is a URL from a
+  // **stranger's server**. It writes into `shio/assets`, the same root `assetPathFor` owns, which is
+  // why it shares that root's collision detector and not a new one.
+  "clone-assets.mjs",
 ];
 
 /** Producers whose name does not follow the convention, found by reading the module. */
@@ -78,6 +83,21 @@ const DECLARED = {
       values: ["Blog/media/Logo.png", "Blog/media/logo.png"],
       detector: assetPathCollisions,
       writtenBy: "commands/content-pull.mjs",
+    },
+  },
+  capturedAssetPathFor: {
+    guarded: "SH378 — answers null, like `assetPathFor` whose root it shares. The value that "
+      + "reaches it is an encoded **slash**, not a dot segment: a URL parser resolves `%2e%2e` "
+      + "(measured — this probe asserted it and was wrong) and deliberately preserves `%2f`, so the "
+      + "separator is what a readability decode re-creates",
+    probe: () => capturedAssetPathFor("https://x.test/img/..%2f..%2fetc/passwd", "Blog"),
+    collides: {
+      // The same root as `assetPathFor`, so the same detector — a second one over `shio/assets`
+      // would be two answers to one question, and the pair would be reported by whichever the
+      // writer happened to call.
+      values: ["Blog/img/Logo.png", "Blog/img/logo.png"],
+      detector: assetPathCollisions,
+      writtenBy: "commands/clone.mjs",
     },
   },
   filePathFor: {

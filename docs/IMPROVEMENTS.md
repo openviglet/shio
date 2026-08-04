@@ -1405,23 +1405,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.2 The bytes are the half a crawl cannot skip (SH378)
-
-SH145 made an asset a path in the tree, and a push uploads what a `File` field names. So
-the capture's job is narrow and entirely mechanical: download every referenced image,
-font, icon and stylesheet into `shio/assets/<site>/<folder-chain>/<name>` and rewrite
-the source's URL to that path, which is the currency every later command already speaks.
-
-Four rules the capture has to keep, all of them consequences of rules that exist.
-**Same-origin only**, with a report of what was left behind — silently mirroring a CDN's
-bytes into a customer's media library is a licensing decision, not a fetch. **Dedupe by
-digest**, because a source that serves one logo from three URLs must not become three
-assets whose path stops naming one thing (SH210's argument). **The folder chain comes
-from the source's own path**, so the tree reads like the site rather than like a dump.
-And a name a path cannot hold is **refused, never trimmed** — SH256 and SH257 are
-already the law here, and a crawl is the largest source of hostile names the projection
-will ever see.
-
 ### XVII.3 Two modes, and the proposal between them is the deliverable (SH379)
 
 The conversion has two honest answers and the temptation is to ship one. **Fidelity

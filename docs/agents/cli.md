@@ -77,6 +77,36 @@ exactly the pathological shape with a timeout as the assertion. It is CLI-shaped
 settled reason and the manifest says so: `siteCapture: false` with
 `elsewhere.siteCapture = "shio clone <url>"`.
 
+**`--assets` is the bytes, and it is a second opt-in pass so SH377's promise survives (SH378).**
+SH145 made an asset a path in the tree and `push --content` uploads whatever a `File` field names,
+so the job is narrow: download each referenced image, stylesheet, font, icon and media file into
+`shio/assets/<site>/<the source's own folder chain>/<name>` and fold the source-URL → tree-path map
+back into **the same inventory**, because SH379's markup rewrite reads that map and a second copy of
+it would rewrite an `<img src>` to a path holding somebody else's bytes. `--site` is **required and
+validated before the first request** — an asset path starts with the site name, a crawl cannot know
+what the replica will be called, and deriving it from the hostname would put a site called
+`www.example.com` in an instance. Four rules, each a consequence of an existing one. **Same-origin
+only**, with the hosts left behind *named* — mirroring a CDN's bytes into a customer's media library
+is a licensing decision and this tool is not entitled to make it, but somebody has to be able to.
+**Deduped by sha-256** (SH210: a path names one thing, so one logo served from three URLs is one
+asset and three paths would mean a curator replacing "the logo" replaces a third of it) — and the
+plan is ordered **most-referenced first**, which decides *which* of two identical files is canonical:
+sorted by path, an incidental `/img/hero-again.png` became the name for a logo referenced forty
+times as `/img/hero.png`, because `-` sorts before `.`. A test found that. **A name a path cannot
+hold is refused, never trimmed** — and the hazard is not the one you would guess: a URL parser
+resolves `%2e%2e` before anyone sees it (measured; the first draft of the comment claimed otherwise
+and the SH403 lint refused the claim), while it *deliberately preserves* `%2F` and `%5C`, because
+decoding a slash would change the path's structure. So the separator is what a decode-for-readability
+re-creates, which is why the order is decode-then-validate and why `capturedAssetPathFor` is
+classified in `path-safety.test.mjs` sharing `assetPathFor`'s collision detector — one root, one
+answer. Also refused: a Windows device name, a trailing dot, a colon or pipe (legal on POSIX, and the
+tree's whole promise is that it moves), leading or trailing whitespace, and a segment past 255 bytes.
+**A soft 404 is caught here or nowhere**: a response of `text/html` where an image was expected would
+land in the media library under a `.png` name that every later check reads as a present asset.
+`--max-assets` and `--max-asset-bytes` bound it, the latter checked against `content-length` *and*
+against what actually arrived, since a server that under-declares would otherwise walk straight past
+the ceiling whose whole job is not filling a disk.
+
 **`shio impact <address>` exists and `shio read` deliberately does not (SH288).** The task was
 filed as "the CLI cannot show one post", and only half of that is a gap. A post's **content** is on
 disk after `pull --content`, where `Grep` and `Edit` are the cheapest tools an agent has (P4), so a

@@ -243,11 +243,13 @@ public class ShAgentManifestService {
         // standing non-goal, so this flag saying `true` would advertise a Chromium process inside
         // the JVM. The pointer beside it is how a client learns the capability exists at all.
         features.put("pageAudit", false);
-        // SH377's capture pass — `shio clone <url>` walks a site that already exists and writes an
-        // inventory. `false` here is not modesty: a URL the *server* fetches is SH101's
-        // request-forgery surface argued a second time, which SH268 already settled, and a page whose
-        // markup arrives after hydration needs the browser this surface must not have. Both reasons
-        // are the same reason the flag beside it is false.
+        // SH377/SH378's capture pass — `shio clone <url>` walks a site that already exists, writes an
+        // inventory, and with `--assets` downloads the bytes it names. `false` here is not modesty: a
+        // URL the *server* fetches is SH101's request-forgery surface argued a second time, which
+        // SH268 already settled, and a page whose markup arrives after hydration needs the browser
+        // this surface must not have. Both reasons are the same reason the flag beside it is false.
+        // One flag rather than two for the capture and the download: they are one capability with a
+        // second pass, and a caller who has the command has both.
         features.put("siteCapture", false);
         return features;
     }

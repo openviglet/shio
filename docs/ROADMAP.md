@@ -77,9 +77,8 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH378** (deps: SH145 ✅, SH377 ✅) **A captured page references bytes nothing downloads** — The projection reads assets off disk, and nothing fetches the original's images, fonts and stylesheets into the tree or rewrites their URLs to asset paths. → §XVII.2
 - 📋 **SH379** (deps: SH95 ✅, SH191 ✅, SH377 ✅) **Captured markup can only become a frozen copy** — Fidelity wants the original's HTML verbatim and authorability wants sections, and nothing proposes the mapping between them, so a replica is one or the other. → §XVII.3
-- 📋 **SH380** (deps: SH195 ✅, SH378) **An imported stylesheet lands as one opaque blob** — A Theme carries CSS and DTCG tokens, and a capture that writes only the CSS yields a replica nobody can restyle, though the source's own values are what a token set is. → §XVII.4
+- 📋 **SH380** (deps: SH195 ✅, SH378 ✅) **An imported stylesheet lands as one opaque blob** — A Theme carries CSS and DTCG tokens, and a capture that writes only the CSS yields a replica nobody can restyle, though the source's own values are what a token set is. → §XVII.4
 - 📋 **SH381** (deps: SH183 ✅) **A navigation row carries no URL, so a menu cannot link** — The navigation helper yields id, name and title over the folder tree while its own docstring promises a url, so the helper a site's menu needs cannot emit an href. → §XVII.5
 - 📋 **SH382** (deps: SH381) **A site's menu is the folder tree or nothing** — Ordered labels, nested groups and external links are what a real menu is and no folder chain expresses any of them, so the nav gets hand-written into every layout. → §XVII.6
 - 📋 **SH383** (deps: SH348 ✅, SH323 ✅) **The renderer knows nothing about locale** — SH348 made the tree locale-aware and the render model stayed monolingual: no sibling translations in scope, no locale in the route and no switcher a six-language site needs. → §XVII.7

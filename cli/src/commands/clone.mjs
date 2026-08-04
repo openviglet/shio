@@ -29,6 +29,14 @@
 import { dirname, join } from "node:path";
 
 import {
+  DEFAULT_MAX_ASSETS,
+  DEFAULT_MAX_ASSET_BYTES,
+  describeDownloads,
+  placeAsset,
+  planAssets,
+  withDownloads,
+} from "../clone-assets.mjs";
+import {
   DEFAULT_DEPTH,
   DEFAULT_MAX_PAGES,
   INVENTORY_FILE,
@@ -43,6 +51,8 @@ import {
   scanPage,
   serializeInventory,
 } from "../clone.mjs";
+import { ASSETS_DIR } from "../content-assets.mjs";
+import { assetPathCollisions, siteDir } from "../content-files.mjs";
 
 const USER_AGENT = `${ROBOTS_AGENT} (+https://github.com/openviglet/shio)`;
 
@@ -67,6 +77,11 @@ export async function run(flags, positionals, ctx) {
     throw new Error(`shio clone: "${seed}" is not http(s), so there is nothing to crawl.`);
   }
 
+  // SH378 — before any request at all, including robots.txt. A run that has nowhere to put the bytes
+  // should cost a second and no traffic to somebody else's server, and the first draft of this
+  // validated after the robots fetch, which the test noticed.
+  const site = flags.assets === true ? assetSite(flags) : null;
+
   // `--depth 0` is the seed page and nothing else, which is a legitimate thing to ask for — the
   // cheapest possible look at a site. A ceiling of zero pages is not.
   const depth = whole(flags.depth, DEFAULT_DEPTH, "--depth", 0);
@@ -85,7 +100,7 @@ export async function run(flags, positionals, ctx) {
   try {
     const walk = await crawl({ origin, depth, maxPages, robots, page, flags }, ctx);
     notes.push(...walk.notes);
-    const inventory = buildInventory({
+    let inventory = buildInventory({
       origin: origin.origin,
       seed: String(seed),
       visited: walk.visited,
@@ -93,6 +108,9 @@ export async function run(flags, positionals, ctx) {
       options: { depth, maxPages, rendered, truncated: walk.truncated },
       notes,
     });
+    if (site) {
+      inventory = await download(inventory, { site, flags }, ctx);
+    }
 
     const out = typeof flags.out === "string" ? flags.out : INVENTORY_FILE;
     const target = join(ctx.cwd, out);
@@ -103,6 +121,7 @@ export async function run(flags, positionals, ctx) {
       ctx.stdout.write(serializeInventory(inventory));
     } else {
       ctx.stdout.write(describeInventory(inventory, { ...flags, out }));
+      ctx.stdout.write(describeDownloads(inventory, flags));
     }
     // A capture that reached nothing is not a capture. Exiting 0 on it would let a CI step that
     // wraps this read "0 pages" as "a site with no pages".
@@ -110,6 +129,115 @@ export async function run(flags, positionals, ctx) {
   } finally {
     await page?.close?.();
   }
+}
+
+/**
+ * The site the bytes will belong to (SH378).
+ *
+ * <p>Required rather than guessed. An asset's tree path is `<site>/<chain>/<name>` and the crawl has
+ * no idea what the replica will be called — deriving it from the origin's hostname would put a site
+ * called `www.example.com` in somebody's instance, and a rename afterwards moves every asset.
+ * `siteDir` validates it, so a name with a separator is refused here and not by the 200th write.
+ */
+function assetSite(flags) {
+  const name = typeof flags.site === "string" ? flags.site : "";
+  if (!name) {
+    throw new Error(
+      "shio clone: --assets needs --site <name>, because an asset's path in the tree is\n" +
+        "<site>/<folder chain>/<file name> and a crawl cannot know what the replica is called.\n" +
+        "Example: shio clone https://example.com --assets --site Acme",
+    );
+  }
+  return siteDir(name);
+}
+
+/**
+ * Downloads what the inventory names, and folds the outcome back into it.
+ *
+ * <p>Sequential like the crawl, and for one of the same reasons: this is somebody else's server, and
+ * forty parallel connections to it is a load decision made on their behalf. It also keeps the dedupe
+ * deterministic — with concurrency, *which* of two identical assets becomes the file on disk depends
+ * on which response arrived first (P5).
+ */
+async function download(inventory, { site, flags }, ctx) {
+  const maxAssets = whole(flags.maxAssets, DEFAULT_MAX_ASSETS, "--max-assets", 1);
+  const maxBytes = whole(flags.maxAssetBytes, DEFAULT_MAX_ASSET_BYTES, "--max-asset-bytes", 1);
+  const { plan, skipped, external } = planAssets(inventory, { site, maxAssets });
+
+  // SH408's question, asked of this root before anything is written: two source URLs whose names
+  // differ only in case are one file on macOS and Windows, and the second would overwrite the first
+  // with no digest ever compared.
+  const collisions = assetPathCollisions(plan.map((item) => item.file));
+  const results = [];
+  const state = { byDigest: new Map(), byPath: new Map() };
+
+  for (const item of plan) {
+    if (collisions.has(item.file)) {
+      const group = collisions.get(item.file);
+      results.push({
+        action: "collision",
+        source: item.source,
+        file: item.file,
+        detail: `folds onto ${group.paths.filter((each) => each !== item.file).join(" ")} on a `
+          + "case-insensitive filesystem",
+      });
+      continue;
+    }
+    const fetched = await fetchBytes(item, maxBytes, ctx);
+    if (fetched.error) {
+      results.push({ action: "failed", source: item.source, file: item.file, detail: fetched.error });
+      continue;
+    }
+    const placed = placeAsset(state, {
+      source: item.source,
+      file: item.file,
+      bytes: fetched.bytes,
+      contentType: fetched.contentType,
+      kind: item.kind,
+    });
+    results.push(placed);
+    if (placed.action !== "wrote") continue;
+    const target = join(ctx.cwd, ASSETS_DIR, item.file);
+    await ctx.fs.mkdir(dirname(target), { recursive: true });
+    await ctx.fs.writeFile(target, fetched.bytes);
+  }
+  return withDownloads(inventory, { site, results, skipped, external });
+}
+
+/**
+ * One asset's bytes, or the reason there are none.
+ *
+ * <p>The ceiling is checked against `content-length` **and** against what actually arrived: a server
+ * that under-declares or omits the header would otherwise walk straight past the limit, and the
+ * limit exists to stop a crawl filling a disk.
+ */
+async function fetchBytes(item, maxBytes, ctx) {
+  let response;
+  try {
+    response = await ctx.fetch(item.url, {
+      headers: { "User-Agent": USER_AGENT },
+      redirect: "follow",
+    });
+  } catch (error) {
+    return { error: `fetch failed: ${error?.message ?? error}` };
+  }
+  if (!response.ok) {
+    return { error: `HTTP ${response.status ?? 0}` };
+  }
+  const declared = Number(response.headers?.get?.("content-length") ?? Number.NaN);
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    return { error: `${declared} bytes, past --max-asset-bytes (${maxBytes})` };
+  }
+  let bytes;
+  try {
+    bytes = new Uint8Array(await response.arrayBuffer());
+  } catch (error) {
+    return { error: `could not read the body: ${error?.message ?? error}` };
+  }
+  if (bytes.length > maxBytes) {
+    return { error: `${bytes.length} bytes, past --max-asset-bytes (${maxBytes})` };
+  }
+  return { bytes, contentType: response.headers?.get?.("content-type") ?? "" };
 }
 
 function whole(value, fallback, flag, min) {
