@@ -425,14 +425,23 @@ export async function readRemoteAssets(agent, admin, {
 }
 
 /**
- * How many per-folder listings are worth doing instead of one per site (SH213).
+ * How many per-folder listings are worth doing instead of one per site (SH213), measured (SH375).
  *
- * The trade is **requests against rows**, and only one side of it is knowable before asking: the
- * caller knows how many folders it references and cannot know how large the library is. So the
- * decision is made on the number it has, and the number is small on purpose — eight requests is a
- * bounded, uninteresting cost, and above that one listing is the cheaper shape whatever the
- * library holds. This is the threshold §X.16 asked for rather than a replacement: resolving N
- * paths individually is N requests against one, and that is only a win while N is small.
+ * <h3>What the number is, and what it is not</h3>
+ *
+ * SH213 argued eight from "a bounded, uninteresting number of requests" and left the crossover
+ * unmeasured. `ShStaticFileListingBenchmarkTest` measured it and found the premise was wrong in the
+ * dangerous direction: `folderId` was applied **in memory** after every published `File` post in
+ * the tenant had been loaded and stat-ed, so a folder listing read the whole library — one folder
+ * cost 69 rows against the whole site's 69 — and F listings cost F whole-library reads. The
+ * narrowing was buying payload and paying for it in server work.
+ *
+ * The predicate is in the query now, and the same benchmark puts covering the whole library one
+ * folder at a time at **84 rows against 69** — about a fifth more, which is the fixed tail read F
+ * times. So server work is no longer what bounds this: **round trips are**, and a round trip is a
+ * client-side cost no benchmark in this repository can measure. Eight survives as a latency budget
+ * rather than a work budget, which is a claim about the deployment and therefore the caller's to
+ * change — hence `--max-folder-reads`.
  */
 const MAX_FOLDER_READS = 8;
 

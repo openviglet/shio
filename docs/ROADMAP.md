@@ -14,6 +14,7 @@
 - 💭 **SH84** (deps: SH22 ✅, SH83 ✅) **Turing ecosystem wiring** — the SH22 tenant sweep and its test shipped; what remains is the Turing integration (replaces old SH37). → §VIII.9
 - 💭 **SH140** (deps: SH100 ✅, SH134 ✅) **Report inbound links when a post moves** — A URL typed into another post's rich text names the address rather than the object, so a move breaks it and nothing tells the agent which pages it just broke. → §VIII.13
 - 💭 **SH197** (deps: SH136 ✅) **Finish the byte-stability class** — A hash-ordered Map.of reaching a serialized map component is the SH136 defect the lint does not ban, and no live instance is affected yet. → §VIII.14
+- 📋 **SH393** (deps: SH338 ✅, SH268 ✅) **Which surface owns a capability is re-argued per task** — Six shipped tasks each re-derived the MCP-or-CLI boundary from scratch, and the P1 conformance test records reachability without recording which surface was chosen. → §VIII.15
 
 ## Block K — Perception & verification loop
 
@@ -24,11 +25,11 @@
 - 📋 **SH208** (deps: —) **A backtick in the CLI's help text breaks the whole binary** — HELP is a template literal, so a backtick in the prose is a syntax error that stops the binary loading, and only the three tests that spawn it notice. → §IX.9
 - 💭 **SH209** (deps: SH102 ✅) **`shio snapshot` photographs one page per run** — The useful artifact for a handoff is the set of a site's pages, and the command captures one page per run. → §IX.10
 - 📋 **SH391** (deps: SH102 ✅, SH265 ✅) **A browser runs in this repo twice and neither output is for the agent** — The console e2e drives the console and snapshot draws a PNG for a human, so the one failure class no digest reaches is still checked by asking somebody to look at it. → §IX.11
+- 📋 **SH397** (deps: SH295 ✅, SH325 ✅) **A dev instance reports its version as dev, so a stale server reads as a code defect** — The build stamp comes from the jar manifest, which is absent in the one mode where the running instance can lag the working tree, and nothing composes the readiness facts. → §IX.12
 
 ## Block I — Content as files (local-first authoring)
 
 - 📋 **SH374** (deps: SH212 ✅) **A missing sidecar and a dangling translationOf still wait for a gate that needs the server** — SH212 showed both are provable from the tree alone, yet the projection group has one rule and the cheapest gate misses the two defects beside it. → §X.20
-- 💭 **SH375** (deps: SH213 ✅) **The per-folder inventory threshold is a number nobody measured** — SH213 asserts both branches of an eight-folder cutoff, but the crossover depends on per-request against per-row cost and its benchmark measures neither. → §X.21
 - 💭 **SH376** (deps: SH147 ✅) **The change feed's ordering guard is silently weaker on a second application node** — SH147's watermark is exact for one JVM and lag-millis now defaults to 0, so a two-node install can lose an edit and nothing tells the operator which install it is. → §X.22
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin
@@ -39,6 +40,7 @@
 - 📋 **SH219** (deps: SH96 ✅) **The local package directory needs a reload that is not a restart** — ShBlueprintRegistry caches on first access, so a package dropped into the configured directory is invisible until the process restarts. → §XI.13
 - 📋 **SH220** (deps: SH155 ✅) **A re-apply defaults to the parameters the site was built with** — The record of a site's blueprint parameters exists and no re-apply reads it, so a value the operator misremembers rebuilds the site differently and reports ordinary work. → §XI.14
 - 💭 **SH221** (deps: SH153 ✅) **The rest of the write surface should be plannable read-only too** — The plan and dryRun paths are write-free and nothing enforces it, so the next feature needing to resolve what it would create can reintroduce a write. → §XI.15
+- 📋 **SH395** (deps: SH156 ✅, SH183 ✅, SH280 ✅) **A blueprint stops one step before a site anybody can look at** — No first-party package ships a theme, a layout or a binding, so applying one yields content whose design is the labelled fallback and an agent finishes the job by hand. → §XI.16
 
 ## Block L — Agent safety & human-in-the-loop
 
@@ -57,6 +59,8 @@
 - 💭 **SH230** (deps: SH174 ✅) **The manifest's weight is prose, and terse barely touches it** — About 87% of the manifest is a purpose sentence and an example per endpoint, kept verbatim on purpose, so terse saves 11% where it is worth a third elsewhere. → §XIII.10
 - 💭 **SH231** (deps: SH161 ✅) **An instance's own notes travel nowhere** — A site's notes ride its export and the instance's own travel nowhere, which is right for an import and wrong for a move. → §XIII.11
 - 💭 **SH232** (deps: SH159 ✅) **`/agent/changes` cannot revalidate the way it is most often called** — In window mode the response's own cursor is the moving edge of the feed, so no two polls agree and every one pays in full. → §XIII.12
+- 📋 **SH394** (deps: SH132 ✅, SH208) **The CLI's discovery surface has no budget, so it reads as free** — tools/list is capped at 2375 tokens and checked every build while shio --help is 14 KB nobody measures, so the two surfaces cannot be compared on the cost that decides between them. → §XIII.13
+- 📋 **SH396** (deps: SH112 ✅, SH395) **The build-a-site benchmark ends at verify, before anything renders** — Its four calls stop at a lint, so the measured job is content that passes checks rather than a page a person can open, and the traps between the two are unmeasured. → §XIII.14
 
 ## Block N — Realignment of what already shipped
 
@@ -80,7 +84,7 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH377** (deps: SH268 ✅) **Nothing captures a site that already exists** — Replicating a live site starts with an inventory of its pages, assets, locales and forms, and no command crawls one, so the work cannot even be scoped. → §XVII.1
+- 📋 **SH377** (deps: SH268 ✅, SH391) **Nothing captures a site that already exists** — Replicating a live site starts with an inventory of its pages, assets, locales and forms, and no command crawls one, so the work cannot even be scoped. → §XVII.1
 - 📋 **SH378** (deps: SH145 ✅, SH377) **A captured page references bytes nothing downloads** — The projection reads assets off disk, and nothing fetches the original's images, fonts and stylesheets into the tree or rewrites their URLs to asset paths. → §XVII.2
 - 📋 **SH379** (deps: SH95 ✅, SH191 ✅, SH377) **Captured markup can only become a frozen copy** — Fidelity wants the original's HTML verbatim and authorability wants sections, and nothing proposes the mapping between them, so a replica is one or the other. → §XVII.3
 - 📋 **SH380** (deps: SH195 ✅, SH378) **An imported stylesheet lands as one opaque blob** — A Theme carries CSS and DTCG tokens, and a capture that writes only the CSS yields a replica nobody can restyle, though the source's own values are what a token set is. → §XVII.4
@@ -89,7 +93,7 @@
 - 📋 **SH383** (deps: SH348 ✅, SH323 ✅) **The renderer knows nothing about locale** — SH348 made the tree locale-aware and the render model stayed monolingual: no sibling translations in scope, no locale in the route and no switcher a six-language site needs. → §XVII.7
 - 📋 **SH384** (deps: SH247 ✅, SH259 ✅) **A listing has a ceiling and no second page** — query takes folder, type and limit only, so an archive past its limit has no page two and a hub filtered by industry or tag cannot be written at all. → §XVII.8
 - 📋 **SH385** (deps: SH377) **A replica silently abandons the original's URL space** — The capture knows every source URL and nothing records the source-to-replica map or serves a redirect, so every inbound link to a path the replica renamed is lost. → §XVII.9
-- 📋 **SH386** (deps: SH102 ✅, SH265 ✅, SH365) **Nothing proves the replica looks like the original** — snapshot compares a page against its own earlier capture, so the comparison a replication needs — the source as the baseline, at several widths — cannot be asked for. → §XVII.10
+- 📋 **SH386** (deps: SH265 ✅, SH365, SH391) **Nothing proves the replica looks like the original** — snapshot compares a page against its own earlier capture, so the comparison a replication needs — the source as the baseline, at several widths — cannot be asked for. → §XVII.10
 - 📋 **SH387** (deps: SH212 ✅, SH377) **Fidelity has no report, so coverage is a feeling** — Which source pages, links, assets and form fields never arrived is the question a replication asks, and it is provable from the tree and the inventory with no instance. → §XVII.11
 - 💭 **SH388** (deps: SH337 ✅) **A page's head is markup nobody checks** — Title, description, og and canonical tags are template freedom with no convention and no lint, so sixty replica pages can share one description and verify stays green. → §XVII.12
 - 💭 **SH389** (deps: SH183 ✅, SH248 ✅) **A site-wide script is copied into every layout** — Consent, analytics and chat belong to the site and the only slots are a layout's or a theme's own fields, so a replica repeats them per layout and their order is per copy. → §XVII.13

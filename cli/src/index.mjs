@@ -246,6 +246,12 @@ Content as files (shio pull/push --content, shio dev --content):
   --folders-dir <dir>  Folder-marker root      (default shio/folders)
   --assets-dir <dir>   Asset root              (default shio/assets)
   --max-ops <n>        push: ops per document; a bigger tree splits (default 1500)
+  --max-folder-reads <n>
+                       push: how many asset folders to list one at a time before
+                       reading a whole site instead (default 8). Measured: a folder
+                       listing reads that folder's rows only, so this bounds round
+                       trips rather than server work — lower it on a slow link,
+                       raise it on a fast one with a large media library.
   --prune              push: delete server posts the file tree does not declare
   --check / --dry-run  push: drift guard / plan only, same meanings as for post-types
   --ours / --theirs    pull: resolve conflicts in one direction

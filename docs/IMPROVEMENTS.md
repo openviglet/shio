@@ -233,6 +233,27 @@ component specifically, or `Map.of` in the model at all. The first needs the lin
 know what is serialized, which it cannot; the second is broad enough to need the
 exemption often, which is how a guard gets deleted.
 
+### VIII.15 The surface assignment is a decision, so it should be a declared fact (SH393)
+
+SH268 argued a zip cannot be a JSON-RPC message, SH186 that a JSON-shaped verb becomes
+an op rather than a thirteenth tool, SH104 that a human artifact has no server surface,
+SH288 that a file beats a read command, SH262 that a projection beats a new endpoint,
+and SH391 that a browser lives where a browser lives. Six tasks, one boundary, derived
+six times — each correctly, and each from memory. That is the shape SH338 named: a law
+with no instrument.
+
+`ShAgentP1ConformanceTest` already classifies all 52 manifest `features` keys by
+*reachability*. What it does not record is the **surface**: MCP, CLI, REST-only, or
+console-only, with the reason. Adding that column makes the next argument a lookup,
+makes a capability that quietly gained a second surface visible, and makes "CLI-shaped"
+a declared decision an MCP client can read in the manifest instead of discovering by
+failing — which SH268 does for exactly one capability today.
+
+The rule the six tasks converge on, worth writing where it can be checked: **MCP owns
+address-in, small-JSON-out verbs a session repeats**, because a client may have no
+shell; **the CLI owns whatever has a file, a byte stream, a browser or a human on one
+end**, because none of those fit a JSON-RPC frame. Nothing is owned by neither.
+
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
 > The agent cannot see. Two of the three human round trips in a typical build existed only
@@ -385,6 +406,27 @@ targeted rather than exploratory.
 
 **The measurement is the first deliverable** (P3): a full-page screenshot costs roughly 1.6k tokens after downscaling and is unreadable at page height, cannot be diffed across turns, and asks the reader to *judge*; twenty findings cost a few hundred, grep and diff, and ask the reader to *fix*. **CLI-shaped, not a tool**: `tools/list` is capped at 12 with 11 used and is paid every turn, while a Bash call is paid when it is made — and the JVM stays browserless, which is a standing non-goal.
 
+### IX.12 Can I work here — one call, and the fact it needs is missing in dev (SH397)
+
+The manifest's `version` reads `getPackage().getImplementationVersion()`, which the POM
+stamps with the version and the abbreviated commit — **for a packaged jar**. Run from
+Maven or an IDE, it is `null` and the manifest answers `"dev"`. That is exactly the mode
+where the instance can be several commits behind the tree being edited, and the failure
+it produces is the expensive kind: a change that is not there reads as a change that
+does not work, and the diagnosis happens in the wrong file. It has cost real sessions,
+which is why a memory note exists to warn about it.
+
+Two halves. **A stamp that exists in dev** — the commit and time from `git.properties`,
+or failing that the newest timestamp among the loaded classes, so the answer is
+comparable rather than a constant. **`shio doctor`**, one call that answers *can I
+work*: is the instance up and which build, is the render model provisioned and does it
+drift (SH295), are the widgets seeded (SH325's 409 is the tell), do the credentials
+authenticate, is the content tree in sync (`push --content --check`), which sites exist.
+
+Every fact already has a reader; nothing composes them, so the first minutes of a
+session are five calls and a guess. This is P2 pointed at the environment instead of at
+the content — and it is CLI-shaped, because half the inputs are files.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -417,30 +459,6 @@ post-type the tree lacks.
 
 The push refusals stay. They are the last net, and SH212's rule is that reaching one
 means the cheap check was never run.
-
-### X.21 The per-folder inventory threshold is a number nobody measured (SH375)
-
-SH213 measured the thing that mattered and fixed it: one asset reference cost 200
-inventory rows and now costs 10. What it did not measure is the constant it introduced.
-Up to eight referenced folders a push lists per folder; past that it lists whole sites.
-Eight is argued — a bounded, uninteresting number of requests — and the argument is the
-shape agents.md names as a defect in its own right, one step removed from the one the
-task fixed.
-
-The honest position is that only one side of the trade is knowable before asking. The
-caller knows how many folders it references and cannot know how large the library is, so
-the decision has to be made on the number it has. That justifies deciding on the folder
-count; it does not justify *eight*.
-
-What would settle it is a benchmark that puts a cost on a request against a cost on a
-row — the same instrument SH264 built for the render sweep, which counts statements
-rather than milliseconds for the reason a timing ceiling on a shared machine is a flake.
-Until something measures both, the alternative worth considering is making the ceiling a
-flag with the measured default, so an instance with a slow round trip and a small
-library can move it without a code change.
-
-Filed because the number is in a comment claiming to be reasoned, and a cost that is
-argued rather than measured fails quietly and in somebody else's environment.
 
 ### X.22 The feed's ordering guard cannot see a second node (SH376)
 
@@ -588,6 +606,28 @@ database refuses the write instead of a reviewer catching it. This is the same a
 remembering belongs inside a mechanism (§VIII.11). The open question is scope, since the
 batch service's entry points are shared between plan and apply and the flag cannot simply be
 moved onto the class.
+
+### XI.16 The appliable unit stops where the visible site starts (SH395)
+
+Six packages ship — `blog`, `docs`, `landing`, `marketing-site`, `nextjs-starter`,
+`product-catalog` — and **not one declares a `Theme`, a `PageLayout`, a `Region` or a
+`site.postTypeLayout` binding**. SH280 records the consequence in passing ("no
+first-party blueprint ships a layout, so this is an agent-built-site exposure"), and
+that is the whole gap: apply a blueprint and the pages render through SH169's labelled
+fallback, which is a safety net and not a design.
+
+What the agent then does by hand is the most trap-dense sequence in the product:
+`render.provision`, three templates whose fields are keyed the 2018 way, a `TITLE` that
+must be set or nothing can address the template (SH277), a flat `postTypeLayout` map
+keyed by post-type, a theme resolved by title, and a **publish** of every template or a
+published render 409s (SH280). Each trap has a teaching error, which means it is learned
+one failure at a time — P2 backwards, in the one flow the product is named for.
+
+So `CONTENT_KEYS` gains the render model: a package may declare templates and its
+binding, `apply` provisions the types first (SH152's `ensure`, never an upsert) and
+publishes the templates it wrote, because a draft-only layout is the state that 409s.
+One command, one visible site — and the packages become the place the render conventions
+are *demonstrated* rather than described.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 
@@ -873,6 +913,48 @@ Three shapes, in increasing order of how much they concede:
 
 The third is the default and the first is probably wrong. Worth deciding rather than
 leaving to whoever next notices the poll is not free.
+
+### XIII.13 One surface is measured and the other is assumed cheap (SH394)
+
+`token-budgets.properties` declares `mcp.tools.list.total=2375` and `max-per-tool=460`,
+and SH132's test fails the build on a regression, because that payload is re-sent every
+turn of every session. The CLI has no equivalent: `shio --help` is **14,363 bytes —
+roughly 3,600 tokens** — and no test, ceiling or benchmark touches it.
+
+The two costs are shaped differently and that is the whole point. MCP's is **per turn
+and bounded**; the CLI's is **per session, on demand, and unbounded** — paid when an
+agent reads the help, the area file or the skill. Neither number is knowable from the
+other, so the recurring argument that one surface is cheaper than the other has been
+made from intuition on both sides, which P3 calls a defect regardless of which way it
+points.
+
+So: a budget for the help text and for each command's own help, in the same file and the
+same shape, and the per-session comparison printed rather than asserted (`shio --help`
+plus the smallest set of reads that gets an agent from nothing to a correct first call,
+against `tools/list` × a session's turns). It is a benchmark before it is a ceiling.
+SH208 is a dependency rather than a coincidence: the same template literal is what this
+measures and what breaks the binary on a backtick.
+
+### XIII.14 The number guards the job that stops short of the promise (SH396)
+
+`build-marketing-site` is the canonical benchmark for the product's own headline task,
+budgeted at 4 calls and 2700 tokens, and its calls are: context, blueprints, apply,
+verify. It ends at a **lint**. Nothing in it provisions the render model, binds a
+layout, publishes a template or fetches a page, so the number that P3 defends describes
+*content that passes checks* — not a site anybody can look at.
+
+That matters twice. The agent path is understated, because the steps it is missing are
+precisely the ones SH395 collapses into the blueprint. And the naive path is understated
+far more, because a hand-built site meets SH277's empty title and SH280's
+unpublished-layout 409 on the way, which is where a real session actually loses its
+turns — so the honest ratio is larger than the one being reported, and the reported one
+is the product's own claim about itself.
+
+The fix is to extend the task to its real end: apply, provision, bind, publish, then
+`GET /agent/render` and assert a digest that is not the hash of nothing. Two
+consequences to accept — the budget rises (a truthful number is the point, not a small
+one), and the benchmark starts covering the flow SH277 named as the one nothing tested
+end to end, which is how that defect survived four blocks.
 
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 

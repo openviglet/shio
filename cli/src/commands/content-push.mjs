@@ -280,6 +280,9 @@ export async function run(flags, _positionals, ctx) {
     stdout: ctx.stdout,
     // SH373 — the agreed hashes, so a push can tell "the tree edited this" from "the server did".
     assetBase: base.assets ?? {},
+    maxFolderReads: flags.maxFolderReads === undefined
+      ? undefined
+      : Number(flags.maxFolderReads),
   });
   if (declared.assetConflicts.length) {
     // Both sides moved the same bytes and there is no merging two images, so the only honest
@@ -630,6 +633,7 @@ async function replacementFor(ctx, { admin, path, item, assetsDir, base = {} }) 
 
 async function resolveAssets(ctx, {
   client, admin, defs, posts, sites, assetsDir, planOnly, stdout, assetBase = {},
+  maxFolderReads,
 }) {
   const fileFieldMap = fileFields(defs);
   const needed = new Set();
@@ -651,6 +655,10 @@ async function resolveAssets(ctx, {
   const { byPath, folderIds } = await readRemoteAssets(client, admin, {
     sites,
     folders: [...needed].map((path) => assetLocationOf(path)).filter(Boolean),
+    // SH375 — the ceiling is a latency budget, not a server-work one (the benchmark settled that),
+    // so it is the caller's to move: an instance with a slow round trip and a small library wants
+    // it lower, one on a fast link with a huge library wants it higher.
+    ...(maxFolderReads === undefined ? {} : { maxFolderReads }),
   });
   const uploaded = [];
   const replaced = [];

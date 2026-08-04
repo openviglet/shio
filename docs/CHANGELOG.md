@@ -222,6 +222,7 @@
 - **SH214** — A legitimate delete-plus-create can be accepted once with push --content --accept, keyed on both addresses, and the acceptance is spent by the run that uses it.
 - **SH215** — A fingerprint carries its canonical byte length, so equal hashes with unequal lengths prove a collision and the merge reports it instead of dropping the edit.
 - **SH373** — Asset bytes join the SH89 merge: a server-side edit reaches the tree, a push no longer reverts one, and both sides editing is a conflict left on disk.
+- **SH375** — Measured: the folderId filter ran in memory, so a folder listing read the whole library. It is a query predicate now, and the ceiling is a documented, movable latency budget.
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 

@@ -164,6 +164,43 @@ public class ShStaticFileService {
     }
 
     /**
+     * The rows a listing has to read — the folder's, when one is named (SH375).
+     *
+     * <h2>The measurement that produced this</h2>
+     *
+     * <p>{@code folderId} used to be applied by {@link #matches} <b>after</b> every published
+     * {@code File} post in the tenant had been loaded and {@link #toItem} had stat-ed each one's
+     * bytes on disk. So it narrowed the *response* and not the work, which made SH213's per-folder
+     * push — F listings instead of one — cost F whole-library reads to return a fraction of the
+     * rows. SH375 measured it: a one-folder listing on a 60-file library fetched all 60.</p>
+     *
+     * <p>The predicate belongs in the query, and that is all this is. Two things it deliberately
+     * keeps: the folder is passed as an <b>entity</b>, never as an id in JPQL, because
+     * {@code ShFolder} is an {@code ShObject} subclass and navigating one forces a join whose
+     * {@code @TenantId} predicate references an unjoined alias (the SH22 hazard, and the reason
+     * {@code findByShPostType_IdAndState} is keyed by id rather than by name); and the post-type
+     * check stays in the stream, because a folder holds few rows and one predicate here is not
+     * worth a second finder.</p>
+     *
+     * <p>An unknown folder reads nothing rather than everything. A filter that silently widened to
+     * the whole tenant is how a caller asking about one folder is answered about a site.</p>
+     */
+    private List<ShPostUnified> rowsFor(String folderId, ShPostType fileType) {
+        if (isBlank(folderId)) {
+            return shPostUnifiedRepository
+                    .findByShPostType_IdAndState(fileType.getId(), ShPostState.PUBLISHED);
+        }
+        return shFolderRepository.findById(folderId)
+                .map(folder -> shPostUnifiedRepository
+                        .findByShFolderAndState(folder, ShPostState.PUBLISHED)
+                        .stream()
+                        .filter(post -> post.getShPostType() != null
+                                && fileType.getId().equals(post.getShPostType().getId()))
+                        .toList())
+                .orElseGet(List::of);
+    }
+
+    /**
      * Replace the bytes of an existing {@code File} post, keeping its identity (SH210).
      *
      * <h2>Why this operation had to exist</h2>
@@ -362,8 +399,7 @@ public class ShStaticFileService {
         }
         String wantCategory = isBlank(category) ? null : category.toLowerCase(Locale.ROOT);
         String wantQuery = isBlank(q) ? null : q.toLowerCase(Locale.ROOT);
-        return shPostUnifiedRepository
-                .findByShPostType_IdAndState(fileType.getId(), ShPostState.PUBLISHED)
+        return rowsFor(folderId, fileType)
                 .stream()
                 .map(this::toItem)
                 .filter(item -> matches(item, folderId, siteId, wantCategory, wantQuery))

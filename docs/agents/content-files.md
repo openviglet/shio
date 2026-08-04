@@ -375,13 +375,26 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
     it. Now: **10 rows** for one reference, **0** for the upload case (the referenced folder does
     not exist yet, so there is nothing to list), and the second look-up asks
     `readRemoteFolders` — the sitemap answers it alone. Two rules the numbers argued for:
-    - **It is a threshold, not a replacement.** The listing's `folderId` filter is the server's own
-      (SH62); what SH145 could not know is how many folders a tree references. Up to
-      **8** referenced folders it lists per folder; past that one whole-site listing is the cheaper
-      shape whatever the library holds, and the benchmark asserts both branches (10 folders → 1
-      read of 200 rows; 3 folders → 3 reads of 30). The trade is requests against rows and only one
-      side is knowable before asking, which is why the decision is made on the number the caller
-      has.
+    - **It is a threshold, not a replacement**, and since SH375 the number is measured rather than
+      argued. Up to **8** referenced folders it lists per folder; past that one whole-site listing,
+      and `--max-folder-reads` moves it. The CLI benchmark asserts both branches (10 folders → 1
+      read of 200 rows; 3 folders → 3 reads of 30).
+    - **The `folderId` filter had to move into the query first (SH375).** SH213 assumed the server's
+      filter narrowed the server's work. It did not: `listFiles` loaded every published `File` post
+      in the tenant and applied `folderId` **in memory**, stat-ing each file on the way through — so
+      a one-folder listing read the whole library (measured: **69 rows against the whole site's
+      69**) and F listings cost F whole-library reads. The narrowing was buying payload and paying
+      in server work, which is the direction "measure before you fix" exists to catch.
+      `ShStaticFileListingBenchmarkTest` now pins it: one folder reads **14**, and covering the
+      library one folder at a time costs **84 against 69** — the fixed tail, F times. Two rules kept
+      in `rowsFor`: the folder is passed as an **entity**, never as an id in JPQL, because
+      `ShFolder` is an `ShObject` subclass and navigating one trips the SH22 tenant-join hazard; and
+      an **unknown folder reads nothing**, because a filter that widened to the whole tenant would
+      answer a caller asking about one folder with a whole site.
+    - **What bounds the threshold is round trips, not server work** — that is what the measurement
+      settled. A round trip is a client-side cost no benchmark here can measure, so eight survives
+      as a *latency* budget, which is a claim about the deployment and therefore the caller's to
+      change.
     - **A pull is deliberately still the whole library.** It rewrites every `File` field id → path,
       so it needs every id the site has; narrowing it would leave UUIDs in the tree, which is the
       defect SH145 exists to remove. The benchmark asserts that too, so the two directions cannot
