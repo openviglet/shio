@@ -44,6 +44,7 @@
  * the class that needs a person's judgement. Framing them as "worth a look" rather than
  * "failures" is what keeps the section short enough to actually be read.
  */
+import { isFrontEnd } from "./front-end.mjs";
 
 /** `CREATE`/`UPDATE`/`PUBLISH`/`UNPUBLISH`/`DELETE` → how a reviewer should read it. */
 const ACTION_LABELS = {
@@ -134,6 +135,11 @@ function decorate(change, sites) {
     why = `site ${site ?? "?"} is not in the context pack`;
   } else if (!origin) {
     why = `site ${site} has no front-end URL configured`;
+  } else if (!isFrontEnd(origin)) {
+    // SH442 — the same truthiness test `resolveUrl` had, and here it produced `cafeteria/blog/hello`
+    // as a link. A broken link presented as a working one is worse than saying there is none: the
+    // reader clicks it, and a handoff whose links do not open is a handoff nobody trusts twice.
+    why = `site ${site} has \`${origin}\` in its URL field, which is not an absolute http(s) URL`;
   } else {
     preview = `${origin}${path}`;
   }

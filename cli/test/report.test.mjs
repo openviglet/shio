@@ -373,3 +373,33 @@ test("a context pack that cannot be read costs the links, not the report", async
   assert.match(ctx.stdout.text, /# Content handoff/);
   assert.match(ctx.stdout.text, /no preview: site Blog is not in the context pack/);
 });
+
+test("SH442: a slug in the URL field is not a preview link, and the report says which it is", () => {
+  // The same truthiness test `resolveUrl` had, one file over and with a worse output: `!origin` is
+  // false for `cafeteria`, so the report composed `cafeteria/blog/hello` and printed it as a link.
+  // A broken link presented as a working one is worse than saying there is none — the reader clicks
+  // it, and a handoff whose links do not open is a handoff nobody trusts twice.
+  const built = buildReport({
+    changes: {
+      ...CHANGES,
+      changes: [
+        { action: "UPDATE", address: "post:Cafeteria/menu", site: "Cafeteria", what: "Edited" },
+        { action: "UPDATE", address: "post:Blog/blog/hello", site: "Blog", what: "Edited" },
+      ],
+    },
+    context: {
+      sites: [
+        { name: "Blog", url: "https://blog.example.com/" },
+        { name: "Cafeteria", url: "cafeteria" },
+      ],
+    },
+  });
+
+  assert.match(
+    built.markdown,
+    /no preview: site Cafeteria has `cafeteria` in its URL field, which is not an absolute http\(s\) URL/,
+  );
+  assert.doesNotMatch(built.markdown, /\(cafeteria\/menu\)/, "and no link is composed from it");
+  // The site that does have a front end is untouched: this is a predicate correction, not a policy.
+  assert.match(built.markdown, /\[preview\]\(https:\/\/blog\.example\.com\/blog\/hello\)/);
+});

@@ -28,6 +28,7 @@
  *   `shio/content/` so a reviewer sees the image in the diff. That PNGs are heavy in git is a
  *   real cost, and one more reason the whole command is opt-in.
  */
+import { isFrontEnd } from "./front-end.mjs";
 
 /** Where baselines live: a project directory, reviewable, not a cache. */
 export const SNAPSHOT_DIR = "shio/snapshots";
@@ -260,12 +261,29 @@ export function describe(result, { slug, path, diffPath } = {}) {
  * unhideable (P7), and it is in the baseline as well as in the capture, so a diff still means
  * what it says.
  *
- * @param sites   site name → public base URL, or `""` when none is configured
+ * ## A slug is not a front end (SH442)
+ *
+ * <p>The branch above read `if (options.preview || !origin)` — the **truthiness** of the site's URL
+ * field rather than whether it is a URL. A site's URL field holds three states, not two: absent,
+ * absolute, and *a slug*, which is the default for any site created without a public URL. A slug is
+ * truthy, so the front-end branch was taken and the slug went to the browser as an absolute address:
+ * `snapshot --page post:Viglet2/ --against <source>` failed with playwright's own `Cannot navigate
+ * to invalid URL`, call log `navigating to "viglet2/"` — no scheme, no host. `Bootstrap` holds
+ * `https://getbootstrap.com/` and worked; `Cafeteria` holds `cafeteria` and did not.</p>
+ *
+ * <p>SH265's intent was never ambiguous and this predicate was the one place not implementing it, so
+ * the test is the one `resolveUrl` already applies to its *target*: `/^https?:\/\//`. What made it
+ * survivable is that nothing could have caught it — captures are injected, so no test hands a URL to
+ * a browser, and a real run needs a playwright the checkout cannot resolve (SH444), so it refused
+ * earlier for that instead. The fixture with three states is therefore the fix as much as the
+ * predicate is.</p>
+ *
+ * @param sites   site name → public base URL, `""` when none is configured, or a slug
  * @param options `previewBase` — the instance's own origin; `preview` — force the preview
  */
 export function resolveUrl(target, sites, options = {}) {
   const raw = String(target ?? "").trim();
-  if (/^https?:\/\//.test(raw)) {
+  if (isFrontEnd(raw)) {
     return { url: raw };
   }
   const match = /^post:([^/]+)(\/.*)$/.exec(raw);
@@ -282,11 +300,19 @@ export function resolveUrl(target, sites, options = {}) {
     return { error: `Site "${site}" is not one this instance reports. Check the name, or pass a URL.` };
   }
   const previewBase = options.previewBase ? String(options.previewBase).replace(/\/+$/, "") : "";
-  if (options.preview || !origin) {
+  // SH442 — absolute, not truthy. A slug in the URL field is not a front end, and handing it to a
+  // browser produces a protocol error where the product has a designed answer.
+  const frontEnd = isFrontEnd(origin);
+  if (options.preview || !frontEnd) {
     if (!previewBase) {
+      // Two states, two sentences: "no URL configured" is false for a site whose field holds
+      // `cafeteria`, and a refusal that misreports the cause is one the reader cannot act on (P6).
+      const cause = origin
+        ? `Site "${site}" has \`${origin}\` in its URL field, which is not an absolute http(s) URL,`
+        : `Site "${site}" has no front-end URL configured,`;
       return {
         error:
-          `Site "${site}" has no front-end URL configured, and this command was not told where\n` +
+          `${cause} and this command was not told where\n` +
           `the instance is, so it cannot fall back to its preview. Pass --url, set SHIO_URL, or\n` +
           `pass the page URL directly: shio snapshot https://…${path}`,
       };

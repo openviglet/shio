@@ -934,6 +934,7 @@
 - **SH439** — createSite rides the desired-state document as a site.upsert op, so convert and apply share one --create-site, the dry run resolves, and the refusal names the flag.
 - **SH438** — convert composes one DRAFT Page per captured page at the source's URL, ordered by the proposal's new per-page block list, so the replica serves what the capture saw.
 - **SH441** — source-chrome-stranded is its own rule: a favicon or manifest no field can hold gets the site-level answer, and the fix names what will not work.
+- **SH442** — resolveUrl tests the site URL for absoluteness, not truthiness, so a slug site is photographed through the preview; report.mjs had the same predicate and the fixtures now carry all three states.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

@@ -175,6 +175,51 @@ test("SH265: a site with no front end is photographed through the instance's own
   assert.match(resolveUrl("post:Docs/guide", sites, {}).error, /cannot fall back to its preview/);
 });
 
+test("SH442: a slug in the URL field is not a front end, so it is photographed through the preview", () => {
+  // The third state, and the one the fixtures did not have. `Docs` has no origin and `Blog` has an
+  // absolute one — two states, while a site's URL field holds three: the slug is what any site
+  // created without a public URL gets. It is truthy, so `if (options.preview || !origin)` took the
+  // front-end branch and handed `cafeteria` to the browser as an absolute address. Measured:
+  // playwright's own `Cannot navigate to invalid URL`, call log `navigating to "viglet2/"`.
+  const sites = new Map([
+    ["Blog", "https://blog.example.com/"],
+    ["Docs", ""],
+    ["Cafeteria", "cafeteria"],
+  ]);
+  const at = { previewBase: "http://localhost:2710" };
+
+  const slug = resolveUrl("post:Cafeteria/menu", sites, at);
+  assert.equal(slug.url, "http://localhost:2710/preview/Cafeteria/menu");
+  assert.equal(slug.preview, true, "SH265's answer, which this predicate was the one place not applying");
+
+  // The home page is the address the defect was reported on, and `post:<site>/` is its form (SH433).
+  assert.equal(
+    resolveUrl("post:Cafeteria/", sites, at).url,
+    "http://localhost:2710/preview/Cafeteria/",
+  );
+
+  // The other two states are unchanged: this is a predicate correction, not a new policy.
+  assert.equal(resolveUrl("post:Blog/blog/hello", sites, at).url, "https://blog.example.com/blog/hello");
+  assert.equal(resolveUrl("post:Docs/guide", sites, at).url, "http://localhost:2710/preview/Docs/guide");
+});
+
+test("SH442: with no preview to fall back to, the refusal names the slug rather than claiming no URL", () => {
+  // A non-absolute site URL deserves a teaching refusal, not a protocol error — and not a refusal
+  // that misreports the cause either: "has no front-end URL configured" is simply false for a site
+  // whose field holds `cafeteria`, and a reader who believes it goes and sets the field it already has.
+  const sites = new Map([["Cafeteria", "cafeteria"], ["Docs", ""]]);
+
+  const slug = resolveUrl("post:Cafeteria/menu", sites, {}).error;
+  assert.match(slug, /`cafeteria` in its URL field, which is not an absolute http\(s\) URL/);
+  assert.match(slug, /cannot fall back to its preview/);
+
+  assert.match(
+    resolveUrl("post:Docs/guide", sites, {}).error,
+    /has no front-end URL configured/,
+    "and the empty case keeps the sentence that is true of it",
+  );
+});
+
 // --- the command ---
 
 test("a first capture writes the baseline and reports no comparison", async () => {

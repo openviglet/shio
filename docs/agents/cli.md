@@ -491,6 +491,26 @@ and a third meaning would have made the flag that says where Shio is also decide
 to. No endpoint and no MCP tool — SH268's rule plus the standing no-browser non-goal — so
 `visualSnapshot: false` stays correct and `elsewhere.visualSnapshot` keeps pointing at the command.
 
+**A slug is not a front end, and a site's URL field has three states (SH442).** `snapshot --page
+post:Viglet2/ --against <source>` failed with playwright's own `Cannot navigate to invalid URL`, call
+log `navigating to "viglet2/"` — no scheme, no host — and `--preview` made the same run work, which
+located it. `resolveUrl` chose front end or preview on `if (options.preview || !origin)`: the
+**truthiness** of the site's URL field rather than whether it is a URL. The field holds *absent*,
+*absolute*, and *a slug* — the last being the default for any site created without a public URL — and
+a slug is truthy, so the front-end branch handed it to the browser as an absolute address.
+`Bootstrap` holds `https://getbootstrap.com/` and worked; `Cafeteria` holds `cafeteria` and did not.
+SH265's intent was never ambiguous and this predicate was the one place not implementing it, so the
+test is the one `resolveUrl` already applied to its *target*, now `isFrontEnd` in its own module.
+**The same predicate was in `report.mjs`**, where the output is worse rather than better: `!origin` is
+false for `cafeteria`, so the handoff composed `cafeteria/blog/hello` and printed it as a preview
+link. A broken link presented as a working one beats no link only until somebody clicks it. Both now
+refuse with a sentence that names the slug — "no front-end URL configured" is simply false of a site
+whose field holds one, and a reader who believes it goes and sets the field it already has. **The
+fixtures are the fix as much as the predicate is**: the SH265 tests encoded two states while sites
+have three, and nothing else could have caught the gap — captures are injected, so no test hands a
+URL to a browser, and a real run needs a `playwright` the checkout cannot resolve (SH444), so every
+one of them refused earlier for that instead.
+
 **`--checks replication` is the second server-free group, and the gate that says when a replication is
 *done* (SH387).** SH386 answers "does this page look right" one page at a time; the other half of done
 is arithmetic — of the pages, links, assets, form fields and locales the source had, which ones exist
