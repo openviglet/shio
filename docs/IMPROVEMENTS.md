@@ -1422,6 +1422,30 @@ should go through that path for its root folder instead of assuming a cascade th
 never wired. The conformance harness does exactly that in three calls, which is the
 workaround standing in for the fix and the reason the deletion is checkable at all.
 
+### XVI.70 Vestigial was implemented as accepts-anything (SH457)
+
+`GET /sites/publico/viglet-logo.png` answers **200 with `text/html` and the home page's 10265 bytes**.
+So does `/sites/publico/qualquer`. Four probes place it exactly: `/sites/<site>/` is the home and right;
+`/sites/<site>/default/en-us/nao-existe` and `/sites/<site>/a/b/c/d/e` are teaching 404s and right; the
+**three-segment** form is the one that lies.
+
+The cause is the decision this route was shipped with. `<format>` is vestigial — kept so
+the URL keeps 0.3.x's shape, carrying no behaviour — but vestigial was implemented as
+*accepts anything*. With any value in that slot and no segments after it, the content
+path is empty, so the resolver returns the home page and the response is a 200.
+
+That shape is not hypothetical: it is what every root-relative asset becomes. A page
+served at `/sites/publico/` carrying `<img src="/viglet-logo.png">` requests
+`/sites/publico/viglet-logo.png`, and the browser is handed HTML with an image content
+type expected. A missing asset stops being a 404 an author can see and becomes a silent
+soft-200 — the failure `verify`'s route checks exist to prevent, on the surface they
+cannot reach.
+
+Vestigial should mean **fixed**: accept `default` and refuse anything else, which is
+what "carrying no behaviour" was meant to say. A sibling worth naming while here: an
+unmapped path outside `/sites` answers **401**, so a public visitor asking for a missing
+font is challenged for credentials rather than told it is absent.
+
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA
@@ -1523,3 +1547,56 @@ failure a replica has.
 Two gaps in the middle are not about replication at all: they are ordinary site features
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
+
+### XVII.37 A remedy that is not one (SH455)
+
+SH452 shipped the honest note and not the fetch. The note is now right — "root-relative,
+so they resolve against the REPLICA's origin" — and ends with a remedy: "Re-run the
+capture to fetch them: `shio clone <url> --assets --site <name>`."
+
+That command is the one that just ran. Measured: that clone wrote **1 asset**, the
+`<link rel="icon">` logo, on the first run and on a second after `propose` had named
+both fonts. The replica still renders in a serif fallback.
+
+The reason is one call graph. `addAsset` in `clone.mjs` is reached from markup
+attributes only — `<link href>`, `src`, `poster`, `srcset` — so nothing extracts `url()`
+from a stylesheet into the inventory, and `--assets` downloads "the bytes the inventory
+names". `theme.mjs` finds them, counts them and writes the note; nothing writes them
+back where the downloader looks.
+
+It is worse than the silence it replaced. The old note claimed the fonts still loaded,
+which was false and inert. This one is true, names the files, and hands the reader a
+command that cannot work — so the reader runs it, sees `wrote 1`, and has no way to tell
+a no-op from a failure. P6 asks a message to carry a fix; a fix that is not one is the
+same defect the message was written to remove.
+
+The seam already exists: `theme.mjs` holds the URLs, and the inventory is the
+downloader's input.
+
+### XVII.38 The one branch that builds an address the resolver refuses (SH456)
+
+`shio convert --site Publico --create-site` printed its whole report — `0 section(s) in
+1 page(s) + Theme + PageLayout`, `1 of 1 page(s) in fidelity mode`, `changed: 7
+object(s) - in DRAFT` — and then failed with `Malformed address 'folder:Publico'` and
+**exited 1**. The three posts are on the instance: the work succeeded and the command
+says it did not.
+
+`commands/convert.mjs:224` builds the address:
+
+    client.resolve(`folder:${site}${at.folder === "/" ? "" : at.folder}`)
+
+The ternary strips the slash for the root folder, and the slash is exactly what the root
+form needs — `folder:Publico/`, the shape the refusal itself spells out. So the branch
+written for the root case is the only one that produces an address the resolver rejects,
+and every other folder works.
+
+It fires on the main path. A single-page capture converts into the site's root folder,
+so **every** fidelity conversion of a home page hits it — which is the flow SH449 was
+built for.
+
+The exit code is the damage. `convert` is idempotent and re-runnable, so a caller who
+trusts the 1 runs it again and sees the same 1 forever; a caller who trusts the report
+ignores an exit code that is sometimes real. It is SH447's shape one command along —
+work done, refusal reported — except that here nothing is left half-written, only
+half-said. A test that asserts the exit code of a successful conversion is what closes
+it, which is the assertion SH448's replication scenario already has a place for.

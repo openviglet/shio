@@ -79,8 +79,12 @@
 - 📋 **SH419** (deps: SH384 ✅) **A listing loads the whole folder to render ten rows** — Measured at 213 rows per 10 rendered: limit and page are an in-memory window over a whole-folder read, so a 5000-post archive pays 5000 rows for page one. → §XV.30
 - 📋 **SH420** (deps: SH384 ✅) **A nested listing clobbers the outer block's @last** — Measured: an outer row reading {{#if @last}} after an inner query renders twice, because both blocks write @index and @last into one shared data scope. → §XV.31
 - 📋 **SH421** (deps: SH389 ✅) **A layout that should not carry the site's scripts is still told off** — site-scripts-dropped warns for every bound layout that omits site.scripts, and an email template or a print sheet omits them on purpose with no way to say so. → §XV.32
+- 📋 **SH457** (deps: SH451 ✅) **Any three-segment /sites path serves the home page with 200, so a missing asset is HTML** — The vestigial format segment accepts any value instead of only default, and with nothing after it the content path is empty, which is the shape every root-relative asset takes. → §XVI.70
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
+
+- 📋 **SH455** (deps: SH452 ✅) **The note names the fonts and hands the reader a command that cannot fetch them** — addAsset is reached from markup attributes only, so no url() from a stylesheet enters the inventory the downloader reads, and re-running the capture writes one asset. → §XVII.37
+- 📋 **SH456** (deps: SH449 ✅) **convert writes everything, then exits 1 on a root folder address it malformed itself** — The ternary at convert.mjs:224 strips the slash for the root folder, which is the one form that needs it, so every fidelity conversion of a home page reports failure after succeeding. → §XVII.38
 
 ## Block F — Market positioning
 
