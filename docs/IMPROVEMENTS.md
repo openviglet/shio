@@ -374,6 +374,31 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
+### IX.26 Which side of the live boundary is stale (SH460)
+
+Two of four conformance tests failed, both true statements about an instance running
+since **16:05:10** whose classes under test were compiled at **18:47:21** — after every
+Java commit the run validated. The CLI half was live, because it runs from disk: SH456's
+new assertion passed in the same run that SH453's and SH457's failed. Nothing said so.
+
+The cost is the diagnosis, not the red. Two shipped fixes read as broken, and telling
+that apart took hand probes, class timestamps in `target/`, and the JVM's start time
+from the process table. A reader without that instinct files two defects that do not
+exist — which is worse than a red run, because it spends the next session disproving
+them.
+
+**The probe already holds the answer and does not use it.** `instance.mjs` fetches
+`GET /api/v2/agent/manifest?include=identity` to prove reachability, and stops there. That response
+carries `version`, which reads `dev` on a developer instance and so distinguishes nothing — the gap is
+therefore a field, not a comparison: the manifest has no build identity a client could compare against
+the tree it is testing.
+
+A commit hash and build timestamp on the identity, and one assertion at the top that
+fails **first** with "this instance was built before HEAD" instead of letting the rest
+fail downstream. A suite whose whole premise is the live boundary must be able to say
+which side of that boundary is stale, or its red means two different things and the
+reader has to guess which.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
