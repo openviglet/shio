@@ -400,6 +400,33 @@ Fix it at the exit rather than per command: let the request layer's handles clos
 unref them, so one path serves every thrown error. The regression test is an exit code
 asserted for a remote failure.
 
+### IX.21 The optional dependency is optional, not absent (SH444)
+
+The repo already has the browser and the CLI still cannot see it. Measured:
+`shio-react/package.json` declares `playwright: ^1.62.0`, the binaries are in the
+machine's `ms-playwright` cache, and `import('playwright')` succeeds from `shio-react/`
+while failing with `ERR_MODULE_NOT_FOUND` from both `cli/` and the repo root. pnpm's
+strict isolation puts the package in `shio-react/node_modules`, and a bare specifier
+resolves from the **importing module** upward — `cli/src/` to `cli/node_modules` to the
+root — never through a sibling package. Linking it into `cli/node_modules` made the
+import work at once, so resolution is the whole of it.
+
+The teaching error is not wrong, it is right for somebody else: a consumer who installs
+`@viglet/shio` gets `node_modules/@viglet/shio/src/`, from which `pnpm add -D
+playwright` in their project *is* on the upward path. In the checkout it is not, so the
+advice reads as followed and changes nothing.
+
+`cli/devDependencies`, pinned to the version `shio-react` already resolves so the cached
+chromium is reused rather than a second revision downloaded. That keeps the promise the
+optional import exists for — a devDependency is not installed by consumers of the
+published package, and `files: ["src"]` means it never reaches them — and it breaks no
+test, because every browser test injects its capture through `ctxWith` and none loads
+playwright.
+
+`pixelmatch` and `pngjs` belong in the same change and are in no lockfile at all.
+Without them `--against` can only compare bytes, which is the degraded answer SH443 is
+about.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -1601,29 +1628,28 @@ can hold, and say which of the two it is.
 
 ### XVII.31 A slug is not a front end (SH442)
 
-`shio snapshot --page post:Viglet2/ --against <source>` failed with playwright's own
-`Protocol error (Page.navigate): Cannot navigate to invalid URL`, call log `navigating
-to "viglet2/"`. No scheme, no host. `--preview` made the same run work, which locates
-it.
+`snapshot --page post:Viglet2/ --against <source>` failed with playwright's own `Cannot
+navigate to invalid URL`, call log `navigating to "viglet2/"` — no scheme, no host.
+`--preview` made the same run work, which locates it.
 
-`resolveUrl` decides between a site's front end and the instance's preview with `if
-(options.preview || !origin)` — the **truthiness** of the site's URL field, not whether
-it is a URL. A site whose field holds a bare slug has a truthy `origin` that is not an
-origin, so the front-end branch is taken and the slug is handed to the browser as an
-absolute address. `Cafeteria` holds `cafeteria` and `Bootstrap` holds
-`https://getbootstrap.com/`, so this splits existing sites: the one with a real front
-end works, and the ones without are broken by the field meant to say they have none.
+`resolveUrl` chooses front end or preview with `if (options.preview || !origin)` — the
+**truthiness** of the site's URL field, not whether it is a URL. A slug is a truthy
+`origin` that is not one, so the front-end branch is taken and the slug goes to the
+browser as an absolute address. `Bootstrap` holds `https://getbootstrap.com/` and works;
+`Cafeteria` holds `cafeteria` and does not.
 
-SH265's intent is unambiguous and this predicate is the one place that does not
-implement it: a site with no front end is photographed through the instance's preview,
-and a slug is not a front end. The fix is `/^https?:\/\//` on `origin`, the test
-`resolveUrl` already applies to its target.
+SH265's intent is unambiguous and this predicate is the one place not implementing it: a
+site with no front end is photographed through the preview, and a slug is not a front
+end. The fix is `/^https?:\/\//` on `origin`, the test `resolveUrl` already applies to
+its target.
 
-Two reasons it stayed hidden. It needs playwright, which the repo resolves only inside
-`shio-react`, so every earlier run refused for the missing browser first. And the error
-belongs to the browser, so it names a URL nobody wrote and no Shio rule — P6's opposite.
-Whatever the predicate becomes, a non-absolute site URL deserves a teaching refusal
-rather than a protocol error.
+**The fixtures are why it shipped and they are the regression test.** The two SH265 tests encode two
+states — `Docs` with no origin, `Blog` with an absolute one — while sites have three, the third being the
+default for any site created without a public URL. A slug fixture fails today. Nothing else would have
+caught it: captures are injected, so no test hands a URL to a browser, and the command needs a playwright
+the checkout cannot resolve (SH444), so every real run refused earlier for that.
+
+A non-absolute site URL deserves a teaching refusal, not a protocol error.
 
 ### XVII.32 A percentage where the run says there is none (SH443)
 
