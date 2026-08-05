@@ -1383,26 +1383,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.10 The baseline a replication needs is somebody else's site (SH386)
-
-SH102's comparison answers *"did this page change since I last looked"*, and SH187
-records why the appearance digest cannot answer this one: there is no layout engine, so
-it covers the failure an agent creates and not the one a human sees (SH265). A replica's
-whole risk is the second kind.
-
-`shio snapshot --against <url>` captures both sides in the same run, at each `--width`,
-and reports one number per page plus the diff image. The source capture is the baseline
-and is **kept**, so the number is reproducible and reviewable in a pull request, which
-is what makes it a gate somebody trusts. It is a **CLI capability with no endpoint**,
-for SH268's reason and because the manifest still says `visualSnapshot: false` correctly
-— an agent reading `true` would hunt for a call that does not exist.
-
-SH365 is a hard dependency rather than a courtesy: `--url` is already two arguments
-wearing one name (the instance and the page), and adding a third meaning to it would
-make the flag that says where Shio is also decide what it is compared to. **A difference
-exits non-zero here**, unlike SH102 — a replica that does not match is the defect, not
-the change you just made.
-
 ### XVII.11 The coverage gate is the one that says when a replication is done (SH387)
 
 SH386 answers *"does this page look right"* one page at a time. The other half of "done"

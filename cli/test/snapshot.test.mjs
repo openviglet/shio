@@ -329,3 +329,137 @@ test("SH365: snapshot warns on stderr and still photographs the page", async () 
   // stdout stays the artifact's own report — a deprecation is not part of what the command produces.
   assert.doesNotMatch(ctx.stdout.text, /deprecated/);
 });
+
+// --- SH386: the baseline a replication needs is somebody else's site ---
+
+/** A capture keyed on origin, so a comparison can be made to match or to differ deliberately. */
+function twoSites({ same = false } = {}) {
+  const seen = [];
+  return {
+    seen,
+    capture: async (url, flags, credentials) => {
+      seen.push({ url, width: flags.width, credentials });
+      if (same) return Buffer.from("IDENTICAL");
+      return Buffer.from(url.includes("acme.example.com") ? "SOURCE" : "REPLICA");
+    },
+  };
+}
+
+test("SH386: --against captures both sides in one run, at each width", async () => {
+  const { seen, capture } = twoSites();
+  const ctx = ctxWith({ capture });
+
+  const result = await snapshot.run(
+    { against: "https://acme.example.com/", width: "1280,375" },
+    ["post:Blog/"],
+    ctx,
+  );
+
+  // Both sides, both widths, and the *original first* at each — so a failure fetching somebody
+  // else's site is reported before the replica is photographed.
+  assert.deepEqual(seen.map((each) => `${each.width}:${new URL(each.url).host}`), [
+    "375:acme.example.com", "375:blog.example.com",
+    "1280:acme.example.com", "1280:blog.example.com",
+  ]);
+  assert.equal(result.widths.length, 2);
+});
+
+test("SH386: the source capture is kept in the tree, which is what makes the number reviewable", async () => {
+  const { capture } = twoSites();
+  const ctx = ctxWith({ capture });
+
+  await snapshot.run({ against: "https://acme.example.com/", width: "1280" }, ["post:Blog/"], ctx);
+
+  const paths = Object.keys(ctx.written).map((each) => each.replace(/\\/g, "/"));
+  // A pull request shows what the replica was compared against. Without the source image the number
+  // is unreproducible *and* unreviewable; with it, at least a human can look.
+  assert.ok(paths.some((each) => each.endsWith("shio/snapshots/blog@1280.source.png")), paths.join(" "));
+  assert.ok(paths.some((each) => each.endsWith("shio/snapshots/blog@1280.replica.png")));
+});
+
+test("SH386: a difference exits 1 — the one place SH102's rule inverts", async () => {
+  const { capture } = twoSites();
+  const ctx = ctxWith({ capture });
+
+  const result = await snapshot.run({ against: "https://acme.example.com/" }, ["post:Blog/"], ctx);
+
+  // No --fail-on-change to remember: nobody runs this command except to find out whether the
+  // replica matches, so a mismatch is the defect rather than the change you just made.
+  assert.equal(result.exitCode, 1);
+  assert.match(ctx.stdout.text, /1 width\(s\), 1 differing/);
+});
+
+test("SH386: a matching replica exits 0", async () => {
+  const { capture } = twoSites({ same: true });
+  const ctx = ctxWith({ capture });
+
+  const result = await snapshot.run({ against: "https://acme.example.com/" }, ["post:Blog/"], ctx);
+
+  assert.equal(result.exitCode, 0);
+  assert.match(ctx.stdout.text, /0 differing/);
+});
+
+test("SH386: a per-pixel comparator gives a magnitude per width, and the worst one is in the header", async () => {
+  const { capture } = twoSites();
+  const ctx = ctxWith({
+    capture,
+    compare: (before, after) => ({
+      // Wider viewport, bigger difference — so the header has to name which width was worst.
+      ratio: after.length > 0 && before.length > 0 ? 0.25 : 0,
+      diff: Buffer.from("DIFF"),
+    }),
+  });
+
+  const result = await snapshot.run(
+    { against: "https://acme.example.com/", width: "375,1280" },
+    ["post:Blog/"],
+    ctx,
+  );
+
+  assert.deepEqual(result.widths.map((row) => row.ratio), [0.25, 0.25]);
+  assert.match(ctx.stdout.text, /worst 25\.00% at \d+px/);
+  assert.match(ctx.stdout.text, /diff → /);
+});
+
+test("SH386: with no comparator the run says the byte answer is nearly meaningless here", async () => {
+  const { capture } = twoSites();
+  const ctx = ctxWith({ capture });
+
+  await snapshot.run({ against: "https://acme.example.com/" }, ["post:Blog/"], ctx);
+
+  // Two browsers photographing two origins almost never produce identical bytes, so a difference at
+  // byte resolution is unmeasured rather than a magnitude — and a reader has to be told.
+  assert.match(ctx.stdout.text, /no per-pixel comparator/);
+  assert.match(ctx.stdout.text, /treat a difference here as unmeasured/);
+});
+
+test("SH386: --against wants an absolute URL, because the instance never fetches the original", async () => {
+  const ctx = ctxWith({ capture: twoSites().capture });
+
+  await assert.rejects(
+    () => snapshot.run({ against: "/about" }, ["post:Blog/"], ctx),
+    /--against takes an absolute URL[\s\S]*never fetches \(SH268\)/,
+  );
+});
+
+test("SH386: several widths in the baseline mode are refused, naming --against", async () => {
+  const ctx = ctxWith();
+
+  // Refused rather than silently using the first: `<slug>.png` is a file every project holds, so a
+  // second width here would orphan it or need a conditional name (SH379's rule).
+  await assert.rejects(
+    () => snapshot.run({ width: "1280,375" }, ["post:Blog/"], ctx),
+    /--width takes one viewport here, not 2[\s\S]*--against/,
+  );
+});
+
+test("SH386: the baseline mode is unchanged by all of this", async () => {
+  const ctx = ctxWith({ files: { "shio/snapshots/blog.png": Buffer.from("AFTER") } });
+
+  const result = await snapshot.run({}, ["post:Blog/"], ctx);
+
+  assert.equal(result.status, "same");
+  assert.equal(result.exitCode, 0);
+  assert.ok(Object.keys(ctx.written).some((each) => each.replace(/\\/g, "/")
+    .endsWith("shio/snapshots/blog.png")));
+});

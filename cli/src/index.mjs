@@ -233,6 +233,24 @@ The handoff (shio report):
   --accept             Replace the baseline without reporting a change
   --fail-on-change     Exit 1 when the page looks different
   --width / --height   Viewport (default 1280x800)  --viewport-only  Skip the full page
+  --against <url>      Compare the page against ANOTHER SITE instead of against its own earlier
+                       capture (SH386) — the comparison a replication needs, which neither the
+                       baseline mode nor the appearance digest can express: there is no layout
+                       engine, so a digest covers the failure an agent creates and not the one a
+                       human sees. Both sides are captured in the SAME RUN at each --width, with
+                       the same viewport and the same animation suppression, because comparing a
+                       picture taken now against one a different browser build took last month
+                       measures the browser. The source image is KEPT in the tree, so a pull
+                       request shows what the replica was compared against. A difference EXITS 1
+                       here — the one place SH102's rule inverts, since a replica that does not
+                       match is the defect rather than the change you just made, so there is no
+                       --fail-on-change to remember.
+                       --width takes a list in this mode: a replica that matches at 1280 and
+                       breaks at 375 is the ordinary outcome, and one averaged number would hide
+                       exactly that. Needs pixelmatch + pngjs for a magnitude; without them the
+                       run says only whether the bytes match, and says that two browsers
+                       photographing two origins almost never produce identical bytes.
+  shio snapshot --page post:Acme/ --against https://acme.example.com/ --width 1280,768,375
   --site <name>        One site only
   --out <file>         Write the Markdown instead of printing it
   --title <text>       Heading for the document

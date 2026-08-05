@@ -25,7 +25,18 @@ import { dirname, join } from "node:path";
 
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
-import { SNAPSHOT_DIR, compareSnapshots, describe, pageTarget, resolveUrl, slugFor } from "../snapshot.mjs";
+import {
+  DEFAULT_WIDTH,
+  SNAPSHOT_DIR,
+  againstNames,
+  compareSnapshots,
+  describe,
+  describeAgainst,
+  pageTarget,
+  resolveUrl,
+  slugFor,
+  widthsOf,
+} from "../snapshot.mjs";
 
 export async function run(flags, positionals, ctx) {
   // SH365 — `--page`, not `--url`. `--url` is the instance here as everywhere else, and reading it
@@ -51,6 +62,24 @@ export async function run(flags, positionals, ctx) {
 
   const slug = slugFor(target);
   const dir = typeof flags.out === "string" ? flags.out : SNAPSHOT_DIR;
+  const widths = widthsOf(flags.width);
+
+  if (typeof flags.against === "string" && flags.against) {
+    return against(resolved, { slug, dir, widths, admin, flags }, ctx);
+  }
+  if (widths.length > 1) {
+    // Refused rather than quietly using the first, and rather than growing a baseline per width in
+    // this mode. `<slug>.png` is a file every project already holds, so a second width here would
+    // either orphan it or need a conditional name — the defect SH379 settled for the markup cache.
+    // Comparing several widths is what `--against` exists for, and the message says so (P6).
+    throw new Error(
+      `shio snapshot: --width takes one viewport here, not ${widths.length}.\n` +
+        "A baseline is one picture per page, and this mode compares a page against its own earlier\n" +
+        "capture — a second width would need a second baseline nobody has.\n" +
+        "Several widths are what --against is for, where both sides are captured in the same run:\n" +
+        `  shio snapshot --page ${target} --against https://example.com/ --width ${widths.join(",")}`,
+    );
+  }
   const path = join(dir, `${slug}.png`);
   const diffPath = join(dir, `${slug}.diff.png`);
 
@@ -58,7 +87,9 @@ export async function run(flags, positionals, ctx) {
   // rest of the CLI uses. Passed only for the instance's own origin: handing a site's public host
   // an admin password because one command happens to photograph both would be a credential leak
   // nobody asked for.
-  const shot = await capture(resolved.url, flags, ctx,
+  // The resolved width, not the raw flag: `widthsOf` is the one parser, so `capture` never has to
+  // know that `--width` can be a list.
+  const shot = await capture(resolved.url, { ...flags, width: widths[0] }, ctx,
     resolved.preview ? { user: admin.user, password: admin.password } : null);
   const before = await readIfPresent(ctx, path);
   const result = compareSnapshots(before, shot, { compare: await comparator(ctx) });
@@ -88,6 +119,124 @@ export async function run(flags, positionals, ctx) {
   // in `|| true`.
   const failed = Boolean(flags.failOnChange) && result.status === "changed";
   return { slug, url: resolved.url, path, ...result, diff: undefined, exitCode: failed ? 1 : 0 };
+}
+
+/**
+ * `--against <url>` — the replica against the original (SH386).
+ *
+ * <h2>Why SH102's comparison could not answer this</h2>
+ *
+ * <p>It answers <i>"did this page change since I last looked"</i>, and a replication's question is
+ * <i>"does this page look like somebody else's"</i>. The appearance digest cannot answer it either, and
+ * SH187 recorded why: there is no layout engine, so it covers the failure an <b>agent</b> creates and
+ * not the one a <b>human</b> sees (SH265). A replica's whole risk is the second kind.
+ *
+ * <h2>Both sides in the same run, and the source is kept</h2>
+ *
+ * <p>Captured together at each width, with the same viewport, the same animation suppression and the
+ * same timezone — a comparison between a picture taken now and one taken by a different browser build
+ * last month measures the browser. The source image is <b>written to the tree</b>, which is what makes
+ * this reviewable: a pull request shows what the replica was compared against, so a number nobody can
+ * reproduce is at least a number somebody can look at. It is re-captured every run rather than reused,
+ * because the source is <em>somebody else's site</em> and may have changed — the kept file is what
+ * <i>this</i> run compared against, which is the honest artefact.
+ *
+ * <h2>A difference exits non-zero, and this is the one place that rule inverts</h2>
+ *
+ * <p>SH102 exits 0 on a change on purpose: a page looking different is usually the change you just
+ * made, and gating on it produces the exit code people wrap in {@code || true}. Here the opposite
+ * holds — a replica that does not match the original <b>is</b> the defect, and nobody runs this command
+ * except to find out. So there is no {@code --fail-on-change} to remember.
+ *
+ * <h2>No endpoint, and the manifest keeps saying so</h2>
+ *
+ * <p>SH268's rule (a URL the server fetches is SH101's request-forgery surface) plus the standing
+ * non-goal that the instance runs no browser. {@code visualSnapshot: false} stays correct, and an agent
+ * reading {@code true} would hunt for a call that does not exist.
+ */
+async function against(resolved, { slug, dir, widths, admin, flags }, ctx) {
+  const source = String(flags.against);
+  if (!/^https?:\/\//.test(source)) {
+    throw new Error(
+      `shio snapshot: --against takes an absolute URL, not "${source}".\n` +
+        "It is the ORIGINAL — somebody else's site, which this instance never fetches (SH268), so\n" +
+        "there is nothing for a relative path to resolve against.\n" +
+        "  shio snapshot --page post:Acme/ --against https://acme.example.com/",
+    );
+  }
+  const credentials = resolved.preview
+    ? { user: admin.user, password: admin.password }
+    : null;
+  const compare = await comparator(ctx);
+  const rows = [];
+
+  for (const width of widths) {
+    const names = againstNames(slug, width);
+    const paths = {
+      source: join(dir, names.source),
+      replica: join(dir, names.replica),
+      diff: join(dir, names.diff),
+    };
+    // The original first, so a failure fetching it is reported before the replica is photographed —
+    // and so the two captures are as close together in time as the sequence allows.
+    const before = await capture(source, { ...flags, width }, ctx, null);
+    const after = await capture(resolved.url, { ...flags, width }, ctx, credentials);
+    const result = compareSnapshots(before, after, { compare });
+
+    await put(ctx, paths.source, before);
+    await put(ctx, paths.replica, after);
+    let diffPath = null;
+    if (result.diff) {
+      await put(ctx, paths.diff, result.diff);
+      diffPath = paths.diff;
+    }
+    rows.push({
+      width,
+      status: result.status,
+      ratio: result.ratio,
+      resolution: result.resolution,
+      sourcePath: paths.source,
+      replicaPath: paths.replica,
+      diffPath,
+    });
+  }
+
+  ctx.stdout.write(`${describeAgainst(rows, {
+    source,
+    page: resolved.url,
+    limit: flags.limit,
+  })}\n`);
+  if (resolved.preview) {
+    ctx.stdout.write(
+      `  note: the replica side is the DRAFT through this instance's renderer, banner and all — `
+        + `a stripe across the top of every diff is that, not your content\n`,
+    );
+  }
+  if (rows.every((row) => row.ratio === null)) {
+    // Said out loud, because a byte comparison across two origins is nearly always "differs" and a
+    // reader could take that for a finding. `describe`'s rule about naming the resolution, at the one
+    // place where the weaker answer is close to useless.
+    ctx.stdout.write(
+      "  note: no per-pixel comparator (install pixelmatch and pngjs), so this run can only say "
+        + "whether the bytes match — two browsers photographing two origins almost never produce "
+        + "identical bytes, so treat a difference here as unmeasured rather than as a magnitude\n",
+    );
+  }
+
+  const differing = rows.filter((row) => row.status !== "same").length;
+  return {
+    slug,
+    url: resolved.url,
+    against: source,
+    widths: rows,
+    exitCode: differing ? 1 : 0,
+  };
+}
+
+/** Writes one image, creating the directory. No baseline rotation: nothing here is displaced. */
+async function put(ctx, path, bytes) {
+  await ctx.fs.mkdir(dirname(path), { recursive: true });
+  await ctx.fs.writeFile(path, bytes);
 }
 
 /**
@@ -146,7 +295,7 @@ async function capture(url, flags, ctx, credentials) {
     return ctx.capture(url, flags, credentials);
   }
   const playwright = await load("playwright", ctx);
-  const width = Number(flags.width ?? 1280);
+  const width = Number(flags.width ?? DEFAULT_WIDTH);
   const height = Number(flags.height ?? 800);
   const browser = await playwright.chromium.launch();
   try {

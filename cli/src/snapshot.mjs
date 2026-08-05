@@ -139,6 +139,85 @@ function sameBytes(a, b) {
 }
 
 /**
+ * The widths a run photographs (SH386).
+ *
+ * <p>A list in both modes, so the flag means one thing — SH384's rule about two spellings of one
+ * window, applied to a viewport. `1280` alone is the default because that is what SH102 has always
+ * taken and an existing baseline must keep comparing against the same picture.
+ */
+export function widthsOf(value) {
+  if (value === undefined || value === true) return [DEFAULT_WIDTH];
+  const widths = String(value)
+    .split(",")
+    .map((each) => Number(each.trim()))
+    .filter((each) => Number.isInteger(each) && each > 0);
+  return widths.length ? [...new Set(widths)].sort((a, b) => a - b) : [DEFAULT_WIDTH];
+}
+
+/** SH102's viewport, unchanged: a new default would move every baseline in every project. */
+export const DEFAULT_WIDTH = 1280;
+
+/**
+ * What a replication comparison's three images are called (SH386).
+ *
+ * <p>Names rather than paths: the command joins them with `node:path`, which is SH198's rule — a
+ * module that built a separator itself would work on a fake filesystem keyed on the literal somebody
+ * typed and fail on the disk, or the reverse.
+ *
+ * <p>Width-suffixed <b>always</b> in this mode, unlike the ordinary one where the first width keeps
+ * `<slug>.png`. There is no baseline to preserve here — the mode is new — and a name that were
+ * suffixed only when a second width happened to be asked for is the conditional-naming defect SH379
+ * settled for the markup cache: the file a run writes must not depend on what else the run was asked
+ * to do.
+ */
+export function againstNames(slug, width) {
+  const at = `${slug}@${width}`;
+  return {
+    // The source is the *baseline*, and it is named as one so a reviewer opening the directory can
+    // tell which of two similar pictures is somebody else's site.
+    source: `${at}.source.png`,
+    replica: `${at}.replica.png`,
+    diff: `${at}.diff.png`,
+  };
+}
+
+/**
+ * The report for a replication comparison (SH386).
+ *
+ * <p>One line per width plus a total, because a replica that matches at 1280 and breaks at 375 is the
+ * ordinary outcome and a single averaged number would hide exactly that. The **resolution** is named
+ * per row for `describe`'s reason: "identical" from a byte comparison and from a pixel comparison are
+ * different claims, and here the byte answer is much weaker than usual — two browsers photographing
+ * two different origins will almost never produce identical bytes, so a byte-level `same` is close to
+ * meaningless and a reader has to be told which one they got.
+ */
+export function describeAgainst(rows, { source, page, limit } = {}) {
+  const worst = rows.reduce((most, row) => (ratioOf(row) > ratioOf(most) ? row : most), rows[0]);
+  const differing = rows.filter((row) => row.status !== "same");
+  const lines = [];
+  lines.push(
+    `shio snapshot --against: ${page} vs ${source} — ${rows.length} width(s), `
+      + `${differing.length} differing`
+      + (worst && ratioOf(worst) > 0 ? `, worst ${(ratioOf(worst) * 100).toFixed(2)}% at ${worst.width}px` : ""),
+  );
+  const shown = Number.isFinite(Number(limit)) ? Math.max(Number(limit), 1) : rows.length;
+  for (const row of rows.slice(0, shown)) {
+    const magnitude = row.ratio === null
+      ? (row.status === "same" ? "identical bytes" : "differs (bytes only — no magnitude)")
+      : `${(row.ratio * 100).toFixed(2)}% of pixels`;
+    lines.push(`  ${row.width}px  ${magnitude} (${row.resolution})`
+      + (row.diffPath ? `  diff → ${row.diffPath}` : ""));
+  }
+  if (rows.length > shown) lines.push(`  … ${rows.length - shown} more width(s)`);
+  lines.push(`  baseline kept: ${rows.map((row) => row.sourcePath).join(" ")}`);
+  return lines.join("\n");
+}
+
+function ratioOf(row) {
+  return row?.ratio ?? (row?.status === "same" ? 0 : 1);
+}
+
+/**
  * The line a human reads.
  *
  * <p>Names the resolution of the answer, because "no change" from a byte comparison and "no

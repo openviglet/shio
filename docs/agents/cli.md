@@ -243,6 +243,43 @@ like a fix. And `propose` now refuses only when there is **neither** markup nor 
 taken with `--assets` and without `--markup` is a real state, and withholding the theme over a flag
 that has nothing to do with the theme would be the wrong answer to it.
 
+**`shio snapshot --against <url>` compares the replica with the original, and it is the one command
+here whose gate is on by default (SH386).** SH102 answers *"did this page change since I last
+looked"*; a replication asks *"does this page look like somebody else's"*, and the appearance digest
+cannot answer that either — SH187 recorded why, and SH265 restated it: there is no layout engine, so a
+digest covers the failure an **agent** creates and not the one a **human** sees. A replica's whole risk
+is the second kind. Six decisions:
+- **Both sides in the same run**, at each width, with the same viewport, animation suppression and
+  timezone. Comparing a picture taken now against one a different browser build took last month
+  measures the browser, which is the failure mode that makes a visual gate get ignored.
+- **The source image is written to the tree and kept.** That is what makes the number reviewable
+  rather than merely produced: a pull request shows what the replica was compared against. It is
+  **re-captured every run** rather than reused, because the source is *somebody else's site* and may
+  have changed — the kept file is what *this* run compared against, which is the honest artefact even
+  though it means the number is not reproducible against a moving original.
+- **A difference exits 1, and this is the only place SH102's rule inverts.** There is no
+  `--fail-on-change` to remember: nobody runs this except to find out whether the replica matches, so
+  a mismatch is the defect rather than the change you just made — the reasoning that keeps the gate
+  opt-in everywhere else does not apply where the command *is* the gate.
+- **`--width` takes a list here** (`1280,768,375`), one number and one diff image per width, because a
+  replica that matches at 1280 and breaks at 375 is the ordinary outcome and one averaged number would
+  hide exactly that. **The baseline mode refuses a list** and says `--against` is what several widths
+  are for: `<slug>.png` is a file every project already holds, so a second width there would orphan it
+  or need a conditional name — SH379's rule about a file name never depending on what else the run was
+  asked to do. One parser (`widthsOf`), so the flag has one type and only its *capacity* differs.
+- **Names are always width-suffixed in this mode** (`<slug>@<width>.source.png` / `.replica.png` /
+  `.diff.png`) for that same rule, and they are *names* rather than paths — the command joins them
+  with `node:path`, per SH198.
+- **The byte-level answer is nearly useless here and the run says so.** Without `pixelmatch` + `pngjs`
+  there is no magnitude, and two browsers photographing two different origins almost never produce
+  identical bytes — so a difference at byte resolution is *unmeasured*, not small or large, and a
+  reader is told that rather than left to read it as a finding. `describe`'s rule about naming the
+  resolution, at the one place the weaker answer stops meaning anything.
+SH365 was a hard dependency rather than a courtesy: `--url` was already two arguments wearing one name,
+and a third meaning would have made the flag that says where Shio is also decide what it is compared
+to. No endpoint and no MCP tool — SH268's rule plus the standing no-browser non-goal — so
+`visualSnapshot: false` stays correct and `elsewhere.visualSnapshot` keeps pointing at the command.
+
 **`source-url-abandoned` is the only projection rule that reads something other than the tree (SH385).**
 Every other rule in the group answers a question about the files alone; this one compares them against
 the **capture**, because "the source-to-replica map is not discarded" is not checkable from either half
