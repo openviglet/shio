@@ -41,7 +41,21 @@ ref_scheme = "outline"
 # it found SH453 and SH454 on its first execution, seven tasks before the queue would have. It
 # also caught the live-boundary defect in every task after it, which is the argument the suite
 # exists to make. It is green as of SH446.
+# The third run. The suite goes first again, because the second run settled that argument: run
+# first it was red by construction and found two defects seven tasks before the queue would
+# have. So SH458's three assertions land while what they describe is still broken, and each
+# turns green as its fix arrives — the instrument precedes the fixes (SH338). Then the two that
+# make a replication lie about itself: SH456 exits 1 after writing everything, and SH453 drops
+# the layout binding on the create branch, so the first step of every new-site replication is
+# wrong. Then the two the replica shows on screen — SH457 serves HTML where an asset belongs,
+# SH455 never fetches the fonts — and last SH454, which is the suite's own hygiene.
 priority = [
+  "SH458",
+  "SH456",
+  "SH453",
+  "SH457",
+  "SH455",
+  "SH454",
   "Block P",
   "Block H",
   "Block K",
