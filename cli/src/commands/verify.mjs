@@ -36,6 +36,7 @@ import {
 } from "../content-store.mjs";
 import { readLocalDefs } from "../post-types-compile.mjs";
 import { PROJECTION_CHECK, lintProjection, splitChecks } from "../verify-projection.mjs";
+import { REPLICATION_CHECK, lintReplication } from "../verify-replication.mjs";
 import {
   BASELINE_FILE,
   acceptedFrom,
@@ -55,6 +56,9 @@ export async function run(flags, positionals, ctx) {
   // that needs an instance.
   const groups = splitChecks(flags.checks);
   const projection = groups.projection ? await lintTree(flags, ctx, site) : null;
+  // SH387 - the coverage group, and it runs on the same read: both are tree-only, so asking the
+  // disk twice for one command would be the cost SH353 removed one layer along.
+  const replication = groups.replication ? await lintCoverage(flags, ctx, site) : null;
 
   let raw;
   if (groups.callRemote) {
@@ -78,7 +82,7 @@ export async function run(flags, positionals, ctx) {
         + `group too (\`--checks ${PROJECTION_CHECK},routes\`), or drop --delivery.`,
     );
   }
-  raw = merge(raw, projection, groups);
+  raw = merge(raw, projection, groups, replication);
 
   const path = typeof flags.baseline === "string" ? flags.baseline : BASELINE_FILE;
   // An explicit `--baseline` that is not there is a mistake worth reporting: a CI job
@@ -95,6 +99,7 @@ export async function run(flags, positionals, ctx) {
   const report = applyBaseline(raw, baseline, {
     groups: [
       ...(groups.projection ? ["projection"] : []),
+      ...(groups.replication ? [REPLICATION_CHECK] : []),
       ...(groups.callRemote ? ["remote"] : []),
     ],
     site,
@@ -174,16 +179,48 @@ async function lintTree(flags, ctx, site) {
       // A scoped run is not a statement about the whole tree, so a `translationOf` it could not
       // have seen is a warning rather than an error (SH143's rule).
       scoped: Boolean(site),
-      // SH385 — the capture, when the project holds one. Absent on every project that never cloned
-      // anything, which is most of them, and the rule that reads it is silent then rather than
-      // reporting an empty comparison as a clean one.
-      inventory: await readInventory(ctx),
     }),
     note: null,
   };
 }
 
 /** A directory the tree does not have is not an error here — it is an empty list. */
+/**
+ * The replication's coverage (SH387) — the capture compared against the tree, both from disk.
+ *
+ * <p>A second read of the same directories rather than a shared one, and that is a deliberate trade
+ * measured against the alternative: threading one read through two groups means the group that runs
+ * alone still pays for what the other needs, and `--checks replication` on a project with no capture
+ * would then read every post to answer "there is nothing to compare". The reads are cheap and local;
+ * the coupling would not be.
+ */
+async function lintCoverage(flags, ctx, site) {
+  const inventory = await readInventory(ctx);
+  if (!inventory) {
+    // Answered before the tree is read at all: a project that never cloned anything is most of them,
+    // and there is nothing to compare a tree against.
+    return lintReplication({ inventory: null });
+  }
+  const defs = await readLocalDefs(ctx, flags.dir ?? DEFS_DIR).catch(noDefs);
+  const read = await readLocal(ctx, {
+    dir: flags.contentDir ?? CONTENT_DIR,
+    site,
+    sidecars: "report",
+  }).catch(absentRead);
+  const assets = await readLocalAssets(ctx, {
+    dir: flags.assetsDir ?? ASSETS_DIR,
+    site,
+  }).catch(absent);
+  return lintReplication({
+    posts: Object.values(read.docs),
+    defs: defs ?? [],
+    assets,
+    inventory,
+    // Every rule in the group is an absence, and a scoped run cannot prove one (SH143).
+    scoped: Boolean(site),
+  });
+}
+
 function absent(error) {
   if (error?.code === "ENOENT") return [];
   throw error;
@@ -215,7 +252,7 @@ function absentRead(error) {
  * leaving the machine. Counts are recomputed rather than added: `ok` is the server's own word
  * for "nothing an error", and a merged report has to mean the same thing.
  */
-function merge(remote, projection, groups) {
+function merge(remote, projection, groups, replication) {
   const base = remote ?? {
     ok: true,
     checked: 0,
@@ -226,19 +263,28 @@ function merge(remote, projection, groups) {
     checks: [],
     notes: [],
   };
-  if (!projection) return base;
+  // SH387 — both local groups fold in the same way, so they are one list rather than two nearly
+  // identical branches. An empty `local` is what makes a remote-only run return `base` untouched.
+  const local = [projection, replication].filter(Boolean);
+  if (!local.length) return base;
 
-  const findings = [...projection.findings, ...(base.findings ?? [])];
+  const findings = [...local.flatMap((each) => each.findings), ...(base.findings ?? [])];
   const errors = findings.filter((finding) => finding.severity === "error").length;
   const warnings = findings.filter((finding) => finding.severity !== "error").length;
   const notes = [...(base.notes ?? [])];
-  if (projection.note) notes.push(projection.note);
+  for (const each of local) {
+    if (each.note) notes.push(each.note);
+  }
   return {
     ...base,
     ok: errors === 0,
-    checks: [PROJECTION_CHECK, ...(base.checks ?? [])],
-    checked: (base.checked ?? 0) + projection.checked,
-    found: (base.found ?? 0) + projection.findings.length,
+    checks: [
+      ...(projection ? [PROJECTION_CHECK] : []),
+      ...(replication ? [REPLICATION_CHECK] : []),
+      ...(base.checks ?? []),
+    ],
+    checked: (base.checked ?? 0) + local.reduce((sum, each) => sum + each.checked, 0),
+    found: (base.found ?? 0) + local.reduce((sum, each) => sum + each.findings.length, 0),
     findings,
     errors,
     warnings,

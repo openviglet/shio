@@ -280,21 +280,55 @@ and a third meaning would have made the flag that says where Shio is also decide
 to. No endpoint and no MCP tool — SH268's rule plus the standing no-browser non-goal — so
 `visualSnapshot: false` stays correct and `elsewhere.visualSnapshot` keeps pointing at the command.
 
-**`source-url-abandoned` is the only projection rule that reads something other than the tree (SH385).**
-Every other rule in the group answers a question about the files alone; this one compares them against
-the **capture**, because "the source-to-replica map is not discarded" is not checkable from either half
-by itself. A path the SH377 inventory served that the tree neither holds as a post's `url` nor answers
-with a `Redirect` is a link that used to work — and a `Redirect` needs no special case here, since it
-*is* a post whose `url` is the path it answers, so "served or redirected" is one lookup. A **warning**,
-not an error: deciding an old path does not deserve a redirect is a real answer and only the operator
-can give it. Three bounds worth knowing: the **query string is dropped** before comparing (a capture
-records `/x` and `/x?utm=1` as two pages and a redirect answers a *path*, so keeping both would report
-one abandoned URL per tracking parameter); rows are **capped at 20 with the cut declared in every
-message**, since an unreported cut reads as a clean pass; and it is **silent on a scoped run**, because
-the finding is an absence and SH143's rule bites hardest for those — the same reason SH383's
-`translation-missing` does not run scoped either. The inventory is read by the projection group itself
-rather than passed in, and absent/unreadable/not-JSON all mean the same thing: there is no capture, so
-there is nothing to compare, which is the state of every project that never cloned anything.
+**`--checks replication` is the second server-free group, and the gate that says when a replication is
+*done* (SH387).** SH386 answers "does this page look right" one page at a time; the other half of done
+is arithmetic — of the pages, links, assets, form fields and locales the source had, which ones exist
+here. It is a **group** and not five more `projection` rules because every rule needs a *second
+document*, the SH377 capture, and asks a coverage question rather than a structural one; both groups
+still skip the server entirely, which is what makes them affordable on every push. Six rules, and the
+one that matters most is not a coverage rule:
+- **`replication-unchecked`** — a warning that names itself, in four shapes: the capture was
+  **truncated** (so every count is a lower bound, and a clean run means "complete among the pages we
+  saw"), a source page the crawl **could not read at all** (a 500 is the source's defect, not the
+  replica's), a locale whose selection the capture could not place in a URL, and an inventory written
+  by a **newer** `shio clone` than this reader understands. An unchecked thing counted as a clean one
+  is how a coverage report starts lying, and a coverage report nobody trusts ends the replication with
+  a number instead of with the work (SH302's rule).
+- **`source-page-missing`** — SH385's `source-url-abandoned`, **moved into the group that owns it and
+  renamed**. It was the right check in the wrong place: a coverage question about a source path is this
+  group's whole subject, and leaving it in `projection` while adding a second page rule here would have
+  been one defect in two reports that can disagree. A `Redirect` still needs no special case, since it
+  *is* a post whose `url` is the path it answers (SH385) — "served or redirected" is one lookup.
+- **`source-link-unresolved`** — and it required a **change to the capture**: `INVENTORY_VERSION` is 2,
+  with an `unfollowed` list of internal targets the walk saw and never crawled. Every *followed* link
+  is already a `pages` row, so reporting it here too would be the two-reports defect again; what was in
+  neither list is a link cut by `--depth`, `--max-pages` or robots — and before SH387 a fidelity report
+  counted that as absent from the **source** rather than absent from the **capture**, which are
+  opposite claims. The version moves rather than the field being optional, because a version-1 file
+  read as "nothing was left uncrawled" is exactly the wrong way round for a coverage report; an older
+  capture gets a note saying which rule checked nothing.
+- **`source-asset-missing`** — never downloaded, or downloaded and then lost, as two messages under one
+  rule because the fixes are different commands. **Off-origin assets are not reported**: SH378 settled
+  that mirroring another host's bytes is a licensing decision, so their absence is the design.
+- **`source-form-field-lost`** — and the claim is bounded *in the fix text*, because it is easy to
+  over-read: there is no form storage in this product (SH247 renders a declaration), so "the field
+  arrived" can only mean some post-type **declares** a field of that name.
+- **`source-locale-missing`** — where a smoke run caught the defect worth keeping: the projection writes
+  `locale:` only for a **non-default** locale (SH348), so a monolingual English tree states its locale
+  by *omission*, and reading omission as absence reported `en` missing on a tree whose only page was
+  English. Which locale the default is cannot be known server-free, so **the capture answers it** —
+  `declared` is the source's own `<html lang>` — and the inference is put in the notes rather than made
+  silently. With no primary locale in the capture, the note says the language is unproven instead.
+Every finding hangs on `source:<origin>` rather than an invented `post:` address, because the subject
+of every rule is something that does *not* exist in the replica and a fabricated address is one
+`shio resolve` cannot resolve. Rows are **capped at 20 with the total in every message** — not in a
+note three screens down, which a reader has not been told by. The group is **silent on a scoped run**:
+the findings are absences, and SH143's rule bites hardest for those.
+**And one bug the smoke run found, worth the sentence:** `splitChecks` took the local-group list as a
+*parameter with a default*, and the default was the one group that existed before this task — so
+`--checks replication` filtered nothing out, decided the server had been asked for, and failed with
+`fetch failed` on the gate whose whole promise is that it needs no instance. It is a constant now,
+beside the two names it is made of.
 
 **`shio impact <address>` exists and `shio read` deliberately does not (SH288).** The task was
 filed as "the CLI cannot show one post", and only half of that is a gap. A post's **content** is on
@@ -325,9 +359,10 @@ range the report could not cover whole** — a read must not move a position as 
 running it twice would answer "nothing changed", and for a review artifact an empty report reads
 as approval.
 
-**CI gates, in the order they should run:** `shio verify --checks projection` (tree defects — **no
-instance**, SH212/SH374: a broken asset path, a `files:` entry naming nothing, a dangling
-`translationOf`) → `shio push --check` (model drift) → `shio push --content --check`
+**CI gates, in the order they should run:** `shio verify --checks projection,replication` (tree defects
+— **no instance**, SH212/SH374: a broken asset path, a `files:` entry naming nothing, a dangling
+`translationOf`; plus SH387's coverage against the capture, on a project that has one) → `shio push
+--check` (model drift) → `shio push --content --check`
 (content-tree drift) → `shio apply --check` (document drift) → `shio verify` (content defects).
 The first one is new and is first for a reason: it needs no credentials, no network and nothing
 stood up, so a defect the files alone prove should never wait for a gate that does. **`projection`

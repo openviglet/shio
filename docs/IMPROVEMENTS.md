@@ -1383,26 +1383,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.11 The coverage gate is the one that says when a replication is done (SH387)
-
-SH386 answers *"does this page look right"* one page at a time. The other half of "done"
-is arithmetic: of the pages, links, assets, forms and locales the source had, which ones
-exist here. Nothing reports it, so a replication currently ends when somebody stops
-looking.
-
-It belongs in `verify` as a **`replication` check group**, beside SH212's `projection`,
-and for the same reason: the inventory is a file and the content is a file, so every
-finding is provable with **no instance and no credentials** — the cheapest gate in the
-pipeline, and the one a CI run can afford on every push. The rules are
-`source-page-missing`, `source-link-unresolved` (a link the source served that resolves
-to nothing here, which is SH336's route index asked from the other side),
-`source-asset-missing` (SH212 already owns the mechanics), `source-form-field-lost`, and
-`source-locale-missing`.
-
-One rule to keep from SH302: a page the group could **not** check — a type the tree
-lacks, a source URL the crawl truncated — is a warning naming itself, never silence. An
-unchecked page reading as a clean one is how a coverage report starts lying.
-
 ### XVII.12 The head is the part of a replica a human notices last and a crawler notices first (SH388)
 
 SH337 supplied the two facts a head needs that a template cannot compose —

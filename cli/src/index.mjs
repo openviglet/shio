@@ -186,11 +186,18 @@ Verification (shio verify / shio digest):
   that resolve to nothing, and anything that failed asynchronously. Errors exit 1;
   warnings are printed. Run it before handing work over.
   --site <idOrName>    Scope to one site
-  --checks <groups>    projection,content,routes,diagnostics,delivery (default all that
+  --checks <groups>    projection,replication,content,routes,diagnostics,delivery (default all that
                        can run). projection is this tool's own group and reads the file
                        tree — post-types, posts and asset bytes — so --checks projection
                        needs no instance at all and is the cheapest gate there is. Run it
-                       first in CI; the full run includes it too.
+                       first in CI; the full run includes it too. SH387 added replication, the
+                       second server-free group: it compares the SH377 capture against the tree
+                       and answers the other half of "done" — of the pages, links, assets, form
+                       fields and locales the source had, which ones exist here. Every rule in it
+                       is an ABSENCE, so it does not run on a --site-scoped run (a partial read
+                       cannot prove one), and anything it could not check is a warning naming
+                       itself rather than silence: an unchecked page counted as a clean one is how
+                       a coverage report starts lying.
   --delivery           Also prove each published route by fetching it from the site's
                        own origin — turns "the front end does not serve this" from a
                        warning into an error. Needs the instance's allow-fetch and each

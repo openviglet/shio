@@ -43,8 +43,14 @@
  * is a fact `git log` already holds.
  */
 
-/** The inventory's shape version. Bumped when a consumer would read an old file wrongly. */
-export const INVENTORY_VERSION = 1;
+/**
+ * The inventory's shape version. Bumped when a consumer would read an old file wrongly.
+ *
+ * <p>**2 since SH387**, which added `unfollowed`: internal links the walk saw and never crawled. A
+ * consumer of a version-1 file reads that as "nothing was left uncrawled", which is exactly the wrong
+ * way round for a *coverage* report — so the version moves rather than the field being optional.
+ */
+export const INVENTORY_VERSION = 2;
 
 /** Where the inventory lives: beside `content-base.json`, which is the other derived snapshot. */
 export const INVENTORY_FILE = "shio/.shio/source-inventory.json";
@@ -612,6 +618,7 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
   const forms = new Map();
   const navigation = new Map();
   const external = new Map();
+  const unfollowed = new Map();
   const problems = [];
 
   for (const entry of [...visited].sort((a, b) => (pathOf(a.url) < pathOf(b.url) ? -1 : 1))) {
@@ -623,11 +630,21 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
     const doc = entry.doc;
     let internal = 0;
     let outbound = 0;
+    const crawled = new Set(visited.map((each) => pathOf(each.url)));
     for (const link of doc.links) {
       const url = resolveHref(link.href, entry.url);
       if (!url) continue;
-      if (sameOrigin(url, originUrl)) internal += 1;
-      else {
+      if (sameOrigin(url, originUrl)) {
+        internal += 1;
+        // SH387 — an internal target no row in this inventory covers. Computed against the *visited*
+        // set rather than against `pages`, because a page that answered 500 is a page the crawl
+        // reached: it belongs to `problems`, and calling it uncrawled as well would put one gap in
+        // two lists that can disagree.
+        const target = pathOf(url);
+        if (!crawled.has(target)) {
+          unfollowed.set(target, (unfollowed.get(target) ?? 0) + 1);
+        }
+      } else {
         outbound += 1;
         const host = url.host.toLowerCase();
         external.set(host, (external.get(host) ?? 0) + 1);
@@ -778,6 +795,21 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
       .map(([host, refs]) => ({ host, refs }))
       .sort((a, b) => (a.host < b.host ? -1 : 1)),
     problems: problems.sort(byPath),
+    /**
+     * Internal links the walk saw and never followed (SH387).
+     *
+     * <p>The one field SH377 could not have known it needed. Every internal link the crawl *did*
+     * follow is a row in `pages`, so a coverage report can already ask about it — but a link cut by
+     * `--depth`, by `--max-pages` or by robots.txt is in **neither** list, and the reader of a
+     * fidelity report would count it as absent from the source rather than absent from the capture.
+     * Those two are opposite claims.
+     *
+     * <p>Deduplicated with a reference count and sorted, like `assets`: a site's footer links to the
+     * privacy page from every page, and one row per occurrence would be the whole crawl again.
+     */
+    unfollowed: [...unfollowed.entries()]
+      .map(([path, refs]) => ({ path, refs }))
+      .sort(byPath),
     notes: collected,
   };
 }

@@ -1,0 +1,411 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * Licensed under GPL-3.0.
+ *
+ * SH387 — the gate that says when a replication is **done**.
+ *
+ * WHY THIS IS A GROUP AND NOT FIVE MORE PROJECTION RULES
+ * SH212's `projection` group answers questions about the tree *alone*: is the asset this field names
+ * on disk, does this `translationOf` resolve. Every rule here needs a **second document** — the SH377
+ * capture — and the question it answers is arithmetic rather than structural: of the pages, links,
+ * assets, forms and locales the source had, which ones exist here. That is a different claim about a
+ * different subject, so `--checks replication` selects it and `--checks projection` does not. Naming
+ * either one alone still skips the server entirely, which is the property that makes both affordable
+ * on every push.
+ *
+ * WHY IT IS THE CHEAPEST GATE IN THE PIPELINE
+ * The inventory is a file and the content is a file. No instance, no credentials, no network — so a
+ * replication's completeness is provable before anything is stood up, which is where a check this
+ * cheap belongs (P9).
+ *
+ * THE ONE RULE THAT MATTERS MOST, AND IT IS NOT A COVERAGE RULE
+ * A page, asset or locale the group could **not** check is a warning that names itself. An unchecked
+ * thing counted as a clean one is how a coverage report starts lying, and a coverage report nobody can
+ * trust is worse than none — it ends the replication early with a number instead of with the work.
+ * SH302's rule, and the reason `replication-unchecked` exists.
+ *
+ * WHAT MOVED HERE FROM SH385
+ * `source-url-abandoned` was the right check filed in the wrong group: it is a coverage question about
+ * a source path, which is this group's whole subject. It is `source-page-missing` now. One defect, one
+ * rule, one report — the alternative was two rules over one fact, which is two reports that can
+ * disagree.
+ */
+
+/** The group name, in `--checks` and in the report's own `checks` list. */
+export const REPLICATION_CHECK = "replication";
+
+/** Enough rows to act on, few enough to read. Every cut is declared in the message that carries it. */
+const LIMIT = 20;
+
+/** The inventory shape this group understands. A `version` past it is reported, never guessed at. */
+export const READS_VERSION = 2;
+
+/**
+ * Lints a replication's coverage against the capture it came from.
+ *
+ * @param {object} input
+ * @param {object[]} input.posts   the projected posts (`readLocal`'s values)
+ * @param {object[]} input.defs    local post-type defs (`readLocalDefs`)
+ * @param {Iterable<string>} input.assets asset paths on disk
+ * @param {object} [input.inventory] the SH377 capture; absent means there is nothing to compare
+ * @param {boolean} [input.scoped] whether the run covers only part of the tree
+ * @returns {{ findings: object[], checked: number, note: string|null }}
+ */
+export function lintReplication({ posts = [], defs = [], assets = [], inventory = null, scoped = false }) {
+  if (!inventory || typeof inventory !== "object") {
+    // Not a finding and not silence: a project that never cloned anything has no replication to be
+    // complete, and saying "0 findings" would be a claim about a comparison that never happened.
+    return { findings: [], checked: 0, note: `${REPLICATION_CHECK}: no capture in this tree, so there `
+      + "is nothing to compare — run `shio clone <url>` first" };
+  }
+  if (scoped) {
+    // Every rule here is an **absence**, and SH143's rule bites hardest for those: a run that read
+    // part of the tree cannot tell a page the replica lacks from a page it did not look at.
+    return { findings: [], checked: 0, note: `${REPLICATION_CHECK}: skipped — a scoped run cannot `
+      + "prove an absence, and every rule in this group is one" };
+  }
+
+  const findings = [];
+  const notes = [];
+  const served = servedPaths(posts);
+  const declared = declaredFields(defs);
+  const present = new Set(assets);
+
+  findings.push(
+    ...pageFindings(inventory, served),
+    ...linkFindings(inventory, served),
+    ...assetFindings(inventory, present),
+    ...formFindings(inventory, declared),
+    ...localeFindings(inventory, posts, notes),
+    ...uncheckedFindings(inventory, notes),
+  );
+
+  const checked = (inventory.pages?.length ?? 0) + (inventory.assets?.length ?? 0)
+    + (inventory.forms?.length ?? 0) + (inventory.locales?.length ?? 0);
+  return {
+    findings: sortFindings(findings),
+    checked,
+    note: notes.length ? `${REPLICATION_CHECK}: ${notes.join("; ")}` : null,
+  };
+}
+
+/**
+ * Every path the replica answers — a page's own URL, or a `Redirect` posted at it.
+ *
+ * <p>One set for both, because a redirect *is* a post whose `url` is the path it answers (SH385): the
+ * design decision not to give a redirect a `from` field is what makes "served or redirected" a single
+ * lookup here rather than two lists to keep in step.
+ */
+function servedPaths(posts) {
+  const served = new Set();
+  for (const post of posts) {
+    if (typeof post?.url === "string" && post.url) served.add(normalizePath(post.url));
+  }
+  return served;
+}
+
+/**
+ * A source page the replica neither serves nor redirects — the rule SH385 filed as
+ * `source-url-abandoned` before this group existed to hold it.
+ *
+ * <p>A **warning**: deciding an old path does not deserve a page or a redirect is legitimate, and a
+ * replica may genuinely drop a section. This says "you have not said what happens to these", which
+ * only the operator can answer.
+ */
+function pageFindings(inventory, served) {
+  const missing = pathsOf(inventory.pages).filter((path) => !served.has(normalizePath(path)));
+  return capped(missing, "source-page-missing", inventory, (path, cut) => ({
+    message: `the capture served \`${path}\` and this tree neither holds a page there nor redirects it${cut}`,
+    fix: "Give the replica a page at that URL, or a Redirect post whose friendly URL is that path "
+      + "and whose TO names where it went. Deciding a path does not deserve either is a real answer "
+      + "— this is a warning because only you can give it.",
+  }));
+}
+
+/**
+ * An internal link the source served that the capture never crawled and the replica does not hold.
+ *
+ * <h3>Why it is not "every internal link"</h3>
+ *
+ * Every link the crawl <b>followed</b> is a row in `pages`, so `source-page-missing` already asks
+ * about it — reporting it here as well would put one gap in two rules, which is two reports that can
+ * disagree. What is left is the set neither list covers: a target cut by `--depth`, by `--max-pages`
+ * or by robots.txt. Before SH387 the inventory did not record it at all, so a fidelity report counted
+ * it as absent from the *source* rather than absent from the *capture* — opposite claims.
+ */
+function linkFindings(inventory, served) {
+  const rows = Array.isArray(inventory.unfollowed) ? inventory.unfollowed : [];
+  const missing = rows
+    .map((row) => (typeof row?.path === "string" ? row.path.split("?")[0] : ""))
+    .filter(Boolean)
+    .filter((path) => !served.has(normalizePath(path)));
+  return capped(missing, "source-link-unresolved", inventory, (path, cut) => ({
+    message: `the source linked to \`${path}\`, the capture never crawled it, and this tree does `
+      + `not hold it either${cut}`,
+    fix: "Raise --depth or --max-pages and capture again, or accept that the source's own link goes "
+      + "nowhere in the replica. This is the one rule about a gap in the CAPTURE rather than in the "
+      + "replica, which is why it is worth telling apart from source-page-missing.",
+  }));
+}
+
+/**
+ * A same-origin asset the capture named that the tree does not hold.
+ *
+ * <p>Two shapes, one finding: an asset with no `file` was never downloaded (`--assets` did not run,
+ * or it was skipped), and one with a `file` that is not on disk was downloaded and then lost. The
+ * message says which, because the fixes are different commands. **Off-origin assets are not
+ * reported** — SH378 settled that mirroring another host's bytes is a licensing decision this tool
+ * does not make, so their absence is the designed outcome rather than a gap.
+ */
+function assetFindings(inventory, present) {
+  const rows = (inventory.assets ?? []).filter((asset) => asset && !asset.external);
+  const missing = [];
+  for (const asset of rows) {
+    if (!asset.file) {
+      missing.push({ path: asset.path, why: "was never downloaded" });
+    } else if (!present.has(asset.file)) {
+      missing.push({ path: asset.path, why: `was downloaded to \`${asset.file}\`, which is not in the tree` });
+    }
+  }
+  return capped(missing, "source-asset-missing", inventory, (row, cut) => ({
+    message: `the asset \`${row.path}\` ${row.why}${cut}`,
+    fix: "Run `shio clone <url> --assets --site <name>` to fetch the bytes, or `shio pull --content` "
+      + "if the asset is in the instance and not in this tree.",
+  }), (row) => row.path);
+}
+
+/**
+ * A form field the source had that no post-type in this tree declares.
+ *
+ * <h3>The limit of the claim, stated because it is easy to over-read</h3>
+ *
+ * There is no form storage in this product — SH247 renders a post-type's *declaration* and the
+ * receiving half was deliberately not built — so "the field arrived" can only mean **some post-type
+ * declares a field of that name**. That is a weaker statement than "the form works", and it is the
+ * strongest one provable with no instance. A submit button is skipped: it carries no value.
+ */
+function formFindings(inventory, declared) {
+  const missing = [];
+  for (const form of inventory.forms ?? []) {
+    for (const field of form?.fields ?? []) {
+      const name = typeof field?.name === "string" ? field.name.trim() : "";
+      if (!name || field.type === "submit") continue;
+      if (declared.has(name.toLowerCase())) continue;
+      missing.push({ name, at: form.path ?? "?" });
+    }
+  }
+  return capped(missing, "source-form-field-lost", inventory, (row, cut) => ({
+    message: `the form on \`${row.at}\` posted \`${row.name}\`, and no post-type in this tree `
+      + `declares a field of that name${cut}`,
+    fix: "Add the field to the post-type that receives this form, or accept that the replica's form "
+      + "collects less than the original's. Note the limit: this can only check that a field is "
+      + "DECLARED — where a submission goes is not something this product stores (SH247).",
+  }), (row) => `${row.at} ${row.name}`);
+}
+
+/**
+ * A locale the source served for which the tree holds no content.
+ *
+ * <p>Declared locales only (`x-default` is not a language), and matched case-insensitively because
+ * `pt-BR` and `pt-br` are one locale spelled two ways — a coverage report that reported a gap over
+ * capitalisation would be reporting on the source's HTML style.
+ */
+function localeFindings(inventory, posts, notes) {
+  const held = new Set(
+    posts.map((post) => String(post?.locale ?? "").trim().toLowerCase()).filter(Boolean),
+  );
+  // **An absent `locale:` means the instance default** (SH348: the projection writes the field only
+  // for a non-default locale, so a monolingual tree is byte-identical to before that task). Reading
+  // omission as absence is what the first draft did, and a smoke run caught it reporting `en` missing
+  // on a tree whose only page was English.
+  //
+  // Which locale the default *is* cannot be known server-free — that constant is the writer's. What
+  // the capture knows is the source's own primary: `declared` is its `<html lang>`, `default` is its
+  // `x-default`. A replica's default is meant to be that one, so an unlabelled post counts as holding
+  // it. The inference is stated in the notes rather than assumed silently, because it is an inference.
+  const unlabelled = posts.filter((post) => !String(post?.locale ?? "").trim()).length;
+  if (unlabelled) {
+    const primary = (inventory.locales ?? [])
+      .find((row) => row?.shape === "declared" || row?.shape === "default");
+    if (primary?.locale) {
+      held.add(String(primary.locale).trim().toLowerCase());
+      notes.push(`${unlabelled} post(s) state no locale, which means the instance default — counted `
+        + `as covering \`${primary.locale}\`, the locale the source itself declares`);
+    } else {
+      notes.push(`${unlabelled} post(s) state no locale and the capture names no primary locale, so `
+        + "which language they are in is unproven here");
+    }
+  }
+  const missing = (inventory.locales ?? [])
+    .map((row) => String(row?.locale ?? "").trim())
+    .filter((locale) => locale && locale.toLowerCase() !== "x-default")
+    .filter((locale) => !held.has(locale.toLowerCase()));
+  return capped(missing, "source-locale-missing", inventory, (locale, cut) => ({
+    message: `the source served \`${locale}\` and no post in this tree carries that locale${cut}`,
+    fix: "Create the translations with a post.upsert naming `locale` and `translationOf`, or accept "
+      + "that the replica ships in fewer languages than the original.",
+  }));
+}
+
+/**
+ * What this group could not check — a warning that names itself, never silence (SH302's rule).
+ *
+ * <p>Four ways a coverage report can be built on less than it looks like: the capture was
+ * **truncated** by a ceiling, so every count in it is a lower bound and "no missing pages" means "no
+ * missing pages among the ones we saw"; a page the crawl **could not read** at all; a locale the
+ * source signalled in a shape the crawl could not place (`unknown`); and an inventory written by a
+ * **newer** version of `shio clone` than this one understands. Each is a warning against the capture
+ * itself rather than against a page, because none of them is a defect in the replica.
+ */
+function uncheckedFindings(inventory, notes) {
+  const out = [];
+  const version = Number(inventory.version ?? 1);
+  const address = originAddress(inventory);
+
+  if (version > READS_VERSION) {
+    out.push({
+      rule: "replication-unchecked",
+      severity: "warning",
+      address,
+      field: undefined,
+      message: `this capture is version ${version} and this command reads ${READS_VERSION}, so `
+        + "whatever it added was not checked",
+      fix: "Upgrade @viglet/shio. A coverage report from an older reader is a lower bound, which is "
+        + "the one thing a coverage report must not be silently.",
+      source: REPLICATION_CHECK,
+    });
+  }
+  if (inventory.crawl?.truncated) {
+    notes.push("the capture is PARTIAL (a ceiling cut it), so every count here is a lower bound");
+    out.push(unchecked(address, "the capture stopped at its ceiling, so the source has pages this "
+      + "report never compared", "Raise --depth or --max-pages and capture again. Until then a clean "
+      + "run means \"complete among the pages the crawl saw\"."));
+  }
+  if (version < READS_VERSION) {
+    notes.push(`this capture is version ${version}; \`unfollowed\` arrived in ${READS_VERSION}, so `
+      + "source-link-unresolved checked nothing");
+  }
+  const unreadable = (inventory.problems ?? []).length;
+  if (unreadable) {
+    out.push(unchecked(address, `${unreadable} source page(s) could not be read at all, so their `
+      + "links, assets and forms were never compared",
+      "Look at `problems` in the inventory: a 500 is the source's, a redirect off-origin is a "
+      + "different site, and neither is a gap in the replica."));
+  }
+  const vague = (inventory.locales ?? []).filter((row) => row?.shape === "unknown").length;
+  if (vague) {
+    out.push(unchecked(address, `${vague} source locale(s) appear nowhere in a URL, so the capture `
+      + "could not tell how the source selects them",
+      "A site keying its locale off a cookie or a header cannot be replicated by URL alone — decide "
+      + "what the replica does instead, because this report cannot."));
+  }
+  return out;
+}
+
+function unchecked(address, message, fix) {
+  return {
+    rule: "replication-unchecked",
+    severity: "warning",
+    address,
+    field: undefined,
+    message,
+    fix,
+    source: REPLICATION_CHECK,
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
+// shared shapes
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * One rule's rows, capped, with the cut declared **in every message**.
+ *
+ * <p>Not in a note beside them: a reader who sees nineteen rows and a twentieth saying "and more"
+ * has been told; a reader who sees twenty rows and a note three screens down has not. An unreported
+ * cut reads as a complete list, which for a coverage report is the failure the whole group exists to
+ * prevent.
+ */
+function capped(rows, rule, inventory, render, key = (row) => row) {
+  const unique = [];
+  const seen = new Set();
+  for (const row of rows) {
+    const id = String(key(row));
+    if (seen.has(id)) continue;
+    seen.add(id);
+    unique.push(row);
+  }
+  unique.sort((a, b) => String(key(a)).localeCompare(String(key(b))));
+  const total = unique.length;
+  return unique.slice(0, LIMIT).map((row) => {
+    const cut = total > LIMIT ? ` (${total} in all; ${LIMIT} shown)` : "";
+    const { message, fix } = render(row, cut);
+    return {
+      rule,
+      severity: "warning",
+      address: originAddress(inventory),
+      field: undefined,
+      message,
+      fix,
+      source: REPLICATION_CHECK,
+    };
+  });
+}
+
+/**
+ * The address every finding here hangs on: the **source origin**.
+ *
+ * <p>Deliberately not a `post:` address, and the reason is that there is nothing to point at — the
+ * subject of every rule in this group is something that does *not* exist in the replica. An invented
+ * `post:<site>/<path>` would be an address `shio resolve` cannot resolve, which is worse than an
+ * honest one naming the capture.
+ */
+function originAddress(inventory) {
+  return `source:${inventory?.source?.origin ?? "?"}`;
+}
+
+function pathsOf(rows) {
+  return (rows ?? [])
+    .map((row) => (typeof row?.path === "string" ? row.path.split("?")[0] : ""))
+    .filter(Boolean);
+}
+
+/** Every field name any post-type in the tree declares, folded for comparison. */
+function declaredFields(defs) {
+  const names = new Set();
+  for (const def of defs ?? []) {
+    for (const field of def?.fields ?? []) {
+      if (typeof field?.name === "string") names.add(field.name.trim().toLowerCase());
+      for (const child of field?.fields ?? []) {
+        if (typeof child?.name === "string") names.add(child.name.trim().toLowerCase());
+      }
+    }
+  }
+  return names;
+}
+
+/** A path as a comparison key: leading slash, no trailing one, case-folded (SH79). */
+function normalizePath(path) {
+  const raw = String(path ?? "").trim().toLowerCase();
+  const lead = raw.startsWith("/") ? raw : `/${raw}`;
+  return lead.length > 1 && lead.endsWith("/") ? lead.slice(0, -1) : lead;
+}
+
+/** By rule, then message — so two runs over one tree and one capture read the same (P5). */
+function sortFindings(findings) {
+  return [...findings].sort((a, b) =>
+    (a.rule ?? "").localeCompare(b.rule ?? "") || (a.message ?? "").localeCompare(b.message ?? ""));
+}
+
+/** The rules this group owns, for the baseline's coverage split (SH410/SH411). */
+export function replicationRules() {
+  return new Set([
+    "source-page-missing",
+    "source-link-unresolved",
+    "source-asset-missing",
+    "source-form-field-lost",
+    "source-locale-missing",
+    "replication-unchecked",
+  ]);
+}

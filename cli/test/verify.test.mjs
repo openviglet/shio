@@ -134,7 +134,7 @@ test("a clean report exits zero and says what it checked", async () => {
   assert.match(ctx.stdout.text, /ok — 0 error\(s\), 0 warning\(s\) over 12 object\(s\)/);
   // SH212 — the tree's own group runs by default and is named first, because its findings are
   // the ones a reader can act on without leaving the machine.
-  assert.match(ctx.stdout.text, /\[projection, content, routes\]/);
+  assert.match(ctx.stdout.text, /\[projection, replication, content, routes\]/);
   // And it says it checked nothing rather than passing quietly: "0 findings" and "not run" have
   // to be distinguishable (SH302's lesson, one command along).
   assert.match(ctx.stdout.text, /projection: nothing to check in this tree/);

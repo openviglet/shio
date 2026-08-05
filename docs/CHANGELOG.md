@@ -911,6 +911,7 @@
 - **SH384** — query takes page, sort and a field filter with exact pager counts; a benchmark measured 213 rows loaded per 10 rendered first, which is what made them free.
 - **SH385** — A Redirect post whose friendly URL is the path it answers, honoured by the preview, plus a lint for a source URL the replica abandons.
 - **SH386** — shio snapshot --against captures replica and original in one run per width, keeps the source image as a reviewable baseline, and exits non-zero on a difference.
+- **SH387** — A server-free replication check group scores the capture against the tree in five rules, and names everything it could not check rather than counting it clean.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 
