@@ -1520,3 +1520,54 @@ failure a replica has.
 Two gaps in the middle are not about replication at all: they are ordinary site features
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
+
+### XVII.39 Two rewriting rules, and the stylesheet uses the wrong one (SH461)
+
+The replica's fonts still 404, and the served CSS says why twice over:
+
+    src: url(&quot;/Final/model-catalog/fonts/inter-latin.woff2&quot;)
+
+**The value is HTML-escaped.** CSS decodes no entities, so `&quot;` is four literal characters inside the
+URL and the `@font-face` rule is invalid whatever it points at. The rest of the theme is unescaped — the
+page is styled — so this is the rewriter escaping the one value it writes, not `{{theme.css}}`.
+
+**And the path is the tree's, not the server's.** `/Final/model-catalog/fonts/…` is `shio/assets/Final/…`
+with the prefix dropped: the site's *name*, capitalised, and the asset tree's layout. The servable URL is
+`/sites/final/default/en-us/model-catalog/fonts/inter-latin.woff2`, which answers **200**. That URL is
+the one the markup rewriter already produces — the same page's `<img>` resolves to
+`/sites/final/default/en-us/viglet-logo.png` and the logo loads.
+
+So one page carries two rewriting rules for the same job, and the one that works is not
+the one the stylesheet uses. The measurement is the argument: the logo went from broken
+to 200 in this run, and the fonts did not, on a capture that fetched them correctly
+(`assets: 3 uploaded`) and a route that serves them correctly when asked properly.
+
+Both halves are one pass over the same code. A test that fetches what the *rendered*
+page references — SH458's third assertion — fails on exactly this today, and passes when
+the rewriter emits the URL the markup rewriter already knows how to build.
+
+### XVII.40 The op that cannot name what it must act on (SH462)
+
+`convert` now uploads what it captured — `assets: 3 uploaded, 0 already there - served
+at the source's own paths` — and every one of them lands in DRAFT, like everything else
+it writes (P7). Nothing can take them out.
+
+`GET /agent/find?site=Final` returns the three as **`id:<uuid>`** and the three content
+posts as `post:…`. That is correct: a `File` post is never given a friendly URL, so it
+has no `post:` address to have. But `post.publish` accepts only `post:` — writes refuse
+the bare `id:` form on purpose (SH79) — and there is no other verb. Addressing it by the
+path it is served at 404s: that path is the route's, not the post's.
+
+So the one op that would finish a public replication cannot name the objects it has to
+act on. The batch that tried failed whole, at `ops[0]`, before publishing the page: the
+atomicity that makes a batch safe turns one unpublishable asset into a replication that
+publishes nothing.
+
+It is invisible on the preview, which is why it survived. `/preview` renders DRAFT, so
+an asset uploaded and never published looks right there and 404s the moment the site is
+public — the exact split SH451 introduced and the reason a public route needed its own
+tests.
+
+Either `post.publish` takes `id:` for a type that can hold no `post:` address, or a File
+is published by the op that uploads it, since a draft asset nothing can reference is not
+a state worth having.
