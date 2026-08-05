@@ -399,6 +399,32 @@ it — and it seeds and deletes its own site, the answer to what a hand-driven r
 behind. Each assertion names the task it would have caught, so the suite reads as the
 record of what unit tests structurally cannot see.
 
+### IX.24 A screenshot of an error is not a comparison (SH450)
+
+The first `--against` run that reached a browser reported `100.00% of pixels` on a
+replica whose markup is the source's, verbatim. Opening the PNG says why: it is a white
+page reading `{"error":"Unauthorized"}`. The gate photographed a 401 and scored it
+against the real site.
+
+The credentials are computed and passed — `resolved.preview ? {user, password} : null`,
+then `httpCredentials` on `newPage`. Playwright's `httpCredentials` answers a
+**challenge**; it does not send `Authorization` unprompted. The preview's 401 carries
+`Content-Type: application/json` and **no `WWW-Authenticate` header**, so there is
+nothing for the browser to answer and it never retries. `curl -u` succeeds against the
+same URL because it can be told to send the header first.
+
+The unit test is the reason this shipped, and it is the exact shape SH448 describes.
+`snapshot.test.mjs` asserts `seen[0].credentials` equals the admin pair — that the
+credentials were *handed to the injected capture*. Nothing asserts a browser got in,
+because no test starts one. Its comment even names the failure it was written to
+prevent: "without this the capture would be a photograph of the login page — which
+compares stably against itself and would read as unchanged forever."
+
+Two ends, and both are worth having. The preview should emit `WWW-Authenticate: Basic`
+on its 401 so any browser can authenticate it. And the capture should refuse a page
+whose status is not 2xx rather than photograph it — a screenshot of an error is the one
+thing a visual gate must never score.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -1572,3 +1598,29 @@ anything, which makes the refusal true. Or report what landed — `✓ Created �
 then the refusal — which makes it honest without reordering. The first is better here
 because the partial state is a directory that then blocks the retry, and the second
 still leaves that.
+
+### XVII.35 The mode that is only a label (SH449)
+
+`propose.mjs`'s own header declares two modes. **Fidelity** "writes its markup verbatim
+as a `Theme` plus a `PageLayout` and its `Region`s (SH191 sidecars): it renders
+identically and nothing about it is authorable." **Authorable** maps blocks onto the
+section vocabulary. "An unaccepted block stays in fidelity mode."
+
+It does not. Measured: capture a page, accept nothing, `convert --create-site` writes
+**the Theme and nothing else** — no PageLayout, no Region, no Page, and the site 404s.
+`propose.mjs:768` shows why the label looks real: `mode: accepted.has(rest.id) ?
+"authorable" : "fidelity"` is the whole of it, a string on a proposal entry. The report
+counts "2 in fidelity mode", `verify-replication.mjs:236` reasons about what a fidelity
+block does with its images, and no writer exists. An unaccepted block is not kept
+verbatim — it is dropped.
+
+The mode that is missing is the one replication needs most. Fidelity loses nothing (the
+authorable path reports "loses: 11 class name(s) — all styling"), needs no npm publish,
+and renders through Shio's own renderer with no front end — which matters now that SH446
+has the other path unable to install.
+
+It works by hand, so this is a writer rather than a design. Taking the captured markup,
+replacing the inline `<style>` with `{{theme.css}}`, writing it as a PageLayout titled
+by the site and binding `postTypeLayout` produced a page that renders at 11787 bytes
+with all 23 original class attributes and the palette intact — three ops over what
+`convert` already writes.

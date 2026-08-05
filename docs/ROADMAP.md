@@ -24,6 +24,7 @@
 - 📋 **SH397** (deps: SH295 ✅, SH325 ✅) **A dev instance reports its version as dev, so a stale server reads as a code defect** — The build stamp comes from the jar manifest, which is absent in the one mode where the running instance can lag the working tree, and nothing composes the readiness facts. → §IX.12
 - 📋 **SH423** (deps: SH347 ✅) **The test-context budget is a ceiling nobody sees approaching** — ShContextCacheHeadroomTest fails once 64 is crossed and nothing says a task is spending one, so eleven tasks took the count from 38 to 44 with no moment anybody was asked. → §VIII.20
 - 📋 **SH448** (deps: SH422 ✅) **The suite asserts composition, so every defect at the live boundary ships** — SH422 drives the chain over fixtures and SH438, SH442 and SH446 passed under it; no test hands a URL to a browser or installs from npm, and one abort was fixed three times against a harness. → §IX.23
+- 📋 **SH450** (deps: SH442 ✅) **The visual gate photographs a 401 and scores it as a 100% difference** — The preview's 401 carries no WWW-Authenticate, so playwright's httpCredentials never answers a challenge, and no test starts a browser to notice. → §IX.24
 
 ## Block I — Content as files (local-first authoring)
 
@@ -84,6 +85,7 @@
 
 - 📋 **SH437** (deps: SH429 ✅) **A fidelity replica's images 404 because a static file is only served at its own id** — SH429 made the stranded bytes visible and left the delivery unbuilt: keeping the source's URL space needs a route Shio does not have, so the choice was never available. → §XVII.27
 - 📋 **SH446** (deps: SH438 ✅) **The front end that serves a converted site cannot be installed** — init writes @viglet/shio-client@^2026.3.1 which npm does not have and depends on shio-sections which was never published, so npm install fails ETARGET on both scaffolds. → §XVII.33
+- 📋 **SH449** (deps: SH438 ✅) **Fidelity mode is declared, labelled and counted, and writes nothing** — An unaccepted block is documented to stay verbatim as a PageLayout and Regions, but convert emits only the Theme, so the mode replication needs most does not exist. → §XVII.35
 
 ## Block F — Market positioning
 
