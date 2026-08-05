@@ -248,6 +248,30 @@ export function stripNonMarkup(html) {
 }
 
 /**
+ * The bodies of a page's `<style>` blocks, in source order (SH427).
+ *
+ * <p>`stripNonMarkup` **removes** these, which is right for building a tree and is why the theme
+ * phase could not see them: `openviglet.github.io` declares its whole palette — sixteen custom
+ * properties — inside one `<style>` block and links zero external stylesheets, so `shio propose`
+ * emitted `theme: null` with no note. Critical CSS in a `<style>` block is not an edge case; it is
+ * what a single-page marketing site and every performance-tuned landing page does.
+ *
+ * <p>The same coarse boundary as `stripNonMarkup`, and for the same reason (see below): this module
+ * reads bytes from a stranger's server, so the pattern stays strictly linear. A block declaring a
+ * `type` that is not CSS is skipped rather than parsed as CSS.
+ */
+export function styleBlocks(html) {
+  const out = [];
+  const pattern = /<style\b([^>]*)>([\s\S]*?)<\/style\s*>/gi;
+  for (const [, attrs, body] of String(html ?? "").matchAll(pattern)) {
+    const type = /\btype\s*=\s*["']?([^"'\s>]+)/i.exec(attrs ?? "")?.[1];
+    if (type && !/^text\/css$/i.test(type)) continue;
+    if (body.trim()) out.push(body);
+  }
+  return out;
+}
+
+/**
  * The tag boundary, and it is deliberately **coarse**.
  *
  * <p>The precise version — a repeated group of `name(=value)?` with quoted alternatives — has nested

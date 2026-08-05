@@ -37,6 +37,7 @@ import {
   MARKUP_DIR,
   parseAttrs,
   stripNonMarkup,
+  styleBlocks,
   tokenize,
 } from "../clone.mjs";
 import { ASSETS_DIR } from "../content-assets.mjs";
@@ -94,7 +95,11 @@ export async function run(flags, positionals, ctx) {
 
   const plan = (await readJson(join(ctx.cwd, PLAN_FILE), ctx)) ?? { accepted: [] };
   const markup = await readMarkup(inventory, ctx);
-  const styles = await readStyles(inventory, ctx);
+  // SH427 — the external stylesheets `clone --assets` wrote, *and* the `<style>` blocks in the markup
+  // `clone --markup` already stored. The second cost no request and needs no new extractor; leaving it
+  // out meant the commonest shape of the page a replication starts from was the shape whose theme was
+  // invisible.
+  const styles = [...await readStyles(inventory, ctx), ...inlineStyles(inventory, markup)];
   // Either half is a proposal worth having, so the refusal is about having *neither*. A capture with
   // stylesheets and no markup is a real state — `--assets --site X` without `--markup` — and refusing
   // it would withhold the theme over a flag that has nothing to do with the theme.
@@ -270,6 +275,37 @@ async function readStyles(inventory, ctx) {
       // Named by the theme's own sheet count against the inventory's, the way a missing markup file
       // is. A run refused for one deleted derived file would be hostage to the cheapest thing to lose.
     }
+  }
+  return styles;
+}
+
+/**
+ * The `<style>` blocks in the captured markup, one entry per page (SH427).
+ *
+ * <p>All of a page's blocks are joined into one sheet, so the count a reviewer reads is "this page's
+ * inline CSS" rather than an arbitrary number of fragments, and the `path` says where the tokens came
+ * from. A declared custom property is the token SH380 calls genuinely editable — the source's own CSS
+ * already says `var()` on it — so this is the *strong* half of the theme, not a leftover.
+ *
+ * <p>`url` is the **page**, which is the one thing that differs from an external sheet and the reason
+ * it is passed rather than assumed: `url(img/hero.png)` in a `<style>` block resolves against the
+ * document, while the same text in `/assets/css/site.css` resolves against that directory. SH380's
+ * rule, inverted, and getting it wrong would name a file that does not exist.
+ */
+function inlineStyles(inventory, markup) {
+  const styles = [];
+  for (const page of inventory.pages ?? []) {
+    const source = markup.get(page.path);
+    if (typeof source !== "string") continue;
+    const blocks = styleBlocks(source);
+    if (!blocks.length) continue;
+    styles.push({
+      path: `${page.path} <style>`,
+      file: null,
+      url: absolute(page.path, inventory.source?.origin),
+      css: blocks.join("\n"),
+      inline: true,
+    });
   }
   return styles;
 }

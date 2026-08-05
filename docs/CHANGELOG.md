@@ -923,6 +923,7 @@
 - **SH432** — A row's `on` counts distinct pages and `occurrences` every sighting, so a nav repeated in a footer no longer claims reach it never had.
 - **SH425** — A container whose children are repeated units is the block, and a link wrapping block content is one too — so a marketing page yields its hero and its grid.
 - **SH426** — The closest header before main is a candidate block, and a candidate on every page read is named as what chrome looks like.
+- **SH427** — A page's inline style blocks are read from the stored markup as sheets of their own, resolving url() against the document.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

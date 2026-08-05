@@ -633,7 +633,14 @@ export function buildTheme({ styles = [], assets = new Map(), minRefs = DEFAULT_
       unresolved.set(each, (unresolved.get(each) ?? 0) + 1);
     }
     css += `${css ? "\n" : ""}/* ${style.path} */\n${rewrite.css.trim()}\n`;
-    sheets.push({ path: style.path, file: style.file, rules: scan.rules, bytes: scan.bytes });
+    sheets.push({
+      path: style.path,
+      file: style.file,
+      // SH427 — where the bytes were, which is the one thing a reviewer cannot see from a token row.
+      inline: style.inline === true,
+      rules: scan.rules,
+      bytes: scan.bytes,
+    });
   }
 
   const declared = declaredTokens(declarations);
@@ -654,6 +661,16 @@ export function buildTheme({ styles = [], assets = new Map(), minRefs = DEFAULT_
       `${recurring.tokens.length} recurring token(s) name the palette and change nothing on their ` +
         `own — no rule references them until the CSS is rewired, which this does NOT do: a ` +
         `search-and-replace over a stranger's stylesheet breaks a replica in a way no digest catches`,
+    );
+  }
+  // SH427 — said out loud, because "16 declared tokens and no stylesheet in the tree" is a state a
+  // reader will otherwise try to explain. It is also the note that says a diff against the source's
+  // CSS is not available here: there is no file, only a page.
+  if (sheets.length && sheets.every((sheet) => sheet.inline)) {
+    notes.push(
+      `every stylesheet read here is an inline <style> block (${sheets.length} page(s)) — critical `
+        + "CSS, which is what a single-page site does. The tokens are the page's own custom "
+        + "properties; there is no stylesheet file in the tree to diff a change against",
     );
   }
   if (unresolved.size) {

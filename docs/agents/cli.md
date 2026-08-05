@@ -221,6 +221,24 @@ are deduped — one decision on N pages, not N decisions), and the proposal now 
 candidate appears on **all** the pages read, with three as the floor: on two pages a hero is on both as
 well, and a hint that fires on every small capture is one a reviewer learns to ignore.
 
+**An inline stylesheet is a stylesheet (SH427).** `openviglet.github.io` declares its whole palette —
+sixteen custom properties — inside one `<style>` block and links **zero** external stylesheets, and
+`shio propose` over that capture emitted `theme: null`, `notes: []` and printed no theme section at
+all. That is the failure mode SH380 named and guarded one case of (a variant-only palette is *reported*
+rather than left silent, because silence reads as "this site declares no tokens"), reproduced with no
+guard and for the **strong** case: a declared custom property is the one SH380 calls genuinely
+editable, since the source's own CSS already says `var()` on it. Critical CSS in a `<style>` block is
+what a single-page marketing site does, so the commonest shape of the page a replication starts from was
+the shape whose theme was invisible. `stripNonMarkup` removes those blocks — right for building a tree,
+and exactly why the theme phase could not see them — so `styleBlocks` reads them from the markup
+`clone --markup` already stored: no request, no new extractor, one `styles` entry per page labelled
+`"/ <style>"`. **`url()` is the one thing that differs and is passed rather than assumed**: an inline
+block resolves against the *document*, while `/assets/css/site.css` resolves against its own directory
+— SH380's rule inverted, and getting it wrong names a file that does not exist. A `<style type>` that
+is not CSS is skipped rather than parsed as CSS, and when every sheet read was inline the theme says so:
+sixteen tokens with no stylesheet in the tree is a state a reader would otherwise try to explain, and
+there is no file to diff a change against.
+
 **The same command emits the theme as tokens *plus* CSS, never as CSS (SH380).** SH195 gave a `Theme`
 a `TOKENS` field so the commonest change — the accent colour, the type scale, the density — is a field
 edit rather than a stylesheet rewrite; a capture runs the other direction on the same argument, so

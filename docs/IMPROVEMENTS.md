@@ -1523,32 +1523,6 @@ references it yet.
 Invisible to `snapshot --against`, `digest` and `audit` — the replica looks perfect. The
 proof is a token edit that moves a render.
 
-### XVII.20 An inline stylesheet is a stylesheet (SH427)
-
-`openviglet.github.io` declares sixteen custom properties — `--bg`, `--brand`, `--text`,
-the whole palette — inside one `<style>` block, and links **zero** external stylesheets.
-`shio propose` over that capture emitted `theme: null`, `notes: []`, and printed no
-theme section whatsoever.
-
-That is the failure mode SH380 named and guarded one case of. It reports a variant-only
-palette rather than staying quiet, because silence there reads as "this site declares no
-tokens". Inline CSS produces exactly that silence with no guard, and it produces it for
-the *strong* case: a declared custom property is the one SH380 calls genuinely editable,
-since the source's own CSS already says `var()` on it.
-
-Critical CSS in a `<style>` block is not an edge case — it is what a single-page
-marketing site and every performance-tuned landing page does. So the commonest shape of
-the page a replication is most likely to start from is the shape whose theme is
-invisible.
-
-The bytes are already in hand. `clone --markup` stores the page's markup and `propose`
-reads it for candidates, so the `<style>` content needs no request and no new extractor;
-it is another entry in the `styles` list `buildTheme` already takes, with its own path
-label so the report can say where a token came from. Resolving `url()` is the one thing
-that differs: an inline block resolves against the *page*, not against a stylesheet's
-own directory, which is the inverse of SH380's rule and has to be passed rather than
-assumed.
-
 ### XVII.21 The DTCG path collision is self-inflicted (SH428)
 
 Run over `openviglet.github.io`'s palette, `dtcgFor` wrote nine of sixteen declared

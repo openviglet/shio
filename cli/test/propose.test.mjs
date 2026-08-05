@@ -634,6 +634,68 @@ test("a capture with stylesheets and no markup still yields a theme, not a refus
   assert.ok(proposal.theme.rows.length);
 });
 
+test("SH427: a palette declared in a <style> block is a theme, not silence", async () => {
+  // The measured case: openviglet.github.io declares sixteen custom properties inside one <style>
+  // block and links ZERO external stylesheets, and `shio propose` emitted `theme: null`, `notes: []`
+  // and printed no theme section at all. `stripNonMarkup` removes those blocks — right for building
+  // a tree, and the reason the theme phase could not see them. A declared custom property is the
+  // token SH380 calls genuinely editable, so this is the strong half of the theme, not a leftover.
+  const inline = `<html><head><style>
+      :root { --bg: #0b0f14; --brand: #35d07f; --text: #e6edf3 }
+      .hero { color: var(--text); background: var(--bg) url("img/hero.png") }
+    </style></head><body><main>
+      <section class=hero><h1>Shio</h1><p>An agent-native CMS.</p></section>
+    </main></body></html>`;
+  const ctx = ctxWith({
+    inventory: { ...inventoryFor(["/"]), assets: [{ path: "/img/hero.png", kind: "image", refs: 1, file: "Acme/img/hero.png" }] },
+    site: { "/": inline },
+  });
+
+  const { proposal } = await propose.run({}, [], ctx);
+
+  assert.ok(proposal.theme, "a theme at all, which is SH427");
+  const declared = proposal.theme.rows.filter((row) => row.source === "declared");
+  assert.equal(declared.length, 3, "the page's own custom properties, which the source already var()s");
+  assert.equal(proposal.theme.sheets.length, 1);
+  assert.equal(proposal.theme.sheets[0].inline, true);
+  assert.match(proposal.theme.sheets[0].path, /^\/ <style>$/, "labelled with the page it came from");
+  assert.ok(
+    proposal.theme.notes.some((note) => /every stylesheet read here is an inline <style> block/.test(note)),
+    "and the report says where the CSS was: 16 tokens with no stylesheet in the tree is a state a "
+      + "reader would otherwise try to explain",
+  );
+  assert.match(ctx.stdout.text, /^theme: 1 stylesheet\(s\)/m);
+});
+
+test("SH427: an inline url() resolves against the page, which is SH380's rule inverted", async () => {
+  // The one thing that differs from an external sheet, and the commonest defect in anything that
+  // touches CSS urls. `url(img/hero.png)` in a <style> block is /img/hero.png; the same text in
+  // /assets/css/site.css would be /assets/css/img/hero.png, which names a file that does not exist.
+  const inline = `<html><head><style>.hero { background: url("img/hero.png") }</style></head>`
+    + "<body><main><section class=hero><h1>Hi</h1><p>There</p></section></main></body></html>";
+  const ctx = ctxWith({
+    inventory: { ...inventoryFor(["/"]), assets: [{ path: "/img/hero.png", kind: "image", refs: 1, file: "Acme/img/hero.png" }] },
+    site: { "/": inline },
+  });
+
+  const { proposal } = await propose.run({}, [], ctx);
+
+  assert.equal(proposal.theme.urls.rewritten, 1, "resolved against the document and found in the map");
+  assert.deepEqual(proposal.theme.urls.unresolved, []);
+  assert.ok(proposal.theme.css.includes("Acme/img/hero.png"));
+});
+
+test("SH427: a <style type> that is not CSS is skipped rather than parsed as CSS", async () => {
+  const inline = '<html><head><style type="text/less">@brand: #35d07f; .hero { color: @brand }</style>'
+    + "</head><body><main><section class=hero><h1>Hi</h1><p>There</p></section></main></body></html>";
+  const ctx = ctxWith({ inventory: inventoryFor(["/"]), site: { "/": inline } });
+
+  const { proposal } = await propose.run({}, [], ctx);
+
+  assert.ok(!proposal.theme, "no sheet was read, so there is no theme to report — and guessing that "
+    + "a preprocessor dialect is CSS is how a token list stops meaning anything");
+});
+
 test("neither markup nor a stylesheet is what the refusal is about, and it names both flags", async () => {
   // The failure this message exists for: an empty proposal reads as "this site has no convertible
   // blocks and no theme", which is a statement about the *site* rather than about the capture.
