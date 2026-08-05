@@ -179,6 +179,7 @@
 - **SH440** — Every non-zero exit goes through exit.mjs, which closes undici's dispatcher slots first: 1 instead of 0xC0000409, in 79ms not 4082, and a lint holds it to one call site.
 - **SH444** — playwright, pixelmatch and pngjs are root devDependencies, so both consumers resolve them by the same upward walk; a lint pins the placement and the comparator finally has coverage.
 - **SH445** — finish disarms and returns instead of calling process.exit, whose pending piped stdout write was the abort; an unref'd watchdog covers a loop held elsewhere and the stub now fails first.
+- **SH448** — A conformance suite under cli/conformance/, opt-in by its own glob and needing a running instance: two scenarios (replication from a node:http fixture through convert, pull and verify to npm install --dry-run on what init wrote; native render from render.provision to /preview answering 200 with sh-region and the data-shio-* markers), nothing injected, an unreachable instance a failure rather than a skip, its own site seeded and removed, and every assertion naming the task it would have caught. Its first run found SH453 and SH454, and it is red on SH446 by design.
 
 ### Block I follow-up
 

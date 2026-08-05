@@ -23,6 +23,27 @@ to test it (every function in it *is* DOM behaviour, and evaluating it from the 
 the no-script-engine non-goal). **These do not run under `./mvnw test`** — the Maven gate is Java only,
 so a rule that must never regress silently also belongs in `ShEditorBridgeTest` as a textual guard.
 Running the JS suite in CI is SH241/SH284's open work.
+**The conformance suite is a second glob, and the glob is the opt-in (SH448).**
+`cli/conformance/*.conformance.mjs` — run with `pnpm conformance` at the root (or
+`pnpm --filter @viglet/shio run conformance`), never by `pnpm test`, because it needs a
+**running instance** and the npm registry. It reads `SHIO_URL`/`SHIO_USER`/`SHIO_PASSWORD`
+the way the CLI does (defaults `http://localhost:2710`, `admin`/`admin`), seeds a
+`ShioConf…` site per run and removes it in `after`; `SHIO_CONFORMANCE_KEEP=1` leaves it for
+inspection. Two scenarios: **replication** (a `node:http` fixture → `clone` → `propose
+--accept` → `convert` into the instance → `content-pull` back → `verify` → `npm install
+--dry-run` on what `init` wrote) and **native render** (`render.provision` → post-type →
+site binding → posts → `/preview/<site>/` answers 200 carrying `sh-region`,
+`data-shio-region`, `data-shio-region-missing` and `data-shio-prop`).
+
+Three rules it exists under, and each is the reason a defect shipped:
+- **An unreachable instance is a failure, never a skip.** `requireInstance` throws with the
+  command that fixes it. The precedent is `ShPostgresSchemaIT` reporting `0.00 s / Skipped`
+  without Docker while a reader concludes the schema was proved.
+- **Nothing is injected.** Real sockets, real `fetch`, real npm — SH438, SH442 and SH446 all
+  passed under SH422 precisely because it substitutes those three.
+- **Every assertion names the task it would have caught**, so the file reads as the record of
+  what a unit test structurally cannot see. On its first run it found SH453 and SH454.
+
 Native build scripts are allowlisted via `onlyBuiltDependencies` in
 `pnpm-workspace.yaml` (`esbuild`, `@tailwindcss/oxide`) — pnpm 11 no longer reads
 the `pnpm` field in `package.json`, so this setting lives in the workspace file.

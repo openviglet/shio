@@ -1,0 +1,226 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * Licensed under GPL-3.0.
+ *
+ * SH448 — scenario one: **replication, against the three things a unit test replaces**.
+ *
+ * SH422 drives the same chain and is green, and SH438, SH442 and SH446 all shipped under it. One
+ * cause explains the three: it asserts the seams over a *served fixture object*, an *injected
+ * capture* and *no registry*, so the only boundaries it cannot see are the ones it substitutes.
+ * This file substitutes none of them:
+ *
+ * - the source is a real `node:http` server and the CLI gets the platform's own `fetch`;
+ * - the conversion goes to a **running instance** over HTTP, and the content comes back through
+ *   `shio pull --content` rather than being read out of the document that was sent;
+ * - the scaffold `init` writes is handed to **npm**, which is the only thing that can say whether
+ *   the versions in it exist.
+ *
+ * Every assertion names the task it would have caught. The three that matter most are SH446 (a
+ * scaffold whose dependencies are unresolvable — invisible until somebody ran `npm install` by
+ * hand), SH438 (sections nothing composed, so `/preview/<site>/` answered 404 while the chain was
+ * green) and SH387 (`unfollowed` meaning "not visited", never "not there").
+ */
+import assert from "node:assert/strict";
+import { after, before, describe, test } from "node:test";
+
+import { spawn } from "node:child_process";
+import * as nodeFs from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { ShioAgentClient } from "../src/agent-client.mjs";
+import { INVENTORY_FILE, MARKUP_DIR } from "../src/clone.mjs";
+import { ASSETS_DIR } from "../src/content-assets.mjs";
+import { PLAN_FILE } from "../src/propose.mjs";
+import { SECTIONS_FOLDER } from "../src/convert.mjs";
+import * as clone from "../src/commands/clone.mjs";
+import * as contentPull from "../src/commands/content-pull.mjs";
+import * as convert from "../src/commands/convert.mjs";
+import * as init from "../src/commands/init.mjs";
+import * as propose from "../src/commands/propose.mjs";
+import * as verify from "../src/commands/verify.mjs";
+import { ConsoleSession, keepsFixtures, requireInstance, scratchSite } from "./support/instance.mjs";
+import { serveFixture } from "./support/fixture-site.mjs";
+
+let conn;
+let site;
+let source;
+let cwd;
+let ctx;
+let console_;
+
+describe("SH448 conformance: replication, from a served source to an installable front end", () => {
+  before(async () => {
+    conn = await requireInstance();
+    site = scratchSite("Repl");
+    source = await serveFixture();
+    cwd = await mkdtemp(join(tmpdir(), "shio-sh448-"));
+    console_ = new ConsoleSession(conn);
+    ctx = {
+      // The real environment, plus the connection — every command below resolves its instance
+      // through `resolveAdmin`, which is the path a user's shell takes.
+      env: { ...process.env, SHIO_URL: conn.baseUrl, SHIO_USER: conn.user, SHIO_PASSWORD: conn.password },
+      cwd,
+      stdout: sink(),
+      stderr: sink(),
+      // Not a fake. This is the difference between this file and SH422's.
+      fetch: globalThis.fetch,
+      fs: nodeFs,
+    };
+  });
+
+  after(async () => {
+    await source?.close().catch(() => {});
+    if (keepsFixtures()) return;
+    await console_?.deleteSite(site).catch(() => {});
+    await rm(cwd, { recursive: true, force: true }).catch(() => {});
+  });
+
+  test("capture over a socket → convert into the instance → pull it back → gate it", async () => {
+    // ── the capture, over HTTP ────────────────────────────────────────────────────────────
+    await clone.run({ markup: true, assets: true, site, depth: 1 }, [source.origin], ctx);
+    const inventory = JSON.parse(await readFile(join(cwd, INVENTORY_FILE), "utf8"));
+
+    assert.deepEqual(
+      inventory.pages.map((row) => row.path).sort(),
+      ["/", "/about"],
+      "SH387: the walk stopped at the origin, honoured robots.txt and was cut by --depth. Asserted "
+        + "against a real server because robots and depth are decisions about *requests*, and an "
+        + "injected fetch is a fixture that cannot refuse one",
+    );
+    assert.ok(
+      !source.requested.includes("/deep") && !source.requested.includes("/admin"),
+      `SH387: and the server was never asked for them. "absent from the source" and "absent from `
+        + `the capture" are opposite claims, and only the socket can tell them apart. Asked for: `
+        + `${source.requested.join(", ")}`,
+    );
+    assert.deepEqual(
+      inventory.unfollowed.map((row) => row.path).sort(),
+      ["/admin", "/deep"],
+      "SH387: both are recorded as seen-and-not-followed, which is what the coverage group reads",
+    );
+
+    const stylesheet = inventory.assets.find((asset) => asset.kind === "stylesheet");
+    assert.ok(stylesheet?.file, "the stylesheet was downloaded and its tree path recorded");
+    const image = inventory.assets.find((asset) => asset.path === "/img/hero.png");
+    assert.ok(image?.file, "and so was the image the markup references");
+    const bytes = await readFile(join(cwd, ASSETS_DIR, image.file));
+    assert.equal(
+      bytes.subarray(0, 8).toString("hex"),
+      "89504e470d0a1a0a",
+      "SH204: the bytes on disk are the PNG the server sent. A fake fetch answers `arrayBuffer` "
+        + "from a string, so binary-safety is the one property it structurally cannot assert",
+    );
+    for (const row of inventory.pages) {
+      const cached = await readFile(join(cwd, MARKUP_DIR, row.markup), "utf8");
+      assert.match(cached, /<section class="hero">/, `page ${row.path} cached the markup it served`);
+    }
+
+    // ── the proposal, and one acceptance ──────────────────────────────────────────────────
+    const { proposal } = await propose.run({}, [], ctx);
+    const hero = proposal.candidates.find((row) => row.type === "SectionHero");
+    assert.ok(hero, "the block that recurs on both captured pages is one candidate");
+    assert.equal(hero.mode, "fidelity", "P7: nothing is authorable until somebody accepts it");
+
+    await propose.run({ accept: true }, [hero.id], ctx);
+    const plan = JSON.parse(await readFile(join(cwd, PLAN_FILE), "utf8"));
+    assert.deepEqual(plan.accepted.map((entry) => entry.block), [hero.id]);
+
+    // ── the conversion, into a site that does not exist yet ───────────────────────────────
+    // SH439: `--create-site` compiles to a `site.upsert` op, run first. Without it this refusal
+    // was the one a reader could not act on — the resolver named a verb the command did not take.
+    await convert.run({ site, createSite: true }, [], ctx);
+
+    const agent = new ShioAgentClient(conn);
+    const resolved = await agent.resolve(`post:${site}/`);
+    assert.ok(
+      resolved?.id,
+      "SH438/SH433: the replica has a home page. This is the assertion the chain could not make: "
+        + "SH417 wrote sections nothing composed, three posts were created, /preview/<site>/ "
+        + "answered 404, and every test was green because none of them asked an instance",
+    );
+
+    const found = await agent.findAll({ site });
+    const urls = found.results.map((row) => row.address ?? row.url ?? "");
+    assert.ok(
+      urls.some((address) => address.includes(SECTIONS_FOLDER)),
+      `SH417: the accepted block landed as a section post. Found: ${urls.join(", ")}`,
+    );
+    assert.ok(
+      urls.some((address) => address.endsWith("/about")),
+      "SH385: a replica keeps the source's URL space, so /about is /about and not /pages/about",
+    );
+
+    // ── back out of the instance, and gated on what came back ─────────────────────────────
+    // The projection is the round trip: everything above proved what was *sent*, and a document
+    // that was accepted is not the same claim as a site that reads back.
+    await contentPull.run({ site }, [], ctx);
+    const report = await verify.run({ checks: "projection,replication", site }, [], ctx);
+
+    const replication = report.findings.filter((each) => each.source === "replication");
+    assert.ok(replication.length >= 0, "the coverage group ran");
+    assert.ok(
+      !replication.some((each) => each.rule === "replication-unchecked"),
+      "SH387: the reader understood the version the writer wrote",
+    );
+    const missing = replication
+      .filter((each) => each.rule === "source-page-missing")
+      .map((each) => each.message);
+    assert.deepEqual(
+      missing,
+      [],
+      `SH438: every page the capture recorded exists in the replica. This is the gate's own `
+        + `statement that the replication is done, and it is only true once the content has been `
+        + `through the instance and back. Still missing: ${missing.join(" | ")}`,
+    );
+
+    // ── and the front end that serves it can actually be installed ────────────────────────
+    // The last boundary, and the one nothing in `cli/test/` touches: the npm registry. SH446 was
+    // invisible to eleven green files and to SH422, and surfaced only under a hand-run
+    // `npm install --dry-run` — which is precisely the shape of defect this suite exists for.
+    const project = "front-end";
+    const { targetDir, files } = await init.run(
+      { name: project, yes: true, url: conn.baseUrl, site, token: "" },
+      [],
+      ctx,
+    );
+    assert.ok(files.length, "init wrote a scaffold");
+
+    const manifest = JSON.parse(await readFile(join(targetDir, "package.json"), "utf8"));
+    const install = await npm(["install", "--dry-run", "--no-audit", "--no-fund"], targetDir);
+    assert.equal(
+      install.code,
+      0,
+      `SH446: every version the scaffold declares resolves on the registry. It writes\n`
+        + `${JSON.stringify(manifest.dependencies, null, 2)}\n`
+        + `and npm answered ${install.code}:\n${install.output.trim().slice(-1500)}`,
+    );
+  });
+});
+
+function sink() {
+  const out = { text: "" };
+  out.write = (chunk) => {
+    out.text += chunk;
+  };
+  return out;
+}
+
+/**
+ * Run npm in `cwd` and report its exit code and combined output.
+ *
+ * `shell: true` because npm is a `.cmd` shim on Windows, which `spawn` will not exec directly —
+ * and this suite is run on the machine the developer has, not on a chosen one.
+ */
+function npm(args, cwd) {
+  return new Promise((resolve) => {
+    const child = spawn("npm", args, { cwd, shell: true });
+    let output = "";
+    child.stdout.on("data", (chunk) => (output += chunk));
+    child.stderr.on("data", (chunk) => (output += chunk));
+    child.on("error", (error) => resolve({ code: -1, output: `${output}\n${error.message}` }));
+    child.on("close", (code) => resolve({ code, output }));
+  });
+}

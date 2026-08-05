@@ -12,6 +12,7 @@
 ## Block H — The Agent Gateway (MCP + agent-shaped protocol)
 
 - 📋 **SH413** (deps: SH84 ✅) **Turning indexing on leaves the content that is already published unfindable** — SH84 indexes on publish, so an instance that switches Turing on indexes nothing until every post happens to be republished, and nothing says so. → §VIII.16
+- 📋 **SH453** (deps: SH448 ✅) **site.upsert silently drops the postTypeLayout it is given when it creates the site** — The create branch reads description/url/furl only and answers CREATE - a blank site; the binding is written by the fill branch, which a create never reaches, so /preview refuses later. → §VIII.21
 
 ## Block K — Perception & verification loop
 
@@ -23,7 +24,6 @@
 - 💭 **SH209** (deps: SH102 ✅) **`shio snapshot` photographs one page per run** — The useful artifact for a handoff is the set of a site's pages, and the command captures one page per run. → §IX.10
 - 📋 **SH397** (deps: SH295 ✅, SH325 ✅) **A dev instance reports its version as dev, so a stale server reads as a code defect** — The build stamp comes from the jar manifest, which is absent in the one mode where the running instance can lag the working tree, and nothing composes the readiness facts. → §IX.12
 - 📋 **SH423** (deps: SH347 ✅) **The test-context budget is a ceiling nobody sees approaching** — ShContextCacheHeadroomTest fails once 64 is crossed and nothing says a task is spending one, so eleven tasks took the count from 38 to 44 with no moment anybody was asked. → §VIII.20
-- 📋 **SH448** (deps: SH422 ✅) **The suite asserts composition, so every defect at the live boundary ships** — SH422 drives the chain over fixtures and SH438, SH442 and SH446 passed under it; no test hands a URL to a browser or installs from npm, and one abort was fixed three times against a harness. → §IX.23
 - 📋 **SH450** (deps: SH442 ✅) **The visual gate photographs a 401 and scores it as a 100% difference** — The preview's 401 carries no WWW-Authenticate, so playwright's httpCredentials never answers a challenge, and no test starts a browser to notice. → §IX.24
 
 ## Block I — Content as files (local-first authoring)
@@ -70,6 +70,7 @@
 - 💭 **SH243** (deps: SH55 ✅, SH202 ✅) **A trashed post still holds its friendly URL, and nothing knows it** — Every free-URL check reads through @SQLRestriction, so the trash is invisible to it and an untrashed post can collide with the name its own copy took. → §XVI.3
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4
 - 💭 **SH245** (deps: SH139 ✅, SH202 ✅, SH203 ✅) **Make "one writer per verb" a lint, not an expectation** — Four times the console's copy of a shared verb was the careless one, and the rule that would have caught all four is stated in agents.md and enforced nowhere. → §XVI.5
+- 📋 **SH454** (deps: SH448 ✅) **Deleting a site that holds a single post answers a body-less 500** — ShSite cascades to its folders and nothing cascades to its posts, so the folder delete trips the sh_post_unified FK; trashing first does not help, since trash keeps the row. → §XVI.69
 
 ## Block P — The visible site (what the human actually looks at)
 

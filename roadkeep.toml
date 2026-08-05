@@ -31,15 +31,21 @@ ref_scheme = "outline"
 # is not their filing order. A spent entry is deleted — a consumed queue left in place is one
 # `pick` keeps answering with.
 #
-# The eight below are the second run, and one rule orders them: **a replica has to be visible
+# The eight below were the second run, and one rule ordered them: **a replica has to be visible
 # before anything about it can be checked.** So the writer that turns a capture into a
 # renderable site comes first (SH449), then the bytes its stylesheet asks for (SH452), then the
 # public route that serves the result anonymously (SH451) and the delivery of those bytes at
 # the path the source chose (SH437) — which needs the site-and-path resolution SH451 builds and
 # touches the same security config, so it cannot go beside it. Only then is there an anonymous,
 # complete page to photograph, which is what SH450's visual gate has been missing. The two that
-# depend on nothing (SH447, SH446) sit late because they cost the replica nothing, and the
-# conformance suite is last (SH448): written earlier it would assert the broken state.
+# depend on nothing (SH447, SH446) sit late because they cost the replica nothing.
+#
+# **SH448 was last here and was run first, on instruction, and the note above predicted what
+# that costs**: the conformance suite it delivers is red on SH446 — a scaffold whose dependency
+# versions do not exist — because that task has not shipped yet. Deliberate rather than a
+# regression, and it is the SH338 order (the instrument precedes the fixes) rather than this
+# one; the run turns green as SH446 lands. What it also did is find SH453 and SH454 on its
+# first execution, seven tasks earlier than the queue below would have.
 priority = [
   "SH449",
   "SH452",
@@ -48,7 +54,6 @@ priority = [
   "SH450",
   "SH447",
   "SH446",
-  "SH448",
   "Block P",
   "Block H",
   "Block K",

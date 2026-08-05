@@ -217,6 +217,30 @@ these isolate only because a fixture writes instance-wide post-types, which is S
 real reason. A shared context with per-test site scoping would need no slot at all, and
 the tasks that cannot have it would then be the exception rather than the habit.
 
+### VIII.21 An op that reports CREATE and applies half of what it was sent (SH453)
+
+Found by SH448's conformance suite on its first run, which is the argument for that
+task: the shape is invisible to a unit test because both halves are individually
+correct.
+
+`site.upsert` has two branches. On a site that exists it delegates to
+`ShSiteWriteService.fillEmpty`, which takes the requested fields **and** the SH328
+bindings. On a site that does not, it builds a payload from `description`, `url` and
+`furl`, calls `createBlank`, and reports `CREATE — a blank site`. `data.postTypeLayout`
+is read by the first branch and by nothing in the second, so a caller that creates a
+site and binds its layout in one op is told the op succeeded and gets no binding.
+
+The failure surfaces nowhere near the cause. The next thing to read the binding is
+`ShPageRenderService`, so the caller sees a 400 from `/preview/<site>/` — `Site '…'
+binds no layout for post-type '…'` — after four more successful writes. That message is
+a good one (P6), and it answers a question about the wrong step.
+
+Two ways to close it, and the choice is the task. Either the create branch applies the
+bindings it was handed, which makes one op mean one intention; or it **refuses** a
+create carrying data it will not apply, the SH320 rule about a value the server cannot
+honour. What it must not keep doing is the third thing — take the data and say nothing,
+which is P7's surprise on the one edge that decides whether a site renders at all.
+
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
 > The agent cannot see. Two of the three human round trips in a typical build existed only
@@ -373,31 +397,6 @@ authenticate, is the content tree in sync (`push --content --check`), which site
 Every fact already has a reader; nothing composes them, so the first minutes of a
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
-
-### IX.23 A conformance suite is the instrument this session argues for (SH448)
-
-Every defect this session found was invisible to the suite, and one cause explains all:
-the tests assert composition, and the defects live where the code meets a live instance
-and a real registry.
-
-SH422 already drives clone → propose → accept → verify, and SH438, SH442 and SH446
-passed under it, because it asserts the seams over a served fixture. `snapshot.test.mjs`
-injects its capture, so no test hands a URL to a browser — SH442 shipped with fixtures
-encoding two of the three states a site URL has. Nothing installs from npm, so SH446,
-the scaffold `init` writes being unresolvable, surfaced only under a hand-run `npm
-install --dry-run`. And SH434, SH440 and SH445 are one abort fixed three times, each
-measured against a harness, not the failing command.
-
-So the instrument is a **conformance suite against a running instance**, asserting
-observable outcomes rather than internals, in two scenarios: replication (capture a
-fixture, convert, gate it, install what `init` writes) and native render (provision the
-model, build layout, region, theme and a post-type, then assert `/preview/` answers 200
-and the DOM carries `sh-region` and the `data-shio-*` markers SH185 specifies).
-
-It is opt-in the way the ITs are — it needs an instance, so `clean test` must not invoke
-it — and it seeds and deletes its own site, the answer to what a hand-driven run leaves
-behind. Each assertion names the task it would have caught, so the suite reads as the
-record of what unit tests structurally cannot see.
 
 ### IX.24 A screenshot of an error is not a comparison (SH450)
 
@@ -1453,6 +1452,31 @@ Six guards invert rather than drop: anonymous, **PUBLISHED** never draft, no ban
 cacheable, indexable, and links rewritten into the public space — SH336 pointed the
 other way. It makes `renderer.md`'s "production delivery is Next.js" a choice between
 two; no non-goal forbids it.
+
+### XVI.69 The console's delete button is broken for every site worth deleting (SH454)
+
+The second thing SH448's suite found, and it found it in its own teardown — the run
+needed to remove the site it had seeded, and could not.
+
+`ShSiteWriteService.delete` calls `shSiteRepository.delete(site)` with a comment
+explaining that an entity delete is used so the cascade reaches the folders through
+`ShSite#shFolders`. It does. Nothing reaches the **posts**, which hold
+`sh_post_unified.folder_id`, so Hibernate orders a folder delete against rows that still
+reference it and H2 answers `Referential integrity constraint violation`. The controller
+catches nothing, so the caller gets a 500 with a Spring default body — SH189's defect,
+on the console's most destructive button. Only an empty site deletes, which is the one
+nobody deletes.
+
+Trashing the posts first is the obvious workaround and does not work: trash is a flag on
+the row, the FK is still there, and the 500 is identical.
+
+The verb that already gets this right is `ShFolderWriteService#purge`, whose comments
+record the same ordering problem being solved once: trash what is live, purge what is
+trashed, flush and clear so Hibernate does not reorder, then let the folder cascade run.
+So this is SH245's shape — one writer per verb — rather than new logic: the site delete
+should go through that path for its root folder instead of assuming a cascade that was
+never wired. The conformance harness does exactly that in three calls, which is the
+workaround standing in for the fix and the reason the deletion is checkable at all.
 
 # Part 2 — pre-existing sections
 
