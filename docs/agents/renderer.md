@@ -155,6 +155,34 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   most of the work** — frames, `this`/`./`/`../`, data variables, subexpressions, literals, partials,
   comments, a block's own name, an inline helper's name and every row value, with `{{~TEXT~}}` the
   one its own test caught being dropped. A reference *not* reported is the quiet failure direction.
+- **A layout's `<head>` is lintable from the stored HTML, and answering SH388's open question is what
+  made it cheap.** The task was filed as an *idea* asking whether these are `verify` findings at all or
+  belong to the delivery layer that owns the head in production (P10). **Both readings were about the
+  wrong subject**: the head a *visitor* receives is composed by the front end over the CDA and Shio does
+  not own it — but every defect the task named is a property of the **layout**, which is content Shio
+  stores. So it is a template lint and says nothing about production. That reframing also deleted the
+  expensive half: the idea proposed comparing *rendered* heads across a site, which is the per-page cost
+  SH312/SH384 measured and which reports the **symptom** (sixty pages sharing one description) sixty
+  times. The **cause** is one line of one layout and needs **no render at all** — a `<title>` that
+  interpolates nothing has the same value on every page bound to it *by construction*. One text scan of
+  a field already in hand, one finding, and the page count in the message rather than the count (SH280's
+  shape). The evidence for the claim is the test: `ShHeadConventionsTest` is a plain unit test with no
+  context, no database and no fixture, running in under a second — a head check that needed a running
+  instance would mean the cheap version had not been found. Seven rules, and **two are errors** because
+  they are provably wrong rather than a matter of taste: a **relative `og:image`** (a crawler resolves it
+  against *its* origin, so the tag renders perfectly and the card is blank — `site.baseUrl` from SH337
+  exists for exactly this) and a **`noindex`** (what a preview-shaped conversion carries over, and the
+  preview route already sends `X-Robots-Tag: noindex` on every response, so the tag in the markup buys
+  nothing and costs the live site). The five warnings — static/absent title, static/absent description,
+  absent canonical — are warnings because a one-page site legitimately has one of each. Three silences
+  are decisions: a layout with **no `<head>` at all** yields nothing (a fragment or a deliberately
+  headless template, and reporting every absent convention would bury the layouts that have a head and
+  get it wrong); a layout **nothing renders through** is skipped, because `unused-layout` is already that
+  finding; and an `og:image` this scanner **cannot judge** (`{{OG_IMAGE}}`, or anything starting with an
+  expression) is left alone rather than guessed at. The interpolation test is deliberately generous —
+  any `{{…}}`, including a block — because the claim is narrow: *this value cannot differ between two
+  pages*. A layout that varies its title some way the scanner cannot see is a false positive, which is
+  why those five are warnings.
 - **A `Redirect` is the fourth render system post-type, and its friendly URL *is* the path it answers
   (SH385)** — a replication that renames a path breaks every link into it (search results, other
   people's pages, a decade of email), and the map from source URL to replica address existed at exactly

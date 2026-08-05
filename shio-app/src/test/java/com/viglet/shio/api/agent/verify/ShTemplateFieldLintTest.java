@@ -34,6 +34,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.model.widget.ShWidget;
 import com.viglet.shio.post.type.ShSystemPostType;
+import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.render.ShTemplateEngine;
 import com.viglet.shio.widget.ShSystemWidget;
 
@@ -369,5 +370,30 @@ class ShTemplateFieldLintTest {
                     .append('"');
         }
         return sb.append('}').toString();
+    }
+
+    @Test
+    @DisplayName("SH388: the head rules reach the report against the LAYOUT, with its page count")
+    void headConventionsReachTheReport() {
+        // This fixture's layout has a head with an interpolated title and nothing else: no
+        // description, no canonical. Both are warnings, and the value of this assertion is the
+        // *wiring* — the scanner itself is pinned by ShHeadConventionsTest with no context at all.
+        List<ShAgentReport.Finding> head = verifyService.verify(siteName, "content", 200).findings()
+                .stream()
+                .filter(finding -> finding.rule().startsWith("head-"))
+                .toList();
+
+        assertThat(head).extracting(ShAgentReport.Finding::rule)
+                .as("the fixture layout interpolates its title and emits neither of the other two")
+                .containsExactlyInAnyOrder("head-no-canonical", "head-no-description");
+        assertThat(head).allSatisfy(finding -> {
+            assertThat(finding.address())
+                    .as("against the layout, which is the post an author edits - not once per page")
+                    .isEqualTo("post:" + siteName + "/layout");
+            assertThat(finding.field()).isEqualTo(ShSystemPostTypeAttr.HTML);
+            assertThat(finding.message())
+                    .as("the page count is what makes a warning actionable (SH280's shape)")
+                    .contains("page(s) render through it");
+        });
     }
 }

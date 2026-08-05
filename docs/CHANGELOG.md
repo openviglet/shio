@@ -912,6 +912,7 @@
 - **SH385** — A Redirect post whose friendly URL is the path it answers, honoured by the preview, plus a lint for a source URL the replica abandons.
 - **SH386** — shio snapshot --against captures replica and original in one run per width, keeps the source image as a reviewable baseline, and exits non-zero on a difference.
 - **SH387** — A server-free replication check group scores the capture against the tree in five rules, and names everything it could not check rather than counting it clean.
+- **SH388** — A layout's head is linted from its stored HTML with no render: a static title or description, an absent canonical, a relative og:image and a noindex.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

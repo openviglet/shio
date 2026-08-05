@@ -536,6 +536,92 @@ public class ShAgentVerifyService {
         missingThemes(check, scan, findings);
         unpublishedTemplates(check, scan, findings);
         redirectTargets(check, scan, findings);
+        headConventions(check, scan, findings);
+    }
+
+    /**
+     * SH388 — a {@code PageLayout}'s {@code <head>}, read off the stored HTML.
+     *
+     * <h2>The design question the task was filed on, and why the answer changed the shape</h2>
+     *
+     * <p>SH388 asked whether these are {@code verify} findings at all or the delivery layer's (P10).
+     * Both readings were about the wrong subject: the head a <em>visitor</em> receives is composed by
+     * the front end over the CDA, which Shio does not own — but every defect the task named is a
+     * property of the <b>layout</b>, which is content Shio stores. So it is a template lint, and it
+     * says nothing about production.</p>
+     *
+     * <p>That also made the expensive design unnecessary. The idea proposed comparing <em>rendered</em>
+     * heads across a site, which is the per-page cost SH312 and SH384 measured and which reports the
+     * symptom — sixty pages sharing one description — sixty times. The cause is one line of one layout
+     * and needs no render: a {@code <title>} that interpolates nothing has the same value on every page
+     * bound to it, <b>by construction</b>. One scan of a field already in hand, one finding, and the
+     * page count in the message rather than in the count — SH280's shape, for its reason.</p>
+     *
+     * <h2>The count is what makes a warning actionable</h2>
+     *
+     * <p>"This layout has a static title" is a fact; "and 63 published pages render through it" is the
+     * reason to care. {@code impactOf} already computes it (SH193/SH288) from the graph this pass has
+     * built anyway, so it costs nothing here — and a layout <b>nothing</b> renders through is skipped
+     * entirely, because {@code unused-layout} is already the finding for that and a head defect on a
+     * template in progress is not one.</p>
+     */
+    private void headConventions(String check, Scan scan, List<Finding> findings) {
+        for (ShPostUnified post : scan.posts()) {
+            String typeName = post.getShPostType() == null ? null : post.getShPostType().getName();
+            if (!ShSystemPostType.PAGE_LAYOUT.equals(typeName)) {
+                continue;
+            }
+            String html = fieldValue(post, ShSystemPostTypeAttr.HTML);
+            List<ShHeadConventions.Finding> head = ShHeadConventions.of(html);
+            if (head.isEmpty()) {
+                continue;
+            }
+            var impact = templateGraph.impactOf(post);
+            if (impact.isEmpty() || !impact.get().isUsed()) {
+                // Nothing renders through it, so `unused-layout` is the finding and this would be a
+                // second one about the same unfinished template.
+                continue;
+            }
+            int pages = impact.get().pages();
+            for (ShHeadConventions.Finding found : head) {
+                String message = "This layout's <head> " + found.detail() + ", and " + pages
+                        + " page(s) render through it — so the defect is site-wide while every page "
+                        + "renders perfectly.";
+                findings.add(found.error()
+                        ? Finding.error(check, found.rule(), address(post),
+                                ShSystemPostTypeAttr.HTML, message, headFix(found.rule()))
+                        : Finding.warning(check, found.rule(), address(post),
+                                ShSystemPostTypeAttr.HTML, message, headFix(found.rule())));
+            }
+        }
+    }
+
+    /** What to do about one head rule — the model already carries what each of them needs (SH337). */
+    private String headFix(String rule) {
+        return switch (rule) {
+            case "head-static-title" -> "Interpolate the page's own title: `<title>{{post.title}}"
+                    + " — {{site.name}}</title>`. A warning rather than an error because a one-page "
+                    + "site legitimately has one title.";
+            case "head-no-title" -> "Add `<title>{{post.title}}</title>`. A page with no title is "
+                    + "one nothing can list, link or search for.";
+            case "head-static-description" -> "Interpolate it: `<meta name=\"description\" "
+                    + "content=\"{{post.summary}}\">`. Sixty pages sharing one description is the "
+                    + "defect a conversion produces by writing the head once.";
+            case "head-no-description" -> "Add `<meta name=\"description\" "
+                    + "content=\"{{post.summary}}\">`, which is the field SH183 puts on every row.";
+            case "head-no-canonical" -> "Add `<link rel=\"canonical\" href=\"{{post.canonical}}\">`. "
+                    + "SH337 put that value on the model precisely because a template cannot compose "
+                    + "it: a friendly URL is not guaranteed to lead with a slash.";
+            case "head-relative-og-image" -> "Make it absolute with `{{site.baseUrl}}`. A crawler "
+                    + "resolves a relative og:image against ITS own origin, so the tag renders "
+                    + "perfectly and the card is blank — which is why this is an error.";
+            case "head-noindex" -> "Remove it. A noindex carried over from a preview-shaped "
+                    + "conversion makes the whole site invisible, which is why this is an error. Note "
+                    + "that the preview route already sends `X-Robots-Tag: noindex` on every response, "
+                    + "so a draft is not indexable whatever the layout says — the tag in the markup "
+                    + "buys nothing and costs the live site.";
+            default -> "See ShHeadConventions for what this rule checks.";
+        };
     }
 
     /**

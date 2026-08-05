@@ -1383,25 +1383,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.12 The head is the part of a replica a human notices last and a crawler notices first (SH388)
-
-SH337 supplied the two facts a head needs that a template cannot compose —
-`post.canonical` and `site.baseUrl` — and everything else is left to the layout,
-correctly: a `<meta>` tag is markup, and markup is content. What is missing is not a
-feature but an **instrument**. A replica is where this bites, because the conversion
-writes the head once and repeats it across every page, so one copied description or a
-missing `og:image` becomes a site-wide defect that renders perfectly.
-
-The cheap version is `verify` rules over the rendered page the instance can already
-produce: a duplicate `<title>` or description within a site, an absent canonical, an
-`og:image` that is a relative path (which is the one that silently fails off-origin),
-and a `robots` `noindex` on a published page — the last being the mistake a
-preview-shaped conversion is most likely to carry over.
-
-Filed as an idea rather than designed, because the honest first question is whether
-these are `verify` findings at all or belong to the delivery layer that owns the head in
-production (P10). The `og:image` case argues for `verify`: it is provable from content.
-
 ### XVII.13 Consent before analytics is an ordering no per-layout copy can guarantee (SH389)
 
 Every real site carries three or four scripts that belong to the *site*: a consent

@@ -76,7 +76,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 💭 **SH388** (deps: SH337 ✅) **A page's head is markup nobody checks** — Title, description, og and canonical tags are template freedom with no convention and no lint, so sixty replica pages can share one description and verify stays green. → §XVII.12
 - 💭 **SH389** (deps: SH183 ✅, SH248 ✅) **A site-wide script is copied into every layout** — Consent, analytics and chat belong to the site and the only slots are a layout's or a theme's own fields, so a replica repeats them per layout and their order is per copy. → §XVII.13
 - 💭 **SH390** (deps: SH145 ✅, SH210 ✅) **One asset, one size** — file_url yields a single path, so no template can emit a srcset and a replica ships the desktop image to a phone where the original it is being compared against does not. → §XVII.14
 
