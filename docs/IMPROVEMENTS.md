@@ -1433,26 +1433,26 @@ production, Next.js over the CDA, cannot install (SH446). So the renderer compos
 correct page nobody outside the console can read.
 
 **The route is recoverable, not designed from memory.** Branch `0.3.8` carries it in
-`com.viglet.shio.website`: `ShSitesContext` maps `GET /sites/**` and `ShSitesContextURLProcess`
-splits the path by position —
+`com.viglet.shio.website`: `ShSitesContext` maps `GET /sites/**` and `ShSitesContextURLProcess` splits
+the path by position —
 
     /sites/<site-furl>/<format>/<locale>/<content-path…>
 
-`contexts[2]` is the site, resolved by `findByFurl`; `[3]` the format; `[4]` the locale.
-The defaults it builds are `default` and `en-us`, so `/sites/fidelidade/default/en-us/`
-is a home page. Two variants ship with it: `x-sh-site` names the site as a header and
-the URL carries only the content path, which is how one host serves one site;
-`sh-format` overrides the format segment per request.
+`contexts[2]` is the site, resolved by `findByFurl`; `[3]` the format; `[4]` the locale,
+defaulting to `default` and `en-us`. So `/sites/fidelidade/default/en-us/` is a home
+page. Two variants ship with it: `x-sh-site` names the site as a header so the URL
+carries only the content path, which is how one host serves one site; `sh-format`
+overrides the format segment.
 
-Six things must differ from `/preview`, each a guard deliberately inverted rather than
-dropped: anonymous instead of authenticated; **PUBLISHED**, never the draft; no banner;
-cacheable instead of `no-store`; indexable instead of `noindex`; and links rewritten
-into the public space, SH336's rewrite pointed the other way. 0.3.8 also gates per page
-— `isPageAllowGuestUser` against a session — which is a separate decision from the
-route.
+**Two decisions taken.** The path stays **plural**, `/sites`, because that preserves the URLs of anything
+migrating from 0.3.x and singular buys nothing. And `<format>` is **vestigial**: the segment is kept so
+the shape is the old one, fixed at `default`, carrying no behaviour — today's layout comes from
+`postTypeLayout`, and making the segment a second binding table is a feature, not a recovery.
 
-**It is a strategy change and belongs in the open:** it makes `renderer.md`'s "production delivery is
-Next.js over the CDA" a choice between two. No non-goal forbids it.
+Six guards invert rather than drop: anonymous, **PUBLISHED** never draft, no banner,
+cacheable, indexable, and links rewritten into the public space — SH336 pointed the
+other way. It makes `renderer.md`'s "production delivery is Next.js" a choice between
+two; no non-goal forbids it.
 
 # Part 2 — pre-existing sections
 
