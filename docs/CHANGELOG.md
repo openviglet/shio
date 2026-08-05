@@ -176,6 +176,7 @@
   <br>**An unresolvable section is marked, not skipped.** Contributing nothing is the original failure wearing a different hat: two different mistakes would hash the same. It contributes a heading naming the gap, so the digest moves when a reference breaks. The cost is real and stated: a page digest now reads N+1 posts, which is the same scoping pressure as **SH143**.
 - **SH391** — the browser that was already installed twice now answers the agent: shio audit renders the page at each --width and prints one line per finding with the element to fix, at ~57 tokens clean and ~643 for twenty findings against a screenshot's ~1600
 - **SH434** — The browser is resolved before any request, so a missing one is a teaching refusal that exits 1 — one module for three commands, plus clone --render.
+- **SH440** — Every non-zero exit goes through exit.mjs, which closes undici's dispatcher slots first: 1 instead of 0xC0000409, in 79ms not 4082, and a lint holds it to one call site.
 
 ### Block I follow-up
 

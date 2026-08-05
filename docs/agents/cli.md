@@ -561,6 +561,32 @@ optional. What it deliberately does **not** pre-empt is a package installed with
 with a `post:` target so the old order would show — and the real exit code from a child process,
 skipped where `playwright` resolves rather than passing on a different path.
 
+**Every non-zero exit goes through `exit.mjs`, which disarms the request layer first (SH440).**
+SH434 closed one route to that abort and left the exit alone, so every *other* thrown remote error
+still took it: `convert --site <absent>`, `verify --site <absent>` and `resolve post:<absent>/x` each
+printed their teaching error and then `0xC0000409`. The boundary named the cause — a malformed
+address, rejected locally with no request, exited 1 cleanly; `push --check` with real drift, which
+*returns* a non-zero `exitCode` and unwinds normally, was fine too. What crashed was an error
+**thrown** from a path that had already made an HTTP request, because `main().catch` called
+`process.exit(1)` with a fetch handle still live. It matters most where the exit code *is* the
+product: `convert --check`, `apply --check` and `push --content --check` are drift guards whose whole
+output is a number a pipeline branches on, and a crash code cannot be told apart from a runner
+killing the process — non-zero being the safe direction is why it sat unnoticed. `finish(code)` now
+closes every versioned `undici.globalDispatcher` slot on `globalThis` (Node 26 carries `.1` **and**
+`.2`; the sweep matches the prefix, so a renumbering cannot silently leave the layer armed) and then
+exits. Two measurements shaped it, both on the idle keep-alive socket a thrown HTTP error leaves
+behind: `process.exitCode = 1` and return is **not** the fix — it exits 1 after **4082 ms**, undici's
+`keepAliveTimeout`, and a request the server never answers holds the loop with no timeout at all;
+disarming first took **79 ms**. `exit()` stays because it is what guarantees termination when
+something other than the request layer holds the loop, and after the disarm it is safe. The success
+path deliberately does not come through here — `process.exit(0)` truncates a pending stdout write on
+a pipe, and `shio report --json` is a large one. `exit-path.test.mjs` pins the ordering against fake
+dispatchers, the real binary's code *and a two-second deadline* (the deadline is what fails the naive
+fix, which returns the right number four seconds late), and — the instrument, per SH322/SH338 —
+that **no second `process.exit` exists anywhere under `cli/src/`**: the defect was one call site
+reached from many commands, and the next one added beside a command would be invisible until somebody
+read an exit code outside a shell, which is exactly how it survived SH434.
+
 **`shio impact <address>` exists and `shio read` deliberately does not (SH288).** The task was
 filed as "the CLI cannot show one post", and only half of that is a gap. A post's **content** is on
 disk after `pull --content`, where `Grep` and `Edit` are the cheapest tools an agent has (P4), so a

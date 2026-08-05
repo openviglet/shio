@@ -18,9 +18,10 @@
  * Env fallbacks: SHIO_URL, SHIO_USER, SHIO_PASSWORD (pull/push/deploy),
  * SHIO_CDA_TOKEN (types/dev).
  */
-import { argv, exit } from "node:process";
+import { argv } from "node:process";
 
 import { parseArgs } from "./args.mjs";
+import { finish } from "./exit.mjs";
 import { formatError } from "./format-error.mjs";
 import { defaultContext } from "./context.mjs";
 
@@ -181,7 +182,8 @@ async function main() {
   const loader = COMMANDS[command];
   if (!loader) {
     process.stderr.write(`shio: unknown command "${command}"\n\n${HELP}`);
-    exit(1);
+    await finish(1);
+    return;
   }
 
   const { flags, positionals } = parseArgs(rest, {
@@ -203,11 +205,17 @@ async function main() {
   const result = await mod.run(flags, positionals, defaultContext());
   // Commands may request a non-zero exit (e.g. `push --check` drift guard, SH65).
   if (result && typeof result.exitCode === "number" && result.exitCode !== 0) {
-    exit(result.exitCode);
+    await finish(result.exitCode);
   }
 }
 
-main().catch((err) => {
+// SH440 — every non-zero exit goes through `finish`, which disarms the request layer first. A
+// thrown error is the path that used to abort: it reaches here with a fetch handle still live, and
+// `process.exit` then asserted in libuv's teardown rather than exiting. Success returns instead,
+// so a pending stdout write is not truncated on the way out.
+try {
+  await main();
+} catch (err) {
   process.stderr.write(formatError(err, { debug: Boolean(process.env.SHIO_DEBUG) }));
-  exit(1);
-});
+  await finish(1);
+}

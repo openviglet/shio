@@ -374,32 +374,6 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
-### IX.20 The exit, not the command, is where this lives (SH440)
-
-SH434 fixed the optional-browser path and `shio audit` now exits 1 as intended. The same crash survives
-everywhere else. Measured, exit codes read outside the shell: `convert --site <absent>` gives
-**-1073740791**, so does `verify --site <absent>`, so does `resolve post:<absent>/x`, each printing
-`Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 94` after its
-teaching error. `0xC0000409` is Windows' `abort()`.
-
-The boundary is sharp and names the cause. `resolve bogus:xyz` — malformed, rejected locally with no
-request — exits 1 cleanly. `push --check` with real drift exits 1 cleanly. What crashes is an error
-**thrown** from a path that already made an HTTP request: those reach `main().catch`, which calls
-`process.exit(1)` while a fetch handle is still live, and the teardown asserts. A command that instead
-*returns* a non-zero `exitCode` unwinds normally first and is fine.
-
-That is why SH434 looked complete: it removed one way to reach the throw path with a
-handle armed, not the exit itself.
-
-It matters most where the exit code is the product. `convert --check`, `apply --check`
-and `push --content --check` are drift guards whose whole output is a number a pipeline
-branches on, and a crash code cannot be told apart from a runner killing the process.
-Non-zero is the safe direction, which is why this sits unnoticed.
-
-Fix it at the exit rather than per command: let the request layer's handles close, or
-unref them, so one path serves every thrown error. The regression test is an exit code
-asserted for a remote failure.
-
 ### IX.21 The optional dependency is optional, not absent (SH444)
 
 The repo already has the browser and the CLI still cannot see it. Measured:
