@@ -19,6 +19,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.folder.ShFolderWriteService;
 import com.viglet.shio.exchange.site.ShBootstrapSiteProvider;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.site.ShSite;
@@ -43,14 +44,18 @@ public class ShSiteWriteService {
     private final ShFolderRepository shFolderRepository;
     private final ShBootstrapSiteProvider bootstrapSiteProvider;
     private final ObjectMapper objectMapper;
+    /** SH454 — deleting a subtree is the folder writer's verb, and there is one of it (SH245). */
+    private final ShFolderWriteService shFolderWriteService;
 
     public ShSiteWriteService(ShSiteRepository shSiteRepository, ShFolderRepository shFolderRepository,
                               ShBootstrapSiteProvider bootstrapSiteProvider,
-                              ObjectMapper objectMapper) {
+                              ObjectMapper objectMapper,
+                              ShFolderWriteService shFolderWriteService) {
         this.shSiteRepository = shSiteRepository;
         this.shFolderRepository = shFolderRepository;
         this.bootstrapSiteProvider = bootstrapSiteProvider;
         this.objectMapper = objectMapper;
+        this.shFolderWriteService = shFolderWriteService;
     }
 
     @Transactional
@@ -65,20 +70,6 @@ public class ShSiteWriteService {
         return createBlank(payload, owner);
     }
 
-    /**
-     * A site and its root folder, and nothing else (SH151/SH170).
-     *
-     * <h2>Why blank is a first-class option</h2>
-     *
-     * <p>{@link #create} clones the SH71 bootstrap template because an empty site used to be
-     * useless. A blueprint is exactly the thing that makes it useful — and against a cloned
-     * template, "create a site for this package" means applying a package on top of a Welcome
-     * page and an About page nobody asked for, then pruning them. That is why a blueprint apply
-     * into a fresh site used to report {@code about} as an <em>update</em>.</p>
-     *
-     * <p>So the agent path creates blank sites and the console keeps its starter: the difference
-     * is not a preference, it is whether something else is about to fill the site in.</p>
-     */
     /**
      * A blank site that carries the layout bindings it was created with (SH453).
      *
@@ -130,6 +121,20 @@ public class ShSiteWriteService {
         return createBlank(payload, owner);
     }
 
+    /**
+     * A site and its root folder, and nothing else (SH151/SH170).
+     *
+     * <h2>Why blank is a first-class option</h2>
+     *
+     * <p>{@link #create} clones the SH71 bootstrap template because an empty site used to be
+     * useless. A blueprint is exactly the thing that makes it useful — and against a cloned
+     * template, "create a site for this package" means applying a package on top of a Welcome
+     * page and an About page nobody asked for, then pruning them. That is why a blueprint apply
+     * into a fresh site used to report {@code about} as an <em>update</em>.</p>
+     *
+     * <p>So the agent path creates blank sites and the console keeps its starter: the difference
+     * is not a preference, it is whether something else is about to fill the site in.</p>
+     */
     @Transactional
     public ShSite createBlank(ShSite payload, String owner) {
         ShSite site = new ShSite();
@@ -402,14 +407,65 @@ public class ShSiteWriteService {
         });
     }
 
+    /**
+     * Deletes a site and everything in it (SH454).
+     *
+     * <h2>What this was, and why only an empty site deleted</h2>
+     *
+     * <p>It called {@code shSiteRepository.delete(site)} alone, with a comment explaining that an
+     * entity delete is used so the cascade reaches the folders through {@code ShSite#shFolders}.
+     * It does. <b>Nothing reached the posts</b>, which hold {@code sh_post_unified.folder_id}, so
+     * Hibernate ordered a folder delete against rows that still referenced it and the database
+     * answered {@code Referential integrity constraint violation}. The controller catches nothing,
+     * so the caller got a <b>500 with a Spring default body</b> — SH189's defect, on the console's
+     * most destructive button, for every site that holds a single post. Only an empty site
+     * deleted, which is the one nobody deletes. Trashing the posts first is the obvious workaround
+     * and does not help: trash is a flag on the row, the FK is still there, and the 500 is
+     * identical.</p>
+     *
+     * <h2>The verb that already gets this right</h2>
+     *
+     * <p>{@link ShFolderWriteService#purge} solved this ordering once and records the reasoning:
+     * trash what is live, purge what is trashed, {@code flush()} and {@code clear()} so Hibernate
+     * does not order a folder delete ahead of a post it believes still references it, then let the
+     * folder cascade run. So this is SH245's shape — <b>one writer per verb</b> — rather than new
+     * logic: the root folder goes through that path, and only then is there a site whose cascade
+     * has nothing left to trip on. It is the same three steps SH448's conformance harness had to
+     * make by hand in its own teardown, which is the workaround that stood in for this fix and the
+     * reason the deletion was checkable at all.</p>
+     *
+     * <p>The site itself is re-read after the purge rather than held across it: {@code purge}
+     * clears the persistence context, so the instance loaded above is detached by the time it
+     * returns and deleting it would be a no-op or a merge nobody asked for.</p>
+     *
+     * @param actor who deleted it, for the audit entries the post writer and the folder writer
+     *              record on the way down (SH51/SH196)
+     */
     @Transactional
-    public boolean delete(String id) {
+    public boolean delete(String id, String actor) {
+        Optional<ShSite> found = shSiteRepository.findById(id);
+        if (found.isEmpty()) {
+            return false;
+        }
+        for (String rootFolderId : rootFolderIds(found.get())) {
+            // Trash first because `purge` operates *on* the trash and refuses a live folder — the
+            // two halves are one gesture here, since a site delete has no undo to preserve.
+            shFolderWriteService.delete(rootFolderId, actor);
+            shFolderWriteService.purge(rootFolderId);
+        }
         return shSiteRepository.findById(id).map(site -> {
-            // Entity delete (not the JPQL bulk delete) so the cascade reaches the
-            // site's folders via ShSite#shFolders (CascadeType.ALL).
             shSiteRepository.delete(site);
             return true;
         }).orElse(false);
+    }
+
+    /** The site's root folders, read before anything is purged out from under the collection. */
+    private static List<String> rootFolderIds(ShSite site) {
+        List<String> ids = new ArrayList<>();
+        for (ShFolder folder : site.getShFolders()) {
+            ids.add(folder.getId());
+        }
+        return ids;
     }
 
     private static boolean hasText(String value) {

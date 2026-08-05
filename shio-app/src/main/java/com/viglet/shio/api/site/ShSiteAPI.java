@@ -138,8 +138,11 @@ public class ShSiteAPI {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
-        return shSiteWriteService.delete(id)
+    public ResponseEntity<Void> delete(@PathVariable String id, Principal principal) {
+        // SH454 — the actor, because the site delete now goes down through the folder and post
+        // writers and each of them records an audit entry. Without it the most destructive gesture
+        // in the console is the one with no name against it.
+        return shSiteWriteService.delete(id, principal != null ? principal.getName() : null)
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
     }

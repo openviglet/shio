@@ -254,6 +254,26 @@ which is also where the lifecycle event fires — SH55's rule that a reversible 
 effects. Beside it: `GET /v2/folder/trash` (one row per deleted *section*, not per folder in it),
 `POST /v2/folder/{id}/untrash`, `DELETE /v2/folder/{id}/purge`, and the console's trash page lists
 sections and posts together.
+
+**And `DELETE /v2/site/{id}` goes through that same purge, which is what makes it work at all
+(SH454).** It called `shSiteRepository.delete(site)` alone, with a comment explaining that an entity
+delete is used so the cascade reaches the folders through `ShSite#shFolders`. It does — and **nothing
+reached the posts**, which hold `sh_post_unified.folder_id`, so Hibernate ordered a folder delete
+against rows that still referenced it and the database answered `Referential integrity constraint
+violation`. The controller catches nothing, so the caller got a **500 with a Spring default body**
+(SH189's shape) on the console's most destructive button. **Only an empty site deleted, which is the
+one nobody deletes** — and that is exactly why it went unnoticed: the obvious test creates a bare
+site and removes it, and it passes against the defect. Trashing the posts first is the natural
+workaround and does not help; trash is a flag on the row, the FK is still there, and the 500 is
+identical. The fix is SH245's shape rather than new logic — the root folder is trashed and purged
+through `ShFolderWriteService`, which solved this ordering once and is the only place that knows it,
+and only then is there a site whose cascade has nothing left to trip on. The site is **re-read after
+the purge** because `purge` clears the persistence context, so the instance loaded before it is
+detached by the time it returns. `delete` now takes an **actor**, since the walk down records an
+audit entry per post and per folder — the most destructive gesture in the console was the one with
+no name against it. Found by SH448's conformance suite **in its own teardown**, which had to do the
+three calls by hand; that teardown is one call again, so a regression fails every scenario in the
+suite with the 500 that started this.
 - **Every folder read excludes a trashed folder**, in `ShFolderRepository` — its derived finders
   are spelled out as JPQL with `deletedDate is null`, keeping their names so no call site changed.
   There is deliberately **no `@SQLRestriction` on `ShFolder`**: it would also fire when a

@@ -1373,31 +1373,6 @@ SH341's order applies — instrument first — but a section gate cannot ratchet
 way the line gate did, because dropping a section is destructive where shortening a line
 is not. So the honest first step is deciding what a *stale* section should become.
 
-### XVI.69 The console's delete button is broken for every site worth deleting (SH454)
-
-The second thing SH448's suite found, and it found it in its own teardown — the run
-needed to remove the site it had seeded, and could not.
-
-`ShSiteWriteService.delete` calls `shSiteRepository.delete(site)` with a comment
-explaining that an entity delete is used so the cascade reaches the folders through
-`ShSite#shFolders`. It does. Nothing reaches the **posts**, which hold
-`sh_post_unified.folder_id`, so Hibernate orders a folder delete against rows that still
-reference it and H2 answers `Referential integrity constraint violation`. The controller
-catches nothing, so the caller gets a 500 with a Spring default body — SH189's defect,
-on the console's most destructive button. Only an empty site deletes, which is the one
-nobody deletes.
-
-Trashing the posts first is the obvious workaround and does not work: trash is a flag on
-the row, the FK is still there, and the 500 is identical.
-
-The verb that already gets this right is `ShFolderWriteService#purge`, whose comments
-record the same ordering problem being solved once: trash what is live, purge what is
-trashed, flush and clear so Hibernate does not reorder, then let the folder cascade run.
-So this is SH245's shape — one writer per verb — rather than new logic: the site delete
-should go through that path for its root folder instead of assuming a cascade that was
-never wired. The conformance harness does exactly that in three calls, which is the
-workaround standing in for the fix and the reason the deletion is checkable at all.
-
 ### XVI.71 The two siblings SH457 named and did not take (SH459)
 
 SH457 fixed the format segment: vestigial now means fixed, and

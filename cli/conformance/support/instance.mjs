@@ -164,38 +164,28 @@ export class ConsoleSession {
    * Idempotent: a site that is not there is a clean teardown, not a failure — a test that
    * already failed must not fail a second time in its own `after`.
    *
-   * **Three calls and not one, and that is the second thing this suite found.**
-   * `DELETE /api/v2/site/{id}` cascades to the site's folders through `ShSite#shFolders`, and
-   * nothing cascades to its posts — so on any site that holds one it dies inside the folder
-   * delete with `Referential integrity constraint violation: sh_post_unified FOREIGN KEY
-   * (folder_id)`, a body-less 500. That is every site a curator would actually delete, and no
-   * unit test sees it because none of them deletes a site that has content in it. So the root
-   * folder is trashed and purged first — `ShFolderWriteService#purge` is the one verb that
-   * already gets the ordering right, live rows and trashed rows alike — and only then does the
-   * site go. See SH454.
+   * **One call, and it was three — which is the second thing this suite found.**
+   * `DELETE /api/v2/site/{id}` cascaded to the site's folders through `ShSite#shFolders` and
+   * nothing cascaded to its posts, so on any site that held one it died inside the folder delete
+   * with `Referential integrity constraint violation: sh_post_unified FOREIGN KEY (folder_id)`, a
+   * body-less 500. That is every site a curator would actually delete, and no unit test saw it
+   * because none of them deleted a site with content in it. This teardown worked around it by
+   * trashing and purging the root folder itself and only then removing the site — three calls
+   * standing in for the fix, and the reason the deletion was checkable at all.
+   *
+   * **SH454 moved those two steps into the site delete**, through `ShFolderWriteService#purge` —
+   * the one verb that already gets the ordering right — so the teardown is one call again. Which
+   * makes it the assertion rather than the workaround: if the cascade regresses, every scenario in
+   * this suite fails in its own `after` with the 500 that started this.
    */
   async deleteSite(name) {
     const site = await this.site(name).catch(() => null);
     if (!site?.id) return false;
-    const root = await this.#rootFolder(site.id).catch(() => null);
     const { value, header } = await this.#csrf();
-    const csrf = { [header]: value };
-    if (root) {
-      await this.#fetch(`/api/v2/folder/${encodeURIComponent(root)}`, { method: "DELETE", headers: csrf });
-      await this.#fetch(`/api/v2/folder/${encodeURIComponent(root)}/purge`, { method: "DELETE", headers: csrf });
-    }
     const res = await this.#fetch(`/api/v2/site/${encodeURIComponent(site.id)}`, {
       method: "DELETE",
-      headers: csrf,
+      headers: { [header]: value },
     });
     return res.ok || res.status === 404;
-  }
-
-  /** A site's root folder id — its one child in the object listing. */
-  async #rootFolder(siteId) {
-    const res = await this.#fetch(`/api/v2/object/${encodeURIComponent(siteId)}/list`, { method: "GET" });
-    if (!res.ok) return null;
-    const listing = await res.json();
-    return (listing?.folders ?? []).find((folder) => folder.root)?.id ?? null;
   }
 }
