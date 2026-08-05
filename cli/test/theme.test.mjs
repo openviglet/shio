@@ -239,14 +239,59 @@ test("the tree is the TOKENS field, sorted, and it flattens back to the paths it
   assert.deepEqual(Object.keys(flatten(tokens)).sort(), ["brand.primary", "color.text-1"]);
 });
 
-test("a path that would make one name both a group and a token is dropped and named", () => {
-  // DTCG cannot represent both, and picking one makes the other silently disappear.
-  const { tokens, dropped } = dtcgFor([
-    { path: "color", value: "#0b5533", type: "color" },
-    { path: "color.text", value: "#333333", type: "color" },
+test("SH428: a name that is both a token and a group keeps both, the second one flat", () => {
+  // Over openviglet.github.io's palette this wrote nine of sixteen declared tokens and dropped seven:
+  // bg.alt, border.strong, brand.2, brand.3, brand.ink, brand.wash, brand.font. Detecting the
+  // collision was right — DTCG cannot represent both — but creating it was the defect, and the round
+  // trip (the only hard rule here) is satisfied by the flat name: --bg-alt is what the source wrote.
+  const { tokens, dropped, rows } = dtcgFor([
+    { path: "color", value: "#0b5533", type: "color", source: "declared" },
+    { path: "color.text", value: "#333333", type: "color", source: "declared" },
   ]);
 
   assert.deepEqual(tokens.color, { $value: "#0b5533", $type: "color" });
+  assert.deepEqual(tokens["color-text"], { $value: "#333333", $type: "color" },
+    "the flat name, which is the one the stylesheet's own var() references");
+  assert.deepEqual(dropped, [], "nothing is lost: --x plus --x-y is the commonest scheme in CSS");
+  assert.equal(customPropertyFor("color-text"), "--color-text",
+    "and it compiles back to the property the source declared, which is what keeps the CSS working");
+  assert.deepEqual(
+    rows.map((row) => row.path),
+    ["color", "color-text"],
+    "the rows report the path the file actually holds, so a count taken from them cannot contradict it",
+  );
+  assert.equal(rows[1].nested, "color.text", "with the path it would have had, for the record");
+});
+
+test("SH428: the order of the two does not decide which one survives", () => {
+  // Rows arrive in declaration order, so the collision can be met from either side. Taking the
+  // shortest path first is what keeps a flat name free at the moment it is needed — in the other
+  // order `color` would find a group already there and have nowhere to go.
+  const { tokens, dropped } = dtcgFor([
+    { path: "color.text", value: "#333333", type: "color" },
+    { path: "color", value: "#0b5533", type: "color" },
+  ]);
+
+  assert.deepEqual(tokens.color, { $value: "#0b5533", $type: "color" });
+  assert.deepEqual(tokens["color-text"], { $value: "#333333", $type: "color" });
+  assert.deepEqual(dropped, []);
+});
+
+test("the collision guard is still there for the case the fallback cannot answer", () => {
+  // Two names cannot both take one flat slot. This shape does not arise from one stylesheet's custom
+  // properties — the flat name IS the source's own name, so it would mean two identical declarations
+  // — which is why it is asserted here rather than left to a capture: a guard nobody can reach is
+  // still the thing that stops a token being written over.
+  const { tokens, dropped } = dtcgFor([
+    { path: "color", value: "#0b5533", type: "color" },
+    { path: "color-text", value: "#111111", type: "color" },
+    { path: "color.text", value: "#333333", type: "color" },
+  ]);
+
+  assert.deepEqual(tokens["color-text"], { $value: "#111111", $type: "color" },
+    "first writer keeps the slot; the loser is named rather than overwriting it");
+  assert.equal(dropped.length, 1);
+  assert.equal(dropped[0].name, "color.text");
   assert.equal(dropped[0].reason, "collision");
 });
 
@@ -311,6 +356,39 @@ function themeFor(css = SHEET) {
     assets: new Map([["/img/bg.png", "Acme/img/bg.png"], ["/css/site.css", "Acme/css/site.css"]]),
   });
 }
+
+test("SH428: the accent ramp survives, and the note counts what the file holds", () => {
+  // The two halves of SH428 in the shape they were measured in. `--brand` beside `--brand-2` and
+  // `--brand-3` is the accent ramp — the hero gradient and the primary button — and losing them is
+  // SH210's hazard: a curator replacing "the brand colour" replaces a quarter of it. The note said
+  // "16 declared token(s) are the editable half" while its own list showed nine written and seven not,
+  // because the count was taken before the drop.
+  const theme = themeFor(`:root {
+      --brand: #35d07f;
+      --brand-2: #2bb96f;
+      --brand-3: #1f9c5b;
+      --brand-ink: #06281a;
+      --bg: #0b0f14;
+      --bg-alt: #111820;
+    }
+    .hero { background: linear-gradient(var(--brand), var(--brand-2)) }
+    .btn { background: var(--brand-3); color: var(--brand-ink) }
+    body { background: var(--bg) }
+    .panel { background: var(--bg-alt) }`);
+
+  const declared = theme.rows.filter((row) => row.source === "declared");
+  assert.equal(declared.length, 6, "all six, where the nested reading kept two and dropped four");
+  assert.deepEqual(
+    declared.map((row) => row.path).sort(),
+    ["bg", "bg-alt", "brand", "brand-2", "brand-3", "brand-ink"],
+    "the four that collided took their flat names, which are the ones the CSS var()s",
+  );
+  assert.ok(!theme.unsure.some((row) => row.reason === "collision"));
+
+  const note = theme.notes.find((each) => /declared token\(s\) are the editable half/.test(each));
+  assert.match(note, /^6 declared token\(s\)/,
+    "the number a reader can check against the rows beneath it comes from those rows");
+});
 
 test("the theme carries both kinds of token, the CSS it kept, and which file each rule came from", () => {
   const theme = themeFor();

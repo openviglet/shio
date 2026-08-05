@@ -494,11 +494,37 @@ function bucketFor(declaration) {
  * object key sorted so two runs over one stylesheet serialize identically (P5). A path that would
  * have to overwrite a *group* with a token, or a token with a group, is dropped and named: DTCG has
  * no representation for both, and picking one would make the other silently disappear.
+ *
+ * <h2>SH428 — the collision was self-inflicted, and the flat name resolves it</h2>
+ *
+ * <p>Over `openviglet.github.io`'s palette this wrote nine of sixteen declared tokens and dropped
+ * seven: `bg.alt`, `border.strong`, `brand.2`, `brand.3`, `brand.ink`, `brand.wash`, `brand.font`.
+ * Detecting the collision was right — DTCG forbids it and writing anyway loses a token silently —
+ * but *creating* it was the defect: `pathForCustomProperty` splits on every hyphen, so `--bg` becomes
+ * `bg` and `--bg-alt` becomes `bg.alt`, and the first then has to be both a token and a group.
+ *
+ * <p>The round trip is the only hard rule here, and a **single-segment** path passes it:
+ * `customPropertyFor("bg-alt")` is `--bg-alt`, the very property the source wrote. So a colliding row
+ * falls back to its whole name as one segment — nothing guessed, nothing lost, and the fallback is
+ * accepted only when it compiles to the *same* custom property the nested path would have. `--x` plus
+ * `--x-y` is the most common naming scheme in hand-written CSS; here it cost the accent ramp
+ * (`--brand-2` and `--brand-3` are the hero gradient and the primary button), which is SH210's hazard:
+ * a curator replacing "the brand colour" replaces a quarter of it.
+ *
+ * <p>Rows are taken **shortest path first**, which is what makes the fallback always available: `bg`
+ * is written as a token before `bg.alt` asks to nest under it, so the collision is discovered while a
+ * flat name is still free. In the other order `bg` would find a group already there and have nowhere
+ * to go. The emitted JSON is unaffected by the reordering — every key is sorted on the way out.
  */
 export function dtcgFor(rows) {
   const root = {};
   const dropped = [];
-  for (const row of rows) {
+  const kept = [];
+  const shortestFirst = [...rows]
+    .map((row, index) => ({ row, index, depth: String(row.path).split(".").length }))
+    .sort((a, b) => (a.depth === b.depth ? a.index - b.index : a.depth - b.depth))
+    .map((each) => each.row);
+  for (const row of shortestFirst) {
     const segments = String(row.path).split(".");
     let node = root;
     let ok = true;
@@ -517,12 +543,32 @@ export function dtcgFor(rows) {
     }
     const leaf = segments.at(-1);
     if (!ok || (node[leaf] && !("$value" in node[leaf]))) {
+      const flat = flatName(row.path);
+      if (flat && !root[flat]) {
+        root[flat] = { $value: row.value, ...(row.type ? { $type: row.type } : {}) };
+        kept.push({ ...row, path: flat, nested: row.path });
+        continue;
+      }
       dropped.push({ name: row.path, reason: "collision", detail: "a group and a token cannot share one path" });
       continue;
     }
     node[leaf] = { $value: row.value, ...(row.type ? { $type: row.type } : {}) };
+    kept.push(row);
   }
-  return { tokens: sortKeys(root), dropped };
+  return { tokens: sortKeys(root), dropped, rows: kept };
+}
+
+/**
+ * A colliding path as one flat segment, or null when that would rename the property (SH428).
+ *
+ * <p>The equality is the whole safety of the fallback: `bg.alt` and `bg-alt` both compile to
+ * `--bg-alt`, so writing the flat one keeps every `var(--bg-alt)` in the captured CSS working. A path
+ * where the two spellings differ is not a name this reader may invent, and it is dropped and reported
+ * exactly as before.
+ */
+function flatName(path) {
+  const flat = String(path).replace(/\./g, "-");
+  return customPropertyFor(flat) === customPropertyFor(path) ? flat : null;
 }
 
 function sortKeys(value) {
@@ -646,19 +692,24 @@ export function buildTheme({ styles = [], assets = new Map(), minRefs = DEFAULT_
   const declared = declaredTokens(declarations);
   const recurring = recurringTokens(declarations, { minRefs });
   const rows = [...declared.tokens, ...recurring.tokens];
-  const { tokens, dropped } = dtcgFor(rows);
-  const written = new Set(Object.keys(flatten(tokens)));
+  // SH428 — `written` is what the file actually holds, and the counts below are taken from it. The
+  // note used to say "16 declared token(s) are the editable half" while its own list showed nine
+  // written and seven not: the count was taken before the drop, so the note contradicted the artefact
+  // it introduces. A number a reader can check against the rows beneath it has to come from them.
+  const { tokens, dropped, rows: written } = dtcgFor(rows);
+  const declaredWritten = written.filter((row) => row.source === "declared");
+  const recurringWritten = written.filter((row) => row.source === "recurring");
 
   const notes = [];
-  if (declared.tokens.length) {
+  if (declaredWritten.length) {
     notes.push(
-      `${declared.tokens.length} declared token(s) are the editable half: the source's own CSS says ` +
+      `${declaredWritten.length} declared token(s) are the editable half: the source's own CSS says ` +
         `var() on each, so changing one changes the replica`,
     );
   }
-  if (recurring.tokens.length) {
+  if (recurringWritten.length) {
     notes.push(
-      `${recurring.tokens.length} recurring token(s) name the palette and change nothing on their ` +
+      `${recurringWritten.length} recurring token(s) name the palette and change nothing on their ` +
         `own — no rule references them until the CSS is rewired, which this does NOT do: a ` +
         `search-and-replace over a stranger's stylesheet breaks a replica in a way no digest catches`,
     );
@@ -685,7 +736,11 @@ export function buildTheme({ styles = [], assets = new Map(), minRefs = DEFAULT_
     sheets,
     css,
     tokens,
-    rows: rows.filter((row) => written.has(row.path)),
+    // The rows the file holds, with the path each was actually written under — a row whose nested
+    // path collided carries the flat one it took, plus `nested` saying what it would have been. A
+    // report keyed to a path the artefact does not contain is the same defect as a count taken
+    // before a drop.
+    rows: written,
     unsure: [...declared.unsure, ...recurring.unsure, ...dropped].sort((a, b) =>
       (a.name === b.name ? 0 : a.name < b.name ? -1 : 1)),
     urls: { rewritten, unresolved: [...unresolved.keys()].sort() },

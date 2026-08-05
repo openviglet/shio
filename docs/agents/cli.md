@@ -221,6 +221,25 @@ are deduped — one decision on N pages, not N decisions), and the proposal now 
 candidate appears on **all** the pages read, with three as the floor: on two pages a hero is on both as
 well, and a hint that fires on every small capture is one a reviewer learns to ignore.
 
+**The DTCG path collision was self-inflicted, and the flat name resolves it (SH428).** Over
+`openviglet.github.io`'s palette, `dtcgFor` wrote **nine of sixteen** declared tokens and dropped seven
+— `bg.alt`, `border.strong`, `brand.2`, `brand.3`, `brand.ink`, `brand.wash`, `brand.font` — with
+*"a group and a token cannot share one path"*. Detecting that is right (DTCG forbids it, and writing
+anyway loses a token silently); **creating** it was the defect: `pathForCustomProperty` splits on every
+hyphen, so `--bg` becomes `bg` and `--bg-alt` becomes `bg.alt`, and the first then has to be both. The
+round trip is the only hard rule here and a **single-segment path passes it** — `customPropertyFor("bg-alt")`
+is `--bg-alt`, the property the source wrote — so a colliding row falls back to its whole name as one
+segment, accepted only when it compiles to the *same* custom property the nested path would have.
+Nothing guessed, nothing lost. Rows are taken **shortest path first**, which is what keeps the flat
+name free at the moment it is needed (in the other order `bg` finds a group already there and has
+nowhere to go); the emitted JSON is unaffected, since every key is sorted on the way out. `--x` plus
+`--x-y` is the commonest scheme in hand-written CSS, and here it cost the accent ramp — `--brand-2`
+and `--brand-3` are the hero gradient and the primary button — which is SH210's hazard: a curator
+replacing "the brand colour" replaces a quarter of it. **Second, smaller, same run:** the note said
+"16 declared token(s) are the editable half" while its own list showed nine written and seven not,
+because the count was taken *before* the drop. The counts now come from the rows the file holds, and a
+row that took a flat name carries the nested one it would have had.
+
 **An inline stylesheet is a stylesheet (SH427).** `openviglet.github.io` declares its whole palette —
 sixteen custom properties — inside one `<style>` block and links **zero** external stylesheets, and
 `shio propose` over that capture emitted `theme: null`, `notes: []` and printed no theme section at

@@ -1523,31 +1523,6 @@ references it yet.
 Invisible to `snapshot --against`, `digest` and `audit` — the replica looks perfect. The
 proof is a token edit that moves a render.
 
-### XVII.21 The DTCG path collision is self-inflicted (SH428)
-
-Run over `openviglet.github.io`'s palette, `dtcgFor` wrote nine of sixteen declared
-tokens and dropped seven with `collision: a group and a token cannot share one path`:
-`bg.alt`, `border.strong`, `brand.2`, `brand.3`, `brand.ink`, `brand.wash`,
-`brand.font`. Detecting the collision is right — DTCG genuinely forbids it, and writing
-anyway would lose a token silently. Creating the collision is the defect.
-
-`pathForCustomProperty` splits on every hyphen, so `--bg` becomes `bg` and `--bg-alt`
-becomes `bg.alt`, and the first now has to be both a token and a group. But the round
-trip is the only hard rule here, and a single-segment path passes it:
-`customPropertyFor("bg-alt")` returns `--bg-alt` exactly, verified for all seven names.
-So when nesting would collide with a path already taken, the whole name as one segment
-writes the token *and* compiles back to the property the source wrote. Nothing is
-guessed and nothing is lost.
-
-`--x` plus `--x-y` is not an unusual naming scheme; it is the most common one in
-hand-written CSS. Here it cost the accent ramp — `--brand-2` and `--brand-3` are the
-hero gradient and the primary button — which is the SH210 hazard SH378 already named: a
-curator replacing "the brand colour" replaces a quarter of it.
-
-Second, smaller, same run: the report's note says "16 declared token(s) are the editable
-half" while its own list shows nine written and seven not. The count is taken before the
-drop, so the note contradicts the artefact it introduces.
-
 ### XVII.22 The asset map has no reader in fidelity mode (SH429)
 
 SH378 downloads each referenced image into `shio/assets/<site>/…` and folds a source-URL
