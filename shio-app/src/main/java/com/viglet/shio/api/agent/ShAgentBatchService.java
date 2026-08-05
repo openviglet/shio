@@ -635,8 +635,13 @@ public class ShAgentBatchService {
             return siteFill(op, session, address, existing.get());
         }
         requireUnscopedCredential(name);
+        // SH453 — the bindings the create branch used to drop. Read before the dry-run return, so
+        // a plan and a run describe the same op: a plan derived from a second reading of the rule
+        // is a plan that can disagree with the run it predicts.
+        Map<String, String> bindings = bindingsOf(op.data());
+        String detail = createDetail(bindings);
         if (session.dryRun) {
-            return session.change(op, address, Change.CREATE, "a blank site", null);
+            return session.change(op, address, Change.CREATE, detail, null);
         }
         shTenantQuotaService.checkCanCreateSite();
         ShSite payload = new ShSite();
@@ -644,8 +649,26 @@ public class ShAgentBatchService {
         payload.setDescription(text(op.data(), "description"));
         payload.setUrl(text(op.data(), "url"));
         payload.setFurl(text(op.data(), "furl"));
-        ShSite created = shSiteWriteService.createBlank(payload, session.actor);
-        return session.change(op, address, Change.CREATE, "a blank site", created.getId());
+        ShSite created = shSiteWriteService.createBlank(payload, bindings, session.actor);
+        return session.change(op, address, Change.CREATE, detail, created.getId());
+    }
+
+    /**
+     * What a create says it did (SH453).
+     *
+     * <p>"a blank site" was true and became the reason the defect was invisible: the op reported
+     * the same sentence whether or not it had been handed bindings, so the one caller who could
+     * have noticed — the one who sent them — was told nothing was missing. The bindings are named
+     * in the fill branch's own vocabulary ({@code postTypeLayout.<post-type>}), because one op
+     * describing one field two ways is a report a reader has to translate.</p>
+     */
+    private static String createDetail(Map<String, String> bindings) {
+        if (bindings.isEmpty()) {
+            return "a blank site";
+        }
+        return "a blank site, binding " + bindings.keySet().stream()
+                .map(key -> ShSiteWriteService.LAYOUT_FIELD + "." + key)
+                .collect(java.util.stream.Collectors.joining(", "));
     }
 
     /**

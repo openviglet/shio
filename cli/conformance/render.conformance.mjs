@@ -120,14 +120,13 @@ describe("SH448 conformance: the native render path, end to end over HTTP", () =
     );
 
     // ── the site, and the binding that is the difference between a model and a page ───────
-    // Two `site.upsert` ops and not one, which is the first thing this suite found: the create
-    // branch reads `description`/`url`/`furl` and **drops `data.postTypeLayout` silently**, so a
-    // caller that creates and binds in one op gets `CREATE — a blank site`, no binding, and a 400
-    // from `/preview` several steps later. The binding is written by the *fill* branch, which only
-    // runs on a site that already exists. Driven the documented way here, with the read below as
-    // the assertion — see SH453.
+    // **One** `site.upsert` op, which is the assertion. This was two — the first thing this suite
+    // found: the create branch read `description`/`url`/`furl` and **dropped `data.postTypeLayout`
+    // silently**, so a caller that created and bound in one op got `CREATE — a blank site`, no
+    // binding, and a 400 from `/preview` several steps later, because the binding was written by
+    // the *fill* branch and only a site that already exists reaches it. SH453 made both branches
+    // read it, so the workaround becomes the guard: one op, with the read below as the proof.
     const built = await batch(conn, [
-      { op: "site.upsert", address: `site:${site}` },
       { op: "site.upsert", address: `site:${site}`, data: { postTypeLayout: { [postType]: LAYOUT } } },
       { op: "post.upsert", address: `post:${site}/theme`, type: "Theme", folder: "/",
         data: { TITLE: THEME, CSS: "body{font-family:system-ui}" } },
@@ -149,8 +148,9 @@ describe("SH448 conformance: the native render path, end to end over HTTP", () =
     assert.match(
       bound?.postTypeLayout ?? "",
       new RegExp(`"${postType}"\\s*:\\s*"${LAYOUT}"`),
-      "SH328: and the binding is on the site afterwards. Asserted as a read rather than inferred "
-        + "from the op's own report, because the op that drops it still answers CREATE",
+      "SH453: and the binding is on the site afterwards, from the op that created it. Asserted as "
+        + "a read rather than inferred from the op's own report, because the version that dropped "
+        + "the binding still answered CREATE — which is exactly why nothing caught it",
     );
 
     // ── the assertion the whole scenario is for ──────────────────────────────────────────

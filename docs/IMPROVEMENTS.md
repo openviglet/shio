@@ -217,30 +217,6 @@ these isolate only because a fixture writes instance-wide post-types, which is S
 real reason. A shared context with per-test site scoping would need no slot at all, and
 the tasks that cannot have it would then be the exception rather than the habit.
 
-### VIII.21 An op that reports CREATE and applies half of what it was sent (SH453)
-
-Found by SH448's conformance suite on its first run, which is the argument for that
-task: the shape is invisible to a unit test because both halves are individually
-correct.
-
-`site.upsert` has two branches. On a site that exists it delegates to
-`ShSiteWriteService.fillEmpty`, which takes the requested fields **and** the SH328
-bindings. On a site that does not, it builds a payload from `description`, `url` and
-`furl`, calls `createBlank`, and reports `CREATE — a blank site`. `data.postTypeLayout`
-is read by the first branch and by nothing in the second, so a caller that creates a
-site and binds its layout in one op is told the op succeeded and gets no binding.
-
-The failure surfaces nowhere near the cause. The next thing to read the binding is
-`ShPageRenderService`, so the caller sees a 400 from `/preview/<site>/` — `Site '…'
-binds no layout for post-type '…'` — after four more successful writes. That message is
-a good one (P6), and it answers a question about the wrong step.
-
-Two ways to close it, and the choice is the task. Either the create branch applies the
-bindings it was handed, which makes one op mean one intention; or it **refuses** a
-create carrying data it will not apply, the SH320 rule about a value the server cannot
-honour. What it must not keep doing is the third thing — take the data and say nothing,
-which is P7's surprise on the one edge that decides whether a site renders at all.
-
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
 > The agent cannot see. Two of the three human round trips in a typical build existed only

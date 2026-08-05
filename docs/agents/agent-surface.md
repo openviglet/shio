@@ -169,6 +169,23 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   a key is never a whole-map replace — which is what the console's `PUT /api/v2/site/{id}` is,
   nulling the map when the field is omitted. String values only, matching what the renderer
   reads: the SH193 array form is skipped, so a binding cannot look written and render nothing.
+  **And both branches read it, which took a second task (SH453).** The op has two: an existing site
+  goes through `fillEmpty`, which takes the fields *and* the bindings; a site that does not exist was
+  built from `description`/`url`/`furl` alone and reported `CREATE — a blank site`. So one op that
+  created a site and bound its layout was told it succeeded and got no binding — **both halves
+  individually correct**, which is why eleven green tests missed it (every one of them creates first
+  and binds second, so the op under test is always the *fill* branch) and SH448's conformance suite
+  found it on its first run against an instance. The failure surfaced nowhere near the cause: the
+  next thing to read the binding is `ShPageRenderService`, so the caller got a 400 from
+  `/preview/<site>/` — *"Site '…' binds no layout for post-type '…'"* — after four more successful
+  writes, a good message answering a question about the wrong step. §VIII.21 left open whether to
+  apply the bindings or **refuse** a create carrying data it will not honour (SH320's rule);
+  **applied**, because P2 is the argument for this surface — one op means one intention, and refusing
+  would make the first step of every new-site build two ops with the second existing only to work
+  around the first. The serialization stays in `ShSiteWriteService` (SH245: a second copy of a verb is
+  where the careless version grows), and the report now names the bindings in the fill branch's own
+  vocabulary — `a blank site, binding postTypeLayout.Article` — because reporting `a blank site`
+  either way is what kept this invisible to the one caller who could have noticed.
   **`?digest=true` closes the *appearance* loop the same way (SH194)** — the two SH187 hashes for
   each page the run **affected**, which for a write to a shared layout or region is not the address
   written but every page that renders through it (SH193's graph; this is that graph's first consumer

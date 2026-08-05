@@ -70,8 +70,9 @@ import tools.jackson.databind.JsonNode;
  *                render, and the binding is the one edge no {@code post.upsert} can express —
  *                a replication in fidelity mode writes the layout, so it needed this or a
  *                second, un-`--out`-able call. Deliberately <b>after</b> the create rather
- *                than folded into it: {@code site.upsert}'s create branch does not apply
- *                bindings (SH453), and one op that means one thing beats one that means two
+ *                than folded into it: it began as a workaround for a create branch that
+ *                dropped bindings, and since SH453 fixed that it is a choice — this field is
+ *                settable without {@code createSite}, so one op serves both cases
  *
  * @author Alexandre Oliveira
  * @since 2026.3

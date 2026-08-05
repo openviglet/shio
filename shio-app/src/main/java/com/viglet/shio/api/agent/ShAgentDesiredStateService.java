@@ -185,10 +185,14 @@ public class ShAgentDesiredStateService {
         }
         // SH449 — the binding, as its own op right after the create. A fidelity replication writes
         // a PageLayout, and a layout nobody bound renders nothing: `/preview/<site>/` answers 400
-        // naming a post-type instead of serving the page the document just described. It is a
-        // second op and not a field on the one above because `site.upsert`'s create branch drops
-        // `data.postTypeLayout` (SH453) — the fill branch is what writes it, and only a site that
-        // already exists reaches it.
+        // naming a post-type instead of serving the page the document just described.
+        //
+        // It was a second op because `site.upsert`'s create branch dropped `data.postTypeLayout`;
+        // SH453 fixed that, so folding it into the op above is now *possible* and is deliberately
+        // not done. `postTypeLayout` is settable without `createSite`, so the separate op is the
+        // path that serves both cases — folding it would buy one op on one of them and cost a
+        // branch on every run. Idempotent either way: the create writes nothing here, and the fill
+        // that follows binds what is unbound.
         if (desired.postTypeLayout() != null && !desired.postTypeLayout().isEmpty()) {
             ops.add(op(ShAgentBatchService.SITE_UPSERT, ShAddress.site(site).toString(),
                     null, null, bindingData(desired.postTypeLayout())));

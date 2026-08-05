@@ -664,6 +664,80 @@ class ShAgentBatchTest {
                 .isEqualTo(Change.UPDATE);
     }
 
+    // --- SH453: the create branch used to drop the bindings it was handed ---
+
+    /**
+     * Why every SH328 test above missed this: each one creates the site first and binds second, so
+     * the op under test is always the <em>fill</em> branch. A caller doing both in one op went down
+     * the create branch, which read {@code description}, {@code url} and {@code furl} and nothing
+     * else — and was told {@code CREATE — a blank site}, which was true and was the reason nobody
+     * noticed. Both halves are individually correct, which is why SH448's conformance suite found
+     * it on a live instance and no unit test had.
+     */
+    @Test
+    @DisplayName("SH453: creating a site and binding its layout in one op applies both")
+    void aCreateAppliesTheBindingsItWasHanded() {
+        String name = "sh453-" + UUID.randomUUID().toString().substring(0, 8);
+
+        Change change = only(run(false, siteOp(name, bindings(Map.of("Article", "Article Layout")))));
+
+        assertThat(change.action()).isEqualTo(Change.CREATE);
+        assertThat(change.detail())
+                .as("and it says so: reporting `a blank site` either way is what kept this invisible "
+                        + "to the one caller who could have noticed — the one who sent the binding")
+                .contains("postTypeLayout.Article");
+        // Read back rather than inferred from the report, because the op that dropped the binding
+        // still answered CREATE. The failure surfaced four writes later as a 400 from
+        // /preview/<site>/ — "Site '…' binds no layout for post-type '…'" — a good message
+        // answering a question about the wrong step.
+        assertThat(bindingsOn(name))
+                .containsEntry("Article", "Article Layout");
+    }
+
+    @Test
+    @DisplayName("SH453: a plan says the same thing the run does, bindings included")
+    void aPlannedCreateNamesTheBindings() {
+        String name = "sh453-" + UUID.randomUUID().toString().substring(0, 8);
+        Op create = siteOp(name, bindings(Map.of("Article", "Article Layout")));
+
+        Change planned = only(run(true, create));
+
+        assertThat(planned.action()).isEqualTo(Change.CREATE);
+        assertThat(planned.detail()).contains("blank").contains("postTypeLayout.Article");
+        // A plan derived from a second reading of the rule is one that can disagree with the run it
+        // predicts, so the detail comes from the same call in both branches.
+        assertThat(only(run(false, create)).detail()).isEqualTo(planned.detail());
+    }
+
+    @Test
+    @DisplayName("SH453: a create with no bindings still reports a blank site and writes no map")
+    void aCreateWithoutBindingsIsUnchanged() {
+        String name = "sh453-" + UUID.randomUUID().toString().substring(0, 8);
+
+        Change change = only(run(false, siteOp(name, null)));
+
+        assertThat(change.detail()).isEqualTo("a blank site");
+        assertThat(bindingsOn(name))
+                .as("an empty map leaves the column null, exactly as before — the fix adds a "
+                        + "binding when one was sent and changes nothing when none was")
+                .isEmpty();
+    }
+
+    /** The site's post-type → layout map as stored, read straight out of the column. */
+    private Map<String, String> bindingsOn(String name) {
+        return new TransactionTemplate(transactionManager).execute(status -> {
+            ShSite site = entityManager
+                    .createQuery("select s from ShSite s where s.name = :name", ShSite.class)
+                    .setParameter("name", name)
+                    .getSingleResult();
+            String raw = site.getPostTypeLayout();
+            if (raw == null || raw.isBlank()) {
+                return Map.<String, String>of();
+            }
+            return objectMapper.readValue(raw, new tools.jackson.core.type.TypeReference<Map<String, String>>() {});
+        });
+    }
+
     private Op siteOp(String name, JsonNode data) {
         return new Op(ShAgentBatchService.SITE_UPSERT, "site:" + name, null, null, data);
     }

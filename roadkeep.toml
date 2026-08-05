@@ -41,14 +41,13 @@ ref_scheme = "outline"
 # it found SH453 and SH454 on its first execution, seven tasks before the queue would have. It
 # also caught the live-boundary defect in every task after it, which is the argument the suite
 # exists to make. It is green as of SH446.
-# The third run shipped SH458, SH455, SH456 and SH457, and the instrument-first argument held
-# again: SH458's three assertions landed red by construction and each went green as its fix
-# arrived. What is left of that run is SH453 — the create branch drops the layout binding, so the
-# first step of every new-site replication is wrong — and then SH454, the suite's own hygiene.
-# SH459 is SH457's residue and waits behind both: two more segments of the public route that
-# answer 200 or 401 where absent is the true answer.
+# The third run shipped SH458, SH455, SH456, SH457 and SH453, and the instrument-first argument
+# held again: SH458's three assertions landed red by construction and each went green as its fix
+# arrived. What is left of that run is SH454, the suite's own hygiene — deleting a site that holds
+# a post is a body-less 500, which is every site a curator would actually delete. SH459 is SH457's
+# residue and waits behind it: two more segments of the public route that answer 200 or 401 where
+# absent is the true answer.
 priority = [
-  "SH453",
   "SH454",
   "Block P",
   "Block H",

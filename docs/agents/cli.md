@@ -378,8 +378,11 @@ it. Four decisions worth keeping:
 - **The binding rides the document** (`postTypeLayout`, new on `ShAgentDesiredState`), because a
   layout nobody bound renders nothing and no `post.upsert` can express that edge — without it
   `--out` would emit an un-appliable file. It compiles to a **second** `site.upsert` after
-  `createSite`, never folded into it: that op's create branch drops `data.postTypeLayout` silently
-  (SH453), which is exactly the run — a new site — that needs it.
+  `createSite` rather than folded into it. That began as a workaround — the create branch dropped
+  `data.postTypeLayout` silently, on exactly the run that needs it — and **SH453 fixed the branch**,
+  so it is now a choice: `postTypeLayout` is settable without `createSite`, so the separate op is the
+  one path that serves both cases, and folding it would buy one op on one of them and cost a branch
+  on every run.
 
 **And the bytes go up with it (SH437).** A fidelity page references its images by the source's own
 path and has no `File` field, so SH145's rule — an asset reaches the instance because a *field* names

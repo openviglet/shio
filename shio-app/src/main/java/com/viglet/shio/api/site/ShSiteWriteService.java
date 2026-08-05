@@ -79,6 +79,57 @@ public class ShSiteWriteService {
      * <p>So the agent path creates blank sites and the console keeps its starter: the difference
      * is not a preference, it is whether something else is about to fill the site in.</p>
      */
+    /**
+     * A blank site that carries the layout bindings it was created with (SH453).
+     *
+     * <h2>The defect this closes</h2>
+     *
+     * <p>{@code site.upsert} has two branches, and only the second read {@code postTypeLayout}: an
+     * existing site went through {@link #fillEmpty}, which takes the requested fields <em>and</em>
+     * the SH328 bindings, while a site that did not exist was built from {@code description},
+     * {@code url} and {@code furl} alone and reported {@code CREATE — a blank site}. So a caller
+     * that created a site and bound its layout in one op was told the op succeeded and got no
+     * binding. <b>Both halves are individually correct</b>, which is why no unit test saw it and
+     * why SH448's conformance suite found it on its first run.</p>
+     *
+     * <p>The failure surfaces nowhere near the cause. The next thing to read the binding is
+     * {@code ShPageRenderService}, so the caller gets a 400 from {@code /preview/<site>/} —
+     * <em>"Site '…' binds no layout for post-type '…'"</em> — after four more successful writes.
+     * That message is a good one, and it answers a question about the wrong step.</p>
+     *
+     * <h2>Applied rather than refused</h2>
+     *
+     * <p>§VIII.21 left the choice open between applying the bindings and refusing a create that
+     * carries data it will not honour (SH320's rule). <b>Applied</b>, because P2 is the whole
+     * argument for this surface: one op should mean one intention, and refusing would make the
+     * first step of every new-site build two ops with the second existing only to work around the
+     * first. The refusal would also have been the more surprising of the two — a caller who sends a
+     * binding wants the binding.</p>
+     *
+     * <p>Serialized here rather than by the protocol layer, for SH245's reason: the merge that
+     * {@link #applyFill} performs is the same write, and a second copy of it is where the careless
+     * version grows. On a create the merge has nothing to merge with, so it is the requested map
+     * minus blanks — but it goes through the same {@code objectMapper}, so both branches produce
+     * one shape.</p>
+     *
+     * @param bindings post-type name → {@code PageLayout} title; blank values are dropped, and an
+     *                 empty map leaves the column null exactly as before
+     */
+    @Transactional
+    public ShSite createBlank(ShSite payload, Map<String, String> bindings, String owner) {
+        Map<String, String> merged = new LinkedHashMap<>();
+        for (Map.Entry<String, String> entry : bindings == null ? Map.<String, String>of().entrySet()
+                : bindings.entrySet()) {
+            if (entry.getValue() != null && !entry.getValue().isBlank()) {
+                merged.put(entry.getKey(), entry.getValue());
+            }
+        }
+        if (!merged.isEmpty()) {
+            payload.setPostTypeLayout(objectMapper.writeValueAsString(merged));
+        }
+        return createBlank(payload, owner);
+    }
+
     @Transactional
     public ShSite createBlank(ShSite payload, String owner) {
         ShSite site = new ShSite();

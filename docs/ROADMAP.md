@@ -12,7 +12,6 @@
 ## Block H — The Agent Gateway (MCP + agent-shaped protocol)
 
 - 📋 **SH413** (deps: SH84 ✅) **Turning indexing on leaves the content that is already published unfindable** — SH84 indexes on publish, so an instance that switches Turing on indexes nothing until every post happens to be republished, and nothing says so. → §VIII.16
-- 📋 **SH453** (deps: SH448 ✅) **site.upsert silently drops the postTypeLayout it is given when it creates the site** — The create branch reads description/url/furl only and answers CREATE - a blank site; the binding is written by the fill branch, which a create never reaches, so /preview refuses later. → §VIII.21
 
 ## Block K — Perception & verification loop
 
