@@ -82,7 +82,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH462** (deps: SH437 ✅) **An uploaded asset lands in DRAFT and no op can publish it** — A File post has only an id: address and post.publish takes only post:, so a public replica's assets stay unpublished and the batch fails whole at ops[0]. → §XVII.40
 - 📋 **SH464** (deps: SH449 ✅) **Neither conversion mode yields a replica that both renders and can be edited** — Fidelity renders with zero data-shio-prop and authorable writes no PageLayout, so /preview 400s and the Universal Editor has nothing to frame in either. → §XVII.41
 
 ## Block F — Market positioning

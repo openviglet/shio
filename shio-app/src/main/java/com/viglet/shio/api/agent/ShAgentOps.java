@@ -139,10 +139,14 @@ public final class ShAgentOps {
             new OpSpec(ShAgentBatchService.POST_PUBLISH,
                     List.of(ADDRESS), List.of(), List.of(), List.of(WHEN),
                     "Publish the draft at that address, or schedule it with an ISO-8601 `when` "
-                            + "(SH342). Needs a credential with mayPublish."),
+                            + "(SH342). Needs a credential with mayPublish. Takes `id:` too, and "
+                            + "only here: an asset has no URL to be addressed by, and an "
+                            + "uploaded one is already published, so this answers noop rather "
+                            + "than failing the batch (SH462)."),
             new OpSpec(ShAgentBatchService.POST_UNPUBLISH,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
-                    "Withdraw the published row; the draft stays."),
+                    "Withdraw the published row; the draft stays. Takes `id:` on the same "
+                            + "terms as post.publish."),
             new OpSpec(ShAgentBatchService.POST_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Trash a post. Needs `confirm` from its own dry run."),

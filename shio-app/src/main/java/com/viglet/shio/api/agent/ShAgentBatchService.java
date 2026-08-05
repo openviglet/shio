@@ -43,6 +43,7 @@ import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.UpdateRequest;
 import com.viglet.shio.api.folder.ShFolderWriteService;
+import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
@@ -1347,7 +1348,10 @@ public class ShAgentBatchService {
      * differ — a re-run of the same document must not claim to have published again.
      */
     private Change postPublish(ShAgentBatch.Op op, Session session) {
-        ShAddress address = writeAddress(op, ShAddress.Kind.POST);
+        ShAddress address = stateAddress(op);
+        if (address.kind() == ShAddress.Kind.ID) {
+            return publishById(op, address, session, true);
+        }
         ShSite site = requireSite(address.site(), session);
         // Dry run only: in a real run the draft genuinely exists by now and must really
         // be published — short-circuiting here would silently skip the publish and make
@@ -1446,12 +1450,19 @@ public class ShAgentBatchService {
     }
 
     private Change postUnpublish(ShAgentBatch.Op op, Session session) {
-        ShAddress address = writeAddress(op, ShAddress.Kind.POST);
+        ShAddress address = stateAddress(op);
+        if (address.kind() == ShAddress.Kind.ID) {
+            return publishById(op, address, session, false);
+        }
         ShSite site = requireSite(address.site(), session);
         Optional<ShPostUnified> published = state(site, address, ShPostState.PUBLISHED);
         if (published.isEmpty()) {
             return session.change(op, address, Change.NOOP, "not published", null);
         }
+        // SH462 - see requireDraftBehind: unpublish deletes the published row, so a post with
+        // no draft behind it would be destroyed rather than withdrawn.
+        requireDraftBehind(op, address,
+                state(site, address, ShPostState.DRAFT).orElse(null), published.get());
         String id = published.get().getId();
         if (!session.dryRun) {
             shContentAclService.requireWrite(id);
@@ -1689,6 +1700,130 @@ public class ShAgentBatchService {
      * {@code id:} carries no path, so it cannot express where a post <em>should</em> be
      * — which is the whole content of an upsert.</p>
      */
+    /**
+     * SH462 — the address the two state verbs take: {@code post:} always, and {@code id:} for an
+     * object that <b>can hold no {@code post:} address</b>.
+     *
+     * <h2>The dead end this opens</h2>
+     *
+     * <p>A {@code File} post is never given a friendly URL ({@code ShStaticFileService.upload} does
+     * not assign one, which is why SH172 needed the {@code id:} fallback in the first place), so
+     * {@code /agent/find} reports a site's assets as {@code id:<uuid>} — correctly, because that is
+     * the only address they have. Every write then refused that form, and the refusal's own
+     * {@code fix} said "re-address the op with the `post:` scheme": advice that <em>cannot be
+     * followed</em> for this object. And because a batch is atomic, one such op failed the whole
+     * run at {@code ops[0]}, so a replication that tried to be thorough about its assets published
+     * nothing at all.</p>
+     *
+     * <h2>What SH79 is actually protecting, and why this does not break it</h2>
+     *
+     * <p>The rule is that a write must not take a UUID <em>instead of</em> an address, because a
+     * UUID is the working currency this whole surface exists to remove and because
+     * {@code folder:}/{@code post:} are separate namespaces a guess could confuse. Neither applies
+     * here: an object with no friendly URL has no address to prefer, and there is no second
+     * namespace to be confused with. So the exemption is written as exactly that condition — the
+     * post's {@code furl} is blank — and a post that <em>does</em> have one is still refused,
+     * now naming the address it should have been given.</p>
+     *
+     * <p>Publish and unpublish only. {@code post.upsert} and {@code post.move} are unchanged and
+     * must be: they take or change an address, and an object with none cannot be their subject.</p>
+     */
+    private ShAddress stateAddress(ShAgentBatch.Op op) {
+        if (op.address() == null || op.address().isBlank()) {
+            throw new MissingOpFieldException("address", op.op(), null, "post:<site>/<path>",
+                    "Every op names what it acts on by address.");
+        }
+        ShAddress address = ShAddress.parse(op.address());
+        if (address.kind() != ShAddress.Kind.POST && address.kind() != ShAddress.Kind.ID) {
+            throw new WrongAddressKindException(op.op(), address, ShAddress.Kind.POST);
+        }
+        return address;
+    }
+
+    /**
+     * A state change on an object addressed by id (SH462).
+     *
+     * <p>The publish half is almost always a {@code NOOP}, and that is the outcome worth having
+     * rather than a shortcoming: an uploaded {@code File} is written {@code PUBLISHED} by
+     * {@code upload} itself, so an agent that publishes its assets for safety's sake is <b>told
+     * they are already live</b> and its batch survives — which is the whole of the defect. The
+     * transition is still real when there is a draft, because a {@code File} post can reach that
+     * state by other routes (a {@code post.upsert} naming the type, an unpublish).</p>
+     *
+     * @param publishing {@code true} for post.publish, {@code false} for post.unpublish
+     */
+    private Change publishById(ShAgentBatch.Op op, ShAddress address, Session session,
+                               boolean publishing) {
+        String id = address.id();
+        ShPostUnified draft = shPostUnifiedRepository.findByIdAndState(id, ShPostState.DRAFT)
+                .orElse(null);
+        ShPostUnified published = shPostUnifiedRepository.findByIdAndState(id, ShPostState.PUBLISHED)
+                .orElse(null);
+        ShPostUnified any = draft != null ? draft : published;
+        if (any == null) {
+            throw new ShAddressResolver.UnresolvedAddressException(address, List.of());
+        }
+        // The exemption is the *absence of an address*, not the type — so it is asked of the post
+        // rather than of a list of type names somebody has to keep in step.
+        if (any.getFurl() != null && !any.getFurl().isBlank()) {
+            throw new AddressableByUrlException(op.op(), address, any);
+        }
+        // Site access, the same question `requireSite` asks of a `post:` address — an id names an
+        // object without saying whose, so it must be asked here rather than skipped.
+        ShSite site = ShFolderSite.of(any.getShFolder());
+        requireSite(site == null ? null : site.getName(), session);
+
+        if (publishing) {
+            if (draft == null) {
+                return session.change(op, address, Change.NOOP, "no draft to publish",
+                        published.getId());
+            }
+            if (published != null && sameContent(draft, published)) {
+                return session.change(op, address, Change.NOOP, null, draft.getId());
+            }
+            if (!session.dryRun) {
+                shContentAclService.requireWrite(draft.getId());
+                shPostUnifiedWriteService.publish(draft.getId(), session.actor);
+            }
+            return session.change(op, address, Change.PUBLISH, null, draft.getId());
+        }
+        if (published == null) {
+            return session.change(op, address, Change.NOOP, "not published", null);
+        }
+        requireDraftBehind(op, address, draft, published);
+        if (!session.dryRun) {
+            shContentAclService.requireWrite(published.getId());
+            shPostUnifiedWriteService.unpublish(published.getId(), session.actor);
+        }
+        return session.change(op, address, Change.UNPUBLISH, null, published.getId());
+    }
+
+    /**
+     * SH462 - a withdrawal that would DESTROY the object is refused.
+     *
+     * <h2>Found by making the op reachable</h2>
+     *
+     * <p>{@code ShPostUnifiedWriteService.unpublish} hard-deletes the {@code PUBLISHED} row and
+     * keeps the draft, which is exactly right for the post it was written for: a post reaches
+     * {@code PUBLISHED} through {@code post.publish}, which leaves the draft behind, so there is
+     * always something to fall back to. An uploaded {@code File} has <b>no draft</b> - SH38 writes
+     * one row and it is published - so withdrawing it deletes the object outright, not even into
+     * the trash {@code post.delete} uses. Nothing could reach that before SH462 gave the op an
+     * address for it, which is what makes this a finding <em>of</em> the change rather than a
+     * regression <em>in</em> it.</p>
+     *
+     * <p>Guarded on <b>both</b> address forms rather than only the new one: a {@code PUBLISHED} row
+     * with no draft is a shape an exchange import can produce for an ordinary post too, and a guard
+     * covering only the path this task opened would leave the older one destroying content by the
+     * same mechanism. P7, and the surprise here is unrecoverable.</p>
+     */
+    private void requireDraftBehind(ShAgentBatch.Op op, ShAddress address,
+                                    ShPostUnified draft, ShPostUnified published) {
+        if (draft == null) {
+            throw new NothingToFallBackToException(op.op(), address, published);
+        }
+    }
+
     private ShAddress writeAddress(ShAgentBatch.Op op, ShAddress.Kind expected) {
         if (op.address() == null || op.address().isBlank()) {
             throw new MissingOpFieldException("address", op.op(), null,
@@ -1970,6 +2105,64 @@ public class ShAgentBatchService {
                             + expected.name().toLowerCase(Locale.ROOT) + ":` scheme.")
                     .withExample(expected == ShAddress.Kind.POST
                             ? "post:Blog/blog/hello-world" : "folder:Blog/blog"));
+        }
+    }
+
+    /**
+     * SH462 — an {@code id:} on a state verb, for a post that has a {@code post:} address.
+     *
+     * <p>The exemption exists for objects that <b>cannot</b> be addressed by URL, so a post that can
+     * is refused — and the refusal is worth its own class because it is the one place on this surface
+     * that can hand the caller the exact address it should have sent, rather than the scheme it
+     * should have used. {@code WrongAddressKindException} says "use `post:`"; this says
+     * "use `post:Blog/hello-world`".</p>
+     */
+    public static class AddressableByUrlException extends ShTeachingException {
+
+        public AddressableByUrlException(String op, ShAddress sent, ShPostUnified post) {
+            super(ShProblem.badRequest("addressable-by-url",
+                            op + " takes an id: only for a post with no URL")
+                    .withDetail("'" + sent + "' names a post that has a friendly URL, so it has a "
+                            + "post: address and SH79's rule applies to it: a write names content "
+                            + "by address, never by the UUID the address exists to replace. An "
+                            + "id: is accepted here only for an object that can hold no address "
+                            + "at all - a File post, which is never given a URL.")
+                    .withFix("Re-address the op with this post's own address.")
+                    .withExample(addressOf(post)));
+        }
+
+        private static String addressOf(ShPostUnified post) {
+            ShSite site = post == null ? null : ShFolderSite.of(post.getShFolder());
+            return ShAddress.post(site == null ? null : site.getName(),
+                    post == null ? null : post.getFurl()).toString();
+        }
+    }
+
+    /**
+     * SH462 — a withdrawal with nothing behind it, which would be a deletion.
+     *
+     * <p>Refused rather than performed, and refused rather than quietly turned into a
+     * {@code post.delete}: those are different acts with different reversibility (delete is the SH55
+     * trash and restorable; this would not be), and an op that silently did the more destructive one
+     * is the shape P7 exists to forbid. The message names the one op that <em>does</em> mean it.</p>
+     */
+    public static class NothingToFallBackToException extends ShTeachingException {
+
+        public NothingToFallBackToException(String op, ShAddress sent, ShPostUnified published) {
+            super(ShProblem.badRequest("nothing-to-fall-back-to",
+                            op + " would delete '" + sent + "', not withdraw it")
+                    .withDetail("Unpublishing removes the published row and leaves the draft behind. "
+                            + "This object has no draft - an uploaded File is written published and "
+                            + "never has one - so there is nothing to fall back to and the row is all "
+                            + "there is. Removing it would destroy the object outright, and not into "
+                            + "the trash.")
+                    .withAllowed(List.of(POST_DELETE, POST_UPSERT))
+                    .withFix("If you meant to remove it, use post.delete, which trashes it and can "
+                            + "be undone. If you meant to take it off the public site while keeping "
+                            + "it, there is no such state for an object with no draft: re-upload it "
+                            + "when it is wanted again.")
+                    .withExample(POST_DELETE + " " + sent
+                            + (published == null ? "" : " (" + published.getTitle() + ")")));
         }
     }
 

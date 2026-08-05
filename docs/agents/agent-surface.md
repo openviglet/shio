@@ -136,6 +136,34 @@ is meant, and the lenient `site:` form **refuses to guess** when both are occupi
 **(3) Absent, not forbidden**: an address outside the SH2 allow-list resolves **404, never 403**, so
 a scoped credential cannot use the error to prove a site exists.
 
+**And the one exemption, which is the absence of an address rather than a type (SH462).**
+`post.publish` and `post.unpublish` take an `id:` when — and only when — the post has **no friendly
+URL**. A `File` post is never given one, so `/agent/find` reports a site's assets as `id:<uuid>`,
+correctly, and every write then refused that form with a `fix` saying "re-address the op with the
+`post:` scheme" — advice this object cannot follow. Because a batch is atomic, one such op failed
+the whole run at `ops[0]`: an agent thorough about its assets published nothing, including its
+pages. **A surface that emits an address its own writes refuse is the defect**; the whole-batch
+failure is what made it expensive rather than untidy. Nothing in rule (2) is weakened — there is no
+second namespace to confuse and no address to prefer — and a post that *does* have a URL is still
+refused, now by `addressable-by-url`, which hands back **that post's own address** rather than the
+scheme it should have used. `post.upsert` and `post.move` are unchanged and must be: they take or
+change an address, so an object with none cannot be their subject.
+
+**The filing's other half did not exist, and the measurement is the first assertion in
+`ShAgentAssetPublishTest`.** "An uploaded asset lands in DRAFT" — it does not:
+`ShStaticFileService.upload` writes **one** row and it is `PUBLISHED` (SH38), so a replica's assets
+are live on upload and `/agent/find` reports them so. Publishing one by `id:` is therefore a `noop`,
+which is the outcome worth having: the agent is *told* they are already live and its batch survives.
+
+**Making the op reachable found a deletion (SH462, and it shipped in the same commit).**
+`ShPostUnifiedWriteService.unpublish` hard-deletes the `PUBLISHED` row and keeps the draft — right
+for the post it was written for, because publishing leaves a draft behind. An uploaded `File` has no
+draft, so the same call **destroys the object outright**, not even into the SH55 trash. The first
+version of the test asserted the round trip and did destroy it; every later test in the class then
+failed on an id that no longer resolved, which is the failure a curator would have had one asset at
+a time. `nothing-to-fall-back-to` now refuses it on **both** address forms, not just the new one: a
+`PUBLISHED` row with no draft is a shape an exchange import can produce for an ordinary post too.
+
 **A site's home page is `post:<site>/`, and that is now written down in the four places it is looked
 for (SH433).** It always resolved — `normalizePath` folds `post:Site/` and `post:Site//` to a `furl`
 of `/`, the renderer looks for exactly that post, and `/preview/<site>/` then serves it — but nothing
