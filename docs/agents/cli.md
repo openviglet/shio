@@ -343,6 +343,20 @@ the findings are absences, and SH143's rule bites hardest for those.
 `fetch failed` on the gate whose whole promise is that it needs no instance. It is a constant now,
 beside the two names it is made of.
 
+**A row's `on` is distinct pages, and `occurrences` is every sighting (SH432).** It used to be one
+counter incremented per sighting and printed as pages: a capture of **one** page reported
+`navigation (3)` with `on 2 page(s)` against all three items, because the source repeats its links in
+a topbar `<nav>` and again in a footer `<nav>`. A navigation item's reach is the whole argument for
+curating it as content — a link on every page is a menu, a link on one page is a link — so doubling it
+wherever a site repeats its nav (most sites) makes the number say the opposite of what a reviewer
+needs, and unlike a truncated count it cannot be read as a lower bound: a count above the pages
+captured is not conservative, it is wrong. The pages are a **set** now, `occurrences` is kept because
+"this link appears twice on every page" is itself a fact about a menu, and the report prints the second
+number only when it differs. **`forms` had the identical defect** one field along — its own comment
+said "how many pages carry it" — and is fixed in the same pass. No `INVENTORY_VERSION` bump, unlike
+SH431, and the reason is the test of whether a bump is owed: nothing *consumes* `on` (the coverage gate
+reads `forms` for its fields, never for its counts), so no reader can misread an older file through it.
+
 **One test drives the whole pipeline, and it is the only one that can (SH422).** Block Q shipped as
 eleven tasks, each thoroughly tested in isolation — and every phase hands an artefact to the next, so
 each handoff is a shape agreed in two places with a unit test pinning one side and *constructing the

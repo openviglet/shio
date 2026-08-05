@@ -1651,29 +1651,6 @@ rewritten to the uploaded asset's address, which needs an upload with no field. 
 first is closer to what a fidelity replica means. Whichever, `source-asset-missing`
 should be able to say the bytes exist and nothing serves them.
 
-### XVII.24 Counting occurrences and calling them pages (SH432)
-
-A capture of one page reported `navigation (3)` with `on 2 page(s)` against all three
-items. The inventory holds exactly one page. The source repeats its three links in a
-topbar `<nav>` and again in a footer `<nav>`, so what was counted is occurrences and
-what is printed is pages.
-
-Small, and worth fixing for what the field is for rather than the arithmetic. A
-navigation item's reach is the argument for SH382 curating it as content: a link on
-every page is a menu, a link on one page is a link. Doubling it wherever a site repeats
-its nav in the footer — most sites — makes the number say the opposite of what a
-reviewer needs, and nothing prints it beside the page count to be checked against.
-
-Nor can it be read as a lower bound the way a truncated count can. A count above the
-pages captured is not conservative, it is wrong, and here it exceeded it twofold on the
-smallest case there is, which is why it was visible at all. On the twenty-five-page
-crawl the same defect produced `on 2 page(s)` for an item genuinely on two,
-indistinguishable from one item twice on one page.
-
-Either count distinct pages, which is what the label promises, or report both — since
-"this link appears twice per page" is itself a fact about a menu. What the field must
-not do is claim reach it did not measure.
-
 ### XVII.25 The home page is the one address nothing spells (SH433)
 
 `verify --checks replication` reported `source-page-missing` for `/` — the capture

@@ -707,20 +707,50 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
     }
     for (const form of doc.forms) {
       // Deduped like navigation, and for the same reason: one newsletter signup in a footer is one
-      // form to reproduce, not sixty. `on` is how many pages carry it and `path` is where it was
-      // first seen, which is the page a conversion opens.
+      // form to reproduce, not sixty. `path` is where it was first seen, which is the page a
+      // conversion opens. SH432 — the pages are a *set*: the count said pages and added one per
+      // sighting, so a form repeated in a header and a footer claimed two pages from one.
       const key = `${form.method} ${form.action} ${form.fields.map((field) => field.name ?? field.type).join(",")}`;
       const existing = forms.get(key);
-      if (existing) existing.on += 1;
-      else forms.set(key, { path, action: form.action, method: form.method, fields: form.fields, on: 1 });
+      if (existing) {
+        existing.occurrences += 1;
+        existing.seen.add(path);
+      } else {
+        forms.set(key, {
+          path,
+          action: form.action,
+          method: form.method,
+          fields: form.fields,
+          occurrences: 1,
+          seen: new Set([path]),
+        });
+      }
     }
     for (const item of doc.nav) {
       const url = resolveHref(item.href, entry.url);
       const target = url ? (sameOrigin(url, originUrl) ? pathOf(url) : url.href) : item.href;
       const key = `${item.label}\u0000${target}`;
       const existing = navigation.get(key);
-      if (existing) existing.on += 1;
-      else navigation.set(key, { label: item.label, href: target, external: url ? !sameOrigin(url, originUrl) : false, on: 1 });
+      // SH432 — the defect this fixes, and the field it matters most for. A capture of ONE page
+      // reported `on 2 page(s)` against all three menu items, because the source repeats its nav in
+      // a topbar and again in a footer: what was counted was occurrences and what was printed was
+      // pages. A navigation item's reach is the whole argument for curating it as content — a link on
+      // every page is a menu, a link on one page is a link — so doubling it wherever a site repeats
+      // its nav (most sites) makes the number say the opposite of what a reviewer needs. And it
+      // cannot be read as a lower bound the way a truncated count can: a count above the pages
+      // captured is not conservative, it is wrong.
+      if (existing) {
+        existing.occurrences += 1;
+        existing.seen.add(path);
+      } else {
+        navigation.set(key, {
+          label: item.label,
+          href: target,
+          external: url ? !sameOrigin(url, originUrl) : false,
+          occurrences: 1,
+          seen: new Set([path]),
+        });
+      }
     }
     pages.push({
       path,
@@ -800,9 +830,9 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
     // every diff non-empty.
     assets: [...assets.values()].sort(byPath),
     locales: [...locales.values()].sort((a, b) => (a.locale < b.locale ? -1 : 1)),
-    forms: [...forms.values()].sort(byPathThenAction),
+    forms: [...forms.values()].map(reach).sort(byPathThenAction),
     // NOT sorted — a menu's order is the fact this section exists to record.
-    navigation: [...navigation.values()],
+    navigation: [...navigation.values()].map(reach),
     scripts: [...scripts.values()].sort((a, b) => (a.host < b.host ? -1 : 1)),
     outbound: [...external.entries()]
       .map(([host, refs]) => ({ host, refs }))
@@ -835,6 +865,23 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
       .sort(byPath),
     notes: collected,
   };
+}
+
+/**
+ * Turns the pages a row was **seen on** into the two counts it reports (SH432).
+ *
+ * <p>`on` is distinct pages, which is what the label always promised, and `occurrences` is every
+ * sighting — kept rather than dropped, because "this link appears twice on every page" is itself a
+ * fact about a menu, and a reader who can see both can tell a menu from a repetition. Emitted in a
+ * fixed field order and with the working set removed, so the file is still byte-stable (P5).
+ *
+ * <p>No `INVENTORY_VERSION` bump, and that is a decision rather than an omission: nothing *consumes*
+ * `on` — the coverage gate reads `forms` for its fields and never for its counts — so no reader can
+ * misread an older file through it. SH431 bumped because a consumer would have; this one is read by a
+ * human, in a report generated from the capture it describes.
+ */
+function reach({ seen, ...row }) {
+  return { ...row, on: seen.size, occurrences: row.occurrences };
 }
 
 function byPath(a, b) {
@@ -893,10 +940,11 @@ export function describeInventory(inventory, options = {}) {
   section("locales", inventory.locales, (locale) =>
     `${locale.locale}  ${locale.shape}  ${locale.sample}  on ${locale.pages} page(s)`);
   section("navigation", inventory.navigation, (item) =>
-    `${item.label || "(no label)"} → ${item.href}${item.external ? " (external)" : ""}  on ${item.on} page(s)`);
+    `${item.label || "(no label)"} → ${item.href}${item.external ? " (external)" : ""}`
+      + `  on ${item.on} page(s)${repeats(item)}`);
   section("forms", inventory.forms, (form) => {
     const fields = form.fields.slice(0, 8).map((field) => field.name ?? `(${field.type})`).join(", ");
-    const on = form.on > 1 ? `  on ${form.on} page(s)` : "";
+    const on = form.on > 1 ? `  on ${form.on} page(s)${repeats(form)}` : repeats(form);
     return `${form.path} → ${form.method.toUpperCase()} ${form.action}  ${form.fields.length} field(s): ${fields}${on}`;
   });
   section("assets", byKind(inventory.assets), (row) =>
@@ -920,6 +968,20 @@ export function describeInventory(inventory, options = {}) {
 }
 
 /** Assets grouped by kind: 400 image rows are noise, "image: 400" is the fact. */
+/**
+ * `, twice per page` — printed only when the sightings outnumber the pages (SH432).
+ *
+ * <p>Silent otherwise, because on most rows the two counts are the same and a second number that
+ * always says nothing is a number a reader stops reading. When they differ it is the interesting
+ * case: a menu repeated in a footer, which is what made the page count wrong in the first place.
+ */
+function repeats(row) {
+  const times = Number(row.occurrences ?? 0);
+  const pages = Number(row.on ?? 0);
+  if (!pages || times <= pages) return "";
+  return `, ${times} occurrence(s)`;
+}
+
 function byKind(assets) {
   const kinds = new Map();
   for (const asset of assets) {

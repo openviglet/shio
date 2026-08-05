@@ -424,6 +424,57 @@ test("SH431: a fetch that really failed is still a problem, and the report keeps
   );
 });
 
+test("SH432: a menu repeated in a footer is on one page, and says how often it appears", async () => {
+  // The measured case: a capture of ONE page reported `navigation (3)` with `on 2 page(s)` against
+  // all three items, because the source repeats its links in a topbar <nav> and again in a footer
+  // <nav>. What was counted was occurrences and what was printed was pages — and a count above the
+  // pages captured cannot be read as a lower bound the way a truncated one can. It is just wrong.
+  const twice = `<html lang="en"><head><title>Home</title></head><body>
+    <nav><a href="/solutions">Solutions</a><a href="/pricing">Pricing</a></nav>
+    <p>${"text ".repeat(60)}</p>
+    <form action="/subscribe" method="POST"><input type="email" name="email"></form>
+    <footer><nav><a href="/solutions">Solutions</a><a href="/pricing">Pricing</a></nav></footer>
+    <form action="/subscribe" method="POST"><input type="email" name="email"></form>
+  </body></html>`;
+  const ctx = ctxWith({ "/": { body: twice } });
+  const { inventory } = await clone.run({ depth: 0 }, ["https://x.test"], ctx);
+
+  assert.equal(inventory.pages.length, 1, "one page captured, which is what makes the defect visible");
+  for (const item of inventory.navigation) {
+    assert.equal(item.on, 1, `${item.href} is on one page — the label promises distinct pages`);
+    assert.equal(item.occurrences, 2, "and the repetition is kept: a link that appears twice on "
+      + "every page is a fact about the menu, not noise to drop");
+  }
+  assert.match(
+    ctx.stdout.text,
+    /on 1 page\(s\), 2 occurrence\(s\)/,
+    "the report prints both, so a reviewer can tell a menu from a repetition",
+  );
+
+  // The same arithmetic, one field along — `on` was a per-sighting counter there too, and the
+  // comment beside it already said "how many pages carry it".
+  assert.equal(inventory.forms.length, 1, "one form, deduped");
+  assert.equal(inventory.forms[0].on, 1);
+  assert.equal(inventory.forms[0].occurrences, 2);
+});
+
+test("SH432: reach across pages is still counted, which is the number the field exists for", async () => {
+  const menu = (title) => `<html lang="en"><head><title>${title}</title></head><body>
+    <nav><a href="/solutions">Solutions</a><a href="/about">About</a></nav>
+    <p>${"text ".repeat(60)}</p></body></html>`;
+  const ctx = ctxWith({ "/": { body: menu("Home") }, "/about": { body: menu("About") } });
+  const { inventory } = await clone.run({ depth: 1 }, ["https://x.test"], ctx);
+
+  const solutions = inventory.navigation.find((item) => item.href === "/solutions");
+  assert.equal(solutions.on, 2, "two pages carry it, and that is the reach a reviewer reads");
+  assert.equal(solutions.occurrences, 2);
+  assert.ok(
+    !/occurrence\(s\)/.test(ctx.stdout.text),
+    "and nothing is printed about occurrences when they equal the pages — a second number that "
+      + "always says nothing is one a reader stops reading",
+  );
+});
+
 test("a seed that redirects off-host is refused, naming the host it actually got", async () => {
   const site = { ...SITE, "/": { status: 301, location: "https://www.x.test/", body: "" } };
   const ctx = ctxWith(site);
