@@ -374,6 +374,31 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
+### IX.23 A conformance suite is the instrument this session argues for (SH448)
+
+Every defect this session found was invisible to the suite, and one cause explains all:
+the tests assert composition, and the defects live where the code meets a live instance
+and a real registry.
+
+SH422 already drives clone → propose → accept → verify, and SH438, SH442 and SH446
+passed under it, because it asserts the seams over a served fixture. `snapshot.test.mjs`
+injects its capture, so no test hands a URL to a browser — SH442 shipped with fixtures
+encoding two of the three states a site URL has. Nothing installs from npm, so SH446,
+the scaffold `init` writes being unresolvable, surfaced only under a hand-run `npm
+install --dry-run`. And SH434, SH440 and SH445 are one abort fixed three times, each
+measured against a harness, not the failing command.
+
+So the instrument is a **conformance suite against a running instance**, asserting
+observable outcomes rather than internals, in two scenarios: replication (capture a
+fixture, convert, gate it, install what `init` writes) and native render (provision the
+model, build layout, region, theme and a post-type, then assert `/preview/` answers 200
+and the DOM carries `sh-region` and the `data-shio-*` markers SH185 specifies).
+
+It is opt-in the way the ITs are — it needs an instance, so `clean test` must not invoke
+it — and it seeds and deletes its own site, the answer to what a hand-driven run leaves
+behind. Each assertion names the task it would have caught, so the suite reads as the
+record of what unit tests structurally cannot see.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
