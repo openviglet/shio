@@ -524,6 +524,32 @@ test("SH452: a stylesheet that a stylesheet references is followed too", async (
   );
 });
 
+test("SH455: an inline <style>'s url() is followed too, which is where a critical-CSS site keeps them", async () => {
+  // SH452 closed the *external* stylesheet. A page with critical CSS has no stylesheet file, so its
+  // webfonts stayed invisible to the downloader while `theme.mjs` — which reads the same <style>
+  // blocks — named them in a note whose remedy was to re-run this command. Measured on
+  // openviglet.github.io: `wrote 1 asset`, twice, and the replica in a serif fallback.
+  const ctx = ctxWith({
+    bodies: {
+      "/": {
+        body: "<html><head><style>@font-face{font-family:Inter;src:url(/fonts/inter.woff2)}"
+          + "body{background:url(\"/img/bg.jpg\")}</style></head><body><p>Copy.</p></body></html>",
+      },
+      "/fonts/inter.woff2": { type: "font/woff2", body: "WOFF2BYTES" },
+      "/img/bg.jpg": { type: "image/jpeg", body: "JPEGBYTES" },
+    },
+  });
+
+  const { inventory } = await clone.run({ assets: true, site: "Blog", depth: 0 }, ["https://x.test"], ctx);
+
+  assert.ok(
+    Object.keys(ctx.written).includes("/repo/shio/assets/Blog/fonts/inter.woff2"),
+    `the webfont is in the tree. Written: ${Object.keys(ctx.written).sort().join(" ")}`,
+  );
+  assert.ok(Object.keys(ctx.written).includes("/repo/shio/assets/Blog/img/bg.jpg"));
+  assert.equal(inventory.assets.find((asset) => asset.path === "/fonts/inter.woff2").kind, "font");
+});
+
 test("SH452: an off-origin url() is left behind and its host is named, like any other", async () => {
   // SH378's rule reaches here unchanged: mirroring somebody else's bytes is a licensing decision
   // this tool does not make. What matters is that it lands in the *same* external report, so the

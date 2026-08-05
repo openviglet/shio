@@ -144,6 +144,21 @@ deliberately a **second copy** of `theme.mjs`': the two run at different times a
 them would make a capture depend on the theme builder — what would be a real defect is the two
 disagreeing, which is what the tests hold.
 
+**SH455 closed the half of that a critical-CSS page falls through.** SH452 reads a stylesheet that was
+*written*, which is right for a `<link rel="stylesheet">` and reaches nothing on a page whose CSS is an
+inline `<style>` block — there is no file to download and therefore none to walk. `theme.mjs` sees
+those blocks (`styleBlocks`, SH427) and the scanner did not, so the fonts were named in a note whose
+remedy was *re-run this capture* and fetched by nobody: measured on `openviglet.github.io`, `wrote 1
+asset` on the first run and on a second after `propose` had named both fonts, replica in a serif
+fallback. **A remedy that cannot work is the same defect P6 exists to remove**, and worse than the
+silence SH452 replaced, because the reader cannot tell a no-op from a failure. So `scanPage` now walks
+`styleBlocks(html)` with the same `URL_CALL` — **imported** from `clone-assets.mjs`, not copied a
+third time; that import runs capture→capture, which is the direction the paragraph above forbids only
+in reverse — and pushes each resolved reference onto `doc.assets`, where `buildInventory` and the
+downloader already handle it. `kindForUrl` rather than `assetKind`: a `url()` has no tag and no `rel`,
+so the extension is the only evidence, and the unrecognised default has to be `image` (downloads) and
+not `assetKind`'s `other` (does not).
+
 **The note that excused the leftovers was wrong in the common case, and that was the other half.**
 It read: unresolved references are "left as they are — the theme still fetches them from the source's
 origin". True of an **absolute** URL. These were **root-relative**, so they resolve against the

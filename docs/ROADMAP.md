@@ -84,7 +84,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH455** (deps: SH452 ✅) **The note names the fonts and hands the reader a command that cannot fetch them** — addAsset is reached from markup attributes only, so no url() from a stylesheet enters the inventory the downloader reads, and re-running the capture writes one asset. → §XVII.37
 - 📋 **SH456** (deps: SH449 ✅) **convert writes everything, then exits 1 on a root folder address it malformed itself** — The ternary at convert.mjs:224 strips the slash for the root folder, which is the one form that needs it, so every fidelity conversion of a home page reports failure after succeeding. → §XVII.38
 
 ## Block F — Market positioning

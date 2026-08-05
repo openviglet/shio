@@ -1570,31 +1570,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.37 A remedy that is not one (SH455)
-
-SH452 shipped the honest note and not the fetch. The note is now right — "root-relative,
-so they resolve against the REPLICA's origin" — and ends with a remedy: "Re-run the
-capture to fetch them: `shio clone <url> --assets --site <name>`."
-
-That command is the one that just ran. Measured: that clone wrote **1 asset**, the
-`<link rel="icon">` logo, on the first run and on a second after `propose` had named
-both fonts. The replica still renders in a serif fallback.
-
-The reason is one call graph. `addAsset` in `clone.mjs` is reached from markup
-attributes only — `<link href>`, `src`, `poster`, `srcset` — so nothing extracts `url()`
-from a stylesheet into the inventory, and `--assets` downloads "the bytes the inventory
-names". `theme.mjs` finds them, counts them and writes the note; nothing writes them
-back where the downloader looks.
-
-It is worse than the silence it replaced. The old note claimed the fonts still loaded,
-which was false and inert. This one is true, names the files, and hands the reader a
-command that cannot work — so the reader runs it, sees `wrote 1`, and has no way to tell
-a no-op from a failure. P6 asks a message to carry a fix; a fix that is not one is the
-same defect the message was written to remove.
-
-The seam already exists: `theme.mjs` holds the URLs, and the inventory is the
-downloader's input.
-
 ### XVII.38 The one branch that builds an address the resolver refuses (SH456)
 
 `shio convert --site Publico --create-site` printed its whole report — `0 section(s) in

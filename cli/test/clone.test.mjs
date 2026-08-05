@@ -116,6 +116,32 @@ test("assets come from every attribute that names bytes, srcset included", () =>
   assert.equal(kinds.get("/img/hero@2x.png"), "image");
 });
 
+test("a url() inside an inline <style> is an asset the inventory names (SH455)", () => {
+  // The measured case: a page with critical CSS and no stylesheet file. SH452 made a *downloaded*
+  // stylesheet's references discoverable, so an external sheet's webfonts arrive; an inline block's
+  // did not, and `--assets` wrote one file while `propose` reported the fonts as 404-on-the-replica
+  // and told the reader to re-run the capture that could not fetch them.
+  const page = `<html><head><style>
+    @font-face { font-family: Inter; src: url("/fonts/inter.woff2") format("woff2"); }
+    body { background: url(/img/bg.jpg); }
+    .sprite { background-image: url('../sprite'); }
+    .noise { background: url(data:image/gif;base64,AA==); }
+    .off { background: url(https://cdn.test/x.png); }
+  </style></head><body><p>Copy.</p></body></html>`;
+  const kinds = new Map(
+    scanPage(page, "https://x.test/a/b").assets.map((asset) => [asset.url, asset.kind]),
+  );
+
+  assert.equal(kinds.get("https://x.test/fonts/inter.woff2"), "font");
+  assert.equal(kinds.get("https://x.test/img/bg.jpg"), "image");
+  // Resolved against the page, and `image` because a url() carries no tag and no rel — the
+  // extension is the only evidence, and the default has to be the one that downloads.
+  assert.equal(kinds.get("https://x.test/sprite"), "image");
+  assert.equal(kinds.get("https://cdn.test/x.png"), "image");
+  // A data: URI is already portable; recording it would put base64 in the inventory.
+  assert.ok(![...kinds.keys()].some((url) => url.startsWith("data:")));
+});
+
 test("a form's fields are what it submits, and an unnamed control is not a field", () => {
   const [form] = scanPage(PAGE, "https://x.test/").forms;
 

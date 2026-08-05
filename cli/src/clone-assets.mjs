@@ -49,8 +49,12 @@ const TRAVERSAL = new Set([".", ".."]);
  * the two modules run at different times — this one before anything is downloaded, that one after —
  * and importing across them would make a capture depend on the theme builder. What would be a real
  * defect is the two *disagreeing*, and `clone-assets.test.mjs` asserts they find the same set.</p>
+ *
+ * <p>Exported for `clone.mjs`, which scans a page's inline `<style>` blocks with it (SH455). That is
+ * an import in the capture direction — the scanner already depends on this module's `kindForUrl` —
+ * so it adds a copy of the pattern to neither side.</p>
  */
-const URL_CALL = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)'"\s]+))\s*\)/gi;
+export const URL_CALL = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)'"\s]+))\s*\)/gi;
 
 /**
  * What kind of asset a URL names, from its extension alone (SH452).

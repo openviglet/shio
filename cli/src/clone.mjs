@@ -43,6 +43,8 @@
  * is a fact `git log` already holds.
  */
 
+import { URL_CALL, kindForUrl } from "./clone-assets.mjs";
+
 /**
  * The inventory's shape version. Bumped when a consumer would read an old file wrongly.
  *
@@ -369,6 +371,27 @@ export function scanPage(html, pageUrl) {
     if (!url) return;
     doc.assets.push({ url: url.href, kind: assetKind(tag, url, attrs) });
   };
+
+  // SH455 — the `url()` calls inside the page's own `<style>` blocks, which `stripNonMarkup` removed
+  // before the loop below ever saw them.
+  //
+  // <p>SH452 made a *downloaded* stylesheet's references discoverable, and that is the case with an
+  // external `<link rel="stylesheet">`. A page whose CSS is inline has no such file, so its webfonts
+  // reached the theme builder — which reads `styleBlocks` too — and never reached the inventory the
+  // downloader reads. Measured on `openviglet.github.io`: `--assets` wrote 1 file, the `<link
+  // rel="icon">` logo, while `propose` named two webfonts as 404-on-the-replica and told the reader
+  // to re-run the very capture that could not fetch them (P6 — a fix that is not one).
+  //
+  // <p>`kindForUrl` rather than `assetKind`: a `url()` carries no tag and no `rel`, so the extension
+  // is the only evidence, and its unrecognised default is `image` — which downloads — where
+  // `assetKind`'s is `other`, which does not.
+  for (const body of styleBlocks(html)) {
+    for (const match of body.matchAll(URL_CALL)) {
+      const raw = (match[1] ?? match[2] ?? match[3] ?? "").trim();
+      const url = resolveHref(raw, pageUrl);
+      if (url) doc.assets.push({ url: url.href, kind: kindForUrl(url.pathname) });
+    }
+  }
 
   for (const token of tokenize(stripNonMarkup(html))) {
     if (token.type === "text") {
