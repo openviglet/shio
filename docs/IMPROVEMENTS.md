@@ -691,30 +691,6 @@ Two candidate answers, not exclusive:
   a trashed folder, so the correct form is also the shortest one. The lint then has something to
   point at, which is what made SH128's guard teachable rather than annoying.
 
-### XII.14 A safety flag that is ignored is worse than one that does not exist (SH430)
-
-`POST /api/v2/agent/batch?dryRun=true` created a site, two folders and three posts. The
-response said `"dryRun": false` and `"changed": 6`. Nothing refused and nothing warned;
-the write was reported as a write, which is the only tell and arrives after the fact.
-
-The endpoint declares `ids`, `verify`, `digest` and `format` as `@RequestParam`.
-`dryRun` is a field on the `ShAgentBatch` body. Spring ignores an unrecognised query
-parameter, so the spelling that looks exactly like the four flags that *are* query
-parameters is the one that silently disarms the rehearsal. This is SH365's "one flag,
-one meaning" defect a surface along: there, one name had two readings; here, one
-endpoint has two conventions and no way to tell which a flag follows.
-
-P7 is the law: draft-default, dry-run, explicit publish. A dry run that quietly commits
-is worse than no dry run, because the caller has been told the opposite of what happened
-and will trust the next one. It is also the flag most likely to be sent by someone who
-has not read the reference — which is who a rehearsal is for.
-
-The fix is a refusal, not a second spelling. An unknown query parameter on a mutating
-agent endpoint should be a teaching 400 naming the body field, per P6; `ShAgentFlag.of`
-already reads the four legitimate ones, so the allowed set is in hand. Accepting
-`?dryRun=` as a synonym would be worse: it makes the convention ambiguous instead of
-merely undiscoverable. Same audit for `/agent/apply`.
-
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
 > ✅ **Block M shipped in full**, including the six follow-ups the measurement itself opened

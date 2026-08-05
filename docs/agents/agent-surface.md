@@ -631,6 +631,21 @@ pass: `?verify=yes` used to be a caller asking for proof, getting silence, and r
 `?ids=` stays lenient — it only adds a field to rows that are otherwise identical, and `?ids=1` is
 informal rather than wrong; `1`/`0` are accepted everywhere for that reason.
 
+**And one rule for an unrecognised parameter *name*, on the writes only (SH430): a mutating agent
+endpoint refuses a query parameter it does not declare.** `POST /agent/batch?dryRun=true` created a
+site, two folders and three posts and answered `"dryRun": false, "changed": 6` — `ids`, `verify`,
+`digest` and `format` are query parameters there and `dryRun` is a body field, so the spelling that
+looks exactly like the four flags that *are* query parameters is the one Spring drops. The refusal
+is a teaching 400 in three shapes: *it is a body field here* (with the allow-list), *this endpoint
+has no `dryRun` and `POST /agent/plan` takes the same document and never writes* (`/agent/apply`),
+and *not a parameter of this endpoint* with `didYouMean`. `ShAgentQueryParams` is a
+`HandlerInterceptor` on `/api/v2/agent/**` that reads the allow-list off each handler's own
+`@RequestParam` declarations — so a new endpoint is covered before it is written, which a
+per-endpoint check would not have been (SH338). Accepting `?dryRun=` as a synonym was the other
+option and is worse: it makes the convention ambiguous rather than merely undiscoverable (SH365).
+**Reads stay lenient** for SH320's reason, and `POST /mcp` is outside it — a malformed MCP message
+must come back as JSON-RPC, not as an HTTP problem body.
+
 **`?format=` on `/agent/context` has three values (SH78, SH115):** `json`, `terse`, and
 `agents-md` — the same pack rendered as project agent instructions, which is what
 `shio context --as agents-md --out AGENTS.md` writes. An unknown value is a teaching **400**,

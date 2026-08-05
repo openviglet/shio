@@ -12,6 +12,8 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.viglet.shio.api.agent.diagnostics.ShAgentErrorRecordingFilter;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
@@ -28,7 +30,7 @@ import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
  * @since 2026.3
  */
 @Configuration(proxyBeanMethods = false)
-public class ShAgentWebConfig {
+public class ShAgentWebConfig implements WebMvcConfigurer {
 
     /**
      * Prefix mappings — each also covers nested paths ({@code /api/v2/agent/context},
@@ -53,6 +55,22 @@ public class ShAgentWebConfig {
         registration.setName("shEstTokensHeaderFilter");
         registration.setOrder(Ordered.LOWEST_PRECEDENCE - 30);
         return registration;
+    }
+
+    /**
+     * SH430 — the unknown-parameter refusal, mounted on the agent surface.
+     *
+     * <p>An interceptor rather than a check in each handler, because a check in each handler is a
+     * rule the next endpoint has to remember: this reads the allow-list off the handler's own
+     * {@code @RequestParam} declarations, so a mutating endpoint is covered before it is written.
+     * It runs after the security chain — a 401 must not be turned into a 400 about a parameter —
+     * and only on {@code POST}/{@code PUT}/{@code PATCH}/{@code DELETE}, which is
+     * {@link ShAgentQueryParams}'s declared scope.</p>
+     */
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new ShAgentQueryParams())
+                .addPathPatterns(ShAgentQueryParams.PATH_PATTERN);
     }
 
     /**
