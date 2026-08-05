@@ -222,6 +222,67 @@ describe("SH448 conformance: the native render path, end to end over HTTP", () =
         + `textual proof that replaces a human round trip. Got: ${JSON.stringify(digest).slice(0, 300)}`,
     );
 
+    // ── SH451: and a visitor with no credential can read it, once it is published ─────────
+    // The claim nothing else in this repository can make. Every guard below is asserted from a
+    // request that carries no Authorization header at all, because "anonymous" is not a property
+    // of the code — it is a property of what a stranger's HTTP client gets back.
+    const anonymousBefore = await fetch(`${conn.baseUrl}/sites/${site}/default/en-us/`);
+    assert.equal(
+      anonymousBefore.status,
+      404,
+      "SH451: PUBLISHED and never DRAFT. The page exists as a draft — the whole model above was "
+        + "written by post.upsert, which drafts (P7) — and a delivery route that served it would "
+        + "publish somebody's unfinished edit by rendering it",
+    );
+
+    // Every level, not just the page. SH278: a PUBLISHED render reads only published rows at every
+    // level, so an unpublished layout cannot be used — what a visitor gets must not depend on an
+    // edit nobody has published. The 409 that says so is one of the better errors in the product,
+    // and it is the reason this list is four ops rather than one.
+    const published = await batch(conn, [
+      { op: "post.publish", address: `post:${site}/theme` },
+      { op: "post.publish", address: `post:${site}/layout` },
+      { op: "post.publish", address: `post:${site}/region-nav` },
+      { op: "post.publish", address: `post:${site}/` },
+    ]);
+    assert.ok(!errorsIn(published), `publishing the model: ${JSON.stringify(published).slice(0, 400)}`);
+
+    const anonymous = await fetch(`${conn.baseUrl}/sites/${site}/default/en-us/`);
+    const publicHtml = await anonymous.text();
+    assert.equal(
+      anonymous.status,
+      200,
+      `SH451: a site built in Shio has a public URL. /preview/** answers 401 anonymously by design `
+        + `and the Next.js path cannot install (SH446), so until this route existed the renderer `
+        + `composed a correct page nobody outside the console could read. Body: ${publicHtml.slice(0, 300)}`,
+    );
+    assert.match(publicHtml, /<h1>Conformance home<\/h1>/, "the same render, the same content");
+    assert.ok(
+      !/data-shio-preview|Preview/i.test(publicHtml),
+      "SH451: no banner. A preview says what it is because nobody should have to work out whether "
+        + "they are looking at the live site; a delivery route saying so would be a lie",
+    );
+    assert.match(
+      anonymous.headers.get("cache-control") ?? "",
+      /public/,
+      "SH451: cacheable, which is the guard inverted rather than dropped — `no-store` on a preview "
+        + "is what stops it quietly becoming infrastructure, and this route *is* the infrastructure",
+    );
+    assert.equal(
+      anonymous.headers.get("x-robots-tag"),
+      null,
+      "SH451: and indexable. A published page a crawler is told to ignore is not published",
+    );
+
+    // The header variant, which is how one host serves one site: no site in the URL at all.
+    const headed = await fetch(`${conn.baseUrl}/sites/`, { headers: { "x-sh-site": site } });
+    assert.equal(
+      headed.status,
+      200,
+      "SH451: `x-sh-site` names the site so the URL carries only the content path — 0.3.8's own "
+        + "variant, recovered with the route rather than invented beside it",
+    );
+
     // ── the content lint agrees, on the instance, about the site we just made ─────────────
     const report = await agent.verify({ site });
     const missingTheme = (report?.findings ?? []).filter((row) => row.rule === "missing-theme");

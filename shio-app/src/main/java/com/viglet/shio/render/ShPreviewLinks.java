@@ -117,12 +117,27 @@ public class ShPreviewLinks {
      * @return the same HTML with resolvable internal links prefixed, and everything else untouched
      */
     public String rewrite(String html, String siteKey, ShPageRenderService.ShRenderedPage page) {
+        return rewriteInto(html,
+                ShSiteFrontEnd.PREVIEW_BASE + URLEncoder.encode(siteKey, StandardCharsets.UTF_8),
+                page);
+    }
+
+    /**
+     * The same pass, into whatever address space the caller serves at (SH451).
+     *
+     * <p>SH336's rule is not about the preview — it is that a link is rewritten <b>only when its path
+     * is a URL this site publishes</b>, so a `{{file_url}}`, an SH141 front-end route and an external
+     * site's own `/api/…` are all left as the author wrote them. That rule is identical for a public
+     * delivery URL; what differs is four characters of prefix. Parameterising it here rather than
+     * copying the pass is SH245's rule — the second copy is the one that stops matching.</p>
+     *
+     * @param prefix what a resolvable internal path is prefixed with, with no trailing slash
+     */
+    public String rewriteInto(String html, String prefix, ShPageRenderService.ShRenderedPage page) {
         if (html == null || html.isBlank() || page == null || page.siteId() == null) {
             return html;
         }
         Set<String> known = publishedUrls(page.siteId(), page.state());
-        String prefix = ShSiteFrontEnd.PREVIEW_BASE
-                + URLEncoder.encode(siteKey, StandardCharsets.UTF_8);
         Document document = Jsoup.parse(html);
         document.outputSettings().prettyPrint(false);
         // SH437 — one lookup per *distinct* path, not per element. A fidelity page is the whole

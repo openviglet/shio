@@ -905,6 +905,7 @@
 - **SH415** — The ITs are opt-in now: `skipITs` defaults true and `-DskipITs=false` runs them, on the finding that no workflow ran the Java suite at all and failsafe ignored its own failures.
 - **SH416** — A `@Container` read from `@DynamicPropertySource` starts eagerly now, so 26 ITs pass with none skipped; a lint names the next one and failsafe stops ignoring its own failures.
 - **SH365** — the page is --page and --url is the instance in snapshot and digest both, with --url still naming the page when nothing else does and saying which flag to use; the grep landed first as flag-meaning.test.mjs, which found digest carrying the identical collision the task had not named and keeps the colliding set empty
+- **SH451** — ShSitesAPI maps GET /sites/<site>/<format>/<locale>/<path> and splits it by position exactly as 0.3.8's ShSitesContextURLProcess did, with x-sh-site naming the site as a header and sh-format replacing the format segment; the path stays plural and the format segment is vestigial - read, kept in every rewritten link, and carrying no behaviour, since a layout comes from postTypeLayout. Six guards are inverted rather than dropped: anonymous on a permitAll path that was already there, PUBLISHED with no way to ask for a draft, no banner, no editor bridge, public max-age=300, indexable, and links rewritten into the public space by the same pass the preview uses.
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 

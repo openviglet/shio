@@ -108,7 +108,12 @@ class ShSilentCatchInventoryTest {
             // SH103 settled that 4xx does not belong in the diagnostics window. The lint keys on
             // "neither records nor rethrows the caught exception" and cannot see that this one
             // rethrows a better one, which is the right way round for a population guard to be wrong.
-            "render", 7,
+            // 9 since SH451, which adds *two* on the public delivery route and both are the ones
+            // already argued above: `ShSitesAPI` catches `ShPageRedirectException` and answers with
+            // a 302 (SH385's row, at a second address) and `UnknownAssetException` to fall back to
+            // the page's 404 (SH437's). Two routes making the same two choices is one judgement,
+            // not two — which is also why they read as duplicates here and are counted anyway.
+            "render", 9,
             "utils", 2,
             "migration", 1,
             // 1 since SH84: `ShTuringDocumentMapper.readData` reads a post whose `data` is not JSON
@@ -238,11 +243,13 @@ class ShSilentCatchInventoryTest {
                         is a template author's mistake and could be argued the other way; it is \
                         left as it was rather than changed in passing.
 
-                        SH437 added the seventh, and it is control flow rather than a degradation: \
-                        a path with no page is tried as an asset, and a path that is neither gets \
-                        the page's 404 because that is the more useful of the two sentences.""")
-                .hasSize(7)
+                        SH437 added the seventh and SH451 the eighth and ninth, and all three are \
+                        control flow rather than degradations: a path with no page is tried as an \
+                        asset, and a path that is neither gets the page's 404 because that is the \
+                        more useful of the two sentences. Two of them are the public delivery \
+                        route making the same two choices this one does, at a second address.""")
+                .hasSize(9)
                 .allSatisfy(where -> assertThat(where)
-                        .matches(".*(ShRenderAPI|ShRenderHelpers|ShTemplateValidator).*"));
+                        .matches(".*(ShRenderAPI|ShSitesAPI|ShRenderHelpers|ShTemplateValidator).*"));
     }
 }

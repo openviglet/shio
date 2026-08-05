@@ -1423,36 +1423,6 @@ SH341's order applies — instrument first — but a section gate cannot ratchet
 way the line gate did, because dropping a section is destructive where shortening a line
 is not. So the honest first step is deciding what a *stale* section should become.
 
-### XVI.68 The delivery half of an inheritance we already took (SH451)
-
-A site built or replicated in Shio has **no public URL by any path**. `/preview/**` is
-the only HTML mapping `ShRenderAPI` declares and it answers 401 anonymously —
-authenticated, `no-store`, `noindex`, all deliberate. The path `renderer.md` names as
-production, Next.js over the CDA, cannot install (SH446). So the renderer composes a
-correct page nobody outside the console can read.
-
-**The route is recoverable, not designed from memory.** Branch `0.3.8` carries it in
-`com.viglet.shio.website`: `ShSitesContext` maps `GET /sites/**` and `ShSitesContextURLProcess` splits
-the path by position —
-
-    /sites/<site-furl>/<format>/<locale>/<content-path…>
-
-`contexts[2]` is the site, resolved by `findByFurl`; `[3]` the format; `[4]` the locale,
-defaulting to `default` and `en-us`. So `/sites/fidelidade/default/en-us/` is a home
-page. Two variants ship with it: `x-sh-site` names the site as a header so the URL
-carries only the content path, which is how one host serves one site; `sh-format`
-overrides the format segment.
-
-**Two decisions taken.** The path stays **plural**, `/sites`, because that preserves the URLs of anything
-migrating from 0.3.x and singular buys nothing. And `<format>` is **vestigial**: the segment is kept so
-the shape is the old one, fixed at `default`, carrying no behaviour — today's layout comes from
-`postTypeLayout`, and making the segment a second binding table is a feature, not a recovery.
-
-Six guards invert rather than drop: anonymous, **PUBLISHED** never draft, no banner,
-cacheable, indexable, and links rewritten into the public space — SH336 pointed the
-other way. It makes `renderer.md`'s "production delivery is Next.js" a choice between
-two; no non-goal forbids it.
-
 ### XVI.69 The console's delete button is broken for every site worth deleting (SH454)
 
 The second thing SH448's suite found, and it found it in its own teardown — the run

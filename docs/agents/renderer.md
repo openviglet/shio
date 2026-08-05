@@ -7,11 +7,18 @@
 
 `GET /preview/{site}/{url}` composes a page out of content the instance already holds, so a
 site an agent built is visible with **no front end and no client setup** — which was the gap
-the whole of Block P is about. Owner: `com.viglet.shio.render`. Production delivery is still
-Next.js over the CDA (P10); this is **preview-grade** and the guards that keep it that way are
-deliberate: a distinct route, `no-store` + `X-Robots-Tag: noindex` (a freshness lifetime is how
-a preview quietly becomes infrastructure), authentication, and a banner the page's own
-stylesheet cannot hide because it is inline-styled rather than classed.
+the whole of Block P is about. Owner: `com.viglet.shio.render`. This is **preview-grade** and the
+guards that keep it that way are deliberate: a distinct route, `no-store` + `X-Robots-Tag: noindex`
+(a freshness lifetime is how a preview quietly becomes infrastructure), authentication, and a banner
+the page's own stylesheet cannot hide because it is inline-styled rather than classed.
+
+**And since SH451 there is a second route, which is the same renderer with every one of those guards
+inverted** — `ShSitesAPI`, `GET /sites/<site>/<format>/<locale>/<path…>`. "Production delivery is
+Next.js over the CDA" was true and was also the only option, and the option did not work: `/preview`
+answers 401 anonymously *by design*, and the Next.js starter could not install (SH446). So the
+renderer composed a correct page nobody outside the console could read. It is now a choice between
+two, and no non-goal forbids it — P10 says MCP must not become a third contract, and this is one
+renderer over one body of content at a second address. See the section on it below.
 
 - **The model is content.** `PageLayout` (`HTML`/`THEME`/`JAVASCRIPT`), `Region`
   (`HTML`/`JAVASCRIPT`) and `Theme` (`CSS`/`JAVASCRIPT`) are **system post-types created on
@@ -407,6 +414,34 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   never on `target=…`, never outside `/preview/…` (the editor also runs against external front ends).
   **What is not an option is making `{{link}}` preview-aware**: it is content-facing, so one field
   would mean two things in two renders — the coupling SH187 spent a task splitting apart.
+- **The public delivery route, recovered rather than designed (SH451)** — `ShSitesAPI` maps
+  `GET /sites/**` and splits it **by position**, which is what branch `0.3.8`'s
+  `ShSitesContextURLProcess` did: `/sites/<site-furl>/<format>/<locale>/<content-path…>`, with the
+  site resolved SH181-style, and `default`/`en-us` as the defaults when the segments are absent. Two
+  variants ship with it and both are here — **`x-sh-site`** names the site as a header so the URL
+  carries only the content path (how one host serves one site), and **`sh-format`** replaces the
+  format segment. The split is a `record` with a static factory (`ShSitesAPI.Address`) precisely
+  because it *is* the recovered artefact: a claim about what a 0.3.x URL means has to be assertable
+  without a servlet or it is a claim about a comment.
+  **Two decisions.** The path stays **plural** — `/sites` preserves the URLs of anything migrating
+  from 0.3.x and singular buys nothing. `<format>` is **vestigial**: kept so the shape is the old
+  one, read (a URL that names one is still a URL, and `sh-format` still replaces it, and the *prefix*
+  every link is rewritten with keeps whatever the caller used — a reader who asked for `print`/`pt-br`
+  must not have both choices dropped on their first click) and then **ignored**, because a layout
+  comes from `postTypeLayout` (SH328) and making the segment a second binding table is a feature
+  rather than a recovery.
+  **Six guards, inverted rather than dropped**, and that is the whole difference between the routes:
+  **anonymous** (the path has been `permitAll` since before the renderer existed — a latent hazard
+  while nothing served there, and now the point), **PUBLISHED and never DRAFT** (the route takes no
+  `state`; SH278 then means the *whole model* must be published, and the 409 that says so names the
+  layout — four `post.publish` ops, not one), **no banner**, **no editor bridge**, **cacheable**
+  (`public, max-age=300` — five minutes, because a delivery route whose invalidation story is "wait"
+  is one people put a CDN in front of and purge by hand), **indexable** (no `X-Robots-Tag`: a
+  published page a crawler is told to ignore is not published), and links **rewritten into the public
+  space**. That last is `ShPreviewLinks.rewriteInto`, parameterised rather than copied — SH336's rule
+  is not about the preview, it is that a link is rewritten *only when its path is a URL this site
+  publishes*, and that is identical here; what differs is the prefix. SH437's asset fallback and
+  SH385's redirect are inherited by the same route, at public URLs.
 - **A `File` post is reachable at the path its source used, and `src` joins the rewrite (SH437)** —
   a static file's bytes are public at `/file_source/<postId>/<fileName>` (SH38), keyed by an id no
   source ever chose, so a fidelity replica's `<img src="/img/hero.png">` was as broken with the bytes

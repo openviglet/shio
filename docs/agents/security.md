@@ -137,4 +137,14 @@ interceptor.
   nothing anywhere disagrees out loud. When you mount a controller on an existing path prefix,
   the question is not "is this route safe" but **"what does the allow-list already say about this
   prefix"**.
+- **`/sites/**` *is* in `permitAll()`, and since SH451 that is deliberate rather than inherited.**
+  It was the same shape as the entry above — left over from 0.3.x's `com.viglet.shio.website`,
+  pointing at nothing — and the difference is only that nothing served there, so it was a latent
+  hazard instead of a live one. `ShSitesAPI` now mounts the public delivery route on it *because*
+  it is anonymous, and every other guard is inverted to match: **PUBLISHED only** (the route takes
+  no `state` parameter, so there is no way to ask it for a draft), no banner, no editor bridge,
+  cacheable, indexable. Asked the question the bullet above prescribes, and answered it in the
+  direction the allow-list already pointed — which is the one case where inheriting an entry is
+  right, and it is right only because the route was designed to the entry rather than the other
+  way round.
 
