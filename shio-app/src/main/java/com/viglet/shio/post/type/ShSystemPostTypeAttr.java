@@ -59,6 +59,16 @@ public class ShSystemPostTypeAttr {
 	 * <p>There is deliberately no {@code FROM}: a redirect's source is the post's own <b>friendly
 	 * URL</b>. See {@code ShRenderPostTypes} for why that is the whole design.</p>
 	 */
+	/**
+	 * SH389 — a site's ordered script declarations, as JSON.
+	 *
+	 * <p>{@code Ace Editor - Javascript} holding JSON, which is {@code Theme.TOKENS}' precedent for its
+	 * reason (SH195): the widget catalogue has no JSON editor and JSON is valid JavaScript. An array,
+	 * because the whole meaning of the value is <b>its order</b> — consent has to load before what it
+	 * gates, and that is the property four per-layout copies could not keep.</p>
+	 */
+	public static final String SCRIPTS = "SCRIPTS";
+
 	public static final String TO = "TO";
 	public static final String PERMANENT = "PERMANENT";
 	public static final String CONTENT = "CONTENT";

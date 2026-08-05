@@ -30,6 +30,7 @@ import {
   repeatedUnits,
   signature,
 } from "../src/propose.mjs";
+import { proposeScripts } from "../src/propose.mjs";
 import { flatten } from "../src/theme.mjs";
 import * as propose from "../src/commands/propose.mjs";
 import { norm } from "./support/paths.mjs";
@@ -531,4 +532,68 @@ test("a page with no markup in hand gets no file, so the cache never lies about 
   const { files } = planMarkup([{ url: "https://x.test/", doc: {}, html: "<p>a</p>" }, { url: "https://x.test/x", doc: {} }]);
 
   assert.deepEqual(files.map((item) => item.path), ["/"]);
+});
+
+// --- SH389: the site-wide scripts a capture found and nothing could hold ---
+
+const SCRIPTS = [
+  { host: "cdn.cookiebot.com", refs: 12, sample: "/uc.js", async: true, defer: false },
+  { host: "www.googletagmanager.com", refs: 12, sample: "/gtm.js?id=GTM-1", async: false, defer: true },
+  { host: "widget.intercom.io", refs: 3, sample: "/widget/abc", async: false, defer: false },
+  { host: "example-partner.test", refs: 1, sample: "/embed.js", async: false, defer: false },
+];
+
+test("SH389: a captured script becomes a SiteScripts entry, so a capture stops dropping it", () => {
+  // Until there was somewhere to put these, a replica had no consent banner, no analytics and no
+  // chat — subtly not the site, and nothing said so.
+  const rows = proposeScripts({ scripts: SCRIPTS });
+
+  assert.equal(rows.length, 4);
+  assert.equal(rows[0].src, "https://cdn.cookiebot.com/uc.js");
+  assert.equal(rows[1].defer, true);
+  assert.equal(rows[0].async, true);
+  assert.equal(rows[1].refs, 12);
+});
+
+test("SH389: every entry is proposed for the head, because moving one later breaks a consent order", () => {
+  // A reviewer moving an entry down is a decision; this command proposing it is not.
+  for (const row of proposeScripts({ scripts: SCRIPTS })) {
+    assert.equal(row.position, "head");
+  }
+});
+
+test("SH389: a category is recognised where the host says so, and blank where it does not", () => {
+  const byHost = new Map(proposeScripts({ scripts: SCRIPTS })
+    .map((row) => [row.src, row.category]));
+
+  assert.equal(byHost.get("https://cdn.cookiebot.com/uc.js"), "consent");
+  assert.equal(byHost.get("https://www.googletagmanager.com/gtm.js?id=GTM-1"), "analytics");
+  assert.equal(byHost.get("https://widget.intercom.io/widget/abc"), "functional");
+  // A guess presented as a fact would be worse than a blank on a consent gate.
+  assert.equal(byHost.get("https://example-partner.test/embed.js"), "");
+});
+
+test("SH389: an absolute sample is kept as it is rather than rebuilt from the host", () => {
+  const rows = proposeScripts({ scripts: [{ host: "x.test", refs: 1, sample: "https://y.test/a.js" }] });
+
+  assert.equal(rows[0].src, "https://y.test/a.js");
+});
+
+test("SH389: a capture with no scripts proposes none, and the report says nothing about them", async () => {
+  const ctx = ctxWith();
+  const { proposal } = await propose.run({}, [], ctx);
+
+  assert.deepEqual(proposal.scripts, []);
+  assert.ok(!ctx.stdout.text.includes("site scripts:"));
+});
+
+test("SH389: the proposal carries them and the report counts the ones a reviewer must classify", async () => {
+  const ctx = ctxWith({ inventory: { ...inventoryFor(), scripts: SCRIPTS } });
+  const { proposal } = await propose.run({}, [], ctx);
+
+  assert.equal(proposal.scripts.length, 4);
+  assert.match(ctx.stdout.text, /site scripts: 4 third-party script\(s\)/);
+  // The unclassified count is the only number here that names remaining work rather than a finding.
+  assert.match(ctx.stdout.text, /1 with no category a reviewer has to set/);
+  assert.match(ctx.stdout.text, /every entry is proposed for the head/);
 });

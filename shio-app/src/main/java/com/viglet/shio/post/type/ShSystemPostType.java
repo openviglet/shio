@@ -76,4 +76,14 @@ public class ShSystemPostType {
 	 */
 	public static final String REDIRECT = "Redirect";
 
+	/**
+	 * SH389 — the scripts a whole site carries, in one order.
+	 *
+	 * <p>A system type for {@code Redirect}'s reason turned the other way round: this one is not
+	 * consulted by the router, it is <b>read by the render model</b>, which is machinery a vocabulary
+	 * post-type cannot reach. One per site, found by type — two is reported rather than resolved
+	 * (SH381's rule about a fabricated answer).</p>
+	 */
+	public static final String SITE_SCRIPTS = "SiteScripts";
+
 }

@@ -100,6 +100,13 @@ class ShRenderModelSourceTest {
      * which would also have to be extended every time the type grew a field.</p>
      */
     private static final Map<String, String> INVENTED_TYPES = new TreeMap<>(Map.of(
+            ShSystemPostType.SITE_SCRIPTS,
+            "SH389 - the 2018 model has two places for browser JavaScript, a Theme's and a Region's, "
+                    + "and both are per-layout: a site with four layouts held four copies whose load "
+                    + "ORDER was a property of each copy. There is no site-level list to reconcile "
+                    + "with, so this is an invention rather than a difference - and the field it "
+                    + "carries is JSON in a JavaScript editor, which is Theme.TOKENS' own precedent "
+                    + "(SH195) for the same reason.",
             ShSystemPostType.REDIRECT,
             "SH385 — a replication that renames a path breaks every link into it, and the 2018 model "
                     + "has no redirect of any kind: FSP resolved a URL to a post and 404'd. It is a "

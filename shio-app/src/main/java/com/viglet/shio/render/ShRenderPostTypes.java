@@ -91,7 +91,7 @@ public class ShRenderPostTypes {
     /** The three, in the order a reader meets them: page, then its parts, then its skin. */
     public static final List<String> NAMES = List.of(
             ShSystemPostType.PAGE_LAYOUT, ShSystemPostType.REGION, ShSystemPostType.THEME,
-            ShSystemPostType.REDIRECT);
+            ShSystemPostType.REDIRECT, ShSystemPostType.SITE_SCRIPTS);
 
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShWidgetRepository shWidgetRepository;
@@ -126,7 +126,8 @@ public class ShRenderPostTypes {
                 mapper.toDef(ensurePageLayout()),
                 mapper.toDef(ensureRegion()),
                 mapper.toDef(ensureTheme()),
-                mapper.toDef(ensureRedirect()));
+                mapper.toDef(ensureRedirect()),
+                mapper.toDef(ensureSiteScripts()));
     }
 
     /** Which of the three exist, without creating any — same transaction rule. */
@@ -297,6 +298,13 @@ public class ShRenderPostTypes {
             // already SH99's `duplicate-url` error, which is the finding SH385 asked for and nobody
             // had to write. A `FROM` field would have needed a lookup, a uniqueness rule and a
             // shadow rule, all of which exist.
+            // SH389 — one field, and it is JSON in a JavaScript editor for `Theme.TOKENS`' reason
+            // (SH195). Not required: a site with no third-party scripts is the common case, and a
+            // required field would make the post refuse to exist until somebody invented content.
+            case ShSystemPostType.SITE_SCRIPTS -> List.of(
+                    titleField(),
+                    field(ShSystemPostTypeAttr.SCRIPTS, "Scripts (JSON)",
+                            ShSystemWidget.ACE_JS, 2, false));
             case ShSystemPostType.REDIRECT -> List.of(
                     titleField(),
                     field(ShSystemPostTypeAttr.TO, "Redirect to", ShSystemWidget.TEXT, 2, true),
@@ -319,6 +327,11 @@ public class ShRenderPostTypes {
     private ShPostType ensureTheme() {
         return ensure(ShSystemPostType.THEME, "Themes", "Theme",
                 "The stylesheet and script a whole site shares");
+    }
+
+    private ShPostType ensureSiteScripts() {
+        return ensure(ShSystemPostType.SITE_SCRIPTS, "Site Scripts", "Site Scripts",
+                "The consent, analytics and chat scripts a whole site carries, in load order");
     }
 
     private ShPostType ensureRedirect() {

@@ -198,13 +198,16 @@ public class ShPageRenderService {
         ShPostUnified layout = layoutFor(site, page, state);
 
         ShThemeAssets theme = themeOf(site, layout, state);
+        // SH389 — resolved beside the theme because it is the same kind of fact: a property of the
+        // site rather than of the page, read through the SH311 per-type cache that is already warm.
+        Map<String, Object> scripts = siteScriptsOf(site, state);
         // SH297 — the layout names a theme and the site has not got one. Computed here rather than
         // inside themeOf because "no theme named" and "a theme named that is not there" are
         // different facts and only the second is a defect.
         String themeTitle = themeTitleOf(layout);
         String missingTheme = theme == null && themeTitle != null && !themeTitle.isBlank()
                 ? themeTitle : null;
-        Map<String, Object> model = new LinkedHashMap<>(renderModel.of(page, theme));
+        Map<String, Object> model = new LinkedHashMap<>(renderModel.of(page, theme, scripts));
         // Reserved, like `post`/`site`/`theme`: it lets the helpers pick DRAFT vs PUBLISHED
         // and lets a layout render its own "you are looking at a draft" marker.
         //
@@ -542,6 +545,47 @@ public class ShPageRenderService {
         return postOfSystemType(site, ShSystemPostType.THEME, themeName, state)
                 .map(this::themeAssets)
                 .orElse(null);
+    }
+
+    /**
+     * SH389 — the site's ordered script declarations, or three empty lists.
+     *
+     * <h2>Two of them is nothing, not the first one</h2>
+     *
+     * <p>The post is found by <b>type</b> rather than by title, because there is one per site and
+     * asking an author to remember a magic title would be a second convention. Two posts of the type
+     * therefore have to mean something, and it is SH381's rule: a fabricated answer wearing a
+     * deterministic hat is worse than none, so the render carries no scripts and
+     * {@code shio verify}'s {@code site-scripts-ambiguous} says which two.</p>
+     *
+     * <h2>Malformed JSON degrades and is reported</h2>
+     *
+     * <p>{@code Theme.TOKENS}' shape exactly (SH195/SH270): the page must not fail over a tag manager,
+     * and it must not fail <em>silently</em> either. The catch is here rather than in
+     * {@link ShSiteScripts} because reporting needs the incident log and that class is a pure
+     * function — {@code ShSilentCatchInventoryTest} is what made that placement a decision.</p>
+     */
+    private Map<String, Object> siteScriptsOf(ShSite site, ShPostState state) {
+        List<ShPostUnified> found = ShRenderState.preferDraft(
+                postsOfSystemType(site, ShSystemPostType.SITE_SCRIPTS, state), state);
+        if (found.size() != 1) {
+            return ShSiteScripts.of(null);
+        }
+        ShPostUnified post = found.getFirst();
+        try {
+            return ShSiteScripts.of(fieldOf(post, ShSystemPostTypeAttr.SCRIPTS));
+        } catch (JacksonException e) {
+            incidentLog.record(ShAgentIncidentLog.Kind.CONTENT,
+                    ShAddress.post(site.getName(), post.getFurl()).toString(),
+                    "This site's SCRIPTS field is not valid JSON, so the page rendered with none of "
+                            + "the site's scripts at all: " + e.getOriginalMessage(),
+                    "Rewrite SCRIPTS as a JSON array of "
+                            + "{\"src\"|\"inline\", \"position\", \"defer\", \"category\"} "
+                            + "with post.upsert, or clear the field. A consent banner that silently "
+                            + "stopped loading is the worst shape this defect takes.",
+                    ShAgentIncidentFrames.of(e));
+            return ShSiteScripts.of(null);
+        }
     }
 
     /**

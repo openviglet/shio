@@ -109,12 +109,20 @@ public class ShRenderModel {
      * @return the view model
      */
     public Map<String, Object> of(ShPostUnified post, ShThemeAssets theme) {
+        return of(post, theme, null);
+    }
+
+    /**
+     * @param scripts SH389's three positioned lists, or {@code null} for a site with none
+     */
+    public Map<String, Object> of(ShPostUnified post, ShThemeAssets theme,
+                                  Map<String, Object> scripts) {
         // Resolved once: both frames need it now that SH337 projects the site's origin, and
         // the folder walk below is not free.
         ShSite site = siteOf(post);
         Map<String, Object> model = new LinkedHashMap<>(fieldsOf(post));
         model.put("post", postFrame(post, site));
-        model.put("site", siteFrame(site));
+        model.put("site", siteFrame(site, scripts));
         model.put("theme", themeFrame(theme));
         return ShStableMap.copyOf(model);
     }
@@ -230,7 +238,7 @@ public class ShRenderModel {
         return ShPostUnifiedWriteService.localeOf(post);
     }
 
-    private Map<String, Object> siteFrame(ShSite site) {
+    private Map<String, Object> siteFrame(ShSite site, Map<String, Object> scripts) {
         Map<String, Object> frame = new LinkedHashMap<>();
         if (site == null) {
             return ShStableMap.copyOf(frame);
@@ -245,6 +253,11 @@ public class ShRenderModel {
         // one, `/preview/<site>` when there is not. Both are here because they answer different
         // questions — "has this site been deployed?" is `url`, and it must stay answerable.
         frame.put("baseUrl", ShSiteFrontEnd.of(site).baseUrl());
+        // SH389 — three positioned lists, always present even when empty. A layout writes
+        // `{{#each site.scripts.head}}`, and Shio never injects one: the delivery layer reads the same
+        // post through the CDA, so there is no path by which a consent banner behaves one way in the
+        // preview and another in production (P10, and the question SH389 was filed on).
+        frame.put("scripts", scripts == null ? ShSiteScripts.of(null) : scripts);
         return ShStableMap.copyOf(frame);
     }
 

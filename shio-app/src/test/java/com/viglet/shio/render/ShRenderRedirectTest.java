@@ -107,7 +107,22 @@ class ShRenderRedirectTest {
             ShPostType page = postType(pageType, when);
 
             post(site, root, layoutType, "SH385_LAYOUT", "/l",
-                    "{\"HTML\":\"<html><body><h1>{{TITLE}}</h1></body></html>\"}", when);
+                    "{\"HTML\":\"<html><head>"
+                            + "{{#each site.scripts.head}}<script src=\\\"{{src}}\\\""
+                            + "{{#if defer}} defer{{/if}}></script>{{/each}}"
+                            + "</head><body><h1>{{TITLE}}</h1>"
+                            + "{{#each site.scripts.bodyEnd}}<script>{{{inline}}}</script>{{/each}}"
+                            + "</body></html>\"}", when);
+
+            // SH389 — one list per site, and the order in the JSON is the load order. Consent before
+            // analytics is the property four per-layout copies could not keep.
+            post(site, root, type(ShSystemPostType.SITE_SCRIPTS), "Site Scripts", "/scripts",
+                    "{\"SCRIPTS\":\"[{\\\"src\\\":\\\"https://consent.test/c.js\\\","
+                            + "\\\"position\\\":\\\"head\\\"},"
+                            + "{\\\"src\\\":\\\"https://analytics.test/a.js\\\","
+                            + "\\\"position\\\":\\\"head\\\",\\\"defer\\\":true},"
+                            + "{\\\"inline\\\":\\\"chat()\\\","
+                            + "\\\"position\\\":\\\"bodyEnd\\\"}]\"}", when);
             post(site, root, page, "About", "/about", "{\"TITLE\":\"About\"}", when);
 
             // The four redirect shapes, and the fifth thing that is not one.
@@ -179,6 +194,29 @@ class ShRenderRedirectTest {
     @DisplayName("an ordinary page is untouched, so one type comparison is the whole cost")
     void anOrdinaryPageStillRenders() {
         assertThat(render("/about")).contains("<h1>About</h1>");
+    }
+
+
+    @Test
+    @DisplayName("SH389: the site's scripts reach the template in the JSON's order, per position")
+    void siteScriptsReachTheTemplate() {
+        String html = render("/about");
+
+        // Consent first, analytics second — the whole point of moving them to one list.
+        assertThat(html.indexOf("consent.test")).isLessThan(html.indexOf("analytics.test"));
+        assertThat(html).contains("<script src=\"https://analytics.test/a.js\" defer></script>");
+        assertThat(html).contains("<script>chat()</script>");
+        // And nothing was injected: the head holds exactly what the layout asked for.
+        assertThat(html.indexOf("chat()")).isGreaterThan(html.indexOf("<h1>"));
+    }
+
+    @Test
+    @DisplayName("SH389: Shio never injects — a layout that emits nothing renders no scripts")
+    void nothingIsInjected() {
+        // The ownership answer, asserted: the preview must not behave differently from a delivery
+        // layer that reads the same post through the CDA, and the way to guarantee that is to have no
+        // code path that adds a tag a layout did not ask for.
+        assertThat(render("/about")).doesNotContain("<script src=\"\">");
     }
 
     private String render(String url) {

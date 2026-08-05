@@ -75,7 +75,12 @@ class ShSilentCatchInventoryTest {
             // postTypeLayout as "no bindings", which is what the renderer already does with it
             // (and where SH270 records the incident, on the path that actually renders). Repairing
             // it from the write side would replace a value somebody set.
-            "api", 52,
+            // 53 since SH389: `ShAgentVerifyService.scriptFindings` catches an unparseable SCRIPTS
+            // field and *adds a Finding* for it, which is reporting of the strongest kind this
+            // codebase has — a rule with an address and a fix. The lint keys on "records an incident
+            // or rethrows" and cannot see a finding, which is the right way round for a population
+            // guard to be blind. Counted rather than exempted, so the population stays a diff.
+            "api", 53,
             "tenant", 4,
             "blueprint", 2,
             "exchange", 2,

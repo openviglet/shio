@@ -155,6 +155,48 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   most of the work** — frames, `this`/`./`/`../`, data variables, subexpressions, literals, partials,
   comments, a block's own name, an inline helper's name and every row value, with `{{~TEXT~}}` the
   one its own test caught being dropped. A reference *not* reported is the quiet failure direction.
+- **`site.scripts` is one ordered list per site, and Shio *never injects* it (SH389).** Browser
+  JavaScript had two homes — a `Theme`'s `JAVASCRIPT` and a `Region`'s (SH248) — and both are
+  per-layout, so a site with four layouts held **four copies** whose load order was a property of each
+  copy. Consent has to load *before* what it gates, which makes that a compliance defect rather than
+  duplication. The task was an **idea** because of a real risk it named: the renderer is preview-grade
+  and `no-store`, production delivery is Next.js over the CDA (P10), and *a consent implementation that
+  behaves differently in the two is worse than one that exists only in delivery*. **The answer is that
+  Shio stores and exposes and has no code path that injects.** A layout writes
+  `{{#each site.scripts.head}}`, the delivery layer reads the same post through the CDA, and the thing
+  that could have diverged — an injected banner behaving one way in preview and another in production —
+  does not exist. What the task actually wanted is the *single ordered list*, and that is what shipped:
+  four layouts now read one order instead of holding four. Five decisions:
+  **A fifth system post-type, `SiteScripts`**, one per site, found by *type* rather than by a magic
+  title — so two of them is ambiguous and yields nothing (SH381's rule against a fabricated answer),
+  reported as `site-scripts-ambiguous`. It is a system type for `Redirect`'s reason inverted: not
+  consulted by the router, but **read by the render model**, which a vocabulary post-type cannot reach.
+  **One JSON field, not a Relator** — `Theme.TOKENS` settled this in SH195 (no JSON widget in the
+  catalogue, JSON is valid JavaScript), and a Relator would need a nested field spec for a value whose
+  whole meaning is *its order*, which an array carries and sibling posts do not.
+  **Three named lists rather than one plus a position field**, because Handlebars cannot compare two
+  strings without a helper: `{{#if_eq}}` does not exist and SH260's closed set is not growing for this.
+  `head` / `bodyStart` / `bodyEnd` are placeable with the `{{#each}}` every template already uses, and
+  every position is present even when empty so a layout's loop is never an expression resolving to
+  nothing.
+  **An unknown `position` falls back to `bodyEnd`, never `head`** — a typo must not move a script
+  *earlier* than the author wrote it, which is the direction that breaks a consent ordering, and the end
+  of the body cannot block a paint.
+  **An entry with neither `src` nor `inline` is skipped, not emitted** — `<script src="">` re-requests
+  the page itself in some browsers, which is worse than the missing script. The renderer degrades and
+  `verify` explains, which is the standing split.
+  The lint that matters is **`site-scripts-dropped`**: moving the declarations to one list fixes the
+  duplication and does *not* stop a layout from failing to emit them, so a bound layout whose HTML never
+  names `site.scripts` is a warning with the page count in it (SH388's shape). And the **replication
+  angle is what made this a task at all** — SH377 already inventoried a source's third-party scripts and
+  had nowhere to put them, so they were silently dropped and the replica was subtly not the site;
+  `shio propose` now proposes them as a `SiteScripts` list, every entry **for the head** (moving one
+  later is a reviewer's decision, not a command's), with a **recognised** consent category where the host
+  says so and a blank where it does not — a guess presented as a fact would be worse than a blank on a
+  consent gate, and the report counts how many need a human.
+  **One process note worth keeping:** `./mvnw -q compile` printed nothing on a run that had *failed to
+  compile*, and I read the silence as success. That is agents.md's `-q` trap one command along — it
+  documents `-q` hiding a test total, and it hides a build failure exactly as well. Compile without it.
 - **A layout's `<head>` is lintable from the stored HTML, and answering SH388's open question is what
   made it cheap.** The task was filed as an *idea* asking whether these are `verify` findings at all or
   belong to the delivery layer that owns the head in production (P10). **Both readings were about the

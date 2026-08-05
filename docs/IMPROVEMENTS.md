@@ -1383,25 +1383,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.13 Consent before analytics is an ordering no per-layout copy can guarantee (SH389)
-
-Every real site carries three or four scripts that belong to the *site*: a consent
-banner, an analytics tag, a chat widget, a tag manager. Shio has two places to put
-browser JavaScript — a `Theme`'s `JAVASCRIPT` and a `Region`'s (SH248) — and both are
-per-layout or per-region, so a site with four layouts holds four copies whose order is a
-property of each copy. Consent has to load *before* what it gates, which makes that a
-compliance defect rather than duplication.
-
-The shape is probably a site-level ordered list of script declarations (`src` or inline,
-`defer`, a position, and the consent category it belongs to), emitted once by the
-renderer and read by the delivery layer as content. What keeps it an idea is a genuine
-question about ownership: the renderer is preview-grade and `no-store`, production
-delivery is Next.js (P10), and a consent implementation that behaves differently in the
-two is worse than one that exists only in delivery. The replication angle is what makes
-it a task at all — a capture *finds* these scripts (SH377 inventories them) and today
-has nowhere to put them, so they are silently dropped and the replica is subtly not the
-site.
-
 ### XVII.14 A responsive image is a fidelity question, not an optimisation (SH390)
 
 `{{file_url FIELD}}` resolves a `File` field to the one path SH38 serves its bytes on.

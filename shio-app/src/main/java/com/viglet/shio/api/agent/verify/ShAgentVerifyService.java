@@ -55,6 +55,7 @@ import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.widget.ShSystemWidget;
 
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -537,6 +538,155 @@ public class ShAgentVerifyService {
         unpublishedTemplates(check, scan, findings);
         redirectTargets(check, scan, findings);
         headConventions(check, scan, findings);
+        siteScripts(check, scan, findings);
+    }
+
+    /**
+     * SH389 — the site's script list, and the layouts that drop it.
+     *
+     * <h2>Why the third rule is the one that matters</h2>
+     *
+     * <p>The first two are ordinary content defects: a {@code SCRIPTS} field that is not a JSON array
+     * (the render carries none of them, silently but for the CONTENT incident), and an entry with
+     * neither {@code src} nor {@code inline} (skipped rather than emitted as
+     * {@code <script src="">}, which re-requests the page itself in some browsers).</p>
+     *
+     * <p>The third is the task's own complaint turned into an instrument. Moving the declarations to
+     * one ordered list fixes the duplication; it does <b>not</b> stop a layout from failing to emit
+     * them, and a layout that does not is a set of pages with no consent banner that renders perfectly.
+     * So: a site that has scripts, and a <em>bound</em> layout whose HTML never names
+     * {@code site.scripts}, is a warning against that layout with the page count in it — SH388's
+     * shape, for its reason. A layout nothing renders through is skipped, because
+     * {@code unused-layout} is already that finding.</p>
+     *
+     * <h2>And a site with two of them</h2>
+     *
+     * <p>The post is found by type, so two is ambiguous and the render carries nothing (SH381's rule
+     * against a fabricated answer). Reported as an <b>error</b>: unlike the layout rule this is not a
+     * matter of taste — the site has scripts and every page is silently rendering without them.</p>
+     */
+    private void siteScripts(String check, Scan scan, List<Finding> findings) {
+        for (ShSite site : scan.siteById().values()) {
+            List<ShPostUnified> posts = scan.posts().stream()
+                    .filter(post -> ShSystemPostType.SITE_SCRIPTS.equals(
+                            post.getShPostType() == null ? null : post.getShPostType().getName()))
+                    // ShFolderSite-exempt: a post carries its own site column (SH128 is about folders).
+                    .filter(post -> post.getShSite() != null
+                            && site.getId().equals(post.getShSite().getId()))
+                    .toList();
+            if (posts.isEmpty()) {
+                continue;
+            }
+            if (posts.size() > 1) {
+                findings.add(Finding.error(check, "site-scripts-ambiguous", "site:" + site.getName(),
+                        null,
+                        "This site has " + posts.size() + " SiteScripts posts ("
+                                + posts.stream().map(ShAgentVerifyService::address).sorted()
+                                        .collect(java.util.stream.Collectors.joining(", "))
+                                + "), so the renderer cannot tell which list is the site's and every "
+                                + "page renders with none of them.",
+                        "Keep one and delete the others. There is one list per site on purpose — the "
+                                + "whole point of SH389 is that the load order is a property of one "
+                                + "list rather than of each copy."));
+                continue;
+            }
+            ShPostUnified post = posts.getFirst();
+            int entries = scriptFindings(check, post, findings);
+            if (entries > 0) {
+                droppedScripts(check, site, scan, entries, findings);
+            }
+        }
+    }
+
+    /** The list itself: not an array, or an entry that would emit nothing. Returns how many are live. */
+    private int scriptFindings(String check, ShPostUnified post, List<Finding> findings) {
+        String raw = fieldValue(post, ShSystemPostTypeAttr.SCRIPTS);
+        if (raw == null || raw.isBlank()) {
+            return 0;
+        }
+        JsonNode root;
+        try {
+            root = objectMapper.readTree(raw);
+        } catch (JacksonException e) {
+            findings.add(Finding.error(check, "site-scripts-invalid", address(post),
+                    ShSystemPostTypeAttr.SCRIPTS,
+                    "This site's SCRIPTS is not valid JSON (" + e.getOriginalMessage()
+                            + "), so every page renders with none of the site's scripts.",
+                    "Rewrite it as a JSON array of {\"src\" or \"inline\", \"position\", "
+                            + "\"defer\", \"category\"}. A consent banner that silently stopped "
+                            + "loading is the worst shape this defect takes, which is why it is an "
+                            + "error rather than a warning."));
+            return 0;
+        }
+        if (root == null || !root.isArray()) {
+            findings.add(Finding.error(check, "site-scripts-invalid", address(post),
+                    ShSystemPostTypeAttr.SCRIPTS,
+                    "This site's SCRIPTS is valid JSON but not an array, so the renderer reads no "
+                            + "scripts from it at all.",
+                    "The value is an ordered array — the order IS the load order, which is the "
+                            + "property a per-layout copy could not keep."));
+            return 0;
+        }
+        int live = 0;
+        int index = 0;
+        for (JsonNode entry : root) {
+            boolean empty = !entry.isObject()
+                    || (text(entry, "src").isEmpty() && text(entry, "inline").isEmpty());
+            if (empty) {
+                findings.add(Finding.error(check, "site-scripts-entry-empty", address(post),
+                        ShSystemPostTypeAttr.SCRIPTS,
+                        "Entry " + index + " of SCRIPTS has neither `src` nor `inline`, so it is "
+                                + "skipped — the renderer will not emit `<script src=\"\">`, which "
+                                + "re-requests the page itself in some browsers.",
+                        "Give it a `src` or an `inline` body, or remove the entry. Every other entry "
+                                + "still loads, so this is one missing script rather than a broken "
+                                + "site."));
+            } else {
+                live += 1;
+            }
+            index += 1;
+        }
+        return live;
+    }
+
+    /** A bound layout whose HTML never names the site's list — the task's complaint, instrumented. */
+    private void droppedScripts(String check, ShSite site, Scan scan, int entries,
+                                List<Finding> findings) {
+        for (ShPostUnified layout : scan.posts()) {
+            String typeName = layout.getShPostType() == null
+                    ? null : layout.getShPostType().getName();
+            // ShFolderSite-exempt: a post carries its own site column (SH128 is about folders).
+            ShSite owner = layout.getShSite();
+            if (!ShSystemPostType.PAGE_LAYOUT.equals(typeName) || owner == null
+                    || !site.getId().equals(owner.getId())) {
+                continue;
+            }
+            String html = fieldValue(layout, ShSystemPostTypeAttr.HTML);
+            if (html != null && html.contains("site.scripts")) {
+                continue;
+            }
+            var impact = templateGraph.impactOf(layout);
+            if (impact.isEmpty() || !impact.get().isUsed()) {
+                continue;
+            }
+            findings.add(Finding.warning(check, "site-scripts-dropped", address(layout),
+                    ShSystemPostTypeAttr.HTML,
+                    "This site declares " + entries + " script(s) and this layout never emits them, "
+                            + "so the " + impact.get().pages() + " page(s) it renders carry none — "
+                            + "which for a consent banner is a compliance defect that renders "
+                            + "perfectly.",
+                    "Emit them where they belong: `{{#each site.scripts.head}}<script src=\"{{src}}\""
+                            + " {{#if defer}}defer{{/if}}></script>{{/each}}` in the head, and the "
+                            + "same for site.scripts.bodyStart and site.scripts.bodyEnd. Shio never "
+                            + "injects a script a layout did not ask for (P10), which is why this is "
+                            + "reported rather than fixed."));
+        }
+    }
+
+    /** One JSON field's text, trimmed — the shape {@link ShSiteScripts} reads. */
+    private static String text(JsonNode node, String field) {
+        JsonNode value = node.path(field);
+        return value.isValueNode() && !value.isNull() ? value.asString().trim() : "";
     }
 
     /**

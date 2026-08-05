@@ -643,6 +643,10 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     // find, and the two are read together: a block's loss report says "3 class names — all styling",
     // and the theme is where that styling went.
     ...(theme ? { theme } : {}),
+    // SH389 — and the third half: the scripts SH377 found and nothing could hold. Computed from the
+    // inventory alone, so it needs neither markup nor stylesheets and is present on every proposal a
+    // capture can produce.
+    scripts: proposeScripts(inventory),
     notes: [...notes, ...(theme?.notes ?? [])],
   };
 }
@@ -667,6 +671,64 @@ function describe(block, guess, index) {
     fields,
     loss: lossFor(block, consumed),
   };
+}
+
+/**
+ * The site-wide scripts a capture found, as a `SiteScripts` list somebody can accept (SH389).
+ *
+ * <h3>The half that makes SH389 a task at all</h3>
+ *
+ * SH377 already inventories the third-party scripts a source loads, and until there was somewhere to
+ * put them they were **silently dropped** — so the replica was subtly not the site: no consent banner,
+ * no analytics, no chat. This proposes the JSON the `SCRIPTS` field takes, in the order the capture saw
+ * them, which is the property the whole task is about: consent has to load before what it gates.
+ *
+ * <h3>Every entry is proposed for the head, deliberately</h3>
+ *
+ * A tag the source loaded in the head and a replica loads at the end of the body is a different site,
+ * and moving one *later* is the direction that breaks a consent ordering. A reviewer moving an entry
+ * down is a decision; this command proposing it is not.
+ *
+ * <h3>A category is recognised, never inferred</h3>
+ *
+ * A consent tool cannot be deduced from a URL, but the common hosts are recognisable by name, and an
+ * entry whose category nobody set is one a reviewer has to classify by hand — which for a consent gate
+ * is exactly the work that matters. So a known host gets a `category`, everything else gets `""`, and
+ * the report counts how many need a human. A guess presented as a fact would be worse than a blank.
+ */
+export function proposeScripts(inventory) {
+  return (inventory?.scripts ?? [])
+    .filter((script) => script?.host)
+    .map((script) => ({
+      src: /^https?:\/\//.test(script.sample ?? "")
+        ? script.sample
+        : `https://${script.host}${script.sample ?? ""}`,
+      inline: "",
+      position: "head",
+      defer: Boolean(script.defer),
+      async: Boolean(script.async),
+      category: categoryOf(script.host),
+      refs: script.refs ?? 0,
+    }));
+}
+
+/**
+ * The consent category a host is recognisably in, or `""`.
+ *
+ * A short list on purpose. A longer one buys little and risks a wrong label on somebody's consent
+ * gate, which is the one field here where being confidently wrong is worse than being empty.
+ */
+function categoryOf(host) {
+  const name = String(host ?? "").toLowerCase();
+  // Consent first, because it is the category whose ORDER is the compliance property — and the one
+  // worth recognising even if nothing else were.
+  if (/cookiebot|onetrust|cookielaw|osano|iubenda|termly|usercentrics/.test(name)) return "consent";
+  if (/googletagmanager|google-analytics|segment|mixpanel|plausible|matomo|hotjar/.test(name)) {
+    return "analytics";
+  }
+  if (/doubleclick|adservice|adsystem|linkedin|tiktok|facebook/.test(name)) return "marketing";
+  if (/intercom|drift|zendesk|crisp|tawk|livechat/.test(name)) return "functional";
+  return "";
 }
 
 /**
@@ -750,6 +812,10 @@ export function describeProposal(proposal, options = {}) {
     lines.push("");
     lines.push(describeTheme(proposal.theme, options).trimEnd());
   }
+  if (proposal.scripts?.length) {
+    lines.push("");
+    lines.push(describeScripts(proposal.scripts, options).trimEnd());
+  }
   lines.push("", `proposal: ${options.out ?? PROPOSAL_FILE} (nothing was applied)`);
   // The theme's own notes are already in `proposal.notes`, which is what `describeTheme` prints too —
   // so they are dropped here rather than printed twice. One list, one place.
@@ -757,6 +823,29 @@ export function describeProposal(proposal, options = {}) {
     lines.push(`  note: ${note}`);
   }
   return `${lines.join("\n")}\n`;
+}
+
+/**
+ * The site-wide scripts, and how many still need a category (SH389).
+ *
+ * The unclassified count is the line that matters: those are the entries a human has to place in a
+ * consent gate, and it is the only number here that names remaining work rather than a finding.
+ */
+function describeScripts(scripts, options = {}) {
+  const limit = Number.isFinite(Number(options.limit)) ? Math.max(Number(options.limit), 1) : 20;
+  const unclassified = scripts.filter((row) => !row.category).length;
+  const lines = [
+    `site scripts: ${scripts.length} third-party script(s) the source loaded`
+      + (unclassified ? `, ${unclassified} with no category a reviewer has to set` : ""),
+  ];
+  for (const row of scripts.slice(0, limit)) {
+    lines.push(`  ${row.category || "(uncategorised)"}  ${row.src}`
+      + `  ${row.refs} page(s)${row.defer ? "  defer" : ""}${row.async ? "  async" : ""}`);
+  }
+  if (scripts.length > limit) lines.push(`  … ${scripts.length - limit} more in the proposal`);
+  lines.push("  note: every entry is proposed for the head — moving one later is the direction that "
+    + "breaks a consent ordering, so a reviewer does that deliberately");
+  return lines.join("\n");
 }
 
 function describeLoss(loss) {
