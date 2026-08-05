@@ -106,9 +106,12 @@ class ShStatelessReachabilityLintTest {
                 "site.upsert (SH170) — and this path is the reason that task exists, since a "
                 + "stateless caller here gets a bodiless 403 and the CLI's e2e/provision.mjs walks "
                 + "the CSRF dance by hand"));
-        byPath.put("/api/v2/staticfile", new Requirement(Reason.AGENT_EQUIVALENT,
-                "the shio_assets tool and the SH145 asset projection; a multipart upload from a "
-                + "JSON-RPC client is not a shape MCP has"));
+        // /api/v2/staticfile was here, classified AGENT_EQUIVALENT on the reasoning that the
+        // `shio_assets` tool and the SH145 projection covered it. SH437 measured that and it was
+        // false in the direction that matters: an agent can *read* the media library over MCP and
+        // cannot put bytes into it, because a multipart upload is not a shape JSON-RPC has — which
+        // is an argument for the HTTP path being reachable, not for the gap being acceptable. The
+        // narrowed exemption is in ShSecurityConfig; this comment is what stops the row coming back.
 
         byPath.put("/api/v2/api-token", new Requirement(Reason.CONSOLE_ADMIN,
                 "an agent minting or widening its own credential is the escalation Block L is "

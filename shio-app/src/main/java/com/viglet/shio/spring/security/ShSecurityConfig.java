@@ -115,6 +115,25 @@ public class ShSecurityConfig {
      */
     private static final String IMPORT_PATH = "/api/v2/import";
     /**
+     * The media library (SH62) — narrowed for SH437's reason, which is the one the SH339 inventory
+     * predicted somebody would hit.
+     *
+     * <p>Bytes are the one thing the agent surface cannot carry: {@code post.upsert} takes JSON, so
+     * an asset reaches an instance through {@code POST /api/v2/staticfile/upload} and through
+     * nothing else. That path was reachable only with a session cookie, so the refusal a stateless
+     * caller got was accurate and its fix — "use the agent surface" — named no verb that could do
+     * the job. {@code shio push --content} has uploaded assets since SH145 and every test of it
+     * injects a {@code fetch}, so the whole feature was unreachable from a real CLI and nothing
+     * said so; SH437 found it by driving a conversion against a running instance.</p>
+     *
+     * <p>Narrowed, not blanket, and the discriminator is SH117's: the console posts this multipart
+     * form with a session cookie and stays CSRF-checked, while the CLI holds none and cannot obtain
+     * a token. An upload is also the least destructive write on this list — it adds a post, it
+     * replaces nothing — and {@code /{id}} replace and delete are covered by the same narrowing for
+     * the same reason a curator's browser is still checked.</p>
+     */
+    private static final String STATIC_FILE_PATH = "/api/v2/staticfile/**";
+    /**
      * The agent surface (Block H) — stateless callers: a CDA {@code Key} token or the
      * {@code shio} CLI's Basic auth. CSRF-exempt only for those (SH167): the namespace is
      * {@code authenticated()} and nothing else, so a browser session reaches its writes too.
@@ -217,6 +236,9 @@ public class ShSecurityConfig {
                         // back on the read, because narrowing is what widens who can read it.
                         new ShStatelessRequestMatcher(mvc.matcher(WEBHOOK_PATH), sessionCookieName),
                         new ShStatelessRequestMatcher(mvc.matcher(IMPORT_PATH), sessionCookieName),
+                        // SH437 — see STATIC_FILE_PATH. Bytes are the one thing the agent surface
+                        // cannot carry, so this was a gap no other exemption could stand in for.
+                        new ShStatelessRequestMatcher(mvc.matcher(STATIC_FILE_PATH), sessionCookieName),
                         // SH109 — same narrowed exemption, same reason (see REVIEW_PATH).
                         new ShStatelessRequestMatcher(mvc.matcher(REVIEW_PATH), sessionCookieName),
                         // Agent writes (SH81/SH82) and MCP (SH75) — the callers are a

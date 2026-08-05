@@ -112,16 +112,32 @@ const PAGE = "<html><body><main>"
   + "<section class=hero><h1>Home</h1><p>Welcome to the site.</p><a href=/go>Start</a></section>"
   + "</main></body></html>";
 
-function ctxWith({ plan = null, site = { "/": PAGE }, fetchImpl } = {}) {
+/**
+ * @param {object} [options]
+ * @param {Record<string, string|null>} [options.assets] source path → bytes, or `null` for an
+ *   asset the capture named and never downloaded (SH437's "missing" row)
+ * @param {object[]} [options.staticFiles] what the instance already holds in the target folder
+ */
+function ctxWith({ plan = null, site = { "/": PAGE }, assets = {}, staticFiles = [], fetchImpl } = {}) {
   const files = new Map();
+  const assetRows = Object.keys(assets).map((path) => ({
+    path,
+    file: `x.test${path}`,
+    kind: "image",
+    contentType: "image/png",
+  }));
   files.set(norm(`/repo/${INVENTORY_FILE}`), JSON.stringify({
     version: 3,
     source: { origin: "https://x.test", seed: "https://x.test" },
     crawl: { pages: 1, truncated: false, markup: true },
     pages: Object.keys(site).map((path) => ({ path, title: path, markup: markupFileFor(path) })),
+    assets: assetRows,
   }));
   for (const [path, html] of Object.entries(site)) {
     files.set(norm(`/repo/${MARKUP_DIR}/${markupFileFor(path)}`), html);
+  }
+  for (const [path, bytes] of Object.entries(assets)) {
+    if (bytes !== null) files.set(norm(`/repo/shio/assets/x.test${path}`), bytes);
   }
   if (plan) files.set(norm(`/repo/${PLAN_FILE}`), JSON.stringify(plan));
   const written = {};
@@ -134,8 +150,14 @@ function ctxWith({ plan = null, site = { "/": PAGE }, fetchImpl } = {}) {
     written,
     calls,
     async fetch(url, init = {}) {
-      calls.push({ url: String(url), method: init.method ?? "GET", body: init.body });
-      return fetchImpl ? fetchImpl(String(url), init) : json({ changed: 3 });
+      const at = String(url);
+      calls.push({ url: at, method: init.method ?? "GET", body: init.body });
+      if (fetchImpl) return fetchImpl(at, init);
+      // SH437's three reads, in the order `sendAssets` makes them.
+      if (at.includes("/agent/resolve")) return json({ id: "folder-1", kind: "folder" });
+      if (at.includes("/api/v2/staticfile?")) return json(staticFiles);
+      if (at.includes("/api/v2/staticfile/upload")) return json({ id: "file-1" });
+      return json({ changed: 3 });
     },
     fs: {
       async mkdir() {},
@@ -264,6 +286,44 @@ test("SH449: a capture with no markup is refused by the read, not by the writer"
     /neither their markup[\s\S]*shio clone https:\/\/x\.test --markup/,
   );
   assert.deepEqual(ctx.calls, []);
+});
+
+test("SH437: a fidelity conversion uploads the captured bytes at the source's own path", async () => {
+  // SH145's rule is that an asset reaches the instance because a File *field* names it, and a page
+  // kept in fidelity mode has no fields at all — which is what `source-asset-stranded` has been
+  // reporting since SH429. The reference is in the markup, at the source's path, so the upload has
+  // to use that path as the folder chain plus file name: the pair the renderer walks back.
+  const withImage = { "/": PAGE.replace("<main>", '<main><img src="/img/hero.png" alt="Hero">') };
+  const ctx = ctxWith({ site: withImage, assets: { "/img/hero.png": "PNG" } });
+
+  const { assets } = await convert.run({ site: "Acme" }, [], ctx);
+
+  assert.deepEqual(assets, { uploaded: 1, present: 0, missing: 0 });
+  const folder = ctx.calls.find((call) => call.url.includes("/agent/apply") && /"\/img"/.test(call.body ?? ""));
+  assert.ok(folder, "the folder chain the source implied is created through the one write path (P10)");
+  const upload = ctx.calls.find((call) => call.url.includes("/api/v2/staticfile/upload"));
+  assert.ok(upload, "and the bytes go up the endpoint the console uses");
+
+  // The markup is untouched — SH429's option A, and the reason it needed a route rather than a
+  // rewrite: `snapshot --against` compares a replica to its source, and an edited `src` is a
+  // difference the comparison structurally cannot see.
+  const out = ctxWith({ site: withImage, assets: { "/img/hero.png": "PNG" } });
+  const page = (await convert.run({ site: "Acme", out: "c.json" }, [], out))
+    .document.posts.find((post) => post.type === "Page");
+  assert.match(page.data.content, /src="\/img\/hero\.png"/);
+});
+
+test("SH437: a second conversion uploads nothing, and a missing byte is counted rather than raised", async () => {
+  // Idempotent, because a second `convert` must not re-upload a site's images; and an asset the
+  // capture named but never downloaded is `source-asset-missing`, which the gate already reports
+  // with the `clone` that fixes it — failing a whole conversion over an image would be worse.
+  const already = ctxWith({ assets: { "/img/hero.png": "PNG" }, staticFiles: [{ fileName: "hero.png" }] });
+  assert.deepEqual((await convert.run({ site: "Acme" }, [], already)).assets,
+    { uploaded: 0, present: 1, missing: 0 });
+
+  const gone = ctxWith({ assets: { "/img/hero.png": null } });
+  assert.deepEqual((await convert.run({ site: "Acme" }, [], gone)).assets,
+    { uploaded: 0, present: 0, missing: 1 });
 });
 
 test("SH449: an accepted page composes sections and carries no verbatim copy of itself", async () => {

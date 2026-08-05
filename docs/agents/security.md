@@ -14,7 +14,8 @@
 **Every exemption is session-narrowed, and the one that is not is argued (SH167).**
 `/api/v2/post-type`, `/api/v2/review/**`, `/api/v2/cda/**`, `/api/v2/agent/**`, `/mcp`, — since
 SH189 — `/api/v2/import` — since SH327 — `/api/v2/render/**`, — since SH344 —
-`/api/v2/preview-token` and — since SH343 — `/api/v2/site-webhook/**` are wrapped in
+`/api/v2/preview-token`, — since SH343 — `/api/v2/site-webhook/**` and — since SH437 —
+`/api/v2/staticfile/**` are wrapped in
 **`ShStatelessRequestMatcher`**: exempt for a caller holding no session cookie,
 CSRF-checked for one that does. A blanket exemption is only safe while no cookie-bearing
 client reaches the path, which was true of the post-type API right up to the commit (SH117)
@@ -44,13 +45,23 @@ class: SH170 (creating a site needs session + CSRF, worked around by hand in `e2
 then SH327 (`/api/v2/render/**`) and SH335 — the same defect three times, each found by a human doing
 a build rather than by a build failing. `ShStatelessReachabilityLintTest` asserts over the same
 configuration that **every mutating controller root is stateless-writable or classified**, and prints
-the inventory: **25 roots, 8 writable**, and of the 17 that need a session, 5 are `AGENT_EQUIVALENT`
-(the capability has an address-native form — SH170's own resolution was to grow `site.upsert`, not to
-open `POST /api/v2/site` to a token), 9 are `CONSOLE_ADMIN` (an agent minting its own API token is the
-escalation Block L prevents), and **the gap list is empty** since SH343.
-`/api/v2/render/post-types` (SH327), `/api/v2/preview-token` (SH344) and `/api/v2/site-webhook`
-(SH343) were the three, and each left the only way an entry may: the lint failed until the note was
-removed.
+the inventory: **25 roots**, of which the writable count and the classified ones are printed by the
+run. `AGENT_EQUIVALENT` means the capability has an address-native form (SH170's own resolution was to
+grow `site.upsert`, not to open `POST /api/v2/site` to a token); `CONSOLE_ADMIN` means an agent
+minting its own API token is the escalation Block L prevents; and **the gap list is empty** since
+SH343. `/api/v2/render/post-types` (SH327), `/api/v2/preview-token` (SH344) and `/api/v2/site-webhook`
+(SH343) each left the only way an entry may: the lint failed until the note was removed.
+
+**SH437 removed a fourth, and it is the one that shows a classification can be wrong rather than
+merely stale.** `/api/v2/staticfile` sat under `AGENT_EQUIVALENT` on the reasoning that MCP's
+`shio_assets` tool and the SH145 projection cover it. They do not: an agent can *read* the media
+library over JSON-RPC and cannot put bytes into it, because **a multipart upload is not a shape MCP
+has** — which is an argument for the HTTP path being reachable, not for the gap being acceptable. The
+consequence had been shipping since SH145: `shio push --content` uploads assets and every test of it
+injects a `fetch`, so the feature was unreachable from a real CLI and nothing said so. Found by
+driving a fidelity conversion against a running instance (SH448's suite). **When you write an
+`AGENT_EQUIVALENT` note, name the verb and check it can carry the payload** — "there is a tool for
+that area" is not the same claim.
 
 **And SH343 found the limit both instruments share: neither asks what a newly-widened path
 *returns*.** Narrowing CSRF on `/api/v2/site-webhook` widens who reaches its `GET` from a console

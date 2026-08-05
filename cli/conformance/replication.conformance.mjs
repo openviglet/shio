@@ -243,6 +243,35 @@ describe("SH448 conformance: replication, from a served source to an installable
       "SH380/SH424: and the captured theme is inlined by the layout, so a token edit reaches the "
         + "page — which is what a <head> copied verbatim from the source could never give",
     );
+
+    // ── SH437: and its images load ────────────────────────────────────────────────────────
+    // The half SH429 measured as unavailable. A static file's bytes are public at
+    // /file_source/<postId>/<name>, keyed by an id no source ever chose, so uploading the capture
+    // left <img src="/img/hero.png"> exactly as broken as leaving the bytes on disk. Nothing short
+    // of a live instance can assert this: it is a route, a resolver and a render pass agreeing.
+    assert.match(
+      html,
+      new RegExp(`src="/preview/${fidelitySite}/img/hero\\.png"`),
+      "SH437: the render pass points the source's own path at the site's copy of those bytes — and "
+        + "the stored markup is untouched, which is why `snapshot --against` can still compare it",
+    );
+
+    const image = await fetch(`${conn.baseUrl}/preview/${encodeURIComponent(fidelitySite)}/img/hero.png`, {
+      headers: { Authorization: basicOf(conn), Accept: "image/png" },
+    });
+    assert.equal(
+      image.status,
+      200,
+      "SH437: and the route answers with the bytes, resolved by folder chain + file name — SH145's "
+        + "addressing read backwards, which is the join that did not exist",
+    );
+    assert.match(image.headers.get("content-type") ?? "", /^image\//,
+      "as an image, from what the storage layer probed rather than from the URL");
+    assert.equal(
+      Buffer.from(await image.arrayBuffer()).subarray(0, 8).toString("hex"),
+      "89504e470d0a1a0a",
+      "and they are the PNG the fixture served, all the way through capture, upload and delivery",
+    );
   });
 });
 

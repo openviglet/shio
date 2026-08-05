@@ -407,6 +407,30 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   never on `target=…`, never outside `/preview/…` (the editor also runs against external front ends).
   **What is not an option is making `{{link}}` preview-aware**: it is content-facing, so one field
   would mean two things in two renders — the coupling SH187 spent a task splitting apart.
+- **A `File` post is reachable at the path its source used, and `src` joins the rewrite (SH437)** —
+  a static file's bytes are public at `/file_source/<postId>/<fileName>` (SH38), keyed by an id no
+  source ever chose, so a fidelity replica's `<img src="/img/hero.png">` was as broken with the bytes
+  uploaded as without them. SH429 called keeping the source's URL space the better option and
+  measured that it *was not available*; this is the route it needed. **`ShSiteAssets`** walks a
+  site-relative path as **folder chain + file name** — SH145's asset addressing (`shio/assets/<site>
+  <chain>/<name>`) read backwards, not a new scheme — and **`ShSiteAssetDelivery`** streams the bytes
+  through the same storage the id-keyed route uses. `/file_source/**` is unchanged and `{{file_url}}`
+  still points there; the whole feature is the addressing.
+  **One mapping, with the asset as a fallback.** Two `@GetMapping("/{siteKey}/**")` differing only by
+  `produces` was the obvious shape and is wrong: `Accept: */*` matches both and Spring's choice is not
+  a decision this class made — measured, the home page started answering `render-asset-unknown` for
+  `/`. So `page` catches `UnknownPageException`, tries the asset, and rethrows the **page's** 404 when
+  that misses too, because a path with neither is far more often a page somebody meant to write. That
+  catch is the seventh row in `ShSilentCatchInventoryTest`'s `render` count, declared as control flow.
+  **The headers are not the page's**: `max-age=300, private` and `noindex`, because an asset is not a
+  draft page — its bytes are immutable while the post holds them, and `no-store` on forty images is a
+  round trip each per reload. Private, since the route is authenticated.
+  **And `src` joins `ShPreviewLinks`**, against this index rather than the URL one — the class note's
+  "deliberately not `src`" was right about the index it had. Same rule as `href`: rewrite only what
+  this site actually serves. One lookup per *distinct* path, because a fidelity page is a whole source
+  document. `/file_source/…` is excluded explicitly, so a template that resolved an asset properly is
+  never re-pointed. **The stored markup is never edited** — which is the point: `snapshot --against`
+  compares a replica to its source, and an edited `src` is a difference it structurally cannot see.
 - **Both render-model verbs are ops, not just routes (SH186, SH326)** — `render.provision` is
   addressless and idempotent; **`data.reconcile:true`** on it reaches SH289's repair, which had
   stayed HTTP-only, so an MCP client could *diagnose* an old instance (`untitled-template`) and

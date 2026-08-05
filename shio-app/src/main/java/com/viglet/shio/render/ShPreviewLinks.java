@@ -11,8 +11,10 @@ package com.viglet.shio.render;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.jsoup.Jsoup;
@@ -73,6 +75,20 @@ public class ShPreviewLinks {
     private static final List<String> NAVIGABLE = List.of("href");
 
     /**
+     * And the one that carries an asset (SH437).
+     *
+     * <p>The class note above says `src` is deliberately excluded, and it was right about the index
+     * it had: `{{file_url}}` emits `/file_source/<id>/<name>`, a real server path that must not be
+     * touched, and page URLs are not what an `<img>` points at. What changed is that a site-relative
+     * asset path now <em>resolves</em> — {@link ShSiteAssets} answers "is there a `File` post at
+     * `/img/hero.png` in this site" — so `src` gets the same rule the class already had, against a
+     * different index: rewrite only what this site actually serves, leave everything else exactly as
+     * the author wrote it. That is what makes a fidelity replica's images load without a single byte
+     * of its captured markup being edited (SH429's option A).</p>
+     */
+    private static final List<String> ASSET = List.of("src");
+
+    /**
      * How many of this site's URLs the editor bridge is handed (SH336's second mechanism).
      *
      * <p>The browser half needs the same index the server pass used, because it cannot otherwise
@@ -84,9 +100,11 @@ public class ShPreviewLinks {
     static final int BRIDGE_URL_CAP = 500;
 
     private final ShPostUnifiedRepository shPostUnifiedRepository;
+    private final ShSiteAssets shSiteAssets;
 
-    public ShPreviewLinks(ShPostUnifiedRepository shPostUnifiedRepository) {
+    public ShPreviewLinks(ShPostUnifiedRepository shPostUnifiedRepository, ShSiteAssets shSiteAssets) {
         this.shPostUnifiedRepository = shPostUnifiedRepository;
+        this.shSiteAssets = shSiteAssets;
     }
 
     /**
@@ -103,13 +121,25 @@ public class ShPreviewLinks {
             return html;
         }
         Set<String> known = publishedUrls(page.siteId(), page.state());
-        if (known.isEmpty()) {
-            return html;
-        }
         String prefix = ShSiteFrontEnd.PREVIEW_BASE
                 + URLEncoder.encode(siteKey, StandardCharsets.UTF_8);
         Document document = Jsoup.parse(html);
         document.outputSettings().prettyPrint(false);
+        // SH437 — one lookup per *distinct* path, not per element. A fidelity page is the whole
+        // source document, so forty `<img>` tags sharing one sprite is the ordinary case and a query
+        // per attribute would make the rewrite cost the page rather than the assets.
+        Map<String, Boolean> assets = new HashMap<>();
+        for (String attribute : ASSET) {
+            for (Element element : document.select("[" + attribute + "]")) {
+                String value = element.attr(attribute);
+                String rewritten = rewriteAsset(value, prefix, page, assets);
+                if (rewritten != null) {
+                    element.attr(attribute, rewritten);
+                }
+            }
+        }
+        // The empty index used to short-circuit the whole method. It cannot any more: a site with no
+        // page URLs can still hold assets, and this loop already does nothing when `known` is empty.
         for (String attribute : NAVIGABLE) {
             for (Element element : document.select("[" + attribute + "]")) {
                 String value = element.attr(attribute);
@@ -156,6 +186,30 @@ public class ShPreviewLinks {
         String path = cut < 0 ? value : value.substring(0, cut);
         String tail = cut < 0 ? "" : value.substring(cut);
         return known.contains(ShAddress.normalizePath(path)) ? prefix + path + tail : null;
+    }
+
+    /**
+     * One {@code src}, or {@code null} to leave it alone (SH437).
+     *
+     * <p>Same three exclusions as {@link #rewriteOne} — absolute, protocol-relative and
+     * document-relative are all somebody else's or already correct — plus one this rule needs and
+     * that one does not: {@code /file_source/…} is where {@code {{file_url}}} already points, so a
+     * template that resolved an asset properly must not have its work re-pointed at a path that
+     * would have to resolve back to the same bytes.</p>
+     */
+    private String rewriteAsset(String value, String prefix,
+                                ShPageRenderService.ShRenderedPage page, Map<String, Boolean> seen) {
+        if (value == null || !value.startsWith("/") || value.startsWith("//")
+                || value.startsWith(ShSiteFrontEnd.PREVIEW_BASE)
+                || value.startsWith("/file_source/")) {
+            return null;
+        }
+        int cut = firstOf(value, '?', '#');
+        String path = cut < 0 ? value : value.substring(0, cut);
+        String tail = cut < 0 ? "" : value.substring(cut);
+        boolean served = seen.computeIfAbsent(path, candidate ->
+                shSiteAssets.findInSite(page.siteId(), candidate, page.state()).isPresent());
+        return served ? prefix + path + tail : null;
     }
 
     private static int firstOf(String value, char... any) {

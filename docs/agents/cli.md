@@ -338,6 +338,26 @@ it. Four decisions worth keeping:
   `createSite`, never folded into it: that op's create branch drops `data.postTypeLayout` silently
   (SH453), which is exactly the run — a new site — that needs it.
 
+**And the bytes go up with it (SH437).** A fidelity page references its images by the source's own
+path and has no `File` field, so SH145's rule — an asset reaches the instance because a *field* names
+it — leaves them in the tree, which is what `source-asset-stranded` has been reporting since SH429.
+`convert` therefore uploads the captured assets itself, after the apply and only when there is
+verbatim markup: each one into the folder chain its source path implies, under its source file name,
+which is exactly the pair `ShSiteAssets` walks back at render time. Idempotent (an asset already in
+its folder is left alone — replacing is a decision about bytes a curator may have changed) and quiet
+about what it cannot do (an asset the capture never downloaded is counted, not raised: the gate
+already reports it as `source-asset-missing` with the `clone` that fixes it, and failing a whole
+conversion over an image would be worse). `--assets-dir` moves where it reads from.
+
+**One thing this needed from the backend, and it was a P1 gap the SH339 inventory had mis-classified**:
+`POST /api/v2/staticfile/upload` was reachable only with a session cookie, so *no* stateless caller
+could put bytes into an instance — `shio push --content` included, since SH145, with every test of it
+injecting a `fetch`. The inventory listed the path as `AGENT_EQUIVALENT` on the reasoning that MCP's
+`shio_assets` covers it; that is false in the direction that matters, because a multipart upload is not
+a shape JSON-RPC has. `/api/v2/staticfile/**` now carries SH117's *narrowed* exemption (session-less
+callers only, so the console stays CSRF-checked) and the inventory row is gone —
+`ShStatelessReachabilityLintTest` fails if it comes back.
+
 Both keys are written only when there is verbatim markup, so an all-accepted conversion is the same
 bytes it was before (P5). SH417's *"nothing has been accepted"* refusal is gone with the defect it
 described; a capture with no markup is refused one step earlier by `proposalFor`, which knows the

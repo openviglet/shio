@@ -101,7 +101,14 @@ class ShSilentCatchInventoryTest {
             // configuration mistake, and an image at its natural size is the correct degradation.
             // Neither is recorded: an unmeasurable image is not a degradation, and the signer's own
             // startup log already reports an enabled signer with no secret.
-            "render", 6,
+            // 7 since SH437, and it is the same kind as the SH385 redirect above rather than a
+            // degradation: `ShRenderAPI` catches `UnknownAssetException` and rethrows the *page's*
+            // 404, because a path that is neither is far more often a page somebody meant to write.
+            // Nothing is lost — both are teaching 4xx problems that reach the caller in full, and
+            // SH103 settled that 4xx does not belong in the diagnostics window. The lint keys on
+            // "neither records nor rethrows the caught exception" and cannot see that this one
+            // rethrows a better one, which is the right way round for a population guard to be wrong.
+            "render", 7,
             "utils", 2,
             "migration", 1,
             // 1 since SH84: `ShTuringDocumentMapper.readData` reads a post whose `data` is not JSON
@@ -229,8 +236,12 @@ class ShSilentCatchInventoryTest {
                         put one diagnostics entry per stranger's typo into a window folded by \
                         subject — which is exactly the trade SH103 refused for 4xx. A bad `limit=` \
                         is a template author's mistake and could be argued the other way; it is \
-                        left as it was rather than changed in passing.""")
-                .hasSize(6)
+                        left as it was rather than changed in passing.
+
+                        SH437 added the seventh, and it is control flow rather than a degradation: \
+                        a path with no page is tried as an asset, and a path that is neither gets \
+                        the page's 404 because that is the more useful of the two sentences.""")
+                .hasSize(7)
                 .allSatisfy(where -> assertThat(where)
                         .matches(".*(ShRenderAPI|ShRenderHelpers|ShTemplateValidator).*"));
     }

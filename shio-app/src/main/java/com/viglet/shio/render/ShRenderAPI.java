@@ -77,17 +77,56 @@ public class ShRenderAPI {
     private final ShPreviewBanner banner;
     private final ShEditorBridge editorBridge;
     private final ShPreviewLinks previewLinks;
+    private final ShSiteAssetDelivery assetDelivery;
 
     /** Never indexed, whether it renders a page or answers with a redirect (SH385). */
     private static final String ROBOTS = "X-Robots-Tag";
     private static final String NO_INDEX = "noindex, nofollow";
 
     public ShRenderAPI(ShPageRenderService shPageRenderService, ShPreviewBanner banner,
-                       ShEditorBridge editorBridge, ShPreviewLinks previewLinks) {
+                       ShEditorBridge editorBridge, ShPreviewLinks previewLinks,
+                       ShSiteAssetDelivery assetDelivery) {
         this.shPageRenderService = shPageRenderService;
         this.banner = banner;
         this.editorBridge = editorBridge;
         this.previewLinks = previewLinks;
+        this.assetDelivery = assetDelivery;
+    }
+
+    /**
+     * The same path, when no page answers to it: an <b>asset</b> (SH437).
+     *
+     * <h2>Why one mapping with a fallback and not two mappings</h2>
+     *
+     * <p>Two {@code @GetMapping("/{siteKey}/**")} differing only by {@code produces} was the
+     * obvious shape and it is wrong: a caller sending {@code Accept: *}/{@code *} — which is every
+     * programmatic client and most {@code <img>} requests — matches both, Spring picks one, and
+     * which one is not a decision this class made. Measured: the home page started answering
+     * {@code render-asset-unknown} for {@code /}. So the route has one entry, pages are its primary
+     * meaning, and an asset is what it tries when the page lookup says there is nothing there. The
+     * cost is one failed post lookup per asset request; the alternative is a content-negotiation
+     * outcome that changes with the caller's headers.</p>
+     *
+     * <h2>Which 404 a caller gets when neither answers</h2>
+     *
+     * <p>The <b>page's</b>, because a path with no page and no asset is far more often a page
+     * somebody meant to write than an image somebody meant to upload, and {@code render-page-unknown}
+     * names the call that lists what the site does hold. The asset's own teaching 404 is reserved
+     * for the case that reached the resolver and missed there.</p>
+     *
+     * <h2>What it is not</h2>
+     *
+     * <p>Not a second file API. {@code /file_source/<id>/<name>} stays exactly as it is and is
+     * still where {@code file_url} points; this resolves the <em>site's own</em> path to the same
+     * post and hands off to the same storage. The whole feature is the addressing.</p>
+     */
+    private ResponseEntity<?> assetOr(RuntimeException pageProblem, String siteKey, String path,
+                                      ShPostState state) {
+        try {
+            return assetDelivery.serve(siteKey, path, state);
+        } catch (ShSiteAssetDelivery.UnknownAssetException ignored) {
+            throw pageProblem;
+        }
     }
 
     /**
@@ -97,18 +136,23 @@ public class ShRenderAPI {
      * @param state   {@code DRAFT} (the default: previewing means seeing unpublished edits)
      *                or {@code PUBLISHED} to see what a visitor would get
      */
-    @GetMapping(value = "/{siteKey}/**", produces = MediaType.TEXT_HTML_VALUE)
-    public ResponseEntity<String> page(@PathVariable String siteKey,
-                                       @RequestParam(defaultValue = "DRAFT") String state,
-                                       @RequestParam(defaultValue = "false") boolean editor,
-                                       HttpServletRequest request) {
+    @GetMapping("/{siteKey}/**")
+    public ResponseEntity<?> page(@PathVariable String siteKey,
+                                  @RequestParam(defaultValue = "DRAFT") String state,
+                                  @RequestParam(defaultValue = "false") boolean editor,
+                                  HttpServletRequest request) {
+        ShPostState wanted = ShPostState.PUBLISHED.name().equalsIgnoreCase(state)
+                ? ShPostState.PUBLISHED
+                : ShPostState.DRAFT;
         ShRenderedPage rendered;
         try {
-            rendered = shPageRenderService.render(siteKey, pathWithin(siteKey, request),
-                    ShPostState.PUBLISHED.name().equalsIgnoreCase(state)
-                            ? ShPostState.PUBLISHED
-                            : ShPostState.DRAFT,
+            rendered = shPageRenderService.render(siteKey, pathWithin(siteKey, request), wanted,
                     readerParams(request));
+        } catch (ShPageRenderService.UnknownPageException noPage) {
+            // SH437 — the same path, as an asset. See `assetOr`: one mapping with a fallback,
+            // because two mappings differing only by `produces` let the caller's Accept header
+            // decide which of them a request reaches.
+            return assetOr(noPage, siteKey, pathWithin(siteKey, request), wanted);
         } catch (ShPageRenderService.ShPageRedirectException redirect) {
             // SH385 — the *proof* has to cover the URL space, which is why the redirect is honoured
             // here and not only by whatever serves the site in production. A replication's whole claim

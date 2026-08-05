@@ -35,10 +35,16 @@ ref_scheme = "outline"
 # before anything about it can be checked.** So the writer that turns a capture into a
 # renderable site comes first (SH449), then the bytes its stylesheet asks for (SH452), then the
 # public route that serves the result anonymously (SH451) and the delivery of those bytes at
-# the path the source chose (SH437) — which needs the site-and-path resolution SH451 builds and
-# touches the same security config, so it cannot go beside it. Only then is there an anonymous,
-# complete page to photograph, which is what SH450's visual gate has been missing. The two that
-# depend on nothing (SH447, SH446) sit late because they cost the replica nothing.
+# the path the source chose (SH437). Only then is there an anonymous, complete page to
+# photograph, which is what SH450's visual gate has been missing. The two that depend on nothing
+# (SH447, SH446) sit late because they cost the replica nothing.
+#
+# **SH437 was run before SH451, on instruction, and the claim above that it needs SH451 was
+# wrong.** It needed a site-and-path resolution, not *that* one: the preview route already had a
+# site key and a path, so the asset resolver hangs off it and the public `/sites/**` grammar is
+# left entirely to SH451. It did touch the security config, and independently — a narrowed CSRF
+# exemption on `/api/v2/staticfile`, which is a different edit from the anonymous read SH451
+# needs. Two tasks in one file is not the same as two tasks in one decision.
 #
 # **SH448 was last here and was run first, on instruction, and the note above predicted what
 # that costs**: the conformance suite it delivers is red on SH446 — a scaffold whose dependency
@@ -49,7 +55,6 @@ ref_scheme = "outline"
 priority = [
   "SH452",
   "SH451",
-  "SH437",
   "SH450",
   "SH447",
   "SH446",

@@ -32,7 +32,9 @@
  */
 import { join } from "node:path";
 
+import { ShioAdminClient } from "../admin-client.mjs";
 import { ShioAgentClient } from "../agent-client.mjs";
+import { ASSETS_DIR } from "../content-assets.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { buildConversion, describeConversion, staleMessage } from "../convert.mjs";
 import { retellUnknownSite } from "../unknown-site.mjs";
@@ -59,6 +61,9 @@ Every post lands in DRAFT. Publishing is a separate, explicit call.
   --ids                Put object ids on the change rows (off by default)
   --limit <n>          Rows to print
   --inventory <file>   Read a capture from somewhere else
+  --assets-dir <dir>   Where the captured bytes are (default shio/assets). A page kept in
+                       fidelity mode references them by the source's own path, so they are
+                       uploaded at that path and served there
   --json               The document as JSON on stdout instead of the report
 
 Examples:
@@ -82,7 +87,7 @@ export async function run(flags, positionals, ctx) {
 
   // The plan file and the proposal computed from the capture NOW: the pair is the whole point, since
   // an acceptance is only checkable against the candidates the current markup produces.
-  const { proposal, plan, markup } = await proposalFor(flags, ctx, "convert");
+  const { proposal, plan, markup, inventory } = await proposalFor(flags, ctx, "convert");
   const { document, stale, sections, pages, verbatim, extras } = buildConversion({
     proposal,
     plan,
@@ -144,9 +149,109 @@ export async function run(flags, positionals, ctx) {
         + `${planOnly ? " (nothing was written)" : " - in DRAFT"}\n`,
     );
   }
+  // SH437 — and the bytes, which are not content and so cannot ride the document.
+  let assets = null;
+  if (!planOnly && verbatim) {
+    assets = await sendAssets({ site, inventory, flags, admin: { baseUrl, user, password } }, ctx);
+    ctx.stdout.write(
+      `  assets: ${assets.uploaded} uploaded, ${assets.present} already there`
+        + `${assets.missing ? `, ${assets.missing} with no bytes in the tree` : ""}`
+        + " - served at the source's own paths\n",
+    );
+  }
+
   // `--check` is a drift guard, so a non-empty plan is the failure it exists to report.
   const drifted = Boolean(flags.check) && Number(result?.changed ?? 0) > 0;
-  return { document, applied: !planOnly, changed: result?.changed ?? 0, exitCode: drifted ? 1 : 0 };
+  return {
+    document, applied: !planOnly, assets, changed: result?.changed ?? 0, exitCode: drifted ? 1 : 0,
+  };
+}
+
+/**
+ * The captured assets, uploaded at the source's own paths (SH437).
+ *
+ * <h3>Why this is here and not in `push --content`</h3>
+ *
+ * <p>SH145's rule is that an asset reaches the instance because a `File` **field** names it — the
+ * bytes alone are never uploaded, which is right, because an asset nothing references is one
+ * nothing serves. A page kept in fidelity mode breaks that premise: it has no fields at all, its
+ * markup references the bytes directly by the source's path, and `source-asset-stranded` is the
+ * finding that has been saying so since SH429. So the reference exists; it is in the markup rather
+ * than in a field, and `push` cannot see it.</p>
+ *
+ * <h3>Addressed by the source's path, which is the whole feature</h3>
+ *
+ * <p>The folder chain is the asset's source directory and the file name is its source file name, so
+ * `/img/hero.png` uploads into `folder:<site>/img` as `hero.png` — the pair SH145 addresses an asset
+ * by, and therefore the pair `ShSiteAssets` walks when the renderer is asked for that path. The
+ * replica's markup is never edited: it still says `src="/img/hero.png"`, and now that resolves.</p>
+ *
+ * <h3>Idempotent, and quiet about what it cannot do</h3>
+ *
+ * <p>An asset already in its folder is left alone rather than replaced — a second `convert` must not
+ * re-upload a site's images, and replacing is a decision about bytes a curator may have changed. An
+ * asset the capture named but never downloaded has no bytes to send and is counted, not raised:
+ * `verify --checks replication` already reports it as `source-asset-missing` with the `clone` that
+ * fixes it, and a refusal here would fail a conversion over an image.</p>
+ */
+async function sendAssets({ site, inventory, flags, admin }, ctx) {
+  const rows = (inventory?.assets ?? []).filter((asset) => asset && !asset.external && asset.file);
+  const summary = { uploaded: 0, present: 0, missing: 0 };
+  if (!rows.length) return summary;
+
+  const assetsDir = typeof flags.assetsDir === "string" ? flags.assetsDir : ASSETS_DIR;
+  const client = new ShioAgentClient({ ...admin, fetch: ctx.fetch });
+  const adminClient = new ShioAdminClient({ ...admin, fetch: ctx.fetch });
+  const folders = new Map();
+
+  for (const asset of rows) {
+    const at = locationOf(site, asset.path);
+    if (!at) continue;
+    let bytes;
+    try {
+      bytes = await ctx.fs.readFile(join(ctx.cwd, assetsDir, asset.file));
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+      summary.missing += 1;
+      continue;
+    }
+
+    let folderId = folders.get(at.folder);
+    if (!folderId) {
+      // The folder, through the one write path there is (P10) — `apply` is idempotent, so a
+      // second run creates nothing and a first run creates the chain the source implied.
+      await client.apply({ site, folders: [{ path: at.folder }], posts: [] });
+      const resolved = await client.resolve(`folder:${site}${at.folder === "/" ? "" : at.folder}`);
+      folderId = resolved?.id;
+      if (!folderId) {
+        summary.missing += 1;
+        continue;
+      }
+      folders.set(at.folder, folderId);
+    }
+
+    const existing = await adminClient.listStaticFiles({ folderId });
+    if ((existing ?? []).some((item) => item.fileName === at.fileName)) {
+      summary.present += 1;
+      continue;
+    }
+    await adminClient.uploadStaticFile({
+      folderId,
+      fileName: at.fileName,
+      bytes,
+      contentType: asset.contentType || "application/octet-stream",
+    });
+    summary.uploaded += 1;
+  }
+  return summary;
+}
+
+/** A source path as the folder chain and file name SH145 addresses an asset by. */
+function locationOf(site, path) {
+  const parts = String(path ?? "").split("?")[0].split("#")[0].split("/").filter(Boolean);
+  if (!parts.length || parts.some((part) => part === "." || part === "..")) return null;
+  const fileName = parts.pop();
+  return { site, folder: parts.length ? `/${parts.join("/")}` : "/", fileName };
 }
 
 /**
