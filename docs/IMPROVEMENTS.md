@@ -1497,32 +1497,6 @@ makes detectable and an apply must refuse rather than guess at. And the apply is
 `--dry-run` first like every other write here, because the artefact it consumes was
 built to be reviewed and a command that skipped straight to writing would waste that.
 
-### XVII.17 The captured theme's tokens are dead on arrival (SH424)
-
-Measured on a real replica of `openviglet.github.io`, not argued. `shio propose` wrote
-nine declared tokens into `Theme.TOKENS`; the rendered page carries two `:root` blocks —
-the token-compiled one at char 1794, the source's own at char 2735, still inside the
-`CSS` field SH380 deliberately keeps verbatim. Equal specificity, later wins, so all
-nine are inert. A curator who edits `brand` sees no change.
-
-Both halves are individually right, which is why nothing caught it. SH380 refuses
-substitution for a good reason: search-and-replacing `#ea580c` across a stranger's
-stylesheet breaks a replica in a way no digest catches. `ShThemeTokens` prepends rather
-than appends so a theme's own CSS can override the token block, which is correct when
-one author wrote both. Composed, the capture emits an artefact whose editability claim
-is inverted, and the report states that claim out loud.
-
-The fix is narrower than substitution and is not what SH380 forbids. A declared property
-lifted into `TOKENS` is re-emitted byte-identically by the compiled `:root`, so dropping
-that one declaration from the kept CSS preserves the computed value — unlike rewriting a
-literal into a `var()`, which changes what the cascade computes. Only lifted
-declarations, never the block: the source's `:root` also holds `color-scheme: light`,
-which is no custom property and must stay. A recurring token is untouched, since nothing
-references it yet.
-
-Invisible to `snapshot --against`, `digest` and `audit` — the replica looks perfect. The
-proof is a token edit that moves a render.
-
 ### XVII.22 The asset map has no reader in fidelity mode (SH429)
 
 SH378 downloads each referenced image into `shio/assets/<site>/…` and folds a source-URL

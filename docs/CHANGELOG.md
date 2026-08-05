@@ -925,6 +925,7 @@
 - **SH426** — The closest header before main is a candidate block, and a candidate on every page read is named as what chrome looks like.
 - **SH427** — A page's inline style blocks are read from the stored markup as sheets of their own, resolving url() against the document.
 - **SH428** — A colliding token takes its whole name as one flat segment, which round-trips to the property the source wrote, and the note counts what the file holds.
+- **SH424** — A declaration lifted into TOKENS is dropped from the kept CSS, so the prepended token block is what sets it and an edit reaches the page.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

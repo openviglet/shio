@@ -221,6 +221,28 @@ are deduped — one decision on N pages, not N decisions), and the proposal now 
 candidate appears on **all** the pages read, with three as the floor: on two pages a hero is on both as
 well, and a hint that fires on every small capture is one a reviewer learns to ignore.
 
+**A lifted declaration comes out of the kept CSS, or the tokens are dead on arrival (SH424).**
+Measured on a real replica, not argued: `shio propose` wrote nine declared tokens into `Theme.TOKENS`,
+and the rendered page carried **two** `:root` blocks — the token-compiled one at char 1794 and the
+source's own at 2735, still inside the `CSS` field SH380 keeps verbatim. Equal specificity, later wins,
+so all nine were inert and a curator editing `brand` saw no change. **Both halves were individually
+right**, which is why nothing caught it: SH380 refuses substitution because search-and-replacing
+`#ea580c` across a stranger's stylesheet breaks a replica in a way no digest catches, and
+`ShThemeTokens` *prepends* so a theme's own CSS can override the token block — correct when one author
+wrote both. Composed, the artefact's editability claim inverted while the report stated it out loud.
+The fix is narrower than what SH380 forbids and is not the same act: a lifted property is re-emitted
+**byte-identically** by the compiled `:root`, so dropping that one declaration preserves the computed
+value, where rewriting a literal into a `var()` would change it. **Only lifted declarations, never the
+block** — the source's `:root` also holds `color-scheme: light` — and a recurring token is untouched,
+since nothing references it yet. Removing every occurrence of a lifted name is safe because
+`declaredTokens` already guarantees one is declared *only* under a root selector and with *one* value.
+The exception is a value holding a `url()`: the kept CSS has been rewritten to the tree path and the
+token has not, so those stay declared and stay **named in a note** — a token that cannot be edited is
+the claim this task exists to stop making silently. The guard is stated over the whole artefact rather
+than per fixture: *nothing the theme keeps re-declares a token the theme writes*, which is exactly the
+condition that makes an edit reach the page. Invisible to `snapshot --against`, `digest` and `audit` —
+the replica looks perfect either way.
+
 **The DTCG path collision was self-inflicted, and the flat name resolves it (SH428).** Over
 `openviglet.github.io`'s palette, `dtcgFor` wrote **nine of sixteen** declared tokens and dropped seven
 — `bg.alt`, `border.strong`, `brand.2`, `brand.3`, `brand.ink`, `brand.wash`, `brand.font` — with

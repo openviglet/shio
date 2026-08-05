@@ -559,6 +559,63 @@ export function dtcgFor(rows) {
 }
 
 /**
+ * Removes the declarations that became tokens from the kept CSS (SH424).
+ *
+ * <h2>The defect, measured on a real replica rather than argued</h2>
+ *
+ * <p>`shio propose` wrote nine declared tokens into `Theme.TOKENS`, and the rendered page carried
+ * **two** `:root` blocks — the token-compiled one at char 1794 and the source's own at 2735, still
+ * inside the `CSS` field SH380 deliberately keeps verbatim. Equal specificity, later wins, so all nine
+ * were inert: a curator editing `brand` saw no change. Both halves are individually right, which is
+ * why nothing caught it — SH380 refuses substitution because search-and-replacing `#ea580c` across a
+ * stranger's stylesheet breaks a replica in a way no digest catches, and `ShThemeTokens` prepends so a
+ * theme's own CSS can override the token block. Composed, the artefact's editability claim inverted
+ * while the report stated it out loud.
+ *
+ * <h2>Why this is narrower than what SH380 forbids</h2>
+ *
+ * <p>A lifted property is re-emitted **byte-identically** by the compiled `:root`, so dropping that
+ * one declaration preserves the computed value — unlike rewriting a literal into a `var()`, which
+ * changes what the cascade computes. Only lifted declarations, never the block: the source's `:root`
+ * also holds things like `color-scheme: light`, which is no custom property and must stay. A recurring
+ * token is untouched, since nothing references it yet.
+ *
+ * <p>Removing every occurrence of a lifted name is safe because of what `declaredTokens` already
+ * guarantees about one: it is declared **only** under a root selector (a variant occurrence
+ * disqualifies it) and with **one** value (two values make it a conflict). So there is no occurrence
+ * elsewhere that could carry a different value, and rule boundaries do not have to be reconstructed.
+ *
+ * <p>The exception is a value holding a `url()`. The kept CSS has been rewritten to the tree path and
+ * the token has not, so dropping the declaration would send the replica back to the source's origin
+ * for those bytes. Those stay, and stay **named** in a note: a token that cannot be edited is exactly
+ * the claim this task exists to stop making silently.
+ */
+function dropLifted(css, rows) {
+  let out = css;
+  const removed = [];
+  const shadowed = [];
+  for (const row of rows) {
+    const property = row.name ?? customPropertyFor(row.path);
+    if (/url\(/i.test(String(row.value ?? ""))) {
+      shadowed.push(property);
+      continue;
+    }
+    // `[^;{}]*` cannot run past its own rule, and the terminator is consumed only when it is a `;` —
+    // a declaration that ends at the closing brace leaves the brace where it is.
+    const pattern = new RegExp(`\\s*${escapeForPattern(property)}\\s*:[^;{}]*(?:;|(?=\\}))`, "g");
+    const before = out;
+    out = out.replace(pattern, "");
+    if (out !== before) removed.push(property);
+  }
+  return { css: out, removed, shadowed };
+}
+
+/** A property name as a literal in a pattern. Custom property names may hold regex metacharacters. */
+function escapeForPattern(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
  * A colliding path as one flat segment, or null when that would rename the property (SH428).
  *
  * <p>The equality is the whole safety of the fallback: `bg.alt` and `bg-alt` both compile to
@@ -699,8 +756,26 @@ export function buildTheme({ styles = [], assets = new Map(), minRefs = DEFAULT_
   const { tokens, dropped, rows: written } = dtcgFor(rows);
   const declaredWritten = written.filter((row) => row.source === "declared");
   const recurringWritten = written.filter((row) => row.source === "recurring");
+  // SH424 — the declarations that were lifted come OUT of the kept CSS, or the tokens are inert.
+  const lifted = dropLifted(css, declaredWritten);
+  css = lifted.css;
 
   const notes = [];
+  if (lifted.removed.length) {
+    notes.push(
+      `${lifted.removed.length} lifted declaration(s) were removed from the kept CSS, so the token `
+        + "block is what sets them: it is prepended, and the source re-declaring the same property "
+        + "later at equal specificity is what made every token inert",
+    );
+  }
+  if (lifted.shadowed.length) {
+    notes.push(
+      `${lifted.shadowed.length} token(s) are still set by the kept CSS and editing them changes `
+        + `nothing (${lifted.shadowed.join(" ")}): their value carries a url(), which the kept CSS has `
+        + "rewritten to a tree path and the token has not — dropping the declaration would send the "
+        + "replica back to the source's origin for those bytes",
+    );
+  }
   if (declaredWritten.length) {
     notes.push(
       `${declaredWritten.length} declared token(s) are the editable half: the source's own CSS says ` +

@@ -357,6 +357,78 @@ function themeFor(css = SHEET) {
   });
 }
 
+test("SH424: a lifted declaration leaves the kept CSS, or the token is inert", () => {
+  // Measured on a real replica: nine declared tokens in Theme.TOKENS, and the rendered page carried
+  // TWO :root blocks — the token-compiled one at char 1794 and the source's own at 2735, still inside
+  // the CSS field SH380 keeps verbatim. Equal specificity, later wins, so all nine were dead and a
+  // curator editing `brand` saw no change. Both halves were individually right, which is why nothing
+  // caught it; this is the assertion at the seam.
+  const theme = themeFor(`:root {
+      color-scheme: light;
+      --brand: #35d07f;
+      --space-4: 16px;
+    }
+    .btn { background: var(--brand); padding: var(--space-4) }`);
+
+  assert.ok(!/--brand\s*:/.test(theme.css), "the declaration is gone from the CSS the theme keeps");
+  assert.ok(!/--space-4\s*:/.test(theme.css));
+  assert.deepEqual(theme.tokens.brand, { $value: "#35d07f", $type: "color" },
+    "and the token holds it, byte-identically, so the computed value is unchanged");
+  assert.match(theme.css, /color-scheme\s*:\s*light/,
+    "only the lifted declarations, never the block: color-scheme is no custom property and must stay");
+  assert.match(theme.css, /var\(--brand\)/, "and a reference is a reference, not a declaration");
+  assert.ok(
+    theme.notes.some((note) => /lifted declaration\(s\) were removed from the kept CSS/.test(note)),
+    "said out loud, because the artefact's editability claim is what this task is about",
+  );
+});
+
+test("SH424: a recurring token's literal is left exactly where it is", () => {
+  // The line SH380 drew and this does not cross: nothing references a recurring token yet, so
+  // search-and-replacing #0b5533 across a stranger's stylesheet would change what the cascade
+  // computes — the failure no digest catches. A lifted declaration is the opposite: the compiled
+  // :root re-emits it byte for byte.
+  const theme = themeFor();
+
+  assert.ok(theme.rows.some((row) => row.source === "recurring" && row.value === "#0b5533"));
+  assert.match(theme.css, /color:#0b5533/, "the literal stays in the CSS, untouched");
+  assert.ok(!/--brand-primary\s*:/.test(theme.css), "while the declared one is lifted out");
+});
+
+test("SH424: a token whose value carries a url() keeps its declaration, and is named", () => {
+  // The kept CSS has been rewritten to the tree path and the token has not, so dropping this one
+  // would send the replica back to the source's origin for those bytes. It stays — and it stays
+  // named, because a token that cannot be edited is exactly the claim this task exists to stop
+  // making silently.
+  const theme = themeFor(`:root { --hero: url(/img/bg.png); --brand: #35d07f }
+    .hero { background-image: var(--hero) }`);
+
+  assert.match(theme.css, /--hero\s*:/, "still declared, so the rewritten path is what renders");
+  assert.ok(!/--brand\s*:/.test(theme.css), "and the one beside it is still lifted");
+  assert.ok(
+    theme.notes.some((note) => /still set by the kept CSS and editing them changes nothing/.test(note)
+      && /--hero/.test(note)),
+    "the exception is reported per property, not left for a curator to discover by editing",
+  );
+});
+
+test("SH424: nothing the theme keeps re-declares a token the theme writes", () => {
+  // The property that makes the tokens live, stated as one claim over the whole artefact rather than
+  // per fixture. `ShThemeTokens` PREPENDS the compiled :root — correct when one author wrote both
+  // halves — so "the kept CSS declares none of them" is exactly the condition that makes an edit
+  // reach the page.
+  const theme = themeFor(`:root { --a: #111; --b: 8px; --c: #222; color-scheme: dark }
+    .x { color: var(--a); gap: var(--b); border-color: var(--c) }`);
+
+  for (const row of theme.rows.filter((each) => each.source === "declared")) {
+    const property = customPropertyFor(row.path);
+    assert.ok(
+      !new RegExp(`${property}\s*:`).test(theme.css),
+      `${property} is a token AND is declared by the kept CSS, which is the SH424 defect`,
+    );
+  }
+});
+
 test("SH428: the accent ramp survives, and the note counts what the file holds", () => {
   // The two halves of SH428 in the shape they were measured in. `--brand` beside `--brand-2` and
   // `--brand-3` is the accent ramp — the hero gradient and the primary button — and losing them is
