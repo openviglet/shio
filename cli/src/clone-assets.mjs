@@ -43,6 +43,101 @@ export const DOWNLOADABLE = new Set(["image", "stylesheet", "font", "icon", "med
 const TRAVERSAL = new Set([".", ".."]);
 
 /**
+ * A `url()` call, as it appears in a stylesheet (SH452).
+ *
+ * <p>Deliberately the same pattern `theme.mjs` rewrites with, and deliberately a second copy of it:
+ * the two modules run at different times — this one before anything is downloaded, that one after —
+ * and importing across them would make a capture depend on the theme builder. What would be a real
+ * defect is the two *disagreeing*, and `clone-assets.test.mjs` asserts they find the same set.</p>
+ */
+const URL_CALL = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)'"\s]+))\s*\)/gi;
+
+/**
+ * What kind of asset a URL names, from its extension alone (SH452).
+ *
+ * <p>The crawl gets a `kind` from the markup that referenced it — a `<link rel="icon">` is an icon
+ * whatever it is called — and a `url()` in a stylesheet carries no such evidence, so the extension
+ * is all there is. It only has to be good enough for two decisions: whether the reference is worth
+ * downloading at all, and what a `soft-404` check should expect. Anything unrecognised is `image`,
+ * which is what a `url()` in CSS overwhelmingly is and which downloads; the alternative — refusing
+ * what it cannot classify — would drop the sprite sheet nobody gave an extension.</p>
+ */
+export function kindForUrl(value) {
+  const path = String(value ?? "").split("?")[0].split("#")[0].toLowerCase();
+  if (/\.(woff2?|ttf|otf|eot)$/.test(path)) return "font";
+  if (/\.css$/.test(path)) return "stylesheet";
+  if (/\.(mp4|webm|ogv|mp3|ogg|wav)$/.test(path)) return "media";
+  if (/\.ico$/.test(path)) return "icon";
+  return "image";
+}
+
+/**
+ * Every same-origin asset a stylesheet references, as inventory rows (SH452).
+ *
+ * <h3>The defect this closes</h3>
+ *
+ * <p>`clone` builds its asset list from the **markup**. A stylesheet's `url()` is not markup, so a
+ * webfont, a background image and an icon sprite are invisible to it — and for a *fidelity* replica,
+ * whose whole claim is that it renders identically, the stylesheet is where most of the remaining
+ * bytes live. Measured on a real run: `--assets` wrote exactly one file (a `<link rel="icon">` logo)
+ * and the replica rendered in a serif fallback because both of its webfonts 404'd, while `propose`
+ * said so in a note nobody had to act on: "2 url() reference(s) are not in the asset map".</p>
+ *
+ * <h3>Resolved against the stylesheet, never against the page</h3>
+ *
+ * <p>`url(../fonts/x.woff2)` in `/assets/css/site.css` is `/assets/fonts/x.woff2`. Resolving it
+ * against the page that linked the stylesheet names a file that does not exist, and it is the most
+ * common single defect in anything that touches CSS urls — which is why `base` is required here and
+ * in `theme.mjs`' `rewriteUrls`, the module that has to arrive at the *same* key for the rewrite to
+ * find the bytes this pass downloaded.</p>
+ *
+ * <h3>What it does not take</h3>
+ *
+ * <p>`data:` and `about:` are already portable. Off-origin is skipped for SH378's reason — mirroring
+ * somebody else's bytes is a licensing decision this tool does not make — and lands in the same
+ * external report as an off-origin `<img>`, so the hosts are named once. A reference already in the
+ * inventory is dropped, since the markup found it first and its `kind` is the better one.</p>
+ *
+ * @param {string} css   the stylesheet's bytes, as text
+ * @param {string} base  the stylesheet's own absolute URL
+ * @param {string} origin the source's origin, for the same-origin test
+ * @returns {Array<{path: string, kind: string, external: boolean, refs: number}>}
+ */
+export function assetsReferencedBy(css, base, origin) {
+  const found = new Map();
+  for (const match of String(css ?? "").matchAll(URL_CALL)) {
+    const raw = (match[1] ?? match[2] ?? match[3] ?? "").trim();
+    if (!raw || /^(?:data|about):/i.test(raw) || raw.startsWith("#")) continue;
+    let url;
+    try {
+      url = new URL(raw, base);
+    } catch {
+      continue;
+    }
+    if (url.protocol !== "http:" && url.protocol !== "https:") continue;
+    const external = !sameHost(url, origin);
+    // The inventory's own currency: a same-origin asset is a path, an off-origin one is a URL.
+    // Matching that here is what lets these rows go through `planAssets` unchanged.
+    const path = external ? url.href : `${url.pathname}${url.search}`;
+    const existing = found.get(path);
+    if (existing) {
+      existing.refs += 1;
+      continue;
+    }
+    found.set(path, { path, kind: kindForUrl(url.pathname), external, refs: 1 });
+  }
+  return [...found.values()].sort((a, b) => (a.path === b.path ? 0 : a.path < b.path ? -1 : 1));
+}
+
+function sameHost(url, origin) {
+  try {
+    return url.host.toLowerCase() === new URL(origin).host.toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Characters no filesystem this tree targets can hold in a name, plus the control range.
  *
  * <p>`:` and `|` are legal on POSIX and not on Windows. Refusing both everywhere is deliberate: a

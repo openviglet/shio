@@ -107,6 +107,27 @@ describe("SH448 conformance: replication, from a served source to an installable
 
     const stylesheet = inventory.assets.find((asset) => asset.kind === "stylesheet");
     assert.ok(stylesheet?.file, "the stylesheet was downloaded and its tree path recorded");
+
+    // SH452 — the webfont, which nothing in the markup mentions. `clone` built its asset list from
+    // the markup alone, so a font, a background image and an icon sprite were invisible to it, and
+    // a replica whose fonts 404 renders in a serif fallback with every test still green.
+    const font = inventory.assets.find((asset) => asset.kind === "font");
+    assert.ok(
+      font?.file,
+      `SH452: the stylesheet's own url() was followed. Captured: `
+        + `${inventory.assets.map((asset) => asset.path).join(" ")}`,
+    );
+    assert.equal(
+      font.path,
+      "/fonts/fixture.woff2",
+      "resolved against the STYLESHEET — `../fonts/` from /css/site.css. Against the page it would "
+        + "be the same string here only by accident, which is why the fixture nests the stylesheet",
+    );
+    assert.equal(
+      (await readFile(join(cwd, ASSETS_DIR, font.file))).subarray(0, 4).toString("ascii"),
+      "wOF2",
+      "and the bytes are the font's, not a soft-404 page wearing a .woff2 name",
+    );
     const image = inventory.assets.find((asset) => asset.path === "/img/hero.png");
     assert.ok(image?.file, "and so was the image the markup references");
     const bytes = await readFile(join(cwd, ASSETS_DIR, image.file));
@@ -271,6 +292,36 @@ describe("SH448 conformance: replication, from a served source to an installable
       Buffer.from(await image.arrayBuffer()).subarray(0, 8).toString("hex"),
       "89504e470d0a1a0a",
       "and they are the PNG the fixture served, all the way through capture, upload and delivery",
+    );
+
+    // SH452 + SH437 together: a byte nothing in the markup ever named, delivered at the path the
+    // stylesheet asks for. This is the whole replication claim in one request.
+    const webfont = await fetch(
+      `${conn.baseUrl}/preview/${encodeURIComponent(fidelitySite)}/fonts/fixture.woff2`,
+      { headers: { Authorization: basicOf(conn) } },
+    );
+    assert.equal(
+      webfont.status,
+      200,
+      "SH452: the webfont the stylesheet asked for is served by the replica. Before it, the capture "
+        + "took the markup's assets only and the page rendered in a serif fallback",
+    );
+    assert.equal(
+      Buffer.from(await webfont.arrayBuffer()).subarray(0, 4).toString("ascii"),
+      "wOF2",
+    );
+
+    // And the theme's own url() now resolves to a tree path rather than being excused by a note
+    // that said it still worked (SH452's second half).
+    const theme = await fetch(
+      `${conn.baseUrl}/api/v2/agent/read?address=${encodeURIComponent(`post:${fidelitySite}/theme/captured`)}`,
+      { headers: { Authorization: basicOf(conn), Accept: "application/json" } },
+    );
+    const css = JSON.stringify(await theme.json());
+    assert.ok(
+      !/url\(\\?"?\.\.\/fonts/.test(css),
+      "the captured theme points at what the tree holds, not at a path relative to a file that is "
+        + "no longer there",
     );
   });
 });

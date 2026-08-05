@@ -1630,28 +1630,3 @@ anything, which makes the refusal true. Or report what landed — `✓ Created �
 then the refusal — which makes it honest without reordering. The first is better here
 because the partial state is a directory that then blocks the retry, and the second
 still leaves that.
-
-### XVII.36 What a stylesheet references is not markup (SH452)
-
-The replica renders in a serif fallback because its two webfonts 404. Measured: the page
-asks for `/model-catalog/fonts/inter-latin.woff2` and `plus-jakarta-sans-latin.woff2`;
-both answer **200 at the source and 404 at the replica**. The capture never took them —
-`--assets` wrote exactly one file, the `<link rel="icon">` logo, and `propose` says so
-itself: "2 url() reference(s) are not in the asset map".
-
-`clone` builds its asset list from the markup. A stylesheet's `url()` is not markup, so
-a font, a background image and an icon sprite are invisible to it — and for a *fidelity*
-replica, whose whole claim is that it renders identically, the stylesheet is where most
-of the remaining bytes live. The theme is captured and its `url()`s survive it; nothing
-fetches what they name.
-
-**The note that excuses this is wrong in the common case.** It reads: the reference is "left as it is —
-the theme still fetches them from the source's origin". That holds for an absolute URL. These are
-**root-relative**, so they resolve against the *replica's* origin, where nothing serves them. The note
-tells the reader the fonts still work at the moment they stop working, which is SH443's defect one
-surface along: a message asserting an outcome nobody measured.
-
-Two halves, and the second is already filed. Capture what a stylesheet references, and
-distinguish absolute from root-relative when reporting what was left behind. Serving
-them at the source's path is SH437, which the logo — captured, and still 404 — is
-waiting on too.

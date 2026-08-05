@@ -29,10 +29,19 @@ const PAGES = {
   "/about": page("About", "Who we are", ['<a href="/deep">Deeper still</a>']),
 };
 
+/**
+ * The webfont is referenced **only from here**, which is the SH452 case: `clone` builds its asset
+ * list from the markup, so a font, a background image and an icon sprite are invisible to it — and
+ * a fidelity replica whose fonts 404 renders in a serif fallback while every test passes.
+ */
 const STYLESHEET = `:root { --ink: #102a43 }
+@font-face { font-family: "Fixture"; src: url("../fonts/fixture.woff2") format("woff2") }
 .hero { color: #102a43; background: #f0f4f8 url("/img/hero.png") no-repeat }
-.hero h1 { color: #102a43; font-size: 2rem }
+.hero h1 { color: #102a43; font-size: 2rem; font-family: "Fixture", serif }
 .card { color: #102a43; background: #f0f4f8 }`;
+
+/** `wOF2` — the magic a real WOFF2 starts with, which is all this fixture needs to be one. */
+const WOFF2 = Buffer.concat([Buffer.from("wOF2", "ascii"), Buffer.alloc(60)]);
 
 /** A one-pixel PNG, as real bytes: a stylesheet's `url()` target has to be downloadable. */
 const HERO_PNG = Buffer.from(
@@ -81,6 +90,8 @@ export async function serveFixture() {
     requested.push(path);
     if (path === "/robots.txt") return send(res, 200, "text/plain", "User-agent: *\nDisallow: /admin\n");
     if (path === "/css/site.css") return send(res, 200, "text/css", STYLESHEET);
+    // `../fonts/` from `/css/site.css` — resolved against the *stylesheet*, so this is `/fonts/`.
+    if (path === "/fonts/fixture.woff2") return send(res, 200, "font/woff2", WOFF2);
     if (path === "/img/hero.png") return send(res, 200, "image/png", HERO_PNG);
     // /deep exists and is linked, and `--depth 1` is what stops the crawl reaching it: an
     // `unfollowed` row has to mean "not visited", never "not there" (SH387).

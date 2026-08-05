@@ -330,6 +330,36 @@ test("a reference the asset map does not hold is left alone and named", () => {
   assert.deepEqual(out.unresolved, ["https://cdn.test/bg.png"]);
 });
 
+test("SH452: an unresolved reference is reported as broken or as still-working, never as both", () => {
+  // The note used to say, of everything unresolved: "left as they are — the theme still fetches
+  // them from the source's origin". True of an absolute URL, false of a root-relative one, which
+  // resolves against the REPLICA's origin where nothing serves it. Measured: two webfonts, 200 at
+  // the source and 404 at the replica, while this note told the reader they still worked — SH443's
+  // defect one surface along, a message asserting an outcome nobody measured.
+  const theme = buildTheme({
+    styles: [{
+      path: "/css/site.css",
+      file: "Acme/css/site.css",
+      url: "https://x.test/css/site.css",
+      css: "@font-face{src:url(/fonts/inter.woff2)}"
+        + "a{background:url(../img/bg.jpg)}"
+        + "b{background:url(https://cdn.other.test/x.png)}",
+    }],
+    assets: new Map(),
+  });
+
+  const broken = theme.notes.find((note) => /404/.test(note));
+  assert.ok(broken, `the root-relative pair is reported as broken. Notes: ${theme.notes.join(" | ")}`);
+  assert.match(broken, /2 url\(\) reference\(s\)/);
+  assert.match(broken, /shio clone <url> --assets/, "P6: the note carries the command that fixes it");
+  assert.ok(!/cdn\.other\.test/.test(broken), "the absolute one is not in this list");
+
+  const kept = theme.notes.find((note) => /still fetches/.test(note));
+  assert.match(kept, /1 url\(\) reference\(s\)/);
+  assert.match(kept, /cdn\.other\.test/,
+    "and only the one that really does keep working is described as keeping working");
+});
+
 test("a data: URI is already portable, so it is not looked up and not reported", () => {
   const out = rewriteUrls('a{background:url("data:image/gif;base64,R0lGOD")}', {
     base: "https://x.test/css/site.css",

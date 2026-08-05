@@ -86,7 +86,6 @@
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
 - 📋 **SH446** (deps: SH438 ✅) **The front end that serves a converted site cannot be installed** — init writes @viglet/shio-client@^2026.3.1 which npm does not have and depends on shio-sections which was never published, so npm install fails ETARGET on both scaffolds. → §XVII.33
-- 📋 **SH452** (deps: SH437 ✅) **A stylesheet's url() assets are never captured, so a fidelity replica loses its fonts** — clone builds the asset list from markup only, and the note excusing the leftovers claims they still load from the source, which is false for a root-relative path. → §XVII.36
 
 ## Block F — Market positioning
 

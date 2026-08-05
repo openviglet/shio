@@ -31,6 +31,7 @@ import { dirname, join } from "node:path";
 import {
   DEFAULT_MAX_ASSETS,
   DEFAULT_MAX_ASSET_BYTES,
+  assetsReferencedBy,
   describeDownloads,
   placeAsset,
   planAssets,
@@ -246,6 +247,7 @@ async function writeMarkup(markup, ctx) {
 async function download(inventory, { site, flags }, ctx) {
   const maxAssets = whole(flags.maxAssets, DEFAULT_MAX_ASSETS, "--max-assets", 1);
   const maxBytes = whole(flags.maxAssetBytes, DEFAULT_MAX_ASSET_BYTES, "--max-asset-bytes", 1);
+  const origin = inventory?.source?.origin ?? "";
   const { plan, skipped, external } = planAssets(inventory, { site, maxAssets });
 
   // SH408's question, asked of this root before anything is written: two source URLs whose names
@@ -254,8 +256,15 @@ async function download(inventory, { site, flags }, ctx) {
   const collisions = assetPathCollisions(plan.map((item) => item.file));
   const results = [];
   const state = { byDigest: new Map(), byPath: new Map() };
-
-  for (const item of plan) {
+  // SH452 — the rows a stylesheet's `url()` calls add. Held here rather than written into the
+  // inventory as they are found, because `withDownloads` folds outcomes onto `assets` and a row
+  // that appeared halfway through the loop would have no outcome for half of it.
+  const discovered = [];
+  const known = new Set((inventory?.assets ?? []).map((asset) => asset.path));
+  // Indexed rather than `for…of`: a stylesheet appends to this list while it is being walked, which
+  // is the whole mechanism — a stylesheet that imports another is followed by the same loop.
+  for (let at = 0; at < plan.length; at += 1) {
+    const item = plan[at];
     if (collisions.has(item.file)) {
       const group = collisions.get(item.file);
       results.push({
@@ -284,8 +293,34 @@ async function download(inventory, { site, flags }, ctx) {
     const target = join(ctx.cwd, ASSETS_DIR, item.file);
     await ctx.fs.mkdir(dirname(target), { recursive: true });
     await ctx.fs.writeFile(target, fetched.bytes);
+
+    // SH452 — and what this stylesheet itself references. Only a stylesheet that was actually
+    // written: a deduped one is the same bytes under another path and its references are already
+    // queued, and a failed one has nothing to read.
+    if (item.kind !== "stylesheet") continue;
+    const rows = assetsReferencedBy(decode(fetched.bytes), item.url, origin);
+    for (const row of rows) {
+      if (known.has(row.path)) continue;
+      known.add(row.path);
+      discovered.push(row);
+      const queued = planAssets({ assets: [row], source: { origin } },
+        { site, maxAssets: maxAssets - plan.length });
+      plan.push(...queued.plan);
+      skipped.push(...queued.skipped);
+      for (const host of queued.external) {
+        const seen = external.find((each) => each.host === host.host);
+        if (seen) seen.refs += host.refs;
+        else external.push(host);
+      }
+    }
   }
-  return withDownloads(inventory, { site, results, skipped, external });
+  return withDownloads({ ...inventory, assets: [...(inventory.assets ?? []), ...discovered] },
+    { site, results, skipped, external });
+}
+
+/** A downloaded stylesheet's bytes as text. UTF-8 is what a stylesheet is, in practice and in spec. */
+function decode(bytes) {
+  return new TextDecoder("utf-8").decode(bytes);
 }
 
 /**

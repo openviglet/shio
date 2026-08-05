@@ -692,6 +692,22 @@ export function rewriteUrls(css, { base, assets = new Map(), prefix = "" } = {})
  * the stylesheet would name a file that does not exist. The most common single defect in anything
  * that touches CSS urls, and the reason `base` is required rather than optional.
  */
+/**
+ * Whether an unresolved `url()` will 404 on the replica (SH452).
+ *
+ * <p>The question is what the reference resolves *against*. An absolute URL names a host and keeps
+ * working; a protocol-relative `//host/x` names one too. Everything else — `/fonts/x.woff2`,
+ * `../fonts/x.woff2`, `x.woff2` — resolves against the replica's own origin, which has no bytes at
+ * that path, so it is broken rather than left alone. A document-relative reference is included for
+ * the same reason as a root-relative one: in a theme the CSS has been concatenated out of its
+ * original file, so "relative to what" no longer has the answer the source gave it.</p>
+ */
+function isRootRelative(raw) {
+  const value = String(raw ?? "").trim();
+  if (!value || value.startsWith("//")) return false;
+  return !/^[a-z][a-z0-9+.-]*:/i.test(value);
+}
+
 function resolveAgainst(raw, base) {
   if (!base) return raw;
   try {
@@ -799,11 +815,29 @@ export function buildTheme({ styles = [], assets = new Map(), minRefs = DEFAULT_
         + "properties; there is no stylesheet file in the tree to diff a change against",
     );
   }
-  if (unresolved.size) {
+  // SH452 — two different outcomes, and the note used to report both as the harmless one.
+  //
+  // "left as it is — the theme still fetches them from the source's origin" is true of an
+  // **absolute** URL and false of a **root-relative** one, which resolves against the *replica's*
+  // origin, where nothing serves it. Measured: two webfonts, 200 at the source and 404 at the
+  // replica, while this note told the reader they still worked. That is SH443's defect one surface
+  // along — a message asserting an outcome nobody measured — so the two are counted apart and only
+  // the one that keeps working is described as keeping working.
+  const broken = [...unresolved.keys()].filter(isRootRelative).sort();
+  const offOrigin = [...unresolved.keys()].filter((raw) => !isRootRelative(raw)).sort();
+  if (broken.length) {
     notes.push(
-      `${unresolved.size} url() reference(s) are not in the asset map and were left as they are — ` +
-        `the theme still fetches them from the source's origin ` +
-        `(first: ${[...unresolved.keys()].sort().slice(0, 3).join(" ")})`,
+      `${broken.length} url() reference(s) in the theme point at a path this replica does not ` +
+        `serve, so they 404 — they are root-relative, so they resolve against the REPLICA's origin ` +
+        `and not the source's. Re-run the capture to fetch them: shio clone <url> --assets --site ` +
+        `<name> (first: ${broken.slice(0, 3).join(" ")})`,
+    );
+  }
+  if (offOrigin.length) {
+    notes.push(
+      `${offOrigin.length} url() reference(s) are not in the asset map and were left as they are — ` +
+        `these are absolute, so the theme still fetches them from the host they name ` +
+        `(first: ${offOrigin.slice(0, 3).join(" ")})`,
     );
   }
 

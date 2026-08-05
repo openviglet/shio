@@ -16,8 +16,10 @@ import { test } from "node:test";
 
 import {
   DOWNLOADABLE,
+  assetsReferencedBy,
   capturedAssetPathFor,
   describeDownloads,
+  kindForUrl,
   placeAsset,
   planAssets,
   sha256Of,
@@ -416,4 +418,127 @@ test("without --assets the capture still writes exactly one file", async () => {
 
   // SH377's promise, which SH378 is opt-in in order to keep.
   assert.deepEqual(Object.keys(ctx.written), ["/repo/shio/.shio/source-inventory.json"]);
+});
+
+// --- SH452: what a stylesheet references is not markup ---
+
+test("SH452: a url() is resolved against the stylesheet, never against the page", () => {
+  // The most common single defect in anything that touches CSS urls, and the reason `base` is
+  // required rather than optional: `../fonts/x.woff2` in /assets/css/site.css is
+  // /assets/fonts/x.woff2, and resolving it against the page names a file that does not exist.
+  const rows = assetsReferencedBy(
+    `@font-face{src:url("../fonts/inter.woff2")}
+     .hero{background:url(/img/bg.jpg)}
+     .icon{background:url('sprite.svg')}`,
+    "https://x.test/assets/css/site.css",
+    "https://x.test",
+  );
+
+  assert.deepEqual(rows.map((row) => row.path).sort(), [
+    "/assets/css/sprite.svg",
+    "/assets/fonts/inter.woff2",
+    "/img/bg.jpg",
+  ]);
+  assert.equal(rows.find((row) => row.path.endsWith("inter.woff2")).kind, "font",
+    "a url() carries no evidence of its kind, so the extension is all there is");
+});
+
+test("SH452: data:, off-origin and a repeated reference each land where they should", () => {
+  const rows = assetsReferencedBy(
+    `a{background:url(data:image/gif;base64,R0lGOD)}
+     b{background:url(https://cdn.other.test/x.png)}
+     c{background:url(/img/bg.jpg)}
+     d{background:url("/img/bg.jpg")}`,
+    "https://x.test/site.css",
+    "https://x.test",
+  );
+
+  assert.equal(rows.length, 2, "data: is already portable and is not a reference to fetch");
+  assert.equal(rows.find((row) => row.external).path, "https://cdn.other.test/x.png",
+    "an off-origin row is a URL, a same-origin one is a path — the inventory's own currency, which "
+      + "is what lets these go through planAssets unchanged");
+  assert.equal(rows.find((row) => !row.external).refs, 2, "counted, so the dedupe ordering holds");
+});
+
+test("SH452: the extension classifier only has to decide download-or-not", () => {
+  assert.equal(kindForUrl("/fonts/x.woff2"), "font");
+  assert.equal(kindForUrl("/a/b.css?v=2"), "stylesheet");
+  assert.equal(kindForUrl("/favicon.ico"), "icon");
+  assert.equal(
+    kindForUrl("/img/sprite"),
+    "image",
+    "unrecognised is `image`, which downloads: refusing what it cannot classify would drop the "
+      + "sprite sheet nobody gave an extension, and a url() in CSS is overwhelmingly an image",
+  );
+});
+
+test("SH452: --assets follows a stylesheet's url() calls, which is where the fonts are", async () => {
+  // The defect, measured on a real run: `--assets` wrote exactly one file (a <link rel="icon">
+  // logo) and the replica rendered in a serif fallback, because `clone` builds its asset list from
+  // the markup and a stylesheet's url() is not markup. For a fidelity replica — whose whole claim
+  // is that it renders identically — the stylesheet is where most of the remaining bytes live.
+  const ctx = ctxWith({
+    bodies: {
+      "/css/site.css": {
+        type: "text/css",
+        body: "@font-face{src:url(../fonts/inter.woff2)}.hero{background:url(/img/bg.jpg)}",
+      },
+      "/fonts/inter.woff2": { type: "font/woff2", body: "WOFF2BYTES" },
+      "/img/bg.jpg": { type: "image/jpeg", body: "JPEGBYTES" },
+    },
+  });
+
+  const { inventory } = await clone.run({ assets: true, site: "Blog", depth: 0 }, ["https://x.test"], ctx);
+
+  assert.ok(
+    Object.keys(ctx.written).includes("/repo/shio/assets/Blog/fonts/inter.woff2"),
+    `the webfont is in the tree. Written: ${Object.keys(ctx.written).sort().join(" ")}`,
+  );
+  assert.ok(Object.keys(ctx.written).includes("/repo/shio/assets/Blog/img/bg.jpg"));
+
+  // And in the inventory, which is the map `theme.mjs`' rewrite reads: a font downloaded but not
+  // recorded is a file nothing points at.
+  const font = inventory.assets.find((asset) => asset.path === "/fonts/inter.woff2");
+  assert.equal(font.file, "Blog/fonts/inter.woff2");
+  assert.equal(font.kind, "font");
+  assert.equal(font.sha256, sha256Of("WOFF2BYTES"));
+});
+
+test("SH452: a stylesheet that a stylesheet references is followed too", async () => {
+  // The loop walks the plan by index and appends to it, so an @import chain is followed by the
+  // same pass rather than needing a second one.
+  const ctx = ctxWith({
+    bodies: {
+      "/css/site.css": { type: "text/css", body: "@import url(/css/fonts.css);" },
+      "/css/fonts.css": { type: "text/css", body: "@font-face{src:url(/fonts/inter.woff2)}" },
+      "/fonts/inter.woff2": { type: "font/woff2", body: "WOFF2BYTES" },
+    },
+  });
+
+  await clone.run({ assets: true, site: "Blog", depth: 0 }, ["https://x.test"], ctx);
+
+  assert.ok(Object.keys(ctx.written).includes("/repo/shio/assets/Blog/css/fonts.css"));
+  assert.ok(
+    Object.keys(ctx.written).includes("/repo/shio/assets/Blog/fonts/inter.woff2"),
+    "two hops from the markup, which is where a font actually lives on a real site",
+  );
+});
+
+test("SH452: an off-origin url() is left behind and its host is named, like any other", async () => {
+  // SH378's rule reaches here unchanged: mirroring somebody else's bytes is a licensing decision
+  // this tool does not make. What matters is that it lands in the *same* external report, so the
+  // hosts a run left behind are one list rather than two.
+  const ctx = ctxWith({
+    bodies: {
+      "/css/site.css": { type: "text/css", body: "@font-face{src:url(https://fonts.other.test/i.woff2)}" },
+    },
+  });
+
+  const { inventory } = await clone.run({ assets: true, site: "Blog", depth: 0 }, ["https://x.test"], ctx);
+
+  assert.ok(!ctx.requested.some((url) => url.includes("fonts.other.test")), "never fetched");
+  assert.ok(
+    inventory.notes.some((note) => note.includes("fonts.other.test")),
+    `the host is named once, with the rest. Notes: ${inventory.notes.join(" | ")}`,
+  );
 });

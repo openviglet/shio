@@ -123,6 +123,34 @@ re-creates, which is why the order is decode-then-validate and why `capturedAsse
 classified in `path-safety.test.mjs` sharing `assetPathFor`'s collision detector — one root, one
 answer. Also refused: a Windows device name, a trailing dot, a colon or pipe (legal on POSIX, and the
 tree's whole promise is that it moves), leading or trailing whitespace, and a segment past 255 bytes.
+
+**And a fifth rule since SH452: what a *stylesheet* references is not markup.** The pass built its
+list from the markup alone, so a webfont, a background image and an icon sprite were invisible to it
+— and for a **fidelity** replica, whose whole claim is that it renders identically, the stylesheet is
+where most of the remaining bytes live. Measured on a real run: `--assets` wrote exactly one file
+(a `<link rel="icon">` logo), the replica rendered in a serif fallback because both webfonts 404'd,
+and `propose` said so in a note nobody had to act on ("2 url() reference(s) are not in the asset
+map"). So a stylesheet that was **written** has its `url()` calls read (`assetsReferencedBy`) and the
+same-origin ones appended to the plan, which the loop walks **by index** — an `@import` chain is
+therefore followed by the same pass rather than needing a second one. Resolved against the
+**stylesheet** and never against the page (`url(../fonts/x.woff2)` in `/assets/css/site.css` is
+`/assets/fonts/x.woff2`), which is the same key `theme.mjs`' `rewriteUrls` computes, or the rewrite
+would not find the bytes this pass downloaded. `data:` is already portable and off-origin lands in
+the *same* external report, so the hosts a run left behind stay one list. A `url()` carries no
+evidence of its kind, so `kindForUrl` reads the extension and answers `image` for anything it does
+not recognise — refusing what it cannot classify would drop the sprite sheet nobody gave an
+extension. `--max-assets` still bounds the whole thing, discoveries included. The `URL_CALL` regex is
+deliberately a **second copy** of `theme.mjs`': the two run at different times and importing across
+them would make a capture depend on the theme builder — what would be a real defect is the two
+disagreeing, which is what the tests hold.
+
+**The note that excused the leftovers was wrong in the common case, and that was the other half.**
+It read: unresolved references are "left as they are — the theme still fetches them from the source's
+origin". True of an **absolute** URL. These were **root-relative**, so they resolve against the
+*replica's* origin where nothing serves them — the note told the reader the fonts still worked at the
+moment they stopped working, which is SH443's defect one surface along: a message asserting an outcome
+nobody measured. `buildTheme` now splits the list and only the absolute half is described as still
+working; the root-relative half is reported as 404-ing, with the `clone` that fixes it.
 **A soft 404 is caught here or nowhere**: a response of `text/html` where an image was expected would
 land in the media library under a `.png` name that every later check reads as a present asset.
 `--max-assets` and `--max-asset-bytes` bound it, the latter checked against `content-length` *and*
