@@ -833,3 +833,46 @@ test("SH389: the proposal carries them and the report counts the ones a reviewer
   assert.match(ctx.stdout.text, /1 with no category a reviewer has to set/);
   assert.match(ctx.stdout.text, /every entry is proposed for the head/);
 });
+
+// --- SH438: the axis a signature-keyed proposal could not have ---
+
+test("SH438: the proposal records each page's blocks in source order, and its title", () => {
+  // `candidates` is keyed by signature, which is what makes a block one decision on N pages instead
+  // of N decisions — and is exactly why it can say *which* pages a block is on and never in what
+  // order. Without this, the sections a page composes could only be ordered by id, an ordering the
+  // source never had.
+  const proposal = buildProposal({
+    inventory: inventoryFor(),
+    markup: new Map(Object.entries(SITE)),
+    html: HTML,
+  });
+
+  assert.deepEqual(proposal.pages.map((page) => page.path), ["/", "/about"]);
+  assert.deepEqual(proposal.pages.map((page) => page.title), ["/", "/about"]);
+  for (const page of proposal.pages) {
+    assert.equal(page.blocks.length, 2, "both top-level sections of the fixture page");
+    for (const id of page.blocks) {
+      assert.ok(
+        proposal.candidates.some((row) => row.id === id),
+        "every id resolves to a candidate, which is what lets `convert` turn the list into section URLs",
+      );
+    }
+  }
+  // The shared hero is one candidate on both pages, and first on each — the recurrence claim and the
+  // ordering claim are about the same block, read two different ways.
+  const hero = proposal.candidates.find((row) => row.pages.length === 2);
+  assert.deepEqual(proposal.pages.map((page) => page.blocks[0]), [hero.id, hero.id]);
+});
+
+test("SH438: a page with no cached markup is in `read` and in `pages` neither", () => {
+  const proposal = buildProposal({
+    inventory: inventoryFor(["/", "/about", "/pricing"]),
+    markup: new Map(Object.entries(SITE)),
+    html: HTML,
+  });
+
+  assert.deepEqual(proposal.read, proposal.pages.map((page) => page.path));
+  assert.ok(!proposal.pages.some((page) => page.path === "/pricing"),
+    "a page nothing was read from composes nothing, and claiming otherwise would put an empty Page "
+      + "at a URL the replica cannot serve");
+});

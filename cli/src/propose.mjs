@@ -693,6 +693,7 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
   const candidates = new Map();
   const notes = [];
   const read = [];
+  const composition = [];
 
   for (const page of (inventory.pages ?? []).toSorted((a, b) => byText(a.path, b.path))) {
     const source = markup.get(page.path);
@@ -700,9 +701,17 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     read.push(page.path);
     const tree = buildTree(html.stripNonMarkup(source), html.tokenize, html.parseAttrs);
     const blocks = blocksOf(tree);
+    // SH438 — the page's own blocks, in the order the source had them. `candidates` is keyed by
+    // signature, so it can say *which* pages a block is on and never in what order: a candidate is
+    // one decision on N pages, which is the whole reason it is cheap to review. This is the other
+    // axis, and without it the sections a page composes could only be ordered by id — an ordering
+    // the source never had.
+    const order = [];
+    composition.push({ path: page.path, title: page.title ?? null, blocks: order });
     blocks.forEach((block, index) => {
       const sig = signature(block);
       const id = idFor(sig);
+      order.push(id);
       const guess = classify(block, { first: index === 0 });
       const existing = candidates.get(id);
       if (existing) {
@@ -765,6 +774,9 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     version: PROPOSAL_VERSION,
     source: inventory.source ?? null,
     read: read.toSorted(byText),
+    // SH438 — what orders the sections a page composes. `read` says which pages were understood;
+    // this says what each one is made of, which is the array `Page.sections` takes.
+    pages: composition,
     candidates: rows,
     accepted: rows.filter((row) => row.mode === "authorable").length,
     // SH380 — the theme is the same artefact's other half. A separate file would be a second thing to

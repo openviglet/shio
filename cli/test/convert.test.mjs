@@ -356,3 +356,131 @@ test("SH439: an absent site is refused with --create-site, not with an op conver
     "and the resolver's own title, detail and didYouMean stay: they are about the site, not the surface",
   );
 });
+
+// --- SH438: a section no page composes is not a replica ---
+//
+// SH417's scope was honest — sections, a theme, scripts — and a section nothing orders is not
+// deliverable by anything. Measured on a real run: three posts created, `/preview/viglet2/` answered
+// 404, and `verify --checks replication` reported `source-page-missing` for `/`. The replica of a
+// one-page site ended as two orphans, and the step that turns them into a site was the one step
+// still done by hand — the manual work this phase existed to remove, moved up from block to page.
+
+/** A proposal that also records what each page is made of, which is what SH438 added to it. */
+const composed = (pages, candidates) => ({ candidates, pages });
+
+test("SH438: each captured page becomes a Page composing its sections, in source order", () => {
+  const { document, pages } = buildConversion({
+    proposal: composed(
+      [{ path: "/", title: "Home", blocks: ["hero1", "feat2", "cta3"] }],
+      [candidate("hero1"), candidate("feat2"), candidate("cta3")],
+    ),
+    // Accepted in an order that is neither the source's nor the sorted one, so the assertion below
+    // can only pass by reading the page's own block order.
+    plan: { accepted: [{ block: "cta3" }, { block: "hero1" }, { block: "feat2" }].map(
+      (entry) => ({ ...entry, type: "SectionHero" })) },
+    site: "Acme",
+  });
+
+  assert.equal(pages.length, 1);
+  assert.deepEqual(pages[0], {
+    url: "/",
+    type: "Page",
+    folder: "/",
+    data: {
+      title: "Home",
+      sections: [
+        `${SECTIONS_FOLDER}/hero1`,
+        `${SECTIONS_FOLDER}/feat2`,
+        `${SECTIONS_FOLDER}/cta3`,
+      ],
+    },
+  });
+  assert.ok(
+    !("publish" in pages[0]),
+    "DRAFT like every other row: a page appearing published because a converter ran is the surprise "
+      + "P7 forbids",
+  );
+  assert.deepEqual(
+    document.folders,
+    [{ path: SECTIONS_FOLDER }, { path: "/" }],
+    "and the site root is declared, because that is where a page lives",
+  );
+});
+
+test("SH438: the home page's URL is the source's `/`, which is what post:<site>/ names", () => {
+  // SH385's rule — a replica keeps the original's URL space — and SH433's form for the one path the
+  // grammar does not spell. A page at any other URL is a replica that 404s where the source served.
+  const { pages } = buildConversion({
+    proposal: composed(
+      [{ path: "/", title: "Home", blocks: ["hero1"] }, { path: "/pricing", title: "Pricing", blocks: ["hero1"] }],
+      [candidate("hero1")],
+    ),
+    plan: { accepted: [{ block: "hero1", type: "SectionHero" }] },
+    site: "Acme",
+  });
+
+  assert.deepEqual(pages.map((page) => page.url), ["/", "/pricing"]);
+  assert.ok(
+    pages.every((page) => page.data.sections.length === 1),
+    "a block accepted on several pages belongs to each of them — one section post, composed twice",
+  );
+});
+
+test("SH438: only accepted blocks reach the array, and a page composing none gets no Page", () => {
+  const { pages } = buildConversion({
+    proposal: composed(
+      [
+        { path: "/", title: "Home", blocks: ["hero1", "verbatim9"] },
+        { path: "/legal", title: "Legal", blocks: ["verbatim9"] },
+      ],
+      [candidate("hero1"), candidate("verbatim9")],
+    ),
+    plan: { accepted: [{ block: "hero1", type: "SectionHero" }] },
+    site: "Acme",
+  });
+
+  assert.deepEqual(pages.map((page) => page.url), ["/"]);
+  assert.deepEqual(pages[0].data.sections, [`${SECTIONS_FOLDER}/hero1`]);
+  // A candidate left in fidelity mode stays verbatim markup, so it is not a section and cannot be
+  // in the array. A page made only of those composes nothing, and an empty Page would report success
+  // for a page that serves nothing — this same defect one level down, which is why the gate's
+  // `source-page-missing` is right to keep asking about /legal.
+});
+
+test("SH438: an untitled page falls back to its path, because Page.title is required", () => {
+  const { pages } = buildConversion({
+    proposal: composed([{ path: "/quiet", title: "  ", blocks: ["hero1"] }], [candidate("hero1")]),
+    plan: { accepted: [{ block: "hero1", type: "SectionHero" }] },
+    site: "Acme",
+  });
+
+  assert.equal(pages[0].data.title, "/quiet", "the path, not the site name: two untitled pages must "
+    + "still be two rows a human can tell apart");
+});
+
+test("SH438: a repeated signature on one page is listed once", () => {
+  // One post, one set of fields, so listing it twice asks the page to render the same content twice.
+  // That is a decision for the reviewer, not something to infer from a structural collision.
+  const { pages } = buildConversion({
+    proposal: composed([{ path: "/", title: "Home", blocks: ["cta1", "hero2", "cta1"] }],
+      [candidate("cta1"), candidate("hero2")]),
+    plan: { accepted: [{ block: "cta1", type: "SectionCta" }, { block: "hero2", type: "SectionHero" }] },
+    site: "Acme",
+  });
+
+  assert.deepEqual(pages[0].data.sections, [`${SECTIONS_FOLDER}/cta1`, `${SECTIONS_FOLDER}/hero2`]);
+});
+
+test("SH438: a proposal from before this carried no pages, and still converts", () => {
+  // The pre-SH438 shape, which is what a proposal file already on disk looks like. It composes
+  // nothing rather than throwing: re-running `shio propose` is what produces the page order, and a
+  // crash would be a worse way to say so.
+  const { document, pages } = buildConversion({
+    proposal: { candidates: [candidate("hero1")] },
+    plan: { accepted: [{ block: "hero1", type: "SectionHero" }] },
+    site: "Acme",
+  });
+
+  assert.deepEqual(pages, []);
+  assert.deepEqual(document.posts.map((post) => post.url), [`${SECTIONS_FOLDER}/hero1`]);
+});

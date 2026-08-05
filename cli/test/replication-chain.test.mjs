@@ -272,8 +272,9 @@ test("SH422: capture → propose → accept → convert → verify, each phase r
     assert.equal(conversion.site, "Acme");
     assert.deepEqual(
       conversion.posts.map((post) => post.url),
-      [`${SECTIONS_FOLDER}/${hero.id}`, "/theme/captured"],
-      "the accepted block's id addresses the section, and the theme rides the same document",
+      [`${SECTIONS_FOLDER}/${hero.id}`, "/", "/about", "/theme/captured"],
+      "the accepted block's id addresses the section, a Page composes it on each source path it "
+        + "appeared on (SH438), and the theme rides the same document",
     );
     assert.equal(
       conversion.posts[0].data.heading,
@@ -284,6 +285,15 @@ test("SH422: capture → propose → accept → convert → verify, each phase r
       conversion.posts.every((post) => !("publish" in post)),
       "and nothing is published: a conversion of somebody else's site lands in DRAFT (P7)",
     );
+    // SH438 — the phase used to end here with sections nothing composed: three posts created,
+    // `/preview/<site>/` answering 404, and the gate below reporting `source-page-missing` for `/`.
+    // The home page is `post:<site>/` — a post whose friendly URL is `/` (SH433), and the source's
+    // own path, because a replica keeps the original's URL space (SH385).
+    const home = conversion.posts.find((post) => post.url === "/");
+    assert.equal(home.type, "Page");
+    assert.equal(home.folder, "/");
+    assert.deepEqual(home.data.sections, [`${SECTIONS_FOLDER}/${hero.id}`]);
+    assert.equal(home.data.title, "Home", "the title the capture recorded, which `Page` requires");
 
     // ── phase four: the coverage gate ───────────────────────────────────────────────────
     const report = await verify.run({ checks: "projection,replication" }, [], ctx);

@@ -83,7 +83,7 @@ export async function run(flags, positionals, ctx) {
   // The plan file and the proposal computed from the capture NOW: the pair is the whole point, since
   // an acceptance is only checkable against the candidates the current markup produces.
   const { proposal, plan } = await proposalFor(flags, ctx, "convert");
-  const { document, stale, sections, extras } = buildConversion({
+  const { document, stale, sections, pages, extras } = buildConversion({
     proposal,
     plan,
     site,
@@ -104,7 +104,7 @@ export async function run(flags, positionals, ctx) {
 
   if (typeof flags.out === "string" && flags.out) {
     await write(join(ctx.cwd, flags.out), `${JSON.stringify(document, null, 2)}\n`, ctx);
-    ctx.stdout.write(describeConversion({ document, sections, extras, requires: proposal.requires },
+    ctx.stdout.write(describeConversion({ document, sections, pages, extras, requires: proposal.requires },
       flags));
     ctx.stdout.write(`  document: ${flags.out} (nothing was applied)\n`);
     return { document, applied: false, exitCode: 0 };
@@ -118,7 +118,7 @@ export async function run(flags, positionals, ctx) {
     await requirePostTypeFields(proposal.requires ?? [], { baseUrl, user, password }, ctx);
   }
 
-  ctx.stdout.write(describeConversion({ document, sections, extras, requires: proposal.requires },
+  ctx.stdout.write(describeConversion({ document, sections, pages, extras, requires: proposal.requires },
     flags));
   // SH439 — the write resolver's "add a `site.upsert` op" is un-followable here, because `convert`
   // composes its own document and takes no ops. The flag above is the remedy; this makes the

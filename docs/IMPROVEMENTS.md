@@ -1548,32 +1548,6 @@ differ from the source's in a way `snapshot --against` cannot see. Option A need
 route above, and keeps the markup byte-identical. Whichever lands,
 `source-asset-stranded` is the check that says when it has.
 
-### XVII.28 A section no page composes is not a replica (SH438)
-
-`shio convert` writes the accepted sections and the theme, and nothing that orders them.
-Measured: three posts created, `/preview/viglet2/` answered 404, and `verify --checks
-replication` reported `source-page-missing` for `/` — the gate's own statement that the
-replication is not done.
-
-SH417's scope was honest and it delivered it: sections, a theme and scripts. But a
-section that no page composes is not deliverable by anything. The replica of a one-page
-site ends as two orphans, and the step that turns them into a site is the one step still
-done by hand — the manual work this phase existed to remove, moved up a level from the
-block to the page.
-
-Everything needed is already held. The proposal records which page each candidate
-appeared on and in what source order, which is exactly the `sections` array; the shape
-is written down in the `marketing-site` blueprint — `url: "/"`, `folder: "/"`,
-`data.sections` as an ordered list of section URLs. Closing it here took one
-`post.upsert` and the gate went quiet, so this is a translation into an existing shape
-rather than a new decision.
-
-Two rules it inherits. DRAFT, like everything else `convert` writes, because a page
-appearing published is the surprise P7 forbids. And the page's friendly URL is the
-**source's** path, per SH385's rule that a replica keeps the original's URL space —
-which for a home page is `post:<site>/`, the form SH433 just made discoverable. A block
-accepted on several pages belongs to each of them.
-
 ### XVII.30 A chrome asset belongs to the site, not to a block (SH441)
 
 SH429 made stranded bytes a finding and the rule fires correctly:

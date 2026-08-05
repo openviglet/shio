@@ -19,6 +19,14 @@
  * this module is a **pure function from two artefacts to one document**, and the command around it
  * does the IO.
  *
+ * ## What SH417 left out, and why it was the whole deliverable (SH438)
+ *
+ * Sections, a theme and scripts — and nothing that *ordered* them. A section no page composes is not
+ * deliverable by anything, so the first real run created three posts, answered 404 at
+ * `/preview/<site>/`, and had the replication gate report `source-page-missing` for `/`. So this also
+ * composes one `Page` per captured page from `proposal.pages`, which records each page's blocks in
+ * source order. Everything it needs was already held; see `composePages`.
+ *
  * ## The two rules the translation owes
  *
  * **Nothing is written for a candidate the current proposal does not hold.** An acceptance from a run
@@ -39,6 +47,16 @@ export const SECTIONS_FOLDER = "/sections";
 export const THEME_FOLDER = "/theme";
 
 /**
+ * Where a composed page lands, and the post-type that composes it (SH438).
+ *
+ * <p>The site root, and `Page` — the shape the `marketing-site` blueprint already writes down:
+ * `url: "/"`, `folder: "/"`, `data.sections` as an ordered list of section friendly URLs. This is a
+ * translation into that shape rather than a new one, which is why the names are its names.</p>
+ */
+export const PAGES_FOLDER = "/";
+export const PAGE_TYPE = "Page";
+
+/**
  * The document that makes an accepted plan true.
  *
  * @param {object} input
@@ -56,7 +74,7 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false 
   const byId = new Map((proposal?.candidates ?? []).map((row) => [row.id, row]));
   const stale = accepted.filter((entry) => !byId.has(entry.block)).map((entry) => entry.block).sort();
   if (stale.length) {
-    return { document: null, stale, sections: [], extras: [] };
+    return { document: null, stale, sections: [], pages: [], extras: [] };
   }
 
   const sections = accepted
@@ -72,8 +90,10 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false 
     }))
     .sort((a, b) => (a.url < b.url ? -1 : 1));
 
+  const pages = composePages(proposal, new Set(sections.map((post) => post.url)));
+
   const extras = [];
-  const posts = [...sections];
+  const posts = [...sections, ...pages];
   if (proposal?.theme?.rows?.length) {
     posts.push(themePost(proposal.theme, site));
     extras.push("Theme");
@@ -83,7 +103,11 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false 
     extras.push("SiteScripts");
   }
 
-  const folders = [SECTIONS_FOLDER, ...(extras.length ? [THEME_FOLDER] : [])];
+  const folders = [
+    SECTIONS_FOLDER,
+    ...(pages.length ? [PAGES_FOLDER] : []),
+    ...(extras.length ? [THEME_FOLDER] : []),
+  ];
   return {
     document: {
       site,
@@ -95,8 +119,70 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false 
     },
     stale: [],
     sections,
+    pages,
     extras,
   };
+}
+
+/**
+ * One `Page` per captured page, composing the sections that page was made of (SH438).
+ *
+ * <h3>Why this is the difference between three posts and a replica</h3>
+ *
+ * <p>SH417 wrote the sections, the theme and the scripts, and nothing that ordered them. Measured on
+ * a real run: three posts created, `/preview/viglet2/` answered **404**, and `verify --checks
+ * replication` reported `source-page-missing` for `/` — the gate's own statement that the
+ * replication was not done. A section no page composes is not deliverable by anything, so the
+ * replica of a one-page site ended as two orphans and the step that turned them into a site was the
+ * one step still done by hand. That is the manual work this phase existed to remove, moved up a
+ * level from the block to the page.</p>
+ *
+ * <h3>The three rules it inherits rather than decides</h3>
+ *
+ * <p><b>The source's URL.</b> SH385's rule — a replica keeps the original's URL space — so the page's
+ * friendly URL is the captured path, which for a home page is `/`: the post that `post:&lt;site&gt;/`
+ * names (SH433) and the one the renderer looks for when `/preview/&lt;site&gt;/` is asked for.</p>
+ *
+ * <p><b>DRAFT.</b> `publish` is absent here as it is on every other row, so re-running cannot
+ * unpublish a page a curator has since published, and nothing appears live because a converter ran
+ * (P7).</p>
+ *
+ * <p><b>Only what was accepted, and only where there is something to compose.</b> A candidate left
+ * in `fidelity` mode stays verbatim markup, so it is not a section and cannot be in the array. A
+ * captured page whose blocks were *all* left verbatim therefore composes nothing, and gets no
+ * `Page`: writing an empty one would report success for a page that serves nothing, which is this
+ * same defect one level down — and `source-page-missing` is right to keep asking about it.</p>
+ */
+function composePages(proposal, sectionUrls) {
+  const pages = [];
+  for (const page of proposal?.pages ?? []) {
+    const seen = new Set();
+    const sections = [];
+    for (const id of page.blocks ?? []) {
+      const url = `${SECTIONS_FOLDER}/${id}`;
+      // First occurrence wins. A signature repeated on one page is still one section post with one
+      // set of fields, so listing it twice would ask the page to render the same content twice —
+      // a decision for the reviewer, not a thing to infer from a structural collision.
+      if (!sectionUrls.has(url) || seen.has(url)) continue;
+      seen.add(url);
+      sections.push(url);
+    }
+    if (!sections.length) continue;
+    pages.push({
+      url: page.path,
+      type: PAGE_TYPE,
+      folder: PAGES_FOLDER,
+      // `title` is required on `Page`, and the capture recorded one. The path is the fallback rather
+      // than the site name: it is what makes two untitled pages two rows a human can tell apart.
+      data: { title: titleOf(page), sections },
+    });
+  }
+  return pages.sort((a, b) => (a.url < b.url ? -1 : 1));
+}
+
+function titleOf(page) {
+  const title = typeof page.title === "string" ? page.title.trim() : "";
+  return title || page.path;
 }
 
 /**
@@ -140,11 +226,16 @@ function scriptsPost(scripts, site) {
  * content. The preconditions come last because they are the sentence that decides whether the write
  * can work at all (SH436).
  */
-export function describeConversion({ document, sections, extras, requires = [] }, options = {}) {
+export function describeConversion({ document, sections, pages = [], extras, requires = [] },
+                                   options = {}) {
   const lines = [];
   const limit = Number.isFinite(Number(options.limit)) ? Math.max(Number(options.limit), 1) : 20;
   lines.push(
     `shio convert: ${sections.length} section(s)`
+      // SH438 — counted separately from the extras, because it is the count that says whether the
+      // replica serves anything: sections with no page composing them are orphans, and the run that
+      // wrote only those reported success.
+      + `${pages.length ? ` in ${pages.length} page(s)` : ""}`
       + `${extras.length ? ` + ${extras.join(" + ")}` : ""} into site ${document.site}`,
   );
   for (const post of document.posts.slice(0, limit)) {

@@ -262,6 +262,28 @@ current markup produces — `proposalFor` is exported from `propose` so there is
 what a candidate is. `--out <file>` writes the document and applies nothing, which is what lets the
 SH422 chain test cover this phase without an instance.
 
+**It composes the pages too, because a section no page composes is not a replica (SH438).** SH417's
+scope was honest and it delivered it — sections, a theme, scripts — and nothing that *ordered* them.
+Measured: three posts created, `/preview/viglet2/` answered **404**, and `verify --checks replication`
+reported `source-page-missing` for `/`, which is the gate's own statement that the replication is not
+done. The replica of a one-page site ended as two orphans, and the step that turns them into a site
+was the one step still done by hand — the manual work this phase existed to remove, moved up a level
+from the block to the page. Everything needed was already held, so this is a translation into an
+existing shape rather than a new decision: the `marketing-site` blueprint writes it down as `url:
+"/"`, `folder: "/"`, `data.sections` as an ordered list of section friendly URLs, and those are the
+names `composePages` uses. It inherits three rules rather than deciding them — **the source's URL**
+(SH385's rule that a replica keeps the original's URL space, which for a home page is `/`, the post
+`post:<site>/` names since SH433), **DRAFT** like every other row, and **only what was accepted**: a
+candidate left in `fidelity` mode is verbatim markup, not a section, so a captured page whose blocks
+were all left verbatim composes nothing and gets no `Page` — an empty one would report success for a
+page that serves nothing, which is this same defect one level down. The enabling change is in the
+**proposal**, which gained `pages: [{path, title, blocks}]`: `candidates` is keyed by signature —
+that is what makes a block one decision on N pages instead of N — so it can say *which* pages a block
+is on and structurally cannot say in what order. Without the second axis the sections a page composes
+could only be ordered by id, an ordering the source never had. A pre-SH438 proposal file carries no
+`pages`, and converts as it did: it composes nothing rather than throwing, because re-running `shio
+propose` is what produces the order and a crash is a worse way to say so.
+
 **`--create-site`, because the fourth refusal named a remedy this surface cannot express (SH439).**
 `shio convert --site Viglet2` against an absent site printed the plan and then refused with *"add a
 `site.upsert` op for it earlier in the same batch"* — the shared write resolver's fix, right on the
