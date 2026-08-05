@@ -53,6 +53,7 @@ import {
   scanPage,
   serializeInventory,
 } from "../clone.mjs";
+import { requireBrowser } from "../browser.mjs";
 import { ASSETS_DIR } from "../content-assets.mjs";
 import { assetPathCollisions, siteDir } from "../content-files.mjs";
 
@@ -91,6 +92,21 @@ export async function run(flags, positionals, ctx) {
   const rendered = flags.render === true;
   const notes = [];
 
+  // SH434 — `--render` needs a browser, and the refusal for a missing one belongs here for exactly
+  // the reason the SH378 comment above gives about `--assets`: before any request at all, including
+  // robots.txt. It used to be resolved when the crawl asked for its first page, so a run that could
+  // never succeed had already fetched from somebody else's server, and then exited with a live
+  // handle armed — which is where `exit(1)` was measured aborting instead of exiting.
+  const browser = rendered && typeof ctx.render !== "function"
+    ? await requireBrowser({
+      command: "clone",
+      needs: "--render",
+      why: "Without it the crawl reads the HTML the server sent, which is the whole page on a "
+        + "server-rendered site — the inventory says which of the two it got, and warns when a page "
+        + "looks like it renders itself.",
+    }, ctx)
+    : null;
+
   const robots = flags.ignoreRobots === true
     ? { present: false, matched: null, sitemaps: [], crawlDelay: null, rules: null }
     : await readRobots(origin, ctx);
@@ -104,7 +120,7 @@ export async function run(flags, positionals, ctx) {
   // keeping a stranger's HTML in the tree, not a second pass over their server.
   const keepMarkup = flags.markup === true;
 
-  const page = rendered ? await renderer(flags, ctx) : null;
+  const page = rendered ? await renderer(flags, ctx, browser) : null;
   try {
     const walk = await crawl({ origin, depth, maxPages, robots, page, flags, keepMarkup }, ctx);
     notes.push(...walk.notes);
@@ -437,22 +453,13 @@ async function renderOne(url, page, flags, keepMarkup) {
  * <p>Optional and dynamic for SH102's reason: `@viglet/shio` is installed to author content, and a
  * crawl of a server-rendered site — which is most of them — needs no browser at all. `ctx.render` is
  * the seam the tests use.
+ *
+ * <p>The module arrives as an argument (SH434): `run` resolves it before the crawl starts, so a
+ * missing one is refused before this command touches the network.
  */
-async function renderer(flags, ctx) {
+async function renderer(flags, ctx, playwright) {
   if (typeof ctx.render === "function") {
     return ctx.render(flags);
-  }
-  let playwright;
-  try {
-    playwright = await import("playwright");
-  } catch {
-    throw new Error(
-      "shio clone: --render needs playwright, which is not installed.\n" +
-        "  pnpm add -D playwright && npx playwright install chromium\n" +
-        "Without it the crawl reads the HTML the server sent, which is the whole page on a " +
-        "server-rendered site — the inventory says which of the two it got, and warns when a page " +
-        "looks like it renders itself.",
-    );
   }
   const browser = await playwright.chromium.launch();
   const page = await browser.newPage({

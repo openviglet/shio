@@ -175,6 +175,7 @@
   <br>**The digest reads the model, not a list of the eight first-party types.** A section's structure is not in one HTML field: the vocabulary's components render its title as a heading and its text fields as prose. So the mapping is stated once in terms of what the model says about a field — a title field becomes a heading, a markup field contributes its parsed structure, any other text field contributes its words — and it runs the *same parser*, so there is one notion of "structure" rather than a second path that would drift. A digest that knew the shipped section types by name would stop working the first time somebody wrote a ninth.
   <br>**An unresolvable section is marked, not skipped.** Contributing nothing is the original failure wearing a different hat: two different mistakes would hash the same. It contributes a heading naming the gap, so the digest moves when a reference breaks. The cost is real and stated: a page digest now reads N+1 posts, which is the same scoping pressure as **SH143**.
 - **SH391** — the browser that was already installed twice now answers the agent: shio audit renders the page at each --width and prints one line per finding with the element to fix, at ~57 tokens clean and ~643 for twenty findings against a screenshot's ~1600
+- **SH434** — The browser is resolved before any request, so a missing one is a teaching refusal that exits 1 — one module for three commands, plus clone --render.
 
 ### Block I follow-up
 

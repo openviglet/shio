@@ -24,6 +24,7 @@
 import { dirname, join } from "node:path";
 
 import { ShioAgentClient } from "../agent-client.mjs";
+import { requireBrowser } from "../browser.mjs";
 import { resolveAdmin } from "../context.mjs";
 import {
   DEFAULT_WIDTH,
@@ -50,6 +51,17 @@ export async function run(flags, positionals, ctx) {
     );
   }
 
+  // SH434 — the browser is resolved here, before a socket is opened. It used to be resolved inside
+  // `capture`, which is *after* the instance has been asked for its sites: a run that could never
+  // succeed printed its refusal while the process was still carrying live handles, and `exit(1)` was
+  // measured aborting rather than exiting. Spending a round trip on a run that cannot work is the
+  // smaller half of the same mistake.
+  const browser = typeof ctx.capture === "function" ? null : await requireBrowser({
+    command: "snapshot",
+    why: "It is optional because a screenshot is for a human to look at (SH102) — the agent's own "
+      + "check is `shio digest`, which needs no browser and costs a fraction of the tokens.",
+  }, ctx);
+
   const admin = resolveAdmin(flags, ctx.env);
   const sites = /^https?:\/\//.test(String(target)) ? new Map() : await siteUrls(flags, ctx);
   const resolved = resolveUrl(target, sites, {
@@ -65,7 +77,7 @@ export async function run(flags, positionals, ctx) {
   const widths = widthsOf(flags.width);
 
   if (typeof flags.against === "string" && flags.against) {
-    return against(resolved, { slug, dir, widths, admin, flags }, ctx);
+    return against(resolved, { slug, dir, widths, admin, flags, browser }, ctx);
   }
   if (widths.length > 1) {
     // Refused rather than quietly using the first, and rather than growing a baseline per width in
@@ -90,7 +102,7 @@ export async function run(flags, positionals, ctx) {
   // The resolved width, not the raw flag: `widthsOf` is the one parser, so `capture` never has to
   // know that `--width` can be a list.
   const shot = await capture(resolved.url, { ...flags, width: widths[0] }, ctx,
-    resolved.preview ? { user: admin.user, password: admin.password } : null);
+    resolved.preview ? { user: admin.user, password: admin.password } : null, browser);
   const before = await readIfPresent(ctx, path);
   const result = compareSnapshots(before, shot, { compare: await comparator(ctx) });
 
@@ -154,7 +166,7 @@ export async function run(flags, positionals, ctx) {
  * non-goal that the instance runs no browser. {@code visualSnapshot: false} stays correct, and an agent
  * reading {@code true} would hunt for a call that does not exist.
  */
-async function against(resolved, { slug, dir, widths, admin, flags }, ctx) {
+async function against(resolved, { slug, dir, widths, admin, flags, browser }, ctx) {
   const source = String(flags.against);
   if (!/^https?:\/\//.test(source)) {
     throw new Error(
@@ -179,8 +191,8 @@ async function against(resolved, { slug, dir, widths, admin, flags }, ctx) {
     };
     // The original first, so a failure fetching it is reported before the replica is photographed —
     // and so the two captures are as close together in time as the sequence allows.
-    const before = await capture(source, { ...flags, width }, ctx, null);
-    const after = await capture(resolved.url, { ...flags, width }, ctx, credentials);
+    const before = await capture(source, { ...flags, width }, ctx, null, browser);
+    const after = await capture(resolved.url, { ...flags, width }, ctx, credentials, browser);
     const result = compareSnapshots(before, after, { compare });
 
     await put(ctx, paths.source, before);
@@ -289,12 +301,15 @@ async function siteUrls(flags, ctx) {
  * <p>`ctx.capture` is the seam the tests use: a browser in a unit test would be testing
  * Playwright, and the parts of this command worth pinning are the comparison, the baseline
  * rotation and the exit code.
+ *
+ * <p>`playwright` arrives as an argument rather than being imported here (SH434): the module the
+ * caller already resolved, because the refusal for a missing one has to happen before this command
+ * opens anything.
  */
-async function capture(url, flags, ctx, credentials) {
+async function capture(url, flags, ctx, credentials, playwright) {
   if (typeof ctx.capture === "function") {
     return ctx.capture(url, flags, credentials);
   }
-  const playwright = await load("playwright", ctx);
   const width = Number(flags.width ?? DEFAULT_WIDTH);
   const height = Number(flags.height ?? 800);
   const browser = await playwright.chromium.launch();
@@ -363,17 +378,3 @@ async function optional(name) {
   }
 }
 
-/** A required optional dependency: absent is a teaching error, not a stack trace. */
-async function load(name, ctx) {
-  const loaded = await optional(name);
-  if (loaded) {
-    return loaded;
-  }
-  throw new Error(
-    `shio snapshot: this command needs ${name}, which is not installed.\n` +
-      `  pnpm add -D ${name} && npx playwright install chromium\n` +
-      `It is optional because a screenshot is for a human to look at (SH102) — the agent's own ` +
-      `check is \`shio digest\`, which needs no browser and costs a fraction of the tokens.` +
-      (ctx?.env?.SHIO_DEBUG ? `\n(resolved from ${process.cwd()})` : ""),
-  );
-}

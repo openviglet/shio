@@ -374,31 +374,6 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
-### IX.19 A refusal that crashes is not a refusal (SH434)
-
-With `playwright` absent, all three commands print the intended teaching error — the install line and
-why the dependency is optional — and then emit
-`Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 94` and exit
-**-1073740791**, which is `0xC0000409`, Windows' code for `abort()`. Measured on all three;
-`shio resolve` on a bad address exits `1` cleanly, so it is these paths rather than the CLI's error
-handler.
-
-`main().catch` calls `exit(1)`, so the intent is right and something live is still armed
-when `process.exit` runs — the shape SH198 recorded for the CLI suite, where a handle
-released only on the happy path left `node --test` printing every result and never
-exiting. Here it is a command rather than a test, and the optional import's failure path
-is the one nobody exercised with the dependency missing.
-
-Two reasons it matters more than a cosmetic exit code. `snapshot --against` is the one
-command whose gate is on by default (SH386), so its exit code is load-bearing: non-zero
-is the safe direction here, but a caller distinguishing "the replica differs" from "no
-browser installed" cannot, and a crash code is not a contract. And a native assertion
-printed under a Shio command reads as a Shio defect — the last thing on the terminal
-after a message written to be actionable, which is the SH391 argument about what an
-instrument owes its reader.
-
-Fix and pin it: refuse before arming anything, and assert the exit code in a test.
-
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the

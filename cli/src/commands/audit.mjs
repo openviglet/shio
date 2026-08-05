@@ -26,6 +26,7 @@
  * `flag-meaning.test.mjs` is what keeps that true of the next command as well.
  */
 import { ShioAgentClient } from "../agent-client.mjs";
+import { requireBrowser } from "../browser.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { PER_RULE_CAP, classify, describe, parseWidths, probe } from "../audit.mjs";
 import { pageTarget, resolveUrl } from "../snapshot.mjs";
@@ -46,6 +47,15 @@ export async function run(flags, positionals, ctx) {
     throw new Error(`shio audit: ${widthError}`);
   }
 
+  // SH434 — before a socket is opened, for the reason `snapshot` says at the same point: the
+  // refusal used to arrive after the instance had been asked for its sites, so a run that could
+  // never succeed exited with live handles armed and was measured aborting instead.
+  const browser = typeof ctx.audit === "function" ? null : await requireBrowser({
+    command: "audit",
+    why: "It is optional because most projects never render a page here — the browser-free checks "
+      + "are `shio verify` (the content lint) and `shio digest` (one page's structure).",
+  }, ctx);
+
   const admin = resolveAdmin(flags, ctx.env);
   const sites = /^https?:\/\//.test(String(target)) ? new Map() : await siteUrls(admin, ctx);
   const resolved = resolveUrl(target, sites, {
@@ -61,7 +71,12 @@ export async function run(flags, positionals, ctx) {
   // because one command reaches both.
   const observed = await inspect(
     resolved.url,
-    { widths, credentials: resolved.preview ? { user: admin.user, password: admin.password } : null, flags },
+    {
+      widths,
+      credentials: resolved.preview ? { user: admin.user, password: admin.password } : null,
+      flags,
+      browser,
+    },
     ctx,
   );
   const { findings, counts, capped } = classify(observed, { contrast: flags.contrast });
@@ -114,11 +129,10 @@ async function siteUrls({ baseUrl, user, password }, ctx) {
  * response that never became a DOM node — a stylesheet's background image, a fetch — leaves no
  * trace an in-page probe could find.
  */
-async function inspect(url, { widths, credentials, flags }, ctx) {
+async function inspect(url, { widths, credentials, flags, browser: playwright }, ctx) {
   if (typeof ctx.audit === "function") {
     return ctx.audit(url, { widths, credentials }, flags);
   }
-  const playwright = await load("playwright", ctx);
   const timeout = Number(flags.timeout ?? 30000);
   const browser = await playwright.chromium.launch();
   const requests = [];
@@ -171,25 +185,4 @@ async function inspect(url, { widths, credentials, flags }, ctx) {
   }
 }
 
-async function optional(name) {
-  try {
-    return await import(name);
-  } catch {
-    return null;
-  }
-}
 
-/** A required optional dependency: absent is a teaching error, not a stack trace. */
-async function load(name, ctx) {
-  const loaded = await optional(name);
-  if (loaded) {
-    return loaded;
-  }
-  throw new Error(
-    `shio audit: this command needs ${name}, which is not installed.\n` +
-      `  pnpm add -D ${name} && npx playwright install chromium\n` +
-      `It is optional because most projects never render a page here — the browser-free checks are ` +
-      `\`shio verify\` (the content lint) and \`shio digest\` (one page's structure).` +
-      (ctx?.env?.SHIO_DEBUG ? `\n(resolved from ${process.cwd()})` : ""),
-  );
-}

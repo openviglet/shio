@@ -347,6 +347,25 @@ assertion, so the test must not be what decides it), and still **no instance and
 a property of the pipeline — `snapshot --against` is the one step that needs one, and its comparison is
 already driven through an injected capture.
 
+**The optional browser is resolved before anything else, and one module owns the refusal (SH434).**
+With `playwright` absent, `snapshot`, `snapshot --against` and `audit` printed the intended teaching
+error and then emitted `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)` and exit
+**-1073740791** — `0xC0000409`, `abort()`. `main().catch` calls `exit(1)`, so the intent was right and
+something live was still armed: the import sat *behind* work that had already run — the instance had
+been asked for its sites, and `clone --render` had fetched robots.txt from somebody else's server. A
+refusal that crashes is not a refusal. `--against` is the one command whose gate is on by default
+(SH386), so a caller cannot tell "the replica differs" from "no browser installed" when both are a
+crash, and a native assertion under a Shio command reads as a Shio defect. So `browser.mjs`'s
+`requireBrowser` is called **first** in all three — and in `clone --render`, which had the same defect
+one grep away and whose own SH378 comment already stated the rule ("before any request at all,
+including robots.txt") one line above the import that broke it. Three copies of the message became
+one; each command still supplies its own browser-free alternative, which is *why* the dependency is
+optional. What it deliberately does **not** pre-empt is a package installed without the browser: only
+`chromium.launch()` knows, and refusing from a path would risk telling a working install it is broken.
+`browser-refusal.test.mjs` pins the property that is checkable — **zero requests before the refusal**,
+with a `post:` target so the old order would show — and the real exit code from a child process,
+skipped where `playwright` resolves rather than passing on a different path.
+
 **`shio impact <address>` exists and `shio read` deliberately does not (SH288).** The task was
 filed as "the CLI cannot show one post", and only half of that is a gap. A post's **content** is on
 disk after `pull --content`, where `Grep` and `Edit` are the cheapest tools an agent has (P4), so a
