@@ -331,6 +331,19 @@ public class ShPageRenderService {
 
     // --- resolution -------------------------------------------------------------
 
+    /**
+     * The locales this site's content is actually written in, in this state (SH459).
+     *
+     * <p>Here rather than in the route because site resolution is here: {@code siteByKey} is SH181's
+     * order (id, then furl, then name) and a second copy of it on the delivery controller would be
+     * the second copy that stops matching. Sorted by the query, so a refusal that lists them reads
+     * the same on every engine (P5).</p>
+     */
+    @Transactional(readOnly = true)
+    public List<String> localesOf(String siteKey, ShPostState state) {
+        return shPostUnifiedRepository.findDistinctLocalesBySiteId(siteByKey(siteKey).getId(), state);
+    }
+
     private ShSite siteByKey(String siteKey) {
         // SH181's order: the declared key wins a collision.
         Optional<ShSite> byId = shSiteRepository.findById(siteKey);

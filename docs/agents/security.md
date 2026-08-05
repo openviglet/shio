@@ -123,6 +123,23 @@ interceptor.
   the entry point exists at all. The body stays the same JSON either way — a browser acts on the
   header and never renders that body, so making the two responses differ further would be a second
   contract with no reader.
+  **And since SH459 it answers 404 for a path no controller claims.** Measured: `GET /fonts/x.woff2`
+  and `GET /nope` answered **401** while `/assets/missing.js` answered 404 — the only difference
+  being that `/assets/**` is on the `permitAll` list, so it reached the dispatcher and got the truth.
+  Every other root path fell through to `anyRequest().authenticated()`, so a visitor asking for a
+  missing font was told to authenticate for a file that exists nowhere. **Answered here rather than
+  by widening `permitAll`, and that is the safer of the two**: permitting the path would make the
+  resource handler anonymously reachable, a change to *what is served*; this changes only *what the
+  refusal says*, and nothing new is readable. The condition is asked of **every**
+  `RequestMappingHandlerMapping` — the actuator contributes a second, and a single-bean injection
+  does not merely miss it, it throws `NoUniqueBeanDefinitionException` inside the entry point and
+  turns the 401 into a 500. A *resource* handler is deliberately not consulted: Spring Boot maps
+  `classpath:/public/` at `/**`, so it claims every path and asking it would make the rule never
+  fire. SH167's default is untouched — a new controller is claimed the moment it exists, which is
+  what keeps the console's login flow reading a 401 — and an undecidable mapping
+  (`HttpRequestMethodNotSupportedException`: the path *is* a controller's, only the verb is wrong)
+  counts as claimed, so this can never turn a real route's 401 into a 404. 404 is also the *less*
+  disclosing answer: 401 tells a prober a path is behind a door.
 - Login flow: React sends `GET /api/v2` with Basic auth header via `fetch()`, then redirects to `/console`
 
 ### CORS

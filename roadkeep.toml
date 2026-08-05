@@ -57,11 +57,11 @@ ref_scheme = "outline"
 # two rewriting rules for one job and the stylesheet used the broken one, so the theme now emits the
 # source's path and the render pass walks <style> the way it already walked src. SH462: the assets
 # were never in DRAFT (upload writes PUBLISHED), but no write could NAME them, and making the op
-# reachable found that unpublish would have deleted them outright. SH459 is
-# last — the public route's remaining lenient segment, and the 401 an unmapped path answers where
-# 404 is the truth.
+# reachable found that unpublish would have deleted them outright. SH459 closed the run: the locale
+# segment is checked against the site's own content rather than pinned, and a URI no controller
+# claims answers 404 instead of 401. The fourth run is spent — four tasks, four commits, and the
+# instrument-first argument held once more (SH460 shipped before the three it made legible).
 priority = [
-  "SH459",
   "Block P",
   "Block H",
   "Block K",

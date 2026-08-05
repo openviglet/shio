@@ -243,6 +243,20 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
             nativeQuery = true)
     int purge(@Param("id") String id, @Param("tenant") String tenant);
 
+    /**
+     * The distinct locales a site's content is written in, in this state (SH459).
+     *
+     * <p>What the public route's locale segment is checked against. {@code p.shSite.id} and never
+     * {@code p.shSite} — navigating past {@code .id} of an association whose target is an
+     * {@code ShObject} subclass emits the {@code @TenantId} predicate against a subclass alias that
+     * has no such column, which is valid JPQL and a runtime failure.</p>
+     */
+    @Query("select distinct p.locale from ShPostUnified p "
+            + "where p.shSite.id = :siteId and p.state = :state and p.locale is not null "
+            + "order by p.locale")
+    List<String> findDistinctLocalesBySiteId(@Param("siteId") String siteId,
+                                             @Param("state") ShPostState state);
+
     // --- Content i18n / locales (SH53) ---
 
     /** All sibling translation rows (across states) sharing a translation group. */

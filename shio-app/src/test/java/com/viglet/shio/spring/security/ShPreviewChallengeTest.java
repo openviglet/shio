@@ -89,6 +89,37 @@ class ShPreviewChallengeTest {
     }
 
     @Test
+    @DisplayName("SH459: a path no controller claims is absent, not behind a door")
+    void anUnclaimedPathIsNotFound() throws Exception {
+        // Measured before the fix: /fonts/x.woff2 and /nope answered 401, while /assets/missing.js
+        // answered 404 — the only difference being that /assets/** is on the permitAll list, so it
+        // reached the dispatcher and got the truth. A visitor asking for a missing font was told to
+        // authenticate for a file that does not exist anywhere, which is a fact about the security
+        // chain rather than about any route (SH450's family).
+        for (String absent : new String[] { "/fonts/x.woff2", "/model-catalog/fonts/x.woff2", "/nope" }) {
+            mockMvc.perform(MockMvcRequestBuilders.get(absent))
+                    .andExpect(MockMvcResultMatchers.status().isNotFound());
+        }
+    }
+
+    @Test
+    @DisplayName("SH459: and a route that exists still answers 401, which the console depends on")
+    void aClaimedPathStillRefuses() throws Exception {
+        // The whole safety of the rule above. SH167's `anyRequest().authenticated()` default is
+        // untouched: the condition is "no @RequestMapping claims this URI", so a new controller is
+        // claimed the moment it exists. If this ever inverted, the React app would read a 404 where
+        // it looks for a 401 and stop sending anybody to its login page.
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/v2/agent/manifest"))
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized());
+        mockMvc.perform(MockMvcRequestBuilders.get("/preview/any-site/"))
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized());
+        // A path a controller claims with another method: the route exists and only the verb is
+        // wrong, so 401 is honest and 404 would be a lie about a route that is there.
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v2/agent/batch"))
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized());
+    }
+
+    @Test
     @DisplayName("SH450: the body is the same JSON either way, so a program reads one shape")
     void theBodyIsUnchanged() throws Exception {
         // A browser never renders this body — it acts on the header — so making the two responses

@@ -68,7 +68,6 @@
 - 💭 **SH243** (deps: SH55 ✅, SH202 ✅) **A trashed post still holds its friendly URL, and nothing knows it** — Every free-URL check reads through @SQLRestriction, so the trash is invisible to it and an untrashed post can collide with the name its own copy took. → §XVI.3
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4
 - 💭 **SH245** (deps: SH139 ✅, SH202 ✅, SH203 ✅) **Make "one writer per verb" a lint, not an expectation** — Four times the console's copy of a shared verb was the careless one, and the rule that would have caught all four is stated in agents.md and enforced nowhere. → §XVI.5
-- 📋 **SH459** (deps: SH457 ✅) **Two more segments of the public route answer 200 or 401 where absent is the true answer** — The locale segment is read into the prefix and never rendered with, so any value serves the home page, and an unmapped path outside /sites challenges for credentials rather than 404. → §XVI.71
 
 ## Block P — The visible site (what the human actually looks at)
 

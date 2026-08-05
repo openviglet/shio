@@ -1397,27 +1397,6 @@ SH341's order applies — instrument first — but a section gate cannot ratchet
 way the line gate did, because dropping a section is destructive where shortening a line
 is not. So the honest first step is deciding what a *stale* section should become.
 
-### XVI.71 The two siblings SH457 named and did not take (SH459)
-
-SH457 fixed the format segment: vestigial now means fixed, and
-`/sites/publico/viglet-logo.png` is a 404 rather than the home page with a 200. Its own
-section named two more of the same shape, filed here rather than folded in — neither is
-the defect that task measured, and both are a statement about behaviour rather than a
-correction to it.
-
-**The locale segment is the format segment's twin.** `Address.of` reads it into the prefix and never
-passes it to the renderer, so `/sites/acme/default/xx-yy/` answers the home page with a 200 exactly
-as `/sites/acme/qualquer` did. The format check does not reach it: a root-relative reference puts its
-first segment in the *format* slot, which is why SH457 closed every case it measured and not this
-one. The remedy is not obvious the way the format's was — refusing every locale but `en-us` is a
-statement about a multi-language CMS, and the alternative is that the segment stops being vestigial
-and starts selecting content.
-
-**An unmapped path outside `/sites` answers 401.** A visitor asking for a missing font is challenged
-for credentials rather than told it is absent, which gives a browser a dialog where it wanted a
-status. Same family as SH450 — what an anonymous client receives is a fact about the security chain,
-not about the controller — and the fix is in the chain rather than in any route.
-
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA

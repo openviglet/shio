@@ -462,6 +462,22 @@ renderer over one body of content at a second address. See the section on it bel
   is not about the preview, it is that a link is rewritten *only when its path is a URL this site
   publishes*, and that is identical here; what differs is the prefix. SH437's asset fallback and
   SH385's redirect are inherited by the same route, at public URLs.
+- **The locale segment is checked against the site's own content (SH459)** — SH457 fixed the format
+  slot; its twin one slot along was left, and lied the same way: `Address.of` reads the locale into
+  the prefix and never passes it to the renderer, so with any value there and no segments after it
+  the content path is empty and `/sites/<site>/default/xx-yy/` answered the **home page with a 200**.
+  The two are not reachable by one probe, which is why one task could not close both — a
+  root-relative reference puts its first segment in the *format* slot, so SH457's check caught every
+  case it measured. **"Vestigial means fixed" is the wrong answer here**: pinning the segment to
+  `en-us` would make a Portuguese site's public URLs say `en-us`, a lie of a different kind and a
+  statement about a multi-language CMS that a route-lenience fix is not entitled to make. So the
+  rule is a *fact about the site* — accepted when the site has published content in that locale, or
+  when it is `DEFAULT_LOCALE` (which every URL this route builds writes, so refusing it would break
+  a pt-br site's own navigation to fix its address bar). It stays true when locale selection ships,
+  because that is the same set. The default short-circuits, so only a URL that actually names
+  another locale pays the site read and the projection; `localesOf` lives on `ShPageRenderService`
+  because `siteByKey` (SH181's id → furl → name order) does, and a second copy of that on the
+  controller is the copy that stops matching.
 - **A `File` post is reachable at the path its source used, and `src` joins the rewrite (SH437)** —
   a static file's bytes are public at `/file_source/<postId>/<fileName>` (SH38), keyed by an id no
   source ever chose, so a fidelity replica's `<img src="/img/hero.png">` was as broken with the bytes

@@ -11,6 +11,8 @@ package com.viglet.shio.render;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.CacheControl;
@@ -158,6 +160,7 @@ public class ShSitesAPI {
                                    @RequestParam(name = FORMAT_PARAM, required = false) String format,
                                    HttpServletRequest request) {
         Address address = Address.of(withinBase(request), siteHeader, format);
+        requireKnownLocale(address);
         ShRenderedPage rendered;
         try {
             rendered = shPageRenderService.render(address.site(), address.path(),
@@ -176,6 +179,44 @@ public class ShSitesAPI {
                 // this route *is* the infrastructure, so saying so is the correct answer.
                 .cacheControl(CacheControl.maxAge(MAX_AGE).cachePublic())
                 .body(links.rewriteInto(rendered.html(), address.prefix(), rendered));
+    }
+
+    /**
+     * SH459 — the locale segment is the format segment's twin, and it lied the same way.
+     *
+     * <h2>The same 200 as SH457's, one slot along</h2>
+     *
+     * <p>{@code Address.of} reads the locale into the prefix and never passes it to the renderer, so
+     * with any value in that slot and no segments after it the content path is empty and
+     * {@code /sites/acme/default/xx-yy/} answers the <b>home page</b> with a 200. SH457's format check
+     * cannot reach it: a root-relative reference puts its first segment in the <em>format</em> slot,
+     * which is why that task closed every case it measured and not this one.</p>
+     *
+     * <h2>Why the site's own content and not a fixed `en-us`</h2>
+     *
+     * <p>"Vestigial means fixed" was the right answer for the format, whose slot names a binding
+     * table this product does not have. It is the wrong one here: pinning the segment to
+     * {@code en-us} would make a Portuguese site's public URLs say {@code en-us}, which is a lie of
+     * a different kind and a statement about a multi-language CMS that a route-lenience fix is not
+     * entitled to make. So the rule is a <b>fact about this site</b> — the locale is accepted when
+     * the site has content in it, or when it is the default this route writes — and it stays true
+     * when locale selection eventually ships, because that is the same set.</p>
+     *
+     * <h2>It costs a query only when a URL uses it</h2>
+     *
+     * <p>The default short-circuits, so {@code /sites/acme/} and every link this route builds pay
+     * nothing. A URL that names some other locale pays one site read and one projection, which is
+     * the request that was about to be answered wrongly.</p>
+     */
+    private void requireKnownLocale(Address address) {
+        String locale = address.locale();
+        if (locale == null || locale.isBlank() || DEFAULT_LOCALE.equalsIgnoreCase(locale)) {
+            return;
+        }
+        List<String> known = shPageRenderService.localesOf(address.site(), ShPostState.PUBLISHED);
+        if (known.stream().noneMatch(locale::equalsIgnoreCase)) {
+            throw new UnknownLocaleException(locale, known);
+        }
     }
 
     private ResponseEntity<?> asset(RuntimeException pageProblem, Address address) {
@@ -235,7 +276,7 @@ public class ShSitesAPI {
      * @param path   the content path, always leading-slashed; {@code /} is the home page (SH433)
      * @param prefix what a link in this page has to be prefixed with to stay in this address space
      */
-    public record Address(String site, String path, String prefix) {
+    public record Address(String site, String path, String prefix, String locale) {
 
         /**
          * @param within everything after {@code /sites}
@@ -247,8 +288,9 @@ public class ShSitesAPI {
             if (header != null && !header.isBlank()) {
                 // The header form: the whole path is content, so one host serves one site and the
                 // URLs are the site's own. The prefix is `/sites` alone, because that is what the
-                // reader's browser already has in front of every path.
-                return new Address(header.trim(), leading(rest), BASE);
+                // reader's browser already has in front of every path. It names no locale segment,
+                // so it names the default and there is nothing for SH459 to check.
+                return new Address(header.trim(), leading(rest), BASE, DEFAULT_LOCALE);
             }
             String[] segments = rest.split("/");
             // segments[0] is the empty string before the first slash — 0.3.8 indexed from 1 on the
@@ -277,7 +319,8 @@ public class ShSitesAPI {
             // for `/sites/acme/print/pt-br/x` must get links that keep them there, or every click
             // silently changes the two things they chose.
             return new Address(site, content + trailingSlashOf(rest),
-                    BASE + "/" + encode(site) + "/" + encode(usedFormat) + "/" + encode(locale));
+                    BASE + "/" + encode(site) + "/" + encode(usedFormat) + "/" + encode(locale),
+                    locale);
         }
 
         private static String leading(String path) {
@@ -313,6 +356,44 @@ public class ShSitesAPI {
      * teaching body still carries the rule, so a caller who *did* type it is told the same thing
      * (P6).</p>
      */
+    /**
+     * A 404: this site has no content in the locale the URL named (SH459).
+     *
+     * <p>404 and not 400 for {@link UnknownFormatException}'s reason, one slot along: the URL shape
+     * is fine and "that is not here" is the true answer. The body lists what the site does have,
+     * which is the one thing a caller cannot derive — and on a site with no locale on any post the
+     * list is empty, so the message says the default is the only address this route answers rather
+     * than printing an empty {@code allowed} and leaving the reader to infer it.</p>
+     */
+    public static class UnknownLocaleException extends ShTeachingException {
+
+        public UnknownLocaleException(String sent, List<String> known) {
+            super(ShProblem.of("sites-unknown-locale", HttpStatus.NOT_FOUND,
+                            "Nothing is served in locale '" + sent + "'")
+                    .withDetail("The locale segment of a public URL names the locale the content is "
+                            + "written in. This site has " + (known.isEmpty()
+                                    ? "no post declaring a locale, so `" + DEFAULT_LOCALE
+                                            + "` is the only value this route answers."
+                                    : "content in " + String.join(", ", known) + ".")
+                            + " Any other value used to serve the home page with a 200, which is "
+                            + "what this refusal replaces.")
+                    .withAllowed(allowedLocales(known))
+                    .withDidYouMeanFrom(sent)
+                    .withFix("Use the locale this site's content is in, or omit the segment - "
+                            + "`/sites/<site>/` is the home page.")
+                    .withExample("/sites/<site>/" + DEFAULT_FORMAT + "/"
+                            + (known.isEmpty() ? DEFAULT_LOCALE : known.getFirst()) + "/"));
+        }
+
+        private static List<String> allowedLocales(List<String> known) {
+            List<String> allowed = new ArrayList<>(known);
+            if (allowed.stream().noneMatch(DEFAULT_LOCALE::equalsIgnoreCase)) {
+                allowed.add(DEFAULT_LOCALE);
+            }
+            return allowed;
+        }
+    }
+
     public static class UnknownFormatException extends ShTeachingException {
 
         public UnknownFormatException(String sent) {

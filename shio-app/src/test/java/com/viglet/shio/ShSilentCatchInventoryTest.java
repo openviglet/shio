@@ -132,7 +132,18 @@ class ShSilentCatchInventoryTest {
             // per publish, and folding by subject would then hide whichever of the two arrived
             // second. Not indexing its body is also the correct outcome, not a degradation: there is
             // no prose in a malformed payload to index.
-            "turing", 1);
+            "turing", 1,
+            // 1 since SH459, and it is the SH385/SH437 kind rather than a degradation: the
+            // authentication entry point asks every RequestMappingHandlerMapping whether any
+            // controller claims the URI, so that a path none of them serves answers 404 instead of
+            // 401. A mapping that cannot decide (HttpRequestMethodNotSupportedException is the
+            // ordinary case - the path IS a controller's and only the verb is wrong) is counted as
+            // claiming it, so the catch IS the handling and what it preserves is the refusal that
+            // was already going to be sent. There is nothing to record: no caller is worse off than
+            // before the check existed, and an incident per wrong-verb probe would fill the window
+            // with what SH103 refused for 4xx. Counted rather than exempted, so the population stays
+            // a diff.
+            "spring", 1);
 
     private static final Pattern CATCH = Pattern.compile("catch\\s*\\(([^)]*)\\)\\s*\\{");
 
