@@ -239,6 +239,27 @@ the markup's `src` — and the first turns out not to be available: a static fil
 post. That is a route the instance does not have, so it is a delivery feature rather than a CLI change,
 and this shipped the half that is provable from the tree.
 
+**A chrome asset is site-level, and the rule that catches it is its own (SH441).** SH429's fix said to
+point a `File` field at the stranded bytes, and for `/viglet-logo.png` there was no field to point:
+the logo is in `div.topbar` and in `<link rel="icon">`, both chrome, and `contentRoot` excludes chrome
+on purpose — so a favicon or a wordmark is stranded **by construction** and the advice read as though
+the operator had forgotten something, which is P6's failure and not theirs. Two answers were open and
+**SH437 had already closed one**: a static file keeping the source's own path is not available, so
+choosing it would mean building a delivery route the instance does not have. It is therefore the
+site-level one, which is where this product already puts the other two kinds of chrome — SH389's
+scripts, SH382's menu. `source-chrome-stranded` carries that: declare a site-level post-type with a
+`File` field and point it at the path, or decide the replica does not need the bytes and delete them,
+and *not* the original path — the fix says so outright, because it is the answer an operator reaches
+for first and SH437's note is not somewhere they would look. **The classifier is `kind`, and it
+deliberately under-reports.** An `icon` or a `manifest` is a `<link>` in `<head>`, outside every
+content root, so no block will ever declare a field for one — a certainty, not a heuristic. A header
+logo is chrome by the same argument and arrives as `image`, because assets dedupe by URL keeping the
+first `kind` seen: the wordmark that is *also* a favicon lands as `icon` and the one that is not does
+not. So `source-asset-stranded` keeps its SH429 advice **and** names the site-level case, rather than
+leaving the operator it still catches with the one instruction that may not apply. The new rule is in
+`replicationRules()` and in the registry lint's own fixture — a rule the lint never emits is a rule
+the lint cannot check, and one the SH410/SH411 coverage split silently attributes to nobody.
+
 **`shio convert` is the verb the pipeline was one short of (SH417).** SH379 stopped at the proposal on
 purpose — review and mutation in one command is the surprise P7 forbids — which left
 `shio/conversion-plan.json` a file whose only reader was the report that produced it. The applier is

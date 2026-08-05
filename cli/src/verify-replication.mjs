@@ -30,6 +30,22 @@
  * a source path, which is this group's whole subject. It is `source-page-missing` now. One defect, one
  * rule, one report — the alternative was two rules over one fact, which is two reports that can
  * disagree.
+ *
+ * WHERE A CHROME ASSET LANDS, WHICH SH441 HAD TO SETTLE BEFORE IT COULD ADVISE ANYTHING
+ * SH429 fired correctly on `/viglet-logo.png` and told the operator to point a `File` field at it.
+ * There was no field to point: the logo is in `div.topbar` and in `<link rel="icon">`, both chrome,
+ * and `contentRoot` excludes chrome on purpose — so a conversion strands a favicon or a wordmark **by
+ * construction** and the fix read as though the operator had forgotten something. Two answers were
+ * open, and **SH437 had already closed one of them**: a static file keeping the source's own path is
+ * not available, because Shio serves a File post's bytes from `/api/v2/staticfile/{id}` and
+ * `/file_source/<postId>/<fileName>` — both id-keyed — and nothing maps a source path to a `File`
+ * post (`ShStaticFileService.upload` never assigns a friendly URL, which is why SH172 needed the
+ * `id:` fallback). Choosing it would mean building a delivery route the instance does not have: a
+ * feature, not a correction to a sentence. So it is **the site-level one**, which is also where this
+ * product already puts the other two kinds of chrome: SH389 made a site's third-party scripts one
+ * ordered list the site owns, SH382 made the curated menu content. `source-chrome-stranded` says
+ * that, and says what will *not* work — because "serve it at the original path" is the answer an
+ * operator reaches for first, and SH437's finding is not somewhere they would think to look.
  */
 
 /** The group name, in `--checks` and in the report's own `checks` list. */
@@ -166,6 +182,24 @@ function linkFindings(inventory, served) {
 }
 
 /**
+ * The asset kinds that belong to the site rather than to anything on a page (SH441).
+ *
+ * <h3>Why `kind` is the whole classifier, and what it therefore misses</h3>
+ *
+ * <p>An `icon` is a `<link rel="icon">` and a `manifest` is a `<link rel="manifest">`: both live in
+ * `<head>`, outside every content root, and no block will ever declare a field for one. That is a
+ * certainty rather than a heuristic, which is what makes it safe to give them different advice.</p>
+ *
+ * <p>A header logo in `div.topbar` is chrome by the same argument and arrives here as `image`, and
+ * the capture cannot say otherwise: assets are deduped by URL keeping the first `kind` seen, so the
+ * one that is *also* a favicon lands as `icon` and the one that is only a wordmark does not. This
+ * set therefore <b>under-reports chrome</b> — the same lower-bound stance `referencedAssets` takes
+ * one function down, and the reason `source-asset-stranded` names the site-level case too instead
+ * of leaving it to this rule to have caught.</p>
+ */
+const CHROME_KINDS = new Set(["icon", "manifest"]);
+
+/**
  * A same-origin asset the capture named that the tree does not hold.
  *
  * <p>Two shapes, one finding: an asset with no `file` was never downloaded (`--assets` did not run,
@@ -178,13 +212,14 @@ function assetFindings(inventory, present, referenced) {
   const rows = (inventory.assets ?? []).filter((asset) => asset && !asset.external);
   const missing = [];
   const stranded = [];
+  const chrome = [];
   for (const asset of rows) {
     if (!asset.file) {
       missing.push({ path: asset.path, why: "was never downloaded" });
     } else if (!present.has(asset.file)) {
       missing.push({ path: asset.path, why: `was downloaded to \`${asset.file}\`, which is not in the tree` });
     } else if (!referenced.has(asset.file)) {
-      stranded.push(asset);
+      (CHROME_KINDS.has(asset.kind) ? chrome : stranded).push(asset);
     }
   }
   return [
@@ -199,7 +234,25 @@ function assetFindings(inventory, present, referenced) {
       fix: "An asset reaches the instance because a File field names its path (SH145) - the bytes "
         + "alone are never uploaded. Point a field at it and `shio push --content` sends it. A block "
         + "left in FIDELITY mode has no fields at all, so its images stay here: that is the delivery "
-        + "half a replica needs, and it is not the download.",
+        + "half a replica needs, and it is not the download. "
+        // SH441 — the escape hatch, on this rule too. `kind` classifies a favicon with certainty and
+        // a header logo not at all, so an operator holding one of the ones this rule still catches
+        // has to be told that "point a field at it" is not always available.
+        + "If this one is site chrome — a wordmark or a header logo, which belongs to no block and "
+        + "so to no block's field — it is the site-level case below: declare a site-level post-type "
+        + "with a File field and point that at it.",
+    }), (row) => row.path),
+    ...capped(chrome, "source-chrome-stranded", inventory, (row, cut) => ({
+      message: `the chrome asset \`${row.path}\` (${row.kind}) is in the tree as \`${row.file}\` and `
+        + `no field can ever name it, so nothing uploads it${cut}`,
+      fix: "This is site chrome, so it is site-level content, the way SH389 models a site's scripts "
+        + "and SH382 its menu: declare a site-level post-type with a File field (`shio push` sends "
+        + "the type), point it at this path, and `shio push --content` sends the bytes. Deciding the "
+        + "replica does not need it and deleting the bytes is the other real answer. What will NOT "
+        + "work is serving it at the source's own path: Shio delivers a File post from "
+        + "`/api/v2/staticfile/{id}` and `/file_source/<id>/<name>`, both id-keyed, and a File post "
+        + "is never given a friendly URL — so verbatim markup pointing at the original path stays "
+        + "broken until the markup is rewritten.",
     }), (row) => row.path),
   ];
 }
@@ -470,6 +523,7 @@ export function replicationRules() {
     "source-link-unresolved",
     "source-asset-missing",
     "source-asset-stranded",
+    "source-chrome-stranded",
     "source-form-field-lost",
     "source-locale-missing",
     "replication-unchecked",

@@ -83,7 +83,6 @@
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
 - 📋 **SH437** (deps: SH429 ✅) **A fidelity replica's images 404 because a static file is only served at its own id** — SH429 made the stranded bytes visible and left the delivery unbuilt: keeping the source's URL space needs a route Shio does not have, so the choice was never available. → §XVII.27
-- 📋 **SH441** (deps: SH429 ✅) **A logo or favicon is stranded by construction and the fix advises a field that cannot hold it** — Chrome assets belong to no candidate block, so no File field will ever name them, while SH389's scripts and SH382's menu already model chrome as site-level. → §XVII.30
 - 📋 **SH442** (deps: SH386 ✅) **A site whose URL field is a slug is photographed at that slug, so the browser refuses it** — resolveUrl picks the front end on the truthiness of the site's URL rather than on it being absolute, so a site with no front end skips the preview SH265 added for it. → §XVII.31
 - 📋 **SH443** (deps: SH386 ✅) **The summary reports worst 100.00% on a run that says it measured no magnitude** — With no per-pixel comparator the answer is byte equality, so the header prints an uninitialised percentage the row and the notes both contradict. → §XVII.32
 

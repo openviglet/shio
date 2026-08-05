@@ -549,8 +549,14 @@ test("every rule this group emits is in replicationRules(), or the baseline misf
     {
       posts: [],
       defs: DEFS,
+      // SH441 — a downloaded chrome asset, so `source-chrome-stranded` is emitted here too. The
+      // fixture is the lint: a rule this loop never produces is a rule the assertion cannot check.
+      assets: ["Acme/favicon.ico"],
       inventory: capture({
-        assets: [{ path: "/a.png", kind: "image", refs: 1 }],
+        assets: [
+          { path: "/a.png", kind: "image", refs: 1 },
+          { path: "/favicon.ico", kind: "icon", refs: 1, file: "Acme/favicon.ico" },
+        ],
         forms: [{ path: "/c", action: "/c", method: "post", fields: [{ name: "zz", type: "text" }], on: 1 }],
         locales: [{ locale: "de", shape: "prefix", sample: "/de/", pages: 1 }],
         unfollowed: [{ path: "/deep", refs: 1 }],
@@ -560,8 +566,92 @@ test("every rule this group emits is in replicationRules(), or the baseline misf
     for (const finding of lintReplication(input).findings) emitted.add(finding.rule);
   }
 
-  assert.ok(emitted.size >= 6, [...emitted].join(" "));
+  assert.ok(emitted.size >= 7, [...emitted].join(" "));
   for (const rule of emitted) {
     assert.ok(replicationRules().has(rule), `${rule} is not in replicationRules()`);
   }
+});
+
+// --- SH441: a chrome asset belongs to the site, not to a block ---
+//
+// SH429's rule fired correctly on `/viglet-logo.png` and told the operator to point a `File` field
+// at it. There was no field to point: the logo is in `div.topbar` and in `<link rel="icon">`, both
+// chrome, and `contentRoot` excludes chrome on purpose. A favicon or a wordmark is stranded **by
+// construction**, so the fix read as though the operator had forgotten something — P6's failure, not
+// the operator's.
+
+test("SH441: a favicon is chrome, and gets the site-level answer rather than a field it cannot have", () => {
+  const { findings } = lintReplication({
+    posts: [page("/"), page("/about")],
+    defs: DEFS,
+    assets: ["Acme/viglet-logo.png"],
+    inventory: capture({
+      assets: [{ path: "/viglet-logo.png", kind: "icon", refs: 2, file: "Acme/viglet-logo.png" }],
+    }),
+  });
+
+  const chrome = findings.filter((each) => each.rule === "source-chrome-stranded");
+  assert.equal(chrome.length, 1);
+  assert.match(chrome[0].message, /no field can ever name it/);
+  assert.match(chrome[0].fix, /site-level post-type with a File field/);
+  assert.ok(
+    !findings.some((each) => each.rule === "source-asset-stranded"),
+    "one asset, one finding: the two rules split the same state by whether a field could ever hold "
+      + "it, and both firing would be two reports over one fact that can disagree",
+  );
+});
+
+test("SH441: the fix says what will not work, because it is what an operator reaches for first", () => {
+  // The other answer the task weighed — a static file keeping the source's own path — is closed, and
+  // measurably: both delivery routes are id-keyed and a File post is never given a friendly URL. An
+  // operator who tries it loses an afternoon to a 404 that looks like a bug in Shio.
+  const { findings } = lintReplication({
+    posts: [page("/")],
+    defs: DEFS,
+    assets: ["Acme/site.webmanifest"],
+    inventory: capture({
+      assets: [{ path: "/site.webmanifest", kind: "manifest", refs: 1, file: "Acme/site.webmanifest" }],
+    }),
+  });
+
+  const [chrome] = findings.filter((each) => each.rule === "source-chrome-stranded");
+  assert.match(chrome.fix, /staticfile\/\{id\}/);
+  assert.match(chrome.fix, /never given a friendly URL/);
+  assert.match(chrome.fix, /deleting the bytes is the other real answer/,
+    "and the second real answer, because 'the replica does not need this' is a decision only the "
+      + "operator can make");
+});
+
+test("SH441: an asset a field COULD hold keeps the old rule, and is told about the chrome case", () => {
+  // The classifier is `kind`, which is certain for a favicon and silent for a header logo — assets
+  // dedupe by URL keeping the first kind seen, so a wordmark that is not also a favicon arrives as
+  // `image`. Under-reporting the classification is the safe direction; leaving that operator with
+  // only "point a field at it" is not, which is why the older rule names the site-level case too.
+  const { findings } = lintReplication({
+    posts: [page("/"), page("/about")],
+    defs: DEFS,
+    assets: ["Acme/img/logo.png"],
+    inventory: capture({
+      assets: [{ path: "/img/logo.png", kind: "image", refs: 4, file: "Acme/img/logo.png" }],
+    }),
+  });
+
+  const [stranded] = findings.filter((each) => each.rule === "source-asset-stranded");
+  assert.match(stranded.fix, /FIDELITY mode has no fields/, "the SH429 advice is still right here");
+  assert.match(stranded.fix, /site-level post-type with a File field/);
+  assert.ok(!findings.some((each) => each.rule === "source-chrome-stranded"));
+});
+
+test("SH441: a chrome asset a field does name is served, and says nothing", () => {
+  const { findings } = lintReplication({
+    posts: [page("/", { data: { image: "Acme/viglet-logo.png" } })],
+    defs: DEFS,
+    assets: ["Acme/viglet-logo.png"],
+    inventory: capture({
+      assets: [{ path: "/viglet-logo.png", kind: "icon", refs: 2, file: "Acme/viglet-logo.png" }],
+    }),
+  });
+
+  assert.ok(!findings.some((each) => each.rule === "source-chrome-stranded"),
+    "the rule is about bytes nothing will ever upload, not about the kind of the asset");
 });

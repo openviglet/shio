@@ -1548,31 +1548,6 @@ differ from the source's in a way `snapshot --against` cannot see. Option A need
 route above, and keeps the markup byte-identical. Whichever lands,
 `source-asset-stranded` is the check that says when it has.
 
-### XVII.30 A chrome asset belongs to the site, not to a block (SH441)
-
-SH429 made stranded bytes a finding and the rule fires correctly:
-`source-asset-stranded` named `/viglet-logo.png`, sitting in the tree as
-`Viglet2/viglet-logo.png` with no post referencing it. Its fix says to point a `File`
-field at it. On this page there is no field to point.
-
-The logo appears twice in the source, in `div.topbar` and in `<link rel="icon">`. Both
-are chrome, and `contentRoot` excludes chrome on purpose. `SectionHero` does declare an
-`image` field, so the advice is followable when a hero carries a picture; it is not
-followable for the one asset class that can never belong to a block. A favicon, a
-wordmark and a header logo are site-level by nature, so a conversion strands them by
-construction, and the fix text reads as though the operator forgot something.
-
-The precedents both point the same way and are recent. SH389 made a site's third-party
-scripts one ordered list the site owns rather than something injected per page, and
-SH382 made the curated menu content. Chrome is already modelled as site-level in this
-product; its assets are not.
-
-So the question the task answers is where a chrome asset lands — a static file keeping
-the source's own path, which is what SH385's URL-space rule argues for and what makes
-`<img src="/viglet-logo.png">` resolve in a fidelity replica too, or a site-level field.
-Either way `source-asset-stranded` should stop advising a field for an asset no field
-can hold, and say which of the two it is.
-
 ### XVII.31 A slug is not a front end (SH442)
 
 `snapshot --page post:Viglet2/ --against <source>` failed with playwright's own `Cannot
