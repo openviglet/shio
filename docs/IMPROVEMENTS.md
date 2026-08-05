@@ -1429,25 +1429,30 @@ is not. So the honest first step is deciding what a *stale* section should becom
 A site built or replicated in Shio has **no public URL by any path**. `/preview/**` is
 the only HTML mapping `ShRenderAPI` declares and it answers 401 anonymously —
 authenticated, `no-store`, `noindex`, all deliberate. The path `renderer.md` names as
-production, Next.js over the CDA, cannot be installed (SH446). So the renderer composes
-a correct page nobody outside the console can read.
+production, Next.js over the CDA, cannot install (SH446). So the renderer composes a
+correct page nobody outside the console can read.
 
-The route to add is the product's own: `/site/<lang>/<country>/<context>/<site>/<url>`,
-the OpenText WEM / Vignette V7 delivery shape this renderer already descends from —
-`ShPageRenderService` names that lineage for the *model*, page → template → component,
-and this is the delivery half of the same inheritance rather than a new idea.
+**The route is recoverable, not designed from memory.** Branch `0.3.8` carries it in
+`com.viglet.shio.website`: `ShSitesContext` maps `GET /sites/**` and `ShSitesContextURLProcess`
+splits the path by position —
+
+    /sites/<site-furl>/<format>/<locale>/<content-path…>
+
+`contexts[2]` is the site, resolved by `findByFurl`; `[3]` the format; `[4]` the locale.
+The defaults it builds are `default` and `en-us`, so `/sites/fidelidade/default/en-us/`
+is a home page. Two variants ship with it: `x-sh-site` names the site as a header and
+the URL carries only the content path, which is how one host serves one site;
+`sh-format` overrides the format segment per request.
 
 Six things must differ from `/preview`, each a guard deliberately inverted rather than
 dropped: anonymous instead of authenticated; **PUBLISHED**, never the draft; no banner;
-cacheable instead of `no-store`; indexable instead of `noindex`; and internal links
-rewritten into the public space, which is SH336's rewrite pointed the other way. A route
-sharing the preview's composition but not its guards would be the preview quietly
-becoming infrastructure — what those guards exist to prevent.
+cacheable instead of `no-store`; indexable instead of `noindex`; and links rewritten
+into the public space, SH336's rewrite pointed the other way. 0.3.8 also gates per page
+— `isPageAllowGuestUser` against a session — which is a separate decision from the
+route.
 
-**It is a strategy change and belongs in the open.** `renderer.md` states production delivery is Next.js
-over the CDA (P10); shipping this makes that a choice between two rather than a fact, and the doc has to
-say so. No non-goal forbids it. One thing to settle first: `<context>` — `default` in the shape above —
-means a channel in WEM, and Shio has no such concept today.
+**It is a strategy change and belongs in the open:** it makes `renderer.md`'s "production delivery is
+Next.js over the CDA" a choice between two. No non-goal forbids it.
 
 # Part 2 — pre-existing sections
 
