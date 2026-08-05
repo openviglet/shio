@@ -1496,3 +1496,54 @@ with no field and a rewrite of the fidelity markup, which makes the replica's HT
 differ from the source's in a way `snapshot --against` cannot see. Option A needs the
 route above, and keeps the markup byte-identical. Whichever lands,
 `source-asset-stranded` is the check that says when it has.
+
+### XVII.33 The chain is green and the replica is unviewable (SH446)
+
+The replication chain now runs green to its last step and the last step does not
+install. `shio init` scaffolds the Next.js app that serves a converted site, prints `npm
+install` as the next command, and that command fails: `ETARGET — No matching version
+found for @viglet/shio-client@^2026.3.1`. Measured on both scaffolds, the built-in
+template and the `marketing-site` starter.
+
+Two causes, and `npm view` states them. `@viglet/shio-client` is published only up to
+**2026.2.1**, so the `^2026.3.1` the scaffold writes matches nothing; the version comes
+from the workspace, which is at 2026.3.1 unpublished. `@viglet/shio-sections` returns
+**E404** — it has never been published at all, and it is the package a *converted* site
+needs, because `convert` writes sections and the blueprint's `lib/sections.ts` renders
+them. A control (`npm view next`) resolves, so this is not the registry.
+
+It is worth stating as the end of the chain rather than a packaging chore. `clone`,
+`propose`, `convert` and `verify` all now report success — the gate says `ok — 0
+error(s)` — and the replica is not viewable by anybody, because the one artifact that
+would serve it cannot be installed outside this monorepo. That is P9 failing at the last
+hop: every cheap textual proof passes and the perception loop never closes.
+
+So the fix is a release, not a code change: publish `shio-sections`, publish
+`shio-client@2026.3.1`, or have `init` write the versions that exist. A CI check that
+installs what `init` writes is the instrument, since no test in the repo installs from
+the registry.
+
+### XVII.34 A refusal that already did half the job (SH447)
+
+`shio init viglet3-web --blueprint marketing-site --site Viglet3` printed one line —
+`Blueprint 'marketing-site' requires the parameter 'brand'` — and exited non-zero. It had already written
+**15 files**: the whole Next.js app, `app/[...slug]/page.tsx`, `lib/sections.ts`, and a `.env.local`
+correctly carrying `SHIO_SITE_ID=Viglet3`. Nothing in the output says so.
+
+The next command is where it bites. `shio init viglet3-web --yes` then refuses with
+`Target directory is not empty`, which is true and unexplainable from anything the
+caller was told: the first run reported a refusal, so the directory should not exist.
+The recovery is to delete a directory whose contents the tool never admitted to writing.
+
+The order is the defect. `params` are validated against the blueprint before a single
+file is written on every other path — `blueprints <name>` exists precisely to state them
+— but here the scaffold runs first and the content application validates second, so a
+parameter that governs *content* aborts a run that had already finished the *files*. P7
+is the law it breaks: never surprise the human, and a refusal that silently succeeded at
+half its job is the surprise arriving one command later.
+
+Two ways out and they are not equivalent. Validate every declared param before writing
+anything, which makes the refusal true. Or report what landed — `✓ Created … (15 files)`
+then the refusal — which makes it honest without reordering. The first is better here
+because the partial state is a directory that then blocks the retry, and the second
+still leaves that.

@@ -35,6 +35,7 @@
 - 📋 **SH220** (deps: SH155 ✅) **A re-apply defaults to the parameters the site was built with** — The record of a site's blueprint parameters exists and no re-apply reads it, so a value the operator misremembers rebuilds the site differently and reports ordinary work. → §XI.14
 - 💭 **SH221** (deps: SH153 ✅) **The rest of the write surface should be plannable read-only too** — The plan and dryRun paths are write-free and nothing enforces it, so the next feature needing to resolve what it would create can reintroduce a write. → §XI.15
 - 📋 **SH395** (deps: SH156 ✅, SH183 ✅, SH280 ✅) **A blueprint stops one step before a site anybody can look at** — No first-party package ships a theme, a layout or a binding, so applying one yields content whose design is the labelled fallback and an agent finishes the job by hand. → §XI.16
+- 📋 **SH447** (deps: —) **init refuses on a content parameter after it has already written the whole scaffold** — The files land before the params are validated, so a refusal leaves 15 files and the retry then fails on a directory the caller was never told existed. → §XVII.34
 
 ## Block L — Agent safety & human-in-the-loop
 
@@ -81,6 +82,7 @@
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
 - 📋 **SH437** (deps: SH429 ✅) **A fidelity replica's images 404 because a static file is only served at its own id** — SH429 made the stranded bytes visible and left the delivery unbuilt: keeping the source's URL space needs a route Shio does not have, so the choice was never available. → §XVII.27
+- 📋 **SH446** (deps: SH438 ✅) **The front end that serves a converted site cannot be installed** — init writes @viglet/shio-client@^2026.3.1 which npm does not have and depends on shio-sections which was never published, so npm install fails ETARGET on both scaffolds. → §XVII.33
 
 ## Block F — Market positioning
 
