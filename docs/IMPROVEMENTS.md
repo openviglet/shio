@@ -195,6 +195,28 @@ ten thousand queued jobs on the single-threaded sender, which is the queue-full 
 SH84 already reports arriving in bulk. A page size, and a report that says how far it
 got, are the difference between a backfill and an outage of the publish path.
 
+### VIII.20 A budget with a wall and no gauge gets spent until it stops the build (SH423)
+
+SH347 made the Spring context-cache ceiling visible by asserting it: 64, configured
+rather than defaulted, with a margin of 8 and the count printed on every run. That
+closed the failure it was written for — an evicted context is a correctness problem, not
+a slow one.
+
+What it does not do is price the next one. A task that adds `@SpringBootTest(properties
+= "spring.datasource.url=…mem:shio-shNNN…")` spends a slot silently; the number moves;
+nothing asks. Measured over Block Q: eleven tasks took it from 38 to 44, and the only
+reason it is not higher is that two of the last three deliberately extended an existing
+fixture instead — a judgement call made because the count happened to be in view, not
+because anything prompted it.
+
+Two things would help and they are different. A **gauge**: the run already prints the
+count, so the same assertion could warn on approach rather than only fail at the wall —
+the shape `token-budgets.properties` has, where a ceiling is a reviewable number and a
+diff that raises it is the moment somebody is asked. And a **cheaper default**: most of
+these isolate only because a fixture writes instance-wide post-types, which is SH246's
+real reason. A shared context with per-test site scoping would need no slot at all, and
+the tasks that cannot have it would then be the exception rather than the habit.
+
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
 > The agent cannot see. Two of the three human round trips in a typical build existed only
@@ -1110,6 +1132,76 @@ what the region declares it does happens. And it stays a **CLI gate**, never a `
 finding: the server cannot see it, and one defect reported by two subsystems is two
 reports that disagree.
 
+### XV.30 The window belongs in the query, and the reason it was not put there is a correctness argument (SH419)
+
+SH384's first deliverable was the measurement, and it found something the sweep
+benchmarks are blind to: they count prepared statements, where a listing is flat, while
+`findByShFolderAndStateIn` reads the **whole folder** and `limit` is applied afterwards
+in memory. `ShRenderListingPageBenchmarkTest` records 213 entity rows loaded to render
+10, identical for page 1 and page 19, with the ceiling asserted on the *ratio* so
+enlarging a fixture cannot absorb it.
+
+That measurement licensed paging, sorting and filtering as free in-memory operations,
+and it is also the finding: the cost grows with the folder rather than with the page, so
+an archive of 5000 posts pays 5000 rows for the first ten of them.
+
+Pushing the window into the query is **not** free, which is why SH384 deferred it rather
+than doing it in passing. Three things need rows a windowed query would exclude. The
+DRAFT-preference fold reads both states and keeps one row per id, so a window applied
+before the fold can return fewer rows than asked for, or the wrong ones. The exact
+totals the pager reports come from the full matching set, so a windowed read owes a
+second count query with the same predicates, which has to stay in step with them or the
+pager lies. And the field filter is a predicate over the post's JSON data, evaluated in
+Java today.
+
+### XV.31 The pager idiom SH384 documented is unreliable in exactly the page that needs it (SH420)
+
+SH384 published `@page`, `@pages`, `@total`, `@first` and `@last` as Handlebars data
+variables so a pager could be drawn **once**: a block helper's body repeats per row and
+there is no way to write into the enclosing scope, so `{{#if @last}}` is the only place
+a template can emit one.
+
+That idiom breaks as soon as a listing contains a listing, and the failure was verified
+rather than reasoned about. A layout whose outer `{{#query}}` body holds an inner
+`{{#query}}` and then reads `{{#if @last}}` renders the pager **on every outer row** —
+measured 2 of 2 where 1 was expected. The inner block's final iteration sets `@last =
+true`, the outer body reads it afterwards, and both writes land in one scope. `@index`
+and `@first` have the same defect.
+
+The page shape that hits it is not exotic: an archive whose cards list their own
+children, or a hub whose sections include a listing. So the documented way to draw a
+pager is wrong precisely where a real site would draw one.
+
+Three candidate fixes, and the choice is part of the task. **Save and restore** the five
+values around `options.fn`, the smallest change, leaving the shared scope. **Namespace**
+them per call (`@query.last`), which is a template-visible rename and therefore a break.
+Or **push them onto the row**, giving up drawing a pager once — the option SH384
+rejected for repeating markup per item, worth re-examining now the alternative is known
+unsound.
+
+### XV.32 A lint over templates fires on correct work or nobody reads it (SH421)
+
+SH389's `site-scripts-dropped` is the rule that makes the task's fix real: moving a
+site's scripts into one ordered list stops the duplication and does nothing about a
+layout that never emits them, which is a set of pages with no consent banner rendering
+perfectly.
+
+It has one false-positive shape, introduced with it and worth closing before somebody
+meets it. The rule fires for **every** bound layout in a site that declares scripts, and
+some layouts omit them deliberately: a transactional email template, a print sheet, an
+AMP-shaped variant, an embed a partner iframes. Each is a legitimate layout that must
+not load a chat widget, and its author has no way to say so.
+
+The lesson SH388 wrote down applies directly: a lint over templates that fires on
+correct work is one authors learn to skip, and the true finding goes unread with it.
+
+Two shapes to choose between. A **baseline acceptance** already works and costs nothing
+to build, but records the decision away from the layout it is about. A **field on the
+layout** — a declared opt-out — puts it where an author reads it and makes the omission
+intentional in the content rather than in a suppression file, at the cost of one more
+field on a system post-type. The second is probably right for the same reason SH385 put
+a redirect's source on the post rather than in a side table.
+
 ## XVI. The human half (Block O) — what reading the console next found
 
 Block O shipped, and its lesson was that **console defects answer `200`**: seven of them, none
@@ -1382,3 +1474,47 @@ failure a replica has.
 Two gaps in the middle are not about replication at all: they are ordinary site features
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
+
+### XVII.15 Applying the plan is the phase the proposal was built to make safe (SH418) (SH417)
+
+SH379 deliberately stopped at the proposal: `--accept` writes a review decision into
+`shio/conversion-plan.json` and applies nothing, because making review and mutation one
+command is the surprise P7 forbids. That was right, and it leaves the pipeline one verb
+short — the plan is a file whose only reader is the report that produced it.
+
+What is missing is narrow, because everything it needs exists. For each accepted
+candidate the proposal already holds the section type and the field values; for an
+unmatched block it holds the post-type it needs; SH380 holds the theme as DTCG tokens
+plus CSS with its `url()` already rewritten to tree paths. Writing them is `shio
+apply`'s desired-state document plus `push --content`, both idempotent and both already
+carrying a `--check` gate — so this is a translation into existing verbs rather than a
+new engine.
+
+Two rules the translation owes. Nothing may be written for a candidate whose id the
+current proposal does not hold: an acceptance from a run taken before the source changed
+names a block that no longer exists, which is exactly the staleness a structural id
+makes detectable and an apply must refuse rather than guess at. And the apply is
+`--dry-run` first like every other write here, because the artefact it consumes was
+built to be reviewed and a command that skipped straight to writing would waste that.
+
+### XVII.16 The seam between two phases is where a pipeline actually breaks (SH422)
+
+Block Q shipped as eleven tasks and each one is thoroughly tested in isolation: the
+crawl has a fake site, the proposal has a fake filesystem, the coverage group has a
+fixture capture, the render helpers have their own databases. Nothing runs the pipeline.
+
+That matters because the phases hand artefacts to each other, and every one of those
+handoffs is a shape agreed in two places. `clone --markup` names a file that `propose`
+resolves by slug. `clone --assets` folds a source-URL-to-tree-path map that the theme's
+`url()` rewrite reads. `propose` writes an id that an acceptance in
+`conversion-plan.json` refers to. The coverage group reads an `unfollowed` list a
+version-2 inventory carries and a version-1 one does not. Each is pinned on one side by
+a unit test that constructs the other side by hand — which is exactly the shape that
+passes while the real producer writes something else.
+
+The proof wanted is one fixture site walked end to end with no instance: crawl a served
+map of pages, propose, accept one candidate, run `verify --checks
+projection,replication`, and assert the artefacts of each step are the inputs the next
+step actually reads. It is a CLI test, because every phase but the render is the CLI's,
+and it needs no browser: `snapshot --against` is the one step that does, and its
+comparison is already unit-tested through an injected capture.
