@@ -80,7 +80,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH417** (deps: SH379 ✅, SH380 ✅) **An accepted conversion plan is a file nothing applies** — SH379 records a reviewed acceptance and no command turns it into the posts, post-types and theme it describes, so the half a human approved never becomes content. → §XVII.15
 - 📋 **SH429** (deps: SH378 ✅, SH379 ✅) **A downloaded asset cannot reach a replica that stays in fidelity mode** — Only a File field triggers an upload and verbatim markup has no fields, so every image clone --assets fetched stays on disk and the replica's img tags point at nothing. → §XVII.22
 
 ## Block F — Market positioning

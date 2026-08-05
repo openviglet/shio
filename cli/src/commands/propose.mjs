@@ -83,11 +83,48 @@ Examples:
 `;
 
 export async function run(flags, positionals, ctx) {
+  const { inventory, plan, proposal, markup, theme } = await proposalFor(flags, ctx, "propose");
+
+  const accepting = acceptIds(flags, positionals);
+  if (accepting.length) {
+    const next = accept(proposal, plan, accepting, flags);
+    await write(join(ctx.cwd, PLAN_FILE), serializePlan(next), ctx);
+    // Recomputed rather than patched, so what the report says is what the file now holds: a summary
+    // written from the pre-accept proposal would be one review out of date at the moment it was most
+    // likely to be believed.
+    const after = buildProposal({
+      inventory,
+      markup,
+      html: { tokenize, parseAttrs, stripNonMarkup },
+      plan: next,
+      theme,
+    });
+    return finish(after, flags, ctx, {
+      accepted: accepting,
+      out: typeof flags.out === "string" ? flags.out : PROPOSAL_FILE,
+    });
+  }
+
+  return finish(proposal, flags, ctx, { out: typeof flags.out === "string" ? flags.out : PROPOSAL_FILE });
+}
+
+/**
+ * The proposal, computed from the tree: one implementation, two commands (SH417).
+ *
+ * <p>`shio convert` needs the proposal the capture produces **now**, because that is what makes an
+ * acceptance's staleness detectable. An id is a hash of the block's structure, so one the current
+ * proposal does not hold names markup that is no longer there. Recomputing it in the applier from a
+ * second copy of these readers is how the two would eventually disagree about what a candidate is,
+ * so the readers stay here beside the command that owns them and the applier calls this.
+ *
+ * @param {string} command the caller's name, so a refusal names the command the user actually ran
+ */
+export async function proposalFor(flags, ctx, command = "propose") {
   const inventoryPath = typeof flags.inventory === "string" ? flags.inventory : INVENTORY_FILE;
   const inventory = await readJson(join(ctx.cwd, inventoryPath), ctx);
   if (!inventory) {
     throw new Error(
-      `shio propose: there is no capture at ${inventoryPath}, so there is nothing to convert.\n` +
+      `shio ${command}: there is no capture at ${inventoryPath}, so there is nothing to convert.\n` +
         "Capture the source first, and keep its markup — the proposal is computed from it:\n" +
         "  shio clone https://example.com --markup",
     );
@@ -105,7 +142,7 @@ export async function run(flags, positionals, ctx) {
   // it would withhold the theme over a flag that has nothing to do with the theme.
   if (!markup.size && !styles.length) {
     throw new Error(
-      `shio propose: ${inventoryPath} holds ${inventory.pages?.length ?? 0} page(s), and neither ` +
+      `shio ${command}: ${inventoryPath} holds ${inventory.pages?.length ?? 0} page(s), and neither ` +
         `their markup (${MARKUP_DIR}/) nor their stylesheets (${ASSETS_DIR}/) are in the tree.\n` +
         "The capture was taken without the flags that keep them. Re-run it; the markup costs the same\n" +
         "requests it already made, and the bytes are what a theme is:\n" +
@@ -123,28 +160,7 @@ export async function run(flags, positionals, ctx) {
     plan,
     theme,
   });
-
-  const accepting = acceptIds(flags, positionals);
-  if (accepting.length) {
-    const next = accept(proposal, plan, accepting, flags);
-    await write(join(ctx.cwd, PLAN_FILE), serializePlan(next), ctx);
-    // Recomputed rather than patched, so what the report says is what the file now holds — a
-    // summary written from the pre-accept proposal would be one review out of date at the moment it
-    // was most likely to be believed.
-    const after = buildProposal({
-      inventory,
-      markup,
-      html: { tokenize, parseAttrs, stripNonMarkup },
-      plan: next,
-      theme,
-    });
-    return finish(after, flags, ctx, {
-      accepted: accepting,
-      out: typeof flags.out === "string" ? flags.out : PROPOSAL_FILE,
-    });
-  }
-
-  return finish(proposal, flags, ctx, { out: typeof flags.out === "string" ? flags.out : PROPOSAL_FILE });
+  return { inventory, plan, proposal, markup, theme };
 }
 
 async function finish(proposal, flags, ctx, { out, accepted = [] }) {

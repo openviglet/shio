@@ -83,6 +83,7 @@ const COMMANDS = {
   audit: () => import("./commands/audit.mjs"),
   clone: () => import("./commands/clone.mjs"),
   propose: () => import("./commands/propose.mjs"),
+  convert: () => import("./commands/convert.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),
   build: () => import("./commands/build.mjs"),
@@ -121,6 +122,7 @@ Commands:
   audit <page>   What is wrong with a rendered page, as text with a selector each
   clone <url>    Capture a site that already exists: an inventory, and no content
   propose        Which captured blocks could become sections, and what each would lose
+  convert        Apply the accepted conversion plan: sections, theme and scripts, as DRAFT
   pull           Pull post-types into ./shio/post-types/*.json (--content for pages)
   push           Apply local post-types back to Shio (--dry-run, --prune, --content)
   build          Compile local DSL/JSON post-types to canonical JSON (--out)

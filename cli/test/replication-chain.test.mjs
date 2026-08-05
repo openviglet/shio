@@ -41,7 +41,9 @@ import { ASSETS_DIR } from "../src/content-assets.mjs";
 import { PLAN_FILE, PROPOSAL_FILE } from "../src/propose.mjs";
 import { flatten } from "../src/theme.mjs";
 import { READS_VERSION } from "../src/verify-replication.mjs";
+import { SECTIONS_FOLDER } from "../src/convert.mjs";
 import * as clone from "../src/commands/clone.mjs";
+import * as convert from "../src/commands/convert.mjs";
 import * as propose from "../src/commands/propose.mjs";
 import * as verify from "../src/commands/verify.mjs";
 
@@ -138,7 +140,7 @@ function response({ status = 200, body = "", type = "text/html; charset=utf-8" }
 
 const json = async (cwd, file) => JSON.parse(await readFile(join(cwd, file), "utf8"));
 
-test("SH422: capture → propose → accept → verify, each phase reading what the last one wrote", async () => {
+test("SH422: capture → propose → accept → convert → verify, each phase reading what the last one wrote", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "shio-sh422-"));
   const source = served(SITE);
   const ctx = {
@@ -257,6 +259,30 @@ test("SH422: capture → propose → accept → verify, each phase reading what 
       after.candidates.filter((row) => row.mode === "authorable").length,
       1,
       "accepting one block leaves every other candidate in fidelity mode (SH379)",
+    );
+
+    // ── phase three and a half: the conversion document ─────────────────────────────────
+    // SH417 added a phase after this file was written, and a seam test that stops at the phase before
+    // the new one is a seam test with a hole in it. `--out` needs no instance, so the document the
+    // applier would send is checkable here for the one property that matters: it is built from the
+    // acceptance the previous step recorded, for the candidate the current markup produces.
+    await convert.run({ site: "Acme", out: "conversion.json" }, [], ctx);
+
+    const conversion = await json(cwd, "conversion.json");
+    assert.equal(conversion.site, "Acme");
+    assert.deepEqual(
+      conversion.posts.map((post) => post.url),
+      [`${SECTIONS_FOLDER}/${hero.id}`, "/theme/captured"],
+      "the accepted block's id addresses the section, and the theme rides the same document",
+    );
+    assert.equal(
+      conversion.posts[0].data.heading,
+      hero.fields.heading,
+      "with the field values the proposal published, not a second reading of the markup",
+    );
+    assert.ok(
+      conversion.posts.every((post) => !("publish" in post)),
+      "and nothing is published: a conversion of somebody else's site lands in DRAFT (P7)",
     );
 
     // ── phase four: the coverage gate ───────────────────────────────────────────────────

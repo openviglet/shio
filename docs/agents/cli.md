@@ -221,6 +221,29 @@ are deduped — one decision on N pages, not N decisions), and the proposal now 
 candidate appears on **all** the pages read, with three as the floor: on two pages a hero is on both as
 well, and a hint that fires on every small capture is one a reviewer learns to ignore.
 
+**`shio convert` is the verb the pipeline was one short of (SH417).** SH379 stopped at the proposal on
+purpose — review and mutation in one command is the surprise P7 forbids — which left
+`shio/conversion-plan.json` a file whose only reader was the report that produced it. The applier is
+deliberately **a translation into existing verbs, not a new engine**: it builds `shio apply`'s
+desired-state document and sends it down the same path, which is idempotent, `--dry-run`-able and the
+only write contract there is (P10). One post per **candidate** rather than per page — a candidate *is*
+a signature, so the hero that recurs on twelve pages is one section reused, which is the whole reason
+the proposal groups by structure — at `/sections/<id>`, plus the captured theme (`Theme`: `TITLE`,
+`CSS`, `TOKENS`) and scripts (`SiteScripts`) under `/theme`. Section fields carry the blueprint's
+lowercase vocabulary and the render types carry their own uppercase one; this is where the two meet.
+**Every post lands in DRAFT**, and `publish` is *absent* rather than `false`, so re-running cannot
+unpublish a page a curator has since published. Three refusals, each a refusal rather than a guess: a
+**stale acceptance** (an id is a hash of the block's structure, so one the current proposal does not
+hold means the source changed after the review — all or nothing, since a half-applied conversion is
+the worst outcome available); **nothing accepted**, naming the two commands that fix it; and
+**SH436's precondition**, checked against `GET /api/v2/render/post-types/drift` at the one moment
+there is an instance to ask, refusing with the `reconcile` call *before* the write and skipping the
+check entirely on `--dry-run`/`--out`, which touch no instance. The proposal is recomputed from the
+capture rather than read from its file, because staleness is only checkable against the candidates the
+current markup produces — `proposalFor` is exported from `propose` so there is one implementation of
+what a candidate is. `--out <file>` writes the document and applies nothing, which is what lets the
+SH422 chain test cover this phase without an instance.
+
 **The proposal states its own preconditions, because the field it writes into may not exist (SH436).**
 On a real instance `Theme` declared `TITLE`, `CSS` and `JAVASCRIPT` and **no `TOKENS`**: the post-type
 predates SH195, `ensure` deliberately never touches an existing one, and SH289's reconcile is additive

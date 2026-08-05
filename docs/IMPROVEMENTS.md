@@ -1475,28 +1475,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.15 Applying the plan is the phase the proposal was built to make safe (SH418) (SH417)
-
-SH379 deliberately stopped at the proposal: `--accept` writes a review decision into
-`shio/conversion-plan.json` and applies nothing, because making review and mutation one
-command is the surprise P7 forbids. That was right, and it leaves the pipeline one verb
-short — the plan is a file whose only reader is the report that produced it.
-
-What is missing is narrow, because everything it needs exists. For each accepted
-candidate the proposal already holds the section type and the field values; for an
-unmatched block it holds the post-type it needs; SH380 holds the theme as DTCG tokens
-plus CSS with its `url()` already rewritten to tree paths. Writing them is `shio
-apply`'s desired-state document plus `push --content`, both idempotent and both already
-carrying a `--check` gate — so this is a translation into existing verbs rather than a
-new engine.
-
-Two rules the translation owes. Nothing may be written for a candidate whose id the
-current proposal does not hold: an acceptance from a run taken before the source changed
-names a block that no longer exists, which is exactly the staleness a structural id
-makes detectable and an apply must refuse rather than guess at. And the apply is
-`--dry-run` first like every other write here, because the artefact it consumes was
-built to be reviewed and a command that skipped straight to writing would waste that.
-
 ### XVII.22 The asset map has no reader in fidelity mode (SH429)
 
 SH378 downloads each referenced image into `shio/assets/<site>/…` and folds a source-URL

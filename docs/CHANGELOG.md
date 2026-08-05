@@ -928,6 +928,7 @@
 - **SH424** — A declaration lifted into TOKENS is dropped from the kept CSS, so the prepended token block is what sets it and an edit reaches the page.
 - **SH433** — The home page form `post:<site>/` is named by the conventions, the generated AGENTS.md, the root coverage finding's fix and the address refusal itself.
 - **SH436** — A proposal carries the post-type fields the target must declare, derived from what it holds and naming the reconcile call.
+- **SH417** — shio convert turns an accepted plan into sections, a theme and scripts through the desired-state path, in DRAFT, refusing a stale acceptance.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 
