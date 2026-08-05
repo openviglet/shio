@@ -193,13 +193,18 @@ export function againstNames(slug, width) {
  * meaningless and a reader has to be told which one they got.
  */
 export function describeAgainst(rows, { source, page, limit } = {}) {
-  const worst = rows.reduce((most, row) => (ratioOf(row) > ratioOf(most) ? row : most), rows[0]);
   const differing = rows.filter((row) => row.status !== "same");
+  // SH443 — only a row a comparator actually measured has a magnitude. The old `ratioOf` read a
+  // null ratio as `1` for anything not `same`, so the byte-only path printed `worst 100.00%`: a
+  // percentage nothing computed, on the one line a reader takes away and an agent greps, saying
+  // "total mismatch" about a replica that may be all but identical.
+  const measured = differing.filter((row) => typeof row?.ratio === "number");
+  const worst = measured.reduce((most, row) => (row.ratio > most.ratio ? row : most), measured[0]);
   const lines = [];
   lines.push(
     `shio snapshot --against: ${page} vs ${source} — ${rows.length} width(s), `
       + `${differing.length} differing`
-      + (worst && ratioOf(worst) > 0 ? `, worst ${(ratioOf(worst) * 100).toFixed(2)}% at ${worst.width}px` : ""),
+      + magnitudeOf(differing, measured, worst),
   );
   const shown = Number.isFinite(Number(limit)) ? Math.max(Number(limit), 1) : rows.length;
   for (const row of rows.slice(0, shown)) {
@@ -214,8 +219,25 @@ export function describeAgainst(rows, { source, page, limit } = {}) {
   return lines.join("\n");
 }
 
-function ratioOf(row) {
-  return row?.ratio ?? (row?.status === "same" ? 0 : 1);
+/**
+ * What the header may claim about how different the widths are (SH443).
+ *
+ * <p>One run printed `1 differing, worst 100.00% at 1280px` four lines above its own
+ * `1280px  differs (bytes only — no magnitude)`. The header stated a magnitude and the row stated
+ * there is none; the note at the bottom said it a third time. So the file already knew — one line
+ * did not, and it was the line that matters most: the summary a reader takes away and an agent
+ * greps, where "worst 100.00%" reads as a total mismatch and is the number that ends a replication
+ * early. SH386's own argument is that a byte-level difference is <b>unmeasured</b> rather than
+ * large, and this is that argument applied to the summary.</p>
+ *
+ * <p>Three cases rather than two, because "nothing measured it" and "measured, and zero" are
+ * different claims and only the first is unmeasured.</p>
+ */
+function magnitudeOf(differing, measured, worst) {
+  if (!differing.length) return "";
+  if (!measured.length) return " (unmeasured)";
+  if (!worst || !(worst.ratio > 0)) return "";
+  return `, worst ${(worst.ratio * 100).toFixed(2)}% at ${worst.width}px`;
 }
 
 /**

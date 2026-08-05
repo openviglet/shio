@@ -476,6 +476,32 @@ test("SH386: with no comparator the run says the byte answer is nearly meaningle
   // byte resolution is unmeasured rather than a magnitude — and a reader has to be told.
   assert.match(ctx.stdout.text, /no per-pixel comparator/);
   assert.match(ctx.stdout.text, /treat a difference here as unmeasured/);
+
+  // SH443 — and the summary line has to agree with the row under it. It used to read
+  // `1 differing, worst 100.00% at 1280px` four lines above `differs (bytes only — no magnitude)`:
+  // a percentage nothing computed, because the reducer read a null ratio as 1 for anything not
+  // `same`. It is the line a reader takes away and an agent greps, and "worst 100.00%" about a
+  // replica that may be all but identical is the most misleading thing this command could say.
+  assert.match(ctx.stdout.text, /1 width\(s\), 1 differing \(unmeasured\)/);
+  assert.doesNotMatch(ctx.stdout.text, /worst/,
+    "no percentage at all, rather than a smaller wrong one: there is no comparator to produce it");
+});
+
+test("SH443: a measured run still names the worst width, and a match claims nothing", async () => {
+  // The other two cases the header has to tell apart. "Nothing measured it" and "measured, and
+  // zero" are different claims, and only the first is unmeasured.
+  const measured = ctxWith({
+    capture: twoSites().capture,
+    compare: () => ({ ratio: 0.25, diff: Buffer.from("DIFF") }),
+  });
+  await snapshot.run({ against: "https://acme.example.com/", width: "375,1280" }, ["post:Blog/"], measured);
+  assert.match(measured.stdout.text, /2 differing, worst 25\.00% at \d+px/);
+  assert.doesNotMatch(measured.stdout.text, /unmeasured\)/);
+
+  const same = ctxWith({ capture: twoSites({ same: true }).capture });
+  await snapshot.run({ against: "https://acme.example.com/" }, ["post:Blog/"], same);
+  assert.match(same.stdout.text, /0 differing$/m,
+    "nothing differs, so there is nothing to qualify — neither a percentage nor `(unmeasured)`");
 });
 
 test("SH386: --against wants an absolute URL, because the instance never fetches the original", async () => {

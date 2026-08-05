@@ -1547,32 +1547,3 @@ with no field and a rewrite of the fidelity markup, which makes the replica's HT
 differ from the source's in a way `snapshot --against` cannot see. Option A needs the
 route above, and keeps the markup byte-identical. Whichever lands,
 `source-asset-stranded` is the check that says when it has.
-
-### XVII.32 A percentage where the run says there is none (SH443)
-
-One run printed both of these, four lines apart:
-
-    1 width(s), 1 differing, worst 100.00% at 1280px
-    1280px  differs (bytes only — no magnitude) (bytes)
-
-The header states a magnitude and the row states there is none. Without `pixelmatch` and
-`pngjs` the comparison is byte equality, so the only honest answers are "identical" and
-"different"; 100.00% is what a percentage initialised for the per-pixel path reads as
-when nothing measured it.
-
-SH386 already argued this exact point and the row is the argument's output: two browsers
-photographing two origins almost never produce identical bytes, so a difference at byte
-resolution is *unmeasured* rather than large, and a reader must be told that rather than
-left to read it as a finding. The note at the bottom repeats it a third time. So the
-file knows; one line does not.
-
-It is worse than cosmetic because of which line it is. The header is the summary a
-reader takes away and an agent greps, and "worst 100.00%" is the number that ends a
-replication early — it reads as a total mismatch, which for a replica that is close is
-the most misleading thing this command could say. It is the same defect class as a count
-taken before a drop: SH428's note claimed sixteen editable tokens beside its own list of
-nine.
-
-The header should carry no percentage when there is no comparator, and say `differing
-(unmeasured)`. The test is the one that already covers the degraded path, asserting the
-summary line too.

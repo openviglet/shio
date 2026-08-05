@@ -486,6 +486,16 @@ is the second kind. Six decisions:
   identical bytes — so a difference at byte resolution is *unmeasured*, not small or large, and a
   reader is told that rather than left to read it as a finding. `describe`'s rule about naming the
   resolution, at the one place the weaker answer stops meaning anything.
+- **And the summary line says it too (SH443).** It used to read `1 differing, worst 100.00% at 1280px`
+  four lines above its own `1280px  differs (bytes only — no magnitude)`, with the note above saying
+  it a third time: the file knew, and one line did not. The reducer read a null ratio as `1` for
+  anything not `same`, so the header printed a percentage nothing had computed. Worse than cosmetic
+  because of *which* line — the summary a reader takes away and an agent greps, where `worst 100.00%`
+  reads as a total mismatch and is the number that ends a replication early, about a replica that may
+  be all but identical. The same defect class as a count taken before a drop (SH428's note claimed
+  sixteen editable tokens beside its own list of nine). Now `N differing (unmeasured)` and **no**
+  percentage, with three cases rather than two: nothing measured it, measured and non-zero, measured
+  and zero — only the first is unmeasured.
 SH365 was a hard dependency rather than a courtesy: `--url` was already two arguments wearing one name,
 and a third meaning would have made the flag that says where Shio is also decide what it is compared
 to. No endpoint and no MCP tool — SH268's rule plus the standing no-browser non-goal — so
