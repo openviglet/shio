@@ -158,6 +158,12 @@ public class ShAgentManifestService {
         // absence used to send the agent to the console entity API, which answers a stateless
         // caller with a bodiless 403 — the one dead end on the whole surface.
         features.put("siteUpsert", true);
+        // SH463: and it can remove one. The flag exists as much for the INSTRUMENT as for the
+        // caller - ShAgentP1ConformanceTest classifies feature keys, so a capability with no
+        // key is not classified at all, and site deletion had none. That is how the one test
+        // built to find unreachable capabilities could not see the gap the product is named
+        // after: an agent could create a site and needed a browser to remove one.
+        features.put("siteDelete", true);
         // SH152: an apply can add the fields an existing post-type lacks (opt-in per call).
         features.put("postTypeMerge", true);
         // Block K: the agent can check its own work. contentLint was reported false

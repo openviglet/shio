@@ -12,7 +12,6 @@
 ## Block H — The Agent Gateway (MCP + agent-shaped protocol)
 
 - 📋 **SH413** (deps: SH84 ✅) **Turning indexing on leaves the content that is already published unfindable** — SH84 indexes on publish, so an instance that switches Turing on indexes nothing until every post happens to be republished, and nothing says so. → §VIII.16
-- 📋 **SH463** (deps: —) **An agent can create a site and cannot delete one, so maintenance needs a browser session** — There is no site.delete op, verb or tool, and the P1 test classifies manifest feature keys, so a capability with no key is invisible to the instrument built to find it. → §VIII.22
 
 ## Block K — Perception & verification loop
 

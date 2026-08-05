@@ -217,30 +217,6 @@ these isolate only because a fixture writes instance-wide post-types, which is S
 real reason. A shared context with per-test site scoping would need no slot at all, and
 the tasks that cannot have it would then be the exception rather than the habit.
 
-### VIII.22 The capability the reachability test could not see (SH463)
-
-Clearing sixteen sites took the browser's dance. `DELETE /api/v2/site/{id}` with Basic auth answered
-**403** on all sixteen; only reading `GET /api/v2/csrf`, keeping its cookie and echoing the token back
-worked. There is no `site.delete` op, no `shio` verb, and no MCP tool — an agent can
-create a site with `site.upsert` and cannot remove one.
-
-The debris is the proof that this is maintenance and not an edge case. Eight `ShioConf*`
-scratch sites were still on the instance: the suite seeds and deletes its own, but a
-**failed** test never reaches teardown, so every red run leaves one behind and the only
-remedy is a surface the suite hand-rolled a session for. Its own comment names the
-asymmetry and calls it "not this task's to fix" — recorded in a code comment, filed
-nowhere.
-
-**P1 is the law it breaks, and the instrument missed it.** `ShAgentP1ConformanceTest` classifies every
-manifest `features` key and asserts the unreachable ones exactly, which is why that list is trustworthy —
-but a capability with no feature key is not classified at all. Site deletion has none, so the test that
-exists to find exactly this could not see it. That is worth more than the verb: an inventory keyed on
-what the manifest advertises measures the manifest, not the surface.
-
-The verb is the smaller half. `site.delete` with the confirm token `folder.delete` and
-`post.delete` already use, and a feature key so the next gap of this shape is classified
-rather than found by hand.
-
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
 > The agent cannot see. Two of the three human round trips in a typical build existed only

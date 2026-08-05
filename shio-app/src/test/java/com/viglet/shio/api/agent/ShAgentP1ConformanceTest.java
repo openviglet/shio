@@ -164,6 +164,14 @@ class ShAgentP1ConformanceTest {
         byFeature.put("folderMove", mcp("shio_write", "folder.move, the same one level up (SH137)"));
         byFeature.put("siteUpsert", mcp("shio_write", "site.upsert — SH170's whole point was that "
                 + "this must not be console-only"));
+        // SH463 — and the key matters as much as the op. This table is keyed on `features`,
+        // so a capability with no flag is not classified at all: site deletion had none, and
+        // the one instrument built to find unreachable capabilities was structurally unable to
+        // see it. An inventory keyed on what the manifest advertises measures the manifest.
+        byFeature.put("siteDelete", mcp("shio_write", "site.delete — the other half of SH170, "
+                + "found by clearing sixteen scratch sites through the browser's CSRF dance. "
+                + "Destructive, so it takes the SH108 confirm token, and its plan line says it "
+                + "is purged rather than trashed"));
         byFeature.put("writeProof", mcp("shio_write", "?verify=true on the write, which is why the "
                 + "argument went on this tool and not on shio_apply (SH227)"));
         byFeature.put("confirmTokens", mcp("shio_write", "the SH108 token is a `confirm` argument"));

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
@@ -79,7 +80,41 @@ class ShStatelessReachabilityLintTest {
         GAP
     }
 
-    private record Requirement(Reason reason, String why) {
+    /**
+     * @param covered for an {@link Reason#AGENT_EQUIVALENT}, the HTTP verbs the named agent form
+     *                actually delivers (SH463). Empty means <em>all of them</em>, which is what
+     *                {@code CONSOLE_ADMIN} and {@code GAP} mean by construction - a human performs
+     *                the whole controller, or the whole controller is the gap
+     */
+    private record Requirement(Reason reason, String why, Set<String> covered) {
+
+        Requirement(Reason reason, String why) {
+            this(reason, why, Set.of());
+        }
+    }
+
+    /**
+     * SH463 - an {@code AGENT_EQUIVALENT} entry now names the verbs its agent form covers.
+     *
+     * <h2>The blindness this closes was in the instrument, not in the code</h2>
+     *
+     * <p>This lint classified a whole <b>controller root</b>, so {@code /api/v2/site} was
+     * {@code AGENT_EQUIVALENT} on the strength of {@code site.upsert} - and that controller mutates
+     * with {@code POST}, {@code PUT} <em>and</em> {@code DELETE}. An agent could create a site and
+     * could not remove one, and the inventory built to find exactly that read as covered. SH338's
+     * {@code ShAgentP1ConformanceTest} could not see it either, for its own reason: it classifies
+     * manifest {@code features} keys, and site deletion had no key, so a capability with no flag is
+     * not classified at all. Two instruments, one blind spot each, and the same gap fell between
+     * them - found by hand, by somebody clearing sixteen scratch sites through the browser's CSRF
+     * dance.</p>
+     *
+     * <p>The rule now is that the <b>capability is the verb</b> and not the controller: an
+     * equivalence claim states which verbs it delivers, and the lint compares that against the verbs
+     * the source actually declares. A verb the agent form does not cover fails the build with the
+     * verb in the message.</p>
+     */
+    private static Requirement agentEquivalent(Set<String> covered, String why) {
+        return new Requirement(Reason.AGENT_EQUIVALENT, why, covered);
     }
 
     /**
@@ -91,21 +126,37 @@ class ShStatelessReachabilityLintTest {
     private static Map<String, Requirement> sessionRequired() {
         Map<String, Requirement> byPath = new TreeMap<>();
 
-        byPath.put("/api/v2/folder", new Requirement(Reason.AGENT_EQUIVALENT,
+        byPath.put("/api/v2/folder", agentEquivalent(Set.of("POST", "PUT", "DELETE"),
                 "folder.upsert / folder.move / folder.delete on POST /api/v2/agent/batch — SH137's "
                 + "whole point is that the agent form is safer than the console pair"));
-        byPath.put("/api/v2/object", new Requirement(Reason.AGENT_EQUIVALENT,
-                "copyto/moveto are the console's gestures; the agent moves with post.move and "
-                + "folder.move, which share the same writers (SH139)"));
-        byPath.put("/api/v2/post-unified", new Requirement(Reason.AGENT_EQUIVALENT,
-                "post.upsert / post.move / post.publish, and since SH342 a scheduled publish is "
-                + "`when` on post.publish. What is still uncovered is /{id}/translate — SH342's "
-                + "other half, and the harder one: a locale is part of a post's identity in a way an "
-                + "SH79 address does not express (SH323 settled that an address carries no locale)"));
-        byPath.put("/api/v2/site", new Requirement(Reason.AGENT_EQUIVALENT,
-                "site.upsert (SH170) — and this path is the reason that task exists, since a "
-                + "stateless caller here gets a bodiless 403 and the CLI's e2e/provision.mjs walks "
-                + "the CSRF dance by hand"));
+        // SH463 found this one, and it is the instrument paying for itself on its first run: the
+        // entry said POST and the controller's two gestures are both PUT. Neither is a gap, and
+        // neither had ever been written down as a decision.
+        byPath.put("/api/v2/object", agentEquivalent(Set.of("PUT"),
+                "copyto/moveto are the console's gestures. `moveto` is post.move and folder.move, "
+                + "which share the same writers (SH139). `copyto` has no op and needs none: a copy "
+                + "is a read plus a post.upsert at the new address, which is not merely equivalent "
+                + "but better - an op that duplicated an object would have to decide what happens "
+                + "to its id, and SH79's whole point is that the agent never holds one"));
+        // SH463 found the PATCH here too - SH335's partial merge, which had no classification
+        // because the row was written before it existed.
+        byPath.put("/api/v2/post-unified", agentEquivalent(Set.of("POST", "PUT", "DELETE", "PATCH"),
+                "post.upsert / post.move / post.publish / post.delete, and since SH342 a scheduled "
+                + "publish is `when` on post.publish. What is still uncovered is /{id}/translate — "
+                + "SH342's other half, and the harder one: a locale is part of a post's identity in "
+                + "a way an SH79 address does not express (SH323 settled that an address carries no "
+                + "locale). It is a sub-path rather than a verb, so the SH463 check cannot see it "
+                + "and this sentence is still the only record of it. PATCH is SH335's partial "
+                + "merge and has no op deliberately: post.upsert declares WHOLE state (SH168), "
+                + "which is the agent's form, and the merge exists for the editor's concurrency "
+                + "problem - several curators on one site - which an agent does not have"));
+        // SH463 — this row is why the verb granularity exists. It said `site.upsert` and covered
+        // POST and PUT; the controller also declares DELETE, and nothing on the agent surface
+        // removed a site. The entry passed anyway, which is an inventory measuring its own table.
+        byPath.put("/api/v2/site", agentEquivalent(Set.of("POST", "PUT", "DELETE"),
+                "site.upsert (SH170) and site.delete (SH463) — and this path is the reason SH170 "
+                + "exists, since a stateless caller here gets a bodiless 403 and the CLI's "
+                + "e2e/provision.mjs walked the CSRF dance by hand"));
         // /api/v2/staticfile was here, classified AGENT_EQUIVALENT on the reasoning that the
         // `shio_assets` tool and the SH145 projection covered it. SH437 measured that and it was
         // false in the direction that matters: an agent can *read* the media library over MCP and
@@ -182,6 +233,43 @@ class ShStatelessReachabilityLintTest {
     }
 
     @Test
+    @DisplayName("SH463: an agent equivalence covers every verb the controller mutates with")
+    void anAgentEquivalentCoversEveryMutatingVerb() {
+        Map<String, Set<String>> verbs = mutatingVerbs();
+        Map<String, Requirement> classified = sessionRequired();
+
+        List<String> uncovered = new ArrayList<>();
+        List<String> overclaimed = new ArrayList<>();
+        classified.forEach((root, requirement) -> {
+            if (requirement.reason() != Reason.AGENT_EQUIVALENT) {
+                return;
+            }
+            Set<String> declared = verbs.getOrDefault(root, Set.of());
+            declared.stream().filter(verb -> !requirement.covered().contains(verb))
+                    .forEach(verb -> uncovered.add(root + " " + verb));
+            requirement.covered().stream().filter(claimed -> !declared.contains(claimed))
+                    .forEach(claimed -> overclaimed.add(root + " " + claimed));
+        });
+
+        assertThat(uncovered)
+                .as("SH463: the capability is the VERB, not the controller. `/api/v2/site` was "
+                        + "AGENT_EQUIVALENT on the strength of `site.upsert` while the same "
+                        + "controller also declared DELETE - so an agent could create a site and "
+                        + "not remove one, and the inventory built to find exactly that read as "
+                        + "covered. Clearing sixteen scratch sites then took the browser's CSRF "
+                        + "dance, and the conformance suite had hand-rolled a session for it and "
+                        + "called the asymmetry \"not this task's to fix\" in a code comment, filed "
+                        + "nowhere. Either ship the op that covers this verb, or reclassify the "
+                        + "root as a GAP with a task id.")
+                .isEmpty();
+        assertThat(overclaimed)
+                .as("the same rot from the other side (SH142): a claim to cover a verb the "
+                        + "controller no longer declares reads as coverage of something that is "
+                        + "gone, and is how a table starts describing a surface that has moved.")
+                .isEmpty();
+    }
+
+    @Test
     @DisplayName("SH339: the inventory is exactly this, and the run prints it")
     void theInventoryIsTheDeliverable() {
         Map<String, Requirement> classified = sessionRequired();
@@ -249,7 +337,7 @@ class ShStatelessReachabilityLintTest {
     private static final Pattern CLASS_MAPPING = Pattern.compile(
             "@RequestMapping\\(\\s*(?:value\\s*=\\s*)?(\"([^\"]*)\"|[A-Za-z_][\\w.]*)");
     private static final Pattern MUTATING_MAPPING = Pattern.compile(
-            "@(?:Post|Put|Delete|Patch)Mapping\\b");
+            "@(Post|Put|Delete|Patch)Mapping\\b");
     /** {@code public static final String X = "/literal";} — for a mapping given as a constant. */
     private static final Pattern CONSTANT = Pattern.compile(
             "String\\s+(\\w+)\\s*=\\s*\"([^\"]*)\"");
@@ -265,10 +353,26 @@ class ShStatelessReachabilityLintTest {
      * skip — silent under-reporting is the one way a lint like this goes wrong.</p>
      */
     private static List<String> mutatingRoots() {
-        List<String> roots = new ArrayList<>();
+        return List.copyOf(mutatingVerbs().keySet());
+    }
+
+    /**
+     * The same scan, keeping the verbs (SH463).
+     *
+     * <p>The verb was matched and thrown away, which is precisely why a controller could be
+     * classified covered on the strength of one of its three mutating methods. Two controllers may
+     * share a root, so the sets are merged rather than replaced.</p>
+     */
+    private static Map<String, Set<String>> mutatingVerbs() {
+        Map<String, Set<String>> byRoot = new TreeMap<>();
         List<String> unresolved = new ArrayList<>();
         sources().forEach((name, body) -> {
-            if (!MUTATING_MAPPING.matcher(body).find()) {
+            Set<String> verbs = new TreeSet<>();
+            Matcher mutating = MUTATING_MAPPING.matcher(body);
+            while (mutating.find()) {
+                verbs.add(mutating.group(1).toUpperCase(java.util.Locale.ROOT));
+            }
+            if (verbs.isEmpty()) {
                 return;
             }
             Matcher mapping = CLASS_MAPPING.matcher(body);
@@ -293,14 +397,14 @@ class ShStatelessReachabilityLintTest {
                 unresolved.add(name + " (" + mapping.group(1) + " could not be resolved)");
                 return;
             }
-            roots.add(literal);
+            byRoot.computeIfAbsent(literal, ignored -> new TreeSet<>()).addAll(verbs);
         });
 
         assertThat(unresolved)
                 .as("every mutating controller must contribute a root, or this lint reports fewer "
                         + "paths than exist and passes — add the spelling to CLASS_MAPPING")
                 .isEmpty();
-        return roots.stream().distinct().sorted().toList();
+        return byRoot;
     }
 
     /**

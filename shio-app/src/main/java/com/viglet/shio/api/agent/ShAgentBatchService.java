@@ -114,6 +114,7 @@ public class ShAgentBatchService {
      * agent off this surface entirely.
      */
     public static final String SITE_UPSERT = "site.upsert";
+    public static final String SITE_DELETE = "site.delete";
 
     /**
      * SH186 — provisions the three render post-types, which was the last step only REST could take.
@@ -134,14 +135,19 @@ public class ShAgentBatchService {
 
     /** The closed op vocabulary, in the order a teaching error lists it. */
     public static final List<String> OPS = List.of(
-            SITE_UPSERT, FOLDER_UPSERT, FOLDER_MOVE, FOLDER_DELETE, POST_UPSERT, POST_MOVE,
-            POST_PUBLISH, POST_UNPUBLISH, POST_DELETE, RENDER_PROVISION);
+            SITE_UPSERT, SITE_DELETE, FOLDER_UPSERT, FOLDER_MOVE, FOLDER_DELETE, POST_UPSERT,
+            POST_MOVE, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE, RENDER_PROVISION);
 
     /**
      * The ops that destroy something and therefore need confirming (SH108). Everything else
-     * on this surface is recoverable by another write; these two are not.
+     * on this surface is recoverable by another write; these three are not.
+     *
+     * <p>{@code site.delete} (SH463) is the least recoverable of them and the only one with no
+     * trash behind it at all: {@code ShSiteWriteService.delete} trashes each root folder and then
+     * <b>purges</b> it, because a site delete has no undo to preserve. Its plan line says so.</p>
      */
-    public static final List<String> DESTRUCTIVE_OPS = List.of(FOLDER_DELETE, POST_DELETE);
+    public static final List<String> DESTRUCTIVE_OPS =
+            List.of(SITE_DELETE, FOLDER_DELETE, POST_DELETE);
 
     private static final List<ShPostState> BOTH_STATES =
             List.of(ShPostState.DRAFT, ShPostState.PUBLISHED);
@@ -490,6 +496,7 @@ public class ShAgentBatchService {
         String name = op.op() == null ? "" : op.op().trim().toLowerCase(Locale.ROOT);
         return switch (name) {
             case SITE_UPSERT -> siteUpsert(op, session);
+            case SITE_DELETE -> siteDelete(op, session);
             case FOLDER_UPSERT -> folderUpsert(op, session);
             case FOLDER_MOVE -> folderMove(op, session);
             case FOLDER_DELETE -> folderDelete(op, session);
@@ -652,6 +659,53 @@ public class ShAgentBatchService {
         payload.setFurl(text(op.data(), "furl"));
         ShSite created = shSiteWriteService.createBlank(payload, bindings, session.actor);
         return session.change(op, address, Change.CREATE, detail, created.getId());
+    }
+
+    /**
+     * Removes a site and everything in it (SH463).
+     *
+     * <h2>The asymmetry this ends</h2>
+     *
+     * <p>{@code site.upsert} shipped in SH170 for a reason that applies twice over here: creating a
+     * site over {@code POST /api/v2/site} needs a browser session, so the CLI's own provisioning
+     * walked the CSRF dance by hand. Deleting one was left, and the cost turned up as maintenance
+     * rather than as a feature request - clearing sixteen scratch sites took the same dance, and
+     * SH448's conformance teardown had hand-rolled a session for it and recorded the asymmetry in a
+     * code comment ("not this task's to fix"), filed nowhere. A suite that seeds a site per scenario
+     * and cannot remove one after a <em>failed</em> run leaves debris on every red run.</p>
+     *
+     * <h2>Destructive, and the least recoverable op on the surface</h2>
+     *
+     * <p>It carries the SH108 confirm token that {@code folder.delete} and {@code post.delete} carry,
+     * and its plan line says something theirs cannot: <b>there is no trash behind it</b>.
+     * {@code ShSiteWriteService.delete} trashes each root folder and then purges it, because a site
+     * delete has no undo to preserve (SH454). An agent that believed this was restorable would not
+     * offer the human the undo that does not exist, which is the P7 failure the wording exists to
+     * prevent.</p>
+     *
+     * <h2>Unscoped credentials only</h2>
+     *
+     * <p>The same check {@code site.upsert}'s create branch makes, for the sharper reason: a
+     * credential scoped to a site list must not be able to remove a member of it. Scoping is an
+     * allow-list of what may be <em>read and written</em>, never a grant to destroy the container.</p>
+     */
+    private Change siteDelete(ShAgentBatch.Op op, Session session) {
+        ShAddress address = writeAddress(op, ShAddress.Kind.SITE);
+        String name = address.site();
+        Optional<ShSite> existing = siteAccess.find(name);
+        if (existing.isEmpty()) {
+            // A delete of something already gone is a noop, which is what makes a teardown safe to
+            // run twice - and a teardown that failed once is exactly when it gets run again.
+            return session.change(op, address, Change.NOOP, "already absent", null);
+        }
+        requireUnscopedCredential(name);
+        String id = existing.get().getId();
+        if (!session.dryRun) {
+            shSiteWriteService.delete(id, session.actor);
+        }
+        return session.change(op, address, Change.DELETE,
+                "with every folder and post in it, permanently - a site delete is purged rather "
+                        + "than trashed, so this one has no undo", id);
     }
 
     /**

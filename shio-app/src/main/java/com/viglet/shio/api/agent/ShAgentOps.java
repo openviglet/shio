@@ -117,6 +117,11 @@ public final class ShAgentOps {
                     "Create a blank site, or fill an empty url/description/furl on one that "
                             + "exists. `data.postTypeLayout` binds a post-type to a PageLayout "
                             + "title, per key. Never replaces a value somebody set."),
+            new OpSpec(ShAgentBatchService.SITE_DELETE,
+                    List.of(ADDRESS), List.of(), List.of(), List.of(),
+                    "Remove a site and every folder and post in it. Needs `confirm` from its "
+                    + "own dry run, and unlike folder.delete it is PURGED rather than trashed "
+                    + "- there is no undo (SH463)."),
             new OpSpec(ShAgentBatchService.FOLDER_UPSERT,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Create a folder at that whole name chain, or confirm it is there."),

@@ -180,9 +180,9 @@ one — there is no root folder page, and suggesting `folder:Site/` would point 
 not exist. This is P6 and P2, not a capability gap: nothing was missing except the sentence.
 
 - `GET /agent/resolve?address=…` — an address → an object id, for id-keyed endpoints.
-- `POST /agent/batch` — **writes**: N addressed ops (`site.upsert`, `folder.upsert`,
-  `folder.move`, `post.upsert`, `post.move`, `post.publish`, `post.unpublish`, `folder.delete`,
-  `post.delete`) in one transaction; `{"dryRun":true}` reports without writing, and a batch that deletes needs
+- `POST /agent/batch` — **writes**: N addressed ops (`site.upsert`, `site.delete`,
+  `folder.upsert`, `folder.move`, `post.upsert`, `post.move`, `post.publish`, `post.unpublish`,
+  `folder.delete`, `post.delete`) in one transaction; `{"dryRun":true}` reports without writing, and a batch that deletes needs
   SH108's `confirm` from its own dry run. **`?verify=true` returns the run's own proof
   (SH157)** — the SH99 lint over exactly the addresses it touched, which removes the closing
   turn of every write-then-check loop and is better than a separate `/agent/verify` because
@@ -765,6 +765,35 @@ tests, P5 has `ShByteStabilityLintTest`, P6 has a `fix` on every 4xx and P10 has
 half-truth came back as SH326's `serverRender: true`, and SH170's session+CSRF friction came back
 as SH327 and SH335 — the same classes, two blocks apart, each found by a human doing a build rather
 than by a build failing. **Before "fix the thirteen instances", ask what would have failed.**
+
+**`site.delete` closes the other half of SH170 (SH463)**, and the instrument half of that task is
+worth more than the verb. An agent could create a site and not remove one, so clearing sixteen
+scratch sites took the browser's dance: `DELETE /api/v2/site/{id}` with Basic auth answered **403**
+on all sixteen and only `GET /api/v2/csrf` + its cookie + the echoed token worked. It is
+maintenance rather than an edge case — SH448's suite seeds a site per scenario and a **failed**
+test never reaches teardown, so every red run leaves debris, and the suite's own harness had
+hand-rolled a session for it and called the asymmetry "not this task's to fix" in a code comment,
+filed nowhere. The op is destructive (SH108's confirm token) and its plan line says the thing
+`folder.delete`'s cannot: **it is purged, not trashed, so there is no undo** —
+`ShSiteWriteService.delete` trashes each root folder and then purges it (SH454), and an agent that
+read this as restorable would not offer the human an undo that does not exist. Scoped credentials
+are refused: an allow-list says what may be read and written, never that the container may be
+destroyed.
+
+**Two instruments existed to find that gap and neither could — which is the part to remember
+(SH463).** `ShAgentP1ConformanceTest` is keyed on manifest `features`, and site deletion had **no
+key**, so it was not classified at all: an inventory keyed on what the manifest advertises measures
+the manifest, not the surface. `ShStatelessReachabilityLintTest` classified a whole controller
+**root**, so `/api/v2/site` read as covered on the strength of `site.upsert` while the same
+controller declared `DELETE` as well. Both are fixed in the same commit as the verb: `siteDelete`
+is a feature key (so the classification is forced), and an `AGENT_EQUIVALENT` entry now **names the
+HTTP verbs its agent form delivers**, asserted both ways against the verbs the source declares. On
+its first run the new check found two more undeclared decisions nobody had written down —
+`/api/v2/object PUT` (`copyto` has no op and needs none: a copy is a read plus a `post.upsert` at
+the new address, which is better, because an op that duplicated an object would have to decide what
+happens to its id) and `/api/v2/post-unified PATCH` (SH335's partial merge has no op deliberately:
+`post.upsert` declares *whole* state, and the merge exists for the editor's several-curators
+problem, which an agent does not have).
 
 **P1 has an instrument now, and its exception list is the inventory (SH338).**
 `ShAgentP1ConformanceTest` classifies **every** key in the manifest's `features` map — a key
