@@ -56,22 +56,36 @@ import tools.jackson.databind.JsonNode;
  *                here. Off by default and never implied: prune is the one operation
  *                whose blast radius grows with content the author never mentioned (P7),
  *                which is why the plan lists every deletion before {@code apply} runs
+ * @param createSite create {@code site}, blank, as this run's <em>first</em> step when it is
+ *                not there (SH439). Opt-in for the same reason {@code prune} is: a document
+ *                naming a site nobody made is usually a typo, and the refusal that catches
+ *                it is worth more than the convenience of guessing (P7). Compiles to the
+ *                {@code site.upsert} op the batch surface already has, which is what makes a
+ *                <em>dry run</em> of a document into a new site resolve — SH329 reads the
+ *                sites a run would create off the run's own ops
  *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
 public record ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
-                                  List<Move> moves, boolean prune, String confirm) {
+                                  List<Move> moves, boolean prune, String confirm,
+                                  boolean createSite) {
 
     /** The four-field form: every document that does not prune, and every pre-SH108 caller. */
     public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts, boolean prune) {
-        this(site, folders, posts, null, prune, null);
+        this(site, folders, posts, null, prune, null, false);
     }
 
     /** The five-field form: pre-SH150 callers, which never moved anything. */
     public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
                                boolean prune, String confirm) {
-        this(site, folders, posts, null, prune, confirm);
+        this(site, folders, posts, null, prune, confirm, false);
+    }
+
+    /** The six-field form: pre-SH439 callers, which never created the site they wrote into. */
+    public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
+                               List<Move> moves, boolean prune, String confirm) {
+        this(site, folders, posts, moves, prune, confirm, false);
     }
 
     /**

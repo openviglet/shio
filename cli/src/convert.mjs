@@ -45,9 +45,13 @@ export const THEME_FOLDER = "/theme";
  * @param {object} input.proposal the proposal computed from the capture **now**
  * @param {{accepted?: Array<{block: string, type: string}>}} input.plan the reviewed decisions
  * @param {string} input.site the site to write into
+ * @param {boolean} [input.createSite] make the site as the run's first step (SH439). The key is
+ *   written into the document only when asked, so an `--out` file is the same bytes it was
+ *   before for every caller that did not ask (P5) — and carries the intent for the one that did,
+ *   which is what makes `shio apply conversion.json` mean what `shio convert` meant
  * @returns {{document: object|null, stale: string[], sections: object[], extras: string[]}}
  */
-export function buildConversion({ proposal, plan = {}, site }) {
+export function buildConversion({ proposal, plan = {}, site, createSite = false }) {
   const accepted = (plan.accepted ?? []).map((entry) => ({ ...entry }));
   const byId = new Map((proposal?.candidates ?? []).map((row) => [row.id, row]));
   const stale = accepted.filter((entry) => !byId.has(entry.block)).map((entry) => entry.block).sort();
@@ -83,6 +87,9 @@ export function buildConversion({ proposal, plan = {}, site }) {
   return {
     document: {
       site,
+      // SH439 — present only when asked. Creating a site nobody named is the surprise P7 forbids,
+      // and an absent key is what every document written before this said.
+      ...(createSite ? { createSite: true } : {}),
       folders: folders.map((path) => ({ path })),
       posts,
     },

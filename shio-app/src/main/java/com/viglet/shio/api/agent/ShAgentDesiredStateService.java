@@ -173,7 +173,17 @@ public class ShAgentDesiredStateService {
             }
         }
 
-        List<ShAgentBatch.Op> ops = new ArrayList<>(folders);
+        List<ShAgentBatch.Op> ops = new ArrayList<>();
+        // SH439 — `createSite` first, before the folder a post needs. It is the whole flag: the op
+        // is `site.upsert`, so an apply creates the site and a *plan* resolves against it too,
+        // because SH329's `withSitesFrom` reads the sites a run would create off the run's own ops.
+        // Nothing else here changes — that is the point of compiling to an op rather than teaching
+        // this class what a site is (P10).
+        if (desired.createSite()) {
+            ops.add(op(ShAgentBatchService.SITE_UPSERT, ShAddress.site(site).toString(),
+                    null, null, null));
+        }
+        ops.addAll(folders);
         ops.addAll(folderMoves);
         ops.addAll(movedFolders);
         ops.addAll(moves);

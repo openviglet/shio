@@ -239,6 +239,14 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   posts first and folders deepest-first; declared folders, their ancestors, any folder
   a declared post calls home, **and the source of every declared move (SH150)** are protected.
   Also `shio apply <file>` in the CLI (`--dry-run` / `--check` / `-` for stdin).
+  **`createSite: true` makes the site the document names, as the run's first op (SH439)** — it
+  compiles to `site.upsert`, which is what also fixes the *plan*: SH329's `withSitesFrom` reads the
+  sites a run would create off the run's own ops, so a dry run into a new site resolves instead of
+  404-ing. Opt-in like `prune`, because a document naming a site nobody made is usually a typo and
+  the refusal that catches it is worth more than guessing (P7). Reached from `shio apply
+  --create-site` and `shio convert --create-site`, one meaning in both. Deliberately **not** an MCP
+  argument, for the reason `ShApplyTool` already gives about `blueprint`'s copy of the flag:
+  `tools/list` is re-sent every turn (P3), and `shio_write` takes `site.upsert` for free.
   **`moves` is the document's one intent channel for a *post* (SH150)** — `{from, to?, folder?}`,
   compiled to `post.move` after folders and before upserts. **A folder's is `movedFrom` on its own
   `folders` entry (SH211)**, since a folder's name chain is its address and the destination is

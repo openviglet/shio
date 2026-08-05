@@ -302,3 +302,44 @@ test("a prune that would delete nothing needs no confirm and no second thought",
   assert.equal(JSON.parse(fetchImpl.calls[1].init.body).confirm, undefined);
   assert.doesNotMatch(ctx.stdout.text, /deleting/);
 });
+
+// --- SH439: one meaning for --create-site ---
+
+test("SH439: --create-site on the document mode, so the flag means one thing in both", async () => {
+  // It was a blueprint-only flag, and the document half's absent-site refusal named a `site.upsert`
+  // op instead — the same message `shio convert` could not act on. One flag, one compiled op.
+  const fetchImpl = scriptedFetch({ dryRun: false, ops: 2, changed: 2, results: [] });
+  const ctx = ctxWith(fetchImpl);
+
+  await apply.run({ createSite: true }, ["site.json"], ctx);
+
+  assert.deepEqual(JSON.parse(fetchImpl.calls[0].init.body), { ...DOCUMENT, createSite: true });
+});
+
+test("SH439: without the flag the document is untouched", async () => {
+  const fetchImpl = scriptedFetch({ dryRun: false, ops: 1, changed: 1, results: [] });
+  const ctx = ctxWith(fetchImpl);
+
+  await apply.run({}, ["site.json"], ctx);
+
+  assert.ok(!("createSite" in JSON.parse(fetchImpl.calls[0].init.body)));
+});
+
+test("SH439: an absent site names the flag, and any other 404 is left exactly as it came", async () => {
+  const unknownSite = {
+    type: "https://shio.viglet.com/errors/unknown-site",
+    title: "No readable site 'Ghost'",
+    fix: "Address a site that exists, or add a `site.upsert` op for it earlier in the same batch.",
+  };
+  const retold = await apply.run({}, ["site.json"], ctxWith(scriptedFetch(unknownSite, { status: 404 })))
+    .then(() => null, (error) => error);
+  assert.match(JSON.parse(retold.body).fix, /--create-site/);
+  assert.equal(JSON.parse(retold.body).example, "shio apply --site Blog --create-site");
+
+  // The narrowness is the point: `--create-site` offered at a post-type problem is advice that
+  // cannot work, which is the defect this task is about, pointed the other way.
+  const elsewhere = { type: "https://shio.viglet.com/errors/unknown-post-type", title: "No post-type 'Hero'", fix: "Create it first." };
+  const untouched = await apply.run({}, ["site.json"], ctxWith(scriptedFetch(elsewhere, { status: 404 })))
+    .then(() => null, (error) => error);
+  assert.deepEqual(JSON.parse(untouched.body), elsewhere);
+});

@@ -110,7 +110,8 @@ Commands:
   impact <addr>  What a change to this template would affect: layouts, types, page counts
   apply [file]   Plan/apply a desired-state content document (--dry-run, --check, - for stdin)
                  or a ready-made package (--blueprint <name> --site <site>;
-                  --create-site makes the site, --merge-post-types adds missing fields)
+                  --merge-post-types adds missing fields). --create-site makes the site
+                  in either mode, and means the same thing on convert
   import <file>  Clone an SH68 exchange package (.zip) into this instance — the way to accept
                  a site somebody hands you (export it with GET /api/v2/site/{id}/export)
   blueprints     List the appliable starting points (blueprints <name> for its parameters)

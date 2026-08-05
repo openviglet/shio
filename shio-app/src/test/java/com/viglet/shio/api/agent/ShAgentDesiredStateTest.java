@@ -29,6 +29,7 @@ import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
 import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
+import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
@@ -150,9 +151,11 @@ class ShAgentDesiredStateTest {
             String confirm = desired.prune()
                     ? shAgentDesiredStateService.plan(desired, false, "tester").confirm()
                     : null;
+            // Every field, not the five the confirm case used to copy: a rebuild that drops one is a
+            // helper that quietly tests a different document than the one it was handed (SH439).
             ShAgentDesiredState confirmed = confirm == null ? desired
                     : new ShAgentDesiredState(desired.site(), desired.folders(), desired.posts(),
-                            desired.prune(), confirm);
+                            desired.moves(), desired.prune(), confirm, desired.createSite());
             return shAgentDesiredStateService.apply(confirmed, false, "tester");
         });
     }
@@ -444,5 +447,89 @@ class ShAgentDesiredStateTest {
 
         assertThatThrownBy(() -> plan(anonymous))
                 .isInstanceOf(ShAgentDesiredStateService.MissingPostUrlException.class);
+    }
+
+    // --- createSite (SH439) ---
+
+    /** A document into a site that is not there, which is the normal shape of a replication. */
+    private ShAgentDesiredState intoNewSite(String site, boolean createSite) {
+        return new ShAgentDesiredState(site, List.of(new ShAgentDesiredState.Folder("/pages")),
+                List.of(new ShAgentDesiredState.Post("/pages/home", postTypeName, "/pages",
+                        data("Home"), null)),
+                null, false, null, createSite);
+    }
+
+    /**
+     * The flag is one op, and it is the first one.
+     *
+     * <p>Which is the whole design: the site has to exist before the folder a post needs, and
+     * compiling to {@code site.upsert} rather than calling a write service means one op decides
+     * what creating a site means — blank, never an update, refused for an SH2-scoped credential
+     * (P10).</p>
+     */
+    @Test
+    void createSiteCompilesToOneSiteUpsertBeforeEverythingElse() {
+        List<ShAgentBatch.Op> ops = shAgentDesiredStateService
+                .compile(intoNewSite("new-site-" + UUID.randomUUID(), true));
+
+        assertThat(ops.stream().map(ShAgentBatch.Op::op).toList()).containsExactly(
+                ShAgentBatchService.SITE_UPSERT, ShAgentBatchService.FOLDER_UPSERT,
+                ShAgentBatchService.POST_UPSERT);
+        assertThat(shAgentDesiredStateService.compile(intoNewSite(siteName, false)))
+                .noneMatch(op -> ShAgentBatchService.SITE_UPSERT.equals(op.op()));
+    }
+
+    /**
+     * SH439 — the defect, at the surface it was reported on.
+     *
+     * <p>{@code shio convert --site Viglet2} printed its plan and then refused with the write
+     * resolver's fix: add a {@code site.upsert} op earlier in the same batch. Correct advice on the
+     * batch surface and un-followable on a document, which takes no ops — P6 makes an instruction
+     * naming something that does not exist worse than none. The refusal itself is right, so it
+     * stays: what changes is that the caller can now express the remedy.</p>
+     */
+    @Test
+    void aDocumentIntoAnAbsentSiteIsRefusedUntilItAsksForTheSite() {
+        String absent = "absent-site-" + UUID.randomUUID();
+
+        // The batch re-raises the resolver's problem with `at` added, so the slug is what identifies
+        // it — and the fix it carries is the `site.upsert` sentence this task is about.
+        assertThatThrownBy(() -> plan(intoNewSite(absent, false)))
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class)
+                .satisfies(thrown -> {
+                    ShProblem problem = ((ShAgentBatchService.BatchOpException) thrown).problem();
+                    assertThat(problem.slug()).isEqualTo("unknown-site");
+                    assertThat(problem.toProblemDetail().getProperties())
+                            .extractingByKey("fix").asString().contains("site.upsert");
+                });
+
+        // And with the flag it resolves — on a *plan*, which is the half that could not work by
+        // asking the database, because nothing has been created yet. SH329's `withSitesFrom` reads
+        // the site off this run's own first op, so the plan describes its own first step.
+        ShAgentChangeSet planned = plan(intoNewSite(absent, true));
+
+        assertThat(planned.dryRun()).isTrue();
+        assertThat(planned.results()).extracting(Change::op).containsExactly(
+                ShAgentBatchService.SITE_UPSERT, ShAgentBatchService.FOLDER_UPSERT,
+                ShAgentBatchService.POST_UPSERT);
+        assertThat(planned.changed()).isEqualTo(3);
+        // And a plan that describes creating a site still creates none — the endpoint's one promise.
+        assertThatThrownBy(() -> shAddressResolver.resolve("site:" + absent))
+                .isInstanceOf(ShAddressResolver.UnresolvedAddressException.class);
+    }
+
+    /** And the apply makes it so — then the same document is a noop, which is the shape's promise. */
+    @Test
+    void createSiteAppliesAndThenConverges() {
+        String fresh = "fresh-site-" + UUID.randomUUID();
+
+        ShAgentChangeSet applied = apply(intoNewSite(fresh, true));
+
+        assertThat(actions(applied)).containsExactly(Change.CREATE, Change.CREATE, Change.CREATE);
+        assertThat(shAddressResolver.resolve("post:" + fresh + "/pages/home").kind())
+                .isEqualTo("post");
+        // Re-running is the property the whole document shape exists for, and `createSite` must not
+        // cost it: a second run's `site.upsert` is a noop, not a second site and not an error.
+        assertThat(plan(intoNewSite(fresh, true)).changed()).isZero();
     }
 }

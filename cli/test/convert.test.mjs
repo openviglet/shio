@@ -278,3 +278,81 @@ test("SH436: a sound instance is not asked twice, and a dry run does not ask at 
     "a dry run writes nothing, so a precondition on writing has nothing to guard",
   );
 });
+
+// --- SH439: a refusal that names a remedy this surface can express ---
+//
+// `shio convert --site Viglet2` against an absent site printed the plan and then refused with the
+// write resolver's fix: "add a `site.upsert` op for it earlier in the same batch." Un-followable
+// here — `convert` composes its own document and takes no ops — and it landed at the worst moment,
+// because converting into a **new** site is the normal shape of a replication. P6 makes an
+// instruction naming something that does not exist worse than none. So the flag, and the message.
+
+test("SH439: --create-site rides the document, and its absence leaves the document as it was", () => {
+  const proposal = { candidates: [candidate("b1a2")] };
+  const plan = { accepted: [{ block: "b1a2", type: "SectionHero" }] };
+
+  const asked = buildConversion({ proposal, plan, site: "Acme", createSite: true });
+  assert.equal(asked.document.createSite, true);
+
+  const not = buildConversion({ proposal, plan, site: "Acme" });
+  assert.ok(
+    !("createSite" in not.document),
+    "absent rather than false: every document written before SH439 is the same bytes, and creating "
+      + "a site nobody asked for is the surprise P7 forbids (P5)",
+  );
+});
+
+test("SH439: `convert --create-site` sends the flag, and `--out` writes it into the file", async () => {
+  const probe = ctxWith();
+  const id = await idOf(probe);
+  const plan = { accepted: [{ block: id, type: "SectionHero" }] };
+
+  const wet = ctxWith({ plan });
+  await convert.run({ site: "Acme", createSite: true }, [], wet);
+  const sent = JSON.parse(wet.calls.find((call) => call.url.includes("/agent/apply")).body);
+  assert.equal(sent.createSite, true, "the flag is the document's, so plan and apply agree by construction");
+
+  const out = ctxWith({ plan });
+  await convert.run({ site: "Acme", createSite: true, out: "conversion.json" }, [], out);
+  const document = JSON.parse(out.written[norm("/repo/conversion.json")]);
+  assert.equal(
+    document.createSite,
+    true,
+    "an --out document must mean what the run meant, or `shio apply conversion.json` is a different act",
+  );
+});
+
+test("SH439: an absent site is refused with --create-site, not with an op convert cannot take", async () => {
+  const probe = ctxWith();
+  const id = await idOf(probe);
+  const ctx = ctxWith({
+    plan: { accepted: [{ block: id, type: "SectionHero" }] },
+    // The write resolver's own body, verbatim in shape: correct on the batch surface, and the
+    // reason this task exists on this one.
+    fetchImpl: (url) => (url.includes("/agent/apply") || url.includes("/agent/plan")
+      ? json({
+        type: "https://shio.viglet.com/errors/unknown-site",
+        title: "No readable site 'Viglet2'",
+        detail: "No site with that id or name is visible to this credential.",
+        fix: "Address a site that exists, or add a `site.upsert` op for it earlier in the same batch.",
+        example: "{\"op\":\"site.upsert\",\"address\":\"site:Viglet2\"}",
+      }, 404)
+      : json([])),
+  });
+
+  const failure = await convert.run({ site: "Viglet2" }, [], ctx).then(() => null, (error) => error);
+
+  assert.ok(failure, "an absent site is still a refusal — the flag is the remedy, not the default");
+  const problem = JSON.parse(failure.body);
+  assert.match(problem.fix, /--create-site/);
+  assert.ok(
+    !problem.fix.includes("site.upsert"),
+    "the op is what this surface cannot express; naming it is the defect, not the message's length",
+  );
+  assert.equal(problem.example, "shio convert --site Viglet2 --create-site");
+  assert.equal(
+    problem.title,
+    "No readable site 'Viglet2'",
+    "and the resolver's own title, detail and didYouMean stay: they are about the site, not the surface",
+  );
+});

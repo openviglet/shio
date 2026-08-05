@@ -931,6 +931,7 @@
 - **SH436** — A proposal carries the post-type fields the target must declare, derived from what it holds and naming the reconcile call.
 - **SH417** — shio convert turns an accepted plan into sections, a theme and scripts through the desired-state path, in DRAFT, refusing a stale acceptance.
 - **SH429** — Downloaded bytes no post references are a finding of their own, so a replica whose images 404 stops reading as complete.
+- **SH439** — createSite rides the desired-state document as a site.upsert op, so convert and apply share one --create-site, the dry run resolves, and the refusal names the flag.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

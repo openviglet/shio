@@ -1574,31 +1574,6 @@ appearing published is the surprise P7 forbids. And the page's friendly URL is t
 which for a home page is `post:<site>/`, the form SH433 just made discoverable. A block
 accepted on several pages belongs to each of them.
 
-### XVII.29 A refusal that names another surface's remedy (SH439)
-
-`shio convert --site Viglet2` against a site that does not exist prints the plan, then
-refuses with `No readable site 'Viglet2'` and the fix `Address a site that exists, or
-add a site.upsert op for it earlier in the same batch.` That is un-followable here:
-`convert` takes no ops. Its flags are `--site`, `--dry-run`, `--check`, `--out`,
-`--ids`, `--limit`, `--inventory` and `--json` — no `--create-site`, which `shio apply`
-does have, for exactly this.
-
-The message is the shared write resolver's, where it is correct: a caller composing a
-batch can add the op. `convert` composes its own document and hands it over, so the one
-thing the reader is told to do is the one thing this surface cannot express. P6 makes an
-instruction naming something that does not exist worse than none, and SH329 settled this
-case by having a dry run resolve against sites the same run would create.
-
-It lands at the worst moment. Converting into a **new** site is the normal shape of a
-replication, so the first real run of the phase hits a refusal whose remedy is
-elsewhere. Closing it by hand meant a `site.upsert` through `/agent/batch`, a surface a
-caller using the CLI has no reason to be holding.
-
-Either `convert` grows `--create-site`, matching `apply` so the flag means one thing in
-both, or the refusal names a command that exists. The first is better: a conversion that
-must not create a site is the rarer case, and `--dry-run` already shows what would
-happen.
-
 ### XVII.30 A chrome asset belongs to the site, not to a block (SH441)
 
 SH429 made stranded bytes a finding and the rule fires correctly:

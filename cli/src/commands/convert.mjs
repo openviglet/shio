@@ -24,12 +24,18 @@
  * them. The proposal already states its preconditions; this is the first moment there is an instance
  * to check them against, so it asks `GET /api/v2/render/post-types/drift` before it writes and names
  * the reconcile call in the refusal. Skipped on a dry run and on `--out`, which touch no instance.
+ *
+ * An **absent site** is the third, and until SH439 it was the one refusal a reader could not act on:
+ * the resolver's fix is to add a `site.upsert` op, and this command takes no ops. Converting into a
+ * *new* site is the normal shape of a replication, so `--create-site` exists — the same flag `apply`
+ * has, compiled to the same op — and the refusal now names it.
  */
 import { join } from "node:path";
 
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { buildConversion, describeConversion, staleMessage } from "../convert.mjs";
+import { retellUnknownSite } from "../unknown-site.mjs";
 import { proposalFor } from "./propose.mjs";
 
 /**
@@ -46,6 +52,7 @@ desired-state path shio apply uses, so running it twice changes nothing the seco
 Every post lands in DRAFT. Publishing is a separate, explicit call.
 
   --site <name>        The site to write into (required)
+  --create-site        Create the site (blank) if it does not exist, as the first step
   --dry-run            Print the plan the instance would apply, and write nothing
   --check              Drift guard: plan, and exit non-zero if anything would change
   --out <file>         Write the desired-state document to a file and apply nothing
@@ -56,7 +63,7 @@ Every post lands in DRAFT. Publishing is a separate, explicit call.
 
 Examples:
   shio convert --site Acme --dry-run
-  shio convert --site Acme
+  shio convert --site Acme --create-site
   shio convert --site Acme --out conversion.json
 `;
 
@@ -76,7 +83,12 @@ export async function run(flags, positionals, ctx) {
   // The plan file and the proposal computed from the capture NOW: the pair is the whole point, since
   // an acceptance is only checkable against the candidates the current markup produces.
   const { proposal, plan } = await proposalFor(flags, ctx, "convert");
-  const { document, stale, sections, extras } = buildConversion({ proposal, plan, site });
+  const { document, stale, sections, extras } = buildConversion({
+    proposal,
+    plan,
+    site,
+    createSite: Boolean(flags.createSite),
+  });
   if (stale.length) {
     throw new Error(staleMessage(stale, typeof flags.out === "string" ? flags.out : null));
   }
@@ -108,9 +120,15 @@ export async function run(flags, positionals, ctx) {
 
   ctx.stdout.write(describeConversion({ document, sections, extras, requires: proposal.requires },
     flags));
-  const result = planOnly
-    ? await client.plan(document, { ids: Boolean(flags.ids) })
-    : await client.apply(document, { ids: Boolean(flags.ids) });
+  // SH439 — the write resolver's "add a `site.upsert` op" is un-followable here, because `convert`
+  // composes its own document and takes no ops. The flag above is the remedy; this makes the
+  // refusal name it, for the caller who has not passed it yet.
+  const result = await (planOnly
+    ? client.plan(document, { ids: Boolean(flags.ids) })
+    : client.apply(document, { ids: Boolean(flags.ids) })
+  ).catch((error) => {
+    throw retellUnknownSite(error, { command: "convert", site });
+  });
 
   if (flags.json) {
     ctx.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

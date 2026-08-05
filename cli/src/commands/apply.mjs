@@ -29,6 +29,7 @@ import { dirname, join } from "node:path";
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { writeProjectFiles } from "../project-files.mjs";
+import { retellUnknownSite } from "../unknown-site.mjs";
 
 /**
  * What `shio apply --help` prints (SH435).
@@ -51,7 +52,7 @@ compaction. - reads the document from stdin.
   --site <site>          With --blueprint: the site to apply it into (required)
   --param k=v            With --blueprint: one parameter value; repeat for several
   --params <file.json>   With --blueprint: values from a file (--param wins over it)
-  --create-site          With --blueprint: create the site (blank) if it does not exist
+  --create-site          Create the site (blank) if it does not exist, as the first step
   --merge-post-types     With --blueprint: add fields an existing post-type lacks; never
                          changes one
   --force                With --blueprint: overwrite existing front-end files
@@ -68,16 +69,24 @@ export async function run(flags, positionals, ctx) {
   }
   const source = positionals[0] ?? flags.file;
   const document = await readDocument(source, ctx);
+  // SH439 — the same flag the blueprint half has always had, on the document half too, so
+  // `--create-site` means one thing in this command and in `shio convert`. The flag wins over the
+  // document's own key rather than merging: a document that already declares it is unchanged, and
+  // a caller who typed the flag asked for it here.
+  if (flags.createSite) document.createSite = true;
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
   const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
 
   // `--check` is a plan by definition: a drift guard that could write would not be a
   // guard. `--dry-run` is the same call under the name the other verbs use.
   const planOnly = Boolean(flags.check || flags.dryRun);
-  const result = planOnly
-    ? await client.plan(document, { ids: Boolean(flags.ids) })
-    : await client.applyConfirmed(document, { ids: Boolean(flags.ids) },
-        (plan) => ctx.stdout.write(renderDeletions(plan)));
+  const result = await (planOnly
+    ? client.plan(document, { ids: Boolean(flags.ids) })
+    : client.applyConfirmed(document, { ids: Boolean(flags.ids) },
+        (plan) => ctx.stdout.write(renderDeletions(plan)))
+  ).catch((error) => {
+    throw retellUnknownSite(error, { command: "apply", site: document?.site ?? "<name>" });
+  });
 
   ctx.stdout.write(render(result, planOnly));
 

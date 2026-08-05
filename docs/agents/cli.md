@@ -262,6 +262,24 @@ current markup produces — `proposalFor` is exported from `propose` so there is
 what a candidate is. `--out <file>` writes the document and applies nothing, which is what lets the
 SH422 chain test cover this phase without an instance.
 
+**`--create-site`, because the fourth refusal named a remedy this surface cannot express (SH439).**
+`shio convert --site Viglet2` against an absent site printed the plan and then refused with *"add a
+`site.upsert` op for it earlier in the same batch"* — the shared write resolver's fix, right on the
+batch surface and un-followable here, since `convert` composes its own document and takes no ops.
+P6 makes an instruction naming something that does not exist worse than none, and it landed at the
+worst moment: converting into a **new** site is the normal shape of a replication, so the first real
+run of the phase hit it, and closing it by hand meant a `site.upsert` through `/agent/batch` — a
+surface a caller holding the CLI has no reason to be holding. So the flag, on `convert` *and* on
+`apply`'s document mode, where it had been blueprint-only: one flag, one compiled `site.upsert`, one
+meaning. It rides the **document** rather than the request, so an `--out` file means what the run
+meant and `shio apply conversion.json` is the same act — and the key is written only when asked, so
+every document produced before this is the same bytes (P5). Opt-in rather than default, because
+creating a site nobody named is the surprise P7 forbids; `--dry-run` shows what would happen, and
+works now, which it could not before (the plan resolves the site off its own first op — SH329).
+`unknown-site.mjs` is the other half: on `convert` and `apply` the refusal's `fix` and `example` are
+rewritten to name the flag, and *only* for the `unknown-site` problem — offering `--create-site` at
+some other 404 would be this same defect pointed the other way, which is what the test pins.
+
 **The proposal states its own preconditions, because the field it writes into may not exist (SH436).**
 On a real instance `Theme` declared `TITLE`, `CSS` and `JAVASCRIPT` and **no `TOKENS`**: the post-type
 predates SH195, `ensure` deliberately never touches an existing one, and SH289's reconcile is additive
