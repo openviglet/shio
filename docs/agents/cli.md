@@ -687,6 +687,31 @@ that **no second `process.exit` exists anywhere under `cli/src/`**: the defect w
 reached from many commands, and the next one added beside a command would be invisible until somebody
 read an exit code outside a shell, which is exactly how it survived SH434.
 
+**And then it did not call `process.exit` at all, which is what actually fixed it (SH445).** SH440
+shipped and the crash was still there: measured against a live instance at the shipping revision,
+`resolve post:<absent>/x` and `verify --site <absent>` each printed the teaching error, then the
+libuv assertion, then **-1073740791**. The disarm was not the problem and was not useless —
+`getActiveResourcesInfo()` goes from `["PipeWrap","TCPSocketWrap","Immediate"]` to `["PipeWrap"]`, so
+the socket and the dispatcher really are gone. **`PipeWrap` is stdio**, and on Windows a
+stdout/stderr connected to a pipe is *asynchronous*: `process.exit` can run with a write still in
+flight, and libuv then signals that write's completion on a handle it is closing. That is why it
+reproduces under a pipe and under redirection but not in a terminal, and why "write to stderr and
+exit" is clean on its own — it takes a request **and** a pending write, the one combination no
+harness had. So `finish` now disarms, sets `process.exitCode`, and **returns**; the disarm is what
+makes returning affordable (SH440 measured `exitCode` alone waiting out undici's 4 s
+`keepAliveTimeout`, and there is nothing left to wait for once the layer is down), and returning is
+what removes the abort. An **`unref`'d 5 s watchdog** covers the case SH440 kept `process.exit` for —
+a loop held by something that is not the request layer — without delaying a healthy exit, because an
+unref'd timer does not hold the loop. Measured after: exit **1** in ~130 ms against the stub and
+~160 ms against the live instance. **The test is the deliverable here.** SH440's stub answers with
+two headers and a short body, and the binary exits 1 against it *at the broken revision too* — which
+is why SH440 shipped believing it was done. Bisected deterministically over three runs: two headers
+exits 1, `set-cookie` added exits 1, and only the full live header set reproduces, so the trigger is
+a threshold rather than any header's meaning and `exit-path.test.mjs` sends what the instance sends
+without trimming it. Three tasks in a row — SH434, SH440, this — were measured against a harness
+rather than against the failing command; the rule that falls out is that a fix for a crash owes a
+harness that **fails first**.
+
 **`shio impact <address>` exists and `shio read` deliberately does not (SH288).** The task was
 filed as "the CLI cannot show one post", and only half of that is a gap. A post's **content** is on
 disk after `pull --content`, where `Grep` and `Edit` are the cheapest tools an agent has (P4), so a

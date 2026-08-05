@@ -374,31 +374,6 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
-### IX.22 Measured against the harness, not against the command (SH445)
-
-SH440 shipped and its crash is still there. Measured against a live instance, exit codes
-read outside the shell: `resolve post:<absent>/x`, `verify --site <absent>` and `convert
---site <absent>` each print their teaching error, then the libuv `UV_HANDLE_CLOSING`
-assertion, then exit **-1073740791**. Reproduced under a pipe and under file
-redirection, at the shipping revision with `await finish(1)` on both paths.
-
-What SH440 did works, and three checks put the cause elsewhere.
-`getActiveResourcesInfo()` at exit shows no `TCPWrap` and no dispatcher, so the disarm
-did disarm. A minimal script that fetches, destroys both `undici.globalDispatcher` slots
-and exits 1 is clean, so the sweep is not the trigger. Minimal scripts that write to
-stderr and exit, or fetch and then exit, are clean too — so this is not Node 26 on
-Windows, it is this CLI. The surviving handle is created on the path that reads a failed
-response and throws, not in the layer the sweep targets.
-
-One narrowing is **unproven** and must be re-run: with the instance stopped, the same
-three commands exited 1 cleanly, which would mean the trigger needs a completed HTTP
-response rather than a refused connection. Single run as the instance went down, and
-`fetch failed` is a different path — a lead, not a finding.
-
-The lesson is the shape, three deep: SH434 fixed the browser path, SH440 the request
-layer, each measured against a harness rather than the failing command. The exit code of
-a real remote failure is the assertion this needs.
-
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the

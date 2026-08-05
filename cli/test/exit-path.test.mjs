@@ -93,21 +93,21 @@ test("SH440: `close()` is the fallback where a dispatcher has no `destroy()`", a
   assert.deepEqual(record, ["close.9"]);
 });
 
-test("SH440: a dispatcher that refuses to close does not hold up the exit", async () => {
+test("SH440: a dispatcher that refuses to close does not lose the code", async () => {
   const global = {};
   global[Symbol.for("undici.globalDispatcher.1")] = {
     async destroy() {
       throw new Error("socket is already gone");
     },
   };
-  const ended = [];
+  const proc = { exit() {}, exitCode: 0 };
 
-  await finish(3, { proc: { exit: (code) => ended.push(code) }, global });
+  await finish(3, { proc, global, schedule: () => ({ unref() {} }) });
 
-  assert.deepEqual(ended, [3], "the caller decided a code; a teardown error is not a reason to lose it");
+  assert.equal(proc.exitCode, 3, "the caller decided a code; a teardown error is not a reason to lose it");
 });
 
-test("SH440: the request layer is disarmed *before* the process ends", async () => {
+test("SH445: the request layer is disarmed, and then nothing calls process.exit", async () => {
   const order = [];
   const global = globalWithDispatchers(order);
   const proc = {
@@ -116,15 +116,36 @@ test("SH440: the request layer is disarmed *before* the process ends", async () 
     },
   };
 
-  await finish(1, { proc, global });
+  const watchdog = await finish(1, { proc, global, schedule: () => ({ unref() { order.push("unref"); } }) });
 
   assert.deepEqual(
     order,
-    ["destroy.1", "destroy.2", "exit.1"],
-    "this ordering is the whole fix: `process.exit` with a fetch handle still live is what asserted "
-      + "in libuv's teardown and returned 0xC0000409 instead of 1",
+    ["destroy.1", "destroy.2", "unref"],
+    "SH440 asserted `exit.1` at the end of this list, and that call was the surviving crash: with a "
+      + "request behind it, `process.exit` runs while a piped stdout write is still in flight and "
+      + "libuv signals the completion on a closing handle. The disarm is what makes returning "
+      + "affordable; returning is what fixes it",
   );
-  assert.equal(proc.exitCode, 1, "and the code is set before the await, so a teardown that dies still carries it");
+  assert.equal(proc.exitCode, 1, "the code is set before the await, so a teardown that dies still carries it");
+  assert.ok(watchdog, "and a watchdog is armed for the case a loop is held by something else");
+});
+
+test("SH445: the watchdog is unref'd, so it never delays a healthy exit", async () => {
+  // The whole reason it is safe to arm at all. An unref'd timer does not hold the loop, so on the
+  // ordinary path the process is gone long before it fires — it exists only for the case SH440 kept
+  // `process.exit` for, where a hang would otherwise be the outcome.
+  let unrefs = 0;
+  const armed = [];
+  const proc = { exit() {}, exitCode: 0 };
+  const schedule = (fn, ms) => {
+    armed.push(ms);
+    return { unref: () => { unrefs += 1; } };
+  };
+
+  await finish(1, { proc, global: {}, schedule });
+
+  assert.equal(unrefs, 1, "unref'd exactly once — a ref'd watchdog would add five seconds to every failure");
+  assert.deepEqual(armed, [5000]);
 });
 
 test("SH440: `process.exit` lives in exit.mjs and nowhere else in the CLI", async () => {
@@ -143,6 +164,69 @@ test("SH440: `process.exit` lives in exit.mjs and nowhere else in the CLI", asyn
       + "the request layer first. A second call site brings the abort back for whichever command "
       + "owns it, and nothing else in the suite would notice: import `finish` from ./exit.mjs",
   );
+});
+
+/**
+ * SH445 — the response the live instance actually sends, header for header.
+ *
+ * <p>This is the difference between a test that passes and a test that <em>reproduces</em>. SH440's
+ * stub below answers with two headers and a short body, and the binary exits 1 against it at the
+ * broken revision as well as the fixed one — which is why SH440 shipped believing it was done.
+ * Bisected, deterministically over three runs: the two-header and the `set-cookie` variants exit 1,
+ * and only the full set reproduces the abort. The trigger is a threshold rather than any one header's
+ * meaning, so the honest thing is to send what the instance sends and not to trim it to taste.</p>
+ */
+const LIVE_INSTANCE_HEADERS = {
+  "content-type": "application/problem+json",
+  "set-cookie": ["XSRF-TOKEN=651a74ee; Path=/; HttpOnly", "SHJSESSIONID=E441F709; Path=/; HttpOnly"],
+  "x-xsrf-token": "651a74ee",
+  "access-control-expose-headers": "X-XSRF-TOKEN",
+  "x-shio-est-tokens": "78",
+  "x-content-type-options": "nosniff",
+  "x-xss-protection": "0",
+};
+
+test("SH445: the real binary exits 1 against the response a live instance sends", async () => {
+  // The assertion SH440 needed and did not have. At the shipping revision this exits **-1073740791**
+  // — 0xC0000409, Windows' abort() — after printing the teaching error, on `resolve` and on `verify`,
+  // against the instance and against this stub alike. Two tasks in a row were measured against a
+  // harness rather than against the failing command; this is the harness that fails first.
+  const server = createServer((req, res) => {
+    res.writeHead(404, LIVE_INSTANCE_HEADERS);
+    res.end(JSON.stringify({
+      type: "https://shio.viglet.com/errors/unknown-site",
+      title: "No readable site 'absent-xyz'",
+      detail: "No site with that id or name is visible to this credential.",
+      fix: "Address a site that exists, or add a `site.upsert` op for it earlier in the same batch.",
+      example: "{\"op\":\"site.upsert\",\"address\":\"site:absent-xyz\"}",
+    }));
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const { port } = server.address();
+
+  try {
+    for (const argv of [["resolve", "post:absent-xyz/x"], ["verify", "--site", "absent-xyz"]]) {
+      const failure = await run(process.execPath, [
+        ENTRY, ...argv, "--url", `http://127.0.0.1:${port}`, "--user", "u", "--password", "p",
+      ]).then(() => null, (error) => error);
+
+      assert.ok(failure, `shio ${argv[0]} should exit non-zero when the instance refuses`);
+      assert.equal(
+        failure.code,
+        1,
+        `\`shio ${argv.join(" ")}\` exited ${failure.code}. -1073740791 (and 3221226505 unsigned) is `
+          + "0xC0000409 — abort(). The exit path called process.exit with a piped stdout write still "
+          + "in flight, which libuv completes on a handle it is closing",
+      );
+      assert.doesNotMatch(
+        failure.stderr,
+        /UV_HANDLE_CLOSING|Assertion failed/,
+        "and no native assertion under a Shio command, which reads as a Shio defect",
+      );
+    }
+  } finally {
+    server.close();
+  }
 });
 
 test("SH440: the real binary exits 1 for a remote failure, and does not wait out keep-alive", async () => {
