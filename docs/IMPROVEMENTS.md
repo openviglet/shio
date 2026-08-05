@@ -1598,3 +1598,58 @@ the source's own path, which is what SH385's URL-space rule argues for and what 
 `<img src="/viglet-logo.png">` resolve in a fidelity replica too, or a site-level field.
 Either way `source-asset-stranded` should stop advising a field for an asset no field
 can hold, and say which of the two it is.
+
+### XVII.31 A slug is not a front end (SH442)
+
+`shio snapshot --page post:Viglet2/ --against <source>` failed with playwright's own
+`Protocol error (Page.navigate): Cannot navigate to invalid URL`, call log `navigating
+to "viglet2/"`. No scheme, no host. `--preview` made the same run work, which locates
+it.
+
+`resolveUrl` decides between a site's front end and the instance's preview with `if
+(options.preview || !origin)` — the **truthiness** of the site's URL field, not whether
+it is a URL. A site whose field holds a bare slug has a truthy `origin` that is not an
+origin, so the front-end branch is taken and the slug is handed to the browser as an
+absolute address. `Cafeteria` holds `cafeteria` and `Bootstrap` holds
+`https://getbootstrap.com/`, so this splits existing sites: the one with a real front
+end works, and the ones without are broken by the field meant to say they have none.
+
+SH265's intent is unambiguous and this predicate is the one place that does not
+implement it: a site with no front end is photographed through the instance's preview,
+and a slug is not a front end. The fix is `/^https?:\/\//` on `origin`, the test
+`resolveUrl` already applies to its target.
+
+Two reasons it stayed hidden. It needs playwright, which the repo resolves only inside
+`shio-react`, so every earlier run refused for the missing browser first. And the error
+belongs to the browser, so it names a URL nobody wrote and no Shio rule — P6's opposite.
+Whatever the predicate becomes, a non-absolute site URL deserves a teaching refusal
+rather than a protocol error.
+
+### XVII.32 A percentage where the run says there is none (SH443)
+
+One run printed both of these, four lines apart:
+
+    1 width(s), 1 differing, worst 100.00% at 1280px
+    1280px  differs (bytes only — no magnitude) (bytes)
+
+The header states a magnitude and the row states there is none. Without `pixelmatch` and
+`pngjs` the comparison is byte equality, so the only honest answers are "identical" and
+"different"; 100.00% is what a percentage initialised for the per-pixel path reads as
+when nothing measured it.
+
+SH386 already argued this exact point and the row is the argument's output: two browsers
+photographing two origins almost never produce identical bytes, so a difference at byte
+resolution is *unmeasured* rather than large, and a reader must be told that rather than
+left to read it as a finding. The note at the bottom repeats it a third time. So the
+file knows; one line does not.
+
+It is worse than cosmetic because of which line it is. The header is the summary a
+reader takes away and an agent greps, and "worst 100.00%" is the number that ends a
+replication early — it reads as a total mismatch, which for a replica that is close is
+the most misleading thing this command could say. It is the same defect class as a count
+taken before a drop: SH428's note claimed sixteen editable tokens beside its own list of
+nine.
+
+The header should carry no percentage when there is no comparator, and say `differing
+(unmeasured)`. The test is the one that already covers the degraded path, asserting the
+summary line too.
