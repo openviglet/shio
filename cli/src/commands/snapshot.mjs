@@ -379,10 +379,23 @@ async function capture(url, flags, ctx, credentials, playwright) {
   }
 }
 
-/** The per-pixel comparator, when both optional helpers resolve. */
+/**
+ * The per-pixel comparator, when both optional helpers resolve.
+ *
+ * <p>`ctx.compare` is the injection seam, and since SH444 it has three states rather than two: a
+ * function is the comparator, **`null` declares there is none**, and `undefined` means "resolve
+ * whatever this checkout has". The middle one exists because the checkout stopped being a constant:
+ * `pixelmatch` and `pngjs` were in no lockfile, so every test that did not pass a function was
+ * silently pinning the byte-only path *by absence*, and declaring them at the root turned eleven of
+ * them red at once. A test whose branch depends on what happens to be installed is not a test of
+ * either branch (P5) — production still passes `undefined` and resolves for real.</p>
+ */
 async function comparator(ctx) {
   if (typeof ctx.compare === "function") {
     return ctx.compare;
+  }
+  if (ctx.compare === null) {
+    return undefined;
   }
   const pixelmatch = await optional("pixelmatch");
   const pngjs = await optional("pngjs");

@@ -34,7 +34,16 @@ function sink() {
 
 const CONTEXT = { sites: [{ name: "Blog", url: "https://blog.example.com/" }, { name: "Docs", url: "" }] };
 
-function ctxWith({ files = {}, capture, compare } = {}) {
+/**
+ * SH444 — `compare: null` by default, which is what these tests were always getting.
+ *
+ * <p>The captures below are strings, not PNGs, and until `pixelmatch`/`pngjs` were declared at the
+ * root they were never parsed: no comparator resolved, so every one of these ran the byte-only path
+ * *by absence*. Declaring them turned eleven of these red with a pngjs stack trace. Saying `null` is
+ * the same behaviour those assertions were written against, now stated rather than inherited — and a
+ * test that wants the pixel path passes a `compare` function, as two below do.</p>
+ */
+function ctxWith({ files = {}, capture, compare = null } = {}) {
   const written = {};
   return {
     env: { SHIO_URL: "http://shio.test", SHIO_USER: "admin", SHIO_PASSWORD: "secret" },
@@ -533,4 +542,39 @@ test("SH386: the baseline mode is unchanged by all of this", async () => {
   assert.equal(result.exitCode, 0);
   assert.ok(Object.keys(ctx.written).some((each) => each.replace(/\\/g, "/")
     .endsWith("shio/snapshots/blog.png")));
+});
+
+test("SH444: the real pixelmatch/pngjs comparator runs, which the checkout could not do before", async () => {
+  // Every other test here injects `compare`, so the wiring between this command and the two optional
+  // helpers had no coverage at all — and could not have: they were in no lockfile. Declaring them at
+  // the root is what makes this test possible, so it is the one that would notice them going away
+  // again in a way `browser-refusal.test.mjs`'s resolution guard cannot: by using them.
+  const { PNG } = await import("pngjs");
+  const png = (shade) => {
+    const image = new PNG({ width: 4, height: 4 });
+    for (let i = 0; i < image.data.length; i += 4) {
+      // One pixel of sixteen differs, so the ratio is a number this test can name exactly.
+      const value = i === 0 ? shade : 0;
+      image.data[i] = value;
+      image.data[i + 1] = value;
+      image.data[i + 2] = value;
+      image.data[i + 3] = 255;
+    }
+    return PNG.sync.write(image);
+  };
+
+  const ctx = ctxWith({
+    files: { "shio/snapshots/blog.png": png(0) },
+    capture: async () => png(255),
+  });
+  // Not `compare: undefined` — that is what a default parameter *is*, so it would take the `null`.
+  // Deleting the key is how this context says "resolve for real", which is what `defaultContext`
+  // does by never setting it.
+  delete ctx.compare;
+
+  const result = await snapshot.run({}, ["post:Blog/"], ctx);
+
+  assert.equal(result.resolution, "pixel", "not `bytes` — the helpers resolved and did the work");
+  assert.equal(result.ratio, 1 / 16, "one pixel of sixteen, measured rather than assumed");
+  assert.match(ctx.stdout.text, /6\.25% of pixels/);
 });

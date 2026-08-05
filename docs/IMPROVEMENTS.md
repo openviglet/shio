@@ -374,32 +374,6 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
-### IX.21 The optional dependency is optional, not absent (SH444)
-
-The repo has the browser and the CLI cannot see it. Measured: `shio-react` declares `playwright:
-^1.62.0` as a **devDependency**, the binaries are cached in `ms-playwright`, and `import('playwright')`
-succeeds from `shio-react/` while failing `ERR_MODULE_NOT_FOUND` from `cli/` and the root. pnpm's strict isolation puts it in `shio-react/node_modules`, and a bare specifier resolves from the
-**importing module** upward — `cli/src/`, `cli/node_modules`, the root — never through a sibling. Linking
-it into `cli/node_modules` fixed the import at once, so resolution is the whole of it.
-
-The teaching error is right for somebody else: a consumer of `@viglet/shio` gets
-`node_modules/@viglet/shio/src/`, from which their own `pnpm add -D playwright` *is* on
-the upward path. In the checkout it is not, so the advice reads as followed and changes
-nothing.
-
-**The root, not `cli/`, because there are two consumers.** `shio-react/e2e/console-check.mjs` imports
-`{ chromium }` from it, and `cli/src/audit.mjs` and `snapshot.mjs` want the same package — declaring it per
-package means two ranges to align and, on drift, two chromium revisions for one repo. A root
-devDependency is visible to both by the same upward walk and makes `shio-react`'s redundant.
-
-Neither placement threatens the promise the optional import exists for: a devDependency
-is not installed by consumers of the published package, and `files: ["src"]` means it
-never reaches them. It breaks no test — every browser test injects its capture through
-`ctxWith`, so none loads playwright.
-
-`pixelmatch` and `pngjs` belong in the same change and are in no lockfile; without them
-`--against` compares only bytes, which is SH443.
-
 ### IX.22 Measured against the harness, not against the command (SH445)
 
 SH440 shipped and its crash is still there. Measured against a live instance, exit codes

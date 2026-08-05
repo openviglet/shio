@@ -23,7 +23,6 @@
 - 💭 **SH209** (deps: SH102 ✅) **`shio snapshot` photographs one page per run** — The useful artifact for a handoff is the set of a site's pages, and the command captures one page per run. → §IX.10
 - 📋 **SH397** (deps: SH295 ✅, SH325 ✅) **A dev instance reports its version as dev, so a stale server reads as a code defect** — The build stamp comes from the jar manifest, which is absent in the one mode where the running instance can lag the working tree, and nothing composes the readiness facts. → §IX.12
 - 📋 **SH423** (deps: SH347 ✅) **The test-context budget is a ceiling nobody sees approaching** — ShContextCacheHeadroomTest fails once 64 is crossed and nothing says a task is spending one, so eleven tasks took the count from 38 to 44 with no moment anybody was asked. → §VIII.20
-- 📋 **SH444** (deps: SH391 ✅) **The browser commands cannot resolve the playwright the repo already installs** — pnpm keeps it in shio-react/node_modules while the CLI's dynamic import resolves from cli/src upward, so snapshot and audit refuse in a checkout that has the package and the browsers. → §IX.21
 - 📋 **SH445** (deps: SH440 ✅) **The abort SH440 shipped to fix still happens on every thrown remote error** — The dispatcher sweep works and is not the trigger, and minimal scripts are clean, so a handle on the read-and-throw path survives and the exit code is still a crash code. → §IX.22
 
 ## Block I — Content as files (local-first authoring)

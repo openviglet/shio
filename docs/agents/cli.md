@@ -496,6 +496,15 @@ is the second kind. Six decisions:
   sixteen editable tokens beside its own list of nine). Now `N differing (unmeasured)` and **no**
   percentage, with three cases rather than two: nothing measured it, measured and non-zero, measured
   and zero — only the first is unmeasured.
+- **The comparator has real coverage now, and did not before (SH444).** `pixelmatch` and `pngjs` were
+  in no lockfile, so every test here injected `compare` or ran the byte path *by absence* — the wiring
+  between this command and the two helpers was never executed. Declaring them at the root turned
+  eleven snapshot tests red with a pngjs stack trace, because their fixtures capture strings rather
+  than PNGs and nothing had ever parsed them. That is the real defect the dependency hid: a test whose
+  branch depends on what happens to be installed is a test of neither branch (P5). `ctx.compare` now
+  has three states — a function, **`null` for "there is no comparator"**, and `undefined` for "resolve
+  what this checkout has" — so the degraded path is *declared* by the tests that pin it, and one test
+  builds real PNGs and runs the actual comparator.
 SH365 was a hard dependency rather than a courtesy: `--url` was already two arguments wearing one name,
 and a third meaning would have made the flag that says where Shio is also decide what it is compared
 to. No endpoint and no MCP tool — SH268's rule plus the standing no-browser non-goal — so

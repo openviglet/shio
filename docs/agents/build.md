@@ -28,6 +28,21 @@ Native build scripts are allowlisted via `onlyBuiltDependencies` in
 the `pnpm` field in `package.json`, so this setting lives in the workspace file.
 `@viglet/viglet-design-system` resolves from public npmjs (no scope mapping needed).
 
+**`playwright`, `pixelmatch` and `pngjs` are declared at the workspace root, and that placement is
+load-bearing (SH444).** They were `shio-react`'s (and, for the last two, nobody's — in no lockfile at
+all), so pnpm's strict isolation put `playwright` in `shio-react/node_modules`, and a bare specifier
+resolves from the **importing module** upward — `cli/src/`, `cli/node_modules`, the root — never
+through a sibling. So `shio snapshot` and `shio audit` refused in a checkout that had the package
+*and* the cached browsers, with a teaching error that is correct for a consumer of `@viglet/shio`
+(whose own `pnpm add -D playwright` **is** on that upward path) and, here, read as advice already
+followed that changed nothing. The root is the only placement both consumers see by the same walk:
+`cli/src/audit.mjs`/`snapshot.mjs` and `shio-react/e2e/console-check.mjs`. Declaring it per package
+would mean two ranges to align and, on drift, two chromium revisions for one repo. Neither the
+placement nor the dependency reaches consumers — a devDependency is not installed by them, and
+`files: ["src"]` means the tests never ship. **Do not move them back into a package**;
+`browser-refusal.test.mjs` asserts they resolve, because every other browser test injects its capture
+and so the whole suite passed while the commands could not run at all.
+
 ### Maven Integration
 `frontend-maven-plugin` (2.0.0) in `shio-app/pom.xml` runs, all from `../shio-react`:
 1. `install-node-and-pnpm` (Node `v26.3.1` + pnpm `11.8.0`)

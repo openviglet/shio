@@ -180,3 +180,36 @@ test("SH434: the real binary exits 1, not 0xC0000409", async (t) => {
     assert.match(failure.stderr, /needs playwright, which is not installed/);
   }
 });
+
+/**
+ * SH444 — **the optional dependency is optional, not absent.**
+ *
+ * The complement of everything above, and the reason it needs saying: the tests in this file prove
+ * the refusal is *good*, and every other browser test injects its capture through `ctxWith`, so the
+ * whole suite passed while `snapshot` and `audit` could not run at all in a checkout that had the
+ * package **and** the browsers. `shio-react` declared `playwright` as a devDependency, pnpm's strict
+ * isolation put it in `shio-react/node_modules`, and a bare specifier resolves from the *importing*
+ * module upward — `cli/src/`, `cli/node_modules`, the root — never through a sibling. So the teaching
+ * error was correct for a consumer of `@viglet/shio`, whose own `pnpm add -D playwright` *is* on that
+ * upward path, and in this repo it read as advice already followed that changed nothing.
+ *
+ * They are root devDependencies now, which is the only placement visible to both consumers by the
+ * same walk (`cli/src/**` and `shio-react/e2e/console-check.mjs`). This asserts that, because nothing
+ * else would: move them back under one package and every test here still passes.
+ *
+ * Workspace-only by construction — `files: ["src"]` means the published package carries no tests, and
+ * a devDependency is not installed by consumers, so this can never fire on somebody else's install.
+ */
+test("SH444: the browser dependencies resolve from the CLI in this checkout", async () => {
+  for (const name of ["playwright", "pixelmatch", "pngjs"]) {
+    const resolved = await import(name).then(() => true, () => false);
+    assert.ok(
+      resolved,
+      `\`${name}\` does not resolve from cli/test. It is a **root** devDependency for exactly this `
+        + "reason: pnpm keeps a package under the workspace that declares it, and a bare specifier "
+        + "never resolves through a sibling — so declaring it in shio-react left the CLI's commands "
+        + "refusing in a repo that had it. Run `pnpm install` at the root; if that does not fix it, "
+        + "check whether it was moved back into a package's own devDependencies",
+    );
+  }
+});
