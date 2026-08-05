@@ -374,6 +374,32 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
+### IX.20 The exit, not the command, is where this lives (SH440)
+
+SH434 fixed the optional-browser path and `shio audit` now exits 1 as intended. The same crash survives
+everywhere else. Measured, exit codes read outside the shell: `convert --site <absent>` gives
+**-1073740791**, so does `verify --site <absent>`, so does `resolve post:<absent>/x`, each printing
+`Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 94` after its
+teaching error. `0xC0000409` is Windows' `abort()`.
+
+The boundary is sharp and names the cause. `resolve bogus:xyz` — malformed, rejected locally with no
+request — exits 1 cleanly. `push --check` with real drift exits 1 cleanly. What crashes is an error
+**thrown** from a path that already made an HTTP request: those reach `main().catch`, which calls
+`process.exit(1)` while a fetch handle is still live, and the teardown asserts. A command that instead
+*returns* a non-zero `exitCode` unwinds normally first and is fine.
+
+That is why SH434 looked complete: it removed one way to reach the throw path with a
+handle armed, not the exit itself.
+
+It matters most where the exit code is the product. `convert --check`, `apply --check`
+and `push --content --check` are drift guards whose whole output is a number a pipeline
+branches on, and a crash code cannot be told apart from a runner killing the process.
+Non-zero is the safe direction, which is why this sits unnoticed.
+
+Fix it at the exit rather than per command: let the request layer's handles close, or
+unref them, so one path serves every thrown error. The regression test is an exit code
+asserted for a remote failure.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -1496,3 +1522,79 @@ with no field and a rewrite of the fidelity markup, which makes the replica's HT
 differ from the source's in a way `snapshot --against` cannot see. Option A needs the
 route above, and keeps the markup byte-identical. Whichever lands,
 `source-asset-stranded` is the check that says when it has.
+
+### XVII.28 A section no page composes is not a replica (SH438)
+
+`shio convert` writes the accepted sections and the theme, and nothing that orders them.
+Measured: three posts created, `/preview/viglet2/` answered 404, and `verify --checks
+replication` reported `source-page-missing` for `/` — the gate's own statement that the
+replication is not done.
+
+SH417's scope was honest and it delivered it: sections, a theme and scripts. But a
+section that no page composes is not deliverable by anything. The replica of a one-page
+site ends as two orphans, and the step that turns them into a site is the one step still
+done by hand — the manual work this phase existed to remove, moved up a level from the
+block to the page.
+
+Everything needed is already held. The proposal records which page each candidate
+appeared on and in what source order, which is exactly the `sections` array; the shape
+is written down in the `marketing-site` blueprint — `url: "/"`, `folder: "/"`,
+`data.sections` as an ordered list of section URLs. Closing it here took one
+`post.upsert` and the gate went quiet, so this is a translation into an existing shape
+rather than a new decision.
+
+Two rules it inherits. DRAFT, like everything else `convert` writes, because a page
+appearing published is the surprise P7 forbids. And the page's friendly URL is the
+**source's** path, per SH385's rule that a replica keeps the original's URL space —
+which for a home page is `post:<site>/`, the form SH433 just made discoverable. A block
+accepted on several pages belongs to each of them.
+
+### XVII.29 A refusal that names another surface's remedy (SH439)
+
+`shio convert --site Viglet2` against a site that does not exist prints the plan, then
+refuses with `No readable site 'Viglet2'` and the fix `Address a site that exists, or
+add a site.upsert op for it earlier in the same batch.` That is un-followable here:
+`convert` takes no ops. Its flags are `--site`, `--dry-run`, `--check`, `--out`,
+`--ids`, `--limit`, `--inventory` and `--json` — no `--create-site`, which `shio apply`
+does have, for exactly this.
+
+The message is the shared write resolver's, where it is correct: a caller composing a
+batch can add the op. `convert` composes its own document and hands it over, so the one
+thing the reader is told to do is the one thing this surface cannot express. P6 makes an
+instruction naming something that does not exist worse than none, and SH329 settled this
+case by having a dry run resolve against sites the same run would create.
+
+It lands at the worst moment. Converting into a **new** site is the normal shape of a
+replication, so the first real run of the phase hits a refusal whose remedy is
+elsewhere. Closing it by hand meant a `site.upsert` through `/agent/batch`, a surface a
+caller using the CLI has no reason to be holding.
+
+Either `convert` grows `--create-site`, matching `apply` so the flag means one thing in
+both, or the refusal names a command that exists. The first is better: a conversion that
+must not create a site is the rarer case, and `--dry-run` already shows what would
+happen.
+
+### XVII.30 A chrome asset belongs to the site, not to a block (SH441)
+
+SH429 made stranded bytes a finding and the rule fires correctly:
+`source-asset-stranded` named `/viglet-logo.png`, sitting in the tree as
+`Viglet2/viglet-logo.png` with no post referencing it. Its fix says to point a `File`
+field at it. On this page there is no field to point.
+
+The logo appears twice in the source, in `div.topbar` and in `<link rel="icon">`. Both
+are chrome, and `contentRoot` excludes chrome on purpose. `SectionHero` does declare an
+`image` field, so the advice is followable when a hero carries a picture; it is not
+followable for the one asset class that can never belong to a block. A favicon, a
+wordmark and a header logo are site-level by nature, so a conversion strands them by
+construction, and the fix text reads as though the operator forgot something.
+
+The precedents both point the same way and are recent. SH389 made a site's third-party
+scripts one ordered list the site owns rather than something injected per page, and
+SH382 made the curated menu content. Chrome is already modelled as site-level in this
+product; its assets are not.
+
+So the question the task answers is where a chrome asset lands — a static file keeping
+the source's own path, which is what SH385's URL-space rule argues for and what makes
+`<img src="/viglet-logo.png">` resolve in a fidelity replica too, or a site-level field.
+Either way `source-asset-stranded` should stop advising a field for an asset no field
+can hold, and say which of the two it is.

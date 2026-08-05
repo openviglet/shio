@@ -26,32 +26,17 @@ ref_scheme = "outline"
 # heading ("Part 1 — current focus") is one `pick` cannot read and one nobody updates; stated
 # here it is what `pick` and `brief` answer with, and every token is validated.
 #
-# The ids ahead of the blocks are Block Q's replication run, in execution order rather than id
-# order — a smoke test against a real site found thirteen defects, and the order they must be
-# fixed in is not the order they were filed in. Three rules produced it. The safety fix and the
-# end-to-end test come first, because SH430 makes every dry run below trustworthy and SH422
-# passes today, so it locks the handoffs the rest of the queue changes. Then the pipeline is
-# repaired upstream to downstream — capture (SH431, SH432), then conversion (SH425, SH426),
-# then the theme (SH427 reads the CSS, SH428 stops dropping paths, SH424 makes the tokens
-# live), because each phase reads what the one before it wrote. The write path is last, since
-# an applier is only worth building once the proposal is worth applying, and SH433 precedes it
-# because the applier has to write a page at `/`.
+# An id may be listed ahead of the blocks, and Block Q's replication run was: fifteen tasks in
+# execution order rather than id order, because a smoke test against a real site found defects
+# whose fix order was not their filing order. They have all shipped and the entries are spent,
+# so they are gone — a consumed queue left in place is one `pick` keeps answering with. What is
+# worth keeping is the three rules that produced the order, since the retest filed four more
+# (SH438–SH441) and the next run will want them: the safety fix and the end-to-end test first,
+# because one makes every later dry run trustworthy and the other locks the handoffs the rest
+# of the queue changes; then the pipeline repaired upstream to downstream, capture before
+# conversion before theme, because each phase reads what the one before it wrote; then the
+# write path last, since an applier is only worth building once the proposal is worth applying.
 priority = [
-  "SH430",
-  "SH422",
-  "SH434",
-  "SH435",
-  "SH431",
-  "SH432",
-  "SH425",
-  "SH426",
-  "SH427",
-  "SH428",
-  "SH424",
-  "SH433",
-  "SH436",
-  "SH417",
-  "SH429",
   "Block P",
   "Block H",
   "Block K",

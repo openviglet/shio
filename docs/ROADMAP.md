@@ -23,6 +23,7 @@
 - 💭 **SH209** (deps: SH102 ✅) **`shio snapshot` photographs one page per run** — The useful artifact for a handoff is the set of a site's pages, and the command captures one page per run. → §IX.10
 - 📋 **SH397** (deps: SH295 ✅, SH325 ✅) **A dev instance reports its version as dev, so a stale server reads as a code defect** — The build stamp comes from the jar manifest, which is absent in the one mode where the running instance can lag the working tree, and nothing composes the readiness facts. → §IX.12
 - 📋 **SH423** (deps: SH347 ✅) **The test-context budget is a ceiling nobody sees approaching** — ShContextCacheHeadroomTest fails once 64 is crossed and nothing says a task is spending one, so eleven tasks took the count from 38 to 44 with no moment anybody was asked. → §VIII.20
+- 🛠 **SH440** (deps: SH434 ✅) **Every thrown remote error still aborts, so a drift guard answers a crash code** — SH434 fixed only the optional-browser path; convert, verify and resolve exit 0xC0000409 because main's catch calls process.exit while a fetch handle is live. → §IX.20
 
 ## Block I — Content as files (local-first authoring)
 
@@ -81,6 +82,9 @@
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
 - 📋 **SH437** (deps: SH429 ✅) **A fidelity replica's images 404 because a static file is only served at its own id** — SH429 made the stranded bytes visible and left the delivery unbuilt: keeping the source's URL space needs a route Shio does not have, so the choice was never available. → §XVII.27
+- 📋 **SH438** (deps: SH417 ✅) **The converted sections have no page composing them, so the replica serves nothing** — convert writes sections and a theme and no Page at the source's URL, so the root 404s and source-page-missing fires on a run that reported success. → §XVII.28
+- 📋 **SH439** (deps: SH417 ✅) **convert refuses an absent site by telling you to add an op it accepts none of** — The refusal is the batch resolver's, but convert composes its own document and has no --create-site, so the only remedy it names is one this surface cannot express. → §XVII.29
+- 📋 **SH441** (deps: SH429 ✅) **A logo or favicon is stranded by construction and the fix advises a field that cannot hold it** — Chrome assets belong to no candidate block, so no File field will ever name them, while SH389's scripts and SH382's menu already model chrome as site-level. → §XVII.30
 
 ## Block F — Market positioning
 
