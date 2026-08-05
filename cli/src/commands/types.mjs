@@ -12,6 +12,25 @@ import { ShioClient, generateShioTypes } from "@viglet/shio-client";
 
 import { resolveCda } from "../context.mjs";
 
+/**
+ * What `shio types --help` prints (SH435).
+ *
+ * Here rather than in `index.mjs` so the flags and their meanings are one edit apart: the
+ * global help described some commands' flags and no command's completely, and learning this
+ * one's meant grepping the source for `flags.` — reading an implementation to discover an
+ * interface, having already paid for a help text that answered something else.
+ */
+export const HELP = `shio types — generate a TypeScript .d.ts from the live post-types
+
+Uses a CDA token (--token, or SHIO_CDA_TOKEN), not the console credentials.
+
+  --out <file>          Where the declarations go
+  --import-from <spec>  The module the generated types import their helpers from
+
+Example:
+  shio types --out lib/shio-types.d.ts
+`;
+
 export async function run(flags, _positionals, ctx) {
   const { baseUrl, apiToken } = resolveCda(flags, ctx.env);
   const out = flags.out ?? "lib/shio-types.d.ts";

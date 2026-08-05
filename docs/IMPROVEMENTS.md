@@ -856,32 +856,6 @@ consequences to accept — the budget rises (a truthful number is the point, not
 one), and the benchmark starts covering the flow SH277 named as the one nothing tested
 end to end, which is how that defect survived four blocks.
 
-### XIII.19 Per-command help is a token cost, not a nicety (SH435)
-
-`shio clone --help` prints the same forty-line global help as `shio --help`. So does
-every other command. The mechanism is one branch: `main` checks `flags.help` and writes
-the shared `HELP` constant before `loader()` runs, so no command is ever consulted about
-its own flags.
-
-The cost lands on the agent, which is what makes it a P3 item rather than a polish one.
-Learning that `clone` takes `--assets`, `--markup`, `--depth`, `--max-pages`,
-`--render`, `--ignore-robots`, `--max-assets` and `--max-asset-bytes` meant grepping
-`cli/src/commands/clone.mjs` for `flags.` — reading source to discover an interface,
-having already paid for a help text that answered nothing. Repeat per command and the
-discovery bill for a pipeline of six is six greps plus six wasted help outputs, against
-a budget the project measures everywhere else.
-
-It is also where flag semantics are decided and currently undocumented. SH365 renamed a
-page target to `--page` and kept `--url` working with a deprecation printed on stderr;
-`clone` is the one command that gives `--url` a private meaning, declared in a test
-rather than anywhere a caller looks. A per-command help is where those belong.
-
-The global help is already long enough that it is the wrong answer to a specific
-question, and the strings exist — every flag has a documented meaning in
-`docs/agents/cli.md`. What is missing is a per-command block the loader can print, which
-also makes the global list shorter: it can name commands and stop describing their
-flags.
-
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 
 > The reorientation was mostly additive, but it did invalidate some existing choices.

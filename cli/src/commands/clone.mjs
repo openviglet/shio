@@ -59,6 +59,47 @@ import { assetPathCollisions, siteDir } from "../content-files.mjs";
 
 const USER_AGENT = `${ROBOTS_AGENT} (+https://github.com/openviglet/shio)`;
 
+/**
+ * What `shio clone --help` prints (SH435).
+ *
+ * Here rather than in `index.mjs` so the flags and their meanings are one edit apart: the
+ * global help described some commands' flags and no command's completely, and learning this
+ * one's meant grepping the source for `flags.` — reading an implementation to discover an
+ * interface, having already paid for a help text that answered something else.
+ */
+export const HELP = `shio clone <url> — capture a site that already exists, and write no content
+
+Walks one origin and records what it found in shio/.shio/source-inventory.json. That file
+is the only thing written unless you ask for more, which is the promise every later phase
+rests on: read the inventory before anything else happens.
+
+  --depth <n>              How deep to follow internal links (default 3; 0 = the seed page)
+  --max-pages <n>          Ceiling on pages fetched (default 200); a cut is recorded, so a
+                           partial capture can never read as a complete one
+  --markup                 Keep each page's HTML — what shio propose computes from. Costs
+                           no extra request; the flag is a decision about keeping a
+                           stranger's HTML in the tree
+  --assets                 Download the bytes the inventory names (needs --site)
+  --site <name>            With --assets: whose asset tree the bytes go under
+  --max-assets <n>         With --assets: ceiling on downloads (default 500)
+  --max-asset-bytes <n>    With --assets: skip anything larger (default 26214400)
+  --render                 Drive a browser, for a page that renders itself (needs
+                           playwright). Without it the crawl reads what the server sent
+  --ignore-robots          Crawl anyway. Recorded in the inventory, so a capture taken
+                           without permission cannot later pass for one taken with it
+  --delay <seconds>        Wait between requests (default: the site's own Crawl-delay)
+  --timeout <ms>           Per-page timeout with --render (default 30000)
+  --out <file>             Inventory path (default shio/.shio/source-inventory.json)
+  --json                   The inventory on stdout instead of the report
+  --url <url>              The site to capture, when no positional is given. This is the ONE
+                           command where --url means the target rather than the instance:
+                           clone never talks to a Shio instance at all
+
+Examples:
+  shio clone https://acme.example.com --markup
+  shio clone https://acme.example.com --markup --assets --site Acme --depth 2
+`;
+
 export async function run(flags, positionals, ctx) {
   const seed = flags.url ?? positionals[0];
   if (!seed) {

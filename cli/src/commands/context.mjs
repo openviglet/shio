@@ -20,6 +20,33 @@ import { resolveAdmin } from "../context.mjs";
 /** `terse` is the default here, unlike the endpoint: the caller is an agent. */
 const DEFAULT_FORMAT = "terse";
 
+/**
+ * What `shio context --help` prints (SH435).
+ *
+ * Here rather than in `index.mjs` so the flags and their meanings are one edit apart: the
+ * global help described some commands' flags and no command's completely, and learning this
+ * one's meant grepping the source for `flags.` — reading an implementation to discover an
+ * interface, having already paid for a help text that answered something else.
+ */
+export const HELP = `shio context — the agent context pack: model + sitemap + conventions, in one call
+
+  --site <idOrName>    Scope to one site       (omit for every readable site)
+  --include <sections> instance,sites,model,sitemap,conventions (default all)
+  --format <fmt>       terse (default), json, or agents-md
+  --as agents-md       Same as --format agents-md; pair with --out AGENTS.md so the file
+                       cannot rot — regenerate it and the diff is the drift
+  --depth <n>          Folder-tree depth to walk
+  --budget <tokens>    Estimated-token ceiling (0 = unbounded)
+  --from <id>          Resume cursor from a truncated pack
+  --ids                Put object ids back on every row (off by default — a row is
+                       addressable without one, and a UUID is the priciest field)
+  --out <file>         Write the pack to a file instead of stdout
+
+Examples:
+  shio context --site Acme
+  shio context --as agents-md --out AGENTS.md
+`;
+
 export async function run(flags, _positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
   // `--as` and `--format` name the same thing. Both exist because the roadmap word

@@ -14,6 +14,28 @@
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 
+/**
+ * What `shio blueprints --help` prints (SH435).
+ *
+ * Here rather than in `index.mjs` so the flags and their meanings are one edit apart: the
+ * global help described some commands' flags and no command's completely, and learning this
+ * one's meant grepping the source for `flags.` — reading an implementation to discover an
+ * interface, having already paid for a help text that answered something else.
+ */
+export const HELP = `shio blueprints [name] — the appliable starting points this instance carries
+
+Bare, it lists the catalogue with each package's parameters. With a name, it prints that
+one in detail. Applying is shio apply --blueprint <name> --site <site>.
+
+  --name <name>        The package, when no positional is given
+  --files              Also list the front-end files the package carries
+  --json               Raw JSON instead of the report
+
+Examples:
+  shio blueprints
+  shio blueprints blog --files
+`;
+
 export async function run(flags, positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
   const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });

@@ -55,7 +55,6 @@
 - 💭 **SH232** (deps: SH159 ✅) **`/agent/changes` cannot revalidate the way it is most often called** — In window mode the response's own cursor is the moving edge of the feed, so no two polls agree and every one pays in full. → §XIII.12
 - 📋 **SH394** (deps: SH132 ✅, SH208) **The CLI's discovery surface has no budget, so it reads as free** — tools/list is capped at 2375 tokens and checked every build while shio --help is 14 KB nobody measures, so the two surfaces cannot be compared on the cost that decides between them. → §XIII.13
 - 📋 **SH396** (deps: SH112 ✅, SH395) **The build-a-site benchmark ends at verify, before anything renders** — Its four calls stop at a lint, so the measured job is content that passes checks rather than a page a person can open, and the traps between the two are unmeasured. → §XIII.14
-- 📋 **SH435** (deps: —) **A command's flags cost a source read because --help always prints the global help** — index.mjs answers flags.help before the command module loads, so shio clone --help returns 40 lines about every other command and none about clone's own eight flags. → §XIII.19
 
 ## Block N — Realignment of what already shipped
 

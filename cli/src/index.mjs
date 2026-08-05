@@ -94,6 +94,9 @@ const HELP = `shio — the Shio CMS CLI
 
 Usage:
   shio <command> [options]
+  shio <command> --help      That command's own flags, with what each one means
+                             (this list names the commands; it stopped describing
+                              their flags when each command grew its own help)
 
 Commands:
   init [name]    Scaffold a Next.js site wired to the Shio CDA
@@ -136,308 +139,6 @@ Connection:
   --password <pass>    Console password       (env SHIO_PASSWORD)    [pull/push/deploy]
   --token <token>      CDA token              (env SHIO_CDA_TOKEN)   [types/dev]
 
-Context pack (shio context):
-  --format <fmt>       terse (default), json, or agents-md
-  --as agents-md       Render the pack as project agent instructions (same as
-                       --format agents-md); pair with --out AGENTS.md so the file
-                       cannot rot — regenerate it and the diff is the drift
-  --site <idOrName>    Scope to one site      (omit for every readable site)
-  --include <sections> instance,sites,model,sitemap,conventions (default all)
-  --depth <n>          Folder-tree depth to walk
-  --budget <tokens>    Estimated-token ceiling (0 = unbounded)
-  --from <id>          Resume cursor from a truncated pack
-  --ids                Put object ids back on every row (off by default — rows are
-                       addressable without one, and a UUID is the priciest field)
-
-MCP (shio mcp):
-  Speaks newline-delimited JSON-RPC on stdin/stdout and forwards it to POST /mcp.
-  Register it with:  claude mcp add shio -- shio mcp
-  Uses the same --url/--user/--password (or SHIO_URL/SHIO_USER/SHIO_PASSWORD).
-
-Content as a document (shio apply):
-  A desired-state document says what a site section should contain; applying it
-  twice changes nothing the second time, so it survives a compaction.
-  --dry-run            Print the plan, write nothing
-  --check              Drift guard — plan, and exit non-zero if anything would change
-  --ids                Put object ids on the change rows (off by default)
-  shio apply site.json --dry-run
-  echo '{"site":"Blog","folders":[{"path":"/blog"}]}' | shio apply -
-
-Blueprints (shio blueprints / shio apply --blueprint):
-  A blueprint is a section of a site you do not have to build: a content model, a folder
-  tree, sample pages, the parameters that make it yours, and the promise it keeps about
-  what exists afterwards. Applying one is idempotent, so re-running it is safe.
-  shio blueprints                 The catalogue, with each package's parameters
-  shio blueprints blog            One package in detail (--files for the carried files)
-  --blueprint <name>   apply: the package to apply
-  --site <site>        apply: the site to apply it into (required)
-  --param k=v          apply: one parameter value; repeat for several
-  --params <file.json> apply: parameter values from a file (--param wins over it)
-  --force              apply: overwrite existing front-end files
-  --create-site        apply: create the site (blank) if it does not exist yet
-  --merge-post-types   apply: add fields an existing post-type lacks; never changes one
-  --dry-run            apply: the whole plan, post-types included, written nowhere
-  shio apply --blueprint marketing-site --site Acme --param brand=Acme --dry-run
-  shio apply --blueprint marketing-site --site Acme --param brand=Acme --create-site
-
-Verification (shio verify / shio digest):
-  shio verify is the content-side type-check: empty required fields, references to posts
-  that do not exist, images with no bytes, two pages on one URL, empty folders, links
-  that resolve to nothing, and anything that failed asynchronously. Errors exit 1;
-  warnings are printed. Run it before handing work over.
-  --site <idOrName>    Scope to one site
-  --checks <groups>    projection,replication,content,routes,diagnostics,delivery (default all that
-                       can run). projection is this tool's own group and reads the file
-                       tree — post-types, posts and asset bytes — so --checks projection
-                       needs no instance at all and is the cheapest gate there is. Run it
-                       first in CI; the full run includes it too. SH387 added replication, the
-                       second server-free group: it compares the SH377 capture against the tree
-                       and answers the other half of "done" — of the pages, links, assets, form
-                       fields and locales the source had, which ones exist here. Every rule in it
-                       is an ABSENCE, so it does not run on a --site-scoped run (a partial read
-                       cannot prove one), and anything it could not check is a warning naming
-                       itself rather than silence: an unchecked page counted as a clean one is how
-                       a coverage report starts lying.
-  --delivery           Also prove each published route by fetching it from the site's
-                       own origin — turns "the front end does not serve this" from a
-                       warning into an error. Needs the instance's allow-fetch and each
-                       site's URL; declare front-end-owned routes with
-                       shio remember frontend-routes "/tags/* /search" --site <site>
-  --limit <n>          Findings to print (the counts always cover the whole run)
-  --strict             Fail on warnings too (off by default — see the severity rule)
-  --folder <address>   Scope to a folder subtree (folder:<site>/<chain>)
-  --address <a,b>      Scope to named posts (post:<site>/<url>, comma-separated)
-  --since <cursor>     Scope to what changed after an SH88 cursor (shio changes --cursor)
-  A scoped run says so: the report carries scope/partial, and the counts cover the subset.
-  --baseline <file>    Accepted findings to subtract   (default shio/verify-baseline.json)
-  --accept             Write this run's findings into the baseline (--reason "why")
-  A baseline entry whose finding no longer exists fails the run — remove it when you fix
-  the defect, or the file rots into a suppression that hides the next one.
-  shio digest <page>   post:<site>/<url>, or a delivery URL when fetching is enabled
-  --page / --address   Same, as explicit flags. NOT --url: that is the instance, here as in
-                       every other command (SH365). --url still names the page when nothing
-                       else does, and says to use --page instead
-
-The handoff (shio report):
-  shio report renders the summary a *human* reads: what changed, a preview link per page,
-  and the questions the CMS cannot answer itself. Markdown on stdout — paste it into a PR
-  body, or --out FILE. It composes changes + context + verify; there is no new endpoint.
-  --since <cursor>     Range start; "last" = where the last --mark left off,
-                       "content" = where the last content pull reached. Omit for a window
-  --mark               Record this range as reviewed, so the next --since last resumes.
-                       Refused when the report could not cover its whole range
-  shio snapshot <page> A PNG for a human to look at, and whether it changed (SH102).
-                       Baselines live in shio/snapshots/; the displaced one is kept as
-                       <slug>.prev.png. A change exits 0 — a page looking different is
-                       usually the change you just made — use --fail-on-change for a gate.
-                       Optional deps: playwright (required), pixelmatch + pngjs for a
-                       per-pixel diff; without them it answers changed/unchanged by bytes.
-  --page <page>        The page to photograph (or a bare positional, or --address).
-                       NOT --url: that is the instance, and since SH265 it also decides which
-                       server a front-endless site is previewed from — one flag that picked
-                       both would decide which server the picture came from (SH365). --url
-                       still names the page when nothing else does, and says to use --page
-  --accept             Replace the baseline without reporting a change
-  --fail-on-change     Exit 1 when the page looks different
-  --width / --height   Viewport (default 1280x800)  --viewport-only  Skip the full page
-  --against <url>      Compare the page against ANOTHER SITE instead of against its own earlier
-                       capture (SH386) — the comparison a replication needs, which neither the
-                       baseline mode nor the appearance digest can express: there is no layout
-                       engine, so a digest covers the failure an agent creates and not the one a
-                       human sees. Both sides are captured in the SAME RUN at each --width, with
-                       the same viewport and the same animation suppression, because comparing a
-                       picture taken now against one a different browser build took last month
-                       measures the browser. The source image is KEPT in the tree, so a pull
-                       request shows what the replica was compared against. A difference EXITS 1
-                       here — the one place SH102's rule inverts, since a replica that does not
-                       match is the defect rather than the change you just made, so there is no
-                       --fail-on-change to remember.
-                       --width takes a list in this mode: a replica that matches at 1280 and
-                       breaks at 375 is the ordinary outcome, and one averaged number would hide
-                       exactly that. Needs pixelmatch + pngjs for a magnitude; without them the
-                       run says only whether the bytes match, and says that two browsers
-                       photographing two origins almost never produce identical bytes.
-  shio snapshot --page post:Acme/ --against https://acme.example.com/ --width 1280,768,375
-  --site <name>        One site only
-  --out <file>         Write the Markdown instead of printing it
-  --title <text>       Heading for the document
-  --no-verify          Skip the open-questions section (change list only)
-  --json               The report as data (markdown, cursor, changed, caveats)
-  shio report --since last --mark --out HANDOFF.md
-
-Auditing a rendered page (shio audit):
-  The other browser command, and the one for the agent: it renders the page and prints what is
-  wrong with it as **text**, one line per finding with the selector to fix. A screenshot costs
-  ~1.6k tokens, cannot be diffed and asks you to judge; twenty findings cost a few hundred, grep
-  and diff, and say what to change. Needs playwright (the same optional install as snapshot).
-  Errors — a request that 404'd, a console error — exit 1. Warnings — overflow, contrast, a
-  collapsed box, a fallback font — are printed and exit 0, because each of those is design intent
-  often enough that a gate on them is the exit code people learn to ignore.
-  shio audit post:Blog/blog/hello-world
-  --page <page>        The page to audit (or a bare positional, or --address).
-                       NOT --url: that is the instance, here as in every other command
-  --width <list>       Viewport widths, comma-separated  (default 1280,375)
-  --height <px>        Viewport height                   (default 800)
-  --contrast <ratio>   Contrast floor                    (default 4.5, WCAG AA; large text 3)
-  --preview            Audit the DRAFT through this instance's renderer
-  --limit <n>          Findings to print (the counts always cover the whole run)
-  --strict             Exit 1 on warnings too
-  --json               The findings as data
-
-Capturing a site that exists (shio clone):
-  The first of replication's three phases — capture, convert, prove. It walks ONE origin and
-  writes NO content: one inventory at shio/.shio/source-inventory.json plus a report naming
-  what it found — the pages with their titles and paths, the assets they reference, the locales
-  and how each shows up in a URL, the forms and their fields, the navigation as the source
-  spells it, and the third-party scripts. Everything downstream is scoped off that file, which
-  is what makes a conversion reviewable before it writes anything.
-  Four rules it keeps: every link off the host is recorded and never followed; a seed that
-  redirects off-host is refused, naming the host it actually got; the site's own robots.txt
-  bounds it; and the walk is sequential over a sorted frontier, so a ceiling cuts the same
-  pages every run and the inventory can be diffed against the next crawl.
-  shio clone https://example.com --depth 3 --max-pages 200
-  --depth <n>          How many link levels to follow    (default 3)
-  --max-pages <n>      Page ceiling; hitting it marks the inventory PARTIAL (default 200)
-  --render             Drive a browser, for a page whose markup arrives only after hydration
-                       (needs playwright). Without it the crawl reads what the server sent,
-                       and the report warns when a page looks like it renders itself
-  --ignore-robots      Skip robots.txt — for your own site. Recorded in the inventory, so a
-                       capture taken without permission cannot later look like one taken with it
-  --delay <seconds>    Wait between requests (default: the site's own Crawl-delay)
-  --out <file>         Inventory path       (default shio/.shio/source-inventory.json)
-  --limit <n>          Rows per report section (the inventory always holds everything)
-  --json               Print the inventory instead of the report
-
-  The bytes are a second, opt-in pass, so the default capture still writes nothing you have
-  not read the inventory for first:
-  --assets             Download the images, stylesheets, fonts, icons and media the inventory
-                       names into shio/assets/<site>/<source folder chain>/<name>, and record
-                       the source-URL-to-tree-path map back into the inventory. Same-origin
-                       only — mirroring another host's bytes is a licensing decision, and the
-                       hosts left behind are named so somebody can make it. Deduped by
-                       sha-256, so one logo served from three URLs is one asset. A name a path
-                       cannot hold is refused and reported, never trimmed.
-  --site <name>        Required with --assets: an asset's tree path starts with the site name,
-                       and a crawl cannot know what the replica will be called
-  --max-assets <n>     Ceiling on how many to download   (default 500)
-  --max-asset-bytes <n>
-                       Ceiling per asset, in bytes       (default 26214400)
-
-  The markup is a third opt-in, and it costs no extra request — the bytes were already read:
-  --markup             Keep each captured page's HTML in shio/.shio/source-markup/ and name
-                       the file on its inventory row. This is what shio propose reads, and
-                       caching it is what makes a proposal reproducible from the tree instead
-                       of from whatever the source serves today
-
-Proposing a conversion (shio propose):
-  The second of replication's three phases, and it writes no content either. A captured block
-  can become two things: verbatim markup in a PageLayout (renders identically, nothing is
-  authorable) or a section from the SH95 vocabulary (authorable, and the pixels have moved).
-  Both are defensible, so this command ships neither — it proposes. For every candidate block
-  it prints the pages it recurs on, the section type it looks like and why, the fields it would
-  carry, and what accepting it would LOSE: the elements the section cannot hold, the behaviour
-  (an onclick, a data- attribute, an anchor target), and every class name in it.
-  Reads only the tree — no instance, no network, no browser — so it is free to re-run and its
-  diff is what the source changed. A candidate's id is a hash of its structure, so an
-  acceptance survives a re-run; an id from an older run is gone because the markup moved.
-  shio clone https://example.com --markup && shio propose
-  shio propose --accept b1a2c3d4 --reason "hero is the same on every page"
-  --accept <ids…>      Record these candidates as authorable in shio/conversion-plan.json,
-                       or "all" for every one the vocabulary matched. It writes no post, no
-                       post-type and no layout — the plan is the reviewed unit, and applying
-                       it is a separate act. An unaccepted block stays verbatim markup, which
-                       is a decision and not an omission. A candidate the vocabulary has no
-                       type for cannot be accepted as a section: the proposal names the
-                       post-type it needs instead, because forcing it into the nearest shape
-                       is how a conversion loses content nobody notices
-  --reason <text>      Why, recorded with the acceptance
-  It reads the captured stylesheets too, and emits a Theme as TOKENS plus CSS rather than as one
-  opaque blob — because a replica that looks right and cannot be restyled is the outcome this
-  whole block exists to avoid. Two kinds of token, and they are NOT equally powerful, which the
-  report says out loud: a DECLARED custom property is editable (the source's own CSS already says
-  var() on it, so changing it changes the replica), while a RECURRING literal only names the
-  palette and changes nothing until the CSS is rewired. Substitution is deliberately not done —
-  search-and-replacing a colour across a stranger's stylesheet breaks a replica in a way no digest
-  catches. Every url() is rewritten to its SH378 tree path, which is what makes the theme portable
-  instead of a set of links to somebody else's origin; one the asset map does not hold is left
-  alone and named. A token whose name would not survive the DTCG round trip is reported, never
-  written: SH195 drops such a declaration silently and can take the whole :root block with it.
-  --min-refs <n>       How often a literal must recur to be a palette value (default 3)
-  --inventory <file>   The capture to read (default shio/.shio/source-inventory.json)
-  --out <file>         Proposal path        (default shio/.shio/conversion-proposal.json)
-  --limit <n>          Candidates to print (the proposal always holds every one)
-  --json               The proposal as data
-
-Content as files (shio pull/push --content, shio dev --content):
-  Content projects to shio/content/<site>/<url>.md — YAML frontmatter is the fields,
-  the body is the post's rich-text field. Edit with Edit/Write/Grep, then push.
-  A pull merges three ways (last-synced base, server, files): only a field both sides
-  changed is a conflict, and a conflict writes nothing and exits non-zero.
-  Binaries project to shio/assets/<site>/<folder>/<name>, and a File field reads as
-  that path instead of a UUID — so the tree is a complete, movable, reviewable
-  description of the site. A push uploads what the server lacks, once per path, and an
-  asset's bytes are merged three ways like everything else: whichever side edited them
-  wins, both sides editing is a conflict that writes nothing, and neither direction
-  overwrites the other silently.
-  An empty folder is a file too: shio/folders/<site>/<chain>/_folder.md declares a
-  folder nothing else does, so you can scaffold the structure before filling it. It is
-  a separate root because a folder chain and a friendly URL are separate namespaces.
-  Renaming a file is a move, so the post keeps its id, history and references: push
-  pairs it up by content, or by movedFrom: <old url> when you rewrote it as well.
-  It refuses to guess between two candidates, and warns when it cannot prove a pair.
-  Renaming a folder's directory is a move too, so the section keeps its posts: push
-  pairs it by subtree shape, or by movedFrom: <old path> in the _folder.md.
-  --accept             push: record this run's unprovable renames as reviewed and push
-                       nothing. They stop being warned about, and each acceptance is
-                       spent by the run that uses it — a delete-plus-create cannot
-                       happen twice, so there is nothing left to go stale. Both
-                       addresses are the key: accepting one deletion never silences a
-                       different arrival. --reason "why" travels with the entry, and
-                       --baseline picks the file (default shio/verify-baseline.json,
-                       shared with shio verify, which never touches this list).
-  --site <name>        Only this site
-  --content-dir <dir>  Content root            (default shio/content)
-  --folders-dir <dir>  Folder-marker root      (default shio/folders)
-  --assets-dir <dir>   Asset root              (default shio/assets)
-  --max-ops <n>        push: ops per document; a bigger tree splits (default 1500)
-  --max-folder-reads <n>
-                       push: how many asset folders to list one at a time before
-                       reading a whole site instead (default 8). Measured: a folder
-                       listing reads that folder's rows only, so this bounds round
-                       trips rather than server work — lower it on a slow link,
-                       raise it on a fast one with a large media library.
-  --prune              push: delete server posts the file tree does not declare
-  --check / --dry-run  push: drift guard / plan only, same meanings as for post-types
-  --ours / --theirs    pull: resolve conflicts in one direction
-  --show-remote        pull: write the server's copy as <file>.remote next to a conflict
-  --allow-partial      pull: accept a truncated post list (marks the snapshot partial)
-  --force              push: proceed despite conflicts or a partial snapshot
-  The last-synced base and the change cursor live in shio/.shio/content-base.json. The
-  base holds a hash per field, not a copy of your content, so it is safe to commit.
-
-Instance memory (shio remember):
-  What one session works out, the next is told: notes come back in the context pack's
-  conventions, attributed to whoever wrote them. Re-using a key rewrites that note.
-  shio remember                          List what is already remembered
-  shio remember <key> "<note>"           Remember it
-  shio remember <key> --forget           Forget it
-  --site <name>        Scope the note to one site (default: the whole instance)
-  --limit <n>          Notes to list
-
-Change feed (shio changes):
-  --since <cursor>     Only what happened after that position ("last" = last pull's)
-  --cursor             Print only the cursor (SINCE=$(shio changes --cursor))
-  --site <name>        Scope to one site
-  --limit <n>          Entries to print
-  --json               Raw JSON instead of lines
-
-Addresses (shio resolve):
-  post:<site>/<url>    A post, by its friendly URL
-  folder:<site>/<path> A folder, by its chain of folder names
-  site:<name>          A site (or site:<name>/<path> to resolve whatever is there)
-  id:<uuid>            An object id, when you have one
-  --id                 Print only the resolved id (pipeline-friendly)
-
 Common options:
   --dir <dir>          Post-types directory   (default shio/post-types) [pull/push/build]
   --out <file>         Output path            (.d.ts for types; dir for pull/build, default shio/.out;
@@ -448,9 +149,28 @@ Common options:
   -h, --help           Show help
 `;
 
+/**
+ * One command's help, from the command itself (SH435).
+ *
+ * <p>Loading the module to print its help is the whole point: the strings live beside the `flags.`
+ * reads they describe, so a new flag and its meaning are one edit apart. A module with no `HELP` is
+ * a defect `help.test.mjs` fails the build for — falling back to the global text here would hide it,
+ * and the global text is the wrong answer to a question about one command.</p>
+ */
+async function printCommandHelp(command) {
+  const mod = await COMMANDS[command]();
+  process.stdout.write(`${mod.HELP.trim()}\n`);
+}
+
 async function main() {
   const [command, ...rest] = argv.slice(2);
 
+  // SH435 — `shio help <command>` is the other spelling of `shio <command> --help`, and it is
+  // answered here so `help` keeps working as a command name rather than becoming one.
+  if (command === "help" && COMMANDS[rest[0]]) {
+    await printCommandHelp(rest[0]);
+    return;
+  }
   if (!command || command === "--help" || command === "-h" || command === "help") {
     process.stdout.write(HELP);
     return;
@@ -466,8 +186,14 @@ async function main() {
     booleans: BOOLEANS,
     repeatable: REPEATABLE,
   });
+  // SH435 — the command's own help, not the global one. This branch used to print `HELP` before
+  // `loader()` ran, so no command was ever consulted about its own flags: `shio clone --help`
+  // answered with forty lines about every other command and none about clone's fourteen. The cost
+  // landed on the agent, which is what makes it a P3 item and not a polish one — learning a
+  // command's interface meant grepping its source for `flags.`, having already paid for a help
+  // text that answered something else.
   if (flags.help) {
-    process.stdout.write(HELP);
+    await printCommandHelp(command);
     return;
   }
 

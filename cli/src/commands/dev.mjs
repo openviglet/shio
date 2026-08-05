@@ -20,6 +20,24 @@ export function detectPackageManager(env = process.env) {
   return "npm";
 }
 
+/**
+ * What `shio dev --help` prints (SH435).
+ *
+ * Here rather than in `index.mjs` so the flags and their meanings are one edit apart: the
+ * global help described some commands' flags and no command's completely, and learning this
+ * one's meant grepping the source for `flags.` — reading an implementation to discover an
+ * interface, having already paid for a help text that answered something else.
+ */
+export const HELP = `shio dev — generate types, start the site's dev server, and watch the model
+
+  --content            Sync shio/content/** both ways and log events, instead of running
+                       the site's dev server
+  --interval <ms>      How often to poll for changes
+
+Example:
+  shio dev --content
+`;
+
 export async function run(flags, positionals, ctx) {
   if (flags.content) {
     // SH90: the content loop instead of the site's dev server. It is a different job —

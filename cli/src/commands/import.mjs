@@ -28,6 +28,25 @@ import { basename } from "node:path";
 import { ShioAdminClient } from "../admin-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 
+/**
+ * What `shio import --help` prints (SH435).
+ *
+ * Here rather than in `index.mjs` so the flags and their meanings are one edit apart: the
+ * global help described some commands' flags and no command's completely, and learning this
+ * one's meant grepping the source for `flags.` — reading an implementation to discover an
+ * interface, having already paid for a help text that answered something else.
+ */
+export const HELP = `shio import <file> — clone an SH68 exchange package (.zip) into this instance
+
+The way to accept a site somebody hands you. Export one with
+GET /api/v2/site/{id}/export.
+
+  --file <file.zip>    The package, when no positional is given
+
+Example:
+  shio import acme-site.zip
+`;
+
 export async function run(flags, positionals, ctx) {
   const file = positionals[0] ?? flags.file;
   if (!file) {

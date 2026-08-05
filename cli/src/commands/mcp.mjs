@@ -22,6 +22,24 @@ import { resolveAdmin } from "../context.mjs";
 /** The header the server mints on initialize and expects echoed afterwards. */
 const SESSION_HEADER = "mcp-session-id";
 
+/**
+ * What `shio mcp --help` prints (SH435).
+ *
+ * Here rather than in `index.mjs` so the flags and their meanings are one edit apart: the
+ * global help described some commands' flags and no command's completely, and learning this
+ * one's meant grepping the source for `flags.` — reading an implementation to discover an
+ * interface, having already paid for a help text that answered something else.
+ */
+export const HELP = `shio mcp — bridge stdio to this instance's MCP endpoint
+
+Speaks newline-delimited JSON-RPC on stdin/stdout and forwards it to POST /mcp. Takes no
+flags of its own beyond the connection ones (--url/--user/--password, or SHIO_URL/
+SHIO_USER/SHIO_PASSWORD).
+
+Register it with:
+  claude mcp add shio -- shio mcp
+`;
+
 export async function run(flags, _positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
   const endpoint = `${String(baseUrl).replace(/\/+$/, "")}/mcp`;

@@ -30,6 +30,27 @@ async function prompt(rl, question, fallback) {
   return answer || fallback || "";
 }
 
+/**
+ * What `shio init --help` prints (SH435).
+ *
+ * Here rather than in `index.mjs` so the flags and their meanings are one edit apart: the
+ * global help described some commands' flags and no command's completely, and learning this
+ * one's meant grepping the source for `flags.` — reading an implementation to discover an
+ * interface, having already paid for a help text that answered something else.
+ */
+export const HELP = `shio init [name] — scaffold a Next.js site wired to this instance
+
+  --name <name>        The directory to create, when no positional is given
+  --blueprint <name>   Take the starter from the instance instead of the built-in template
+  --site <site>        With --blueprint: also apply the package's content into that site
+  --force              Overwrite files that are already there
+  --yes                Take every default without asking
+
+Examples:
+  shio init my-site
+  shio init acme --blueprint marketing-site --site Acme
+`;
+
 export async function run(flags, positionals, ctx) {
   let projectName = positionals[0] ?? flags.name;
   let { url, site, token } = flags;

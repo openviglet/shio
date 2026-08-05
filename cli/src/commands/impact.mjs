@@ -24,6 +24,27 @@
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 
+/**
+ * What `shio impact --help` prints (SH435).
+ *
+ * Here rather than in `index.mjs` so the flags and their meanings are one edit apart: the
+ * global help described some commands' flags and no command's completely, and learning this
+ * one's meant grepping the source for `flags.` — reading an implementation to discover an
+ * interface, having already paid for a help text that answered something else.
+ */
+export const HELP = `shio impact <address> — what a change to this template would affect
+
+Prints the layouts, the post-types and the draft/published page counts a template feeds.
+An ordinary post is answered with "is not a template" rather than a failure, so a caller
+sweeping a mixed list does not have to know which addresses are templates first.
+
+  --address <addr>     The address, when no positional is given
+  --json               The section as JSON (null for a non-template), for a pipeline
+
+Example:
+  shio impact post:Acme/layouts/article
+`;
+
 export async function run(flags, positionals, ctx) {
   const address = positionals[0] ?? flags.address;
   if (!address) {

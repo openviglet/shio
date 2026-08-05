@@ -13,6 +13,26 @@
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 
+/**
+ * What `shio resolve --help` prints (SH435).
+ *
+ * Here rather than in `index.mjs` so the flags and their meanings are one edit apart: the
+ * global help described some commands' flags and no command's completely, and learning this
+ * one's meant grepping the source for `flags.` — reading an implementation to discover an
+ * interface, having already paid for a help text that answered something else.
+ */
+export const HELP = `shio resolve <address> — resolve a content address to its object
+
+  --address <addr>     The address, when no positional is given
+  --id                 Print only the resolved id (pipeline-friendly)
+
+Addresses: post:<site>/<url> · folder:<site>/<chain> · site:<name> · id:<uuid>
+
+Examples:
+  shio resolve post:Blog/blog/hello-world
+  ID=$(shio resolve folder:Blog/blog --id)
+`;
+
 export async function run(flags, positionals, ctx) {
   const address = positionals[0] ?? flags.address;
   if (!address) {

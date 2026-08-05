@@ -31,6 +31,37 @@ import { resolveAdmin } from "../context.mjs";
 import { PER_RULE_CAP, classify, describe, parseWidths, probe } from "../audit.mjs";
 import { pageTarget, resolveUrl } from "../snapshot.mjs";
 
+/**
+ * What `shio audit --help` prints (SH435).
+ *
+ * Here rather than in `index.mjs` so the flags and their meanings are one edit apart: the
+ * global help described some commands' flags and no command's completely, and learning this
+ * one's meant grepping the source for `flags.` — reading an implementation to discover an
+ * interface, having already paid for a help text that answered something else.
+ */
+export const HELP = `shio audit <page> — what is wrong with a rendered page, as text with a selector each
+
+Errors are what a machine observed (a 404, a thrown exception) and exit 1; overflow,
+contrast, a collapsed box and a fallback font are warnings that exit 0, because each is
+design intent often enough that gating on them makes this the exit code people wrap in
+|| true. Needs playwright.
+
+  --page <page>        The page to audit (or a bare positional, or --address)
+  --width <n[,n]>      Viewport width(s) to load, default 1280 — findings merge across them
+  --height <n>         Viewport height (default 800)
+  --contrast <ratio>   The contrast floor to report against (default 4.5)
+  --strict             Exit 1 on warnings too
+  --preview            Audit the instance's own preview (the banner is never a finding)
+  --timeout <ms>       Per-page navigation timeout (default 30000)
+  --json               The findings as JSON, for a pipeline
+
+NOT --url: that is the instance (SH365).
+
+Examples:
+  shio audit post:Acme/about --width 1280,375
+  shio audit https://acme.example.com/ --strict
+`;
+
 export async function run(flags, positionals, ctx) {
   // No `warn` argument, which is how SH365's helper is told to refuse the legacy `--url`-as-page
   // reading: this command never documented it, so accepting it would create the hazard rather than

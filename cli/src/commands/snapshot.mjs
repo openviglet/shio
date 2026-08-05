@@ -39,6 +39,41 @@ import {
   widthsOf,
 } from "../snapshot.mjs";
 
+/**
+ * What `shio snapshot --help` prints (SH435).
+ *
+ * Here rather than in `index.mjs` so the flags and their meanings are one edit apart: the
+ * global help described some commands' flags and no command's completely, and learning this
+ * one's meant grepping the source for `flags.` — reading an implementation to discover an
+ * interface, having already paid for a help text that answered something else.
+ */
+export const HELP = `shio snapshot <page> — a PNG for a human, and whether the page looks different
+
+Baselines live in shio/snapshots/; the displaced one is kept as <slug>.prev.png. A change
+exits 0 — a page looking different is usually the change you just made — so the gate is
+opt-in. Needs playwright; pixelmatch + pngjs make the diff per-pixel instead of byte-level.
+
+  --page <page>        The page to photograph (or a bare positional, or --address)
+  --against <url>      Compare the page against the ORIGINAL at that URL, both captured in
+                       this run (SH386). A difference exits 1 — here that IS the defect
+  --accept             Replace the baseline without reporting a change
+  --fail-on-change     Exit 1 when the page changed (a gate; off by default)
+  --width <n[,n]>      Viewport width(s), default 1280. Several widths only with --against
+  --height <n>         Viewport height (default 800)
+  --viewport-only      Just the viewport, not the full page
+  --preview            Photograph the instance's own preview — the only way to see a DRAFT
+  --limit <n>          Rows to print with --against
+  --timeout <ms>       Per-page navigation timeout (default 30000)
+  --out <dir>          Where the images go (default shio/snapshots)
+
+NOT --url: that is the instance, and it also decides which server a front-endless site is
+previewed from — one flag that picked both would decide which server the picture came from.
+
+Examples:
+  shio snapshot post:Acme/about
+  shio snapshot --page post:Acme/ --against https://acme.example.com/ --width 1280,375
+`;
+
 export async function run(flags, positionals, ctx) {
   // SH365 — `--page`, not `--url`. `--url` is the instance here as everywhere else, and reading it
   // as the page as well is what let one flag decide which *server* a picture came from.

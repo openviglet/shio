@@ -347,6 +347,24 @@ assertion, so the test must not be what decides it), and still **no instance and
 a property of the pipeline — `snapshot --against` is the one step that needs one, and its comparison is
 already driven through an injected capture.
 
+**`shio <command> --help` prints that command's own flags, and the global help stopped describing
+them (SH435).** It used to print the same global text for every command — `main` answered
+`flags.help` *before* `loader()` ran, so no command was ever consulted about its own flags, and
+learning that `clone` takes `--markup`, `--assets`, `--max-asset-bytes` and eleven more meant
+grepping the source for `flags.` after paying for a help text that answered something else. That is
+a P3 cost, not a polish one: a six-command pipeline was six greps plus six wasted outputs. Every
+command module now exports `HELP` — beside the `flags.` reads it describes, so a flag and its meaning
+are one edit apart — and `printCommandHelp` loads the module to print it, with **no fallback to the
+global text**, because a silent fallback is what hid this. `shio help <command>` is the same answer.
+The instrument is the second test rather than the first: `help.test.mjs` derives each command's flags
+from its **source** and fails the build for any the help does not name (122 flags across 23 commands
+today, printed on every run), which is the check a hand-kept list cannot do — and it is what finally
+documented `clone --url`, the one command where `--url` means the *target* rather than the instance, a
+semantic that until now was declared in a test rather than anywhere a caller looks. The global help
+fell from **357 lines to 58**: it names the commands, points at `shio <command> --help`, and keeps only
+what is genuinely cross-command (the connection flags). Both halves of that are the same rule — the
+same interface described in two places is the shape that drifts.
+
 **The optional browser is resolved before anything else, and one module owns the refusal (SH434).**
 With `playwright` absent, `snapshot`, `snapshot --against` and `audit` printed the intended teaching
 error and then emitted `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)` and exit
