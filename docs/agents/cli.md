@@ -330,6 +330,23 @@ the findings are absences, and SH143's rule bites hardest for those.
 `fetch failed` on the gate whose whole promise is that it needs no instance. It is a constant now,
 beside the two names it is made of.
 
+**One test drives the whole pipeline, and it is the only one that can (SH422).** Block Q shipped as
+eleven tasks, each thoroughly tested in isolation — and every phase hands an artefact to the next, so
+each handoff is a shape agreed in two places with a unit test pinning one side and *constructing the
+other by hand*. That is the shape that passes while the real producer writes something else.
+`replication-chain.test.mjs` therefore runs `clone --markup --assets` → `propose` → `propose --accept`
+→ `verify --checks projection,replication` over one served fixture site, asserting at each step that
+what the last phase **wrote** is what this one reads: the inventory row naming a markup file that holds
+that page, a candidate whose `pages` are the crawl's own paths, a `url()` rewritten onto the tree path
+the capture chose (so the asset map is *the* map and not a copy), the accepted id coming back
+`authorable` from the plan on disk, `INVENTORY_VERSION` equal to `READS_VERSION` across the two
+modules, and the `unfollowed` rows — one cut by robots, one by `--depth` — becoming
+`source-link-unresolved`. Two harness choices are the point rather than convenience: a **real temp
+directory**, because a fake filesystem is right for a phase and wrong for a chain (the artefact is the
+assertion, so the test must not be what decides it), and still **no instance and no browser**, which is
+a property of the pipeline — `snapshot --against` is the one step that needs one, and its comparison is
+already driven through an injected capture.
+
 **`shio impact <address>` exists and `shio read` deliberately does not (SH288).** The task was
 filed as "the CLI cannot show one post", and only half of that is a gap. A post's **content** is on
 disk after `pull --content`, where `Grep` and `Edit` are the cheapest tools an agent has (P4), so a

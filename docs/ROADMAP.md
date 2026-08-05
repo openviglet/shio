@@ -83,7 +83,6 @@
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
 - 📋 **SH417** (deps: SH379 ✅, SH380 ✅) **An accepted conversion plan is a file nothing applies** — SH379 records a reviewed acceptance and no command turns it into the posts, post-types and theme it describes, so the half a human approved never becomes content. → §XVII.15
-- 📋 **SH422** (deps: SH377 ✅, SH379 ✅, SH387 ✅) **Every replication phase is tested and the chain is not** — Eleven tasks each pinned their own half, and no test drives capture to propose to verify to snapshot, so a break between two phases is the one nothing would catch. → §XVII.16
 - 📋 **SH424** (deps: SH380 ✅) **Every design token the capture writes is shadowed by the stylesheet it keeps** — ShThemeTokens prepends the compiled :root and the kept CSS re-declares the same properties later at equal specificity, so editing a token changes nothing. → §XVII.17
 - 📋 **SH425** (deps: SH379 ✅) **A plain marketing page yields zero conversion candidates** — The block walk descends into the card grid and then discards its children as inline, so the two blocks the vocabulary fits best are the two it cannot see. → §XVII.18
 - 📋 **SH426** (deps: SH379 ✅) **A hero in a page's own header element can never be a candidate** — contentRoot narrows to main to skip site chrome, but a page's introductory header is content, so the block classify has a dedicated hero test for is the one it never sees. → §XVII.19

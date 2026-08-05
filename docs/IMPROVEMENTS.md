@@ -1548,28 +1548,6 @@ makes detectable and an apply must refuse rather than guess at. And the apply is
 `--dry-run` first like every other write here, because the artefact it consumes was
 built to be reviewed and a command that skipped straight to writing would waste that.
 
-### XVII.16 The seam between two phases is where a pipeline actually breaks (SH422)
-
-Block Q shipped as eleven tasks and each one is thoroughly tested in isolation: the
-crawl has a fake site, the proposal has a fake filesystem, the coverage group has a
-fixture capture, the render helpers have their own databases. Nothing runs the pipeline.
-
-That matters because the phases hand artefacts to each other, and every one of those
-handoffs is a shape agreed in two places. `clone --markup` names a file that `propose`
-resolves by slug. `clone --assets` folds a source-URL-to-tree-path map that the theme's
-`url()` rewrite reads. `propose` writes an id that an acceptance in
-`conversion-plan.json` refers to. The coverage group reads an `unfollowed` list a
-version-2 inventory carries and a version-1 one does not. Each is pinned on one side by
-a unit test that constructs the other side by hand — which is exactly the shape that
-passes while the real producer writes something else.
-
-The proof wanted is one fixture site walked end to end with no instance: crawl a served
-map of pages, propose, accept one candidate, run `verify --checks
-projection,replication`, and assert the artefacts of each step are the inputs the next
-step actually reads. It is a CLI test, because every phase but the render is the CLI's,
-and it needs no browser: `snapshot --against` is the one step that does, and its
-comparison is already unit-tested through an injected capture.
-
 ### XVII.17 The captured theme's tokens are dead on arrival (SH424)
 
 Measured on a real replica of `openviglet.github.io`, not argued. `shio propose` wrote
