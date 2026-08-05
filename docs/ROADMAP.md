@@ -80,6 +80,7 @@
 - 📋 **SH419** (deps: SH384 ✅) **A listing loads the whole folder to render ten rows** — Measured at 213 rows per 10 rendered: limit and page are an in-memory window over a whole-folder read, so a 5000-post archive pays 5000 rows for page one. → §XV.30
 - 📋 **SH420** (deps: SH384 ✅) **A nested listing clobbers the outer block's @last** — Measured: an outer row reading {{#if @last}} after an inner query renders twice, because both blocks write @index and @last into one shared data scope. → §XV.31
 - 📋 **SH421** (deps: SH389 ✅) **A layout that should not carry the site's scripts is still told off** — site-scripts-dropped warns for every bound layout that omits site.scripts, and an email template or a print sheet omits them on purpose with no way to say so. → §XV.32
+- 📋 **SH451** (deps: —) **A site has no public URL, so the renderer composes a page nobody outside the console can read** — preview is 401 by design and the Next.js path cannot install, so the WEM-shaped /site delivery route the model already descends from is the missing half. → §XVI.68
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 

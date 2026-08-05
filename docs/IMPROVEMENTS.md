@@ -1424,6 +1424,31 @@ SH341's order applies — instrument first — but a section gate cannot ratchet
 way the line gate did, because dropping a section is destructive where shortening a line
 is not. So the honest first step is deciding what a *stale* section should become.
 
+### XVI.68 The delivery half of an inheritance we already took (SH451)
+
+A site built or replicated in Shio has **no public URL by any path**. `/preview/**` is
+the only HTML mapping `ShRenderAPI` declares and it answers 401 anonymously —
+authenticated, `no-store`, `noindex`, all deliberate. The path `renderer.md` names as
+production, Next.js over the CDA, cannot be installed (SH446). So the renderer composes
+a correct page nobody outside the console can read.
+
+The route to add is the product's own: `/site/<lang>/<country>/<context>/<site>/<url>`,
+the OpenText WEM / Vignette V7 delivery shape this renderer already descends from —
+`ShPageRenderService` names that lineage for the *model*, page → template → component,
+and this is the delivery half of the same inheritance rather than a new idea.
+
+Six things must differ from `/preview`, each a guard deliberately inverted rather than
+dropped: anonymous instead of authenticated; **PUBLISHED**, never the draft; no banner;
+cacheable instead of `no-store`; indexable instead of `noindex`; and internal links
+rewritten into the public space, which is SH336's rewrite pointed the other way. A route
+sharing the preview's composition but not its guards would be the preview quietly
+becoming infrastructure — what those guards exist to prevent.
+
+**It is a strategy change and belongs in the open.** `renderer.md` states production delivery is Next.js
+over the CDA (P10); shipping this makes that a choice between two rather than a fact, and the doc has to
+say so. No non-goal forbids it. One thing to settle first: `<context>` — `default` in the shape above —
+means a channel in WEM, and Shio has no such concept today.
+
 # Part 2 — pre-existing sections
 
 ## I. Headless foundation — the CDA
