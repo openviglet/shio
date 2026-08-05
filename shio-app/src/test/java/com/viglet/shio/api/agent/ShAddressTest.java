@@ -34,6 +34,50 @@ class ShAddressTest {
         assertThat(ShAddress.parse("id:9f3c-abcd")).isEqualTo(new ShAddress(Kind.ID, "9f3c-abcd", null));
     }
 
+    /**
+     * SH433 — the home page is the one address nothing spelled.
+     *
+     * <p>{@code verify --checks replication} reports {@code source-page-missing} for {@code /} on
+     * every replication, and its fix said "give the replica a page at that URL". Neither that URL nor
+     * anything else written down said how: {@code folder:OpenViglet} is refused because a folder needs
+     * a path, {@code agents.md} gave {@code post:<site>/<friendly-url>}, and an empty friendly URL
+     * reads as the same malformed case. The answer — a post whose {@code furl} is {@code /} — cost
+     * several probes against a live instance to find, which is the session P2 exists to remove.
+     *
+     * <p>It resolves and always did. This pins the two spellings a caller reaches for and, below, the
+     * refusal that now names the form instead of leaving it to be guessed.
+     */
+    @Test
+    void theHomePageIsAddressable() {
+        assertThat(ShAddress.parse("post:Blog/").path())
+                .as("the form the conventions, AGENTS.md and the teaching errors now all name")
+                .isEqualTo("/");
+        assertThat(ShAddress.parse("post:Blog//").path())
+                .as("""
+                        and the double slash a caller finds by probing normalizes to the same thing,                         so the one that was discovered the hard way keeps working""")
+                .isEqualTo("/");
+        assertThat(ShAddress.post("Blog", "/").path()).isEqualTo("/");
+        assertThat(ShAddress.parse("post:Blog/").toString())
+                .as("and it round-trips, which is what makes it usable as a key")
+                .isEqualTo("post:Blog/");
+    }
+
+    @Test
+    void aPostAddressWithNoPathNamesTheHomePageForm() {
+        // The refusal a caller actually hits: `post:<site>` with the path left off is exactly how
+        // somebody reaches for the root. P6 — the message is the documentation that gets read.
+        assertThatThrownBy(() -> ShAddress.parse("post:Blog"))
+                .isInstanceOf(ShAddress.MalformedAddressException.class)
+                .hasMessageContaining("post:Blog/")
+                .hasMessageContaining("friendly URL");
+
+        // A folder has no root page and is not offered one: a folder address is a chain of names, and
+        // suggesting `folder:Blog/` would send a caller at something that does not exist.
+        assertThatThrownBy(() -> ShAddress.parse("folder:Blog"))
+                .isInstanceOf(ShAddress.MalformedAddressException.class)
+                .hasMessageNotContaining("friendly URL");
+    }
+
     @Test
     void schemeIsCaseInsensitiveAndWhitespaceTolerant() {
         assertThat(ShAddress.parse("  POST:Blog/hello  ").kind()).isEqualTo(Kind.POST);

@@ -423,9 +423,13 @@ public class ShAgentContextService {
         // Deliberately a *rule*, not a per-row field: every sitemap row already carries
         // its site, path and url, so emitting a built address on each one would pay
         // tokens to repeat what the caller can derive. State the grammar once (SH79).
+        // SH433 — the home page is named here because it is the one form a caller cannot derive from
+        // the grammar: an empty friendly URL reads as the malformed case, and a replication needs
+        // that address first, every time.
         conventions.add("Address content as post:<site>/<url> (a post's friendly URL) or "
                 + "folder:<site>/<path> (its chain of folder names) — build it from a sitemap row's "
-                + "site + url/path. GET /api/v2/agent/resolve?address=... returns the id when an "
+                + "site + url/path; the home page is post:<site>/ (friendly URL `/`). "
+                + "GET /api/v2/agent/resolve?address=... returns the id when an "
                 + "id-keyed endpoint needs one. Ids are per-install UUIDs and are not portable.");
         // Say it once, here, rather than shipping 36 chars per row to prove it (SH121).
         if (!ids) {

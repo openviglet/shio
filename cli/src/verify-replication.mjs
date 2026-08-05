@@ -127,7 +127,15 @@ function pageFindings(inventory, served) {
     message: `the capture served \`${path}\` and this tree neither holds a page there nor redirects it${cut}`,
     fix: "Give the replica a page at that URL, or a Redirect post whose friendly URL is that path "
       + "and whose TO names where it went. Deciding a path does not deserve either is a real answer "
-      + "— this is a warning because only you can give it.",
+      + "— this is a warning because only you can give it."
+      // SH433 — the root is the one path whose address nobody can spell from what is written down,
+      // and it is the first row this rule reports on every replication. A fix that says "give the
+      // replica a page at that URL" and leaves the caller to discover `post:<site>/` by probing a
+      // live instance is the session P2 exists to remove.
+      + (normalizePath(path) === "/"
+        ? " The home page is addressed `post:<site>/` — a post whose friendly URL is `/`, which is "
+          + "what the renderer looks for and what /preview/<site>/ then serves."
+        : ""),
   }));
 }
 

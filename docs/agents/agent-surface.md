@@ -121,6 +121,21 @@ is meant, and the lenient `site:` form **refuses to guess** when both are occupi
 **(3) Absent, not forbidden**: an address outside the SH2 allow-list resolves **404, never 403**, so
 a scoped credential cannot use the error to prove a site exists.
 
+**A site's home page is `post:<site>/`, and that is now written down in the four places it is looked
+for (SH433).** It always resolved — `normalizePath` folds `post:Site/` and `post:Site//` to a `furl`
+of `/`, the renderer looks for exactly that post, and `/preview/<site>/` then serves it — but nothing
+*said* so: `folder:Site` is refused because a folder needs a path, the grammar reads
+`post:<site>/<friendly-url>`, and an empty friendly URL looks like the same malformed case. Finding it
+cost several probes against a live instance, which is the session P2 exists to remove — and it is the
+**first** address a replication needs, because `verify --checks replication` reports
+`source-page-missing` for `/` on every one of them. So: the context pack's address convention names it,
+the generated `AGENTS.md` names it, `source-page-missing`'s fix names it **only on the root row** (a
+sentence about the home page on every missing page is how a fix line stops being read), and
+`ShAddress`'s refusal for a path-less `post:` address now answers with `post:<site>/` instead of the
+grammar the caller just failed to apply. A path-less **`folder:`** address is deliberately not offered
+one — there is no root folder page, and suggesting `folder:Site/` would point at something that does
+not exist. This is P6 and P2, not a capability gap: nothing was missing except the sentence.
+
 - `GET /agent/resolve?address=…` — an address → an object id, for id-keyed endpoints.
 - `POST /agent/batch` — **writes**: N addressed ops (`site.upsert`, `folder.upsert`,
   `folder.move`, `post.upsert`, `post.move`, `post.publish`, `post.unpublish`, `folder.delete`,

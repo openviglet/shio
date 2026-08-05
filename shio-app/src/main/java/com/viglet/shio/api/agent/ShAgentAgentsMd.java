@@ -100,7 +100,8 @@ public final class ShAgentAgentsMd {
                 + "authority.** Send `If-None-Match` with the digest below and an unchanged "
                 + "instance answers `304`.\n");
         out.append("2. Address content as `post:<site>/<friendly-url>` or "
-                + "`folder:<site>/<folder-path>`. You never need a UUID; "
+                + "`folder:<site>/<folder-path>` — the home page is `post:<site>/`. "
+                + "You never need a UUID; "
                 + "`GET /api/v2/agent/resolve?address=…` produces one when an id-keyed "
                 + "endpoint demands it.\n");
         out.append("3. Write with `POST /api/v2/agent/batch` (atomic, addressed, `dryRun`-able) "

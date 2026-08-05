@@ -82,7 +82,8 @@ describes. The per-area detail below is **authoritative** — do not restate it 
 
 Addresses (SH79), used everywhere: `post:<site>/<friendly-url>` ·
 `folder:<site>/<name-chain>` · `site:<name>` · `id:<uuid>`. **Writes take only
-`post:`/`folder:`.** Backend `http://localhost:2710`, React dev `5173`, API prefix
+`post:`/`folder:`**, and a site's **home page is `post:<site>/`** — the one form
+the grammar does not spell (SH433). Backend `http://localhost:2710`, React dev `5173`, API prefix
 `/api/v2/`.
 
 **Three endpoints that do not exist** — an agent cannot grep for an absence, and

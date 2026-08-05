@@ -82,7 +82,6 @@
 
 - 📋 **SH417** (deps: SH379 ✅, SH380 ✅) **An accepted conversion plan is a file nothing applies** — SH379 records a reviewed acceptance and no command turns it into the posts, post-types and theme it describes, so the half a human approved never becomes content. → §XVII.15
 - 📋 **SH429** (deps: SH378 ✅, SH379 ✅) **A downloaded asset cannot reach a replica that stays in fidelity mode** — Only a File field triggers an upload and verbatim markup has no fields, so every image clone --assets fetched stays on disk and the replica's img tags point at nothing. → §XVII.22
-- 📋 **SH433** (deps: SH387 ✅) **Nothing tells an agent how to spell the address of a site's home page** — A post answering the source's root needs post:<site>// with a double slash, which no document, convention line or teaching error mentions, and it is every replication's first page. → §XVII.25
 - 📋 **SH436** (deps: SH380 ✅) **The captured theme has nowhere to land on an instance older than Theme.TOKENS** — ensure never touches an existing post-type and reconcile is opt-in, so a pre-SH195 instance has no TOKENS field and nothing in the capture path says a repair is needed. → §XVII.26
 
 ## Block F — Market positioning

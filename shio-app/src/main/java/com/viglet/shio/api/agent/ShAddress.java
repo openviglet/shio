@@ -137,7 +137,16 @@ public record ShAddress(Kind kind, String site, String path) {
         if (slash < 0) {
             if (kind == Kind.POST || kind == Kind.FOLDER) {
                 throw new MalformedAddressException(text,
-                        "A " + scheme + " address needs a path: `" + scheme + ":<site>/<path>`.");
+                        "A " + scheme + " address needs a path: `" + scheme + ":<site>/<path>`."
+                                // SH433 — the one path an agent cannot derive. A replication starts at
+                                // the source's `/` every time, so this is the first address it needs,
+                                // and `post:<site>` with the path left off is exactly how a caller
+                                // reaches for it. Naming the form here costs a sentence on a refusal
+                                // and saves the probing session P2 exists to remove.
+                                + (kind == Kind.POST
+                                        ? " The site's home page is `" + scheme + ":" + target.trim()
+                                                + "/` — the post whose friendly URL is `/`."
+                                        : ""));
             }
             return new ShAddress(Kind.SITE, target.trim(), null);
         }
@@ -217,7 +226,8 @@ public record ShAddress(Kind kind, String site, String path) {
                     .withDetail(why)
                     .withAllowed(Kind.schemes())
                     .withFix("Use `<scheme>:<site>/<path>` — e.g. `post:Blog/blog/hello-world`, "
-                            + "`folder:Blog/blog`, `site:Blog`, or `id:<uuid>`.")
+                            + "`post:Blog/` (the home page), `folder:Blog/blog`, `site:Blog`, or "
+                            + "`id:<uuid>`.")
                     .withExample("post:Blog/blog/hello-world"));
         }
     }

@@ -95,6 +95,26 @@ test("a source page the tree neither serves nor redirects is a warning", () => {
   assert.match(missing[0].message, /\/about/);
 });
 
+test("SH433: the finding for the source's root says how to spell the address", () => {
+  // `/` is the first row this rule reports on every replication, and its fix said "give the replica a
+  // page at that URL" — while nothing written down said how to write one. `folder:<site>` is refused
+  // (a folder needs a path), agents.md gave post:<site>/<friendly-url>, and an empty friendly URL
+  // reads as the same malformed case. Finding `post:<site>/` cost probes against a live instance.
+  const { findings } = lintReplication({ posts: [], defs: DEFS, inventory: capture() });
+
+  const root = findings.find((each) => each.rule === "source-page-missing" && /`\/`/.test(each.message));
+  assert.ok(root, "the root is reported like any other path");
+  assert.match(root.fix, /post:<site>\//, "and the fix names the address, which is the whole task");
+  assert.match(root.fix, /friendly URL is `\/`/);
+
+  const other = findings.find((each) => each.rule === "source-page-missing" && /about/.test(each.message));
+  assert.ok(
+    !/post:<site>\//.test(other.fix),
+    "and only the root carries it: a sentence about the home page on every missing page is the kind "
+      + "of padding that makes a fix line stop being read",
+  );
+});
+
 test("a Redirect answering the path counts as served, because it is a post with that url", () => {
   const { findings } = lintReplication({
     posts: [page("/"), { site: "Acme", url: "/about", type: "Redirect", data: { TO: "/company" } }],

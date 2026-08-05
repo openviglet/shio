@@ -1523,31 +1523,6 @@ rewritten to the uploaded asset's address, which needs an upload with no field. 
 first is closer to what a fidelity replica means. Whichever, `source-asset-missing`
 should be able to say the bytes exist and nothing serves them.
 
-### XVII.25 The home page is the one address nothing spells (SH433)
-
-`verify --checks replication` reported `source-page-missing` for `/` — the capture
-served it and the replica had no page there. The fix text says to give the replica a
-page at that URL or a `Redirect` whose friendly URL is that path. Neither is spellable
-from anything written down.
-
-`folder:OpenViglet` is refused as malformed: a folder address needs a path. `agents.md`
-gives `post:<site>/<friendly-url>`, and an empty friendly URL reads as the same
-malformed case. The answer turns out to be `post:OpenViglet//` — a double slash, which
-`ShAddress.normalizePath` folds to a furl of `/`, after which `/preview/<site>/` serves
-and the finding clears. That works and is undiscoverable; finding it cost several probes
-against a live instance, which is the session P2 exists to remove.
-
-Worth separating from a capability gap, because it is not one. The renderer looks for a
-post whose friendly URL is `/`, a post can hold it, and once one existed everything
-downstream was correct — including `UnknownPageException`'s example `/preview/<site>/`,
-which reads like a broken example until a home page exists and is then the right one.
-
-So this is P6 and P2, not a missing feature: `source-page-missing` knows a root path is
-wanted and should say how to write it, the conventions line should name the form beside
-the other four, and `shio resolve` should accept it without a caller guessing. A
-replication starts at the source's `/` every time, which makes this the first address an
-agent needs and the only one it cannot derive.
-
 ### XVII.26 The field the capture writes into may not exist yet (SH436)
 
 On the dev instance, `Theme` declared `TITLE`, `CSS` and `JAVASCRIPT` and no `TOKENS`,

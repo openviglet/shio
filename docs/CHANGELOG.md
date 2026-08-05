@@ -926,6 +926,7 @@
 - **SH427** — A page's inline style blocks are read from the stored markup as sheets of their own, resolving url() against the document.
 - **SH428** — A colliding token takes its whole name as one flat segment, which round-trips to the property the source wrote, and the note counts what the file holds.
 - **SH424** — A declaration lifted into TOKENS is dropped from the kept CSS, so the prepended token block is what sets it and an edit reaches the page.
+- **SH433** — The home page form `post:<site>/` is named by the conventions, the generated AGENTS.md, the root coverage finding's fix and the address refusal itself.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 
