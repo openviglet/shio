@@ -25,7 +25,33 @@ ref_scheme = "outline"
 # focus, and after it the suggested order is H → K → I → J → O → L → M. A queue stated as a
 # heading ("Part 1 — current focus") is one `pick` cannot read and one nobody updates; stated
 # here it is what `pick` and `brief` answer with, and every token is validated.
+#
+# The ids ahead of the blocks are Block Q's replication run, in execution order rather than id
+# order — a smoke test against a real site found thirteen defects, and the order they must be
+# fixed in is not the order they were filed in. Three rules produced it. The safety fix and the
+# end-to-end test come first, because SH430 makes every dry run below trustworthy and SH422
+# passes today, so it locks the handoffs the rest of the queue changes. Then the pipeline is
+# repaired upstream to downstream — capture (SH431, SH432), then conversion (SH425, SH426),
+# then the theme (SH427 reads the CSS, SH428 stops dropping paths, SH424 makes the tokens
+# live), because each phase reads what the one before it wrote. The write path is last, since
+# an applier is only worth building once the proposal is worth applying, and SH433 precedes it
+# because the applier has to write a page at `/`.
 priority = [
+  "SH430",
+  "SH422",
+  "SH434",
+  "SH435",
+  "SH431",
+  "SH432",
+  "SH425",
+  "SH426",
+  "SH427",
+  "SH428",
+  "SH424",
+  "SH433",
+  "SH436",
+  "SH417",
+  "SH429",
   "Block P",
   "Block H",
   "Block K",
