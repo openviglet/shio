@@ -90,7 +90,8 @@ public class ShRenderPostTypes {
 
     /** The three, in the order a reader meets them: page, then its parts, then its skin. */
     public static final List<String> NAMES = List.of(
-            ShSystemPostType.PAGE_LAYOUT, ShSystemPostType.REGION, ShSystemPostType.THEME);
+            ShSystemPostType.PAGE_LAYOUT, ShSystemPostType.REGION, ShSystemPostType.THEME,
+            ShSystemPostType.REDIRECT);
 
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShWidgetRepository shWidgetRepository;
@@ -124,7 +125,8 @@ public class ShRenderPostTypes {
         return List.of(
                 mapper.toDef(ensurePageLayout()),
                 mapper.toDef(ensureRegion()),
-                mapper.toDef(ensureTheme()));
+                mapper.toDef(ensureTheme()),
+                mapper.toDef(ensureRedirect()));
     }
 
     /** Which of the three exist, without creating any — same transaction rule. */
@@ -287,6 +289,19 @@ public class ShRenderPostTypes {
                     // one-line fix if this field turns out to be edited by hand often.
                     field(ShSystemPostTypeAttr.TOKENS, "Design tokens",
                             ShSystemWidget.ACE_JS, 4, false));
+            // SH385 — and note what is NOT here: a `FROM`. A redirect's source is the post's own
+            // friendly URL, which is the whole design rather than a shortcut. Three things fall out
+            // of it for free: the router already resolves a path to a post, so a redirect costs no
+            // new query and no site-wide scan on a 404; SH323 makes a friendly URL site-unique, so
+            // "two redirects claim one path" cannot happen; and a redirect shadowing a real page is
+            // already SH99's `duplicate-url` error, which is the finding SH385 asked for and nobody
+            // had to write. A `FROM` field would have needed a lookup, a uniqueness rule and a
+            // shadow rule, all of which exist.
+            case ShSystemPostType.REDIRECT -> List.of(
+                    titleField(),
+                    field(ShSystemPostTypeAttr.TO, "Redirect to", ShSystemWidget.TEXT, 2, true),
+                    field(ShSystemPostTypeAttr.PERMANENT, "Permanent (301)",
+                            ShSystemWidget.CHECK_BOX, 3, false));
             default -> List.of();
         };
     }
@@ -304,6 +319,11 @@ public class ShRenderPostTypes {
     private ShPostType ensureTheme() {
         return ensure(ShSystemPostType.THEME, "Themes", "Theme",
                 "The stylesheet and script a whole site shares");
+    }
+
+    private ShPostType ensureRedirect() {
+        return ensure(ShSystemPostType.REDIRECT, "Redirects", "Redirect",
+                "One old path in, one address out — the friendly URL is the path it answers");
     }
 
     private ShPostType ensure(String name, String plural, String title, String description) {

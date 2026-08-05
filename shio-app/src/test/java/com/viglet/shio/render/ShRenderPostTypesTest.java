@@ -73,8 +73,10 @@ class ShRenderPostTypesTest {
         assertThat(applied.results()).singleElement().satisfies(row ->
                 assertThat(row.action()).isEqualTo("create"));
         assertThat(shRenderPostTypes.existing()).extracting(ShPostTypeDef::name)
-                .containsExactlyInAnyOrder(ShSystemPostType.PAGE_LAYOUT, ShSystemPostType.REGION,
-                        ShSystemPostType.THEME);
+                // Derived from `NAMES` (SH385). Naming them here made this the third place a fourth
+                // render type had to be added, in a class whose own last assertion already reads the
+                // list — so the restatement was failing while the code it describes was correct.
+                .containsExactlyInAnyOrderElementsOf(ShRenderPostTypes.NAMES);
 
         // Idempotent, and it says so rather than reporting a second creation: an agent re-running its
         // own build must be able to tell "already there" from "made it again" (P5).
@@ -88,13 +90,14 @@ class ShRenderPostTypesTest {
     }
 
     @Test
-    @DisplayName("the three arrive with the 2018 field names, so a real export renders")
-    void theThreeAreCreated() {
+    @DisplayName("they arrive with the 2018 field names, so a real export renders")
+    void theRenderTypesAreCreated() {
         List<ShPostTypeDef> defs = shRenderPostTypes.ensure();
 
         assertThat(defs).extracting(ShPostTypeDef::name)
-                .containsExactly(ShSystemPostType.PAGE_LAYOUT, ShSystemPostType.REGION,
-                        ShSystemPostType.THEME);
+                .as("in `NAMES`' order, which `ensure` builds by hand — so a type added to one and "
+                        + "not the other fails here rather than being provisioned in silence")
+                .containsExactlyElementsOf(ShRenderPostTypes.NAMES);
         assertThat(fieldNames(defs, ShSystemPostType.PAGE_LAYOUT))
                 .as("openviglet/bootstrap-site's PT-PAGE-LAYOUT carries exactly these, so a "
                         + "package from 2018 imports and renders with no migration")
@@ -137,7 +140,7 @@ class ShRenderPostTypesTest {
         assertThatCode(shRenderPostTypes::ensure).doesNotThrowAnyException();
 
         List<ShPostTypeDef> second = shRenderPostTypes.ensure();
-        assertThat(second).hasSize(3);
+        assertThat(second).hasSameSizeAs(ShRenderPostTypes.NAMES);
         assertThat(fieldNames(second, ShSystemPostType.REGION))
                 .as("SH152's rule: an existing type is left exactly as it is, including a "
                         + "field a curator added — re-creating it would discard their work "

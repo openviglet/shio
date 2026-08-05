@@ -535,6 +535,89 @@ public class ShAgentVerifyService {
         untitledTemplates(check, scan, findings);
         missingThemes(check, scan, findings);
         unpublishedTemplates(check, scan, findings);
+        redirectTargets(check, scan, findings);
+    }
+
+    /**
+     * SH385 — a {@code Redirect} whose {@code TO} names nothing.
+     *
+     * <h2>Why this rule and not the other one SH385 asked for</h2>
+     *
+     * <p>The task named two findings: a redirect shadowing a real page, and a target that resolves to
+     * nothing. The <b>first needed no rule at all</b> — a redirect's source is its own friendly URL, so
+     * two posts claiming one path is already SH99's {@code duplicate-url} error, reported with both
+     * addresses. That is the strongest form of "needs no new mechanism" this block has produced, and it
+     * is a consequence of the field that was <em>not</em> added.</p>
+     *
+     * <h2>Why an error rather than a warning</h2>
+     *
+     * <p>Unlike a half-translated site (SH383) there is no work-in-progress reading of this: the post
+     * exists to send a reader somewhere, and it names somewhere that is not there. The reader gets a
+     * 404 <em>after</em> a redirect, which is worse than a plain 404 because the address they end at is
+     * not the one they asked for and nothing tells them why.</p>
+     *
+     * <p>An <b>absolute</b> target is not checked, and that is deliberate rather than lazy: verifying
+     * it would mean fetching somebody else's URL from inside the instance, which SH268 settled and
+     * SH101's request-forgery argument settled again. {@code shio verify --delivery} is where a claim
+     * about a URL outside this instance belongs.</p>
+     */
+    private void redirectTargets(String check, Scan scan, List<Finding> findings) {
+        for (ShPostUnified post : scan.posts()) {
+            String typeName = post.getShPostType() == null ? null : post.getShPostType().getName();
+            if (!ShSystemPostType.REDIRECT.equals(typeName) || post.getShSite() == null) {
+                continue;
+            }
+            String to = fieldValue(post, ShSystemPostTypeAttr.TO);
+            if (to == null || to.isBlank()) {
+                // An empty TO renders as an ordinary page rather than as a redirect, so the defect is
+                // already `required-field-empty` on the same post — one field, one finding.
+                continue;
+            }
+            if (to.startsWith("http://") || to.startsWith("https://")) {
+                continue;
+            }
+            String furl = normalized(to);
+            if (furlsIn(scan, post.getShSite().getId()).contains(furl)) {
+                continue;
+            }
+            findings.add(Finding.error(check, "redirect-target-missing", address(post),
+                    ShSystemPostTypeAttr.TO,
+                    "This redirect points at '" + to + "', and site '" + post.getShSite().getName()
+                            + "' has no page there — so an old link lands on a 404 at an address "
+                            + "nobody asked for, which is harder to diagnose than a plain 404.",
+                    "Point TO at a friendly URL this site holds (GET /api/v2/agent/find?site="
+                            + post.getShSite().getName() + " lists them), use an absolute URL if the "
+                            + "page now lives on another host, or delete the redirect. One exact "
+                            + "path in, one address out — there are no patterns here."));
+        }
+    }
+
+    /**
+     * Every friendly URL one site holds, in either state.
+     *
+     * <p>Built once per call rather than scanned per redirect — a site with fifty redirects would
+     * otherwise walk the whole post list fifty times, which is the shape SH312 measured and disliked
+     * one layer along. Both states, because a redirect pointing at a page somebody has not published
+     * yet is work in progress and not a broken target; {@code unpublished-dependency} is the rule for
+     * that and it is a different finding.</p>
+     */
+    private Set<String> furlsIn(Scan scan, String siteId) {
+        Set<String> furls = new HashSet<>();
+        for (ShPostUnified each : scan.posts()) {
+            // ShFolderSite-exempt: a post carries its own site column (SH128's invariant is about
+            // folders), and every row here came from `scan.posts()`, which reads posts.
+            ShSite site = each.getShSite();
+            if (site != null && siteId.equals(site.getId())) {
+                furls.add(normalized(each.getFurl()));
+            }
+        }
+        return furls;
+    }
+
+    /** One field's value as text, or null. */
+    private String fieldValue(ShPostUnified post, String field) {
+        JsonNode value = data(post).get(field);
+        return value == null || value.isNull() ? null : value.asString();
     }
 
     /**

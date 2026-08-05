@@ -76,7 +76,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH385** (deps: SH377 ✅) **A replica silently abandons the original's URL space** — The capture knows every source URL and nothing records the source-to-replica map or serves a redirect, so every inbound link to a path the replica renamed is lost. → §XVII.9
 - 📋 **SH386** (deps: SH265 ✅, SH365 ✅, SH391 ✅) **Nothing proves the replica looks like the original** — snapshot compares a page against its own earlier capture, so the comparison a replication needs — the source as the baseline, at several widths — cannot be asked for. → §XVII.10
 - 📋 **SH387** (deps: SH212 ✅, SH377 ✅) **Fidelity has no report, so coverage is a feeling** — Which source pages, links, assets and form fields never arrived is the question a replication asks, and it is provable from the tree and the inventory with no instance. → §XVII.11
 - 💭 **SH388** (deps: SH337 ✅) **A page's head is markup nobody checks** — Title, description, og and canonical tags are template freedom with no convention and no lint, so sixty replica pages can share one description and verify stays green. → §XVII.12

@@ -25,6 +25,7 @@ import { join } from "node:path";
 
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
+import { INVENTORY_FILE } from "../clone.mjs";
 import { ASSETS_DIR } from "../content-assets.mjs";
 import {
   CONTENT_DIR,
@@ -173,6 +174,10 @@ async function lintTree(flags, ctx, site) {
       // A scoped run is not a statement about the whole tree, so a `translationOf` it could not
       // have seen is a warning rather than an error (SH143's rule).
       scoped: Boolean(site),
+      // SH385 — the capture, when the project holds one. Absent on every project that never cloned
+      // anything, which is most of them, and the rule that reads it is silent then rather than
+      // reporting an empty comparison as a clean one.
+      inventory: await readInventory(ctx),
     }),
     note: null,
   };
@@ -375,4 +380,20 @@ function render(report, path) {
   }
   const body = lines.length ? `${lines.join("\n")}\n` : "";
   return `${header}\n${body}${tail.length ? `${tail.join("\n")}\n` : ""}`;
+}
+
+/**
+ * The SH377 capture, or null (SH385).
+ *
+ * <p>Read here rather than passed in, because it is the projection group's own input and the group's
+ * promise is that it needs nothing stood up: the file is in the tree beside everything else this
+ * function reads. Absent, unreadable or not JSON all mean the same thing — there is no capture to
+ * compare against — and none of them is a defect in the *tree*, which is what this gate reports on.
+ */
+async function readInventory(ctx) {
+  try {
+    return JSON.parse(await ctx.fs.readFile(join(ctx.cwd, INVENTORY_FILE), "utf8"));
+  } catch {
+    return null;
+  }
 }

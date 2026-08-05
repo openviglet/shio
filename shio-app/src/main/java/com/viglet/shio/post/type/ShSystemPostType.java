@@ -61,9 +61,19 @@ public class ShSystemPostType {
 	/** Created on first upload by {@code ShStaticFileService.resolveOrCreateFilePostType} (SH38). */
 	public static final String FILE = "File";
 
-	/** The three the renderer provisions on demand — {@code ShRenderPostTypes.ensure} (SH183). */
+	/** The four the renderer provisions on demand — {@code ShRenderPostTypes.ensure} (SH183). */
 	public static final String REGION = "Region";
 	public static final String THEME = "Theme";
 	public static final String PAGE_LAYOUT = "PageLayout";
+
+	/**
+	 * SH385 — one source path in, one address out.
+	 *
+	 * <p>A <b>system</b> type rather than a vocabulary one, unlike SH382's {@code Menu}, and SH249's
+	 * test is what decides it: a menu needs no new mechanism because a template reads it, while a
+	 * redirect has to be consulted by the <b>router</b> before a page is chosen. That is a new
+	 * mechanism and it is the server's, so the server is entitled to know this name.</p>
+	 */
+	public static final String REDIRECT = "Redirect";
 
 }

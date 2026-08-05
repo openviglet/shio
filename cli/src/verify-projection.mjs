@@ -41,6 +41,7 @@ export const PROJECTION_CHECK = "projection";
  * @param {object[]} [tree.duplicates] addresses more than one file claims (SH400)
  * @param {object[]} [tree.unportable] files a case-insensitive filesystem holds as one (SH401)
  * @param {boolean} [tree.scoped] whether the run covers only part of the tree (SH374)
+ * @param {object} [tree.inventory] the SH377 capture, when the project holds one (SH385)
  * @returns {{ findings: object[], checked: number }}
  */
 export function lintProjection({
@@ -52,6 +53,7 @@ export function lintProjection({
   duplicates = [],
   unportable = [],
   scoped = false,
+  inventory = null,
 }) {
   const fields = fileFields(defs);
   const present = new Set(assets);
@@ -94,12 +96,84 @@ export function lintProjection({
     }
   }
 
-  findings.push(...duplicateFindings(duplicates));
-  findings.push(...unportableFindings(unportable));
-  findings.push(...sidecarFindings(missingSidecars));
-  findings.push(...translationFindings(posts, scoped));
-  findings.push(...menuItemFindings(posts));
+  findings.push(
+    ...duplicateFindings(duplicates),
+    ...unportableFindings(unportable),
+    ...sidecarFindings(missingSidecars),
+    ...translationFindings(posts, scoped),
+    ...menuItemFindings(posts),
+    ...abandonedFindings(posts, inventory, scoped),
+  );
   return { findings: sortFindings(findings), checked };
+}
+
+/**
+ * A source URL the replica neither serves nor redirects (SH385).
+ *
+ * <h3>This is the half that makes "the map is not discarded" checkable</h3>
+ *
+ * SH377's capture knows every URL the source served, and that list sitting in
+ * `shio/.shio/source-inventory.json` is only useful if something compares it against what the replica
+ * holds. A path present in the capture and absent from the tree — as a post's own `url` or as a
+ * `Redirect` answering it — is a link that used to work and now does not: search results, other
+ * people's pages, a decade of email. Nothing else in the pipeline can see it, because every other
+ * check reasons about the tree alone and this is the one question that needs the *source* too.
+ *
+ * <h3>A warning, and reported per path with a cap</h3>
+ *
+ * A **warning** because deciding an old path does not deserve a redirect is legitimate — a replica may
+ * genuinely drop a section — so this is "you have not said what happens to these", not "this is
+ * wrong". Which also means it can be numerous, so the rows are capped and the cut is **declared**: an
+ * unreported cut reads as a clean pass, which is the failure `shio verify`'s own `notes` exist to
+ * prevent.
+ *
+ * <h3>Silent on a scoped run</h3>
+ *
+ * The finding is an absence, so SH143's rule applies the way it does to SH383's `translation-missing`:
+ * a run that read part of the tree cannot tell a missing redirect from an unread one.
+ */
+function abandonedFindings(posts, inventory, scoped) {
+  const pages = inventory?.pages;
+  if (scoped || !Array.isArray(pages) || !pages.length) return [];
+  // Redirects need no special case here, and that is the furl-as-source design paying off a third
+  // time: a Redirect *is* a post whose `url` is the path it answers, so it lands in this set with
+  // every other page and "served or redirected" is one lookup rather than two.
+  const served = new Set();
+  for (const post of posts) {
+    if (typeof post?.url === "string" && post.url) served.add(normalizePath(post.url));
+  }
+  const missing = pages
+    .map((page) => (typeof page?.path === "string" ? page.path : ""))
+    .filter(Boolean)
+    // The query string goes: a capture records `/x?utm=1` and `/x` as two pages, and a redirect
+    // answers a *path*. Keeping both would report one abandoned URL per tracking parameter.
+    .map((path) => path.split("?")[0])
+    .filter((path) => !served.has(normalizePath(path)))
+    .sort((a, b) => a.localeCompare(b));
+
+  const unique = [...new Set(missing)];
+  return unique.slice(0, ABANDONED_LIMIT).map((path) => ({
+    rule: "source-url-abandoned",
+    severity: "warning",
+    address: `post:${inventory.source?.origin ?? ""}${path}`,
+    field: undefined,
+    message: `the capture served \`${path}\` and this tree neither holds a page there nor redirects it`
+      + (unique.length > ABANDONED_LIMIT ? ` (${unique.length} such paths; ${ABANDONED_LIMIT} shown)` : ""),
+    fix: "Give the replica a page at that URL, or a Redirect post whose friendly URL is that path "
+      + "and whose TO names where it went. Deciding a path does not deserve a redirect is a real "
+      + "answer — this is a warning because only you can make it.",
+    source: PROJECTION_CHECK,
+  }));
+}
+
+/** Enough to act on, few enough to read. The cut is declared in every message. */
+const ABANDONED_LIMIT = 20;
+
+/** A path as a comparison key: leading slash, no trailing one, case-folded (SH79). */
+function normalizePath(path) {
+  const raw = String(path ?? "").trim().toLowerCase();
+  const lead = raw.startsWith("/") ? raw : `/${raw}`;
+  return lead.length > 1 && lead.endsWith("/") ? lead.slice(0, -1) : lead;
 }
 
 /**

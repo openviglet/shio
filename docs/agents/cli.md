@@ -243,6 +243,22 @@ like a fix. And `propose` now refuses only when there is **neither** markup nor 
 taken with `--assets` and without `--markup` is a real state, and withholding the theme over a flag
 that has nothing to do with the theme would be the wrong answer to it.
 
+**`source-url-abandoned` is the only projection rule that reads something other than the tree (SH385).**
+Every other rule in the group answers a question about the files alone; this one compares them against
+the **capture**, because "the source-to-replica map is not discarded" is not checkable from either half
+by itself. A path the SH377 inventory served that the tree neither holds as a post's `url` nor answers
+with a `Redirect` is a link that used to work — and a `Redirect` needs no special case here, since it
+*is* a post whose `url` is the path it answers, so "served or redirected" is one lookup. A **warning**,
+not an error: deciding an old path does not deserve a redirect is a real answer and only the operator
+can give it. Three bounds worth knowing: the **query string is dropped** before comparing (a capture
+records `/x` and `/x?utm=1` as two pages and a redirect answers a *path*, so keeping both would report
+one abandoned URL per tracking parameter); rows are **capped at 20 with the cut declared in every
+message**, since an unreported cut reads as a clean pass; and it is **silent on a scoped run**, because
+the finding is an absence and SH143's rule bites hardest for those — the same reason SH383's
+`translation-missing` does not run scoped either. The inventory is read by the projection group itself
+rather than passed in, and absent/unreadable/not-JSON all mean the same thing: there is no capture, so
+there is nothing to compare, which is the state of every project that never cloned anything.
+
 **`shio impact <address>` exists and `shio read` deliberately does not (SH288).** The task was
 filed as "the CLI cannot show one post", and only half of that is a gap. A post's **content** is on
 disk after `pull --content`, where `Grep` and `Edit` are the cheapest tools an agent has (P4), so a

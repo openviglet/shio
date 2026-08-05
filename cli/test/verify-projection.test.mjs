@@ -383,3 +383,108 @@ test("SH382: a post of any other type is not subject to the rule", () => {
 
   assert.deepEqual(findings, []);
 });
+
+// --- SH385: the source's URL space, compared against the replica's ---
+
+const CAPTURE = {
+  source: { origin: "https://x.test", seed: "https://x.test" },
+  pages: [
+    { path: "/" },
+    { path: "/about" },
+    { path: "/legacy/offer" },
+    { path: "/about?utm_source=news" },
+  ],
+};
+
+const page = (url) => ({ site: "Blog", url, type: "Article", data: { headline: "x" } });
+
+// A tree that holds Redirect posts holds the post-type too, or `asset-check-skipped` reports every
+// one of them as unchecked — which is the existing rule being right, and the reason it is here.
+const CAPTURE_DEFS = [
+  ...DEFS,
+  { name: "Redirect", fields: [{ name: "TO", widget: "Text", ordinal: 1 }] },
+];
+
+test("SH385: a source URL the tree neither serves nor redirects is a warning", () => {
+  // The half that makes "the map is not discarded" checkable at all: every other rule here reasons
+  // about the tree alone, and this is the one question that needs the capture too.
+  const { findings } = lintProjection({
+    posts: [page("/"), page("/about")],
+    defs: DEFS,
+    assets: [],
+    inventory: CAPTURE,
+  });
+
+  assert.deepEqual(findings.map((each) => each.rule), ["source-url-abandoned"]);
+  assert.equal(findings[0].severity, "warning");
+  assert.match(findings[0].message, /\/legacy\/offer/);
+  assert.match(findings[0].fix, /Redirect post whose friendly URL is that path/);
+});
+
+test("SH385: a Redirect answering the path needs no special case, because it is a post with that url", () => {
+  // The furl-as-source design paying off: "served or redirected" is one lookup, not two.
+  const { findings } = lintProjection({
+    posts: [page("/"), page("/about"),
+      { site: "Blog", url: "/legacy/offer", type: "Redirect", data: { TO: "/about" } }],
+    defs: CAPTURE_DEFS,
+    assets: [],
+    inventory: CAPTURE,
+  });
+
+  assert.deepEqual(findings, []);
+});
+
+test("SH385: a query string is not a second URL to redirect", () => {
+  // A capture records `/about` and `/about?utm_source=news` as two pages, and a redirect answers a
+  // path — keeping both would report one abandoned URL per tracking parameter.
+  const { findings } = lintProjection({
+    posts: [page("/"), page("/about"), page("/legacy/offer")],
+    defs: DEFS,
+    assets: [],
+    inventory: CAPTURE,
+  });
+
+  assert.deepEqual(findings, []);
+});
+
+test("SH385: a trailing slash and a case difference are the same path (SH79)", () => {
+  const { findings } = lintProjection({
+    posts: [page("/"), page("/About/"), page("/legacy/offer")],
+    defs: DEFS,
+    assets: [],
+    inventory: CAPTURE,
+  });
+
+  assert.deepEqual(findings, []);
+});
+
+test("SH385: no capture means no comparison, not a clean one", () => {
+  // Most projects never cloned anything. An empty comparison reported as a pass would be a claim
+  // about a URL space nothing here has seen.
+  for (const inventory of [null, undefined, {}, { pages: [] }]) {
+    const { findings } = lintProjection({ posts: [], defs: DEFS, assets: [], inventory });
+    assert.deepEqual(findings, [], JSON.stringify(inventory));
+  }
+});
+
+test("SH385: a scoped run does not report it, because the finding is an absence", () => {
+  const { findings } = lintProjection({
+    posts: [page("/")],
+    defs: DEFS,
+    assets: [],
+    inventory: CAPTURE,
+    scoped: true,
+  });
+
+  assert.deepEqual(findings, []);
+});
+
+test("SH385: the rows are capped and the cut is declared, so a truncated list cannot read as complete", () => {
+  const many = { source: CAPTURE.source, pages: [] };
+  for (let index = 0; index < 30; index += 1) many.pages.push({ path: `/gone-${index}` });
+
+  const { findings } = lintProjection({ posts: [], defs: DEFS, assets: [], inventory: many });
+
+  assert.equal(findings.length, 20);
+  assert.match(findings[0].message, /30 such paths; 20 shown/);
+});

@@ -26,6 +26,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
+import com.viglet.shio.post.type.ShSystemPostType;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -89,6 +90,23 @@ class ShRenderModelSourceTest {
      * is allowed when the field is <b>optional</b> and its absence changes nothing, which is the
      * condition that keeps the promise true.</p>
      */
+    /**
+     * A whole post-type this renderer invents, with the reason (SH385).
+     *
+     * <p>Kept apart from {@link #INVENTED}, which is about a <em>field</em>, because the two say
+     * different things: an invented field means an imported 2018 template arrives without it and
+     * renders as it did, while an invented <b>type</b> means the 2018 package cannot carry the concept
+     * at all. That is a larger claim and deserves its own list rather than one entry per field of it,
+     * which would also have to be extended every time the type grew a field.</p>
+     */
+    private static final Map<String, String> INVENTED_TYPES = new TreeMap<>(Map.of(
+            ShSystemPostType.REDIRECT,
+            "SH385 — a replication that renames a path breaks every link into it, and the 2018 model "
+                    + "has no redirect of any kind: FSP resolved a URL to a post and 404'd. It is a "
+                    + "SYSTEM type rather than a vocabulary one because the *router* consults it "
+                    + "before a page is chosen (SH249's test), and it carries no 2018 field at all, "
+                    + "so a per-field entry in INVENTED would be three entries saying one thing."));
+
     private static final Map<String, String> INVENTED = new TreeMap<>(Map.of(
             "Theme.TOKENS", "SH195 — the 2018 model has no token vocabulary at all, which is the "
                     + "defect that task exists to fix rather than a difference to reconcile. The "
@@ -120,6 +138,9 @@ class ShRenderModelSourceTest {
         Map<String, Map<String, Field>> reference = reference();
 
         for (ShPostTypeDef def : shRenderPostTypes.ensure()) {
+            if (INVENTED_TYPES.containsKey(def.name())) {
+                continue;
+            }
             Map<String, Field> declared = reference.get(def.name());
             assertThat(declared)
                     .as("the 2018 model has no %s at all, which makes the whole comparison "
@@ -146,6 +167,9 @@ class ShRenderModelSourceTest {
         Map<String, Map<String, Field>> reference = reference();
 
         for (ShPostTypeDef def : shRenderPostTypes.ensure()) {
+            if (INVENTED_TYPES.containsKey(def.name())) {
+                continue;
+            }
             for (ShPostTypeAttrDef field : def.fields()) {
                 if (INVENTED.containsKey(def.name() + "." + field.name())) {
                     continue;
@@ -171,8 +195,14 @@ class ShRenderModelSourceTest {
         java.util.Set<String> unusedOmissions = new TreeSet<>(OMITTED.keySet());
         java.util.Set<String> unusedWidgets = new TreeSet<>(WIDGETS.keySet());
         java.util.Set<String> unusedInventions = new TreeSet<>(INVENTED.keySet());
+        // Emptied the same way as the others, so a declaration for a type this renderer stopped
+        // inventing fails here rather than sitting in the list looking like a reason.
+        java.util.Set<String> unusedInventedTypes = new TreeSet<>(INVENTED_TYPES.keySet());
 
         for (ShPostTypeDef def : shRenderPostTypes.ensure()) {
+            if (unusedInventedTypes.remove(def.name())) {
+                continue;
+            }
             Map<String, Field> source = reference.get(def.name());
             Map<String, ShPostTypeAttrDef> ours = new LinkedHashMap<>();
             def.fields().forEach(field -> ours.put(field.name(), field));
@@ -220,6 +250,10 @@ class ShRenderModelSourceTest {
                 .isEmpty();
         assertThat(unusedWidgets)
                 .as("a declared widget difference that no longer exists — same rule")
+                .isEmpty();
+        assertThat(unusedInventedTypes)
+                .as("""
+                        a TYPE declared as invented that this renderer no longer provisions — same                         rule, and this entry is permission to skip an entire type's comparison,                         which makes a stale one the most expensive of the three.""")
                 .isEmpty();
         assertThat(unusedInventions)
                 .as("""

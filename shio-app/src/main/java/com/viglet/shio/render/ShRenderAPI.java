@@ -14,6 +14,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.springframework.http.MediaType;
+import java.net.URI;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -75,6 +78,10 @@ public class ShRenderAPI {
     private final ShEditorBridge editorBridge;
     private final ShPreviewLinks previewLinks;
 
+    /** Never indexed, whether it renders a page or answers with a redirect (SH385). */
+    private static final String ROBOTS = "X-Robots-Tag";
+    private static final String NO_INDEX = "noindex, nofollow";
+
     public ShRenderAPI(ShPageRenderService shPageRenderService, ShPreviewBanner banner,
                        ShEditorBridge editorBridge, ShPreviewLinks previewLinks) {
         this.shPageRenderService = shPageRenderService;
@@ -95,11 +102,20 @@ public class ShRenderAPI {
                                        @RequestParam(defaultValue = "DRAFT") String state,
                                        @RequestParam(defaultValue = "false") boolean editor,
                                        HttpServletRequest request) {
-        ShRenderedPage rendered = shPageRenderService.render(siteKey, pathWithin(siteKey, request),
-                ShPostState.PUBLISHED.name().equalsIgnoreCase(state)
-                        ? ShPostState.PUBLISHED
-                        : ShPostState.DRAFT,
-                readerParams(request));
+        ShRenderedPage rendered;
+        try {
+            rendered = shPageRenderService.render(siteKey, pathWithin(siteKey, request),
+                    ShPostState.PUBLISHED.name().equalsIgnoreCase(state)
+                            ? ShPostState.PUBLISHED
+                            : ShPostState.DRAFT,
+                    readerParams(request));
+        } catch (ShPageRenderService.ShPageRedirectException redirect) {
+            // SH385 — the *proof* has to cover the URL space, which is why the redirect is honoured
+            // here and not only by whatever serves the site in production. A replication's whole claim
+            // is "it renders the same", and a preview that 404'd on every old path would leave the one
+            // thing a replica most often gets wrong untested.
+            return redirectTo(siteKey, redirect);
+        }
         // SH185 — the editor bridge is opt-in per request. An ordinary preview must ship no
         // editor code at all: a script that makes elements contenteditable is not something to
         // leave lying in a page somebody might screenshot, and "off unless asked" is cheaper
@@ -120,9 +136,48 @@ public class ShRenderAPI {
                 // Store nothing, anywhere. See the class note: a freshness lifetime is how
                 // this stops being a preview.
                 .cacheControl(CacheControl.noStore().mustRevalidate())
-                .header("X-Robots-Tag", "noindex, nofollow")
+                .header(ROBOTS, NO_INDEX)
                 .header("X-Shio-Render-Layout", rendered.layout())
                 .body(body);
+    }
+
+    /**
+     * A redirect, as HTTP (SH385).
+     *
+     * <h2>301 or 302, and nothing else</h2>
+     *
+     * <p>Permanent is what a replication almost always means — the old path is gone and a search engine
+     * should move its index — but it is opt-in rather than the default, because a 301 is <b>cached by
+     * browsers effectively for ever</b> and a wrong one is the hardest routing mistake to take back.
+     * SH121's shape applied to a status code: the safe answer is the default and the expensive one is
+     * asked for.</p>
+     *
+     * <h2>The target is rewritten into the preview's own address space</h2>
+     *
+     * <p>A relative {@code TO} names a friendly URL in this site, so the {@code Location} is that page's
+     * preview path — {@code ShPreviewLinks}' rule, which exists so a reader clicking through a preview
+     * stays inside it (SH336). An absolute {@code TO} is left exactly as written: a path that now lives
+     * on another host is a legitimate redirect, and rewriting it into {@code /preview/<site>/https://…}
+     * would be a broken link built out of a working one.</p>
+     *
+     * <h2>Cache nothing, and say so</h2>
+     *
+     * <p>The same headers the page carries, for the same reason: a preview that told a browser to
+     * remember a 301 would leave the reader unable to see the page even after the redirect was deleted.
+     * {@code X-Robots-Tag} too — a preview redirect must not teach a crawler anything.</p>
+     */
+    private ResponseEntity<String> redirectTo(String siteKey,
+                                              ShPageRenderService.ShPageRedirectException redirect) {
+        String to = redirect.to();
+        boolean absolute = to.startsWith("http://") || to.startsWith("https://");
+        String within = to.startsWith("/") ? to : "/" + to;
+        String location = absolute ? to : "/preview/" + siteKey + within;
+        return ResponseEntity
+                .status(redirect.permanent() ? HttpStatus.MOVED_PERMANENTLY : HttpStatus.FOUND)
+                .location(URI.create(location))
+                .cacheControl(CacheControl.noStore().mustRevalidate())
+                .header(ROBOTS, NO_INDEX)
+                .build();
     }
 
     /**
@@ -138,7 +193,7 @@ public class ShRenderAPI {
     public ResponseEntity<String> editorScript() {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
-                .header("X-Robots-Tag", "noindex, nofollow")
+                .header(ROBOTS, NO_INDEX)
                 .body(editorBridge.script());
     }
 

@@ -83,7 +83,13 @@ class ShSilentCatchInventoryTest {
             // falls back to the default. Deliberately not recorded — that value comes off a URL a
             // *reader* types, so a diagnostics entry per `?page=abc` would fill the window with
             // somebody else's typos, which is the trade SH103 refused for 4xx.
-            "render", 3,
+            //
+            // 4 since SH385, and this one is not a degradation at all: `ShRenderAPI` catches
+            // `ShPageRedirectException` and *answers with a 302*. The catch IS the handling, so there
+            // is nothing to record — but the lint keys on "neither records nor rethrows" and cannot
+            // tell a swallowed error from control flow, which is the right way round for a population
+            // guard to be wrong. Counted rather than exempted, so the population stays a diff.
+            "render", 4,
             "utils", 2,
             "migration", 1,
             // 1 since SH84: `ShTuringDocumentMapper.readData` reads a post whose `data` is not JSON
@@ -212,8 +218,8 @@ class ShSilentCatchInventoryTest {
                         subject — which is exactly the trade SH103 refused for 4xx. A bad `limit=` \
                         is a template author's mistake and could be argued the other way; it is \
                         left as it was rather than changed in passing.""")
-                .hasSize(3)
+                .hasSize(4)
                 .allSatisfy(where -> assertThat(where)
-                        .matches(".*(ShRenderHelpers|ShTemplateValidator).*"));
+                        .matches(".*(ShRenderAPI|ShRenderHelpers|ShTemplateValidator).*"));
     }
 }

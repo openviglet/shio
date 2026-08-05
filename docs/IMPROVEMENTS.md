@@ -1383,25 +1383,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.9 The URL space is part of the site being replicated (SH385)
-
-A replication that changes a path breaks every link into it — search results, other
-people's pages, a decade of email. The capture already knows the source's full URL list
-(SH377), and the conversion already knows where each page landed, so the map exists at
-exactly one moment and is currently discarded.
-
-It should become content, for the reason SH382 gives about menus: a `Redirect` post-type
-(`from`, `to` as an address, permanent or temporary) projects to the tree, diffs in a
-review, and needs no new contract. The renderer honours it on `/preview` so the *proof*
-covers it, and the delivery layer reads it the way it reads anything else — P10 holds,
-and this is not a rewrite engine: one exact path in, one address out, no patterns and no
-regular expressions, which is the version whose behaviour can be verified from the tree
-alone.
-
-Two findings come with it: a `from` that a published post already claims (the redirect
-would shadow a real page), and a `to` that resolves to nothing — the second being
-SH154's rule applied to a field that happens to hold an address.
-
 ### XVII.10 The baseline a replication needs is somebody else's site (SH386)
 
 SH102's comparison answers *"did this page change since I last looked"*, and SH187

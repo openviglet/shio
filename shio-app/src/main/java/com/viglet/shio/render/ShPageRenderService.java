@@ -100,7 +100,8 @@ import tools.jackson.databind.ObjectMapper;
 // alone, which SH259's four-argument overload then bypassed — `/preview` calls the overload, so a
 // teaching 404 became an UnexpectedRollbackException at commit. The lint that exists to catch this
 // missed it because its escape searched the whole file rather than the annotation.
-@Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
+@Transactional(readOnly = true,
+        noRollbackFor = { ShTeachingException.class, ShPageRenderService.ShPageRedirectException.class })
 public class ShPageRenderService {
 
     private final ShSiteRepository shSiteRepository;
@@ -146,7 +147,8 @@ public class ShPageRenderService {
     // marks it rollback-only whether or not anybody handles the exception. Exactly the hazard SH171
     // documented for the agent read path, one service along — and the reason it is worth naming
     // twice is that the failure surfaces at commit, nowhere near the catch that caused it.
-    @Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
+    @Transactional(readOnly = true,
+        noRollbackFor = { ShTeachingException.class, ShPageRedirectException.class })
     public ShRenderedPage render(String siteKey, String url, ShPostState state) {
         return render(siteKey, url, state, Map.of());
     }
@@ -177,11 +179,19 @@ public class ShPageRenderService {
     // string — would otherwise get neither the read-only transaction nor the `noRollbackFor` the
     // comment above explains at length. Which of the two a caller picked decided whether a caught
     // teaching 4xx blew up at commit. `ShAgentTransactionalOverloadLintTest` refuses the next pair.
-    @Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
+    @Transactional(readOnly = true,
+        noRollbackFor = { ShTeachingException.class, ShPageRedirectException.class })
     public ShRenderedPage render(String siteKey, String url, ShPostState state,
                                  Map<String, String> params) {
         ShSite site = siteByKey(siteKey);
         ShPostUnified page = pageAt(site, url, state);
+        // SH385 — a replication that renames a path breaks every link into it: search results, other
+        // people's pages, a decade of email. A `Redirect` answers the old path, and it is found by the
+        // read that just ran rather than by a lookup of its own, because its friendly URL *is* the
+        // path it answers. So this costs one type-name comparison and no query at all.
+        redirectFor(page).ifPresent(redirect -> {
+            throw redirect;
+        });
         // SH278 — the render's own state reaches every level: a preview shows the draft layout,
         // the draft region and the draft theme, which is what makes it a preview of the page the
         // curator is editing rather than a mix of what is live and what is not.
@@ -349,6 +359,63 @@ public class ShPageRenderService {
     private Optional<ShPostUnified> first(Optional<ShPostUnified> preferred,
                                           java.util.function.Supplier<Optional<ShPostUnified>> fallback) {
         return preferred.isPresent() ? preferred : fallback.get();
+    }
+
+    /**
+     * Whether the post at this path is a redirect, and where to (SH385).
+     *
+     * <h2>Why a redirect's source is its friendly URL and not a {@code from} field</h2>
+     *
+     * <p>The design offered a {@code from}, and this is strictly less machinery for the same
+     * capability. The router already resolves a path to a post, so a redirect is <b>found by the read
+     * that just ran</b> — no lookup, and in particular no site-wide scan on every 404. SH323 makes a
+     * friendly URL site-unique, so "two redirects claim one path" is impossible rather than reported.
+     * And a redirect shadowing a real page is already SH99's {@code duplicate-url} <em>error</em>,
+     * which is one of the two findings SH385 asked for, arriving with no rule written.</p>
+     *
+     * <h2>Not a rewrite engine, and that is the point</h2>
+     *
+     * <p>One exact path in, one address out. No patterns, no regular expressions, no ordering to
+     * reason about — which is what makes a replica's URL space verifiable from the tree alone rather
+     * than by running requests through it. A pattern language would also be a second addressing scheme
+     * beside SH79, for a capability nobody has asked for yet.</p>
+     *
+     * <h2>A redirect with no target renders as a page, deliberately</h2>
+     *
+     * <p>An empty {@code TO} yields no redirect, so the request falls through to the ordinary render
+     * path and fails there — naming the missing layout binding, which is a true statement about a post
+     * that is not finished. Redirecting to {@code /} instead would send a reader to the homepage and
+     * tell nobody, and {@code verify}'s {@code redirect-target-missing} is where the defect belongs.</p>
+     */
+    private Optional<ShPageRedirectException> redirectFor(ShPostUnified page) {
+        String typeName = page.getShPostType() == null ? null : page.getShPostType().getName();
+        if (!ShSystemPostType.REDIRECT.equals(typeName)) {
+            return Optional.empty();
+        }
+        Map<String, Object> fields = renderModel.fieldsOf(page);
+        String to = fields.get(ShSystemPostTypeAttr.TO) == null
+                ? null
+                : fields.get(ShSystemPostTypeAttr.TO).toString().trim();
+        if (to == null || to.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(new ShPageRedirectException(to, isTrue(fields.get(ShSystemPostTypeAttr.PERMANENT))));
+    }
+
+    /**
+     * A Check Box's value, which is not a boolean on the wire.
+     *
+     * <p>The widget stores {@code "1"}/{@code "0"} through the console and {@code true}/{@code false}
+     * through {@code post.upsert}, and a redirect written by either has to mean the same thing — a 301
+     * that silently became a 302 because the value arrived as a string is the kind of defect nobody
+     * finds by looking at the content.</p>
+     */
+    private static boolean isTrue(Object value) {
+        if (value instanceof Boolean flag) {
+            return flag;
+        }
+        String text = value == null ? "" : value.toString().trim();
+        return "1".equals(text) || "true".equalsIgnoreCase(text) || "on".equalsIgnoreCase(text);
     }
 
     /**
@@ -634,6 +701,43 @@ public class ShPageRenderService {
                             + "by id, friendly URL or name.")
                     .withFix("GET /api/v2/site lists the sites this instance holds.")
                     .withExample("/preview/Blog/blog/hello-world"));
+        }
+    }
+
+    /**
+     * Not an error: this path answers with a redirect (SH385).
+     *
+     * <h2>Why it is an exception and not a field on {@link ShRenderedPage}</h2>
+     *
+     * <p>A redirect has <b>no page</b> — no layout, no theme, no model — so a record that carried one
+     * would be a rendered page with every field empty, and each of the five callers of {@code render}
+     * would have to learn to check before touching any of them. An exception says "there is nothing to
+     * render here" in the one place that can, and only the HTTP layer has to care.</p>
+     *
+     * <h2>Deliberately not a {@link ShTeachingException}</h2>
+     *
+     * <p>Those are 4xx problems, and this is a working answer: the reader gets the page they were
+     * looking for, at its new address. Making it one would put a redirect in the diagnostics window and
+     * in {@code verify}'s counts. It <b>is</b> named in {@code noRollbackFor} beside them, because a
+     * redirect must not mark a read-only transaction for rollback for having worked.</p>
+     */
+    public static class ShPageRedirectException extends RuntimeException {
+
+        private final String to;
+        private final boolean permanent;
+
+        public ShPageRedirectException(String to, boolean permanent) {
+            super("redirect to " + to);
+            this.to = to;
+            this.permanent = permanent;
+        }
+
+        public String to() {
+            return to;
+        }
+
+        public boolean permanent() {
+            return permanent;
         }
     }
 

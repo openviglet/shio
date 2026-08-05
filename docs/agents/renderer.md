@@ -155,6 +155,41 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   most of the work** — frames, `this`/`./`/`../`, data variables, subexpressions, literals, partials,
   comments, a block's own name, an inline helper's name and every row value, with `{{~TEXT~}}` the
   one its own test caught being dropped. A reference *not* reported is the quiet failure direction.
+- **A `Redirect` is the fourth render system post-type, and its friendly URL *is* the path it answers
+  (SH385)** — a replication that renames a path breaks every link into it (search results, other
+  people's pages, a decade of email), and the map from source URL to replica address existed at exactly
+  one moment and was discarded. **A system type rather than an SH382-style vocabulary one**, and SH249's
+  test is what decides it: a menu needs no new mechanism because a *template* reads it, while a redirect
+  is consulted by the **router** before a page is chosen — that is a new mechanism and it is the
+  server's, so the server is entitled to know this name. Fields: `TO` (a friendly URL in this site, or
+  an absolute URL) and `PERMANENT` (a Check Box). **There is deliberately no `FROM`, and that omission
+  is the whole design** — the design section offered one, and not having it pays off four times, each
+  a rule or a lookup nobody had to write: the router already resolves a path to a post, so a redirect
+  costs **no query** and no site-wide scan on a 404; SH323 makes a furl site-unique, so two redirects
+  claiming one path is *impossible* rather than reported; a redirect shadowing a real page is already
+  SH99's `duplicate-url` **error**, which is one of the two findings SH385 asked for arriving with no
+  code; and in the CLI's tree lint "served or redirected" is one lookup, because a Redirect is a post
+  with that `url`. Five more decisions: **302 is the default and 301 is opt-in**, because a permanent
+  redirect is cached by browsers effectively for ever and a wrong one is the hardest routing mistake to
+  take back (SH121's shape applied to a status code); **`PERMANENT` is read from `"1"` or `true`**,
+  since the Check Box widget stores one through the console and the other through `post.upsert` and a
+  301 that silently became a 302 is not a defect anybody finds by reading content; **an empty `TO`
+  renders as an ordinary page**, so the request fails naming the missing layout binding — a true
+  statement about an unfinished post — rather than redirecting a reader to `/` and telling nobody;
+  **the preview honours it** (301/302 with `no-store` and `X-Robots-Tag`, and a relative target
+  rewritten into the preview's own address space per SH336) because a replication's claim is *it
+  renders the same* and a preview that 404'd on every old path would leave the thing a replica most
+  often gets wrong untested; and **it is not a rewrite engine** — one exact path in, one address out,
+  no patterns and no regular expressions, which is what makes a URL space verifiable from the tree
+  instead of by running requests through it. `verify` gains **`redirect-target-missing`** (an error: a
+  404 *after* a redirect is harder to diagnose than a plain one), and an **absolute** target is
+  deliberately unchecked because verifying it means the instance fetching a stranger's URL, which SH268
+  settled. The guards charged **five test edits for a fourth system type** — `ShRenderModelSourceTest`
+  needed a new `INVENTED_TYPES` list (the 2018 model has no redirect of any kind, so a per-field entry
+  would be three entries saying one thing), `ShRenderPostTypesTest` named "the three" in three places,
+  and `ShSilentCatchInventoryTest` counted the controller's `catch` — which is **control flow, not a
+  degradation**: it answers with a 302. Counted rather than exempted, so the population stays a diff.
+  All three type lists derive from `ShRenderPostTypes.NAMES` now.
 - **A theme's tokens are declared data, and the vocabulary is adopted rather than invented (SH195)** —
   a `Theme` now carries **`TOKENS`** beside `CSS` and `JAVASCRIPT`, in the **W3C Design Tokens
   (DTCG)** shape (`{"color":{"accent":{"$value":"#0b5"}}}`), which is what Style Dictionary, Figma

@@ -47,6 +47,20 @@ public class ShSystemPostTypeAttr {
 	public static final String HTML = "HTML";
 	public static final String PAGE_LAYOUT = "PAGE-LAYOUT";
 	public static final String THEME = "THEME";
+
+	/**
+	 * SH385 — a {@code Redirect}'s two fields.
+	 *
+	 * <p>{@code TO} holds an <b>address</b> (a friendly URL in this site, or an absolute URL for a
+	 * path that now lives somewhere else). {@code PERMANENT} decides 301 against 302, and it is a
+	 * checkbox rather than a status-code field because those are the only two answers anybody wants
+	 * and a free-text code would let somebody write 307 into a routing decision.</p>
+	 *
+	 * <p>There is deliberately no {@code FROM}: a redirect's source is the post's own <b>friendly
+	 * URL</b>. See {@code ShRenderPostTypes} for why that is the whole design.</p>
+	 */
+	public static final String TO = "TO";
+	public static final String PERMANENT = "PERMANENT";
 	public static final String CONTENT = "CONTENT";
 	public static final String PHOTO = "PHOTO";
 	public static final String VIDEO = "VIDEO";
