@@ -85,6 +85,7 @@
 
 - 📋 **SH461** (deps: SH455 ✅) **The theme's rewritten url() is HTML-escaped and points at the asset tree, not the server** — The markup rewriter on the same page emits a URL that answers 200 while the stylesheet's emits an escaped tree path, so the fonts 404 on a route that serves them. → §XVII.39
 - 📋 **SH462** (deps: SH437 ✅) **An uploaded asset lands in DRAFT and no op can publish it** — A File post has only an id: address and post.publish takes only post:, so a public replica's assets stay unpublished and the batch fails whole at ops[0]. → §XVII.40
+- 📋 **SH464** (deps: SH449 ✅) **Neither conversion mode yields a replica that both renders and can be edited** — Fidelity renders with zero data-shio-prop and authorable writes no PageLayout, so /preview 400s and the Universal Editor has nothing to frame in either. → §XVII.41
 
 ## Block F — Market positioning
 

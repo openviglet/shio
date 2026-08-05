@@ -1595,3 +1595,28 @@ tests.
 Either `post.publish` takes `id:` for a type that can hold no `post:` address, or a File
 is published by the op that uploads it, since a draft asset nothing can reference is not
 a state worth having.
+
+### XVII.41 The block is named authorable and ships neither half (SH464)
+
+Block Q is named "an existing site becomes an **authorable** Shio site", and neither
+mode it ships produces one. Measured on two clean replicas of the same page:
+
+**Fidelity renders and cannot be edited.** `/preview/Final/` answers 200, `?editor=true` injects
+`_shio/editor.js` — and the page carries **zero** `data-shio-prop`. Verbatim markup has no `sh-field`
+to annotate, so the editor loads over a page with nothing to offer. That is what `propose.mjs` promises
+("nothing about it is authorable"), stated as a property rather than as a gap.
+
+**Authorable does not render.** Accepting both candidates writes two sections, a Page and a Theme and
+**no PageLayout**, so `/preview/Autor2/` answers **400 — binds no layout for post-type 'Page'**. The
+console frames the site's front end or, failing that, that same preview, so the editor has nothing to
+frame either.
+
+So a replica is curatable only by standing up the Next.js front end and pointing the
+site's `url` at it — a second deliverable, and the one SH446 had to publish packages
+for. In the product itself, the combination the premise rests on does not exist.
+
+The missing piece is one artefact, and its shape is already settled: **a PageLayout
+whose regions render the SH95 section vocabulary with `sh-field` on each field**.
+Fidelity proves the renderer annotates what the template declares; the `marketing-site`
+blueprint ships eight section types and no layout, because its delivery is the bundled
+Next.js app. Nobody has written the server-side half.
