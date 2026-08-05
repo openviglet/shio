@@ -921,6 +921,7 @@
 - **SH422** — One test drives clone → propose → accept → verify over a served fixture, asserting each phase reads the artefact the last one wrote.
 - **SH431** — A served non-HTML 200 is its own inventory list, reported but never counted as an unread page; problems keeps the failures.
 - **SH432** — A row's `on` counts distinct pages and `occurrences` every sighting, so a nav repeated in a footer no longer claims reach it never had.
+- **SH425** — A container whose children are repeated units is the block, and a link wrapping block content is one too — so a marketing page yields its hero and its grid.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

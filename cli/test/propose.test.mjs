@@ -87,6 +87,71 @@ test("single-child wrappers are descended through, so a themed page is not one b
   assert.deepEqual(blocksOf(root).map((block) => block.tag), ["section", "section"]);
 });
 
+test("SH425: a card grid inside a wrapper is the block, not two children of it", () => {
+  // The measured case, from openviglet.github.io: one page, a hero and a two-card grid, and
+  // `shio propose` reported `0 candidate block(s)` — emptiest exactly where it should be richest.
+  // The walk went main > div.wrap > div.cards and stopped AT div.cards, returning its children. But
+  // div.cards IS the block: a container whose repeated units are the cards, which `repeatedUnits`
+  // would have classified as a SectionFeatureGrid.
+  const root = tree(
+    "<main><div class=wrap><div class=cards>" +
+      "<div class=card><h3>Fast</h3><p>Very</p></div>" +
+      "<div class=card><h3>Safe</h3><p>Quite</p></div>" +
+      "</div></div></main>",
+  );
+
+  const blocks = blocksOf(root);
+  assert.deepEqual(blocks.map((block) => block.attrs.class), ["cards"],
+    "the container is the candidate; its cards are its repeated units, not blocks of their own");
+  assert.equal(repeatedUnits(blocks[0]).length, 2);
+  assert.equal(classify(blocks[0], { first: false }).type, "SectionFeatureGrid");
+});
+
+test("SH425: a link wrapping a heading and a paragraph is a block, not prose", () => {
+  // The second mechanism, which alone was enough to produce zero: INLINE held `a`, and the
+  // whole-card-is-a-link pattern wraps <h3> and <p> in <a class=card>. "Inline by HTML default" and
+  // "cannot be a block" are not the same claim, and an anchor containing block content is neither
+  // rare nor ambiguous.
+  const root = tree(
+    "<main><div class=cards>" +
+      "<a class=card href=/one><h3>One</h3><p>First</p></a>" +
+      "<a class=card href=/two><h3>Two</h3><p>Second</p></a>" +
+      "</div></main>",
+  );
+
+  const blocks = blocksOf(root);
+  assert.deepEqual(blocks.map((block) => block.attrs.class), ["cards"]);
+  assert.equal(repeatedUnits(blocks[0]).length, 2, "the two link-wrapped cards are the units");
+  assert.equal(classify(blocks[0], { first: false }).type, "SectionFeatureGrid");
+  // And a link inside a sentence is still prose: the rule asks the node, not the tag.
+  const prose = tree("<main><section><h2>Hi</h2><p>Read <a href=/more>more</a> about it.</p></section></main>");
+  assert.deepEqual(blocksOf(prose).map((block) => block.tag), ["section"]);
+});
+
+test("SH425: a hero and a grid on one page are two candidates, which is what the page has", () => {
+  // The whole point, stated as the number that was wrong. This is the shape of the page the defect
+  // was measured on, and the failure had no symptom other than the count — a candidate list that
+  // looks plausible is what let it ship.
+  const root = tree(
+    "<main><div class=wrap>" +
+      "<section class=hero><h1>Shio</h1><p>An agent-native CMS.</p><a href=/start>Start</a></section>" +
+      "<div class=cards>" +
+        "<a class=card href=/a><h3>Model catalog</h3><p>Every model.</p></a>" +
+        "<a class=card href=/b><h3>Benchmarks</h3><p>Every run.</p></a>" +
+      "</div>" +
+      "</div></main>",
+  );
+
+  const blocks = blocksOf(root);
+  assert.equal(blocks.length, 2, "a hero and a grid — zero was the answer before SH425");
+  assert.deepEqual(
+    blocks.map((block, index) => classify(block, { first: index === 0 }).type),
+    ["SectionHero", "SectionFeatureGrid"],
+    "and both are classified — `first` comes from the caller, which is what makes the opening block "
+      + "a hero rather than a call to action",
+  );
+});
+
 // --- signatures and recurrence ---
 
 test("a signature ignores text and classes, so one hero on twelve pages is one candidate", () => {

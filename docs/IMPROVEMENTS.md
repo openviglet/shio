@@ -1523,32 +1523,6 @@ references it yet.
 Invisible to `snapshot --against`, `digest` and `audit` — the replica looks perfect. The
 proof is a token edit that moves a render.
 
-### XVII.18 Zero candidates is the answer a marketing page gets today (SH425)
-
-Measured against `openviglet.github.io`: one page, a hero and a two-card grid, and `shio
-propose` reports `0 candidate block(s)`. The same command reports 36 on that site's
-model-catalog app, where 11 have no vocabulary type. The proposal is emptiest exactly
-where it should be richest.
-
-Two mechanisms compound, both traced with `contentRoot`/`blocksOf` on the captured
-markup. First, the descent past single-child generic wrappers walks `main > div.wrap >
-div.cards` and stops *at* `div.cards`, returning its children. But `div.cards` **is**
-the block — a container whose repeated units are the cards, which `repeatedUnits` would
-have classified as `SectionFeatureGrid`. The docstring's rule is that two children mean
-nothing was skipped; the case it misses is a node whose two children are repeated units,
-where the container was the candidate and the descent consumed it.
-
-Second, `INLINE` holds `a`, and the whole-card-is-a-link pattern wraps `<h2>` and `<p>`
-in `<a class="card">`. So even without the first defect both children filter to nothing.
-`INLINE` conflates "inline by HTML default" with "cannot be a block", and an anchor
-containing block content is neither rare nor ambiguous.
-
-Order matters for the fix: test a node for repeated units *before* descending through
-it, and let an element's children decide whether it is inline rather than its tag alone.
-Both are testable with no instance and no browser. The regression test is this page,
-because a candidate list that looks plausible is what let this ship — the failure has no
-symptom other than a number.
-
 ### XVII.19 Site chrome and a page header are not the same element (SH426)
 
 `contentRoot` resolves to `<main>`, else `[role=main]`, else `<body>`, and its stated

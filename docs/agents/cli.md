@@ -187,6 +187,25 @@ under its own key: `conversionProposal: false` with
 since `--assets` is a phase of the same act while a conversion is a different act on a different
 artefact.
 
+**And a fifth of that shape, which cost the command its whole answer on the simplest page there is
+(SH425).** Measured against `openviglet.github.io`: one page, a hero and a two-card grid, and
+`shio propose` reported **0 candidate block(s)** — while the same command found 36 on that site's
+model-catalog app. The proposal was emptiest exactly where it should be richest, and two mechanisms
+compounded. The descent walked `main > div.wrap > div.cards` and stopped *at* `div.cards`, returning
+its children — but `div.cards` **is** the block, a container whose repeated units are the cards; the
+docstring's rule was that two children mean nothing was skipped, and the case it missed is a node
+whose two children *are* the units. So a node is tested for repeated units **before** being descended
+through, and the test is deliberately shallow (a subtree-wide one stops at the outermost wrapper and
+yields one candidate whose signature is the whole page) and restricted to **generic** units, or a
+theme's `<div class=row>` holding two identically-built `<section>`s would collapse two blocks into
+one. Second, `INLINE` held `a`, and the whole-card-is-a-link pattern wraps `<h3>` and `<p>` in
+`<a class="card">` — so even without the first defect both children filtered to nothing. "Inline by
+HTML default" and "cannot be a block" are not the same claim: `isInline` now asks the **node**, so a
+link around a heading is a block and a link inside a sentence is still prose. The same function
+answers what a conversion *loses*, where a block-wrapping anchor is structure a reviewer should see
+dropped. **The regression test is that page**, because the failure has no symptom other than a number
+and a candidate list that looks plausible is what let it ship.
+
 **The same command emits the theme as tokens *plus* CSS, never as CSS (SH380).** SH195 gave a `Theme`
 a `TOKENS` field so the commonest change — the accent colour, the type scale, the density — is a field
 edit rather than a stylesheet rewrite; a capture runs the other direction on the same argument, so

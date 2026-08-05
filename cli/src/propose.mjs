@@ -124,6 +124,23 @@ const INLINE = new Set([
   "strong", "sub", "sup", "time", "u", "var",
 ]);
 
+/**
+ * Whether a node is prose decoration — asked of the **node**, not of its tag (SH425).
+ *
+ * <p>The set above conflated "inline by HTML default" with "cannot be a block", and one very common
+ * pattern lives in the gap: the whole-card-is-a-link, `<a class="card"><h2>…</h2><p>…</p></a>`. With
+ * the tag alone deciding, a two-card grid of those filtered to nothing — so the block the vocabulary
+ * fits best was the one it could not see, and the only symptom was a candidate count of zero.
+ *
+ * <p>An inline element containing block content is neither rare nor ambiguous, so the rule is simply
+ * that its own children answer the question. A link around a heading is a block; a link inside a
+ * sentence is prose, and stays a leaf.
+ */
+function isInline(node) {
+  if (!INLINE.has(node.tag)) return false;
+  return !node.children.some((child) => isElement(child) && !INLINE.has(child.tag));
+}
+
 /** A block this long in characters is prose, not a call to action. */
 const CTA_TEXT_CEILING = 320;
 
@@ -211,21 +228,46 @@ function find(node, predicate) {
 const GENERIC = new Set(["div", "span"]);
 
 /**
+ * Elements that are a block by declaration, however many of them there are (SH425).
+ *
+ * <p>The other half of the stop-before-descending rule below. Two `<section>`s of identical structure
+ * inside a theme's `<div class=row>` satisfy "repeated units" exactly as two cards do — and they are
+ * two blocks, not one grid, because the source said `section`. So the container is only treated as
+ * the candidate when the units it holds are *generic*: a card, a link-wrapped card, a `<div>`. This is
+ * the same principle the single-child rule already used — "a sectioning element is a block no matter
+ * how alone it is" — applied to the case where there are several of them.
+ */
+const SECTIONING = new Set(["section", "article", "aside", "nav", "header", "footer", "main", "form"]);
+
+/**
  * The blocks of one page, in source order.
  *
  * <p>A block is a child of the content root, having first walked past any chain of single-child
  * **generic** wrappers. Two conditions, both load-bearing: one child (the moment a node has two,
  * those two are the blocks and nothing has been skipped past), and generic (a sectioning element is
  * a block no matter how alone it is).
+ *
+ * <p>SH425 added the third, and it is a condition on *stopping* rather than on descending: a node
+ * whose own children are repeated units **is** the block. `main > div.wrap > div.cards` used to walk
+ * to `div.cards` and return its children — but `div.cards` is the candidate the vocabulary would have
+ * called a `SectionFeatureGrid`, and the descent consumed it. The docstring's rule was that two
+ * children mean nothing was skipped; the case it missed is a node whose two children are the repeated
+ * units. The test is deliberately **shallow** — the units have to be that node's own children, not
+ * something deeper — because a subtree-wide test would stop at the outermost wrapper and yield one
+ * candidate whose signature is the whole page, which is the same over-descent in the direction nobody
+ * notices. And it applies only to *generic* units, or a theme's `<div class=row>` holding two
+ * identically-built `<section>`s would collapse two blocks into one (`SECTIONING`).
  */
 export function blocksOf(root) {
   let node = contentRoot(root);
   for (;;) {
     const kids = node.children.filter(isElement);
     if (kids.length !== 1 || !GENERIC.has(kids[0].tag) || !kids[0].children.some(isElement)) break;
+    const units = unitsAmong(kids[0]);
+    if (units.length && units.every((unit) => !SECTIONING.has(unit.tag))) break;
     node = kids[0];
   }
-  return node.children.filter((child) => isElement(child) && !INLINE.has(child.tag));
+  return node.children.filter((child) => isElement(child) && !isInline(child));
 }
 
 const isElement = (node) => node.tag !== "#text";
@@ -269,22 +311,38 @@ export function signature(node, depth = 3) {
  * wrapper around a heading and its text, which is what a card, a quote and a disclosure all are.
  */
 export function repeatedUnits(block) {
-  let best = [];
+  let best = unitsAmong(block);
   const visit = (node) => {
-    const groups = new Map();
     for (const child of node.children.filter(isElement)) {
-      if (INLINE.has(child.tag) || !child.children.some(isElement)) continue;
-      const key = signature(child, 2);
-      const group = groups.get(key);
-      if (group) group.push(child);
-      else groups.set(key, [child]);
+      const found = unitsAmong(child);
+      if (found.length > best.length) best = found;
+      visit(child);
     }
-    for (const group of groups.values()) {
-      if (group.length >= 2 && group.length > best.length) best = group;
-    }
-    for (const child of node.children.filter(isElement)) visit(child);
   };
   visit(block);
+  return best;
+}
+
+/**
+ * The repeated units among **one node's own children** — the rule above, one level deep.
+ *
+ * <p>Split out for SH425, which needs to ask the question before descending through a wrapper and
+ * must not be answered by something further down. One implementation, so the two callers cannot
+ * disagree about what a repeated unit is.
+ */
+function unitsAmong(node) {
+  const groups = new Map();
+  for (const child of node.children.filter(isElement)) {
+    if (isInline(child) || !child.children.some(isElement)) continue;
+    const key = signature(child, 2);
+    const group = groups.get(key);
+    if (group) group.push(child);
+    else groups.set(key, [child]);
+  }
+  let best = [];
+  for (const group of groups.values()) {
+    if (group.length >= 2 && group.length > best.length) best = group;
+  }
   return best;
 }
 
@@ -486,7 +544,10 @@ export function lossFor(block, consumed) {
         behaviour.push(`${node.tag}[${name}]`);
       }
     }
-    if (consumed.has(node) || INLINE.has(node.tag)) continue;
+    // SH425 — `isInline`, not the tag: an `<a>` wrapping a card's heading and paragraph is
+    // structure a conversion drops, and a reviewer agreeing to the loss should see it. A link inside
+    // a sentence is still prose and still excluded, which is what the tag set is for.
+    if (consumed.has(node) || isInline(node)) continue;
     if (LAYOUT.has(node.tag)) continue;
     elements.push(node.tag);
   }
