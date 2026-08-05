@@ -591,6 +591,26 @@ is the second kind. Six decisions:
   has three states — a function, **`null` for "there is no comparator"**, and `undefined` for "resolve
   what this checkout has" — so the degraded path is *declared* by the tests that pin it, and one test
   builds real PNGs and runs the actual comparator.
+- **A screenshot of an error is not a comparison, and the gate now refuses to score one (SH450).**
+  The first `--against` run that reached a browser reported `100.00% of pixels` on a replica whose
+  markup is the source's, *verbatim*. The PNG was a white page reading `{"error":"Unauthorized"}`.
+  The credentials were computed and handed to Playwright, and that was never the problem:
+  **`httpCredentials` answers a challenge and does not send `Authorization` unprompted**, and the
+  preview's 401 carried `Content-Type: application/json` and no `WWW-Authenticate`, so there was
+  nothing to answer and the browser never retried. `curl -u` worked against the same URL for the one
+  reason that matters — it can be told to send the header first. Two ends, and both were worth
+  having: the server now challenges on `/preview/**` (see `security.md`), and `capture` reads
+  `page.goto`'s response and **refuses any non-2xx** rather than photographing it. The status, not
+  the pixels: an error page is small, plain and stable, so it compares against itself perfectly and
+  against a real site at exactly 100% — a failure to *capture* must read as a failure and never as a
+  difference, because the two have nothing in common but the digit. The 401 gets its own sentence
+  naming the challenge, since credentials-in-hand plus a 401 is a fact about the instance and "check
+  your password" would send a reader nowhere.
+  **And the test that let this ship is the SH448 shape exactly**: `snapshot.test.mjs` asserted
+  `seen[0].credentials` equals the admin pair — that they were handed to the *injected* capture —
+  and its comment even names the failure it was written to prevent ("without this the capture would
+  be a photograph of the login page"). It was true, it was about this command's plumbing, and no
+  test started a browser. The comment now says what it does not cover.
 SH365 was a hard dependency rather than a courtesy: `--url` was already two arguments wearing one name,
 and a third meaning would have made the flag that says where Shio is also decide what it is compared
 to. No endpoint and no MCP tool — SH268's rule plus the standing no-browser non-goal — so

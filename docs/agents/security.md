@@ -108,7 +108,21 @@ interceptor.
 ### Authentication
 - HTTP Basic Auth
 - `HttpSessionSecurityContextRepository` for session persistence
-- `BasicAuthenticationFilter` with custom `ShAuthenticationEntryPoint`
+- `BasicAuthenticationFilter` with custom `ShAuthenticationEntryPoint` — **and since SH450 it
+  challenges on `/preview/**` and nowhere else.** Spring's own entry point sends
+  `WWW-Authenticate: Basic`, which opens the browser's native credential dialog; that is the wrong
+  answer to every unauthenticated console `fetch`, because the React app has a login page and a
+  native dialog in front of it is unanswerable — dismiss it and the console is blank. So the entry
+  point was replaced with one that answers JSON, and the replacement was right for the API and wrong
+  for the one route a **browser** is meant to open with Basic. Measured: `shio snapshot --against`
+  reported `100.00% of pixels` on a byte-identical replica, and the PNG was a white page reading
+  `{"error":"Unauthorized"}` — Playwright's `httpCredentials` answers a *challenge* and never sends
+  `Authorization` unprompted, so with no header there was nothing to answer. The rule is **a path,
+  not a heuristic**: `Accept: text/html` would have caught console fetches too, and a path is
+  checkable. `ShPreviewChallengeTest` asserts both directions, because the second one is the reason
+  the entry point exists at all. The body stays the same JSON either way — a browser acts on the
+  header and never renders that body, so making the two responses differ further would be a second
+  contract with no reader.
 - Login flow: React sends `GET /api/v2` with Basic auth header via `fetch()`, then redirects to `/console`
 
 ### CORS

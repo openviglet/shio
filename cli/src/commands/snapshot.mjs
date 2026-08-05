@@ -362,7 +362,17 @@ async function capture(url, flags, ctx, credentials, playwright) {
       reducedMotion: "reduce",
       timezoneId: "UTC",
     });
-    await page.goto(url, { waitUntil: "networkidle", timeout: Number(flags.timeout ?? 30000) });
+    const response = await page.goto(url, {
+      waitUntil: "networkidle",
+      timeout: Number(flags.timeout ?? 30000),
+    });
+    // SH450 — a screenshot of an error is the one thing a visual gate must never score. The first
+    // `--against` run that reached a browser reported `100.00% of pixels` on a replica whose markup
+    // is the source's, verbatim: the PNG was a white page reading `{"error":"Unauthorized"}`, and
+    // 100% is exactly what an unrelated image scores. A failure to *capture* has to read as a
+    // failure, never as a difference, or the gate reports a defect in the content for a defect in
+    // the run — and the two have nothing in common but the number.
+    refuseNon2xx(response, url, credentials);
     await page.addStyleTag({
       content:
         "*,*::before,*::after{animation:none!important;transition:none!important;" +
@@ -377,6 +387,44 @@ async function capture(url, flags, ctx, credentials, playwright) {
   } finally {
     await browser.close();
   }
+}
+
+/**
+ * Refuse a page the browser could not actually open (SH450).
+ *
+ * <h3>Why the status and not the pixels</h3>
+ *
+ * <p>Every heuristic over the image is worse than the header that is already there: an error page
+ * is small, plain and stable, which is to say it looks exactly like a legitimately minimal page and
+ * compares against itself perfectly. `page.goto` hands back the response for the top-level document
+ * and its status is the one unambiguous fact in the whole capture.</p>
+ *
+ * <h3>The 401 gets its own sentence</h3>
+ *
+ * <p>Because it is the one a caller can act on and the one that produced this task. Playwright's
+ * `httpCredentials` answers a **challenge** — it does not send `Authorization` unprompted — so a
+ * 401 with credentials in hand means the server did not challenge, which is a fact about the server
+ * and not about the flags. An instance older than SH450 is exactly that case, and naming it is the
+ * difference between "fix your password" and "upgrade the instance".</p>
+ */
+export function refuseNon2xx(response, url, credentials) {
+  // A null response is `about:blank` and same-document navigation, neither of which this reaches.
+  const status = response?.status?.();
+  if (!status || (status >= 200 && status < 300)) return;
+  const sent = credentials?.user ? `as ${credentials.user}` : "with no credentials";
+  const teaching = status === 401 || status === 403
+    ? "The browser was given credentials, and Playwright's `httpCredentials` answers a *challenge* "
+      + "rather than sending Authorization unprompted — so a 401 here means the server sent no "
+      + "`WWW-Authenticate` header. Shio emits one on /preview/** since SH450; an older instance "
+      + "does not, and no password will help.\n"
+    : "";
+  throw new Error(
+    `shio snapshot: ${url} answered HTTP ${status} (${sent}), so there is no page to photograph.\n`
+      + teaching
+      + "Refusing rather than capturing it: an error page is small, plain and stable, so it "
+      + "compares against itself perfectly and against a real site at 100% — which reads as a "
+      + "total visual regression in the content rather than a failure of the run.",
+  );
 }
 
 /**

@@ -269,6 +269,13 @@ test("SH265: a front-endless site is captured from the preview, with credentials
   // SH359 closed the preview, so the browser has to authenticate like everything else the CLI
   // does. Without this the capture would be a photograph of the login page — which compares
   // stably against itself and would read as "unchanged" forever.
+  //
+  // SH450 — and this assertion is the reason that defect shipped, so it is worth saying what it
+  // does *not* cover. It asserts the credentials were handed to the **injected capture**: a fact
+  // about this command's plumbing, and none at all about whether a browser got in. It did not, for
+  // a reason nothing here can see (Playwright answers a challenge the preview was not sending), and
+  // the gate photographed the 401 and scored it 100% against the real site. The two ends of that
+  // are `ShPreviewChallengeTest` and `refuseNon2xx` below.
   assert.deepEqual(seen[0].credentials, { user: "admin", password: "secret" });
   // The reader is told the picture is a DRAFT with a banner on it, because the image cannot say
   // so and a reviewer diffing it against production would otherwise blame the stripe on the site.
@@ -577,4 +584,49 @@ test("SH444: the real pixelmatch/pngjs comparator runs, which the checkout could
   assert.equal(result.resolution, "pixel", "not `bytes` — the helpers resolved and did the work");
   assert.equal(result.ratio, 1 / 16, "one pixel of sixteen, measured rather than assumed");
   assert.match(ctx.stdout.text, /6\.25% of pixels/);
+});
+
+// --- SH450: a screenshot of an error is not a comparison ---
+
+test("SH450: a capture refuses a page the browser could not open, and the 401 names why", () => {
+  // The defect, in one number: `--against` reported `100.00% of pixels` on a replica whose markup
+  // is the source's, verbatim. The PNG was a white page reading `{"error":"Unauthorized"}`, and
+  // 100% is exactly what any unrelated image scores. A failure to *capture* must read as a failure
+  // and never as a difference — the two have nothing in common but the digit.
+  assert.throws(
+    () => snapshot.refuseNon2xx({ status: () => 401 }, "http://shio.test/preview/Docs/", {
+      user: "admin",
+      password: "secret",
+    }),
+    (error) => {
+      assert.match(error.message, /answered HTTP 401 \(as admin\)/);
+      // The sentence a caller can act on, and the reason it is specific to 401: `httpCredentials`
+      // answers a *challenge*, so credentials in hand plus a 401 means the server did not send one.
+      // That is a fact about the instance, and "fix your password" would send a reader nowhere.
+      assert.match(error.message, /WWW-Authenticate/);
+      assert.match(error.message, /SH450/, "and names the version that emits it");
+      return true;
+    },
+  );
+});
+
+test("SH450: a 2xx passes, and a 500 is refused without the credentials sentence", () => {
+  assert.doesNotThrow(() => snapshot.refuseNon2xx({ status: () => 200 }, "http://x.test/", null));
+  assert.doesNotThrow(
+    () => snapshot.refuseNon2xx(null, "http://x.test/", null),
+    "a null response is about:blank and same-document navigation — neither reaches this",
+  );
+
+  assert.throws(
+    () => snapshot.refuseNon2xx({ status: () => 500 }, "http://x.test/", null),
+    (error) => {
+      assert.match(error.message, /answered HTTP 500 \(with no credentials\)/);
+      assert.ok(
+        !/WWW-Authenticate/.test(error.message),
+        "the authentication sentence is for the status it explains — on a 500 it is noise pointing "
+          + "at the wrong subsystem",
+      );
+      return true;
+    },
+  );
 });

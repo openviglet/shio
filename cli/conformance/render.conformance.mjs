@@ -222,6 +222,20 @@ describe("SH448 conformance: the native render path, end to end over HTTP", () =
         + `textual proof that replaces a human round trip. Got: ${JSON.stringify(digest).slice(0, 300)}`,
     );
 
+    // ── SH450: the preview's 401 is answerable by a browser ───────────────────────────────
+    // No browser here — the suite deliberately starts none (IX.23) — but the header is the whole
+    // mechanism, and it is a fact about a live response that no unit test observed for two tasks.
+    // Playwright's `httpCredentials` answers a *challenge*; with none sent, `--against` photographed
+    // the 401 and scored it 100% against the real site.
+    const unauthenticated = await fetch(`${conn.baseUrl}/preview/${encodeURIComponent(site)}/`);
+    assert.equal(unauthenticated.status, 401, "SH359: the preview is closed, which is the premise");
+    assert.match(
+      unauthenticated.headers.get("www-authenticate") ?? "",
+      /^Basic realm=/,
+      "SH450: and it says so in a way a browser can act on. Absent, a headless browser handed "
+        + "credentials never sends them and the visual gate compares a login error to a website",
+    );
+
     // ── SH451: and a visitor with no credential can read it, once it is published ─────────
     // The claim nothing else in this repository can make. Every guard below is asserted from a
     // request that carries no Authorization header at all, because "anonymous" is not a property

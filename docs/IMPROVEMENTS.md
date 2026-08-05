@@ -398,32 +398,6 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
-### IX.24 A screenshot of an error is not a comparison (SH450)
-
-The first `--against` run that reached a browser reported `100.00% of pixels` on a
-replica whose markup is the source's, verbatim. Opening the PNG says why: it is a white
-page reading `{"error":"Unauthorized"}`. The gate photographed a 401 and scored it
-against the real site.
-
-The credentials are computed and passed — `resolved.preview ? {user, password} : null`,
-then `httpCredentials` on `newPage`. Playwright's `httpCredentials` answers a
-**challenge**; it does not send `Authorization` unprompted. The preview's 401 carries
-`Content-Type: application/json` and **no `WWW-Authenticate` header**, so there is
-nothing for the browser to answer and it never retries. `curl -u` succeeds against the
-same URL because it can be told to send the header first.
-
-The unit test is the reason this shipped, and it is the exact shape SH448 describes.
-`snapshot.test.mjs` asserts `seen[0].credentials` equals the admin pair — that the
-credentials were *handed to the injected capture*. Nothing asserts a browser got in,
-because no test starts one. Its comment even names the failure it was written to
-prevent: "without this the capture would be a photograph of the login page — which
-compares stably against itself and would read as unchanged forever."
-
-Two ends, and both are worth having. The preview should emit `WWW-Authenticate: Basic`
-on its 401 so any browser can authenticate it. And the capture should refuse a page
-whose status is not 2xx rather than photograph it — a screenshot of an error is the one
-thing a visual gate must never score.
-
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
