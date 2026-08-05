@@ -383,16 +383,45 @@ test("--depth bounds the levels, and --max-pages cuts the same pages twice", asy
   assert.ok(first.inventory.notes.some((note) => /every count in it is a lower bound/.test(note)));
 });
 
-test("a non-HTML response is recorded as unreadable, not scanned", async () => {
+test("SH431: a served non-HTML response is recorded as not a page, not as unreadable", async () => {
+  // The distinction this asserts is the whole of SH431. Capturing openviglet.github.io reported
+  // "could not be read (24)", every row a 200 with `not html (application/json)`: the site's data
+  // surface, linked on purpose and served correctly. The coverage gate reads `problems.length` as
+  // "source page(s) could not be read at all" and downgrades every count in its own report on the
+  // strength of it, so a complete capture came back with two dozen phantom gaps.
   const ctx = ctxWith();
   const { inventory } = await clone.run({}, ["https://x.test"], ctx);
 
-  const pdf = inventory.problems.find((each) => each.path === "/whitepaper.pdf");
-  assert.ok(pdf, "the PDF should be recorded");
-  assert.match(pdf.reason, /not html \(application\/pdf\)/);
-  // And it is still an asset, because the page that linked it named bytes.
-  assert.ok(inventory.assets.some((each) => each.path === "/whitepaper.pdf" || each.kind === "document")
-    || inventory.problems.length > 0);
+  const pdf = inventory.data.find((each) => each.path === "/whitepaper.pdf");
+  assert.ok(pdf, "the PDF is recorded — a reader may well decide the replica needs it");
+  assert.equal(pdf.type, "application/pdf", "with what it actually was, as a field rather than "
+    + "as a content type buried in a message");
+  assert.equal(pdf.status, 200, "and with the status that says the crawl did not fail on it");
+  assert.ok(
+    !inventory.problems.some((each) => each.path === "/whitepaper.pdf"),
+    "`problems` means the crawl could not read this, which is a different claim with a different fix",
+  );
+  // It is a *link* target — which is why the crawl fetched it — so it stays in the visited set and
+  // the SH387 unfollowed list does not report a link to it as unresolved either. That is the second
+  // way this could have been got wrong: moving the row out of `problems` and out of `visited` would
+  // have turned every reference to it into a phantom gap of a different kind.
+  assert.ok(!inventory.unfollowed.some((each) => each.path === "/whitepaper.pdf"));
+});
+
+test("SH431: a fetch that really failed is still a problem, and the report keeps them apart", async () => {
+  const ctx = ctxWith({ ...SITE, "/about": { status: 500, body: "boom" } });
+  const { inventory } = await clone.run({}, ["https://x.test"], ctx);
+
+  const broken = inventory.problems.find((each) => each.path === "/about");
+  assert.ok(broken, "a 500 is the honest case the unreadable list exists for");
+  assert.match(broken.reason, /HTTP 500/);
+  assert.match(ctx.stdout.text, /could not be read \(1\)/);
+  assert.match(
+    ctx.stdout.text,
+    /not a page \(served, not HTML\)/,
+    "two headings, because the reader's next question differs: one asks what is broken on the "
+      + "source, the other whether the replica needs a data surface too",
+  );
 });
 
 test("a seed that redirects off-host is refused, naming the host it actually got", async () => {

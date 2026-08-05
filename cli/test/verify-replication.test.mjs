@@ -373,6 +373,67 @@ test("an older capture says which rule checked nothing, rather than reporting a 
   assert.match(result.note, /source-link-unresolved checked nothing/);
 });
 
+test("SH431: a served non-HTML response is reported and never counted as unchecked", () => {
+  // The defect this closes, in the form it was measured: 24 rows of `application/json` — a site's
+  // data surface, linked on purpose and served correctly — arrived in `problems` and became "24
+  // source page(s) could not be read at all". Two dozen unfixable warnings on a first run is how a
+  // coverage report loses the trust that makes it the answer to "is this replication done".
+  const result = lintReplication({
+    posts: [page("/"), page("/about")],
+    defs: DEFS,
+    inventory: capture({
+      data: [
+        { path: "/catalog-v1.json", status: 200, type: "application/json" },
+        { path: "/badge.json", status: 200, type: "application/json" },
+      ],
+    }),
+  });
+
+  assert.ok(
+    !result.findings.some((each) => each.rule === "replication-unchecked"),
+    "not a finding: nothing here was unchecked, and a warning nobody can act on is how the group "
+      + "stops being read",
+  );
+  assert.match(
+    result.note,
+    /2 served non-HTML response\(s\)/,
+    "reported, though — a data endpoint may well deserve replicating, and a reader should be able "
+      + "to see one without opening the inventory",
+  );
+});
+
+test("SH431: a real failure still downgrades the run, which is the case the rule exists for", () => {
+  const result = lintReplication({
+    posts: [page("/"), page("/about")],
+    defs: DEFS,
+    inventory: capture({
+      problems: [{ path: "/pricing", status: 500, reason: "HTTP 500" }],
+      data: [{ path: "/catalog-v1.json", status: 200, type: "application/json" }],
+    }),
+  });
+
+  const unchecked = result.findings.filter((each) => each.rule === "replication-unchecked");
+  assert.equal(unchecked.length, 1, "one, for the 500 — not two, and not none");
+  assert.match(unchecked[0].message, /1 source page\(s\) could not be read/);
+});
+
+test("SH431: a version-2 capture says the count may include a data surface", () => {
+  // The honest half of the version bump. In a version-2 file the data files ARE in `problems`, so a
+  // reader that knows the difference has to say that its own count is the older, blunter one —
+  // naming the rule that is affected, not just "this file is older".
+  const result = lintReplication({
+    posts: [page("/"), page("/about")],
+    defs: DEFS,
+    inventory: capture({ version: 2, data: undefined }),
+  });
+
+  assert.match(result.note, /filed as an unreadable page before 3/);
+  assert.ok(
+    !/unfollowed. arrived in 2/.test(result.note),
+    "and it does not claim source-link-unresolved checked nothing: version 2 has `unfollowed`",
+  );
+});
+
 // --- shared shapes ---
 
 test("the rows are capped and the cut is declared in every message, not in a note", () => {

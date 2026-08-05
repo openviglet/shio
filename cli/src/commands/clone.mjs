@@ -464,7 +464,12 @@ async function visit(url, { page, flags, keepMarkup, isSeed }, ctx) {
   }
   const contentType = response.headers?.get?.("content-type") ?? "";
   if (contentType && !/text\/html|application\/xhtml/i.test(contentType)) {
-    return { status, contentType, error: `not html (${contentType.split(";")[0]})` };
+    // SH431 — a distinct outcome, and deliberately **not** an `error`. A 200 of application/json is
+    // the site's data surface, linked on purpose and served correctly: it is not a page, and the
+    // crawl did not fail on it. Filing it as an error put 24 of `openviglet.github.io`'s data files
+    // into `problems`, where the coverage gate reads them as "source page(s) could not be read at
+    // all" and downgrades every count in the report to a lower bound on the strength of them.
+    return { status, contentType, notHtml: contentType.split(";")[0].trim() };
   }
   const html = await response.text();
   // `html` is carried only when `--markup` asked for it: holding 200 pages of somebody else's HTML

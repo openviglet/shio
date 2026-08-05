@@ -919,6 +919,7 @@
 - **SH389** — A SiteScripts post gives a site one ordered script list on site.scripts, emitted only by a layout that asks; a capture proposes the ones it found.
 - **SH390** — {{#image}} yields an asset's intrinsic size and a signed srcset that never upscales, over the transform pipeline SH40 already ships.
 - **SH422** — One test drives clone → propose → accept → verify over a served fixture, asserting each phase reads the artefact the last one wrote.
+- **SH431** — A served non-HTML 200 is its own inventory list, reported but never counted as an unread page; problems keeps the failures.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

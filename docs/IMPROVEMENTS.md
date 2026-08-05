@@ -1651,30 +1651,6 @@ rewritten to the uploaded asset's address, which needs an upload with no field. 
 first is closer to what a fidelity replica means. Whichever, `source-asset-missing`
 should be able to say the bytes exist and nothing serves them.
 
-### XVII.23 Not a page is not the same as could not be read (SH431)
-
-Capturing `openviglet.github.io` reported `could not be read (24)`, every row a `200`
-with `not html (application/json)`: `catalog-v1.json`, `badge.json`,
-`by-vendor/openai.json` and twenty-one more. Those are the site's data surface, linked
-on purpose and served correctly. They are not pages, and the crawl did not fail on them.
-
-`replication-unchecked` reads `inventory.problems.length`, so all twenty-four become "24
-source page(s) could not be read at all, so their content is unchecked". That rule
-exists for the honest case — a 500, a redirect off-origin, a truncated crawl — and its
-point is that an unchecked thing counted as clean is how a coverage report starts lying.
-Here it lies the other way: a complete capture reports two dozen phantom gaps, and every
-count in the report is downgraded to a lower bound on the strength of them.
-
-Which matters because of what the group is for. SH387 says the coverage number is how a
-replication knows it is done, and that a report nobody trusts ends it with a number
-instead of the work. Two dozen unfixable warnings on a first run is how that trust goes.
-
-A JSON or XML response is a distinct outcome from a fetch that failed, and the inventory
-should say so rather than leaving a reader to infer it from a content type inside a
-message. `problems` keeps the failures; a non-HTML `200` is a separate list — reported,
-since a data endpoint may deserve replicating, but never an unread page. A sitemap
-already gets this treatment.
-
 ### XVII.24 Counting occurrences and calling them pages (SH432)
 
 A capture of one page reported `navigation (3)` with `on 2 page(s)` against all three

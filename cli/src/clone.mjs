@@ -46,11 +46,17 @@
 /**
  * The inventory's shape version. Bumped when a consumer would read an old file wrongly.
  *
- * <p>**2 since SH387**, which added `unfollowed`: internal links the walk saw and never crawled. A
+ * <p>**2 with SH387**, which added `unfollowed`: internal links the walk saw and never crawled. A
  * consumer of a version-1 file reads that as "nothing was left uncrawled", which is exactly the wrong
  * way round for a *coverage* report — so the version moves rather than the field being optional.
+ *
+ * <p>**3 since SH431**, which took the non-HTML responses out of `problems` and gave them their own
+ * list. Same argument, and it is the reason this is a version rather than an addition: in a
+ * version-2 file a data endpoint served correctly *is* a row in `problems`, so a reader that does not
+ * know the difference reports it as a page nobody could read — and then calls every count in its own
+ * report a lower bound because of it.
  */
-export const INVENTORY_VERSION = 2;
+export const INVENTORY_VERSION = 3;
 
 /** Where the inventory lives: beside `content-base.json`, which is the other derived snapshot. */
 export const INVENTORY_FILE = "shio/.shio/source-inventory.json";
@@ -620,9 +626,16 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
   const external = new Map();
   const unfollowed = new Map();
   const problems = [];
+  const data = [];
 
   for (const entry of [...visited].sort((a, b) => (pathOf(a.url) < pathOf(b.url) ? -1 : 1))) {
     const path = pathOf(entry.url);
+    // SH431 — a non-HTML 200 before a failure, because the two are different answers and only one of
+    // them is a defect. `problems` is what the crawl could not read; this is what was never a page.
+    if (entry.notHtml && !entry.error) {
+      data.push({ path, status: entry.status ?? 0, type: entry.notHtml });
+      continue;
+    }
     if (entry.error || !entry.doc) {
       problems.push({ path, status: entry.status ?? 0, reason: entry.error ?? "not html" });
       continue;
@@ -796,6 +809,16 @@ export function buildInventory({ origin, seed, visited = [], robots, options = {
       .sort((a, b) => (a.host < b.host ? -1 : 1)),
     problems: problems.sort(byPath),
     /**
+     * A 200 that was never a page (SH431) — the site's data surface.
+     *
+     * <p>`catalog-v1.json`, a `.txt`, an `.xml` feed: linked on purpose, served correctly, and not
+     * HTML. Kept because a data endpoint may well deserve replicating and a reader should be able to
+     * see one, and kept **out of `problems`** because that list means "the crawl could not read
+     * this", which is a different claim with a different fix. Filing 24 of them as unreadable pages
+     * is what made a complete capture report two dozen phantom gaps.
+     */
+    data: data.sort(byPath),
+    /**
      * Internal links the walk saw and never followed (SH387).
      *
      * <p>The one field SH377 could not have known it needed. Every internal link the crawl *did*
@@ -882,6 +905,10 @@ export function describeInventory(inventory, options = {}) {
     `${script.host}  ${script.refs} reference(s)  e.g. ${truncate(script.sample, 60)}`);
   section("could not be read", inventory.problems, (problem) =>
     `${problem.path}  ${problem.status || "-"}  ${problem.reason}`);
+  // SH431 — its own heading, because the reader's question about these two lists is different: one
+  // asks "what is broken on the source", the other "does the replica need a data surface too".
+  section("not a page (served, not HTML)", inventory.data, (row) =>
+    `${row.path}  ${row.status || "-"}  ${row.type}`);
 
   if (crawl.truncated) {
     lines.push(

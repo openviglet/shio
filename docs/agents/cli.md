@@ -293,7 +293,20 @@ one that matters most is not a coverage rule:
   replica's), a locale whose selection the capture could not place in a URL, and an inventory written
   by a **newer** `shio clone` than this reader understands. An unchecked thing counted as a clean one
   is how a coverage report starts lying, and a coverage report nobody trusts ends the replication with
-  a number instead of with the work (SH302's rule).
+  a number instead of with the work (SH302's rule). **SH431 removed the fourth shape's largest false
+  positive, and it lied the other way**: capturing `openviglet.github.io` reported *"could not be read
+  (24)"*, every row a `200` with `not html (application/json)` — `catalog-v1.json`, `badge.json` and
+  twenty-two more, the site's data surface, linked on purpose and served correctly. They are not pages
+  and the crawl did not fail on them, so a complete capture came back with two dozen phantom gaps and
+  every count downgraded to a lower bound on the strength of them; two dozen unfixable warnings on a
+  first run is how that trust goes. A served non-HTML `200` is now its own list — `data`, with the
+  content type as a **field** rather than buried in a `reason` string, and its own heading in the
+  report — reported because a data endpoint may well deserve replicating, never counted as an unread
+  page, and still in the visited set so a link to one is not an unresolved link either. `problems`
+  keeps the failures, which is the case the rule exists for. `INVENTORY_VERSION` is **3** for it, and a
+  version-2 capture gets a note naming *which* count is the blunter one — the version messages are now
+  per version (`unfollowed` arrived in 2, the split in 3) rather than one message keyed to the newest,
+  because a reader told only "this file is older" has a fact it cannot act on.
 - **`source-page-missing`** — SH385's `source-url-abandoned`, **moved into the group that owns it and
   renamed**. It was the right check in the wrong place: a coverage question about a source path is this
   group's whole subject, and leaving it in `projection` while adding a second page rule here would have

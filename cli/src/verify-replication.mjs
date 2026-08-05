@@ -38,8 +38,16 @@ export const REPLICATION_CHECK = "replication";
 /** Enough rows to act on, few enough to read. Every cut is declared in the message that carries it. */
 const LIMIT = 20;
 
-/** The inventory shape this group understands. A `version` past it is reported, never guessed at. */
-export const READS_VERSION = 2;
+/**
+ * The inventory shape this group understands. A `version` past it is reported, never guessed at.
+ *
+ * <p>**3 since SH431**: a non-HTML 200 is its own list in the capture rather than a row in
+ * `problems`. Reading a version-2 file with this reader is safe and under-informed in one specific
+ * way, which the note below states rather than leaving to be inferred — the data files are still in
+ * `problems` there, so `replication-unchecked` over-reports on exactly the sites that have a data
+ * surface.
+ */
+export const READS_VERSION = 3;
 
 /**
  * Lints a replication's coverage against the capture it came from.
@@ -282,9 +290,16 @@ function uncheckedFindings(inventory, notes) {
       + "report never compared", "Raise --depth or --max-pages and capture again. Until then a clean "
       + "run means \"complete among the pages the crawl saw\"."));
   }
-  if (version < READS_VERSION) {
-    notes.push(`this capture is version ${version}; \`unfollowed\` arrived in ${READS_VERSION}, so `
+  // Each version is named with what it added, rather than one message keyed to the newest: a reader
+  // told "this file is older" and not *which rule went quiet* has been given a fact it cannot act on.
+  if (version < 2) {
+    notes.push(`this capture is version ${version}; \`unfollowed\` arrived in 2, so `
       + "source-link-unresolved checked nothing");
+  }
+  if (version < 3) {
+    notes.push(`this capture is version ${version}; a served non-HTML response was filed as an `
+      + "unreadable page before 3, so the count below may include a data surface that is not a gap "
+      + "— re-run `shio clone` to separate them");
   }
   const unreadable = (inventory.problems ?? []).length;
   if (unreadable) {
@@ -292,6 +307,16 @@ function uncheckedFindings(inventory, notes) {
       + "links, assets and forms were never compared",
       "Look at `problems` in the inventory: a 500 is the source's, a redirect off-origin is a "
       + "different site, and neither is a gap in the replica."));
+  }
+  // SH431 — reported, never counted as unchecked. A 200 of application/json is the site's data
+  // surface: linked on purpose, served correctly, and never a page. Twenty-four of them turned a
+  // complete capture into two dozen phantom gaps and downgraded every count in the report — which is
+  // how a coverage report loses the trust that makes it the answer to "is this replication done".
+  const served = (inventory.data ?? []).length;
+  if (served) {
+    notes.push(`${served} served non-HTML response(s) (a data surface) were recorded and not `
+      + "compared: they were never pages, so their absence from the replica is a decision rather "
+      + "than a gap");
   }
   const vague = (inventory.locales ?? []).filter((row) => row?.shape === "unknown").length;
   if (vague) {
