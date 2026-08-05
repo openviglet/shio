@@ -16,11 +16,13 @@ IMPROVEMENTS.md** — the residue SH356 tracks, down from the 278 the adoption i
 count a *new* finding is nobody's backlog: it is yours, and the CI workflow's baseline line goes
 away the day `lint` exits 0.
 
-**Keep the installed copies in step: `roadkeep install`.** The plugin's skill, the hook matcher
-and `.mcp.json` are vendored into `.claude/`, so a session can load a skill several versions
-behind the checkout that is answering its commands and trust it like the original. `install
---check` is the question and `SessionStart` asks it for you; the answer arrives in the notice
-before the first read.
+**There is nothing here to keep in step.** This project used to run the tool from a sibling
+checkout, with the skill, the hook matcher and `.mcp.json` vendored into `.claude/` — so a
+session could load a skill several versions behind the checkout answering its commands and
+trust it like the original. Those copies are gone: the plugin is installed from the
+`alegauss` marketplace, declared in `.claude/settings.json` and committed, so the skill a
+session loads *is* the published one. Updating the tool is `claude plugin marketplace update
+alegauss` followed by `claude plugin update roadkeep@alegauss` — one place, no per-project step.
 
 Everything below is why the rules are what they are. It is no longer a procedure to perform
 by hand.

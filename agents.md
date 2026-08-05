@@ -208,35 +208,25 @@ a docs commit's prose about already-shipped work gets misread as
 
 | File | Single responsibility |
 |---|---|
-| [docs/ROADMAP.md](docs/ROADMAP.md) | **Active backlog only** (📋 designed · 💭 idea · ⏳ partial · 🛠 in-progress) — one line per task |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | **Active backlog only** — one line per task, one marker each (the legend is `[markers]` in `roadkeep.toml`) |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | What has **shipped**, indexed by Block — one entry per task |
 | [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md) | **Design rationale** for *unshipped* sections only |
 
-Never duplicate between them; **status markers live only in ROADMAP.md**. Tasks are
-`SH<n>`; per-task specs are `docs/specs/SH<n>-<slug>.md`.
+**All three are written by [`roadkeep`](https://github.com/alegauss/roadkeep) and never by
+hand.** The plugin is enabled in [`.claude/settings.json`](.claude/settings.json), so a clone
+gets the hook that denies the `Edit` and names the command to call instead.
+[`roadkeep.toml`](roadkeep.toml) is the authority on this project's ids, markers, outline
+pointers and limits, and the **`roadkeep` skill** — which ships with the plugin — on the write
+path and the query surface. Neither is restated here: a rule in two files is two files that can
+disagree, and the tool's copy is the one that is enforced. Per-task specs are
+`docs/specs/SH<n>-<slug>.md`, which roadkeep does not govern.
 
-**ROADMAP.md holds three things and nothing else: block headings, open task lines, and
-the non-goals.** No `> ✅ … shipped` note, no block description, no priority essay, no
-numbering history — every one of those is a sentence roadkeep has no verb for, which is
-the tell that it belongs elsewhere: shipped work in the ledger, design at the `→ §`
-pointer, the queue in `roadkeep.toml`'s `priority`, and a missing id in `roadkeep gaps`.
-It had drifted to **535 lines carrying 48 tasks**; asking rather than reading is what
-keeps it at 118, so reach for `roadkeep brief`/`stats` and never open the file to count.
-
-**A ROADMAP entry is one sentence: what + why + `→` pointer.** The reasoning belongs
-in IMPROVEMENTS.md, which is what the pointer addresses; a line that restates it
-makes the roadmap a history instead of a queue. Measured at SH341: 95 active task
-lines averaging **142** words, worst 555 — and six of the worst eight were written
-in the session that then found the problem, so treat it as a drift the process
-invites rather than a lapse. If the analysis feels too big for the line, that is the
-signal it goes in IMPROVEMENTS.
-
-**The same drift produced this file's own split.** `agents.md` reached 186 KB
+**This file's own split came from the same drift.** `agents.md` reached 186 KB
 (~46k tokens, resident every turn) by absorbing the rationale of every shipped task
 — P3 violated by the file that declares P3. When you finish a task, the decision
 goes in its area file under `docs/agents/`, the history stays in `git log`, and this
-index grows only when a *new area* appears. **Non-goals are binding** — check
-ROADMAP.md → "Non-goals" and IMPROVEMENTS §0 before proposing work.
+index grows only when a *new area* appears. **Non-goals are binding** — and they are printed
+with every task, so honouring them costs no read.
 
 The full cross-file update rules are in
 [docs/agents/docs-process.md](docs/agents/docs-process.md).
