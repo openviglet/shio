@@ -1523,31 +1523,6 @@ references it yet.
 Invisible to `snapshot --against`, `digest` and `audit` — the replica looks perfect. The
 proof is a token edit that moves a render.
 
-### XVII.19 Site chrome and a page header are not the same element (SH426)
-
-`contentRoot` resolves to `<main>`, else `[role=main]`, else `<body>`, and its stated
-reason is sound: a site's header and footer are the same markup on every page, so
-proposing them would propose sixty copies of one nav. That reason describes the *site*
-chrome. It does not describe a page's own `<header>`.
-
-On `openviglet.github.io` the chrome is `div.topbar` and the hero is `header.hero-wrap`
-— an eyebrow, an `<h1>`, a lead paragraph and two CTA links, sitting as a sibling just
-before `<main>`. Narrowing to `<main>` discards it. `<header>` for a page's or a
-section's introductory content is what the HTML spec is for, so this is the idiomatic
-structure rather than an unusual one, and the hero is the single most convertible block
-on any marketing page.
-
-The irony is worth recording because it shows the two decisions were made apart:
-`classify` carries a dedicated positional hero test, tried first and only when the
-caller says the block opened the page, precisely so a hero is not filed as a CTA. On a
-page shaped like this one, `contentRoot` guarantees that test can never fire.
-
-The distinction available is repetition, which the capture already computes: a block
-whose signature recurs on most captured pages is chrome, and one that appears once is
-content. That is the same signature machinery candidates are already grouped by, so it
-costs nothing new. With a single-page capture there is no repetition evidence, which
-argues for including a pre-`<main>` `<header>` and letting the recurrence count speak.
-
 ### XVII.20 An inline stylesheet is a stylesheet (SH427)
 
 `openviglet.github.io` declares sixteen custom properties — `--bg`, `--brand`, `--text`,

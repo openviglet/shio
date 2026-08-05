@@ -259,7 +259,8 @@ const SECTIONING = new Set(["section", "article", "aside", "nav", "header", "foo
  * identically-built `<section>`s would collapse two blocks into one (`SECTIONING`).
  */
 export function blocksOf(root) {
-  let node = contentRoot(root);
+  const main = contentRoot(root);
+  let node = main;
   for (;;) {
     const kids = node.children.filter(isElement);
     if (kids.length !== 1 || !GENERIC.has(kids[0].tag) || !kids[0].children.some(isElement)) break;
@@ -267,7 +268,51 @@ export function blocksOf(root) {
     if (units.length && units.every((unit) => !SECTIONING.has(unit.tag))) break;
     node = kids[0];
   }
-  return node.children.filter((child) => isElement(child) && !isInline(child));
+  const blocks = node.children.filter((child) => isElement(child) && !isInline(child));
+  return [...pageHeader(root, main), ...blocks];
+}
+
+/**
+ * The page's own `<header>`, when narrowing to `<main>` walked straight past it (SH426).
+ *
+ * <p>`contentRoot`'s reason for narrowing is sound and describes the **site** chrome: a header and
+ * footer repeated on every page would propose sixty copies of one nav. It does not describe a page's
+ * own introductory header, and on `openviglet.github.io` that distinction cost the command the single
+ * most convertible block on the page: the chrome is `div.topbar`, and the hero is `header.hero-wrap` —
+ * an eyebrow, an `<h1>`, a lead paragraph and two CTA links — sitting as a sibling just before
+ * `<main>`. `<header>` for introductory content is what the HTML spec is for, so that is the idiomatic
+ * shape rather than an unusual one.
+ *
+ * <p>The irony worth recording, because it shows the two decisions were made apart: `classify` carries
+ * a positional hero test, tried first and only when the caller says the block opened the page,
+ * precisely so a hero is not filed as a CTA. On a page shaped like this one, `contentRoot` guaranteed
+ * that test could never fire.
+ *
+ * <p>**The closest one only**, and no attempt to tell a hero from chrome here. A site whose chrome
+ * *is* `<header>` gets one candidate — signatures are deduped, so it is one decision on N pages, not
+ * N decisions — and the evidence that separates the two is repetition, which the capture already
+ * computes and `buildProposal` reports as `pages`. Deciding it structurally would mean guessing from a
+ * single page, which is the case with no evidence at all.
+ */
+function pageHeader(root, main) {
+  const narrowed = main.tag === "main" || String(main.attrs.role ?? "").toLowerCase() === "main";
+  if (!narrowed) return [];
+  const parent = parentOf(root, main);
+  if (!parent) return [];
+  const kids = parent.children.filter(isElement);
+  const before = kids.slice(0, kids.indexOf(main));
+  const header = before.filter((node) => node.tag === "header").at(-1);
+  return header?.children.some(isElement) ? [header] : [];
+}
+
+function parentOf(node, target) {
+  for (const child of node.children) {
+    if (child === target) return node;
+    if (!isElement(child)) continue;
+    const found = parentOf(child, target);
+    if (found) return found;
+  }
+  return null;
 }
 
 const isElement = (node) => node.tag !== "#text";
@@ -683,6 +728,21 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
   }
   if (inventory.crawl?.truncated) {
     notes.push("the capture this reads was PARTIAL, so a block that recurs site-wide may look page-local here");
+  }
+  // SH426 — the recurrence evidence, said out loud. Including a page's own `<header>` means a site
+  // whose chrome is `<header>` now yields it as a candidate, and the honest way to tell that from a
+  // hero is that chrome is on *every* page. Three pages is the floor for saying so: on two, a hero
+  // with one structure is on all of them too, and a hint that fires on every small capture is one a
+  // reviewer learns to ignore.
+  const everywhere = read.length >= 3
+    ? [...candidates.values()].filter((row) => new Set(row.pages).size === read.length)
+    : [];
+  if (everywhere.length) {
+    notes.push(
+      `${everywhere.length} candidate(s) appear on all ${read.length} pages read, which is what site `
+        + `chrome looks like: ${everywhere.map((row) => row.id).join(" ")} — a header or a nav that `
+        + "recurs everywhere is one decision about the site, not a section per page",
+    );
   }
 
   const rows = [...candidates.values()]

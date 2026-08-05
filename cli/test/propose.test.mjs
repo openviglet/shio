@@ -152,6 +152,56 @@ test("SH425: a hero and a grid on one page are two candidates, which is what the
   );
 });
 
+test("SH426: a page's own header before main is a block, because it is content", () => {
+  // The shape on openviglet.github.io: the site chrome is `div.topbar`, and the hero is
+  // `header.hero-wrap` — an eyebrow, an h1, a lead and two CTA links — as a sibling just before
+  // <main>. contentRoot narrows to <main> to skip site chrome, which is the right reason for the
+  // wrong element here: <header> for introductory content is what the HTML spec is for.
+  const root = tree(
+    "<body><div class=topbar><nav><a href=/>Home</a></nav></div>" +
+      "<header class=hero-wrap><p class=eyebrow>Open source</p><h1>Shio</h1>" +
+        "<p>An agent-native CMS.</p><a href=/start>Start</a><a href=/docs>Docs</a></header>" +
+      "<main><section class=cards><h2>Features</h2></section></main></body>",
+  );
+
+  const blocks = blocksOf(root);
+  assert.deepEqual(
+    blocks.map((block) => block.attrs.class),
+    ["hero-wrap", "cards"],
+    "the header comes first, so `first` reaches it — and `classify` carries a positional hero test "
+      + "precisely so a hero is not filed as a CTA, which contentRoot guaranteed could never fire",
+  );
+  assert.equal(classify(blocks[0], { first: true }).type, "SectionHero");
+  assert.ok(
+    !blocks.some((block) => block.attrs.class === "topbar"),
+    "and the site chrome is still not a block: it is a div before the header, not the header",
+  );
+});
+
+test("SH426: the closest header wins, and a page with no header is unchanged", () => {
+  const both = tree(
+    "<body><header class=chrome><nav><a href=/>Home</a></nav></header>" +
+      "<header class=hero><h1>Title</h1><p>Lead</p></header>" +
+      "<main><section><h2>Body</h2></section></main></body>",
+  );
+  assert.deepEqual(
+    blocksOf(both).map((block) => block.attrs.class ?? block.tag),
+    ["hero", "section"],
+    "two headers before main: the closest is the page's own, which is the one worth proposing",
+  );
+
+  const plain = tree("<body><header><nav><a href=/>Home</a></nav></header><main><section><h2>a</h2></section></main></body>");
+  assert.deepEqual(
+    blocksOf(plain).map((block) => block.tag),
+    ["header", "section"],
+    "a site whose chrome IS <header> yields it as ONE candidate — signatures are deduped, so it is "
+      + "one decision on N pages — and repetition is what tells a reviewer which it is",
+  );
+
+  const nothing = tree("<main><section><h2>a</h2></section></main>");
+  assert.deepEqual(blocksOf(nothing).map((block) => block.tag), ["section"]);
+});
+
 // --- signatures and recurrence ---
 
 test("a signature ignores text and classes, so one hero on twelve pages is one candidate", () => {
@@ -350,6 +400,36 @@ function sink() {
   };
   return out;
 }
+
+test("SH426: a candidate on every page read is named as what chrome looks like", async () => {
+  // The other half of including a page's own header: the evidence that separates a hero from chrome
+  // is repetition, and the capture already computes it. Three pages is the floor for saying so —
+  // on two, a hero with one structure is on both as well, and a hint that fires on every small
+  // capture is one a reviewer learns to ignore.
+  const chrome = "<header><nav><a href=/>Home</a><a href=/about>About</a></nav></header>";
+  const page = (heading) => `<html><body>${chrome}<main>`
+    + `<section class=hero><h1>${heading}</h1><p>Words about ${heading}.</p></section>`
+    + "</main></body></html>";
+  const site = { "/": page("Home"), "/about": page("About"), "/pricing": page("Pricing") };
+  const ctx = ctxWith({ inventory: inventoryFor(Object.keys(site)), site });
+
+  const { proposal } = await propose.run({}, [], ctx);
+
+  const header = proposal.candidates.find((row) => row.tag === "header");
+  assert.ok(header, "the page's header is a candidate at all, which is SH426");
+  assert.equal(header.pages.length, 3);
+  assert.ok(
+    proposal.notes.some((note) => /appear on all 3 pages read, which is what site chrome looks like/.test(note)),
+    "and the recurrence is said out loud, because a reviewer reading a candidate list cannot see it",
+  );
+});
+
+test("SH426: two pages are too few for the chrome hint, and it stays silent", async () => {
+  const ctx = ctxWith();
+  const { proposal } = await propose.run({}, [], ctx);
+
+  assert.ok(!proposal.notes.some((note) => /site chrome looks like/.test(note)));
+});
 
 test("the proposal names each candidate, the pages it recurs on and what it would lose", async () => {
   const ctx = ctxWith();

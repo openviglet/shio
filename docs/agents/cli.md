@@ -206,6 +206,21 @@ answers what a conversion *loses*, where a block-wrapping anchor is structure a 
 dropped. **The regression test is that page**, because the failure has no symptom other than a number
 and a candidate list that looks plausible is what let it ship.
 
+**A page's own `<header>` is content, and `contentRoot` was skipping it (SH426).** Narrowing to
+`<main>` is right for the **site** chrome — a header repeated on every page would propose sixty copies
+of one nav — and that reason does not describe a page's introductory header. On
+`openviglet.github.io` the chrome is `div.topbar` and the hero is `header.hero-wrap` (an eyebrow, an
+`<h1>`, a lead and two CTA links) sitting just before `<main>`, so the single most convertible block on
+the page was discarded — while `classify` carries a *positional* hero test, tried first and only when
+the caller says the block opened the page, which `contentRoot` guaranteed could never fire. The two
+decisions were made apart, and that is the whole defect. `blocksOf` now prepends the **closest**
+`<header>` preceding `<main>`, and deliberately does not try to tell a hero from chrome structurally:
+from a single page there is no evidence, and the evidence that exists is **repetition**, which the
+capture already computes. A site whose chrome *is* `<header>` therefore yields one candidate (signatures
+are deduped — one decision on N pages, not N decisions), and the proposal now says so in a note when a
+candidate appears on **all** the pages read, with three as the floor: on two pages a hero is on both as
+well, and a hint that fires on every small capture is one a reviewer learns to ignore.
+
 **The same command emits the theme as tokens *plus* CSS, never as CSS (SH380).** SH195 gave a `Theme`
 a `TOKENS` field so the commonest change — the accent colour, the type scale, the density — is a field
 edit rather than a stylesheet rewrite; a capture runs the other direction on the same argument, so
