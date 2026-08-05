@@ -1422,29 +1422,26 @@ should go through that path for its root folder instead of assuming a cascade th
 never wired. The conformance harness does exactly that in three calls, which is the
 workaround standing in for the fix and the reason the deletion is checkable at all.
 
-### XVI.70 Vestigial was implemented as accepts-anything (SH457)
+### XVI.71 The two siblings SH457 named and did not take (SH459)
 
-`GET /sites/publico/viglet-logo.png` answers **200 with `text/html` and the home page's 10265 bytes**.
-So does `/sites/publico/qualquer`. Four probes place it exactly: `/sites/<site>/` is the home and right;
-`/sites/<site>/default/en-us/nao-existe` and `/sites/<site>/a/b/c/d/e` are teaching 404s and right; the
-**three-segment** form is the one that lies.
+SH457 fixed the format segment: vestigial now means fixed, and
+`/sites/publico/viglet-logo.png` is a 404 rather than the home page with a 200. Its own
+section named two more of the same shape, filed here rather than folded in — neither is
+the defect that task measured, and both are a statement about behaviour rather than a
+correction to it.
 
-The cause is the decision this route was shipped with. `<format>` is vestigial — kept so
-the URL keeps 0.3.x's shape, carrying no behaviour — but vestigial was implemented as
-*accepts anything*. With any value in that slot and no segments after it, the content
-path is empty, so the resolver returns the home page and the response is a 200.
+**The locale segment is the format segment's twin.** `Address.of` reads it into the prefix and never
+passes it to the renderer, so `/sites/acme/default/xx-yy/` answers the home page with a 200 exactly
+as `/sites/acme/qualquer` did. The format check does not reach it: a root-relative reference puts its
+first segment in the *format* slot, which is why SH457 closed every case it measured and not this
+one. The remedy is not obvious the way the format's was — refusing every locale but `en-us` is a
+statement about a multi-language CMS, and the alternative is that the segment stops being vestigial
+and starts selecting content.
 
-That shape is not hypothetical: it is what every root-relative asset becomes. A page
-served at `/sites/publico/` carrying `<img src="/viglet-logo.png">` requests
-`/sites/publico/viglet-logo.png`, and the browser is handed HTML with an image content
-type expected. A missing asset stops being a 404 an author can see and becomes a silent
-soft-200 — the failure `verify`'s route checks exist to prevent, on the surface they
-cannot reach.
-
-Vestigial should mean **fixed**: accept `default` and refuse anything else, which is
-what "carrying no behaviour" was meant to say. A sibling worth naming while here: an
-unmapped path outside `/sites` answers **401**, so a public visitor asking for a missing
-font is challenged for credentials rather than told it is absent.
+**An unmapped path outside `/sites` answers 401.** A visitor asking for a missing font is challenged
+for credentials rather than told it is absent, which gives a browser a dialog where it wanted a
+status. Same family as SH450 — what an anonymous client receives is a fact about the security chain,
+not about the controller — and the fix is in the chain rather than in any route.
 
 # Part 2 — pre-existing sections
 

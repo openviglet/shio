@@ -59,29 +59,88 @@ class ShSitesAPITest {
     }
 
     @Test
-    @DisplayName("SH451: the prefix keeps the segments the caller used, not the defaults")
+    @DisplayName("SH451: the prefix keeps the locale segment the caller used, not the default")
     void theCallersOwnSegmentsSurviveIntoEveryLink() {
-        // The one thing a link rewrite must not do here: a reader who asked for `print`/`pt-br` and
-        // gets links back to `default`/`en-us` has had both of their choices silently dropped on the
-        // first click. So the prefix is built from what arrived.
-        ShSitesAPI.Address chosen = ShSitesAPI.Address.of("/acme/print/pt-br/sobre", null, null);
+        // The one thing a link rewrite must not do here: a reader who asked for `pt-br` and gets
+        // links back to `en-us` has had their choice silently dropped on the first click. So the
+        // prefix is built from what arrived.
+        //
+        // SH457 narrowed this to the locale: the format segment was `print` here, and a format that
+        // is not `default` is now a 404 rather than a value carried into the prefix.
+        ShSitesAPI.Address chosen = ShSitesAPI.Address.of("/acme/default/pt-br/sobre", null, null);
 
-        assertThat(chosen.prefix()).isEqualTo("/sites/acme/print/pt-br");
+        assertThat(chosen.prefix()).isEqualTo("/sites/acme/default/pt-br");
         assertThat(chosen.path()).isEqualTo("/sobre");
     }
 
     @Test
-    @DisplayName("SH451: `sh-format` replaces the format segment, as it did in 0.3.8")
+    @DisplayName("SH451: `sh-format` still replaces the format segment, and SH457 still fixes its value")
     void theFormatParameterOverridesTheSegment() {
         // Kept because it is part of the recovered shape, and inert because the format axis carries
         // no behaviour: a layout comes from `postTypeLayout` (SH328), and making this segment a
         // second binding table would be a feature rather than a recovery.
-        ShSitesAPI.Address overridden = ShSitesAPI.Address.of("/acme/default/en-us/sobre", null, "print");
+        ShSitesAPI.Address overridden = ShSitesAPI.Address.of("/acme/whatever/en-us/sobre", null, "default");
 
         assertThat(overridden.prefix())
-                .as("it reaches the URL space, so a link keeps the reader in the format they asked for")
-                .isEqualTo("/sites/acme/print/en-us");
+                .as("the parameter replaces the segment, so a URL whose segment would be refused is "
+                        + "served when the parameter names the one value there is")
+                .isEqualTo("/sites/acme/default/en-us");
         assertThat(overridden.path()).isEqualTo("/sobre");
+
+        // And it is the *same* rule, applied to the value that won: an override is not an escape
+        // from it. Vestigial means fixed wherever the value came from, or the two sources disagree
+        // about one axis and a reader has to know which one is checked.
+        assertThatThrownBy(() -> ShSitesAPI.Address.of("/acme/default/en-us/sobre", null, "print"))
+                .isInstanceOf(ShSitesAPI.UnknownFormatException.class);
+    }
+
+    @Test
+    @DisplayName("SH457: a format that is not `default` is a 404, because that is what a missing asset is")
+    void aVestigialSegmentAcceptsOneValue() {
+        // The measured defect: `GET /sites/publico/viglet-logo.png` answered **200 text/html** with
+        // the home page's 10265 bytes, and so did `/sites/publico/qualquer`. With any value in the
+        // format slot and no segments after it the content path is empty, so the resolver returns
+        // the home page — and that shape is what every root-relative asset becomes. A page served at
+        // `/sites/publico/` carrying `<img src="/viglet-logo.png">` requests exactly this URL, so a
+        // missing image stopped being a 404 an author can see and became a silent soft-200.
+        assertThatThrownBy(() -> ShSitesAPI.Address.of("/publico/viglet-logo.png", null, null))
+                .isInstanceOf(ShSitesAPI.UnknownFormatException.class)
+                .satisfies(thrown -> {
+                    var problem = ((ShSitesAPI.UnknownFormatException) thrown).problem();
+                    assertThat(problem.slug()).isEqualTo("sites-unknown-format");
+                    assertThat(problem.status().value())
+                            .as("404 and not 400: the sender is a browser resolving an <img>, not a "
+                                    + "person who typed a malformed URL, and `it is not here` is the "
+                                    + "answer an author can act on")
+                            .isEqualTo(404);
+                    assertThat(problem.toProblemDetail().getProperties())
+                            .extractingByKey("fix").asString()
+                            // P6: the remedy is where the path should have gone, and it names the
+                            // rewrite whose absence is why the request arrived here at all.
+                            .contains("/sites/<site>/default/en-us/viglet-logo.png");
+                });
+
+        // The four-segment form lies the same way and for the same reason — `img` lands in the
+        // format slot, `missing.png` in the locale slot, and the content path is empty.
+        assertThatThrownBy(() -> ShSitesAPI.Address.of("/publico/img/missing.png", null, null))
+                .isInstanceOf(ShSitesAPI.UnknownFormatException.class);
+
+        // And the three URLs the probe found correct stay correct: the home page with the segments
+        // spelled, the home page with them omitted, and a real content path underneath them.
+        assertThat(ShSitesAPI.Address.of("/publico/default/en-us/", null, null).path()).isEqualTo("/");
+        assertThat(ShSitesAPI.Address.of("/publico", null, null).path()).isEqualTo("/");
+        assertThat(ShSitesAPI.Address.of("/publico/default/en-us/sobre", null, null).path())
+                .isEqualTo("/sobre");
+    }
+
+    @Test
+    @DisplayName("SH457: the header form takes the whole path as content, so no segment is a format")
+    void theHeaderFormIsUnaffectedByTheFixedSegment() {
+        // `x-sh-site` is the one-host-one-site variant, and it has no format slot at all — every
+        // segment is the content's. So the narrowing above must not reach it, or the variant that
+        // makes root-relative paths work natively is the one it breaks.
+        assertThat(ShSitesAPI.Address.of("/viglet-logo.png", "publico", null).path())
+                .isEqualTo("/viglet-logo.png");
     }
 
     @Test

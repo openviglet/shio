@@ -426,10 +426,30 @@ renderer over one body of content at a second address. See the section on it bel
   **Two decisions.** The path stays **plural** — `/sites` preserves the URLs of anything migrating
   from 0.3.x and singular buys nothing. `<format>` is **vestigial**: kept so the shape is the old
   one, read (a URL that names one is still a URL, and `sh-format` still replaces it, and the *prefix*
-  every link is rewritten with keeps whatever the caller used — a reader who asked for `print`/`pt-br`
-  must not have both choices dropped on their first click) and then **ignored**, because a layout
-  comes from `postTypeLayout` (SH328) and making the segment a second binding table is a feature
-  rather than a recovery.
+  every link is rewritten with keeps whatever the caller used — a reader who asked for `pt-br` must
+  not have that choice dropped on their first click) and then **ignored**, because a layout comes
+  from `postTypeLayout` (SH328) and making the segment a second binding table is a feature rather
+  than a recovery.
+  **And vestigial means *fixed*, which is not what it first shipped as (SH457).** "Carries no
+  behaviour" was implemented as **accepts anything**, and the two differ exactly where it costs: with
+  any value in that slot and no segments after it the content path is empty, so the resolver returns
+  the home page and the answer is a **200**. Measured: `GET /sites/publico/viglet-logo.png` answered
+  200 `text/html` with the home page's 10265 bytes, and so did `/sites/publico/qualquer`. Four probes
+  place it — `/sites/<site>/` is the home and right, `/sites/<site>/default/en-us/nao-existe` and
+  `/sites/<site>/a/b/c/d/e` are teaching 404s and right, and the **three-segment** form is the one
+  that lies. That shape is **what every root-relative asset becomes**: a page served at
+  `/sites/publico/` carrying `<img src="/viglet-logo.png">` requests exactly that URL, and the
+  browser is handed HTML where it expected an image — so a missing asset stopped being a 404 an
+  author can see and became a silent soft-200, on the one surface `verify`'s route checks cannot
+  reach. A format that is not `default` is now `UnknownFormatException`, and the rule applies to
+  `sh-format` too: an override is not an escape from it, or the two sources disagree about one axis
+  and a reader has to know which is checked. **404 and not 400** — the sender is a browser resolving
+  an `<img>`, not somebody who typed a malformed URL, so "that is not here" is the answer an author
+  can act on; the teaching body still carries the rule, and its `fix` names where the path should
+  have gone, which is the rewrite whose absence is why the request arrived there at all. The
+  **locale** segment has the same shape (read into the prefix, never rendered with) and is
+  deliberately left to **SH459**: the format check covers every case this defect measured, because a
+  root-relative reference puts its first segment in the *format* slot.
   **Six guards, inverted rather than dropped**, and that is the whole difference between the routes:
   **anonymous** (the path has been `permitAll` since before the renderer existed — a latent hazard
   while nothing served there, and now the point), **PUBLISHED and never DRAFT** (the route takes no

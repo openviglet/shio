@@ -67,6 +67,28 @@ import jakarta.servlet.http.HttpServletRequest;
  * <em>read</em> — {@code sh-format} still replaces it, and a URL that names one is still a URL — and
  * then ignored, which is the honest form of "kept for compatibility".</p>
  *
+ * <p><b>And vestigial means fixed, which is not what it first shipped as (SH457).</b> "Carries no
+ * behaviour" was implemented as <em>accepts anything</em>, and the two differ exactly where it
+ * costs: with any value in that slot and no segments after it the content path is empty, so the
+ * resolver returns the home page and the response is a <b>200</b>. Measured:
+ * {@code GET /sites/publico/viglet-logo.png} answered 200 {@code text/html} with the home page's
+ * 10265 bytes, and so did {@code /sites/publico/qualquer}. Four probes place it — {@code /sites/<site>/}
+ * is the home and right, {@code /sites/<site>/default/en-us/nao-existe} and {@code /sites/<site>/a/b/c/d/e}
+ * are teaching 404s and right, and the <b>three-segment</b> form is the one that lies. That shape is
+ * what every root-relative asset becomes: a page served at {@code /sites/publico/} carrying
+ * {@code <img src="/viglet-logo.png">} requests {@code /sites/publico/viglet-logo.png}, and the
+ * browser is handed HTML where it expected an image. A missing asset stopped being a 404 an author
+ * can see and became a silent soft-200 — the failure {@code verify}'s route checks exist to prevent,
+ * on the surface they cannot reach. So a format that is not {@code default} is now
+ * {@link UnknownFormatException}, and the segment finally means what this note always said.</p>
+ *
+ * <p><b>The locale segment has the same shape and is deliberately left (SH459).</b> It is read into
+ * the prefix and never passed to the renderer, so {@code /sites/acme/default/xx-yy/} also answers the
+ * home page with 200. The format check above already covers every case this task measured — a
+ * root-relative reference puts its first segment in the <em>format</em> slot — and narrowing the
+ * locale axis is a statement about a multi-language CMS rather than a defect fix, so it is filed
+ * rather than taken here.</p>
+ *
  * <h2>Six guards, inverted</h2>
  *
  * <p>Everything {@link ShRenderAPI}'s class note lists as keeping a preview a preview is deliberately
@@ -237,6 +259,16 @@ public class ShSitesAPI {
             String site = segments[1];
             String usedFormat = format != null && !format.isBlank() ? format
                     : segments.length > 2 && !segments[2].isBlank() ? segments[2] : DEFAULT_FORMAT;
+            // SH457 — and vestigial means *fixed*, which is what "carrying no behaviour" was meant
+            // to say. It was implemented as accepts-anything, and the two are not the same thing:
+            // with any value in this slot and no segments after it the content path is empty, so
+            // `/sites/publico/viglet-logo.png` answered 200 with `text/html` and the home page's
+            // 10265 bytes. That shape is not hypothetical — it is what every root-relative asset
+            // becomes, so a missing image stopped being a 404 an author can see and became a silent
+            // soft-200, on the one surface `verify`'s route checks cannot reach.
+            if (!DEFAULT_FORMAT.equalsIgnoreCase(usedFormat)) {
+                throw new UnknownFormatException(usedFormat);
+            }
             String locale = segments.length > 3 && !segments[3].isBlank() ? segments[3] : DEFAULT_LOCALE;
             String content = segments.length > 4
                     ? "/" + String.join("/", java.util.Arrays.copyOfRange(segments, 4, segments.length))
@@ -267,6 +299,34 @@ public class ShSitesAPI {
 
         private static String encode(String value) {
             return URLEncoder.encode(value, StandardCharsets.UTF_8);
+        }
+    }
+
+    /**
+     * A 404: the format segment is fixed at {@code default}, and this URL named something else.
+     *
+     * <p><b>404 and not 400</b>, because of what actually sends these. The URL shape is fine — the
+     * caller is almost always a browser resolving {@code <img src="/logo.png">} against a page served
+     * at {@code /sites/acme/default/en-us/}, which lands on {@code /sites/acme/logo.png} with the
+     * file name sitting in the format slot. "That is not here" is the true answer and the one an
+     * author can act on; "your format segment is malformed" describes a URL nobody typed. The
+     * teaching body still carries the rule, so a caller who *did* type it is told the same thing
+     * (P6).</p>
+     */
+    public static class UnknownFormatException extends ShTeachingException {
+
+        public UnknownFormatException(String sent) {
+            super(ShProblem.of("sites-unknown-format", HttpStatus.NOT_FOUND,
+                            "Nothing is served at format '" + sent + "'")
+                    .withDetail("The format segment of " + BASE + "/<site>/<format>/<locale>/<path> "
+                            + "is vestigial: it is kept so the URL keeps 0.3.x's shape and it carries "
+                            + "no behaviour, so `" + DEFAULT_FORMAT + "` is the only value it takes.")
+                    .withAllowed(java.util.List.of(DEFAULT_FORMAT))
+                    .withFix("If this was meant to be an asset or a page, put it after the locale: "
+                            + BASE + "/<site>/" + DEFAULT_FORMAT + "/" + DEFAULT_LOCALE + "/" + sent
+                            + " — a page's own root-relative references are rewritten into that space "
+                            + "for you, so a reference that arrived here was never rewritten.")
+                    .withExample(BASE + "/acme/" + DEFAULT_FORMAT + "/" + DEFAULT_LOCALE + "/"));
         }
     }
 

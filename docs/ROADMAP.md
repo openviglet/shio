@@ -69,6 +69,7 @@
 - 💭 **SH244** (deps: SH202 ✅) **Duplicating content is console-only** — Copy exists only as a console PUT, with no batch op, no MCP verb and no CLI path, and a folder is the case an agent cannot reproduce with upserts. → §XVI.4
 - 💭 **SH245** (deps: SH139 ✅, SH202 ✅, SH203 ✅) **Make "one writer per verb" a lint, not an expectation** — Four times the console's copy of a shared verb was the careless one, and the rule that would have caught all four is stated in agents.md and enforced nowhere. → §XVI.5
 - 📋 **SH454** (deps: SH448 ✅) **Deleting a site that holds a single post answers a body-less 500** — ShSite cascades to its folders and nothing cascades to its posts, so the folder delete trips the sh_post_unified FK; trashing first does not help, since trash keeps the row. → §XVI.69
+- 📋 **SH459** (deps: SH457 ✅) **Two more segments of the public route answer 200 or 401 where absent is the true answer** — The locale segment is read into the prefix and never rendered with, so any value serves the home page, and an unmapped path outside /sites challenges for credentials rather than 404. → §XVI.71
 
 ## Block P — The visible site (what the human actually looks at)
 
@@ -79,7 +80,6 @@
 - 📋 **SH419** (deps: SH384 ✅) **A listing loads the whole folder to render ten rows** — Measured at 213 rows per 10 rendered: limit and page are an in-memory window over a whole-folder read, so a 5000-post archive pays 5000 rows for page one. → §XV.30
 - 📋 **SH420** (deps: SH384 ✅) **A nested listing clobbers the outer block's @last** — Measured: an outer row reading {{#if @last}} after an inner query renders twice, because both blocks write @index and @last into one shared data scope. → §XV.31
 - 📋 **SH421** (deps: SH389 ✅) **A layout that should not carry the site's scripts is still told off** — site-scripts-dropped warns for every bound layout that omits site.scripts, and an email template or a print sheet omits them on purpose with no way to say so. → §XV.32
-- 📋 **SH457** (deps: SH451 ✅) **Any three-segment /sites path serves the home page with 200, so a missing asset is HTML** — The vestigial format segment accepts any value instead of only default, and with nothing after it the content path is empty, which is the shape every root-relative asset takes. → §XVI.70
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
