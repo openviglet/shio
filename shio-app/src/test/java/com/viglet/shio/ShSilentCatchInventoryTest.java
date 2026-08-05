@@ -80,7 +80,16 @@ class ShSilentCatchInventoryTest {
             // codebase has — a rule with an address and a fix. The lint keys on "records an incident
             // or rethrows" and cannot see a finding, which is the right way round for a population
             // guard to be blind. Counted rather than exempted, so the population stays a diff.
-            "api", 53,
+            // 55 since SH460, and both are the same judgement: `ShAgentBuildIdentity` reads the
+            // running build's timestamp off the code source at startup, and a code source it cannot
+            // walk yields **no** `builtAt` rather than a guessed one. Not recorded, for a reason
+            // stronger than "not worth reporting" — the degradation is *published on the wire*, and
+            // the client SH460 exists for treats a missing `builtAt` as a stale instance and fails
+            // its whole run naming it. An incident would report the same fact to an operator who is
+            // not the one asking, at a moment (context refresh) when the diagnostics window is not
+            // yet the place anybody reads. Same shape as SH389's finding: reported, in the medium
+            // the caller is already reading. Counted rather than exempted, so it stays a diff.
+            "api", 55,
             "tenant", 4,
             "blueprint", 2,
             "exchange", 2,

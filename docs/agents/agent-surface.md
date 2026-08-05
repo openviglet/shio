@@ -32,6 +32,21 @@ the CDA + console services (law P10) and holds no business logic of its own.
   entry in prose and cost 138 tokens against 81; the reason belongs in the conformance test, where
   it is reviewed, and the wire carries the command. `response.manifest` is 2650 for it — the raise
   is on that one line, deliberately.
+  **The identity scalars now name the build (SH460):** `commit` (abbreviated, from the
+  `git.properties` the build writes) and `builtAt` (ISO-8601, when the **running** classes were
+  produced). They survive every projection, so `?include=identity` — the cheapest read on the
+  surface, and what a client sends to probe reachability — is exactly the call that can say which
+  build answered. `version` could not: it reads `dev` on every developer instance, before and
+  after a rebuild, so it distinguished nothing. **`ShAgentBuildIdentity` captures both at bean
+  construction, and that is the whole mechanism** — reading class timestamps when the request
+  arrives reports the compile that happened *after* this JVM loaded its classes, which is a stale
+  instance claiming to be fresh. `ShAgentBuildIdentityTest` makes the code source newer than the
+  running build and asserts the value did not move. `builtAt` is the field to compare (an IDE
+  compiling into `target/classes` on save moves the classes and not `git.properties`, so `commit`
+  names a build and does not date it), and it is folded into `digest()` — otherwise a client that
+  cached the manifest before a restart is answered `304` by the very instance whose staleness it
+  is checking. Measured cost: manifest 2546 → 2574, terse 2305 → 2332, check 341 → 361; **no
+  ceiling was raised.**
 - `GET /agent/context` — model + sitemap + conventions in one call. `?format=terse`,
   `?include=`, `?budget=`, `?from=`, `?ids=true` (rows are **id-free by default**, SH121).
   The `digest` is how a later session skips re-reading. **`include=all,manifest` folds the

@@ -61,6 +61,7 @@ public class ShAgentManifestService {
     private final ShImageTransformProperties shImageTransformProperties;
     private final ShAgentProperties shAgentProperties;
     private final ShTuringIndexService shTuringIndexService;
+    private final ShAgentBuildIdentity shAgentBuildIdentity;
 
     public ShAgentManifestService(ShAppProperties shAppProperties,
                                  ShCdaProperties shCdaProperties,
@@ -68,7 +69,9 @@ public class ShAgentManifestService {
                                  ShScheduleProperties shScheduleProperties,
                                  ShImageTransformProperties shImageTransformProperties,
                                  ShAgentProperties shAgentProperties,
-                                 ShTuringIndexService shTuringIndexService) {
+                                 ShTuringIndexService shTuringIndexService,
+                                 ShAgentBuildIdentity shAgentBuildIdentity) {
+        this.shAgentBuildIdentity = shAgentBuildIdentity;
         this.shAppProperties = shAppProperties;
         this.shCdaProperties = shCdaProperties;
         this.shWebhookProperties = shWebhookProperties;
@@ -84,6 +87,8 @@ public class ShAgentManifestService {
                 version(),
                 PROTOCOL,
                 API_BASE,
+                shAgentBuildIdentity.commit(),
+                shAgentBuildIdentity.builtAt(),
                 features(),
                 elsewhere(),
                 limits(),
@@ -539,9 +544,16 @@ public class ShAgentManifestService {
      * serialized document instead would tie the tag to Jackson's field order — a
      * dependency upgrade would then invalidate every client's cache for no
      * change.</p>
+     *
+     * <p>SH460 folds the build identity in, and it is not a detail: {@code version} reads
+     * {@code dev} on every developer instance and the feature flags do not move on a rebuild, so
+     * without {@code builtAt} a client that cached this document before a restart is answered
+     * {@code 304} by the very instance whose staleness it is trying to detect.</p>
      */
     public String digest() {
-        StringBuilder canonical = new StringBuilder(version()).append('|').append(PROTOCOL);
+        StringBuilder canonical = new StringBuilder(version()).append('|').append(PROTOCOL)
+                .append('|').append(shAgentBuildIdentity.commit())
+                .append('|').append(shAgentBuildIdentity.builtAt());
         features().forEach((key, value) -> canonical.append('|').append(key).append('=').append(value));
         return ShAgentContextService.digest(canonical.toString());
     }

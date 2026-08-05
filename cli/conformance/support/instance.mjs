@@ -25,7 +25,13 @@
  * carrying the command that fixes it — you asked for the conformance suite, and not running
  * it is not an answer to that request.
  */
+import { execFile } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
+
 import { ShioHttpError } from "@viglet/shio-client";
+
+const run = promisify(execFile);
 
 /** The scratch site's name prefix — grep-able, and what `stale()` looks for. */
 export const SITE_PREFIX = "ShioConf";
@@ -56,6 +62,10 @@ export function keepsFixtures(env = process.env) {
  * cheapest authenticated read on the surface this suite exercises, and its 401-vs-connection
  * -refused split is exactly the two ways the run can be misconfigured — so the message can
  * name the right fix instead of "something went wrong".
+ *
+ * SH460 adds the third way, which is the one that cost a session: reachable, authenticated, and
+ * running code older than the commits under test. That response now carries the build identity
+ * to answer it — see `requireLiveBuild`.
  */
 export async function requireInstance(env = process.env) {
   const { baseUrl, user, password } = connection(env);
@@ -79,7 +89,91 @@ export async function requireInstance(env = process.env) {
     throw new Error(`shio conformance: ${baseUrl} answered ${res.status} on the manifest probe.`);
   }
   const manifest = await res.json();
+  await requireLiveBuild(baseUrl, manifest, env);
   return { baseUrl, user, password, manifest };
+}
+
+/** `SHIO_CONFORMANCE_ALLOW_STALE=1` — for pointing this suite at an instance you did not build. */
+function allowsStale(env) {
+  return /^(1|true|yes)$/i.test(String(env.SHIO_CONFORMANCE_ALLOW_STALE ?? ""));
+}
+
+/**
+ * SH460 — the first assertion of every run, and the only one that can name the *other* side.
+ *
+ * ## The run this exists to make readable
+ *
+ * Two of four conformance tests failed, both true statements about an instance that had been
+ * running since 16:05:10 whose classes under test were compiled at 18:47:21 — after every Java
+ * commit the run was validating. The CLI half was green in the same run, because it loads from
+ * disk. Nothing said so. Telling a broken fix from a stale JVM took hand probes, `target/`
+ * timestamps and the JVM's start time from the process table, and the cheaper reading — "SH453
+ * and SH457 regressed" — was two defects that do not exist, which costs a whole session to
+ * disprove.
+ *
+ * ## Why it asserts here rather than in a test
+ *
+ * A suite whose premise is the live boundary must fail on the boundary *first*. As a test it
+ * would be one red line among several and the reader would still have to guess which failure
+ * explains which; in `requireInstance` it fails before a single scenario builds anything, so
+ * a stale instance produces one message instead of a plausible-looking defect report.
+ *
+ * ## What is compared, and why it is the timestamp rather than the commit
+ *
+ * `builtAt` is when the *running* classes were produced (the instance captures it at startup, so
+ * a recompile underneath a live JVM cannot flatter it) and HEAD's commit time is when the code
+ * under test was written. Built-before-HEAD is exactly the incident. The commit is reported and
+ * not asserted: an IDE that compiles into `target/classes` on save moves the classes and not
+ * `git.properties`, which is the very scenario above, so it would fail for the right reason at
+ * the wrong times.
+ *
+ * An instance that reports **no** `builtAt` is stale by definition — the field ships with this
+ * assertion. Working-tree changes that were never built are out of scope: this compares against
+ * HEAD, and something has to be committed before it can be conformance-tested.
+ */
+async function requireLiveBuild(baseUrl, manifest, env) {
+  if (allowsStale(env)) return;
+  const head = await gitHead();
+  if (!head) return; // No working tree to compare against — nothing to be stale *relative to*.
+
+  const builtAt = manifest?.builtAt ? Date.parse(manifest.builtAt) : Number.NaN;
+  if (Number.isNaN(builtAt)) {
+    throw new Error(stale(baseUrl, head, "it reports no build identity at all, so it predates SH460"));
+  }
+  if (builtAt < head.at) {
+    const commit = manifest.commit ? ` (commit ${manifest.commit})` : "";
+    throw new Error(stale(baseUrl, head,
+      `it was built at ${manifest.builtAt}${commit}, before HEAD was committed`));
+  }
+}
+
+/** HEAD's sha and commit time, or null when there is no git to ask. */
+async function gitHead() {
+  const repo = fileURLToPath(new URL("../../..", import.meta.url));
+  try {
+    const { stdout } = await run("git", ["-C", repo, "log", "-1", "--format=%h %cI"], {
+      timeout: 10_000,
+    });
+    const [sha, iso] = stdout.trim().split(/\s+/);
+    const at = Date.parse(iso);
+    return Number.isNaN(at) ? null : { sha, iso, at };
+  } catch {
+    return null;
+  }
+}
+
+function stale(baseUrl, head, because) {
+  return (
+    `shio conformance: the instance at ${baseUrl} is older than the code under test —\n`
+    + `${because}.\n\n`
+    + `  HEAD  ${head.sha}  ${head.iso}\n\n`
+    + `This suite asserts two things at once — that the code is right, and that this\n`
+    + `instance is running it — so a red run against a stale JVM reads as a defect in a\n`
+    + `fix that already shipped. Rebuild and restart before drawing any conclusion:\n\n`
+    + `  ./mvnw -pl shio-app -am clean install -Dskip.npm=true -DskipTests\n`
+    + `  ./mvnw spring-boot:run -pl shio-app -Dskip.npm=true -DskipTests\n\n`
+    + `Set SHIO_CONFORMANCE_ALLOW_STALE=1 if you meant to test an instance you did not build.`
+  );
 }
 
 function unreachable(baseUrl, cause) {

@@ -62,7 +62,22 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <generateGitPropertiesFile>false</generateGitPropertiesFile>
+                    <!--
+                        SH460 — written now, and it was `false` since the plugin was added. The
+                        file is what Spring Boot's GitProperties reads, and without it the agent
+                        manifest could say `version: dev` and nothing else about *which* build is
+                        answering. Trimmed to the three keys that identity needs: the full set is
+                        ~30 properties an instance never reads, in a file that ships in the jar.
+                        `failOnNoGitDirectory` stays default (true) — this repo has one, and a
+                        build that silently loses the commit is the state this task exists to end.
+                    -->
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                    <includeOnlyProperties>
+                        <includeOnlyProperty>^git.commit.id.abbrev$</includeOnlyProperty>
+                        <includeOnlyProperty>^git.commit.id$</includeOnlyProperty>
+                        <includeOnlyProperty>^git.commit.time$</includeOnlyProperty>
+                        <includeOnlyProperty>^git.branch$</includeOnlyProperty>
+                    </includeOnlyProperties>
                 </configuration>
             </plugin>
             <plugin>

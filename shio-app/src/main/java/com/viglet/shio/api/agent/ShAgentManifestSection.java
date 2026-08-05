@@ -95,10 +95,14 @@ public enum ShAgentManifestSection {
      * Projects a manifest down to the requested sections.
      *
      * <p>The identity scalars ({@code product}, {@code version}, {@code protocol},
-     * {@code apiBase}) survive every projection. They cost about twenty tokens together, and a
-     * response that omitted {@code protocol} would be a document a client cannot safely branch
-     * on — which turns a saving into a second call. {@code @JsonInclude(NON_NULL)} on the record
-     * is what makes an omitted section actually absent from the wire rather than {@code null}.</p>
+     * {@code apiBase}, and SH460's {@code commit}/{@code builtAt}) survive every projection. They
+     * cost about thirty tokens together, and a response that omitted {@code protocol} would be a
+     * document a client cannot safely branch on — which turns a saving into a second call. The
+     * build identity survives for the same reason one level down: the cheapest read on this
+     * surface is {@code ?include=identity}, which is what a client probing reachability sends,
+     * and that is exactly the call that must be able to say which build answered.
+     * {@code @JsonInclude(NON_NULL)} on the record is what makes an omitted section actually
+     * absent from the wire rather than {@code null}.</p>
      */
     public static ShAgentManifest project(ShAgentManifest manifest, Set<ShAgentManifestSection> sections) {
         if (sections.size() == values().length) {
@@ -109,6 +113,8 @@ public enum ShAgentManifestSection {
                 manifest.version(),
                 manifest.protocol(),
                 manifest.apiBase(),
+                manifest.commit(),
+                manifest.builtAt(),
                 sections.contains(FEATURES) ? manifest.features() : null,
                 sections.contains(ELSEWHERE) ? manifest.elsewhere() : null,
                 sections.contains(LIMITS) ? manifest.limits() : null,

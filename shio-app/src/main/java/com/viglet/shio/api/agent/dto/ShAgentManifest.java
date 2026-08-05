@@ -28,6 +28,16 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  *                  the manifest/context changes, so a client can branch on it
  *                  without version-sniffing the product
  * @param apiBase   base path every {@code endpoints} path is relative to
+ * @param commit    abbreviated git commit this build came from, absent outside a build
+ *                  (SH460). {@code version} could not answer "which code is this?" — it
+ *                  reads {@code dev} on every developer instance, before and after a
+ *                  rebuild
+ * @param builtAt   ISO-8601 instant the <b>running</b> classes were produced (SH460),
+ *                  captured at startup rather than read per request, so an instance whose
+ *                  classes were recompiled underneath it still reports the build it is
+ *                  actually running. This is the field a client compares against the tree
+ *                  it is testing, and the reason a red conformance run can now say which
+ *                  side of the live boundary is stale
  * @param features  capability name → present. **Always populated for known
  *                  capabilities, including the ones that are {@code false}** — an
  *                  absent flag would send the caller probing, which is the cost
@@ -62,6 +72,8 @@ public record ShAgentManifest(
         String version,
         int protocol,
         String apiBase,
+        String commit,
+        String builtAt,
         Map<String, Boolean> features,
         Map<String, String> elsewhere,
         ShAgentLimits limits,
@@ -72,6 +84,7 @@ public record ShAgentManifest(
     public ShAgentManifest(String product, String version, int protocol, String apiBase,
                            Map<String, Boolean> features, ShAgentLimits limits,
                            List<ShAgentEndpoint> endpoints, List<String> startHere) {
-        this(product, version, protocol, apiBase, features, null, limits, endpoints, startHere);
+        this(product, version, protocol, apiBase, null, null, features, null, limits, endpoints,
+                startHere);
     }
 }

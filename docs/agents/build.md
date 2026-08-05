@@ -39,6 +39,17 @@ Three rules it exists under, and each is the reason a defect shipped:
 - **An unreachable instance is a failure, never a skip.** `requireInstance` throws with the
   command that fixes it. The precedent is `ShPostgresSchemaIT` reporting `0.00 s / Skipped`
   without Docker while a reader concludes the schema was proved.
+  **And a *stale* instance is the third misconfiguration, which cost a session (SH460).** A run
+  went red on two shipped fixes because the JVM had started at 16:05:10 and the classes under test
+  were compiled at 18:47:21 — after every commit it was validating. The CLI half was green in the
+  same run, because it loads from disk. `requireInstance` now compares the manifest's `builtAt`
+  against `git log -1`'s commit time **before any scenario builds anything**, so a stale instance
+  produces one message naming both sides instead of a plausible-looking defect report. An instance
+  reporting no `builtAt` is stale by definition — the field ships with the gate.
+  `SHIO_CONFORMANCE_ALLOW_STALE=1` is the escape hatch for an instance you did not build, and
+  `cli/test/conformance-live-build.test.mjs` proves the gate against a `node:http` stub, which is
+  the one part of this suite that runs *without* an instance because the case worth asserting is
+  the one no real instance volunteers.
 - **Nothing is injected.** Real sockets, real `fetch`, real npm — SH438, SH442 and SH446 all
   passed under SH422 precisely because it substitutes those three.
 - **Every assertion names the task it would have caught**, so the file reads as the record of

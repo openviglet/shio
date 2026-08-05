@@ -63,6 +63,11 @@ public final class ShAgentManifestTerse {
                 .attr("product", manifest.product())
                 .attr("version", manifest.version())
                 .attr("base", manifest.apiBase())
+                // SH460 — which build answered. Absent attributes cost nothing here (ShTerse
+                // omits a null), so an instance that cannot read its own timestamp says so by
+                // silence rather than by an empty field a client would have to interpret.
+                .attr("commit", manifest.commit())
+                .attr("built", manifest.builtAt())
                 .build());
 
         appendFeatures(out, manifest.features());
