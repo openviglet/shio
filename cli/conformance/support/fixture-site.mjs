@@ -43,6 +43,21 @@ const STYLESHEET = `:root { --ink: #102a43 }
 /** `wOF2` — the magic a real WOFF2 starts with, which is all this fixture needs to be one. */
 const WOFF2 = Buffer.concat([Buffer.from("wOF2", "ascii"), Buffer.alloc(60)]);
 
+/**
+ * The logo, at the **root** of the URL space — the one thing this fixture was missing (SH458).
+ *
+ * <p>`<link rel="icon" href="/favicon.ico">` is what every site has and what the measured capture
+ * actually downloaded ("wrote 1 asset"), and its path has no folder segment. That makes it the only
+ * asset here whose upload takes `convert`'s root-folder branch, which is the branch SH456 is about:
+ * every other asset in this fixture lives under `/img/` or `/fonts/` and never reaches it. A fixture
+ * where nothing is at the root is a fixture that cannot see a defect in the root case.</p>
+ */
+const FAVICON = Buffer.concat([
+  // A 1x1 ICO header, which is enough for the storage layer to probe it as an image.
+  Buffer.from("00000100010001010000010020003000000016000000", "hex"),
+  Buffer.alloc(48),
+]);
+
 /** A one-pixel PNG, as real bytes: a stylesheet's `url()` target has to be downloadable. */
 const HERO_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
@@ -56,6 +71,7 @@ function page(title, lead, links = []) {
   <meta charset="utf-8">
   <title>${title}</title>
   <link rel="stylesheet" href="/css/site.css">
+  <link rel="icon" href="/favicon.ico">
 </head>
 <body>
   <main>
@@ -93,6 +109,7 @@ export async function serveFixture() {
     // `../fonts/` from `/css/site.css` — resolved against the *stylesheet*, so this is `/fonts/`.
     if (path === "/fonts/fixture.woff2") return send(res, 200, "font/woff2", WOFF2);
     if (path === "/img/hero.png") return send(res, 200, "image/png", HERO_PNG);
+    if (path === "/favicon.ico") return send(res, 200, "image/x-icon", FAVICON);
     // /deep exists and is linked, and `--depth 1` is what stops the crawl reaching it: an
     // `unfollowed` row has to mean "not visited", never "not there" (SH387).
     if (path === "/deep") return send(res, 200, "text/html; charset=utf-8", page("Deep", "Never fetched"));

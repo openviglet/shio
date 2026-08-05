@@ -20,6 +20,17 @@
  * scaffold whose dependencies are unresolvable — invisible until somebody ran `npm install` by
  * hand), SH438 (sections nothing composed, so `/preview/<site>/` answered 404 while the chain was
  * green) and SH387 (`unfollowed` meaning "not visited", never "not there").
+ *
+ * ## How it grows (SH458)
+ *
+ * This file ran green — 3 tests, 0 failures — on the instance where a hand pass found SH455, SH456
+ * and SH457 in one sitting. That is the expected state of a first version, and the rule above is
+ * what says how it closes: **each new assertion names the task it would have caught**, and it lands
+ * while that task is still open, so it is red by construction and turns green when the fix arrives
+ * (SH338 — the instrument precedes the fixes). Two of the three are here — the process's exit code,
+ * which a module call structurally cannot see, and whether the rendered page's own references
+ * resolve, which is what a reader checks by looking at the replica. The third is the public route's
+ * negative cases, in `render.conformance.mjs`.
  */
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
@@ -29,6 +40,7 @@ import * as nodeFs from "node:fs/promises";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { ShioAgentClient } from "../src/agent-client.mjs";
 import { INVENTORY_FILE, MARKUP_DIR } from "../src/clone.mjs";
@@ -44,9 +56,13 @@ import * as verify from "../src/commands/verify.mjs";
 import { ConsoleSession, keepsFixtures, requireInstance, scratchSite } from "./support/instance.mjs";
 import { serveFixture } from "./support/fixture-site.mjs";
 
+/** The bin `npm install -g @viglet/shio` puts on a PATH — the entry point no test in `test/` runs. */
+const SHIO_BIN = fileURLToPath(new URL("../src/index.mjs", import.meta.url));
+
 let conn;
 let site;
 let fidelitySite;
+let exitSite;
 let source;
 let cwd;
 let ctx;
@@ -57,6 +73,7 @@ describe("SH448 conformance: replication, from a served source to an installable
     conn = await requireInstance();
     site = scratchSite("Repl");
     fidelitySite = scratchSite("Fid");
+    exitSite = scratchSite("Exit");
     source = await serveFixture();
     cwd = await mkdtemp(join(tmpdir(), "shio-sh448-"));
     console_ = new ConsoleSession(conn);
@@ -78,6 +95,7 @@ describe("SH448 conformance: replication, from a served source to an installable
     if (keepsFixtures()) return;
     await console_?.deleteSite(site).catch(() => {});
     await console_?.deleteSite(fidelitySite).catch(() => {});
+    await console_?.deleteSite(exitSite).catch(() => {});
     await rm(cwd, { recursive: true, force: true }).catch(() => {});
   });
 
@@ -323,8 +341,84 @@ describe("SH448 conformance: replication, from a served source to an installable
       "the captured theme points at what the tree holds, not at a path relative to a file that is "
         + "no longer there",
     );
+
+    // ── SH458: and every reference the page makes resolves ────────────────────────────────
+    //
+    // The third missing assertion, and the one a reader makes instantly by looking at the replica.
+    // The three checks above name three files by hand, so they prove those three and say nothing
+    // about the fourth — which is how the logo stayed broken and how SH455's webfonts were reported
+    // as fetched while the page rendered in a serif fallback. This asks the page instead: whatever
+    // its markup and its CSS say they need, fetch it and expect 200.
+    //
+    // Same-origin and root-relative only. An absolute URL is somebody else's host and SH378's rule
+    // is that we do not mirror it, so a 404 there is their outage and not this replica's defect.
+    const referenced = referencesIn(html);
+    assert.ok(referenced.length >= 2, `the page references something. Found: ${referenced.join(" ")}`);
+
+    const broken = [];
+    for (const path of referenced) {
+      const asset = await fetch(`${conn.baseUrl}${path}`, { headers: { Authorization: basicOf(conn) } });
+      if (asset.status !== 200) broken.push(`${path} → ${asset.status}`);
+    }
+    assert.deepEqual(
+      broken,
+      [],
+      `SH455: every path the replica's own page names is served by the replica. A reference that `
+        + `404s is the whole failure mode of a fidelity capture — the bytes may well be on the `
+        + `instance, under a path the page does not ask for, and no unit test can tell those apart `
+        + `because both halves are green in isolation. Referenced: ${referenced.join(" ")}`,
+    );
+  });
+
+  test("SH456: a conversion that wrote everything exits 0, said by the process and not by the module", async () => {
+    // SH458's first missing assertion. Every `convert` above is a *module* call — `convert.run(...)`
+    // — so the suite reads what the command returned and never what the shell would see. SH456 is
+    // precisely the gap between those two: `convert --site Publico --create-site` printed its whole
+    // report (`changed: 7 object(s) — in DRAFT`, three posts live on the instance) and then exited
+    // **1** on `Malformed address 'folder:Publico'`, an address it built itself. Work done, refusal
+    // reported. The same seam as SH445 — code fixed twice against a harness before anything ran the
+    // command — and the reason this file spawns the bin instead of importing it.
+    //
+    // The fixture's `/favicon.ico` is what makes this bite: it is the only asset with no folder
+    // segment, so it is the only one whose upload takes the root-folder branch that malforms.
+    const run = await shio(["convert", "--site", exitSite, "--create-site"], cwd);
+
+    assert.equal(
+      run.code,
+      0,
+      `SH456: the exit code agrees with the report. A caller who trusts the 1 re-runs an idempotent `
+        + `command forever; a caller who trusts the report ignores an exit code that is sometimes `
+        + `real. Output:\n${run.output.trim().slice(-1500)}`,
+    );
+    const agent = new ShioAgentClient(conn);
+    assert.ok(
+      (await agent.resolve(`post:${exitSite}/`))?.id,
+      "and it exited 0 because it succeeded, not because it did less — the home page is there",
+    );
   });
 });
+
+/**
+ * Every root-relative path a rendered page says it needs — from its markup and from its CSS.
+ *
+ * <p>`src`, `<link href>` and `url()`, which is the whole set that makes a browser issue a request
+ * for bytes. A plain `<a href>` is excluded on purpose: it is navigation, and the fixture links
+ * `/admin`, a page robots.txt kept out of the capture — a 404 there is correct, so including it
+ * would make the assertion say something it does not mean.</p>
+ */
+function referencesIn(html) {
+  const found = new Set();
+  const keep = (raw) => {
+    const value = String(raw ?? "").trim();
+    if (value.startsWith("/") && !value.startsWith("//")) found.add(value.split("#")[0]);
+  };
+  for (const [, value] of html.matchAll(/\bsrc\s*=\s*"([^"]*)"/gi)) keep(value);
+  for (const [, value] of html.matchAll(/<link\b[^>]*\bhref\s*=\s*"([^"]*)"/gi)) keep(value);
+  for (const [, dq, sq, bare] of html.matchAll(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^)'"\s]+))\s*\)/gi)) {
+    keep(dq ?? sq ?? bare);
+  }
+  return [...found].sort();
+}
 
 /** The same capture with the acceptances set aside, so one review yields both modes. */
 async function withoutPlan(from) {
@@ -355,6 +449,25 @@ function sink() {
 function npm(args, cwd) {
   return new Promise((resolve) => {
     const child = spawn("npm", args, { cwd, shell: true });
+    let output = "";
+    child.stdout.on("data", (chunk) => (output += chunk));
+    child.stderr.on("data", (chunk) => (output += chunk));
+    child.on("error", (error) => resolve({ code: -1, output: `${output}\n${error.message}` }));
+    child.on("close", (code) => resolve({ code, output }));
+  });
+}
+
+/**
+ * Run the `shio` bin as a process, which is the only way to observe an exit code (SH458).
+ *
+ * <p>`node <bin>` rather than the shim, and `shell: false`: the shim is what a PATH install writes
+ * and it is not what is under test here — the entry point is, and going through a shell would put
+ * the shell's own exit-code handling between the command and the assertion. The environment is the
+ * one `ctx` carries, so the process resolves its instance exactly as the module calls above do.</p>
+ */
+function shio(args, cwd) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [SHIO_BIN, ...args], { cwd, env: ctx.env });
     let output = "";
     child.stdout.on("data", (chunk) => (output += chunk));
     child.stderr.on("data", (chunk) => (output += chunk));

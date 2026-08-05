@@ -44,6 +44,29 @@ Three rules it exists under, and each is the reason a defect shipped:
 - **Every assertion names the task it would have caught**, so the file reads as the record of
   what a unit test structurally cannot see. On its first run it found SH453 and SH454.
 
+**And that third rule is also how it grows (SH458).** The suite ran **green** on the instance where
+a hand pass found SH455, SH456 and SH457 in one sitting — the expected state of a first version, not
+a failure of SH448, because it asserts happy paths through the modules. So three assertions were
+added **while those tasks were still open**, red by construction, each turning green as its fix
+arrives (SH338 — the instrument precedes the fixes). What each one buys, and why none of them could
+have been a unit test:
+- **The process's exit code.** Every `convert` in the suite was a *module* call, so the shell's view
+  of the command was the one observable it could not have. SH456 lives exactly there: the whole
+  report printed, three posts written, exit **1**. The suite now spawns `src/index.mjs` as a process
+  for one conversion. Same seam as SH445 — code fixed twice against a harness before anything ran
+  the command.
+- **The public route's negative cases.** The happy path was asserted and the lying path was not, so
+  `/sites/<site>/<anything>/<anything>/` answering 200 with the home page went unnoticed. Two
+  assertions: an unknown format segment, and a root-relative asset path.
+- **That the rendered page's own references resolve.** Three files were named by hand and proved;
+  the fourth was not. It now reads `src`, `<link href>` and `url()` off the served HTML and fetches
+  each — the check no unit test can make, because both halves (the bytes are on the instance; the
+  page asks for a path) are green in isolation and only the replica sees them disagree.
+
+The fixture gained a root-level `/favicon.ico` for the first of those. It is the only asset in it
+with **no folder segment**, so it is the only one whose upload takes `convert`'s root-folder branch —
+and a fixture where nothing is at the root is a fixture that cannot see a defect in the root case.
+
 Native build scripts are allowlisted via `onlyBuiltDependencies` in
 `pnpm-workspace.yaml` (`esbuild`, `@tailwindcss/oxide`) — pnpm 11 no longer reads
 the `pnpm` field in `package.json`, so this setting lives in the workspace file.

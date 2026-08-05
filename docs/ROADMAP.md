@@ -24,7 +24,6 @@
 - 💭 **SH209** (deps: SH102 ✅) **`shio snapshot` photographs one page per run** — The useful artifact for a handoff is the set of a site's pages, and the command captures one page per run. → §IX.10
 - 📋 **SH397** (deps: SH295 ✅, SH325 ✅) **A dev instance reports its version as dev, so a stale server reads as a code defect** — The build stamp comes from the jar manifest, which is absent in the one mode where the running instance can lag the working tree, and nothing composes the readiness facts. → §IX.12
 - 📋 **SH423** (deps: SH347 ✅) **The test-context budget is a ceiling nobody sees approaching** — ShContextCacheHeadroomTest fails once 64 is crossed and nothing says a task is spending one, so eleven tasks took the count from 38 to 44 with no moment anybody was asked. → §VIII.20
-- 📋 **SH458** (deps: SH448 ✅) **The suite is green on an instance where a hand pass found three defects** — It asserts happy paths through the modules, so a process exit code, a route's negative cases and whether a rendered page's own references resolve are all outside it. → §IX.25
 
 ## Block I — Content as files (local-first authoring)
 

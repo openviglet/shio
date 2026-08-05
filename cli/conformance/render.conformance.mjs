@@ -288,6 +288,37 @@ describe("SH448 conformance: the native render path, end to end over HTTP", () =
       "SH451: and indexable. A published page a crawler is told to ignore is not published",
     );
 
+    // ── SH458: and the same route's negative cases, which nothing asked about ─────────────
+    //
+    // The second missing assertion. Everything above is the happy path, so the route that lies is
+    // the one no test ever addresses: `/sites/<site>/<a>/<b>/` accepts **any** `<a>` — the format
+    // segment is vestigial and was implemented as accepts-anything — and with nothing after `<b>`
+    // the content path is empty, which resolves to the home page. Measured on the running instance:
+    // `/sites/publico/img/missing.png` answers **200 text/html**, the site's home page, for a
+    // request a browser made for an image. That is the shape of every root-relative asset a
+    // captured page names, so a broken image and a missing webfont both arrive as a rendered page
+    // with a 200 — the status a caller checks first says the opposite of what happened (SH457).
+    const wrongFormat = await fetch(`${conn.baseUrl}/sites/${site}/bogus/en-us/`);
+    assert.equal(
+      wrongFormat.status,
+      404,
+      "SH457: the format segment accepts `default` and nothing else. Vestigial is a reason to fix "
+        + "its value, not a reason to accept every value — and accepting every value is what makes "
+        + "the two segments after the site name unusable for telling a real request from a typo",
+    );
+
+    const missingAsset = await fetch(`${conn.baseUrl}/sites/${site}/img/missing.png`);
+    const missingBody = await missingAsset.text();
+    assert.equal(
+      missingAsset.status,
+      404,
+      `SH457: a path that names no content is a 404, not the home page. This is the one that costs `
+        + `— an <img src="/img/missing.png"> on a replica gets 200 and a full HTML document, so `
+        + `every check that reads a status sees a working asset and the page still has a broken `
+        + `image on it. Got ${missingAsset.status} ${missingAsset.headers.get("content-type")}: `
+        + `${missingBody.slice(0, 200)}`,
+    );
+
     // The header variant, which is how one host serves one site: no site in the URL at all.
     const headed = await fetch(`${conn.baseUrl}/sites/`, { headers: { "x-sh-site": site } });
     assert.equal(

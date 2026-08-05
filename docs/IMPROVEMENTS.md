@@ -398,28 +398,6 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
-### IX.25 Three assertions, one per defect it missed (SH458)
-
-The suite ran green — 3 tests, 2 suites, 0 failures — on the same instance where a
-hand-driven pass found SH455, SH456 and SH457 in one sitting. That is not a failure of
-SH448; it is the expected state of a first version, and the rule SH448 set is what says
-how it grows: **each assertion names the task it would have caught.** Three are missing,
-one per defect, and each is cheap.
-
-**An exit code of a successful conversion.** SH456 is `convert` writing three posts, printing
-`changed: 7 object(s)`, and exiting **1** on an address it malformed itself. The replication scenario
-already drives `convert` and asserts what it wrote — it calls the module, so the process's exit code is
-the one observable it cannot see. That is the same seam as SH445: the code was fixed twice against a
-harness before anything ran the command.
-
-**The negative cases of the public route.** SH457 is `/sites/<site>/<anything>` answering 200 with the
-home page. The render scenario asserts the happy path only, so the route that lies is the one nobody
-asks about. Assert a 404 for an unknown third segment.
-
-**That the page's own references resolve.** SH455 and the broken logo are both a page whose `<img>` and
-`@font-face` point at paths the replica does not serve. Fetch what the rendered HTML and CSS name, and
-assert 200 — the check no unit test can make and the one a reader makes instantly by looking.
-
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
