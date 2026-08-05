@@ -155,6 +155,38 @@ stylesheet cannot hide because it is inline-styled rather than classed.
   most of the work** — frames, `this`/`./`/`../`, data variables, subexpressions, literals, partials,
   comments, a block's own name, an inline helper's name and every row value, with `{{~TEXT~}}` the
   one its own test caught being dropped. A reference *not* reported is the quiet failure direction.
+- **`{{#image FIELD}}` is the tenth helper, and SH390's premise was stale — which *was* the finding.**
+  The task offered three answers and said the choice was the task: build derivatives into the tree, add
+  an on-demand resizing endpoint, or delegate to the delivery layer and ship "the helper shape". It
+  dismissed the second as *"a new subsystem and a cache-invalidation question"* — and **that subsystem
+  already exists**: SH40/SH41 ship `ShImageTransformPipeline`, served at `/file_source/**` with
+  `?w=&h=&format=&crop=`, cached, guarded and optionally HMAC-signed. So two of the three options were
+  about building something already built, and the choice collapsed to the third. Reading the code
+  before choosing is what made this a small task instead of a large wrong one.
+  What was genuinely missing is exactly two facts, and **both require the server**: a template does not
+  know an image's **intrinsic width**, so every `srcset` candidate it wrote would risk upscaling; and it
+  cannot compute an **HMAC**, so with signing on a hand-written srcset is a page of 403s. Hence a
+  helper, and hence one that emits *whole URLs* rather than parts.
+  **It costs nothing**, which is why it is a helper and not a build pass: `ShStaticFileService` already
+  writes `WIDTH`/`HEIGHT` onto the `File` post's own `data` at upload, so this reads the same `fieldsOf`
+  map `bytePath` already reads — no extra query, no file read, no image decoding. A derivative pass
+  would have put N copies of every image in git and needed a native image library in a CLI that keeps
+  even playwright optional.
+  Three decisions: the ladder (320/640/960/1280/1920) is **filtered below the intrinsic width with the
+  original as the last entry**, so nothing ever upscales — a `srcset` offering 1920w for a 1600px image
+  tells the browser a lie it acts on, and SH386 grades a replica against a source that *does* ship a
+  small image to a small viewport, which is the task's own framing of this as fidelity rather than
+  optimisation; an image nothing measured (an SVG, a pre-reader upload) yields the **plain url and an
+  empty srcset**, which in HTML means "use src" and is right, because fabricating a ladder from a width
+  nobody knows is the one choice that produces *broken* images rather than unoptimised ones; and the row
+  has **its own key set** (`IMAGE_KEYS`) for `FORM_FIELD_KEYS`' reason — a listing's rows are
+  interchangeable because they are all posts, and putting `srcset` on every `{{#query}}` row would be a
+  promise no listing keeps.
+  Two things worth keeping from the run: the **tally held exactly** — three test edits for the new
+  helper *name* (signature anchor, validator list, field-lint fixture) plus the silent-catch population,
+  which is what SH384's note predicted; and the first draft of the signing assertion looked for a raw
+  `&` and failed, because Handlebars **escapes** `{{srcset}}` as an attribute value. Asserting the raw
+  form would have been asserting that the renderer had an XSS hole.
 - **`site.scripts` is one ordered list per site, and Shio *never injects* it (SH389).** Browser
   JavaScript had two homes — a `Theme`'s `JAVASCRIPT` and a `Region`'s (SH248) — and both are
   per-layout, so a site with four layouts held **four copies** whose load order was a property of each

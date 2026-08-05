@@ -1382,21 +1382,3 @@ failure a replica has.
 Two gaps in the middle are not about replication at all: they are ordinary site features
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
-
-### XVII.14 A responsive image is a fidelity question, not an optimisation (SH390)
-
-`{{file_url FIELD}}` resolves a `File` field to the one path SH38 serves its bytes on.
-There is no derivative, no width parameter and no `srcset`, so a template can only ever
-emit one image at one size. On a replica that is a fidelity failure rather than a
-performance note: SH386 compares the replica to a source that *does* ship a small image
-to a small viewport, so the comparison it is graded against is one the model cannot
-express.
-
-Three candidate answers, and the choice is the task. A **build-time** pass that writes
-derivatives into the tree as ordinary assets is the one that fits every existing rule —
-bytes on disk, uploaded by a push, no new endpoint, and SH210 already made bytes
-replaceable in place. An on-demand resizing endpoint puts image processing in the JVM,
-which is a new subsystem and a cache-invalidation question. Doing nothing and delegating
-to the delivery layer's own image pipeline is legitimate too, and is probably right for
-production — in which case what this task actually owes is the *helper shape* that lets
-a template hand a front end the widths, rather than the bytes.

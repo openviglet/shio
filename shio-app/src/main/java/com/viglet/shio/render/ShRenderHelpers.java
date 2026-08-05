@@ -25,6 +25,9 @@ import org.springframework.stereotype.Component;
 import com.github.jknack.handlebars.Options;
 import com.viglet.shio.api.agent.ShAddress;
 import com.viglet.shio.api.agent.ShAddressResolver;
+import com.viglet.shio.api.staticfile.transform.ShImageTransformSigner;
+import com.viglet.shio.api.staticfile.transform.ShImageTransformSpec;
+import com.viglet.shio.property.ShImageTransformProperties;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
@@ -113,6 +116,8 @@ public class ShRenderHelpers {
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShSiteRepository shSiteRepository;
     private final ShRenderModel shRenderModel;
+    private final ShImageTransformSigner imageTransformSigner;
+    private final ShImageTransformProperties imageTransformProperties;
 
     public ShRenderHelpers(ShTemplateEngine engine,
                            ShAddressResolver shAddressResolver,
@@ -120,7 +125,9 @@ public class ShRenderHelpers {
                            ShPostUnifiedRepository shPostUnifiedRepository,
                            ShPostTypeRepository shPostTypeRepository,
                            ShSiteRepository shSiteRepository,
-                           ShRenderModel shRenderModel) {
+                           ShRenderModel shRenderModel,
+                           ShImageTransformSigner imageTransformSigner,
+                           ShImageTransformProperties imageTransformProperties) {
         this.engine = engine;
         this.shAddressResolver = shAddressResolver;
         this.shFolderRepository = shFolderRepository;
@@ -128,6 +135,8 @@ public class ShRenderHelpers {
         this.shPostTypeRepository = shPostTypeRepository;
         this.shSiteRepository = shSiteRepository;
         this.shRenderModel = shRenderModel;
+        this.imageTransformSigner = imageTransformSigner;
+        this.imageTransformProperties = imageTransformProperties;
     }
 
     /**
@@ -140,6 +149,16 @@ public class ShRenderHelpers {
      */
     public static final Set<String> ROW_KEYS =
             Set.of("id", "title", "summary", "url", "link", "type", "name", "locale");
+
+    /**
+     * What an {@code {{#image}}} row carries (SH390) — an <b>asset</b>, not a post.
+     *
+     * <p>Its own set for {@link #FORM_FIELD_KEYS}' reason: a listing's rows are interchangeable
+     * because they are all posts, and an image is a different kind of thing. Merging them would put
+     * {@code srcset} on every {@code {{#query}}} row, which is a promise no listing keeps.</p>
+     */
+    public static final Set<String> IMAGE_KEYS =
+            Set.of("url", "width", "height", "alt", "widths", "srcset", "sizes");
 
     /**
      * What a {@code {{#form}}} row carries (SH247) — a <b>field</b>, not a post.
@@ -166,7 +185,11 @@ public class ShRenderHelpers {
      * template — committed while adding the set that was meant to prevent it.</p>
      */
     public static Set<String> rowKeysFor(String scope) {
-        return "form".equals(scope) ? FORM_FIELD_KEYS : ROW_KEYS;
+        return switch (scope == null ? "" : scope) {
+            case "form" -> FORM_FIELD_KEYS;
+            case "image" -> IMAGE_KEYS;
+            default -> ROW_KEYS;
+        };
     }
 
     @PostConstruct
@@ -193,6 +216,8 @@ public class ShRenderHelpers {
                 "{{#menu title=}}…{{/menu}}", this::menu);
         engine.register("translations", ShHelperShape.BLOCK,
                 "{{#translations}}…{{/translations}}", this::translations);
+        engine.register("image", ShHelperShape.BLOCK_PATH_ARG,
+                "{{#image FIELD sizes=}}…{{/image}}", this::image);
     }
 
     /**
@@ -976,6 +1001,150 @@ public class ShRenderHelpers {
                 .findFirst()
                 .map(this::bytePath)
                 .orElse("");
+    }
+
+    /**
+     * {@code {{#image HERO}}…{{/image}}} — one image with the facts a {@code srcset} needs (SH390).
+     *
+     * <h3>The premise SH390 was filed on turned out to be stale, and that decided the design</h3>
+     *
+     * <p>The task offered three answers and said the choice was the task: build derivatives into the
+     * tree, add an on-demand resizing endpoint, or delegate to the delivery layer and ship "the helper
+     * shape". It evaluated the second as <em>"a new subsystem and a cache-invalidation question"</em> —
+     * and that subsystem <b>already exists</b>: SH40/SH41 ship {@code ShImageTransformPipeline}, served
+     * at {@code /file_source/**} with {@code ?w=&h=&format=&crop=}, cached, guarded and optionally
+     * signed. So there was nothing to choose between: two of the three options were about building
+     * something that is built.</p>
+     *
+     * <p>What is actually missing is small and is exactly the third option's "helper shape". A template
+     * cannot emit a {@code srcset} for two reasons, and both of them need the server: it does not know
+     * the image's <b>intrinsic width</b>, so every candidate it wrote would risk upscaling; and when
+     * signing is on it cannot compute an <b>HMAC</b>. Nothing else about the problem was missing.</p>
+     *
+     * <h3>It costs nothing, which is why it is a helper rather than a pass</h3>
+     *
+     * <p>The dimensions are already on the {@code File} post's own {@code data} — {@code
+     * ShStaticFileService} reads them at upload and stores {@code WIDTH}/{@code HEIGHT} — so this reads
+     * the same {@code fieldsOf} map {@link #bytePath} already reads. <b>No extra query, no file read,
+     * no image decoding.</b> A build-time derivative pass would have put N copies of every image in
+     * git; this puts nothing anywhere.
+     *
+     * <h3>Never upscales, and that is the fidelity claim</h3>
+     *
+     * <p>The candidate ladder is filtered to widths <em>below</em> the intrinsic one, with the original
+     * as the largest entry. A {@code srcset} offering 1920w for a 900px image tells the browser a lie
+     * it will act on, and SH386 grades a replica against a source that ships a small image to a small
+     * viewport — so this is a fidelity question rather than an optimisation, which is the task's own
+     * framing.
+     *
+     * <h3>An image the instance cannot measure yields the plain url and no srcset</h3>
+     *
+     * <p>An SVG, or a file uploaded before the dimension reader existed, has no {@code WIDTH}. The row
+     * still carries {@code url} so the template renders a working {@code <img>}; {@code srcset} is
+     * empty, which in HTML means "use src" and is exactly right. Fabricating a ladder from a width
+     * nobody knows is the one thing that would produce broken images rather than unoptimised ones.
+     */
+    Object image(Object context, Options options) throws IOException {
+        String id = string(context);
+        if (id == null || id.isBlank()) {
+            return options.inverse();
+        }
+        Optional<ShPostUnified> file = preferDraft(shPostUnifiedRepository.findById(id), state(options))
+                .stream().findFirst();
+        if (file.isEmpty()) {
+            return options.inverse();
+        }
+        Map<String, Object> fields = shRenderModel.fieldsOf(file.get());
+        String url = bytePath(file.get());
+        if (url.isEmpty()) {
+            return options.inverse();
+        }
+        int width = whole(fields.get("WIDTH"));
+        int height = whole(fields.get("HEIGHT"));
+        List<Integer> widths = ladderFor(width);
+
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("url", url);
+        row.put("width", width);
+        row.put("height", height);
+        row.put("alt", fields.get("ALT") == null ? "" : fields.get("ALT").toString());
+        row.put("widths", widths);
+        // The whole attribute value, not the parts. A template cannot compose it: each candidate needs
+        // an HMAC when signing is on, and that is the one thing only the server can do here.
+        row.put("srcset", srcsetFor(id, url, widths));
+        row.put("sizes", hash(options, "sizes", "100vw"));
+        return options.fn(ShStableMap.copyOf(row));
+    }
+
+    /**
+     * The candidate widths for an image of this intrinsic width.
+     *
+     * <p>A fixed ladder rather than a setting: the values are the ones device pixel ratios and common
+     * breakpoints actually produce, and a per-site list would be a knob nobody could tune without
+     * measuring a real audience. The intrinsic width is always the last entry, so the largest candidate
+     * is the original and no entry claims a size the bytes cannot fill.
+     */
+    private List<Integer> ladderFor(int intrinsic) {
+        if (intrinsic <= 0) {
+            return List.of();
+        }
+        List<Integer> out = new ArrayList<>();
+        for (int candidate : new int[] { 320, 640, 960, 1280, 1920 }) {
+            if (candidate < intrinsic) {
+                out.add(candidate);
+            }
+        }
+        out.add(intrinsic);
+        return List.copyOf(out);
+    }
+
+    /**
+     * The {@code srcset} attribute value, signed per candidate when signing is enabled.
+     *
+     * <p>Unsigned when it is not, because the pipeline accepts an unsigned transform then and a
+     * {@code sig} nobody verifies is noise in every URL. When signing <em>is</em> on and the secret is
+     * missing the signer throws — and that is caught here into an <b>empty srcset</b> rather than a
+     * failed render: a page that fell over because a transform could not be signed would take a site
+     * down for a configuration mistake, and an image at its natural size is the correct degradation.
+     * {@code shio verify} has no rule for it because the pipeline's own startup log already reports an
+     * enabled signer with no secret.
+     */
+    private String srcsetFor(String id, String url, List<Integer> widths) {
+        if (widths.size() < 2) {
+            // One candidate is the original, and `srcset="… 900w"` with a single entry buys a browser
+            // nothing it does not already have from `src`.
+            return "";
+        }
+        StringBuilder out = new StringBuilder();
+        for (int width : widths) {
+            ShImageTransformSpec spec = new ShImageTransformSpec(width, null, null, null);
+            String query = "w=" + width;
+            if (imageTransformProperties.getSigning().isEnabled()) {
+                try {
+                    query += "&sig=" + imageTransformSigner.sign(id, spec);
+                } catch (IllegalStateException e) {
+                    return "";
+                }
+            }
+            if (!out.isEmpty()) {
+                out.append(", ");
+            }
+            out.append(url).append('?').append(query).append(' ').append(width).append('w');
+        }
+        return out.toString();
+    }
+
+    private int whole(Object value) {
+        if (value instanceof Number number) {
+            return Math.max(number.intValue(), 0);
+        }
+        try {
+            return Math.max(Integer.parseInt(String.valueOf(value).trim()), 0);
+        } catch (RuntimeException e) {
+            // A `WIDTH` that is not a number means the same as an absent one: no ladder, plain url.
+            // Not recorded, because an unmeasurable image is not a degradation — see the helper's note.
+            return 0;
+        }
     }
 
     private String bytePath(ShPostUnified filePost) {

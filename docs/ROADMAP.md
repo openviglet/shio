@@ -76,8 +76,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 💭 **SH390** (deps: SH145 ✅, SH210 ✅) **One asset, one size** — file_url yields a single path, so no template can emit a srcset and a replica ships the desktop image to a phone where the original it is being compared against does not. → §XVII.14
-
 ## Block F — Market positioning
 
 - 💭 **SH44** (deps: SH22 ✅) **Superadmin impersonation** — let a privileged operator act as / switch into any tenant from the console (audited). → §VI.1

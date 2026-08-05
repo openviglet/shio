@@ -94,7 +94,14 @@ class ShSilentCatchInventoryTest {
             // is nothing to record — but the lint keys on "neither records nor rethrows" and cannot
             // tell a swallowed error from control flow, which is the right way round for a population
             // guard to be wrong. Counted rather than exempted, so the population stays a diff.
-            "render", 4,
+            // 6 since SH390, both in `{{#image}}` and both the same shape as `limit=`: a `WIDTH` that
+            // is not a number means the same as an absent one (no ladder, plain url), and a signer
+            // with no configured secret yields an empty `srcset` rather than a failed render — a page
+            // that fell over because a transform could not be signed would take a site down for a
+            // configuration mistake, and an image at its natural size is the correct degradation.
+            // Neither is recorded: an unmeasurable image is not a degradation, and the signer's own
+            // startup log already reports an enabled signer with no secret.
+            "render", 6,
             "utils", 2,
             "migration", 1,
             // 1 since SH84: `ShTuringDocumentMapper.readData` reads a post whose `data` is not JSON
@@ -223,7 +230,7 @@ class ShSilentCatchInventoryTest {
                         subject — which is exactly the trade SH103 refused for 4xx. A bad `limit=` \
                         is a template author's mistake and could be argued the other way; it is \
                         left as it was rather than changed in passing.""")
-                .hasSize(4)
+                .hasSize(6)
                 .allSatisfy(where -> assertThat(where)
                         .matches(".*(ShRenderAPI|ShRenderHelpers|ShTemplateValidator).*"));
     }

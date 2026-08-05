@@ -914,6 +914,7 @@
 - **SH387** — A server-free replication check group scores the capture against the tree in five rules, and names everything it could not check rather than counting it clean.
 - **SH388** — A layout's head is linted from its stored HTML with no render: a static title or description, an absent canonical, a relative og:image and a noindex.
 - **SH389** — A SiteScripts post gives a site one ordered script list on site.scripts, emitted only by a layout that asks; a capture proposes the ones it found.
+- **SH390** — {{#image}} yields an asset's intrinsic size and a signed srcset that never upscales, over the transform pipeline SH40 already ships.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

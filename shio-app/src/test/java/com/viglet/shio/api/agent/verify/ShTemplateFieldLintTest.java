@@ -78,6 +78,8 @@ class ShTemplateFieldLintTest {
               {{#if SUMMARY}}<p class="lede">{{SUMMARY}}</p>{{/if}}
               <div>{{{BODY}}}</div>
               <img src="{{file_url HERO}}">
+              {{#image HERO sizes="50vw"}}<img src="{{url}}" width="{{width}}" height="{{height}}"
+                srcset="{{srcset}}" sizes="{{sizes}}" alt="{{alt}}">{{/image}}
               {{#getRelation HERO}}<i>{{title}}</i>{{/getRelation}}
               <p class="byline">{{headline}}</p>
               <div sh-region="SH251_LIST_REGION"></div>
