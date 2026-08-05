@@ -444,6 +444,35 @@ test("the proposal names each candidate, the pages it recurs on and what it woul
   assert.ok(ctx.stdout.text.includes("loses:"));
 });
 
+test("SH436: the proposal states the fields the target has to declare, before anything is written", async () => {
+  // The state a real instance was in: `Theme` declared TITLE, CSS and JAVASCRIPT and no TOKENS,
+  // because the post-type predates SH195, `ensure` never touches an existing one, and reconcile is
+  // additive AND opt-in. All three are right; the gap is when anybody learns. clone and propose never
+  // talk to an instance by design, so without this the first moment a missing field matters is when a
+  // token is written — after a capture, a conversion and a review have all been paid for.
+  const ctx = ctxWithStyles();
+  const { proposal } = await propose.run({}, [], ctx);
+
+  const theme = proposal.requires.find((row) => row.postType === "Theme");
+  assert.ok(theme, "the theme half knows what it needs");
+  assert.equal(theme.field, "TOKENS");
+  assert.match(theme.fix, /render\/post-types\/reconcile/,
+    "and names the repair: a precondition a reader cannot satisfy is a complaint");
+  assert.match(theme.fix, /drift/, "plus the read that answers it without writing");
+  assert.match(ctx.stdout.text, /requires on the target instance/);
+  assert.match(ctx.stdout.text, /Theme\.TOKENS/);
+});
+
+test("SH436: a proposal with no theme and no scripts requires nothing", async () => {
+  // Derived from what the proposal actually holds, not listed: a capture that produced neither half
+  // has no precondition, and a requirement that is always there is one nobody reads.
+  const ctx = ctxWith();
+  const { proposal } = await propose.run({}, [], ctx);
+
+  assert.deepEqual(proposal.requires, []);
+  assert.ok(!/requires on the target instance/.test(ctx.stdout.text));
+});
+
 test("it applies nothing: the only files it writes are the proposal and, on accept, the plan", async () => {
   const ctx = ctxWith();
   await propose.run({}, [], ctx);

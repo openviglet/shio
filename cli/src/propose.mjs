@@ -40,8 +40,15 @@
  */
 import { describeTheme } from "./theme.mjs";
 
-/** The proposal's shape version. Bumped when a consumer would read an old file wrongly. */
-export const PROPOSAL_VERSION = 1;
+/**
+ * The proposal's shape version. Bumped when a consumer would read an old file wrongly.
+ *
+ * <p>**2 since SH436**, which added `requires`: the post-type fields the target instance has to
+ * declare before this proposal can be applied. A consumer of a version-1 file sees no preconditions
+ * and would take that for "there are none", which is the wrong way round — an applier that skips the
+ * check silently writes a theme without its tokens.
+ */
+export const PROPOSAL_VERSION = 2;
 
 /** Where the proposal lands: derived, beside the inventory it is computed from. */
 export const PROPOSAL_FILE = "shio/.shio/conversion-proposal.json";
@@ -768,7 +775,53 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     // inventory alone, so it needs neither markup nor stylesheets and is present on every proposal a
     // capture can produce.
     scripts: proposeScripts(inventory),
+    // SH436 — what the target must already declare for this to be appliable, computed from what the
+    // proposal actually holds.
+    requires: requirements({ theme, scripts: proposeScripts(inventory) }),
     notes: [...notes, ...(theme?.notes ?? [])],
+  };
+}
+
+/**
+ * The fields the target instance must declare before this proposal can be applied (SH436).
+ *
+ * <h3>Why the precondition lives here</h3>
+ *
+ * <p>On a real instance `Theme` declared `TITLE`, `CSS` and `JAVASCRIPT` and **no `TOKENS`**: the
+ * post-type predates SH195, `ensure` deliberately never touches an existing one, and SH289's
+ * reconcile is additive *and* opt-in. All three of those are right — a widget change is a different
+ * decision from a missing field — and the repair is one call. The gap is *when* anybody learns.
+ * `clone` and `propose` never talk to an instance by design, so the first moment a missing field
+ * matters is when a token is written, and a project spends real effort on a capture, a conversion and
+ * a review before finding out the target cannot hold half of it.
+ *
+ * <p>So the artefact states its own preconditions. It costs no request and no instance: the theme half
+ * knows it needs `Theme.TOKENS`, the scripts half knows it needs `SiteScripts.SCRIPTS`, and an applier
+ * has something to check before it writes rather than a failure to explain afterwards. `shio verify`
+ * still carries the finding — that is the right home for the *check* — this is the same fact, said
+ * early enough to act on.
+ *
+ * <p>Every row names the repair, because a precondition a reader cannot satisfy is a complaint.
+ */
+function requirements({ theme, scripts }) {
+  const rows = [];
+  if (theme?.rows?.length) {
+    rows.push(needs("Theme", "TOKENS", "the captured design tokens are written into it"));
+  }
+  if (scripts?.length) {
+    rows.push(needs("SiteScripts", "SCRIPTS", "the third-party scripts the capture found go into it"));
+  }
+  return rows;
+}
+
+function needs(postType, field, why) {
+  return {
+    postType,
+    field,
+    why,
+    fix: `POST /api/v2/render/post-types/reconcile adds it and changes nothing else (or a `
+      + `render.provision op with data.reconcile:true). GET /api/v2/render/post-types/drift `
+      + `answers whether it is needed without writing.`,
   };
 }
 
@@ -936,6 +989,16 @@ export function describeProposal(proposal, options = {}) {
   if (proposal.scripts?.length) {
     lines.push("");
     lines.push(describeScripts(proposal.scripts, options).trimEnd());
+  }
+  // SH436 — printed before the "nothing was applied" line, because it is the sentence that decides
+  // whether applying this will work at all, and a reader who stops at the candidates has still read it.
+  if (proposal.requires?.length) {
+    lines.push("");
+    lines.push(`requires on the target instance (${proposal.requires.length}):`);
+    for (const row of proposal.requires) {
+      lines.push(`  ${row.postType}.${row.field} — ${row.why}`);
+    }
+    lines.push(`  ${proposal.requires[0].fix}`);
   }
   lines.push("", `proposal: ${options.out ?? PROPOSAL_FILE} (nothing was applied)`);
   // The theme's own notes are already in `proposal.notes`, which is what `describeTheme` prints too —

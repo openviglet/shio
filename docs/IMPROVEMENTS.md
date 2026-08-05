@@ -1522,28 +1522,3 @@ SH385's rule that a replica keeps the original's URL space — or the markup's `
 rewritten to the uploaded asset's address, which needs an upload with no field. The
 first is closer to what a fidelity replica means. Whichever, `source-asset-missing`
 should be able to say the bytes exist and nothing serves them.
-
-### XVII.26 The field the capture writes into may not exist yet (SH436)
-
-On the dev instance, `Theme` declared `TITLE`, `CSS` and `JAVASCRIPT` and no `TOKENS`,
-because the post-type predates SH195 and `ensure` deliberately never touches an existing
-one — SH289's reconcile is additive and also opt-in. `POST
-/api/v2/render/post-types/reconcile?dryRun=true` answered exactly `["Theme: TOKENS"]`,
-and the unqualified call fixed it.
-
-So the mechanism is documented, the repair is one call, and it is right that a widget
-change is a different decision from a missing field. The gap is that nothing on the
-replication path says any of it. `shio clone` and `shio propose` never talk to an
-instance, by design, so the first moment the missing field matters is when a token is
-written — and the writer is whatever applies the plan, which SH417 says does not exist
-yet. Left alone, the first version of that applier meets a post-type with no `TOKENS`
-and either fails somewhere unhelpful or writes the theme without its tokens.
-
-`shio verify` does carry a finding pointing at the reconcile, which is the right home
-for the check; the problem is when it is read. A replication runs capture, convert and
-review before it writes anything, and a project spends real effort on a proposal before
-learning the target cannot hold half of it.
-
-The cheap answer is a precondition where the artefact is produced: the theme half of a
-proposal knows it needs `Theme.TOKENS`, and SH417's apply is the natural place to check
-the target declares it and to name the reconcile call in the refusal.

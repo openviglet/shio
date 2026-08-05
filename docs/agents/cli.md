@@ -221,6 +221,22 @@ are deduped — one decision on N pages, not N decisions), and the proposal now 
 candidate appears on **all** the pages read, with three as the floor: on two pages a hero is on both as
 well, and a hint that fires on every small capture is one a reviewer learns to ignore.
 
+**The proposal states its own preconditions, because the field it writes into may not exist (SH436).**
+On a real instance `Theme` declared `TITLE`, `CSS` and `JAVASCRIPT` and **no `TOKENS`**: the post-type
+predates SH195, `ensure` deliberately never touches an existing one, and SH289's reconcile is additive
+*and* opt-in. Every one of those is right — a widget change is a different decision from a missing
+field — and the repair is one call (`POST /api/v2/render/post-types/reconcile`, with
+`GET /api/v2/render/post-types/drift` answering without writing). The gap was **when** anybody learns:
+`clone` and `propose` never talk to an instance by design, so the first moment a missing field matters
+is when a token is written, and a project pays for a capture, a conversion and a review before finding
+out the target cannot hold half of it. So the artefact carries `requires` — `Theme.TOKENS` when it
+holds a theme, `SiteScripts.SCRIPTS` when it holds scripts — **derived from what the proposal actually
+holds** (a requirement that is always there is one nobody reads), each row naming the repair, since a
+precondition a reader cannot satisfy is a complaint. `shio verify` still carries the finding: that is
+the right home for the *check*, and this is the same fact said early enough to act on. `PROPOSAL_VERSION`
+is **2** for it, because a consumer of a version-1 file sees no preconditions and would take that for
+"there are none" — an applier that skips the check writes a theme without its tokens.
+
 **A lifted declaration comes out of the kept CSS, or the tokens are dead on arrival (SH424).**
 Measured on a real replica, not argued: `shio propose` wrote nine declared tokens into `Theme.TOKENS`,
 and the rendered page carried **two** `:root` blocks — the token-compiled one at char 1794 and the
