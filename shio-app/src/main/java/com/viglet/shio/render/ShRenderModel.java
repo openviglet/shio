@@ -18,6 +18,7 @@ import java.util.TreeMap;
 
 import org.springframework.stereotype.Component;
 
+import com.github.jknack.handlebars.Handlebars;
 import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
@@ -261,14 +262,43 @@ public class ShRenderModel {
         return ShStableMap.copyOf(frame);
     }
 
+    /**
+     * SH461 — {@code css} and {@code javascript} are <b>raw</b>, and everything else here is not.
+     *
+     * <h3>What HTML-escaping them actually did</h3>
+     *
+     * <p>The documented layout is {@code <style>{{theme.css}}</style>} — the double stash, so
+     * Handlebars escaped the value. CSS decodes no entities, so a captured theme's
+     * {@code src: url("/fonts/inter.woff2")} reached the browser as
+     * {@code url(&quot;/fonts/inter.woff2&quot;)}: four literal characters inside the URL, an
+     * invalid {@code @font-face} whatever it pointed at, and a replica rendering in a serif
+     * fallback. Nothing else in a stylesheet carries {@code "}, {@code <}, {@code >} or {@code &},
+     * which is why the page looked styled and only the {@code url()}s were broken — the failure
+     * was invisible in proportion to how ordinary the CSS was.</p>
+     *
+     * <h3>Why raw is the correct answer and not the convenient one</h3>
+     *
+     * <p>{@code <style>} and {@code <script>} are raw-text elements: entity escaping is not the
+     * encoding for that context, so what it removed was correctness and what it bought was a
+     * defence against {@code </style>} — from a {@code Theme} post written by whoever also writes
+     * the {@code PageLayout} that emits it, three lines below, through {@code {{{content}}}}. There
+     * is no privilege boundary between the two, so there was nothing to defend. The layouts stay
+     * {@code {{theme.css}}}: the fix belongs where the value is built, or every hand-written layout
+     * in the product keeps the defect and only the generated one is cured.</p>
+     */
     private Map<String, Object> themeFrame(ShThemeAssets theme) {
         Map<String, Object> frame = new LinkedHashMap<>();
-        frame.put("css", theme == null ? null : theme.css());
-        frame.put("javascript", theme == null ? null : theme.javascript());
+        frame.put("css", theme == null ? null : raw(theme.css()));
+        frame.put("javascript", theme == null ? null : raw(theme.javascript()));
         // SH195 — the same values the `:root` block carries, dotted, for the places a custom
         // property cannot reach: an inline style, an SVG fill, an email template.
         frame.put("tokens", theme == null ? Map.of() : theme.tokens());
         return ShStableMap.copyOf(frame);
+    }
+
+    /** A value a stash must not entity-escape. Null stays null, so an absent field stays absent. */
+    private static Object raw(String value) {
+        return value == null ? null : new Handlebars.SafeString(value);
     }
 
     /**

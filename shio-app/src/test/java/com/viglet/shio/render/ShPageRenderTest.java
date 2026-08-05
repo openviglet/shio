@@ -518,6 +518,56 @@ class ShPageRenderTest {
     }
 
     @Test
+    @DisplayName("SH461: a theme's CSS reaches the page unescaped, so its url() is a URL")
+    void aThemesCssIsNotHtmlEscaped() {
+        // The defect, and the reason it hid for four tasks: `<style>{{theme.css}}</style>` is the
+        // documented layout, the double stash escapes, and CSS decodes no entities — so
+        // `url("/fonts/inter.woff2")` arrived as `url(&quot;/fonts/inter.woff2&quot;)`, four literal
+        // characters inside the URL and an invalid @font-face whatever it pointed at. Nothing else
+        // in a stylesheet carries " < > or &, so the page looked styled and only the references
+        // were broken: the failure was invisible in proportion to how ordinary the CSS was.
+        String site = "sh461-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh461Page" + UUID.randomUUID().toString().substring(0, 8);
+        String css = "@font-face{font-family:\"Inter\";src:url(\"/fonts/inter.woff2\") format(\"woff2\")}"
+                + "a{content:'a & b'}";
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"SH461_LAYOUT\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+            ShPostType themeType = postType(ShSystemPostType.THEME, (byte) 1, when);
+
+            post(owner, root, themeType, "SH461_THEME", "/theme", json("CSS", css), when);
+            post(owner, root, layoutType, "SH461_LAYOUT", "/l",
+                    json("HTML", "<html><head><style>{{theme.css}}</style></head>"
+                            + "<body><p>{{TEXT}}</p></body></html>",
+                            "THEME", "SH461_THEME"),
+                    when);
+            post(owner, root, pageType, "Home", "/", json("TEXT", "body"), when);
+        });
+
+        String html = shPageRenderService.render(site, "/", ShPostState.DRAFT).html();
+
+        assertThat(html)
+                .as("the stylesheet is served as written — the stash escapes, and this is the one "
+                        + "value in the model for which escaping is not the encoding of its context")
+                .contains(css);
+        assertThat(html)
+                .as("and none of the three entities the escaper would have introduced is here; a "
+                        + "single &quot; is enough to break every url() and every quoted family name")
+                .doesNotContain("&quot;")
+                .doesNotContain("&#x27;")
+                .doesNotContain("&amp;");
+    }
+
+    @Test
     @DisplayName("SH297: a layout with no theme at all is not marked")
     void noThemeNamedIsNotADefect() {
         // "No theme named" and "a theme named that is not there" are different facts, and only the

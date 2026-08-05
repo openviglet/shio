@@ -310,12 +310,30 @@ test("a url() resolves against the stylesheet, not against the page that linked 
   const out = rewriteUrls("@font-face{src:url(../fonts/x.woff2)}", {
     base: "https://x.test/assets/css/site.css",
     assets,
-    prefix: "/",
   });
 
-  assert.match(out.css, /url\("\/Acme\/assets\/fonts\/x\.woff2"\)/);
+  // SH461: what is written is the SOURCE's path, not the map's value. The tree path
+  // (`/Acme/assets/fonts/x.woff2`) is addressable in shio/assets/ and nowhere a browser can ask
+  // for; the instance resolves a site-relative path, which is what the source used and what the
+  // markup — never rewritten here — has been serving correctly since SH437.
+  assert.match(out.css, /url\("\/assets\/fonts\/x\.woff2"\)/);
+  assert.ok(!out.css.includes("Acme/"), "the site segment is the tree's, and a URL is not the tree");
   assert.equal(out.rewritten, 1);
   assert.deepEqual(out.unresolved, []);
+});
+
+test("SH461: the asset map is still the gate — an uncaptured reference is not pointed at us", () => {
+  // The map's value stopped being written; its PRESENCE is what still decides. A url() nothing
+  // downloaded must keep pointing where it pointed, or a named licensing gap (SH378) becomes a
+  // broken replica that claims to serve bytes it never fetched.
+  const out = rewriteUrls("a{background:url(/img/never-fetched.png)}", {
+    base: "https://x.test/css/site.css",
+    assets: new Map(),
+  });
+
+  assert.match(out.css, /url\(\/img\/never-fetched\.png\)/);
+  assert.equal(out.rewritten, 0);
+  assert.deepEqual(out.unresolved, ["/img/never-fetched.png"]);
 });
 
 test("a reference the asset map does not hold is left alone and named", () => {

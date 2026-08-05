@@ -474,8 +474,8 @@ value, where rewriting a literal into a `var()` would change it. **Only lifted d
 block** — the source's `:root` also holds `color-scheme: light` — and a recurring token is untouched,
 since nothing references it yet. Removing every occurrence of a lifted name is safe because
 `declaredTokens` already guarantees one is declared *only* under a root selector and with *one* value.
-The exception is a value holding a `url()`: the kept CSS has been rewritten to the tree path and the
-token has not, so those stay declared and stay **named in a note** — a token that cannot be edited is
+The exception is a value holding a `url()`: the kept CSS has been rewritten to the replica's own path
+(SH461) and the token has not, so those stay declared and stay **named in a note** — a token that cannot be edited is
 the claim this task exists to stop making silently. The guard is stated over the whole artefact rather
 than per fixture: *nothing the theme keeps re-declares a token the theme writes*, which is exactly the
 condition that makes an edit reach the page. Invisible to `snapshot --against`, `digest` and `audit` —
@@ -553,12 +553,18 @@ names — all styling", and this is where that styling went. Six decisions:
   better and is exactly the "token nobody can trace back to the source" the rule forbids. `--min-refs`
   (default 3) is what stops every colour on the site becoming a token; a **shorthand is not a length**,
   so `padding: 8px 16px` becomes two tokens or none, and none is the answer a scanner is entitled to.
-- **Every `url()` is rewritten to its SH378 tree path**, resolved against the **stylesheet** and not
-  the page — `url(../fonts/x.woff2)` in `/assets/css/site.css` is `/assets/fonts/x.woff2`, and the
+- **Every `url()` is rewritten to the path the source used**, resolved against the **stylesheet** and
+  not the page — `url(../fonts/x.woff2)` in `/assets/css/site.css` is `/assets/fonts/x.woff2`, and the
   page-relative reading names a file the download never wrote. That is what makes the theme portable
   instead of a set of links to somebody else's origin. One the asset map does not hold is left exactly
   as it was and named: rewriting it to a path with no bytes turns SH378's named licensing gap into a
   broken replica.
+  **It wrote the SH378 *tree* path (`/<site>/<chain>/<name>`) until SH461**, and that is why a
+  replica's fonts 404'd on a route that serves them: the tree path is addressable in `shio/assets/`
+  and nowhere a browser can ask for, while the instance resolves a **site-relative** path — which the
+  verbatim markup on the same page had been using correctly since SH437. The map is still the gate;
+  only what gets written changed. The delivery half is `ShPreviewLinks` walking `<style>`
+  ([renderer.md](renderer.md)).
 Three things a smoke run against a real stylesheet found that the unit tests had not asked:
 **a custom property keeps its case and an ordinary property does not** — CSS folds `COLOR` and treats
 `--Foo`/`--foo` as two properties, so lowercasing everything both merges two declarations and *defeats
@@ -754,8 +760,8 @@ other by hand*. That is the shape that passes while the real producer writes som
 `replication-chain.test.mjs` therefore runs `clone --markup --assets` → `propose` → `propose --accept`
 → `verify --checks projection,replication` over one served fixture site, asserting at each step that
 what the last phase **wrote** is what this one reads: the inventory row naming a markup file that holds
-that page, a candidate whose `pages` are the crawl's own paths, a `url()` rewritten onto the tree path
-the capture chose (so the asset map is *the* map and not a copy), the accepted id coming back
+that page, a candidate whose `pages` are the crawl's own paths, a `url()` rewritten onto the source path
+the capture downloaded (so the asset map is *the* map and not a copy), the accepted id coming back
 `authorable` from the plan on disk, `INVENTORY_VERSION` equal to `READS_VERSION` across the two
 modules, and the `unfollowed` rows — one cut by robots, one by `--depth` — becoming
 `source-link-unresolved`. Two harness choices are the point rather than convenience: a **real temp

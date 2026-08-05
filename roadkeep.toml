@@ -53,14 +53,13 @@ ref_scheme = "outline"
 # been running since before the commits it was being asked about, and only the JVM's start time
 # against the class timestamps said so. The manifest now dates its own build and the conformance
 # harness refuses an instance older than HEAD, before any scenario runs. Then the last two steps
-# between an uploaded asset and a served one, cheapest
-# first: SH461 is a rewriter emitting an escaped tree path where the markup rewriter on the same
-# page already emits a working URL, and it is what the one still-red conformance assertion is
-# failing on; SH462 is the File posts landing in DRAFT with no op able to name them. SH459 is
+# between an uploaded asset and a served one, cheapest first. SH461 has shipped: one page carried
+# two rewriting rules for one job and the stylesheet used the broken one, so the theme now emits the
+# source's path and the render pass walks <style> the way it already walked src. What is left is
+# SH462, the File posts landing in DRAFT with no op able to name them. SH459 is
 # last — the public route's remaining lenient segment, and the 401 an unmapped path answers where
 # 404 is the truth.
 priority = [
-  "SH461",
   "SH462",
   "SH459",
   "Block P",

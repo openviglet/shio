@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -82,6 +83,8 @@ class ShSiteAssetsTest {
     private WebApplicationContext webApplicationContext;
     @Autowired
     private ShSiteAssets shSiteAssets;
+    @Autowired
+    private ShPreviewLinks shPreviewLinks;
     @Autowired
     private ShStaticFileService shStaticFileService;
     @Autowired
@@ -207,6 +210,59 @@ class ShSiteAssetsTest {
                         .contains("max-age").contains("private"))
                 .andExpect(result -> assertThat(result.getResponse().getHeader("X-Robots-Tag"))
                         .isEqualTo("noindex, nofollow"));
+    }
+
+    /**
+     * SH461 — the same page, the same asset, the two rules that used to disagree about it.
+     *
+     * <p>A fidelity replica's markup is verbatim, so its {@code <img src="/img/hero.png">} is the
+     * source's own path and SH437's pass points it here. Its stylesheet was rewritten by the capture
+     * to the asset <b>tree</b>'s path, which is addressable in {@code shio/assets/} and nowhere a
+     * browser can ask for — so the logo loaded and the webfonts 404'd, on one page, from one
+     * capture. This asserts the two agree: the {@code url()} and the {@code src} name the same
+     * served path, and everything the site does not serve is left exactly as the author wrote it.</p>
+     */
+    @Test
+    @DisplayName("SH461: a url() inside <style> is rewritten by the rule that already works for src")
+    void aStylesheetsUrlGetsTheSameTreatmentAsAnImgSrc() {
+        String prefix = "/preview/" + siteName;
+        String served = prefix + "/img/hero.png";
+
+        String html = shPreviewLinks.rewriteInto("""
+                <html><head><style>\
+                @font-face{src:url("/img/hero.png")}\
+                a{background:URL(/img/hero.png)}\
+                b{background:url('/img/hero.png')}\
+                c{background:url(/img/missing.png)}\
+                d{background:url(https://cdn.example.com/x.png)}\
+                e{background:url(data:image/gif;base64,R0lGOD)}\
+                </style></head><body><img src="/img/hero.png"></body></html>""",
+                prefix, pageOfThisSite());
+
+        assertThat(html)
+                .as("all three quotings resolve, and each keeps the quoting the author used — a "
+                        + "bare url() that gained quotes would be a rewrite editing more than the path")
+                .contains("url(\"" + served + "\")")
+                .contains("url(" + served + ")")
+                .contains("url('" + served + "')")
+                .as("and the markup's own reference agrees with them, which is the whole finding")
+                .contains("src=\"" + served + "\"");
+        assertThat(html)
+                .as("everything this site does not serve is left alone, exactly as the src rule "
+                        + "already leaves it: a missing path, somebody else's host, an inline datum")
+                .contains("url(/img/missing.png)")
+                .contains("url(https://cdn.example.com/x.png)")
+                .contains("url(data:image/gif;base64,R0lGOD)");
+
+        assertThat(shPreviewLinks.rewriteInto(html, prefix, pageOfThisSite()))
+                .as("and the pass is idempotent here too — a second render must not stack prefixes")
+                .isEqualTo(html);
+    }
+
+    /** Built rather than rendered: the unit under test is the rewrite, not this fixture's layout. */
+    private ShPageRenderService.ShRenderedPage pageOfThisSite() {
+        return new ShPageRenderService.ShRenderedPage("", siteName, "/", "layout", List.of(),
+                ShPostState.DRAFT, "post-id", site.getId());
     }
 
     @Test

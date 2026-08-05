@@ -486,6 +486,29 @@ renderer over one body of content at a second address. See the section on it bel
   document. `/file_source/…` is excluded explicitly, so a template that resolved an asset properly is
   never re-pointed. **The stored markup is never edited** — which is the point: `snapshot --against`
   compares a replica to its source, and an edited `src` is a difference it structurally cannot see.
+- **And the same rule inside `<style>`, because one page carried two of them (SH461)** —
+  a fidelity replica's markup is verbatim, so its `<img src>` is the source's own path and SH437's
+  pass points it at this site's copy. Its stylesheet was not: the capture rewrote every `url()` to
+  the **asset tree's** path (`/<site>/<chain>/<name>`), which is addressable in `shio/assets/` and
+  nowhere a browser can ask for. So the logo loaded and the webfonts 404'd, on one page, from one
+  capture that had fetched them correctly and a route that serves them when asked properly. Fixed on
+  both sides and by *deleting* the second rule rather than adding a third: the CLI's `rewriteUrls`
+  now emits the **source's** path (the asset map stays the gate — an uncaptured reference is still
+  left alone and named, SH378), and `ShPreviewLinks` walks inline `<style>` blocks with the same
+  `rewriteAsset` lookup, the same prefix and the same leave-it-alone default. Quoting is preserved
+  as the author wrote it; a `<link rel=stylesheet>` needs nothing, because Shio's own theme is
+  *inlined* by the layout (SH183), which is exactly why there is a `<style>` to walk.
+- **`{{theme.css}}` is raw, and it had to become so before any of that could work (SH461)** —
+  the documented layout is `<style>{{theme.css}}</style>`, the double stash escapes, and CSS decodes
+  no entities, so `url("/fonts/inter.woff2")` reached the browser as `url(&quot;/fonts/…&quot;)`: an
+  invalid `@font-face` whatever it pointed at. Nothing else in a stylesheet carries `"`, `<`, `>` or
+  `&`, so the page looked styled and only the references broke — the failure was invisible in
+  proportion to how ordinary the CSS was. The fix is in `ShRenderModel.themeFrame`
+  (`Handlebars.SafeString`), **not** in the layouts: fixing the generated layout would cure one
+  template and leave every hand-written one broken. `<style>` and `<script>` are raw-text elements,
+  so entity escaping is not that context's encoding; what it bought was a defence against `</style>`
+  in a `Theme` written by whoever also writes the `PageLayout` that emits it through `{{{content}}}`
+  three lines below — no privilege boundary, so nothing to defend.
 - **Both render-model verbs are ops, not just routes (SH186, SH326)** — `render.provision` is
   addressless and idempotent; **`data.reconcile:true`** on it reaches SH289's repair, which had
   stayed HTTP-only, so an MCP client could *diagnose* an old instance (`untitled-template`) and

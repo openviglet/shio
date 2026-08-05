@@ -1520,31 +1520,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.39 Two rewriting rules, and the stylesheet uses the wrong one (SH461)
-
-The replica's fonts still 404, and the served CSS says why twice over:
-
-    src: url(&quot;/Final/model-catalog/fonts/inter-latin.woff2&quot;)
-
-**The value is HTML-escaped.** CSS decodes no entities, so `&quot;` is four literal characters inside the
-URL and the `@font-face` rule is invalid whatever it points at. The rest of the theme is unescaped — the
-page is styled — so this is the rewriter escaping the one value it writes, not `{{theme.css}}`.
-
-**And the path is the tree's, not the server's.** `/Final/model-catalog/fonts/…` is `shio/assets/Final/…`
-with the prefix dropped: the site's *name*, capitalised, and the asset tree's layout. The servable URL is
-`/sites/final/default/en-us/model-catalog/fonts/inter-latin.woff2`, which answers **200**. That URL is
-the one the markup rewriter already produces — the same page's `<img>` resolves to
-`/sites/final/default/en-us/viglet-logo.png` and the logo loads.
-
-So one page carries two rewriting rules for the same job, and the one that works is not
-the one the stylesheet uses. The measurement is the argument: the logo went from broken
-to 200 in this run, and the fonts did not, on a capture that fetched them correctly
-(`assets: 3 uploaded`) and a route that serves them correctly when asked properly.
-
-Both halves are one pass over the same code. A test that fetches what the *rendered*
-page references — SH458's third assertion — fails on exactly this today, and passes when
-the rewriter emits the URL the markup rewriter already knows how to build.
-
 ### XVII.40 The op that cannot name what it must act on (SH462)
 
 `convert` now uploads what it captured — `assets: 3 uploaded, 0 already there - served

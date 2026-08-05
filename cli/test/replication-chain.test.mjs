@@ -231,8 +231,14 @@ test("SH422: capture → propose → accept → convert → verify, each phase r
       "nothing was left pointing at the source's origin, which is what an unshared map produces",
     );
     assert.ok(
-      proposal.theme.css.includes(image.file),
-      `the rewritten CSS names ${image.file} — the tree path phase one chose for those bytes`,
+      proposal.theme.css.includes(`url("${image.path}")`),
+      `SH461: the rewritten CSS names ${image.path} — the SOURCE path, which is what the instance `
+      + `resolves and what the verbatim markup on the same page uses. It named ${image.file} (the `
+      + `asset tree's own layout) until a replica's fonts 404'd on a route that serves them.`,
+    );
+    assert.ok(
+      !proposal.theme.css.includes(image.file),
+      "and not the tree path, which is addressable in shio/assets/ and nowhere else",
     );
     await json(cwd, PROPOSAL_FILE);
 

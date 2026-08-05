@@ -711,7 +711,11 @@ test("SH427: an inline url() resolves against the page, which is SH380's rule in
 
   assert.equal(proposal.theme.urls.rewritten, 1, "resolved against the document and found in the map");
   assert.deepEqual(proposal.theme.urls.unresolved, []);
-  assert.ok(proposal.theme.css.includes("Acme/img/hero.png"));
+  // SH461: found in the map, written as the SOURCE path. The map value (`Acme/img/hero.png`) is a
+  // path in shio/assets/ and a browser cannot ask for it; `/img/hero.png` is what the instance
+  // resolves, and what the markup beside it has named all along.
+  assert.ok(proposal.theme.css.includes('url("/img/hero.png")'));
+  assert.ok(!proposal.theme.css.includes("Acme/img/hero.png"));
 });
 
 test("SH427: a <style type> that is not CSS is skipped rather than parsed as CSS", async () => {

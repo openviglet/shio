@@ -16,6 +16,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -89,6 +91,20 @@ public class ShPreviewLinks {
     private static final List<String> ASSET = List.of("src");
 
     /**
+     * A CSS {@code url()} — quoted either way, or bare (SH461).
+     *
+     * <p>Deliberately the same three alternatives the CLI's own {@code URL_CALL} matches, and for the
+     * same reason its comment gives: an alternative that can match <b>empty</b> between two
+     * {@code \s*} makes {@code url(} with no closing paren quadratic, so the bare branch is {@code +}.
+     * Two copies of one pattern is what SH245 warns about — they are in different languages on
+     * different sides of the wire, and the shared contract is CSS's grammar rather than either
+     * file's.</p>
+     */
+    private static final Pattern CSS_URL =
+            Pattern.compile("url\\(\\s*(?:\"([^\"]*)\"|'([^']*)'|([^)'\"\\s]+))\\s*\\)",
+                    Pattern.CASE_INSENSITIVE);
+
+    /**
      * How many of this site's URLs the editor bridge is handed (SH336's second mechanism).
      *
      * <p>The browser half needs the same index the server pass used, because it cannot otherwise
@@ -153,6 +169,7 @@ public class ShPreviewLinks {
                 }
             }
         }
+        rewriteStylesheets(document, prefix, page, assets);
         // The empty index used to short-circuit the whole method. It cannot any more: a site with no
         // page URLs can still hold assets, and this loop already does nothing when `known` is empty.
         for (String attribute : NAVIGABLE) {
@@ -201,6 +218,78 @@ public class ShPreviewLinks {
         String path = cut < 0 ? value : value.substring(0, cut);
         String tail = cut < 0 ? "" : value.substring(cut);
         return known.contains(ShAddress.normalizePath(path)) ? prefix + path + tail : null;
+    }
+
+    /**
+     * The same rule inside {@code <style>}, on every {@code url()} (SH461).
+     *
+     * <h2>Why a page carried two rewriting rules for one job</h2>
+     *
+     * <p>A fidelity replica's markup is kept verbatim, so its {@code <img src="/img/hero.png">} is the
+     * source's own path and SH437's pass above points it at this site's copy. Its stylesheet was not:
+     * the capture rewrote every {@code url()} to the asset <em>tree</em>'s path, which is addressable
+     * in {@code shio/assets/} and nowhere a browser can ask for. So one page carried two rules for one
+     * job and the working one was not the one the stylesheet used — the logo loaded and the webfonts
+     * 404'd, on a capture that had fetched them correctly and a route that serves them when asked
+     * properly. SH461 deleted the second rule in the CLI (the theme now carries the source's path,
+     * like the markup) and this is the other half: the same lookup, the same prefix, the same
+     * leave-it-alone default, applied where CSS references live.</p>
+     *
+     * <h2>Inline only, and that is the whole surface</h2>
+     *
+     * <p>A {@code <link rel="stylesheet">} is an {@code href} the {@code NAVIGABLE} pass already sees,
+     * and its bytes are served by whoever owns them. Shio's own theme is <em>inlined</em> by the
+     * layout through {@code {{theme.css}}} (SH183), which is exactly why there is a {@code <style>} to
+     * walk — and why walking it is enough.</p>
+     */
+    private void rewriteStylesheets(Document document, String prefix,
+                                    ShPageRenderService.ShRenderedPage page, Map<String, Boolean> seen) {
+        for (Element style : document.select("style")) {
+            String css = style.data();
+            // `(` and not `url(`: the pattern is case-insensitive, and a guard that is not would
+            // skip a stylesheet written with `URL(` — legal CSS, and the kind of asymmetry that
+            // makes one instance's replica render and another's not.
+            if (css.indexOf('(') >= 0) {
+                String rewritten = rewriteCssUrls(css, prefix, page, seen);
+                if (!css.equals(rewritten)) {
+                    // `Element#text` on a <style> writes a DataNode, which Jsoup emits unescaped —
+                    // the one thing this pass must not undo, since an escaped url() is half the
+                    // defect it exists for.
+                    style.text(rewritten);
+                }
+            }
+        }
+    }
+
+    private String rewriteCssUrls(String css, String prefix,
+                                  ShPageRenderService.ShRenderedPage page, Map<String, Boolean> seen) {
+        Matcher urls = CSS_URL.matcher(css);
+        StringBuilder out = new StringBuilder(css.length());
+        while (urls.find()) {
+            String quote = quoteOf(urls);
+            String raw = valueOf(urls).trim();
+            String served = rewriteAsset(raw, prefix, page, seen);
+            urls.appendReplacement(out, Matcher.quoteReplacement(
+                    "url(" + quote + (served == null ? raw : served) + quote + ")"));
+        }
+        return urls.appendTail(out).toString();
+    }
+
+    /** The quoting the author used, kept: a bare `url()` must not gain quotes it never had. */
+    private static String quoteOf(Matcher urls) {
+        if (urls.group(1) != null) {
+            return "\"";
+        }
+        return urls.group(2) != null ? "'" : "";
+    }
+
+    private static String valueOf(Matcher urls) {
+        for (int group = 1; group <= 3; group++) {
+            if (urls.group(group) != null) {
+                return urls.group(group);
+            }
+        }
+        return "";
     }
 
     /**

@@ -585,8 +585,9 @@ export function dtcgFor(rows) {
  * disqualifies it) and with **one** value (two values make it a conflict). So there is no occurrence
  * elsewhere that could carry a different value, and rule boundaries do not have to be reconstructed.
  *
- * <p>The exception is a value holding a `url()`. The kept CSS has been rewritten to the tree path and
- * the token has not, so dropping the declaration would send the replica back to the source's origin
+ * <p>The exception is a value holding a `url()`. The kept CSS has been rewritten to the replica's own
+ * path (SH461) and the token has not, so dropping the declaration would send the replica back to the
+ * source's origin
  * for those bytes. Those stay, and stay **named** in a note: a token that cannot be edited is exactly
  * the claim this task exists to stop making silently.
  */
@@ -654,7 +655,7 @@ function sortKeys(value) {
 const URL_CALL = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)'"\s]+))\s*\)/gi;
 
 /**
- * Rewrites every `url()` in a stylesheet to the tree path SH378 downloaded it to.
+ * Rewrites every `url()` in a stylesheet to **the path the source used**, once SH378 has the bytes.
  *
  * <p>Which is the difference between a portable theme and one that renders by fetching from the site
  * it was copied from — including the case where that site is taken down, and the case where it starts
@@ -663,10 +664,21 @@ const URL_CALL = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)'"\s]+))\s*\)/gi;
  * else's bytes is a licensing decision this tool does not make. Rewriting it to a path with no bytes
  * behind it would turn that into a broken replica instead of a named gap.
  *
+ * <h3>Why the source's path and not the tree path (SH461)</h3>
+ *
+ * <p>This emitted `/<site>/<chain>/<name>` — the asset tree's own layout, site segment and all —
+ * until a replica's fonts 404'd on a route that serves them. That path is addressable in `shio/assets/`
+ * and nowhere else: the theme's CSS is served by the **instance**, and what the instance resolves is
+ * a site-relative path (`ShSiteAssets` walks the folder chain from the site root). The source's own
+ * path is exactly that, which is why the markup — kept verbatim, never rewritten here — has worked
+ * since SH437 while this did not. So one page carried two rules for one job; this is the second one
+ * deleted, not a third one added. The asset map stays the gate (a reference nothing downloaded is
+ * still left alone and named); only what gets written changes.</p>
+ *
  * <p>`data:` is skipped rather than looked up — it is already portable, and a 40 KB base64 sprite in
  * the "unresolved" list would bury the three references somebody has to act on.
  */
-export function rewriteUrls(css, { base, assets = new Map(), prefix = "" } = {}) {
+export function rewriteUrls(css, { base, assets = new Map() } = {}) {
   const unresolved = [];
   let rewritten = 0;
   const out = String(css ?? "").replace(URL_CALL, (match, dq, sq, bare) => {
@@ -679,7 +691,9 @@ export function rewriteUrls(css, { base, assets = new Map(), prefix = "" } = {})
       return match;
     }
     rewritten += 1;
-    return `url("${prefix}${file}")`;
+    // `key` when the map answered on it, `raw` when it answered on the raw value — the same two
+    // lookups the line above makes, so the emitted path is always the one the bytes were found by.
+    return `url("${assets.has(key) ? key : raw}")`;
   });
   return { css: out, rewritten, unresolved: [...new Set(unresolved)].sort() };
 }
@@ -734,7 +748,9 @@ function resolveAgainst(raw, base) {
  * would put every value below the threshold.
  *
  * @param {Array<{path: string, file: string, url: string, css: string}>} styles the downloaded CSS
- * @param {Map<string, string>} assets source path → tree path, from the SH378 download
+ * @param {Map<string, string>} assets source path → tree path, from the SH378 download. It is the
+ *   *gate* rather than the value — SH461 emits the source path, and this map says whether the bytes
+ *   for it were actually captured
  */
 export function buildTheme({ styles = [], assets = new Map(), minRefs = DEFAULT_MIN_REFS } = {}) {
   const declarations = [];
@@ -746,7 +762,7 @@ export function buildTheme({ styles = [], assets = new Map(), minRefs = DEFAULT_
   for (const style of styles) {
     const scan = scanCss(style.css);
     declarations.push(...scan.declarations);
-    const rewrite = rewriteUrls(style.css, { base: style.url, assets, prefix: "/" });
+    const rewrite = rewriteUrls(style.css, { base: style.url, assets });
     rewritten += rewrite.rewritten;
     for (const each of rewrite.unresolved) {
       unresolved.set(each, (unresolved.get(each) ?? 0) + 1);
@@ -788,7 +804,7 @@ export function buildTheme({ styles = [], assets = new Map(), minRefs = DEFAULT_
     notes.push(
       `${lifted.shadowed.length} token(s) are still set by the kept CSS and editing them changes `
         + `nothing (${lifted.shadowed.join(" ")}): their value carries a url(), which the kept CSS has `
-        + "rewritten to a tree path and the token has not — dropping the declaration would send the "
+        + "rewritten to the replica's own path and the token has not — dropping the declaration would send the "
         + "replica back to the source's origin for those bytes",
     );
   }
@@ -900,7 +916,7 @@ export function describeTheme(theme, options = {}) {
   section("not written", theme.unsure, (row) => `${row.name}  ${row.reason}: ${row.detail}`);
   if (theme.urls.rewritten || theme.urls.unresolved.length) {
     lines.push(
-      `  url(): ${theme.urls.rewritten} rewritten to tree paths, ${theme.urls.unresolved.length} left ` +
+      `  url(): ${theme.urls.rewritten} pointed at this replica, ${theme.urls.unresolved.length} left ` +
         `pointing at the source`,
     );
   }
