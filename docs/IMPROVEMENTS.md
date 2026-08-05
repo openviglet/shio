@@ -374,6 +374,31 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
+### IX.19 A refusal that crashes is not a refusal (SH434)
+
+With `playwright` absent, all three commands print the intended teaching error — the install line and
+why the dependency is optional — and then emit
+`Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 94` and exit
+**-1073740791**, which is `0xC0000409`, Windows' code for `abort()`. Measured on all three;
+`shio resolve` on a bad address exits `1` cleanly, so it is these paths rather than the CLI's error
+handler.
+
+`main().catch` calls `exit(1)`, so the intent is right and something live is still armed
+when `process.exit` runs — the shape SH198 recorded for the CLI suite, where a handle
+released only on the happy path left `node --test` printing every result and never
+exiting. Here it is a command rather than a test, and the optional import's failure path
+is the one nobody exercised with the dependency missing.
+
+Two reasons it matters more than a cosmetic exit code. `snapshot --against` is the one
+command whose gate is on by default (SH386), so its exit code is load-bearing: non-zero
+is the safe direction here, but a caller distinguishing "the replica differs" from "no
+browser installed" cannot, and a crash code is not a contract. And a native assertion
+printed under a Shio command reads as a Shio defect — the last thing on the terminal
+after a message written to be actionable, which is the SH391 argument about what an
+instrument owes its reader.
+
+Fix and pin it: refuse before arming anything, and assert the exit code in a test.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -666,6 +691,30 @@ Two candidate answers, not exclusive:
   a trashed folder, so the correct form is also the shortest one. The lint then has something to
   point at, which is what made SH128's guard teachable rather than annoying.
 
+### XII.14 A safety flag that is ignored is worse than one that does not exist (SH430)
+
+`POST /api/v2/agent/batch?dryRun=true` created a site, two folders and three posts. The
+response said `"dryRun": false` and `"changed": 6`. Nothing refused and nothing warned;
+the write was reported as a write, which is the only tell and arrives after the fact.
+
+The endpoint declares `ids`, `verify`, `digest` and `format` as `@RequestParam`.
+`dryRun` is a field on the `ShAgentBatch` body. Spring ignores an unrecognised query
+parameter, so the spelling that looks exactly like the four flags that *are* query
+parameters is the one that silently disarms the rehearsal. This is SH365's "one flag,
+one meaning" defect a surface along: there, one name had two readings; here, one
+endpoint has two conventions and no way to tell which a flag follows.
+
+P7 is the law: draft-default, dry-run, explicit publish. A dry run that quietly commits
+is worse than no dry run, because the caller has been told the opposite of what happened
+and will trust the next one. It is also the flag most likely to be sent by someone who
+has not read the reference — which is who a rehearsal is for.
+
+The fix is a refusal, not a second spelling. An unknown query parameter on a mutating
+agent endpoint should be a teaching 400 naming the body field, per P6; `ShAgentFlag.of`
+already reads the four legitimate ones, so the allowed set is in hand. Accepting
+`?dryRun=` as a synonym would be worse: it makes the convention ambiguous instead of
+merely undiscoverable. Same audit for `/agent/apply`.
+
 ## XIII. Token economy, measured (Block M) — what the measurement opened
 
 > ✅ **Block M shipped in full**, including the six follow-ups the measurement itself opened
@@ -855,6 +904,32 @@ The fix is to extend the task to its real end: apply, provision, bind, publish, 
 consequences to accept — the budget rises (a truthful number is the point, not a small
 one), and the benchmark starts covering the flow SH277 named as the one nothing tested
 end to end, which is how that defect survived four blocks.
+
+### XIII.19 Per-command help is a token cost, not a nicety (SH435)
+
+`shio clone --help` prints the same forty-line global help as `shio --help`. So does
+every other command. The mechanism is one branch: `main` checks `flags.help` and writes
+the shared `HELP` constant before `loader()` runs, so no command is ever consulted about
+its own flags.
+
+The cost lands on the agent, which is what makes it a P3 item rather than a polish one.
+Learning that `clone` takes `--assets`, `--markup`, `--depth`, `--max-pages`,
+`--render`, `--ignore-robots`, `--max-assets` and `--max-asset-bytes` meant grepping
+`cli/src/commands/clone.mjs` for `flags.` — reading source to discover an interface,
+having already paid for a help text that answered nothing. Repeat per command and the
+discovery bill for a pipeline of six is six greps plus six wasted help outputs, against
+a budget the project measures everywhere else.
+
+It is also where flag semantics are decided and currently undocumented. SH365 renamed a
+page target to `--page` and kept `--url` working with a deprecation printed on stderr;
+`clone` is the one command that gives `--url` a private meaning, declared in a test
+rather than anywhere a caller looks. A per-command help is where those belong.
+
+The global help is already long enough that it is the wrong answer to a specific
+question, and the strings exist — every flag has a documented meaning in
+`docs/agents/cli.md`. What is missing is a per-command block the loader can print, which
+also makes the global list shorter: it can name commands and stop describing their
+flags.
 
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 
@@ -1518,3 +1593,254 @@ projection,replication`, and assert the artefacts of each step are the inputs th
 step actually reads. It is a CLI test, because every phase but the render is the CLI's,
 and it needs no browser: `snapshot --against` is the one step that does, and its
 comparison is already unit-tested through an injected capture.
+
+### XVII.17 The captured theme's tokens are dead on arrival (SH424)
+
+Measured on a real replica of `openviglet.github.io`, not argued. `shio propose` wrote
+nine declared tokens into `Theme.TOKENS`; the rendered page carries two `:root` blocks —
+the token-compiled one at char 1794, the source's own at char 2735, still inside the
+`CSS` field SH380 deliberately keeps verbatim. Equal specificity, later wins, so all
+nine are inert. A curator who edits `brand` sees no change.
+
+Both halves are individually right, which is why nothing caught it. SH380 refuses
+substitution for a good reason: search-and-replacing `#ea580c` across a stranger's
+stylesheet breaks a replica in a way no digest catches. `ShThemeTokens` prepends rather
+than appends so a theme's own CSS can override the token block, which is correct when
+one author wrote both. Composed, the capture emits an artefact whose editability claim
+is inverted, and the report states that claim out loud.
+
+The fix is narrower than substitution and is not what SH380 forbids. A declared property
+lifted into `TOKENS` is re-emitted byte-identically by the compiled `:root`, so dropping
+that one declaration from the kept CSS preserves the computed value — unlike rewriting a
+literal into a `var()`, which changes what the cascade computes. Only lifted
+declarations, never the block: the source's `:root` also holds `color-scheme: light`,
+which is no custom property and must stay. A recurring token is untouched, since nothing
+references it yet.
+
+Invisible to `snapshot --against`, `digest` and `audit` — the replica looks perfect. The
+proof is a token edit that moves a render.
+
+### XVII.18 Zero candidates is the answer a marketing page gets today (SH425)
+
+Measured against `openviglet.github.io`: one page, a hero and a two-card grid, and `shio
+propose` reports `0 candidate block(s)`. The same command reports 36 on that site's
+model-catalog app, where 11 have no vocabulary type. The proposal is emptiest exactly
+where it should be richest.
+
+Two mechanisms compound, both traced with `contentRoot`/`blocksOf` on the captured
+markup. First, the descent past single-child generic wrappers walks `main > div.wrap >
+div.cards` and stops *at* `div.cards`, returning its children. But `div.cards` **is**
+the block — a container whose repeated units are the cards, which `repeatedUnits` would
+have classified as `SectionFeatureGrid`. The docstring's rule is that two children mean
+nothing was skipped; the case it misses is a node whose two children are repeated units,
+where the container was the candidate and the descent consumed it.
+
+Second, `INLINE` holds `a`, and the whole-card-is-a-link pattern wraps `<h2>` and `<p>`
+in `<a class="card">`. So even without the first defect both children filter to nothing.
+`INLINE` conflates "inline by HTML default" with "cannot be a block", and an anchor
+containing block content is neither rare nor ambiguous.
+
+Order matters for the fix: test a node for repeated units *before* descending through
+it, and let an element's children decide whether it is inline rather than its tag alone.
+Both are testable with no instance and no browser. The regression test is this page,
+because a candidate list that looks plausible is what let this ship — the failure has no
+symptom other than a number.
+
+### XVII.19 Site chrome and a page header are not the same element (SH426)
+
+`contentRoot` resolves to `<main>`, else `[role=main]`, else `<body>`, and its stated
+reason is sound: a site's header and footer are the same markup on every page, so
+proposing them would propose sixty copies of one nav. That reason describes the *site*
+chrome. It does not describe a page's own `<header>`.
+
+On `openviglet.github.io` the chrome is `div.topbar` and the hero is `header.hero-wrap`
+— an eyebrow, an `<h1>`, a lead paragraph and two CTA links, sitting as a sibling just
+before `<main>`. Narrowing to `<main>` discards it. `<header>` for a page's or a
+section's introductory content is what the HTML spec is for, so this is the idiomatic
+structure rather than an unusual one, and the hero is the single most convertible block
+on any marketing page.
+
+The irony is worth recording because it shows the two decisions were made apart:
+`classify` carries a dedicated positional hero test, tried first and only when the
+caller says the block opened the page, precisely so a hero is not filed as a CTA. On a
+page shaped like this one, `contentRoot` guarantees that test can never fire.
+
+The distinction available is repetition, which the capture already computes: a block
+whose signature recurs on most captured pages is chrome, and one that appears once is
+content. That is the same signature machinery candidates are already grouped by, so it
+costs nothing new. With a single-page capture there is no repetition evidence, which
+argues for including a pre-`<main>` `<header>` and letting the recurrence count speak.
+
+### XVII.20 An inline stylesheet is a stylesheet (SH427)
+
+`openviglet.github.io` declares sixteen custom properties — `--bg`, `--brand`, `--text`,
+the whole palette — inside one `<style>` block, and links **zero** external stylesheets.
+`shio propose` over that capture emitted `theme: null`, `notes: []`, and printed no
+theme section whatsoever.
+
+That is the failure mode SH380 named and guarded one case of. It reports a variant-only
+palette rather than staying quiet, because silence there reads as "this site declares no
+tokens". Inline CSS produces exactly that silence with no guard, and it produces it for
+the *strong* case: a declared custom property is the one SH380 calls genuinely editable,
+since the source's own CSS already says `var()` on it.
+
+Critical CSS in a `<style>` block is not an edge case — it is what a single-page
+marketing site and every performance-tuned landing page does. So the commonest shape of
+the page a replication is most likely to start from is the shape whose theme is
+invisible.
+
+The bytes are already in hand. `clone --markup` stores the page's markup and `propose`
+reads it for candidates, so the `<style>` content needs no request and no new extractor;
+it is another entry in the `styles` list `buildTheme` already takes, with its own path
+label so the report can say where a token came from. Resolving `url()` is the one thing
+that differs: an inline block resolves against the *page*, not against a stylesheet's
+own directory, which is the inverse of SH380's rule and has to be passed rather than
+assumed.
+
+### XVII.21 The DTCG path collision is self-inflicted (SH428)
+
+Run over `openviglet.github.io`'s palette, `dtcgFor` wrote nine of sixteen declared
+tokens and dropped seven with `collision: a group and a token cannot share one path`:
+`bg.alt`, `border.strong`, `brand.2`, `brand.3`, `brand.ink`, `brand.wash`,
+`brand.font`. Detecting the collision is right — DTCG genuinely forbids it, and writing
+anyway would lose a token silently. Creating the collision is the defect.
+
+`pathForCustomProperty` splits on every hyphen, so `--bg` becomes `bg` and `--bg-alt`
+becomes `bg.alt`, and the first now has to be both a token and a group. But the round
+trip is the only hard rule here, and a single-segment path passes it:
+`customPropertyFor("bg-alt")` returns `--bg-alt` exactly, verified for all seven names.
+So when nesting would collide with a path already taken, the whole name as one segment
+writes the token *and* compiles back to the property the source wrote. Nothing is
+guessed and nothing is lost.
+
+`--x` plus `--x-y` is not an unusual naming scheme; it is the most common one in
+hand-written CSS. Here it cost the accent ramp — `--brand-2` and `--brand-3` are the
+hero gradient and the primary button — which is the SH210 hazard SH378 already named: a
+curator replacing "the brand colour" replaces a quarter of it.
+
+Second, smaller, same run: the report's note says "16 declared token(s) are the editable
+half" while its own list shows nine written and seven not. The count is taken before the
+drop, so the note contradicts the artefact it introduces.
+
+### XVII.22 The asset map has no reader in fidelity mode (SH429)
+
+SH378 downloads each referenced image into `shio/assets/<site>/…` and folds a source-URL
+to tree-path map into the inventory. SH145 uploads an asset when a `File` field names
+its path, and is explicit that only referenced assets upload — a file no field names is
+never sent, which removed the question of what an unreferenced one means.
+
+SH379 then makes fidelity mode the default: an unaccepted block stays verbatim markup in
+a `PageLayout`, which is a decision rather than an omission. Verbatim markup has no
+fields. So on the replica built here, `shio/assets/OpenViglet/viglet-logo.png` sat on
+disk with correct bytes, the layout's `<img src="/viglet-logo.png">` resolved to
+nothing, and no rule reported it: `verify --checks projection,replication` passed with
+one unrelated warning, because `source-asset-missing` asks whether the bytes were
+downloaded and they were.
+
+Each rule is right alone and the composition strands the bytes. The gap widens the more
+of a site stays in fidelity mode, which is the state SH379 designed for and the state a
+first replication is almost entirely in.
+
+Two candidate readers, and the choice is the task's real content. Either a captured
+asset becomes a static file so the source's own path keeps resolving — which fits
+SH385's rule that a replica keeps the original's URL space — or the markup's `src` is
+rewritten to the uploaded asset's address, which needs an upload with no field. The
+first is closer to what a fidelity replica means. Whichever, `source-asset-missing`
+should be able to say the bytes exist and nothing serves them.
+
+### XVII.23 Not a page is not the same as could not be read (SH431)
+
+Capturing `openviglet.github.io` reported `could not be read (24)`, every row a `200`
+with `not html (application/json)`: `catalog-v1.json`, `badge.json`,
+`by-vendor/openai.json` and twenty-one more. Those are the site's data surface, linked
+on purpose and served correctly. They are not pages, and the crawl did not fail on them.
+
+`replication-unchecked` reads `inventory.problems.length`, so all twenty-four become "24
+source page(s) could not be read at all, so their content is unchecked". That rule
+exists for the honest case — a 500, a redirect off-origin, a truncated crawl — and its
+point is that an unchecked thing counted as clean is how a coverage report starts lying.
+Here it lies the other way: a complete capture reports two dozen phantom gaps, and every
+count in the report is downgraded to a lower bound on the strength of them.
+
+Which matters because of what the group is for. SH387 says the coverage number is how a
+replication knows it is done, and that a report nobody trusts ends it with a number
+instead of the work. Two dozen unfixable warnings on a first run is how that trust goes.
+
+A JSON or XML response is a distinct outcome from a fetch that failed, and the inventory
+should say so rather than leaving a reader to infer it from a content type inside a
+message. `problems` keeps the failures; a non-HTML `200` is a separate list — reported,
+since a data endpoint may deserve replicating, but never an unread page. A sitemap
+already gets this treatment.
+
+### XVII.24 Counting occurrences and calling them pages (SH432)
+
+A capture of one page reported `navigation (3)` with `on 2 page(s)` against all three
+items. The inventory holds exactly one page. The source repeats its three links in a
+topbar `<nav>` and again in a footer `<nav>`, so what was counted is occurrences and
+what is printed is pages.
+
+Small, and worth fixing for what the field is for rather than the arithmetic. A
+navigation item's reach is the argument for SH382 curating it as content: a link on
+every page is a menu, a link on one page is a link. Doubling it wherever a site repeats
+its nav in the footer — most sites — makes the number say the opposite of what a
+reviewer needs, and nothing prints it beside the page count to be checked against.
+
+Nor can it be read as a lower bound the way a truncated count can. A count above the
+pages captured is not conservative, it is wrong, and here it exceeded it twofold on the
+smallest case there is, which is why it was visible at all. On the twenty-five-page
+crawl the same defect produced `on 2 page(s)` for an item genuinely on two,
+indistinguishable from one item twice on one page.
+
+Either count distinct pages, which is what the label promises, or report both — since
+"this link appears twice per page" is itself a fact about a menu. What the field must
+not do is claim reach it did not measure.
+
+### XVII.25 The home page is the one address nothing spells (SH433)
+
+`verify --checks replication` reported `source-page-missing` for `/` — the capture
+served it and the replica had no page there. The fix text says to give the replica a
+page at that URL or a `Redirect` whose friendly URL is that path. Neither is spellable
+from anything written down.
+
+`folder:OpenViglet` is refused as malformed: a folder address needs a path. `agents.md`
+gives `post:<site>/<friendly-url>`, and an empty friendly URL reads as the same
+malformed case. The answer turns out to be `post:OpenViglet//` — a double slash, which
+`ShAddress.normalizePath` folds to a furl of `/`, after which `/preview/<site>/` serves
+and the finding clears. That works and is undiscoverable; finding it cost several probes
+against a live instance, which is the session P2 exists to remove.
+
+Worth separating from a capability gap, because it is not one. The renderer looks for a
+post whose friendly URL is `/`, a post can hold it, and once one existed everything
+downstream was correct — including `UnknownPageException`'s example `/preview/<site>/`,
+which reads like a broken example until a home page exists and is then the right one.
+
+So this is P6 and P2, not a missing feature: `source-page-missing` knows a root path is
+wanted and should say how to write it, the conventions line should name the form beside
+the other four, and `shio resolve` should accept it without a caller guessing. A
+replication starts at the source's `/` every time, which makes this the first address an
+agent needs and the only one it cannot derive.
+
+### XVII.26 The field the capture writes into may not exist yet (SH436)
+
+On the dev instance, `Theme` declared `TITLE`, `CSS` and `JAVASCRIPT` and no `TOKENS`,
+because the post-type predates SH195 and `ensure` deliberately never touches an existing
+one — SH289's reconcile is additive and also opt-in. `POST
+/api/v2/render/post-types/reconcile?dryRun=true` answered exactly `["Theme: TOKENS"]`,
+and the unqualified call fixed it.
+
+So the mechanism is documented, the repair is one call, and it is right that a widget
+change is a different decision from a missing field. The gap is that nothing on the
+replication path says any of it. `shio clone` and `shio propose` never talk to an
+instance, by design, so the first moment the missing field matters is when a token is
+written — and the writer is whatever applies the plan, which SH417 says does not exist
+yet. Left alone, the first version of that applier meets a post-type with no `TOKENS`
+and either fails somewhere unhelpful or writes the theme without its tokens.
+
+`shio verify` does carry a finding pointing at the reconcile, which is the right home
+for the check; the problem is when it is read. A replication runs capture, convert and
+review before it writes anything, and a project spends real effort on a proposal before
+learning the target cannot hold half of it.
+
+The cheap answer is a precondition where the artefact is produced: the theme half of a
+proposal knows it needs `Theme.TOKENS`, and SH417's apply is the natural place to check
+the target declares it and to name the reconcile call in the refusal.

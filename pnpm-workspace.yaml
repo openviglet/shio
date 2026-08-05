@@ -23,3 +23,17 @@ confirmModulesPurge: false
 
 minimumReleaseAgeExclude:
   - '@viglet/viglet-design-system@2026.3.2'
+
+# CodeMirror 6 must be a singleton per page: an extension built against one copy
+# of @codemirror/state is unrecognised by another, and the editor dies with
+# "Unrecognized extension value in extension set ([object Object])" inside
+# EditorState.create. Nothing declares a conflict — @uiw/react-codemirror
+# resolved state 6.7.1 / view 6.43.6 / language 6.12.4 while @codemirror/lang-html
+# and lang-javascript pulled state 6.6.0 / view 6.43.0 / language 6.12.3, so
+# html() and githubDark produced facets from a foreign class. Three copies of
+# state and two of view; pin one of each. Every consumer's range is >=6.0.0 or
+# ^6.x, so the newest satisfies all of them.
+overrides:
+  '@codemirror/state': '6.7.1'
+  '@codemirror/view': '6.43.6'
+  '@codemirror/language': '6.12.4'

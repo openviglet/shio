@@ -192,6 +192,37 @@ const p = JSON.parse(raw);
 return p && typeof p === "object" ? p : {};
 ```
 
+### The Ace Editor widgets need CodeMirror to be a singleton
+
+`ace-editor.widget.tsx` (the HTML / Javascript / CSS widgets) pairs `@uiw/react-codemirror`
+with extensions built elsewhere — `html()`, `javascript()`, `githubDark`. CodeMirror 6
+matches `Facet`, `StateField` and extension values by **class identity**, so a second copy
+of `@codemirror/state` makes `EditorState.create` reject an extension the types say is
+valid:
+
+```
+Unrecognized extension value in extension set ([object Object]).
+```
+
+The editor then renders nothing on a post edit page. Nothing declares the conflict —
+`@uiw/react-codemirror` resolved state 6.7.1 / view 6.43.6 while `@codemirror/lang-html`
+and `lang-javascript` pulled state 6.6.0 / view 6.43.0 through `language@6.12.3`. Three
+copies of state, two of view, every semver range satisfied, `pnpm install` clean.
+
+Two things made it read as somebody else's bug for longer than it should have. The stack
+named **`vendor-graphiql-*.js`**, because the manual-chunk rule in
+[vite.config.ts](../../shio-react/vite.config.ts) claims every id containing `codemirror`
+— so a widget fault surfaced under GraphiQL's name. And the same rule means any post with
+an Ace widget eagerly loads that ~4.8 MB chunk, since `WIDGET_MAP` imports the widget
+statically; worth splitting if the page's weight is ever the question.
+
+`overrides` in [pnpm-workspace.yaml](../../pnpm-workspace.yaml) pins one version of state,
+view and language — **in the workspace file, not `package.json`**, which pnpm 11 no longer
+reads for that field. `test/codemirror-singleton.test.mjs` guards it by building the
+widget's own extensions and feeding them to the editor's own `EditorState`, so it fails on
+any future re-split rather than on a version number; importing `@codemirror/state`
+directly would resolve the *test's* copy and pass while the console stayed broken.
+
 ## Post Type Editor (`post-type.edit.page.tsx`)
 
 ### Layout

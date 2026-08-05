@@ -23,6 +23,7 @@
 - 💭 **SH209** (deps: SH102 ✅) **`shio snapshot` photographs one page per run** — The useful artifact for a handoff is the set of a site's pages, and the command captures one page per run. → §IX.10
 - 📋 **SH397** (deps: SH295 ✅, SH325 ✅) **A dev instance reports its version as dev, so a stale server reads as a code defect** — The build stamp comes from the jar manifest, which is absent in the one mode where the running instance can lag the working tree, and nothing composes the readiness facts. → §IX.12
 - 📋 **SH423** (deps: SH347 ✅) **The test-context budget is a ceiling nobody sees approaching** — ShContextCacheHeadroomTest fails once 64 is crossed and nothing says a task is spending one, so eleven tasks took the count from 38 to 44 with no moment anybody was asked. → §VIII.20
+- 📋 **SH434** (deps: SH391 ✅) **The three browser commands abort the process instead of exiting 1** — snapshot, snapshot --against and audit print the teaching error and then die on a libuv assertion with 0xC0000409, so a gate reads a crash code where the CLI intended one. → §IX.19
 
 ## Block I — Content as files (local-first authoring)
 
@@ -44,6 +45,7 @@
 - 📋 **SH224** (deps: SH55 ✅, SH200 ✅) **A permanent deletion is the one write nobody records** — purge fires the lifecycle event and writes no audit row, so the irreversible half of the trash is the one nobody can attribute. → §XII.8
 - 📋 **SH225** (deps: SH54 ✅, SH201 ✅) **The ACL check depends on `open-in-view` and does not say so** — requireRead and requireWrite reach the folder-chain walk by self-invocation, so the transaction is whatever the caller happened to have — open-in-view in the app, nothing elsewhere. → §XII.9
 - 💭 **SH226** (deps: SH200 ✅) **A trashed folder is excluded by convention, not by invariant** — The trashed-folder exclusion lives in one repository's finders, and ids also resolve polymorphically through another that knows nothing about it. → §XII.10
+- 📋 **SH430** (deps: —) **dryRun as a query parameter is ignored and the batch writes for real** — verify, digest, ids and format are query parameters on that same endpoint while dryRun is a body field, so Spring drops the unknown one and a rehearsal commits. → §XII.14
 
 ## Block M — Token economy (measured)
 
@@ -55,6 +57,7 @@
 - 💭 **SH232** (deps: SH159 ✅) **`/agent/changes` cannot revalidate the way it is most often called** — In window mode the response's own cursor is the moving edge of the feed, so no two polls agree and every one pays in full. → §XIII.12
 - 📋 **SH394** (deps: SH132 ✅, SH208) **The CLI's discovery surface has no budget, so it reads as free** — tools/list is capped at 2375 tokens and checked every build while shio --help is 14 KB nobody measures, so the two surfaces cannot be compared on the cost that decides between them. → §XIII.13
 - 📋 **SH396** (deps: SH112 ✅, SH395) **The build-a-site benchmark ends at verify, before anything renders** — Its four calls stop at a lint, so the measured job is content that passes checks rather than a page a person can open, and the traps between the two are unmeasured. → §XIII.14
+- 📋 **SH435** (deps: —) **A command's flags cost a source read because --help always prints the global help** — index.mjs answers flags.help before the command module loads, so shio clone --help returns 40 lines about every other command and none about clone's own eight flags. → §XIII.19
 
 ## Block N — Realignment of what already shipped
 
@@ -82,6 +85,16 @@
 
 - 📋 **SH417** (deps: SH379 ✅, SH380 ✅) **An accepted conversion plan is a file nothing applies** — SH379 records a reviewed acceptance and no command turns it into the posts, post-types and theme it describes, so the half a human approved never becomes content. → §XVII.15
 - 📋 **SH422** (deps: SH377 ✅, SH379 ✅, SH387 ✅) **Every replication phase is tested and the chain is not** — Eleven tasks each pinned their own half, and no test drives capture to propose to verify to snapshot, so a break between two phases is the one nothing would catch. → §XVII.16
+- 📋 **SH424** (deps: SH380 ✅) **Every design token the capture writes is shadowed by the stylesheet it keeps** — ShThemeTokens prepends the compiled :root and the kept CSS re-declares the same properties later at equal specificity, so editing a token changes nothing. → §XVII.17
+- 📋 **SH425** (deps: SH379 ✅) **A plain marketing page yields zero conversion candidates** — The block walk descends into the card grid and then discards its children as inline, so the two blocks the vocabulary fits best are the two it cannot see. → §XVII.18
+- 📋 **SH426** (deps: SH379 ✅) **A hero in a page's own header element can never be a candidate** — contentRoot narrows to main to skip site chrome, but a page's introductory header is content, so the block classify has a dedicated hero test for is the one it never sees. → §XVII.19
+- 📋 **SH427** (deps: SH380 ✅) **A stylesheet inside a style tag is never read, and the report says nothing** — The theme phase reads only stylesheets clone --assets wrote as files, so a page whose whole palette is one inline block reports no theme at all and no note explains the silence. → §XVII.20
+- 📋 **SH428** (deps: SH380 ✅) **Declaring --brand and --brand-2 drops the second, and the note still counts it** — Splitting a property name on every hyphen makes a token and a group collide, and a single-segment path round-trips for all seven that were dropped. → §XVII.21
+- 📋 **SH429** (deps: SH378 ✅, SH379 ✅) **A downloaded asset cannot reach a replica that stays in fidelity mode** — Only a File field triggers an upload and verbatim markup has no fields, so every image clone --assets fetched stays on disk and the replica's img tags point at nothing. → §XVII.22
+- 📋 **SH431** (deps: SH377 ✅, SH387 ✅) **A JSON data file is filed as a page the crawl could not read** — A 200 of application/json lands in the inventory's problems, so a site with a data surface reports dozens of unchecked pages and every coverage count reads as a lower bound. → §XVII.23
+- 📋 **SH432** (deps: SH377 ✅) **A navigation item says it is on two pages when the capture holds one** — The count is occurrences and the report calls it pages, so a site repeating its nav in a footer doubles every number a reviewer reads as reach. → §XVII.24
+- 📋 **SH433** (deps: SH387 ✅) **Nothing tells an agent how to spell the address of a site's home page** — A post answering the source's root needs post:<site>// with a double slash, which no document, convention line or teaching error mentions, and it is every replication's first page. → §XVII.25
+- 📋 **SH436** (deps: SH380 ✅) **The captured theme has nowhere to land on an instance older than Theme.TOKENS** — ensure never touches an existing post-type and reconcile is opt-in, so a pre-SH195 instance has no TOKENS field and nothing in the capture path says a repair is needed. → §XVII.26
 
 ## Block F — Market positioning
 
