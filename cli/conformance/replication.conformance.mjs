@@ -46,6 +46,7 @@ import { serveFixture } from "./support/fixture-site.mjs";
 
 let conn;
 let site;
+let fidelitySite;
 let source;
 let cwd;
 let ctx;
@@ -55,6 +56,7 @@ describe("SH448 conformance: replication, from a served source to an installable
   before(async () => {
     conn = await requireInstance();
     site = scratchSite("Repl");
+    fidelitySite = scratchSite("Fid");
     source = await serveFixture();
     cwd = await mkdtemp(join(tmpdir(), "shio-sh448-"));
     console_ = new ConsoleSession(conn);
@@ -75,6 +77,7 @@ describe("SH448 conformance: replication, from a served source to an installable
     await source?.close().catch(() => {});
     if (keepsFixtures()) return;
     await console_?.deleteSite(site).catch(() => {});
+    await console_?.deleteSite(fidelitySite).catch(() => {});
     await rm(cwd, { recursive: true, force: true }).catch(() => {});
   });
 
@@ -198,7 +201,62 @@ describe("SH448 conformance: replication, from a served source to an installable
         + `and npm answered ${install.code}:\n${install.output.trim().slice(-1500)}`,
     );
   });
+
+  test("SH449: accept nothing, and the replica is still a site you can look at", async () => {
+    // Fidelity mode, which the docs described for two blocks and no writer ever produced. It runs
+    // second on purpose: the capture and the plan are already on disk from the test above, so this
+    // is the *same* review, converted into a second site with the acceptances ignored — which is
+    // exactly the comparison a reviewer makes before deciding.
+    //
+    // Nothing here can be asserted without an instance. The claim is that a page nobody restructured
+    // renders, and the only thing that can answer it is the renderer.
+    const unreviewed = await withoutPlan(cwd);
+    try {
+      await convert.run({ site: fidelitySite, createSite: true }, [], { ...ctx, cwd: unreviewed });
+    } finally {
+      await rm(unreviewed, { recursive: true, force: true }).catch(() => {});
+    }
+
+    const res = await fetch(`${conn.baseUrl}/preview/${encodeURIComponent(fidelitySite)}/`, {
+      headers: { Authorization: basicOf(conn) },
+    });
+    const html = await res.text();
+    assert.equal(
+      res.status,
+      200,
+      `SH449: /preview answers for a conversion with no acceptances. Before this, convert wrote the `
+        + `Theme and nothing else — every captured path 404'd and the coverage gate reported `
+        + `source-page-missing for all of them, while the report said "2 in fidelity mode". `
+        + `Body: ${html.slice(0, 400)}`,
+    );
+    assert.match(
+      html,
+      /class="hero"/,
+      "and it is the source's own markup: the class attributes the authorable path reports losing "
+        + "are all still here, which is the entire reason fidelity is a mode",
+    );
+    assert.match(html, /Body copy that reads like a page a person wrote/,
+      "with the source's copy, not a field somebody mapped it into");
+    assert.match(
+      html,
+      /--ink:\s*#102a43/,
+      "SH380/SH424: and the captured theme is inlined by the layout, so a token edit reaches the "
+        + "page — which is what a <head> copied verbatim from the source could never give",
+    );
+  });
 });
+
+/** The same capture with the acceptances set aside, so one review yields both modes. */
+async function withoutPlan(from) {
+  const to = await mkdtemp(join(tmpdir(), "shio-sh449-"));
+  await nodeFs.cp(join(from, "shio"), join(to, "shio"), { recursive: true });
+  await rm(join(to, PLAN_FILE), { force: true });
+  return to;
+}
+
+function basicOf({ user, password }) {
+  return `Basic ${Buffer.from(`${user ?? ""}:${password ?? ""}`, "utf8").toString("base64")}`;
+}
 
 function sink() {
   const out = { text: "" };

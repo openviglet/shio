@@ -305,6 +305,44 @@ could only be ordered by id, an ordering the source never had. A pre-SH438 propo
 `pages`, and converts as it did: it composes nothing rather than throwing, because re-running `shio
 propose` is what produces the order and a crash is a worse way to say so.
 
+**And a block nobody accepted is now *written*, which is what fidelity always meant (SH449).** The
+paragraph above ends with SH438's rule that a page whose blocks were all left verbatim gets no
+`Page`. The reasoning was right about an *empty* page and wrong about which page this is:
+`propose.mjs`' header documents two modes, and fidelity — "writes its markup verbatim… it renders
+identically and nothing about it is authorable" — had no writer at all. `mode: accepted.has(id) ?
+"authorable" : "fidelity"` was the whole of it, a string on a proposal entry that the report counted
+and `verify-replication.mjs` reasoned about. Measured: accept nothing, `convert --create-site`, and
+the document held **the Theme alone** — every captured path 404-ing and the gate reporting
+`source-page-missing` for all of them. An unaccepted block was not kept verbatim, it was dropped.
+
+So a page with no accepted section carries its captured **`<body>` inner HTML** in `Page.content`,
+and one `PageLayout` per site — `<site> (fidelity)`, at `/theme/layout` — is the shell that renders
+it. Four decisions worth keeping:
+
+- **One layout per site, not per page**, and that is forced: the renderer resolves a layout through
+  `site.postTypeLayout`, which is keyed by **post-type**, so every `Page` of a site renders through
+  one template. What differs per page therefore has to live *on* the page, which is what `content`
+  (an `HTML Editor` field the `Page` type already declares) is for.
+- **The `<head>` is rebuilt and the `<body>` is verbatim.** The one thing a replica must change is
+  where its CSS comes from — the source links a stylesheet at the source's origin, the replica
+  inlines the captured `Theme` through `{{theme.css}}`, which is what makes SH424's token edits reach
+  the page. `lang` is carried over only when every captured page agreed on one.
+- **`{{{content}}}`, not one `Region` per block.** SH191's sidecar shape needs each block's own
+  bytes and this pipeline cannot produce them: `buildTree` records no source offsets, so the only
+  route back to markup is re-serializing a tree built from `stripNonMarkup`'s output, which has
+  already dropped the comments and the raw-text bodies. *Verbatim* and *re-serialized* are different
+  claims, and making the second while the docs promise the first is the defect being fixed.
+- **The binding rides the document** (`postTypeLayout`, new on `ShAgentDesiredState`), because a
+  layout nobody bound renders nothing and no `post.upsert` can express that edge — without it
+  `--out` would emit an un-appliable file. It compiles to a **second** `site.upsert` after
+  `createSite`, never folded into it: that op's create branch drops `data.postTypeLayout` silently
+  (SH453), which is exactly the run — a new site — that needs it.
+
+Both keys are written only when there is verbatim markup, so an all-accepted conversion is the same
+bytes it was before (P5). SH417's *"nothing has been accepted"* refusal is gone with the defect it
+described; a capture with no markup is refused one step earlier by `proposalFor`, which knows the
+origin and prints the exact `clone` to re-run.
+
 **`--create-site`, because the fourth refusal named a remedy this surface cannot express (SH439).**
 `shio convert --site Viglet2` against an absent site printed the plan and then refused with *"add a
 `site.upsert` op for it earlier in the same batch"* — the shared write resolver's fix, right on the

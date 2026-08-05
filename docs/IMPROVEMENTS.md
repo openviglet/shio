@@ -1653,32 +1653,6 @@ then the refusal — which makes it honest without reordering. The first is bett
 because the partial state is a directory that then blocks the retry, and the second
 still leaves that.
 
-### XVII.35 The mode that is only a label (SH449)
-
-`propose.mjs`'s own header declares two modes. **Fidelity** "writes its markup verbatim
-as a `Theme` plus a `PageLayout` and its `Region`s (SH191 sidecars): it renders
-identically and nothing about it is authorable." **Authorable** maps blocks onto the
-section vocabulary. "An unaccepted block stays in fidelity mode."
-
-It does not. Measured: capture a page, accept nothing, `convert --create-site` writes
-**the Theme and nothing else** — no PageLayout, no Region, no Page, and the site 404s.
-`propose.mjs:768` shows why the label looks real: `mode: accepted.has(rest.id) ?
-"authorable" : "fidelity"` is the whole of it, a string on a proposal entry. The report
-counts "2 in fidelity mode", `verify-replication.mjs:236` reasons about what a fidelity
-block does with its images, and no writer exists. An unaccepted block is not kept
-verbatim — it is dropped.
-
-The mode that is missing is the one replication needs most. Fidelity loses nothing (the
-authorable path reports "loses: 11 class name(s) — all styling"), needs no npm publish,
-and renders through Shio's own renderer with no front end — which matters now that SH446
-has the other path unable to install.
-
-It works by hand, so this is a writer rather than a design. Taking the captured markup,
-replacing the inline `<style>` with `{{theme.css}}`, writing it as a PageLayout titled
-by the site and binding `postTypeLayout` produced a page that renders at 11787 bytes
-with all 23 original class attributes and the palette intact — three ops over what
-`convert` already writes.
-
 ### XVII.36 What a stylesheet references is not markup (SH452)
 
 The replica renders in a serif fallback because its two webfonts 404. Measured: the page

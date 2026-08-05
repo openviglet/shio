@@ -183,6 +183,16 @@ public class ShAgentDesiredStateService {
             ops.add(op(ShAgentBatchService.SITE_UPSERT, ShAddress.site(site).toString(),
                     null, null, null));
         }
+        // SH449 — the binding, as its own op right after the create. A fidelity replication writes
+        // a PageLayout, and a layout nobody bound renders nothing: `/preview/<site>/` answers 400
+        // naming a post-type instead of serving the page the document just described. It is a
+        // second op and not a field on the one above because `site.upsert`'s create branch drops
+        // `data.postTypeLayout` (SH453) — the fill branch is what writes it, and only a site that
+        // already exists reaches it.
+        if (desired.postTypeLayout() != null && !desired.postTypeLayout().isEmpty()) {
+            ops.add(op(ShAgentBatchService.SITE_UPSERT, ShAddress.site(site).toString(),
+                    null, null, bindingData(desired.postTypeLayout())));
+        }
         ops.addAll(folders);
         ops.addAll(folderMoves);
         ops.addAll(movedFolders);
@@ -417,6 +427,27 @@ public class ShAgentDesiredStateService {
 
     private static <T> List<T> nullSafe(List<T> values) {
         return values == null ? List.of() : values;
+    }
+
+    /**
+     * The binding map as the {@code data} a {@code site.upsert} reads (SH449).
+     *
+     * <p>Entries are copied in the document's own order and a blank title is dropped: the batch
+     * op keeps string values only, so a null here would be silently skipped one layer down and
+     * the caller would learn about it from a render error. Sorting is not applied — a map with
+     * one binding is the common case, and the document's order is the caller's.</p>
+     */
+    private static tools.jackson.databind.JsonNode bindingData(java.util.Map<String, String> bindings) {
+        tools.jackson.databind.node.ObjectNode data = tools.jackson.databind.node.JsonNodeFactory
+                .instance.objectNode();
+        tools.jackson.databind.node.ObjectNode layout = data.putObject("postTypeLayout");
+        for (java.util.Map.Entry<String, String> entry : bindings.entrySet()) {
+            if (entry.getKey() != null && !entry.getKey().isBlank()
+                    && entry.getValue() != null && !entry.getValue().isBlank()) {
+                layout.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return data;
     }
 
     /** A 400: the document does not say which site it describes. */

@@ -214,14 +214,76 @@ test("SH417: --dry-run plans and writes nothing; a bare run applies", async () =
   assert.match(wet.stdout.text, /in DRAFT/);
 });
 
-test("SH417: nothing accepted is a refusal that names the two commands, not an empty write", async () => {
+test("SH449: nothing accepted writes the page verbatim, which is what fidelity mode always meant", async () => {
+  // SH417 refused here, and SH438 wrote no Page for a wholly-unaccepted capture — so the two
+  // documented modes were one mode and a label. Measured before this: convert emitted the Theme
+  // alone, the site 404'd at every captured path, and `verify --checks replication` reported
+  // `source-page-missing` for all of them. Accepting nothing is a decision, not an omission.
   const ctx = ctxWith();
+
+  await convert.run({ site: "Acme", out: "conversion.json" }, [], ctx);
+  const document = JSON.parse(ctx.written[norm("/repo/conversion.json")]);
+
+  const page = document.posts.find((post) => post.type === "Page");
+  assert.equal(page.url, "/", "SH385: the replica keeps the source's URL space");
+  assert.ok(
+    !("sections" in page.data),
+    "nothing was accepted, so there is no section to compose — the markup is the content",
+  );
+  assert.match(page.data.content, /<section class=hero>/,
+    "the source's own markup, and its class attributes with it");
+  assert.ok(
+    !/<body/i.test(page.data.content),
+    "the body's *inner* HTML: the layout owns the document, so a second <body> here would nest one",
+  );
+
+  const layout = document.posts.find((post) => post.type === "PageLayout");
+  assert.match(layout.data.HTML, /\{\{\{content\}\}\}/,
+    "the shell interpolates the page's markup — triple-stash, or the replica renders as escaped text");
+  assert.match(layout.data.HTML, /<style>\{\{theme\.css\}\}<\/style>/,
+    "and inlines the captured theme, which is the one thing a replica must not take from the source");
+  assert.deepEqual(
+    document.postTypeLayout,
+    { Page: "Acme (fidelity)" },
+    "SH328/SH449: the binding rides the document. A layout nobody bound renders nothing, and this "
+      + "is the one edge no post.upsert can express — without it --out would be un-appliable",
+  );
+  assert.match(ctx.stdout.text, /1 of 1 page\(s\) in fidelity mode/);
+});
+
+test("SH449: a capture with no markup is refused by the read, not by the writer", async () => {
+  // What replaced SH417's "nothing has been accepted". That refusal asked the wrong question — an
+  // unaccepted block is now written — and the state it was standing in for is a capture with no
+  // markup, which `proposalFor` already refuses one step earlier and with the better sentence,
+  // because it knows the origin and can print the exact `clone` to re-run. The writer's own
+  // "nothing to write" survives as the residue for a capture that has styles and no pages.
+  const ctx = ctxWith({ site: {} });
 
   await assert.rejects(
     () => convert.run({ site: "Acme" }, [], ctx),
-    /nothing has been accepted[\s\S]*shio propose --accept/,
+    /neither their markup[\s\S]*shio clone https:\/\/x\.test --markup/,
   );
   assert.deepEqual(ctx.calls, []);
+});
+
+test("SH449: an accepted page composes sections and carries no verbatim copy of itself", async () => {
+  // The two modes are per page, and a page that composes must not also ship the markup it replaced:
+  // that would render the block twice and make the acceptance invisible in the output.
+  const probe = ctxWith();
+  const id = await idOf(probe);
+  const ctx = ctxWith({ plan: { accepted: [{ block: id, type: "SectionHero" }] } });
+
+  await convert.run({ site: "Acme", out: "conversion.json" }, [], ctx);
+  const document = JSON.parse(ctx.written[norm("/repo/conversion.json")]);
+
+  const page = document.posts.find((post) => post.type === "Page");
+  assert.deepEqual(page.data.sections, [`${SECTIONS_FOLDER}/${id}`]);
+  assert.ok(!("content" in page.data), "composed, so there is nothing verbatim to keep");
+  assert.ok(
+    !document.posts.some((post) => post.type === "PageLayout"),
+    "and no fidelity layout: it exists to serve verbatim markup, and there is none",
+  );
+  assert.ok(!("postTypeLayout" in document), "so the document is the bytes it was before SH449 (P5)");
 });
 
 test("SH417: no --site is refused before anything is read", async () => {

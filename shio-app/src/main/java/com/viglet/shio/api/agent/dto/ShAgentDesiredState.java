@@ -9,6 +9,7 @@
 package com.viglet.shio.api.agent.dto;
 
 import java.util.List;
+import java.util.Map;
 
 import tools.jackson.databind.JsonNode;
 
@@ -63,29 +64,44 @@ import tools.jackson.databind.JsonNode;
  *                {@code site.upsert} op the batch surface already has, which is what makes a
  *                <em>dry run</em> of a document into a new site resolve — SH329 reads the
  *                sites a run would create off the run's own ops
+ * @param postTypeLayout post-type name → {@code PageLayout} title, the SH328 binding, as a
+ *                second {@code site.upsert} op after {@code createSite} (SH449). A document
+ *                that writes a layout and cannot bind it describes a site that does not
+ *                render, and the binding is the one edge no {@code post.upsert} can express —
+ *                a replication in fidelity mode writes the layout, so it needed this or a
+ *                second, un-`--out`-able call. Deliberately <b>after</b> the create rather
+ *                than folded into it: {@code site.upsert}'s create branch does not apply
+ *                bindings (SH453), and one op that means one thing beats one that means two
  *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
 public record ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
                                   List<Move> moves, boolean prune, String confirm,
-                                  boolean createSite) {
+                                  boolean createSite, Map<String, String> postTypeLayout) {
 
     /** The four-field form: every document that does not prune, and every pre-SH108 caller. */
     public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts, boolean prune) {
-        this(site, folders, posts, null, prune, null, false);
+        this(site, folders, posts, null, prune, null, false, null);
     }
 
     /** The five-field form: pre-SH150 callers, which never moved anything. */
     public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
                                boolean prune, String confirm) {
-        this(site, folders, posts, null, prune, confirm, false);
+        this(site, folders, posts, null, prune, confirm, false, null);
     }
 
     /** The six-field form: pre-SH439 callers, which never created the site they wrote into. */
     public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
                                List<Move> moves, boolean prune, String confirm) {
-        this(site, folders, posts, moves, prune, confirm, false);
+        this(site, folders, posts, moves, prune, confirm, false, null);
+    }
+
+    /** The seven-field form: pre-SH449 callers, which never bound a layout. */
+    public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
+                               List<Move> moves, boolean prune, String confirm,
+                               boolean createSite) {
+        this(site, folders, posts, moves, prune, confirm, createSite, null);
     }
 
     /**

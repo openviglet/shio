@@ -939,6 +939,7 @@
 - **SH441** — source-chrome-stranded is its own rule: a favicon or manifest no field can hold gets the site-level answer, and the fix names what will not work.
 - **SH442** — resolveUrl tests the site URL for absoluteness, not truthiness, so a slug site is photographed through the preview; report.mjs had the same predicate and the fixtures now carry all three states.
 - **SH443** — the header carries a magnitude only where a comparator produced one, so the byte-only path reads differing (unmeasured) instead of a percentage nothing computed.
+- **SH449** — A page whose blocks nobody accepted is written verbatim: its captured body inner HTML lands in Page.content, one PageLayout per site inlines the captured theme through {{theme.css}} and interpolates it with {{{content}}}, and the binding rides the desired-state document as a new postTypeLayout key compiled to a second site.upsert after createSite. Fidelity was a string on a proposal entry with no writer - accept nothing and convert emitted the Theme alone - so the mode the docs describe and the report counts now produces a site /preview answers 200 for, with the source's own class attributes intact.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

@@ -82,29 +82,35 @@ export async function run(flags, positionals, ctx) {
 
   // The plan file and the proposal computed from the capture NOW: the pair is the whole point, since
   // an acceptance is only checkable against the candidates the current markup produces.
-  const { proposal, plan } = await proposalFor(flags, ctx, "convert");
-  const { document, stale, sections, pages, extras } = buildConversion({
+  const { proposal, plan, markup } = await proposalFor(flags, ctx, "convert");
+  const { document, stale, sections, pages, verbatim, extras } = buildConversion({
     proposal,
     plan,
     site,
     createSite: Boolean(flags.createSite),
+    // SH449 — the markup cache the proposal was computed from. A page whose blocks nobody accepted
+    // is written verbatim, and this is where the bytes come from; without it the fidelity half of
+    // the two documented modes has no source and the command falls back to SH438's behaviour.
+    markup,
   });
   if (stale.length) {
     throw new Error(staleMessage(stale, typeof flags.out === "string" ? flags.out : null));
   }
   if (!document.posts.length) {
+    // SH449 narrowed this. It used to fire on "nothing accepted", which was the wrong question:
+    // an unaccepted block stays verbatim and is written, so the empty document now means the
+    // capture itself is empty — no page has markup on disk and no theme was found.
     throw new Error(
-      "shio convert: nothing has been accepted, so there is nothing to write.\n"
-        + `The proposal holds ${proposal.candidates.length} candidate(s); accepting one is what says a\n`
-        + "block becomes content rather than staying verbatim markup:\n"
-        + "  shio propose\n"
-        + "  shio propose --accept <id>",
+      "shio convert: this capture holds nothing to write.\n"
+        + `The proposal holds ${proposal.candidates.length} candidate(s) and no page with markup on\n`
+        + "disk, so there is neither a section to compose nor a page to keep verbatim.\n"
+        + "  shio clone <url> --markup --assets",
     );
   }
 
   if (typeof flags.out === "string" && flags.out) {
     await write(join(ctx.cwd, flags.out), `${JSON.stringify(document, null, 2)}\n`, ctx);
-    ctx.stdout.write(describeConversion({ document, sections, pages, extras, requires: proposal.requires },
+    ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, extras, requires: proposal.requires },
       flags));
     ctx.stdout.write(`  document: ${flags.out} (nothing was applied)\n`);
     return { document, applied: false, exitCode: 0 };
@@ -118,7 +124,7 @@ export async function run(flags, positionals, ctx) {
     await requirePostTypeFields(proposal.requires ?? [], { baseUrl, user, password }, ctx);
   }
 
-  ctx.stdout.write(describeConversion({ document, sections, pages, extras, requires: proposal.requires },
+  ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, extras, requires: proposal.requires },
     flags));
   // SH439 — the write resolver's "add a `site.upsert` op" is un-followable here, because `convert`
   // composes its own document and takes no ops. The flag above is the remedy; this makes the

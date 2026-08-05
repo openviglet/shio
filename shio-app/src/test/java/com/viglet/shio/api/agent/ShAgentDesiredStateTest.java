@@ -65,6 +65,8 @@ class ShAgentDesiredStateTest {
     private PlatformTransactionManager transactionManager;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private com.viglet.shio.persistence.repository.site.ShSiteRepository shSiteRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -531,5 +533,59 @@ class ShAgentDesiredStateTest {
         // Re-running is the property the whole document shape exists for, and `createSite` must not
         // cost it: a second run's `site.upsert` is a noop, not a second site and not an error.
         assertThat(plan(intoNewSite(fresh, true)).changed()).isZero();
+    }
+
+    // --- postTypeLayout (SH449) ---
+
+    private ShAgentDesiredState withBinding(String site, boolean createSite,
+                                            java.util.Map<String, String> bindings) {
+        return new ShAgentDesiredState(site, List.of(new ShAgentDesiredState.Folder("/pages")),
+                List.of(new ShAgentDesiredState.Post("/pages/home", postTypeName, "/pages",
+                        data("Home"), null)),
+                null, false, null, createSite, bindings);
+    }
+
+    /**
+     * SH449 — the binding is a <em>second</em> {@code site.upsert}, immediately after the create.
+     *
+     * <p>Both halves matter. A document that writes a {@code PageLayout} and cannot bind it
+     * describes a site that does not render — {@code /preview} answers 400 naming a post-type — and
+     * that binding is the one edge {@code post.upsert} cannot express, so a replication in fidelity
+     * mode either got this or needed a second call {@code --out} could not carry.</p>
+     *
+     * <p>And it is a second op rather than {@code data} on the first because {@code site.upsert}'s
+     * <b>create</b> branch reads {@code description}/{@code url}/{@code furl} and drops
+     * {@code postTypeLayout} silently (SH453). Folding them would make this compile to a binding
+     * that is never applied on exactly the run that needs it — a new site.</p>
+     */
+    @Test
+    void aBindingCompilesToItsOwnSiteUpsertAfterTheCreate() {
+        String site = "bound-site-" + UUID.randomUUID();
+
+        assertThat(shAgentDesiredStateService
+                .compile(withBinding(site, true, java.util.Map.of("Page", "ACME_FIDELITY")))
+                .stream().map(ShAgentBatch.Op::op).toList())
+                .containsExactly(ShAgentBatchService.SITE_UPSERT, ShAgentBatchService.SITE_UPSERT,
+                        ShAgentBatchService.FOLDER_UPSERT, ShAgentBatchService.POST_UPSERT);
+
+        // Absent and empty are the same document as before this task: no op, no bytes (P5).
+        assertThat(shAgentDesiredStateService.compile(withBinding(siteName, false, null)))
+                .noneMatch(op -> ShAgentBatchService.SITE_UPSERT.equals(op.op()));
+        assertThat(shAgentDesiredStateService.compile(withBinding(siteName, false, java.util.Map.of())))
+                .noneMatch(op -> ShAgentBatchService.SITE_UPSERT.equals(op.op()));
+    }
+
+    /** And it reaches the site, which is the only claim a caller can act on. */
+    @Test
+    void aBindingIsOnTheSiteAfterTheApply() {
+        String site = "bound-apply-" + UUID.randomUUID();
+
+        apply(withBinding(site, true, java.util.Map.of("Page", "ACME_FIDELITY")));
+
+        assertThat(shSiteRepository.findByName(site).getPostTypeLayout())
+                .contains("\"Page\"").contains("\"ACME_FIDELITY\"");
+        // Re-runnable, like everything else in the document: the fill never replaces what is there.
+        assertThat(plan(withBinding(site, true, java.util.Map.of("Page", "ACME_FIDELITY"))).changed())
+                .isZero();
     }
 }
