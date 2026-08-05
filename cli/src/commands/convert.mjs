@@ -221,7 +221,15 @@ async function sendAssets({ site, inventory, flags, admin }, ctx) {
       // The folder, through the one write path there is (P10) — `apply` is idempotent, so a
       // second run creates nothing and a first run creates the chain the source implied.
       await client.apply({ site, folders: [{ path: at.folder }], posts: [] });
-      const resolved = await client.resolve(`folder:${site}${at.folder === "/" ? "" : at.folder}`);
+      // SH456 — `folder:<site>/<chain>`, and the root folder is `folder:<site>/`. This used to
+      // strip the slash for the root case (`at.folder === "/" ? "" : at.folder`), which is the one
+      // form that needs it: `folder:Publico` has no path at all, and `ShAddress.parse` refuses it
+      // with exactly the shape it wanted. So the branch written *for* the root case was the only
+      // one that produced an address the resolver rejects, and every other folder worked. It fires
+      // on the main path — a single-page capture converts into the site's root folder, so every
+      // fidelity conversion of a home page hit it — and it fired *after* the writes, so `convert`
+      // printed its whole report and then exited 1 on work that had succeeded.
+      const resolved = await client.resolve(`folder:${site}${at.folder}`);
       folderId = resolved?.id;
       if (!folderId) {
         summary.missing += 1;

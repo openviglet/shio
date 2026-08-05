@@ -154,7 +154,20 @@ function ctxWith({ plan = null, site = { "/": PAGE }, assets = {}, staticFiles =
       calls.push({ url: at, method: init.method ?? "GET", body: init.body });
       if (fetchImpl) return fetchImpl(at, init);
       // SH437's three reads, in the order `sendAssets` makes them.
-      if (at.includes("/agent/resolve")) return json({ id: "folder-1", kind: "folder" });
+      //
+      // SH456 — and the resolve refuses a malformed address, the way the instance does. A stub that
+      // answers `{ id }` to anything cannot disagree with its caller, so `folder:Acme` (the root
+      // form with its slash stripped) read as a resolved folder here and threw `Malformed address`
+      // against a server. That is the SH448 shape inside a unit test: the harness decided the
+      // answer, so the one boundary it existed to stand in for was the one it could not model.
+      // `ShAddress.parse` is the rule — a `folder:` target with no `/` after the site is a 400.
+      if (at.includes("/agent/resolve")) {
+        const address = decodeURIComponent(new URL(at, "http://x").searchParams.get("address") ?? "");
+        if (/^folder:[^/]*$/.test(address)) {
+          return json({ error: "Malformed address", detail: `Malformed address '${address}'` }, 400);
+        }
+        return json({ id: "folder-1", kind: "folder" });
+      }
       if (at.includes("/api/v2/staticfile?")) return json(staticFiles);
       if (at.includes("/api/v2/staticfile/upload")) return json({ id: "file-1" });
       return json({ changed: 3 });
@@ -324,6 +337,32 @@ test("SH437: a second conversion uploads nothing, and a missing byte is counted 
   const gone = ctxWith({ assets: { "/img/hero.png": null } });
   assert.deepEqual((await convert.run({ site: "Acme" }, [], gone)).assets,
     { uploaded: 0, present: 0, missing: 1 });
+});
+
+test("SH456: an asset at the root of the URL space gets an address the resolver accepts", async () => {
+  // `/favicon.ico` has no folder segment, so its folder is `/` — and the branch written for that
+  // case was the only one that produced an address the resolver rejects. Measured:
+  // `shio convert --site Publico --create-site` printed `0 section(s) in 1 page(s) + Theme +
+  // PageLayout`, `changed: 7 object(s) — in DRAFT`, and then failed with `Malformed address
+  // 'folder:Publico'` and exited **1**. The three posts were on the instance: the work succeeded
+  // and the command said it did not.
+  //
+  // It is the main path, not an edge: a single-page capture converts into the site's root folder,
+  // so every fidelity conversion of a home page hit it. And the exit code is the damage — `convert`
+  // is idempotent, so a caller who trusts the 1 re-runs it and sees the same 1 forever.
+  const withIcon = { "/": PAGE.replace("<main>", '<main><link rel="icon" href="/favicon.ico">') };
+  const ctx = ctxWith({ site: withIcon, assets: { "/favicon.ico": "ICO" } });
+
+  const { assets } = await convert.run({ site: "Acme" }, [], ctx);
+
+  assert.deepEqual(assets, { uploaded: 1, present: 0, missing: 0 });
+  const resolve = ctx.calls.find((call) => call.url.includes("/agent/resolve"));
+  assert.match(
+    decodeURIComponent(resolve.url),
+    /address=folder:Acme\/(&|$)/,
+    "`folder:<site>/` — the root form, which is the one the grammar spells and the one the refusal "
+      + "itself printed. Stripping the slash leaves `folder:Acme`, a target with no path at all",
+  );
 });
 
 test("SH449: an accepted page composes sections and carries no verbatim copy of itself", async () => {

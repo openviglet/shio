@@ -1547,31 +1547,3 @@ failure a replica has.
 Two gaps in the middle are not about replication at all: they are ordinary site features
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
-
-### XVII.38 The one branch that builds an address the resolver refuses (SH456)
-
-`shio convert --site Publico --create-site` printed its whole report — `0 section(s) in
-1 page(s) + Theme + PageLayout`, `1 of 1 page(s) in fidelity mode`, `changed: 7
-object(s) - in DRAFT` — and then failed with `Malformed address 'folder:Publico'` and
-**exited 1**. The three posts are on the instance: the work succeeded and the command
-says it did not.
-
-`commands/convert.mjs:224` builds the address:
-
-    client.resolve(`folder:${site}${at.folder === "/" ? "" : at.folder}`)
-
-The ternary strips the slash for the root folder, and the slash is exactly what the root
-form needs — `folder:Publico/`, the shape the refusal itself spells out. So the branch
-written for the root case is the only one that produces an address the resolver rejects,
-and every other folder works.
-
-It fires on the main path. A single-page capture converts into the site's root folder,
-so **every** fidelity conversion of a home page hits it — which is the flow SH449 was
-built for.
-
-The exit code is the damage. `convert` is idempotent and re-runnable, so a caller who
-trusts the 1 runs it again and sees the same 1 forever; a caller who trusts the report
-ignores an exit code that is sometimes real. It is SH447's shape one command along —
-work done, refusal reported — except that here nothing is left half-written, only
-half-said. A test that asserts the exit code of a successful conversion is what closes
-it, which is the assertion SH448's replication scenario already has a place for.

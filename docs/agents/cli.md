@@ -392,6 +392,22 @@ about what it cannot do (an asset the capture never downloaded is counted, not r
 already reports it as `source-asset-missing` with the `clone` that fixes it, and failing a whole
 conversion over an image would be worse). `--assets-dir` moves where it reads from.
 
+**And the branch written for the root folder was the only one that malformed its address (SH456).**
+The upload resolved `folder:${site}${at.folder === "/" ? "" : at.folder}` — the ternary strips the
+slash for the root folder, and the slash is exactly what the root form needs. `folder:Publico` has no
+path at all, which `ShAddress.parse` refuses, printing the shape it wanted; `folder:Publico/` is the
+root. So every *other* folder worked and the one case the branch existed for did not. **It is the main
+path, not an edge**: a single-page capture converts into the site's root folder, and any site with a
+`<link rel="icon">` has an asset there, so every fidelity conversion of a home page hit it. **The exit
+code is the damage** — `convert` printed `changed: 7 object(s) - in DRAFT`, left three posts on the
+instance, and exited **1**. SH447's shape one command along: work done, refusal reported, except that
+here nothing is half-written, only half-said, and `convert` is idempotent so a caller who trusts the 1
+re-runs it and sees the same 1 forever. The guard is in the harness rather than beside the fix: the
+`convert.test.mjs` stub for `/agent/resolve` answered `{ id }` to *anything*, so it could not disagree
+with its caller — it now returns 400 for a `folder:` target with no `/`, the way the instance does,
+which makes the whole file a guard against the class rather than the instance. SH458's conformance
+run asserts the process's exit code, which is the observable a module call cannot have.
+
 **One thing this needed from the backend, and it was a P1 gap the SH339 inventory had mis-classified**:
 `POST /api/v2/staticfile/upload` was reachable only with a session cookie, so *no* stateless caller
 could put bytes into an instance — `shio push --content` included, since SH145, with every test of it

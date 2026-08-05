@@ -83,8 +83,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH456** (deps: SH449 ✅) **convert writes everything, then exits 1 on a root folder address it malformed itself** — The ternary at convert.mjs:224 strips the slash for the root folder, which is the one form that needs it, so every fidelity conversion of a home page reports failure after succeeding. → §XVII.38
-
 ## Block F — Market positioning
 
 - 💭 **SH44** (deps: SH22 ✅) **Superadmin impersonation** — let a privileged operator act as / switch into any tenant from the console (audited). → §VI.1

@@ -50,7 +50,6 @@ ref_scheme = "outline"
 # wrong. Then the two the replica shows on screen — SH457 serves HTML where an asset belongs,
 # SH455 never fetches the fonts — and last SH454, which is the suite's own hygiene.
 priority = [
-  "SH456",
   "SH453",
   "SH457",
   "SH454",
