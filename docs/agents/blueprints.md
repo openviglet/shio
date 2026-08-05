@@ -138,3 +138,32 @@ the flag exists and travels to the request, and without it an absent site is a t
 before the write. A resolve that fails for any reason *other* than 404 is deliberately swallowed —
 this is a courtesy check ahead of a call that will judge authoritatively, and turning a network blip
 into a broken scaffold would be a worse trade than the one it fixes.
+
+**A scaffold may only declare a version the registry can serve, and that is now a table (SH446).**
+The replication chain ran green to its last step and the last step did not install: `shio init`
+scaffolds the Next.js app that serves a converted site, prints `npm install` as the next command,
+and that command failed — `ETARGET — No matching version found for @viglet/shio-client@^2026.3.1`,
+on both scaffolds. The range came from **the workspace**, which is at `2026.3.1` and unpublished
+while the registry has `2026.2.1`, so *every version bump re-broke every scaffold* and nothing said
+so, because nothing in the repository installs from the registry. Worth stating as the end of the
+chain rather than a packaging chore: `clone`, `propose`, `convert` and `verify` all reported
+success, the gate said `ok — 0 error(s)`, and the replica was viewable by nobody. **P9 failing at
+the last hop** — every cheap textual proof passes and the perception loop never closes.
+
+`create-shio-app/src/published.mjs` is the one table, and `resolveNeeds`' comment used to assert the
+exact opposite of what it did ("read from the workspace … so a release cannot leave the generated
+packages pointing at a version nobody published" — reading it from the workspace is what
+*guarantees* that). The ranges are **caret on the latest published version**, so `^2026.2.1`
+resolves today *and* resolves to `2026.3.1` the day it ships: the release does not have to edit the
+scaffold. `scaffold-versions.test.mjs` holds the tree against the table and pins the mechanism —
+it asserts the template's range is **not** the workspace's — and the SH448 conformance suite hands
+the result to **npm**, which is the only thing that can say whether a range is real. That last
+assertion was red from the day the suite shipped and is green now.
+
+**One row is `null` and that is a release, not a range.** `@viglet/shio-model` and
+`@viglet/shio-sections` have never been published (E404), and `marketing-site`/`landing` carry a
+front end that *imports* the vocabulary — so no version choice makes them installable. Recorded as
+a row rather than left absent, because a guess would look like a fix; `emit` prints the gap every
+time it runs, at the moment the file is written rather than leaving it for a stranger's
+`npm install`. **`shio init` with no `--blueprint` is unaffected** — it carries only published
+packages, which is why the default path installs today.

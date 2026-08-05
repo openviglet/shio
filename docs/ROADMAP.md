@@ -82,8 +82,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH446** (deps: SH438 ✅) **The front end that serves a converted site cannot be installed** — init writes @viglet/shio-client@^2026.3.1 which npm does not have and depends on shio-sections which was never published, so npm install fails ETARGET on both scaffolds. → §XVII.33
-
 ## Block F — Market positioning
 
 - 💭 **SH44** (deps: SH22 ✅) **Superadmin impersonation** — let a privileged operator act as / switch into any tenant from the console (audited). → §VI.1

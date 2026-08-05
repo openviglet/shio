@@ -1523,29 +1523,3 @@ failure a replica has.
 Two gaps in the middle are not about replication at all: they are ordinary site features
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
-
-### XVII.33 The chain is green and the replica is unviewable (SH446)
-
-The replication chain now runs green to its last step and the last step does not
-install. `shio init` scaffolds the Next.js app that serves a converted site, prints `npm
-install` as the next command, and that command fails: `ETARGET — No matching version
-found for @viglet/shio-client@^2026.3.1`. Measured on both scaffolds, the built-in
-template and the `marketing-site` starter.
-
-Two causes, and `npm view` states them. `@viglet/shio-client` is published only up to
-**2026.2.1**, so the `^2026.3.1` the scaffold writes matches nothing; the version comes
-from the workspace, which is at 2026.3.1 unpublished. `@viglet/shio-sections` returns
-**E404** — it has never been published at all, and it is the package a *converted* site
-needs, because `convert` writes sections and the blueprint's `lib/sections.ts` renders
-them. A control (`npm view next`) resolves, so this is not the registry.
-
-It is worth stating as the end of the chain rather than a packaging chore. `clone`,
-`propose`, `convert` and `verify` all now report success — the gate says `ok — 0
-error(s)` — and the replica is not viewable by anybody, because the one artifact that
-would serve it cannot be installed outside this monorepo. That is P9 failing at the last
-hop: every cheap textual proof passes and the perception loop never closes.
-
-So the fix is a release, not a code change: publish `shio-sections`, publish
-`shio-client@2026.3.1`, or have `init` write the versions that exist. A CI check that
-installs what `init` writes is the instrument, since no test in the repo installs from
-the registry.

@@ -27,6 +27,7 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { rangeFor, unpublished } from "./published.mjs";
 import { readTemplateFiles } from "./scaffold.mjs";
 
 /** Where the blueprint packages live, relative to this file. */
@@ -158,14 +159,33 @@ export function compose(base, overlay, dependencies = {}) {
 }
 
 /**
- * The dependency ranges an overlay's `needs` resolve to — read from the workspace rather
- * than written down here, so a release that bumps `@viglet/shio-sections` cannot leave the
- * generated packages pointing at a version nobody published.
+ * The dependency ranges an overlay's `needs` resolve to.
+ *
+ * <h3>The comment that used to be here was exactly backwards (SH446)</h3>
+ *
+ * <p>It read: "read from the workspace rather than written down here, so a release that bumps
+ * `@viglet/shio-sections` cannot leave the generated packages pointing at a version nobody
+ * published." Reading it from the workspace is what <em>guarantees</em> pointing at a version nobody
+ * published — the workspace is the version being <em>built</em>, and it is installable only in the
+ * instant after a release. Measured on `@viglet/shio-client`, whose template range was derived the
+ * same way: `^2026.3.1` against a registry that had `2026.2.1`, so `npm install` in a fresh scaffold
+ * failed `ETARGET` and nothing in the repository noticed, because nothing installs from the
+ * registry.</p>
+ *
+ * <p>So the published range wins when there is one ({@link rangeFor}), and the workspace's is the
+ * fallback for a package that has never been published at all — where no range is correct and
+ * writing *something* at least leaves a project that is right the day the release runs.
+ * {@link unpublishedNeeds} is what reports that state, and `emit` prints it.</p>
  */
 export async function resolveNeeds(needs) {
   if (!needs || needs.length === 0) return {};
   const { version } = JSON.parse(await readFile(SECTIONS_MANIFEST, "utf8"));
-  return Object.fromEntries(needs.map((name) => [name, `^${version}`]));
+  return Object.fromEntries(needs.map((name) => [name, rangeFor(name) ?? `^${version}`]));
+}
+
+/** The `needs` across every package that name something the registry does not have (SH446). */
+export function unpublishedNeeds() {
+  return unpublished([...new Set(PACKAGES.flatMap((pkg) => pkg.needs ?? []))]);
 }
 
 /** The whole tree one entry of {@link PACKAGES} should carry. */
@@ -221,7 +241,20 @@ export async function emit({ log = console.log } = {}) {
     emitted[pkg.name] = files.map((file) => file.path);
   }
 
-  return { files: emitted["nextjs-starter"], packages: emitted };
+  // SH446 — said at the moment the file is written, because the alternative is a stranger's
+  // `npm install` saying it, and by then the scaffold is on their disk and this repository is not.
+  const missing = unpublishedNeeds();
+  if (missing.length) {
+    log(
+      `\n! ${missing.join(" ")} ${missing.length === 1 ? "is" : "are"} NOT on the registry, so the `
+        + `starter${missing.length === 1 ? "" : "s"} carrying the section overlay cannot `
+        + `npm install outside this monorepo.\n`
+        + `  No range fixes it — publish them, then record the range in src/published.mjs.\n`
+        + `  \`shio init\` (no --blueprint) is unaffected: it carries only published packages.\n`,
+    );
+  }
+
+  return { files: emitted["nextjs-starter"], packages: emitted, unpublished: missing };
 }
 
 // `pathToFileURL`, not a hand-built `file://` string: on Windows `process.argv[1]` is
