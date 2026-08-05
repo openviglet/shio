@@ -36,7 +36,6 @@
 - 📋 **SH220** (deps: SH155 ✅) **A re-apply defaults to the parameters the site was built with** — The record of a site's blueprint parameters exists and no re-apply reads it, so a value the operator misremembers rebuilds the site differently and reports ordinary work. → §XI.14
 - 💭 **SH221** (deps: SH153 ✅) **The rest of the write surface should be plannable read-only too** — The plan and dryRun paths are write-free and nothing enforces it, so the next feature needing to resolve what it would create can reintroduce a write. → §XI.15
 - 📋 **SH395** (deps: SH156 ✅, SH183 ✅, SH280 ✅) **A blueprint stops one step before a site anybody can look at** — No first-party package ships a theme, a layout or a binding, so applying one yields content whose design is the labelled fallback and an agent finishes the job by hand. → §XI.16
-- 📋 **SH447** (deps: —) **init refuses on a content parameter after it has already written the whole scaffold** — The files land before the params are validated, so a refusal leaves 15 files and the retry then fails on a directory the caller was never told existed. → §XVII.34
 
 ## Block L — Agent safety & human-in-the-loop
 

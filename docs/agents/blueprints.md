@@ -102,3 +102,39 @@ substring, or `app/[...slug]/page.tsx` would be rejected as traversal. Each decl
 after an apply against the instance (alongside the SH99 lint); `shio apply --blueprint` exits
 non-zero when that fails.
 
+
+**`shio init --blueprint` checks its preconditions before it writes anything (SH447).** It did not,
+and the two halves of that compounded. `init` had **neither `--param` nor `--params`** — it sent
+`{projectName}` and nothing else — so a package declaring a required parameter could not be
+scaffolded through it *by any invocation*: the server refused on `brand`, and the run exited
+non-zero **having already written the whole Next.js app**. Measured: 15 files,
+`app/[...slug]/page.tsx`, a correct `.env.local` — reported by one line that mentions none of them.
+The next command is where it bites: `shio init <same-dir> --yes` then refuses with *"Target
+directory is not empty"*, which is true and unexplainable from anything the caller was told, and the
+recovery is to delete a directory whose contents the tool never admitted writing. **The order was
+the defect** — `params` are validated against the schema before a byte is written on every other
+path, and here the scaffold ran first and the content application validated second.
+
+So: the same `--param`/`--params` flags `apply` has, through **one parser** (`blueprint-params.mjs`
+— SH245, since the second copy of a verb is the one that stops matching), plus a
+`missingParams` check that runs **before** `writeProjectFiles`. It restates the server's rule
+exactly — in `required`, no `default`, no value — because anything looser would refuse a run the
+server would have accepted, which is a worse failure than the one being fixed. Only when a `--site`
+is given, since that is precisely when the content half runs and therefore the only case that was
+ever refused: the refusal moves earlier, it does not widen. Everything else stays the server's —
+an unknown name and a wrong type get `ShBlueprintParams`' teaching 400 with the declared list and
+the nearest match, and a second copy of those rules here would be two validators that eventually
+disagree about one schema.
+
+**Validated rather than merely reported, and the choice is not cosmetic.** Printing `✓ Created …
+(15 files)` before the refusal makes the run honest and *still* leaves the directory that blocks
+the retry. Only checking first makes the refusal true.
+
+**And running the fix against a live instance found the same defect with a second trigger.** With
+`brand` supplied, a `--site` naming a site that does not exist refused *after* the fifteen files,
+exactly as the parameter had — and the remedy the server's own message names (`createSite: true`)
+was one `init` could not express, because `--create-site` was on `apply` and not here. Both closed:
+the flag exists and travels to the request, and without it an absent site is a teaching refusal
+before the write. A resolve that fails for any reason *other* than 404 is deliberately swallowed —
+this is a courtesy check ahead of a call that will judge authoritatively, and turning a network blip
+into a broken scaffold would be a worse trade than the one it fixes.

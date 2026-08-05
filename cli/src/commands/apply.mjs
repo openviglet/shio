@@ -24,9 +24,11 @@
  * caller that can write a package's front-end files — those belong in the project, and the
  * server has no business writing into a working tree it cannot see.
  */
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 
 import { ShioAgentClient } from "../agent-client.mjs";
+// SH447 — one parser for `--param`/`--params`, shared with `init`, which had neither.
+import { coerceParams, readParams } from "../blueprint-params.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { writeProjectFiles } from "../project-files.mjs";
 import { retellUnknownSite } from "../unknown-site.mjs";
@@ -223,7 +225,7 @@ async function applyBlueprint(flags, positionals, ctx) {
   const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
 
   const detail = await client.blueprint(name, { files: true });
-  const params = coerceParams(await readParams(flags, ctx), detail?.manifest?.params);
+  const params = coerceParams(await readParams(flags, ctx, "apply"), detail?.manifest?.params);
   const planOnly = Boolean(flags.check || flags.dryRun);
   const result = await client.applyBlueprint(name, {
     site,
@@ -269,67 +271,6 @@ async function applyBlueprint(flags, positionals, ctx) {
   return result;
 }
 
-/** `--params <file.json>` as the base, `--param k=v` on top. */
-async function readParams(flags, ctx) {
-  const values = {};
-  if (typeof flags.params === "string") {
-    const raw = await ctx.fs.readFile(join(ctx.cwd, flags.params), "utf8").catch((error) => {
-      if (error?.code === "ENOENT") {
-        throw new Error(`shio apply: no such params file "${flags.params}".`);
-      }
-      throw error;
-    });
-    let parsed;
-    try {
-      parsed = JSON.parse(raw);
-    } catch (error) {
-      throw new Error(`shio apply: ${flags.params} is not valid JSON (${error.message}).`);
-    }
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      throw new Error(
-        `shio apply: ${flags.params} must hold a JSON object of parameter values, ` +
-          'e.g. {"brand":"Acme"}.',
-      );
-    }
-    Object.assign(values, parsed);
-  }
-  const pairs = flags.param === undefined ? [] : [flags.param].flat();
-  for (const pair of pairs) {
-    if (typeof pair !== "string" || !pair.includes("=")) {
-      throw new Error(
-        `shio apply: --param takes name=value (got "${pair}"). ` +
-          "Example: --param brand=Acme",
-      );
-    }
-    const cut = pair.indexOf("=");
-    values[pair.slice(0, cut)] = pair.slice(cut + 1);
-  }
-  return values;
-}
-
-/**
- * Coerces string values to the types the package declared. An unknown parameter is left
- * exactly as typed so the *server* rejects it — its teaching error names the declared
- * parameters and the nearest match, which is a better message than this file could write.
- */
-function coerceParams(values, schema) {
-  const properties = schema?.properties ?? {};
-  const out = {};
-  for (const [name, value] of Object.entries(values)) {
-    const type = properties[name]?.type;
-    if (typeof value !== "string" || !type || type === "string") {
-      out[name] = value;
-    } else if (type === "integer" || type === "number") {
-      const parsed = Number(value);
-      out[name] = Number.isFinite(parsed) ? parsed : value;
-    } else if (type === "boolean") {
-      out[name] = value === "true" ? true : value === "false" ? false : value;
-    } else {
-      out[name] = value;
-    }
-  }
-  return out;
-}
 
 /**
  * Writes the package's front-end files into the project — see

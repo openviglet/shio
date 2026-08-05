@@ -53,7 +53,6 @@ ref_scheme = "outline"
 # one; the run turns green as SH446 lands. What it also did is find SH453 and SH454 on its
 # first execution, seven tasks earlier than the queue below would have.
 priority = [
-  "SH447",
   "SH446",
   "Block P",
   "Block H",

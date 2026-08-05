@@ -1549,28 +1549,3 @@ So the fix is a release, not a code change: publish `shio-sections`, publish
 `shio-client@2026.3.1`, or have `init` write the versions that exist. A CI check that
 installs what `init` writes is the instrument, since no test in the repo installs from
 the registry.
-
-### XVII.34 A refusal that already did half the job (SH447)
-
-`shio init viglet3-web --blueprint marketing-site --site Viglet3` printed one line —
-`Blueprint 'marketing-site' requires the parameter 'brand'` — and exited non-zero. It had already written
-**15 files**: the whole Next.js app, `app/[...slug]/page.tsx`, `lib/sections.ts`, and a `.env.local`
-correctly carrying `SHIO_SITE_ID=Viglet3`. Nothing in the output says so.
-
-The next command is where it bites. `shio init viglet3-web --yes` then refuses with
-`Target directory is not empty`, which is true and unexplainable from anything the
-caller was told: the first run reported a refusal, so the directory should not exist.
-The recovery is to delete a directory whose contents the tool never admitted to writing.
-
-The order is the defect. `params` are validated against the blueprint before a single
-file is written on every other path — `blueprints <name>` exists precisely to state them
-— but here the scaffold runs first and the content application validates second, so a
-parameter that governs *content* aborts a run that had already finished the *files*. P7
-is the law it breaks: never surprise the human, and a refusal that silently succeeded at
-half its job is the surprise arriving one command later.
-
-Two ways out and they are not equivalent. Validate every declared param before writing
-anything, which makes the refusal true. Or report what landed — `✓ Created … (15 files)`
-then the refusal — which makes it honest without reordering. The first is better here
-because the partial state is a directory that then blocks the retry, and the second
-still leaves that.

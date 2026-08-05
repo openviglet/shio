@@ -187,3 +187,151 @@ test("a blueprint with no front-end half is a teaching refusal, not an empty pro
 
   await assert.rejects(() => init.run(flags, positionals, ctx), /carries no front-end files/);
 });
+
+// --- SH447: a refusal that already did half the job ---
+
+/** A package with a parameter that has no default — `landing`'s and `docs`' actual shape. */
+const NEEDS_BRAND = {
+  ...DETAIL,
+  manifest: {
+    ...DETAIL.manifest,
+    name: "landing",
+    params: {
+      type: "object",
+      required: ["brand"],
+      properties: {
+        brand: { type: "string", description: "The company or product name." },
+        headline: { type: "string", default: "Start in an afternoon" },
+        projectName: { type: "string", default: "my-shio-site" },
+      },
+    },
+  },
+};
+
+test("SH447: a required parameter is refused before a single file is written", async () => {
+  // Measured before this: `shio init viglet3-web --blueprint marketing-site --site Viglet3` printed
+  // one line — the server's refusal on `brand` — and exited non-zero having already written 15
+  // files, `app/[...slug]/page.tsx` and a correct `.env.local`. The retry then failed with "Target
+  // directory is not empty", which is true and unexplainable from anything the caller was told.
+  const fetchImpl = routedFetch(NEEDS_BRAND);
+  const ctx = ctxWith(fetchImpl);
+  const { flags, positionals } = flagsFor([
+    "viglet3-web", "--blueprint", "landing", "--site", "Viglet3", "--yes",
+  ]);
+
+  await assert.rejects(() => init.run(flags, positionals, ctx), (error) => {
+    assert.match(error.message, /requires 1 parameter\(s\)/);
+    assert.match(error.message, /brand — The company or product name\./,
+      "the package's own description, because the schema is the authority");
+    assert.match(error.message, /nothing is on disk to clean up/);
+    assert.match(error.message, /--param brand=<value>/, "P6: the flag that fixes it");
+    assert.match(error.message, /shio blueprints landing/, "and the read that states the rest");
+    return true;
+  });
+
+  assert.deepEqual(ctx.written, [],
+    "THE assertion: reporting what landed would make the run honest and still leave the directory "
+      + "that blocks the retry, so the check has to come first rather than the report");
+  assert.ok(
+    !fetchImpl.calls.some((call) => /\/apply$/.test(call.url)),
+    "and nothing was applied either — the run stops at the read that told us the schema",
+  );
+});
+
+test("SH447: --param and --params reach the blueprint, which is what makes it scaffoldable at all", async () => {
+  // The other half of the same defect: `init --blueprint` had neither flag, so it always sent
+  // `{projectName}` and a package with a required parameter could not be scaffolded through it by
+  // any invocation. One parser with `apply`, so `--param` means one thing in both (SH245).
+  const fetchImpl = routedFetch(NEEDS_BRAND);
+  const ctx = ctxWith(fetchImpl);
+  const { flags, positionals } = flagsFor([
+    "viglet3-web", "--blueprint", "landing", "--site", "Viglet3", "--param", "brand=Viglet", "--yes",
+  ]);
+
+  const result = await init.run(flags, positionals, ctx);
+
+  assert.ok(result.files.length, "the scaffold was written");
+  const applied = fetchImpl.calls.find((call) => /\/apply$/.test(call.url));
+  assert.ok(applied, "and the content half ran");
+  assert.ok(
+    ctx.written.some((file) => file.path.includes("viglet3-web")),
+    "into the project the caller named",
+  );
+});
+
+test("SH447: with no --site the check does not run, because the refusal never did either", async () => {
+  // The refusal is being moved earlier, not widened. Without `--site` this command writes files and
+  // calls nothing, so a run that works today must keep working — checking here would be a new
+  // refusal wearing a bug fix's name.
+  const ctx = ctxWith(routedFetch(NEEDS_BRAND));
+  const { flags, positionals } = flagsFor(["viglet3-web", "--blueprint", "landing", "--yes"]);
+
+  const result = await init.run(flags, positionals, ctx);
+
+  assert.ok(result.files.length);
+  assert.match(ctx.stdout.text, /content NOT applied/);
+});
+
+test("SH447: a --site that is not there is refused before the write too, and names --create-site", async () => {
+  // The same defect with a second trigger, found by running the parameter fix against a live
+  // instance: with `brand` supplied, a `--site` naming a site that does not exist refused *after*
+  // the fifteen files, exactly as the parameter had. `apply --blueprint` has `--create-site` and
+  // `init` did not, so the remedy the server's own refusal names was one this command could not
+  // express — SH439's shape at a third call site.
+  const notFound = async (url) => {
+    if (/\/agent\/resolve/.test(String(url))) {
+      return {
+        ok: false,
+        status: 404,
+        headers: { get: () => null },
+        async text() {
+          return JSON.stringify({ title: "No site" });
+        },
+        async json() {
+          return { title: "No site" };
+        },
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      async text() {
+        return JSON.stringify(DETAIL);
+      },
+      async json() {
+        return DETAIL;
+      },
+    };
+  };
+  const ctx = ctxWith(notFound);
+  const { flags, positionals } = flagsFor([
+    "sh447-web", "--blueprint", "nextjs-starter", "--site", "Absent", "--yes",
+  ]);
+
+  await assert.rejects(() => init.run(flags, positionals, ctx), (error) => {
+    assert.match(error.message, /no site named "Absent"/);
+    assert.match(error.message, /nothing is on disk to clean up/);
+    assert.match(error.message, /--create-site/, "P6: the flag that resolves it, which now exists");
+    return true;
+  });
+  assert.deepEqual(ctx.written, []);
+});
+
+test("SH447: --create-site skips the check and travels to the server, as it does on apply", async () => {
+  // Not merely skipped locally: the flag has to reach the request, or the check would be the only
+  // thing it did and the server would refuse the run this command just let through.
+  const fetchImpl = routedFetch();
+  const ctx = ctxWith(fetchImpl);
+  const { flags, positionals } = flagsFor([
+    "sh447-web", "--blueprint", "nextjs-starter", "--site", "Fresh", "--create-site", "--yes",
+  ]);
+
+  await init.run(flags, positionals, ctx);
+
+  assert.ok(
+    !fetchImpl.calls.some((call) => /\/agent\/resolve/.test(call.url)),
+    "the check is skipped — the caller already answered the question it asks",
+  );
+  assert.ok(fetchImpl.calls.some((call) => /\/apply$/.test(call.url)));
+});

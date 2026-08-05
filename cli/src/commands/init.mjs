@@ -22,6 +22,12 @@ import { createInterface } from "node:readline/promises";
 import { scaffold } from "create-shio-app/scaffold";
 
 import { ShioAgentClient } from "../agent-client.mjs";
+import {
+  coerceParams,
+  missingParams,
+  missingParamsMessage,
+  readParams,
+} from "../blueprint-params.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { writeProjectFiles } from "../project-files.mjs";
 
@@ -43,12 +49,15 @@ export const HELP = `shio init [name] — scaffold a Next.js site wired to this 
   --name <name>        The directory to create, when no positional is given
   --blueprint <name>   Take the starter from the instance instead of the built-in template
   --site <site>        With --blueprint: also apply the package's content into that site
+  --param k=v          With --blueprint: one parameter value; repeat for several
+  --params <file.json> With --blueprint: values from a file (--param wins over it)
+  --create-site        With --blueprint --site: create the site (blank) if it is not there
   --force              Overwrite files that are already there
   --yes                Take every default without asking
 
 Examples:
   shio init my-site
-  shio init acme --blueprint marketing-site --site Acme
+  shio init acme --blueprint marketing-site --site Acme --param brand=Acme
 `;
 
 export async function run(flags, positionals, ctx) {
@@ -102,7 +111,40 @@ async function initFromBlueprint({ flags, projectName, targetDir, url, site, tok
     );
   }
 
-  const params = { projectName };
+  // SH447 — the parameters, and the check that makes a refusal true.
+  //
+  // Both halves were missing and together they made a package with a required parameter
+  // unscaffoldable: this sent `{projectName}` and nothing else, the server refused on the parameter
+  // it was never given, and the run exited non-zero **having already written the whole Next.js
+  // app**. Measured: 15 files and a correct `.env.local`, reported by one line that mentions none
+  // of them — and the retry then fails with "Target directory is not empty", which is true and
+  // unexplainable from anything the caller was told. P7's surprise, arriving one command later.
+  //
+  // Validated rather than merely reported, because the two are not equivalent: reporting what
+  // landed makes the run honest and still leaves the directory that blocks the retry.
+  const schema = detail?.manifest?.params;
+  const params = coerceParams(
+    { projectName, ...(await readParams(flags, ctx, "init")) },
+    schema,
+  );
+  // Only when a `--site` is given, which is precisely when the content half runs and therefore the
+  // only case that was ever refused. Without one this command writes files and calls nothing, so
+  // checking here would newly refuse a run that works today — the refusal is being moved earlier,
+  // not widened.
+  const missing = site ? missingParams(schema, params) : [];
+  if (missing.length) {
+    throw new Error(missingParamsMessage("init", name, missing));
+  }
+  // The same defect with a second trigger, found by running the fix against a live instance: with
+  // the parameter supplied, `--site` naming a site that does not exist refused *after* the fifteen
+  // files, exactly as the parameter had. `apply --blueprint` has `--create-site` for this and `init`
+  // did not, so the remedy the server's own refusal names ("set createSite: true") was one this
+  // command could not express — SH439's shape, at a third call site. Checked here for the same
+  // reason as the parameters: a precondition that is knowable before the write belongs before it.
+  if (site && !flags.createSite) {
+    await requireSite(client, name, site);
+  }
+
   const { lines, written } = await writeProjectFiles(
     detail.files,
     { force: Boolean(flags.force), params, baseDir: targetDir },
@@ -111,7 +153,9 @@ async function initFromBlueprint({ flags, projectName, targetDir, url, site, tok
   await ctx.fs.mkdir(targetDir, { recursive: true });
   await ctx.fs.writeFile(join(targetDir, ".env.local"), envFile({ url, site, token }), "utf8");
 
-  const applied = site ? await client.applyBlueprint(name, { site, params }) : null;
+  const applied = site
+    ? await client.applyBlueprint(name, { site, params, createSite: Boolean(flags.createSite) })
+    : null;
 
   const version = detail.manifest?.version ? ` ${detail.manifest.version}` : "";
   ctx.stdout.write(`\n✓ Scaffolded ${projectName} from blueprint ${name}${version}\n`);
@@ -128,6 +172,29 @@ async function initFromBlueprint({ flags, projectName, targetDir, url, site, tok
   }
   ctx.stdout.write(created(projectName, targetDir, written.length + 1));
   return { targetDir, files: written, applied };
+}
+
+/**
+ * Refuse a `--site` that is not there, before anything is written (SH447).
+ *
+ * <p>A read failure that is <em>not</em> "no such site" is swallowed on purpose: this is a courtesy
+ * check ahead of a call that will make the same judgement authoritatively, and refusing a scaffold
+ * because a resolve timed out would turn a network blip into a broken command. The server's own
+ * refusal still stands behind it — this only decides whether it arrives before or after fifteen
+ * files.</p>
+ */
+async function requireSite(client, blueprint, site) {
+  const resolved = await client.resolve(`site:${site}`).catch((error) => error);
+  const missing = resolved instanceof Error && Number(resolved?.status) === 404;
+  if (!missing) return;
+  throw new Error(
+    `shio init: there is no site named "${site}" to apply "${blueprint}" into.\n`
+      + "A blueprint brings a model and content, not a site of its own, and creating one is the most\n"
+      + "visible side effect in the system — so it is requested, never inferred (SH151).\n"
+      + "Checked before anything was written, so nothing is on disk to clean up.\n"
+      + `  shio init … --blueprint ${blueprint} --site ${site} --create-site\n`
+      + "  shio apply --blueprint … --site <an existing site>",
+  );
 }
 
 function created(projectName, targetDir, fileCount) {
