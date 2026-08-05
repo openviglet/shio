@@ -24,6 +24,7 @@
 - 📋 **SH397** (deps: SH295 ✅, SH325 ✅) **A dev instance reports its version as dev, so a stale server reads as a code defect** — The build stamp comes from the jar manifest, which is absent in the one mode where the running instance can lag the working tree, and nothing composes the readiness facts. → §IX.12
 - 📋 **SH423** (deps: SH347 ✅) **The test-context budget is a ceiling nobody sees approaching** — ShContextCacheHeadroomTest fails once 64 is crossed and nothing says a task is spending one, so eleven tasks took the count from 38 to 44 with no moment anybody was asked. → §VIII.20
 - 📋 **SH444** (deps: SH391 ✅) **The browser commands cannot resolve the playwright the repo already installs** — pnpm keeps it in shio-react/node_modules while the CLI's dynamic import resolves from cli/src upward, so snapshot and audit refuse in a checkout that has the package and the browsers. → §IX.21
+- 📋 **SH445** (deps: SH440 ✅) **The abort SH440 shipped to fix still happens on every thrown remote error** — The dispatcher sweep works and is not the trigger, and minimal scripts are clean, so a handle on the read-and-throw path survives and the exit code is still a crash code. → §IX.22
 
 ## Block I — Content as files (local-first authoring)
 
@@ -83,7 +84,7 @@
 
 - 📋 **SH437** (deps: SH429 ✅) **A fidelity replica's images 404 because a static file is only served at its own id** — SH429 made the stranded bytes visible and left the delivery unbuilt: keeping the source's URL space needs a route Shio does not have, so the choice was never available. → §XVII.27
 - 📋 **SH438** (deps: SH417 ✅) **The converted sections have no page composing them, so the replica serves nothing** — convert writes sections and a theme and no Page at the source's URL, so the root 404s and source-page-missing fires on a run that reported success. → §XVII.28
-- 📋 **SH439** (deps: SH417 ✅) **convert refuses an absent site by telling you to add an op it accepts none of** — The refusal is the batch resolver's, but convert composes its own document and has no --create-site, so the only remedy it names is one this surface cannot express. → §XVII.29
+- 🛠 **SH439** (deps: SH417 ✅) **convert refuses an absent site by telling you to add an op it accepts none of** — The refusal is the batch resolver's, but convert composes its own document and has no --create-site, so the only remedy it names is one this surface cannot express. → §XVII.29
 - 📋 **SH441** (deps: SH429 ✅) **A logo or favicon is stranded by construction and the fix advises a field that cannot hold it** — Chrome assets belong to no candidate block, so no File field will ever name them, while SH389's scripts and SH382's menu already model chrome as site-level. → §XVII.30
 - 📋 **SH442** (deps: SH386 ✅) **A site whose URL field is a slug is photographed at that slug, so the browser refuses it** — resolveUrl picks the front end on the truthiness of the site's URL rather than on it being absolute, so a site with no front end skips the preview SH265 added for it. → §XVII.31
 - 📋 **SH443** (deps: SH386 ✅) **The summary reports worst 100.00% on a run that says it measured no magnitude** — With no per-pixel comparator the answer is byte equality, so the header prints an uninitialised percentage the row and the notes both contradict. → §XVII.32
