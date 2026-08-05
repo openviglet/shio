@@ -80,7 +80,7 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH429** (deps: SH378 ✅, SH379 ✅) **A downloaded asset cannot reach a replica that stays in fidelity mode** — Only a File field triggers an upload and verbatim markup has no fields, so every image clone --assets fetched stays on disk and the replica's img tags point at nothing. → §XVII.22
+- 📋 **SH437** (deps: SH429 ✅) **A fidelity replica's images 404 because a static file is only served at its own id** — SH429 made the stranded bytes visible and left the delivery unbuilt: keeping the source's URL space needs a route Shio does not have, so the choice was never available. → §XVII.27
 
 ## Block F — Market positioning
 

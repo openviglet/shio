@@ -221,6 +221,24 @@ are deduped — one decision on N pages, not N decisions), and the proposal now 
 candidate appears on **all** the pages read, with three as the floor: on two pages a hero is on both as
 well, and a hint that fires on every small capture is one a reviewer learns to ignore.
 
+**Bytes in the tree that nothing references are their own finding (SH429).** Three right rules compose
+into a broken replica: SH378 downloads each referenced image into `shio/assets/<site>/…`, SH145 uploads
+an asset **only** when a `File` field names its path, and SH379 makes *fidelity* the default — where a
+block stays verbatim markup, which has no fields. So on a real replica the logo sat on disk with
+correct bytes, the layout's `<img src="/viglet-logo.png">` resolved to nothing, and
+`verify --checks projection,replication` **passed**: `source-asset-missing` asks whether the bytes were
+downloaded, and they were. `source-asset-stranded` is the second state — downloaded, in the tree, and
+referenced by no post — and the two never both fire on one asset, because two findings over one fact
+are two reports that can disagree. The referenced set is read from post **data** (a projected `File`
+field holds the asset's path, SH90) and a value that is not path-shaped is an id this tree never
+projected, left out rather than guessed at, so the set is a lower bound and the rule under-reports
+rather than inventing a gap. **The delivery half is deliberately not here (SH437).** SH429 offered a
+choice — make the captured asset a static file so the source's own path keeps resolving, or rewrite
+the markup's `src` — and the first turns out not to be available: a static file's bytes are public at
+`/file_source/<postId>/<fileName>`, keyed by the post's id, and nothing maps a source path to a `File`
+post. That is a route the instance does not have, so it is a delivery feature rather than a CLI change,
+and this shipped the half that is provable from the tree.
+
 **`shio convert` is the verb the pipeline was one short of (SH417).** SH379 stopped at the proposal on
 purpose — review and mutation in one command is the surprise P7 forbids — which left
 `shio/conversion-plan.json` a file whose only reader was the report that produced it. The applier is

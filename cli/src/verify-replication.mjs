@@ -83,7 +83,7 @@ export function lintReplication({ posts = [], defs = [], assets = [], inventory 
   findings.push(
     ...pageFindings(inventory, served),
     ...linkFindings(inventory, served),
-    ...assetFindings(inventory, present),
+    ...assetFindings(inventory, present, referencedAssets(posts)),
     ...formFindings(inventory, declared),
     ...localeFindings(inventory, posts, notes),
     ...uncheckedFindings(inventory, notes),
@@ -174,21 +174,53 @@ function linkFindings(inventory, served) {
  * reported** — SH378 settled that mirroring another host's bytes is a licensing decision this tool
  * does not make, so their absence is the designed outcome rather than a gap.
  */
-function assetFindings(inventory, present) {
+function assetFindings(inventory, present, referenced) {
   const rows = (inventory.assets ?? []).filter((asset) => asset && !asset.external);
   const missing = [];
+  const stranded = [];
   for (const asset of rows) {
     if (!asset.file) {
       missing.push({ path: asset.path, why: "was never downloaded" });
     } else if (!present.has(asset.file)) {
       missing.push({ path: asset.path, why: `was downloaded to \`${asset.file}\`, which is not in the tree` });
+    } else if (!referenced.has(asset.file)) {
+      stranded.push(asset);
     }
   }
-  return capped(missing, "source-asset-missing", inventory, (row, cut) => ({
-    message: `the asset \`${row.path}\` ${row.why}${cut}`,
-    fix: "Run `shio clone <url> --assets --site <name>` to fetch the bytes, or `shio pull --content` "
-      + "if the asset is in the instance and not in this tree.",
-  }), (row) => row.path);
+  return [
+    ...capped(missing, "source-asset-missing", inventory, (row, cut) => ({
+      message: `the asset \`${row.path}\` ${row.why}${cut}`,
+      fix: "Run `shio clone <url> --assets --site <name>` to fetch the bytes, or `shio pull --content` "
+        + "if the asset is in the instance and not in this tree.",
+    }), (row) => row.path),
+    ...capped(stranded, "source-asset-stranded", inventory, (row, cut) => ({
+      message: `the asset \`${row.path}\` is in the tree as \`${row.file}\` and no post references `
+        + `it, so nothing serves it${cut}`,
+      fix: "An asset reaches the instance because a File field names its path (SH145) - the bytes "
+        + "alone are never uploaded. Point a field at it and `shio push --content` sends it. A block "
+        + "left in FIDELITY mode has no fields at all, so its images stay here: that is the delivery "
+        + "half a replica needs, and it is not the download.",
+    }), (row) => row.path),
+  ];
+}
+
+/**
+ * Every asset path a post's File field names - the readers of the bytes on disk (SH429).
+ *
+ * <p>Read from the post data rather than from the post-types, because a projected File field holds
+ * the asset's **path** (SH90) and that is the same string the capture's `file` is. A value that is
+ * not path-shaped is an id already, which is a reference this tree never projected and cannot be
+ * matched here; it is left out rather than guessed at, so this set is a lower bound and the rule
+ * built on it under-reports rather than inventing a gap.
+ */
+function referencedAssets(posts) {
+  const referenced = new Set();
+  for (const post of posts ?? []) {
+    for (const value of Object.values(post?.data ?? {})) {
+      if (typeof value === "string" && value.includes("/")) referenced.add(value);
+    }
+  }
+  return referenced;
 }
 
 /**
@@ -437,6 +469,7 @@ export function replicationRules() {
     "source-page-missing",
     "source-link-unresolved",
     "source-asset-missing",
+    "source-asset-stranded",
     "source-form-field-lost",
     "source-locale-missing",
     "replication-unchecked",

@@ -1475,28 +1475,24 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.22 The asset map has no reader in fidelity mode (SH429)
+### XVII.27 Keeping the source's URL space needs a route that does not exist (SH437)
 
-SH378 downloads each referenced image into `shio/assets/<site>/…` and folds a source-URL
-to tree-path map into the inventory. SH145 uploads an asset when a `File` field names
-its path, and is explicit that only referenced assets upload — a file no field names is
-never sent, which removed the question of what an unreferenced one means.
+SH429 asked for a choice: either a captured asset becomes a static file so the source's
+own path keeps resolving — which fits SH385's rule that a replica keeps the original's
+URL space — or the markup's `src` is rewritten to the uploaded asset's address. It
+called the first closer to what a fidelity replica means.
 
-SH379 then makes fidelity mode the default: an unaccepted block stays verbatim markup in
-a `PageLayout`, which is a decision rather than an omission. Verbatim markup has no
-fields. So on the replica built here, `shio/assets/OpenViglet/viglet-logo.png` sat on
-disk with correct bytes, the layout's `<img src="/viglet-logo.png">` resolved to
-nothing, and no rule reported it: `verify --checks projection,replication` passed with
-one unrelated warning, because `source-asset-missing` asks whether the bytes were
-downloaded and they were.
+Measuring the first against the code says it is not available. A static file's bytes are
+public at `/file_source/<postId>/<fileName>` (SH38, `ShStaticResourceConfiguration`),
+keyed by the post's id and not by any path a source chose. Nothing maps
+`/viglet-logo.png` to a `File` post, so uploading one leaves the replica's `<img
+src="/viglet-logo.png">` exactly as broken as leaving the bytes on disk. Option A is
+therefore a **delivery** feature — a route that resolves a site-scoped source path to a
+File post's bytes — and not a CLI change, which is why SH429 shipped the half that is
+provable from the tree and stopped.
 
-Each rule is right alone and the composition strands the bytes. The gap widens the more
-of a site stays in fidelity mode, which is the state SH379 designed for and the state a
-first replication is almost entirely in.
-
-Two candidate readers, and the choice is the task's real content. Either a captured
-asset becomes a static file so the source's own path keeps resolving — which fits
-SH385's rule that a replica keeps the original's URL space — or the markup's `src` is
-rewritten to the uploaded asset's address, which needs an upload with no field. The
-first is closer to what a fidelity replica means. Whichever, `source-asset-missing`
-should be able to say the bytes exist and nothing serves them.
+So the decision is still open, and it is now an informed one. Option B needs an upload
+with no field and a rewrite of the fidelity markup, which makes the replica's HTML
+differ from the source's in a way `snapshot --against` cannot see. Option A needs the
+route above, and keeps the markup byte-identical. Whichever lands,
+`source-asset-stranded` is the check that says when it has.

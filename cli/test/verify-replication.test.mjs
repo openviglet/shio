@@ -393,6 +393,61 @@ test("an older capture says which rule checked nothing, rather than reporting a 
   assert.match(result.note, /source-link-unresolved checked nothing/);
 });
 
+test("SH429: bytes in the tree that nothing references are their own finding", () => {
+  // The composition three right rules produced. SH378 downloads each referenced image into
+  // shio/assets/<site>/...; SH145 uploads an asset only when a File field names its path; SH379 makes
+  // FIDELITY the default, and verbatim markup has no fields. So on a real replica the logo sat on
+  // disk with correct bytes, the layout's <img src="/viglet-logo.png"> resolved to nothing, and the
+  // coverage gate passed - because source-asset-missing asks whether the bytes were downloaded, and
+  // they were.
+  const { findings } = lintReplication({
+    posts: [page("/"), page("/about")],
+    defs: DEFS,
+    assets: ["Acme/img/logo.png"],
+    inventory: capture({
+      assets: [{ path: "/img/logo.png", kind: "image", refs: 4, file: "Acme/img/logo.png" }],
+    }),
+  });
+
+  const stranded = findings.filter((each) => each.rule === "source-asset-stranded");
+  assert.equal(stranded.length, 1);
+  assert.match(stranded[0].message, /nothing serves it/);
+  assert.match(stranded[0].fix, /FIDELITY mode has no fields/,
+    "and the fix names the composition rather than the symptom: the download is not the delivery");
+  assert.ok(
+    !findings.some((each) => each.rule === "source-asset-missing"),
+    "the bytes ARE downloaded, so the older rule is right to stay quiet - these are two states",
+  );
+});
+
+test("SH429: an asset a File field names is served, and says nothing", () => {
+  const { findings } = lintReplication({
+    posts: [page("/", { data: { image: "Acme/img/logo.png" } }), page("/about")],
+    defs: DEFS,
+    assets: ["Acme/img/logo.png"],
+    inventory: capture({
+      assets: [{ path: "/img/logo.png", kind: "image", refs: 4, file: "Acme/img/logo.png" }],
+    }),
+  });
+
+  assert.ok(!findings.some((each) => each.rule === "source-asset-stranded"));
+});
+
+test("SH429: an asset that was never downloaded stays the older rule's, not this one's", () => {
+  const { findings } = lintReplication({
+    posts: [page("/"), page("/about")],
+    defs: DEFS,
+    inventory: capture({ assets: [{ path: "/img/logo.png", kind: "image", refs: 4 }] }),
+  });
+
+  assert.equal(findings.filter((each) => each.rule === "source-asset-missing").length, 1);
+  assert.ok(
+    !findings.some((each) => each.rule === "source-asset-stranded"),
+    "bytes that are not here cannot be stranded here, and two findings over one asset would be two "
+      + "reports that can disagree",
+  );
+});
+
 test("SH431: a served non-HTML response is reported and never counted as unchecked", () => {
   // The defect this closes, in the form it was measured: 24 rows of `application/json` — a site's
   // data surface, linked on purpose and served correctly — arrived in `problems` and became "24
