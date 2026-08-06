@@ -8,6 +8,7 @@
   },
   "exports": {
     "./scaffold": "./src/scaffold.mjs",
+    "./published": "./src/published.mjs",
     "./package.json": "./package.json"
   },
   "files": [

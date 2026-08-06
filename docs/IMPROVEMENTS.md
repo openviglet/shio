@@ -1592,44 +1592,6 @@ subsystem is exactly the defect class no page-by-page pass finds.
 (`D:\Git\viglet\vigletdocs\vigletdocs.github.io`), so each task lands two commits: the
 Shio-repo ship, and the vigletdocs page edit.
 
-### XVIII.5 The MCP page (§XVIII.5) (SH481)
-
-`POST /mcp` is the surface the product is designed around and it is undocumented. Write
-the page from `docs/agents/mcp.md`: the single endpoint and its transport, `tools/list`
-and what the tool vocabulary is (read, find, upsert, move, delete, apply, verify), the
-resources and prompts, the token scope a tool call runs under, and the fact that the
-tool list is a measured budget rather than an open catalogue.
-
-Second half of the page: the Claude Code plugin. How an operator installs it, what it
-registers, and the note that a bare instance has no registered MCP server, so a local
-bridge is the path until one is configured. That last fact costs a reader an afternoon
-if it is missing.
-
-Model the page on `docs-turing/mcp-servers.md`, which documents both halves of Turing's
-MCP story (client and server) on one page, and keep the same discipline: a copyable
-request, a real response, and the error shape a caller gets when the arguments are wrong
-(P6: an error carries `fix`, `allowed`, `didYouMean` and `example`, which is a feature
-worth showing rather than describing).
-
-### XVIII.7 The page a curator reads before letting an agent in (§XVIII.7) (SH485)
-
-This is the page that decides whether a human trusts the product, and there is no draft of it.
-Write it from Block L and Block O: writes land as **drafts by default**, a write can be asked to
-**dry-run** first, a destructive op needs a **confirm token**, an agent's changes land in a
-**review queue** a curator approves, every write carries **attribution**, a delete goes to a
-**trash** rather than away, and the AGENT token scope is bounded rather than an administrator
-session.
-
-State the bounds honestly, including the ones still open: the trash is restorable but an
-agent cannot yet list it, and a site delete cascades. A reader who discovers a gap after
-trusting the page loses more than one who was told.
-
-Pair it with the console half: what the review queue looks like, where attribution shows
-up, how publishing works, and what preview shows. `docs/agents/console-ui.md` and
-`docs/agents/security.md` are the sources; `docs-turing/human-in-the-loop.md` is the
-closest model in tone. This page is the natural landing page for the "the human curates
-it" hub.
-
 ### XVIII.8 Content as files (§XVIII.8) (SH486)
 
 Write the page from `docs/agents/content-files.md`: the `shio/content/**`,

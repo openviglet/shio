@@ -167,3 +167,21 @@ a row rather than left absent, because a guess would look like a fix; `emit` pri
 time it runs, at the moment the file is written rather than leaving it for a stranger's
 `npm install`. **`shio init` with no `--blueprint` is unaffected** — it carries only published
 packages, which is why the default path installs today.
+
+**Two templates, and neither serves an authorable replica (SH502).** SH446 asked whether the
+scaffold installs and got that; the half it left unmeasured is the one an authorable site needs.
+Measured, one `npm install --dry-run` per template: the built-in one **exits 0** and carries no
+sections renderer — nothing under `app/` or `lib/` reads a Page's `sections` — and the
+`marketing-site` blueprint, the only scaffold that draws them, answers **E404 on
+`@viglet/shio-sections`**. So a fidelity replica has two working paths (Shio's own renderer, or a
+front end it does not need) and an authorable replica has none: its content *is* sections.
+**Publishing `shio-sections` is the whole fix**, and the version write is the report while the
+publish is the behaviour — only the first shipped, which is the split the `shio-replication-test`
+skill already names. Until it lands, `init --site` refuses the built-in template for a site whose
+Pages carry sections: two calls (`find` type=Page, then one `read`), a courtesy check that swallows
+every read failure so the no-instance path SH119 requires still works, and the message names
+`/sites/<site>/default/en-us/` as the front end that exists today rather than recommending a
+blueprint whose install fails. The refusal's own text is read from `published.mjs`, so the day the
+package ships it recommends `--blueprint marketing-site` instead — and the conformance measurement
+flips with it: while the table says unpublished, npm **must** refuse that template, and once it does
+not the same line requires a clean install.

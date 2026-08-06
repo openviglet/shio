@@ -83,7 +83,7 @@
 - ⏳ **SH467** (deps: SH385 ✅) **The replica's canonical URL is the mirror of the source's, so every captured link costs a 301** — The route half answers both forms now, but the grammar still collapses the declared slash, so the replica serves /shio as canonical and 301s /shio/ — the source does the opposite. → §XVII.44
 - 📋 **SH477** (deps: SH472 ✅) **A decorative two-letter mark is still the first word of a link's label** — The tile's aria-label equals its own visible text, which says it is a logo, and scanPage reads it as content. → §XVII.53
 - 📋 **SH478** (deps: SH474 ✅) **The three Media Library keys are still fields the File type does not declare** — ALT, CAPTION and TAGS are written by updateMetadata and left undeclared by SH474, so a curator who captions an image turns a green verify red. → §XVII.54
-- 📋 **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
+- ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
 
 ## Block F — Market positioning
 
@@ -94,8 +94,6 @@
 
 ## Block R — End-user documentation for 2026.3 (docs-shio)
 
-- 📋 **SH481** (deps: SH482 ✅) **Nothing published says Shio speaks MCP, so its primary operator surface is unfindable** — POST /mcp with its tools, resources and prompts and the Claude Code plugin are how the agent drives Shio, and the word MCP appears in none of the 19 pages. → §XVIII.5
-- 📋 **SH485** (deps: SH482 ✅) **Nothing tells a curator what stops an agent from surprising them** — Draft-default, dry-run, confirm tokens, the review queue, attribution and the trash are P7's whole promise to the human and none of it is published. → §XVIII.7
 - 📋 **SH486** (deps: SH482 ✅, Block I ✅) **The cheapest authoring path, content as files, has no page at all** — P4 says files beat APIs for authoring, and a reader cannot learn that Edit, Write and Grep author Shio content or how the merge protects a curator's edit. → §XVIII.8
 - 📋 **SH487** (deps: SH482 ✅, SH486) **The `shio` CLI is documented nowhere, so its verbs are unfindable** — pull, push, apply, verify, report, clone, propose, convert and snapshot are the scripted path into an instance, and the docs' only CLI pages are Turing's. → §XVIII.9
 - 📋 **SH488** (deps: SH482 ✅) **Blueprints, the appliable starting points, are absent from the published docs** — P8 says skipping a step needs an appliable unit, and nothing says a package exists, what blueprint.json declares, or how applying one builds a site. → §XVIII.10

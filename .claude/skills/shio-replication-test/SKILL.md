@@ -98,6 +98,15 @@ the preview.
 *Known limit:* this is the path `renderer.md` calls production delivery (P10), and the one
 whose failure is invisible from inside the instance.
 
+**For a site whose pages are sections, this scenario cannot be run at all yet (SH502).** Measure
+per template, because they answer differently and either one alone reads as "the scaffold
+installs": the **built-in** template exits 0 and contains no sections renderer (nothing under
+`app/` or `lib/` reads a Page's `sections`), and **`marketing-site`** — the only scaffold that
+draws them — answers **E404 on `@viglet/shio-sections`**, never published. So `init --site` now
+*refuses* the built-in template for a section-carrying site, and the honest answer for an
+authorable replica's delivery is Shio's own renderer at `/sites/<site>/default/en-us/`. Do not
+report scenario 3 as covered by a scaffold that installs; ask which template, and what it renders.
+
 ## The seven checks, in the order that finds things
 
 1. **Every reference the page makes resolves.** Fetch each same-origin `src`, `<link href>`

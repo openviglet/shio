@@ -42,6 +42,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { unpublished } from "create-shio-app/published";
+
 import { ShioAgentClient } from "../src/agent-client.mjs";
 import { INVENTORY_FILE, MARKUP_DIR } from "../src/clone.mjs";
 import { ASSETS_DIR } from "../src/content-assets.mjs";
@@ -290,20 +292,45 @@ describe("SH448 conformance: replication, from a served source to an installable
         + `through the instance and back. Still missing: ${missing.join(" | ")}`,
     );
 
-    // ── and the front end that serves it can actually be installed ────────────────────────
-    // The last boundary, and the one nothing in `cli/test/` touches: the npm registry. SH446 was
-    // invisible to eleven green files and to SH422, and surfaced only under a hand-run
-    // `npm install --dry-run` — which is precisely the shape of defect this suite exists for.
-    const project = "front-end";
-    const { targetDir, files } = await init.run(
-      { name: project, yes: true, url: conn.baseUrl, site, token: "" },
+    // ── and the front end that serves it cannot be the built-in one ───────────────────────
+    // SH502. This site's pages are sections — asserted above, `/sections` in the address list — and
+    // the built-in template renders a page's body and nothing else. It used to be handed over here,
+    // and it installs, so every check in this suite passed on a project that serves empty pages.
+    await assert.rejects(
+      () => init.run({ name: "front-end", yes: true, url: conn.baseUrl, site, token: "" }, [], ctx),
+      (error) => {
+        assert.match(error.message, /builds its pages from sections/);
+        assert.match(error.message, /marketing-site/, "and where a sections renderer comes from");
+        return true;
+      },
+    );
+  });
+
+  /**
+   * One `npm install --dry-run` per template — the measurement SH446 did not make (SH502).
+   *
+   * <p>SH446 proved the built-in template installs and stopped there, which left the half an
+   * authorable replica needs unmeasured: the `marketing-site` blueprint is the only scaffold that
+   * draws a Page's `sections`, and it asks for `@viglet/shio-sections`, which has never been
+   * published. Two templates, one command each, and the pair is the finding — either alone reads as
+   * "the scaffold installs".</p>
+   *
+   * <p>The section template's assertion is keyed on {@code published.mjs} rather than on a fixed
+   * expectation, so it holds in both worlds: while the package is unpublished npm <b>must</b> refuse
+   * it (and a pass would mean the table is lying), and the day it ships the same line requires a
+   * clean install. That is what makes this a measurement and not a snapshot of today's breakage.</p>
+   */
+  test("SH502: one install per template, and the section-carrying one is measured too", async () => {
+    // The built-in template, on its own: the site is what made it wrong above, not the template.
+    const builtIn = await init.run(
+      { name: "front-end", yes: true, url: conn.baseUrl, token: "" },
       [],
       ctx,
     );
-    assert.ok(files.length, "init wrote a scaffold");
+    assert.ok(builtIn.files.length, "init wrote a scaffold");
 
-    const manifest = JSON.parse(await readFile(join(targetDir, "package.json"), "utf8"));
-    const install = await npm(["install", "--dry-run", "--no-audit", "--no-fund"], targetDir);
+    const manifest = JSON.parse(await readFile(join(builtIn.targetDir, "package.json"), "utf8"));
+    const install = await npm(["install", "--dry-run", "--no-audit", "--no-fund"], builtIn.targetDir);
     assert.equal(
       install.code,
       0,
@@ -311,6 +338,36 @@ describe("SH448 conformance: replication, from a served source to an installable
         + `${JSON.stringify(manifest.dependencies, null, 2)}\n`
         + `and npm answered ${install.code}:\n${install.output.trim().slice(-1500)}`,
     );
+
+    // The one that renders sections. No `--site`: this measures the template, and applying content
+    // would write a blueprint's own model into the replica under test.
+    const sections = await init.run(
+      { name: "sections-front-end", blueprint: "marketing-site", yes: true, url: conn.baseUrl, token: "" },
+      [],
+      ctx,
+    );
+    assert.ok(sections.files.length, "the blueprint carries a front end");
+
+    const missing = unpublished(["@viglet/shio-sections", "@viglet/shio-model"]);
+    const dry = await npm(["install", "--dry-run", "--no-audit", "--no-fund"], sections.targetDir);
+    if (missing.length) {
+      assert.notEqual(
+        dry.code,
+        0,
+        `SH502: create-shio-app/src/published.mjs declares ${missing.join(" and ")} unpublished, and`
+          + ` npm installed the section template anyway. If the release has happened, that table is`
+          + ` what is now wrong — and until it is corrected every scaffold declaring these ranges is`
+          + ` unmeasured.\n${dry.output.trim().slice(-800)}`,
+      );
+    } else {
+      assert.equal(
+        dry.code,
+        0,
+        `SH502: with @viglet/shio-sections published, the only scaffold that draws a Page's sections`
+          + ` must install — that publish IS the fix, and this is the line that proves it landed.\n`
+          + `${dry.output.trim().slice(-1500)}`,
+      );
+    }
   });
 
   test("SH449: accept nothing, and the replica is still a site you can look at", async () => {

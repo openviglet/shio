@@ -20,6 +20,7 @@ import { join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 
 import { scaffold } from "create-shio-app/scaffold";
+import { unpublished } from "create-shio-app/published";
 
 import { ShioAgentClient } from "../agent-client.mjs";
 import {
@@ -58,6 +59,9 @@ export const HELP = `shio init [name] — scaffold a Next.js site wired to this 
 Examples:
   shio init my-site
   shio init acme --blueprint marketing-site --site Acme --param brand=Acme
+
+With --site and no --blueprint, a site whose pages are built from sections is refused: the
+built-in template renders a page's body and not its sections (SH502).
 `;
 
 export async function run(flags, positionals, ctx) {
@@ -82,6 +86,11 @@ export async function run(flags, positionals, ctx) {
 
   if (flags.blueprint) {
     return initFromBlueprint({ flags, projectName, targetDir, url, site, token }, ctx);
+  }
+
+  // SH502 — before the write, because the built-in template cannot render this site's pages.
+  if (site) {
+    await refuseSectionsSite(flags, site, ctx);
   }
 
   const { files } = await scaffold({ targetDir, projectName, url, site, token });
@@ -195,6 +204,97 @@ async function requireSite(client, blueprint, site) {
       + `  shio init … --blueprint ${blueprint} --site ${site} --create-site\n`
       + "  shio apply --blueprint … --site <an existing site>",
   );
+}
+
+/**
+ * The built-in template is not offered for a site whose pages are made of sections (SH502).
+ *
+ * ## Two templates, and neither serves an authorable replica
+ *
+ * SH446 made the built-in scaffold *installable*: it declares `@viglet/shio-client@^2026.2.1` and
+ * `npm install --dry-run` resolves. What it does not do is draw a Page's `sections` — there is
+ * nothing under `app/` or `lib/` that reads them — so for a converted site in **authorable** mode it
+ * builds, installs, serves, and renders empty pages. The `marketing-site` blueprint does render them
+ * and asks for `@viglet/shio-sections`, which has never been published and answers **E404**.
+ *
+ * So the honest state until that release is that an authorable replica has *no* installable front
+ * end, and the wrong one being handed over silently is the part this can fix. A refusal that names
+ * the reason costs the caller one command; a scaffold that installs and shows nothing costs them the
+ * afternoon it takes to work out which of six things is wrong (P9 — the perception loop closes here,
+ * with text, rather than after `npm run dev`).
+ *
+ * ## Why it is a courtesy check that swallows every read failure
+ *
+ * Without `--blueprint` this command needs **no running instance** — that is SH119's whole point,
+ * since `shio init` and `npm create shio-app` must produce identical projects. So an unreachable
+ * instance, a missing credential or an older surface leaves the run exactly as it was: the same
+ * bargain `requireSite` strikes one path over, for the same reason.
+ */
+async function refuseSectionsSite(flags, site, ctx) {
+  const pages = await sectionCarryingPages(flags, site, ctx);
+  if (!pages.length) return;
+
+  throw new Error(
+    `shio init: site "${site}" builds its pages from sections, and the built-in template does not\n`
+      + `render them. ${pages.length} of its Page(s) carry a sections list, e.g. ${pages[0]}.\n\n`
+      + `The template draws a page's body; nothing in it reads a Page's \`sections\`, so this project\n`
+      + `would install, build, serve — and show empty pages, which is a failure nothing reports until\n`
+      + `somebody opens one.\n\n`
+      + sectionsRenderer(site)
+      + `\nChecked before anything was written, so nothing is on disk to clean up.`,
+  );
+}
+
+/**
+ * Where a section-rendering front end comes from — which depends on whether it can be installed.
+ *
+ * <p>Read from `PUBLISHED` rather than written here, so the day `@viglet/shio-sections` ships this
+ * message changes with it. A refusal that recommends a blueprint whose `npm install` answers E404
+ * would be the same defect one command along: honest about the first template and wrong about the
+ * second.</p>
+ */
+function sectionsRenderer(site) {
+  const missing = unpublished(["@viglet/shio-sections", "@viglet/shio-model"]);
+  if (!missing.length) {
+    return `Scaffold the one that does render them:\n`
+      + `  shio init <name> --blueprint marketing-site --site ${site}\n`;
+  }
+  return `The scaffold that does render them is the \`marketing-site\` blueprint, and it cannot be\n`
+    + `installed yet: it imports ${missing.join(" and ")}, unpublished on the npm registry (E404).\n`
+    + `Until that release lands, this site's front end is Shio's own renderer, which needs none:\n`
+    + `  /sites/${site}/default/en-us/\n`;
+}
+
+/**
+ * The addresses of this site's Pages that carry a non-empty `sections` list.
+ *
+ * <p>Two calls and a cap: `find` names the Pages and one `read` answers for all of them. The cap is
+ * deliberate and does not weaken the check — the question is "does this site use sections at all",
+ * and one page answering yes is the whole finding. A site-wide walk would make a command that needs
+ * no instance pay for a projection it does not use.</p>
+ */
+async function sectionCarryingPages(flags, site, ctx) {
+  try {
+    const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
+    const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
+    const found = await client.find({ site, type: "Page", limit: 25 });
+    const addresses = (found?.results ?? []).map((row) => row?.address).filter(Boolean);
+    if (!addresses.length) return [];
+    const docs = await client.read(addresses);
+    return (Array.isArray(docs) ? docs : [])
+      .filter((doc) => hasSections(doc))
+      .map((doc) => doc.address);
+  } catch {
+    // A command that works without an instance must keep working without one.
+    return [];
+  }
+}
+
+/** A relator reads back as a list; a single value and a comma-joined string both count as one. */
+function hasSections(doc) {
+  const sections = doc?.data?.sections;
+  if (Array.isArray(sections)) return sections.length > 0;
+  return typeof sections === "string" && sections.trim() !== "";
 }
 
 function created(projectName, targetDir, fileCount) {

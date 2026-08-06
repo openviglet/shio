@@ -16,7 +16,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { resolve } from "node:path";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
 import * as init from "../src/commands/init.mjs";
 import { parseArgs } from "../src/args.mjs";
@@ -316,6 +318,126 @@ test("SH447: a --site that is not there is refused before the write too, and nam
     return true;
   });
   assert.deepEqual(ctx.written, []);
+});
+
+// --- SH502: the built-in template does not render sections ---
+
+/**
+ * A stub instance that answers `find` with one Page and `read` with whatever that Page holds.
+ *
+ * Both calls, because the check is two: `find` names the Pages of the site and one `read` says
+ * whether any of them is made of sections. A stub that answered only the first would let a
+ * refusal keyed on the wrong field pass.
+ */
+function siteWithPage(data) {
+  const answers = (href) => {
+    if (/\/agent\/find/.test(href)) {
+      return { count: 1, truncated: false, results: [{ address: "post:Replica/about", type: "Page" }] };
+    }
+    if (/\/agent\/read/.test(href)) {
+      return [{ address: "post:Replica/about", type: "Page", data }];
+    }
+    return DETAIL;
+  };
+  const calls = [];
+  const fetchImpl = async (url, requestInit) => {
+    const href = String(url);
+    calls.push({ url: href, method: requestInit?.method ?? "GET" });
+    const body = answers(href);
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      async text() {
+        return JSON.stringify(body);
+      },
+      async json() {
+        return body;
+      },
+    };
+  };
+  fetchImpl.calls = calls;
+  return fetchImpl;
+}
+
+test("SH502: a site whose pages are sections is refused the template that cannot draw them", async () => {
+  // Measured: the built-in template installs (SH446) and carries no sections renderer, while the
+  // `marketing-site` blueprint renders them and asks for `@viglet/shio-sections`, which answers E404.
+  // So an authorable replica had two templates and no working combination — and the one it was handed
+  // builds, installs, serves and shows empty pages, which nothing reports until somebody opens one.
+  const fetchImpl = siteWithPage({ sections: ["/sections/hero", "/sections/features"] });
+  const ctx = ctxWith(fetchImpl);
+  const { flags, positionals } = flagsFor(["replica-web", "--site", "Replica", "--yes"]);
+
+  await assert.rejects(() => init.run(flags, positionals, ctx), (error) => {
+    assert.match(error.message, /builds its pages from sections/);
+    assert.match(error.message, /post:Replica\/about/, "the page it read, so the claim is checkable");
+    assert.match(error.message, /marketing-site/, "P6: where a sections renderer comes from");
+    assert.match(error.message, /@viglet\/shio-sections/, "and why that one cannot be installed yet");
+    assert.match(error.message, /\/sites\/Replica\/default\/en-us\//,
+      "the path that serves this replica today, since the honest answer is 'no front end yet'");
+    assert.match(error.message, /nothing is on disk to clean up/);
+    return true;
+  });
+
+  assert.deepEqual(ctx.written, [],
+    "refused before the write, for SH447's reason: a directory left behind blocks the retry");
+});
+
+/**
+ * A real temporary cwd, because the built-in template does **not** write through `ctx.fs`.
+ *
+ * The blueprint path takes every byte from `ctx.fs`, so the tests above assert on `ctx.written` and
+ * touch no disk. `create-shio-app`'s `scaffold` uses `node:fs` directly, so a test that reaches it
+ * with `cwd: "/repo"` creates `D:\repo\<name>` for real — which is how this was found, on the second
+ * run: "Target directory is not empty", from the first run's leftovers.
+ */
+async function scratchCtx(fetchImpl, t) {
+  const dir = await mkdtemp(join(tmpdir(), "shio-init-"));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  return { ...ctxWith(fetchImpl), cwd: dir };
+}
+
+test("SH502: a site whose pages carry a body is scaffolded, because the template renders that", async (t) => {
+  // The assertion that keeps this from being a blanket refusal on `--site`. The template is the right
+  // answer for a site the CDA serves as fields — which is every site SH119 was written for — so a
+  // check that refused those would have replaced a silent failure with a loud one.
+  const ctx = await scratchCtx(siteWithPage({ body: "<p>Hello</p>" }), t);
+  const { flags, positionals } = flagsFor(["fields-web", "--site", "Replica", "--yes"]);
+
+  const result = await init.run(flags, positionals, ctx);
+
+  assert.ok(result.files.length, "the built-in template was written");
+});
+
+test("SH502: an empty sections list is not a sections site — the field exists on every Page", async (t) => {
+  const ctx = await scratchCtx(siteWithPage({ sections: [], body: "<p>Hello</p>" }), t);
+  const { flags, positionals } = flagsFor(["empty-web", "--site", "Replica", "--yes"]);
+
+  assert.ok((await init.run(flags, positionals, ctx)).files.length);
+});
+
+test("SH502: with no --site nothing is read, because the check has no site to ask about", async (t) => {
+  const fetchImpl = siteWithPage({ sections: ["/sections/hero"] });
+  const ctx = await scratchCtx(fetchImpl, t);
+  const { flags, positionals } = flagsFor(["plain-web", "--yes"]);
+
+  const result = await init.run(flags, positionals, ctx);
+
+  assert.ok(result.files.length);
+  assert.deepEqual(fetchImpl.calls, [], "`shio init` needs no instance and must keep needing none");
+});
+
+test("SH502: an unreachable instance leaves the command exactly as it was (SH119)", async (t) => {
+  // The courtesy-check bargain `requireSite` strikes one path over. Without `--blueprint` this
+  // command must produce the same project as `npm create shio-app`, which cannot reach an instance
+  // at all — so a refusal that depended on one would be a new failure mode wearing a fix's name.
+  const ctx = await scratchCtx(async () => {
+    throw new Error("ECONNREFUSED");
+  }, t);
+  const { flags, positionals } = flagsFor(["offline-web", "--site", "Replica", "--yes"]);
+
+  assert.ok((await init.run(flags, positionals, ctx)).files.length);
 });
 
 test("SH447: --create-site skips the check and travels to the server, as it does on apply", async () => {
