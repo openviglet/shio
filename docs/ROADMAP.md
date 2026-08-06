@@ -84,7 +84,8 @@
 - 📋 **SH477** (deps: SH472 ✅) **A decorative two-letter mark is still the first word of a link's label** — The tile's aria-label equals its own visible text, which says it is a logo, and scanPage reads it as content. → §XVII.53
 - 📋 **SH478** (deps: SH474 ✅) **The three Media Library keys are still fields the File type does not declare** — ALT, CAPTION and TAGS are written by updateMetadata and left undeclared by SH474, so a curator who captions an image turns a green verify red. → §XVII.54
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
-- 📋 **SH503** (deps: SH475 ✅) **A call to action's destination cannot be edited, because one element declares one field** — sh-field takes the anchor for ctaLabel, so ctaHref is captured, stored and rendered with no declaration, and a curator can rename the button but not repoint it. → §XVII.57
+- 📋 **SH505** (deps: SH426 ✅) **A fixed overlay's text is adopted as the intro of three unrelated sections** — The consent banner sits out of flow on every page and contentRoot excludes only header and footer chrome, so its first paragraph became content on three pages at once. → §XVII.58
+- 📋 **SH506** (deps: SH425 ✅) **A script element is proposed as a content block, with a post-type that has no fields** — It recurs on all six pages so the walker promotes it, and the proposal offers Block1 with an empty field list, which can hold nothing and would enter the model. → §XVII.59
 
 ## Block F — Market positioning
 
@@ -95,15 +96,7 @@
 
 ## Block R — End-user documentation for 2026.3 (docs-shio)
 
-- 📋 **SH490** (deps: SH482 ✅, SH483 ✅) **The introduction explains a product that no longer exists, so a newcomer starts wrong** — getting-started/intro and core-concepts teach Nashorn pages and shObject and never reach addresses, drafts or the division of labour a reader needs first. → §XVIII.12
-- 📋 **SH491** (deps: SH482 ✅, SH483 ✅) **The architecture page draws a CMS whose engine, agent gateway and delivery path are all wrong** — It diagrams Nashorn rendering, an Elasticsearch dependency and no agent surface, so the one page an evaluator reads describes a system Shio is not. → §XVIII.13
-- 📋 **SH493** (deps: SH482 ✅, SH22 ✅) **Multi-tenancy is undocumented and the admin guide still describes a single-instance install** — SH22's provisioning, membership, quota and suspension change how Shio is installed, administered and secured, and the word tenant appears in no page. → §XVIII.15
-- 📋 **SH494** (deps: SH482 ✅) **The docs promise search out of the box while Turing indexing is off by default** — search-caching.md says content is automatically indexed with no configuration required, and indexing is opt-in and reached only on publish, so the page is a false promise. → §XVIII.16
-- 📋 **SH495** (deps: SH482 ✅) **The REST, configuration and security references list endpoints, properties and rules that moved** — They predate the unified post model, the name-keyed post types, the stateless token paths and the Nashorn removal, so every table on them is unverifiable. → §XVIII.17
-- 📋 **SH496** (deps: SH482 ✅, SH490) **Content modelling and the delivery SDK pages describe a model and a client that changed** — Post types are one name-keyed surface now, addresses are the SH79 grammar, and the CDA pages predate the shapes the console itself reads, so a front-end reader is misled. → §XVIII.18
-- 📋 **SH497** (deps: SH484 ✅) **The one thing a buyer compares agent-native CMSs on, token cost, is unpublished** — Response budgets, terse mode and the build-a-site benchmark are Block M's measured product feature, and no page says what a call costs or how to spend less. → §XVIII.19
-- 📋 **SH498** (deps: SH491) **The diagrams directory carries fourteen Turing and Dumont sources and not one Shio diagram** — Every figure in docs-shio is inline mermaid the repo's conventions reserve for small ones, and the agent loop, the render pipeline and replication have no figure at all. → §XVIII.20
-- 💭 **SH499** (deps: SH479 ✅, SH487 ✅) **No published example is ever executed, so a renamed verb rots the docs silently** — This block writes CLI invocations, MCP calls and CDA requests, and nothing runs one against an instance, which is precisely how the 2018 pages became wrong. → §XVIII.21
+- 📋 **SH499** (deps: SH479 ✅, SH487 ✅) **No published example is ever executed, so a renamed verb rots the docs silently** — 57 executable blocks over 17 pages carry 65 assertable subjects, so both questions are answered: it lives in cli/conformance/, and it is two instruments rather than one. → §XVIII.21
 
 ## Non-goals (do NOT add as tasks)
 

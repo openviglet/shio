@@ -1570,32 +1570,57 @@ should not be offered for a site whose pages hold sections — `init --site` kno
 site and can read whether its Pages carry any, so the wrong scaffold is refusable rather
 than silently useless.
 
-### XVII.57 A link is two fields on one element (SH503)
+### XVII.58 An overlay is chrome that is neither header nor footer (SH505)
 
-Counting the annotations against the fields the content actually fills gives **9 of
-10**. The one missing is `ctaHref` — the destination of the call to action. The element
-is
+Three candidates on three different pages were proposed with the same `intro`: **"We
+respect your privacy"**. It is the cookie consent banner. In the captured markup it sits
+in `<div aria-live="polite" class="fixed inset-x-0 bottom-0 z-50 …">`, out of flow at
+the bottom of every page, and its first paragraph was attributed to a `SectionFaq` on
+`/` and to a `SectionFeatureGrid` on `/dumont/`, `/turing/` and `/shio/`.
 
-    <a class="shio-cta-link" sh-field="ctaLabel" href="https://…/model-catalog/" data-shio-prop="ctaLabel">
+So a curator opening the FAQ to edit "the intro" would be editing a consent notice, and
+the same string becomes content in three places at once — which is also the tell, since
+a field that repeats across unrelated sections is not that section's.
 
-so a curator can rename the button and cannot repoint it. The value is captured, stored
-on the section and rendered into the page; only the declaration is absent.
+`contentRoot` already excludes chrome, and the reasoning transfers exactly: a fixed
+overlay appears on every page, belongs to none of them, and is transient. It is simply
+neither header nor footer, so the existing exclusion does not reach it.
 
-The cause is a limit of the annotation, not an oversight in the template: **one element
-declares one field**, and a link is two — its text and its target. `sh-field="ctaLabel"`
-takes the anchor, so `ctaHref` has nowhere left to go. `image` does not have the problem
-because its element is the `<img>` and the field it declares *is* the attribute
-(`sh-field="image"` on `src`), so the one-to-one holds there.
+A `--render` capture has the signals in hand, which is why this is findable rather than
+a guess: `position: fixed` (as a class here, `fixed inset-x-0 bottom-0 z-50`),
+`aria-live`, `role="dialog"` and `aria-modal`. Any one of them marks a region that is
+painted over the page rather than part of it.
 
-It reaches every pairing of that shape in the vocabulary. `SectionCta` has `ctaLabel`
-and `ctaHref` too, and any future field that qualifies another on the same element will
-land here.
+This is the authorable path's version of SH441. There, chrome assets belonged to no
+block and stranded; here, an overlay's text belongs to no block and is adopted by three.
+Excluding it is one predicate, and the assertion is that no field value appears on
+candidates that share no page.
 
-Two ways out, and the choice is the protocol's rather than this template's. Either an
-element may declare more than one field — a second attribute naming the field and the
-attribute it edits — or the anchor is wrapped so the text and the href each own an
-element. The first is the honest one: a link is one thing to a curator, and splitting it
-into two boxes to satisfy the markup is the tail wagging the dog.
+### XVII.59 A candidate that is only a script (SH506)
+
+One of six candidates is a `<script>`. Its entry reads `"signature": "script"`, `"tag":
+"script"`, `"type": null`, `"fields": {}`, `"loss":
+{"elements":[{"name":"script","count":1}]}`, and it proposes a post-type: `{"name":
+"Block1", "fields": []}`. It recurs on all six pages, which is what promoted it — a
+block seen everywhere looks structural.
+
+A script is behaviour, and SH469 gave behaviour its own list, so this is the block
+walker reaching a node the phase beside it already owns. The proposal even names the
+loss as `1×<script>`, which is the whole of the block: there is nothing else in it.
+
+Accepting it would write a post-type with no fields into the model. Nothing can be
+authored in it, `verify` would find an empty type, and the name is a counter — `Block1`
+— so a second unmatched block would be `Block2` and neither says anything. A fieldless
+post-type is not a conversion of anything.
+
+The rule is available at the point of the decision. A candidate whose own tag is
+`script`, `style`, `link`, `meta` or `noscript` is not content, and a proposed post-type
+with **zero** derivable fields is not worth proposing whatever its tag — the second is
+the more general of the two and covers a case nobody has hit yet.
+
+It costs a reader more than it looks. Six candidates on a real site is a short enough
+list to read carefully, and one of them being noise makes the reader doubt the other
+five.
 
 ## XVIII End-user documentation for 2026.3 (Block R)
 
@@ -1618,164 +1643,6 @@ subsystem is exactly the defect class no page-by-page pass finds.
 `docs-shio` lives in a different git repository
 (`D:\Git\viglet\vigletdocs\vigletdocs.github.io`), so each task lands two commits: the
 Shio-repo ship, and the vigletdocs page edit.
-
-### XVIII.12 What Shio is, from the beginning (§XVIII.12) (SH490)
-
-`getting-started/intro.md` answers "what is Shio CMS?" with "model content, query it via
-GraphQL, build websites using server-side JavaScript", and `core-concepts.md` teaches
-Sites, Folders, Posts, Post Types, Page Layouts and Regions through the `shObject` API.
-Both are the 2018 product. A reader who finishes them cannot say what an agent does,
-what a curator does, or how a page is addressed.
-
-Rewrite the pair as the didactic layer of the documentation, the one Turing added in its
-second round: what problem Shio solves, who operates it (an agent builds, a human
-curates, the CDA delivers), and then the vocabulary in the order it is needed. Sites,
-folders and posts; post types as the one name-keyed surface; the SH79 address grammar
-including `post:<site>/` for a home page; publishing states and what draft-default
-means; page layouts, regions and themes as the renderer's own words; and what "headless"
-means here given that Shio also serves pages.
-
-No API reference, no configuration table, no console screenshots of admin forms: this is
-the page that makes the rest of the site readable, and it should end by pointing at the
-four hubs rather than at an endpoint.
-
-### XVIII.13 The architecture page (§XVIII.13) (SH491)
-
-`architecture-overview.md` is the page an evaluator, an architect and a new contributor
-all open first, and it is a diagram of the 2018 system: Nashorn as the rendering engine,
-Elasticsearch 9.3.3 as a stated dependency, Hazelcast as the cache tier, and no agent
-surface anywhere.
-
-Rewrite it against the tree: Spring Boot 4 on Java 21, the unified post model over the
-JOINED inheritance the tenant discriminator hangs off, Liquibase owning the schema, the
-Handlebars renderer with themes and regions, the agent gateway and MCP as one shape over
-the same services (P10: never a third contract), the content-as-files projection, the
-CDA and the JS SDKs, `/preview/**` versus the public `/sites/**` delivery grammar, the
-static-file subsystem, and Turing indexing as an opt-in edge rather than a component.
-
-Then the flows, one figure each, which is the half the current page does not have at
-all: an agent write from `batch` to a rendered page, a curator's correction through the
-Universal Editor, a CDA read, a files pull-edit-push round trip, and a replicated site
-being served. Deployment topologies stay, corrected for what actually needs to be
-co-located.
-
-### XVIII.15 Tenancy and the operator's pages (§XVIII.15) (SH493)
-
-`docs-turing/multi-tenancy.md` documents Turing's Block J; Shio's SH22 shipped and has
-nothing. Write the page from `docs/specs/SH22-multi-tenancy.md` and
-`docs/agents/database.md`: what a tenant is, how one is provisioned, membership and
-roles, quotas, suspension, what is isolated and what is shared, and how a single-tenant
-install behaves (which is most installs, and the reader needs to know they can ignore
-the rest).
-
-The operator pages need the same pass. `administration-guide.md` documents users, groups
-and the `admin`/`admin` default with no tenant dimension; `installation-guide.md`
-predates the Spring Boot 4 launch rules the docs repo's own conventions record (a JAR is
-not directly executable, `.conf` files no longer work, external config arrives by
-`--spring.config.additional-location`); and neither says anything about the schema being
-Liquibase's or what a cross-database deployment implies.
-
-The one warning that belongs in bold: the tenant discriminator column is lowercase
-`tenant_id` and the H2 casing parameters exist for that reason, so an operator who
-"fixes" a startup error by flipping `ddl-auto` breaks the schema Liquibase owns.
-
-### XVIII.16 Search, and the promise the page should not make (§XVIII.16) (SH494)
-
-`search-caching.md` states that content is "automatically indexed when created or
-updated" and that this means "your site has search functionality out of the box, no
-additional configuration required". Both halves are wrong: Turing indexing is **off by
-default**, and when it is on, a post reaches the index on publish rather than on save.
-
-Rewrite the page from `docs/agents/turing.md`: what the integration is (Turing's own
-contract, via the ecosystem's SDK, not a second search engine), the configuration that
-turns it on, what is mapped and why the mapping is fixed, the AFTER_COMMIT seam and its
-bounded queue, the incident record when indexing fails, and `searchIndexing` in the
-manifest as what an agent can see.
-
-Two facts a reader needs and the current page hides. Absent is not empty: an instance
-with indexing off has no index, not an empty one. And switching indexing on does not
-index what is already published, which is SH413 in the backlog: until it ships, the page
-must say that a republish is what puts existing content in the index. The caching half
-of the page stays, corrected against what the tree caches today.
-
-### XVIII.17 The reference pages (§XVIII.17) (SH495)
-
-Three reference pages carry tables a reader will copy from, and none of them has been
-checked against the tree in years. `rest-api.md` documents session login plus per-object
-endpoints and knows nothing of `/api/v2/post-unified/**`, the copy and move verbs, the
-trash, or the three endpoints that deliberately do not exist.
-`configuration-reference.md` lists `shio.website.nashorn` and
-`shio.website.javascript.engine` as live properties. `security.md` describes HTTP Basic
-and a cookie CSRF token, with no token scopes, no stateless matcher and no CORS story.
-
-Rebuild each table from the tree, and delete rather than soften what is gone. For
-security, the two things a reader must be able to find are how a non-browser caller
-authenticates without a cookie (and which paths accept that) and what the AGENT scope
-may not do.
-
-The measurement discipline this project applies to itself applies here too: a property
-that cannot be found in the tree does not go on the page, and an endpoint gets on the
-page only with a request and a response somebody ran.
-
-### XVIII.18 Content modelling and delivery (§XVIII.18) (SH496)
-
-`content-modeling.md` teaches Post Types through the console form and stops at field
-types and the publishing workflow. Bring it up to the tree: post types as **one
-name-keyed surface** (the id-keyed twin was retired), the widget catalogue as it exists,
-`widgetSettings`, rename, and the post-types DSL from
-`docs/specs/SH62-post-types-dsl.md`. Add addresses, because a model without an
-addressing grammar cannot be queried.
-
-The four headless pages (`content-delivery-api`, `javascript-client`, `react-sdk`,
-`nextjs-starter`) are the best pages in the set and still need a pass: the read shapes
-the console itself consumes, draft and preview reads, caching and ETags, rate limits,
-generated types, and the version of each package a reader would install today.
-`graphql.md` needs the schema it actually serves.
-
-This is also where the "JS dev, zero Java" claim lives, and it is worth keeping and
-strengthening: a front-end developer building against the CDA is a real audience, and
-the agent-first reorientation does not change what they need. It does add one thing to
-say: how content an agent wrote reaches them, and when.
-
-### XVIII.19 Token economy, published (§XVIII.19) (SH497)
-
-P3 makes tokens a measured budget and a regression a build failure. That is a product
-feature, and `docs-turing` has three pages about cost (`token-usage`, `cost-governance`,
-`llm-gateway`) while `docs-shio` has none.
-
-Write one page: what the response budgets are and which surfaces they bind, the terse
-projection of the manifest and what it saves, the field selection and pagination a
-caller can use to spend less, what a context pack costs against the session it replaces,
-and the build-a-site benchmark as the number the project holds itself to.
-
-Two caveats keep it honest. The benchmark ends at `verify` rather than at a page a
-person can open (SH396 is open), so the published number measures content that passes
-checks. And the manifest's weight is mostly the per-endpoint prose kept verbatim on
-purpose, so terse mode saves about a tenth where a reader might expect a third.
-Publishing both numbers with their limits is worth more than publishing the flattering
-one, and it is the argument the ten laws already make: a cost that is argued rather than
-measured is a defect.
-
-### XVIII.20 The diagrams Shio does not have (§XVIII.20) (SH498)
-
-`diagrams/` holds `turing-*.mmd` (8) and `dumont-*.mmd` (6) and no `shio-*.mmd`. The
-convention the docs repo states is that anything past a small figure is a `.mmd`
-rendered to SVG by `scripts/render-diagrams.mjs`, referenced as
-`/img/diagrams/name.svg`, because inline Mermaid sizes inconsistently.
-`architecture-overview.md`'s component diagram is inline Mermaid with well over the ten
-nodes that convention allows.
-
-Author the Shio set: `shio-architecture` (the overview, 8 to 10 blocks, strictly
-top-to-bottom), `shio-agent-loop` (discover, plan, write, verify, as a sequence),
-`shio-render-pipeline` (page → layout → region → template → digest),
-`shio-content-files` (the pull, edit, push round trip with the three-way merge),
-`shio-replication-flow` (clone → propose → convert → publish → serve), and
-`shio-curation-flow` (draft, review queue, Universal Editor, publish).
-
-Use the repo's four-colour palette and the `graph TB` rule, keep the per-layer detail as
-small inline Mermaid under each figure with a table beneath it, and render before
-committing so the SVGs are in the tree rather than produced at build time on somebody
-else's machine.
 
 ### XVIII.21 The examples nobody runs (§XVIII.21) (SH499)
 
