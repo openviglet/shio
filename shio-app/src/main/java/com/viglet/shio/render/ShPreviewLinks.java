@@ -17,6 +17,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.UnaryOperator;
@@ -159,6 +160,15 @@ public class ShPreviewLinks {
     private static final Pattern SCHEME = Pattern.compile("^[a-zA-Z][a-zA-Z0-9+.\\-]*:");
 
     /**
+     * The {@code <link rel>} tokens whose {@code href} is an asset — the collector's own list.
+     *
+     * <p>See {@link #isAssetLink}. Kept as the same five the CLI's {@code scanPage} reads, because a
+     * sixth on one side is the disagreement SH515's fixture exists to fail on.</p>
+     */
+    private static final Set<String> ASSET_RELS =
+            Set.of("stylesheet", "icon", "apple-touch-icon", "manifest", "preload");
+
+    /**
      * The first path segments the <b>instance</b> serves, which are never a site's own (SH466).
      *
      * <p>The whole exception list, and deliberately short: {@code file_source} is where
@@ -184,6 +194,30 @@ public class ShPreviewLinks {
     private static final Pattern CSS_URL =
             Pattern.compile("url\\(\\s*(?:\"([^\"]*)\"|'([^']*)'|([^)'\"\\s]+))\\s*\\)",
                     Pattern.CASE_INSENSITIVE);
+
+    /**
+     * A {@code fetch()} whose argument is a literal path (SH515).
+     *
+     * <p>The reference that is neither markup nor CSS, and the only one here whose breakage is a
+     * <b>crash</b>: a replica of {@code vilt-group.com} threw {@code insightsData.find is not a
+     * function} because {@code content/home-insights.json} answered 404 and the page parsed the
+     * error body. A page that draws a section from a data file references that file as surely as an
+     * {@code <img>} references its bytes, and leaving the string alone is the same hardcoded base
+     * SH466 removed from {@code href}.</p>
+     *
+     * <p>Three quotings, and a template literal only when it holds <b>no interpolation</b>
+     * ({@code [^`$]*}): {@code ${…}} means the path is computed at runtime and rewriting a fragment
+     * of it would corrupt a string this pass does not understand. Everything else a script can pass
+     * to {@code fetch} — a variable, a concatenation, an {@code import()} — is left exactly as
+     * written, which is the honest boundary for a pass that does not run the code.</p>
+     *
+     * <p>The CLI's {@code FETCH_CALL} is the same grammar, a deliberate second copy for the reason
+     * {@link #CSS_URL} is one: the two are on opposite sides of the wire and the shared contract is
+     * JavaScript's, not either file's. {@code cli/test/fixtures/references-page.html} is the one
+     * fixture both suites read, so a disagreement is a red build rather than a missing image.</p>
+     */
+    private static final Pattern FETCH_CALL =
+            Pattern.compile("\\bfetch\\(\\s*(?:\"([^\"]*)\"|'([^']*)'|`([^`$]*)`)");
 
     /**
      * How many of this site's URLs the editor bridge is handed (SH336's second mechanism).
@@ -306,9 +340,52 @@ public class ShPreviewLinks {
                 style.text(rewritten);
             }
         }
-        for (String attribute : NAVIGABLE) {
-            eachAttribute(document, attribute, value -> rule.apply(value, false));
+        // SH515 — inline scripts, for their `fetch()` literals. `[src]` is excluded: that is a
+        // separate file this pass never has in hand, and its own references are a reader of the
+        // bundle rather than of the page.
+        for (Element script : document.select("script:not([src])")) {
+            String rewritten = eachFetchCall(script.data(), rule);
+            if (rewritten != null) {
+                script.text(rewritten);
+            }
         }
+        for (String attribute : NAVIGABLE) {
+            for (Element element : document.select("[" + attribute + "]")) {
+                String rewritten = rule.apply(element.attr(attribute), isAssetLink(element));
+                if (rewritten != null) {
+                    element.attr(attribute, rewritten);
+                }
+            }
+        }
+    }
+
+    /**
+     * Whether a {@code <link>}'s {@code href} asks for <b>bytes</b> rather than naming a page.
+     *
+     * <p>Found by SH515's parity fixture on its first run, and it is exactly the class of
+     * disagreement that fixture exists for: the capture's collector records a
+     * {@code <link rel="stylesheet">} as an <em>asset</em> to download, and this pass was treating
+     * it as a navigation — so the two halves of one contract disagreed about what a stylesheet is.
+     * The consequence was not cosmetic. The navigable rule rebases <b>unconditionally</b> (SH466,
+     * correctly: a missing page is a finding, a link out of the site is a silent exit), and that
+     * argument is about navigations. For bytes the rule is the opposite one {@link #rewriteAsset}
+     * states — a path this site does not serve is left as written, or a reference the capture can
+     * still be measured against becomes one pointing at nothing.</p>
+     *
+     * <p>The rel set is the collector's own, token by token, which is what makes
+     * {@code rel="shortcut icon"} an icon on both sides. {@code preconnect} and {@code dns-prefetch}
+     * are deliberately absent: those name a <em>host</em>, and there is no path in them to rebase.</p>
+     */
+    private static boolean isAssetLink(Element element) {
+        if (!"link".equals(element.tagName())) {
+            return false;
+        }
+        for (String token : element.attr("rel").toLowerCase(Locale.ROOT).trim().split("\\s+")) {
+            if (ASSET_RELS.contains(token)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** One attribute across the document, left exactly as it was wherever the rule answers null. */
@@ -514,6 +591,39 @@ public class ShPreviewLinks {
         }
         String rewritten = urls.appendTail(out).toString();
         return css.equals(rewritten) ? null : rewritten;
+    }
+
+    /**
+     * Every literal {@code fetch()} argument in a script, or {@code null} when none of them moved.
+     *
+     * <p>Treated as an <b>asset</b> reference, which is the conservative half of the rule and the
+     * right one here: a path this site does not serve is left exactly as written, so a script that
+     * calls its own API on a host this instance knows nothing about is untouched, and only a
+     * reference whose bytes are demonstrably here is repointed at them.</p>
+     */
+    private static String eachFetchCall(String script, Rule rule) {
+        if (script == null || !script.contains("fetch(")) {
+            return null;
+        }
+        Matcher calls = FETCH_CALL.matcher(script);
+        StringBuilder out = new StringBuilder(script.length());
+        while (calls.find()) {
+            String quote = fetchQuoteOf(calls);
+            String raw = valueOf(calls).trim();
+            String served = rule.apply(raw, true);
+            calls.appendReplacement(out, Matcher.quoteReplacement(
+                    "fetch(" + quote + (served == null ? raw : served) + quote));
+        }
+        String rewritten = calls.appendTail(out).toString();
+        return script.equals(rewritten) ? null : rewritten;
+    }
+
+    /** The quoting the author used — and a template literal keeps its backticks. */
+    private static String fetchQuoteOf(Matcher calls) {
+        if (calls.group(1) != null) {
+            return "\"";
+        }
+        return calls.group(2) != null ? "'" : "`";
     }
 
     /** The quoting the author used, kept: a bare `url()` must not gain quotes it never had. */

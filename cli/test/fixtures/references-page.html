@@ -1,0 +1,63 @@
+<!--
+SH515 — every reference shape a page can carry, in one file, read by both sides of the wire.
+
+The collector (`clone.mjs`'s `scanPage`, JavaScript) decides what a capture downloads. The rewriter
+(`ShPreviewLinks`, Java) decides what a served page asks for. They are two readings of one question
+— "what does this page reference" — and until this file they were kept in step by hand, which
+produced four tasks: SH452 and SH455 for stylesheet `url()`, SH473 for the script bundle, and SH515
+for style attributes and `fetch()`. Each added a place to look, and the next unusual reference would
+have produced a fifth.
+
+So the list is declared once, here, beside the page it describes. `clone.test.mjs` asserts the
+collector finds exactly the `asset` lines; `ShReferenceParityTest` asserts the rewriter resolves
+exactly the same set, plus the `link` lines. A reference shape added to the page below without a
+line in this block fails both suites, and a shape one side learns and the other does not fails the
+Java one — which is the direction the defect actually travelled.
+
+Everything resolves against **/en/** — one segment deep, the way the source that produced SH512
+served its home page. Relative on purpose: the strings a real capture leaves behind are relative,
+and a reader that filtered on a leading slash would report this page as clean. Two of them are
+plain-relative rather than `../`, so the base is load-bearing in the expectation and not decoration.
+
+EXPECTED
+asset /css/site.css
+asset /content/insights.json
+asset /en/fonts/body.woff2
+asset /img/background.png
+asset /img/hero.png
+asset /img/inline-style.png
+asset /img/narrow.png
+asset /img/poster.png
+asset /img/wide.png
+asset /js/bundle.js
+link /about
+link /en/careers
+-->
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="../css/site.css">
+  <style>
+    body { background-image: url("../img/background.png"); }
+    @font-face { src: url('fonts/body.woff2'); }
+  </style>
+  <script src="../js/bundle.js"></script>
+</head>
+<body>
+  <a href="../about">About</a>
+  <a href="careers">Careers</a>
+  <a href="https://example.com/elsewhere">Somebody else's</a>
+  <a href="mailto:hello@example.com">Mail</a>
+  <a href="#top">This page</a>
+
+  <img src="../img/hero.png" alt="Hero">
+  <img srcset="../img/wide.png 2x, ../img/narrow.png 1x" alt="Responsive">
+  <video poster="../img/poster.png"></video>
+  <div style="background-image:url('../img/inline-style.png')"></div>
+
+  <script>
+    fetch("../content/insights.json").then((response) => response.json());
+    fetch(computedPath);
+    fetch(`../content/${slug}.json`);
+  </script>
+</body>
+</html>

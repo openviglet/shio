@@ -8,16 +8,18 @@
   "types": "dist/shio-editor-cors.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/shio-editor-cors.d.ts",
       "import": "./dist/shio-editor-cors.js",
       "require": "./dist/shio-editor-cors.umd.cjs"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist"
   ],
   "scripts": {
     "dev": "vite build --watch",
-    "build": "vite build",
+    "build": "vite build && tsc --emitDeclarationOnly",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

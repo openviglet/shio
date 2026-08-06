@@ -42,7 +42,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { unpublished } from "create-shio-app/published";
+import { unpublished } from "@viglet/create-shio-app/published";
 
 import { ShioAgentClient } from "../src/agent-client.mjs";
 import { INVENTORY_FILE, MARKUP_DIR } from "../src/clone.mjs";

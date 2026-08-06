@@ -98,7 +98,6 @@
 - 📋 **SH505** (deps: SH426 ✅) **A fixed overlay's text is adopted as the intro of three unrelated sections** — The consent banner sits out of flow on every page and contentRoot excludes only header and footer chrome, so its first paragraph became content on three pages at once. → §XVII.58
 - 📋 **SH506** (deps: SH425 ✅) **A script element is proposed as a content block, with a post-type that has no fields** — It recurs on all six pages so the walker promotes it, and the proposal offers Block1 with an empty field list, which can hold nothing and would enter the model. → §XVII.59
 - 📋 **SH514** (deps: SH437 ✅) **A zero-byte asset is refused with Spring's default 400, so a conversion dies unexplained** — The source serves an empty stylesheet legitimately and the capture writes it faithfully, and the upload's only answer is a body with no title, detail or fix. → §XVII.67
-- 📋 **SH515** (deps: SH473 ✅) **The rewriter rebases references the collector never fetched, so the page asks for what is not there** — A style attribute's url() and a fetch() string are rebased and never downloaded, so two images 404 and a JSON crash follows on a run that uploaded every asset. → §XVII.68
 - 📋 **SH517** (deps: SH469 ✅) **A rendered capture bakes a script's canvas and its transient classes, freezing behaviour as content** — The source's particles div is empty and the replica holds a dead canvas sized for the capture viewport, alongside scrollspy and active states caught mid-flight. → §XVII.69
 
 ## Block F — Market positioning

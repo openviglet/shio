@@ -1897,34 +1897,6 @@ Whichever, the count belongs in the report. `59 uploaded, 1 with no bytes` is wh
 caller needs to see, not a stack of one failed request — and it is a line the conversion
 already knows how to print.
 
-### XVII.68 One pass finds what the other cannot fetch (SH515)
-
-The replica's console shows three 404s and a crash. `img/about-us.png` and
-`img/working-at-vilt.png` are absent from the tree, and `content/home-insights.json` was
-never fetched — after which `insightsData.find is not a function`, because the JSON the
-page expected is a 404 body.
-
-Where they are referenced is the finding. `about-us.png` comes from
-`style="background-image:url('…')"` — a **style attribute**, not a stylesheet.
-`home-insights.json` comes from `fetch("…")` inside JavaScript. Neither is a markup
-attribute the collector reads (`src`, `href`, `srcset`) nor a `url()` in a stylesheet,
-which SH473 added.
-
-**And the rewriter already found all three.** The served page says
-`url('/sites/vilt/default/en-us/img/about-us.png')` and
-`fetch("/sites/vilt/default/en-us/content/home-insights.json")` — rebased correctly onto the serving base.
-So one pass over the markup knows the reference exists and the other does not, and the pass that knows is
-the one that cannot fetch.
-
-That asymmetry is the defect rather than any single missing pattern. It has now produced
-three tasks — SH452 and SH455 for stylesheet `url()`, SH473 for the script bundle, this
-one for style attributes and `fetch` — each adding a place to look, and the next unusual
-reference will produce a fourth.
-
-They should read one list. Whatever the rewriter can rebase, the collector must fetch,
-asserted as an identity rather than kept in step by hand: every reference the rewriter
-rewrote resolves.
-
 ### XVII.69 Baking content is right, baking machinery is not (SH517)
 
 The hero's background animation is dead, and the markup says why. The source has `<div

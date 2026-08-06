@@ -11,7 +11,7 @@ npm install -g @viglet/shio   # or: npx @viglet/shio <command>
 
 | Command | What it does | Auth |
 |---|---|---|
-| `shio init [name]` | Scaffold a Next.js site wired to the CDA (delegates to `create-shio-app`) | — |
+| `shio init [name]` | Scaffold a Next.js site wired to the CDA (delegates to `@viglet/create-shio-app`) | — |
 | `shio pull` | Pull post-types into `shio/post-types/*.json` | Basic (console) |
 | `shio push` | Apply local post-types back to Shio (`--dry-run`, `--prune`) | Basic (console) |
 | `shio types` | Generate a `.d.ts` from the live post-types (autocomplete on `post.attrs.*`) | CDA token |

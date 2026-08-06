@@ -43,7 +43,7 @@
  * is a fact `git log` already holds.
  */
 
-import { URL_CALL, kindForUrl } from "./clone-assets.mjs";
+import { FETCH_CALL, URL_CALL, kindForUrl } from "./clone-assets.mjs";
 
 /**
  * The inventory's shape version. Bumped when a consumer would read an old file wrongly.
@@ -301,6 +301,32 @@ export function styleBlocks(html) {
 }
 
 /**
+ * The bodies of a page's inline `<script>` blocks, in source order (SH515).
+ *
+ * <p>`styleBlocks`' twin, and it exists for the same reason: `stripNonMarkup` blanks these before
+ * the token loop, so a reference inside one is invisible to the scanner that reads the markup. The
+ * references that live here are `fetch()` calls — a page that draws a section from a JSON file, and
+ * the one shape whose absence is a **crash** rather than a missing image.</p>
+ *
+ * <p>Inline only. A `<script src>` is a separate file the inventory already records as an asset
+ * (SH473), and its own `fetch()` calls are a reference inside somebody else's bundle — reachable
+ * only by re-scanning a downloaded script, which is a larger thing than this and a different task.
+ * A `type` that is not JavaScript is skipped rather than scanned: `application/ld+json` is data
+ * about the page, and a `fetch(` in it would be a string in somebody's structured data.</p>
+ */
+export function scriptBlocks(html) {
+  const out = [];
+  const pattern = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
+  for (const [, attrs, body] of String(html ?? "").matchAll(pattern)) {
+    if (/\bsrc\s*=/i.test(attrs ?? "")) continue;
+    const type = /\btype\s*=\s*["']?([^"'\s>]+)/i.exec(attrs ?? "")?.[1];
+    if (type && !/^(text|application)\/(java|ecma)script$|^module$/i.test(type)) continue;
+    if (body.trim()) out.push(body);
+  }
+  return out;
+}
+
+/**
  * The tag boundary, and it is deliberately **coarse**.
  *
  * <p>The precise version — a repeated group of `name(=value)?` with quoted alternatives — has nested
@@ -420,6 +446,20 @@ export function scanPage(html, pageUrl) {
     }
   }
 
+  // SH515 — and the strings a `fetch()` names, which are neither markup nor CSS and which the
+  // rewriter rebases. `content/home-insights.json` was rebased onto the serving base, never
+  // downloaded, and the page then threw `insightsData.find is not a function` on a 404 body: one
+  // pass knew the reference existed and the pass that could fetch it did not. `data` rather than a
+  // guess from the extension, because what makes this a reference is the call and not the file
+  // name — and because that kind is what puts it behind `--scripts`, where its caller already is.
+  for (const body of scriptBlocks(html)) {
+    for (const match of body.matchAll(FETCH_CALL)) {
+      const raw = (match[1] ?? match[2] ?? match[3] ?? "").trim();
+      const url = raw ? resolveHref(raw, pageUrl) : null;
+      if (url) doc.assets.push({ url: url.href, kind: "data" });
+    }
+  }
+
   for (const token of tokenize(stripNonMarkup(html))) {
     if (token.type === "text") {
       if (inTitle && !doc.title) doc.title = collapse(token.text) || null;
@@ -465,6 +505,17 @@ export function scanPage(html, pageUrl) {
       continue;
     }
     const attrs = parseAttrs(token.attrs);
+    // SH515 — the `url()` calls in a `style` **attribute**, which are markup and are not a
+    // stylesheet, so neither pass above saw them. `background-image:url('img/about-us.png')` is how
+    // a hero image reaches a page that has no `<img>` for it, and the rewriter has always rebased
+    // it; the whole finding is that the pass that could fetch it did not know it was there.
+    if (attrs.style?.includes("(")) {
+      for (const match of attrs.style.matchAll(URL_CALL)) {
+        const raw = (match[1] ?? match[2] ?? match[3] ?? "").trim();
+        const url = raw ? resolveHref(raw, pageUrl) : null;
+        if (url) doc.assets.push({ url: url.href, kind: kindForUrl(url.pathname) });
+      }
+    }
     switch (name) {
       case "html":
         if (attrs.lang) doc.lang = attrs.lang.trim();

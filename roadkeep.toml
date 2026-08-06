@@ -73,11 +73,11 @@ ref_scheme = "outline"
 # same reason one level up and has shipped: the gate said `ok` on that page, so until it read
 # what it approved, a green run was not evidence and each round was hand-measured with a
 # resolver I got wrong twice. Then
-# the two that break a replica on sight (SH512's relative refs, SH515's uncollected ones), then
+# the two that broke a replica on sight (SH512's relative refs, SH515's uncollected ones,
+# both shipped), then
 # the capture's own honesty (SH505's overlay text becoming content, SH506's script-as-block,
 # SH517's baked canvas), and last the two that only cost time (SH513, SH514).
 priority = [
-  "SH515",
   "SH505",
   "SH506",
   "SH517",

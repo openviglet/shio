@@ -269,6 +269,7 @@ test("SH473: every kind the downloader will fetch is a kind the scanner can prod
     </head><body>
     <img src="/img/hero.png" alt="">
     <video src="/media/clip.mp4"></video>
+    <script>fetch("/content/insights.json")</script>
     <p>${"text ".repeat(60)}</p>
     </body></html>`;
   const produced = new Set(scanPage(one, "https://x.test/").assets.map((asset) => asset.kind));
@@ -281,6 +282,46 @@ test("SH473: every kind the downloader will fetch is a kind the scanner can prod
       + `flag ships with nothing to act on. Produced: ${[...produced].sort().join(" ")}`,
   );
 });
+
+/**
+ * SH515 — the collector's half of the one list.
+ *
+ * <p>Four tasks added a place to look (SH452, SH455, SH473, and this one for style attributes and
+ * `fetch()`), and each was found by a replica that was already broken: three 404s and a crash,
+ * `insightsData.find is not a function`, because the JSON the page expected was a 404 body. The
+ * asymmetry was the defect rather than any single missing pattern — **the rewriter had already
+ * found all three**, and the pass that knew was the one that could not fetch.</p>
+ *
+ * <p>So the expectation is not written here. It is declared in the fixture, beside the page, and
+ * `ShReferenceParityTest` reads the same file: what this asserts is that the collector produces the
+ * declared set, and what that asserts is that the rewriter resolves it too.</p>
+ */
+test("SH515: the collector finds every reference the shared fixture declares", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const { fileURLToPath } = await import("node:url");
+  const path = fileURLToPath(new URL("./fixtures/references-page.html", import.meta.url));
+  const html = await readFile(path, "utf8");
+
+  const doc = scanPage(html, "https://x.test/en/");
+
+  assert.deepEqual(
+    [...new Set(doc.assets.map((asset) => new URL(asset.url).pathname))].sort(),
+    expectedIn(html, "asset"),
+    "every reference shape on that page, resolved against /en/ — a style attribute's url() and a "
+      + "fetch() literal included, which are the two the capture used to miss",
+  );
+  assert.equal(
+    doc.assets.find((asset) => asset.url.endsWith("/content/insights.json"))?.kind,
+    "data",
+    "and the fetched file is `data`, which is what puts it behind --scripts: without the bundle "
+      + "nothing on the replica would ever ask for it",
+  );
+});
+
+/** The fixture's own EXPECTED block — the one place the list lives, read rather than restated. */
+function expectedIn(html, kind) {
+  return [...html.matchAll(new RegExp(`^${kind} (\\S+)$`, "gm"))].map((match) => match[1]).sort();
+}
 
 test("a url() inside an inline <style> is an asset the inventory names (SH455)", () => {
   // The measured case: a page with critical CSS and no stylesheet file. SH452 made a *downloaded*

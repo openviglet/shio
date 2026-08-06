@@ -1010,10 +1010,17 @@ class ShPageRenderTest {
                 <a href="/api/v2/ping">the instance</a>""", prefix, page);
 
         assertThat(hrefsIn(html))
-                .as("the one thing a replica must never emit is an href whose base is the source's")
+                .as("the one thing a replica must never emit is an href whose base is the source's "
+                        + "— except that SH515 took the `<link rel=icon>` out of this rule. Its "
+                        + "href asks for BYTES, and the capture's collector has always recorded it "
+                        + "as an asset; the two halves of one contract disagreed about what a "
+                        + "favicon is, and the unconditional rebase is the navigation argument "
+                        + "(SH466) applied where the opposite one holds — this site serves nothing "
+                        + "at /favicon.ico, so rebasing it makes a measurable reference point at "
+                        + "nothing. `page-reference-broken` reports it either way (SH516)")
                 .containsExactlyInAnyOrder(
                         prefix + "/a", prefix + "/b/c", prefix + "/d?q=1#top",
-                        prefix + "/favicon.ico", "/api/v2/ping");
+                        "/favicon.ico", "/api/v2/ping");
         assertThat(previewLinks.rewriteInto(html, prefix, page))
                 .as("and the public prefix is an instance route too, which is what keeps a second "
                         + "pass a no-op now that the index no longer decides")

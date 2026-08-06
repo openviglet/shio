@@ -149,7 +149,12 @@ test("the downloadable kinds are the ones a replica needs to render", () => {
   // lists, and SH469's `BEHAVIOUR` is the second one — opt-in, and reported when it is not taken.
   assert.deepEqual([...DOWNLOADABLE].sort(), ["font", "icon", "image", "manifest", "media", "stylesheet"]);
   assert.ok(!DOWNLOADABLE.has("script"));
-  assert.deepEqual([...BEHAVIOUR], ["script"]);
+  // SH515 — `data` is a file a `fetch()` names, and it is on the behaviour side for the reason the
+  // split already states: a script requests it and nothing else does, so without --scripts there is
+  // no bundle to ask for it and downloading it would fetch bytes nobody will ever serve. With the
+  // flag it is exactly as load-bearing as the bundle — the replica that produced the task crashed
+  // on a 404 body rather than merely missing an image.
+  assert.deepEqual([...BEHAVIOUR].sort(), ["data", "script"]);
 });
 
 // --- SH469: the replica keeps the appearance and drops the behaviour ---

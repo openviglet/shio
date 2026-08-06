@@ -1,4 +1,4 @@
-# create-shio-app
+# @viglet/create-shio-app
 
 Scaffold a **Next.js (App Router)** site wired to the **Shio CMS Content Delivery
 API**. The flagship "JS dev, zero Java" starter — a JavaScript/TypeScript
@@ -9,15 +9,15 @@ developer builds a full site against Shio without ever touching the Java backend
 Interactive:
 
 ```bash
-npm create shio-app@latest
+npm create @viglet/shio-app@latest
 # or
-npx create-shio-app
+npx @viglet/create-shio-app
 ```
 
 Non-interactive (CI / scripted):
 
 ```bash
-npx create-shio-app my-site \
+npx @viglet/create-shio-app my-site \
   --url https://cms.example.com \
   --site <site-id> \
   --token <cda-token> \

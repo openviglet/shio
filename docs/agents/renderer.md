@@ -588,6 +588,28 @@ renderer over one body of content at a second address. See the section on it bel
   skipped whole, since splitting on commas would tear it), `poster`, and `url()` in a `style`
   *attribute* as well as in a `<style>` element. That last one is half of SH515's evidence, and the
   reason the list is widened in one go rather than one entry per incident.
+- **One list, asserted across the wire (SH515)** — the collector (`clone.mjs`, what a capture
+  downloads) and the rewriter (`ShPreviewLinks`, what a served page asks for) are two readings of one
+  question, and keeping them in step by hand produced four tasks: SH452 and SH455 for stylesheet
+  `url()`, SH473 for the script bundle, SH515 for style attributes and `fetch()`. The measured
+  consequence was three 404s **and a crash** — `insightsData.find is not a function`, because
+  `content/home-insights.json` was rebased onto the serving base and never fetched, so the page
+  parsed a 404 body. *The pass that knew the reference existed was the one that could not fetch it.*
+  Both sides gained the two missing shapes — the collector reads the `style` attribute and inline
+  `<script>` bodies (`scriptBlocks`, `styleBlocks`' twin, because `stripNonMarkup` blanks them); the
+  rewriter rebases literal `fetch()` arguments. `FETCH_CALL` is a deliberate second copy of one
+  grammar for `CSS_URL`'s reason, and the fixture is what stops them drifting:
+  **`cli/test/fixtures/references-page.html`** carries every reference shape *and* the expected
+  resolved set in one block, `clone.test.mjs` asserts the collector produces it and
+  `ShReferenceParityTest` asserts the rewriter resolves it. A `fetch()` whose argument is computed —
+  a variable, or a template literal holding `${…}` — is known to **neither** side, together: a
+  rewrite of a fragment would corrupt a string the pass does not understand and a download would
+  fetch what the page never asks for. **The fixture found a disagreement on its first run**: a
+  `<link rel=stylesheet|icon|manifest|preload>` is an *asset* to the collector and was a
+  *navigation* to the rewriter, so a favicon this site does not serve was rebased into the replica —
+  SH466's unconditional rebase is the argument for navigations, and for bytes the opposite rule
+  holds. `ASSET_RELS` is now the collector's own five, and `page-reference-broken` (SH516) reports
+  the missing one either way.
 - **`{{theme.css}}` is raw, and it had to become so before any of that could work (SH461)** —
   the documented layout is `<style>{{theme.css}}</style>`, the double stash escapes, and CSS decodes
   no entities, so `url("/fonts/inter.woff2")` reached the browser as `url(&quot;/fonts/…&quot;)`: an

@@ -55,8 +55,14 @@ export const DOWNLOADABLE = new Set(["image", "stylesheet", "font", "icon", "med
  * hydrate markup it did not just produce — which may work, may duplicate the page, and may throw.
  * Capturing behaviour is therefore <b>a decision</b> and not a default, exactly as off-origin bytes
  * are. What is not optional is <em>saying</em> that it was discarded: see `withDownloads`' note.</p>
+ *
+ * <p><b>`data` joined it with SH515</b>, and it belongs on this side of the line rather than in
+ * `DOWNLOADABLE` for a reason the two lists already state: a file a `fetch()` names is requested by
+ * a script and by nothing else, so on a capture without `--scripts` there is no bundle to ask for
+ * it and downloading it would fetch bytes the replica will never serve to anybody. With the flag it
+ * is exactly as load-bearing as the bundle — the page that produced this crashed on a 404 body.</p>
  */
-export const BEHAVIOUR = new Set(["script"]);
+export const BEHAVIOUR = new Set(["script", "data"]);
 
 /**
  * Why a behaviour asset is not in the tree when the flag was not passed — the exact string, shared.
@@ -84,6 +90,28 @@ const TRAVERSAL = new Set([".", ".."]);
  * so it adds a copy of the pattern to neither side.</p>
  */
 export const URL_CALL = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)'"\s]+))\s*\)/gi;
+
+/**
+ * A `fetch()` whose argument is a literal path (SH515).
+ *
+ * <p>The reference shape that is neither markup nor CSS, and the one that produced a **crash**
+ * rather than a missing image: `content/home-insights.json` was never fetched, so
+ * `insightsData.find is not a function` on a 404 body. A page that draws a section from a data file
+ * references that file as surely as an `<img>` references its bytes.</p>
+ *
+ * <p>Three quotings, and the template literal only when it holds **no interpolation**: `${…}` means
+ * the path is computed, and a capture that guessed at one would download a URL the page never asks
+ * for. What is left out is every other way a string can reach `fetch` — a variable, a concatenation,
+ * an `import()`. Those are not knowable without running the script, and the honest boundary is
+ * "a literal, as written".</p>
+ *
+ * <p>`ShPreviewLinks.FETCH_CALL` is the same grammar in Java, and the two are a deliberate second
+ * copy for the reason its own `CSS_URL` is: they are on different sides of the wire, and what would
+ * be a real defect is the two disagreeing. `references-page.html` is the fixture both read, and both
+ * suites assert the same set out of it.</p>
+ */
+export const FETCH_CALL =
+  /\bfetch\(\s*(?:"([^"]*)"|'([^']*)'|`([^`$]*)`)/g;
 
 /**
  * What kind of asset a URL names, from its extension alone (SH452).

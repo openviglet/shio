@@ -1036,6 +1036,22 @@ reads the same fact twice with a `--assets` instruction on the second copy.
 through `scanPage` fails there, naming itself — which is exactly what SH469's own tests could not
 catch, having hand-written an inventory holding a `script` row no capture could make.
 
+**And the coverage that mattered was against the *other* half, not against a list (SH515).** That
+lint asks whether the scanner can produce every kind the downloader fetches; the defect was that the
+**rewriter** could rebase references the scanner had never heard of. Measured: three 404s and a
+crash on a replica — `insightsData.find is not a function`, because `content/home-insights.json` was
+served rebased and never downloaded, so the page parsed a 404 body. Both missing shapes were
+markup-adjacent rather than markup: a **`style` attribute**'s `url()` (`background-image` is how a
+hero reaches a page with no `<img>`) and a **`fetch()`** literal in an inline script, which
+`stripNonMarkup` blanks — hence `scriptBlocks`, `styleBlocks`' twin, inline and same-page only. A
+`fetch()`ed file is `kind: "data"` and joins **`BEHAVIOUR`**, not `DOWNLOADABLE`: a script requests
+it and nothing else does, so without `--scripts` there is no bundle to ask for it. The instrument is
+one fixture read from both languages — `cli/test/fixtures/references-page.html` holds the page and
+its expected resolved set, `clone.test.mjs` asserts the collector produces it, and Java's
+`ShReferenceParityTest` asserts the rewriter resolves the same set. It failed on its first run, on a
+disagreement neither side would have reported: a `<link rel=stylesheet>` was an asset here and a
+navigation there.
+
 **An element boundary inside a link is a separator, and it used to be nothing (SH468).** A captured
 navigation carried `DuDumont DEP`, `ShShio CMS` and `TuTuring ES` — the label with a two-letter prefix
 fused onto its first word. The markup explains it exactly: the anchor holds a 28×28 brand tile
