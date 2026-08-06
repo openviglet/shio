@@ -58,6 +58,7 @@
 - 📋 **SH394** (deps: SH132 ✅, SH208) **The CLI's discovery surface has no budget, so it reads as free** — tools/list is capped at 2375 tokens and checked every build while shio --help is 14 KB nobody measures, so the two surfaces cannot be compared on the cost that decides between them. → §XIII.13
 - 📋 **SH396** (deps: SH112 ✅, SH395) **The build-a-site benchmark ends at verify, before anything renders** — Its four calls stop at a lint, so the measured job is content that passes checks rather than a page a person can open, and the traps between the two are unmeasured. → §XIII.14
 - 📋 **SH513** (deps: —) **The CLI prints a status code and discards the problem document behind it** — A 400 answered with title, detail and fix reaches the reader as the server answered 400, so the teaching error P6 requires is paid for by the endpoint and received by nobody. → §XVII.66
+- 📋 **SH519** (deps: —) **The CLI corrupts non-ASCII content on the way in, so accented text is stored as mojibake** — Its own document holds correct UTF-8 and curl posting that file stores it correctly, so the bytes are read as Latin-1 in the CLI's transport and re-encoded. → §IX.32
 
 ## Block N — Realignment of what already shipped
 
