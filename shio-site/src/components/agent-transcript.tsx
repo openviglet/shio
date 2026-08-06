@@ -1,82 +1,107 @@
-import { useEffect, useRef, useState } from "react";
-import { CornerDownRight } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, CornerDownRight, Pause, Play, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TRANSCRIPT } from "@/lib/site-content";
 
+const LAST = TRANSCRIPT.length - 1;
+const STEP_MS = 2600;
+
 /**
- * The hero's centrepiece: a Claude Code session that builds one page.
+ * SH531 — the centrepiece: a Claude Code session that builds one page, as a
+ * player rather than a still.
  *
- * Three constraints, in the order they constrain the implementation.
+ * Four constraints, in the order they constrain the implementation.
  *
- * 1. **It is a recording and it says so.** The badge in the title bar is not
- *    decoration — a scripted demo dressed as a live connection is precisely the
- *    surprise law P7 forbids, and this page is an argument about that law.
- *    SH540 points it at a public read-only instance; until then, this.
- * 2. **It must be complete without motion.** The whole content is text, so the
- *    prerendered HTML carries every step and the reveal is an enhancement on
- *    top. `prefers-reduced-motion` keeps the finished transcript rather than
- *    freezing it half-typed, and so does a client that never hydrates.
- * 3. **The copy is content, not markup.** The steps live in `site-content.ts`,
- *    so re-scripting the session never touches this file.
+ * 1. **It is a recording and it says so.** The badge is not decoration — a
+ *    scripted demo dressed as a live connection is precisely the surprise law
+ *    P7 forbids, and this page is an argument about that law. SH540 points it
+ *    at a public read-only instance; until then, this.
+ * 2. **Every step is in the DOM at every moment.** The current one is lit and
+ *    the others are dimmed, so a screen reader gets the whole session at once,
+ *    the prerendered HTML carries all six, and the Markdown twin does too.
+ *    Revealing by mounting would have made all three false.
+ * 3. **Motion is an enhancement on top of that.** `prefers-reduced-motion`
+ *    means no autoplay at all — it opens on the finished session with the
+ *    controls still working, which is a better answer than a frozen animation.
+ * 4. **The copy is content, not markup.** The steps and their artefacts live in
+ *    `site-content.ts`, so re-scripting the session never touches this file.
  *
- * The reveal starts only in an effect: the server and the client's first render
- * both draw all six steps, which is what keeps hydration silent.
+ * Autoplay starts only in an effect and only once the panel is on screen, so
+ * the server and the client's first render agree, and a visitor who scrolls
+ * back finds the session where they left it rather than finished.
  */
 export function AgentTranscript({ className }: { className?: string }) {
-  const [shown, setShown] = useState(TRANSCRIPT.length);
+  // SSR and the first client render both draw the finished session.
+  const [current, setCurrent] = useState(LAST);
   const [playing, setPlaying] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLOListElement>(null);
+  const startedRef = useRef(false);
 
+  const step = TRANSCRIPT[current];
+
+  /** Any manual control stops the playback — the reader is driving now. */
+  const goTo = useCallback((next: number) => {
+    setPlaying(false);
+    setCurrent(Math.max(0, Math.min(LAST, next)));
+  }, []);
+
+  const replay = useCallback(() => {
+    setCurrent(0);
+    setPlaying(true);
+  }, []);
+
+  // Arm autoplay once, when the panel first comes into view.
   useEffect(() => {
     if (globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-
-    // Don't run the reveal off-screen: a visitor who scrolls down and back
-    // should find the session at the start, not already finished.
     const node = rootRef.current;
     if (!node) return;
-    let timer: number | undefined;
-
-    const play = () => {
-      setPlaying(true);
-      setShown(1);
-      let i = 1;
-      timer = window.setInterval(() => {
-        i += 1;
-        setShown(i);
-        if (i >= TRANSCRIPT.length) window.clearInterval(timer);
-      }, 1100);
-    };
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          observer.disconnect();
-          play();
-        }
+        if (!entries.some((e) => e.isIntersecting) || startedRef.current) return;
+        startedRef.current = true;
+        observer.disconnect();
+        setCurrent(0);
+        setPlaying(true);
       },
-      { threshold: 0.25 }
+      { threshold: 0.3 }
     );
     observer.observe(node);
-
-    return () => {
-      observer.disconnect();
-      if (timer) window.clearInterval(timer);
-    };
+    return () => observer.disconnect();
   }, []);
 
-  // Follow the newest step down. The panel is shorter than the finished
-  // transcript on purpose — a session scrolls — but only while it is playing:
-  // scrolling a static block of text the visitor has not started reading is the
-  // opposite of helpful.
+  // Advance while playing, and stop at the end rather than looping: a loop makes
+  // the section never settle, which is what makes an animated hero tiring.
   useEffect(() => {
     if (!playing) return;
-    const list = listRef.current;
-    const last = list?.children[shown - 1];
-    last?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [shown, playing]);
+    if (current >= LAST) {
+      setPlaying(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setCurrent((c) => c + 1), STEP_MS);
+    return () => window.clearTimeout(timer);
+  }, [playing, current]);
 
-  const done = shown >= TRANSCRIPT.length;
+  // Keep the lit step in view inside the scrolling list.
+  useEffect(() => {
+    listRef.current?.children[current]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [current]);
+
+  /**
+   * Arrow-key stepping, attached to each control rather than to a container:
+   * the buttons are natively interactive, so this needs no role and no
+   * tabindex on a div that is not a widget.
+   */
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      goTo(current + 1);
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      goTo(current - 1);
+    }
+  };
 
   return (
     <div
@@ -86,7 +111,8 @@ export function AgentTranscript({ className }: { className?: string }) {
         className
       )}
     >
-      <div className="flex items-center gap-2 border-b border-white/10 px-4 py-2.5">
+      {/* Title bar + controls */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-white/10 px-4 py-2.5">
         <span className="flex gap-1.5" aria-hidden>
           <span className="size-2.5 rounded-full bg-[#ff6347]/70" />
           <span className="size-2.5 rounded-full bg-[#f5c46b]/70" />
@@ -95,54 +121,155 @@ export function AgentTranscript({ className }: { className?: string }) {
         <span className="ml-1 font-mono text-xs font-semibold text-[#b39c94]">
           claude &mdash; shio (MCP)
         </span>
-        <span className="ml-auto rounded-full border border-white/12 px-2 py-0.5 font-mono text-[0.65rem] font-bold tracking-wide text-[#a89189] uppercase">
+        <span className="rounded-full border border-white/12 px-2 py-0.5 font-mono text-[0.65rem] font-bold tracking-wide text-[#a89189] uppercase">
           scripted
         </span>
+
+        <div className="ml-auto flex items-center gap-0.5">
+          <PlayerButton
+            label="Previous call"
+            onClick={() => goTo(current - 1)}
+            onKeyDown={onKeyDown}
+            disabled={current === 0}
+          >
+            <ChevronLeft className="size-4" />
+          </PlayerButton>
+          {current >= LAST ? (
+            <PlayerButton label="Replay the session" onClick={replay} onKeyDown={onKeyDown}>
+              <RotateCcw className="size-3.5" />
+            </PlayerButton>
+          ) : (
+            <PlayerButton
+              label={playing ? "Pause" : "Play"}
+              onClick={() => setPlaying((p) => !p)}
+              onKeyDown={onKeyDown}
+            >
+              {playing ? <Pause className="size-3.5" /> : <Play className="size-3.5" />}
+            </PlayerButton>
+          )}
+          <PlayerButton
+            label="Next call"
+            onClick={() => goTo(current + 1)}
+            onKeyDown={onKeyDown}
+            disabled={current >= LAST}
+          >
+            <ChevronRight className="size-4" />
+          </PlayerButton>
+        </div>
       </div>
 
+      {/* The session */}
       <ol
         ref={listRef}
-        className="max-h-[26rem] space-y-4 overflow-y-auto px-4 py-4 font-mono text-[0.8rem] leading-relaxed sm:text-[0.84rem]"
+        className="max-h-[15rem] space-y-3.5 overflow-y-auto px-4 py-3.5 font-mono text-[0.78rem] leading-relaxed"
       >
-        {TRANSCRIPT.map((step, i) => (
+        {TRANSCRIPT.map((s, i) => (
           <li
-            key={step.tool}
+            key={s.tool}
             className={cn(
               "transition-opacity duration-500",
-              i < shown ? "opacity-100" : "opacity-0"
+              i === current ? "opacity-100" : "opacity-35"
             )}
-            aria-hidden={i >= shown ? true : undefined}
           >
             <p className="flex gap-2 text-[#c9b6ae]">
               <span className="shrink-0 select-none text-[#ff8a6b]">&gt;</span>
-              <span className="min-w-0">{step.call}</span>
+              <span className="min-w-0">{s.call}</span>
             </p>
-            <p className="mt-1.5 flex gap-2">
+            <p className="mt-1 flex gap-2">
               <span className="shrink-0 select-none text-[#7dd3a0]">&#9679;</span>
-              <span className="min-w-0 break-words text-[#ffb08a]">{step.tool}</span>
+              <span className="min-w-0 break-words text-[#ffb08a]">{s.tool}</span>
+              <span className="ml-auto shrink-0 rounded border border-[#ff6347]/30 bg-[#ff6347]/10 px-1.5 text-[0.62rem] font-bold text-[#ff9478]">
+                {s.law}
+              </span>
             </p>
-            <p className="mt-1 flex gap-2 pl-[1.1rem] text-[#8d7b74]">
+            <p className="mt-0.5 flex gap-2 pl-[1.1rem] text-[#8d7b74]">
               <CornerDownRight className="mt-0.5 size-3 shrink-0" aria-hidden />
-              <span className="min-w-0 break-words">{step.result}</span>
+              <span className="min-w-0 break-words">{s.result}</span>
             </p>
-            <span className="mt-1.5 ml-[1.1rem] inline-flex items-center rounded border border-[#ff6347]/30 bg-[#ff6347]/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-[#ff9478]">
-              {step.law}
-            </span>
           </li>
         ))}
       </ol>
 
-      <div className="flex items-center gap-2 border-t border-white/10 px-4 py-2.5 font-mono text-xs text-[#8d7b74]">
-        <span className="text-[#ff8a6b]">&gt;</span>
-        {done ? (
-          <>
-            <span>6 calls. Nothing published.</span>
-            <span className="animate-caret ml-0.5 inline-block h-3.5 w-1.5 bg-[#ff8a6b] align-middle" />
-          </>
-        ) : (
-          <span className="animate-caret inline-block h-3.5 w-1.5 bg-[#ff8a6b] align-middle" />
-        )}
+      {/* What that call produced */}
+      <div className="border-t border-white/10 bg-black/25">
+        {/* Not uppercased: half of these labels are a path. */}
+        <p className="flex items-center gap-2 px-4 pt-2.5 pb-1 font-mono text-[0.68rem] font-semibold tracking-wide text-[#8d7b74]">
+          {step.artefact.label}
+        </p>
+        <pre className="h-[9.5rem] overflow-auto px-4 pb-3 font-mono text-[0.72rem] leading-relaxed">
+          <code>
+            {step.artefact.lines.map((line, i) => (
+              <span
+                key={`${line}-${i}`}
+                className={cn(
+                  "block whitespace-pre",
+                  step.artefact.diff && line.startsWith("+") && "text-[#7dd3a0]",
+                  step.artefact.diff && line.startsWith("-") && "text-[#ff8a6b]",
+                  (!step.artefact.diff ||
+                    (!line.startsWith("+") && !line.startsWith("-"))) &&
+                    "text-[#c9b6ae]"
+                )}
+              >
+                {line || " "}
+              </span>
+            ))}
+          </code>
+        </pre>
+      </div>
+
+      {/* Progress */}
+      <div className="flex items-center gap-3 border-t border-white/10 px-4 py-2.5">
+        <ol className="flex gap-1.5">
+          {TRANSCRIPT.map((s, i) => (
+            <li key={s.tool}>
+              <button
+                type="button"
+                onClick={() => goTo(i)}
+                onKeyDown={onKeyDown}
+                aria-label={`Call ${i + 1}: ${s.tool}`}
+                aria-current={i === current ? "step" : undefined}
+                className={cn(
+                  "h-1.5 rounded-full transition-all",
+                  i === current ? "w-6 bg-[#ff8a6b]" : "w-1.5 bg-white/25 hover:bg-white/50"
+                )}
+              />
+            </li>
+          ))}
+        </ol>
+        <span className="ml-auto font-mono text-[0.7rem] text-[#8d7b74]">
+          {current >= LAST
+            ? "6 calls. Nothing published."
+            : `call ${current + 1} of ${TRANSCRIPT.length}`}
+        </span>
       </div>
     </div>
+  );
+}
+
+function PlayerButton({
+  label,
+  onClick,
+  onKeyDown,
+  disabled,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  onKeyDown?: (e: React.KeyboardEvent) => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onKeyDown={onKeyDown}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className="flex size-7 items-center justify-center rounded-md text-[#b39c94] transition-colors hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30"
+    >
+      {children}
+    </button>
   );
 }

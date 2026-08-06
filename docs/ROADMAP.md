@@ -107,7 +107,6 @@
 
 ## Block S — The public site (shio.viglet.org)
 
-- 📋 **SH531** (deps: SH530 ✅) **The landing page asserts the agent loop instead of showing one** — The only proof this product has is a Claude Code session that builds a page, and a still of a terminal is the same claim in a different font. → §XIX.2
 - 📋 **SH533** (deps: SH530 ✅) **The token argument is the differentiator and the site states it as prose** — P3 makes tokens a measured budget with a CI benchmark, and a number nobody plots reads as a slogan instead of as the measurement it already is. → §XIX.4
 - 📋 **SH540** (deps: SH530 ✅) **Nothing on the site is answered by a running Shio** — The transcripts, the preview links and the manifest read are all recordings, so the single claim a visitor cannot check is the one the whole page rests on. → §XIX.11
 

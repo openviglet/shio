@@ -1859,28 +1859,6 @@ The site is also written for the reader it is about. An agent evaluating a CMS r
 page it was handed, and a Claude Code-first product that answers only in HTML is making
 its own argument badly.
 
-### XIX.2 The session is the demo (SH531)
-
-Turing's landing page has a search box a visitor types into, and the answer that comes
-back is the product. Shio's equivalent is not a widget: it is a Claude Code session -
-`shio_context`, an `Edit` on a content file, `shio_write`, `shio verify`, a preview link
-- with the page it produced rendering beside it. That is the only artefact that shows
-the thing being claimed, which is that one operator drives the CMS and a second one
-approves the result.
-
-So the centrepiece is a transcript player: a scripted session that steps through tool
-calls at reading speed, with the resulting page building on the right and a diff of what
-each call wrote. Scripted, and it says so - a recording labelled as one is honest, and a
-recording dressed as a live connection is the failure this section would exist to avoid.
-The public instance below is what makes it genuinely live, and until that exists the
-player is the truthful version.
-
-Two design constraints. It must be readable with motion off, because the whole content
-is text and `prefers-reduced-motion` should collapse it to the finished transcript
-rather than freeze it half-typed. And the transcript is content, not markup: one data
-file the copy is edited in, so the session can be re-scripted without touching the
-player.
-
 ### XIX.4 Plot the budget, do not describe it (SH533)
 
 Every competitor can claim an MCP server. What none of them can show is a build that

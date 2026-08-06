@@ -110,7 +110,7 @@ for that repository.
 
 ## Backlog
 
-Block S in [`docs/ROADMAP.md`](../docs/ROADMAP.md) — the transcript player
-(SH531), the plotted token budget (SH533) and the public demo instance (SH540).
+Block S in [`docs/ROADMAP.md`](../docs/ROADMAP.md) — the plotted token budget
+(SH533) and the public demo instance (SH540).
 The design behind each is `§XIX` in
 [`docs/IMPROVEMENTS.md`](../docs/IMPROVEMENTS.md).

@@ -127,6 +127,18 @@ export interface TranscriptStep {
   result: string;
   /** Which law this step is an instance of. */
   law: string;
+  /** The artefact the call produced, shown beside the transcript (SH531). */
+  artefact: {
+    label: string;
+    lines: string[];
+    /**
+     * Colour the plus and minus prefixes as a diff. Explicit rather than
+     * sniffed from the prefix: the handoff artefact is Markdown, and every one
+     * of its list items starts with a hyphen, which a heuristic paints as a
+     * deletion.
+     */
+    diff?: true;
+  };
 }
 
 /**
@@ -141,36 +153,99 @@ export const TRANSCRIPT: TranscriptStep[] = [
     tool: "shio_context",
     result: "model + sitemap + conventions + write vocabulary — 1 call, 1 digest to skip it next time",
     law: "P2",
+    artefact: {
+      label: "the context pack",
+      lines: [
+        "site:      acme",
+        "postTypes: Page, Article, Author, File",
+        "sitemap:   42 posts, 9 folders",
+        "ops:       post.upsert, post.move, folder.upsert, ...",
+        "digest:    9f2c41 - send this back to skip the re-read",
+      ],
+    },
   },
   {
     call: "Give me the site on disk",
     tool: "shio pull --content",
     result: "shio/content/**  ·  42 posts, 9 folders, front-mattered Markdown",
     law: "P4",
+    artefact: {
+      label: "shio/content/acme/",
+      lines: [
+        "index.md            post:acme/",
+        "launch.md           post:acme/launch",
+        "blog/hello.md       post:acme/blog/hello",
+        "...  39 more",
+      ],
+    },
   },
   {
     call: "Write the launch page",
     tool: "Edit  shio/content/acme/launch.md",
     result: "one file, one post — no API call to author with",
     law: "P4",
+    artefact: {
+      label: "the edit, as a diff",
+      diff: true,
+      lines: [
+        " ---",
+        " postType: Page",
+        "-title: Untitled",
+        "+title: Launching Shio 2026.3",
+        " status: DRAFT",
+        " ---",
+        "+",
+        "+Shio is a CMS whose primary operator is a coding agent.",
+      ],
+    },
   },
   {
     call: "Push it back",
     tool: "shio push --content",
     result: "1 created  ·  status DRAFT  ·  nothing is live yet",
     law: "P7",
+    artefact: {
+      label: "what the instance now holds",
+      lines: [
+        "created  post:acme/launch      DRAFT",
+        "",
+        "0 published. The live site is unchanged.",
+      ],
+    },
   },
   {
     call: "Prove it before a human looks",
     tool: "shio verify --delivery",
     result: "ok — 0 errors, 1 warning: hero image has no alt text",
     law: "P9",
+    artefact: {
+      label: "the proof, before a human looks",
+      lines: [
+        "ok    post:acme/            200  layout Home",
+        "ok    post:acme/launch      200  layout Page",
+        "warn  post:acme/launch      hero image has no alt text",
+        "",
+        "2 checked, 0 errors, 1 warning   exit 0",
+      ],
+    },
   },
   {
     call: "Hand it over",
     tool: "shio report --since last",
     result: "a Markdown summary with a preview link per change, and the warning as an open question",
     law: "P7",
+    artefact: {
+      label: "the handoff, as Markdown",
+      lines: [
+        "## 1 change awaiting review",
+        "",
+        "- **Launching Shio 2026.3** - created",
+        "  preview: /preview/acme/launch",
+        "",
+        "### Open questions",
+        "- The hero image has no alt text. Intentional?",
+      ],
+    },
   },
 ];
 
