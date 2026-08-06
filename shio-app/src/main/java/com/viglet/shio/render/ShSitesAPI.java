@@ -178,7 +178,10 @@ public class ShSitesAPI {
                 // A preview is `no-store` + `noindex` so it cannot quietly become infrastructure;
                 // this route *is* the infrastructure, so saying so is the correct answer.
                 .cacheControl(CacheControl.maxAge(MAX_AGE).cachePublic())
-                .body(links.rewriteInto(rendered.html(), address.prefix(), rendered));
+                // SH512 — `address.path()` is the base a document-relative reference resolves
+                // against: the segments after the prefix, which is the source's own URL space and
+                // the one form that keeps the reader's trailing slash.
+                .body(links.rewriteInto(rendered.html(), address.prefix(), rendered, address.path()));
     }
 
     /**

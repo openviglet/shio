@@ -10,12 +10,15 @@ package com.viglet.shio.render;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -91,6 +94,33 @@ import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
  * depends on {@code state}. {@link #pathsForBridge} still builds it, for the browser half that
  * decides about links this pass never saw.</p>
  *
+ * <h2>And a relative reference is worse than an absolute one (SH512)</h2>
+ *
+ * <p>The rule above says a document-relative reference "already resolves correctly under the
+ * prefix — which is why it must <em>not</em> be touched". That premise is false whenever the
+ * replica's serving depth differs from the source's, and it always does. Replicating
+ * {@code vilt-group.com/en/} produced a page whose logo, hero background and fourteen images were
+ * missing on a run where every asset uploaded and {@code verify} was clean:
+ * {@code /sites/vilt/default/en-us/img/vilt-logo.svg} answers <b>200</b> and the markup asked for
+ * {@code ./../../img/vilt-logo.svg}. The source serves at {@code /en/} — one segment deep, so that
+ * string means {@code /img/x} — and the replica at {@code /sites/vilt/default/en-us/en}, four deep,
+ * where the same string means {@code /sites/vilt/img/x}. Forty-four references on that page were
+ * relative.</p>
+ *
+ * <p>So it is the same defect SH466 named, and strictly worse: an absolute reference is wrong in a
+ * fixed way, a relative one is wrong by however much the depth differs — which changes with the
+ * site's furl and the locale segment. The repair is to resolve it <b>against the page's own URL in
+ * the source's space</b> and rebase the result, which is what a browser would have computed reading
+ * the source. That base is the requested content path — the segments after the prefix — passed in by
+ * the two controllers that know it, because it is the one form that keeps the reader's own trailing
+ * slash: {@code /en/} and {@code /en} are different bases and a furl cannot tell them apart
+ * ({@code ShAddress.normalizePath} drops the slash, correctly, for addressing).</p>
+ *
+ * <p>Widened at the same time from {@code href} and {@code src} to <b>every reference the page
+ * carries</b>: {@code srcset}, {@code poster}, and {@code url()} inside a {@code style}
+ * <em>attribute</em> as well as inside a {@code <style>} element. Each one breaks identically, and
+ * a list that grows one entry per incident is the shape SH515 is about.</p>
+ *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
@@ -111,8 +141,21 @@ public class ShPreviewLinks {
      * different index: rewrite only what this site actually serves, leave everything else exactly as
      * the author wrote it. That is what makes a fidelity replica's images load without a single byte
      * of its captured markup being edited (SH429's option A).</p>
+     *
+     * <p>{@code poster} joined it with SH512: a {@code <video poster>} is an image reference with no
+     * other way onto the page, and it broke exactly the way {@code src} did.</p>
      */
-    private static final List<String> ASSET = List.of("src");
+    private static final List<String> ASSET = List.of("src", "poster");
+
+    /**
+     * A scheme, which means the reference belongs to whoever it names (SH512).
+     *
+     * <p>{@code https:}, and also {@code mailto:}, {@code tel:}, {@code data:} and
+     * {@code javascript:} — the ones a relative-resolution pass would otherwise mangle into a path.
+     * RFC 3986's production, so a reference that merely contains a colon later on ({@code a/b:c}) is
+     * still relative.</p>
+     */
+    private static final Pattern SCHEME = Pattern.compile("^[a-zA-Z][a-zA-Z0-9+.\\-]*:");
 
     /**
      * The first path segments the <b>instance</b> serves, which are never a site's own (SH466).
@@ -170,9 +213,20 @@ public class ShPreviewLinks {
      * @return the same HTML with resolvable internal links prefixed, and everything else untouched
      */
     public String rewrite(String html, String siteKey, ShPageRenderService.ShRenderedPage page) {
+        return rewrite(html, siteKey, page, page == null ? null : page.url());
+    }
+
+    /**
+     * The same pass, told which URL the reader asked for (SH512).
+     *
+     * @param basePath the requested content path — everything after the preview prefix — which is
+     *                 what a document-relative reference resolves against
+     */
+    public String rewrite(String html, String siteKey, ShPageRenderService.ShRenderedPage page,
+                          String basePath) {
         return rewriteInto(html,
                 ShSiteFrontEnd.PREVIEW_BASE + URLEncoder.encode(siteKey, StandardCharsets.UTF_8),
-                page);
+                page, basePath);
     }
 
     /**
@@ -187,35 +241,49 @@ public class ShPreviewLinks {
      * @param prefix what an internal path is prefixed with, with no trailing slash
      */
     public String rewriteInto(String html, String prefix, ShPageRenderService.ShRenderedPage page) {
+        return rewriteInto(html, prefix, page, page == null ? null : page.url());
+    }
+
+    /**
+     * The same pass, told which URL the reader asked for (SH512).
+     *
+     * @param basePath the requested content path — everything after {@code prefix} — which is what a
+     *                 document-relative reference resolves against. The <em>request's</em> path and
+     *                 not the post's furl, because the two differ by a trailing slash and that slash
+     *                 is one level of {@code ../}
+     */
+    public String rewriteInto(String html, String prefix, ShPageRenderService.ShRenderedPage page,
+                              String basePath) {
         if (html == null || html.isBlank() || page == null || page.siteId() == null) {
             return html;
         }
         Document document = Jsoup.parse(html);
         document.outputSettings().prettyPrint(false);
+        String base = basePath == null || basePath.isBlank() ? "/" : basePath;
         // SH437 — one lookup per *distinct* path, not per element. A fidelity page is the whole
         // source document, so forty `<img>` tags sharing one sprite is the ordinary case and a query
         // per attribute would make the rewrite cost the page rather than the assets.
         Map<String, Boolean> assets = new HashMap<>();
         for (String attribute : ASSET) {
-            for (Element element : document.select("[" + attribute + "]")) {
-                String value = element.attr(attribute);
-                String rewritten = rewriteAsset(value, prefix, page, assets);
-                if (rewritten != null) {
-                    element.attr(attribute, rewritten);
-                }
-            }
+            rewriteAttribute(document, attribute, value -> rewriteAsset(value, prefix, page, assets, base));
         }
-        rewriteStylesheets(document, prefix, page, assets);
+        rewriteAttribute(document, "srcset", value -> rewriteSrcset(value, prefix, page, assets, base));
+        rewriteAttribute(document, "style", value -> rewriteCss(value, prefix, page, assets, base));
+        rewriteStylesheets(document, prefix, page, assets, base);
         for (String attribute : NAVIGABLE) {
-            for (Element element : document.select("[" + attribute + "]")) {
-                String value = element.attr(attribute);
-                String rewritten = rewriteOne(value, prefix);
-                if (rewritten != null) {
-                    element.attr(attribute, rewritten);
-                }
-            }
+            rewriteAttribute(document, attribute, value -> rewriteOne(value, prefix, base));
         }
         return document.html();
+    }
+
+    /** One attribute across the document, left exactly as it was wherever the rule answers null. */
+    private static void rewriteAttribute(Document document, String attribute, UnaryOperator<String> rule) {
+        for (Element element : document.select("[" + attribute + "]")) {
+            String rewritten = rule.apply(element.attr(attribute));
+            if (rewritten != null) {
+                element.attr(attribute, rewritten);
+            }
+        }
     }
 
     /**
@@ -243,16 +311,68 @@ public class ShPreviewLinks {
      * <p>Everything else is rebased, resolvable or not (SH466). {@link #INSTANCE_ROUTES} is the one
      * remaining exception, and it is also what makes a second pass a no-op: the prefix this method
      * writes starts with {@code /preview/} or {@code /sites/}.</p>
+     *
+     * <p>SH512 moved the "document-relative already resolves" clause out of the exclusions and into
+     * {@link #toSitePath}, which turns it into the path the source meant before this decides.</p>
      */
-    private String rewriteOne(String value, String prefix) {
-        if (value == null || !value.startsWith("/") || value.startsWith("//")
-                || isInstanceRoute(value)) {
+    private String rewriteOne(String value, String prefix, String basePath) {
+        String site = toSitePath(value, basePath);
+        if (site == null || isInstanceRoute(site)) {
             return null;
         }
-        int cut = firstOf(value, '?', '#');
-        String path = cut < 0 ? value : value.substring(0, cut);
-        String tail = cut < 0 ? "" : value.substring(cut);
-        return prefix + path + tail;
+        return prefix + site;
+    }
+
+    /**
+     * One reference as a path in <b>this site's</b> URL space, or {@code null} to leave it alone
+     * (SH512).
+     *
+     * <p>Root-relative comes back as it was, which is every caller's behaviour before this existed.
+     * A document-relative one is resolved against {@code basePath} exactly as a browser reading the
+     * <em>source</em> would have: the base's directory, then {@code .} and {@code ..} collapsed,
+     * clamping at the root the way every URL parser does rather than escaping above it.</p>
+     *
+     * <p>What is left alone is what is not ours to move: an absolute URL (any scheme — including
+     * {@code mailto:}, {@code tel:}, {@code data:} and {@code javascript:}, each of which a naive
+     * path resolution would mangle), a protocol-relative {@code //host/x}, a same-page {@code #top},
+     * and an empty value.</p>
+     */
+    private static String toSitePath(String value, String basePath) {
+        if (value == null) {
+            return null;
+        }
+        String reference = value.trim();
+        if (reference.isEmpty() || reference.startsWith("//") || reference.startsWith("#")
+                || SCHEME.matcher(reference).find()) {
+            return null;
+        }
+        if (reference.startsWith("/")) {
+            return reference;
+        }
+        int cut = firstOf(reference, '?', '#');
+        String path = cut < 0 ? reference : reference.substring(0, cut);
+        String tail = cut < 0 ? "" : reference.substring(cut);
+        String base = basePath.startsWith("/") ? basePath : "/" + basePath;
+        // A reference that is only a tail (`?page=2`) addresses this page, not its directory.
+        String against = path.isEmpty() ? base : base.substring(0, base.lastIndexOf('/') + 1) + path;
+        return collapseDots(against) + tail;
+    }
+
+    /** {@code .} and {@code ..} resolved away, the trailing slash kept because it is a base. */
+    private static String collapseDots(String path) {
+        Deque<String> segments = new ArrayDeque<>();
+        for (String segment : path.split("/")) {
+            if (segment.isEmpty() || ".".equals(segment)) {
+                continue;
+            }
+            if ("..".equals(segment)) {
+                segments.pollLast();
+            } else {
+                segments.addLast(segment);
+            }
+        }
+        String joined = String.join("/", segments);
+        return "/" + joined + (path.endsWith("/") && !joined.isEmpty() ? "/" : "");
     }
 
     /** Whether the path's first segment names a route the instance serves rather than a site. */
@@ -288,36 +408,47 @@ public class ShPreviewLinks {
      * walk — and why walking it is enough.</p>
      */
     private void rewriteStylesheets(Document document, String prefix,
-                                    ShPageRenderService.ShRenderedPage page, Map<String, Boolean> seen) {
+                                    ShPageRenderService.ShRenderedPage page, Map<String, Boolean> seen,
+                                    String basePath) {
         for (Element style : document.select("style")) {
             String css = style.data();
-            // `(` and not `url(`: the pattern is case-insensitive, and a guard that is not would
-            // skip a stylesheet written with `URL(` — legal CSS, and the kind of asymmetry that
-            // makes one instance's replica render and another's not.
-            if (css.indexOf('(') >= 0) {
-                String rewritten = rewriteCssUrls(css, prefix, page, seen);
-                if (!css.equals(rewritten)) {
-                    // `Element#text` on a <style> writes a DataNode, which Jsoup emits unescaped —
-                    // the one thing this pass must not undo, since an escaped url() is half the
-                    // defect it exists for.
-                    style.text(rewritten);
-                }
+            String rewritten = rewriteCss(css, prefix, page, seen, basePath);
+            if (rewritten != null) {
+                // `Element#text` on a <style> writes a DataNode, which Jsoup emits unescaped —
+                // the one thing this pass must not undo, since an escaped url() is half the
+                // defect it exists for.
+                style.text(rewritten);
             }
         }
     }
 
-    private String rewriteCssUrls(String css, String prefix,
-                                  ShPageRenderService.ShRenderedPage page, Map<String, Boolean> seen) {
+    /**
+     * Every {@code url()} in a chunk of CSS, or {@code null} when none of them moved.
+     *
+     * <p>The same method for a {@code <style>} element and for a {@code style} <b>attribute</b>
+     * (SH512): {@code style="background-image:url('img/hero.png')"} is a reference on the page and
+     * breaks exactly the way the stylesheet's did — measured as a missing hero background on a
+     * replica whose every asset had uploaded.</p>
+     */
+    private String rewriteCss(String css, String prefix, ShPageRenderService.ShRenderedPage page,
+                              Map<String, Boolean> seen, String basePath) {
+        // `(` and not `url(`: the pattern is case-insensitive, and a guard that is not would
+        // skip a stylesheet written with `URL(` — legal CSS, and the kind of asymmetry that
+        // makes one instance's replica render and another's not.
+        if (css == null || css.indexOf('(') < 0) {
+            return null;
+        }
         Matcher urls = CSS_URL.matcher(css);
         StringBuilder out = new StringBuilder(css.length());
         while (urls.find()) {
             String quote = quoteOf(urls);
             String raw = valueOf(urls).trim();
-            String served = rewriteAsset(raw, prefix, page, seen);
+            String served = rewriteAsset(raw, prefix, page, seen, basePath);
             urls.appendReplacement(out, Matcher.quoteReplacement(
                     "url(" + quote + (served == null ? raw : served) + quote + ")"));
         }
-        return urls.appendTail(out).toString();
+        String rewritten = urls.appendTail(out).toString();
+        return css.equals(rewritten) ? null : rewritten;
     }
 
     /** The quoting the author used, kept: a bare `url()` must not gain quotes it never had. */
@@ -352,17 +483,59 @@ public class ShPreviewLinks {
      * the capture can still be measured against into one pointing at nothing.</p>
      */
     private String rewriteAsset(String value, String prefix,
-                                ShPageRenderService.ShRenderedPage page, Map<String, Boolean> seen) {
-        if (value == null || !value.startsWith("/") || value.startsWith("//")
-                || isInstanceRoute(value)) {
+                                ShPageRenderService.ShRenderedPage page, Map<String, Boolean> seen,
+                                String basePath) {
+        String site = toSitePath(value, basePath);
+        if (site == null || isInstanceRoute(site)) {
             return null;
         }
-        int cut = firstOf(value, '?', '#');
-        String path = cut < 0 ? value : value.substring(0, cut);
-        String tail = cut < 0 ? "" : value.substring(cut);
+        int cut = firstOf(site, '?', '#');
+        String path = cut < 0 ? site : site.substring(0, cut);
+        String tail = cut < 0 ? "" : site.substring(cut);
         boolean served = seen.computeIfAbsent(path, candidate ->
                 shSiteAssets.findInSite(page.siteId(), candidate, page.state()).isPresent());
         return served ? prefix + path + tail : null;
+    }
+
+    /**
+     * A {@code srcset}, which is a list and therefore one rewrite per candidate (SH512).
+     *
+     * <p>Split on commas, each candidate being a reference and an optional descriptor. A
+     * {@code data:} URI legitimately contains a comma and would be torn in half by that split, so an
+     * attribute holding one is left entirely alone — the honest answer, since a {@code data:} URI is
+     * not a reference this pass has anything to do to.</p>
+     */
+    private String rewriteSrcset(String value, String prefix,
+                                 ShPageRenderService.ShRenderedPage page, Map<String, Boolean> seen,
+                                 String basePath) {
+        if (value == null || value.isBlank() || value.contains("data:")) {
+            return null;
+        }
+        StringBuilder out = new StringBuilder(value.length());
+        boolean moved = false;
+        for (String candidate : value.split(",")) {
+            String entry = candidate.trim();
+            if (entry.isEmpty()) {
+                continue;
+            }
+            int space = firstWhitespace(entry);
+            String reference = space < 0 ? entry : entry.substring(0, space);
+            String descriptor = space < 0 ? "" : entry.substring(space);
+            String rewritten = rewriteAsset(reference, prefix, page, seen, basePath);
+            moved |= rewritten != null;
+            out.append(out.isEmpty() ? "" : ", ")
+                    .append(rewritten == null ? reference : rewritten).append(descriptor);
+        }
+        return moved ? out.toString() : null;
+    }
+
+    private static int firstWhitespace(String value) {
+        for (int at = 0; at < value.length(); at++) {
+            if (Character.isWhitespace(value.charAt(at))) {
+                return at;
+            }
+        }
+        return -1;
     }
 
     private static int firstOf(String value, char... any) {

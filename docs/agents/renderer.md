@@ -568,6 +568,26 @@ renderer over one body of content at a second address. See the section on it bel
   The instrument is two-sided: `ShPageRenderTest` asserts no href survives the pass except an
   instance route, and `replication.conformance.mjs` asserts the same of a served replica, where the
   fixture's `/admin` had been the live case all along.
+- **And a relative reference is worse than an absolute one (SH512)** — SH336's other exclusion said a
+  document-relative reference "already resolves correctly under the prefix", which holds only while
+  the replica's serving depth equals the source's, and it never does. A replica of
+  `vilt-group.com/en/` lost its logo, its hero background and fourteen images on a run where every
+  asset uploaded and `verify` was clean: `/sites/vilt/default/en-us/img/vilt-logo.svg` answers
+  **200** and the markup asked for `./../../img/vilt-logo.svg` — which means `/img/x` from one
+  segment deep and `/sites/vilt/img/x` from four. **44 of that page's references were relative**, and
+  an absolute one is at least wrong in a *fixed* way; a relative one is wrong by however much the
+  depth differs, so the breakage moves with the site's furl and the locale segment. `toSitePath`
+  resolves it against the page's own URL first — `.` and `..` collapsed, clamped at the root — and
+  everything after that is the rule SH466 already wrote. **The base is the request's content path,
+  passed in by both controllers, not the post's furl**: `ShAddress.normalizePath` drops a trailing
+  slash (correctly, for addressing) and that slash is exactly one level of `../`, so `/en/` and `/en`
+  are different bases and only the request knows which the reader used. Left alone: any scheme
+  (`mailto:`, `tel:`, `data:`, `javascript:` — each of which a naive path resolution mangles),
+  protocol-relative, a bare `#fragment`. **Widened at the same time from `href`/`src` to every
+  reference the page carries** — `srcset` (per candidate; an attribute holding a `data:` URI is
+  skipped whole, since splitting on commas would tear it), `poster`, and `url()` in a `style`
+  *attribute* as well as in a `<style>` element. That last one is half of SH515's evidence, and the
+  reason the list is widened in one go rather than one entry per incident.
 - **`{{theme.css}}` is raw, and it had to become so before any of that could work (SH461)** —
   the documented layout is `<style>{{theme.css}}</style>`, the double stash escapes, and CSS decodes
   no entities, so `url("/fonts/inter.woff2")` reached the browser as `url(&quot;/fonts/…&quot;)`: an

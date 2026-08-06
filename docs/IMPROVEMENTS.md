@@ -1798,32 +1798,6 @@ It costs a reader more than it looks. Six candidates on a real site is a short e
 list to read carefully, and one of them being noise makes the reader doubt the other
 five.
 
-### XVII.65 A relative reference is worse than an absolute one (SH512)
-
-Replicating `vilt-group.com/en/` produced a page whose logo, hero background and
-fourteen images were missing, on a run where every asset uploaded and `verify` was
-clean. The bytes were there: `/sites/vilt/default/en-us/img/vilt-logo.svg` answers
-**200**. The markup asked for `./../../img/vilt-logo.svg`.
-
-That is the arithmetic. The source serves the page at `/en/`, one segment deep, so
-`./../../img/x` resolves to `/img/x`. The replica serves it at
-`/sites/vilt/default/en-us/en`, **four** segments deep, so the same string resolves to
-`/sites/vilt/img/x` and 404s. Forty-four references were relative on that page.
-
-SH466 established the rule for links — every href comes from the resolver, never from
-the source's bytes, because a verbatim reference carries a base the replica does not
-have. A **relative** reference is the same defect and strictly worse: an absolute one is
-wrong in a fixed way, while a relative one is wrong by however much the serving depth
-differs, so the breakage changes with the site's furl and the locale segment.
-
-It is invisible to the checks that exist. `verify` resolved every asset because each
-*is* uploaded and addressable; the gate asks whether the bytes are reachable, not
-whether the page's own string reaches them.
-
-Rebasing at render is where SH466 already stands, so this is that rewriter widened from
-`href` to every reference and from absolute to relative. The assertion is a page whose
-every `<img src>` answers 200 — resolved against the serving URL, not read as a path.
-
 ### XVII.66 A teaching error the caller never sees (SH513)
 
 `shio convert` on a real site died with one line: `shio: the server answered 400`, plus

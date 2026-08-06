@@ -77,7 +77,6 @@ ref_scheme = "outline"
 # SH517's baked canvas), and last the two that only cost time (SH513, SH514).
 priority = [
   "SH516",
-  "SH512",
   "SH515",
   "SH505",
   "SH506",

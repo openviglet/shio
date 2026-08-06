@@ -875,10 +875,13 @@ class ShPageRenderTest {
     /**
      * The rule is narrow on purpose, so the cases that must be left alone are the assertion.
      *
-     * <p>Absolute and protocol-relative belong to whoever they name, a document-relative link
-     * already resolves under the preview prefix, and SH466's {@code INSTANCE_ROUTES} keeps the
-     * paths the <em>instance</em> serves — {@code /file_source/…}, where {@code {{file_url}}}
-     * points, and the two prefixes this pass itself writes.</p>
+     * <p>Absolute and protocol-relative belong to whoever they name, and SH466's
+     * {@code INSTANCE_ROUTES} keeps the paths the <em>instance</em> serves — {@code /file_source/…},
+     * where {@code {{file_url}}} points, and the two prefixes this pass itself writes.</p>
+     *
+     * <p>SH512 took the document-relative case out of that list: it resolves correctly under the
+     * prefix only when the replica's serving depth equals the source's, and the assertion below now
+     * reads the other way for the same reason SH466's did.</p>
      */
     @Test
     @DisplayName("SH336: an internal link enters the preview's address space and nothing else moves")
@@ -892,6 +895,8 @@ class ShPageRenderTest {
                 <a href="https://example.com/">absolute</a>\
                 <a href="//cdn.example.com/x">protocol-relative</a>\
                 <a href="/preview/Other/x">already in a preview</a>\
+                <a href="mailto:someone@example.com">a scheme that is not a path</a>\
+                <a href="#top">the page itself</a>\
                 <a href="contato">document-relative</a>""", siteName, page);
 
         assertThat(html).contains("href=\"/preview/" + siteName + "/\"");
@@ -902,7 +907,64 @@ class ShPageRenderTest {
                 .contains("href=\"https://example.com/\"")
                 .contains("href=\"//cdn.example.com/x\"")
                 .contains("href=\"/preview/Other/x\"")
-                .contains("href=\"contato\"");
+                .contains("href=\"mailto:someone@example.com\"")
+                .contains("href=\"#top\"");
+        assertThat(html)
+                .as("SH512: resolved against the page's own URL — this fixture is served at `/`, so "
+                        + "`contato` means `/contato`, and that is what has to be prefixed")
+                .contains("href=\"/preview/" + siteName + "/contato\"");
+    }
+
+    /**
+     * SH512 — the arithmetic, on the page that produced the task.
+     *
+     * <p>Replicating {@code vilt-group.com/en/} gave a page whose logo, hero background and fourteen
+     * images were missing while every one of them answered 200 at the path the tree held. The source
+     * serves at {@code /en/}, one segment deep, so {@code ./../../img/x} means {@code /img/x}; the
+     * replica serves at {@code /sites/<site>/default/en-us/en}, four deep, where the same string
+     * means {@code /sites/<site>/img/x}. Forty-four references on that page were relative, and the
+     * gate was clean because every asset <em>is</em> addressable — the question it never asked is
+     * whether the page's own string reaches it.</p>
+     */
+    @Test
+    @DisplayName("SH512: a relative link is resolved against the page's URL, not the serving depth")
+    void aRelativeLinkIsResolvedInTheSourcesUrlSpace() {
+        ShRenderedPage page = renderedPageOfMainFixture();
+        String prefix = "/sites/" + siteName + "/default/en-us";
+
+        String html = previewLinks.rewriteInto("""
+                <a href="./../../about">two up from /en/</a>\
+                <a href="../careers">one up</a>\
+                <a href="team">a sibling</a>\
+                <a href="?page=2">the page itself, another query</a>""", prefix, page, "/en/");
+
+        assertThat(hrefsIn(html))
+                .as("every one of them resolved as a browser reading the SOURCE would have, and "
+                        + "then rebased — `..` clamps at the root rather than climbing above it")
+                .containsExactly(prefix + "/about", prefix + "/careers", prefix + "/en/team",
+                        prefix + "/en/?page=2");
+        assertThat(previewLinks.rewriteInto(html, prefix, page, "/en/"))
+                .as("and a second pass is still a no-op: what it wrote is root-relative and under "
+                        + "an instance route")
+                .isEqualTo(html);
+    }
+
+    @Test
+    @DisplayName("SH512: the base is the request's path, because a trailing slash is one level of ..")
+    void theTrailingSlashOfTheRequestedPathIsOneLevel() {
+        ShRenderedPage page = renderedPageOfMainFixture();
+        String prefix = "/sites/" + siteName + "/default/en-us";
+
+        assertThat(hrefsIn(previewLinks.rewriteInto(
+                "<a href=\"../x\">up</a>", prefix, page, "/en/blog/")))
+                .as("a directory-shaped URL resolves inside itself")
+                .containsExactly(prefix + "/en/x");
+        assertThat(hrefsIn(previewLinks.rewriteInto(
+                "<a href=\"../x\">up</a>", prefix, page, "/en/blog")))
+                .as("and a file-shaped one resolves from its parent — the two differ by exactly the "
+                        + "level that `ShAddress.normalizePath` drops, which is why the base is the "
+                        + "request's path and not the post's furl")
+                .containsExactly(prefix + "/x");
     }
 
     /**

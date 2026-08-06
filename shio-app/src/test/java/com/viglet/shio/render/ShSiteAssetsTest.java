@@ -259,6 +259,51 @@ class ShSiteAssetsTest {
                 .isEqualTo(html);
     }
 
+    /**
+     * SH512 — every reference on the page, and the relative ones resolved where the source meant.
+     *
+     * <p>The run that produced the task: a replica of {@code vilt-group.com/en/} whose logo, hero
+     * background and fourteen images were missing while each of them answered <b>200</b> at the path
+     * the tree held. The markup asked for {@code ./../../img/vilt-logo.svg}, which means
+     * {@code /img/…} from {@code /en/} and {@code /sites/<site>/img/…} from four segments deep. The
+     * three that had no rule at all are here too — {@code srcset}, {@code poster} and a
+     * {@code style} <em>attribute</em> — because each is a reference that breaks identically and a
+     * list that grows one entry per incident is the shape this keeps producing.</p>
+     */
+    @Test
+    @DisplayName("SH512: every reference is rebased, and a relative one resolves against the page's URL")
+    void everyReferenceIsRebasedAndRelativeOnesResolveFirst() {
+        String prefix = "/sites/" + siteName + "/default/en-us";
+        String served = prefix + "/img/hero.png";
+
+        String html = shPreviewLinks.rewriteInto("""
+                <img src="./../../img/hero.png">\
+                <img srcset="../img/hero.png 1x, ./../img/hero.png 2x">\
+                <video poster="../../img/hero.png"></video>\
+                <div style="background-image:url('../img/hero.png')"></div>\
+                <img src="../img/missing.png">\
+                <img src="data:image/gif;base64,R0lGOD">""",
+                prefix, pageOfThisSite(), "/en/");
+
+        assertThat(html)
+                .as("the assertion the task names: every <img src> answers 200, resolved against "
+                        + "the serving URL rather than read as a path")
+                .contains("src=\"" + served + "\"")
+                .contains("srcset=\"" + served + " 1x, " + served + " 2x\"")
+                .contains("poster=\"" + served + "\"")
+                .contains("url('" + served + "')");
+        assertThat(html)
+                .as("and what this site does not serve keeps SH437's rule — left as written, so a "
+                        + "reference the capture can still be measured against is not repointed at "
+                        + "nothing; a data: URI is not a reference this pass has anything to do to")
+                .contains("src=\"../img/missing.png\"")
+                .contains("src=\"data:image/gif;base64,R0lGOD\"");
+
+        assertThat(shPreviewLinks.rewriteInto(html, prefix, pageOfThisSite(), "/en/"))
+                .as("idempotent across the widened surface too")
+                .isEqualTo(html);
+    }
+
     /** Built rather than rendered: the unit under test is the rewrite, not this fixture's layout. */
     private ShPageRenderService.ShRenderedPage pageOfThisSite() {
         return new ShPageRenderService.ShRenderedPage("", siteName, "/", "layout", List.of(),

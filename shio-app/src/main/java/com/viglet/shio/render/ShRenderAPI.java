@@ -167,7 +167,11 @@ public class ShRenderAPI {
         // SH336 — internal links into the preview's own address space, before the banner so the
         // banner's own markup is never a subject of the rewrite. Preview only: `/agent/render`
         // does not come through here, so the SH101 digest cannot move.
-        String walkable = previewLinks.rewrite(rendered.html(), siteKey, rendered);
+        // SH512 — and the path the reader asked for, which is what a document-relative reference
+        // resolves against. The *request's* path rather than the post's furl: they differ by a
+        // trailing slash, and that slash is one level of `../`.
+        String walkable = previewLinks.rewrite(rendered.html(), siteKey, rendered,
+                pathWithin(siteKey, request));
         ShRenderedPage page = new ShRenderedPage(walkable, rendered.site(), rendered.url(),
                 rendered.layout(), rendered.regions(), rendered.state(), rendered.postId(),
                 rendered.siteId());
