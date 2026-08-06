@@ -118,36 +118,84 @@ function allowsStale(env) {
  * explains which; in `requireInstance` it fails before a single scenario builds anything, so
  * a stale instance produces one message instead of a plausible-looking defect report.
  *
- * ## What is compared, and why it is the timestamp rather than the commit
+ * ## What is compared: the commit first, and the timestamp only when it cannot answer (SH500)
  *
  * `builtAt` is when the *running* classes were produced (the instance captures it at startup, so
  * a recompile underneath a live JVM cannot flatter it) and HEAD's commit time is when the code
- * under test was written. Built-before-HEAD is exactly the incident. The commit is reported and
- * not asserted: an IDE that compiles into `target/classes` on save moves the classes and not
- * `git.properties`, which is the very scenario above, so it would fail for the right reason at
- * the wrong times.
+ * under test was written. Built-before-HEAD was the incident, and asserting it alone was SH500:
+ * building precedes committing by seconds — compile, test, then commit — so on a clean tree at
+ * HEAD the instance is dated *before* the commit it is running, and the gate cancelled the whole
+ * suite on the ordinary case.
  *
- * An instance that reports **no** `builtAt` is stale by definition — the field ships with this
- * assertion. Working-tree changes that were never built are out of scope: this compares against
- * HEAD, and something has to be committed before it can be conformance-tested.
+ * A matching commit is proof, so it ends the question. `git.properties` names the commit the
+ * artifact was built from, and on a clean tree HEAD's hash describes every byte the build could
+ * have taken from git — same source, whatever the clocks say. The timestamp stays as the fallback
+ * for the two cases a hash cannot cover:
+ *
+ * - the instance's commit is **not** HEAD — the incident, and still caught;
+ * - the tree is **dirty**, where a matching hash no longer says what compiled. Note the normal
+ *   dirty flow passes on the timestamp anyway: you edit, rebuild and restart, so `builtAt` is
+ *   *after* the commit you started from.
+ *
+ * Dirty means a **tracked** modification (`git status --porcelain -uno`). An untracked file has no
+ * version in HEAD for the hash to misdescribe, and counting one would put the gate back where
+ * SH500 found it — a stray scratch file downgrading a current instance to the clock. The limit is
+ * honest and narrow: an untracked `.java` *is* compiled by Maven, and this gate will not see it.
+ *
+ * An instance that reports **no** `builtAt` and no matching commit is stale by definition — both
+ * fields ship with this assertion.
  */
 async function requireLiveBuild(baseUrl, manifest, env) {
   if (allowsStale(env)) return;
   const head = await gitHead();
   if (!head) return; // No working tree to compare against — nothing to be stale *relative to*.
 
-  const builtAt = manifest?.builtAt ? Date.parse(manifest.builtAt) : Number.NaN;
-  if (Number.isNaN(builtAt)) {
-    throw new Error(stale(baseUrl, head, "it reports no build identity at all, so it predates SH460"));
-  }
-  if (builtAt < head.at) {
-    const commit = manifest.commit ? ` (commit ${manifest.commit})` : "";
-    throw new Error(stale(baseUrl, head,
-      `it was built at ${manifest.builtAt}${commit}, before HEAD was committed`));
+  const because = staleReason(manifest, head);
+  if (because) {
+    throw new Error(stale(baseUrl, head, because));
   }
 }
 
-/** HEAD's sha and commit time, or null when there is no git to ask. */
+/**
+ * Why this instance is older than the code under test, or `null` when it is not (SH500).
+ *
+ * Exported for the test: the interesting cases are commit × tree, and only two of the four can be
+ * produced by a real repository at the moment the suite happens to run.
+ */
+export function staleReason(manifest, head) {
+  const atHead = commitMatchesHead(manifest?.commit, head);
+  if (atHead && !head.dirty) return null;
+
+  const builtAt = manifest?.builtAt ? Date.parse(manifest.builtAt) : Number.NaN;
+  if (Number.isNaN(builtAt)) {
+    return "it reports no build identity at all, so it predates SH460";
+  }
+  if (builtAt >= head.at) return null;
+
+  const commit = manifest.commit ? ` (commit ${manifest.commit})` : "";
+  const built = `it was built at ${manifest.builtAt}${commit}, before HEAD was committed`;
+  return atHead
+    ? `${built} — and the working tree has tracked changes, so a commit that matches HEAD`
+      + ` no longer says what compiled`
+    : built;
+}
+
+/**
+ * Does the build's commit name HEAD?
+ *
+ * Both sides are abbreviated and not to the same width — `git.properties` writes seven characters
+ * and `git log --format=%h` widens with the repository — so this compares the shorter prefix, and
+ * refuses anything shorter than seven so a truncated field cannot match loosely.
+ */
+function commitMatchesHead(commit, head) {
+  if (!commit || !head?.sha) return false;
+  const build = String(commit).trim().toLowerCase();
+  const sha = String(head.sha).trim().toLowerCase();
+  const width = Math.min(build.length, sha.length);
+  return width >= 7 && build.slice(0, width) === sha.slice(0, width);
+}
+
+/** HEAD's sha, commit time and whether the tree is dirty, or null when there is no git to ask. */
 async function gitHead() {
   const repo = fileURLToPath(new URL("../../..", import.meta.url));
   try {
@@ -156,9 +204,22 @@ async function gitHead() {
     });
     const [sha, iso] = stdout.trim().split(/\s+/);
     const at = Date.parse(iso);
-    return Number.isNaN(at) ? null : { sha, iso, at };
+    if (Number.isNaN(at)) return null;
+    return { sha, iso, at, dirty: await gitDirty(repo) };
   } catch {
     return null;
+  }
+}
+
+/** Tracked changes only — see `requireLiveBuild` for why untracked files do not count. */
+async function gitDirty(repo) {
+  try {
+    const { stdout } = await run("git", ["-C", repo, "status", "--porcelain", "-uno"], {
+      timeout: 10_000,
+    });
+    return stdout.trim().length > 0;
+  } catch {
+    return false; // Unaskable is not dirty: the commit comparison is the stronger signal anyway.
   }
 }
 
@@ -166,7 +227,7 @@ function stale(baseUrl, head, because) {
   return (
     `shio conformance: the instance at ${baseUrl} is older than the code under test —\n`
     + `${because}.\n\n`
-    + `  HEAD  ${head.sha}  ${head.iso}\n\n`
+    + `  HEAD  ${head.sha}  ${head.iso}${head.dirty ? "  (tracked changes)" : ""}\n\n`
     + `This suite asserts two things at once — that the code is right, and that this\n`
     + `instance is running it — so a red run against a stale JVM reads as a defect in a\n`
     + `fix that already shipped. Rebuild and restart before drawing any conclusion:\n\n`

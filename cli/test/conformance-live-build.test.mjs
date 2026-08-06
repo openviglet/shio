@@ -19,13 +19,20 @@
  * authenticated, correctly-configured* instance running old code, so the interesting pair is:
  * a build newer than HEAD passes silently, and a build older than HEAD stops the run before a
  * single scenario builds anything — naming the timestamp, HEAD, and the command that fixes it.
+ *
+ * SH500 is that sentence's other half, and it is why `staleReason` is asserted directly as well.
+ * A gate that fails on everything is not a gate, and one asserted in a single direction becomes
+ * one: consulting the clock after the commit already matched cancelled four tests on an instance
+ * running HEAD, because a build precedes its own commit by seconds. The four cases are commit ×
+ * tree and only two of them can be produced by whatever state this repository is in when the
+ * suite runs, so the decision is exercised as a function over a synthetic HEAD.
  */
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
 
 import { createServer } from "node:http";
 
-import { requireInstance } from "../conformance/support/instance.mjs";
+import { requireInstance, staleReason } from "../conformance/support/instance.mjs";
 
 /** A minimal instance: it answers the identity probe with whatever manifest the test sets. */
 let server;
@@ -88,4 +95,87 @@ describe("SH460: the conformance harness refuses an instance older than the code
 
     assert.equal(conn.baseUrl, baseUrl);
   });
+
+  /**
+   * SH500 against the repository this is running in, which is the state the gate got wrong.
+   *
+   * The manifest names the real HEAD and is dated a second *before* HEAD's commit — the ordinary
+   * order, compile then commit. Both branches are asserted rather than one being skipped: on a
+   * clean tree the hash is proof and the suite runs, and on a dirty one the message says which
+   * signal it fell back to. The gate has no third answer, so this cannot pass vacuously.
+   */
+  test("an instance built from HEAD a second before the commit is not stale on a clean tree", async () => {
+    const head = await liveHead();
+    manifest = {
+      product: "Viglet Shio CMS",
+      version: "dev",
+      commit: head.sha.slice(0, 7),
+      builtAt: new Date(head.at - 1000).toISOString(),
+    };
+
+    if (head.dirty) {
+      await assert.rejects(() => requireInstance(env()), (error) => {
+        assert.match(error.message, /tracked changes/, "a dirty tree must say why the hash was not enough");
+        return true;
+      });
+      return;
+    }
+
+    const conn = await requireInstance(env());
+
+    assert.equal(conn.manifest.commit, head.sha.slice(0, 7));
+  });
 });
+
+describe("SH500: the four commit × tree combinations, over a HEAD the test controls", () => {
+  const head = { sha: "8b1b7711", iso: "2026-08-06T10:32:38Z", at: Date.parse("2026-08-06T10:32:38Z"), dirty: false };
+  const dirty = { ...head, dirty: true };
+
+  /** The reported incident, to the second: same bytes, thirty-three seconds of clock. */
+  const atHead = { commit: "8b1b771", builtAt: "2026-08-06T10:32:05Z" };
+
+  test("a matching commit on a clean tree ends the question, whatever the clocks say", () => {
+    assert.equal(staleReason(atHead, head), null);
+  });
+
+  test("a matching commit on a dirty tree falls back to the clock, and says so", () => {
+    assert.match(staleReason(atHead, dirty), /tracked changes, so a commit that matches HEAD/);
+  });
+
+  test("a matching commit on a dirty tree still passes when the build is the newer of the two", () => {
+    assert.equal(staleReason({ ...atHead, builtAt: "2026-08-06T10:33:00Z" }, dirty), null);
+  });
+
+  test("a commit that is not HEAD is judged on the timestamp — SH460's incident, still caught", () => {
+    assert.match(
+      staleReason({ commit: "0ldbu1d", builtAt: "2026-08-05T09:00:00Z" }, head),
+      /before HEAD was committed/,
+    );
+  });
+
+  test("a build with no identity at all is stale, and a matching commit does not need one", () => {
+    assert.match(staleReason({ version: "dev" }, head), /no build identity at all/);
+    assert.equal(staleReason({ commit: "8b1b7711" }, head), null);
+  });
+
+  test("an abbreviation too short to identify a commit does not match HEAD", () => {
+    assert.match(
+      staleReason({ commit: "8b1b7", builtAt: "2026-08-06T10:32:05Z" }, head),
+      /before HEAD was committed/,
+    );
+  });
+});
+
+/** HEAD as the gate itself reads it — the same three facts, asked of the repo under test. */
+async function liveHead() {
+  const { execFile } = await import("node:child_process");
+  const { promisify } = await import("node:util");
+  const run = promisify(execFile);
+  const repo = new URL("../..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+
+  const { stdout } = await run("git", ["-C", repo, "log", "-1", "--format=%h %cI"], { timeout: 10_000 });
+  const [sha, iso] = stdout.trim().split(/\s+/);
+  const { stdout: status } = await run("git", ["-C", repo, "status", "--porcelain", "-uno"], { timeout: 10_000 });
+
+  return { sha, iso, at: Date.parse(iso), dirty: status.trim().length > 0 };
+}

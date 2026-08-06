@@ -21,6 +21,13 @@ produces failures indistinguishable from defects** — it once cost a session an
 tasks filed for bugs that did not exist. `version` reads `dev` and proves nothing. Do this
 first, always, and do not diagnose a red run before it passes.
 
+**Read `commit` first and stop there when it is HEAD (SH500).** `builtAt` is *earlier* than
+its own commit on every normal build — compile, test, then commit — so comparing the clocks
+after the hash already matched calls a current instance stale, which is how the suite came to
+cancel four tests against HEAD. The timestamp answers only what the hash cannot: a commit that
+is not HEAD, or a tree with tracked changes. `SHIO_CONFORMANCE_ALLOW_STALE=1` is still the
+hatch for an instance you did not build.
+
 ## The chain, and what each step must produce
 
 ```

@@ -374,32 +374,6 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
-### IX.29 A matching commit should end the question (SH500)
-
-The suite refuses to run: four tests **cancelled**, `pass 0 fail 0`, and one message —
-the instance "is older than the code under test … built at 2026-08-06T10:32:05Z (commit
-8b1b771), before HEAD was committed."
-
-The commit it names **is** HEAD. `8b1b771` is `8b1b7711`, so the running code and the
-code under test are the same bytes, and the guard says otherwise because it also
-compares clocks: the build is `10:32:05Z` and HEAD's commit is `10:32:38Z`, thirty-three
-seconds later. Building before committing is the normal order — compile, test, then
-commit — so the guard fires on the ordinary case.
-
-A matching commit is proof and should end the question. The timestamp is a fallback for
-the case the hash cannot cover: an instance whose commit is *not* HEAD, or a dirty tree
-where the hash says nothing about what compiled. Consulting it after a match can only
-produce this.
-
-The cost is the whole gate, not one assertion. All four tests are cancelled, so the run
-answers nothing about the six tasks it was meant to validate, and the message tells the
-reader to rebuild and restart — work that will not change the outcome and will look like
-it did if the next commit lands afterwards.
-
-It is SH460's own shape turned around: the instrument written so a red run could name
-the stale side now names a current instance as stale. Assert both directions — a
-genuinely old instance is caught, and a current one runs.
-
 ### IX.30 A rule for content posts applied to a File (SH501)
 
 A pixel-identical replica reports three errors. All three are `url-missing` — "This post
@@ -1666,27 +1640,6 @@ stops the agent from surprising them. `docs/specs/SH74-agent-native-cms.md` is t
 form to compress, and the four hub pages of the restructured sidebar are what the
 `NavCard` grid should point at, alongside a quick start that begins with an agent rather
 than with a JavaScript API.
-
-### XVIII.4 The rendering story, rewritten (§XVIII.4) (SH483)
-
-`website-development.md` teaches Page Layouts whose Regions hold "server-side
-JavaScript" and an `shObject` API; `architecture-overview.md`,
-`configuration-reference.md`, `developer-guide.md`, `getting-started/intro.md` and
-`index.mdx` repeat it. The roadmap's own §IV records server-side JS rendering as
-**dropped**, and one of the nine non-goals is "No GraalJS server-side JS template
-engine". The published docs teach the thing the project decided against.
-
-Rewrite it from `docs/agents/renderer.md`: page → layout → region, Handlebars templates
-with the helper set, themes and static files, the section vocabulary in
-`@viglet/shio-sections`, region bindings, the `sh-region` and `data-shio-*` annotations,
-`/preview/**`, and the render digest as cheap textual proof (P9). Keep
-`shio.website.javascript.engine` and the Nashorn options out of
-`configuration-reference.md` unless the property still exists in the tree, and say so
-plainly where a reader of the old docs would look for it.
-
-This is the largest single rewrite in the block and the one most likely to be read by
-someone who followed the old pages, so it needs a short "what changed since the
-JavaScript engine" paragraph rather than a silent replacement.
 
 ### XVIII.5 The MCP page (§XVIII.5) (SH481)
 
