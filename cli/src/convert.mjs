@@ -95,6 +95,12 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
     return { document: null, stale, sections: [], pages: [], extras: [] };
   }
 
+  // SH552 — the finding the previous command made, acted on. `propose` identifies field values that
+  // appear on candidates sharing no page — chrome one level down — and reported them in prose; this
+  // pass copied `row.fields` verbatim, so `intro "We respect your privacy"` was written as the
+  // accepted section's intro and the replica's home page introduced itself with a cookie banner.
+  const chrome = adoptedIndex(proposal);
+  const dropped = [];
   const sections = accepted
     .map((entry) => byId.get(entry.block))
     // An accepted candidate always has a type — `propose --accept` refuses a typeless one, whose
@@ -104,7 +110,7 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
       url: `${SECTIONS_FOLDER}/${row.id}`,
       type: row.type,
       folder: SECTIONS_FOLDER,
-      data: { ...row.fields },
+      data: withoutChrome(row, chrome, dropped),
     }))
     .sort((a, b) => (a.url < b.url ? -1 : 1));
 
@@ -186,7 +192,58 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
     verbatim,
     mixed,
     extras,
+    // SH552 — what this command cut, so the command that performed the cut is the one that states
+    // it. Sorted, so two runs over one capture report the same lines (P5).
+    dropped: dropped.sort((a, b) => (`${a.section}${a.field}` < `${b.section}${b.field}` ? -1 : 1)),
   };
+}
+
+/**
+ * The `(field, value)` pairs the proposal marked as chrome (SH552).
+ *
+ * <h3>Read, never re-derived</h3>
+ *
+ * <p>The rule that decides what counts as adopted lives in `propose.mjs` and has to stay there: it
+ * needs every candidate's page set, which is a fact about the whole capture rather than about the
+ * section being written. So this reads `proposal.adopted` and matches on it exactly. Re-deriving the
+ * predicate here would be a second implementation of one judgement, free to disagree with the note a
+ * reviewer approved — and the reviewer approved the note.</p>
+ *
+ * <p>Keyed on the pair and not on the field name: a `heading` that is chrome on one value is ordinary
+ * content on another, and dropping a whole field would take the section's own heading with it. The
+ * value is compared trimmed, because that is how `propose` compared it.</p>
+ */
+function adoptedIndex(proposal) {
+  const index = new Set();
+  for (const row of proposal?.adopted ?? []) {
+    if (typeof row?.field === "string" && typeof row?.value === "string") {
+      index.add(`${row.field}\u0000${row.value.trim()}`);
+    }
+  }
+  return index;
+}
+
+/**
+ * One candidate's fields with the chrome values left out (SH552).
+ *
+ * <p>Left out rather than emptied: an absent field renders nothing, and a field holding `""` is a
+ * value a curator has to notice and delete. `{{#if}}` guards every field in the layout (SH465), so
+ * absence is already the shape that renders nothing at all.</p>
+ *
+ * <p>Every drop is recorded, because a cut nobody states reads as a capture that did not contain the
+ * thing — which is the failure this task is the seventh instance of.</p>
+ */
+function withoutChrome(row, chrome, dropped) {
+  if (!chrome.size) return { ...row.fields };
+  const data = {};
+  for (const [field, value] of Object.entries(row.fields ?? {})) {
+    if (typeof value === "string" && chrome.has(`${field}\u0000${value.trim()}`)) {
+      dropped.push({ section: row.id, field, value });
+      continue;
+    }
+    data[field] = value;
+  }
+  return data;
 }
 
 /**
@@ -808,7 +865,7 @@ function scriptsPost(scripts, site) {
  * can work at all (SH436).
  */
 export function describeConversion({ document, sections, pages = [], verbatim = 0, mixed = 0, extras,
-                                     requires = [] }, options = {}) {
+                                     requires = [], dropped = [] }, options = {}) {
   const lines = [];
   const limit = Number.isFinite(Number(options.limit)) ? Math.max(Number(options.limit), 1) : 20;
   lines.push(
@@ -841,6 +898,21 @@ export function describeConversion({ document, sections, pages = [], verbatim = 
   const theme = document.posts.find((post) => post.type === "PageLayout")?.data?.THEME;
   if (theme) {
     lines.push(`  presented by ${theme} — the one stylesheet the layout names`);
+  }
+  // SH552 — the same cut, stated by the command that performed it. `propose` reported the finding and
+  // nothing acted on it for six blocks running (SH452, SH469, SH429 among them): the diagnosis
+  // shipped as a sentence somebody had to act on, and the somebody was a command. A drop nobody
+  // prints reads as a capture that never held the thing.
+  if (dropped.length) {
+    const fields = [...new Set(dropped.map((row) => row.field))].sort();
+    lines.push(
+      `  ${dropped.length} field value(s) dropped as chrome — ${fields.join(", ")}: a value on `
+        + "candidates that share no page is nobody's content (a consent banner, a toast). "
+        + "`shio propose` names each one and its carriers",
+    );
+    for (const row of dropped.slice(0, 3)) {
+      lines.push(`    ${row.section}.${row.field} ${preview(row.value)}`);
+    }
   }
   for (const post of document.posts.slice(0, limit)) {
     const title = Object.values(post.data).find((value) => typeof value === "string" && value.trim());

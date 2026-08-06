@@ -60,8 +60,16 @@ import { describeTheme } from "./theme.mjs";
  * declare before this proposal can be applied. A consumer of a version-1 file sees no preconditions
  * and would take that for "there are none", which is the wrong way round — an applier that skips the
  * check silently writes a theme without its tokens.
+ *
+ * <p>**3 since SH552**, which added `adopted`: the field values this pass identified as chrome, as
+ * rows rather than only as a sentence in `notes`. Same argument, and it is the reason the number moves
+ * rather than the field being optional — in a version-2 file the finding exists only as prose, so a
+ * reader that sees no `adopted` would take it for "nothing was adopted" while the note beside it names
+ * five candidates. `convert` recomputes the proposal in-process (`proposalFor`) rather than reading
+ * this file, so nothing is refused on the number; it is here because the artefact on disk is read by
+ * people and by tools that are not `convert`.
  */
-export const PROPOSAL_VERSION = 2;
+export const PROPOSAL_VERSION = 3;
 
 /** Where the proposal lands: derived, beside the inventory it is computed from. */
 export const PROPOSAL_FILE = "shio/.shio/conversion-proposal.json";
@@ -949,7 +957,8 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     notes.push(
       `${adopted.length} field value(s) appear on candidates that share no page, which is what `
         + "chrome looks like one level down — a consent banner, a floating widget, a toast. A field "
-        + `is one section's content or it is not content: ${adopted.slice(0, 3).join("; ")}`,
+        + "is one section's content or it is not content, so `shio convert` drops these rather than "
+        + `writing them: ${adopted.slice(0, 3).map(describeAdopted).join("; ")}`,
     );
   }
 
@@ -982,12 +991,16 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     // SH436 — what the target must already declare for this to be appliable, computed from what the
     // proposal actually holds.
     requires: requirements({ theme, scripts: proposeScripts(inventory) }),
+    // SH552 — the finding, as data. `notes` says it to a person; this says it to `shio convert`,
+    // which is the reader that was writing a consent banner into a home page because a sentence is
+    // not something a command can act on.
+    adopted,
     notes: [...notes, ...(theme?.notes ?? [])],
   };
 }
 
 /**
- * Field values carried by candidates that share no page (SH505).
+ * Field values carried by candidates that share no page (SH505), as rows a command can act on.
  *
  * <p>Scalar fields only, and only values long enough to be prose: a `heading` of "Contact" on two
  * sections is a coincidence a site is entitled to, and "We respect your privacy" attributed to a FAQ
@@ -995,7 +1008,18 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
  * property is structural ("this value belongs to no one page"), and a list of known banner strings
  * would be a list that only ever finds the sites somebody has already looked at.</p>
  *
- * @returns rows like `intro "We respect your privacy" — b1a2, c3d4`, sorted, at most one per value
+ * <h3>Rows rather than sentences, which is the whole of SH552</h3>
+ *
+ * <p>SH505 returned prose, and prose is what the note needed. It is not what the <b>next command</b>
+ * needs: `convert` opens this artefact and copies `row.fields` verbatim, so the value this pass named
+ * exactly — `intro "We respect your privacy"`, across five candidate ids — was written as the accepted
+ * section's `intro`, and the replica's home page introduced itself with a cookie banner. The report
+ * was right, the exclusion was right, and nothing read either. So the finding is data: `field`, the
+ * <b>full</b> value (never `preview`'s truncation, because the consumer matches on it) and the
+ * carriers. The sentence is composed from these rows, so the two cannot disagree about what was
+ * found.</p>
+ *
+ * @returns rows like `{field: "intro", value: "We respect your privacy", candidates: ["b1a2","c3d4"]}`
  */
 function adoptedValues(rows) {
   const seen = new Map();
@@ -1018,9 +1042,14 @@ function adoptedValues(rows) {
       pages.some((other, index) => index !== at && [...set].some((path) => other.has(path))));
     if (shared) continue;
     const [field, value] = key.split("\u0000");
-    found.push(`${field} ${JSON.stringify(preview(value))} — ${carriers.map((row) => row.id).sort(byText).join(", ")}`);
+    found.push({ field, value, candidates: carriers.map((row) => row.id).sort(byText) });
   }
-  return found.sort(byText);
+  return found.sort((a, b) => byText(describeAdopted(a), describeAdopted(b)));
+}
+
+/** One adopted row as the note spells it — the one place the sentence is built. */
+export function describeAdopted(row) {
+  return `${row.field} ${JSON.stringify(preview(row.value))} — ${row.candidates.join(", ")}`;
 }
 
 /** Below this many characters a repeated field value is a coincidence rather than an adoption. */

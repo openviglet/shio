@@ -413,6 +413,35 @@ this pass can recognise; a **note** reports the shape whatever produced it — a
 candidates that *share no page*, which is the `everywhere` note one level down, at the unit a curator
 would actually edit.
 
+**And a note is not a reader, which is the seventh time (SH552).** SH505's two halves both ran: the
+overlay was excluded, and the note named the string exactly — `intro "We respect your privacy"`, across
+five candidate ids. Then `convert` copied `row.fields` verbatim and the replica's home page introduced
+itself with a cookie banner. **The report was not wrong and the exclusion was not wrong**; what was
+missing is that the second command reads the first one's finding. This is the failure shape
+`shio-replication-test` names — *the report ships ahead of the behaviour it reports on* — and SH452
+(a note, not the fetch), SH469 (the list, not the download) and SH429 (stranded bytes visible, delivery
+unbuilt) are the same one: each time the diagnosis shipped as a sentence somebody had to act on, and
+each time the somebody was a **command**. So the fix is not another exclusion rule:
+
+- `adoptedValues` returns **rows** — `{field, value, candidates}` with the **full** value, never
+  `preview`'s 40-character truncation, because the consumer matches on it — and `notes` is *composed*
+  from those rows, so the sentence a reviewer approves and the cut that happens are one fact. The
+  proposal carries them as **`adopted`**, which is why `PROPOSAL_VERSION` is 3: in a version-2 file
+  the finding exists only as prose, so a reader seeing no `adopted` would take it for "nothing was
+  adopted" while the note beside it names five candidates.
+- `convert` **reads** that list and drops the pair, and reads is the operative word — the rule needs
+  every candidate's page set, a fact about the whole capture, so re-deriving the predicate in the
+  applier would be a second implementation of one judgement free to disagree with the note somebody
+  approved. Keyed on the **`(field, value)` pair** and not on the field name: a `heading` that is
+  chrome on one value is ordinary content on another, and dropping the field would take the section's
+  own heading with it. **Absent rather than empty**, because `{{#if}}` guards every field in the
+  layout (SH465) so absence already renders nothing, while `""` is a value a curator has to notice.
+- And **`convert` prints the count** — the same cut, stated by the command that performed it. A drop
+  nobody states reads as a capture that never held the thing, which is how a fix of this shape becomes
+  the eighth instance instead of the last one. The end-to-end assertion is deliberately end-to-end for
+  the same reason: a unit test of the drop passes with the two commands still disconnected, which is
+  precisely the state the three tasks above shipped in.
+
 **And a candidate that is only a `<script>` (SH506).** One of six candidates on a real site read
 `"signature": "script"`, `"fields": {}`, `"loss": {"elements":[{"name":"script","count":1}]}` — the
 loss line naming the whole of the block — and proposed the post-type `{"name":"Block1","fields":[]}`.

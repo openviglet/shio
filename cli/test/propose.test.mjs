@@ -1110,6 +1110,27 @@ test("SH505: a field value on candidates that share no page is reported, whateve
     proposal.notes.some((note) => /share no page/.test(note) && /cookies/.test(note)),
     `the note names the value and the candidates carrying it. Notes: ${JSON.stringify(proposal.notes)}`,
   );
+  // SH552 — and as data, because the reader that has to act on it is a command. The note is composed
+  // from these rows, so the sentence a reviewer approves and the cut `convert` performs are one fact.
+  const adopted = proposal.adopted ?? [];
+  assert.deepEqual(
+    adopted.map((row) => row.field).sort(),
+    ["body", "heading"],
+    `one row per (field, value) pair — the banner contributes two, and both are chrome: `
+      + `${JSON.stringify(adopted)}`,
+  );
+  const body = adopted.find((row) => row.field === "body");
+  assert.ok(
+    body.value.includes("cookies to improve your experience"),
+    "the full value and not `preview`'s 40-character truncation — `convert` matches on it, and a "
+      + "truncated string matches nothing",
+  );
+  assert.equal(body.candidates.length, 2, "with both carriers, sorted");
+  assert.ok(
+    proposal.notes.some((note) => /shio convert/.test(note)),
+    "and the note says which command performs the cut, so a reviewer reading it knows the banner "
+      + "will not be written rather than that somebody should remember not to write it",
+  );
 });
 
 test("SH520: a block's span cuts that block's own bytes out of the source, comments and all", () => {

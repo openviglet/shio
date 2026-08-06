@@ -1810,29 +1810,6 @@ already knows how many rows it found.
 The fix in the extractor is small. The check that would have caught it — a proposed row
 whose field is empty in every instance — is the part worth keeping.
 
-### XVII.75 A finding the next command does not read (SH552)
-
-SH505 taught `propose` to exclude an overlay from the candidate list and to report any
-field value carried by candidates that share no page. Both halves ran. The note named
-the string exactly — `intro "We respect your privacy"` — across five candidate ids. Then
-`convert` wrote it as the accepted section's `intro`, and the site's home page now
-introduces itself with a cookie banner.
-
-The report is not wrong and the exclusion is not wrong. What is missing is that the
-second command reads the first one's finding. The proposal is a file on disk; the note
-is in it; `convert` opens that file and takes the fields.
-
-This is the failure shape `shio-replication-test` already names — *the report ships
-ahead of the behaviour it reports on* — and it is the seventh instance. SH452 fixed a
-note and not the fetch, SH469 added the list and not the download, SH429 made stranded
-bytes visible and left delivery unbuilt. Each time the diagnosis shipped as a sentence
-somebody has to act on, and each time nobody did, because the actor is a command.
-
-So the fix is not another exclusion rule. It is that a value the proposal marked as
-chrome does not get written, and that the count of what was dropped is printed by
-`convert` rather than only by `propose` — the same cut, stated by the command that
-performed it.
-
 ## XVIII End-user documentation for 2026.3 (Block R)
 
 The published documentation at `docs-shio` describes the 2018 product. Measured against

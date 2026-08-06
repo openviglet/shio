@@ -20,7 +20,7 @@ import { test } from "node:test";
 
 import {
   CAPTURED_STYLE_HTML, CAPTURED_THEME_URL, LAYOUT_ROLES, SECTIONS_FOLDER, THEME_FOLDER,
-  WRAPPER_ROLES, buildConversion, withResolvedFileFields,
+  WRAPPER_ROLES, buildConversion, describeConversion, withResolvedFileFields,
 } from "../src/convert.mjs";
 import {
   VOCABULARY_THEME_CSS, VOCABULARY_THEME_TOKENS, vocabularyThemeTitle,
@@ -535,6 +535,125 @@ async function blocksOfPage(ctx) {
   const { proposal } = await proposalFor({}, ctx, "propose");
   return proposal.pages[0].blocks;
 }
+
+/**
+ * The two-page fixture SH552 needs: a banner whose text belongs to neither page.
+ *
+ * <p>The same shape the real capture had — one string carried by candidates that share no page — and
+ * it has to be *two* pages, because that is the whole predicate: a value repeated inside one page is
+ * a duplication the reviewer can see, and a value on candidates sharing no page is chrome.</p>
+ */
+const CONSENT = "<h2>Before you continue</h2><p>We respect your privacy and use cookies here.</p>";
+const CONSENT_SITE = {
+  "/": `<html><body><main><section class=hero><h1>Home</h1><p>Welcome to it.</p>`
+    + `<a href=/go>Start</a></section><section class=consent>${CONSENT}</section></main></body></html>`,
+  "/about": `<html><body><main><section class=about><h1>About</h1><p>Who we are here.</p>`
+    + `<a href=/x>Go</a></section><div class=consent2>${CONSENT}</div></main></body></html>`,
+};
+
+/**
+ * SH552 — the seventh time a finding shipped ahead of the behaviour it reports on.
+ *
+ * <p>SH505 taught `propose` to exclude an overlay and to report any field value carried by candidates
+ * that share no page. Both halves ran, and the note named the string exactly — `intro "We respect your
+ * privacy"`, across five candidate ids. Then `convert` copied `row.fields` verbatim and the replica's
+ * home page introduced itself with a cookie banner. The report was not wrong and the exclusion was not
+ * wrong; what was missing is that the second command reads the first one's finding.</p>
+ *
+ * <p>So this is an end-to-end assertion on purpose. A unit test of the drop would pass with the two
+ * commands still disconnected — which is the exact state SH452, SH469 and SH429 shipped in, each time
+ * as a sentence somebody had to act on, and the somebody was a command.</p>
+ */
+test("SH552: a value the proposal marked as chrome is not written into the section", async () => {
+  const ctx0 = ctxWith({ site: CONSENT_SITE });
+  const { proposalFor } = await import("../src/commands/propose.mjs");
+  const { proposal } = await proposalFor({}, ctx0, "propose");
+
+  assert.ok(
+    proposal.adopted?.length,
+    `propose has to publish the finding as data, not only as prose: ${JSON.stringify(proposal.notes)}`,
+  );
+  const banner = proposal.adopted.find((row) => row.value.includes("respect your privacy"));
+  assert.ok(banner, `the banner's value is one of the rows: ${JSON.stringify(proposal.adopted)}`);
+  assert.ok(
+    banner.value.length > 40,
+    "the full value, never `preview`'s truncation — the consumer matches on it",
+  );
+  assert.ok(banner.candidates.length >= 2, "with the carriers that made it chrome");
+
+  // Accept the candidate that carries it, which is what the real run did.
+  const carrier = proposal.candidates.find((row) => row.id === banner.candidates[0]);
+  assert.ok(
+    JSON.stringify(carrier.fields).includes("respect your privacy"),
+    "the candidate still carries the value in the proposal — `propose` reports and does not edit, so "
+      + "without this the assertion below would pass on a fixture that never held the banner",
+  );
+  const ctx = ctxWith({
+    site: CONSENT_SITE,
+    plan: { accepted: [{ block: carrier.id, type: "SectionRichText" }] },
+  });
+
+  await convert.run({ site: "Acme", out: "conversion.json" }, [], ctx);
+  const document = JSON.parse(ctx.written[norm("/repo/conversion.json")]);
+  const section = document.posts.find((post) => post.url.startsWith(`${SECTIONS_FOLDER}/`));
+
+  assert.ok(section, "the accepted block is still written as a section");
+  assert.ok(
+    !JSON.stringify(section.data).includes("respect your privacy"),
+    `the chrome value is not in the section's fields: ${JSON.stringify(section.data)}`,
+  );
+  assert.match(
+    ctx.stdout.text,
+    /field value\(s\) dropped as chrome/,
+    "and the count is printed by the command that performed the cut, not only by the one that found "
+      + "it — a drop nobody states reads as a capture that never held the thing",
+  );
+});
+
+test("SH552: the drop is keyed on the pair, so a section's own field survives", () => {
+  // A `heading` that is chrome on one value is ordinary content on another. Dropping the whole field
+  // would take the section's own heading with it, which is a second defect wearing the fix's clothes.
+  const { document, dropped } = buildConversion({
+    proposal: {
+      version: 3,
+      candidates: [{
+        id: "b1a2",
+        type: "SectionHero",
+        pages: ["/"],
+        fields: { heading: "Ship faster than before", intro: "We respect your privacy here" },
+      }],
+      pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }],
+      adopted: [{ field: "intro", value: "We respect your privacy here", candidates: ["b1a2", "c3d4"] }],
+    },
+    plan: { accepted: [{ block: "b1a2", type: "SectionHero" }] },
+    site: "Acme",
+  });
+
+  const section = document.posts.find((post) => post.type === "SectionHero");
+  assert.equal(section.data.heading, "Ship faster than before", "the section's own field is kept");
+  assert.ok(!("intro" in section.data), "and the chrome one is absent rather than empty — an absent "
+    + "field renders nothing, and a field holding \"\" is one a curator has to notice and delete");
+  assert.deepEqual(dropped, [{ section: "b1a2", field: "intro", value: "We respect your privacy here" }]);
+});
+
+test("SH552: a proposal with no adopted rows changes nothing, and prints no line about it", () => {
+  const { document, dropped } = buildConversion({
+    proposal: {
+      version: 3,
+      candidates: [{ id: "b1a2", type: "SectionHero", pages: ["/"], fields: { heading: "Ship faster" } }],
+      pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }],
+    },
+    plan: { accepted: [{ block: "b1a2", type: "SectionHero" }] },
+    site: "Acme",
+  });
+
+  assert.deepEqual(dropped, []);
+  assert.equal(document.posts.find((post) => post.type === "SectionHero").data.heading, "Ship faster");
+  assert.ok(
+    !describeConversion({ document, sections: [], extras: [], dropped }).includes("dropped as chrome"),
+    "the report gains nothing on a conversion that dropped nothing (P5: same bytes as before)",
+  );
+});
 
 test("SH520: accepting one block keeps every other block on the page, verbatim", async () => {
   // The promise `propose` prints in the same run — "an unaccepted block stays verbatim markup" — and

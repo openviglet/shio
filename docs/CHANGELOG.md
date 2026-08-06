@@ -1002,6 +1002,7 @@
 - **SH514** — An upload of a zero-byte file is stored rather than refused, because a source that serves an empty 200 is replicated by storing one - MultipartFile.isEmpty() was conflating that with a missing part. The two caller mistakes it was hiding now carry a problem document, as does the empty replacement, and convert counts an empty asset apart from a missing one.
 - **SH550** — attribute values are entity-decoded where markup stops being markup, raw-text bodies are not, and a reference that still arrives escaped is reported as a capture defect
 - **SH549** — the layout names the vocabulary theme whenever any page composes sections, and the captured CSS reaches the verbatim pages through a per-page reference instead of the whole site
+- **SH552** — propose publishes the chrome finding as rows, convert drops those field values instead of writing them, and the command that performed the cut is the one that prints it
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 
