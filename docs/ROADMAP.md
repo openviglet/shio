@@ -81,6 +81,8 @@
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
 - 📋 **SH465** (deps: SH464 ✅) **The authorable layout draws no collection field, so four section types render as a heading** — features, questions, logos and quotes are Relator widgets the generated template never reads, so content that captured, converted and stored fine is never drawn. → §XVII.42
+- 📋 **SH466** (deps: SH336 ✅) **A link the rewriter cannot resolve is emitted verbatim, so it leaves the replica** — The fallback keeps the source's base on a page served under another, so an unpublished target turns into an href out of the site and the output depends on publication state. → §XVII.43
+- 📋 **SH467** (deps: SH385 ✅) **The replica inverts the source's trailing slash, so the source's own links 404** — A directory-style path is stored without its trailing slash and never restored, so /shio/ answers 404 while /shio answers 200 — the opposite of what the source does. → §XVII.44
 
 ## Block F — Market positioning
 

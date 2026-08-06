@@ -1500,3 +1500,51 @@ the layout needs one `{{#getRelation}}` block per collection rather than a rule 
 type. The Universal Editor half comes with it — a row inside a collection needs
 `sh-post` for the editor to address it, which is the same annotation the section itself
 already carries.
+
+### XVII.43 A verbatim href is a hardcoded base (SH466)
+
+A replicated page carried `href="/turing/"` — the source's path, verbatim, on a page
+served from `/sites/vigletorg/default/en-us/`. Following it leaves the site for the
+instance root. The other five links on the same page were rewritten correctly, so the
+page mixes two kinds of href and only one works.
+
+The rule is the mechanism. The rewriter resolves each link against the site's content
+and rewrites what it finds; what it cannot find it **leaves alone**. `turing` was
+unpublished at that moment, and the public route sees only PUBLISHED, so the link fell
+through to verbatim — which is the source's base, not this one. The same page on
+`/preview` had all six rewritten, because the preview sees DRAFT and could resolve it.
+So the output depends on publication state, and the failure appears exactly when a site
+is half published, which is every site mid-migration.
+
+**Every link must come from the resolver, never from the source's bytes.** A verbatim href is a hardcoded
+base, and a replica is by definition served under a different one — `/preview/<site>/` and
+`/sites/<furl>/<format>/<locale>/` are both different from `/`. Leaving one unrewritten is not a
+conservative fallback; it is the one output guaranteed to point somewhere else.
+
+An unresolved link should still be rebased onto the site, so it 404s *inside* the
+replica where `verify` already reports it, and SH336's rewriter is where the fallback
+belongs. A missing page is a finding; a link out of the site is a silent exit.
+
+### XVII.44 A URL space with one character removed (SH467)
+
+The source serves `/shio/` with a **200** and answers `/shio` with a **301** to it. The
+replica does the exact opposite: `/sites/vigletorg/default/en-us/shio` is 200 and
+`/shio/` is **404**. Measured on `/about/` too, and on the preview, which behaves the
+same — so it is the stored friendly URL, not the route.
+
+The capture reads the source's `/shio/` and stores the post at `post:VigletOrg/shio`.
+The trailing slash is dropped on the way in and never restored on the way out, so a
+replica's URL space is the source's with one character removed from every
+directory-style path.
+
+SH385's rule is that a replica keeps the original's URL space, and this breaks it in the
+direction that is hardest to notice: every page still resolves, so `verify` is clean and
+a crawl of the replica succeeds. What fails is anything that carries the *source's* URLs
+— a sitemap, an inbound link, a bookmark, a redirect map, and the source's own markup,
+which is what a fidelity replica serves. That last one is the sharp edge: the captured
+HTML links to `/shio/`, and the replica cannot answer it.
+
+Two ends and both are cheap. Preserve the trailing slash the source declared, so the
+furl round-trips; and answer both forms on the route, redirecting one to the other the
+way the source does, since a replica that keeps a URL space should keep its redirects
+too.
