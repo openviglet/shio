@@ -810,6 +810,28 @@ said "how many pages carry it" — and is fixed in the same pass. No `INVENTORY_
 SH431, and the reason is the test of whether a bump is owed: nothing *consumes* `on` (the coverage gate
 reads `forms` for its fields, never for its counts), so no reader can misread an older file through it.
 
+**An element boundary inside a link is a separator, and it used to be nothing (SH468).** A captured
+navigation carried `DuDumont DEP`, `ShShio CMS` and `TuTuring ES` — the label with a two-letter prefix
+fused onto its first word. The markup explains it exactly: the anchor holds a 28×28 brand tile
+(`<div aria-label="Du">…<span>Du</span></div>`) followed by the text `Dumont DEP`, and `scanPage`
+accumulated `anchor.text += token.text` with no separator — `collapse()` then normalised whitespace
+that was never inserted. It is not about badges: the tokenizer emits one text token per run, so
+**every** append after the first crosses an element boundary, and any inline element adjacent to text
+fused the same way. The nav label is where it surfaced because a label is short enough to read; a
+heading carries the same corruption unnoticed, and those become post titles. **A word that was never
+in the source is worse than a dropped one** — `Dumont DEP` and `DuDumont DEP` both look like content,
+so nothing downstream can tell which is the source's: not `verify`, not a digest, not a reviewer
+skimming a menu, and the capture is supposed to be evidence about somebody else's bytes.
+**Unconditional, not block-aware, and that is a stated trade**: an inline `<em>Open</em>Source` renders
+as one word in a browser and is now extracted as two. Determinism beats accuracy here (P5) — the
+alternative is a list of inline tag names that CSS can contradict per page, and it would fail the same
+silent way. Splitting yields two words the source did contain; fusing invents one it did not.
+**The instrument is an independent oracle**, not four assertions: `clone.test.mjs` strips the fixture's
+tags and asserts that every word of every extracted label is a word the page actually spelled — a
+different mechanism from accumulating text tokens, so it fails on the next fusion whatever causes it.
+Left open on purpose, as the task framed it: whether a mark whose `aria-label` equals its own visible
+text should be in a label at all is a decorative-content question, not a boundary one.
+
 **One test drives the whole pipeline, and it is the only one that can (SH422).** Block Q shipped as
 eleven tasks, each thoroughly tested in isolation — and every phase hands an artefact to the next, so
 each handoff is a shape agreed in two places with a unit test pinning one side and *constructing the

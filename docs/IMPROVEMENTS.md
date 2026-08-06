@@ -1525,30 +1525,6 @@ a capture fix's clothes.
 So the question is narrower than it looked: is a replica's canonical worth splitting the
 address space, or is a redirect the honest answer for URLs Shio never owned?
 
-### XVII.45 A word the source never contained (SH468)
-
-A captured navigation carried `DuDumont DEP`, `ShShio CMS` and `TuTuring ES` — the label
-with a two-letter prefix fused onto its first word. The markup explains it exactly: the
-anchor holds a 28×28 brand tile (`<div aria-label="Du">…<span>Du</span></div>`) followed
-by the text `Dumont DEP`, and `clone.mjs:399` accumulates `anchor.text += token.text`
-with **no separator**. `collapse()` then normalises whitespace that was never inserted.
-
-It is not about badges. Any inline element adjacent to text fuses across the boundary,
-so `<em>Open</em>Source` becomes `OpenSource` and `<sup>2</sup>x` becomes `2x`. The nav
-label is where it surfaced because a label is short enough to read; a heading or a
-summary would carry the same corruption unnoticed, and those become post titles.
-
-A word that was never in the source is worse than a dropped one. `Dumont DEP` and
-`DuDumont DEP` both look like content, so nothing downstream can tell which is the
-source's — not `verify`, not a digest, not a reviewer skimming a menu. The capture is
-supposed to be evidence about somebody else's bytes.
-
-Joining with a space and letting `collapse()` squeeze it is the whole fix, and it yields
-`Du Dumont DEP` — readable, and no longer a fabricated token. Whether a mark like that
-should be dropped from a label at all is a second question worth asking separately: the
-tile carries `aria-label` equal to its own visible text, which is what a decorative mark
-looks like.
-
 ### XVII.46 Faithful to the photograph, not to the page (SH469)
 
 The replica of `www.viglet.org` is 0.33% from the original by pixels and **inert**: the

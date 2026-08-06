@@ -396,7 +396,20 @@ export function scanPage(html, pageUrl) {
   for (const token of tokenize(stripNonMarkup(html))) {
     if (token.type === "text") {
       if (inTitle && !doc.title) doc.title = collapse(token.text) || null;
-      if (anchor) anchor.text += token.text;
+      // SH468 — a separator, because every append after the first crosses an element boundary: the
+      // tokenizer emits one text token per run, so two of them in one anchor were separated by a
+      // tag. Without it a 28×28 brand tile beside its label produced `DuDumont DEP`, `ShShio CMS`,
+      // `TuTuring ES` — a token the source never contained, and `collapse()` then normalised
+      // whitespace that was never inserted. A fabricated word is worse than a dropped one: `Dumont
+      // DEP` and `DuDumont DEP` both look like content, so nothing downstream — not `verify`, not a
+      // digest, not a reviewer skimming a menu — can tell which one is the source's.
+      //
+      // Unconditional rather than block-aware, and that is a real trade: an inline `<em>Open</em>Source`
+      // renders as one word in a browser and is extracted as two. Deterministic beats accurate here
+      // (P5) — the alternative is a list of inline tag names that CSS can contradict on any given
+      // page, and it would fail the same silent way this did. Splitting yields two words the source
+      // did contain; fusing invents one it did not.
+      if (anchor) anchor.text += ` ${token.text}`;
       doc.textChars += collapse(token.text).length;
       continue;
     }

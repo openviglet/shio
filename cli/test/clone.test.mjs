@@ -104,6 +104,78 @@ test("navigation is <nav> only, in source order, with the label the source gives
   assert.ok(doc.links.some((link) => link.href === "/privacy"));
 });
 
+/**
+ * SH468's measured case: a nav whose anchors hold a brand tile before the label.
+ *
+ * <p>The real markup, reduced to the part that matters — a 28×28 `<div>` carrying a two-letter mark
+ * and its own `<span>`, then the label as a sibling text node. The capture read `DuDumont DEP`.</p>
+ */
+const BRANDED_NAV = `<!doctype html>
+<html><head><title>Products</title></head><body>
+<nav>
+  <a href="/dumont"><div class="tile" aria-label="Du"><span>Du</span></div>Dumont DEP</a>
+  <a href="/shio"><div class="tile" aria-label="Sh"><span>Sh</span></div>Shio CMS</a>
+  <a href="/oss"><em>Open</em>Source</a>
+  <a href="/plain">  Plain  label  </a>
+</nav>
+<p>Body copy long enough that this reads like a page a person wrote rather than a shell of one.</p>
+</body></html>`;
+
+test("SH468: an element boundary inside a link is a separator, not nothing", () => {
+  const doc = scanPage(BRANDED_NAV, "https://x.test/");
+  const labels = new Map(doc.nav.map((item) => [item.href, item.label]));
+
+  assert.equal(
+    labels.get("/dumont"),
+    "Du Dumont DEP",
+    "`anchor.text += token.text` inserted nothing between nodes, so the mark fused onto the "
+      + "label's first word and `collapse()` normalised whitespace that was never there",
+  );
+  assert.equal(labels.get("/shio"), "Sh Shio CMS");
+  assert.equal(
+    labels.get("/oss"),
+    "Open Source",
+    "the trade this fix accepts: an inline element renders as one word in a browser and is "
+      + "extracted as two. Two words the source contained beats one it never did",
+  );
+  assert.equal(
+    labels.get("/plain"),
+    "Plain label",
+    "and a label with no elements in it is untouched — `collapse()` still squeezes, so the "
+      + "separator never shows up as a doubled or leading space",
+  );
+});
+
+/**
+ * The independent oracle, and the reason this is a check rather than four assertions (SH468).
+ *
+ * <p>A fabricated token is invisible to everything downstream precisely because it looks like
+ * content: `verify` cannot see it, a digest cannot, and a reviewer skimming a menu cannot. What
+ * *can* see it is the source's own bytes — a word the capture emits that the page never spelled.
+ * Stripping tags is a different mechanism from accumulating text tokens, so this fails on the next
+ * fusion whatever introduces it.</p>
+ */
+function wordsOf(html) {
+  return new Set(
+    html.replace(/<[^>]*>/g, " ").replace(/&[a-z]+;/gi, " ").split(/\s+/).filter(Boolean),
+  );
+}
+
+test("SH468: no extracted label contains a word the source never spelled", () => {
+  for (const [name, html] of [["branded nav", BRANDED_NAV], ["the main fixture", PAGE]]) {
+    const doc = scanPage(html, "https://x.test/");
+    const source = wordsOf(html);
+    for (const { text, href } of doc.links) {
+      for (const word of text.split(/\s+/).filter(Boolean)) {
+        assert.ok(
+          source.has(word),
+          `${name}: ${href} is labelled "${text}", and "${word}" is not a word of the page`,
+        );
+      }
+    }
+  }
+});
+
 test("assets come from every attribute that names bytes, srcset included", () => {
   const doc = scanPage(PAGE, "https://x.test/");
   const kinds = new Map(doc.assets.map((asset) => [asset.url.replace("https://x.test", ""), asset.kind]));
