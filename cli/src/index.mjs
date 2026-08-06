@@ -59,6 +59,10 @@ const BOOLEANS = [
   // SH379: keep the captured HTML, which is what `shio propose` computes a mapping from. Opt-in for
   // the same reason, and it costs no extra request — the bytes were already in hand.
   "markup",
+  // SH469: take the site's own `<script src>` as well, so the replica works and not only renders.
+  // Opt-in because `--render` bakes the post-hydration DOM and handing that page its bundle back is
+  // a hydration nobody asked for — but the *absence* is reported either way.
+  "scripts",
 ];
 
 // Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would

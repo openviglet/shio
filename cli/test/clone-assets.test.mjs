@@ -15,6 +15,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  BEHAVIOUR,
   DOWNLOADABLE,
   assetsReferencedBy,
   capturedAssetPathFor,
@@ -144,10 +145,78 @@ test("--max-assets is a declared cut, not a silent one", () => {
 });
 
 test("the downloadable kinds are the ones a replica needs to render", () => {
-  // Asserted rather than described: adding `script` here would mirror a stranger's JavaScript into
-  // a customer's media library, which is a different decision from copying their logo.
+  // Asserted rather than described. `script` is deliberately absent: rendering and working are two
+  // lists, and SH469's `BEHAVIOUR` is the second one — opt-in, and reported when it is not taken.
   assert.deepEqual([...DOWNLOADABLE].sort(), ["font", "icon", "image", "manifest", "media", "stylesheet"]);
   assert.ok(!DOWNLOADABLE.has("script"));
+  assert.deepEqual([...BEHAVIOUR], ["script"]);
+});
+
+// --- SH469: the replica keeps the appearance and drops the behaviour ---
+
+/** A site whose page is a bundle plus a third-party tag — the shape `www.viglet.org` has. */
+const REACT_SITE = {
+  version: 1,
+  source: { origin: "https://x.test", seed: "https://x.test" },
+  crawl: { depth: 3, maxPages: 200, rendered: true, pages: 1, truncated: false, robots: {} },
+  pages: [{ path: "/", title: "Home" }],
+  assets: [
+    { path: "/css/site.css", kind: "stylesheet", external: false, refs: 1 },
+    { path: "/assets/index-LNwgBwpz.js", kind: "script", external: false, refs: 1 },
+    { path: "https://forms.cognitoforms.com/f/x.js", kind: "script", external: true, refs: 1 },
+  ],
+  locales: [], forms: [], navigation: [], scripts: [], outbound: [], problems: [], notes: [],
+};
+
+test("SH469: the site's own bundle is skipped as behaviour, not as an unrenderable file", () => {
+  const { plan, skipped } = planAssets(REACT_SITE, { site: "Viglet" });
+
+  assert.deepEqual(plan.map((each) => each.source), ["/css/site.css"]);
+  const reasons = new Map(skipped.map((each) => [each.source, each.reason]));
+  assert.equal(
+    reasons.get("/assets/index-LNwgBwpz.js"),
+    "behaviour, not captured without --scripts",
+    "`not a renderable asset` is true of a script and says the wrong thing about it: a .docx the "
+      + "crawl saw is not part of the page, and the site's own bundle IS the page's behaviour",
+  );
+  assert.equal(reasons.get("https://forms.cognitoforms.com/f/x.js"), "off-origin");
+});
+
+test("SH469: --scripts takes the site's own bundle and still refuses somebody else's", () => {
+  const { plan, skipped } = planAssets(REACT_SITE, { site: "Viglet", scripts: true });
+
+  assert.deepEqual(plan.map((each) => each.source).sort(),
+    ["/assets/index-LNwgBwpz.js", "/css/site.css"]);
+  assert.equal(
+    skipped.find((each) => each.source.startsWith("https://")).reason,
+    "off-origin",
+    "SH378's decision is untouched by this one — a flag about behaviour is not a flag about "
+      + "mirroring another host's bytes",
+  );
+});
+
+test("SH469: a capture that discards behaviour says so, in behaviour's terms", () => {
+  const { skipped, external } = planAssets(REACT_SITE, { site: "Viglet" });
+  const folded = withDownloads(REACT_SITE, { site: "Viglet", results: [], skipped, external });
+
+  // The whole finding: every instrument agreed the replica was faithful — the clone reported
+  // `rendered`, the proposal was silent, `verify` was silent, and the snapshot said 0.33%. All of
+  // them measure the photograph. The counting was already here; the sentence was not.
+  const note = folded.notes.find((each) => each.includes("script(s) were NOT captured"));
+  assert.ok(note, `no note named the discarded behaviour. Notes: ${JSON.stringify(folded.notes)}`);
+  assert.match(note, /render and not respond/);
+  assert.match(note, /1 of them belong to this site/);
+  assert.match(note, /--scripts/);
+  assert.match(note, /index-LNwgBwpz\.js/);
+});
+
+test("SH469: with --scripts the note is only about what is genuinely not ours", () => {
+  const { skipped, external } = planAssets(REACT_SITE, { site: "Viglet", scripts: true });
+  const folded = withDownloads(REACT_SITE, { site: "Viglet", results: [], skipped, external });
+
+  const note = folded.notes.find((each) => each.includes("script(s) were NOT captured"));
+  assert.match(note, /All of them are off-origin/);
+  assert.ok(!note.includes("belong to this site"));
 });
 
 // --- placement: dedupe, collision, soft-404 ---

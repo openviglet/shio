@@ -1525,30 +1525,6 @@ a capture fix's clothes.
 So the question is narrower than it looked: is a replica's canonical worth splitting the
 address space, or is a redirect the honest answer for URLs Shio never owned?
 
-### XVII.46 Faithful to the photograph, not to the page (SH469)
-
-The replica of `www.viglet.org` is 0.33% from the original by pixels and **inert**: the
-dark/light toggle does nothing and the consent modal will not close. Both are React
-handlers, and the bundle is gone.
-
-Measured. The source carries four `<script>` tags, one of them `<script type="module"
-crossorigin src="/assets/index-LNwgBwpz.js">`. The replica carries **one** inline script
-and no `src` at all, and no `.js` exists anywhere in the asset tree — `clone --assets`
-collects fonts, icons, images, manifests and stylesheets, and script is not one of its
-kinds. `SiteScripts` did capture two scripts, both **third-party** (cognitoforms), so
-the site's own bundle is the one thing dropped.
-
-Nothing says so. The clone reports `rendered`, the proposal is silent, `verify` is silent, and the
-snapshot says 0.33% — every instrument agrees the replica is faithful, and it is faithful to the
-*appearance* only. That is the worst shape a report can take: a replica that photographs identically and
-does not work is harder to catch than one that looks wrong.
-
-`--render` is what makes this reachable rather than a flaw in it: rendering bakes the
-DOM, so a replica can be static and correct. But then the behaviour is knowingly
-discarded, and a phase that discards something has to name it — the counting is already
-there, since the crawler saw the tags to skip them. Capturing the bundle is the other
-half, and is a decision rather than an oversight.
-
 ### XVII.47 A File field holds a path after a conversion, and file_url only knows ids (SH471)
 
 `propose` writes `fields.image = <img src>` — the source's own path, e.g.

@@ -810,6 +810,26 @@ said "how many pages carry it" — and is fixed in the same pass. No `INVENTORY_
 SH431, and the reason is the test of whether a bump is owed: nothing *consumes* `on` (the coverage gate
 reads `forms` for its fields, never for its counts), so no reader can misread an older file through it.
 
+**A replica that photographs identically and does not work (SH469).** The replica of `www.viglet.org`
+is 0.33% from the original by pixels and **inert**: the dark/light toggle does nothing and the consent
+modal will not close, because both are React handlers and the bundle is gone. Measured — the source
+carries four `<script>` tags, one of them `<script type="module" src="/assets/index-LNwgBwpz.js">`; the
+replica carries one inline script and no `src` at all, and no `.js` exists in the asset tree.
+`DOWNLOADABLE` is the list a replica needs to **render**, and `script` was never on it; `SiteScripts`
+did capture two scripts and both were **third-party**, so the site's own bundle was the one thing
+dropped. Nothing said so: the clone reported `rendered`, the proposal was silent, `verify` was silent,
+the snapshot said 0.33% — every instrument agreed, and every one of them measures the photograph.
+**Two halves, and only one of them is a flag.** `BEHAVIOUR = {"script"}` is a second list beside
+`DOWNLOADABLE`, taken by **`clone --assets --scripts`** and off by default — because `--render` bakes
+the post-hydration DOM into the captured markup, so handing that page its own bundle back asks the
+framework to hydrate markup it did not just produce. That is a decision, like off-origin bytes are
+(SH378 is untouched: `--scripts` never mirrors another host's JavaScript). **What is not optional is
+saying it.** A skipped script gets its own reason — `behaviour, not captured without --scripts`, never
+`not a renderable asset`, which is true of a `.docx` and says the wrong thing about a bundle — and
+`withDownloads` writes a note in behaviour's terms: *N script(s) were NOT captured, so the replica will
+render and not respond*, with how many are the site's own and the flag that takes them. The counting
+was always there; the crawler saw the tags in order to skip them.
+
 **An element boundary inside a link is a separator, and it used to be nothing (SH468).** A captured
 navigation carried `DuDumont DEP`, `ShShio CMS` and `TuTuring ES` — the label with a two-letter prefix
 fused onto its first word. The markup explains it exactly: the anchor holds a 28×28 brand tile

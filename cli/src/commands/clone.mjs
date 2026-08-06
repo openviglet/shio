@@ -84,6 +84,11 @@ rests on: read the inventory before anything else happens.
   --site <name>            With --assets: whose asset tree the bytes go under
   --max-assets <n>         With --assets: ceiling on downloads (default 500)
   --max-asset-bytes <n>    With --assets: skip anything larger (default 26214400)
+  --scripts                With --assets: take this site's own <script src> too, so the
+                           replica works and not only renders. Off by default because
+                           --render bakes the post-hydration DOM, and handing that page
+                           its own bundle back is a hydration nobody asked for. What is
+                           dropped is always named in the report, flag or no flag
   --render                 Drive a browser, for a page that renders itself (needs
                            playwright). Without it the crawl reads what the server sent
   --ignore-robots          Crawl anyway. Recorded in the inventory, so a capture taken
@@ -248,7 +253,9 @@ async function download(inventory, { site, flags }, ctx) {
   const maxAssets = whole(flags.maxAssets, DEFAULT_MAX_ASSETS, "--max-assets", 1);
   const maxBytes = whole(flags.maxAssetBytes, DEFAULT_MAX_ASSET_BYTES, "--max-asset-bytes", 1);
   const origin = inventory?.source?.origin ?? "";
-  const { plan, skipped, external } = planAssets(inventory, { site, maxAssets });
+  // SH469 — behaviour is opt-in and its absence is not. See `BEHAVIOUR` in clone-assets.mjs.
+  const scripts = flags.scripts === true;
+  const { plan, skipped, external } = planAssets(inventory, { site, maxAssets, scripts });
 
   // SH408's question, asked of this root before anything is written: two source URLs whose names
   // differ only in case are one file on macOS and Windows, and the second would overwrite the first
@@ -304,7 +311,7 @@ async function download(inventory, { site, flags }, ctx) {
       known.add(row.path);
       discovered.push(row);
       const queued = planAssets({ assets: [row], source: { origin } },
-        { site, maxAssets: maxAssets - plan.length });
+        { site, maxAssets: maxAssets - plan.length, scripts });
       plan.push(...queued.plan);
       skipped.push(...queued.skipped);
       for (const host of queued.external) {

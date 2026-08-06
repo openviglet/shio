@@ -39,6 +39,25 @@ export const DEFAULT_MAX_ASSET_BYTES = 25 * 1024 * 1024;
 /** The kinds worth downloading: the ones a replica needs to render (§XVII.2's list). */
 export const DOWNLOADABLE = new Set(["image", "stylesheet", "font", "icon", "media", "manifest"]);
 
+/**
+ * The kind a replica needs to <b>work</b>, which is not the same list (SH469).
+ *
+ * <h3>Why it was missing, and why it is still not in the set above</h3>
+ *
+ * <p>Measured on `www.viglet.org`: the replica is 0.33% from the original by pixels and **inert** —
+ * the dark/light toggle does nothing and the consent modal will not close, because both are React
+ * handlers and `<script type="module" src="/assets/index-LNwgBwpz.js">` is not in the tree. Every
+ * instrument agreed it was faithful, which is the worst shape a report can take: a replica that
+ * photographs identically and does not work is harder to catch than one that looks wrong.</p>
+ *
+ * <p>It stays opt-in because of how the faithful photograph is taken. `--render` bakes the
+ * post-hydration DOM into the captured markup, so re-adding the bundle asks the same framework to
+ * hydrate markup it did not just produce — which may work, may duplicate the page, and may throw.
+ * Capturing behaviour is therefore <b>a decision</b> and not a default, exactly as off-origin bytes
+ * are. What is not optional is <em>saying</em> that it was discarded: see `withDownloads`' note.</p>
+ */
+export const BEHAVIOUR = new Set(["script"]);
+
 /** `.` and `..` — a segment that navigates instead of naming (SH256). */
 const TRAVERSAL = new Set([".", ".."]);
 
@@ -238,9 +257,9 @@ function safeName(name) {
  * what happened to succeed.
  *
  * @param inventory the SH377 inventory
- * @param options `site`, `maxAssets`, `maxAssetBytes`
+ * @param options `site`, `maxAssets`, `maxAssetBytes`, `scripts` (SH469's `--scripts`)
  */
-export function planAssets(inventory, { site, maxAssets = DEFAULT_MAX_ASSETS } = {}) {
+export function planAssets(inventory, { site, maxAssets = DEFAULT_MAX_ASSETS, scripts = false } = {}) {
   const plan = [];
   const skipped = [];
   const external = new Map();
@@ -253,8 +272,8 @@ export function planAssets(inventory, { site, maxAssets = DEFAULT_MAX_ASSETS } =
       skipped.push({ source: asset.path, kind: asset.kind, reason: "off-origin" });
       continue;
     }
-    if (!DOWNLOADABLE.has(asset.kind)) {
-      skipped.push({ source: asset.path, kind: asset.kind, reason: "not a renderable asset" });
+    if (!wantedKind(asset.kind, scripts)) {
+      skipped.push({ source: asset.path, kind: asset.kind, reason: skipReasonFor(asset.kind, scripts) });
       continue;
     }
     const url = absolute(asset.path, origin);
@@ -279,6 +298,24 @@ export function planAssets(inventory, { site, maxAssets = DEFAULT_MAX_ASSETS } =
     skipped,
     external: [...external.entries()].map(([host, refs]) => ({ host, refs })).sort(byHost),
   };
+}
+
+/** Whether this run downloads that kind at all — the render list, plus behaviour on request. */
+function wantedKind(kind, scripts) {
+  return DOWNLOADABLE.has(kind) || (scripts && BEHAVIOUR.has(kind));
+}
+
+/**
+ * Why a kind was left, and the two reasons are not one (SH469).
+ *
+ * <p>"Not a renderable asset" is true of a script and says the wrong thing about it: a `.docx` the
+ * crawl saw is not part of the page, and the site's own bundle <em>is</em> the page's behaviour. A
+ * reader who cannot tell those apart reads one number and concludes the replica is complete.</p>
+ */
+function skipReasonFor(kind, scripts) {
+  return !scripts && BEHAVIOUR.has(kind)
+    ? "behaviour, not captured without --scripts"
+    : "not a renderable asset";
 }
 
 function byRefsThenFile(a, b) {
@@ -387,6 +424,25 @@ export function withDownloads(inventory, { site, results = [], skipped = [], ext
 
   const counted = tally(results);
   const notes = [...(inventory.notes ?? [])];
+  // SH469 — the phase that discards behaviour names it, and names it as behaviour. The counting was
+  // already here: the crawler saw the `<script>` tags in order to skip them, and the only thing
+  // missing was a sentence a reader could act on. Every other instrument agrees the replica is
+  // faithful — the clone reports `rendered`, the proposal is silent, `verify` is silent, the
+  // snapshot says 0.33% — and all of them are measuring the photograph.
+  const dropped = skipped.filter((entry) => BEHAVIOUR.has(entry.kind));
+  if (dropped.length) {
+    const own = dropped.filter((entry) => entry.reason !== "off-origin");
+    notes.push(
+      `${dropped.length} script(s) were NOT captured, so the replica will render and not respond — `
+        + `a handler, a toggle, a modal that will not close. `
+        + (own.length
+          ? `${own.length} of them belong to this site: re-run with --scripts to take them, and read `
+            + `the note on --render first, because a baked DOM plus its own bundle is a hydration `
+            + `nobody asked for. `
+          : `All of them are off-origin, which is SH378's decision and not this one. `)
+        + dropped.slice(0, 5).map((entry) => entry.source).join(" "),
+    );
+  }
   if (external.length) {
     notes.push(
       `${external.reduce((sum, each) => sum + each.refs, 0)} asset reference(s) point off-origin and ` +
