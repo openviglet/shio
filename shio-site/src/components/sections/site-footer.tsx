@@ -5,6 +5,7 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
   {
     heading: "For the agent",
     links: [
+      { label: "Drive it from Claude Code", href: "/claude-code" },
       { label: "The ten laws", href: "/#laws" },
       { label: "One call, and its price", href: "/#one-call" },
       { label: "Content as files", href: "/#files" },

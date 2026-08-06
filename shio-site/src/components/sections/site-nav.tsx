@@ -23,6 +23,7 @@ const NAV_GROUPS = [
   {
     label: "For the agent",
     items: [
+      { label: "Drive it from Claude Code", href: "/claude-code" },
       { label: "One call, and its price", href: "/#one-call" },
       { label: "Content as files", href: "/#files" },
       { label: "MCP + CLI surface", href: "/#surface" },
@@ -96,7 +97,7 @@ export function SiteNav() {
           ))}
           {/* The headline claim gets a pill of its own rather than a dropdown row. */}
           <a
-            href="/#top"
+            href="/claude-code"
             className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-sm font-bold whitespace-nowrap text-primary transition-colors hover:border-primary/50 hover:bg-primary/15"
           >
             <Terminal className="size-3.5" />

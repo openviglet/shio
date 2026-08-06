@@ -597,6 +597,146 @@ export const PILLARS: Pillar[] = [
   },
 ];
 
+/* ── /claude-code — the first five minutes ───────────────────────────────── */
+
+export const PLUGIN_INSTALL = `claude plugin marketplace add openviglet/shio
+claude plugin install shio
+
+# then point it at your instance
+export SHIO_URL=http://localhost:2710      # the default
+export SHIO_USER=admin
+export SHIO_PASSWORD=...`;
+
+// Kept under ~54 columns: these render in a half-width figure that scrolls
+// rather than wraps, and a line past the fold reads as truncated.
+export const BRIDGE_INSTALL = `# No plugin, any MCP client — the CLI is
+# the stdio bridge.
+claude mcp add shio -- npx -y @viglet/shio mcp
+
+# POST /mcp — JSON-RPC 2.0, revision 2025-06-18.
+# GET /mcp is a deliberate 405: this server
+# sends nothing unprompted.`;
+
+export interface PluginPart {
+  icon: LucideIcon;
+  title: string;
+  items: { name: string; gloss: string }[];
+}
+
+/** What `claude plugin install shio` actually adds. Mirrors `claude-plugin/`. */
+export const PLUGIN_PARTS: PluginPart[] = [
+  {
+    icon: Workflow,
+    title: "Skills",
+    items: [
+      {
+        name: "shio-site",
+        gloss: "Building and changing pages — addressing, apply, draft-then-publish, moves",
+      },
+      {
+        name: "shio-content-model",
+        gloss: "Post types and widgets as code — pull/push, the DSL, the traps",
+      },
+      {
+        name: "shio-verify",
+        gloss: "Checking work before handing it over — the lint's severities, digests, incidents",
+      },
+    ],
+  },
+  {
+    icon: TerminalSquare,
+    title: "Commands",
+    items: [
+      {
+        name: "/shio-start [site]",
+        gloss: "Reads the instance — model, sitemap, blueprints, lint state — and stops",
+      },
+      {
+        name: "/shio-blueprint <name> <site>",
+        gloss: "Plans a blueprint, asks, applies, reports the verification",
+      },
+      {
+        name: "/shio-check [site]",
+        gloss: "Verifies and reports errors, warnings and not-checked separately",
+      },
+    ],
+  },
+  {
+    icon: FileStack,
+    title: "Project instructions",
+    items: [
+      {
+        name: "AGENTS.fragment.md",
+        gloss:
+          "Paste into your project's AGENTS.md so the conventions survive a session without the plugin",
+      },
+    ],
+  },
+];
+
+/**
+ * The rules the plugin encodes — the ones that are expensive to learn by making
+ * the mistake. Kept in sync with `claude-plugin/README.md`.
+ */
+export const PLUGIN_RULES = [
+  "Content is addressed by path, never by a UUID carried between calls.",
+  "shio_apply before shio_write: a statement re-runs safely, a script does not.",
+  "dryRun first, always. Read the plan — a delete line is a stop-and-ask.",
+  "Writes land in DRAFT. Publishing is a separate, explicit step.",
+];
+
+export interface FirstCall {
+  step: string;
+  call: string;
+  gets: string;
+  cost: string;
+}
+
+/** What the first three calls of a session are, and what each one buys. */
+export const FIRST_CALLS: FirstCall[] = [
+  {
+    step: "Can this instance do what I need?",
+    call: "GET /agent/manifest?include=features,limits",
+    gets: "Capabilities and limits. Unshipped ones read false, never absent; where a capability lives elsewhere, `elsewhere` names the command.",
+    cost: "298 tokens",
+  },
+  {
+    step: "What is here, and how do I write to it?",
+    call: "GET /agent/context?include=all,manifest,ops",
+    gets: "The content model, the sitemap, the conventions and every op with the keys it takes — plus a digest, so session N+1 can skip this.",
+    cost: "one call",
+  },
+  {
+    step: "Change something",
+    call: "POST /agent/batch  { dryRun: true, ops: [...] }",
+    gets: "The plan first: what each op would change. Then the same document without dryRun — and it lands as a draft.",
+    cost: "reviewable",
+  },
+];
+
+export interface TokenScope {
+  scope: string;
+  reads: string;
+  writes: string;
+  agent: boolean;
+}
+
+/**
+ * `ShApiTokenScope` — the four scopes, verbatim in meaning. AGENT is the one
+ * this page exists to explain: it is deliberately not a superset of WRITE.
+ */
+export const TOKEN_SCOPES: TokenScope[] = [
+  { scope: "READ", reads: "published content", writes: "nothing", agent: false },
+  { scope: "PREVIEW", reads: "published + drafts", writes: "nothing", agent: false },
+  { scope: "WRITE", reads: "published + drafts", writes: "the delivery API, including published content", agent: false },
+  {
+    scope: "AGENT",
+    reads: "published + drafts",
+    writes: "the agent surface only — /api/v2/agent/** and /mcp",
+    agent: true,
+  },
+];
+
 /* ── Links ───────────────────────────────────────────────────────────────── */
 
 export const LINKS = {

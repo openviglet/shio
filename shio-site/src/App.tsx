@@ -1,12 +1,35 @@
 import { useEffect } from "react";
 import { LandingPage } from "@/pages/landing";
+import { ClaudeCodePage } from "@/pages/claude-code";
 
 /**
- * Routing is one regular expression the prerender and the client both read —
- * no react-router, no SSG framework. Navigation between pages uses plain
- * `<a href>` full loads, because every route is prerendered to its own static
- * HTML anyway. SH539 adds the first pages that make this branch do work.
+ * Routing is one table the prerender and the client both read — no react-router
+ * and no SSG framework, so the bleeding-edge Vite this workspace tracks has
+ * nothing framework-shaped to break. Navigation is plain `<a href>` full loads,
+ * because every route is prerendered to its own static HTML anyway.
+ *
+ * A route's path is declared once, here, and `entry-server.tsx` attaches the
+ * title and description to the same string. Adding a page is a row plus an
+ * entry in that table — and `scripts/prerender.mjs` writes the file.
  */
+export const ROUTES: Record<string, () => React.JSX.Element> = {
+  "/": LandingPage,
+  "/claude-code": ClaudeCodePage,
+};
+
+/**
+ * Resolve a pathname to a page, tolerating the trailing slash a server adds.
+ *
+ * Trimmed by index rather than by `/\/+$/`: an anchored repeated group over a
+ * string the URL bar supplies backtracks super-linearly, and `/////…` is free
+ * for anyone to type. Same rule the CLI's tag scanner is written under.
+ */
+export function matchRoute(path: string): (() => React.JSX.Element) | null {
+  let end = path.length;
+  while (end > 1 && path[end - 1] === "/") end -= 1;
+  return ROUTES[path.slice(0, end)] ?? null;
+}
+
 export default function App({ path = "/" }: Readonly<{ path?: string }>) {
   // A cross-page link to a home anchor ("/#files") full-loads "/" and then
   // relies on the browser's native hash scroll — but the target section mounts
@@ -35,6 +58,6 @@ export default function App({ path = "/" }: Readonly<{ path?: string }>) {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  void path;
-  return <LandingPage />;
+  const Page = matchRoute(path) ?? LandingPage;
+  return <Page />;
 }

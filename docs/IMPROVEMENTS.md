@@ -1881,25 +1881,6 @@ rather than freeze it half-typed. And the transcript is content, not markup: one
 file the copy is edited in, so the session can be re-scripted without touching the
 player.
 
-### XIX.3 The first five minutes (SH532)
-
-A Claude Code-first product is judged on the distance between arriving and having the
-agent do something. For Shio that distance is short and completely undocumented in
-public: run an instance, `claude mcp add shio -- shio mcp`, and the agent's first call
-is `shio://manifest` - which is the point of P2, since discovery is a capability rather
-than a docs problem.
-
-`/claude-code` is the page that says it. The plugin from the repository's own
-marketplace (the MCP server config, the skills, the slash commands and the `AGENTS.md`
-fragment), the stdio bridge for a bare `claude mcp add`, the token scope an agent gets,
-and what the first three calls of a session actually look like - manifest, context pack,
-then a write. It ends on the honest boundary the product is built around: Shio hosts no
-model and no prompts, so nothing on this page is an API key going into the CMS.
-
-It also names the surfaces that are not MCP, because P1 orders them: whatever the agent
-can do over MCP it can do from the CLI and over REST, and a reader who does not use
-Claude Code needs to see that in the same breath as the plugin.
-
 ### XIX.4 Plot the budget, do not describe it (SH533)
 
 Every competitor can claim an MCP server. What none of them can show is a build that
