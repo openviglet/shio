@@ -611,6 +611,30 @@ it. Four decisions worth keeping:
   **The assertion is the round trip, on both sides of the seam**: the CLI test re-escapes the stored
   field and requires the source's own bytes back, and `ShConvertedLayoutRenderTest` renders a field
   holding a literal `&` and requires `&amp;` once — one language could only check a copy of itself.
+- **And SH476's "belongs where the URL is parsed" was the right instinct at the wrong address
+  (SH550).** One shape settles it: `style="background-image: url(&quot;../img/11.png&quot;)"`. By the
+  time anything resolves a URL, `URL_CALL` has run — and its unquoted branch excludes literal quotes
+  but not `&quot;` — so it captures the entity-laden string whole and yields the asset path
+  `/br/&quot;../img/introducing-vilt/11.png&quot;`, reported as *no safe path for this name* and never
+  fetched. **A decode after that point cannot recover it**: the delimiters the CSS grammar needed are
+  inside the token. Six references in one capture, four of them one image under four locale prefixes
+  and two of them `&amp;` in a query string on a font URL — and **that second form is the dangerous
+  one**, because a URL joined with a literal `&amp;` is a *different request* and nothing about it
+  looks wrong in a listing. So the decode moved into **`parseAttrs`**, which is where markup stops
+  being markup for an attribute and the only place that gives exactly **one pass** over each value
+  (decoding both there and at the URL would turn `&amp;quot;` into `"` and lose the distinction the
+  author drew — so `propose.mjs`' second decode of `alt` is gone). Raw-text bodies — `<style>`,
+  `<script>` — are decoded **nowhere**, because entities are not recognised inside them; the page that
+  produced this carried the unescaped spelling in a `<style>` block and the escaped one in an
+  attribute, which is how one reference became one download and one failure. **The asymmetry was
+  one-sided and the shared fixture proves it**: the rewriter reads attributes through Jsoup, which
+  decodes them and re-escapes on output, so `references-page.html` gained the escaped shape and
+  `ShReferenceParityTest` went green unchanged while `clone.test.mjs` went red until the fix — the
+  direction that fixture exists to catch. **And the report says whose defect it is**: `unavailable`
+  covers off-origin, an unwanted kind, a limit, an HTTP failure and this, and only this one is ours,
+  so a reference that still arrives escaped gets `ENTITY_IN_REFERENCE` plus a top-level note naming
+  it a capture defect — what still reaches there is an entity the curated table does not know or a
+  double escape, both of which are still ours.
 - **`PAGE_BODY_HTML` is an export with no interpolation, and that is a test seam (SH464).** The
   layout is written here in JavaScript and annotated by `ShRegionComposer` in the JVM, so a Java
   test with its own copy of the template would go green while the shipped one was broken — which is

@@ -422,6 +422,30 @@ export function scriptBlocks(html) {
 const TAG = /<(\/?)([a-zA-Z][-\w:]*)(?=[\s/>])([^>]*)>/g;
 const ATTR = /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]*)))?/g;
 
+/**
+ * One tag's attributes, **entity-decoded** (SH550).
+ *
+ * <h3>Why the decode is here and not where the URL is parsed</h3>
+ *
+ * <p>SH476 decoded markup's *text* and left attributes alone, with a note saying that unescaping a
+ * query string "belongs where the URL is parsed". That was the right instinct and the wrong address,
+ * and one shape proves it: `style="background-image: url(&quot;../img/11.png&quot;)"`. By the time
+ * `resolveHref` sees anything, `URL_CALL` has already run — and its unquoted branch excludes literal
+ * quotes but not `&quot;`, so it captures `&quot;../img/11.png&quot;` whole and yields the asset path
+ * `/br/&quot;../img/introducing-vilt/11.png&quot;`, reported as <i>no safe path for this name</i> and
+ * never fetched. A decode after that point cannot recover it: the delimiters the CSS grammar needed
+ * are inside the token. The same holds for `&amp;` in a query string, and that form is the dangerous
+ * one — a same-origin URL joined with a literal `&amp;` is a <em>different request</em> and nothing
+ * about it looks wrong in a listing.</p>
+ *
+ * <p>So the decode happens where the markup stops being markup, which for an attribute is here. It
+ * is also the only place that gives <b>exactly one pass</b> over each value, which SH476 requires:
+ * decoding both here and at the URL would turn `&amp;quot;` into `"` and lose the distinction the
+ * author was drawing. Raw-text bodies — `<style>`, `<script>` — are deliberately <b>not</b> decoded
+ * anywhere, because entities are not recognised inside them; the page that produced this finding
+ * carries the unescaped spelling in a `<style>` block and the escaped one in an attribute, and after
+ * this the two produce one reference instead of one download and one failure.</p>
+ */
 export function parseAttrs(raw) {
   const out = {};
   if (!raw) return out;
@@ -430,7 +454,7 @@ export function parseAttrs(raw) {
   while ((match = ATTR.exec(raw)) !== null) {
     const name = match[1]?.toLowerCase();
     if (!name) continue;
-    out[name] = match[2] ?? match[3] ?? match[4] ?? "";
+    out[name] = decodeEntities(match[2] ?? match[3] ?? match[4] ?? "");
   }
   return out;
 }

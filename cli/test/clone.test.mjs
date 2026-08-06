@@ -320,6 +320,59 @@ test("SH515: the collector finds every reference the shared fixture declares", a
   );
 });
 
+/**
+ * SH550 — `&amp;` in a query string, which is the form that will bite a same-origin asset.
+ *
+ * <p>Not in the shared fixture's EXPECTED block, and the reason is worth stating: that block is
+ * compared against `pathname` on this side and against the rewriter's site path on the Java side,
+ * and neither carries a query — so a case whose whole content is the query would be asserted by
+ * neither. It gets its own test rather than a widened fixture, because widening the comparison to
+ * include queries is a change to what parity *means*.
+ *
+ * <p>A URL joined with a literal `&amp;` is a **different request** — `?w=100&amp;h=50` asks for one
+ * parameter named `w` whose value ends in `;h=50` — and nothing about it looks wrong in a listing.
+ * That is why this is the dangerous half and the missing image is the visible one.
+ */
+test("SH550: an entity in a query string decodes, so the request is the one the page makes", () => {
+  const page = '<html><body><img src="../img/sized.png?w=100&amp;h=50" alt="Sized">'
+    + '<link rel="stylesheet" href="/css/f.css?family=Inter&amp;display=swap"></body></html>';
+
+  const urls = scanPage(page, "https://x.test/en/").assets.map((asset) => asset.url);
+
+  assert.ok(
+    urls.includes("https://x.test/img/sized.png?w=100&h=50"),
+    `an image's query string is one the source would recognise, got ${JSON.stringify(urls)}`,
+  );
+  assert.ok(
+    urls.includes("https://x.test/css/f.css?family=Inter&display=swap"),
+    "and a font URL's, which is the pair the capture that found this actually carried",
+  );
+  assert.ok(
+    !urls.some((url) => url.includes("&amp;")),
+    "nothing reaches the downloader still escaped",
+  );
+});
+
+/**
+ * SH550 — and a `<style>` block is NOT decoded, which is the half that is easy to over-fix.
+ *
+ * <p>Entities are not recognised inside raw-text elements, so `&quot;` there is four characters of a
+ * CSS string and not a delimiter. Decoding it would invent a reference the browser never resolves —
+ * the mirror image of the defect, and it would pass a naive "no entities anywhere" assertion.
+ */
+test("SH550: a raw-text body keeps its bytes, because entities are not markup there", () => {
+  const page = '<html><head><style>body{background:url(&quot;/img/never.png&quot;)}</style>'
+    + '</head><body><p>Copy.</p></body></html>';
+
+  const paths = scanPage(page, "https://x.test/en/").assets.map((asset) =>
+    new URL(asset.url).pathname);
+
+  assert.ok(
+    !paths.includes("/img/never.png"),
+    "a browser would not fetch that either — the decode belongs to attributes only",
+  );
+});
+
 /** The fixture's own EXPECTED block — the one place the list lives, read rather than restated. */
 function expectedIn(html, kind) {
   return [...html.matchAll(new RegExp(`^${kind} (\\S+)$`, "gm"))].map((match) => match[1]).sort();

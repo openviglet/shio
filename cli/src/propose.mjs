@@ -703,11 +703,12 @@ function unitFields(names, unit, take) {
     role: () => null,
     answer: () => paragraph && text(paragraph),
     body: () => paragraph && text(paragraph),
-    // SH476 — an `alt` is the one field taken from an attribute and stored as prose, so it crosses
-    // the same boundary `text` does. `icon`, `avatar`, `image` and `href` are URLs and are left
-    // alone here: they are resolved and rewritten downstream, and unescaping a query string is a
-    // decision that belongs where the URL is parsed.
-    name: () => (decodeEntities(image?.attrs.alt ?? "") || (link && text(link))) ?? null,
+    // SH476 decoded the `alt` here, because it is the one field taken from an attribute and stored
+    // as prose. SH550 moved the decode into `parseAttrs`, where every attribute crosses out of
+    // markup exactly once — so this call is now the *second* pass SH476's own rule forbids, and it
+    // is gone. `icon`, `avatar`, `image` and `href` were never decoded here and still are not;
+    // they arrive decoded, which is what SH550 was about.
+    name: () => (image?.attrs.alt || (link && text(link))) ?? null,
     icon: () => image?.attrs.src ?? null,
     avatar: () => image?.attrs.src ?? null,
     image: () => image?.attrs.src ?? null,

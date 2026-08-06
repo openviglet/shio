@@ -78,6 +78,30 @@ export const BEHAVIOUR_SKIPPED = "behaviour, not captured without --scripts";
 const TRAVERSAL = new Set([".", ".."]);
 
 /**
+ * The reason a reference that is still entity-escaped cannot become a path (SH550).
+ *
+ * <p>Named, so `verify-replication.mjs` and a reader are told the same thing, and so the one cause
+ * in this list that is <b>this tool's</b> is separable from the three that are not: `unavailable`
+ * covers off-origin (a licensing decision), a kind that was not wanted, a limit, an HTTP failure —
+ * and this. Only this one is ours.</p>
+ */
+export const ENTITY_IN_REFERENCE =
+  "the reference is still HTML-escaped, so this is a capture defect and not a name the source " +
+  "got wrong — the decode belongs in parseAttrs (SH550); an unknown entity name or a double " +
+  "escape is what still reaches here";
+
+/**
+ * Whether a reference still carries an HTML character reference.
+ *
+ * <p>A <b>detector</b> and deliberately not the decoder: `decodeEntities` lives in `clone.mjs`,
+ * which imports this module, so reaching back for it would make the capture direction a cycle. The
+ * question here is narrower than decoding anyway — "does this look escaped" needs no table.</p>
+ */
+export function stillEscaped(reference) {
+  return /&(#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6}|[a-zA-Z][a-zA-Z0-9]{1,31});/.test(String(reference ?? ""));
+}
+
+/**
  * A `url()` call, as it appears in a stylesheet (SH452).
  *
  * <p>Deliberately the same pattern `theme.mjs` rewrites with, and deliberately a second copy of it:
@@ -317,7 +341,17 @@ export function planAssets(inventory, { site, maxAssets = DEFAULT_MAX_ASSETS, sc
     const url = absolute(asset.path, origin);
     const file = url ? capturedAssetPathFor(url, site) : null;
     if (!file) {
-      skipped.push({ source: asset.path, kind: asset.kind, reason: "no safe path for this name" });
+      // SH550 — `no safe path for this name` was the honest word for what happened and the wrong
+      // word for why: it reads as a source problem, a name with no safe mapping, and the six
+      // references that produced this finding were a decode this tool had not done. The decode is
+      // fixed at `parseAttrs`; what remains reachable is a name the curated entity table does not
+      // know and a double escape, so a leftover entity still means the reference is **ours** and
+      // saying so is the difference between a note a reader can act on and one that blames a site.
+      skipped.push({
+        source: asset.path,
+        kind: asset.kind,
+        reason: stillEscaped(asset.path) ? ENTITY_IN_REFERENCE : "no safe path for this name",
+      });
       continue;
     }
     if (plan.length >= maxAssets) {
@@ -484,6 +518,19 @@ export function withDownloads(inventory, { site, results = [], skipped = [], ext
       `${external.reduce((sum, each) => sum + each.refs, 0)} asset reference(s) point off-origin and ` +
         `were NOT downloaded — mirroring another host's bytes into a media library is a licensing ` +
         `decision, not a fetch: ${external.slice(0, 5).map((each) => each.host).join(" ")}`,
+    );
+  }
+  // SH550 — one line at the top level for the cause that is this tool's, because a per-row reason
+  // buried under ten written paths is a reason nobody reads. It names the *shape* rather than the
+  // count of pages: four of the six references in the capture that found this were one image under
+  // four locale prefixes, so "6 references" would read as six problems.
+  const escaped = skipped.filter((entry) => entry.reason === ENTITY_IN_REFERENCE);
+  if (escaped.length) {
+    notes.push(
+      `${escaped.length} reference(s) reached the download pass still HTML-escaped and were NOT ` +
+        `fetched — this is a capture defect, not a source problem: the entity is one the decoder's ` +
+        `curated table does not know, or a double escape. Report it with the paths: ` +
+        escaped.slice(0, 5).map((entry) => entry.source).join(" "),
     );
   }
   if (counted.collision) {

@@ -17,6 +17,7 @@ import { test } from "node:test";
 import {
   BEHAVIOUR,
   DOWNLOADABLE,
+  ENTITY_IN_REFERENCE,
   assetsReferencedBy,
   capturedAssetPathFor,
   describeDownloads,
@@ -24,6 +25,7 @@ import {
   placeAsset,
   planAssets,
   sha256Of,
+  stillEscaped,
   withDownloads,
 } from "../src/clone-assets.mjs";
 import * as clone from "../src/commands/clone.mjs";
@@ -135,6 +137,64 @@ test("the plan is same-origin, renderable kinds only, and names what it left beh
     { host: "cdn.other.test", refs: 1 },
     { host: "fonts.gstatic.com", refs: 1 },
   ]);
+});
+
+/**
+ * SH550 — the one cause in this list that is ours, said as such.
+ *
+ * <p>`unavailable` covers off-origin (a licensing decision), a kind nobody wanted, a limit, an HTTP
+ * failure — and a name with no safe mapping. The six references that produced this finding were the
+ * last of those, and they were not a source problem at all: the collector had not decoded the
+ * attribute, so `no safe path for this name` was the honest word for what happened and the wrong word
+ * for why. It reads as a site that named its files badly.
+ *
+ * <p>The decode is fixed where attributes are parsed, so what still reaches here is an entity name
+ * the curated table does not know, or a double escape — and both of those are still <b>ours</b>.
+ */
+test("SH550: a reference that arrives still escaped is reported as a capture defect", () => {
+  const inventory = {
+    ...INVENTORY,
+    assets: [
+      { path: "/img/&quot;../hero.png&quot;", kind: "image", refs: 1 },
+      { path: "/img/a%2fb.png", kind: "image", refs: 1 },
+    ],
+  };
+
+  const { plan, skipped } = planAssets(inventory, { site: "Blog" });
+  const reasons = new Map(skipped.map((each) => [each.source, each.reason]));
+
+  assert.equal(plan.length, 0, "neither becomes a path");
+  assert.equal(reasons.get('/img/&quot;../hero.png&quot;'), ENTITY_IN_REFERENCE);
+  assert.match(
+    reasons.get('/img/&quot;../hero.png&quot;'),
+    /capture defect/,
+    "a reader has to be able to tell whose problem it is without reading this repository",
+  );
+  assert.equal(
+    reasons.get("/img/a%2fb.png"),
+    "no safe path for this name",
+    "and a name that really has no safe mapping keeps the word that fits it — the point is the "
+      + "distinction, not replacing one blanket reason with another",
+  );
+
+  const notes = withDownloads(inventory, { site: "Blog", results: [], skipped }).notes;
+  assert.ok(
+    notes.some((note) => /still HTML-escaped/.test(note) && /capture defect/.test(note)),
+    `one line at the top level, because a per-row reason under ten written paths is one nobody `
+      + `reads: ${JSON.stringify(notes)}`,
+  );
+});
+
+test("SH550: stillEscaped is a detector and not a decoder, and knows the two live shapes", () => {
+  assert.ok(stillEscaped("/img/&quot;a.png&quot;"), "a named entity");
+  assert.ok(stillEscaped("/f.css?a=1&amp;b=2"), "the query-string form");
+  assert.ok(stillEscaped("/img/&#34;a.png&#34;"), "and the numeric spelling");
+  assert.ok(!stillEscaped("/img/hero.png"), "an ordinary path is not escaped");
+  assert.ok(
+    !stillEscaped("/img/a&b.png"),
+    "a bare ampersand is a legal character in a name, not an entity — flagging it would blame a "
+      + "source for something it spelled correctly",
+  );
 });
 
 test("--max-assets is a declared cut, not a silent one", () => {

@@ -19,11 +19,21 @@ served its home page. Relative on purpose: the strings a real capture leaves beh
 and a reader that filtered on a leading slash would report this page as clean. Two of them are
 plain-relative rather than `../`, so the base is load-bearing in the expectation and not decoration.
 
+One reference is **entity-escaped** (SH550), and it is the shape this fixture was built to catch. The
+rewriter reads attributes through Jsoup, which decodes them and re-escapes on output; the collector
+reads the attribute's raw text by hand and did not, so `url(&quot;../img/escaped-style.png&quot;)`
+became the asset path `/en/&quot;../img/escaped-style.png&quot;` — reported as *no safe path for this
+name* and never fetched, while the same page's `<style>` block carried the unescaped spelling and
+downloaded fine. Two spellings of one reference, one download and one failure. Note what is *not*
+escaped: entities are not recognised inside `<style>` or `<script>`, so neither side decodes those,
+and both sides agreeing on that is as load-bearing as agreeing on the attribute.
+
 EXPECTED
 asset /css/site.css
 asset /content/insights.json
 asset /en/fonts/body.woff2
 asset /img/background.png
+asset /img/escaped-style.png
 asset /img/hero.png
 asset /img/inline-style.png
 asset /img/narrow.png
@@ -53,6 +63,7 @@ link /en/careers
   <img srcset="../img/wide.png 2x, ../img/narrow.png 1x" alt="Responsive">
   <video poster="../img/poster.png"></video>
   <div style="background-image:url('../img/inline-style.png')"></div>
+  <div style="background-image:url(&quot;../img/escaped-style.png&quot;)"></div>
 
   <script>
     fetch("../content/insights.json").then((response) => response.json());

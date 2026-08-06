@@ -1812,30 +1812,6 @@ unmatched block into a site-wide regression.
 The render model already supports a theme per layout. What is missing is that the choice
 is per page, not per site.
 
-### XVII.73 The reference read as markup rather than as a URL (SH550)
-
-SH515 widened the collector to `url()` inside a `style` attribute, which was the right
-widening. It reads the attribute's raw text, so an author who wrote `background-image:
-url(&quot;../img/introducing-vilt/11.png&quot;)` yields the asset path
-`/br/&quot;../img/introducing-vilt/11.png&quot;`, reported as *no safe path for this
-name* and never fetched.
-
-The same page carries the unescaped form in a `<style>` block, so the two spellings of
-one reference produce one download and one failure. Six references in one capture were
-affected, four of them that image under four locale prefixes and two of them `&amp;`
-inside a query string on a font URL. The second form is the one that will bite a
-same-origin asset: a query string joined with a literal `&amp;` is a different request,
-and nothing about it looks wrong in a listing.
-
-It reports as *unavailable*, which is the honest word for what happened and the wrong
-word for why, so the note reads like a source problem — a name with no safe mapping —
-rather than a decode the collector did not do. That is the part worth fixing beyond the
-decode itself: `unavailable` currently covers off-origin, unrenderable, HTTP failure and
-this, and only this one is ours.
-
-SH528 already lists a double-escaped entity as a fixture trait, so the assertion has a
-home before the fix does.
-
 ### XVII.74 A disclosure list converted without its labels (SH551)
 
 `SectionFaq` is proposed on the evidence *two or more `<details>`, which is a disclosure
