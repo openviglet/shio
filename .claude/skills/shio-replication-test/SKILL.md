@@ -79,6 +79,13 @@ annotated can be five props over a grid whose two cards carry none. Rendering is
 annotation: the rows once did not draw at all (SH465), then drew with no `sh-post` and no
 `sh-field` (SH475), and the visible page looked reasonable at every stage.
 
+**Count both declaration forms.** A field whose value lands in an attribute is declared by
+`data-shio-prop-attr="<field>:<attribute>"` beside the element's own `data-shio-prop`, because
+one element may carry two fields — a link's text and its destination (SH503). Counting only
+`data-shio-prop` under-reports every attribute-valued field, which is how a complete page once
+read as 9 of 10 and nearly had a regression filed against it. Expect *more* declarations than
+filled fields, too: an empty slot is annotated so a curator can fill it.
+
 Read one extracted string against the source, too. An entity survives extraction as
 characters and is escaped again on render, so `&` becomes `&amp;` in the page *and in the
 editor field* (SH476) — invisible unless you compare.
