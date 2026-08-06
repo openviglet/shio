@@ -58,6 +58,10 @@ src/main/resources/js/client-side/build
 # (SH282), and a record of a failure that the next mandatory step deletes is not a
 # record. Read it before the next run, not after.
 /shio-test.log
+# ...and any other teed run at the root. `run-commit.cmd` stages everything, so a
+# targeted `-Dtest=X` log named anything else gets committed with the fix it was
+# taken for — which is how sh545.log landed in b04ee918.
+/*.log
 
 # === SonarQube (local analysis) ===
 .sonar_lock
