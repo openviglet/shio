@@ -40,6 +40,8 @@
  * the publish state alone", so re-running this cannot unpublish a page a curator has since published.
  */
 
+import { SECTION_FILE_FIELDS } from "./propose.mjs";
+
 /** Where a converted section lands. One folder, because a section is addressed by its own url. */
 export const SECTIONS_FOLDER = "/sections";
 
@@ -375,6 +377,86 @@ function composePages(proposal, sectionUrls, markup = new Map()) {
     });
   }
   return pages.sort((a, b) => (a.url < b.url ? -1 : 1));
+}
+
+/**
+ * Points every `File` field at the post that holds those bytes (SH471).
+ *
+ * <h3>The measurement that chose between the two options</h3>
+ *
+ * <p>`propose` writes `fields.image = <img src>` — the source's own path, e.g. `/img/hero.png` — and
+ * the authorable path stored that string in a `File` field, which the layout draws with
+ * `{{file_url image}}`. That helper resolves a **post id** and answers `""` for anything else, so a
+ * converted `SectionHero` rendered `<img src="">`, and SH465's two row fields inherited it.</p>
+ *
+ * <p>The task offered two fixes and asked for a measurement first. The measurement settled it, and
+ * not on the axis the options were drawn on. **The authorable path was uploading no bytes at all**:
+ * `sendAssets` ran under `if (!planOnly && verbatim)`, an SH437-era guard from when only fidelity
+ * markup referenced the source's paths. So teaching `file_url` to pass a non-id value through would
+ * have emitted `src="/img/hero.png"` against a site that serves nothing there — a broken image that
+ * *looks* like a fix. Three more things decided the rest: it would put a non-id in a `File` field,
+ * which is exactly the `dangling-reference` shape SH470 had just finished removing; `{{#image}}`
+ * (SH390) reads `WIDTH`/`HEIGHT` off the `File` post, so a path leaves `srcset` permanently empty on
+ * the very replicas SH386 grades for fidelity; and the console's File widget resolves ids.</p>
+ *
+ * <p>So the bytes go up on both paths, and the id is stored. The vocabulary keeps one meaning, which
+ * is what makes every other reader work without being told about conversions.</p>
+ *
+ * <h3>Declared fields, never a value that merely looks like a path</h3>
+ *
+ * <p>Only the fields `SECTION_FILE_FIELDS` names are rewritten. Matching any string that equals an
+ * uploaded path would have been shorter and is wrong on a case this vocabulary really has: a
+ * `SectionLogoWall` row carries both `image` and `href`, and a logo that links to its own artwork
+ * would have had its **link** turned into a post id.</p>
+ *
+ * @param document the desired-state document, not mutated
+ * @param ids source path → the `File` post's id, from `sendAssets`
+ * @returns `{document, resolved, unresolved}` — the counts, because a field left holding a path is
+ *   the defect this exists for and a silent zero would read as success
+ */
+export function withResolvedFileFields(document, ids) {
+  const resolved = [];
+  const unresolved = [];
+  if (!document?.posts?.length || !(ids instanceof Map) || !ids.size) {
+    return { document, resolved, unresolved };
+  }
+  const posts = document.posts.map((post) => {
+    const spec = SECTION_FILE_FIELDS[post?.type];
+    if (!spec || !post.data) return post;
+    const data = { ...post.data };
+    for (const field of spec.fields) {
+      data[field] = pointAtFile(data[field], ids, `${post.url}.${field}`, resolved, unresolved);
+    }
+    for (const [row, fields] of Object.entries(spec.rows ?? {})) {
+      if (!Array.isArray(data[row])) continue;
+      data[row] = data[row].map((entry, at) => {
+        if (!entry || typeof entry !== "object") return entry;
+        const copy = { ...entry };
+        for (const field of fields) {
+          copy[field] = pointAtFile(copy[field], ids,
+            `${post.url}.${row}[${at}].${field}`, resolved, unresolved);
+        }
+        return copy;
+      });
+    }
+    return { ...post, data };
+  });
+  return { document: { ...document, posts }, resolved, unresolved };
+}
+
+/** One field: the id of the post holding those bytes, or the value exactly as it was. */
+function pointAtFile(value, ids, where, resolved, unresolved) {
+  if (typeof value !== "string" || !value.trim()) return value;
+  const id = ids.get(value.trim());
+  if (id) {
+    resolved.push(where);
+    return id;
+  }
+  // An absolute URL, a `data:` image, or a path the capture never fetched. Left as written — the
+  // capture is evidence, and a field this cannot resolve is a fact worth reporting rather than
+  // blanking.
+  unresolved.push(`${where} = ${value.trim()}`);
+  return value;
 }
 
 /**

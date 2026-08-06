@@ -81,7 +81,6 @@
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
 - ⏳ **SH467** (deps: SH385 ✅) **The replica's canonical URL is the mirror of the source's, so every captured link costs a 301** — The route half answers both forms now, but the grammar still collapses the declared slash, so the replica serves /shio as canonical and 301s /shio/ — the source does the opposite. → §XVII.44
-- 📋 **SH471** (deps: SH465 ✅) **A converted section's image renders src="", because file_url wants an id and the field holds a path** — SH437 uploads the captured bytes at the source's own path, so an authorable section's File field holds a path and file_url answers empty for anything that is not an id. → §XVII.47
 
 ## Block F — Market positioning
 

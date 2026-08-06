@@ -1499,28 +1499,3 @@ a capture fix's clothes.
 
 So the question is narrower than it looked: is a replica's canonical worth splitting the
 address space, or is a redirect the honest answer for URLs Shio never owned?
-
-### XVII.47 A File field holds a path after a conversion, and file_url only knows ids (SH471)
-
-`propose` writes `fields.image = <img src>` — the source's own path, e.g.
-`/img/hero.png` — and SH437 uploads the captured bytes to exactly that path, which is
-why fidelity mode works: the render pass rewrites `src="/img/hero.png"` to
-`src="/preview/<site>/img/hero.png"`, and the conformance gate asserts it.
-
-The authorable path stores the same string in a `File` field and the layout draws it
-with `{{file_url image}}`, which resolves a **post id** and answers `""` for anything
-else. So a converted `SectionHero` renders `<img src="">`, and SH465's two new row
-fields — `SectionLogoWall.logos.image` and `SectionTestimonial.quotes.avatar` — inherit
-it. Found while measuring SH465, which is why `File` fields are the named exemption in
-`ShConvertedLayoutRenderTest`'s coverage assertion rather than an assertion nobody
-wrote.
-
-Same shape as SH465 and not the same fix: the content is captured, stored and addressed,
-and the page silently omits it. The decision is which side moves. Either `file_url`
-falls back to a value that is not an id — defensible, since a `File` field legitimately
-holds a path a site serves, and it fixes every template at once — or `convert` resolves
-the path to the `File` post it just uploaded and stores the id, which keeps the helper's
-one meaning and makes the field mean what the console's File widget means. The first is
-one line and changes every template's behaviour; the second is a lookup per image field
-and leaves the vocabulary honest. Measure a converted replica's `<img>` tags before
-choosing.

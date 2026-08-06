@@ -18,7 +18,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { SECTIONS_FOLDER, THEME_FOLDER, buildConversion } from "../src/convert.mjs";
+import {
+  SECTIONS_FOLDER, THEME_FOLDER, buildConversion, withResolvedFileFields,
+} from "../src/convert.mjs";
 import * as convert from "../src/commands/convert.mjs";
 import { INVENTORY_FILE, MARKUP_DIR, markupFileFor } from "../src/clone.mjs";
 import { PLAN_FILE } from "../src/propose.mjs";
@@ -104,6 +106,78 @@ test("SH417: a proposal with no theme declares no theme folder", () => {
 
   assert.deepEqual(extras, []);
   assert.deepEqual(document.folders, [{ path: SECTIONS_FOLDER }]);
+});
+
+// --- SH471: a File field names the post that holds the bytes ---
+
+test("SH471: a section's File fields point at the uploaded post, and nothing else moves", () => {
+  const ids = new Map([
+    ["/img/hero.png", "file-hero"],
+    ["/img/acme.svg", "file-acme"],
+    ["/img/face.jpg", "file-face"],
+  ]);
+  const document = {
+    site: "Acme",
+    posts: [
+      { url: "/sections/a", type: "SectionHero", data: { heading: "Hi", image: "/img/hero.png" } },
+      {
+        url: "/sections/b",
+        type: "SectionLogoWall",
+        // The case that rules out matching any string equal to an uploaded path: this row carries
+        // an `image` and an `href`, and a logo linking to its own artwork would have had its LINK
+        // turned into a post id.
+        data: { logos: [{ name: "Acme", image: "/img/acme.svg", href: "/img/acme.svg" }] },
+      },
+      {
+        url: "/sections/c",
+        type: "SectionTestimonial",
+        data: { quotes: [{ quote: "Good", avatar: "/img/face.jpg" }] },
+      },
+      { url: "/", type: "Page", data: { content: '<img src="/img/hero.png">' } },
+    ],
+  };
+
+  const { document: out, resolved, unresolved } = withResolvedFileFields(document, ids);
+
+  assert.equal(out.posts[0].data.image, "file-hero");
+  assert.equal(out.posts[1].data.logos[0].image, "file-acme");
+  assert.equal(out.posts[1].data.logos[0].href, "/img/acme.svg",
+    "only the fields the model declares as File — an href is a link, whatever it points at");
+  assert.equal(out.posts[2].data.quotes[0].avatar, "file-face");
+  assert.equal(out.posts[3].data.content, '<img src="/img/hero.png">',
+    "SH429's option A is untouched: a fidelity page's markup is verbatim, and `ShPreviewLinks` "
+      + "points that src at the site's copy at render time. An edited one is a difference "
+      + "`snapshot --against` structurally cannot see");
+  assert.deepEqual(resolved.sort(),
+    ["/sections/a.image", "/sections/b.logos[0].image", "/sections/c.quotes[0].avatar"]);
+  assert.deepEqual(unresolved, []);
+});
+
+test("SH471: a reference the capture never fetched is left as written and counted", () => {
+  const { document, resolved, unresolved } = withResolvedFileFields(
+    {
+      site: "Acme",
+      posts: [{
+        url: "/sections/a",
+        type: "SectionHero",
+        data: { image: "https://cdn.other.test/hero.png" },
+      }],
+    },
+    new Map([["/img/hero.png", "file-hero"]]),
+  );
+
+  assert.equal(document.posts[0].data.image, "https://cdn.other.test/hero.png",
+    "off-origin bytes are SH378's decision, and blanking the field would destroy the evidence "
+      + "the capture is for");
+  assert.deepEqual(resolved, []);
+  assert.deepEqual(unresolved, ["/sections/a.image = https://cdn.other.test/hero.png"]);
+});
+
+test("SH471: with no uploads there is nothing to point at, and the document is the same object", () => {
+  const document = { site: "Acme", posts: [{ url: "/s", type: "SectionHero", data: { image: "/x.png" } }] };
+
+  assert.equal(withResolvedFileFields(document, new Map()).document, document);
+  assert.equal(withResolvedFileFields(document, null).document, document);
 });
 
 // --- the command ---
@@ -311,7 +385,9 @@ test("SH437: a fidelity conversion uploads the captured bytes at the source's ow
 
   const { assets } = await convert.run({ site: "Acme" }, [], ctx);
 
-  assert.deepEqual(assets, { uploaded: 1, present: 0, missing: 0 });
+  assert.deepEqual(
+    { uploaded: assets.uploaded, present: assets.present, missing: assets.missing },
+    { uploaded: 1, present: 0, missing: 0 });
   const folder = ctx.calls.find((call) => call.url.includes("/agent/apply") && /"\/img"/.test(call.body ?? ""));
   assert.ok(folder, "the folder chain the source implied is created through the one write path (P10)");
   const upload = ctx.calls.find((call) => call.url.includes("/api/v2/staticfile/upload"));
@@ -330,12 +406,23 @@ test("SH437: a second conversion uploads nothing, and a missing byte is counted 
   // Idempotent, because a second `convert` must not re-upload a site's images; and an asset the
   // capture named but never downloaded is `source-asset-missing`, which the gate already reports
   // with the `clone` that fixes it — failing a whole conversion over an image would be worse.
-  const already = ctxWith({ assets: { "/img/hero.png": "PNG" }, staticFiles: [{ fileName: "hero.png" }] });
-  assert.deepEqual((await convert.run({ site: "Acme" }, [], already)).assets,
+  const already = ctxWith({
+    assets: { "/img/hero.png": "PNG" },
+    staticFiles: [{ id: "file-already", fileName: "hero.png" }],
+  });
+  const second = (await convert.run({ site: "Acme" }, [], already)).assets;
+  assert.deepEqual({ uploaded: second.uploaded, present: second.present, missing: second.missing },
     { uploaded: 0, present: 1, missing: 0 });
+  assert.deepEqual(
+    [...second.ids],
+    [["/img/hero.png", "file-already"]],
+    "SH471: the re-run path records the id too. It is the case an agent hits most, and a map that "
+      + "only filled on a first upload would leave every second conversion holding paths",
+  );
 
   const gone = ctxWith({ assets: { "/img/hero.png": null } });
-  assert.deepEqual((await convert.run({ site: "Acme" }, [], gone)).assets,
+  const missing = (await convert.run({ site: "Acme" }, [], gone)).assets;
+  assert.deepEqual({ uploaded: missing.uploaded, present: missing.present, missing: missing.missing },
     { uploaded: 0, present: 0, missing: 1 });
 });
 
@@ -355,7 +442,9 @@ test("SH456: an asset at the root of the URL space gets an address the resolver 
 
   const { assets } = await convert.run({ site: "Acme" }, [], ctx);
 
-  assert.deepEqual(assets, { uploaded: 1, present: 0, missing: 0 });
+  assert.deepEqual(
+    { uploaded: assets.uploaded, present: assets.present, missing: assets.missing },
+    { uploaded: 1, present: 0, missing: 0 });
   const resolve = ctx.calls.find((call) => call.url.includes("/agent/resolve"));
   assert.match(
     decodeURIComponent(resolve.url),

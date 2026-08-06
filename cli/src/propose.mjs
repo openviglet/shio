@@ -99,6 +99,29 @@ export const SECTION_TYPES = {
   SectionRichText: { fields: ["heading", "body"], repeats: null },
 };
 
+/**
+ * Which of those fields the model declares as a `File` widget (SH471).
+ *
+ * <h3>Why a second declaration and not a `kind` on the one above</h3>
+ *
+ * <p>`SECTION_TYPES` says what a block maps *into*; this says what the model on the other side does
+ * with the value, which is a fact about the blueprint and not about the markup. Keeping them apart
+ * means `propose` — which applies nothing and may run before the model exists — is unchanged, and
+ * the fact lands where the one reader that needs it can use it.</p>
+ *
+ * <h3>The duplication is closed by a check, not by a comment</h3>
+ *
+ * <p>Same deliberate duplication as `SECTION_TYPES`, for the same reason, and with the same hazard:
+ * a `File` field the blueprints gain and this map does not would silently go back to rendering
+ * `<img src="">`. `ShConvertedLayoutRenderTest` reads the blueprints and asserts this list is exactly
+ * their `File` fields, so the drift is a red build naming the field.</p>
+ */
+export const SECTION_FILE_FIELDS = {
+  SectionHero: { fields: ["image"], rows: {} },
+  SectionLogoWall: { fields: [], rows: { logos: ["image"] } },
+  SectionTestimonial: { fields: [], rows: { quotes: ["avatar"] } },
+};
+
 /** Elements that never have children, so a tree builder must not wait for their close tag. */
 const VOID = new Set([
   "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",

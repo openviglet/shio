@@ -36,7 +36,9 @@ import { ShioAdminClient } from "../admin-client.mjs";
 import { ShioAgentClient } from "../agent-client.mjs";
 import { ASSETS_DIR } from "../content-assets.mjs";
 import { resolveAdmin } from "../context.mjs";
-import { buildConversion, describeConversion, staleMessage } from "../convert.mjs";
+import {
+  buildConversion, describeConversion, staleMessage, withResolvedFileFields,
+} from "../convert.mjs";
 import { retellUnknownSite } from "../unknown-site.mjs";
 import { proposalFor } from "./propose.mjs";
 
@@ -131,12 +133,41 @@ export async function run(flags, positionals, ctx) {
 
   ctx.stdout.write(describeConversion({ document, sections, pages, verbatim, extras, requires: proposal.requires },
     flags));
+
+  // SH437/SH471 — the bytes, which are not content and so cannot ride the document. **Before** the
+  // apply, not after: a `File` field has to hold the id of the post that holds those bytes, and the
+  // post has to exist before the field can name it. It also stopped being conditional on
+  // `verbatim` — that guard dated from when only fidelity markup referenced the source's paths, and
+  // it is why an authorable conversion uploaded nothing and drew `<img src="">`.
+  let assets = null;
+  let toApply = document;
+  if (!planOnly) {
+    assets = await sendAssets(
+      { site, inventory, flags, createSite: Boolean(flags.createSite), admin: { baseUrl, user, password } },
+      ctx);
+    ctx.stdout.write(
+      `  assets: ${assets.uploaded} uploaded, ${assets.present} already there`
+        + `${assets.missing ? `, ${assets.missing} with no bytes in the tree` : ""}`
+        + " - served at the source's own paths\n",
+    );
+    const pointed = withResolvedFileFields(document, assets.ids);
+    toApply = pointed.document;
+    if (pointed.resolved.length || pointed.unresolved.length) {
+      ctx.stdout.write(
+        `  images: ${pointed.resolved.length} File field(s) point at the uploaded post`
+          + `${pointed.unresolved.length
+            ? `, ${pointed.unresolved.length} left as written (${pointed.unresolved.slice(0, 3).join(", ")})`
+            : ""}\n`,
+      );
+    }
+  }
+
   // SH439 — the write resolver's "add a `site.upsert` op" is un-followable here, because `convert`
   // composes its own document and takes no ops. The flag above is the remedy; this makes the
   // refusal name it, for the caller who has not passed it yet.
   const result = await (planOnly
-    ? client.plan(document, { ids: Boolean(flags.ids) })
-    : client.apply(document, { ids: Boolean(flags.ids) })
+    ? client.plan(toApply, { ids: Boolean(flags.ids) })
+    : client.apply(toApply, { ids: Boolean(flags.ids) })
   ).catch((error) => {
     throw retellUnknownSite(error, { command: "convert", site });
   });
@@ -149,17 +180,6 @@ export async function run(flags, positionals, ctx) {
         + `${planOnly ? " (nothing was written)" : " - in DRAFT"}\n`,
     );
   }
-  // SH437 — and the bytes, which are not content and so cannot ride the document.
-  let assets = null;
-  if (!planOnly && verbatim) {
-    assets = await sendAssets({ site, inventory, flags, admin: { baseUrl, user, password } }, ctx);
-    ctx.stdout.write(
-      `  assets: ${assets.uploaded} uploaded, ${assets.present} already there`
-        + `${assets.missing ? `, ${assets.missing} with no bytes in the tree` : ""}`
-        + " - served at the source's own paths\n",
-    );
-  }
-
   // `--check` is a drift guard, so a non-empty plan is the failure it exists to report.
   const drifted = Boolean(flags.check) && Number(result?.changed ?? 0) > 0;
   return {
@@ -194,9 +214,12 @@ export async function run(flags, positionals, ctx) {
  * `verify --checks replication` already reports it as `source-asset-missing` with the `clone` that
  * fixes it, and a refusal here would fail a conversion over an image.</p>
  */
-async function sendAssets({ site, inventory, flags, admin }, ctx) {
+async function sendAssets({ site, inventory, flags, createSite = false, admin }, ctx) {
   const rows = (inventory?.assets ?? []).filter((asset) => asset && !asset.external && asset.file);
-  const summary = { uploaded: 0, present: 0, missing: 0 };
+  // SH471 — source path → the `File` post's id, so a section's `File` field can name the post that
+  // holds those bytes rather than the path they came from. Free: the listing and the upload response
+  // both already carry the id, so this costs no request that was not being made.
+  const summary = { uploaded: 0, present: 0, missing: 0, ids: new Map() };
   if (!rows.length) return summary;
 
   const assetsDir = typeof flags.assetsDir === "string" ? flags.assetsDir : ASSETS_DIR;
@@ -220,7 +243,12 @@ async function sendAssets({ site, inventory, flags, admin }, ctx) {
     if (!folderId) {
       // The folder, through the one write path there is (P10) — `apply` is idempotent, so a
       // second run creates nothing and a first run creates the chain the source implied.
-      await client.apply({ site, folders: [{ path: at.folder }], posts: [] });
+      // SH471 — `createSite` rides this apply now that the upload runs *before* the document's own.
+      // Without it the first thing a `--create-site` run does is write a folder into a site that
+      // does not exist yet, which is the one ordering this move could have broken.
+      await client.apply({
+        site, ...(createSite ? { createSite: true } : {}), folders: [{ path: at.folder }], posts: [],
+      });
       // SH456 — `folder:<site>/<chain>`, and the root folder is `folder:<site>/`. This used to
       // strip the slash for the root case (`at.folder === "/" ? "" : at.folder`), which is the one
       // form that needs it: `folder:Publico` has no path at all, and `ShAddress.parse` refuses it
@@ -239,16 +267,21 @@ async function sendAssets({ site, inventory, flags, admin }, ctx) {
     }
 
     const existing = await adminClient.listStaticFiles({ folderId });
-    if ((existing ?? []).some((item) => item.fileName === at.fileName)) {
+    const already = (existing ?? []).find((item) => item.fileName === at.fileName);
+    if (already) {
       summary.present += 1;
+      // Recorded on the re-run path too, or a second `convert` — the idempotent case, which is the
+      // one an agent runs most — would resolve nothing and quietly leave the paths in place.
+      if (already.id) summary.ids.set(asset.path, already.id);
       continue;
     }
-    await adminClient.uploadStaticFile({
+    const created = await adminClient.uploadStaticFile({
       folderId,
       fileName: at.fileName,
       bytes,
       contentType: asset.contentType || "application/octet-stream",
     });
+    if (created?.id) summary.ids.set(asset.path, created.id);
     summary.uploaded += 1;
   }
   return summary;

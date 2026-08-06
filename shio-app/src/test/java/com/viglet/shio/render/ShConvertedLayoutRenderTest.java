@@ -146,10 +146,13 @@ class ShConvertedLayoutRenderTest {
          * id. Excluded from the assertion and from nothing else: the field is still written, so the
          * {@code <img>} around it is still exercised.
          *
-         * <p>This exemption is <b>SH471</b>, found by writing it: a conversion stores the source's
-         * own path in these fields, not an id, so a converted {@code SectionHero} renders
-         * {@code <img src="">} and the two row fields here inherit it. Named rather than silently
-         * skipped, because an exemption nobody can read is how a coverage check stops covering.</p>
+         * <p>This exemption is where <b>SH471</b> was found, by writing it: a conversion stored the
+         * source's own path in these fields rather than an id, so a converted {@code SectionHero}
+         * rendered {@code <img src="">} and the two row fields here inherited it. That is fixed —
+         * `convert` uploads the bytes on both paths now and stores the id — but the exemption stays,
+         * because a sentinel string still is not an id and never can be. What replaces the coverage
+         * it cannot give is {@link #theCliKnowsWhichFieldsAreFiles}: the fields skipped here are
+         * exactly the ones that test requires the CLI to know about.</p>
          */
         boolean isRenderableAsText() {
             return !"File".equals(widget);
@@ -382,6 +385,75 @@ class ShConvertedLayoutRenderTest {
                 .contains("sh-post=\"{{id}}\"")
                 .contains("sh-field=\"heading\"")
                 .hasSizeGreaterThan(400);
+    }
+
+    /**
+     * SH471 — the CLI's `File`-field list is the blueprints' own, and this is what says so.
+     *
+     * <h2>Why the CLI has a second copy at all</h2>
+     *
+     * <p>`propose` runs on a machine that has not installed the model — a capture happens before the
+     * site exists — so `SECTION_TYPES` is a deliberate duplication of `@viglet/shio-sections`, and
+     * `SECTION_FILE_FIELDS` is the same duplication for a different fact: which of those fields the
+     * blueprint declares as a `File` widget. `convert` needs it to store the <b>id</b> of the post
+     * holding the bytes rather than the source path, which is what stopped a converted section from
+     * rendering {@code <img src="">}.</p>
+     *
+     * <h2>And why a duplication is allowed to exist here</h2>
+     *
+     * <p>Because this closes it. A `File` field the blueprints gain and that list does not would go
+     * back to storing a path, silently — the render would be an empty `src` again, and the coverage
+     * assertion above <em>exempts</em> `File` fields, so nothing else in this file would notice. The
+     * exemption is what makes this test owed.</p>
+     */
+    @Test
+    @DisplayName("SH471: every blueprint File field is named in the CLI's SECTION_FILE_FIELDS")
+    void theCliKnowsWhichFieldsAreFiles() {
+        String declared = sectionFileFieldsSource();
+
+        List<String> fileFields = VOCABULARY.stream()
+                .flatMap(type -> fieldsOf(type).stream()
+                        .filter(field -> "File".equals(field.widget()))
+                        .map(field -> type.name() + "." + field.path()))
+                .distinct()
+                .sorted()
+                .toList();
+        assertThat(fileFields)
+                .as("the exemption in isRenderableAsText covers something, or this test proves "
+                        + "nothing about a list that could be empty and still pass")
+                .isNotEmpty();
+
+        for (String each : fileFields) {
+            String type = each.substring(0, each.indexOf('.'));
+            String leaf = each.substring(each.lastIndexOf('.') + 1);
+            assertThat(declared)
+                    .as("%s is a File field in the blueprints; convert must store an id for it, and "
+                            + "it can only know that from SECTION_FILE_FIELDS", each)
+                    .contains(type + ":")
+                    .contains("\"" + leaf + "\"");
+        }
+    }
+
+    /** The body of `SECTION_FILE_FIELDS` in `cli/src/propose.mjs`, read rather than remembered. */
+    private static String sectionFileFieldsSource() {
+        Path propose = Path.of("..", "cli", "src", "propose.mjs");
+        String source;
+        try {
+            source = Files.readString(propose, StandardCharsets.UTF_8);
+        } catch (IOException cannotRead) {
+            throw new UncheckedIOException(
+                    "cli/src/propose.mjs declares which section fields are File widgets; this test "
+                            + "reads it rather than keeping a third copy (SH245).", cannotRead);
+        }
+        String marker = "export const SECTION_FILE_FIELDS = {";
+        int start = source.indexOf(marker);
+        assertThat(start)
+                .as("SECTION_FILE_FIELDS is the export this test reads; renamed or inlined, the "
+                        + "duplication it closes has no reader left")
+                .isGreaterThanOrEqualTo(0);
+        int end = source.indexOf("\n};", start);
+        assertThat(end).isGreaterThan(start);
+        return source.substring(start, end);
     }
 
     /**

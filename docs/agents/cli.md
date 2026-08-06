@@ -810,6 +810,31 @@ said "how many pages carry it" — and is fixed in the same pass. No `INVENTORY_
 SH431, and the reason is the test of whether a bump is owed: nothing *consumes* `on` (the coverage gate
 reads `forms` for its fields, never for its counts), so no reader can misread an older file through it.
 
+**A `File` field holds an id, and the measurement is what chose that (SH471).** `propose` writes
+`fields.image = <img src>` — the source's own path — and the authorable path stored that string in a
+`File` field, which the layout draws with `{{file_url image}}`. That helper resolves a **post id** and
+answers `""` for anything else, so a converted `SectionHero` rendered `<img src="">` and SH465's two
+row fields inherited it. The task offered two fixes and asked for a measurement first; the measurement
+settled it on an axis neither option was drawn on. **The authorable path was uploading no bytes at
+all** — `sendAssets` ran under `if (!planOnly && verbatim)`, an SH437-era guard from when only
+fidelity markup referenced the source's paths — so teaching `file_url` to pass a non-id through would
+have emitted `src="/img/hero.png"` against a site that serves nothing there: a broken image that
+*looks* like a fix. Three more facts finished it: a non-id in a `File` field is exactly the
+`dangling-reference` shape SH470 had just removed; `{{#image}}` (SH390) reads `WIDTH`/`HEIGHT` off the
+`File` post, so a path leaves `srcset` permanently empty on the replicas SH386 grades for fidelity;
+and the console's File widget resolves ids. **So the bytes go up on both paths and the id is stored.**
+`sendAssets` now runs **before** the apply — the post must exist before a field can name it — carries
+`createSite` on its own folder-apply so a `--create-site` run keeps working, and returns a
+`source path → File post id` map built from the listing and the upload response, which were already
+being read. `withResolvedFileFields` rewrites only the fields `SECTION_FILE_FIELDS` declares: matching
+any string equal to an uploaded path would be shorter and wrong on a case this vocabulary has — a
+`SectionLogoWall` row carries both `image` and `href`, and a logo linking to its own artwork would have
+had its **link** turned into a post id. A reference the capture never fetched is left as written and
+**counted in the report**, and a fidelity page's markup is untouched (SH429's option A). The duplicate
+list is closed by a check rather than a comment: `ShConvertedLayoutRenderTest` reads the blueprints and
+requires every `File` field to be named in the CLI's map — which is owed, because that same test
+*exempts* `File` fields from its coverage assertion and would otherwise never notice.
+
 **A replica that photographs identically and does not work (SH469).** The replica of `www.viglet.org`
 is 0.33% from the original by pixels and **inert**: the dark/light toggle does nothing and the consent
 modal will not close, because both are React handlers and the bundle is gone. Measured — the source
