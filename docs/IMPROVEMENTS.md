@@ -374,6 +374,31 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
+### IX.27 Eighty-four false errors on a replica that works (SH470)
+
+`verify --site VigletOrg` reports **84 errors** on a replica whose every asset answers
+200. All of them are one rule on one field:
+
+    ✗ dangling-reference · FILE
+      Field 'FILE' points at post inter-greek-wght-normal-CkhJZR-_.woff2, which does not exist.
+
+It does not exist because it is not a post. A `File` post stores its own filename in
+`FILE` — reading one back gives `{"FILE": "inter-greek-wght-normal-CkhJZR-_.woff2",
+"SHA256": …, "SIZE": 18996}` — and the rule treats every `FILE` value as an address to
+resolve. The eighteen assets a capture uploads are therefore eighteen posts × the fields
+the rule walks, and the count is large enough that the real findings on the same run are
+unreadable.
+
+The widget already says which is which. `File.FILE` is a File widget and a relation
+field is a Relator, so the rule has the distinction available and does not consult it.
+
+**A gate that cries wolf is worse than one that stays quiet**, and this one crossed the line where a
+reader stops looking: 84 errors, all false, on a run that also carried the true ones. It also inverts
+what `verify` is for on this path — the replication checks exist so an agent can prove a replica without
+a human, and an agent that cannot tell 84 false errors from a real one has to escalate every run.
+
+Skip File-widget fields, and assert the count on a replica whose assets resolve.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -1475,32 +1500,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.42 Half the vocabulary renders as a bare heading (SH465)
-
-SH464's generated layout draws six fields per section — `heading`, `subheading`,
-`intro`, `body`, `image`, `ctaLabel`/`ctaHref` — and no collection. Four of the seven
-section types are collection-shaped, so for `SectionFeatureGrid` (`features`),
-`SectionFaq` (`questions`), `SectionLogoWall` (`logos`) and `SectionTestimonial`
-(`quotes`) the layout renders a heading and stops. `SectionLogoWall` has *only*
-`heading` and `logos`, so it renders as a bare `<h2>`.
-
-Measured on a replica of the captured page: `features` holds both cards with their
-`title` and `body` in the post, and the rendered page contains "Model Catalog" and none
-of "viglet.org", "vendor-neutral, kind-aware" or "Browse the catalog". The content was
-captured, converted, stored and addressed. It is never drawn.
-
-That is worse than losing it at capture, because every instrument says it is there.
-`verify` is clean, the section post reads back complete, the field is editable in the
-console — and the page a curator approves is missing half its content. The one check
-that would have caught it is a render assertion per section type, which is what SH464
-built the layout for.
-
-The vocabulary already says which fields these are: the four are `Relator` widgets, so
-the layout needs one `{{#getRelation}}` block per collection rather than a rule per
-type. The Universal Editor half comes with it — a row inside a collection needs
-`sh-post` for the editor to address it, which is the same annotation the section itself
-already carries.
-
 ### XVII.43 A verbatim href is a hardcoded base (SH466)
 
 A replicated page carried `href="/turing/"` — the source's path, verbatim, on a page
@@ -1548,3 +1547,76 @@ Two ends and both are cheap. Preserve the trailing slash the source declared, so
 furl round-trips; and answer both forms on the route, redirecting one to the other the
 way the source does, since a replica that keeps a URL space should keep its redirects
 too.
+
+### XVII.45 A word the source never contained (SH468)
+
+A captured navigation carried `DuDumont DEP`, `ShShio CMS` and `TuTuring ES` — the label
+with a two-letter prefix fused onto its first word. The markup explains it exactly: the
+anchor holds a 28×28 brand tile (`<div aria-label="Du">…<span>Du</span></div>`) followed
+by the text `Dumont DEP`, and `clone.mjs:399` accumulates `anchor.text += token.text`
+with **no separator**. `collapse()` then normalises whitespace that was never inserted.
+
+It is not about badges. Any inline element adjacent to text fuses across the boundary,
+so `<em>Open</em>Source` becomes `OpenSource` and `<sup>2</sup>x` becomes `2x`. The nav
+label is where it surfaced because a label is short enough to read; a heading or a
+summary would carry the same corruption unnoticed, and those become post titles.
+
+A word that was never in the source is worse than a dropped one. `Dumont DEP` and
+`DuDumont DEP` both look like content, so nothing downstream can tell which is the
+source's — not `verify`, not a digest, not a reviewer skimming a menu. The capture is
+supposed to be evidence about somebody else's bytes.
+
+Joining with a space and letting `collapse()` squeeze it is the whole fix, and it yields
+`Du Dumont DEP` — readable, and no longer a fabricated token. Whether a mark like that
+should be dropped from a label at all is a second question worth asking separately: the
+tile carries `aria-label` equal to its own visible text, which is what a decorative mark
+looks like.
+
+### XVII.46 Faithful to the photograph, not to the page (SH469)
+
+The replica of `www.viglet.org` is 0.33% from the original by pixels and **inert**: the
+dark/light toggle does nothing and the consent modal will not close. Both are React
+handlers, and the bundle is gone.
+
+Measured. The source carries four `<script>` tags, one of them `<script type="module"
+crossorigin src="/assets/index-LNwgBwpz.js">`. The replica carries **one** inline script
+and no `src` at all, and no `.js` exists anywhere in the asset tree — `clone --assets`
+collects fonts, icons, images, manifests and stylesheets, and script is not one of its
+kinds. `SiteScripts` did capture two scripts, both **third-party** (cognitoforms), so
+the site's own bundle is the one thing dropped.
+
+Nothing says so. The clone reports `rendered`, the proposal is silent, `verify` is silent, and the
+snapshot says 0.33% — every instrument agrees the replica is faithful, and it is faithful to the
+*appearance* only. That is the worst shape a report can take: a replica that photographs identically and
+does not work is harder to catch than one that looks wrong.
+
+`--render` is what makes this reachable rather than a flaw in it: rendering bakes the
+DOM, so a replica can be static and correct. But then the behaviour is knowingly
+discarded, and a phase that discards something has to name it — the counting is already
+there, since the crawler saw the tags to skip them. Capturing the bundle is the other
+half, and is a decision rather than an oversight.
+
+### XVII.47 A File field holds a path after a conversion, and file_url only knows ids (SH471)
+
+`propose` writes `fields.image = <img src>` — the source's own path, e.g.
+`/img/hero.png` — and SH437 uploads the captured bytes to exactly that path, which is
+why fidelity mode works: the render pass rewrites `src="/img/hero.png"` to
+`src="/preview/<site>/img/hero.png"`, and the conformance gate asserts it.
+
+The authorable path stores the same string in a `File` field and the layout draws it
+with `{{file_url image}}`, which resolves a **post id** and answers `""` for anything
+else. So a converted `SectionHero` renders `<img src="">`, and SH465's two new row
+fields — `SectionLogoWall.logos.image` and `SectionTestimonial.quotes.avatar` — inherit
+it. Found while measuring SH465, which is why `File` fields are the named exemption in
+`ShConvertedLayoutRenderTest`'s coverage assertion rather than an assertion nobody
+wrote.
+
+Same shape as SH465 and not the same fix: the content is captured, stored and addressed,
+and the page silently omits it. The decision is which side moves. Either `file_url`
+falls back to a value that is not an id — defensible, since a `File` field legitimately
+holds a path a site serves, and it fixes every template at once — or `convert` resolves
+the path to the `File` post it just uploaded and stores the id, which keeps the helper's
+one meaning and makes the field mean what the console's File widget means. The first is
+one line and changes every template's behaviour; the second is a lookup per image field
+and leaves the vocabulary honest. Measure a converted replica's `<img>` tags before
+choosing.

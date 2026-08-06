@@ -23,6 +23,7 @@
 - 💭 **SH209** (deps: SH102 ✅) **`shio snapshot` photographs one page per run** — The useful artifact for a handoff is the set of a site's pages, and the command captures one page per run. → §IX.10
 - 📋 **SH397** (deps: SH295 ✅, SH325 ✅) **A dev instance reports its version as dev, so a stale server reads as a code defect** — The build stamp comes from the jar manifest, which is absent in the one mode where the running instance can lag the working tree, and nothing composes the readiness facts. → §IX.12
 - 📋 **SH423** (deps: SH347 ✅) **The test-context budget is a ceiling nobody sees approaching** — ShContextCacheHeadroomTest fails once 64 is crossed and nothing says a task is spending one, so eleven tasks took the count from 38 to 44 with no moment anybody was asked. → §VIII.20
+- 📋 **SH470** (deps: SH429 ✅) **Every uploaded asset raises a dangling-reference error, so a clean replica reports 84** — The rule reads File.FILE as an address when it is the stored filename, and the widget that tells a File field from a Relator is available and unread. → §IX.27
 
 ## Block I — Content as files (local-first authoring)
 
@@ -80,9 +81,11 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH465** (deps: SH464 ✅) **The authorable layout draws no collection field, so four section types render as a heading** — features, questions, logos and quotes are Relator widgets the generated template never reads, so content that captured, converted and stored fine is never drawn. → §XVII.42
 - 📋 **SH466** (deps: SH336 ✅) **A link the rewriter cannot resolve is emitted verbatim, so it leaves the replica** — The fallback keeps the source's base on a page served under another, so an unpublished target turns into an href out of the site and the output depends on publication state. → §XVII.43
 - 📋 **SH467** (deps: SH385 ✅) **The replica inverts the source's trailing slash, so the source's own links 404** — A directory-style path is stored without its trailing slash and never restored, so /shio/ answers 404 while /shio answers 200 — the opposite of what the source does. → §XVII.44
+- 📋 **SH468** (deps: SH377 ✅) **Text extraction joins element boundaries with no separator, so adjacent words fuse** — anchor.text += token.text at clone.mjs:399 inserts nothing between nodes, so a brand tile beside a label yields DuDumont DEP — a token the source never contained. → §XVII.45
+- 📋 **SH469** (deps: SH389 ✅) **The replica keeps the appearance and drops the behaviour, and no instrument says so** — script is not an asset kind the crawler collects and SiteScripts took only the third-party ones, so the site's own bundle vanishes while clone, verify and snapshot all report success. → §XVII.46
+- 📋 **SH471** (deps: SH465 ✅) **A converted section's image renders src="", because file_url wants an id and the field holds a path** — SH437 uploads the captured bytes at the source's own path, so an authorable section's File field holds a path and file_url answers empty for anything that is not an id. → §XVII.47
 
 ## Block F — Market positioning
 
