@@ -110,6 +110,8 @@ class ShConvertedLayoutRenderTest {
 
     /** Where the SH465 coverage page lives, kept off {@code /} so SH464's counts are untouched. */
     private static final String VOCABULARY_URL = "/vocabulary";
+    /** SH476 — its own page, so SH464's counts on `/` are untouched by a fixture about escaping. */
+    private static final String ENTITY_URL = "/entities";
 
     /**
      * Every section type the shipped blueprints declare — the vocabulary, read rather than listed.
@@ -230,7 +232,43 @@ class ShConvertedLayoutRenderTest {
             page.put("title", "Vocabulary");
             page.set("sections", composed);
             post(site, root, pageType, "Vocabulary", VOCABULARY_URL, page.toString(), when);
+
+            // SH476 — the render half of the round trip: a field holding the characters the source
+            // meant, on a page of its own so SH464's counts on `/` are untouched.
+            post(site, sections, heroType, "Ampersand", ENTITY_URL + "/hero",
+                    json("heading", "rerank & media models"), when);
+            ObjectNode entities = MAPPER.createObjectNode();
+            entities.put("title", "Entities");
+            entities.set("sections", MAPPER.createArrayNode().add(ENTITY_URL + "/hero"));
+            post(site, root, pageType, "Entities", ENTITY_URL, entities.toString(), when);
         });
+    }
+
+    /**
+     * SH476 — the other half of the seam, and the reason it is asserted here rather than in the CLI.
+     *
+     * <p>`propose` decodes an entity when text becomes a field; this renderer escapes what it is
+     * given. Each is right alone, and the defect was the pair: the field held the five characters
+     * `&amp;` and the page showed `&amp;amp;`, so a reader saw the entity and the editor field held
+     * it too — content a curator cannot repair through the surface built for repairing content.
+     * Asserting both ends in one language would be a copy of one side checked against itself, which
+     * is the SH245 mistake this test class exists to avoid.</p>
+     */
+    @Test
+    @DisplayName("SH476: a stored `&` is escaped exactly once, which is what makes the round trip close")
+    void anAmpersandInAFieldIsEscapedOnce() {
+        String html = shPageRenderService.render(siteName, ENTITY_URL, ShPostState.DRAFT).html();
+
+        assertThat(html)
+                .as("what the source spelled, byte for byte — the field holds the character and the "
+                        + "renderer writes the entity")
+                .contains("rerank &amp; media models");
+        assertThat(html)
+                .as("""
+                        and NOT the doubled form, which is what a page reads when the capture \
+                        stored `&amp;` as five characters: every re-capture escapes what the last \
+                        one stored, so it compounds rather than staying at one layer""")
+                .doesNotContain("&amp;amp;");
     }
 
     @Test

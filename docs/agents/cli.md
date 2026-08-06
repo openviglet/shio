@@ -393,6 +393,23 @@ it. Four decisions worth keeping:
   helper, and a union means a new section type reusing these names renders without a template
   change. `variant`, `align` and `columns` are presentation choices, so they ride as `data-`
   attributes for the theme's CSS instead of being printed as text.
+- **Text stops being markup when it becomes a field, so the entity is decoded there (SH476).** The
+  source spelled `rerank &amp; media models`; the authorable replica stored those five characters and
+  the renderer escaped the `&` again — correctly, it emits text into HTML — so the page read
+  `rerank &amp;amp; media models`. Neither half is wrong and the missing one is the decode at the
+  boundary, in `propose.mjs`' `text()` plus the one attribute stored as prose (`alt`); URLs are left
+  alone, because unescaping a query string belongs where the URL is parsed. **It compounds** — every
+  re-capture escapes what the last one stored — and it is worse than a display bug, because the
+  editor field holds the entity too: a curator who types the correction stores `&` and the next
+  capture overwrites it. **Fidelity mode never had it**, which is why it survived: verbatim markup
+  keeps the entity and renders it once, so only the path nobody had finished testing carried it.
+  `decodeEntities` is in `clone.mjs` — the module that owns reading a stranger's bytes — and is one
+  pass left to right, so `&amp;lt;` stays the text `&lt;`; the named table is the marks a page
+  actually spells rather than HTML5's 2500, and **an unknown name is left verbatim**, because
+  `&thetasym;` surviving is a report a reader can file and `&thetasym;` vanishing is not.
+  **The assertion is the round trip, on both sides of the seam**: the CLI test re-escapes the stored
+  field and requires the source's own bytes back, and `ShConvertedLayoutRenderTest` renders a field
+  holding a literal `&` and requires `&amp;` once — one language could only check a copy of itself.
 - **`PAGE_BODY_HTML` is an export with no interpolation, and that is a test seam (SH464).** The
   layout is written here in JavaScript and annotated by `ShRegionComposer` in the JVM, so a Java
   test with its own copy of the template would go green while the shipped one was broken — which is

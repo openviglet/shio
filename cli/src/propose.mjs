@@ -38,6 +38,11 @@
  * command that re-fetched would produce a different proposal depending on what the source served
  * this morning, which is the one thing an artefact meant to be reviewed cannot do.
  */
+// SH476 — imported rather than injected like `tokenize`, because this is not a second reader of
+// the markup: the tree is already built when it runs. Injection exists so there is one answer to
+// "what is a tag on this page"; a decoder has no such twin, and a copy of the entity table would be
+// exactly the drift that argument is about.
+import { decodeEntities } from "./clone.mjs";
 import { describeTheme } from "./theme.mjs";
 
 /**
@@ -347,9 +352,20 @@ function parentOf(node, target) {
 
 const isElement = (node) => node.tag !== "#text";
 
-/** All the visible text under a node, whitespace collapsed. */
+/**
+ * All the visible text under a node, entities decoded and whitespace collapsed.
+ *
+ * <p>SH476 — this is the boundary where markup becomes **content**, and every authorable field is
+ * either this or an attribute. Decoded here rather than at each caller, because a caller that
+ * forgets is a field that double-escapes and nothing downstream can tell: the renderer escapes what
+ * it is given, correctly, and the page reads `&amp;` where the source read `&`.</p>
+ *
+ * <p>Before the collapse, deliberately: `&nbsp;` is whitespace once it is a character, and a field
+ * holding a non-breaking space that no `\s` pass touched is a value a curator cannot see and cannot
+ * type.</p>
+ */
 export function text(node) {
-  if (node.tag === "#text") return String(node.text ?? "").replace(/\s+/g, " ");
+  if (node.tag === "#text") return decodeEntities(node.text ?? "").replace(/\s+/g, " ");
   return node.children.map(text).join(" ").replace(/\s+/g, " ").trim();
 }
 
@@ -577,7 +593,11 @@ function unitFields(names, unit, take) {
     role: () => null,
     answer: () => paragraph && text(paragraph),
     body: () => paragraph && text(paragraph),
-    name: () => (image?.attrs.alt || (link && text(link))) ?? null,
+    // SH476 — an `alt` is the one field taken from an attribute and stored as prose, so it crosses
+    // the same boundary `text` does. `icon`, `avatar`, `image` and `href` are URLs and are left
+    // alone here: they are resolved and rewritten downstream, and unescaping a query string is a
+    // decision that belongs where the URL is parsed.
+    name: () => (decodeEntities(image?.attrs.alt ?? "") || (link && text(link))) ?? null,
     icon: () => image?.attrs.src ?? null,
     avatar: () => image?.attrs.src ?? null,
     image: () => image?.attrs.src ?? null,

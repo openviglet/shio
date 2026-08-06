@@ -314,6 +314,66 @@ test("repeated units become the repeat field's rows", () => {
   ]);
 });
 
+/**
+ * SH476 — the measured case, and the round trip that says the escape happens exactly once.
+ *
+ * <p>The source spelled `rerank &amp; media models`, which a reader sees as `rerank & media models`.
+ * The replica stored the five characters and the renderer escaped the `&` again — correctly, it is
+ * emitting text into HTML — so the page read `rerank &amp; media models`. Neither half is wrong;
+ * what was missing is the decode where markup becomes content, and it compounds, because each
+ * re-capture escapes what the last one stored.</p>
+ *
+ * <p>The oracle is `escapeOnce`: what the renderer will do to a stored value. Applied to a field
+ * that was decoded it reproduces the source's own bytes, and applied to one that was not it
+ * produces the doubled form — so the assertion is the round trip rather than a spelling.</p>
+ */
+const escapeOnce = (value) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+test("SH476: an entity is decoded when text becomes a field, so the render escapes it once", () => {
+  const source = "rerank &amp; media models";
+  const [block] = blocksOf(tree(
+    `<main><section><h2>${source}</h2><p>Costs &lt; &pound;5 &mdash; &#8220;really&#8221;</p>`
+      + "</section></main>",
+  ));
+  const { fields } = fieldsFor("SectionHero", block);
+
+  assert.equal(fields.heading, "rerank & media models");
+  assert.equal(
+    escapeOnce(fields.heading),
+    source,
+    "the round trip: what the renderer emits for this stored value is what the source spelled. "
+      + "Storing `&amp;` would make this `rerank &amp;amp; media models`, which is what a curator "
+      + "saw and could not repair — the editor field held the entity too",
+  );
+  assert.equal(
+    fields.subheading,
+    "Costs < £5 — “really”",
+    "named, numeric and the ones that are not `&amp;` — a decoder that only knew ampersands would "
+      + "leave every dash and quote a designer typed",
+  );
+});
+
+test("SH476: a source's own escaped entity survives, and an unknown name is left alone", () => {
+  const [block] = blocksOf(tree(
+    "<main><section><h2>Write &amp;lt;p&amp;gt; to mean a tag</h2>"
+      + "<p>Angle &thetasym; and &#xZZ; stay</p></section></main>",
+  ));
+  const { fields } = fieldsFor("SectionHero", block);
+
+  assert.equal(
+    fields.heading,
+    "Write &lt;p&gt; to mean a tag",
+    "one pass, left to right — a second pass would turn the author's escaped entity into a tag "
+      + "and lose the distinction they were drawing",
+  );
+  assert.equal(
+    fields.subheading,
+    "Angle &thetasym; and &#xZZ; stay",
+    "an unknown name is a rendering imperfection a reader can report; dropping it is content that "
+      + "vanished, and the table here is the ones a page actually spells rather than HTML5's 2500",
+  );
+});
+
 test("the loss is the complement of what the fields took, so it cannot under-report", () => {
   // An <iframe> nothing consumed, an onclick, an id an anchor could target, and the classes: all four
   // are things a reviewer needs before they agree to this, and none of them is in a list of

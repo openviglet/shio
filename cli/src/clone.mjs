@@ -630,6 +630,68 @@ export function planMarkup(visited = []) {
 }
 
 /**
+ * The named entities this decoder knows, and the reason it is a list rather than the standard's.
+ *
+ * <p>HTML5 names about two and a half thousand references, almost all of which no page a capture
+ * will meet ever writes. Shipping the table would be forty kilobytes for the ones below; deriving it
+ * would need a browser, and the instance does not run one. So: the punctuation, currency and legal
+ * marks a site actually spells by name, plus every numeric form — and <b>an unknown name is left
+ * verbatim</b>, which is the only safe default. `&thetasym;` surviving as itself is a rendering
+ * imperfection a reader can report; `&thetasym;` becoming an empty string is content that vanished.
+ */
+const ENTITIES = new Map(Object.entries({
+  amp: "&", lt: "<", gt: ">", quot: '"', apos: "'",
+  nbsp: " ", ensp: " ", emsp: " ", thinsp: " ", shy: "­",
+  ndash: "–", mdash: "—", hellip: "…", bull: "•", middot: "·",
+  laquo: "«", raquo: "»", lsquo: "‘", rsquo: "’", ldquo: "“", rdquo: "”",
+  prime: "′", Prime: "″", dagger: "†", Dagger: "‡", permil: "‰", sect: "§", para: "¶",
+  copy: "©", reg: "®", trade: "™", deg: "°", micro: "µ",
+  euro: "€", pound: "£", yen: "¥", cent: "¢",
+  times: "×", divide: "÷", minus: "−", plusmn: "±", frasl: "⁄",
+  frac12: "½", frac14: "¼", frac34: "¾", sup2: "²", sup3: "³",
+  iexcl: "¡", iquest: "¿", szlig: "ß",
+}));
+
+const ENTITY = /&(#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6}|[a-zA-Z][a-zA-Z0-9]{1,31});/g;
+
+/**
+ * Markup's text, as text (SH476).
+ *
+ * <h3>The boundary this is, and the double escape that happens without it</h3>
+ *
+ * <p>A source writes `rerank &amp; media models` and a reader sees `rerank & media models`. The
+ * authorable path stored the five characters `&amp;` in a field, the renderer escaped the `&` it
+ * found — correctly, it is emitting text into HTML — and the replica showed `rerank &amp; media
+ * models`. Neither step is wrong; the missing one is the decode where markup becomes **content**.
+ * It compounds: every re-capture escapes what the last one stored.</p>
+ *
+ * <p>Worse than a display bug, and the reason it is an error rather than a wart: the editor field
+ * holds `&amp;` too, so a curator who types the correction stores `&` and the next capture
+ * overwrites it. It is content a human cannot repair through the surface built for repairing
+ * content. Fidelity mode never had it — verbatim markup keeps the entity and renders it once — which
+ * is why it survived until the authorable path was tested.</p>
+ *
+ * <p><b>One pass, left to right</b>, so `&amp;lt;` decodes to the text `&lt;` and not to `<`: a
+ * second pass over the output would decode the source's own escaped entity and lose the distinction
+ * the author was drawing. Surrogates and the C0 range are refused rather than emitted, because a
+ * lone surrogate is a string later writers cannot serialise.</p>
+ */
+export function decodeEntities(value) {
+  const text = String(value ?? "");
+  if (!text.includes("&")) return text;
+  return text.replace(ENTITY, (whole, body) => {
+    if (body[0] !== "#") return ENTITIES.get(body) ?? whole;
+    const code = body[1] === "x" || body[1] === "X"
+      ? Number.parseInt(body.slice(2), 16)
+      : Number.parseInt(body.slice(1), 10);
+    if (!Number.isFinite(code) || code <= 0 || code > 0x10ffff) return whole;
+    if (code >= 0xd800 && code <= 0xdfff) return whole;
+    if (code < 0x20 && code !== 0x09 && code !== 0x0a) return whole;
+    return String.fromCodePoint(code);
+  });
+}
+
+/**
  * The token stream, shared rather than reimplemented.
  *
  * <p>Exported for SH379, which builds a **tree** over exactly these tokens. Two tokenizers would be

@@ -1500,34 +1500,6 @@ a capture fix's clothes.
 So the question is narrower than it looked: is a replica's canonical worth splitting the
 address space, or is a redirect the honest answer for URLs Shio never owned?
 
-### XVII.52 An entity escaped twice is content nobody can repair (SH476)
-
-The source writes `rerank &amp; media models`, which a reader sees as `rerank & media
-models`. The authorable replica writes `rerank &amp;amp; media models`, which a reader
-sees as `rerank &amp; media models`. The entity is escaped twice.
-
-Extraction keeps `&amp;` as five literal characters instead of decoding it to `&`, and
-the renderer then escapes the `&` it finds — correctly, since it is emitting text into
-HTML. Neither step is wrong on its own; the missing one is the decode at the boundary
-where markup becomes content.
-
-It reaches everything a source spells with an entity: `&`, `&nbsp;`, `&mdash;`,
-`&quot;`, `&lt;`, and the numeric forms. A page that uses them heavily accumulates the
-corruption in every field, and each re-capture escapes what the last one stored — so it
-compounds rather than staying at one layer.
-
-**Fidelity mode is unaffected**, which is why this survived: verbatim markup keeps `&amp;` and renders
-it exactly once. Only the authorable path extracts text into a field, so only the mode nobody had
-finished testing carries it.
-
-The curator is the one who sees it, and cannot fix it in place — the editor field holds
-`&amp;` too, so typing the correction stores `&` and the next capture overwrites it.
-That makes it worse than a display bug: it is content a human cannot repair through the
-surface built for repairing content.
-
-Decode entities when text leaves the markup, and assert a round trip on a source that
-uses one.
-
 ### XVII.53 A mark that labels itself is not a label (SH477)
 
 SH472 spaced the mark correctly and left it in place. A product card on `www.viglet.org`

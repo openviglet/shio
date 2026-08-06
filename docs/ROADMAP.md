@@ -81,7 +81,6 @@
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
 - ⏳ **SH467** (deps: SH385 ✅) **The replica's canonical URL is the mirror of the source's, so every captured link costs a 301** — The route half answers both forms now, but the grammar still collapses the declared slash, so the replica serves /shio as canonical and 301s /shio/ — the source does the opposite. → §XVII.44
-- 📋 **SH476** (deps: SH379 ✅) **Text extracted into a field keeps its HTML entities, so the render escapes them twice** — The capture stores &amp; as five characters and the renderer escapes the ampersand again, so a reader sees the entity and the editor field holds it too. → §XVII.52
 - 📋 **SH477** (deps: SH472 ✅) **A decorative two-letter mark is still the first word of a link's label** — The tile's aria-label equals its own visible text, which says it is a logo, and scanPage reads it as content. → §XVII.53
 - 📋 **SH478** (deps: SH474 ✅) **The three Media Library keys are still fields the File type does not declare** — ALT, CAPTION and TAGS are written by updateMetadata and left undeclared by SH474, so a curator who captions an image turns a green verify red. → §XVII.54
 
