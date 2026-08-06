@@ -135,7 +135,9 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
   // authorable Shio site" and neither of its two modes produced one. Every page needs a layout,
   // because the renderer resolves one per post-type; the layout below serves both modes.
   if (pages.length) {
-    posts.push(pageLayout(markup, site, extras.includes("Theme")));
+    posts.push(pageLayout(markup, site, layoutTheme({
+      site, captured: extras.includes("Theme"), authorable: sections.length > 0 && verbatim === 0,
+    })));
     extras.push("PageLayout");
   }
 
@@ -238,6 +240,48 @@ export const PAGE_BODY_HTML = `{{#if content}}{{{content}}}{{/if}}
 </div>
 </section>
 {{/getRelation}}`;
+
+/**
+ * Which theme the one layout names — the whole of SH510, in one decision.
+ *
+ * <h3>What was being sent</h3>
+ *
+ * <p>An authorable page inlined the captured theme and could not apply it: **1,062,141 of the page's
+ * 1,066,436 bytes** were a stylesheet whose ~2,894 rules met 8 `shio-*` names. Under SH507 that is no
+ * longer a defect to repair but a payload to stop sending — a megabyte on every page of a converted
+ * site, served on the public route with `max-age=300`, for rules that match nothing. And with SH509's
+ * theme in the document there would be **two stylesheets on one page whose order decides the
+ * outcome**, which is the accident SH424 spent a task removing, reintroduced by inclusion rather than
+ * by cascade.</p>
+ *
+ * <h3>The mechanism is the name, not a second `<style>`</h3>
+ *
+ * <p>The layout still emits exactly one `{{theme.css}}`. What changes is **which theme resolves it**:
+ * a layout names its `THEME` by title, so an authorable conversion names `<site> (Shio)` and a
+ * fidelity one names `<site> (captured)`. That is the render model as it already is — no branch in
+ * the template, no second handle, and the vocabulary theme keeps its token compilation (a literal
+ * copy of SH509's CSS in the layout would be a second copy of one stylesheet and would render with
+ * the `:root` block missing).</p>
+ *
+ * <h3>The capture keeps its bytes, and a mixed conversion keeps the captured theme</h3>
+ *
+ * <p>The captured `Theme` post is written exactly as before: **fidelity** inlines it and reaches
+ * 0.00% with it, and the same site converted the other way needs every byte. `authorable` is
+ * therefore `verbatim === 0` and not "has any section" — a conversion where some page was left
+ * verbatim still names the captured theme, because fidelity's claim is a pixel comparison and it
+ * cannot be made without those bytes. That leaves a mixed site's composed pages unstyled, which is
+ * exactly where they are today; what it refuses to do is make a page **worse** than it is now to
+ * make another one better. A site converted both ways holds both themes and uses one per layout,
+ * which is what the render model already supports.</p>
+ *
+ * @returns {string|null} the title to name, or `null` when the document holds no theme at all
+ */
+function layoutTheme({ site, captured, authorable }) {
+  if (authorable) {
+    return vocabularyThemeTitle(site);
+  }
+  return captured ? `${site} (captured)` : null;
+}
 
 /**
  * The shell every page of a converted site renders through (SH449, SH464).
@@ -350,7 +394,7 @@ export const PAGE_BODY_HTML = `{{#if content}}{{{content}}}{{/if}}
  * the same way adding a row does. `ShConvertedLayoutRenderTest` holds that exemption and asserts its
  * premise: a presentation field that becomes free text fails there rather than staying exempt.</p>
  */
-function pageLayout(markup, site, hasTheme) {
+function pageLayout(markup, site, theme) {
   const lang = langOf(markup);
   return {
     url: FIDELITY_LAYOUT_URL,
@@ -359,8 +403,8 @@ function pageLayout(markup, site, hasTheme) {
     data: {
       TITLE: fidelityLayoutTitle(site),
       // A THEME naming a post the site does not have is a marked failure at render time
-      // (`data-shio-theme-missing`), so it is named only when the theme post is in this document.
-      ...(hasTheme ? { THEME: `${site} (captured)` } : {}),
+      // (`data-shio-theme-missing`), so it is named only when that theme post is in this document.
+      ...(theme ? { THEME: theme } : {}),
       HTML: `<!doctype html>
 <html${lang ? ` lang="${lang}"` : ""}>
 <head>
@@ -654,6 +698,13 @@ export function describeConversion({ document, sections, pages = [], verbatim = 
       `  ${verbatim} of ${pages.length} page(s) in fidelity mode — the source's own markup, `
         + `rendered through ${document.postTypeLayout?.[PAGE_TYPE]}`,
     );
+  }
+  // SH510 — which presentation the reviewer is getting, said out loud. Under SH507 it is the mode's
+  // contract rather than an implementation detail, and naming it is also the cheapest statement of
+  // the property the task is about: one stylesheet reaches the page, and this is the one.
+  const theme = document.posts.find((post) => post.type === "PageLayout")?.data?.THEME;
+  if (theme) {
+    lines.push(`  presented by ${theme} — the one stylesheet the layout names`);
   }
   for (const post of document.posts.slice(0, limit)) {
     const title = Object.values(post.data).find((value) => typeof value === "string" && value.trim());

@@ -1645,29 +1645,6 @@ It costs a reader more than it looks. Six candidates on a real site is a short e
 list to read carefully, and one of them being noise makes the reader doubt the other
 five.
 
-### XVII.63 Stop sending what cannot match (SH510)
-
-An authorable page inlines the captured theme and cannot apply it: 1,062,141 bytes of
-the page's 1,066,436 are a stylesheet whose ~2,894 rules meet 8 `shio-*` names. Under
-SH507 that is no longer a defect to repair but a payload to stop sending.
-
-It is not a small saving. A megabyte on every page of a converted site, served on the
-public route with `max-age=300`, for rules that match nothing — and once SH509's theme
-arrives, two stylesheets on one page whose order decides the outcome. That is the
-accident SH424 spent a task removing, reintroduced by inclusion rather than by cascade.
-
-**The capture keeps it.** The `Theme` post is written exactly as today, because **fidelity** mode inlines
-it and reaches 0.00% with it — the same site converted the other way needs every byte. What changes is one
-decision in the authorable layout: it does not emit `{{theme.css}}`, and emits SH509's instead.
-
-So the two modes stop sharing a presentation and each gets the one that fits: verbatim
-markup with the source's own CSS, or the vocabulary with Shio's. A site that has been
-converted both ways holds both themes and uses one per layout, which the render model
-already supports — a `PageLayout` names its `THEME` by title.
-
-The measurement is the proof and it is cheap: the page's byte count drops by the size of
-the captured CSS, and the count of stylesheets on it is one.
-
 ### XVII.64 A decision is not a loss (SH511)
 
 `propose` reports `loses: 311 class name(s) — all styling` per candidate, and

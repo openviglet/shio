@@ -533,6 +533,24 @@ it. Four decisions worth keeping:
   silently: every role in `LAYOUT_ROLES` is styled, every `var()` the stylesheet reads is a token the
   theme declares, and **every token it declares is read** — a token nothing uses is a field a curator
   can edit to no effect. And nothing in it names a section type.
+- **And the layout names the theme the page can apply, which is where the megabyte goes (SH510).**
+  An authorable page inlined the captured theme and could not apply it: **1,062,141 of the page's
+  1,066,436 bytes** were a stylesheet whose ~2,894 rules met 8 `shio-*` names — served on the public
+  route with `max-age=300` — and with SH509's theme in the document that would have become *two*
+  stylesheets on one page whose order decides the outcome, the accident SH424 removed, reintroduced
+  by inclusion rather than by cascade. **The mechanism is the name, not a second `<style>`:** the
+  layout still emits exactly one `{{theme.css}}`, and `layoutTheme` decides which post resolves it —
+  `<site> (Shio)` for an authorable conversion, `<site> (captured)` for a fidelity one. No template
+  branch, no second handle, and the vocabulary theme keeps its token compilation, which a literal
+  copy of the CSS in the layout would lose along with being a second copy of one stylesheet.
+  **`authorable` is `verbatim === 0`, not "has any section"** — a conversion that left a page verbatim
+  still names the captured theme, because fidelity's claim is a pixel comparison and cannot be made
+  without those bytes. A mixed site's composed pages stay unstyled, which is where they are today;
+  what the rule refuses is making one page *worse* than it is now to make another better. The capture
+  is written byte for byte as before. The test measures rather than asserts a name: against a
+  ~1.04 MB captured stylesheet the named theme is **under 1%** of it, there is exactly one
+  `{{theme.css}}`, and `convert`'s report names the theme, because under SH507 which presentation a
+  reviewer is getting is the mode's contract and not an implementation detail.
 - **The binding rides the document** (`postTypeLayout`, new on `ShAgentDesiredState`), because a
   layout nobody bound renders nothing and no `post.upsert` can express that edge — without it
   `--out` would emit an un-appliable file. It compiles to a **second** `site.upsert` after

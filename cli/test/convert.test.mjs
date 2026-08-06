@@ -693,6 +693,95 @@ test("SH509: the theme styles every role SH508 declares, and assumes no section 
   );
 });
 
+// --- SH510: one stylesheet on the page, and it is the one that can match ---
+
+/** ~1.04 MB, the order of magnitude the task was filed on rather than a token stand-in. */
+const CAPTURED_CSS = ".a{color:red}".repeat(80_000);
+
+const withCapturedTheme = (extra = {}) => ({
+  candidates: [candidate("b1a2"), candidate("c3d4")],
+  theme: { rows: [{ path: "brand", source: "declared" }], css: CAPTURED_CSS, tokens: {} },
+  ...extra,
+});
+
+test("SH510: an authorable conversion is presented by the theme it can apply", () => {
+  // The measurement SH507 was filed on: 1,062,141 of an authorable page's 1,066,436 bytes were a
+  // captured stylesheet whose ~2,894 rules met 8 shio-* names. So the assertion is a ratio, not a
+  // claim about a name.
+  const { document } = buildConversion({
+    proposal: withCapturedTheme({ pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }] }),
+    plan: { accepted: [{ block: "b1a2", type: "SectionHero" }] },
+    site: "Acme",
+  });
+
+  const layout = document.posts.find((post) => post.type === "PageLayout");
+  assert.equal(layout.data.THEME, vocabularyThemeTitle("Acme"));
+  const named = document.posts.find((post) => post.data.TITLE === layout.data.THEME);
+  assert.ok(
+    named.data.CSS.length < CAPTURED_CSS.length / 100,
+    `the page carries ${named.data.CSS.length} bytes of stylesheet instead of ${CAPTURED_CSS.length}`
+      + " - a megabyte on every page of a converted site, served with max-age=300, for rules that"
+      + " match nothing",
+  );
+  assert.equal(
+    document.posts.find((post) => post.data.TITLE === "Acme (captured)").data.CSS, CAPTURED_CSS,
+    "and the capture keeps every byte: fidelity inlines it and reaches 0.00% with it, so the same "
+      + "site converted the other way needs all of them",
+  );
+  assert.equal(
+    layout.data.HTML.split("{{theme.css}}").length - 1, 1,
+    "one handle, not two. Two stylesheets on one page would make the cascade depend on which came "
+      + "first, which is the accident SH424 spent a task removing - reintroduced by inclusion",
+  );
+  assert.equal(layout.data.HTML.split("<style>").length - 1, 1);
+});
+
+test("SH510: a conversion that left a page verbatim still names the captured theme", () => {
+  // `authorable` is `verbatim === 0` and not "has any section". A mixed site's composed pages stay
+  // unstyled, which is exactly where they are today; what this refuses to do is make a page worse
+  // than it is now in order to make another one better.
+  const { document, verbatim } = buildConversion({
+    proposal: withCapturedTheme({
+      pages: [
+        { path: "/", title: "Home", blocks: ["b1a2"] },
+        { path: "/about", title: "About", blocks: ["c3d4"] },
+      ],
+    }),
+    plan: { accepted: [{ block: "b1a2", type: "SectionHero" }] },
+    site: "Acme",
+    markup: new Map([["/about", "<html><body><p>Words.</p></body></html>"]]),
+  });
+
+  assert.equal(verbatim, 1);
+  assert.equal(
+    document.posts.find((post) => post.type === "PageLayout").data.THEME, "Acme (captured)",
+    "fidelity's claim is a pixel comparison and it cannot be made without those bytes",
+  );
+});
+
+test("SH510: a fidelity conversion is untouched, and one with no theme at all names none", () => {
+  const fidelity = buildConversion({
+    proposal: withCapturedTheme({ pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }] }),
+    plan: {},
+    site: "Acme",
+    markup: new Map([["/", "<html><body><p>Words.</p></body></html>"]]),
+  });
+  assert.equal(
+    fidelity.document.posts.find((post) => post.type === "PageLayout").data.THEME, "Acme (captured)");
+
+  const bare = buildConversion({
+    proposal: { candidates: [candidate("b1a2")], pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }] },
+    plan: {},
+    site: "Acme",
+    markup: new Map([["/", "<html><body><p>Words.</p></body></html>"]]),
+  });
+  assert.ok(
+    !("THEME" in bare.document.posts.find((post) => post.type === "PageLayout").data),
+    "a THEME naming a post the site does not have is a marked failure at render time, so a document "
+      + "with no theme in it names none",
+  );
+});
+
 test("SH417: no --site is refused before anything is read", async () => {
   const ctx = ctxWith();
 
