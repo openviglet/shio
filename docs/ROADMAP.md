@@ -24,6 +24,7 @@
 - 📋 **SH397** (deps: SH295 ✅, SH325 ✅) **A dev instance reports its version as dev, so a stale server reads as a code defect** — The build stamp comes from the jar manifest, which is absent in the one mode where the running instance can lag the working tree, and nothing composes the readiness facts. → §IX.12
 - 📋 **SH423** (deps: SH347 ✅) **The test-context budget is a ceiling nobody sees approaching** — ShContextCacheHeadroomTest fails once 64 is crossed and nothing says a task is spending one, so eleven tasks took the count from 38 to 44 with no moment anybody was asked. → §VIII.20
 - 📋 **SH500** (deps: SH460 ✅) **The staleness guard cancels the whole suite on an instance running HEAD** — It compares builtAt with HEAD's commit time after the commit already matched, and a build precedes its commit by seconds, so the ordinary order reads as stale. → §IX.29
+- 📋 **SH501** (deps: SH470 ✅) **url-missing fires on every uploaded File, so a perfect replica reports errors** — A File post is defined by having no friendly URL and is reached by path, yet the rule demands one and offers a post.move that would corrupt the model. → §IX.30
 
 ## Block I — Content as files (local-first authoring)
 
@@ -84,6 +85,7 @@
 - ⏳ **SH467** (deps: SH385 ✅) **The replica's canonical URL is the mirror of the source's, so every captured link costs a 301** — The route half answers both forms now, but the grammar still collapses the declared slash, so the replica serves /shio as canonical and 301s /shio/ — the source does the opposite. → §XVII.44
 - 📋 **SH477** (deps: SH472 ✅) **A decorative two-letter mark is still the first word of a link's label** — The tile's aria-label equals its own visible text, which says it is a logo, and scanPage reads it as content. → §XVII.53
 - 📋 **SH478** (deps: SH474 ✅) **The three Media Library keys are still fields the File type does not declare** — ALT, CAPTION and TAGS are written by updateMetadata and left undeclared by SH474, so a curator who captions an image turns a green verify red. → §XVII.54
+- 📋 **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
 
 ## Block F — Market positioning
 

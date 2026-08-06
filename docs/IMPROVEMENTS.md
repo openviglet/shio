@@ -400,6 +400,31 @@ It is SH460's own shape turned around: the instrument written so a red run could
 the stale side now names a current instance as stale. Assert both directions — a
 genuinely old instance is caught, and a current one runs.
 
+### IX.30 A rule for content posts applied to a File (SH501)
+
+A pixel-identical replica reports three errors. All three are `url-missing` — "This post
+is published but has no friendly URL, so no route reaches it" — and all three are the
+`File` posts a fidelity capture uploads: `viglet-logo.png`, `inter-latin.woff2`,
+`plus-jakarta-sans-latin.woff2`.
+
+A `File` post never has a friendly URL. That is the type's design, stated in SH437's own
+rationale, and it is why the asset route exists: bytes are reached at
+`/file_source/<id>/<name>` and, since SH437, at the path the source used. All three
+resolve **200** on the same run that calls them unreachable.
+
+The remedy the message offers is worse than the finding. It hands over a `post.move` op
+to "give it one", which would put a friendly URL on a type that is defined by not having
+one — so a reader who trusts the error makes the content model wrong.
+
+This is SH470's family, one rule along: a check written for content posts is applied to
+`File` without asking what the type is. SH470 was `File.FILE` read as an address; this
+is `File` expected to have a furl. Both fire on every asset a capture uploads, so both
+scale with the size of the replica — the fidelity run here has three, and the six-page
+`viglet.org` capture has eighteen.
+
+The exemption is what `File` already declares. And the assertion is the one that keeps catching these:
+**a replica whose every reference answers 200 must verify clean**, which is the state this run was in.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -1571,6 +1596,30 @@ because the File form is one a curator actually opens.
 
 The measurement is already written: `ShFilePostTypeSourceTest.STILL_UNDECLARED` holds
 the three with their reasons and fails if one is declared without being removed.
+
+### XVII.55 Two templates, and neither serves an authorable replica (SH502)
+
+SH446 made a scaffold installable by writing the version the registry has: the built-in
+template asks for `@viglet/shio-client@^2026.2.1` and `npm install --dry-run` resolves.
+The half it did not reach is the one an authorable replica needs.
+
+Two templates, and neither combination delivers one. The **built-in** template installs and carries no
+sections renderer — `shio-client` only, nothing under `app/` or `lib/` that reads a Page's `sections`. The
+**`marketing-site`** blueprint does render them, and asks for `@viglet/shio-sections@^2026.3.1`, which
+answers **E404**: it has never been published, and neither has `@viglet/shio-model`.
+
+So a fidelity replica has two working paths — Shio's own renderer, or a front end it
+does not need — and an authorable replica has none. Its content is sections, and the
+only scaffold that draws sections cannot be installed.
+
+The measurement is one command per template and it was not in SH446's scope, which asked
+for the scaffold to install and got that. It is the same split the skill names: the
+version write is the report, the publish is the behaviour, and only the first shipped.
+
+Publishing `shio-sections` is the whole fix, and until it lands the built-in template
+should not be offered for a site whose pages hold sections — `init --site` knows the
+site and can read whether its Pages carry any, so the wrong scaffold is refusable rather
+than silently useless.
 
 ## XVIII End-user documentation for 2026.3 (Block R)
 
