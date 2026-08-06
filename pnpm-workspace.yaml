@@ -22,6 +22,19 @@ onlyBuiltDependencies:
 # the install (ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY) — let it purge silently.
 confirmModulesPurge: false
 
+# An unmet peer range was a warning nobody reads, and the console bundle became
+# undeliverable (SH242): a grouped Dependabot bump set monaco-editor to 0.56.0 while
+# monaco-graphql declares "monaco-editor: >= 0.20.0 < 0.53", pnpm resolved it anyway,
+# and `pnpm run compile:build` — i.e. `mvn package` and the release jar — died in the
+# Monaco worker bundle. This turns "resolved a version the dependent does not support"
+# into ERR_PNPM_PEER_DEP_ISSUES at the bump, which is the only moment it is cheap.
+# It fires on a *resolving* install, so a manifest change (what a bump is) is checked;
+# an install against an unchanged lockfile is not, which is why the resolution itself
+# is asserted too (shio-react/test/monaco-workers-resolve.test.mjs).
+# Note the setting belongs here and not in .npmrc: pnpm 11 reads it only from this file,
+# and in .npmrc it silently downgrades to the warning it is meant to replace.
+strictPeerDependencies: true
+
 minimumReleaseAgeExclude:
   - '@viglet/viglet-design-system@2026.3.2'
 

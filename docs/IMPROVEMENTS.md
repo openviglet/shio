@@ -1373,34 +1373,6 @@ asserted at the level the agent surface is.
 > SH164/SH239 precedent, that a test asserting something about the whole instance has to boot
 > its own database.
 
-### XVI.2 An unmet peer range is not a build failure (SH242)
-
-`monaco-graphql@1.8.0` declares `peerDependencies: { "monaco-editor": ">= 0.20.0 < 0.53"
-}`. A Dependabot bump set the console's direct dependency to `monaco-editor: 0.56.0`;
-pnpm resolved it, and nothing failed.
-
-What made it fatal rather than unsupported is that 0.56 introduced an `exports` map
-(`"."`, `"./*.js"`, `"./*"`) whose patterns re-prefix `esm/vs/`, so
-`monaco-editor/esm/vs/editor/editor.worker` expands to
-`esm/vs/esm/vs/editor/editor.worker.js` and resolves to nothing — and 0.56 had also
-*removed* files monaco-graphql imports outright (`esm/vs/editor/edcore.main.js`). `pnpm
-run compile:build` therefore failed, which is `mvn package`, the release jar and the
-SH182 check.
-
-The fix was a pin, not a shim: `@graphiql/react` already pins `monaco-editor@0.52.2`, so
-the console's `0.56.0` was the outlier; aligning on it satisfies the peer range and
-collapses three Monaco copies to one. The first attempt was a Vite `resolve` alias
-remapping the broken prefix, and why it was wrong is worth recording: it made two
-specifiers resolve and failed on a third, because the packages are incompatible and an
-alias hides the symptom at whichever import the bundler reaches first. **A build error
-that moves when you patch it is telling you the version is wrong.**
-
-The generalizable half is the guard. This is a **resolution** fact — true the moment the
-lockfile is written, invisible to every runtime test — so the instrument is the
-installer: `strict-peer-dependencies` (pnpm defaults it off) turns "resolved a version
-the dependent does not support" into a refusal, the only thing that would have caught
-this at the bump.
-
 ### XVI.3 A trashed post still holds its friendly URL, and nothing knows it (SH243)
 
 `ShPostUnified` carries `@SQLRestriction("deleted_date is null")`, which makes the SH55 trash

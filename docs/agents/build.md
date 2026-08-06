@@ -98,6 +98,27 @@ placement nor the dependency reaches consumers — a devDependency is not instal
 `browser-refusal.test.mjs` asserts they resolve, because every other browser test injects its capture
 and so the whole suite passed while the commands could not run at all.
 
+**An unmet peer range now refuses the install, because as a warning it cost the whole bundle
+(SH242).** A grouped Dependabot bump set `shio-react`'s `monaco-editor` to `0.56.0` while
+`monaco-graphql@1.8.0` declares `peerDependencies: { "monaco-editor": ">= 0.20.0 < 0.53" }`. pnpm
+resolved it, warned, and failed nothing — then `pnpm run compile:build` (i.e. `mvn package`, the
+release jar) died in the Monaco worker bundle with `Rolldown failed to resolve import
+"monaco-editor/esm/vs/editor/editor.worker"` and no line of ours in the trace. What made it fatal
+rather than merely unsupported: 0.56 added an `exports` map whose patterns re-prefix `esm/vs/`, so
+every `monaco-editor/esm/vs/…` deep path — used by monaco-graphql, by `@graphiql/react` and by our
+own `src/lib/monaco-workers.ts` — expands to `esm/vs/esm/vs/…` and resolves to nothing. **The fix is
+the pin, not an alias**: `@graphiql/react` already depends on `0.52.2`, so `0.56.0` was the outlier,
+and aligning on it satisfies the peer range and collapses the copies to one. A Vite `resolve` alias
+remapping the broken prefix was tried first and is the wrong shape — it makes some specifiers
+resolve and fails at whichever import the bundler reaches next, because the packages are
+incompatible. Two guards, because neither covers the other's moment: `strictPeerDependencies: true`
+in `pnpm-workspace.yaml` turns the bump itself into `ERR_PNPM_PEER_DEP_ISSUES` (it fires only when a
+manifest change makes pnpm *resolve*, and it belongs in that file — in `.npmrc` pnpm 11 silently
+downgrades it to the warning it replaces), and
+`shio-react/test/monaco-workers-resolve.test.mjs` scans those three sources for their Monaco
+specifiers and resolves each one, so a tree that stops resolving is red without a build. Dependabot
+is capped at `0.52.x` for this dependency; lift it when GraphiQL moves.
+
 ### Maven Integration
 `frontend-maven-plugin` (2.0.0) in `shio-app/pom.xml` runs, all from `../shio-react`:
 1. `install-node-and-pnpm` (Node `v26.3.1` + pnpm `11.8.0`)
