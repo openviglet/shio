@@ -61,6 +61,30 @@ Two rules for editing that file:
   the agent surface's own budget tests. SH533 replaces the hand-copied list with
   the benchmark's JSON artefact, which is the only version that cannot drift.
 
+## The Markdown twins
+
+Every route also emits `<path>.md` — `/` → `/index.md`, everything else appends
+`.md`. Across the ten routes that is ~64 KB of Markdown against ~465 KB of HTML,
+and the prerender prints the ratio on every build.
+
+The twin is **converted from the same render**, not written separately: the copy
+lives in `src/lib/*-content.ts` but the *composition* lives in the JSX, so
+generating Markdown from the data alone would re-declare that composition and
+the two would drift. [`scripts/markdown.mjs`](scripts/markdown.mjs) does the
+conversion and carries the reasoning; it is the one piece of real logic here and
+therefore the one piece with a test (`pnpm --filter shio-site test`).
+
+Two things to know when writing a page:
+
+- The nav and the footer never reach a twin — only `<main>` is converted.
+- **`data-md-skip` on an element drops it from the twin**, children included.
+  The call to action carries it: it converts a reader and costs an agent forty
+  identical words on ten pages.
+
+`dist/manifest.json` lists the routes, their twins and their sizes in the shape
+`/api/v2/agent/manifest` uses, so the discovery pattern the product teaches is
+the one this site is discovered by.
+
 ## Static assets
 
 Served from the site root, in [`public/`](public/): `robots.txt`, `sitemap.xml`,
@@ -87,7 +111,6 @@ for that repository.
 ## Backlog
 
 Block S in [`docs/ROADMAP.md`](../docs/ROADMAP.md) — the transcript player
-(SH531), the plotted token budget (SH533), the markdown twins (SH537) and the
-public demo instance (SH540).
+(SH531), the plotted token budget (SH533) and the public demo instance (SH540).
 The design behind each is `§XIX` in
 [`docs/IMPROVEMENTS.md`](../docs/IMPROVEMENTS.md).

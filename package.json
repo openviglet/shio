@@ -23,7 +23,7 @@
     "dev:site": "pnpm --filter shio-site run dev",
     "typecheck": "pnpm --filter @viglet/shio-client --filter @viglet/shio-react-sdk --filter @viglet/shio-sections --filter shio-site run typecheck",
     "lint": "pnpm -r run lint",
-    "test": "pnpm --filter @viglet/shio-client --filter @viglet/shio-model --filter @viglet/shio-sections --filter @viglet/create-shio-app --filter @viglet/shio --filter @viglet/shio-claude-plugin --filter shio-react run test",
+    "test": "pnpm --filter @viglet/shio-client --filter @viglet/shio-model --filter @viglet/shio-sections --filter @viglet/create-shio-app --filter @viglet/shio --filter @viglet/shio-claude-plugin --filter shio-react --filter shio-site run test",
     "conformance": "pnpm --filter @viglet/shio run conformance",
     "clean": "rimraf \"**/node_modules\" \"**/dist\" \"**/build\""
   },

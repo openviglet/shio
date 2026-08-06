@@ -1900,24 +1900,6 @@ The frame is P2, not arithmetic: the comparison that matters is one call against
 session of crawling REST endpoints it replaces, and the honest version of that
 comparison draws both bars.
 
-### XIX.8 A site an agent can read (SH537)
-
-P4 says files beat APIs for authoring because `Edit`, `Write` and `Grep` are an agent's
-cheapest tools. The same reasoning applies to the marketing site, and a Claude
-Code-first product that makes an agent parse hydrated markup to learn what it does is
-failing its own argument in the first thing anybody reads.
-
-Every prerendered route therefore also emits a markdown twin at `<path>.md` - the same
-content, authored once and rendered twice, because two hand-maintained copies diverge
-and the divergence lands in the version nobody reads. `llms.txt` becomes complete rather
-than decorative: the routes, the packages, the endpoints, the MCP tools and resources,
-and the address forms. And the site publishes a small manifest of itself, in the shape
-`/agent/manifest` already uses, so the discovery pattern the product teaches is the one
-the site is discovered by.
-
-The test is one an agent can run: fetch the site, answer "what can this do and what
-would the first call be", and pay for one page rather than for a bundle.
-
 ### XIX.11 A public instance to point at (SH540)
 
 Turing's landing page went from a scripted demo to a genuinely live one by pointing the

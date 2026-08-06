@@ -12,7 +12,8 @@
     "build:ssr": "vite build --ssr src/entry-server.tsx --outDir dist-ssr",
     "prerender": "node scripts/prerender.mjs",
     "typecheck": "tsc -b --noEmit",
-    "lint": "tsc -b --noEmit"
+    "lint": "tsc -b --noEmit",
+    "test": "node --test scripts/markdown.test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dropdown-menu": "^2.1.24",

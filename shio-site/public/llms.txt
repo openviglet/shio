@@ -6,6 +6,17 @@
 > SDKs). Open source, self-hosted. Shio hosts no model and no prompts — it is the
 > substrate an external agent drives.
 
+## Read the Markdown, not the HTML
+
+Every route on this site is also published as Markdown at `<path>.md` — the same content,
+converted from the same render, with the navigation and the footer left out. Across the ten
+routes that is about 64 KB of Markdown against 465 KB of HTML.
+
+- `/` → https://shio.viglet.org/index.md
+- any other route → append `.md`, e.g. https://shio.viglet.org/features/rendering.md
+- https://shio.viglet.org/manifest.json — the routes, their twins and their sizes, in the
+  shape `/api/v2/agent/manifest` uses
+
 ## Pages on this site
 
 - [/](https://shio.viglet.org/): what Shio is, one section per design law
@@ -56,6 +67,17 @@ this server sends nothing unprompted.
 
 `shio://manifest` · `shio://context` · `shio://ops` · `shio://blueprints` ·
 `shio://schema/{postType}` · `shio://blueprint/{name}`
+
+## Endpoints an agent uses
+
+- `GET /api/v2/agent/manifest` — capabilities, limits, a curated endpoint index
+- `GET /api/v2/agent/context` — model, sitemap, conventions, write vocabulary, digest
+- `GET /api/v2/agent/find` · `GET /api/v2/agent/read` — search and read
+- `POST /api/v2/agent/batch` — the write vocabulary; `dryRun` plans instead of applying
+- `GET /api/v2/agent/verify` · `GET /api/v2/agent/render` — the lint and the render digest
+- `GET /api/v2/agent/changes` · `GET /api/v2/agent/diagnostics` · `/api/v2/agent/memory`
+- `GET /api/v2/cda/**` — the delivery API; `POST /api/graphql` for the GraphQL shape
+- `POST /mcp` — the same capabilities over MCP
 
 ## Addresses
 

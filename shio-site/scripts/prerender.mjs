@@ -16,6 +16,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
+import { pageToMarkdown } from "./markdown.mjs";
 
 const SITE_ORIGIN = "https://shio.viglet.org";
 const distDir = resolve(process.cwd(), "dist");
@@ -73,15 +74,89 @@ function buildHtml(route) {
   return html;
 }
 
+/**
+ * SH537 — the Markdown twin, at `<path>.md`.
+ *
+ * A Claude Code-first product that answers an agent only in hydrated markup is
+ * failing its own argument in the first thing anybody reads. The twin is not a
+ * second copy of the page: it is the same render, converted — see markdown.mjs
+ * for why that direction and not the other.
+ */
+function markdownPathFor(route) {
+  return route.path === "/"
+    ? resolve(distDir, "index.md")
+    : resolve(distDir, `.${route.path}.md`);
+}
+
+const index = [];
+
 for (const route of routes) {
   const html = buildHtml(route);
+  const canonical = `${SITE_ORIGIN}${route.path === "/" ? "/" : route.path}`;
+
   const outFile =
     route.path === "/"
       ? resolve(distDir, "index.html")
       : resolve(distDir, `.${route.path}`, "index.html");
   mkdirSync(dirname(outFile), { recursive: true });
   writeFileSync(outFile, html, "utf-8");
-  console.log(`prerendered ${route.path} -> ${outFile.replace(distDir, "dist")}`);
+
+  const mdFile = markdownPathFor(route);
+  const markdown = pageToMarkdown(html, {
+    title: route.title,
+    description: route.description,
+    canonical,
+  });
+  mkdirSync(dirname(mdFile), { recursive: true });
+  writeFileSync(mdFile, markdown, "utf-8");
+
+  const mdPath = route.path === "/" ? "/index.md" : `${route.path}.md`;
+  index.push({
+    path: route.path,
+    markdown: mdPath,
+    title: route.title,
+    description: route.description,
+    bytes: { html: Buffer.byteLength(html), markdown: Buffer.byteLength(markdown) },
+  });
+
+  console.log(
+    `prerendered ${route.path} -> ${outFile.replace(distDir, "dist")}` +
+      ` + ${mdPath} (${Math.round(Buffer.byteLength(markdown) / 1024)} KB` +
+      ` vs ${Math.round(Buffer.byteLength(html) / 1024)} KB)`
+  );
 }
 
-console.log(`\nprerendered ${routes.length} route(s).`);
+/**
+ * The site's own manifest, in the shape `/api/v2/agent/manifest` uses — because
+ * the discovery pattern the product teaches should be the one the site is
+ * discovered by. `builtAt` is here for the reason SH460 put it on the product's
+ * manifest: a client that cannot date what answered it cannot tell a current
+ * site from a cached one.
+ */
+const manifest = {
+  identity: {
+    name: "Viglet Shio",
+    kind: "marketing-site",
+    origin: SITE_ORIGIN,
+    builtAt: new Date().toISOString(),
+  },
+  startHere:
+    "Every route has a Markdown twin at <path>.md — fetch that instead of the HTML. " +
+    "/llms.txt is the whole product in one file.",
+  routes: index,
+  product: {
+    docs: "https://docs.viglet.org/shio/",
+    source: "https://github.com/openviglet/shio",
+    mcp: "claude mcp add shio -- npx @viglet/shio mcp",
+    firstCall: "GET /api/v2/agent/manifest?include=features,limits",
+  },
+};
+writeFileSync(resolve(distDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf-8");
+
+const htmlBytes = index.reduce((n, r) => n + r.bytes.html, 0);
+const mdBytes = index.reduce((n, r) => n + r.bytes.markdown, 0);
+console.log(
+  `\nprerendered ${routes.length} route(s), each with a Markdown twin.` +
+    ` ${Math.round(mdBytes / 1024)} KB of Markdown against ${Math.round(htmlBytes / 1024)} KB of HTML` +
+    ` — ${Math.round((1 - mdBytes / htmlBytes) * 100)}% smaller.`
+);

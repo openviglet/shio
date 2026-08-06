@@ -6,7 +6,10 @@ import { LINKS } from "@/lib/site-content";
 
 export function CallToAction() {
   return (
-    <section className="py-20">
+    // `data-md-skip`: the Markdown twin of every route would otherwise carry
+    // this identically (SH537). It converts a reader; it costs an agent forty
+    // words ten times over.
+    <section className="py-20" data-md-skip>
       <Container>
         <div className="relative isolate overflow-hidden rounded-3xl border border-white/10 bg-[#150e0c] px-6 py-16 text-center text-white">
           <div className="grid-bg pointer-events-none absolute inset-0 -z-10" />
