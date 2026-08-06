@@ -16,7 +16,7 @@ export function Blueprints() {
           description="Everything an agent is told to do in a tutorial is something it could instead be handed as a unit: post types, folders, content and the files a front end needs, converged in one transaction."
         />
 
-        <ol className="grid gap-4 md:grid-cols-3">
+        <ol className="grid gap-4 md:grid-cols-3 [&>*]:min-w-0">
           {BLUEPRINT_STEPS.map((s, i) => (
             <li key={s.title} className="relative rounded-xl border border-border bg-card p-5">
               <span className="font-mono text-xs font-bold text-muted-foreground">

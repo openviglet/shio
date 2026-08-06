@@ -36,7 +36,7 @@ export function Laws() {
                   {...(law.anchor ? { href: law.anchor } : {})}
                   className="group flex h-full gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-5 transition-colors hover:border-[#ff6347]/40 hover:bg-white/[0.06]"
                 >
-                  <span className="mt-0.5 shrink-0 rounded-lg border border-[#ff6347]/35 bg-[#ff6347]/12 px-2 py-1 font-mono text-sm font-black text-[#ff9478]">
+                  <span className="mt-0.5 shrink-0 self-start rounded-lg border border-[#ff6347]/35 bg-[#ff6347]/12 px-2 py-1 font-mono text-sm font-black text-[#ff9478]">
                     {law.id}
                   </span>
                   <span className="min-w-0">

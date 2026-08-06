@@ -51,7 +51,7 @@ export function SelfHost() {
           description="Nothing here phones home, and there is no hosted tier you are being funnelled towards. Clone it, read it, run it."
         />
 
-        <div className="grid items-start gap-8 lg:grid-cols-[1fr_1fr]">
+        <div className="grid items-start gap-8 lg:grid-cols-[1fr_1fr] [&>*]:min-w-0">
           <div className="space-y-4">
             {FACTS.map((f) => (
               <div key={f.title} className="flex gap-4 rounded-xl border border-border bg-card p-5">

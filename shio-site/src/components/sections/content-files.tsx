@@ -24,7 +24,7 @@ export function ContentFiles() {
           description="So the site is projected to disk. Pull it, edit it with the tools the agent already has, push it back — with a three-way merge underneath, because the instance moved while you were working."
         />
 
-        <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className="grid items-start gap-6 lg:grid-cols-2 [&>*]:min-w-0">
           <CodeBlock caption="shio pull --content" code={CONTENT_TREE} highlight={false} />
           <div className="space-y-6">
             <CodeBlock caption="shio/content/acme/launch.md" code={CONTENT_FILE} />

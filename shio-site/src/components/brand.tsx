@@ -29,6 +29,14 @@ export function Container({ className, ...props }: React.ComponentProps<"div">) 
  * Horizontally-scrollable table wrapper for mobile, with a right-edge fade that
  * hints "more columns →" on small screens. Pair it with a `sticky left-0` first
  * column so the row label stays put while the value columns scroll.
+ *
+ * The wrapper is `overflow-hidden` and that is load-bearing, not tidiness.
+ * Measured at 375px: the inner `overflow-x-auto` box lays out at 327 and scrolls
+ * a 608px table correctly, and the wrapper still reported `scrollWidth` 527 —
+ * which made the whole document scroll sideways by 176px. It is not the sticky
+ * column (removing it changes nothing); some of the scroll container's own
+ * overflow reaches the ancestor's scrollable area. Clipping here costs nothing:
+ * the fade is `absolute right-0` inside these same bounds.
  */
 export function TableScroll({
   className,
@@ -40,7 +48,7 @@ export function TableScroll({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative">
+    <div className="relative overflow-hidden">
       <div className={cn("overflow-x-auto", className)}>{children}</div>
       <div
         aria-hidden

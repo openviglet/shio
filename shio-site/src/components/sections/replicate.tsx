@@ -26,7 +26,7 @@ export function Replicate() {
           </p>
         </div>
 
-        <ol className="relative grid gap-6 md:grid-cols-3">
+        <ol className="relative grid gap-6 md:grid-cols-3 [&>*]:min-w-0">
           {CLONE_STEPS.map((s, i) => (
             <li key={s.step} className="rounded-xl border border-border bg-card p-6">
               <div className="flex items-center gap-2">

@@ -1859,27 +1859,6 @@ The site is also written for the reader it is about. An agent evaluating a CMS r
 page it was handed, and a Claude Code-first product that answers only in HTML is making
 its own argument badly.
 
-### XIX.1 The site itself (SH530)
-
-The foundation and the landing page, in one task, because a site app with no page on it
-is not a deliverable anybody can judge. `shio-site/` joins the pnpm workspace beside the
-other JS packages, with the same stack Turing's site runs and the same two-pass build:
-`vite build` for the client, a second SSR pass for `entry-server`, then a prerender step
-that writes one static `index.html` per route. No router - a pathname maps to a page by
-one regular expression the server and the client both read - so the bleeding-edge Vite
-this workspace tracks has nothing framework-shaped to break.
-
-The brand is Shio's own: tomato (`#FF6347`, the Viglet product colour the `Sh` mark
-already uses) on a warm near-black, against Turing's royal blue on cold navy. Type is
-the house pair - Plus Jakarta Sans and JetBrains Mono - because a sibling site should
-read as a sibling; the differentiation is colour, the terminal motif and the argument,
-not a second typeface.
-
-The landing page is ordered as an argument rather than a feature list: hook, the loop
-running, the two operators, the ten laws, then one section per law that a reader can
-check. `public/` carries what a site owes a crawler - robots, sitemap, favicons, an OG
-card - and a first `llms.txt`.
-
 ### XIX.2 The session is the demo (SH531)
 
 Turing's landing page has a search box a visitor types into, and the answer that comes

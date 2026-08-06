@@ -14,7 +14,7 @@ export function Errors() {
   return (
     <section id="errors" className="py-20">
       <Container>
-        <div className="grid items-center gap-10 lg:grid-cols-[1fr_1fr]">
+        <div className="grid items-center gap-10 lg:grid-cols-[1fr_1fr] [&>*]:min-w-0">
           <div>
             <Eyebrow>P6 &mdash; failure</Eyebrow>
             <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">

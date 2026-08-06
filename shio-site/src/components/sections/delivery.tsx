@@ -28,7 +28,7 @@ export function Delivery() {
           description="REST and GraphQL, a zero-dependency TypeScript client, a React SDK, a shared section vocabulary and a Next.js starter that is generated rather than copied out of a tutorial."
         />
 
-        <div className="grid items-start gap-8 lg:grid-cols-[0.95fr_1.05fr]">
+        <div className="grid items-start gap-8 lg:grid-cols-[0.95fr_1.05fr] [&>*]:min-w-0">
           <div>
             <CodeBlock caption="the delivery client" code={DELIVERY_SNIPPET} />
             <div className="mt-4 rounded-xl border border-border bg-card p-5">
@@ -43,7 +43,7 @@ export function Delivery() {
             </div>
           </div>
 
-          <ul className="grid gap-3">
+          <ul className="grid gap-3 [&>*]:min-w-0">
             {PACKAGES.map((p) => (
               <li key={p.name}>
                 <a

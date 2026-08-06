@@ -19,7 +19,7 @@ export function Surface() {
           description="MCP is a shape over the delivery API and the console services — never a parallel semantic. Whatever the agent can do here it can also do from the CLI and over REST, in that order, by law."
         />
 
-        <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] [&>*]:min-w-0">
           <div className="rounded-2xl border border-border bg-card p-6">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="font-mono text-sm font-bold">POST /mcp</h3>

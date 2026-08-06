@@ -24,7 +24,9 @@ import { TRANSCRIPT } from "@/lib/site-content";
  */
 export function AgentTranscript({ className }: { className?: string }) {
   const [shown, setShown] = useState(TRANSCRIPT.length);
+  const [playing, setPlaying] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLOListElement>(null);
 
   useEffect(() => {
     if (globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
@@ -36,6 +38,7 @@ export function AgentTranscript({ className }: { className?: string }) {
     let timer: number | undefined;
 
     const play = () => {
+      setPlaying(true);
       setShown(1);
       let i = 1;
       timer = window.setInterval(() => {
@@ -62,6 +65,17 @@ export function AgentTranscript({ className }: { className?: string }) {
     };
   }, []);
 
+  // Follow the newest step down. The panel is shorter than the finished
+  // transcript on purpose — a session scrolls — but only while it is playing:
+  // scrolling a static block of text the visitor has not started reading is the
+  // opposite of helpful.
+  useEffect(() => {
+    if (!playing) return;
+    const list = listRef.current;
+    const last = list?.children[shown - 1];
+    last?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [shown, playing]);
+
   const done = shown >= TRANSCRIPT.length;
 
   return (
@@ -86,7 +100,10 @@ export function AgentTranscript({ className }: { className?: string }) {
         </span>
       </div>
 
-      <ol className="max-h-[26rem] space-y-4 overflow-y-auto px-4 py-4 font-mono text-[0.8rem] leading-relaxed sm:text-[0.84rem]">
+      <ol
+        ref={listRef}
+        className="max-h-[26rem] space-y-4 overflow-y-auto px-4 py-4 font-mono text-[0.8rem] leading-relaxed sm:text-[0.84rem]"
+      >
         {TRANSCRIPT.map((step, i) => (
           <li
             key={step.tool}

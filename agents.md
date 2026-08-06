@@ -79,6 +79,7 @@ describes. The per-area detail below is **authoritative** — do not restate it 
 | Build, Maven/pnpm wiring, publishing | [docs/agents/build.md](docs/agents/build.md) | `shio-build-test` |
 | Common issues and solutions | [docs/agents/troubleshooting.md](docs/agents/troubleshooting.md) | `shio-build-test` |
 | Judging a replication run against a live instance — the checks a suite cannot make | `cli/conformance/` | `shio-replication-test` |
+| The public site at shio.viglet.org — its stack, its prerender, and the one file all its copy lives in | [shio-site/README.md](shio-site/README.md) | — |
 | ROADMAP / CHANGELOG / IMPROVEMENTS upkeep rules — those three are **owned by `roadkeep`** ([roadkeep.toml](roadkeep.toml)), never hand-edited | [docs/agents/docs-process.md](docs/agents/docs-process.md) | `shio-roadmap-docs` |
 
 Addresses (SH79), used everywhere: `post:<site>/<friendly-url>` ·

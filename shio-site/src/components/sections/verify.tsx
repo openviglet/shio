@@ -26,8 +26,8 @@ export function Verify() {
           description="Asking a human whether it looks right is the round trip that makes an agent slow. Four instruments replace it — three of them text, and the fourth deliberately for a person."
         />
 
-        <div className="grid items-start gap-8 lg:grid-cols-[1fr_1fr]">
-          <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid items-start gap-8 lg:grid-cols-[1fr_1fr] [&>*]:min-w-0">
+          <div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
             {PROOFS.map((p) => (
               <div key={p.command} className="rounded-xl border border-border bg-card p-5">
                 <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">

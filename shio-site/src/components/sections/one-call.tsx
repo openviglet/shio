@@ -22,13 +22,13 @@ export function OneCall() {
           title={
             <>
               Discovery is a feature,{" "}
-              <span className="text-primary">and it has a price tag</span>
+              <span className="text-primary">and it has a price</span>
             </>
           }
           description="Most CMSs make an agent crawl a REST surface to learn what exists. Shio answers that in one call — and the cost of every answer is a number the build enforces."
         />
 
-        <div className="grid items-start gap-8 lg:grid-cols-[0.95fr_1.05fr]">
+        <div className="grid items-start gap-8 lg:grid-cols-[0.95fr_1.05fr] [&>*]:min-w-0">
           <div>
             <CodeBlock caption="the whole discovery session" code={CONTEXT_CALL} />
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">

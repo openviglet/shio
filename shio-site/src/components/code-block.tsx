@@ -14,7 +14,9 @@ const SYNTAX_RE =
 
 // index 0..3 mirrors the regex capture groups: comment, string, keyword, number.
 const TOKEN_CLASS = [
-  "text-[#8d7b74] italic",
+  // A comment is dim by convention, but not below ~5:1 on #17100e — half the
+  // snippets on this page put the explanation *in* the comment.
+  "text-[#a89189] italic",
   "text-[#7dd3a0]",
   "text-[#ffb08a]",
   "text-[#f5c46b]",
