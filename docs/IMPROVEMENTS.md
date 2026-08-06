@@ -1884,3 +1884,214 @@ token count, a teaching 4xx, a file tree, a draft that did not publish itself.
 The site is also written for the reader it is about. An agent evaluating a CMS reads the
 page it was handed, and a Claude Code-first product that answers only in HTML is making
 its own argument badly.
+
+### XIX.1 The site itself (SH530)
+
+The foundation and the landing page, in one task, because a site app with no page on it
+is not a deliverable anybody can judge. `shio-site/` joins the pnpm workspace beside the
+other JS packages, with the same stack Turing's site runs and the same two-pass build:
+`vite build` for the client, a second SSR pass for `entry-server`, then a prerender step
+that writes one static `index.html` per route. No router - a pathname maps to a page by
+one regular expression the server and the client both read - so the bleeding-edge Vite
+this workspace tracks has nothing framework-shaped to break.
+
+The brand is Shio's own: tomato (`#FF6347`, the Viglet product colour the `Sh` mark
+already uses) on a warm near-black, against Turing's royal blue on cold navy. Type is
+the house pair - Plus Jakarta Sans and JetBrains Mono - because a sibling site should
+read as a sibling; the differentiation is colour, the terminal motif and the argument,
+not a second typeface.
+
+The landing page is ordered as an argument rather than a feature list: hook, the loop
+running, the two operators, the ten laws, then one section per law that a reader can
+check. `public/` carries what a site owes a crawler - robots, sitemap, favicons, an OG
+card - and a first `llms.txt`.
+
+### XIX.2 The session is the demo (SH531)
+
+Turing's landing page has a search box a visitor types into, and the answer that comes
+back is the product. Shio's equivalent is not a widget: it is a Claude Code session -
+`shio_context`, an `Edit` on a content file, `shio_write`, `shio verify`, a preview link
+- with the page it produced rendering beside it. That is the only artefact that shows
+the thing being claimed, which is that one operator drives the CMS and a second one
+approves the result.
+
+So the centrepiece is a transcript player: a scripted session that steps through tool
+calls at reading speed, with the resulting page building on the right and a diff of what
+each call wrote. Scripted, and it says so - a recording labelled as one is honest, and a
+recording dressed as a live connection is the failure this section would exist to avoid.
+The public instance below is what makes it genuinely live, and until that exists the
+player is the truthful version.
+
+Two design constraints. It must be readable with motion off, because the whole content
+is text and `prefers-reduced-motion` should collapse it to the finished transcript
+rather than freeze it half-typed. And the transcript is content, not markup: one data
+file the copy is edited in, so the session can be re-scripted without touching the
+player.
+
+### XIX.3 The first five minutes (SH532)
+
+A Claude Code-first product is judged on the distance between arriving and having the
+agent do something. For Shio that distance is short and completely undocumented in
+public: run an instance, `claude mcp add shio -- shio mcp`, and the agent's first call
+is `shio://manifest` - which is the point of P2, since discovery is a capability rather
+than a docs problem.
+
+`/claude-code` is the page that says it. The plugin from the repository's own
+marketplace (the MCP server config, the skills, the slash commands and the `AGENTS.md`
+fragment), the stdio bridge for a bare `claude mcp add`, the token scope an agent gets,
+and what the first three calls of a session actually look like - manifest, context pack,
+then a write. It ends on the honest boundary the product is built around: Shio hosts no
+model and no prompts, so nothing on this page is an API key going into the CMS.
+
+It also names the surfaces that are not MCP, because P1 orders them: whatever the agent
+can do over MCP it can do from the CLI and over REST, and a reader who does not use
+Claude Code needs to see that in the same breath as the plugin.
+
+### XIX.4 Plot the budget, do not describe it (SH533)
+
+Every competitor can claim an MCP server. What none of them can show is a build that
+fails on a token regression. The measurements already exist -
+`ShAgentResponseBudgetTest`, `ShMcpToolBudgetTest`, the manifest's projections, the
+`audit` cost test - and each is a real number with a real ceiling: the capability check
+at 298 against the full manifest's 2343, `tools/list` capped and eleven tools spending
+it, a clean audited page at about 57 tokens against a full-page PNG's ~1600.
+
+This task puts those on the page as a chart with the ceiling drawn, and sources each one
+from the test that produces it rather than from a copy typed into the site. A number on
+a marketing page that drifts from the build is worse than no number, so the pipeline is
+the deliverable: the benchmark emits a JSON artefact, the site reads it, and a stale
+file is a build failure the same way a budget regression is.
+
+The frame is P2, not arithmetic: the comparison that matters is one call against the
+session of crawling REST endpoints it replaces, and the honest version of that
+comparison draws both bars.
+
+### XIX.5 The comparison, and where it loses (SH534)
+
+The interesting axis is not features, because every headless CMS has content types and a
+delivery API. It is agent-operability, and on that axis the rows are the ten laws made
+checkable: is there one call that replaces discovery, is content addressable as files an
+agent can `Grep`, are the 4xx bodies instructions, is there a dry run, is every
+capability reachable without a cookie, is the token cost of the protocol measured
+anywhere.
+
+Turing's compare page earns its credibility by naming where each alternative wins, and
+this one has to do the same or it is not worth publishing. Contentful and Sanity have
+ecosystems, editor tooling and hosted scale Shio does not; WordPress has a plugin for
+everything; a hand-rolled Git-backed stack has no CMS to run at all. The page says so,
+and then says what an agent pays for each of those choices.
+
+One row is the whole argument and it belongs at the top: on every other product an agent
+is a client of an API designed for a browser, and the protocol quality it gets is
+whatever fell out.
+
+### XIX.6 Point it at a site you already have (SH535)
+
+Block Q's capture-convert-prove pipeline is the most demonstrable thing in the product,
+because the visitor supplies the input. `shio clone <url>` walks one origin under
+robots.txt and writes an inventory and no content; `--assets` fetches the bytes; a
+conversion proposes post-types inferred from the pages themselves; and what comes out is
+a site a curator can edit in the console rather than a mirror.
+
+The page is a walkthrough of exactly that, on a real public site, with the artefacts
+shown: the inventory, the proposed model, the diff, the replica. The reason it converts
+is that the alternative it displaces is a migration project, and the reason it is
+credible is that the pipeline is honest about its bounds - one origin, robots respected,
+a ceiling marks the capture PARTIAL, an off-host redirect refused by name.
+
+It carries the constraint the CLI already carries, in the reader's language rather than
+a flag's: capturing somebody else's site is a decision about their content, and the tool
+records what it was allowed to do, so a capture taken without permission cannot later
+look like one taken with it.
+
+### XIX.7 The curator's half (SH536)
+
+The objection every reader of an agent-native CMS arrives with is not "can the agent do
+it" - it is "what stops it". Answering that with the word governance is worth nothing;
+answering it with the mechanisms is the whole sale, and they exist: writes land as
+drafts, publishing is a separate explicit act, a destructive op needs a confirm token, a
+dry run prints what would change, every write carries attribution, and there is a queue
+a human works through.
+
+So the human half gets its own page rather than a paragraph. The console the curator
+actually uses, the Universal Editor's inline editing on the rendered page, preview links
+for a draft nobody has published, and the review queue - shown as what a person sees on
+a Tuesday, not as an architecture diagram.
+
+It is also where the product's shape is stated plainly for a non-engineer: the agent
+builds, the human curates, the CDA delivers. A reader who only ever sees the first of
+those three concludes, correctly, that nobody is minding the site.
+
+### XIX.8 A site an agent can read (SH537)
+
+P4 says files beat APIs for authoring because `Edit`, `Write` and `Grep` are an agent's
+cheapest tools. The same reasoning applies to the marketing site, and a Claude
+Code-first product that makes an agent parse hydrated markup to learn what it does is
+failing its own argument in the first thing anybody reads.
+
+Every prerendered route therefore also emits a markdown twin at `<path>.md` - the same
+content, authored once and rendered twice, because two hand-maintained copies diverge
+and the divergence lands in the version nobody reads. `llms.txt` becomes complete rather
+than decorative: the routes, the packages, the endpoints, the MCP tools and resources,
+and the address forms. And the site publishes a small manifest of itself, in the shape
+`/agent/manifest` already uses, so the discovery pattern the product teaches is the one
+the site is discovered by.
+
+The test is one an agent can run: fetch the site, answer "what can this do and what
+would the first call be", and pay for one page rather than for a bundle.
+
+### XIX.9 Publishing it (SH538)
+
+Turing's site is deployed by a GitHub Pages workflow that assembles a `_site` tree from
+several builds - the marketing site at the root, the Storybook under `/react-sdk/`, the
+marketplace under `/marketplace/`. Shio needs the same job and has the same shape to
+assemble: the site at the root, and the room to mount the React SDK's component docs and
+the example sites beside it later.
+
+The workflow builds the workspace with the pinned pnpm and Node the other workflows
+already use, runs the two Vite passes and the prerender, writes the CNAME, and deploys.
+`workflow_dispatch` first, on the same reasoning the JS publish workflow uses: a deploy
+that fires on every push to a long-lived branch is one nobody can hold still while
+reviewing it.
+
+Two gates run before the upload, because a marketing site is the one artefact where a
+defect is public immediately: the typecheck has to pass, and the prerender already
+throws when the template drifts, which turns a silently untitled page into a red build.
+
+### XIX.10 Depth pages per claim (SH539)
+
+The landing page is deliberately one screen per idea, which leaves every idea one click
+short. Turing solved this with feature pages generated from one content file, and the
+same mechanism fits here: a slug per pillar - the agent gateway, content as files,
+blueprints, the renderer and preview, delivery, replication - each with its own
+prerendered route, title and description.
+
+What those pages are for is the mechanism, at the level a reader deciding needs it and
+no deeper: the actual call, the actual file on disk, the actual error body.
+`docs/agents/` already holds the authoritative version and is written for somebody about
+to change the code, which makes it exactly the wrong link to hand a reader who has not
+chosen the product yet.
+
+They are also the site's search surface. One page that mentions everything ranks for
+nothing, and every one of these slugs is a phrase somebody types when they are looking
+for what Shio is - which is worth more than another section on a page that is already
+long.
+
+### XIX.11 A public instance to point at (SH540)
+
+Turing's landing page went from a scripted demo to a genuinely live one by pointing the
+widgets at a public read-only instance, and that change is what turned its centrepiece
+from an illustration into evidence. Shio's equivalent is an instance serving a seeded
+demo site, read-only, with a CDA token scoped to it.
+
+What it makes live is specific and small: the manifest and context pack the page quotes,
+the CDA queries behind the delivery section, a preview link that opens a real rendered
+page, and the transcript player's outputs checked against what the instance actually
+returns. The write half stays a recording - a public instance an anonymous visitor can
+write to is a different product with a different threat model.
+
+The condition for building it is that a stale instance is worse than none: SH460 already
+made an instance date its own build and the conformance harness refuse one older than
+HEAD, so the demo is deployable on that discipline rather than on somebody remembering.
+The site degrades to the scripted content when the instance is unreachable, and says
+which one it is showing.

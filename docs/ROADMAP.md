@@ -108,6 +108,18 @@
 
 ## Block S — The public site (shio.viglet.org)
 
+- 📋 **SH530** (deps: —) **Shio has no public site, so the product built for an agent is described nowhere a visitor can read** — Turing ships turing.viglet.org and Shio ships a README, so the ten laws, the MCP surface and the CLI reach only somebody who already cloned the repository. → §XIX.1
+- 📋 **SH531** (deps: SH530) **The landing page asserts the agent loop instead of showing one** — The only proof this product has is a Claude Code session that builds a page, and a still of a terminal is the same claim in a different font. → §XIX.2
+- 📋 **SH532** (deps: SH530) **Nothing tells a visitor how to attach a running instance to Claude Code** — The plugin, the stdio bridge and the manifest-first read are this product's first five minutes, and they live in a repository file nobody browsing a site will open. → §XIX.3
+- 📋 **SH533** (deps: SH530) **The token argument is the differentiator and the site states it as prose** — P3 makes tokens a measured budget with a CI benchmark, and a number nobody plots reads as a slogan instead of as the measurement it already is. → §XIX.4
+- 📋 **SH534** (deps: SH530) **A visitor weighing Shio against another CMS has no matrix to weigh it with** — Agent-native is a category claim, and a category claim with nothing to falsify it against Contentful, Sanity, Strapi and WordPress is marketing. → §XIX.5
+- 📋 **SH535** (deps: SH530) **The one capability a visitor can test against their own URL is missing from the site** — Cloning turns a site that already exists into an authorable one, which is the shortest path from curiosity to a running replica, and no page names it. → §XIX.6
+- 📋 **SH536** (deps: SH530) **The site shows only the agent, so Shio reads as a CMS with no editor** — Draft-default, the review queue and the Universal Editor are what make an agent-operated CMS adoptable, and P7 is the law a buyer needs to see before P1. → §XIX.7
+- 📋 **SH537** (deps: SH530) **The site written for an agent answers it only in HTML** — An agent evaluating Shio reads the page it was handed, so a markdown twin per route and a complete llms.txt are the product demonstrating its own thesis. → §XIX.8
+- 📋 **SH538** (deps: SH530) **Every build of the site is a local artefact, so shio.viglet.org resolves to nothing** — There is no Pages workflow, no CNAME and no domain wiring, so the site ships only when somebody remembers to copy a dist directory by hand. → §XIX.9
+- 📋 **SH539** (deps: SH530) **Every claim on the landing page links to a repository file or to nothing** — A landing section is a headline, and the reader who wants the mechanism is sent to docs/agents, which is written for a contributor rather than for somebody deciding. → §XIX.10
+- 📋 **SH540** (deps: SH530) **Nothing on the site is answered by a running Shio** — The transcripts, the preview links and the manifest read are all recordings, so the single claim a visitor cannot check is the one the whole page rests on. → §XIX.11
+
 ## Non-goals (do NOT add as tasks)
 
 Binding constraints — rationale in [IMPROVEMENTS.md](IMPROVEMENTS.md) §0.3–§0.4, §0.7 and
