@@ -414,6 +414,19 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   the only path to `missing-asset`. Dropping the widget would silence 84 false errors by deleting a
   check that finds real ones. Both halves are asserted: the count on a fixture holding uploaded
   assets, and that `missing-asset` still fires.
+  **And a `File` has no friendly URL by design, so `url-missing` does not fire on one (SH501).**
+  Same family one rule along, same replica: three errors — "published but has no friendly URL, so no
+  route reaches it" — on `viglet-logo.png` and two fonts that all answered **200** on the same run.
+  Bytes are reached at `/file_source/<id>/<name>`, and since SH437 at the path the source used;
+  `id:` is a `File`'s correct address (SH172's fallback), not a symptom. **The remedy was worse than
+  the finding**: it handed over a `post.move` to "give it one", which would put a furl on the type
+  defined by not having one, so an agent that trusted the error would corrupt the content model to
+  clear it. The exemption is keyed on the **post type**, so a content post with no furl is still an
+  error with the same `post.move` fix — silencing the rule would have cleared three false errors by
+  deleting the check that finds real ones, which is SH470's mistake not made twice. The assertion is
+  the one that keeps catching this family: **a replica whose every reference answers 200 verifies
+  clean** — errors are counted, not one rule's absence. `find`'s own `id:` note (SH172) makes the
+  same exemption, since it recommended that same `post.move`.
   **`folder=` / `address=` / `since=` scope the run** (SH143) — a subtree, comma-separated
   `post:` addresses, or an SH88 cursor; they union rather than intersect. A scoped run sets
   `partial` and describes itself in `scope` (both **absent** on a full pass), because `ok` over a

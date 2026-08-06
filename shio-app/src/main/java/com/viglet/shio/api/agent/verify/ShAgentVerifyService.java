@@ -1470,7 +1470,7 @@ public class ShAgentVerifyService {
         int silenced = 0;
         for (ShPostUnified post : scan.published()) {
             String address = address(post);
-            if (isBlank(post.getFurl())) {
+            if (isBlank(post.getFurl()) && !isUrllessByDesign(post)) {
                 findings.add(Finding.error(check, "url-missing", address, null,
                         "This post is published but has no friendly URL, so no route reaches it.",
                         "Give it one with a post.move op (POST /api/v2/agent/batch): "
@@ -2187,6 +2187,41 @@ public class ShAgentVerifyService {
     private static boolean isOwnFileName(ShPostUnified post, String field) {
         return FILE_NAME_FIELD.equals(field)
                 && post != null
+                && post.getShPostType() != null
+                && ShSystemPostType.FILE.equals(post.getShPostType().getName());
+    }
+
+    /**
+     * A post type that is reached by path rather than by friendly URL (SH501).
+     *
+     * <h2>Three errors on a pixel-identical replica</h2>
+     *
+     * <p>A fidelity capture's assets are {@code File} posts, and {@code url-missing} fired on every
+     * one of them: {@code viglet-logo.png}, {@code inter-latin.woff2},
+     * {@code plus-jakarta-sans-latin.woff2} — "published but has no friendly URL, so no route
+     * reaches it" — on a run where all three answered <b>200</b>. A {@code File} never has a furl;
+     * that is the type's design, and it is why the asset route exists: bytes are served at
+     * {@code /file_source/<id>/<name>} and, since SH437, at the path the source used. The rule was
+     * asking a content-post question of a type the question does not apply to.</p>
+     *
+     * <h2>The remedy was worse than the finding</h2>
+     *
+     * <p>The message handed over a {@code post.move} op to "give it one", which would put a friendly
+     * URL on the type defined by not having one — so an agent that trusted the error would corrupt
+     * the content model to clear it. A finding whose fix breaks the thing it is checking is worse
+     * than silence, because silence at least does not act.</p>
+     *
+     * <h2>Why the type and not the field</h2>
+     *
+     * <p>This is SH470's family one rule along — there, {@code File.FILE} was read as an address;
+     * here, {@code File} is expected to have a furl — and both scale with the replica: three assets
+     * in a small capture, eighteen in the six-page {@code viglet.org} one. Both exemptions are the
+     * same narrow shape, keyed on what the post type already declares rather than on the finding, so
+     * a {@code File} referenced from a user field is still checked by every rule that applies to
+     * it ({@code missing-asset}, {@code dangling-reference} on other fields).</p>
+     */
+    private static boolean isUrllessByDesign(ShPostUnified post) {
+        return post != null
                 && post.getShPostType() != null
                 && ShSystemPostType.FILE.equals(post.getShPostType().getName());
     }

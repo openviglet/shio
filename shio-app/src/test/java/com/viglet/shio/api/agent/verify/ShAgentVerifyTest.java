@@ -529,6 +529,113 @@ class ShAgentVerifyTest {
                 .isEmpty();
     }
 
+    // --- SH501: a rule for content posts, applied to a File ---
+
+    /**
+     * SH501 — three errors on a pixel-identical replica, all of them this rule.
+     *
+     * <p>A fidelity capture uploads its assets as {@code File} posts, and {@code url-missing} fired
+     * on every one: {@code viglet-logo.png}, {@code inter-latin.woff2},
+     * {@code plus-jakarta-sans-latin.woff2} — "published but has no friendly URL, so no route reaches
+     * it" — on the same run where all three answered <b>200</b>. A {@code File} has no furl by design
+     * and is reached at {@code /file_source/<id>/<name>}; the rule was asking a content-post question
+     * of a type it does not apply to. Worse than noise: the fix it offered was a {@code post.move} to
+     * "give it one", so an agent that trusted the error would have put a friendly URL on the type
+     * defined by not having one.</p>
+     *
+     * <p>Its own site rather than this class's fixture, because <b>the assertion is the count of
+     * errors and not the absence of one rule</b>: the state under test is a replica whose every
+     * reference answers 200, and the only reading of that which keeps catching this family is that
+     * such a run verifies clean. On the shared fixture — eight deliberate defects — that sentence
+     * cannot be said.</p>
+     */
+    @Test
+    @DisplayName("SH501: a published File with no friendly URL is not url-missing, and the run is clean")
+    void aFileIsNotUrlMissing() {
+        String site = "sh501-" + UUID.randomUUID().toString().substring(0, 8);
+        run(new Op(ShAgentBatchService.SITE_UPSERT, "site:" + site, null, null, null),
+                new Op(ShAgentBatchService.POST_UPSERT, "post:" + site + "/", postTypeName, "/",
+                        data(Map.of("headline", "Home"))),
+                new Op(ShAgentBatchService.POST_UPSERT, "post:" + site + "/logo.png",
+                        ShSystemPostType.FILE, "/", data(Map.of("FILE", "viglet-logo.png"))),
+                new Op(ShAgentBatchService.POST_UPSERT, "post:" + site + "/inter.woff2",
+                        ShSystemPostType.FILE, "/", data(Map.of("FILE", "inter-latin.woff2"))),
+                new Op(ShAgentBatchService.POST_PUBLISH, "post:" + site + "/", null, null, null),
+                new Op(ShAgentBatchService.POST_PUBLISH, "post:" + site + "/logo.png", null, null, null),
+                new Op(ShAgentBatchService.POST_PUBLISH, "post:" + site + "/inter.woff2", null, null, null));
+        // How an upload actually arrives: the write surface addresses a post by furl (SH79), so the
+        // furl-less row a `staticfile/upload` produces has to be forced here.
+        clearFurl(site, "/logo.png");
+        clearFurl(site, "/inter.woff2");
+
+        List<Finding> found = shAgentVerifyService.verify(site, null, null).findings();
+
+        assertThat(found)
+                .filteredOn(finding -> "url-missing".equals(finding.rule()))
+                .as("a File never has a friendly URL — that is the type's design, not a defect")
+                .isEmpty();
+        assertThat(found)
+                .filteredOn(finding -> ShAgentReport.ERROR.equals(finding.severity()))
+                .as("a replica whose every reference answers 200 must verify clean")
+                .isEmpty();
+    }
+
+    /**
+     * The other half, and the reason the exemption is keyed on the post type rather than on the rule:
+     * a content post with no furl is genuinely unreachable, and {@code post.move} is genuinely its
+     * fix. Silencing {@code url-missing} outright would have cleared three false errors by deleting
+     * the check that finds real ones — SH470's mistake-not-made, one rule along.
+     */
+    @Test
+    @DisplayName("SH501: a content post with no friendly URL is still an error, with its post.move fix")
+    void aContentPostWithNoUrlIsStillUrlMissing() {
+        String site = "sh501-content-" + UUID.randomUUID().toString().substring(0, 8);
+        run(new Op(ShAgentBatchService.SITE_UPSERT, "site:" + site, null, null, null),
+                new Op(ShAgentBatchService.POST_UPSERT, "post:" + site + "/orphan", postTypeName, "/",
+                        data(Map.of("headline", "Orphan"))),
+                new Op(ShAgentBatchService.POST_PUBLISH, "post:" + site + "/orphan", null, null, null));
+        clearFurl(site, "/orphan");
+
+        assertThat(shAgentVerifyService.verify(site, "routes", null).findings())
+                .filteredOn(finding -> "url-missing".equals(finding.rule()))
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.severity()).isEqualTo(ShAgentReport.ERROR);
+                    assertThat(finding.address()).startsWith("id:");
+                    assertThat(finding.fix()).contains("post.move");
+                });
+    }
+
+    /**
+     * Blanks one row's furl — the state an upload produces and the write surface cannot address.
+     *
+     * <p>Resolved through the site rather than by furl alone: a furl is unique within a site and not
+     * across the instance, and this class shares a JVM with every other fixture. Select then update
+     * by id, because a bulk update cannot carry an implicit join — and it stops at
+     * {@code shSite.id}, which is the JPQL invariant {@code agents.md} names.</p>
+     *
+     * <p>Every row, not one: an upsert followed by a publish leaves a {@code DRAFT} and a
+     * {@code PUBLISHED} row for one address, and an upload has no furl in either state.</p>
+     */
+    private void clearFurl(String site, String furl) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            String siteId = entityManager
+                    .createQuery("select s.id from ShSite s where s.name = :name", String.class)
+                    .setParameter("name", site)
+                    .getSingleResult();
+            List<String> ids = entityManager.createQuery(
+                            "select p.id from ShPostUnified p "
+                                    + "where p.furl = :furl and p.shSite.id = :siteId", String.class)
+                    .setParameter("furl", furl)
+                    .setParameter("siteId", siteId)
+                    .getResultList();
+            assertThat(ids).as("the fixture must have written %s", furl).isNotEmpty();
+            entityManager.createQuery("update ShPostUnified p set p.furl = null where p.id in :ids")
+                    .setParameter("ids", ids)
+                    .executeUpdate();
+        });
+    }
+
     // --- SH309: an address inside a message has to resolve ---
 
     /**

@@ -235,10 +235,16 @@ public class ShAddressResolver {
      * rows can work — a read returns one arbitrary post, a write is a guess — and the rows did
      * not say anything was wrong.</p>
      *
-     * <p>SH100's lint already answered this correctly: it reports such posts as
-     * {@code url-missing} and addresses them as {@code id:<uuid>}, because that is the only thing
-     * that names them. The two surfaces disagreeing was the actual defect, so the fallback lives
-     * in the one place both of them ask — the invariant is enforced rather than restated.</p>
+     * <p>SH100's lint already answered the <em>addressing</em> half correctly: it addresses such
+     * posts as {@code id:<uuid>}, because that is the only thing that names them. The two surfaces
+     * disagreeing was the actual defect, so the fallback lives in the one place both of them ask —
+     * the invariant is enforced rather than restated.</p>
+     *
+     * <p>What it no longer does is call the {@code File} case <em>broken</em> (SH501). {@code id:}
+     * is this type's correct address rather than a symptom: a {@code File} has no furl by design and
+     * is reached at {@code /file_source/<id>/<name>}. So the fallback fires here and
+     * {@code url-missing} does not fire there, which is the same reading of one fact in two
+     * places.</p>
      *
      * <p>A site-less post (the SH128 class) falls back for the same reason: {@code post:null/x}
      * resolves to nothing and teaches nothing.</p>

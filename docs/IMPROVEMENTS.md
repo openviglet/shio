@@ -374,31 +374,6 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
-### IX.30 A rule for content posts applied to a File (SH501)
-
-A pixel-identical replica reports three errors. All three are `url-missing` — "This post
-is published but has no friendly URL, so no route reaches it" — and all three are the
-`File` posts a fidelity capture uploads: `viglet-logo.png`, `inter-latin.woff2`,
-`plus-jakarta-sans-latin.woff2`.
-
-A `File` post never has a friendly URL. That is the type's design, stated in SH437's own
-rationale, and it is why the asset route exists: bytes are reached at
-`/file_source/<id>/<name>` and, since SH437, at the path the source used. All three
-resolve **200** on the same run that calls them unreachable.
-
-The remedy the message offers is worse than the finding. It hands over a `post.move` op
-to "give it one", which would put a friendly URL on a type that is defined by not having
-one — so a reader who trusts the error makes the content model wrong.
-
-This is SH470's family, one rule along: a check written for content posts is applied to
-`File` without asking what the type is. SH470 was `File.FILE` read as an address; this
-is `File` expected to have a furl. Both fire on every asset a capture uploads, so both
-scale with the size of the replica — the fidelity run here has three, and the six-page
-`viglet.org` capture has eighteen.
-
-The exemption is what `File` already declares. And the assertion is the one that keeps catching these:
-**a replica whose every reference answers 200 must verify clean**, which is the state this run was in.
-
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -1617,30 +1592,6 @@ subsystem is exactly the defect class no page-by-page pass finds.
 (`D:\Git\viglet\vigletdocs\vigletdocs.github.io`), so each task lands two commits: the
 Shio-repo ship, and the vigletdocs page edit.
 
-### XVIII.2 The premise a reader meets first (§XVIII.2) (SH480)
-
-`docs-shio/index.mdx` exports `VERSION = "2026.1"`, and its four `FeatureCard`s are
-Content Modeling, Website Rendering ("server-side JavaScript engine (Nashorn /
-Node.js)"), GraphQL and Native Caching. Its quick-start step 4 sends the reader to
-"JavaScript API, components, and themes". Nothing on the page says a coding agent is the
-primary operator, that content is also files, or that a human curates rather than
-authors.
-
-Rewrite the landing page around the actual premise: **the agent builds, the human
-curates, the CDA delivers.** Keep the JSX component vocabulary the page already uses
-(`Pill`, `FeatureCard`, `NavCard`, `SectionLabel`) and the brand CSS variables, and keep
-the honest parts (open source, GPL v3, headless, GraphQL). Bump the version pill to
-2026.3, which is what `docusaurus.config.ts` already declares for the `shio` plugin. The
-prose introduction and the concept vocabulary are SH490's, not this page's: a landing
-page states the premise and routes.
-
-The ten design laws from `agents.md` are the source for the capability cards, not a list
-to paste: a reader wants to know what one call replaces, why the files matter, and what
-stops the agent from surprising them. `docs/specs/SH74-agent-native-cms.md` is the long
-form to compress, and the four hub pages of the restructured sidebar are what the
-`NavCard` grid should point at, alongside a quick start that begins with an agent rather
-than with a JavaScript API.
-
 ### XVIII.5 The MCP page (§XVIII.5) (SH481)
 
 `POST /mcp` is the surface the product is designed around and it is undocumented. Write
@@ -1659,24 +1610,6 @@ MCP story (client and server) on one page, and keep the same discipline: a copya
 request, a real response, and the error shape a caller gets when the arguments are wrong
 (P6: an error carries `fix`, `allowed`, `didYouMean` and `example`, which is a feature
 worth showing rather than describing).
-
-### XVIII.6 The agent surface page (§XVIII.6) (SH484)
-
-Write the REST half of the agent story from `docs/agents/agent-surface.md`, for a reader who is
-building an agent rather than using Claude Code: the **manifest** as one-call discovery, the
-**context pack**, the read verbs (`find`, `read`, `changes`, `diagnostics`, `memory`), and the
-write path (`batch` with its op vocabulary, `plan`, `apply`, `dryRun`).
-
-Three things a reader cannot infer and must be told. First, the SH79 address grammar:
-`post:<site>/<friendly-url>`, `folder:<site>/<name-chain>`, `site:<name>`, `id:<uuid>`,
-that writes take only `post:` and `folder:`, and that a site's home page is
-`post:<site>/`. Second, the verification loop (P9): `verify` and the render digest are
-how an agent closes the perception loop without a human round trip. Third, the endpoints
-that **do not** exist, because an agent cannot grep for an absence and inventing one is
-the common wrong turn.
-
-Response budgets belong here as a one-paragraph note with a pointer to the token-economy
-page, not as a second copy of that page's tables.
 
 ### XVIII.7 The page a curator reads before letting an agent in (§XVIII.7) (SH485)
 

@@ -23,7 +23,6 @@
 - 💭 **SH209** (deps: SH102 ✅) **`shio snapshot` photographs one page per run** — The useful artifact for a handoff is the set of a site's pages, and the command captures one page per run. → §IX.10
 - 📋 **SH397** (deps: SH295 ✅, SH325 ✅) **A dev instance reports its version as dev, so a stale server reads as a code defect** — The build stamp comes from the jar manifest, which is absent in the one mode where the running instance can lag the working tree, and nothing composes the readiness facts. → §IX.12
 - 📋 **SH423** (deps: SH347 ✅) **The test-context budget is a ceiling nobody sees approaching** — ShContextCacheHeadroomTest fails once 64 is crossed and nothing says a task is spending one, so eleven tasks took the count from 38 to 44 with no moment anybody was asked. → §VIII.20
-- 📋 **SH501** (deps: SH470 ✅) **url-missing fires on every uploaded File, so a perfect replica reports errors** — A File post is defined by having no friendly URL and is reached by path, yet the rule demands one and offers a post.move that would corrupt the model. → §IX.30
 
 ## Block I — Content as files (local-first authoring)
 
@@ -95,9 +94,7 @@
 
 ## Block R — End-user documentation for 2026.3 (docs-shio)
 
-- 📋 **SH480** (deps: SH479 ✅) **The landing page sells a JavaScript-rendering CMS and never mentions the agent** — index.mdx pins v2026.1 and its four capability cards are Nashorn rendering and Hazelcast, so the premise a reader meets first is the one the product left. → §XVIII.2
 - 📋 **SH481** (deps: SH482 ✅) **Nothing published says Shio speaks MCP, so its primary operator surface is unfindable** — POST /mcp with its tools, resources and prompts and the Claude Code plugin are how the agent drives Shio, and the word MCP appears in none of the 19 pages. → §XVIII.5
-- 📋 **SH484** (deps: SH482 ✅) **The `/api/v2/agent` surface is undocumented, so the one call that replaces a session cannot be found** — The manifest, the context pack, find, read, verify, changes and diagnostics are what P2 promises, and no published page names any of them. → §XVIII.6
 - 📋 **SH485** (deps: SH482 ✅) **Nothing tells a curator what stops an agent from surprising them** — Draft-default, dry-run, confirm tokens, the review queue, attribution and the trash are P7's whole promise to the human and none of it is published. → §XVIII.7
 - 📋 **SH486** (deps: SH482 ✅, Block I ✅) **The cheapest authoring path, content as files, has no page at all** — P4 says files beat APIs for authoring, and a reader cannot learn that Edit, Write and Grep author Shio content or how the merge protects a curator's edit. → §XVIII.8
 - 📋 **SH487** (deps: SH482 ✅, SH486) **The `shio` CLI is documented nowhere, so its verbs are unfindable** — pull, push, apply, verify, report, clone, propose, convert and snapshot are the scripted path into an instance, and the docs' only CLI pages are Turing's. → §XVIII.9
@@ -110,7 +107,7 @@
 - 📋 **SH494** (deps: SH482 ✅) **The docs promise search out of the box while Turing indexing is off by default** — search-caching.md says content is automatically indexed with no configuration required, and indexing is opt-in and reached only on publish, so the page is a false promise. → §XVIII.16
 - 📋 **SH495** (deps: SH482 ✅) **The REST, configuration and security references list endpoints, properties and rules that moved** — They predate the unified post model, the name-keyed post types, the stateless token paths and the Nashorn removal, so every table on them is unverifiable. → §XVIII.17
 - 📋 **SH496** (deps: SH482 ✅, SH490) **Content modelling and the delivery SDK pages describe a model and a client that changed** — Post types are one name-keyed surface now, addresses are the SH79 grammar, and the CDA pages predate the shapes the console itself reads, so a front-end reader is misled. → §XVIII.18
-- 📋 **SH497** (deps: SH484) **The one thing a buyer compares agent-native CMSs on, token cost, is unpublished** — Response budgets, terse mode and the build-a-site benchmark are Block M's measured product feature, and no page says what a call costs or how to spend less. → §XVIII.19
+- 📋 **SH497** (deps: SH484 ✅) **The one thing a buyer compares agent-native CMSs on, token cost, is unpublished** — Response budgets, terse mode and the build-a-site benchmark are Block M's measured product feature, and no page says what a call costs or how to spend less. → §XVIII.19
 - 📋 **SH498** (deps: SH491) **The diagrams directory carries fourteen Turing and Dumont sources and not one Shio diagram** — Every figure in docs-shio is inline mermaid the repo's conventions reserve for small ones, and the agent loop, the render pipeline and replication have no figure at all. → §XVIII.20
 - 💭 **SH499** (deps: SH479 ✅, SH487) **No published example is ever executed, so a renamed verb rots the docs silently** — This block writes CLI invocations, MCP calls and CDA requests, and nothing runs one against an instance, which is precisely how the 2018 pages became wrong. → §XVIII.21
 

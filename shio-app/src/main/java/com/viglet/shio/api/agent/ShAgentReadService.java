@@ -36,6 +36,7 @@ import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.render.ShTemplateGraph;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
+import com.viglet.shio.post.type.ShSystemPostType;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -192,9 +193,17 @@ public class ShAgentReadService {
      * site would otherwise pay for the same prose on every row, and the {@code id:} prefix is
      * already visible on the rows it applies to. Same shape as SH88's and SH103's notes — a
      * response that states its own limits.</p>
+     *
+     * <p><b>Not for a {@code File} (SH501).</b> A {@code File} is {@code id:}-addressed because it
+     * never has a friendly URL — the type's design, and the reason the asset route exists — so the
+     * {@code post.move} this note recommends would corrupt the content model rather than fix
+     * anything. On a fidelity replica, whose {@code id:} rows are <em>all</em> assets, the note is
+     * absent entirely: the same exemption {@code verify} makes for {@code url-missing}, on the
+     * surface that phrased the advice.</p>
      */
     private static List<String> notesFor(List<ShAgentFound.Row> rows) {
         boolean anyById = rows.stream()
+                .filter(row -> !ShSystemPostType.FILE.equalsIgnoreCase(row.type()))
                 .anyMatch(row -> row.address() != null && row.address().startsWith("id:"));
         return anyById
                 ? List.of("some rows are addressed `id:` because the post has no friendly URL — "

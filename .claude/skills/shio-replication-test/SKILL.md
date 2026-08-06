@@ -111,7 +111,11 @@ whose failure is invisible from inside the instance.
 4. **`convert` exits 0.** Read the process's code, not the module's return (SH456).
 5. **`verify --site X`** — and read the *whole* first run after any lint fix. Two rules
    disagreed once and the louder one was wrong, hiding the correct one entirely (SH470 →
-   SH474).
+   SH474). **A finding on an asset is the one to distrust first**: an uploaded `File` has no
+   friendly URL and is reached by path, and rules written for content posts have now been
+   applied to it twice — as an address (SH470) and as a missing furl (SH501). Never act on a
+   fix that would give a `File` a furl; it corrupts the content model to clear the message.
+   The bar is **a replica whose every reference answers 200 verifies clean**.
 6. **`snapshot --against <source> --width 1280`** on the public URL. Open the PNG. A number
    is not a result: 100% once meant a photograph of `{"error":"Unauthorized"}` (SH450), and
    once meant a font substitution on an otherwise perfect page.
