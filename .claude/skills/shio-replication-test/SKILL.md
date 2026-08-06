@@ -120,6 +120,11 @@ report scenario 3 as covered by a scaffold that installs; ask which template, an
    and CSS `url()` and expect 200. This is the check that finds what a screenshot cannot:
    it caught the fonts (SH455), the escaped tree path (SH461), and the unpublishable
    assets (SH462).
+   **Resolve against the serving URL — do not filter on a leading `/`.** A relative
+   reference is same-origin too, and it is the one that breaks: the replica is served
+   several segments deeper than the source, so `./../../img/x` lands somewhere else
+   entirely (SH512). Collecting only `/`-prefixed refs reported **0 broken** on a page
+   with a missing logo and fourteen missing images; `urljoin(page_url, ref)` reported 43.
 2. **No href carries the source's base.** Every same-origin link must start with the
    serving base. A verbatim href is a hardcoded base and always points off-site (SH466).
 3. **Both spellings of a directory path answer** — `/shio` and `/shio/`, one canonical and

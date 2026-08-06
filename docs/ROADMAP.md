@@ -55,6 +55,7 @@
 - 💭 **SH232** (deps: SH159 ✅) **`/agent/changes` cannot revalidate the way it is most often called** — In window mode the response's own cursor is the moving edge of the feed, so no two polls agree and every one pays in full. → §XIII.12
 - 📋 **SH394** (deps: SH132 ✅, SH208) **The CLI's discovery surface has no budget, so it reads as free** — tools/list is capped at 2375 tokens and checked every build while shio --help is 14 KB nobody measures, so the two surfaces cannot be compared on the cost that decides between them. → §XIII.13
 - 📋 **SH396** (deps: SH112 ✅, SH395) **The build-a-site benchmark ends at verify, before anything renders** — Its four calls stop at a lint, so the measured job is content that passes checks rather than a page a person can open, and the traps between the two are unmeasured. → §XIII.14
+- 📋 **SH513** (deps: —) **The CLI prints a status code and discards the problem document behind it** — A 400 answered with title, detail and fix reaches the reader as the server answered 400, so the teaching error P6 requires is paid for by the endpoint and received by nobody. → §XVII.66
 
 ## Block N — Realignment of what already shipped
 
@@ -86,10 +87,11 @@
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
 - 📋 **SH505** (deps: SH426 ✅) **A fixed overlay's text is adopted as the intro of three unrelated sections** — The consent banner sits out of flow on every page and contentRoot excludes only header and footer chrome, so its first paragraph became content on three pages at once. → §XVII.58
 - 📋 **SH506** (deps: SH425 ✅) **A script element is proposed as a content block, with a post-type that has no fields** — It recurs on all six pages so the walker promotes it, and the proposal offers Block1 with an empty field list, which can hold nothing and would enter the model. → §XVII.59
-- 📋 **SH508** (deps: SH507 ✅) **The generated layout has no structural elements, so no theme can lay it out** — It emits section, heading, list and item with eight class names, where the source used five nested wrappers to place one heading, so there is no container, stack or grid to style. → §XVII.61
-- 📋 **SH509** (deps: SH508) **A converted page has no presentation of its own, so the editor shows unstyled text** — SH507 decided the mode presents with a Shio theme and none exists, so a curator opens a page with type scale, rhythm, cards and buttons all absent. → §XVII.62
+- 📋 **SH509** (deps: SH508 ✅) **A converted page has no presentation of its own, so the editor shows unstyled text** — SH507 decided the mode presents with a Shio theme and none exists, so a curator opens a page with type scale, rhythm, cards and buttons all absent. → §XVII.62
 - 📋 **SH510** (deps: SH509) **An authorable page ships a megabyte of theme it cannot apply** — 1,062,141 of 1,066,436 bytes are a stylesheet meeting 8 class names, and once a vocabulary theme lands there would be two on one page with order deciding. → §XVII.63
 - 📋 **SH511** (deps: SH507 ✅) **The proposal reports the mode's own contract as a loss the reviewer should weigh** — 311 dropped class names read as an argument for fidelity on every candidate, when under SH507 the presentation is replaced by design and only the discarded content is a loss. → §XVII.64
+- 📋 **SH512** (deps: SH466 ✅) **Relative references are not rebased, so a deeper serving path breaks every image** — The source serves one segment deep and the replica four, so ./../../img/x resolves to a path that 404s while the asset itself answers 200 and verify stays clean. → §XVII.65
+- 📋 **SH514** (deps: SH437 ✅) **A zero-byte asset is refused with Spring's default 400, so a conversion dies unexplained** — The source serves an empty stylesheet legitimately and the capture writes it faithfully, and the upload's only answer is a body with no title, detail or fix. → §XVII.67
 
 ## Block F — Market positioning
 

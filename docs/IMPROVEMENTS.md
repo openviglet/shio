@@ -1622,31 +1622,6 @@ It costs a reader more than it looks. Six candidates on a real site is a short e
 list to read carefully, and one of them being noise makes the reader doubt the other
 five.
 
-### XVII.61 A layout contract before a theme (SH508)
-
-The generated layout emits `section > h2 > ul > li` and eight `shio-*` names. No
-stylesheet can lay that out, because there is nothing to lay out with: no container to
-bound a measure, no stack to space siblings, no grid to put cards beside each other. The
-source needed five nested wrappers to place one heading — `max-w-5xl mx-auto`, a flex
-row, a `shrink-0`, a `flex-1 text-center md:text-left` — and the layout has none of
-those elements at all.
-
-So SH507's decision needs a tree before it needs a theme. This is that tree, and it is
-the vocabulary's own rather than a translation of anybody's: an outer bound, a vertical
-rhythm between sections, a rhythm inside one, and a grid whose column count comes from
-the field the section already declares (`SectionFeatureGrid.columns`).
-
-It is a contract, so it is worth naming as one. A theme written against it must keep
-working when a new section type ships, which means the class names describe *roles* —
-container, stack, grid, media, actions — and never a section type. `shio-section-<Type>`
-already exists for the per-type hook and stays; what is missing is the structural layer
-under it.
-
-Two properties the SH185 annotations impose. A wrapper must not sit between an annotated
-element and its `data-shio-post`, because resolution is nearest-ancestor and a wrapper
-that breaks that chain silently reassigns a field's owner. And a wrapper carries no
-`sh-field`: it is presentation, and a curator has nothing to edit in it.
-
 ### XVII.62 The theme the vocabulary never had (SH509)
 
 SH507 decided a converted page is presented by a Shio theme. This is it: one stylesheet
@@ -1717,6 +1692,81 @@ deletion: what the mode replaces, and what it discards.
 **And the two documents that carry the promise change with it.** `propose.mjs`'s header is the design's own
 statement of the two modes, and `shio-replication-test` calls the unstyled page a "known limit". A
 decision recorded only in a task is one that the next reader reads the old sentence for.
+
+### XVII.65 A relative reference is worse than an absolute one (SH512)
+
+Replicating `vilt-group.com/en/` produced a page whose logo, hero background and
+fourteen images were missing, on a run where every asset uploaded and `verify` was
+clean. The bytes were there: `/sites/vilt/default/en-us/img/vilt-logo.svg` answers
+**200**. The markup asked for `./../../img/vilt-logo.svg`.
+
+That is the arithmetic. The source serves the page at `/en/`, one segment deep, so
+`./../../img/x` resolves to `/img/x`. The replica serves it at
+`/sites/vilt/default/en-us/en`, **four** segments deep, so the same string resolves to
+`/sites/vilt/img/x` and 404s. Forty-four references were relative on that page.
+
+SH466 established the rule for links — every href comes from the resolver, never from
+the source's bytes, because a verbatim reference carries a base the replica does not
+have. A **relative** reference is the same defect and strictly worse: an absolute one is
+wrong in a fixed way, while a relative one is wrong by however much the serving depth
+differs, so the breakage changes with the site's furl and the locale segment.
+
+It is invisible to the checks that exist. `verify` resolved every asset because each
+*is* uploaded and addressable; the gate asks whether the bytes are reachable, not
+whether the page's own string reaches them.
+
+Rebasing at render is where SH466 already stands, so this is that rewriter widened from
+`href` to every reference and from absolute to relative. The assertion is a page whose
+every `<img src>` answers 200 — resolved against the serving URL, not read as a path.
+
+### XVII.66 A teaching error the caller never sees (SH513)
+
+`shio convert` on a real site died with one line: `shio: the server answered 400`, plus
+a URL under `SHIO_DEBUG`. The server's answer was a problem document with `title`,
+`detail`, `fix` and sometimes `allowed` and `example` — the CLI printed none of it.
+
+Diagnosing what should have been one read took the log (a 400 is a client error and is
+not logged), a hand-built probe against an endpoint whose contract I guessed wrong, and
+finally a byte-size listing that found the cause. Minutes, on a path the project
+designed to take seconds.
+
+P6 is the reason this is a defect rather than terseness. Every 4xx in Shio carries a fix
+because an agent is the reader, and the agent's own tool is where that fix has to
+arrive. A teaching error the CLI discards is a teaching error nobody receives — the
+endpoint pays for it and the caller sees `400`.
+
+It reaches every write the CLI makes, not this one endpoint. `convert`, `push`, `apply`,
+`init` and the batch surface all speak to the same problem-document convention, so any
+refusal any of them meets reads as a status code. This session hit it once and lost the
+time once; a user hitting it has no log to read.
+
+Print what the body says: `title`, then `detail`, then `fix`, then `allowed` when
+present — which is the shape the CLI already uses for its own refusals, so the two would
+finally look alike.
+
+### XVII.67 The one refusal that does not teach (SH514)
+
+`POST /api/v2/staticfile/upload` refused a zero-byte file with Spring's default body:
+`{"timestamp":…,"status":400,"error":"Bad Request","path":"/api/v2/staticfile/upload"}`.
+No `title`, no `detail`, no `fix` — the only endpoint in this session's traffic that
+answered that way. The same endpoint answers a *missing* `folderId` properly, with all
+four fields and an example, so the convention is implemented and this path falls outside
+it.
+
+The file was real. `vilt-group.com` serves `/css/en.css?v=cf8427e` as **200 with 0
+bytes**, an empty stylesheet, which is legitimate; the capture wrote it faithfully. So a
+correct capture of a correct source produces bytes this endpoint rejects without saying
+why, and the whole conversion of a 64-asset site dies.
+
+Two answers and both are defensible, which is why the silence is the defect rather than
+the refusal. Accept it — an empty file is a file, and `convert` already reports `1 with
+no bytes in the tree` for the missing case, so it has a vocabulary for this. Or refuse
+it and **say so**: `title` naming the file, `detail` explaining that a zero-byte part
+cannot be stored, `fix` telling the caller to drop it.
+
+Whichever, the count belongs in the report. `59 uploaded, 1 with no bytes` is what the
+caller needs to see, not a stack of one failed request — and it is a line the conversion
+already knows how to print.
 
 ## XVIII End-user documentation for 2026.3 (Block R)
 
