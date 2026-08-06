@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
 
 /**
  * SH451 — what a 0.3.x public URL means, asserted without a servlet.
@@ -184,9 +185,32 @@ class ShSitesAPITest {
         // `/blog` would collapse into one path — and they are two friendly URLs. Restored rather
         // than normalised away: normalising is a routing decision, and this class's job is to say
         // what the URL said.
+        // SH467: and for two blocks that was the whole story — the split said `/blog/` faithfully and
+        // the renderer answered 404, because the stored furl is the grammar's slash-free form. The
+        // fidelity of this class was real and reached nothing; `ShRenderRedirectTest` holds the half
+        // that makes it answer.
         assertThat(ShSitesAPI.Address.of("/acme/default/en-us/blog/", null, null).path())
                 .isEqualTo("/blog/");
         assertThat(ShSitesAPI.Address.of("/acme/default/en-us/blog", null, null).path())
                 .isEqualTo("/blog");
+    }
+
+    @Test
+    @DisplayName("SH467: a redirect keeps the reader's query, unless the target chose one")
+    void aRedirectKeepsTheReadersQuery() {
+        // Invisible while every redirect came from a `Redirect` post a human wrote. It stops being so
+        // the moment the route canonicalises a trailing slash by itself: `/search/?q=shio` arriving at
+        // `/search` with no term is a worse answer than the 404 it replaces.
+        MockHttpServletRequest reader = new MockHttpServletRequest();
+        reader.setQueryString("q=shio&page=2");
+
+        assertThat(ShSitesAPI.withQueryOf(reader, "/sites/acme/default/en-us/search"))
+                .isEqualTo("/sites/acme/default/en-us/search?q=shio&page=2");
+        assertThat(ShSitesAPI.withQueryOf(reader, "https://elsewhere.test/x?ref=1"))
+                .as("a target that carries its own query chose it, and appending a second would "
+                        + "produce a URL neither side wrote")
+                .isEqualTo("https://elsewhere.test/x?ref=1");
+        assertThat(ShSitesAPI.withQueryOf(new MockHttpServletRequest(), "/sites/acme/x"))
+                .isEqualTo("/sites/acme/x");
     }
 }

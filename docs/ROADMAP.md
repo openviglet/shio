@@ -81,7 +81,7 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH467** (deps: SH385 ✅) **The replica inverts the source's trailing slash, so the source's own links 404** — A directory-style path is stored without its trailing slash and never restored, so /shio/ answers 404 while /shio answers 200 — the opposite of what the source does. → §XVII.44
+- ⏳ **SH467** (deps: SH385 ✅) **The replica's canonical URL is the mirror of the source's, so every captured link costs a 301** — The route half answers both forms now, but the grammar still collapses the declared slash, so the replica serves /shio as canonical and 301s /shio/ — the source does the opposite. → §XVII.44
 - 📋 **SH468** (deps: SH377 ✅) **Text extraction joins element boundaries with no separator, so adjacent words fuse** — anchor.text += token.text at clone.mjs:399 inserts nothing between nodes, so a brand tile beside a label yields DuDumont DEP — a token the source never contained. → §XVII.45
 - 📋 **SH469** (deps: SH389 ✅) **The replica keeps the appearance and drops the behaviour, and no instrument says so** — script is not an asset kind the crawler collects and SiteScripts took only the third-party ones, so the site's own bundle vanishes while clone, verify and snapshot all report success. → §XVII.46
 - 📋 **SH471** (deps: SH465 ✅) **A converted section's image renders src="", because file_url wants an id and the field holds a path** — SH437 uploads the captured bytes at the source's own path, so an authorable section's File field holds a path and file_url answers empty for anything that is not an id. → §XVII.47

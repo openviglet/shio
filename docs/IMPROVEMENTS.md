@@ -1500,29 +1500,30 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.44 A URL space with one character removed (SH467)
+### XVII.44 The canonical is the mirror of the source's (SH467)
 
 The source serves `/shio/` with a **200** and answers `/shio` with a **301** to it. The
-replica does the exact opposite: `/sites/vigletorg/default/en-us/shio` is 200 and
-`/shio/` is **404**. Measured on `/about/` too, and on the preview, which behaves the
-same — so it is the stored friendly URL, not the route.
+replica did the exact opposite: `/shio` was 200 and `/shio/` was **404**, on the public
+route and the preview alike — so it was the stored friendly URL, not the route.
 
-The capture reads the source's `/shio/` and stores the post at `post:VigletOrg/shio`.
-The trailing slash is dropped on the way in and never restored on the way out, so a
-replica's URL space is the source's with one character removed from every
-directory-style path.
+The route half has landed: `pageAt` tries the other trailing-slash form and redirects
+toward the stored `furl`, so both spellings answer and the direction is read off the
+content. What remains is that the stored form is still the grammar's. The capture reads
+`/shio/` and `ShAddress.normalizePath` collapses it, so the replica's **canonical** is
+the mirror of the source's: every captured link, sitemap entry and bookmark costs a 301
+instead of a 200, and a search index built from the replica names a URL the source
+redirects away from.
 
-SH385's rule is that a replica keeps the original's URL space, and this breaks it in the
-direction that is hardest to notice: every page still resolves, so `verify` is clean and
-a crawl of the replica succeeds. What fails is anything that carries the *source's* URLs
-— a sitemap, an inbound link, a bookmark, a redirect map, and the source's own markup,
-which is what a fidelity replica serves. That last one is the sharp edge: the captured
-HTML links to `/shio/`, and the replica cannot answer it.
+SH385's rule is that a replica keeps the original's URL space, and one character per
+directory-style path is what is missing. It is also not cheap. Preserving the declared
+slash makes `/shio` and `/shio/` **two addresses**, and `normalizePath` is the one
+canonical path form precisely so they are one: nine exact-`furl` lookups — resolver,
+CDA, `verify`, render, copy/move — become slash-sensitive, and an agent typing a stray
+slash creates a second post instead of updating the first. A P5 identity change wearing
+a capture fix's clothes.
 
-Two ends and both are cheap. Preserve the trailing slash the source declared, so the
-furl round-trips; and answer both forms on the route, redirecting one to the other the
-way the source does, since a replica that keeps a URL space should keep its redirects
-too.
+So the question is narrower than it looked: is a replica's canonical worth splitting the
+address space, or is a redirect the honest answer for URLs Shio never owned?
 
 ### XVII.45 A word the source never contained (SH468)
 

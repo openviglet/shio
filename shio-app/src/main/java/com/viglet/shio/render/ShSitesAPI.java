@@ -170,7 +170,7 @@ public class ShSitesAPI {
             // paths, and a public page whose images 404 is not a published site.
             return asset(noPage, address);
         } catch (ShPageRenderService.ShPageRedirectException redirect) {
-            return redirectTo(address, redirect);
+            return redirectTo(address, redirect, request);
         }
         return ResponseEntity.ok()
                 .contentType(MediaType.TEXT_HTML)
@@ -234,17 +234,34 @@ public class ShSitesAPI {
      * is cached by browsers effectively for ever, so it is opt-in. What differs is the {@code
      * Location}: a relative target is a friendly URL in this site, so it becomes a public URL rather
      * than a preview one, and an absolute one is left alone.</p>
+     *
+     * <p>The reader's query survives it (SH467). Dropping it was invisible while every redirect came
+     * from a {@code Redirect} post a human wrote, and stops being so the moment the route
+     * canonicalises a trailing slash by itself: {@code /search/?q=shio} would have arrived at
+     * {@code /search} with no term, which is a worse answer than the 404 it replaced. Only when the
+     * target declares none of its own — a {@code TO} carrying {@code ?} chose its query, and
+     * appending a second one would produce a URL neither side wrote.</p>
      */
     private ResponseEntity<Void> redirectTo(Address address,
-                                            ShPageRenderService.ShPageRedirectException redirect) {
+                                            ShPageRenderService.ShPageRedirectException redirect,
+                                            HttpServletRequest request) {
         String to = redirect.to();
         boolean absolute = to.startsWith("http://") || to.startsWith("https://");
         String within = to.startsWith("/") ? to : "/" + to;
         return ResponseEntity
                 .status(redirect.permanent() ? HttpStatus.MOVED_PERMANENTLY : HttpStatus.FOUND)
-                .location(java.net.URI.create(absolute ? to : address.prefix() + within))
+                .location(java.net.URI.create(
+                        withQueryOf(request, absolute ? to : address.prefix() + within)))
                 .cacheControl(CacheControl.maxAge(MAX_AGE).cachePublic())
                 .build();
+    }
+
+    /** The reader's query string, kept when the redirect target declares none (SH467). */
+    static String withQueryOf(HttpServletRequest request, String location) {
+        String query = request == null ? null : request.getQueryString();
+        return query == null || query.isBlank() || location.indexOf('?') >= 0
+                ? location
+                : location + "?" + query;
     }
 
     /** Everything after {@code /sites}, which is what both forms are split out of. */

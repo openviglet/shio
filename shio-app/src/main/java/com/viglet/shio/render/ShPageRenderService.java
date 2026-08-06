@@ -363,13 +363,64 @@ public class ShPageRenderService {
 
     private ShPostUnified pageAt(ShSite site, String url, ShPostState state) {
         String furl = url == null || url.isBlank() ? "/" : url;
+        Optional<ShPostUnified> page = pageWithFurl(site, furl, state);
+        if (page.isEmpty()) {
+            canonicalSlashRedirect(site, furl, state).ifPresent(redirect -> {
+                throw redirect;
+            });
+        }
+        return page.orElseThrow(() -> new UnknownPageException(site.getName(), furl, state));
+    }
+
+    private Optional<ShPostUnified> pageWithFurl(ShSite site, String furl, ShPostState state) {
         // DRAFT-preferred when previewing: a preview that showed the published row would
         // be showing the page the curator is trying to change.
-        Optional<ShPostUnified> page = state == ShPostState.DRAFT
+        return state == ShPostState.DRAFT
                 ? first(shPostUnifiedRepository.findByShSite_IdAndFurlAndState(site.getId(), furl, ShPostState.DRAFT),
                         () -> shPostUnifiedRepository.findByShSite_IdAndFurlAndState(site.getId(), furl, ShPostState.PUBLISHED))
                 : shPostUnifiedRepository.findByShSite_IdAndFurlAndState(site.getId(), furl, ShPostState.PUBLISHED);
-        return page.orElseThrow(() -> new UnknownPageException(site.getName(), furl, state));
+    }
+
+    /**
+     * The other trailing-slash form of a path this site does serve (SH467).
+     *
+     * <h2>A URL space with one character removed</h2>
+     *
+     * <p>A source serves {@code /shio/} with a 200 and answers {@code /shio} with a 301 to it. Its
+     * replica did the exact opposite — {@code /shio} was 200 and {@code /shio/} was <b>404</b> — on
+     * the public route and the preview alike, because the address grammar collapses a trailing slash
+     * ({@code ShAddress.normalizePath}) and the stored {@code furl} is therefore the source's path
+     * with one character removed. SH385's rule is that a replica keeps the original's URL space, and
+     * this broke it in the direction hardest to notice: every page still resolves, so {@code verify}
+     * is clean and a crawl of the replica succeeds. What fails is everything carrying the
+     * <em>source's</em> URLs — a sitemap, an inbound link, a bookmark, and the captured markup a
+     * fidelity replica serves, which links to {@code /shio/}.</p>
+     *
+     * <h2>Toward the stored form, not toward a fixed one</h2>
+     *
+     * <p>The canonical URL is whichever one the content declares, so this reads the direction off
+     * the {@code furl} rather than deciding it. Today the grammar always yields the slash-free form,
+     * so in practice {@code /shio/} redirects to {@code /shio}; if a stored {@code furl} ever carries
+     * the slash the source declared, the same code redirects the other way with no edit. That is
+     * also why it is here and not a rule in either controller: one behaviour, and the two routes
+     * already know how to turn a {@link ShPageRedirectException} into their own address space.</p>
+     *
+     * <p>Permanent, unlike SH385's opt-in: the two spellings of one path will not stop meaning the
+     * same page, which is the property that makes a cached 301 safe, and it is what the source and
+     * every ordinary web server answer here.</p>
+     *
+     * <p>{@code /} has no other form — {@code ""} is not a path — so the home page is left to the
+     * {@code UnknownPageException} that follows, and a request matching neither form still reaches
+     * the asset fallback both routes apply to it.</p>
+     */
+    private Optional<ShPageRedirectException> canonicalSlashRedirect(ShSite site, String furl,
+                                                                     ShPostState state) {
+        if (furl.length() <= 1) {
+            return Optional.empty();
+        }
+        String other = furl.endsWith("/") ? furl.substring(0, furl.length() - 1) : furl + "/";
+        return pageWithFurl(site, other, state)
+                .map(found -> new ShPageRedirectException(found.getFurl(), true));
     }
 
     private Optional<ShPostUnified> first(Optional<ShPostUnified> preferred,

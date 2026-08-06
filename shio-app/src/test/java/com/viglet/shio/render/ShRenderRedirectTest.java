@@ -124,6 +124,10 @@ class ShRenderRedirectTest {
                             + "{\\\"inline\\\":\\\"chat()\\\","
                             + "\\\"position\\\":\\\"bodyEnd\\\"}]\"}", when);
             post(site, root, page, "About", "/about", "{\"TITLE\":\"About\"}", when);
+            // SH467 — the same page, stored the other way round. The address grammar cannot spell
+            // this (`ShAddress.normalizePath` collapses the slash), and the column can hold it, which
+            // is what makes the direction assertable today rather than after the capture half lands.
+            post(site, root, page, "Docs", "/docs/", "{\"TITLE\":\"Docs\"}", when);
 
             // The four redirect shapes, and the fifth thing that is not one.
             post(site, root, redirectType, "Old about", "/company/about-us",
@@ -194,6 +198,56 @@ class ShRenderRedirectTest {
     @DisplayName("an ordinary page is untouched, so one type comparison is the whole cost")
     void anOrdinaryPageStillRenders() {
         assertThat(render("/about")).contains("<h1>About</h1>");
+    }
+
+    // ── SH467: both spellings of a path answer, and the content says which is canonical ──
+
+    /**
+     * The measured defect: a source serves {@code /shio/} and answers {@code /shio} with a 301 to it;
+     * the replica did the opposite, and {@code /shio/} was a <b>404</b>. Every page still resolved, so
+     * {@code verify} was clean and a crawl of the replica succeeded — what broke was everything
+     * carrying the source's URLs, including the captured markup a fidelity replica serves.
+     */
+    @Test
+    @DisplayName("SH467: the trailing-slash form of a page this site serves redirects to it")
+    void theOtherSlashFormRedirects() {
+        assertThatThrownBy(() -> render("/about/"))
+                .isInstanceOf(ShPageRedirectException.class)
+                .satisfies(thrown -> {
+                    ShPageRedirectException redirect = (ShPageRedirectException) thrown;
+                    assertThat(redirect.to()).isEqualTo("/about");
+                    assertThat(redirect.permanent())
+                            .as("""
+                                    301 here and 302 for a Redirect post, and the difference is not \
+                                    inconsistency: two spellings of one path will not stop meaning \
+                                    the same page, which is the property that makes a cached \
+                                    permanent redirect safe.""")
+                            .isTrue();
+                });
+    }
+
+    @Test
+    @DisplayName("SH467: and the direction is read off the stored furl, not fixed by this code")
+    void theCanonicalFormIsWhicheverTheContentDeclares() {
+        // `/docs/` is stored with the slash, so the redirect runs the other way — which is what the
+        // capture half needs and why no rule here says "strip". The two assertions are one claim.
+        assertThatThrownBy(() -> render("/docs"))
+                .isInstanceOf(ShPageRedirectException.class)
+                .satisfies(thrown -> assertThat(((ShPageRedirectException) thrown).to())
+                        .isEqualTo("/docs/"));
+        assertThat(render("/docs/")).contains("<h1>Docs</h1>");
+    }
+
+    @Test
+    @DisplayName("SH467: a path neither form serves is still unknown, so the asset fallback is reached")
+    void aPathWithNoPageEitherWayIsStillUnknown() {
+        // Both routes catch `UnknownPageException` to try the same path as an asset (SH437). A
+        // redirect thrown in its place would turn every missing image into a 301 loop.
+        assertThatThrownBy(() -> render("/img/hero.png/"))
+                .isNotInstanceOf(ShPageRedirectException.class);
+        assertThatThrownBy(() -> render("/"))
+                .as("and `/` has no other form — `` is not a path, and SH433's home page is `/`")
+                .isNotInstanceOf(ShPageRedirectException.class);
     }
 
 

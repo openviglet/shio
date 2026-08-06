@@ -513,6 +513,33 @@ renderer over one body of content at a second address. See the section on it bel
   `rewriteAsset` lookup, the same prefix and the same leave-it-alone default. Quoting is preserved
   as the author wrote it; a `<link rel=stylesheet>` needs nothing, because Shio's own theme is
   *inlined* by the layout (SH183), which is exactly why there is a `<style>` to walk.
+- **Both spellings of a path answer, and the content says which is canonical (SH467, route half)** —
+  a source serves `/shio/` with a 200 and answers `/shio` with a **301** to it; its replica did the
+  exact opposite, `/shio` 200 and `/shio/` **404**, on the public route and the preview alike. The
+  cause is not the route: `ShSitesAPI.Address` preserves the trailing slash faithfully (its own test
+  says so) and `ShAddress.normalizePath` collapses it, so the stored `furl` is the source's path with
+  one character removed. SH385's rule is that a replica keeps the original's URL space, and this
+  broke it in the direction hardest to notice — every page still resolves, `verify` is clean, a crawl
+  succeeds, and what fails is everything carrying the *source's* URLs: a sitemap, an inbound link, a
+  bookmark, and the captured markup a fidelity replica serves. `ShPageRenderService.pageAt` now tries
+  the other trailing-slash form when the exact one misses and throws SH385's own
+  `ShPageRedirectException` toward **the stored `furl`** — the direction is read off the content, not
+  decided here, so the same code redirects the other way the day a furl carries the slash. In the
+  service and not in either controller: one behaviour, and both routes already turn that exception
+  into their own address space. **Permanent**, unlike SH385's opt-in 302, because two spellings of one
+  path will not stop meaning the same page. `/` has no other form, and a path neither form serves
+  still raises `UnknownPageException` so the SH437 asset fallback is reached.
+  **And a redirect now keeps the reader's query** (`ShSitesAPI.withQueryOf`, shared by both routes):
+  invisible while every redirect came from a `Redirect` post somebody wrote, and immediately wrong
+  once the route canonicalises by itself — `/search/?q=shio` arriving at `/search` with no term is a
+  worse answer than the 404 it replaced. Skipped when the target declares a query of its own.
+  **What is deliberately *not* done** is the other end the task names — storing the trailing slash the
+  source declared, so the replica's *canonical* matches the source's rather than mirroring it. That
+  means splitting `/shio` and `/shio/` into two addresses, and `normalizePath` is the instance's one
+  canonical path form precisely so they are one: nine exact-`furl` lookups (resolver, CDA, verify,
+  render, copy/move) would become slash-sensitive, and an agent typing a stray slash would create a
+  second post rather than update the first. That is a P5 identity change, not a capture fix, and it
+  is worth deciding on its own evidence.
 - **A verbatim `href` is a hardcoded base, so the fallback is inverted (SH466)** — SH336's rule was
   *rewrite only what the index resolves, leave the rest alone*, and what it produced is a page
   carrying two kinds of `href` where one works. A replicated page held `href="/turing/"` — the

@@ -158,7 +158,7 @@ public class ShRenderAPI {
             // here and not only by whatever serves the site in production. A replication's whole claim
             // is "it renders the same", and a preview that 404'd on every old path would leave the one
             // thing a replica most often gets wrong untested.
-            return redirectTo(siteKey, redirect);
+            return redirectTo(siteKey, redirect, request);
         }
         // SH185 — the editor bridge is opt-in per request. An ordinary preview must ship no
         // editor code at all: a script that makes elements contenteditable is not something to
@@ -209,16 +209,24 @@ public class ShRenderAPI {
      * <p>The same headers the page carries, for the same reason: a preview that told a browser to
      * remember a 301 would leave the reader unable to see the page even after the redirect was deleted.
      * {@code X-Robots-Tag} too — a preview redirect must not teach a crawler anything.</p>
+     *
+     * <h2>And the reader's query survives it (SH467)</h2>
+     *
+     * <p>{@code ShSitesAPI.withQueryOf}, shared rather than copied. It matters here for one reason the
+     * public route does not have: a preview's own {@code ?state=} and {@code ?editor=} are in that
+     * query, so a redirect that dropped it would answer the next page in a different mode than the one
+     * the reader was in.</p>
      */
     private ResponseEntity<String> redirectTo(String siteKey,
-                                              ShPageRenderService.ShPageRedirectException redirect) {
+                                              ShPageRenderService.ShPageRedirectException redirect,
+                                              HttpServletRequest request) {
         String to = redirect.to();
         boolean absolute = to.startsWith("http://") || to.startsWith("https://");
         String within = to.startsWith("/") ? to : "/" + to;
         String location = absolute ? to : "/preview/" + siteKey + within;
         return ResponseEntity
                 .status(redirect.permanent() ? HttpStatus.MOVED_PERMANENTLY : HttpStatus.FOUND)
-                .location(URI.create(location))
+                .location(URI.create(ShSitesAPI.withQueryOf(request, location)))
                 .cacheControl(CacheControl.noStore().mustRevalidate())
                 .header(ROBOTS, NO_INDEX)
                 .build();
