@@ -6,7 +6,7 @@
  * Requires: <meta name="urn:shio:system:connection" content="shio:http://your-shio-server">
  *
  * Copyright (C) 2016-2026 Viglet Team
- * Licensed under GPL-3.0
+ * Licensed under the Apache License, Version 2.0.
  */
 
 // ── Types ─────────────────────────────────────────────────────────────────

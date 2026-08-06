@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * SH448 — the harness for the conformance suite: an instance, a scratch site, and the
  * teaching failure you get instead of a skip.

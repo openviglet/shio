@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * SH119 — generate the `nextjs-starter` blueprint package from this package's
  * `template/` tree, so there is one starter with two ways to get it: offline

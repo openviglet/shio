@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * `shio clone <url>` (SH377) — walk one origin and write down what is there. No content.
  *

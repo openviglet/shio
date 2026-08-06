@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * Minimal client for the Shio agent surface (Block H, `/api/v2/agent/**`).
  *

@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * SH87 / SH89 / SH90 — `pull --content`, `push --content` and the dev sync loop, against a
  * fake filesystem and a scripted server. Network-free and disk-free on purpose: what is

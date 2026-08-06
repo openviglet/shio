@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * `shio report` (SH104) — the human-facing handoff summary: what changed, where to look at
  * it, and what is still open. Ready to paste into a PR body.

@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * SH86 — the filesystem projection format: one post, one Markdown file with
  * frontmatter. Pure (no fs, no network), like `post-types-io.mjs`, so the format is

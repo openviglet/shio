@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * The entry point itself. Every other test here imports a command module directly, which
  * means nothing exercised `index.mjs` — and `HELP` is a template literal, so a single

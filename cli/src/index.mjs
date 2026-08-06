@@ -2,7 +2,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * shio — the Shio CMS command-line interface (SH16). The "JS dev, zero Java"
  * workflow: scaffold a site, generate types, and manage the content model as
@@ -89,6 +89,7 @@ const COMMANDS = {
   clone: () => import("./commands/clone.mjs"),
   propose: () => import("./commands/propose.mjs"),
   convert: () => import("./commands/convert.mjs"),
+  diff: () => import("./commands/diff.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),
   build: () => import("./commands/build.mjs"),
@@ -129,6 +130,8 @@ Commands:
   clone <url>    Capture a site that already exists: an inventory, and no content
   propose        Which captured blocks could become sections, and what each would lose
   convert        Apply the accepted conversion plan: sections, theme and scripts, as DRAFT
+  diff           Compare what a replica serves with the capture that declared it
+                 (counts, not pixels: exits 1 when a page lost something)
   pull           Pull post-types into ./shio/post-types/*.json (--content for pages)
   push           Apply local post-types back to Shio (--dry-run, --prune, --content)
   build          Compile local DSL/JSON post-types to canonical JSON (--out)

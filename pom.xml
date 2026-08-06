@@ -10,6 +10,17 @@
     <name>Shio CMS Master</name>
     <description>Viglet Shio CMS</description>
 
+    <!-- The one place in the tree that declared no license at all. LICENSE, the
+         README badge and every package.json now say the same thing; a POM that
+         says nothing is the same silence a wrong value was, one consumer along. -->
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
     <properties>
         <revision>2026.3</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

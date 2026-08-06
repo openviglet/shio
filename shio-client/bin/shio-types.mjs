@@ -2,7 +2,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * shio-types — generate a TypeScript `.d.ts` from a Shio instance's post-types
  * (SH11). Fetches `/api/v2/cda/post-type` and writes typed `Post` interfaces so

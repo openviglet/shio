@@ -303,6 +303,29 @@ are deduped — one decision on N pages, not N decisions), and the proposal now 
 candidate appears on **all** the pages read, with three as the floor: on two pages a hero is on both as
 well, and a hint that fires on every small capture is one a reviewer learns to ignore.
 
+**`shio diff` — both sides were held and nothing compared them (SH522, `--against capture` only).**
+Shio holds both sides of every comparison it does not make: a capture declares the **source** (six
+pages, eleven links, one image, this much text), a proposal declares the **intent**, a document
+declares the **write**, and the artefact each produces is compared with none of them. So *is this
+what it was supposed to be?* had no answer in the product and was assembled by hand every round —
+wrongly twice, once reporting **zero broken references** on a page with a missing logo and once
+**106 editable fields** on a page that had lost most of its content. Both times the declaration was
+on disk, the artefact was on the wire, and the join was forty lines of Python written from memory.
+What makes it cheap is that **every artefact carries the identity of what declared it** — the
+inventory names the capture, the proposal names the inventory, the document names the proposal — so
+nothing is guessed or re-fetched; the chain was already written down and nobody had walked it.
+`diff` walks the capture's pages, asks the instance for each at `/preview/<site><path>`, and reads
+the served bytes with **`scanPage`, the same function that wrote the declared counts** — SH245's
+rule, and the reason the comparison is arithmetic rather than a second opinion. Not pixels
+(`snapshot` is that and says so): internal links, external links, assets, forms, and prose against a
+**proportional** floor, since whitespace does not survive a conversion and an exact text comparison
+would report every page as lost. **A fact the replica *gained* is never a failure** — a Shio layout
+adds links, and a gate that called that damage would fire on every working conversion — and a path
+the replica does not serve is *one absence* rather than four lost facts, because
+`source-page-missing` is already that finding. Exits 1 on a loss. `--against proposal|document|<an
+earlier moment>` are the three §IX.34 also names and **none is built**: the refusal says so rather
+than answering approximately, and the capture is the one both hand-errors were about.
+
 **Baking content is right, baking machinery is not (SH517).** The source has
 `<div id="particles"></div>` — empty, filled at runtime by a particles library — and the replica had
 `<div id="particles" style="margin-left: -740px; margin-top: -385px;"><canvas width="1480"

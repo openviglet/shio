@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * `shio push` — apply local post-type defs back to Shio. Computes a diff against
  * the live model, then PUTs added/changed types (and, with `--prune`, DELETEs

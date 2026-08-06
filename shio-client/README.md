@@ -97,4 +97,4 @@ npm test           # node:test, no network (injected fetch)
 
 ## License
 
-GPL-3.0
+Apache-2.0

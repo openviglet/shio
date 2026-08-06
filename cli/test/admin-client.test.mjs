@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * Requires the @viglet/shio-client build (for ShioHttpError). The root `test`
  * script builds it first; standalone, run `pnpm --filter @viglet/shio-client build`.

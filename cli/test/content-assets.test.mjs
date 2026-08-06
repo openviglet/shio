@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * SH145 — the asset projection's pure half: which fields hold a file, what an asset's path
  * is, and the two rewrites that keep ids off the disk and paths off the wire.

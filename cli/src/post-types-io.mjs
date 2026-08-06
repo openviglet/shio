@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * Pure (no fs / no network) helpers for "post-types as code" (SH16): a
  * deterministic serialization of a post-type definition, plus the diff/plan

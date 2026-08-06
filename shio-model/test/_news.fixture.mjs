@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * The representative post-type used by both the byte-identical golden test and
  * the widget-by-widget codec tests. Exercises every settings-bearing widget plus

@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * SH114 — `shio remember`, and SH115's `--as agents-md`. Network-free: a scripted
  * fetch records the request each command builds and returns a canned reply.

@@ -59,4 +59,4 @@ npm test   # node:test — scaffolds into a temp dir and asserts the output
 
 ## License
 
-GPL-3.0
+Apache-2.0

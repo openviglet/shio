@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * `shio mcp` (SH75) — a stdio bridge to a Shio instance's MCP endpoint.
  *

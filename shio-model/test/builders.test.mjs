@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * SH63 acceptance tests (node:test). These import the BUILT output (dist/) — run
  * `npm run build` first. Coverage mirrors SH62 §9:

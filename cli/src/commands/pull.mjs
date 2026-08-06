@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * `shio pull` — fetch the lossless post-type defs (console Basic auth) and write
  * one deterministic JSON file per type under `shio/post-types/`. The other half

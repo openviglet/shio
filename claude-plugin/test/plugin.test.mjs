@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * SH97 — the plugin's manifests are valid and its parts exist.
  *
@@ -45,7 +45,7 @@ test("the plugin manifest identifies the plugin", async () => {
   // The description is what a user reads in `claude plugin list`. One clause is a name
   // repeated, not a description.
   assert.ok(manifest.description.length > 80, "the description must say what it gives you");
-  assert.equal(manifest.license, "GPL-3.0");
+  assert.equal(manifest.license, "Apache-2.0");
 });
 
 test("the marketplace points at this plugin, by a path that exists", async () => {

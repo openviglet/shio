@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * SH87 — the disk and wire ends of the content projection: walk `shio/content/**`, read
  * the posts a site holds over the agent surface, and keep the base snapshot that makes a

@@ -8,7 +8,7 @@
   },
   "homepage": "https://github.com/openviglet/shio",
   "repository": "https://github.com/openviglet/shio",
-  "license": "GPL-3.0",
+  "license": "Apache-2.0",
   "keywords": [
     "cms",
     "content",

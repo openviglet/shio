@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * SH64 — the CLI compile step. `shio/post-types/` may now hold `*.ts`/`*.mjs`
  * DSL sources (authored with `@viglet/shio-model`) alongside `*.json`. This

@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * Pure file-operations core for create-shio-app — no prompts, no process.exit,
  * so it can be unit-tested directly.

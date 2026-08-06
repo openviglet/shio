@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * `shio verify` (SH99/SH100) — lint the content and its routes, and exit non-zero when
  * something is actually broken.

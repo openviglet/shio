@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * SH99/SH100/SH101 — `shio verify` and `shio digest`. Network-free: a scripted fetch
  * records the request the command builds and returns a canned report.

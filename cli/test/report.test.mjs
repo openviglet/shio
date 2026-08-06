@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * SH104 — the handoff report. The engine is pure, so most of this file is about what the
  * document must not leave out: a change past the range, a deletion, a truncated lint, a

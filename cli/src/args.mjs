@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * Tiny, dependency-free argv parser shared by every `shio` subcommand. Supports
  * `--key value`, `--key=value`, boolean `--flag`, `-h`/`-y` shorthands and bare

@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * SH102 — the visual snapshot. Browser-free: the capture is injected, because a test that
  * launched Chromium would be testing Playwright, and what is worth pinning here is everything

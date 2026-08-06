@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016-2026 the original author or authors.
  *
- * Licensed under GPL-3.0.
+ * Licensed under the Apache License, Version 2.0.
  *
  * `shio dev` — generate types once, start the site's dev server, and refresh the
  * types on an interval so content-model edits flow into `post.attrs.*`
