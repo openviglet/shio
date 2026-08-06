@@ -1133,6 +1133,120 @@ test("SH505: a field value on candidates that share no page is reported, whateve
   );
 });
 
+/**
+ * SH551 — a disclosure list converted without its labels.
+ *
+ * <p>`SectionFaq` is proposed on the evidence *two or more `<details>`, which is a disclosure list*,
+ * and a `<details>` is exactly two parts. The extraction took the body and dropped the `<summary>`:
+ * viglet.org's home page yielded seven rows, each with an `answer` and no `question`, so the section
+ * rendered seven answers to nothing.</p>
+ *
+ * <p>Nothing reported it, and the reason is the template being careful — `sh-field` for the question
+ * sits inside `{{#if question}}`, which is right, and the effect is that a field that is *never* filled
+ * is indistinguishable from one a curator has not filled yet. The editor count agreed: ten annotated
+ * props on that page, seven of them `questions.N.answer`.</p>
+ */
+test("SH551: a <details> list keeps its summaries, because that is where the question is", () => {
+  const proposal = buildProposal({
+    inventory: inventoryFor(["/"]),
+    markup: new Map([["/", "<html><body><main><section class=faq><h2>Questions</h2>"
+      + "<details><summary>Do you offer a trial?</summary><p>Yes, for thirty days.</p></details>"
+      + "<details><summary>Where is my data held?</summary><p>In the region you pick.</p></details>"
+      + "<details><summary>Can I cancel?</summary><p>At any time, from the console.</p></details>"
+      + "</section></main></body></html>"]]),
+    html: HTML,
+  });
+
+  const faq = proposal.candidates.find((row) => row.type === "SectionFaq");
+  assert.ok(faq, `the disclosure list is proposed as a FAQ: ${JSON.stringify(proposal.candidates)}`);
+  assert.equal(faq.fields.questions.length, 3, "one row per <details>");
+  assert.deepEqual(
+    faq.fields.questions.map((row) => row.question),
+    ["Do you offer a trial?", "Where is my data held?", "Can I cancel?"],
+    "the label a reader clicks is the question — before this every row carried an answer and no "
+      + "question, and seven answers to nothing rendered as a section nobody could read",
+  );
+  assert.ok(
+    faq.fields.questions.every((row) => row.answer),
+    "and the answers are still there: the fix adds a source for the label, it does not move the body",
+  );
+  assert.ok(
+    !proposal.notes.some((note) => /empty on every row/.test(note)),
+    `a complete extraction says nothing: ${JSON.stringify(proposal.notes)}`,
+  );
+});
+
+test("SH551: a row field the markup offered and no row carries is a note about this tool", () => {
+  // The check that would have caught it. `<cite>` is present on every unit and empty, so `author` is
+  // *offered* and produced on no row — which is the shape of the defect above, reachable without
+  // deleting a rule from the source to prove it fires.
+  const unit = (quote) => `<blockquote><p>${quote}</p></blockquote><cite></cite>`;
+  const proposal = buildProposal({
+    inventory: inventoryFor(["/"]),
+    markup: new Map([["/", "<html><body><main><section class=quotes><h2>What they say</h2>"
+      + `<div class=q>${unit("It shipped in a week and nothing broke.")}</div>`
+      + `<div class=q>${unit("The migration was three commands and a coffee.")}</div>`
+      + `<div class=q>${unit("Support answered before we finished the ticket.")}</div>`
+      + "</section></main></body></html>"]]),
+    html: HTML,
+  });
+
+  const note = proposal.notes.find((each) => /empty on every row/.test(each));
+  assert.ok(note, `the finding is reported: ${JSON.stringify(proposal.notes)}`);
+  assert.match(note, /\.author —/, "naming the type and the field");
+  assert.match(
+    note,
+    /statement about this tool and not about the source/,
+    "and saying whose problem it is: a section type whose rows all leave one field empty is a claim "
+      + "about the extractor, and the template's own `{{#if}}` is what makes it look like a to-do",
+  );
+});
+
+test("SH551: a field the markup never offered is not a finding, and `role` never is", () => {
+  // The first version of this check reported a feature grid's `icon` on cards holding no `<img>` —
+  // true, useless, and a note that fires on every healthy proposal. So the predicate is the pair:
+  // empty on every row *and* offered by the markup.
+  const card = (title, body) => `<div class=card><h3>${title}</h3><p>${body}</p></div>`;
+  const proposal = buildProposal({
+    inventory: inventoryFor(["/"]),
+    markup: new Map([["/", "<html><body><main><section class=features><h2>What you get</h2>"
+      + card("Fast", "Measured in milliseconds.")
+      + card("Safe", "Audited every release.")
+      + card("Simple", "One command to deploy.")
+      + "</section></main></body></html>"]]),
+    html: HTML,
+  });
+
+  const grid = proposal.candidates.find((row) => row.type === "SectionFeatureGrid");
+  assert.ok(grid, "the cards are a feature grid");
+  assert.ok(
+    grid.fields.features.every((row) => !row.icon),
+    "no card has an image, so no row has an icon — which is the source's shape and not a defect",
+  );
+  assert.ok(
+    !proposal.notes.some((note) => /empty on every row/.test(note)),
+    `so nothing is reported: ${JSON.stringify(proposal.notes)}`,
+  );
+});
+
+test("SH551: `offered` is working state and never reaches the artefact", () => {
+  // One note reads it, inside this module. A list on every candidate would be bytes every reader of
+  // the proposal pays for and none reads — the per-row cost `propose-cost.test.mjs` measures.
+  const proposal = buildProposal({
+    inventory: inventoryFor(["/"]),
+    markup: new Map([["/", "<html><body><main><section class=faq><h2>Questions</h2>"
+      + "<details><summary>One?</summary><p>Yes it is.</p></details>"
+      + "<details><summary>Two?</summary><p>Also yes.</p></details>"
+      + "</section></main></body></html>"]]),
+    html: HTML,
+  });
+
+  assert.ok(
+    proposal.candidates.every((row) => !("offered" in row)),
+    `no candidate carries it: ${JSON.stringify(proposal.candidates)}`,
+  );
+});
+
 test("SH520: a block's span cuts that block's own bytes out of the source, comments and all", () => {
   // The property everything in SH520 rests on. `buildTree` reads `stripNonMarkup`'s output, so a
   // span means something in the *source* only because that pass blanks what it removes instead of

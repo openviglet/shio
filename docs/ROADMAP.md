@@ -93,7 +93,6 @@
 - 📋 **SH477** (deps: SH472 ✅) **A decorative two-letter mark is still the first word of a link's label** — The tile's aria-label equals its own visible text, which says it is a logo, and scanPage reads it as content. → §XVII.53
 - 📋 **SH478** (deps: SH474 ✅) **The three Media Library keys are still fields the File type does not declare** — ALT, CAPTION and TAGS are written by updateMetadata and left undeclared by SH474, so a curator who captions an image turns a green verify red. → §XVII.54
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
-- 📋 **SH551** (deps: SH505 ✅) **The FAQ section keeps every answer and drops every question** — Seven details elements yielded seven rows carrying answer and no question, and the template guards that field with an if, so the label a reader needs renders as nothing and reports nothing. → §XVII.74
 
 ## Block F — Market positioning
 

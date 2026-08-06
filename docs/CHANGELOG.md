@@ -1003,6 +1003,7 @@
 - **SH550** — attribute values are entity-decoded where markup stops being markup, raw-text bodies are not, and a reference that still arrives escaped is reported as a capture defect
 - **SH549** — the layout names the vocabulary theme whenever any page composes sections, and the captured CSS reaches the verbatim pages through a per-page reference instead of the whole site
 - **SH552** — propose publishes the chrome finding as rows, convert drops those field values instead of writing them, and the command that performed the cut is the one that prints it
+- **SH551** — a details unit's summary is the question, and a row field the markup offered that no row carries is reported as a statement about the extractor
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

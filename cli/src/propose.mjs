@@ -663,8 +663,15 @@ export function fieldsFor(type, block) {
   if (heading && spec.fields.includes("heading")) fields.heading = text(take(heading));
 
   const units = spec.repeats ? repeatedUnits(block) : [];
+  const offered = new Set();
   if (spec.repeats && units.length) {
-    fields[spec.repeats.field] = units.map((unit) => unitFields(spec.repeats.of, unit, take));
+    fields[spec.repeats.field] = units.map((unit) => {
+      const row = unitFields(spec.repeats.of, unit, take);
+      // SH551 — the union across rows: one row offering a `<summary>` is enough to make a `question`
+      // empty on all of them a drop rather than a source with no labels.
+      for (const name of row.offered) offered.add(name);
+      return row.values;
+    });
   }
 
   const prose = descendants(block)
@@ -692,20 +699,51 @@ export function fieldsFor(type, block) {
     fields.image = image.attrs.src ?? "";
     take(image);
   }
-  return { fields, consumed };
+  return { fields, consumed, offered: [...offered].sort(byText) };
 }
 
 function unitFields(names, unit, take) {
   const out = {};
   const heading = descendants(unit).find((node) => /^h[1-6]$/.test(node.tag));
+  // SH551 — a `<details>` is exactly two parts and its label is a `<summary>`, not a heading. The
+  // evidence that proposes `SectionFaq` is *two or more `<details>`, which is a disclosure list*, so
+  // this is the one unit shape the type is most often built from and the one whose label was dropped:
+  // viglet.org's home page yielded seven rows, each with an `answer` and no `question`, and the
+  // section rendered seven answers to nothing.
+  const summary = descendants(unit).find((node) => node.tag === "summary");
   const paragraph = descendants(unit).find((node) => node.tag === "p");
   const quote = descendants(unit).find((node) => node.tag === "blockquote" || node.tag === "q");
   const cite = descendants(unit).find((node) => node.tag === "cite");
   const image = descendants(unit).find((node) => node.tag === "img");
   const link = descendants(unit).find((node) => node.tag === "a");
+  // SH551 — which fields the source gave this pass something to read. Declared beside the rules that
+  // read it, because the pair is the whole content of the check: a field empty on every row *and*
+  // offered by the markup is this extractor dropping something, and a field empty on every row with
+  // nothing offered is a source that simply has no icons. Conflating the two makes the finding fire on
+  // every healthy site, and a note that always fires is the noise SH505's own reasoning calls chrome.
+  const offers = {
+    title: () => Boolean(heading),
+    question: () => Boolean(heading || summary),
+    quote: () => Boolean(quote || paragraph),
+    author: () => Boolean(cite),
+    answer: () => Boolean(paragraph),
+    body: () => Boolean(paragraph),
+    name: () => Boolean(image?.attrs.alt || link),
+    icon: () => Boolean(image),
+    avatar: () => Boolean(image),
+    image: () => Boolean(image),
+    href: () => Boolean(link),
+    // `role` deliberately offers nothing: there is no element in ordinary markup that means "this
+    // person's job title", and inventing one would put a guess in a field a curator reads as fact.
+    // So it is never reported as a drop, and the honest statement about it is this comment.
+    role: () => false,
+  };
   const pick = {
     title: () => heading && text(heading),
-    question: () => heading && text(heading),
+    // A heading first, because a hand-written FAQ uses one and a `<details>` may carry both; the
+    // `<summary>` is the fallback rather than the rule so a disclosure list with an `<h3>` inside its
+    // body is still labelled by the summary a reader clicks.
+    question: () => (heading && text(heading)) || (summary && text(summary)),
     quote: () => (quote ? text(quote) : paragraph && text(paragraph)),
     author: () => cite && text(cite),
     role: () => null,
@@ -722,12 +760,14 @@ function unitFields(names, unit, take) {
     image: () => image?.attrs.src ?? null,
     href: () => link?.attrs.href ?? null,
   };
+  const offered = [];
   for (const name of names) {
     const value = pick[name]?.();
     if (value) out[name] = value;
+    if (offers[name]?.()) offered.push(name);
   }
   take(unit);
-  return out;
+  return { values: out, offered };
 }
 
 /**
@@ -962,8 +1002,26 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     );
   }
 
+  // SH551 — a row field the extractor filled on no row at all. This is SH524's question in the other
+  // direction: that one asks which declared field no template renders, and this asks about a field the
+  // template *does* render and the extraction never supplies — which no instrument asked about, so
+  // seven answers with no questions read as seven fields a curator had not got to yet. A section type
+  // whose rows all leave one field empty is a claim about the **extractor**, not about the content.
+  const unfilled = unfilledRowFields([...candidates.values()]);
+  if (unfilled.length) {
+    notes.push(
+      `${unfilled.length} row field(s) are empty on every row the extraction produced, which is a `
+        + "statement about this tool and not about the source: the template guards each field with an "
+        + "`{{#if}}`, so a field that is never filled renders as nothing and reads exactly like one "
+        + `nobody has filled yet: ${unfilled.slice(0, 4).join("; ")}`,
+    );
+  }
+
   const rows = [...candidates.values()]
-    .map(({ index, ...rest }) => ({
+    // SH551 — `offered` is dropped here with `index`: both are working state this module computes and
+    // no consumer of the artefact reads. Serializing it would put a list on every candidate to support
+    // one note, which is the per-row cost the report exists to keep down.
+    .map(({ index, offered, ...rest }) => ({
       ...rest,
       pages: [...new Set(rest.pages)].sort(byText),
       mode: accepted.has(rest.id) ? "authorable" : "fidelity",
@@ -1056,6 +1114,57 @@ export function describeAdopted(row) {
 const ADOPTED_FLOOR = 12;
 
 /**
+ * Row fields no row of a candidate carries a value for (SH551).
+ *
+ * <h3>Why every row and not some</h3>
+ *
+ * <p>A FAQ whose third entry has no answer is content: somebody wrote it that way, and the reviewer can
+ * see it. A FAQ where **no** entry has a question is the extractor, because a source that repeated one
+ * shape seven times did not omit the same part seven times by accident. So the predicate is "empty in
+ * every instance", which is what makes this a report about this tool rather than a complaint about a
+ * site — the distinction the note has to be able to draw honestly.</p>
+ *
+ * <h3>Against the declared list, never against the keys present</h3>
+ *
+ * <p>`unitFields` writes a key only when it found a value, so a field it can never fill is *absent*
+ * from every row rather than empty in it. Asking the rows what they hold would therefore find nothing;
+ * asking `SECTION_TYPES` what the type declares finds exactly the gap. That is the same reason SH524
+ * reads the model rather than the markup.</p>
+ *
+ * <h3>And only where the source offered something, which is what keeps it honest</h3>
+ *
+ * <p>The first version of this check reported a feature grid's `icon` on a site whose cards hold no
+ * `<img>` — true, useless, and a note that fires on every healthy proposal. So the predicate is the
+ * **pair**: empty on every row *and* offered by the markup, where `offers` in `unitFields` declares
+ * what "offered" means beside the rule that reads it. That also makes this a regression guard with
+ * teeth: SH551's own defect was a `question` rule that looked at headings and not at `<summary>`, so
+ * removing the summary from either list makes this fire.</p>
+ *
+ * @returns rows like `SectionFaq.question — 7 row(s), candidate b1a2`, sorted
+ */
+function unfilledRowFields(candidates) {
+  const found = [];
+  for (const candidate of candidates) {
+    const spec = SECTION_TYPES[candidate.type];
+    if (!spec?.repeats) continue;
+    const rows = candidate.fields?.[spec.repeats.field];
+    if (!Array.isArray(rows) || !rows.length) continue;
+    const offered = new Set(candidate.offered ?? []);
+    for (const field of spec.repeats.of) {
+      if (offered.has(field) && rows.every((row) => blank(row?.[field]))) {
+        found.push(`${candidate.type}.${field} — ${rows.length} row(s), candidate ${candidate.id}`);
+      }
+    }
+  }
+  return found.sort(byText);
+}
+
+/** Absent, null, or whitespace — the three spellings of "this row said nothing here". */
+function blank(value) {
+  return value === undefined || value === null || String(value).trim() === "";
+}
+
+/**
  * The fields the target instance must declare before this proposal can be applied (SH436).
  *
  * <h3>Why the precondition lives here</h3>
@@ -1114,12 +1223,16 @@ function describe(block, guess, index) {
       ...(postType ? { postType } : {}),
     };
   }
-  const { fields, consumed } = fieldsFor(guess.type, block);
+  const { fields, consumed, offered } = fieldsFor(guess.type, block);
   return {
     type: guess.type,
     evidence: guess.evidence,
     fields,
     loss: lossFor(block, consumed),
+    // SH551 — which row fields the markup gave this pass something to read. Not serialized (see
+    // `buildProposal`'s row mapping): it is the input to one check inside this module, and a
+    // per-candidate list on the artefact would be bytes every reader pays for and none reads.
+    offered,
   };
 }
 

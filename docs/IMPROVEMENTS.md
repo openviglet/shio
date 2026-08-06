@@ -1787,29 +1787,6 @@ stays a declaration of content.
 The assertion is the same either way: apply a blueprint to a fresh site and `/preview/`
 answers 200 with `data-shio-prop` on it.
 
-### XVII.74 A disclosure list converted without its labels (SH551)
-
-`SectionFaq` is proposed on the evidence *two or more `<details>`, which is a disclosure
-list* — and a `<details>` is exactly two parts. The extraction takes the body and drops
-the `<summary>`. viglet.org's home page yielded seven rows, each with an `answer` and no
-`question`, so the section renders seven answers to nothing.
-
-Nothing reports it, and the reason is the template being careful. It emits
-`sh-field="questions.{{@index}}.question"` inside `{{#if question}}`, which is right —
-an empty field should not draw an empty heading — and the effect is that a field that is
-*never* filled is indistinguishable from one a curator has not filled yet. The editor
-count agreed: ten annotated props on that page, seven of them `questions.N.answer`, and
-the absence of seven `questions.N.question` reads as a curator's to-do.
-
-This is SH524's shape in the other direction. SH524 asks which declared field no
-template renders; this is a declared field the template renders and the *extraction*
-never supplies, which no instrument asks about. A section type whose rows all leave one
-field empty is a claim about the extractor, not about the content, and the proposal
-already knows how many rows it found.
-
-The fix in the extractor is small. The check that would have caught it — a proposed row
-whose field is empty in every instance — is the part worth keeping.
-
 ## XVIII End-user documentation for 2026.3 (Block R)
 
 The published documentation at `docs-shio` describes the 2018 product. Measured against

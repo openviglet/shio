@@ -413,6 +413,40 @@ this pass can recognise; a **note** reports the shape whatever produced it — a
 candidates that *share no page*, which is the `everywhere` note one level down, at the unit a curator
 would actually edit.
 
+**A disclosure list converted without its labels (SH551).** `SectionFaq` is proposed on the evidence
+*two or more `<details>`, which is a disclosure list* — and a `<details>` is exactly two parts. The
+extraction took the body and dropped the `<summary>`: `question` read `heading && text(heading)`, and a
+`<details>` has no heading. viglet.org's home page yielded **seven rows, each with an `answer` and no
+`question`**, so the section rendered seven answers to nothing. `question` now falls back to the
+summary — heading first, because a hand-written FAQ uses one and a `<details>` may carry both.
+
+**Nothing reported it, and the reason is the template being careful.** `sh-field="questions.N.question"`
+sits inside `{{#if question}}`, which is right — an empty field must not draw an empty heading — and the
+effect is that a field that is *never* filled is indistinguishable from one a curator has not filled
+yet. The editor count agreed: ten annotated props on that page, seven of them `questions.N.answer`, and
+the absence of seven questions read as somebody's to-do. **So the check is the part worth keeping**, and
+it is the first half of a pair whose other half (SH524, which asks which declared field no template
+renders) has not shipped: this one asks about a field the template *does* render and the extraction
+never supplies, which no instrument asked about at all.
+
+Two things make it honest rather than noisy, and both were found by running it:
+
+- **Empty in every instance, not in some.** A FAQ whose third entry has no answer is content — somebody
+  wrote it that way. A FAQ where *no* entry has a question is the extractor, because a source that
+  repeated one shape seven times did not omit the same part seven times by accident.
+- **And only where the markup offered something.** The first version reported a feature grid's `icon` on
+  a site whose cards hold no `<img>` — true, useless, and a note that fires on every healthy proposal,
+  which is the noise SH505's own reasoning calls chrome. So `unitFields` declares an **`offers`** map
+  beside the `pick` rules that read the same nodes, and the predicate is the pair. That is also what
+  gives the check teeth as a regression guard: SH551's defect *was* a `question` rule that looked at
+  headings and not summaries, so dropping the summary from either map makes this fire. `role` offers
+  nothing deliberately — no element in ordinary markup means "this person's job title", and a guess in a
+  field a curator reads as fact is worse than a blank — so it is never reported, and that comment is the
+  honest statement about it. **`offered` is working state and is dropped before serialization**, beside
+  `index`: one note reads it, and a list per candidate would be bytes every reader of the artefact pays
+  for (`propose-cost.test.mjs` measures exactly that, and caught the first version at ≈120 tokens per
+  candidate against a ceiling of 105).
+
 **And a note is not a reader, which is the seventh time (SH552).** SH505's two halves both ran: the
 overlay was excluded, and the note named the string exactly — `intro "We respect your privacy"`, across
 five candidate ids. Then `convert` copied `row.fields` verbatim and the replica's home page introduced
