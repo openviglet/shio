@@ -217,6 +217,84 @@ these isolate only because a fixture writes instance-wide post-types, which is S
 real reason. A shared context with per-test site scoping would need no slot at all, and
 the tasks that cannot have it would then be the exception rather than the habit.
 
+### VIII.23 The model's half of the proposal (SH523)
+
+Modelling is the least agent-native thing here, and the contrast is inside the product.
+For **content**, SH379 gives a proposal: what would change, what it costs, accept it an
+entry at a time. For the **model** there is no such artefact — I write a post-type, push
+it, and find what broke later.
+
+What I could not ask, in fifteen rounds of needing to: which posts would violate a field
+I am about to make required; which templates read a field I am about to remove; which
+declared fields nothing reads; which stored keys no type declares. That last one is not
+hypothetical — a `File` post has stored `SHA256`, `SIZE`, `WIDTH` and `HEIGHT` against a
+type declaring one field, and it took a lint firing 66 times to surface (SH474).
+
+`impact <address>` already answers the neighbouring question for templates — what a
+layout change would affect — so the shape is established and this is the model's half of
+it.
+
+The proposal is the right artefact rather than a lint, because a model change is a
+**decision with alternatives**: making a field required is either a data cleanup or a
+mistake, and only the count of violating posts tells them apart. A refusal cannot say
+that; a proposal can, and I can accept the parts I mean.
+
+It is also what makes modelling incremental. Today the safe move is to declare a field
+optional and never tighten it, because tightening is the change nobody can see the cost
+of.
+
+### VIII.24 The model's own reachability (SH524)
+
+`template-unknown-field` catches a template reading a field the type does not declare.
+Nothing catches the inverse — **a field no template renders** — and that inverse has now
+produced two defects, found by hand, weeks apart.
+
+`SectionFeatureGrid.features`, `SectionFaq.questions`, `SectionLogoWall.logos` and
+`SectionTestimonial.quotes` were declared, captured, stored and drawn nowhere: four of
+seven section types rendered as a bare heading (SH465). `SectionHero.ctaHref` was
+captured, stored, rendered into an `href` and annotated by nothing, so a curator could
+rename a button and not repoint it (SH503). Both are modelling failures that surfaced as
+rendering bugs, and both were found by counting annotations against fields by hand.
+
+**A field nothing renders is dead content.** It costs a curator a form control that changes nothing, it
+costs a capture the work of extracting it, and it makes every count of "how authorable is this page"
+wrong in the flattering direction.
+
+The project already owns this idea and is proud of it: `ShAgentP1ConformanceTest`
+classifies every capability by whether an agent can reach it, and holds the unreachable
+ones as an asserted list — a number that cannot drift without a reviewable diff. This is
+that instrument pointed at the content model instead of the API surface: for every
+declared field, does a template read it, and does the reader annotate it.
+
+The asserted-list shape matters more than the check. A field nobody renders is sometimes
+correct — a `SHA256` is delivery metadata — so the answer is a list somebody signed, not
+a refusal.
+
+### VIII.25 Modelling by example, pointed inward (SH525)
+
+`propose` derives a post-type from markup nobody wrote for Shio: on `viglet.org` it
+offered `BlockBuildTheFuture` with `heading:text, body:htmlEditor, image:file,
+items:relator`, inferred from one page's structure. That is data modelling by example,
+it works, and it exists only inside conversion — pointed at a stranger's site.
+
+Point it at mine. Three product pages written as content, and the question "what
+post-type are these three instances of" has the same answer computed the same way. The
+capability is built; only its input is hard-wired to a capture.
+
+It is the modelling verb I have most wanted and never had. Writing a post-type from
+nothing means naming fields before knowing what they hold, which is the wrong order — a
+model is easier to see once three instances exist and disagree. Today the only route is
+to author blind, discover the shape, then rewrite the type and migrate what already used
+it.
+
+Two things it should carry that the conversion version does not need. **Which instances
+disagree**, since a field two of three share is a different proposal from one all three
+do, and the disagreement is the interesting part. And **what it would cost to adopt**,
+which is SH523's plan — inferring a type is only useful if applying it is reviewable.
+
+The honest limit belongs in the report: three instances of a thing are evidence about
+those three. A proposal, not a conclusion — which is what `propose` already gets right.
+
 ## IX. Perception & verification loop (Block K) — ✅ shipped whole
 
 > The agent cannot see. Two of the three human round trips in a typical build existed only
@@ -445,6 +523,32 @@ that did not; counts the source recorded against counts the page shows.
 **Every artefact carries the identity of what declared it**, which is what makes this cheap: the inventory
 names the capture, the proposal names the inventory, the document names the proposal. Nothing has to be
 guessed or re-fetched — the chain is already written down and nobody has ever walked it.
+
+### IX.35 The shape of a page, not a picture of it (SH526)
+
+Four instruments looked at a page that had lost its hero, its product grid and its
+footer, and all four passed it. `verify` said **ok**. `/agent/render` counted `links: 0`
+and said nothing. `audit` — which drives a real browser — found **one** warning, a font
+fallback. `snapshot` had no baseline to compare.
+
+They share a blind spot rather than four separate ones: each measures **what is there**.
+An almost-empty page has no overflow, perfect contrast, no collapsed boxes and nothing
+that fails to load.
+
+The accessibility tree is the cheapest thing that would have caught it, and the browser
+already builds one. The intact page is a `main` with three headings, a `nav`, a
+`contentinfo` and eleven links; the emptied one is two headings and nothing else. That
+difference is a sentence long and needs no reference image.
+
+It is also the right *kind* of comparison for this work, where pixels are not. A
+screenshot diff answers "identical to a baseline", which is exactly right for fidelity —
+0.00% is a real gate — and structurally useless for authoring, where a page built from a
+blueprint has no baseline at all. The tree survives what pixels cannot: a font
+substitution, an animation caught mid-frame, a different viewport.
+
+So `audit` gains the landmark and heading shape as a finding, and `snapshot --against`
+gains a semantic comparison beside the pixel one — a replica whose tree lost a landmark
+has lost a region of the page, whatever the percentage says.
 
 ## X. Content as files (Block I)
 

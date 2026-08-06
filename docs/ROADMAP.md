@@ -12,6 +12,9 @@
 ## Block H — The Agent Gateway (MCP + agent-shaped protocol)
 
 - 📋 **SH413** (deps: SH84 ✅) **Turning indexing on leaves the content that is already published unfindable** — SH84 indexes on publish, so an instance that switches Turing on indexes nothing until every post happens to be republished, and nothing says so. → §VIII.16
+- 📋 **SH523** (deps: —) **A model change has no proposal, so its cost is discovered after it is made** — Content gets a reviewable plan and the model gets none, so which posts violate a field, which templates read a vanishing one and which keys no type declares are all unaskable. → §VIII.23
+- 📋 **SH524** (deps: SH523) **Nothing reports a declared field that no template renders** — The lint catches a template reading a field that does not exist and not the inverse, which produced four collection types drawn as a heading and a CTA nobody could repoint. → §VIII.24
+- 📋 **SH525** (deps: SH523) **Type inference from instances exists only for a stranger's markup** — propose derives a post-type with typed fields from captured pages, and the same question about my own content has no verb, so a model is written blind and rewritten after. → §VIII.25
 
 ## Block K — Perception & verification loop
 
@@ -26,6 +29,7 @@
 - 📋 **SH516** (deps: SH512) **The gate approves a page whose every link is broken, because it reads the tree and not the page** — verify resolves references against content furls, so 38 broken links and 43 broken references on the served page reach it as ok with 12 warnings. → §IX.31
 - 📋 **SH521** (deps: SH516) **The gate ignores the reads that already hold the finding** — agent/render answered links 0 and nine unstyled classes on the page verify called ok, because every check resolves against the tree and not the artefact. → §IX.33
 - 📋 **SH522** (deps: SH521) **Nothing compares a produced artefact with the declaration it came from** — The capture declares the source, the proposal the intent and the document the write, and the page each produces is judged against none, so the join is hand-written every round. → §IX.34
+- 📋 **SH526** (deps: SH521) **Four instruments passed a page that had lost most of its content** — Each measures what is present, so an empty page has no overflow, no contrast failure and no broken asset, and the accessibility tree the browser already builds would name the loss in a sentence. → §IX.35
 
 ## Block I — Content as files (local-first authoring)
 
