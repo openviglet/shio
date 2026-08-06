@@ -11,6 +11,11 @@ package com.viglet.shio.api.staticfile;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.InputStream;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -123,6 +128,88 @@ class ShFilePostTypeSourceTest {
                 .as("the File widget, which is what the console renders and SH38 stores through")
                 .isEqualTo(field.get("widget").asString())
                 .isEqualTo(ShSystemWidget.FILE);
+    }
+
+    /**
+     * A field this system declares that the 2018 model does not, with the reason (SH474).
+     *
+     * <p>Kept as a declared list rather than added to {@code import/post-types.json}, which is the
+     * 2018 artefact itself: editing it so a comparison passes would destroy the only reference this
+     * test has. All four are <b>optional</b> and machine-stamped, so a 2018 {@code File} arriving
+     * without them is a file with no measurements rather than a broken one.</p>
+     */
+    private static final Map<String, String> INVENTED = new TreeMap<>(Map.of(
+            ShStaticFileService.DATA_SHA256,
+            "SH398 — the digest of the stored bytes, which is how `shio pull --content` skips an "
+                    + "asset already on disk; there is no 2018 equivalent because there was no "
+                    + "content projection to compare against.",
+            ShStaticFileService.DATA_SIZE,
+            "SH399 — the size the digest was taken over, so a reader can tell a stale stamp from a "
+                    + "current one.",
+            ShStaticFileService.DATA_WIDTH,
+            "SH62 for the Media Library, SH471 for the converter: a section draws an image at the "
+                    + "right shape without opening it.",
+            ShStaticFileService.DATA_HEIGHT, "as WIDTH."));
+
+    /**
+     * Every {@code data} key an upload writes that the type still does not declare (SH474).
+     *
+     * <p>The instrument, and the reason it is a list rather than a comment: SH168's
+     * {@code unknown-field} is an error, so each of these is a red finding on any instance whose
+     * curator uses the Media Library. They are held here — declared, with the decision — because
+     * {@code TAGS} is an array and the catalogue's {@code Multi Select} needs {@code widgetSettings}
+     * naming its options, which is a modelling decision and not a transcription. SH478.</p>
+     */
+    private static final Map<String, String> STILL_UNDECLARED = new TreeMap<>(Map.of(
+            "ALT", "SH62 — curator metadata, written by updateMetadata rather than by an upload.",
+            "CAPTION", "as ALT.",
+            "TAGS", "as ALT, and the one that needs a decision: an array, so Multi Select and its "
+                    + "widgetSettings, or a different widget."));
+
+    @Test
+    @DisplayName("SH474: the type declares every key an upload stamps, and names the ones it does not")
+    void theTypeDeclaresWhatTheUploaderWrites() {
+        ShPostType created = shStaticFileService.resolveOrCreateFilePostType();
+        Set<String> declared = created.getShPostTypeAttrs().stream()
+                .map(ShPostTypeAttr::getName)
+                .collect(Collectors.toCollection(TreeSet::new));
+
+        assertThat(declared)
+                .as("""
+                        every one of these is written into a File post's `data` by \
+                        ShStaticFileService, and SH168's unknown-field is an ERROR — a key the \
+                        writer writes and the type omits is a finding on the content, not on the \
+                        model, which is how 66 of them read as broken assets""")
+                .contains(ShSystemPostTypeAttr.FILE, ShStaticFileService.DATA_SHA256,
+                        ShStaticFileService.DATA_SIZE, ShStaticFileService.DATA_WIDTH,
+                        ShStaticFileService.DATA_HEIGHT);
+
+        assertThat(declared)
+                .as("""
+                        and the gap is stated rather than left to be noticed: a key removed from \
+                        STILL_UNDECLARED without being declared fails here, and one declared \
+                        without being removed from the list fails too (SH142's rule)""")
+                .doesNotContainAnyElementsOf(STILL_UNDECLARED.keySet());
+
+        assertThat(INVENTED.keySet())
+                .as("a declared divergence that no longer diverges is a suppression that rotted")
+                .allSatisfy(name -> assertThat(referenceType().get("fields").get(name))
+                        .as("%s is in the 2018 model now, so this entry is stale", name)
+                        .isNull());
+    }
+
+    @Test
+    @DisplayName("SH474: repairing an existing type adds the missing fields and nothing else")
+    void repairIsAdditive() {
+        ShPostType created = shStaticFileService.resolveOrCreateFilePostType();
+        int before = created.getShPostTypeAttrs().size();
+
+        // The second call is the existing-type branch, which is the one an instance that predates
+        // SH474 takes. It must be a no-op on a sound type — the upload path runs it every time.
+        ShPostType again = shStaticFileService.resolveOrCreateFilePostType();
+
+        assertThat(again.getShPostTypeAttrs()).hasSize(before);
+        assertThat(again.getId()).isEqualTo(created.getId());
     }
 
     private JsonNode referenceType() {

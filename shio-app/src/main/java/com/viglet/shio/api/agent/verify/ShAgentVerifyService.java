@@ -2070,15 +2070,27 @@ public class ShAgentVerifyService {
             // reporting every one of them would blame the content for a modelling gap.
             return;
         }
+        // SH474 — a system type has no `PUT` door: ShPostTypeAdminService refuses one (409), and
+        // its additive `mergeMissingFields` refuses one too. Naming an endpoint that answers 409 is
+        // a fix that is not one (P6), and it is the instruction the operator got for all 66 findings
+        // the File type produced on a replica of its own assets.
+        boolean system = post.getShPostType() != null && post.getShPostType().getSystem() == 1;
+        String typeName = name(post.getShPostType());
         for (String key : data.propertyNames()) {
             if (!allowed.contains(key)) {
                 findings.add(Finding.error(check, "unknown-field", address, key,
-                        "This post stores '" + key + "', which post-type '"
-                                + name(post.getShPostType()) + "' does not declare, so nothing "
-                                + "renders or delivers it.",
-                        "Add '" + key + "' to the post-type (PUT /api/v2/post-type/"
-                                + name(post.getShPostType()) + "), or drop the key with a "
-                                + "post.upsert that omits it."));
+                        "This post stores '" + key + "', which post-type '" + typeName
+                                + "' does not declare, so nothing renders or delivers it.",
+                        system
+                                ? "'" + typeName + "' is a system post-type: its model is "
+                                        + "code-owned, so PUT /api/v2/post-type/" + typeName
+                                        + " answers 409. Upgrade to a build that declares '" + key
+                                        + "', or drop the key with a post.upsert that omits it. On "
+                                        + "a File post, uploading or replacing any asset re-runs "
+                                        + "the provisioning that adds a field the model is missing."
+                                : "Add '" + key + "' to the post-type (PUT /api/v2/post-type/"
+                                        + typeName + "), or drop the key with a post.upsert that "
+                                        + "omits it."));
             }
         }
     }

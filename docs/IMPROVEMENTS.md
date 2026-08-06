@@ -1500,30 +1500,6 @@ a capture fix's clothes.
 So the question is narrower than it looked: is a replica's canonical worth splitting the
 address space, or is a redirect the honest answer for URLs Shio never owned?
 
-### XVII.50 The rule the false one was hiding (SH474)
-
-SH470 removed the eighty-four false `dangling-reference` errors, and the run under them
-is **66 `unknown-field` errors** — the ones the false rule was hiding. `File` declares
-exactly one field, `FILE`, and every uploaded asset stores five: `FILE`, `SHA256`,
-`SIZE`, `WIDTH`, `HEIGHT`. Counted by field: 18 `SIZE`, 6 `WIDTH`, 6 `HEIGHT`.
-
-The rule is right and the data is right; the **type** is the thing that never caught up.
-`SHA256` and `SIZE` are what SH429's uploader has always written — the digest is how a
-re-upload is skipped and the size is what the delivery reports — and `WIDTH`/`HEIGHT`
-arrived with SH471 so a converted section can draw an image without measuring it. Four
-fields the writer needs, the reader uses and the declaration does not mention.
-
-So the fix is to declare them, not to stop writing them. `File` is a system post-type,
-so it comes from `import/post-types.json` and `ShRenderModelSourceTest` holds that file
-and the model together — the same door `render.provision` opens for an instance that
-already exists.
-
-The lesson is the sequencing. Two rules disagreed about the same posts and the louder
-one was wrong, so the quieter and correct one was unreadable until the first was fixed.
-`verify` was red both times, and only the second red is worth acting on — which is why a
-gate's *first* run after a fix is worth reading in full rather than diffing against the
-count.
-
 ### XVII.51 Drawn, and still not authorable (SH475)
 
 SH465 made the collection draw and stopped short of making it editable. The rows are
@@ -1598,3 +1574,27 @@ What has to be measured first is how often the pattern is real. One site is one 
 and a rule that fires on a single fixture is a rule that fires on nobody else's markup.
 The capture already holds the anchors, so counting the runs that match across a crawl's
 pages is the first deliverable and the drop is the second.
+
+### XVII.54 The array is why the other three waited (SH478)
+
+SH474 declared the four keys an upload stamps and stopped there, leaving `ALT`,
+`CAPTION` and `TAGS` — SH62's Media Library metadata, written by `updateMetadata` rather
+than by an upload. They are the same defect: SH168's `unknown-field` is an error, so the
+first caption a curator writes turns a green `verify` red on a post nobody did anything
+wrong to.
+
+They waited for one of them. `ALT` is a string and `CAPTION` is a string, and either
+would have been a line beside `SHA256`. `TAGS` is an **array**, and the catalogue's
+`Multi Select` is the only widget shaped like one — it reads `widgetSettings` naming the
+options a curator may pick, and a tag vocabulary is exactly what a media library does
+not have in advance. Declaring it with an empty option list models a field that renders
+as a select nobody can select from; declaring it as `Text` says the value is a string
+when the writer stores a JSON array, which is the same lie the other way round.
+
+So the decision is what a free-form list of strings is in this catalogue, and the two
+honest answers are a `widgetSettings` mode on `Multi Select` meaning "any value", or a
+new widget. Whichever lands, the declaration and the console component have to agree,
+because the File form is one a curator actually opens.
+
+The measurement is already written: `ShFilePostTypeSourceTest.STILL_UNDECLARED` holds
+the three with their reasons and fails if one is declared without being removed.

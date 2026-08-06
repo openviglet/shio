@@ -764,20 +764,80 @@ public class ShStaticFileService {
     }
 
     /**
-     * Find the system {@code File} post type, creating it (with its single
-     * {@code File}-widget {@code FILE} attribute) the first time. A fresh install
-     * does not seed system post types, so an upload must be able to bootstrap it.
+     * One field the {@code File} post-type is defined by (SH474).
+     *
+     * @param name     the {@code data} key this service writes, which is what the type must declare
+     * @param label    what the console shows
+     * @param widget   the catalogue key; {@code Hidden} for a value the machine stamps
+     * @param ordinal  form order
+     * @param required whether a {@code File} post can exist without it
+     * @param title    whether it names the post
+     */
+    private record FileField(String name, String label, String widget, int ordinal,
+                             boolean required, boolean title) {
+    }
+
+    /**
+     * The whole model of a {@code File} post, read by creation <em>and</em> repair (SH474).
+     *
+     * <h2>Why four of these were missing for as long as they have been written</h2>
+     *
+     * <p>{@code FILE} was the only declared field, and every upload stores five: SH398's
+     * {@code SHA256} and SH399's {@code SIZE}, then SH471's {@code WIDTH}/{@code HEIGHT}. A
+     * declaration that omits what the writer unconditionally writes is not a smaller model, it is a
+     * wrong one — SH168's {@code unknown-field} is an <b>error</b>, so a replica whose assets were
+     * uploaded by this service went red on its own bytes. Measured on a clean replication: 66
+     * findings, and the fix is to declare them rather than to stop writing them, because every one
+     * is read back (the digest is how a re-upload is skipped, the size is what invalidates it, and
+     * the dimensions are what lets a converted section draw an image without measuring it).</p>
+     *
+     * <p><b>{@code Hidden}</b> on all four, which is the honest widget: these are stamped from the
+     * bytes and a curator editing one would be editing a claim about a file rather than the file.
+     * The catalogue has had the row since before this service existed.</p>
+     *
+     * <p><b>What is still undeclared, on purpose:</b> {@code ALT}, {@code CAPTION} and {@code TAGS}
+     * — SH62's Media Library metadata, written by {@link #updateMetadata} rather than by an upload.
+     * They are the same defect and not the same decision: {@code TAGS} is an array, the catalogue's
+     * {@code Multi Select} needs {@code widgetSettings} naming its options, and guessing that here
+     * would model a field wrong instead of not at all. SH478. {@code ShFilePostTypeSourceTest} holds
+     * the three as an asserted list, so the gap is a fact the build states rather than one a reader
+     * has to notice.</p>
+     */
+    private static List<FileField> fileFields() {
+        return List.of(
+                new FileField(ShSystemPostTypeAttr.FILE, "File Path", ShSystemWidget.FILE, 1, true, true),
+                new FileField(DATA_SHA256, "SHA-256", ShSystemWidget.HIDDEN, 2, false, false),
+                new FileField(DATA_SIZE, "Size (bytes)", ShSystemWidget.HIDDEN, 3, false, false),
+                new FileField(DATA_WIDTH, "Width (px)", ShSystemWidget.HIDDEN, 4, false, false),
+                new FileField(DATA_HEIGHT, "Height (px)", ShSystemWidget.HIDDEN, 5, false, false));
+    }
+
+    /**
+     * Find the system {@code File} post type, creating it the first time and adding whatever
+     * {@link #fileFields} declares that it lacks. A fresh install does not seed system post types,
+     * so an upload must be able to bootstrap it.
+     *
+     * <h2>Why the existing-type branch repairs instead of returning (SH474)</h2>
+     *
+     * <p>Because there is no other door. {@code PUT /api/v2/post-type/File} is refused — the type
+     * is {@code system}, and so is {@code ShPostTypeAdminService.mergeMissingFields}, which is the
+     * additive verb a blueprint uses. {@code render.provision} repairs the five names in
+     * {@code ShRenderPostTypes.NAMES}, and {@code File} is deliberately not one of them: that list
+     * is also every "is this a template type" test in the renderer. So an instance that uploaded an
+     * asset before this release has four keys its model does not mention and nothing an operator
+     * can call.</p>
+     *
+     * <p>It is SH289's rule rather than a violation of SH152: <b>additive only</b>, from a table
+     * this code owns, of fields this same class writes unconditionally two methods down. Nothing a
+     * curator authored is touched, because a curator cannot author on a system type. What it does
+     * not do is repair an instance nobody uploads to — the next upload is the trigger, which for a
+     * replication is the run itself.</p>
      */
     @Transactional
     public ShPostType resolveOrCreateFilePostType() {
         ShPostType existing = shPostTypeRepository.findByName(ShSystemPostType.FILE);
         if (existing != null) {
-            return existing;
-        }
-
-        ShWidget fileWidget = shWidgetRepository.findByName(ShSystemWidget.FILE);
-        if (fileWidget == null) {
-            throw new IllegalStateException("File widget is not seeded; cannot create File post type");
+            return addMissingFields(existing);
         }
 
         ShPostType postType = new ShPostType();
@@ -789,21 +849,52 @@ public class ShStaticFileService {
         postType.setDate(Instant.now());
         postType.setOwner("admin");
 
-        ShPostTypeAttr fileAttr = new ShPostTypeAttr();
-        fileAttr.setName(ShSystemPostTypeAttr.FILE);
-        fileAttr.setLabel("File Path");
-        fileAttr.setDescription("File Path");
-        fileAttr.setOrdinal(1);
-        fileAttr.setRequired((byte) 1);
-        fileAttr.setIsTitle((byte) 1);
-        fileAttr.setIsSummary((byte) 0);
-        fileAttr.setShWidget(fileWidget);
-        fileAttr.setShPostType(postType);
-
         Set<ShPostTypeAttr> attrs = new HashSet<>();
-        attrs.add(fileAttr);
+        for (FileField field : fileFields()) {
+            attrs.add(attrOf(field, postType));
+        }
         postType.setShPostTypeAttrs(attrs);
 
         return shPostTypeRepository.save(postType);
+    }
+
+    /** Adds what {@link #fileFields} declares and this type lacks; returns it unchanged otherwise. */
+    private ShPostType addMissingFields(ShPostType existing) {
+        Set<ShPostTypeAttr> attrs = existing.getShPostTypeAttrs();
+        if (attrs == null) {
+            return existing;
+        }
+        Set<String> present = new HashSet<>();
+        attrs.forEach(attr -> present.add(attr.getName()));
+        List<FileField> missing = fileFields().stream()
+                .filter(field -> !present.contains(field.name()))
+                .toList();
+        if (missing.isEmpty()) {
+            return existing;
+        }
+        for (FileField field : missing) {
+            attrs.add(attrOf(field, existing));
+        }
+        log.info("File post type: added {}", missing.stream().map(FileField::name).toList());
+        return shPostTypeRepository.save(existing);
+    }
+
+    private ShPostTypeAttr attrOf(FileField field, ShPostType postType) {
+        ShWidget widget = shWidgetRepository.findByName(field.widget());
+        if (widget == null) {
+            throw new IllegalStateException(
+                    field.widget() + " widget is not seeded; cannot model the File post type");
+        }
+        ShPostTypeAttr attr = new ShPostTypeAttr();
+        attr.setName(field.name());
+        attr.setLabel(field.label());
+        attr.setDescription(field.label());
+        attr.setOrdinal(field.ordinal());
+        attr.setRequired((byte) (field.required() ? 1 : 0));
+        attr.setIsTitle((byte) (field.title() ? 1 : 0));
+        attr.setIsSummary((byte) 0);
+        attr.setShWidget(widget);
+        attr.setShPostType(postType);
+        return attr;
     }
 }

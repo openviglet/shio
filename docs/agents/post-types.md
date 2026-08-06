@@ -44,6 +44,28 @@ user's or an import's, named by data.
 drift here breaks **uploads** rather than rendering, and would surface as a 404 on bytes that exist.
 One mapping is stated rather than silent — the export's `label` is this model's `title`.
 
+**`File` declares five fields, and for years it declared one (SH474).** Every upload stamps
+`SHA256` (SH398), `SIZE` (SH399) and — since SH471 — `WIDTH`/`HEIGHT`, while the type mentioned only
+`FILE`. SH168's `unknown-field` is an **error**, so a replica went red on assets this system had
+itself uploaded: 66 findings, all of them true about the *model* and read as broken content. They
+were invisible until SH470 removed the eighty-four false `dangling-reference` errors sitting on top
+— **a gate's first run after a fix is worth reading in full rather than diffing against the count.**
+The fix is to declare them, not to stop writing them: every one is read back. All four are `Hidden`,
+which is the honest widget for a value stamped from the bytes.
+**The repair is in `resolveOrCreateFilePostType` because there is nowhere else it could be.** `PUT
+/api/v2/post-type/File` answers 409 (`system`), `mergeMissingFields` refuses a system type for the
+same reason, and `render.provision` repairs only `ShRenderPostTypes.NAMES` — which `File` must stay
+out of, since that list is also every "is this a template type" test in the renderer. So the
+existing-type branch became additive, SH289's rule at the only door: a table this class owns, of
+fields this class writes unconditionally, added and nothing else. The limit is real and stated — the
+next upload is the trigger, so an instance nobody uploads to stays as it was. `ALT`, `CAPTION` and
+`TAGS` are still undeclared, held as an asserted list in `ShFilePostTypeSourceTest` with the reason
+(`TAGS` is an array and needs a widget decision, not a transcription) — SH478.
+**And the error that reported all 66 named a door that answers 409.** `unknown-field`'s fix said
+`PUT /api/v2/post-type/<name>`, which is right for a user's type and refused for a system one, so
+the instruction was wrong for exactly the case that produced the findings (P6). It now branches on
+the `system` flag and says what actually works.
+
 **Creating a site is `site.upsert` on the batch surface (SH170)** — addressed `site:<name>`,
 idempotent, and it creates a **blank** site (`ShSiteWriteService.createBlank`), not a clone of the
 SH71 bootstrap template. A token with an SH2 site allow-list is **refused** — inventing a site
