@@ -487,6 +487,19 @@ export function scanPage(html, pageUrl) {
               defer: "defer" in attrs,
               type: attrs.type || null,
             });
+            // SH473 — and an asset, which is the half that was missing. `doc.scripts` is the
+            // *third-party* list: `buildInventory` drops every same-origin row from it, because
+            // SH389 models the hosts a site borrows behaviour from. So the site's own bundle was
+            // recorded nowhere a downloader reads, and `--scripts` — whose help says it takes it —
+            // had nothing to take. `BEHAVIOUR`, `wantedKind` and the `withDownloads` note all
+            // shipped with SH469 and all of them were unreachable for the same reason: `planAssets`
+            // walks `assets`, and no row in it ever had `kind: "script"`.
+            //
+            // Unconditional here, and the flag stays where it is: the inventory is the record of
+            // what the page references, and `planAssets` is the one place that decides what is
+            // fetched. An off-origin script is now an off-origin *asset* too, which is the same
+            // fact the third-party section reports and the same decision SH378 already made.
+            addAsset(attrs.src, name, attrs);
           }
         }
         break;

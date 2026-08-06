@@ -1500,31 +1500,6 @@ a capture fix's clothes.
 So the question is narrower than it looked: is a replica's canonical worth splitting the
 address space, or is a redirect the honest answer for URLs Shio never owned?
 
-### XVII.49 The report shipped ahead of the fetch, again (SH473)
-
-`--scripts` exists, its help says "take this site's own `<script src>` too", and the
-site's own script is still not taken. Measured on a `--depth 1 --render --scripts`
-capture of `www.viglet.org`: the captured markup carries `<script type="module"
-crossorigin src="/assets/index-LNwgBwpz.js">`, the inventory's `scripts` list holds
-**only** the two third-party hosts, `script` is absent from the asset kinds, no `.js`
-reaches the tree, and the served replica has one inline script and no `src`. The bundle
-404s.
-
-So the dark/light toggle and the consent modal are still dead, which is where this
-started.
-
-What SH469 did land is the reporting, and it is good: third-party scripts are a named
-section, off-origin references are counted and explained, and `--scripts` is
-discoverable. What did not land is the fetch — the same split as SH452, whose note
-became honest while the download stayed unwritten, and SH455 which had to be filed to
-finish it. Three times now the report has shipped ahead of the behaviour it reports on,
-which is worth naming as a pattern rather than as a third accident: a phase that
-*describes* an omission reads as done.
-
-The first-party half is the whole ask. A `<script src>` on this origin is an asset like
-a stylesheet, and `--scripts` already declares the intent — what is missing is `script`
-as a kind the collector walks.
-
 ### XVII.50 The rule the false one was hiding (SH474)
 
 SH470 removed the eighty-four false `dangling-reference` errors, and the run under them

@@ -47,6 +47,7 @@
  * that, and says what will *not* work — because "serve it at the original path" is the answer an
  * operator reaches for first, and SH437's finding is not somewhere they would think to look.
  */
+import { BEHAVIOUR_SKIPPED } from "./clone-assets.mjs";
 
 /** The group name, in `--checks` and in the report's own `checks` list. */
 export const REPLICATION_CHECK = "replication";
@@ -214,6 +215,12 @@ function assetFindings(inventory, present, referenced) {
   const stranded = [];
   const chrome = [];
   for (const asset of rows) {
+    // SH473 — a script the operator did not ask for is not a gap. Now that a `<script src>` is an
+    // asset row, `--assets` without `--scripts` leaves one behind on purpose, and the download's own
+    // note already says so in behaviour's terms. Reporting it here as "was never downloaded", under
+    // a fix that names `--assets`, would be a second report of one fact with the wrong instruction
+    // on it (P6). A script that *was* taken and then lost from the tree still lands below.
+    if (asset.unavailable === BEHAVIOUR_SKIPPED) continue;
     if (!asset.file) {
       missing.push({ path: asset.path, why: "was never downloaded" });
     } else if (!present.has(asset.file)) {

@@ -58,6 +58,16 @@ export const DOWNLOADABLE = new Set(["image", "stylesheet", "font", "icon", "med
  */
 export const BEHAVIOUR = new Set(["script"]);
 
+/**
+ * Why a behaviour asset is not in the tree when the flag was not passed — the exact string, shared.
+ *
+ * <p>Exported for `verify-replication.mjs` (SH473), which has to tell this apart from a download
+ * that failed: the first is a decision the operator made and the `withDownloads` note already
+ * states, the second is a gap. A literal in two modules is two modules that can disagree, and the
+ * disagreement would read as a replica whose bundle went missing.</p>
+ */
+export const BEHAVIOUR_SKIPPED = "behaviour, not captured without --scripts";
+
 /** `.` and `..` — a segment that navigates instead of naming (SH256). */
 const TRAVERSAL = new Set([".", ".."]);
 
@@ -313,9 +323,7 @@ function wantedKind(kind, scripts) {
  * reader who cannot tell those apart reads one number and concludes the replica is complete.</p>
  */
 function skipReasonFor(kind, scripts) {
-  return !scripts && BEHAVIOUR.has(kind)
-    ? "behaviour, not captured without --scripts"
-    : "not a renderable asset";
+  return !scripts && BEHAVIOUR.has(kind) ? BEHAVIOUR_SKIPPED : "not a renderable asset";
 }
 
 function byRefsThenFile(a, b) {

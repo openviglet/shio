@@ -27,6 +27,7 @@ import {
   serializeInventory,
   stripNonMarkup,
 } from "../src/clone.mjs";
+import { BEHAVIOUR, DOWNLOADABLE } from "../src/clone-assets.mjs";
 import * as clone from "../src/commands/clone.mjs";
 
 function sink() {
@@ -207,6 +208,78 @@ test("assets come from every attribute that names bytes, srcset included", () =>
   // One <img> can name three files, and a capture that took only `src` would leave the phone and
   // the retina copies out of the tree.
   assert.equal(kinds.get("/img/hero@2x.png"), "image");
+});
+
+/**
+ * SH473 — the site's own bundle is an asset, and until now it was an asset nobody produced.
+ *
+ * <p>`doc.scripts` is the *third-party* list: `buildInventory` drops every same-origin row from it,
+ * because SH389 models the hosts a site borrows behaviour from. So `--scripts`, `BEHAVIOUR`,
+ * `wantedKind` and the `withDownloads` note all shipped with SH469 and every one of them was
+ * unreachable — `planAssets` walks `assets`, and no row in it ever carried `kind: "script"`.</p>
+ */
+test("SH473: a <script src> is an asset row, and the third-party list stays third-party", () => {
+  const doc = scanPage(PAGE, "https://x.test/");
+  const kinds = new Map(doc.assets.map((asset) => [asset.url, asset.kind]));
+
+  assert.equal(kinds.get("https://x.test/js/app.js"), "script");
+  assert.equal(kinds.get("https://www.googletagmanager.com/gtm.js?id=GTM-1"), "script");
+
+  const inventory = buildInventory({
+    origin: "https://x.test",
+    seed: "https://x.test",
+    visited: [{ url: "https://x.test/", status: 200, depth: 0, doc }],
+    robots: parseRobots("User-agent: *\nDisallow:\n"),
+    options: {},
+  });
+  const own = inventory.assets.find((asset) => asset.path === "/js/app.js");
+  assert.deepEqual(
+    { kind: own?.kind, external: own?.external },
+    { kind: "script", external: false },
+    "the fetch reads `assets`, so this row is the whole of what --scripts had been missing",
+  );
+  assert.deepEqual(
+    inventory.scripts.map((script) => script.host),
+    ["www.googletagmanager.com"],
+    "and SH389's section is unchanged — a site's own bundle is not a host it borrows from",
+  );
+});
+
+/**
+ * The instrument, and the reason this task is the third of its shape (SH473).
+ *
+ * <p>SH452's note became honest while the download stayed unwritten, SH455 had to be filed to finish
+ * it, and SH469 shipped the reporting without the fetch. Each time a phase that *described* an
+ * omission read as done. What none of them had was a check that the two halves meet: `planAssets`
+ * declares the kinds it will fetch, `scanPage` decides which kinds exist, and nothing asserted that
+ * every kind in the first is a kind the second can produce — SH469's own tests hand-wrote an
+ * inventory holding a `script` row precisely because no capture could make one.</p>
+ *
+ * <p>So: one page referencing one of everything, and the claim is coverage rather than shape. A kind
+ * added to `DOWNLOADABLE` or `BEHAVIOUR` with no path through the scanner fails here, naming itself.
+ * Extending the fixture to make it pass is the point — that is the proof the scanner can emit it.</p>
+ */
+test("SH473: every kind the downloader will fetch is a kind the scanner can produce", () => {
+  const one = `<html lang="en"><head>
+    <link rel="stylesheet" href="/css/site.css">
+    <link rel="icon" href="/favicon.ico">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="preload" href="/fonts/inter.woff2" as="font">
+    <script src="/assets/index.js" type="module"></script>
+    </head><body>
+    <img src="/img/hero.png" alt="">
+    <video src="/media/clip.mp4"></video>
+    <p>${"text ".repeat(60)}</p>
+    </body></html>`;
+  const produced = new Set(scanPage(one, "https://x.test/").assets.map((asset) => asset.kind));
+  const fetched = [...DOWNLOADABLE, ...BEHAVIOUR].sort();
+
+  assert.deepEqual(
+    fetched.filter((kind) => !produced.has(kind)),
+    [],
+    `these kinds are in the fetch lists and no markup in this fixture yields them, which is how a `
+      + `flag ships with nothing to act on. Produced: ${[...produced].sort().join(" ")}`,
+  );
 });
 
 test("a url() inside an inline <style> is an asset the inventory names (SH455)", () => {

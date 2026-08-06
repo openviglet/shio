@@ -855,6 +855,25 @@ saying it.** A skipped script gets its own reason — `behaviour, not captured w
 render and not respond*, with how many are the site's own and the flag that takes them. The counting
 was always there; the crawler saw the tags in order to skip them.
 
+**And none of it ran, because no capture could produce the row it acted on (SH473).** `planAssets`
+walks `inventory.assets`; `scanPage` put a `<script src>` only in `doc.scripts`, which
+`buildInventory` filters to **off-origin hosts** because that is SH389's third-party list. So the
+site's own bundle was recorded nowhere a downloader reads: `--scripts` had nothing to take, and the
+`withDownloads` note — which fires on a *skipped* script — had nothing to name either. The fix is one
+`addAsset` in the `script` case, unconditional: the inventory records what the page references and
+`planAssets` is the one place that decides what is fetched. Measured on `--depth 1 --render --assets
+--scripts` of `www.viglet.org`: **19 files, 1.7 MB, `/assets/index-LNwgBwpz.js → Viglet/assets/…`**,
+where the same run without the flag writes 18 and says *1 of them belong to this site* — a sentence
+that had never been printed. One consequence, on the gate: a same-origin script left behind by
+decision now carries `unavailable: BEHAVIOUR_SKIPPED`, and `assetFindings` skips it, or the operator
+reads the same fact twice with a `--assets` instruction on the second copy.
+**The instrument is coverage between the two halves**, because this was the third task of its shape
+(SH452's note before its download, SH455 to finish it, SH469's report before its fetch):
+`clone.test.mjs` scans one page referencing one of everything and asserts every kind in
+`DOWNLOADABLE ∪ BEHAVIOUR` is a kind the scanner produced. A kind added to a fetch list with no path
+through `scanPage` fails there, naming itself — which is exactly what SH469's own tests could not
+catch, having hand-written an inventory holding a `script` row no capture could make.
+
 **An element boundary inside a link is a separator, and it used to be nothing (SH468).** A captured
 navigation carried `DuDumont DEP`, `ShShio CMS` and `TuTuring ES` — the label with a two-letter prefix
 fused onto its first word. The markup explains it exactly: the anchor holds a 28×28 brand tile
