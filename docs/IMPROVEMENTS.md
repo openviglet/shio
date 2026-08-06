@@ -374,6 +374,32 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
+### IX.29 A matching commit should end the question (SH500)
+
+The suite refuses to run: four tests **cancelled**, `pass 0 fail 0`, and one message —
+the instance "is older than the code under test … built at 2026-08-06T10:32:05Z (commit
+8b1b771), before HEAD was committed."
+
+The commit it names **is** HEAD. `8b1b771` is `8b1b7711`, so the running code and the
+code under test are the same bytes, and the guard says otherwise because it also
+compares clocks: the build is `10:32:05Z` and HEAD's commit is `10:32:38Z`, thirty-three
+seconds later. Building before committing is the normal order — compile, test, then
+commit — so the guard fires on the ordinary case.
+
+A matching commit is proof and should end the question. The timestamp is a fallback for
+the case the hash cannot cover: an instance whose commit is *not* HEAD, or a dirty tree
+where the hash says nothing about what compiled. Consulting it after a match can only
+produce this.
+
+The cost is the whole gate, not one assertion. All four tests are cancelled, so the run
+answers nothing about the six tasks it was meant to validate, and the message tells the
+reader to rebuild and restart — work that will not change the outcome and will look like
+it did if the next commit lands afterwards.
+
+It is SH460's own shape turned around: the instrument written so a red run could name
+the stale side now names a current instance as stale. Assert both directions — a
+genuinely old instance is caught, and a current one runs.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -1591,27 +1617,6 @@ stops the agent from surprising them. `docs/specs/SH74-agent-native-cms.md` is t
 form to compress, and the four hub pages of the restructured sidebar are what the
 `NavCard` grid should point at, alongside a quick start that begins with an agent rather
 than with a JavaScript API.
-
-### XVIII.3 Four hubs, in the order the work happens (§XVIII.3) (SH482)
-
-`sidebars-shio.ts` has eight flat categories (Getting Started, Installation, Content
-Management, Management, Developers, Headless, Security, Integration).
-`sidebars-turing.ts` instead groups everything under four hubs, each with its own `.mdx`
-landing page: Search it, Ask it, Automate it, Run it. The hub is where a reader who does
-not yet know the vocabulary starts.
-
-Shio's four are the product's own division of labour: **the agent builds it** (MCP, the
-agent surface, content as files, the CLI, blueprints), **the human curates it** (the
-console, the Universal Editor, review and publishing, preview), **the CDA delivers it**
-(the read contract, the JS client, the React SDK, the Next.js starter, GraphQL), and
-**run it** (install, configuration, tenancy, search indexing, security, operations).
-Replication spans build and curate; file it under build.
-
-Deliverables: the four `.mdx` hubs, the restructured `sidebars-shio.ts` with `link: {
-type: "doc" }` on each category, and the version row in the docs repo's own `agents.md`,
-which still records Shio as `0.3.7` with no newer version while `docusaurus.config.ts`
-declares 2026.3. Every page task in this block files into the structure this task
-creates, which is why it comes second and not last.
 
 ### XVIII.4 The rendering story, rewritten (§XVIII.4) (SH483)
 
