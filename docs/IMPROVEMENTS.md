@@ -397,32 +397,6 @@ against **its own URL**: `<a href>`, `src`, `srcset`, `<link>`, `url()` in style
 *and* style attributes, and the strings a `fetch(` names. It is what a reader does by
 opening the page, which is why it keeps being the thing that finds what the tree cannot.
 
-### IX.32 Correct file, correct document, corrupt request (SH519)
-
-A Portuguese page replicated as `O futuro Ã© ilimitado`. Four measurements place the
-fault, and only the last one moves:
-
-- the captured file holds `C3 A9` — correct UTF-8 for `é`
-- `convert --out doc.json` writes `C3 A9` — the document the CLI builds is correct
-- posting **that same file** with `curl` stores `C3 A9` — the server and the endpoint are correct
-- letting the **CLI** post it stores `C3 83 C2 A9` — the UTF-8 encoding of `Ã©`
-
-So the bytes are read as Latin-1 somewhere between the CLI's own correct document and
-the request the server receives. `C3 A9` decoded as Latin-1 gives the two characters `Ã`
-and `©`, and re-encoding those as UTF-8 gives the four bytes stored. Nothing else
-produces that sequence, which is why the chain above is worth keeping: each step rules
-out one suspect.
-
-It reaches every write the CLI makes, not conversion. `push`, `apply` and any batch the
-CLI composes go through the same transport, so any content with a non-ASCII character is
-corrupted on the way in — and Portuguese, Spanish, French and German content is almost
-entirely non-ASCII by line.
-
-It is also silent and compounding. Nothing refuses, `verify` is clean, the page serves
-with `charset=UTF-8` and faithfully delivers the corruption; a re-run re-reads the
-source correctly and writes the same damage again. The check is a round trip: write a
-string with an accent through the CLI, read it back, compare bytes.
-
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the

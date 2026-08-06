@@ -90,6 +90,14 @@ Read one extracted string against the source, too. An entity survives extraction
 characters and is escaped again on render, so `&` becomes `&amp;` in the page *and in the
 editor field* (SH476) — invisible unless you compare.
 
+**Never read the API through `subprocess.run(text=True)`, and compare bytes with `od -c`.**
+That decodes with the locale encoding — **cp1252** on this machine — so `C3 A9` reads as `Ã©`,
+and a read-modify-write patch posts the mojibake back. It produced a page of corrupted
+Portuguese and a filed defect against the CLI that had to be retired: `apply` round-trips an
+accented string unchanged and a fresh `convert` stores correct UTF-8. Use
+`capture_output=True` without `text`, decode `utf-8` explicitly, and judge encoding on bytes
+rather than on what a terminal prints.
+
 *Not a limit — the contract (SH507).* The source's classes are dropped and the page is presented by
 a **Shio** theme: `<site> (Shio)`, written into the conversion beside the captured one, styling
 SH508's roles. So judge it as a page a curator would keep, not as a failed copy — does a hero read as
