@@ -60,6 +60,8 @@ export const THEME_FOLDER = "/theme";
  * page, which is what `Page.content` is for.
  */
 export const FIDELITY_LAYOUT_URL = `${THEME_FOLDER}/layout`;
+/** Where the captured `Theme` post lives — named once, because the layout now references it. */
+export const CAPTURED_THEME_URL = `${THEME_FOLDER}/captured`;
 export const fidelityLayoutTitle = (site) => `${site} (fidelity)`;
 
 /**
@@ -129,13 +131,15 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
   // own markup and the source's own class names, so the captured stylesheet is the one that has
   // anything to say about it, and naming the vocabulary's theme would leave the half a curator did
   // not accept rendered as unstyled text.
-  const theme = pages.length
-    ? layoutTheme({
-      site,
-      captured: extras.includes("Theme"),
-      authorable: sections.length > 0 && verbatim === 0 && mixed === 0,
-    })
-    : null;
+  // SH549 — `authorable` used to be `verbatim === 0 && mixed === 0`, a **site-wide** switch, and one
+  // block the vocabulary could not name flipped it for every page: eleven authorable pages named the
+  // captured theme and shipped a megabyte defining none of the `shio-*` classes they draw, with
+  // `page-unstyled` on ten of them. A real site always has such a block. So the layout names the
+  // vocabulary theme whenever *any* page composes sections, and the pages that kept verbatim markup
+  // get the captured CSS through `capturedFor` below — per page, which is what the render model
+  // already allowed and this code was not asking for.
+  const authorable = sections.length > 0;
+  const theme = pages.length ? layoutTheme({ site, captured: extras.includes("Theme"), authorable }) : null;
   // SH509 — the theme SH507's decision promised and the vocabulary never had. Written only when the
   // layout **names** it: it styles SH508's roles, and a page that is verbatim in whole or in part has
   // none of them, so anywhere else it would be a post nobody renders. `Theme (Shio)` rather than
@@ -150,7 +154,12 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
   // authorable Shio site" and neither of its two modes produced one. Every page needs a layout,
   // because the renderer resolves one per post-type; the layout below serves all three modes.
   if (pages.length) {
-    posts.push(pageLayout(markup, site, theme));
+    // SH549 — the captured stylesheet, reaching only the pages that carry verbatim markup. Named
+    // only when the layout named the *vocabulary* theme: a pure-fidelity conversion already names the
+    // captured one, and emitting it twice would put a megabyte on the page twice.
+    const capturedFor = theme === vocabularyThemeTitle(site)
+      && extras.includes("Theme") && held.length > 0;
+    posts.push(pageLayout(markup, site, theme, capturedFor));
     extras.push("PageLayout");
   }
 
@@ -277,16 +286,22 @@ export const PAGE_BODY_HTML = `{{#if content}}{{{content}}}{{/if}}
  * copy of SH509's CSS in the layout would be a second copy of one stylesheet and would render with
  * the `:root` block missing).</p>
  *
- * <h3>The capture keeps its bytes, and a mixed conversion keeps the captured theme</h3>
+ * <h3>The capture keeps its bytes, and SH549 is what `authorable` had to stop meaning</h3>
  *
  * <p>The captured `Theme` post is written exactly as before: **fidelity** inlines it and reaches
- * 0.00% with it, and the same site converted the other way needs every byte. `authorable` is
- * therefore `verbatim === 0` and not "has any section" — a conversion where some page was left
- * verbatim still names the captured theme, because fidelity's claim is a pixel comparison and it
- * cannot be made without those bytes. That leaves a mixed site's composed pages unstyled, which is
- * exactly where they are today; what it refuses to do is make a page **worse** than it is now to
- * make another one better. A site converted both ways holds both themes and uses one per layout,
- * which is what the render model already supports.</p>
+ * 0.00% with it, and the same site converted the other way needs every byte. SH510 made
+ * `authorable` mean `verbatim === 0 && mixed === 0` so that a conversion with any verbatim page
+ * still named the captured theme — refusing to make one page **worse** to make another better, and
+ * saying that a mixed site's composed pages stay unstyled, *exactly where they are today*.</p>
+ *
+ * <p><b>What that decision did not anticipate is the frequency.</b> A real site always has a block
+ * the vocabulary cannot name; the first attempt on the first site had one, so `verbatim === 0` is
+ * not the rare case but the normal one, and a site-wide switch turned **one** unmatched block into a
+ * site-wide regression — twelve pages carrying 1,062,146 characters of CSS that defines none of the
+ * `shio-*` classes they draw, `page-unstyled` on ten of them. So `authorable` is now simply "any
+ * page composes sections", and the trade SH510 refused is not made either: the pages that kept
+ * verbatim markup get the captured CSS **per page**, through `capturedStyleFor`. Both claims hold at
+ * once, which is what the render model already allowed and this function was not asking for.</p>
  *
  * @returns {string|null} the title to name, or `null` when the document holds no theme at all
  */
@@ -408,7 +423,7 @@ function layoutTheme({ site, captured, authorable }) {
  * the same way adding a row does. `ShConvertedLayoutRenderTest` holds that exemption and asserts its
  * premise: a presentation field that becomes free text fails there rather than staying exempt.</p>
  */
-function pageLayout(markup, site, theme) {
+function pageLayout(markup, site, theme, capturedFor = false) {
   const lang = langOf(markup);
   return {
     url: FIDELITY_LAYOUT_URL,
@@ -426,7 +441,7 @@ function pageLayout(markup, site, theme) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{post.title}}</title>
 <style>{{theme.css}}</style>
-</head>
+${capturedFor ? `${CAPTURED_STYLE_HTML}\n` : ""}</head>
 <body class="shio-page">
 ${PAGE_BODY_HTML}
 </body>
@@ -435,6 +450,41 @@ ${PAGE_BODY_HTML}
     },
   };
 }
+
+/**
+ * The captured stylesheet, on the pages that carry verbatim markup and on no others (SH549).
+ *
+ * <h3>Why a second `<style>` here is right where SH510's was wrong</h3>
+ *
+ * <p>SH510 refused two stylesheets on one page, and it was refusing something else: an authorable
+ * page inlining a megabyte that matched none of its classes, with the vocabulary theme beside it and
+ * the cascade deciding. This is not that. `{{#if content}}` is a **per-page** condition — `content`
+ * holds the source's own markup — so an authorable page still receives exactly one stylesheet and
+ * is byte-identical to what SH510 produced. Only a page that kept the source's class names gets the
+ * source's CSS, which is the page that cannot render without it.</p>
+ *
+ * <h3>By reference, so there is still one copy</h3>
+ *
+ * <p>`{{#getRelation}}` resolves a friendly URL inside the current site and yields the post's own
+ * fields (SH247), so the captured `Theme` post remains the single copy: SH424's token edits still
+ * reach the page, which a literal copy in this template would have broken — the objection SH510
+ * raised against inlining SH509's CSS here, and it applies equally in this direction.</p>
+ *
+ * <p>Second in the head, after `{{theme.css}}`, so the source's rules win the collisions a reset or a
+ * `:root` block would otherwise decide against the page's own markup. A **mixed** page gets both and
+ * needs both — its authored half draws `shio-*` and its verbatim half draws the source's names — and
+ * that page is the one the site-wide switch left half-unstyled whichever way it went.</p>
+ *
+ * <h3>A constant with no interpolation, which is SH464's seam</h3>
+ *
+ * <p>`ShConvertedLayoutRenderTest` reads this string out of this file and renders it in the JVM, so
+ * the one thing neither language can check alone — that a **literal** argument to
+ * `{{#getRelation}}` resolves at all, when the helper's declared shape is a field path — is checked
+ * by the half that would fail. The URL is therefore spelled here rather than interpolated from
+ * `CAPTURED_THEME_URL`, and `convert.test.mjs` asserts the two agree.</p>
+ */
+export const CAPTURED_STYLE_HTML =
+  '{{#if content}}{{#getRelation "/theme/captured"}}<style>{{CSS}}</style>{{/getRelation}}{{/if}}';
 
 /**
  * The source's own `lang`, when every captured page agreed on one.
@@ -704,7 +754,7 @@ function titleOf(page) {
  */
 function themePost(theme, site) {
   return {
-    url: `${THEME_FOLDER}/captured`,
+    url: CAPTURED_THEME_URL,
     type: "Theme",
     folder: THEME_FOLDER,
     data: {

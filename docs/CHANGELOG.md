@@ -1001,6 +1001,7 @@
 - **SH517** — A rendered capture gives back what a script created rather than what the page was served with: a canvas the response body did not have, an empty style attribute, and a framework's own state classes - and the counts go in a note, so a capture that froze behaviour says what it froze.
 - **SH514** — An upload of a zero-byte file is stored rather than refused, because a source that serves an empty 200 is replicated by storing one - MultipartFile.isEmpty() was conflating that with a missing part. The two caller mistakes it was hiding now carry a problem document, as does the empty replacement, and convert counts an empty asset apart from a missing one.
 - **SH550** — attribute values are entity-decoded where markup stops being markup, raw-text bodies are not, and a reference that still arrives escaped is reported as a capture defect
+- **SH549** — the layout names the vocabulary theme whenever any page composes sections, and the captured CSS reaches the verbatim pages through a per-page reference instead of the whole site
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 

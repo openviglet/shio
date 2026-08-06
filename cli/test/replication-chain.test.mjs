@@ -278,12 +278,15 @@ test("SH422: capture → propose → accept → convert → verify, each phase r
     assert.equal(conversion.site, "Acme");
     assert.deepEqual(
       conversion.posts.map((post) => post.url),
-      [`${SECTIONS_FOLDER}/${hero.id}`, "/", "/about", "/theme/captured", "/theme/layout"],
+      [`${SECTIONS_FOLDER}/${hero.id}`, "/", "/about", "/theme/captured",
+        "/theme/shio", "/theme/layout"],
       "the accepted block's id addresses the section, a Page composes it on each source path it "
         + "appeared on (SH438), the theme rides the same document, and since SH464 so does the "
-        + "layout - a Page with none is a Page the renderer answers 400 for. No /theme/shio, and "
-        + "that is SH520: every page here kept a block nobody accepted, so every page carries the "
-        + "source's own markup and the captured stylesheet is the one with anything to say about it",
+        + "layout - a Page with none is a Page the renderer answers 400 for. **Both** themes, and "
+        + "that is SH549: every page here kept a block nobody accepted, so every page is mixed and "
+        + "needs both - shio-* for the half that was accepted and the source's own CSS for the half "
+        + "that was not. Before it, `/theme/shio` was absent and one unmatched block left every "
+        + "accepted section on the site unstyled",
     );
     assert.equal(
       conversion.posts[0].data.heading,
@@ -323,11 +326,19 @@ test("SH422: capture → propose → accept → convert → verify, each phase r
       "and the accepted one is not, or the page renders it twice: once as markup and once as the "
         + "section it became, which is the shape that makes an acceptance invisible in the output",
     );
+    const layout = conversion.posts.find((post) => post.type === "PageLayout");
     assert.equal(
-      conversion.posts.find((post) => post.type === "PageLayout").data.THEME,
-      "Acme (captured)",
-      "SH510's rule on SH520's page shape: a page carrying the source's class names is styled by "
-        + "the stylesheet those names came from",
+      layout.data.THEME,
+      "Acme (Shio)",
+      "SH549: a mixed page draws shio-* names for the half that was accepted, so the layout names "
+        + "the theme that defines them. SH510's rule reached the same page and answered the other "
+        + "way, which is what left every accepted section on the site unstyled",
+    );
+    assert.match(
+      layout.data.HTML,
+      /\{\{#if content\}\}\{\{#getRelation "\/theme\/captured"\}\}/,
+      "and the half nobody accepted is still styled by the stylesheet its class names came from — "
+        + "per page, on the page's own `content`, which is the condition SH510 did not have",
     );
 
     // ── phase four: the coverage gate ───────────────────────────────────────────────────

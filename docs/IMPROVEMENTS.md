@@ -1787,31 +1787,6 @@ stays a declaration of content.
 The assertion is the same either way: apply a blueprint to a fresh site and `/preview/`
 answers 200 with `data-shio-prop` on it.
 
-### XVII.72 The one block that unstyles the other eleven pages (SH549)
-
-`propose --accept all` on viglet.org accepted six of seven candidates. The seventh was
-`/partner/`, reported honestly as *nothing in the vocabulary fits this block*, so that
-page stayed verbatim. `convert` computes `authorable = sections.length > 0 && verbatim
-=== 0 && mixed === 0`, which is now false, so the layout named `<site> (captured)` and
-the vocabulary theme was never written.
-
-The result is measurable and absurd: every page ships a single inline `<style>` of
-1,062,146 characters — the source's whole stylesheet — and `verify` reports
-`page-unstyled` on ten of them, because that megabyte defines none of the `shio-*`
-classes the section templates draw. A megabyte of CSS that styles nothing, on every
-page, per request.
-
-SH510's rule is right and is why this happens: fidelity's claim is a pixel comparison
-and cannot be made without those bytes, so a page left verbatim keeps them. The comment
-in `convert.mjs` says so and calls the consequence *exactly where they are today*. What
-that decision did not anticipate is the frequency. A real site always has a block the
-vocabulary cannot name — this was the first attempt on the first site — so `verbatim ===
-0` is not a rare case, it is the normal one, and the site-wide switch turns one
-unmatched block into a site-wide regression.
-
-The render model already supports a theme per layout. What is missing is that the choice
-is per page, not per site.
-
 ### XVII.74 A disclosure list converted without its labels (SH551)
 
 `SectionFaq` is proposed on the evidence *two or more `<details>`, which is a disclosure

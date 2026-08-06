@@ -759,6 +759,30 @@ it. Four decisions worth keeping:
   ~1.04 MB captured stylesheet the named theme is **under 1%** of it, there is exactly one
   `{{theme.css}}`, and `convert`'s report names the theme, because under SH507 which presentation a
   reviewer is getting is the mode's contract and not an implementation detail.
+- **And the site-wide switch was the regression, not the theme (SH549).** `authorable` was
+  `verbatim === 0 && mixed === 0`, so **one** block the vocabulary could not name flipped it for the
+  whole site. Measured on viglet.org: `propose --accept all` took six of seven candidates, the seventh
+  reported honestly as *nothing in the vocabulary fits this block*, and the twelve pages then shipped
+  1,062,146 characters of the source's CSS each — defining none of the `shio-*` classes the section
+  templates draw, `page-unstyled` on ten of them. A megabyte of CSS that styles nothing, on every
+  page, per request. **SH510's reasoning was right and its frequency estimate was not**: a real site
+  always has a block the vocabulary cannot name, this was the first attempt on the first site, so
+  `verbatim === 0` is the normal case rather than the rare one. So `authorable` is now simply "any
+  page composes sections" — **and the trade SH510 refused is still not made**, because the captured
+  CSS reaches the pages that kept verbatim markup through a **per-page** condition in the layout's
+  head: `{{#if content}}{{#getRelation "/theme/captured"}}<style>{{CSS}}</style>{{/getRelation}}{{/if}}`.
+  `content` holds the source's own markup, so an authorable page still receives exactly one stylesheet
+  and is byte-identical to what SH510 produced; only a page carrying the source's class names gets the
+  source's CSS. **By reference, so there is still one copy** — the captured `Theme` post remains the
+  single one and SH424's token edits still reach the page, which the literal copy SH510 rejected would
+  have broken in this direction too. Second in the head, so the source's rules win the collisions a
+  reset would otherwise decide against the page's own markup, and a **mixed** page gets both and needs
+  both — that page is the one the old switch left half-unstyled whichever way it went. **The one check
+  neither language can make alone is in the JVM**: `CAPTURED_STYLE_HTML` is a no-interpolation export
+  (SH464's seam) and `ShConvertedLayoutRenderTest` reads it, seeds a layout naming **no** `THEME`, and
+  asserts the captured rule reaches the verbatim page and not the authorable one — because whether a
+  **literal** first argument to `{{#getRelation}}` resolves at all, when the helper's declared shape is
+  a field *path*, is exactly the thing a silent `{{else}}` would hide behind a green JS suite.
 - **A page is not one mode, and accepting one block used to discard the rest of it (SH520).**
   `composePages` wrote `content` **or** `sections`, so a page with six blocks and one acceptance
   became a `Page` holding a 6-byte `title` and one section — measured on `viglet.org`, where the same

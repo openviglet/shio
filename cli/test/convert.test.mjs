@@ -19,7 +19,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  LAYOUT_ROLES, SECTIONS_FOLDER, THEME_FOLDER, WRAPPER_ROLES, buildConversion, withResolvedFileFields,
+  CAPTURED_STYLE_HTML, CAPTURED_THEME_URL, LAYOUT_ROLES, SECTIONS_FOLDER, THEME_FOLDER,
+  WRAPPER_ROLES, buildConversion, withResolvedFileFields,
 } from "../src/convert.mjs";
 import {
   VOCABULARY_THEME_CSS, VOCABULARY_THEME_TOKENS, vocabularyThemeTitle,
@@ -567,26 +568,33 @@ test("SH520: accepting one block keeps every other block on the page, verbatim",
     "and the reviewer is told, in the run that writes it, that the rest of the page was kept");
 });
 
-test("SH520: a mixed page is presented by the captured theme, because it carries the source's classes", async () => {
-  // SH510's rule on the page shape it did not have. The vocabulary's theme styles SH508's roles, and
-  // the half of a mixed page that nobody accepted has none of them — naming it would leave that half
-  // rendered as unstyled text, and writing it at all would be a post nobody renders.
+test("SH549: a mixed page gets the vocabulary theme, and its verbatim half is not what decides", async () => {
+  // SH520 asserted the opposite here, and SH510's reasoning was why: the half of a mixed page nobody
+  // accepted carries the source's class names, so naming the vocabulary theme would leave that half
+  // as unstyled text. True — and it made the *other* half unstyled instead, for every page of the
+  // site, which is what SH549 measured. This fixture has no captured stylesheet at all, so there is
+  // nothing the verbatim half loses and everything the authored half gains.
   const site = { "/": MIXED_PAGE };
   const [hero] = await blocksOfPage(ctxWith({ site }));
   const ctx = ctxWith({ site, plan: { accepted: [{ block: hero, type: "SectionHero" }] } });
 
   await convert.run({ site: "Acme", out: "conversion.json" }, [], ctx);
   const document = JSON.parse(ctx.written[norm("/repo/conversion.json")]);
+  const layout = document.posts.find((post) => post.type === "PageLayout");
 
-  assert.ok(
-    !document.posts.some((post) => post.data?.TITLE === vocabularyThemeTitle("Acme")),
-    "no Shio theme in the document, because the layout does not name it",
-  );
   assert.equal(
-    document.posts.find((post) => post.type === "PageLayout").data.THEME,
-    undefined,
-    "and no captured one to name either on a fixture with no stylesheet — what is asserted here is "
-      + "that a mixed page never resolves to the vocabulary's theme, which SH509 wrote unconditionally",
+    layout.data.THEME,
+    vocabularyThemeTitle("Acme"),
+    "the page composes a section, so it draws shio-* names and needs the theme that defines them",
+  );
+  assert.ok(
+    document.posts.some((post) => post.data?.TITLE === vocabularyThemeTitle("Acme")),
+    "and the theme post is written, because the layout names it",
+  );
+  assert.ok(
+    !layout.data.HTML.includes(CAPTURED_REFERENCE),
+    "no captured block on a source with no stylesheet: the reference would resolve to nothing, and "
+      + "a template naming a post the document does not hold is SH297's marked failure",
   );
 });
 
@@ -807,10 +815,36 @@ test("SH510: an authorable conversion is presented by the theme it can apply", (
   assert.equal(layout.data.HTML.split("<style>").length - 1, 1);
 });
 
-test("SH510: a conversion that left a page verbatim still names the captured theme", () => {
-  // `authorable` is `verbatim === 0` and not "has any section". A mixed site's composed pages stay
-  // unstyled, which is exactly where they are today; what this refuses to do is make a page worse
-  // than it is now in order to make another one better.
+/** The per-page block SH549 puts in the layout's head — read from the module, never restated. */
+const CAPTURED_REFERENCE = CAPTURED_STYLE_HTML;
+
+test("SH549: the block's hardcoded URL is the one the captured theme post is written at", () => {
+  // `CAPTURED_STYLE_HTML` interpolates nothing, because the JVM half of this seam reads it as a
+  // string (SH464). That is worth exactly one assertion: a literal that drifted from
+  // `CAPTURED_THEME_URL` would name a post the document does not hold, which renders as SH297's
+  // `data-shio-theme-missing` and styles nothing.
+  assert.ok(
+    CAPTURED_STYLE_HTML.includes(`"${CAPTURED_THEME_URL}"`),
+    `${CAPTURED_STYLE_HTML} must reference ${CAPTURED_THEME_URL}`,
+  );
+});
+
+/**
+ * SH549 — the one block the vocabulary cannot name, and the eleven pages it used to unstyle.
+ *
+ * <p>This is SH510's own fixture with the assertion turned around, and the turn is the task. Under
+ * `authorable = verbatim === 0` one page left verbatim named the captured theme for the **whole
+ * site**: measured on viglet.org, twelve pages each carrying 1,062,146 characters of CSS defining
+ * none of the `shio-*` classes the section templates draw, with `page-unstyled` on ten of them. A
+ * real site always has a block the vocabulary cannot name — this was the first attempt on the first
+ * site — so that was not the rare case.</p>
+ *
+ * <p>Both claims now hold, which is why this is not the trade SH510 refused: the layout names the
+ * vocabulary theme, and the captured CSS reaches the verbatim page through a **per-page** condition
+ * on the page's own `content`. By reference, so the captured `Theme` post is still the single copy
+ * and SH424's token edits still reach it.</p>
+ */
+test("SH549: one verbatim page no longer decides the theme for the whole site", () => {
   const { document, verbatim } = buildConversion({
     proposal: withCapturedTheme({
       pages: [
@@ -824,9 +858,47 @@ test("SH510: a conversion that left a page verbatim still names the captured the
   });
 
   assert.equal(verbatim, 1);
+  const layout = document.posts.find((post) => post.type === "PageLayout");
   assert.equal(
-    document.posts.find((post) => post.type === "PageLayout").data.THEME, "Acme (captured)",
-    "fidelity's claim is a pixel comparison and it cannot be made without those bytes",
+    layout.data.THEME,
+    vocabularyThemeTitle("Acme"),
+    "the authorable page draws shio-* names, and eleven of twelve pages losing their styling to one "
+      + "that did not is the regression this task is",
+  );
+  assert.ok(
+    document.posts.some((post) => post.data?.TITLE === vocabularyThemeTitle("Acme")),
+    "so the vocabulary theme post is in the document",
+  );
+  assert.ok(
+    document.posts.some((post) => post.data?.TITLE === "Acme (captured)"),
+    "and the captured one still is too — nothing about the capture's bytes changed",
+  );
+  assert.ok(
+    layout.data.HTML.includes(CAPTURED_REFERENCE),
+    "the verbatim page still gets the source's CSS, guarded by its own `content` — so an authorable "
+      + "page receives exactly one stylesheet and is byte-identical to what SH510 produced",
+  );
+  assert.ok(
+    layout.data.HTML.indexOf("{{theme.css}}") < layout.data.HTML.indexOf("getRelation"),
+    "captured second, so the source's rules win the collisions a reset would otherwise decide "
+      + "against the page's own markup",
+  );
+});
+
+test("SH549: a fidelity conversion never emits the captured block twice", () => {
+  const { document, verbatim } = buildConversion({
+    proposal: withCapturedTheme({ pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }] }),
+    plan: {},
+    site: "Acme",
+    markup: new Map([["/", "<html><body><p>Words.</p></body></html>"]]),
+  });
+
+  assert.equal(verbatim, 1);
+  const layout = document.posts.find((post) => post.type === "PageLayout");
+  assert.equal(layout.data.THEME, "Acme (captured)", "unchanged: nothing composes sections");
+  assert.ok(
+    !layout.data.HTML.includes(CAPTURED_REFERENCE),
+    "and the layout already names it, so a second reference would put a megabyte on the page twice",
   );
 });
 

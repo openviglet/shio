@@ -112,6 +112,10 @@ class ShConvertedLayoutRenderTest {
     private static final String VOCABULARY_URL = "/vocabulary";
     /** SH476 — its own page, so SH464's counts on `/` are untouched by a fixture about escaping. */
     private static final String ENTITY_URL = "/entities";
+    /** SH549 — a page that kept the source's markup, so it needs the source's stylesheet. */
+    private static final String VERBATIM_URL = "/verbatim";
+    /** The sentinel the captured theme's CSS carries, so its presence on a page is unambiguous. */
+    private static final String CAPTURED_RULE = ".sh549-captured-marker{color:#123456}";
 
     /**
      * Every section type the shipped blueprints declare — the vocabulary, read rather than listed.
@@ -224,8 +228,12 @@ class ShConvertedLayoutRenderTest {
             ShPostType heroType = postType("SectionHero", (byte) 0, when);
             ShPostType richTextType = postType("SectionRichText", (byte) 0, when);
 
+            // SH549 — the head carries the per-page captured reference, read out of convert.mjs
+            // rather than spelled here. This layout names no THEME, so anything that reaches a page
+            // below came through that reference and through nothing else.
             post(site, theme, layoutType, LAYOUT_TITLE, "/theme/layout",
                     json("HTML", "<!doctype html><html><head><title>{{post.title}}</title>"
+                            + capturedStyleHtml()
                             + "</head><body>\n" + body + "\n</body></html>"), when);
 
             // Two of the seven SH95 section types, chosen because between them they cover every
@@ -259,6 +267,18 @@ class ShConvertedLayoutRenderTest {
             page.put("title", "Vocabulary");
             page.set("sections", composed);
             post(site, root, pageType, "Vocabulary", VOCABULARY_URL, page.toString(), when);
+
+            // SH549 — the captured `Theme` and a page that kept the source's markup. The layout above
+            // names no theme at all, which is what makes this fixture the honest one for the
+            // question: what reaches the page here can only have come through the reference in the
+            // head, and not from `{{theme.css}}`.
+            post(site, theme, postType(ShSystemPostType.THEME, (byte) 1, when),
+                    siteName + " (captured)", "/theme/captured",
+                    json("TITLE", siteName + " (captured)", "CSS", CAPTURED_RULE), when);
+            post(site, root, pageType, "Verbatim", VERBATIM_URL,
+                    "{\"title\":\"Verbatim\",\"content\":\"<section class=\\\"features\\\">"
+                            + "<p>Kept</p></section>\"}",
+                    when);
 
             // SH476 — the render half of the round trip: a field holding the characters the source
             // meant, on a page of its own so SH464's counts on `/` are untouched.
@@ -836,21 +856,82 @@ class ShConvertedLayoutRenderTest {
     }
 
     /**
+     * SH549 — the half of the seam only the JVM can answer.
+     *
+     * <h2>What was wrong, and why the fix needed a check on this side</h2>
+     *
+     * <p>{@code authorable} was {@code verbatim === 0 && mixed === 0}, a <b>site-wide</b> switch, so
+     * one block the vocabulary could not name flipped it for every page: measured on viglet.org,
+     * twelve pages each carrying 1,062,146 characters of the source's CSS, defining none of the
+     * {@code shio-*} classes the section templates draw, with {@code page-unstyled} on ten of them. A
+     * real site always has such a block, so that was the normal case and not the rare one.</p>
+     *
+     * <p>The fix names the vocabulary theme whenever any page composes sections, and reaches the
+     * pages that kept verbatim markup with the captured CSS <b>per page</b> —
+     * {@code {{#if content}}{{#getRelation "/theme/captured"}}}. That template is written in
+     * JavaScript and rendered here, and it turns on something no JS test can check: whether a
+     * <b>literal</b> first argument resolves at all, when {@code getRelation}'s declared shape
+     * ({@code BLOCK_PATH_ARG}) is a field <em>path</em>. A silent {@code {{else}}} would be a page
+     * with no stylesheet and a suite that says the fix landed.</p>
+     */
+    @Test
+    @DisplayName("SH549: a verbatim page gets the captured CSS through the layout's own reference")
+    void aVerbatimPageResolvesTheCapturedThemeByLiteralReference() {
+        String html = shPageRenderService.render(siteName, VERBATIM_URL, ShPostState.DRAFT).html();
+
+        assertThat(html)
+                .as("a literal argument to {{#getRelation}} resolves — the whole reason this "
+                        + "assertion is in the JVM and not beside the template that spells it")
+                .contains(CAPTURED_RULE);
+        assertThat(html)
+                .as("and it is what a page carrying the source's class names needs, since the layout "
+                        + "names the vocabulary theme for the pages that compose sections")
+                .contains("class=\"features\"");
+    }
+
+    @Test
+    @DisplayName("SH549: an authorable page receives no captured CSS, which is the payload SH510 stopped")
+    void anAuthorablePageIsUntouchedByTheCapturedReference() {
+        String html = shPageRenderService.render(siteName, "/", ShPostState.DRAFT).html();
+
+        assertThat(html)
+                .as("the condition is the page's own `content`, so the megabyte reaches only the "
+                        + "pages that cannot render without it. This is the assertion that keeps "
+                        + "SH510's result: an authorable page is byte-identical to before")
+                .doesNotContain(CAPTURED_RULE);
+        assertThat(html)
+                .as("and it is still the page it was")
+                .contains("Ship faster");
+    }
+
+    /**
+     * {@code CAPTURED_STYLE_HTML} from {@code cli/src/convert.mjs} — the per-page reference, read.
+     *
+     * <p>A single-quoted constant with no interpolation, for exactly this reason (SH464's seam): a
+     * copy here would be a second spelling of the one string whose resolution is under test.</p>
+     */
+    private static String capturedStyleHtml() {
+        String source = convertSource();
+        String marker = "export const CAPTURED_STYLE_HTML =";
+        int start = source.indexOf(marker);
+        assertThat(start)
+                .as("CAPTURED_STYLE_HTML is SH549's per-page reference; if it was renamed or "
+                        + "interpolated, the contract it pins has no reader left")
+                .isGreaterThanOrEqualTo(0);
+        int open = source.indexOf('\'', start);
+        int close = source.indexOf('\'', open + 1);
+        assertThat(close).as("the string literal is unterminated").isGreaterThan(open);
+        return source.substring(open + 1, close);
+    }
+
+    /**
      * {@code PAGE_BODY_HTML} from {@code cli/src/convert.mjs} — a slice between two backticks.
      *
      * <p>A missing file is a <b>failure</b> and never a skip: this test exists to assert a
      * cross-language contract, and one that quietly stops checking it is worse than none.</p>
      */
     private static String pageBodyHtml() {
-        String source;
-        try {
-            source = Files.readString(CONVERT, StandardCharsets.UTF_8);
-        } catch (IOException cannotRead) {
-            throw new UncheckedIOException(
-                    "cli/src/convert.mjs is where the layout is written; this test reads it rather "
-                            + "than keeping a second copy (SH245). If it moved, move this with it.",
-                    cannotRead);
-        }
+        String source = convertSource();
         String marker = "export const PAGE_BODY_HTML = `";
         int start = source.indexOf(marker);
         assertThat(start)
@@ -861,6 +942,18 @@ class ShConvertedLayoutRenderTest {
         int end = source.indexOf('`', from);
         assertThat(end).as("the template literal is unterminated").isGreaterThan(from);
         return source.substring(from, end);
+    }
+
+    /** The file both readers above slice, read once. */
+    private static String convertSource() {
+        try {
+            return Files.readString(CONVERT, StandardCharsets.UTF_8);
+        } catch (IOException cannotRead) {
+            throw new UncheckedIOException(
+                    "cli/src/convert.mjs is where the layout is written; this test reads it rather "
+                            + "than keeping a second copy (SH245). If it moved, move this with it.",
+                    cannotRead);
+        }
     }
 
     private ShFolder folder(ShSite site, ShFolder parent, String name, Instant when) {
