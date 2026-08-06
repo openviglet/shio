@@ -83,31 +83,77 @@ jobs:
       - name: Install workspace deps
         run: pnpm install --frozen-lockfile=false
 
-      # ── Bump every publishable package (same type), keep the template
-      #    dependency ranges in sync so generated apps pull the new core ──
+      # ── One version for the whole workspace, every run ──
+      #
+      # The root is the register: it is bumped once, and the resulting string is
+      # then *stamped* into every workspace package. The previous form ran
+      # `npm version <type>` inside each package through a hand-written list of
+      # `--filter`s, which has two defects this shape does not:
+      #
+      #   1. **It increments, it does not converge.** Each package bumps from its
+      #      own current value, so the versions stay equal only for as long as they
+      #      already are. Any drift is permanent — and a run that fails *after* some
+      #      packages have published creates exactly that drift, because the commit
+      #      step never runs and the repo keeps versions npm has already taken.
+      #   2. **The list had to be maintained by hand**, which is how
+      #      `@viglet/shio-editor-cors` sat outside the release for two versions.
+      #      `-r --include-workspace-root` cannot miss a package that exists.
+      #
+      # Private packages (the console, the examples, the Claude plugin) are stamped
+      # too. They are never published, but "one version for the workspace" is only
+      # checkable if it means all of it — `shio-react` had already drifted to 2026.3
+      # against everything else's 2026.3.1, and nothing said so.
+      #
+      # `--allow-same-version` is what makes the stamp idempotent: the root is
+      # already at the target by the time the recursive pass reaches it.
       - name: Bump versions
         id: version
         run: |
-          pnpm --filter @viglet/shio-model \
-               --filter @viglet/shio-sections \
-               --filter @viglet/shio-client \
-               --filter @viglet/shio-react-sdk \
-               --filter @viglet/shio-editor-cors \
-               --filter @viglet/create-shio-app \
-               --filter @viglet/shio \
-               exec -- npm version "${{ inputs.release-type }}" --no-git-tag-version
-          VERSION=$(node -p "require('./shio-client/package.json').version")
+          npm version "${{ inputs.release-type }}" --no-git-tag-version
+          VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Releasing version $VERSION"
-          node -e "
-            const fs = require('fs');
-            const p = 'create-shio-app/template/package.json';
-            const j = JSON.parse(fs.readFileSync(p, 'utf8'));
-            for (const dep of ['@viglet/shio-client', '@viglet/shio-sections']) {
-              if (j.dependencies[dep]) j.dependencies[dep] = '^$VERSION';
-            }
-            fs.writeFileSync(p, JSON.stringify(j, null, 2) + '\n');
+          pnpm -r --include-workspace-root exec -- \
+            npm version "$VERSION" --no-git-tag-version --allow-same-version
+
+      # ── The invariant, asserted before anything is published ──
+      #
+      # The step above cannot leave the workspace uneven, so this is not a check on
+      # it — it is a check on everything *else* that can: a package added at another
+      # version, a hand-run `npm version`, a half-published previous run. It reads
+      # the workspace from pnpm rather than from a list, for the same reason the bump
+      # does, and it fails here rather than after three packages are already on npm.
+      - name: Assert one version across the workspace
+        run: |
+          pnpm ls -r --depth -1 --json | node -e "
+            let raw = '';
+            process.stdin.on('data', (d) => (raw += d)).on('end', () => {
+              const want = require('./package.json').version;
+              const off = JSON.parse(raw).filter((p) => p.version !== want);
+              if (!off.length) return console.log('all packages at ' + want);
+              for (const p of off) console.error(p.name + ' is at ' + p.version + ', not ' + want);
+              process.exit(1);
+            });
           "
+
+      # ── What the release deliberately does NOT touch: the scaffold's ranges ──
+      #
+      # This step used to rewrite `create-shio-app/template/package.json` to
+      # `^<the version just bumped>`, and that is the precise defect SH446 exists to
+      # make impossible: a scaffold is consumed *outside* this repository, so the only
+      # version it may name is one the **registry** can serve, and the workspace's
+      # version is that only in the instant after a release. Every bump re-broke every
+      # scaffold, and nothing said so until a human ran `npm install`.
+      #
+      # `create-shio-app/src/published.mjs` is now the one table, and
+      # `scaffold-versions.test.mjs` asserts the template matches it *and* that the
+      # range is deliberately not the workspace's — so the rewrite would have turned
+      # the next release into a red suite as well as a broken scaffold.
+      #
+      # The table is therefore updated by hand after a release succeeds, which is the
+      # step where `@viglet/shio-model` and `@viglet/shio-sections` stop being `null`.
+      # Automating it here would still need that test's hard-coded expectations moved
+      # in the same commit; doing it as a task keeps the two in one diff.
 
       # ── Build: the DSL and the vocabulary, then the client and the SDK on it ──
       # The bridge is built here rather than left to its own `prepublishOnly`, so a
@@ -159,10 +205,10 @@ jobs:
       # ── Commit the version bumps ──
       - name: Commit version bump
         run: |
-          git add shio-model/package.json shio-sections/package.json \
-                  shio-client/package.json shio-react-sdk/package.json \
-                  shio-js-sdk/package.json \
-                  create-shio-app/package.json create-shio-app/template/package.json \
-                  cli/package.json
+          # A pathspec, not a list — the bump is workspace-wide, so enumerating the
+          # packages here would reintroduce exactly the hand-maintained list the bump
+          # step just got rid of, and leave a newly added package's bump uncommitted.
+          # node_modules is gitignored, so it cannot be swept in.
+          git add ':(glob)**/package.json' package.json
           git commit -m "chore: release JS packages v${{ steps.version.outputs.version }} [skip ci]" || echo "No changes to commit"
           git push

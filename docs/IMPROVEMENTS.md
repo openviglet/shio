@@ -1796,32 +1796,6 @@ should not be offered for a site whose pages hold sections — `init --site` kno
 site and can read whether its Pages carry any, so the wrong scaffold is refusable rather
 than silently useless.
 
-### XVII.59 A candidate that is only a script (SH506)
-
-One of six candidates is a `<script>`. Its entry reads `"signature": "script"`, `"tag":
-"script"`, `"type": null`, `"fields": {}`, `"loss":
-{"elements":[{"name":"script","count":1}]}`, and it proposes a post-type: `{"name":
-"Block1", "fields": []}`. It recurs on all six pages, which is what promoted it — a
-block seen everywhere looks structural.
-
-A script is behaviour, and SH469 gave behaviour its own list, so this is the block
-walker reaching a node the phase beside it already owns. The proposal even names the
-loss as `1×<script>`, which is the whole of the block: there is nothing else in it.
-
-Accepting it would write a post-type with no fields into the model. Nothing can be
-authored in it, `verify` would find an empty type, and the name is a counter — `Block1`
-— so a second unmatched block would be `Block2` and neither says anything. A fieldless
-post-type is not a conversion of anything.
-
-The rule is available at the point of the decision. A candidate whose own tag is
-`script`, `style`, `link`, `meta` or `noscript` is not content, and a proposed post-type
-with **zero** derivable fields is not worth proposing whatever its tag — the second is
-the more general of the two and covers a case nobody has hit yet.
-
-It costs a reader more than it looks. Six candidates on a real site is a short enough
-list to read carefully, and one of them being noise makes the reader doubt the other
-five.
-
 ### XVII.66 A teaching error the caller never sees (SH513)
 
 `shio convert` on a real site died with one line: `shio: the server answered 400`, plus

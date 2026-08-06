@@ -1037,6 +1037,60 @@ test("SH505: each of the four signals marks an overlay on its own", () => {
   );
 });
 
+test("SH506: a block that is only a script is not a candidate, and the cut is stated", () => {
+  // The measurement: one of six candidates on a real site was a `<script>` — `"signature":
+  // "script"`, `"fields": {}`, a loss line reading `1×<script>` (the whole of the block), and a
+  // proposed post-type `{"name":"Block1","fields":[]}`. It recurred on all six pages, which is what
+  // promoted it: a block seen everywhere looks structural. A script is behaviour, and SH469 gave
+  // behaviour its own list, so this is the block walker reaching a node the phase beside it owns.
+  const page = `<html><body><main>
+    <section class=hero><h1>Home</h1><p>Welcome.</p><a href=/go>Start</a></section>
+    <script>window.dataLayer = [];</script>
+    <noscript><p>Turn it on.</p></noscript>
+    </main></body></html>`;
+  const proposal = buildProposal({
+    inventory: inventoryFor(["/"]),
+    markup: new Map([["/", page]]),
+    html: HTML,
+  });
+
+  assert.deepEqual(proposal.candidates.map((row) => row.tag), ["section"]);
+  assert.ok(
+    proposal.notes.some((note) => /not proposed as candidates/.test(note) && /script/.test(note)),
+    "and the cut is stated: a shortened list of candidates reads exactly like a shorter list of "
+      + `them, and six is few enough that a reader checks every row. Notes: ${JSON.stringify(proposal.notes)}`,
+  );
+});
+
+test("SH506: a post-type with no derivable field is not proposed at all", () => {
+  // The more general of the two rules, and the one that covers a case nobody has hit yet. A
+  // fieldless post-type is not a conversion of anything: nothing can be authored in it, `verify`
+  // would report an empty type, and the name is a counter — `Block1`, then `Block2` — so it says
+  // nothing either. The block below is not a script and still yields no field.
+  const bare = `<html><body><main>
+    <section class=hero><h1>Home</h1><p>Welcome.</p><a href=/go>Start</a></section>
+    <div class=spacer><span></span></div>
+    </main></body></html>`;
+  const proposal = buildProposal({
+    inventory: inventoryFor(["/"]),
+    markup: new Map([["/", bare]]),
+    html: HTML,
+  });
+
+  const empty = proposal.candidates.find((row) => row.tag === "div");
+  assert.ok(empty, "the block is still a candidate — it is content the vocabulary does not fit");
+  assert.ok(
+    !("postType" in empty),
+    "but there is no post-type to offer, and an absent key is the honest form: `{fields: []}` "
+      + "reads as an offer, and accepting it would write an empty type into the model",
+  );
+  assert.match(
+    describeProposal(proposal),
+    /no type/,
+    "and the report says so rather than printing `NEW undefined`",
+  );
+});
+
 test("SH505: a field value on candidates that share no page is reported, whatever produced it", () => {
   // The predicate above excludes the overlays this pass can recognise; the note reports the shape
   // itself, which is what makes the property hold on a site nobody has looked at. Same reasoning as

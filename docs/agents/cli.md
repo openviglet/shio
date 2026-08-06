@@ -322,6 +322,22 @@ this pass can recognise; a **note** reports the shape whatever produced it — a
 candidates that *share no page*, which is the `everywhere` note one level down, at the unit a curator
 would actually edit.
 
+**And a candidate that is only a `<script>` (SH506).** One of six candidates on a real site read
+`"signature": "script"`, `"fields": {}`, `"loss": {"elements":[{"name":"script","count":1}]}` — the
+loss line naming the whole of the block — and proposed the post-type `{"name":"Block1","fields":[]}`.
+It recurred on all six pages, *which is what promoted it*: a block seen everywhere looks structural.
+A script is behaviour and SH469 gave behaviour its own list, so this is the block walker reaching a
+node the phase beside it already owns. Two rules, and **the second is the general one**: a block
+whose own tag is in `NON_CONTENT` (`script`, `style`, `link`, `meta`, `noscript`, `template`) is not
+a candidate, and `proposePostType` returns **`null`** rather than an empty-field proposal whatever
+the tag — a fieldless post-type is not a conversion of anything (nothing can be authored in it,
+`verify` would report an empty type, and `Block1`/`Block2` is a counter that says nothing). The key
+is then **absent** on the candidate, because `{fields: []}` reads as an offer, and the report prints
+`no type` instead of `NEW undefined`. Cost is the reason it is worth a task: six candidates is a
+short enough list to read carefully, and one noise row makes a reader doubt the other five. Both
+exclusions — this and SH505's — are counted in a **note**, since a shortened list of candidates reads
+exactly like a shorter list of them.
+
 **Bytes in the tree that nothing references are their own finding (SH429).** Three right rules compose
 into a broken replica: SH378 downloads each referenced image into `shio/assets/<site>/…`, SH145 uploads
 an asset **only** when a `File` field names its path, and SH379 makes *fidelity* the default — where a

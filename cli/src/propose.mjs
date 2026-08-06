@@ -323,7 +323,7 @@ const SECTIONING = new Set(["section", "article", "aside", "nav", "header", "foo
  * <p>SH505 added the fourth, and it is an exclusion rather than a boundary: an **overlay** is
  * painted over the page and is not part of it. See `isOverlay`.
  */
-export function blocksOf(root) {
+export function blocksOf(root, excluded = []) {
   const main = contentRoot(root);
   let node = main;
   for (;;) {
@@ -334,7 +334,32 @@ export function blocksOf(root) {
     node = kids[0];
   }
   const blocks = node.children.filter((child) => isElement(child) && !isInline(child));
-  return [...pageHeader(root, main), ...blocks].filter((block) => !isOverlay(block));
+  return [...pageHeader(root, main), ...blocks].filter((block) => {
+    const why = notContent(block);
+    if (why) excluded.push({ tag: block.tag, why });
+    return !why;
+  });
+}
+
+/**
+ * Elements that are a block's whole content and are not content (SH506).
+ *
+ * <p>One of six candidates on a real site was a `<script>`: `"signature": "script"`, `"fields": {}`,
+ * `"loss": {"elements":[{"name":"script","count":1}]}` — the loss line naming the whole of the
+ * block — and it proposed the post-type `{"name":"Block1","fields":[]}`. It recurred on all six
+ * pages, which is what promoted it: a block seen everywhere looks structural.</p>
+ *
+ * <p>A script is <b>behaviour</b>, and SH469 gave behaviour its own list, so this is the block
+ * walker reaching a node the phase beside it already owns. The rest of the set is the same argument
+ * for markup that carries no reading: a `<style>`, a `<link>`, a `<meta>` and a `<noscript>` are all
+ * things a page needs and nothing a curator edits.</p>
+ */
+const NON_CONTENT = new Set(["script", "style", "link", "meta", "noscript", "template"]);
+
+/** Why a block is not a candidate, or `null` when it is one. */
+function notContent(block) {
+  if (NON_CONTENT.has(block.tag)) return `a <${block.tag}> is behaviour or markup plumbing`;
+  return isOverlay(block) ? "an overlay is painted over the page rather than part of it" : null;
 }
 
 /**
@@ -780,7 +805,12 @@ export function proposePostType(block, index) {
   if (units.length >= 2) {
     fields.push({ name: "items", kind: "relator", from: `${units.length} repeated ${units[0].tag}` });
   }
-  return { name: postTypeName(block, index), fields };
+  // SH506, and the more general of that task's two rules — it covers a case nobody has hit yet. A
+  // post-type with **zero** derivable fields is not a conversion of anything: nothing can be
+  // authored in it, `verify` would report an empty type, and the name is a counter (`Block1`, then
+  // `Block2`) so it says nothing either. `null` rather than an empty-field proposal, because the
+  // reader's question is "what would I get" and the honest answer here is "nothing".
+  return fields.length ? { name: postTypeName(block, index), fields } : null;
 }
 
 function postTypeName(block, index) {
@@ -820,6 +850,10 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
   const accepted = new Map((plan.accepted ?? []).map((entry) => [entry.block, entry]));
   const candidates = new Map();
   const notes = [];
+  // SH505/SH506 — what the walk refused to call a candidate, so the cut is stated rather than
+  // silent. A shortened list of candidates reads exactly like a shorter list of candidates (SH138),
+  // and on a six-candidate site the reader is checking every row.
+  const excluded = [];
   const read = [];
   const composition = [];
 
@@ -828,7 +862,7 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     if (typeof source !== "string") continue;
     read.push(page.path);
     const tree = buildTree(html.stripNonMarkup(source), html.tokenize, html.parseAttrs);
-    const blocks = blocksOf(tree);
+    const blocks = blocksOf(tree, excluded);
     // SH438 — the page's own blocks, in the order the source had them. `candidates` is keyed by
     // signature, so it can say *which* pages a block is on and never in what order: a candidate is
     // one decision on N pages, which is the whole reason it is cheap to review. This is the other
@@ -897,6 +931,13 @@ export function buildProposal({ inventory, markup, html, plan = {}, theme = null
     );
   }
 
+  if (excluded.length) {
+    const why = [...new Set(excluded.map((row) => row.why))].sort(byText);
+    notes.push(
+      `${excluded.length} top-level block(s) were not proposed as candidates, because a candidate `
+        + `is content and these are not: ${why.join("; ")}`,
+    );
+  }
   // SH505 — the tell, said out loud on every proposal. The predicate above excludes the overlays
   // this pass can recognise; this reports the shape *whatever* produced it, because a field value
   // that recurs on candidates sharing no page is not that section's content. It is the same
@@ -1032,12 +1073,15 @@ const byText = (a, b) => (a === b ? 0 : a < b ? -1 : 1);
 
 function describe(block, guess, index) {
   if (!guess) {
+    const postType = proposePostType(block, index);
     return {
       type: null,
       evidence: "nothing in the vocabulary fits this block",
       fields: {},
       loss: lossFor(block, new Set()),
-      postType: proposePostType(block, index),
+      // SH506 — absent rather than empty when there is nothing to derive. An absent key is what a
+      // reader gets for "this block offers no post-type"; `{fields: []}` reads as an offer.
+      ...(postType ? { postType } : {}),
     };
   }
   const { fields, consumed } = fieldsFor(guess.type, block);
@@ -1171,7 +1215,11 @@ export function describeProposal(proposal, options = {}) {
       : row.pages[0];
     lines.push("");
     lines.push(
-      `${row.id}  ${row.type ?? `NEW ${row.postType.name}`}  [${row.mode}]  on ${where}` +
+      // SH506 — a typeless candidate may now have no post-type to offer either, and the honest
+      // label for it is what it is: a block the vocabulary does not fit and nothing can be derived
+      // from. `NEW undefined` was what reading `.name` off an absent proposal would have printed.
+      `${row.id}  ${row.type ?? (row.postType ? `NEW ${row.postType.name}` : "no type")}  `
+        + `[${row.mode}]  on ${where}` +
         `${row.pages.length > 1 ? ` (e.g. ${row.pages[0]})` : ""}`,
     );
     lines.push(`  why: ${row.evidence}`);
@@ -1181,8 +1229,8 @@ export function describeProposal(proposal, options = {}) {
     }
     if (row.postType) {
       lines.push(
-        `  new post-type ${row.postType.name}: ` +
-          `${row.postType.fields.map((field) => `${field.name}:${field.kind}`).join(", ") || "no fields could be derived"}`,
+        `  new post-type ${row.postType.name}: `
+          + `${row.postType.fields.map((field) => `${field.name}:${field.kind}`).join(", ")}`,
       );
     }
     // SH511 — two lines, because they are two conversations. `discards` is damage and the reviewer

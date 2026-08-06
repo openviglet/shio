@@ -985,6 +985,7 @@
 - **SH512** — A document-relative reference is resolved against the page's own URL in the source's space before it is rebased, so a replica served four segments deep asks for what the source meant. The base is the request's content path, which is the one form that keeps the trailing slash a furl drops. Widened from href and src to srcset, poster and url() in a style attribute.
 - **SH515** — The capture and the render-time rewriter read one list: the collector gained the style attribute's url() and the fetch() literals in inline scripts, the rewriter gained the fetch() literals, and one fixture read from both languages asserts they resolve the same set. A fetched data file is behaviour, taken with --scripts alongside the bundle that asks for it.
 - **SH505** — A block that is painted over the page is not a candidate: out-of-flow positioning, aria-live, role=dialog or aria-modal each mark it, and sticky deliberately does not. The proposal also reports any field value carried by candidates that share no page, which is the same shape wherever it comes from.
+- **SH506** — A block whose own tag is script, style, link, meta, noscript or template is not a candidate, and a post-type with no derivable field is not proposed at all whatever the tag - the key is absent rather than empty. Both exclusions are counted in a note, so the shorter list of candidates is a stated cut.
 
 ## Block 0 — Headless groundwork already in the tree (pre-roadmap)
 
