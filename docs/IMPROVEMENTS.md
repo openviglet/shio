@@ -1499,3 +1499,75 @@ a capture fix's clothes.
 
 So the question is narrower than it looked: is a replica's canonical worth splitting the
 address space, or is a redirect the honest answer for URLs Shio never owned?
+
+### XVII.48 A separator at the wrong boundary (SH472)
+
+SH468 replaced the fused token with a spaced one. The nav label was `DuDumont DEP`; it
+is now `D u Dumont DEP`. The fabrication is gone — no word exists that the source did
+not contain — and the label is still not the source's.
+
+The separator went in between **every** text node, and the brand tile's two letters are
+two nodes, so `D` and `u` were parted. A separator at an element boundary is right; a
+separator between sibling text runs inside one element is not, and the tokenizer does
+not distinguish them today.
+
+The narrower rule is the one the DOM already implies: insert at the boundary of an
+element that is not `display: inline`, or — since the capture has no computed style — at
+the boundary of an element whose tag is not in the inline set (`span`, `em`, `strong`,
+`b`, `i`, `a`, `code`, `sup`, `sub`, `small`). That is what a browser's `innerText`
+does, and it is the behaviour a reader expects: `<span>Du</span>Dumont` is one word to
+the eye and two nodes to the parser.
+
+The mark itself is the second half and still open: `Du` is a logo, and its presence in a
+menu label is wrong however it is spaced. The tile carries `aria-label="Du"` equal to
+its own visible text, which is the signal that it is decorative — a rule worth having,
+because a nav label becomes a menu entry in the replica and a curator reads it.
+
+### XVII.49 The report shipped ahead of the fetch, again (SH473)
+
+`--scripts` exists, its help says "take this site's own `<script src>` too", and the
+site's own script is still not taken. Measured on a `--depth 1 --render --scripts`
+capture of `www.viglet.org`: the captured markup carries `<script type="module"
+crossorigin src="/assets/index-LNwgBwpz.js">`, the inventory's `scripts` list holds
+**only** the two third-party hosts, `script` is absent from the asset kinds, no `.js`
+reaches the tree, and the served replica has one inline script and no `src`. The bundle
+404s.
+
+So the dark/light toggle and the consent modal are still dead, which is where this
+started.
+
+What SH469 did land is the reporting, and it is good: third-party scripts are a named
+section, off-origin references are counted and explained, and `--scripts` is
+discoverable. What did not land is the fetch — the same split as SH452, whose note
+became honest while the download stayed unwritten, and SH455 which had to be filed to
+finish it. Three times now the report has shipped ahead of the behaviour it reports on,
+which is worth naming as a pattern rather than as a third accident: a phase that
+*describes* an omission reads as done.
+
+The first-party half is the whole ask. A `<script src>` on this origin is an asset like
+a stylesheet, and `--scripts` already declares the intent — what is missing is `script`
+as a kind the collector walks.
+
+### XVII.50 The rule the false one was hiding (SH474)
+
+SH470 removed the eighty-four false `dangling-reference` errors, and the run under them
+is **66 `unknown-field` errors** — the ones the false rule was hiding. `File` declares
+exactly one field, `FILE`, and every uploaded asset stores five: `FILE`, `SHA256`,
+`SIZE`, `WIDTH`, `HEIGHT`. Counted by field: 18 `SIZE`, 6 `WIDTH`, 6 `HEIGHT`.
+
+The rule is right and the data is right; the **type** is the thing that never caught up.
+`SHA256` and `SIZE` are what SH429's uploader has always written — the digest is how a
+re-upload is skipped and the size is what the delivery reports — and `WIDTH`/`HEIGHT`
+arrived with SH471 so a converted section can draw an image without measuring it. Four
+fields the writer needs, the reader uses and the declaration does not mention.
+
+So the fix is to declare them, not to stop writing them. `File` is a system post-type,
+so it comes from `import/post-types.json` and `ShRenderModelSourceTest` holds that file
+and the model together — the same door `render.provision` opens for an instance that
+already exists.
+
+The lesson is the sequencing. Two rules disagreed about the same posts and the louder
+one was wrong, so the quieter and correct one was unreadable until the first was fixed.
+`verify` was red both times, and only the second red is worth acting on — which is why a
+gate's *first* run after a fix is worth reading in full rather than diffing against the
+count.

@@ -81,6 +81,9 @@
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
 - ⏳ **SH467** (deps: SH385 ✅) **The replica's canonical URL is the mirror of the source's, so every captured link costs a 301** — The route half answers both forms now, but the grammar still collapses the declared slash, so the replica serves /shio as canonical and 301s /shio/ — the source does the opposite. → §XVII.44
+- 📋 **SH472** (deps: SH468 ✅) **The separator lands between every text node, so a two-letter mark becomes two letters** — SH468 removed the fused word and inserts at every node boundary, including sibling runs inside one inline element, so DuDumont DEP became D u Dumont DEP. → §XVII.48
+- 📋 **SH473** (deps: SH469 ✅) **The scripts flag reports the site's own bundle and still does not fetch it** — script is absent from the asset kinds, so a capture with --scripts leaves no .js in the tree and the replica serves one inline script and no src. → §XVII.49
+- 📋 **SH474** (deps: SH470 ✅) **Every uploaded asset stores four fields the File type does not declare** — SHA256 and SIZE come from SH429's uploader and WIDTH/HEIGHT from SH471, while File declares only FILE, so a clean replica reports 66 unknown-field errors. → §XVII.50
 
 ## Block F — Market positioning
 
