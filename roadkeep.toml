@@ -89,6 +89,31 @@ priority = [
   # that is computable and uncounted (SH527 named the gap and has shipped - 43 shipped tasks carry no assertion, listed; SH528 gives the fixture the traits to
   # reproduce it, SH529 draws the list), and last the model-proposal chain, which is the biggest
   # and adds a verb (SH523, then SH524 and SH525 on top of it).
+  #
+  # The seventh run, on instruction (2026-08-06), and it leads because the sixth changed what the
+  # complaint is. SH522's `diff` held an expectation on its first real run — 12 pages, 35 facts
+  # lost, internal links 16 → 0 — so "nothing judges the artefact" is answered. What the round
+  # found instead is one level earlier: the write path is not safe. Three of the first four below
+  # are not about seeing a defect but about finishing or confirming a write, which no instrument
+  # reaches. SH544 is first because it is the only one that makes a replication impossible to
+  # complete at all — a 265-character page title ended a 201-page conversion after 403 assets had
+  # been uploaded — so every other retest on a real site is blocked behind it. Then the perception
+  # pair (SH545: a landed publish reads DRAFT; SH546: the CLI cannot publish at all), then the
+  # capture's own reads (SH550's undecoded entities, upstream of everything), then the two that
+  # make an authorable replica wrong rather than absent (SH549's site-wide unstyle, SH552's
+  # overlay text), then SH551's dropped FAQ labels, then SH548 which puts `diff` in the gate,
+  # and last SH547, the cheapest and the least harmful. SH543 rides along: a 200-page render pass
+  # that prints nothing for minutes was mistaken for a hang by the human watching this run.
+  "SH544",
+  "SH545",
+  "SH546",
+  "SH550",
+  "SH549",
+  "SH552",
+  "SH551",
+  "SH548",
+  "SH547",
+  "SH543",
   "SH528",
   "SH529",
   "SH523",

@@ -1838,6 +1838,101 @@ stays a declaration of content.
 The assertion is the same either way: apply a blueprint to a fresh site and `/preview/`
 answers 200 with `data-shio-prop` on it.
 
+### XVII.72 The one block that unstyles the other eleven pages (SH549)
+
+`propose --accept all` on viglet.org accepted six of seven candidates. The seventh was
+`/partner/`, reported honestly as *nothing in the vocabulary fits this block*, so that
+page stayed verbatim. `convert` computes `authorable = sections.length > 0 && verbatim
+=== 0 && mixed === 0`, which is now false, so the layout named `<site> (captured)` and
+the vocabulary theme was never written.
+
+The result is measurable and absurd: every page ships a single inline `<style>` of
+1,062,146 characters — the source's whole stylesheet — and `verify` reports
+`page-unstyled` on ten of them, because that megabyte defines none of the `shio-*`
+classes the section templates draw. A megabyte of CSS that styles nothing, on every
+page, per request.
+
+SH510's rule is right and is why this happens: fidelity's claim is a pixel comparison
+and cannot be made without those bytes, so a page left verbatim keeps them. The comment
+in `convert.mjs` says so and calls the consequence *exactly where they are today*. What
+that decision did not anticipate is the frequency. A real site always has a block the
+vocabulary cannot name — this was the first attempt on the first site — so `verbatim ===
+0` is not a rare case, it is the normal one, and the site-wide switch turns one
+unmatched block into a site-wide regression.
+
+The render model already supports a theme per layout. What is missing is that the choice
+is per page, not per site.
+
+### XVII.73 The reference read as markup rather than as a URL (SH550)
+
+SH515 widened the collector to `url()` inside a `style` attribute, which was the right
+widening. It reads the attribute's raw text, so an author who wrote `background-image:
+url(&quot;../img/introducing-vilt/11.png&quot;)` yields the asset path
+`/br/&quot;../img/introducing-vilt/11.png&quot;`, reported as *no safe path for this
+name* and never fetched.
+
+The same page carries the unescaped form in a `<style>` block, so the two spellings of
+one reference produce one download and one failure. Six references in one capture were
+affected, four of them that image under four locale prefixes and two of them `&amp;`
+inside a query string on a font URL. The second form is the one that will bite a
+same-origin asset: a query string joined with a literal `&amp;` is a different request,
+and nothing about it looks wrong in a listing.
+
+It reports as *unavailable*, which is the honest word for what happened and the wrong
+word for why, so the note reads like a source problem — a name with no safe mapping —
+rather than a decode the collector did not do. That is the part worth fixing beyond the
+decode itself: `unavailable` currently covers off-origin, unrenderable, HTTP failure and
+this, and only this one is ours.
+
+SH528 already lists a double-escaped entity as a fixture trait, so the assertion has a
+home before the fix does.
+
+### XVII.74 A disclosure list converted without its labels (SH551)
+
+`SectionFaq` is proposed on the evidence *two or more `<details>`, which is a disclosure
+list* — and a `<details>` is exactly two parts. The extraction takes the body and drops
+the `<summary>`. viglet.org's home page yielded seven rows, each with an `answer` and no
+`question`, so the section renders seven answers to nothing.
+
+Nothing reports it, and the reason is the template being careful. It emits
+`sh-field="questions.{{@index}}.question"` inside `{{#if question}}`, which is right —
+an empty field should not draw an empty heading — and the effect is that a field that is
+*never* filled is indistinguishable from one a curator has not filled yet. The editor
+count agreed: ten annotated props on that page, seven of them `questions.N.answer`, and
+the absence of seven `questions.N.question` reads as a curator's to-do.
+
+This is SH524's shape in the other direction. SH524 asks which declared field no
+template renders; this is a declared field the template renders and the *extraction*
+never supplies, which no instrument asks about. A section type whose rows all leave one
+field empty is a claim about the extractor, not about the content, and the proposal
+already knows how many rows it found.
+
+The fix in the extractor is small. The check that would have caught it — a proposed row
+whose field is empty in every instance — is the part worth keeping.
+
+### XVII.75 A finding the next command does not read (SH552)
+
+SH505 taught `propose` to exclude an overlay from the candidate list and to report any
+field value carried by candidates that share no page. Both halves ran. The note named
+the string exactly — `intro "We respect your privacy"` — across five candidate ids. Then
+`convert` wrote it as the accepted section's `intro`, and the site's home page now
+introduces itself with a cookie banner.
+
+The report is not wrong and the exclusion is not wrong. What is missing is that the
+second command reads the first one's finding. The proposal is a file on disk; the note
+is in it; `convert` opens that file and takes the fields.
+
+This is the failure shape `shio-replication-test` already names — *the report ships
+ahead of the behaviour it reports on* — and it is the seventh instance. SH452 fixed a
+note and not the fetch, SH469 added the list and not the download, SH429 made stranded
+bytes visible and left delivery unbuilt. Each time the diagnosis shipped as a sentence
+somebody has to act on, and each time nobody did, because the actor is a command.
+
+So the fix is not another exclusion rule. It is that a value the proposal marked as
+chrome does not get written, and that the count of what was dropped is printed by
+`convert` rather than only by `propose` — the same cut, stated by the command that
+performed it.
+
 ## XVIII End-user documentation for 2026.3 (Block R)
 
 The published documentation at `docs-shio` describes the 2018 product. Measured against
