@@ -286,42 +286,19 @@ export const ROLES: Role[] = [
   },
 ];
 
-/* ── P2 / P3: what a call costs ──────────────────────────────────────────── */
-
-export interface Measure {
-  label: string;
-  tokens: number;
-  note: string;
-}
+/* ── P2 / P3: what a call costs ────────────────────────────── */
 
 /**
- * Real figures from the agent surface's own budget tests
- * (`ShAgentResponseBudgetTest`, `ShMcpToolBudgetTest`) and from the token-economy
- * page in the end-user docs. SH533 replaces this hand-copied list with the
- * benchmark's own JSON artefact, which is the only version that cannot drift.
+ * SH533 — generated, never typed. `scripts/token-budgets.mjs` reads the build's
+ * own `token-budgets.properties` — the single file the Java suite asserts every
+ * response against — and writes the JSON imported below, on every build. A
+ * renamed key fails the build rather than dropping a bar.
+ *
+ * They are **ceilings**, not measurements: what the build refuses to exceed. That
+ * is the honest thing to publish, because it is the half that is machine-readable
+ * and therefore the half that cannot silently drift.
  */
-export const MEASURES: Measure[] = [
-  {
-    label: "Capability check",
-    tokens: 298,
-    note: "manifest?include=features,limits — what a session opens with",
-  },
-  {
-    label: "Full manifest",
-    tokens: 2343,
-    note: "every capability, every limit, a curated endpoint index",
-  },
-  {
-    label: "Write vocabulary",
-    tokens: 447,
-    note: "context?include=ops — every op and the keys it takes",
-  },
-  {
-    label: "Build a site, end to end",
-    tokens: 2700,
-    note: "4 calls, measured to the verify — not to a page a person opened",
-  },
-];
+export { default as TOKEN_BUDGETS } from "./token-budgets.generated.json";
 
 /* ── P1 / P10: the surface ───────────────────────────────────────────────── */
 

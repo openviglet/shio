@@ -57,9 +57,11 @@ Two rules for editing that file:
 - **Every claim is about a real surface.** A route, a tool name, a flag or an
   error body that appears there is the one the build produces. `docs/agents/` is
   the authority for each.
-- **A measured number carries its source.** The figures in `MEASURES` come from
-  the agent surface's own budget tests. SH533 replaces the hand-copied list with
-  the benchmark's JSON artefact, which is the only version that cannot drift.
+- **A measured number is generated, never typed.** `scripts/token-budgets.mjs`
+  reads `shio-app/src/test/resources/token-budgets.properties` — the one file
+  the Java suite asserts every response against — and writes
+  `src/lib/token-budgets.generated.json` on every build. A renamed key fails the
+  build rather than dropping a bar.
 
 ## The Markdown twins
 
@@ -110,7 +112,7 @@ for that repository.
 
 ## Backlog
 
-Block S in [`docs/ROADMAP.md`](../docs/ROADMAP.md) — the plotted token budget
-(SH533) and the public demo instance (SH540).
-The design behind each is `§XIX` in
+Block S in [`docs/ROADMAP.md`](../docs/ROADMAP.md) — the public read-only demo
+instance (SH540) is all that is left, and it is what turns the scripted session
+in the hero into a live one. Its design is `§XIX.11` in
 [`docs/IMPROVEMENTS.md`](../docs/IMPROVEMENTS.md).

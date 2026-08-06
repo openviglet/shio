@@ -1859,25 +1859,6 @@ The site is also written for the reader it is about. An agent evaluating a CMS r
 page it was handed, and a Claude Code-first product that answers only in HTML is making
 its own argument badly.
 
-### XIX.4 Plot the budget, do not describe it (SH533)
-
-Every competitor can claim an MCP server. What none of them can show is a build that
-fails on a token regression. The measurements already exist -
-`ShAgentResponseBudgetTest`, `ShMcpToolBudgetTest`, the manifest's projections, the
-`audit` cost test - and each is a real number with a real ceiling: the capability check
-at 298 against the full manifest's 2343, `tools/list` capped and eleven tools spending
-it, a clean audited page at about 57 tokens against a full-page PNG's ~1600.
-
-This task puts those on the page as a chart with the ceiling drawn, and sources each one
-from the test that produces it rather than from a copy typed into the site. A number on
-a marketing page that drifts from the build is worse than no number, so the pipeline is
-the deliverable: the benchmark emits a JSON artefact, the site reads it, and a stale
-file is a build failure the same way a budget regression is.
-
-The frame is P2, not arithmetic: the comparison that matters is one call against the
-session of crawling REST endpoints it replaces, and the honest version of that
-comparison draws both bars.
-
 ### XIX.11 A public instance to point at (SH540)
 
 Turing's landing page went from a scripted demo to a genuinely live one by pointing the

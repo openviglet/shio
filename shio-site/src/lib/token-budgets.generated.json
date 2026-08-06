@@ -1,0 +1,59 @@
+{
+  "source": "shio-app/src/test/resources/token-budgets.properties",
+  "ceilings": [
+    {
+      "key": "response.manifest.check",
+      "label": "Capability check",
+      "note": "manifest?include=features,limits — what a session opens with",
+      "tokens": 380
+    },
+    {
+      "key": "response.manifest",
+      "label": "Full manifest",
+      "note": "every capability, every limit, a curated endpoint index",
+      "tokens": 2650
+    },
+    {
+      "key": "mcp.tools.list.total",
+      "label": "Every MCP tool schema",
+      "note": "tools/list, re-sent on every turn before any work happens",
+      "tokens": 2375
+    },
+    {
+      "key": "benchmark.build-marketing-site.tokens",
+      "label": "Build a site, end to end",
+      "note": "the whole task, measured to the verify — not to a page a person opened",
+      "tokens": 2700
+    }
+  ],
+  "tasks": [
+    {
+      "label": "Build a marketing site",
+      "calls": 4,
+      "tokens": 2700,
+      "callRatio": 3,
+      "tokenRatio": 2
+    },
+    {
+      "label": "Add a type and ten posts",
+      "calls": 3,
+      "tokens": 1800,
+      "callRatio": 3.6,
+      "tokenRatio": 3
+    },
+    {
+      "label": "Translate a site",
+      "calls": 3,
+      "tokens": 800,
+      "callRatio": 2.6,
+      "tokenRatio": 4.5
+    },
+    {
+      "label": "Fix a broken link",
+      "calls": 3,
+      "tokens": 400,
+      "callRatio": 2,
+      "tokenRatio": 10
+    }
+  ]
+}

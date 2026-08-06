@@ -107,7 +107,6 @@
 
 ## Block S — The public site (shio.viglet.org)
 
-- 📋 **SH533** (deps: SH530 ✅) **The token argument is the differentiator and the site states it as prose** — P3 makes tokens a measured budget with a CI benchmark, and a number nobody plots reads as a slogan instead of as the measurement it already is. → §XIX.4
 - 📋 **SH540** (deps: SH530 ✅) **Nothing on the site is answered by a running Shio** — The transcripts, the preview links and the manifest read are all recordings, so the single claim a visitor cannot check is the one the whole page rests on. → §XIX.11
 
 ## Non-goals (do NOT add as tasks)
