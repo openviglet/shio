@@ -514,6 +514,25 @@ it. Four decisions worth keeping:
   names three roles rather than eight *and the test asserts why*: `shio-card` and `shio-media` land
   on elements that do declare fields — a feature row is a card and draws its `icon` into an
   attribute — so a rule written over all eight would be false rather than strict.
+- **And the theme that lays it out, as a `Theme` post (SH509).** `vocabulary-theme.mjs` is the
+  stylesheet SH507's decision promised: type scale, measure, vertical rhythm, a card, a button, and
+  two colour roles — **surface** and **ink** — each with the one companion a card and a caption need,
+  plus the accent a button is and the line a card is bounded by. **Content, not a file**: it is
+  written into the conversion document exactly the way the captured theme is (`/theme/shio`,
+  `<site> (Shio)`), so a curator changes a colour without touching the CLI and a site with its own
+  theme overrides it by naming that one on the layout — a stylesheet in the jar would be the one part
+  of a converted site nobody can change, the shape SH183 rejected when it made the render model
+  content. *SH509's rationale names a **blueprint** as the vehicle and this is a post instead*:
+  `convert` writes a desired-state document and has no way to apply a blueprint, so a converted site
+  would render themeless until somebody applied one by hand, and a package **plus** the constant
+  `convert` needs would be two copies of one stylesheet. **Written only when the conversion produces
+  both sections and a layout** — the roles are SH508's and a verbatim page has none of them, so on the
+  fidelity path it would be a post nobody renders. The tokens ride it as DTCG, because `ShThemeTokens`
+  compiles `color.ink` into `--color-ink` and prepends the `:root` block, which is what makes a colour
+  a field edit. Three closures the test holds, each of which fails the way an unstyled page fails —
+  silently: every role in `LAYOUT_ROLES` is styled, every `var()` the stylesheet reads is a token the
+  theme declares, and **every token it declares is read** — a token nothing uses is a field a curator
+  can edit to no effect. And nothing in it names a section type.
 - **The binding rides the document** (`postTypeLayout`, new on `ShAgentDesiredState`), because a
   layout nobody bound renders nothing and no `post.upsert` can express that edge — without it
   `--out` would emit an un-appliable file. It compiles to a **second** `site.upsert` after

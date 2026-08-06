@@ -41,6 +41,9 @@
  */
 
 import { SECTION_FILE_FIELDS } from "./propose.mjs";
+import {
+  VOCABULARY_THEME_CSS, VOCABULARY_THEME_SLUG, VOCABULARY_THEME_TOKENS, vocabularyThemeTitle,
+} from "./vocabulary-theme.mjs";
 
 /** Where a converted section lands. One folder, because a section is addressed by its own url. */
 export const SECTIONS_FOLDER = "/sections";
@@ -115,6 +118,16 @@ export function buildConversion({ proposal, plan = {}, site, createSite = false,
   if (proposal?.scripts?.length) {
     posts.push(scriptsPost(proposal.scripts, site));
     extras.push("SiteScripts");
+  }
+  // SH509 — the theme SH507's decision promised and the vocabulary never had. Written only for a
+  // conversion that produces **both** sections and a layout to name it: it styles SH508's roles, and
+  // a verbatim page has none of them, so on the fidelity path it would be a post nobody renders —
+  // and a document with sections but no page has no layout either, which is the same emptiness one
+  // step earlier. `Theme (Shio)` rather than `Theme` in `extras`, because that string is what decides
+  // whether the layout names the *captured* theme.
+  if (sections.length && pages.length) {
+    posts.push(vocabularyThemePost(site));
+    extras.push("Theme (Shio)");
   }
   // SH449 wrote the layout only for a verbatim page, and SH464 is what that cost: the authorable
   // path wrote sections, a Page and a Theme and NO PageLayout, so `/preview/<site>/` answered
@@ -576,6 +589,28 @@ function themePost(theme, site) {
       TITLE: `${site} (captured)`,
       CSS: theme.css ?? "",
       TOKENS: `${JSON.stringify(theme.tokens ?? {}, null, 2)}\n`,
+    },
+  };
+}
+
+/**
+ * The vocabulary's own theme as a `Theme` post (SH509).
+ *
+ * <p>Same shape as `themePost` above, and that is the point: SH507 decided an authorable conversion
+ * presents with a Shio theme, and a theme in this product is **content**. So it is written, named and
+ * edited exactly the way the captured one is — a curator can change a colour without touching the
+ * CLI, and a site with a theme of its own overrides this by naming that one on the layout. The bytes
+ * live in `vocabulary-theme.mjs`, which is where the argument for each rule is.</p>
+ */
+function vocabularyThemePost(site) {
+  return {
+    url: `${THEME_FOLDER}/${VOCABULARY_THEME_SLUG}`,
+    type: "Theme",
+    folder: THEME_FOLDER,
+    data: {
+      TITLE: vocabularyThemeTitle(site),
+      CSS: VOCABULARY_THEME_CSS,
+      TOKENS: `${JSON.stringify(VOCABULARY_THEME_TOKENS, null, 2)}\n`,
     },
   };
 }

@@ -21,6 +21,9 @@ import { test } from "node:test";
 import {
   LAYOUT_ROLES, SECTIONS_FOLDER, THEME_FOLDER, WRAPPER_ROLES, buildConversion, withResolvedFileFields,
 } from "../src/convert.mjs";
+import {
+  VOCABULARY_THEME_CSS, VOCABULARY_THEME_TOKENS, vocabularyThemeTitle,
+} from "../src/vocabulary-theme.mjs";
 import * as convert from "../src/commands/convert.mjs";
 import { INVENTORY_FILE, MARKUP_DIR, markupFileFor } from "../src/clone.mjs";
 import { PLAN_FILE } from "../src/propose.mjs";
@@ -601,6 +604,92 @@ test("SH508: the layout carries a structural contract, named by role and owned b
     [...used].filter((name) => name !== "shio-section-{{type}}" && name.includes("Section")), [],
     "shio-section-{{type}} is the per-type hook and stays; a *structural* class that named a type "
       + "would make the theme a list of types and break on the eighth one that ships",
+  );
+});
+
+// --- SH509: the theme the vocabulary never had ---
+
+/** The DTCG tree flattened the way `ShThemeTokens` flattens it: `color.ink` → `color-ink`. */
+function declaredCustomProperties(tree, prefix = "", into = new Set()) {
+  for (const [name, node] of Object.entries(tree)) {
+    if (name.startsWith("$") || node === null || typeof node !== "object") continue;
+    const path = prefix ? `${prefix}.${name}` : name;
+    if ("$value" in node) into.add(path.replaceAll(/[^A-Za-z0-9-]+/g, "-"));
+    else declaredCustomProperties(node, path, into);
+  }
+  return into;
+}
+
+test("SH509: an authorable conversion carries the theme it is presented with, as content", () => {
+  const { document, extras } = buildConversion({
+    proposal: {
+      candidates: [candidate("b1a2")],
+      pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }],
+    },
+    plan: { accepted: [{ block: "b1a2", type: "SectionHero" }] },
+    site: "Acme",
+  });
+
+  assert.ok(extras.includes("Theme (Shio)"), "and the report says so, because a post nobody expected "
+    + "is the kind of write P7 makes a run announce");
+  const theme = document.posts.find((post) => post.data.TITLE === vocabularyThemeTitle("Acme"));
+  assert.ok(theme, "SH507 decided the mode presents with a Shio theme; this is the theme");
+  assert.equal(theme.type, "Theme");
+  assert.deepEqual(Object.keys(theme.data).sort(), ["CSS", "TITLE", "TOKENS"],
+    "a Theme post and not a file: a stylesheet in the jar would be the one part of a converted site "
+      + "nobody can change, which is the shape SH183 rejected when it made the render model content");
+  assert.deepEqual(JSON.parse(theme.data.TOKENS), VOCABULARY_THEME_TOKENS,
+    "and the tokens ride it, so changing a colour is a field edit rather than a stylesheet rewrite");
+});
+
+test("SH509: a fidelity conversion carries no theme it would not use", () => {
+  // The roles are SH508's, and a verbatim page has none of them. Writing it anyway would be a post
+  // no page renders — and on the one path that already reaches 0.00% against its source.
+  const { document, extras } = buildConversion({
+    proposal: {
+      candidates: [candidate("b1a2", { mode: "fidelity" })],
+      pages: [{ path: "/", title: "Home", blocks: ["b1a2"] }],
+    },
+    plan: {},
+    site: "Acme",
+    markup: new Map([["/", "<html><body><p>Words.</p></body></html>"]]),
+  });
+
+  assert.ok(!extras.includes("Theme (Shio)"));
+  assert.equal(document.posts.filter((post) => post.type === "Theme").length, 0);
+});
+
+test("SH509: the theme styles every role SH508 declares, and assumes no section type", () => {
+  // The contract has two ends and this is the assertion that they meet. A role the layout emits and
+  // the theme never styles is a wrapper that does nothing; a rule for a role the layout never emits
+  // is a rule that matches nothing.
+  assert.deepEqual(
+    LAYOUT_ROLES.filter((role) => !VOCABULARY_THEME_CSS.includes(`.${role}`)), [],
+    "every role in the contract is styled - a container that bounds nothing is a byte of markup with "
+      + "no reader",
+  );
+  assert.ok(
+    !VOCABULARY_THEME_CSS.includes("Section"),
+    "and none of it names a section type: SH508's names are roles, and a theme that styled "
+      + ".shio-section-SectionHero specially would break the eighth type that ships",
+  );
+
+  // A `var()` naming a property nothing declares is the same defect one level down, and it fails the
+  // way an unstyled page fails - silently, with the browser dropping the declaration.
+  const declared = declaredCustomProperties(VOCABULARY_THEME_TOKENS);
+  const used = new Set([...VOCABULARY_THEME_CSS.matchAll(/var\(--([A-Za-z0-9-]+)\)/g)]
+    .map(([, name]) => name));
+  assert.ok(used.size > 0, "a scanner that found nothing would make both directions pass over nothing");
+  assert.deepEqual(
+    [...used].filter((name) => !declared.has(name)).sort(), [],
+    "every custom property the stylesheet reads is a token the theme declares - ShThemeTokens "
+      + "compiles color.ink into --color-ink and prepends the :root block, so an undeclared one is a "
+      + "declaration the browser drops",
+  );
+  assert.deepEqual(
+    [...declared].filter((name) => !used.has(name)).sort(), [],
+    "and the other way: a token nothing reads is a field a curator can edit to no effect, which is "
+      + "worse than not offering it",
   );
 });
 

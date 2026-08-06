@@ -374,6 +374,29 @@ Every fact already has a reader; nothing composes them, so the first minutes of 
 session are five calls and a guess. This is P2 pointed at the environment instead of at
 the content — and it is CLI-shaped, because half the inputs are files.
 
+### IX.31 Fetch the page the reader gets (SH516)
+
+`verify --site VILT` says **ok — 0 errors, 17 warnings**. Fetching the page it approved
+and resolving what it asks for gives **38 broken links of 39** and **43 broken
+references**. `verify` found 12 of the 38 and none of the 43.
+
+The gap is not a missing rule but a missing *reader*. Every check resolves a reference
+against the tree: does a friendly URL exist, is a File post addressable, does a layout
+name a theme. All true here — and the page that comes out is served four segments deep,
+so its relative strings resolve elsewhere (SH512), its query-stringed paths miss
+(SH515), and its links point at pages nobody captured. The content is self-consistent
+and the page does not work.
+
+**Every defect that survived a green gate this session lives in that gap**, and there have been six:
+SH455, SH461, SH462, SH512, SH515 and the two that produced this line. Each was found by hand, and the hand
+was wrong once — a first pass reported *0 broken* on the page with a missing logo, because it filtered
+references on a leading slash instead of resolving them.
+
+So the instrument is one check that fetches the served page and resolves everything
+against **its own URL**: `<a href>`, `src`, `srcset`, `<link>`, `url()` in stylesheets
+*and* style attributes, and the strings a `fetch(` names. It is what a reader does by
+opening the page, which is why it keeps being the thing that finds what the tree cannot.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the
@@ -1622,30 +1645,6 @@ It costs a reader more than it looks. Six candidates on a real site is a short e
 list to read carefully, and one of them being noise makes the reader doubt the other
 five.
 
-### XVII.62 The theme the vocabulary never had (SH509)
-
-SH507 decided a converted page is presented by a Shio theme. This is it: one stylesheet
-targeting SH508's layout contract, so a converted site looks deliberate rather than
-unstyled.
-
-Small on purpose: type scale, measure, vertical rhythm, a card, a button, and two colour
-roles — surface and ink. Not a design system competing with the front end's, but the
-answer to "a curator opened the editor and needs to see a page".
-
-**It is content, not a file.** `Theme` is a post-type, so this ships the way every other starting point
-does — a blueprint the conversion applies, editable afterwards by the same curator, and overridable by a
-site that has its own. A stylesheet compiled into the jar would be the one part of a converted site nobody
-can change, which is the shape SH183 rejected when it made the render model content.
-
-Two things it must not do. It must not assume a section type: SH508's names are roles,
-and a theme that styles `shio-section-SectionHero` specially breaks the next type that
-ships. And it must not inline alongside the captured theme — SH509 removes that, and the
-two together on one page would make the cascade depend on which came first, which is
-exactly the accident SH424 spent a task removing.
-
-The proof is a reader's, and the skill asks for it: open the editor on a converted page
-and judge whether a hero reads as a hero. A digest cannot answer that.
-
 ### XVII.63 Stop sending what cannot match (SH510)
 
 An authorable page inlines the captured theme and cannot apply it: 1,062,141 bytes of
@@ -1767,6 +1766,63 @@ cannot be stored, `fix` telling the caller to drop it.
 Whichever, the count belongs in the report. `59 uploaded, 1 with no bytes` is what the
 caller needs to see, not a stack of one failed request — and it is a line the conversion
 already knows how to print.
+
+### XVII.68 One pass finds what the other cannot fetch (SH515)
+
+The replica's console shows three 404s and a crash. `img/about-us.png` and
+`img/working-at-vilt.png` are absent from the tree, and `content/home-insights.json` was
+never fetched — after which `insightsData.find is not a function`, because the JSON the
+page expected is a 404 body.
+
+Where they are referenced is the finding. `about-us.png` comes from
+`style="background-image:url('…')"` — a **style attribute**, not a stylesheet.
+`home-insights.json` comes from `fetch("…")` inside JavaScript. Neither is a markup
+attribute the collector reads (`src`, `href`, `srcset`) nor a `url()` in a stylesheet,
+which SH473 added.
+
+**And the rewriter already found all three.** The served page says
+`url('/sites/vilt/default/en-us/img/about-us.png')` and
+`fetch("/sites/vilt/default/en-us/content/home-insights.json")` — rebased correctly onto the serving base.
+So one pass over the markup knows the reference exists and the other does not, and the pass that knows is
+the one that cannot fetch.
+
+That asymmetry is the defect rather than any single missing pattern. It has now produced
+three tasks — SH452 and SH455 for stylesheet `url()`, SH473 for the script bundle, this
+one for style attributes and `fetch` — each adding a place to look, and the next unusual
+reference will produce a fourth.
+
+They should read one list. Whatever the rewriter can rebase, the collector must fetch,
+asserted as an identity rather than kept in step by hand: every reference the rewriter
+rewrote resolves.
+
+### XVII.69 Baking content is right, baking machinery is not (SH517)
+
+The hero's background animation is dead, and the markup says why. The source has `<div
+id="particles"></div>` — empty, filled at runtime by a particles library. The replica
+has `<div id="particles" style="margin-left: -740px; margin-top: -385px;"><canvas
+width="1480" height="770">`: `--render` baked the canvas the script had just created,
+sized for the capture's viewport, and nothing paints on it. The library itself is not
+among the captured scripts.
+
+So `--render`'s value and its cost are the same mechanism. Baking the DOM a script
+produced is right when that DOM is **content** — it is what turned a blank SPA capture
+into six readable pages. It is wrong when the DOM is **machinery**: a canvas is
+meaningless without the loop that draws on it, and baking one also prevents a library
+from creating its own.
+
+The same freeze is elsewhere on the page and quieter. Three `uk-scrollspy-inview`, one
+`aria-hidden="false"`, two empty `style=""` and fifty-nine `uk-active` —
+scroll-triggered states captured mid-flight, so a replica opens with its animations
+already finished and its first slide already chosen.
+
+Three candidate rules, and the first two are cheap. A `<canvas>` produced by script
+carries nothing and can be emptied. A `style` attribute a script wrote is runtime state,
+not authored markup. And a class a known framework toggles — UIkit's `uk-*-inview`,
+`uk-active` — is a state, not content, though that one needs a list and is the arguable
+half.
+
+Whatever the rule, the report has to name it: a capture that freezes behaviour should
+say what it froze.
 
 ## XVIII End-user documentation for 2026.3 (Block R)
 

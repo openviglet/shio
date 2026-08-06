@@ -23,6 +23,7 @@
 - 💭 **SH209** (deps: SH102 ✅) **`shio snapshot` photographs one page per run** — The useful artifact for a handoff is the set of a site's pages, and the command captures one page per run. → §IX.10
 - 📋 **SH397** (deps: SH295 ✅, SH325 ✅) **A dev instance reports its version as dev, so a stale server reads as a code defect** — The build stamp comes from the jar manifest, which is absent in the one mode where the running instance can lag the working tree, and nothing composes the readiness facts. → §IX.12
 - 📋 **SH423** (deps: SH347 ✅) **The test-context budget is a ceiling nobody sees approaching** — ShContextCacheHeadroomTest fails once 64 is crossed and nothing says a task is spending one, so eleven tasks took the count from 38 to 44 with no moment anybody was asked. → §VIII.20
+- 📋 **SH516** (deps: SH512) **The gate approves a page whose every link is broken, because it reads the tree and not the page** — verify resolves references against content furls, so 38 broken links and 43 broken references on the served page reach it as ok with 12 warnings. → §IX.31
 
 ## Block I — Content as files (local-first authoring)
 
@@ -87,11 +88,12 @@
 - ⏳ **SH502** (deps: SH446 ✅) **The only scaffold that renders sections cannot install, so an authorable replica has no front end** — shio-sections answers E404 and the built-in template carries no sections renderer, so a fidelity replica has two delivery paths and an authorable one has none. → §XVII.55
 - 📋 **SH505** (deps: SH426 ✅) **A fixed overlay's text is adopted as the intro of three unrelated sections** — The consent banner sits out of flow on every page and contentRoot excludes only header and footer chrome, so its first paragraph became content on three pages at once. → §XVII.58
 - 📋 **SH506** (deps: SH425 ✅) **A script element is proposed as a content block, with a post-type that has no fields** — It recurs on all six pages so the walker promotes it, and the proposal offers Block1 with an empty field list, which can hold nothing and would enter the model. → §XVII.59
-- 📋 **SH509** (deps: SH508 ✅) **A converted page has no presentation of its own, so the editor shows unstyled text** — SH507 decided the mode presents with a Shio theme and none exists, so a curator opens a page with type scale, rhythm, cards and buttons all absent. → §XVII.62
-- 📋 **SH510** (deps: SH509) **An authorable page ships a megabyte of theme it cannot apply** — 1,062,141 of 1,066,436 bytes are a stylesheet meeting 8 class names, and once a vocabulary theme lands there would be two on one page with order deciding. → §XVII.63
+- 📋 **SH510** (deps: SH509 ✅) **An authorable page ships a megabyte of theme it cannot apply** — 1,062,141 of 1,066,436 bytes are a stylesheet meeting 8 class names, and once a vocabulary theme lands there would be two on one page with order deciding. → §XVII.63
 - 📋 **SH511** (deps: SH507 ✅) **The proposal reports the mode's own contract as a loss the reviewer should weigh** — 311 dropped class names read as an argument for fidelity on every candidate, when under SH507 the presentation is replaced by design and only the discarded content is a loss. → §XVII.64
 - 📋 **SH512** (deps: SH466 ✅) **Relative references are not rebased, so a deeper serving path breaks every image** — The source serves one segment deep and the replica four, so ./../../img/x resolves to a path that 404s while the asset itself answers 200 and verify stays clean. → §XVII.65
 - 📋 **SH514** (deps: SH437 ✅) **A zero-byte asset is refused with Spring's default 400, so a conversion dies unexplained** — The source serves an empty stylesheet legitimately and the capture writes it faithfully, and the upload's only answer is a body with no title, detail or fix. → §XVII.67
+- 📋 **SH515** (deps: SH473 ✅) **The rewriter rebases references the collector never fetched, so the page asks for what is not there** — A style attribute's url() and a fetch() string are rebased and never downloaded, so two images 404 and a JSON crash follows on a run that uploaded every asset. → §XVII.68
+- 📋 **SH517** (deps: SH469 ✅) **A rendered capture bakes a script's canvas and its transient classes, freezing behaviour as content** — The source's particles div is empty and the replica holds a dead canvas sized for the capture viewport, alongside scrollspy and active states caught mid-flight. → §XVII.69
 
 ## Block F — Market positioning
 
