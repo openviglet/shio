@@ -81,7 +81,6 @@
 
 ## Block Q — Replication (an existing site becomes an authorable Shio site)
 
-- 📋 **SH466** (deps: SH336 ✅) **A link the rewriter cannot resolve is emitted verbatim, so it leaves the replica** — The fallback keeps the source's base on a page served under another, so an unpublished target turns into an href out of the site and the output depends on publication state. → §XVII.43
 - 📋 **SH467** (deps: SH385 ✅) **The replica inverts the source's trailing slash, so the source's own links 404** — A directory-style path is stored without its trailing slash and never restored, so /shio/ answers 404 while /shio answers 200 — the opposite of what the source does. → §XVII.44
 - 📋 **SH468** (deps: SH377 ✅) **Text extraction joins element boundaries with no separator, so adjacent words fuse** — anchor.text += token.text at clone.mjs:399 inserts nothing between nodes, so a brand tile beside a label yields DuDumont DEP — a token the source never contained. → §XVII.45
 - 📋 **SH469** (deps: SH389 ✅) **The replica keeps the appearance and drops the behaviour, and no instrument says so** — script is not an asset kind the crawler collects and SiteScripts took only the third-party ones, so the site's own bundle vanishes while clone, verify and snapshot all report success. → §XVII.46

@@ -1500,30 +1500,6 @@ Two gaps in the middle are not about replication at all: they are ordinary site 
 nobody has needed yet because no first-party blueprint has a menu, a second page of a
 listing, or six languages. They surface here because a real site has all three.
 
-### XVII.43 A verbatim href is a hardcoded base (SH466)
-
-A replicated page carried `href="/turing/"` — the source's path, verbatim, on a page
-served from `/sites/vigletorg/default/en-us/`. Following it leaves the site for the
-instance root. The other five links on the same page were rewritten correctly, so the
-page mixes two kinds of href and only one works.
-
-The rule is the mechanism. The rewriter resolves each link against the site's content
-and rewrites what it finds; what it cannot find it **leaves alone**. `turing` was
-unpublished at that moment, and the public route sees only PUBLISHED, so the link fell
-through to verbatim — which is the source's base, not this one. The same page on
-`/preview` had all six rewritten, because the preview sees DRAFT and could resolve it.
-So the output depends on publication state, and the failure appears exactly when a site
-is half published, which is every site mid-migration.
-
-**Every link must come from the resolver, never from the source's bytes.** A verbatim href is a hardcoded
-base, and a replica is by definition served under a different one — `/preview/<site>/` and
-`/sites/<furl>/<format>/<locale>/` are both different from `/`. Leaving one unrewritten is not a
-conservative fallback; it is the one output guaranteed to point somewhere else.
-
-An unresolved link should still be rebased onto the site, so it 404s *inside* the
-replica where `verify` already reports it, and SH336's rewriter is where the fallback
-belongs. A missing page is a finding; a link out of the site is a silent exit.
-
 ### XVII.44 A URL space with one character removed (SH467)
 
 The source serves `/shio/` with a **200** and answers `/shio` with a **301** to it. The

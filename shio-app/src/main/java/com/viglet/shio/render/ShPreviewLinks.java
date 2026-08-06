@@ -57,15 +57,39 @@ import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
  * hashed and the SH101 digest does not move — checked, because the objection raised against this
  * design was exactly that it would, and it was wrong on the facts.</p>
  *
- * <h2>The rule: only a URL this site actually publishes</h2>
+ * <h2>The rule: every navigable path is this site's, except the instance's own routes (SH466)</h2>
  *
- * <p>Rewriting every root-relative {@code href} would break the page. {@code {{file_url}}} emits
- * {@code /file_source/<id>/<name>}, which is a real server path; SH141's declared
- * {@code frontend-routes} are real too; and an external site's own {@code /api/...} is not ours to
- * touch. So the pass rewrites a link <b>only when its path matches a URL in this site's index</b> —
- * reusing the index {@code routes} already builds rather than inventing a rule. Anything else is
- * left exactly as the author wrote it, which is also what makes this safe to run on 2018 content
- * with no author change.</p>
+ * <p>SH336 shipped the opposite rule — rewrite a link <b>only when its path matches a URL in this
+ * site's index</b>, leave everything else exactly as the author wrote it — on the reasoning that
+ * {@code {{file_url}}} emits a real server path, SH141's declared {@code frontend-routes} are real,
+ * and an external site's own {@code /api/…} is not ours to touch. Two of those three are about
+ * <em>the instance's</em> routes, and the third is a claim about a front end that is not what is
+ * serving this page.</p>
+ *
+ * <p>What the index-match rule actually produced is a page carrying two kinds of {@code href} where
+ * only one works. A replicated page held {@code href="/turing/"} — the source's path, verbatim — on
+ * a page served from {@code /sites/vigletorg/default/en-us/}; the other five links on it were
+ * rewritten. {@code turing} was unpublished at that moment, so it was not in the index and fell
+ * through to verbatim, which is <b>the source's base, not this one</b>. The same page under
+ * {@code /preview} had all six rewritten, because the preview sees DRAFT. So the output depended on
+ * publication state, and the failure appeared exactly when a site is half published.</p>
+ *
+ * <p>A verbatim root-relative {@code href} is a hardcoded base, and both address spaces this pass
+ * writes into — {@code /preview/<site>/} and {@code /sites/<furl>/<format>/<locale>/} — are
+ * different from {@code /}. Leaving one alone is not a conservative fallback; it is the one output
+ * guaranteed to point somewhere else. So an unresolved path is <b>rebased onto the site anyway</b>:
+ * it then 404s <em>inside</em> the replica, where {@code verify}'s {@code routes} check already
+ * reports it. A missing page is a finding; a link out of the site is a silent exit.</p>
+ *
+ * <p>The exception that survives is the one the old rule was really protecting, named directly
+ * instead of inferred from an index: a path whose first segment is a route <b>the instance itself</b>
+ * serves ({@link #INSTANCE_ROUTES}). {@code /file_source/…} is where {@code {{file_url}}} points and
+ * must not move; {@code /sites/…} and {@code /preview/…} are the two prefixes this pass writes, which
+ * is also what keeps it idempotent.</p>
+ *
+ * <p>The href pass therefore no longer consults the URL index at all — which is why it no longer
+ * depends on {@code state}. {@link #pathsForBridge} still builds it, for the browser half that
+ * decides about links this pass never saw.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -89,6 +113,19 @@ public class ShPreviewLinks {
      * of its captured markup being edited (SH429's option A).</p>
      */
     private static final List<String> ASSET = List.of("src");
+
+    /**
+     * The first path segments the <b>instance</b> serves, which are never a site's own (SH466).
+     *
+     * <p>The whole exception list, and deliberately short: {@code file_source} is where
+     * {@code {{file_url}}} already points, {@code preview} and {@code sites} are the two prefixes
+     * this pass writes (so a second pass changes nothing), {@code api} is the REST surface and
+     * {@code mcp} the tool one. A source that really publishes a page under one of these cannot be
+     * replicated at that address anyway, so leaving it verbatim is the honest answer rather than a
+     * carve-out.</p>
+     */
+    private static final Set<String> INSTANCE_ROUTES =
+            Set.of("api", "mcp", "file_source", "preview", "sites");
 
     /**
      * A CSS {@code url()} — quoted either way, or bare (SH461).
@@ -147,13 +184,12 @@ public class ShPreviewLinks {
      * delivery URL; what differs is four characters of prefix. Parameterising it here rather than
      * copying the pass is SH245's rule — the second copy is the one that stops matching.</p>
      *
-     * @param prefix what a resolvable internal path is prefixed with, with no trailing slash
+     * @param prefix what an internal path is prefixed with, with no trailing slash
      */
     public String rewriteInto(String html, String prefix, ShPageRenderService.ShRenderedPage page) {
         if (html == null || html.isBlank() || page == null || page.siteId() == null) {
             return html;
         }
-        Set<String> known = publishedUrls(page.siteId(), page.state());
         Document document = Jsoup.parse(html);
         document.outputSettings().prettyPrint(false);
         // SH437 — one lookup per *distinct* path, not per element. A fidelity page is the whole
@@ -170,12 +206,10 @@ public class ShPreviewLinks {
             }
         }
         rewriteStylesheets(document, prefix, page, assets);
-        // The empty index used to short-circuit the whole method. It cannot any more: a site with no
-        // page URLs can still hold assets, and this loop already does nothing when `known` is empty.
         for (String attribute : NAVIGABLE) {
             for (Element element : document.select("[" + attribute + "]")) {
                 String value = element.attr(attribute);
-                String rewritten = rewriteOne(value, known, prefix);
+                String rewritten = rewriteOne(value, prefix);
                 if (rewritten != null) {
                     element.attr(attribute, rewritten);
                 }
@@ -205,19 +239,30 @@ public class ShPreviewLinks {
      * builds one deliberately), a protocol-relative {@code //host/x} is absolute too, and a
      * document-relative {@code contato} already resolves correctly under the preview prefix — which
      * is why it must <em>not</em> be touched.</p>
+     *
+     * <p>Everything else is rebased, resolvable or not (SH466). {@link #INSTANCE_ROUTES} is the one
+     * remaining exception, and it is also what makes a second pass a no-op: the prefix this method
+     * writes starts with {@code /preview/} or {@code /sites/}.</p>
      */
-    private String rewriteOne(String value, Set<String> known, String prefix) {
-        if (value == null || !value.startsWith("/") || value.startsWith("//")) {
-            return null;
-        }
-        // Already in the preview's space: a hand-written /preview/... link, or a second pass.
-        if (value.startsWith(ShSiteFrontEnd.PREVIEW_BASE)) {
+    private String rewriteOne(String value, String prefix) {
+        if (value == null || !value.startsWith("/") || value.startsWith("//")
+                || isInstanceRoute(value)) {
             return null;
         }
         int cut = firstOf(value, '?', '#');
         String path = cut < 0 ? value : value.substring(0, cut);
         String tail = cut < 0 ? "" : value.substring(cut);
-        return known.contains(ShAddress.normalizePath(path)) ? prefix + path + tail : null;
+        return prefix + path + tail;
+    }
+
+    /** Whether the path's first segment names a route the instance serves rather than a site. */
+    private static boolean isInstanceRoute(String value) {
+        int end = value.indexOf('/', 1);
+        int query = firstOf(value, '?', '#');
+        if (query >= 0 && (end < 0 || query < end)) {
+            end = query;
+        }
+        return INSTANCE_ROUTES.contains(end < 0 ? value.substring(1) : value.substring(1, end));
     }
 
     /**
@@ -295,17 +340,21 @@ public class ShPreviewLinks {
     /**
      * One {@code src}, or {@code null} to leave it alone (SH437).
      *
-     * <p>Same three exclusions as {@link #rewriteOne} — absolute, protocol-relative and
-     * document-relative are all somebody else's or already correct — plus one this rule needs and
-     * that one does not: {@code /file_source/…} is where {@code {{file_url}}} already points, so a
-     * template that resolved an asset properly must not have its work re-pointed at a path that
-     * would have to resolve back to the same bytes.</p>
+     * <p>The same exclusions as {@link #rewriteOne} — absolute, protocol-relative and
+     * document-relative are all somebody else's or already correct, and {@link #INSTANCE_ROUTES}
+     * covers {@code /file_source/…}, where {@code {{file_url}}} already points, so a template that
+     * resolved an asset properly is not re-pointed at a path that would have to resolve back to the
+     * same bytes.</p>
+     *
+     * <p>What it does <b>not</b> share is SH466's inverted default. An unresolvable {@code href} is
+     * still a navigation into this site and 404s where {@code verify} reports it; an unresolvable
+     * {@code src} is a request for bytes that are not here, and rebasing it would turn a reference
+     * the capture can still be measured against into one pointing at nothing.</p>
      */
     private String rewriteAsset(String value, String prefix,
                                 ShPageRenderService.ShRenderedPage page, Map<String, Boolean> seen) {
         if (value == null || !value.startsWith("/") || value.startsWith("//")
-                || value.startsWith(ShSiteFrontEnd.PREVIEW_BASE)
-                || value.startsWith("/file_source/")) {
+                || isInstanceRoute(value)) {
             return null;
         }
         int cut = firstOf(value, '?', '#');

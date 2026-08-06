@@ -13,9 +13,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -872,9 +875,10 @@ class ShPageRenderTest {
     /**
      * The rule is narrow on purpose, so the cases that must be left alone are the assertion.
      *
-     * <p>Rewriting every root-relative href would break the page: {@code {{file_url}}} emits a real
-     * server path, SH141's declared front-end routes are real, and a document-relative link already
-     * resolves under the preview prefix. Only a path this site actually publishes is ours to move.</p>
+     * <p>Absolute and protocol-relative belong to whoever they name, a document-relative link
+     * already resolves under the preview prefix, and SH466's {@code INSTANCE_ROUTES} keeps the
+     * paths the <em>instance</em> serves — {@code /file_source/…}, where {@code {{file_url}}}
+     * points, and the two prefixes this pass itself writes.</p>
      */
     @Test
     @DisplayName("SH336: an internal link enters the preview's address space and nothing else moves")
@@ -884,21 +888,79 @@ class ShPageRenderTest {
         String html = previewLinks.rewrite("""
                 <a href="/">home</a>\
                 <a href="/file_source/abc/logo.png">a real server path</a>\
+                <a href="/api/v2/ping">the instance's own REST surface</a>\
                 <a href="https://example.com/">absolute</a>\
                 <a href="//cdn.example.com/x">protocol-relative</a>\
                 <a href="/preview/Other/x">already in a preview</a>\
-                <a href="contato">document-relative</a>\
-                <a href="/nope">not a page of this site</a>""", siteName, page);
+                <a href="contato">document-relative</a>""", siteName, page);
 
         assertThat(html).contains("href=\"/preview/" + siteName + "/\"");
         assertThat(html)
-                .as("everything the site does not publish is left exactly as the author wrote it")
+                .as("a route the instance serves, and everything that is not a path of ours at all")
                 .contains("href=\"/file_source/abc/logo.png\"")
+                .contains("href=\"/api/v2/ping\"")
                 .contains("href=\"https://example.com/\"")
                 .contains("href=\"//cdn.example.com/x\"")
                 .contains("href=\"/preview/Other/x\"")
-                .contains("href=\"contato\"")
-                .contains("href=\"/nope\"");
+                .contains("href=\"contato\"");
+    }
+
+    /**
+     * SH466 — the case the assertion above used to make the other way round.
+     *
+     * <p>It read {@code contains("href=\"/nope\"")}, on the reasoning that a path this site does
+     * not publish is not ours to move. But the page is served under {@code /preview/<site>/} or
+     * {@code /sites/<furl>/<format>/<locale>/}, and a verbatim root-relative href is the source's
+     * base — so "leave it alone" is the one output guaranteed to leave the site. Worse, whether a
+     * link fell through depended on the index, which depends on <b>publication state</b>: a
+     * replicated page carried {@code href="/turing/"} beside five rewritten links because
+     * {@code turing} happened to be unpublished, and the same page on {@code /preview} had all six.
+     * Rebasing it makes the failure a 404 <em>inside</em> the replica, which {@code verify}'s
+     * {@code routes} check already reports.</p>
+     */
+    @Test
+    @DisplayName("SH466: a path this site does not publish is rebased too, so it 404s inside the replica")
+    void anUnresolvedLinkIsRebasedRatherThanLeftVerbatim() {
+        ShRenderedPage page = renderedPageOfMainFixture();
+
+        String html = previewLinks.rewrite(
+                "<a href=\"/nope\">not a page of this site</a>"
+                        + "<a href=\"/turing/\">unpublished at this moment</a>", siteName, page);
+
+        assertThat(html)
+                .contains("href=\"/preview/" + siteName + "/nope\"")
+                .contains("href=\"/preview/" + siteName + "/turing/\"");
+    }
+
+    @Test
+    @DisplayName("SH466: no root-relative href survives the pass except the instance's own routes")
+    void everyNavigablePathEndsUpInTheSitesSpace() {
+        ShRenderedPage page = renderedPageOfMainFixture();
+        String prefix = "/sites/" + siteName + "/default/en-us";
+
+        String html = previewLinks.rewriteInto("""
+                <a href="/a">published</a><a href="/b/c">not published</a>\
+                <a href="/d?q=1#top">with a tail</a><link rel="icon" href="/favicon.ico">\
+                <a href="/api/v2/ping">the instance</a>""", prefix, page);
+
+        assertThat(hrefsIn(html))
+                .as("the one thing a replica must never emit is an href whose base is the source's")
+                .containsExactlyInAnyOrder(
+                        prefix + "/a", prefix + "/b/c", prefix + "/d?q=1#top",
+                        prefix + "/favicon.ico", "/api/v2/ping");
+        assertThat(previewLinks.rewriteInto(html, prefix, page))
+                .as("and the public prefix is an instance route too, which is what keeps a second "
+                        + "pass a no-op now that the index no longer decides")
+                .isEqualTo(html);
+    }
+
+    private static List<String> hrefsIn(String html) {
+        List<String> found = new ArrayList<>();
+        Matcher hrefs = Pattern.compile("href=\"([^\"]*)\"").matcher(html);
+        while (hrefs.find()) {
+            found.add(hrefs.group(1));
+        }
+        return found;
     }
 
     @Test

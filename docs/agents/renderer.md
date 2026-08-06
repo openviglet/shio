@@ -404,10 +404,9 @@ renderer over one body of content at a second address. See the section on it bel
   `link-unresolved` while every really broken link passed.
   **(a) `ShPreviewLinks`, a server DOM pass** in `ShRenderAPI.page` only — `/agent/render` calls
   `ShPageRenderService.render` directly, so nothing here is ever hashed and the SH101 digest cannot
-  move. It rewrites a root-relative `href` **only when the path is a URL this site publishes**,
-  reusing the index `routes` builds: `{{file_url}}`'s `/file_source/…` is a real server path, SH141's
-  declared front-end routes are real, and a document-relative `contato` already resolves. Query
-  string and fragment survive; the pass is idempotent; DRAFT previews match against drafts too.
+  move. It rewrote a root-relative `href` **only when the path was a URL this site publishes**,
+  reusing the index `routes` builds — the rule **SH466 inverted**, below. Query string and fragment
+  survive; the pass is idempotent.
   **(b) click interception in `shio-editor.js`** for the nav a region's SH248 `JAVASCRIPT` builds at
   runtime, which no server pass can see. Handed the *same* index via `data-shio-preview-paths` —
   without it the browser cannot tell a page from a file. Never on a modified or non-primary click,
@@ -514,6 +513,28 @@ renderer over one body of content at a second address. See the section on it bel
   `rewriteAsset` lookup, the same prefix and the same leave-it-alone default. Quoting is preserved
   as the author wrote it; a `<link rel=stylesheet>` needs nothing, because Shio's own theme is
   *inlined* by the layout (SH183), which is exactly why there is a `<style>` to walk.
+- **A verbatim `href` is a hardcoded base, so the fallback is inverted (SH466)** — SH336's rule was
+  *rewrite only what the index resolves, leave the rest alone*, and what it produced is a page
+  carrying two kinds of `href` where one works. A replicated page held `href="/turing/"` — the
+  source's path, verbatim — on a page served from `/sites/vigletorg/default/en-us/`, beside five
+  links that were rewritten; `turing` was **unpublished** at that moment, so it was not in the index,
+  and the same page on `/preview` had all six because the preview sees DRAFT. **The output depended
+  on publication state**, and the failure appears exactly when a site is half published, which is
+  every site mid-migration. Both spaces this pass writes into are different from `/`, so leaving a
+  path alone is the one output guaranteed to point somewhere else. Now **every root-relative `href`
+  is rebased**, resolvable or not: it 404s *inside* the replica, where `routes` already reports it —
+  a missing page is a finding, a link out of the site is a silent exit. The exception is named
+  directly instead of inferred from an index — `ShPreviewLinks.INSTANCE_ROUTES`, the five first
+  segments the **instance** serves (`api`, `mcp`, `file_source`, `preview`, `sites`); the last two
+  are the prefixes this pass writes, which is what keeps it idempotent now that the index no longer
+  decides. The href pass therefore reads no index and no longer depends on `state`; `rewriteAsset`
+  shares the exclusion but **not** the inverted default, because an unresolvable `src` is bytes that
+  are not here and rebasing it would break a reference `snapshot --against` can still measure.
+  Mechanism (b), the click interception, keeps the narrower index rule — it only ever *adds* cover
+  for JS-built links, and the route this defect appeared on carries no editor bridge at all.
+  The instrument is two-sided: `ShPageRenderTest` asserts no href survives the pass except an
+  instance route, and `replication.conformance.mjs` asserts the same of a served replica, where the
+  fixture's `/admin` had been the live case all along.
 - **`{{theme.css}}` is raw, and it had to become so before any of that could work (SH461)** —
   the documented layout is `<style>{{theme.css}}</style>`, the double stash escapes, and CSS decodes
   no entities, so `url("/fonts/inter.woff2")` reached the browser as `url(&quot;/fonts/…&quot;)`: an

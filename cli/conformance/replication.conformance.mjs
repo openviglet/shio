@@ -440,6 +440,26 @@ describe("SH448 conformance: replication, from a served source to an installable
         + `instance, under a path the page does not ask for, and no unit test can tell those apart `
         + `because both halves are green in isolation. Referenced: ${referenced.join(" ")}`,
     );
+
+    // ── SH466: and no link on it leaves the site ──────────────────────────────────────────
+    //
+    // The check above asks whether a reference resolves; this asks where a *navigation* points,
+    // which is the other half and the one that was silently wrong. SH336 rewrote a link only when
+    // its path matched a published URL, so an unresolvable one was emitted verbatim — the source's
+    // base, on a page served under another. The fixture links `/admin`, a page robots.txt kept out
+    // of the capture, so this file already served the exact case: clicking it left the replica for
+    // the instance root. Whether a link fell through depended on the *index*, hence on publication
+    // state, which is why a half-published site mixed two kinds of href and only one worked.
+    const escaping = navigableIn(html).filter(
+      (path) => !path.startsWith(`/preview/${fidelitySite}/`) && !isInstanceRoute(path),
+    );
+    assert.deepEqual(
+      escaping,
+      [],
+      `SH466: every root-relative href on the replica is in the replica's own address space. A `
+        + `verbatim one is a hardcoded base — a missing page is a finding \`verify\` reports, a link `
+        + `out of the site is a silent exit. Hrefs: ${navigableIn(html).join(" ")}`,
+    );
   });
 
   test("SH456: a conversion that wrote everything exits 0, said by the process and not by the module", async () => {
@@ -490,6 +510,40 @@ function referencesIn(html) {
     keep(dq ?? sq ?? bare);
   }
   return [...found].sort();
+}
+
+/**
+ * Every root-relative `<a href>` a rendered page carries — navigation rather than bytes (SH466).
+ *
+ * <p>The complement of `referencesIn`, and deliberately a second function: that one excludes
+ * `<a href>` because a 404 there can be correct, and this one asserts something a 404 cannot say —
+ * whose *base* the link was written against.</p>
+ */
+function navigableIn(html) {
+  const found = new Set();
+  for (const [, value] of html.matchAll(/<a\b[^>]*\bhref\s*=\s*"([^"]*)"/gi)) {
+    const path = String(value ?? "").trim();
+    if (path.startsWith("/") && !path.startsWith("//")) found.add(path);
+  }
+  return [...found].sort();
+}
+
+/**
+ * The first segments the instance serves rather than a site — `ShPreviewLinks.INSTANCE_ROUTES`.
+ *
+ * <p>Three of its five. `preview` and `sites` are omitted on purpose: they are in the Java list
+ * because they are the prefixes that pass *writes*, which is what makes it idempotent, but a served
+ * page whose link points into a **different** site's preview has still left this replica — and
+ * excusing the whole segment here would be the assertion excusing the case it exists for. The
+ * caller admits its own prefix and nothing else under them.</p>
+ *
+ * <p>A second copy of a list, which SH245 warns about. Accepted for the reason that rule gives: the
+ * shared contract is the instance's route table, and this side has to name it to assert about the
+ * other side's output at all. A drift here is a red conformance run rather than a silent miss.</p>
+ */
+function isInstanceRoute(path) {
+  const segment = path.split(/[/?#]/)[1] ?? "";
+  return ["api", "mcp", "file_source"].includes(segment);
 }
 
 /** The same capture with the acceptances set aside, so one review yields both modes. */
