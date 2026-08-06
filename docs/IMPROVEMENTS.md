@@ -1804,29 +1804,30 @@ stays a declaration of content.
 The assertion is the same either way: apply a blueprint to a fresh site and `/preview/`
 answers 200 with `data-shio-prop` on it.
 
-### XVII.71 A page is not one mode (SH520)
+### XVII.71 The promise the mode rests on (SH520)
 
-Replicating `viglet.org` authorably gives **106 annotated fields across five of six
-pages**, and every one draws unstyled. The site holds both themes, `VigOrg (captured)`
-at 1,061,479 bytes and `VigOrg (Shio)` at 2,289, and one layout: `VigOrg (fidelity)`,
-whose `THEME` is the captured one. The Shio theme is written and never bound.
+Accepting one candidate discards every other block on the page. `viglet.org`'s home has
+a `SectionFaq` among its blocks; accepting it leaves a `Page` whose fields are `title`
+(6 bytes) and `sections` (one entry) and **no `content`**. The hero, the product grid
+and the footer are gone; the same page in fidelity holds 42,371 bytes of `content`.
 
-The cause is that **a page is not one mode**. `propose` accepts per *block*, so a real
-page holds both — here four candidates were recognised and two were not, and every page
-therefore mixes accepted sections with verbatim markup. SH509 and SH510 settled the pure
-cases: all-accepted gets the Shio layout and 6 KB, all-fidelity keeps the captured theme
-and reaches 0.00%. Mixed gets the fidelity layout, so the sections render through
-`shio-container`, `shio-heading` and `shio-feature` with nothing that styles them,
-inside a megabyte of CSS for the verbatim parts.
+`propose` prints the opposite in the same run: **"an unaccepted block stays verbatim
+markup"**. That is the mode's central promise — it is what makes accepting one block a
+reviewable, incremental decision rather than an all-or-nothing rewrite — and it is not
+kept.
 
-Mixing is the normal case, not the exception. Six candidates on a real site and four in
-the vocabulary is a good hit rate; a site where every block maps is the unusual one, and
-it is the only site the current binding serves correctly.
+What reaches the reader compounds it. The page still carries the captured theme, so
+**1,062,261 bytes of CSS** are served for markup that no longer exists, and the body is
+3,486 bytes with zero source classes. A megabyte of stylesheet for one FAQ.
 
-So the layout a mixed page uses has to carry both, captured first and Shio after — the
-order is the whole of it, since the later rule wins at equal specificity, which is the
-lesson SH424 already paid for. The check is a page with an accepted section and a
-verbatim block: the section's own classes must match a rule.
+Mixing is the normal case, which is why this is not an edge. Six candidates on a real
+site and four in the vocabulary is a good hit rate; every page here holds accepted and
+unaccepted blocks, so every page loses most of itself.
+
+The composition already has the pieces: `convert` writes `content` for a fidelity page
+and `sections` for an accepted one, and a page needs both — the verbatim remainder
+around the sections, in source order. The check is the one the promise implies: accept
+one block on a page with two, and the other must still be in the rendered output.
 
 ## XVIII End-user documentation for 2026.3 (Block R)
 
