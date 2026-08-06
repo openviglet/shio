@@ -550,6 +550,79 @@ So `audit` gains the landmark and heading shape as a finding, and `snapshot --ag
 gains a semantic comparison beside the pixel one — a replica whose tree lost a landmark
 has lost a region of the page, whatever the percentage says.
 
+### IX.36 A defect closes with an assertion (SH527)
+
+Six times a correction shipped half of itself and the other half became a new task — SH452→455,
+SH429→437, SH469→473, SH468→472, SH465→475, SH470→474. Three of those shipped the *report* and left the
+*behaviour*. At 246 commits in seven days, with verification being a person asking an agent to look
+afterwards, that is the system's expected output rather than bad luck.
+
+The rule that changes it is one line: **a defect closes with an assertion carrying its
+id.** Not a unit test of the fix's internals — the assertion that would have caught it,
+at the boundary it crossed. SH448 already proved the shape: run first, it was red by
+construction and found two defects seven tasks before the queue would have.
+
+It needs a reader, because a rule nobody can check is a preference. The suite knows
+which ids it asserts and the ledger knows which shipped, so the difference is
+computable: shipped tasks with no assertion, listed. That number is the debt, and it
+only goes down when somebody pays it.
+
+**And it has to stay fast enough to run every round.** Thirty-six seconds today, of which one install test
+is nearly thirty; a suite that grows a case per defect and never sheds one becomes the suite people skip,
+which is the failure mode that produced this backlog in the first place. So the assertion is cheap by
+construction — a served fixture, no network — and the expensive kinds say why they earn it.
+
+### IX.37 The fixture as a catalogue of what breaks a replica (SH528)
+
+Every defect this work found came from a real site, and none of them can be reproduced
+without one. The fixture is 134 lines: a page, a stylesheet, a webfont behind
+`../fonts/`, an image, a favicon. Real sites broke the replica with traits it does not
+have.
+
+The list is written already, one per task: a query string on an asset path, a `./../../`
+reference served four segments deeper than its source (SH512), a fixed overlay whose
+text became three sections' `intro` (SH505), a `&` escaped twice (SH476), a zero-byte
+file the upload refused (SH514), a `<canvas>` a script created and `--render` baked dead
+(SH517), a page under a locale prefix with no home at `/`, and a second page so a link
+can be wrong.
+
+Each is a few lines of the fixture. Together they are the deliverable: **a catalogue of
+what a real site does that breaks a replica**, and the first artefact in this work that
+keeps a finding without needing the network.
+
+That is what makes an assertion deterministic rather than merely automated. A real site
+is how a defect is *found* — `viglet.org` has a consent banner and a React canvas nobody
+planned. It is a bad way to keep one: the site changes, the network fails, and a red run
+means nothing until somebody checks which.
+
+The order follows SH527's list — a trait exists because a defect needed it, never
+because a real site happened to have it.
+
+### IX.38 The debt already standing (SH529)
+
+SH527 states the rule for the next defect and SH528 gives the fixture the traits to
+express one. This is the debt already standing: **the defects this work found and
+closed, which no assertion holds.**
+
+The count is the first deliverable and it is computable — the ledger names what shipped,
+the suite names what it asserts, and the difference is a list. Around forty tasks came
+out of the replication rounds and the suite carries five cases, so the list is most of
+them.
+
+Not all of them earn one, and saying which do is the work. A one-line fix to a message
+does not; a defect that **shipped twice** does, and there are six of those. A defect
+nobody could see without a browser does, because that is the boundary the suite exists
+to cross. The output is a decision per task, not a test per task.
+
+Order by whether a defect could return. The six half-corrections could — each was a real
+fix whose second half was written later, so the code around them is the code most likely
+to be revised. SH445's abort is the sharpest: fixed three times, and the third fix has
+no assertion on the exit code of a real remote failure either.
+
+It is also the honest end of my part in this. I have been the verification for fifteen
+rounds and got it wrong twice; a finding that becomes an assertion no longer depends on
+me looking.
+
 ## X. Content as files (Block I)
 
 > The largest cycle reducer, and the least obvious. Authoring over HTTP is the

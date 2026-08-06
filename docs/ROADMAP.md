@@ -30,6 +30,9 @@
 - 📋 **SH521** (deps: SH516) **The gate ignores the reads that already hold the finding** — agent/render answered links 0 and nine unstyled classes on the page verify called ok, because every check resolves against the tree and not the artefact. → §IX.33
 - 📋 **SH522** (deps: SH521) **Nothing compares a produced artefact with the declaration it came from** — The capture declares the source, the proposal the intent and the document the write, and the page each produces is judged against none, so the join is hand-written every round. → §IX.34
 - 📋 **SH526** (deps: SH521) **Four instruments passed a page that had lost most of its content** — Each measures what is present, so an empty page has no overflow, no contrast failure and no broken asset, and the accessibility tree the browser already builds would name the loss in a sentence. → §IX.35
+- 📋 **SH527** (deps: SH448 ✅) **A fix ships without the assertion that would have caught it, and nothing lists the gap** — Six corrections shipped half of themselves at 246 commits a week, and the suite knows which ids it asserts while the ledger knows which shipped, so the debt is computable and uncounted. → §IX.36
+- 📋 **SH528** (deps: SH527) **The fixture cannot exhibit the traits that broke every real replica** — It serves a page, a stylesheet, a font, an image and a favicon, so a query string, a relative depth, an overlay, an entity, an empty file and a script-made canvas are unreproducible offline. → §IX.37
+- 📋 **SH529** (deps: SH528) **Around forty closed defects are held by no assertion, and the six that shipped twice are among them** — The ledger names what shipped and the suite carries five cases, so the difference is a computable list nobody has drawn, headed by the corrections that already came back. → §IX.38
 
 ## Block I — Content as files (local-first authoring)
 
